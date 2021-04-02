@@ -18,6 +18,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> headOffsetX;
         private static ConfigEntry<float> headOffsetZ;
         private static ConfigEntry<bool> enableHeadReposition;
+        private static ConfigEntry<bool> enableHands;
 
         // Graphics Settings
         private static ConfigEntry<bool> useAmplifyOcclusion;
@@ -79,6 +80,10 @@ namespace ValheimVRMod.Utilities
                                                 "Set to this true enable using the arrow keys to position the camera when in first person mode. You can use this to set the values of FirstPersonHeadOffsetX/Z while in game " +
                                                 "rather than having to edit them manually in the config file. Your settings will be remembered between gameplay sessions via this config file."
                                                 );
+            enableHands = config.Bind("General",
+                                       "EnableHands",
+                                       false,
+                                       "Set this true to allow hands and laser pointers to be rendered in game. Default to false since motion controls are not working yet.");
         }
 
         public static bool ModEnabled()
@@ -147,6 +152,11 @@ namespace ValheimVRMod.Utilities
         public static void UpdateHeadOffset(Vector2 offset) {
             headOffsetX.Value = Mathf.Clamp(offset.x, -2f, 2f);
             headOffsetZ.Value = Mathf.Clamp(offset.y, -2f, 2f);
+        }
+
+        public static bool HandsEnabled()
+        {
+            return enableHands.Value;
         }
 
     }

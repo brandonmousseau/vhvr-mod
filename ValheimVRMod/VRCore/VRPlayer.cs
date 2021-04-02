@@ -165,6 +165,14 @@ namespace ValheimVRMod.VRCore
                     _rightPointer = _rightHand.GetComponent<SteamVR_LaserPointer>();
                 }
             }
+            if (_leftHand != null)
+            {
+                _leftHand.enabled = VVRConfig.HandsEnabled();
+            }
+            if (_rightHand != null)
+            {
+                _rightHand.enabled = VVRConfig.HandsEnabled();
+            }
             // Next check whether the hands are active, and enable the appropriate pointer based
             // on what is available and what the options set as preferred. Disable the inactive pointer(s).
             if (handIsActive(_leftHand, _leftPointer) && handIsActive(_rightHand, _rightPointer))
@@ -208,7 +216,8 @@ namespace ValheimVRMod.VRCore
 
         private bool shouldLaserPointersBeActive()
         {
-            return Cursor.visible || (getPlayerCharacter() != null && getPlayerCharacter().InPlaceMode());
+            return VVRConfig.HandsEnabled() &&
+                (Cursor.visible || (getPlayerCharacter() != null && getPlayerCharacter().InPlaceMode()));
         }
 
         // Returns true if both the hand and pointer are not null
@@ -219,7 +228,7 @@ namespace ValheimVRMod.VRCore
             {
                 return false;
             }
-            return h.isActive && h.isPoseValid;
+            return h.enabled && h.isActive && h.isPoseValid;
         }
 
         private Hand getHand(string hand, GameObject playerInstance)
