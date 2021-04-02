@@ -104,10 +104,35 @@ namespace ValheimVRMod.VRCore
             {
                 return;
             }
+            maybeUpdateHeadPosition();
             attachVrPlayerToWorldObject();
             enableCameras();
             checkAndSetHandsAndPointers();
             UpdateAmplifyOcclusionStatus();
+        }
+
+        void maybeUpdateHeadPosition()
+        {
+            if (VVRConfig.AllowHeadRepositioning())
+            {
+                if (Input.GetKeyDown(KeyCode.UpArrow))
+                {
+                    FIRST_PERSON_OFFSET += new Vector3(0f, 0f, 0.2f);
+                }
+                if (Input.GetKeyDown(KeyCode.DownArrow))
+                {
+                    FIRST_PERSON_OFFSET += new Vector3(0f, 0f, -0.2f);
+                }
+                if (Input.GetKeyDown(KeyCode.LeftArrow))
+                {
+                    FIRST_PERSON_OFFSET += new Vector3(-0.2f, 0f, 0f);
+                }
+                if (Input.GetKeyDown(KeyCode.RightArrow))
+                {
+                    FIRST_PERSON_OFFSET += new Vector3(0.2f, 0f, 0f);
+                }
+                VVRConfig.UpdateHeadOffset(new Vector2(FIRST_PERSON_OFFSET.x, FIRST_PERSON_OFFSET.z));
+            }
         }
 
         void UpdateAmplifyOcclusionStatus()

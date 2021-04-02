@@ -17,6 +17,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> overlayCurvature;
         private static ConfigEntry<float> headOffsetX;
         private static ConfigEntry<float> headOffsetZ;
+        private static ConfigEntry<bool> enableHeadReposition;
 
         // Graphics Settings
         private static ConfigEntry<bool> useAmplifyOcclusion;
@@ -66,12 +67,18 @@ namespace ValheimVRMod.Utilities
                                       new ConfigDescription("This is an offset you can adjust, if needed, to center the camera position over the player model in first person mode. " +
                                       "I haven't found a way to programatically fully determine the exact right spot at runtime, so I need to use an offset, and based on tracking, it" +
                                       " might be different for different players. It shouldn't need to be adjusted much.",
-                                      new AcceptableValueRange<float>(-1.5f, 1.5f)));
+                                      new AcceptableValueRange<float>(-2.0f, 2.0f)));
             headOffsetZ = config.Bind("General",
                           "FirstPersonHeadOffsetZ",
                           0.5f,
                           new ConfigDescription("See FirstPersonHeadOffsetZ description.",
-                          new AcceptableValueRange<float>(-1.5f, 1.5f)));
+                          new AcceptableValueRange<float>(-2.0f, 2.0f)));
+            enableHeadReposition = config.Bind("General",
+                                                "EnableHeadRepositioning",
+                                                true,
+                                                "Set to this true enable using the arrow keys to position the camera when in first person mode. You can use this to set the values of FirstPersonHeadOffsetX/Z while in game " +
+                                                "rather than having to edit them manually in the config file. Your settings will be remembered between gameplay sessions via this config file."
+                                                );
         }
 
         public static bool ModEnabled()
@@ -130,6 +137,16 @@ namespace ValheimVRMod.Utilities
         public static Vector2 GetHeadOffset()
         {
             return new Vector2(headOffsetX.Value, headOffsetZ.Value);
+        }
+
+        public static bool AllowHeadRepositioning()
+        {
+            return enableHeadReposition.Value;
+        }
+
+        public static void UpdateHeadOffset(Vector2 offset) {
+            headOffsetX.Value = Mathf.Clamp(offset.x, -2f, 2f);
+            headOffsetZ.Value = Mathf.Clamp(offset.y, -2f, 2f);
         }
 
     }

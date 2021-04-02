@@ -34,7 +34,7 @@ namespace ValheimVRMod
 #if DEBUG
             if (Input.GetKeyDown(KeyCode.Backslash))
             {
-                dumpall();
+              //  dumpall();
             }
 #endif
         }
