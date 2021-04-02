@@ -1,0 +1,765 @@
+fileFormatVersion: 2
+guid: 35bf13fffe3e1b54b9be7cf6d9808f97
+ModelImporter:
+  serializedVersion: 19301
+  internalIDToNameTable:
+  - first:
+      1: 100000
+    second: Armature.000
+  - first:
+      1: 100002
+    second: Armature.001
+  - first:
+      1: 100004
+    second: finger_index_0_r
+  - first:
+      1: 100006
+    second: finger_index_0_r 1
+  - first:
+      1: 100008
+    second: finger_index_0_r 2
+  - first:
+      1: 100010
+    second: finger_index_1_r
+  - first:
+      1: 100012
+    second: finger_index_1_r 1
+  - first:
+      1: 100014
+    second: finger_index_1_r 2
+  - first:
+      1: 100016
+    second: finger_index_2_r
+  - first:
+      1: 100018
+    second: finger_index_2_r 1
+  - first:
+      1: 100020
+    second: finger_index_2_r 2
+  - first:
+      1: 100022
+    second: finger_index_meta_r
+  - first:
+      1: 100024
+    second: finger_index_meta_r 1
+  - first:
+      1: 100026
+    second: finger_index_meta_r 2
+  - first:
+      1: 100028
+    second: finger_index_r_aux
+  - first:
+      1: 100030
+    second: finger_index_r_aux 1
+  - first:
+      1: 100032
+    second: finger_index_r_aux 2
+  - first:
+      1: 100034
+    second: finger_index_r_aux_end
+  - first:
+      1: 100036
+    second: finger_index_r_aux_end 1
+  - first:
+      1: 100038
+    second: finger_index_r_aux_end 2
+  - first:
+      1: 100040
+    second: finger_index_r_end
+  - first:
+      1: 100042
+    second: finger_index_r_end 1
+  - first:
+      1: 100044
+    second: finger_index_r_end 2
+  - first:
+      1: 100046
+    second: finger_index_r_end_end
+  - first:
+      1: 100048
+    second: finger_index_r_end_end 1
+  - first:
+      1: 100050
+    second: finger_index_r_end_end 2
+  - first:
+      1: 100052
+    second: finger_middle_0_r
+  - first:
+      1: 100054
+    second: finger_middle_1_r
+  - first:
+      1: 100056
+    second: finger_middle_2_r
+  - first:
+      1: 100058
+    second: finger_middle_meta_r
+  - first:
+      1: 100060
+    second: finger_middle_r_aux
+  - first:
+      1: 100062
+    second: finger_middle_r_aux_end
+  - first:
+      1: 100064
+    second: finger_middle_r_end
+  - first:
+      1: 100066
+    second: finger_middle_r_end_end
+  - first:
+      1: 100068
+    second: finger_pinky_0_r
+  - first:
+      1: 100070
+    second: finger_pinky_1_r
+  - first:
+      1: 100072
+    second: finger_pinky_2_r
+  - first:
+      1: 100074
+    second: finger_pinky_meta_r
+  - first:
+      1: 100076
+    second: finger_pinky_r_aux
+  - first:
+      1: 100078
+    second: finger_pinky_r_aux_end
+  - first:
+      1: 100080
+    second: finger_pinky_r_end
+  - first:
+      1: 100082
+    second: finger_pinky_r_end_end
+  - first:
+      1: 100084
+    second: finger_ring_0_r
+  - first:
+      1: 100086
+    second: finger_ring_0_r 1
+  - first:
+      1: 100088
+    second: finger_ring_0_r 2
+  - first:
+      1: 100090
+    second: finger_ring_1_r
+  - first:
+      1: 100092
+    second: finger_ring_1_r 1
+  - first:
+      1: 100094
+    second: finger_ring_1_r 2
+  - first:
+      1: 100096
+    second: finger_ring_2_r
+  - first:
+      1: 100098
+    second: finger_ring_2_r 1
+  - first:
+      1: 100100
+    second: finger_ring_2_r 2
+  - first:
+      1: 100102
+    second: finger_ring_meta_r
+  - first:
+      1: 100104
+    second: finger_ring_meta_r 1
+  - first:
+      1: 100106
+    second: finger_ring_meta_r 2
+  - first:
+      1: 100108
+    second: finger_ring_r_aux
+  - first:
+      1: 100110
+    second: finger_ring_r_aux 1
+  - first:
+      1: 100112
+    second: finger_ring_r_aux 2
+  - first:
+      1: 100114
+    second: finger_ring_r_aux_end
+  - first:
+      1: 100116
+    second: finger_ring_r_aux_end 1
+  - first:
+      1: 100118
+    second: finger_ring_r_aux_end 2
+  - first:
+      1: 100120
+    second: finger_ring_r_end
+  - first:
+      1: 100122
+    second: finger_ring_r_end 1
+  - first:
+      1: 100124
+    second: finger_ring_r_end 2
+  - first:
+      1: 100126
+    second: finger_ring_r_end_end
+  - first:
+      1: 100128
+    second: finger_ring_r_end_end 1
+  - first:
+      1: 100130
+    second: finger_ring_r_end_end 2
+  - first:
+      1: 100132
+    second: finger_thumb_0_r
+  - first:
+      1: 100134
+    second: finger_thumb_0_r 1
+  - first:
+      1: 100136
+    second: finger_thumb_0_r 2
+  - first:
+      1: 100138
+    second: finger_thumb_1_r
+  - first:
+      1: 100140
+    second: finger_thumb_1_r 1
+  - first:
+      1: 100142
+    second: finger_thumb_1_r 2
+  - first:
+      1: 100144
+    second: finger_thumb_2_r
+  - first:
+      1: 100146
+    second: finger_thumb_2_r 1
+  - first:
+      1: 100148
+    second: finger_thumb_2_r 2
+  - first:
+      1: 100150
+    second: finger_thumb_r_aux
+  - first:
+      1: 100152
+    second: finger_thumb_r_aux 1
+  - first:
+      1: 100154
+    second: finger_thumb_r_aux 2
+  - first:
+      1: 100156
+    second: finger_thumb_r_aux_end
+  - first:
+      1: 100158
+    second: finger_thumb_r_aux_end 1
+  - first:
+      1: 100160
+    second: finger_thumb_r_aux_end 2
+  - first:
+      1: 100162
+    second: finger_thumb_r_end
+  - first:
+      1: 100164
+    second: finger_thumb_r_end 1
+  - first:
+      1: 100166
+    second: finger_thumb_r_end 2
+  - first:
+      1: 100168
+    second: finger_thumb_r_end_end
+  - first:
+      1: 100170
+    second: finger_thumb_r_end_end 1
+  - first:
+      1: 100172
+    second: finger_thumb_r_end_end 2
+  - first:
+      1: 100174
+    second: Icosphere
+  - first:
+      1: 100176
+    second: Icosphere.001
+  - first:
+      1: 100178
+    second: Icosphere_MeshPart0
+  - first:
+      1: 100180
+    second: Icosphere_MeshPart1
+  - first:
+      1: 100182
+    second: Icosphere_MeshPart2
+  - first:
+      1: 100184
+    second: renderMesh0
+  - first:
+      1: 100186
+    second: Root
+  - first:
+      1: 100188
+    second: Root 1
+  - first:
+      1: 100190
+    second: //RootNode
+  - first:
+      1: 100192
+    second: wrist_r
+  - first:
+      1: 100194
+    second: wrist_r 1
+  - first:
+      1: 100196
+    second: wrist_r 2
+  - first:
+      1: 100198
+    second: alienHand
+  - first:
+      4: 400000
+    second: Armature.000
+  - first:
+      4: 400002
+    second: Armature.001
+  - first:
+      4: 400004
+    second: finger_index_0_r
+  - first:
+      4: 400006
+    second: finger_index_0_r 1
+  - first:
+      4: 400008
+    second: finger_index_0_r 2
+  - first:
+      4: 400010
+    second: finger_index_1_r
+  - first:
+      4: 400012
+    second: finger_index_1_r 1
+  - first:
+      4: 400014
+    second: finger_index_1_r 2
+  - first:
+      4: 400016
+    second: finger_index_2_r
+  - first:
+      4: 400018
+    second: finger_index_2_r 1
+  - first:
+      4: 400020
+    second: finger_index_2_r 2
+  - first:
+      4: 400022
+    second: finger_index_meta_r
+  - first:
+      4: 400024
+    second: finger_index_meta_r 1
+  - first:
+      4: 400026
+    second: finger_index_meta_r 2
+  - first:
+      4: 400028
+    second: finger_index_r_aux
+  - first:
+      4: 400030
+    second: finger_index_r_aux 1
+  - first:
+      4: 400032
+    second: finger_index_r_aux 2
+  - first:
+      4: 400034
+    second: finger_index_r_aux_end
+  - first:
+      4: 400036
+    second: finger_index_r_aux_end 1
+  - first:
+      4: 400038
+    second: finger_index_r_aux_end 2
+  - first:
+      4: 400040
+    second: finger_index_r_end
+  - first:
+      4: 400042
+    second: finger_index_r_end 1
+  - first:
+      4: 400044
+    second: finger_index_r_end 2
+  - first:
+      4: 400046
+    second: finger_index_r_end_end
+  - first:
+      4: 400048
+    second: finger_index_r_end_end 1
+  - first:
+      4: 400050
+    second: finger_index_r_end_end 2
+  - first:
+      4: 400052
+    second: finger_middle_0_r
+  - first:
+      4: 400054
+    second: finger_middle_1_r
+  - first:
+      4: 400056
+    second: finger_middle_2_r
+  - first:
+      4: 400058
+    second: finger_middle_meta_r
+  - first:
+      4: 400060
+    second: finger_middle_r_aux
+  - first:
+      4: 400062
+    second: finger_middle_r_aux_end
+  - first:
+      4: 400064
+    second: finger_middle_r_end
+  - first:
+      4: 400066
+    second: finger_middle_r_end_end
+  - first:
+      4: 400068
+    second: finger_pinky_0_r
+  - first:
+      4: 400070
+    second: finger_pinky_1_r
+  - first:
+      4: 400072
+    second: finger_pinky_2_r
+  - first:
+      4: 400074
+    second: finger_pinky_meta_r
+  - first:
+      4: 400076
+    second: finger_pinky_r_aux
+  - first:
+      4: 400078
+    second: finger_pinky_r_aux_end
+  - first:
+      4: 400080
+    second: finger_pinky_r_end
+  - first:
+      4: 400082
+    second: finger_pinky_r_end_end
+  - first:
+      4: 400084
+    second: finger_ring_0_r
+  - first:
+      4: 400086
+    second: finger_ring_0_r 1
+  - first:
+      4: 400088
+    second: finger_ring_0_r 2
+  - first:
+      4: 400090
+    second: finger_ring_1_r
+  - first:
+      4: 400092
+    second: finger_ring_1_r 1
+  - first:
+      4: 400094
+    second: finger_ring_1_r 2
+  - first:
+      4: 400096
+    second: finger_ring_2_r
+  - first:
+      4: 400098
+    second: finger_ring_2_r 1
+  - first:
+      4: 400100
+    second: finger_ring_2_r 2
+  - first:
+      4: 400102
+    second: finger_ring_meta_r
+  - first:
+      4: 400104
+    second: finger_ring_meta_r 1
+  - first:
+      4: 400106
+    second: finger_ring_meta_r 2
+  - first:
+      4: 400108
+    second: finger_ring_r_aux
+  - first:
+      4: 400110
+    second: finger_ring_r_aux 1
+  - first:
+      4: 400112
+    second: finger_ring_r_aux 2
+  - first:
+      4: 400114
+    second: finger_ring_r_aux_end
+  - first:
+      4: 400116
+    second: finger_ring_r_aux_end 1
+  - first:
+      4: 400118
+    second: finger_ring_r_aux_end 2
+  - first:
+      4: 400120
+    second: finger_ring_r_end
+  - first:
+      4: 400122
+    second: finger_ring_r_end 1
+  - first:
+      4: 400124
+    second: finger_ring_r_end 2
+  - first:
+      4: 400126
+    second: finger_ring_r_end_end
+  - first:
+      4: 400128
+    second: finger_ring_r_end_end 1
+  - first:
+      4: 400130
+    second: finger_ring_r_end_end 2
+  - first:
+      4: 400132
+    second: finger_thumb_0_r
+  - first:
+      4: 400134
+    second: finger_thumb_0_r 1
+  - first:
+      4: 400136
+    second: finger_thumb_0_r 2
+  - first:
+      4: 400138
+    second: finger_thumb_1_r
+  - first:
+      4: 400140
+    second: finger_thumb_1_r 1
+  - first:
+      4: 400142
+    second: finger_thumb_1_r 2
+  - first:
+      4: 400144
+    second: finger_thumb_2_r
+  - first:
+      4: 400146
+    second: finger_thumb_2_r 1
+  - first:
+      4: 400148
+    second: finger_thumb_2_r 2
+  - first:
+      4: 400150
+    second: finger_thumb_r_aux
+  - first:
+      4: 400152
+    second: finger_thumb_r_aux 1
+  - first:
+      4: 400154
+    second: finger_thumb_r_aux 2
+  - first:
+      4: 400156
+    second: finger_thumb_r_aux_end
+  - first:
+      4: 400158
+    second: finger_thumb_r_aux_end 1
+  - first:
+      4: 400160
+    second: finger_thumb_r_aux_end 2
+  - first:
+      4: 400162
+    second: finger_thumb_r_end
+  - first:
+      4: 400164
+    second: finger_thumb_r_end 1
+  - first:
+      4: 400166
+    second: finger_thumb_r_end 2
+  - first:
+      4: 400168
+    second: finger_thumb_r_end_end
+  - first:
+      4: 400170
+    second: finger_thumb_r_end_end 1
+  - first:
+      4: 400172
+    second: finger_thumb_r_end_end 2
+  - first:
+      4: 400174
+    second: Icosphere
+  - first:
+      4: 400176
+    second: Icosphere.001
+  - first:
+      4: 400178
+    second: Icosphere_MeshPart0
+  - first:
+      4: 400180
+    second: Icosphere_MeshPart1
+  - first:
+      4: 400182
+    second: Icosphere_MeshPart2
+  - first:
+      4: 400184
+    second: renderMesh0
+  - first:
+      4: 400186
+    second: Root
+  - first:
+      4: 400188
+    second: Root 1
+  - first:
+      4: 400190
+    second: //RootNode
+  - first:
+      4: 400192
+    second: wrist_r
+  - first:
+      4: 400194
+    second: wrist_r 1
+  - first:
+      4: 400196
+    second: wrist_r 2
+  - first:
+      4: 400198
+    second: alienHand
+  - first:
+      23: 2300000
+    second: Icosphere_MeshPart0
+  - first:
+      23: 2300002
+    second: Icosphere_MeshPart1
+  - first:
+      23: 2300004
+    second: Icosphere_MeshPart2
+  - first:
+      23: 2300006
+    second: renderMesh0
+  - first:
+      23: 2300008
+    second: Icosphere.001
+  - first:
+      23: 2300010
+    second: alienHand
+  - first:
+      33: 3300000
+    second: Icosphere_MeshPart0
+  - first:
+      33: 3300002
+    second: Icosphere_MeshPart1
+  - first:
+      33: 3300004
+    second: Icosphere_MeshPart2
+  - first:
+      33: 3300006
+    second: renderMesh0
+  - first:
+      33: 3300008
+    second: Icosphere.001
+  - first:
+      33: 3300010
+    second: alienHand
+  - first:
+      43: 4300000
+    second: Icosphere.001
+  - first:
+      43: 4300002
+    second: Icosphere_MeshPart0
+  - first:
+      43: 4300004
+    second: Icosphere_MeshPart1
+  - first:
+      43: 4300006
+    second: Icosphere_MeshPart2
+  - first:
+      43: 4300008
+    second: renderMesh0
+  - first:
+      43: 4300010
+    second: alienHand
+  - first:
+      95: 9500000
+    second: //RootNode
+  - first:
+      137: 13700000
+    second: Icosphere.001
+  - first:
+      137: 13700002
+    second: alienHand
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: AlienHand
+    second: {fileID: 2100000, guid: ceb48f72b3325c74e95838fb760d0ab0, type: 2}
+  materials:
+    materialImportMode: 1
+    materialName: 0
+    materialSearch: 1
+    materialLocation: 0
+  animations:
+    legacyGenerateAnimations: 4
+    bakeSimulation: 0
+    resampleCurves: 1
+    optimizeGameObjects: 0
+    motionNodeName: 
+    rigImportErrors: 
+    rigImportWarnings: 
+    animationImportErrors: 
+    animationImportWarnings: 
+    animationRetargetingWarnings: 
+    animationDoRetargetingWarnings: 0
+    importAnimatedCustomProperties: 0
+    importConstraints: 0
+    animationCompression: 1
+    animationRotationError: 0.5
+    animationPositionError: 0.5
+    animationScaleError: 0.5
+    animationWrapMode: 0
+    extraExposedTransformPaths: []
+    extraUserProperties: []
+    clipAnimations: []
+    isReadable: 1
+  meshes:
+    lODScreenPercentages: []
+    globalScale: 100
+    meshCompression: 0
+    addColliders: 0
+    useSRGBMaterialColor: 1
+    sortHierarchyByName: 1
+    importVisibility: 0
+    importBlendShapes: 1
+    importCameras: 0
+    importLights: 0
+    fileIdsGeneration: 1
+    swapUVChannels: 0
+    generateSecondaryUV: 0
+    useFileUnits: 1
+    keepQuads: 0
+    weldVertices: 1
+    preserveHierarchy: 0
+    skinWeightsMode: 0
+    maxBonesPerVertex: 4
+    minBoneWeight: 0.001
+    meshOptimizationFlags: -1
+    indexFormat: 1
+    secondaryUVAngleDistortion: 8
+    secondaryUVAreaDistortion: 15.000001
+    secondaryUVHardAngle: 88
+    secondaryUVPackMargin: 4
+    useFileScale: 1
+  tangentSpace:
+    normalSmoothAngle: 60
+    normalImportMode: 0
+    tangentImportMode: 3
+    normalCalculationMode: 0
+    legacyComputeAllNormalsFromSmoothingGroupsWhenMeshHasBlendShapes: 1
+    blendShapeNormalImportMode: 1
+    normalSmoothingSource: 0
+  referencedClips: []
+  importAnimation: 1
+  humanDescription:
+    serializedVersion: 3
+    human: []
+    skeleton: []
+    armTwist: 0.5
+    foreArmTwist: 0.5
+    upperLegTwist: 0.5
+    legTwist: 0.5
+    armStretch: 0.05
+    legStretch: 0.05
+    feetSpacing: 0
+    globalScale: 100
+    rootMotionBoneName: 
+    hasTranslationDoF: 0
+    hasExtraRoot: 0
+    skeletonHasParents: 0
+  lastHumanDescriptionAvatarSource: {instanceID: 0}
+  autoGenerateAvatarMappingIfUnspecified: 1
+  animationType: 2
+  humanoidOversampling: 1
+  avatarSetup: 1
+  additionalBone: 0
+  userData: 
+  assetBundleName: steamvr_player_prefabs
+  assetBundleVariant: 
