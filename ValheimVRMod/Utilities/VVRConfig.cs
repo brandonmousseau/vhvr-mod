@@ -82,8 +82,8 @@ namespace ValheimVRMod.Utilities
                                                 );
             enableHands = config.Bind("General",
                                        "EnableHands",
-                                       false,
-                                       "Set this true to allow hands and laser pointers to be rendered in game. Default to false since motion controls are not working yet.");
+                                       true,
+                                       "Set this true to allow hands and laser pointers to be rendered in game. Note: motion controls are only minimally enabled, so right now this is just for fun.");
         }
 
         public static bool ModEnabled()
