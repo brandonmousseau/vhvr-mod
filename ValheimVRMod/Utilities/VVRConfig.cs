@@ -17,6 +17,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> overlayCurvature;
         private static ConfigEntry<float> headOffsetX;
         private static ConfigEntry<float> headOffsetZ;
+        private static ConfigEntry<float> headOffsetY;
         private static ConfigEntry<bool> enableHeadReposition;
         private static ConfigEntry<bool> enableHands;
 
@@ -72,7 +73,12 @@ namespace ValheimVRMod.Utilities
             headOffsetZ = config.Bind("General",
                           "FirstPersonHeadOffsetZ",
                           0.5f,
-                          new ConfigDescription("See FirstPersonHeadOffsetZ description.",
+                          new ConfigDescription("See FirstPersonHeadOffsetX description.",
+                          new AcceptableValueRange<float>(-2.0f, 2.0f)));
+            headOffsetY = config.Bind("General",
+                          "FirstPersonHeadOffsetY",
+                          0.4f,
+                          new ConfigDescription("See FirstPersonHeadOffsetX description.",
                           new AcceptableValueRange<float>(-2.0f, 2.0f)));
             enableHeadReposition = config.Bind("General",
                                                 "EnableHeadRepositioning",
@@ -139,9 +145,9 @@ namespace ValheimVRMod.Utilities
             return useAmplifyOcclusion.Value;
         }
 
-        public static Vector2 GetHeadOffset()
+        public static Vector3 GetHeadOffset()
         {
-            return new Vector2(headOffsetX.Value, headOffsetZ.Value);
+            return new Vector3(headOffsetX.Value, headOffsetY.Value, headOffsetZ.Value);
         }
 
         public static bool AllowHeadRepositioning()
@@ -149,9 +155,10 @@ namespace ValheimVRMod.Utilities
             return enableHeadReposition.Value;
         }
 
-        public static void UpdateHeadOffset(Vector2 offset) {
+        public static void UpdateHeadOffset(Vector3 offset) {
             headOffsetX.Value = Mathf.Clamp(offset.x, -2f, 2f);
-            headOffsetZ.Value = Mathf.Clamp(offset.y, -2f, 2f);
+            headOffsetY.Value = Mathf.Clamp(offset.y, -2f, 2f);
+            headOffsetZ.Value = Mathf.Clamp(offset.z, -2f, 2f);
         }
 
         public static bool HandsEnabled()

@@ -41,7 +41,7 @@ namespace ValheimVRMod.VRCore
         // the hands won't be rendered by the handsCam.
         private static readonly int HANDS_LAYER = 23;
         private static readonly int HANDS_LAYER_MASK = (1 << HANDS_LAYER);
-        private static Vector3 FIRST_PERSON_OFFSET = new Vector3(0f, 0.4f, 0f);
+        private static Vector3 FIRST_PERSON_OFFSET = new Vector3(0f, 0f, 0f);
         private static Vector3 THIRD_PERSON_0_OFFSET = new Vector3(-0.5f, 1.0f, -0.6f);
         private static Vector3 THIRD_PERSON_1_OFFSET = new Vector3(-0.5f, 1.4f, -1.5f);
         private static Vector3 THIRD_PERSON_2_OFFSET = new Vector3(-0.5f, 1.9f, -2.6f);
@@ -92,9 +92,7 @@ namespace ValheimVRMod.VRCore
         {
             _prefab = VRAssetManager.GetAsset<GameObject>(PLAYER_PREFAB_NAME);
             _preferredHand = VVRConfig.GetPreferredHand();
-            Vector2 headOffsetConfig = VVRConfig.GetHeadOffset();
-            FIRST_PERSON_OFFSET.x = headOffsetConfig.x;
-            FIRST_PERSON_OFFSET.z = headOffsetConfig.y;
+            FIRST_PERSON_OFFSET = VVRConfig.GetHeadOffset();
             ensurePlayerInstance();
         }
 
@@ -117,21 +115,29 @@ namespace ValheimVRMod.VRCore
             {
                 if (Input.GetKeyDown(KeyCode.UpArrow))
                 {
-                    FIRST_PERSON_OFFSET += new Vector3(0f, 0f, 0.2f);
+                    FIRST_PERSON_OFFSET += new Vector3(0f, 0f, 0.1f);
                 }
                 if (Input.GetKeyDown(KeyCode.DownArrow))
                 {
-                    FIRST_PERSON_OFFSET += new Vector3(0f, 0f, -0.2f);
+                    FIRST_PERSON_OFFSET += new Vector3(0f, 0f, -0.1f);
                 }
                 if (Input.GetKeyDown(KeyCode.LeftArrow))
                 {
-                    FIRST_PERSON_OFFSET += new Vector3(-0.2f, 0f, 0f);
+                    FIRST_PERSON_OFFSET += new Vector3(-0.1f, 0f, 0f);
                 }
                 if (Input.GetKeyDown(KeyCode.RightArrow))
                 {
-                    FIRST_PERSON_OFFSET += new Vector3(0.2f, 0f, 0f);
+                    FIRST_PERSON_OFFSET += new Vector3(0.1f, 0f, 0f);
                 }
-                VVRConfig.UpdateHeadOffset(new Vector2(FIRST_PERSON_OFFSET.x, FIRST_PERSON_OFFSET.z));
+                if (Input.GetKeyDown(KeyCode.PageUp))
+                {
+                    FIRST_PERSON_OFFSET += new Vector3(0f, 0.1f, 0f);
+                }
+                if (Input.GetKeyDown(KeyCode.PageDown))
+                {
+                    FIRST_PERSON_OFFSET += new Vector3(0f, -0.1f, 0f);
+                }
+                VVRConfig.UpdateHeadOffset(FIRST_PERSON_OFFSET);
             }
         }
 
