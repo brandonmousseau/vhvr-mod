@@ -123,7 +123,7 @@ namespace ValheimVRMod.Patches
         }
     }
 
-    // Without this patch, where an object is place is controlled by the
+    // Without this patch, where an object is placed is controlled by the
     // direction of the player camera. In VR, this meant the player has to
     // physically look at the exact spot they want to place an object. It ended
     // up being very uncomfortable & hard to do for building. With this patch,

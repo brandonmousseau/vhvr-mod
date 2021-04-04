@@ -49,7 +49,7 @@ namespace ValheimVRMod.VRCore
 
         private static GameObject _prefab;
         private static GameObject _instance;
-        private HeadZoomLevel _headZoomLevel = HeadZoomLevel.FirstPerson;
+        private static HeadZoomLevel _headZoomLevel = HeadZoomLevel.FirstPerson;
 
         private static Vector3 HEAD_OFFSET = Vector3.zero;
         private static bool headPositionIsInitialized = false;
@@ -82,6 +82,12 @@ namespace ValheimVRMod.VRCore
                 {
                     return null;
                 }
+            }
+        }
+
+        public static bool inFirstPerson { get
+            {
+                return (_headZoomLevel == HeadZoomLevel.FirstPerson) && attachedToPlayer;
             }
         }
 

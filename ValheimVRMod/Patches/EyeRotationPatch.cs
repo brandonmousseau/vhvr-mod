@@ -1,25 +1,50 @@
 ﻿using HarmonyLib;
 using UnityEngine;
 using ValheimVRMod.VRCore;
+using ValheimVRMod.Utilities;
 
 namespace ValheimVRMod.Patches
 {
-    // We ultimately want movement direction tied to the direction the player
-    // body is facing. m_lookDir's only is to determine movement
-    // direction. In original code it is set to the forward direction of the eyes,
-    // but that would cause movement based on look direction instead.
+    // If the user has configured to disconnect walk direction from look direction, we
+    // want movement direction tied to the direction the player body is facing
+    // m_lookDir's only is to determine movement direction. In original code it is set to
+    // the forward direction of the eyes, but that would cause movement based on look
+    // direction instead.
     //
     // So we'll patch it here to set it to the forward direction of the Player
     // game object.
+    //
+    // If the player prefers to keep look direction and walk direction tied together,
+    // we want to rotate the look yaw by the amount the head set has rotated since
+    // the last update (so total yaw will be headset rotation + mouse/joystick rotation).
+    // The player character should be rotated to whatever the lookYaw is.
+    //
     [HarmonyPatch(typeof(Player), "SetMouseLook")]
     class Player_SetMouseLook_Patch
     {
+
+        private static float lastEyeRotationAngle = 0f;
+
+        public static void Prefix(Player __instance, ref Quaternion ___m_lookYaw)
+        {
+            if (VVRConfig.UseLookLocomotion() && VRPlayer.inFirstPerson)
+            {
+                float currentEyeRotationAngle = __instance.m_eye.rotation.eulerAngles.y;
+                float difference = currentEyeRotationAngle - lastEyeRotationAngle;
+                ___m_lookYaw *= Quaternion.Euler(0f, difference, 0f);
+            }
+        }
+
         public static void Postfix(Player __instance, ref Vector3 ___m_lookDir)
         {
             if (VRPlayer.attachedToPlayer)
             {
-                ___m_lookDir = __instance.gameObject.transform.forward;
+                if (!VVRConfig.UseLookLocomotion() || !VRPlayer.inFirstPerson)
+                {
+                    ___m_lookDir = __instance.gameObject.transform.forward;
+                }
             }
+            lastEyeRotationAngle = __instance.m_eye.rotation.eulerAngles.y;
         }
     }
 
@@ -44,7 +69,7 @@ namespace ValheimVRMod.Patches
     {
         public static void Postfix(Player __instance, Quaternion ___m_lookYaw, float ___m_lookPitch)
         {
-            GameObject vrCamObj = GameObject.Find("VRCamera");
+            GameObject vrCamObj = GameObject.Find(CameraUtils.VR_CAMERA);
             if (VRPlayer.attachedToPlayer && vrCamObj != null)
             {
                 // Set the eye rotation equal to HMD rotation
