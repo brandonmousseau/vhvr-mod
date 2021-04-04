@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.XR;
 using Unity.XR.OpenVR;
 using Valve.VR;
+using System.Collections.Generic;
 using System.IO;
 using UnityEngine.XR.Management;
 using ValheimVRMod.Utilities;
@@ -152,6 +153,21 @@ namespace ValheimVRMod
             LogDebug("Got non-null Active Loader.");
             return true;
         }
+
+        public static void maybeRecenter()
+        {
+            if (Input.GetKeyDown(KeyCode.Home))
+            {
+                List<XRInputSubsystem> inputSubsystems = new List<XRInputSubsystem>();
+                SubsystemManager.GetInstances(inputSubsystems);
+                foreach (var subsystem in inputSubsystems)
+                {
+                    LogDebug("Recentering Input Subsystem: " + subsystem);
+                    subsystem.TryRecenter();
+                }
+            }
+        }
+
 
         private static void PrintSteamVRSettings()
         {

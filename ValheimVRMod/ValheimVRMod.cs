@@ -31,6 +31,7 @@ namespace ValheimVRMod
 
         void Update()
         {
+            VRManager.maybeRecenter();
 #if DEBUG
             if (Input.GetKeyDown(KeyCode.Backslash))
             {
