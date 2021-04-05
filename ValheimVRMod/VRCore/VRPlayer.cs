@@ -51,9 +51,6 @@ namespace ValheimVRMod.VRCore
         private static GameObject _instance;
         private static HeadZoomLevel _headZoomLevel = HeadZoomLevel.FirstPerson;
 
-        private static Vector3 HEAD_OFFSET = Vector3.zero;
-        private static bool headPositionIsInitialized = false;
-
         private Camera _vrCam;
         private Camera _handsCam;
         private Camera _skyboxCam;
@@ -471,15 +468,11 @@ namespace ValheimVRMod.VRCore
                 LogError("SteamVR Player instance is null. Cannot attach!");
                 return;
             }
-            if (!headPositionIsInitialized && !playerCharacter.InCutscene())
-            {
-                Transform head = playerCharacter.GetComponentInChildren<Animator>().GetBoneTransform(HumanBodyBones.Head);
-                HEAD_OFFSET = new Vector3(head.position.x - playerCharacter.transform.position.x, 0f, head.position.z - playerCharacter.transform.position.z);
-                headPositionIsInitialized = true;
-            }
-            setHeadVisibility(_headZoomLevel != HeadZoomLevel.FirstPerson);
             _instance.transform.SetParent(playerCharacter.transform, false);
-            _instance.transform.localPosition = HEAD_OFFSET + getHeadOffset(_headZoomLevel);
+            Vector3 hmd = Valve.VR.InteractionSystem.Player.instance.hmdTransform.position;
+            setHeadVisibility(_headZoomLevel != HeadZoomLevel.FirstPerson);
+            _instance.transform.localPosition = playerCharacter.GetEyePoint() - hmd +
+                _instance.transform.position - playerCharacter.transform.position + getHeadOffset(_headZoomLevel);
             attachedToPlayer = true;
         }
 
@@ -490,7 +483,6 @@ namespace ValheimVRMod.VRCore
                 LogError("SteamVR Player instance is null while attaching to main camera!");
                 return;
             }
-            headPositionIsInitialized = false;
             Camera mainCamera = CameraUtils.getCamera(CameraUtils.MAIN_CAMERA);
             if (mainCamera == null)
             {
