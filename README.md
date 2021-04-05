@@ -12,7 +12,7 @@ This project exists primarily as an asset generator to produce necessary AssetBu
 There are several assets being generated in the Unity package, but the most important include:
 * SteamVR Player prefab: This prefab is a Unity GameObject hierarchy that includes allt he needed scripts to properly use SteamVR. It includes a Camera in the hierarchy that will be swapped out for the main game's camera. The camera is configured to use stereoscopic 3D displayed in the HMD.
 * Unity and OpenVR assets: These are assets required to properly bootstrap Unity's XR engine when the game starts up.
-* Amplify Occlusion graphics post-processor: Used as a higher performance substitute to in game SSAO graphics effect.
+* [Amplify Occlusion](https://github.com/AmplifyCreations/AmplifyOcclusion) graphics post-processor: Used as a higher performance substitute to in game SSAO graphics effect.
 
 ### ValheimVRMod C# Project
 This project contains the bulk of the code for the mod. It includes classes/Unity MonoBehaviour scripts that implement the following functionality:
