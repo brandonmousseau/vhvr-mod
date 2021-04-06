@@ -113,6 +113,7 @@ namespace ValheimVRMod.VRCore.UI
         private void setPitch()
         {
             float yAxis = Input.GetAxis("Mouse Y") * PlayerController.m_mouseSens;
+            yAxis += -ZInput.GetJoyRightStickY() * 110f * Time.deltaTime;
             _pitch = Mathf.Clamp(_pitch - yAxis, -89f, 89f);
         }
 
