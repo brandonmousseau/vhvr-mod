@@ -27,6 +27,10 @@ namespace ValheimVRMod.Patches
 
         public static void Prefix(Player __instance, ref Quaternion ___m_lookYaw)
         {
+            if (__instance != Player.m_localPlayer)
+            {
+                return;
+            }
             if (VVRConfig.UseLookLocomotion() && VRPlayer.inFirstPerson)
             {
                 float currentEyeRotationAngle = __instance.m_eye.rotation.eulerAngles.y;
@@ -37,6 +41,10 @@ namespace ValheimVRMod.Patches
 
         public static void Postfix(Player __instance, ref Vector3 ___m_lookDir)
         {
+            if (__instance != Player.m_localPlayer)
+            {
+                return;
+            }
             if (VRPlayer.attachedToPlayer)
             {
                 if (!VVRConfig.UseLookLocomotion() || !VRPlayer.inFirstPerson)
@@ -69,6 +77,10 @@ namespace ValheimVRMod.Patches
     {
         public static void Postfix(Player __instance, Quaternion ___m_lookYaw, float ___m_lookPitch)
         {
+            if (__instance != Player.m_localPlayer)
+            {
+                return;
+            }
             GameObject vrCamObj = GameObject.Find(CameraUtils.VR_CAMERA);
             if (VRPlayer.attachedToPlayer && vrCamObj != null)
             {
