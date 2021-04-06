@@ -154,20 +154,16 @@ namespace ValheimVRMod
             return true;
         }
 
-        public static void maybeRecenter()
+        public static void tryRecenter()
         {
-            if (Input.GetKeyDown(KeyCode.Home))
+            List<XRInputSubsystem> inputSubsystems = new List<XRInputSubsystem>();
+            SubsystemManager.GetInstances(inputSubsystems);
+            foreach (var subsystem in inputSubsystems)
             {
-                List<XRInputSubsystem> inputSubsystems = new List<XRInputSubsystem>();
-                SubsystemManager.GetInstances(inputSubsystems);
-                foreach (var subsystem in inputSubsystems)
-                {
-                    LogDebug("Recentering Input Subsystem: " + subsystem);
-                    subsystem.TryRecenter();
-                }
+                LogDebug("Recentering Input Subsystem: " + subsystem);
+                subsystem.TryRecenter();
             }
         }
-
 
         private static void PrintSteamVRSettings()
         {
