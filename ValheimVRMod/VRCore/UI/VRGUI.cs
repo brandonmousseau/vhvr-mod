@@ -2,6 +2,7 @@
 using Valve.VR;
 using ValheimVRMod.Utilities;
 using UnityEngine.EventSystems;
+using UnityEngine.SceneManagement;
 using Valve.VR.Extras;
 
 using static ValheimVRMod.Utilities.LogUtils;
@@ -45,6 +46,8 @@ namespace ValheimVRMod.VRCore.UI
     class VRGUI : MonoBehaviour
     {
         public static readonly string GUI_CANVAS = "GUI";
+        public static readonly int CROSSHAIR_LAYER = 22;
+        public static readonly int CROSSHAIR_LAYER_MASK = (1 << CROSSHAIR_LAYER);
         public static readonly int UI_LAYER = LayerMask.NameToLayer("UI");
         public static readonly int UI_LAYER_MASK = (1 << UI_LAYER);
         public static readonly int UI_PANEL_LAYER = 22;
@@ -52,8 +55,11 @@ namespace ValheimVRMod.VRCore.UI
         private static readonly string OVERLAY_KEY = "VALHEIM_VR_MOD_OVERLAY";
         private static readonly string OVERLAY_NAME = "Valheim VR";
         private static readonly string UI_PANEL_NAME = "VRUIPanel";
+        private static readonly string CROSSHAIR_GUI_ELEMENT_NAME = "crosshair";
         private static readonly float UI_PANEL_SCALER = 3.0f;
         private static readonly Vector3 UI_PANEL_OFFSET = new Vector3(0f, 1f, 3f);
+        private static readonly Vector3 CROSSHAIR_CANVAS_OFFSET = new Vector3(0f, 0f, 0.5f);
+        private static readonly Vector3 CROSSHAIR_SCALAR = new Vector3(0.3f, 0.3f);
 
         private float OVERLAY_CURVATURE = 0.25f; /* 0f - 1f */
         private bool USING_OVERLAY = true;
@@ -64,6 +70,11 @@ namespace ValheimVRMod.VRCore.UI
         private GameObject _uiPanel;
         private RenderTexture _guiTexture;
         private RenderTexture _overlayTexture;
+
+        private GameObject _crosshairCanvasParent;
+        private Camera _crosshairCamera;
+        private Canvas _crosshairCanvas;
+        private GameObject _canvasCrosshairRoot;
 
         private SteamVR_LaserPointer _leftPointer;
         private SteamVR_LaserPointer _rightPointer;
@@ -98,6 +109,7 @@ namespace ValheimVRMod.VRCore.UI
         {
             if (ensureGuiCanvas())
             {
+                maybeReparentCrosshair();
                 if (USING_OVERLAY)
                 {
                     checkAndSetCurvatureUpdates();
@@ -110,10 +122,125 @@ namespace ValheimVRMod.VRCore.UI
             }
         }
 
+        public bool ensureCrosshairCanvas()
+        {
+            if (_crosshairCanvas != null)
+            {
+                return true;
+            }
+            createCrosshairCamera();
+            _crosshairCanvasParent = new GameObject("CrosshairCanvasGameObject");
+            _crosshairCanvasParent.layer = CROSSHAIR_LAYER;
+            DontDestroyOnLoad(_crosshairCanvasParent);
+            _crosshairCanvas = _crosshairCanvasParent.AddComponent<Canvas>();
+            _crosshairCanvas.renderMode = RenderMode.WorldSpace;
+            _crosshairCanvas.worldCamera = _crosshairCamera;
+            _crosshairCanvas.GetComponent<RectTransform>().SetParent(_crosshairCanvasParent.transform, false);
+            float canvasWidth = _crosshairCanvas.GetComponent<RectTransform>().rect.width;
+            float scaleFactor = .6f / canvasWidth;
+            _crosshairCanvas.GetComponent<RectTransform>().localScale = new Vector3(scaleFactor, scaleFactor, scaleFactor);
+            _crosshairCanvasParent.transform.SetParent(_crosshairCamera.gameObject.transform);
+            _crosshairCanvasParent.transform.position = VRPlayer.instance.transform.position;
+            _crosshairCanvasParent.transform.localPosition = CROSSHAIR_CANVAS_OFFSET;
+            _crosshairCanvasParent.transform.localRotation = Quaternion.Euler(0f, 0f, 0f);
+            LogDebug("Created Crosshair Canvas");
+            return true;
+        }
+
+        private void createCrosshairCamera()
+        {
+            if (_crosshairCamera != null)
+            {
+                return;
+            }
+            GameObject crosshairCameraObject = new GameObject(CameraUtils.CROSSHAIR_CAMERA);
+            DontDestroyOnLoad(crosshairCameraObject);
+            _crosshairCamera = crosshairCameraObject.AddComponent<Camera>();
+            _crosshairCamera.CopyFrom(CameraUtils.getCamera(CameraUtils.VR_CAMERA));
+            _crosshairCamera.depth = _guiCamera.depth;
+            _crosshairCamera.clearFlags = CameraClearFlags.Depth;
+            _crosshairCamera.cullingMask = CROSSHAIR_LAYER_MASK;
+            _crosshairCamera.transform.SetParent(CameraUtils.getCamera(CameraUtils.VR_CAMERA).gameObject.transform, false);
+            _crosshairCamera.enabled = true;
+            LogDebug("Created Crosshair Camera");
+        }
+
         public void OnDisable()
         {
             LogDebug("VRGUI: OnDisable()");
             destroyOverlay();
+        }
+
+        private void maybeReparentCrosshair()
+        {
+            if (SceneManager.GetActiveScene().name != "main" || _guiCanvas == null || !ensureCrosshairCanvas())
+            {
+                return;
+            }
+            if (_canvasCrosshairRoot == null && !findVanillaCrosshairs(_guiCanvas.transform))
+            {
+                return;
+            }
+            configureCrosshairElements(_canvasCrosshairRoot, CROSSHAIR_LAYER, _crosshairCanvasParent.transform.position);
+            var rectTransform = _canvasCrosshairRoot.GetComponent<RectTransform>();
+            if (rectTransform == null)
+            {
+                LogError("Crosshair Rect Transform is Null");
+                return;
+            }
+            rectTransform.SetParent(_crosshairCanvas.GetComponent<RectTransform>());
+        }
+
+        private void configureCrosshairElements(GameObject o, int layer, Vector3 position)
+        {
+            if (o == null)
+            {
+                return;
+            }
+            o.layer = layer;
+            o.transform.position = position;
+            o.transform.localScale = CROSSHAIR_SCALAR * VVRConfig.CrosshairScalar();
+            if (o.name == CROSSHAIR_GUI_ELEMENT_NAME && o.transform.parent != null &&
+                o.transform.parent.gameObject.name == CROSSHAIR_GUI_ELEMENT_NAME)
+            {
+                o.SetActive(VVRConfig.ShowStaticCrosshair());
+            }
+            foreach (Transform t in o.transform)
+            {
+                configureCrosshairElements(t.gameObject, layer, position);
+            }
+        }
+
+        // Crosshair canvas objects are in this hierarchy:
+        // --crosshair
+        //   |--crosshair
+        //   |--crosshair_bow
+        //   |--HoverName
+        //   |--Sneak_hidden
+        //   |--Sneak_detected
+        //   |--Sneak_alert
+        // Function will recursively walk down tree until it reaches
+        // the first element named "crosshair" and caches it.
+        private bool findVanillaCrosshairs(Transform t)
+        {
+            if (t == null)
+            {
+                return false;
+            }
+            if (t.gameObject.name == CROSSHAIR_GUI_ELEMENT_NAME)
+            {
+                LogDebug("Found crosshair canvas root element.");
+                _canvasCrosshairRoot = t.gameObject;
+                return true;
+            }
+            foreach (Transform child in t)
+            {
+                if (findVanillaCrosshairs(child))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         private void checkAndSetCurvatureUpdates()

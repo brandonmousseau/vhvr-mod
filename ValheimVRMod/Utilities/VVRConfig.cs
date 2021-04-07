@@ -21,6 +21,8 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> enableHeadReposition;
         private static ConfigEntry<bool> enableHands;
         private static ConfigEntry<bool> useLookLocomotion;
+        private static ConfigEntry<bool> showStaticCrosshair;
+        private static ConfigEntry<float> crosshairScale;
 
         // Graphics Settings
         private static ConfigEntry<bool> useAmplifyOcclusion;
@@ -91,12 +93,22 @@ namespace ValheimVRMod.Utilities
                                        "EnableHands",
                                        true,
                                        "Set this true to allow hands and laser pointers to be rendered in game. Note: motion controls are only minimally enabled, so right now this is just for fun.");
-
             useLookLocomotion = config.Bind("General",
                                             "UseLookLocomotion",
                                             false,
                                             "Setting this to true ties the direction you are looking to the walk direction while in first person mode. Set this to false if you prefer to disconnect these so you can look" +
                                             " look by turning your head without affecting movement direction.");
+            showStaticCrosshair = config.Bind("General",
+                                               "ShowStaticCrosshair",
+                                               false,
+                                               "This determines whether or not the normal crosshair that is visible by default is visible in VR. I recommend leaving this off as having the crosshair out front is visually" +
+                                               " awkward and results in double vision of the crosshair when you are not focusing on it. All the other crosshair elements will be visible, and are more approriate because the" +
+                                               " player will tend to be focusing on them since they are context specific.");
+            crosshairScale = config.Bind("General",
+                                         "CrosshairScale",
+                                         1.0f,
+                                         new ConfigDescription("Scalar multiplier to adjust the size of the crosshair to your preference. 1.0 is probably fine.",
+                                         new AcceptableValueRange<float>(0.8f, 2.5f)));
         }
 
         public static bool ModEnabled()
@@ -176,6 +188,16 @@ namespace ValheimVRMod.Utilities
         public static bool UseLookLocomotion()
         {
             return useLookLocomotion.Value;
+        }
+
+        public static bool ShowStaticCrosshair()
+        {
+            return showStaticCrosshair.Value;
+        }
+
+        public static float CrosshairScalar()
+        {
+            return crosshairScale.Value;
         }
 
     }
