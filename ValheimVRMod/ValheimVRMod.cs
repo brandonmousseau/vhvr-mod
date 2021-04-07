@@ -55,6 +55,10 @@ namespace ValheimVRMod
                 vrGui = new GameObject("VRGui");
                 DontDestroyOnLoad(vrGui);
                 vrGui.AddComponent<VRGUI>();
+                if (VVRConfig.RecenterOnStart())
+                {
+                    VRManager.tryRecenter();
+                }
             }
             else
             {

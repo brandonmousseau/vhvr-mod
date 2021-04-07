@@ -23,6 +23,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> useLookLocomotion;
         private static ConfigEntry<bool> showStaticCrosshair;
         private static ConfigEntry<float> crosshairScale;
+        private static ConfigEntry<bool> recenterOnStart;
 
         // Graphics Settings
         private static ConfigEntry<bool> useAmplifyOcclusion;
@@ -109,6 +110,10 @@ namespace ValheimVRMod.Utilities
                                          1.0f,
                                          new ConfigDescription("Scalar multiplier to adjust the size of the crosshair to your preference. 1.0 is probably fine.",
                                          new AcceptableValueRange<float>(0.8f, 2.5f)));
+            recenterOnStart = config.Bind("General",
+                                          "RecenterOnStart",
+                                          true,
+                                          "Set this to true if you want tracking to be automatically re-centered when the game first starts up.");
         }
 
         public static bool ModEnabled()
@@ -198,6 +203,11 @@ namespace ValheimVRMod.Utilities
         public static float CrosshairScalar()
         {
             return crosshairScale.Value;
+        }
+
+        public static bool RecenterOnStart()
+        {
+            return recenterOnStart.Value;
         }
 
     }
