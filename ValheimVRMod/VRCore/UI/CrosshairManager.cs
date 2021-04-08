@@ -11,7 +11,6 @@ namespace ValheimVRMod.VRCore.UI
     {
         public static readonly int CROSSHAIR_LAYER = 22;
         public static readonly int CROSSHAIR_LAYER_MASK = (1 << CROSSHAIR_LAYER);
-        private static readonly Vector3 CROSSHAIR_CANVAS_OFFSET = new Vector3(0f, 0f, 0.5f);
         private static readonly Vector3 CROSSHAIR_SCALAR = new Vector3(0.3f, 0.3f);
 
         public static int crosshairDepth = 1;
@@ -60,7 +59,7 @@ namespace ValheimVRMod.VRCore.UI
             configureCrosshairElements(_canvasCrosshairRootClone, CROSSHAIR_LAYER,
                 _crosshairCanvasParent.transform.position, _crosshairCanvasParent.transform.rotation);
             var rectTransform = _canvasCrosshairRootClone.GetComponent<RectTransform>();
-            setCanvasPosition();
+            setCanvasPositionAndScale();
             UpdateHudReferences();
             if (rectTransform == null)
             {
@@ -84,26 +83,36 @@ namespace ValheimVRMod.VRCore.UI
             _crosshairCanvas.renderMode = RenderMode.WorldSpace;
             _crosshairCanvas.worldCamera = _crosshairCamera;
             _crosshairCanvas.GetComponent<RectTransform>().SetParent(_crosshairCanvasParent.transform, false);
-            float canvasWidth = _crosshairCanvas.GetComponent<RectTransform>().rect.width;
-            float scaleFactor = .6f / canvasWidth;
-            _crosshairCanvas.GetComponent<RectTransform>().localScale = new Vector3(scaleFactor, scaleFactor, scaleFactor);
-            setCanvasPosition();
             _crosshairCamera.orthographicSize = _crosshairCanvas.GetComponent<RectTransform>().rect.height * 0.5f;
             LogDebug("Created Crosshair Canvas");
             return true;
         }
 
-        private void setCanvasPosition()
+        private void setCanvasPositionAndScale()
         {
             if (_crosshairCanvasParent == null || VRPlayer.instance == null || _crosshairCamera == null)
             {
                 return;
             }
+            float canvasWidth = _crosshairCanvas.GetComponent<RectTransform>().rect.width;
+            float scaleFactor = 1f / canvasWidth;
             _crosshairCamera.transform.rotation = CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform.rotation;
             _crosshairCanvasParent.transform.SetParent(_crosshairCamera.gameObject.transform, false);
             _crosshairCanvasParent.transform.position = VRPlayer.instance.transform.position;
-            _crosshairCanvasParent.transform.localPosition = CROSSHAIR_CANVAS_OFFSET;
+            float crosshairDistance = calculateCrosshairDistance();
+            _crosshairCanvasParent.transform.localPosition = new Vector3(0f, 0f, crosshairDistance);
+            _crosshairCanvas.GetComponent<RectTransform>().localScale = Vector3.one * scaleFactor * crosshairDistance;
             _crosshairCanvasParent.transform.localRotation = Quaternion.Euler(0f, 0f, 0f);
+        }
+
+        private float calculateCrosshairDistance()
+        {
+            RaycastHit hit;
+            if(Physics.Raycast(new Ray(_crosshairCamera.transform.position, _crosshairCamera.transform.forward), out hit))
+            {
+                return hit.distance;
+            }
+            return _crosshairCamera.farClipPlane * 0.95f;
         }
 
         private void createCrosshairCamera()
