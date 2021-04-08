@@ -19,6 +19,8 @@ namespace ValheimVRMod.VRCore.UI
         public RectTransform parent;
         private static Vector3 lastCursorPosition = Vector3.zero;
 
+        private bool cursorVisible;
+
         // Convert the cursor coordinates to simulated screen mouse position coordinates
         // and vice versa.
         public static Vector3 simulatedMousePosition { get
@@ -78,6 +80,7 @@ namespace ValheimVRMod.VRCore.UI
         void OnEnable()
         {
             LogDebug("SoftwareCursor: OnEnable()");
+            cursorVisible = Cursor.visible;
             if (searchForCursorTexture())
             {
                 LogDebug("Found Cursor texture");
@@ -121,6 +124,12 @@ namespace ValheimVRMod.VRCore.UI
             float deltaX = Input.GetAxis("Mouse X");
             float deltaY = Input.GetAxis("Mouse Y");
             Vector2 newPosition = lastCursorPosition;
+            if (Cursor.visible && !cursorVisible)
+            {
+                // Cursor just became visible this update, so re-center it.
+                newPosition = rect.center;
+            }
+            cursorVisible = Cursor.visible;
             newPosition.x += deltaX * CURSOR_SPEED * PlayerController.m_mouseSens;
             newPosition.y += deltaY * CURSOR_SPEED * PlayerController.m_mouseSens;
             newPosition.x = Mathf.Clamp(newPosition.x, rect.xMin, rect.xMax);
