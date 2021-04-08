@@ -313,6 +313,7 @@ namespace ValheimVRMod.VRCore
             vrCam.cullingMask &= ~(1 << VRGUI.UI_PANEL_LAYER);
             vrCam.cullingMask &= ~(1 << VRGUI.UI_LAYER);
             vrCam.cullingMask &= ~(1 << HANDS_LAYER);
+            vrCam.cullingMask &= ~(1 << CrosshairManager.CROSSHAIR_LAYER);
             mainCamera.enabled = false;
             AudioListener mainCamListener = mainCamera.GetComponent<AudioListener>();
             if (mainCamListener != null)
@@ -500,12 +501,26 @@ namespace ValheimVRMod.VRCore
         // Used to turn off the head model when player is currently occupying it.
         private void setHeadVisibility(bool isVisible)
         {
-            Player playerCharacter = getPlayerCharacter();
-            if (playerCharacter != null)
+            var headBone = getHeadBone();
+            if (headBone != null)
             {
-                Transform head = playerCharacter.GetComponentInChildren<Animator>().GetBoneTransform(HumanBodyBones.Head);
-                head.localScale = isVisible ? new Vector3(1f, 1f, 1f) : new Vector3(0f, 0f, 0f);
+                headBone.localScale = isVisible ? new Vector3(1f, 1f, 1f) : new Vector3(0f, 0f, 0f);
             }
+        }
+
+        private Transform getHeadBone()
+        {
+            var playerCharacter = getPlayerCharacter();
+            if (playerCharacter == null)
+            {
+                return null;
+            }
+            var animator = playerCharacter.GetComponentInChildren<Animator>();
+            if (animator == null)
+            {
+                return null;
+            }
+            return animator.GetBoneTransform(HumanBodyBones.Head);
         }
 
         private void maybeAddAmplifyOcclusion(Camera vrCamera)
