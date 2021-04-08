@@ -26,6 +26,7 @@ namespace ValheimVRMod
                 return;
             }
             LogInfo("ValheimVR Mod Awakens!");
+            LogInfo("VHVR v0.1.6");
             StartValheimVR();
         }
 
