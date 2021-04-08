@@ -9,7 +9,7 @@ namespace ValheimVRMod.VRCore.UI
 {
     class CrosshairManager
     {
-        public static readonly int CROSSHAIR_LAYER = 22;
+        public static readonly int CROSSHAIR_LAYER = 29;
         public static readonly int CROSSHAIR_LAYER_MASK = (1 << CROSSHAIR_LAYER);
         private static readonly Vector3 CROSSHAIR_SCALAR = new Vector3(0.3f, 0.3f);
 
