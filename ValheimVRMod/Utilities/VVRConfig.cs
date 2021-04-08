@@ -20,7 +20,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> headOffsetY;
         private static ConfigEntry<bool> enableHeadReposition;
         private static ConfigEntry<bool> enableHands;
-        private static ConfigEntry<bool> useLookLocomotion;
+        //private static ConfigEntry<bool> useLookLocomotion;
         private static ConfigEntry<bool> showStaticCrosshair;
         private static ConfigEntry<float> crosshairScale;
         private static ConfigEntry<bool> recenterOnStart;
@@ -94,11 +94,11 @@ namespace ValheimVRMod.Utilities
                                        "EnableHands",
                                        true,
                                        "Set this true to allow hands and laser pointers to be rendered in game. Note: motion controls are only minimally enabled, so right now this is just for fun.");
-            useLookLocomotion = config.Bind("General",
-                                            "UseLookLocomotion",
-                                            false,
-                                            "Setting this to true ties the direction you are looking to the walk direction while in first person mode. Set this to false if you prefer to disconnect these so you can look" +
-                                            " look by turning your head without affecting movement direction.");
+            //useLookLocomotion = config.Bind("General",
+            //                               "UseLookLocomotion",
+            //                                false,
+            //                                "Setting this to true ties the direction you are looking to the walk direction while in first person mode. Set this to false if you prefer to disconnect these so you can look" +
+            //                                " look by turning your head without affecting movement direction.");
             showStaticCrosshair = config.Bind("General",
                                                "ShowStaticCrosshair",
                                                false,
@@ -192,7 +192,7 @@ namespace ValheimVRMod.Utilities
 
         public static bool UseLookLocomotion()
         {
-            return useLookLocomotion.Value;
+            return false;
         }
 
         public static bool ShowStaticCrosshair()
