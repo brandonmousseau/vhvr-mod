@@ -9,11 +9,9 @@ using ValheimVRMod.Patches;
 
 namespace ValheimVRMod
 {
-    [BepInPlugin("org.bepinex.plugins.valheimvrmod", "ValheimVR Mod", "0.0.0.1")]
+    [BepInPlugin("org.bepinex.plugins.valheimvrmod", "ValheimVR Mod", "0.1.8")]
     public class ValheimVRMod : BaseUnityPlugin
     {
-
-        public static readonly string VERSION = "v0.1.7";
 
         // Instance of VRPlayer
         private GameObject vrPlayer;
@@ -29,7 +27,6 @@ namespace ValheimVRMod
                 return;
             }
             LogInfo("ValheimVR Mod Awakens!");
-            LogInfo("VHVR " + VERSION);
             StartValheimVR();
         }
 
