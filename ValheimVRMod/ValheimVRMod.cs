@@ -32,7 +32,7 @@ namespace ValheimVRMod
 
         void Update()
         {
-            if (Input.GetKeyDown(KeyCode.Home))
+            if (Input.GetKeyDown(VVRConfig.GetRecenterKey()))
             {
                 VRManager.tryRecenter();
             }

@@ -116,27 +116,27 @@ namespace ValheimVRMod.VRCore
         {
             if (VVRConfig.AllowHeadRepositioning())
             {
-                if (Input.GetKeyDown(KeyCode.UpArrow))
+                if (Input.GetKeyDown(VVRConfig.GetHeadForwardKey()))
                 {
                     FIRST_PERSON_OFFSET += new Vector3(0f, 0f, 0.1f);
                 }
-                if (Input.GetKeyDown(KeyCode.DownArrow))
+                if (Input.GetKeyDown(VVRConfig.GetHeadBackwardKey()))
                 {
                     FIRST_PERSON_OFFSET += new Vector3(0f, 0f, -0.1f);
                 }
-                if (Input.GetKeyDown(KeyCode.LeftArrow))
+                if (Input.GetKeyDown(VVRConfig.GetHeadLeftKey()))
                 {
                     FIRST_PERSON_OFFSET += new Vector3(-0.1f, 0f, 0f);
                 }
-                if (Input.GetKeyDown(KeyCode.RightArrow))
+                if (Input.GetKeyDown(VVRConfig.GetHeadRightKey()))
                 {
                     FIRST_PERSON_OFFSET += new Vector3(0.1f, 0f, 0f);
                 }
-                if (Input.GetKeyDown(KeyCode.PageUp))
+                if (Input.GetKeyDown(VVRConfig.GetHeadUpKey()))
                 {
                     FIRST_PERSON_OFFSET += new Vector3(0f, 0.1f, 0f);
                 }
-                if (Input.GetKeyDown(KeyCode.PageDown))
+                if (Input.GetKeyDown(VVRConfig.GetHeadDownKey()))
                 {
                     FIRST_PERSON_OFFSET += new Vector3(0f, -0.1f, 0f);
                 }

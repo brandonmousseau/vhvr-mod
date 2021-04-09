@@ -1,7 +1,10 @@
 ﻿using BepInEx.Configuration;
 using Unity.XR.OpenVR;
+using System;
 using ValheimVRMod.VRCore;
 using UnityEngine;
+
+using static ValheimVRMod.Utilities.LogUtils;
 
 namespace ValheimVRMod.Utilities
 {
@@ -34,6 +37,13 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> enableHands;
         private static ConfigEntry<bool> useLookLocomotion;
         private static ConfigEntry<string> preferredHand;
+        private static ConfigEntry<string> headReposFowardKey;
+        private static ConfigEntry<string> headReposBackwardKey;
+        private static ConfigEntry<string> headReposLeftKey;
+        private static ConfigEntry<string> headReposRightKey;
+        private static ConfigEntry<string> headReposUpKey;
+        private static ConfigEntry<string> headReposDownKey;
+        private static ConfigEntry<string> hmdRecenterKey;
 
         // Graphics Settings
         private static ConfigEntry<bool> useAmplifyOcclusion;
@@ -163,6 +173,39 @@ namespace ValheimVRMod.Utilities
                                         new ConfigDescription("Which hand do you want to use for the main laser pointer input? If" +
                                         " only one hand is active, it will be used automatically regardless of this setting.",
                                         new AcceptableValueList<string>(new string[] { "Right", "Left" })));
+            InitializeConfigurableKeyBindings(config);
+        }
+
+        private static void InitializeConfigurableKeyBindings(ConfigFile config)
+        {
+            headReposFowardKey = config.Bind("Controls",
+                                             "HeadRepositionForwardKey",
+                                             "UpArrow",
+                                             "Key used to move head camera forwards. Must be matching key from https://docs.unity3d.com/2019.4/Documentation/ScriptReference/KeyCode.html");
+            headReposBackwardKey = config.Bind("Controls",
+                                               "HeadRepositionBackwardKey",
+                                               "DownArrow",
+                                               "Key used to move head camera backwards. Must be matching key from https://docs.unity3d.com/2019.4/Documentation/ScriptReference/KeyCode.html");
+            headReposLeftKey = config.Bind("Controls",
+                                           "HeadRepositionLeftKey",
+                                           "LeftArrow",
+                                           "Key used to move head camera left. Must be matching key from https://docs.unity3d.com/2019.4/Documentation/ScriptReference/KeyCode.html");
+            headReposRightKey = config.Bind("Controls",
+                                           "HeadRepositionRightKey",
+                                           "RightArrow",
+                                           "Key used to move head camera right. Must be matching key from https://docs.unity3d.com/2019.4/Documentation/ScriptReference/KeyCode.html");
+            headReposUpKey = config.Bind("Controls",
+                                           "HeadRepositionUpKey",
+                                           "PageUp",
+                                           "Key used to move head camera up. Must be matching key from https://docs.unity3d.com/2019.4/Documentation/ScriptReference/KeyCode.html");
+            headReposDownKey = config.Bind("Controls",
+                                           "HeadRepositionDownKey",
+                                           "PageDown",
+                                           "Key used to move head camera down. Must be matching key from https://docs.unity3d.com/2019.4/Documentation/ScriptReference/KeyCode.html");
+            hmdRecenterKey = config.Bind("Controls",
+                                           "HMDRecenterKey",
+                                           "Home",
+                                           "Used to recenter HMD tracking. Must be matching key from https://docs.unity3d.com/2019.4/Documentation/ScriptReference/KeyCode.html");
         }
 
         private static void InitializeGraphicsSettings(ConfigFile config)
@@ -299,6 +342,62 @@ namespace ValheimVRMod.Utilities
         public static bool RecenterOnStart()
         {
             return recenterOnStart.Value;
+        }
+
+        public static KeyCode GetRecenterKey()
+        {
+            return tryAndParseConfiguredKeycode(hmdRecenterKey.Value, KeyCode.Home);
+        }
+
+        public static KeyCode GetHeadForwardKey()
+        {
+            return tryAndParseConfiguredKeycode(headReposFowardKey.Value, KeyCode.UpArrow);
+        }
+
+        public static KeyCode GetHeadBackwardKey()
+        {
+            return tryAndParseConfiguredKeycode(headReposBackwardKey.Value, KeyCode.DownArrow);
+        }
+
+        public static KeyCode GetHeadLeftKey()
+        {
+            return tryAndParseConfiguredKeycode(headReposLeftKey.Value, KeyCode.LeftArrow);
+        }
+
+        public static KeyCode GetHeadRightKey()
+        {
+            return tryAndParseConfiguredKeycode(headReposRightKey.Value, KeyCode.RightArrow);
+        }
+
+        public static KeyCode GetHeadUpKey()
+        {
+            return tryAndParseConfiguredKeycode(headReposUpKey.Value, KeyCode.PageUp);
+        }
+
+        public static KeyCode GetHeadDownKey()
+        {
+            return tryAndParseConfiguredKeycode(headReposDownKey.Value, KeyCode.PageDown);
+        }
+
+        private static KeyCode tryAndParseConfiguredKeycode(string configuredKey, KeyCode defaultValue)
+        {
+            try
+            {
+                return (KeyCode)Enum.Parse(typeof(KeyCode), configuredKey, true);
+            }
+            catch (ArgumentNullException)
+            {
+                LogError("Invalid configured key: " + configuredKey + " Using Default Key: " + defaultValue);
+            }
+            catch (ArgumentException)
+            {
+                LogError("Invalid configured key: " + configuredKey + " Using Default Key: " + defaultValue);
+            }
+            catch (OverflowException)
+            {
+                LogError("Invalid configured key: " + configuredKey + " Using Default Key: " + defaultValue);
+            }
+            return defaultValue;
         }
 
     }
