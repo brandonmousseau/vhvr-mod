@@ -13,6 +13,7 @@ namespace ValheimVRMod.VRCore.UI
         static extern bool SetCursorPos(int X, int Y);
 
         private static readonly float CURSOR_SPEED = 10.0f;
+        private static readonly float CURSOR_SCALE = 0.5f;
         private static Texture2D _cursorTexture;
         private static GameObject _instance;
         private static SoftwareCursor _cursorInstance;
@@ -32,10 +33,9 @@ namespace ValheimVRMod.VRCore.UI
                 RectTransform p = instance.GetComponent<SoftwareCursor>().parent;
                 Vector2 position = lastCursorPosition;
                 // Shift from 0,0 in center to 0,0 is top left
-                position += new Vector2(p.rect.width * 0.5f, p.rect.height * 0.5f);
+                position += new Vector2(p.rect.width, p.rect.height) * 0.5f;
                 float xScale = p.rect.width / Screen.width;
                 float yScale = p.rect.height / Screen.height;
-                //LogDebug("Simulated Position = " + new Vector3(position.x / xScale, position.y / yScale));
                 return new Vector3(position.x / xScale, position.y / yScale);
             } set
             {
@@ -49,7 +49,7 @@ namespace ValheimVRMod.VRCore.UI
                 float xValue = value.x * xScale;
                 float yValue = value.y * yScale;
                 Vector2 lastPosition = new Vector2(xValue, yValue);
-                lastPosition -= new Vector2(p.rect.width * 0.5f, p.rect.height * 0.5f);
+                lastPosition -= new Vector2(p.rect.width, p.rect.height) * 0.5f;
                 lastCursorPosition = lastPosition;
             }
         }
@@ -71,7 +71,7 @@ namespace ValheimVRMod.VRCore.UI
                         Sprite.Create(_cursorTexture,
                         new Rect(0.0f, 0.0f, _cursorTexture.width, _cursorTexture.height),
                         new Vector2(0.5f, 0.5f));
-                    cursorImage.transform.localScale = new Vector2(0.5f, 0.5f);
+                    cursorImage.transform.localScale = Vector2.one * CURSOR_SCALE;
                     _instance.SetActive(true);
                 }
                 return _instance;
@@ -135,7 +135,9 @@ namespace ValheimVRMod.VRCore.UI
             newPosition.x = Mathf.Clamp(newPosition.x, rect.xMin, rect.xMax);
             newPosition.y = Mathf.Clamp(newPosition.y, rect.yMin, rect.yMax);
             lastCursorPosition = newPosition;
-            instance.transform.localPosition = newPosition + new Vector2(0f, -0.5f * _cursorTexture.height);
+            // Update position of cursor within canvas rect
+            instance.transform.localPosition = newPosition +
+                new Vector2(_cursorTexture.width, -_cursorTexture.height);
         }
 
         // TODO: Find if there is a better way to grab
