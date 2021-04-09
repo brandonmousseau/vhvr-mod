@@ -1,6 +1,10 @@
-﻿using Unity.XR.OpenVR;
+﻿using System.Collections.Generic;
+using System.Reflection.Emit;
+using System.Reflection;
+using Unity.XR.OpenVR;
 using HarmonyLib;
 using Valve.VR;
+using UnityEngine;
 
 namespace ValheimVRMod.Patches
 {
@@ -37,4 +41,38 @@ namespace ValheimVRMod.Patches
             return false;
         }
     }
+
+    // This method updates FOV on a few cameras, but this
+    // just throws an error while in VR and spams the logfile
+    [HarmonyPatch(typeof(GameCamera), "UpdateCamera")]
+    class GameCamera_UpdateCamera_Patch
+    {
+
+        private static MethodInfo fovMethod =
+            AccessTools.Method(typeof(Camera), "set_fieldOfView");
+
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            var original = new List<CodeInstruction>(instructions);
+            for (int i = 0; i < original.Count; i++)
+            {
+                if (i + 4 < original.Count)
+                {
+                    // check if 4 instructions ahead is set_fieldOfView
+                    var instruction = original[i + 4];
+                    if (instruction.Calls(fovMethod))
+                    {
+                        // Replace these five instructions with NOPs
+                        original[i].opcode = OpCodes.Nop;
+                        original[i + 1].opcode = OpCodes.Nop;
+                        original[i + 2].opcode = OpCodes.Nop;
+                        original[i + 3].opcode = OpCodes.Nop;
+                        original[i + 4].opcode = OpCodes.Nop;
+                    }
+                }
+            }
+            return original;
+        }
+    }
+
 }
