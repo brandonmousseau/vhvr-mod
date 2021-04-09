@@ -12,28 +12,44 @@ namespace ValheimVRMod.Utilities
         // General Settings
         private static ConfigEntry<bool> vrModEnabled;
         private static ConfigEntry<string> mirrorMode;
-        private static ConfigEntry<bool> useOverlayGui;
-        private static ConfigEntry<string> preferredHand;
-        private static ConfigEntry<float> overlayCurvature;
         private static ConfigEntry<float> headOffsetX;
         private static ConfigEntry<float> headOffsetZ;
         private static ConfigEntry<float> headOffsetY;
         private static ConfigEntry<bool> enableHeadReposition;
-        private static ConfigEntry<bool> enableHands;
-        private static ConfigEntry<bool> useLookLocomotion;
+        private static ConfigEntry<bool> recenterOnStart;
+
+        // UI Settings
+        private static ConfigEntry<bool> useOverlayGui;
+        private static ConfigEntry<float> overlayCurvature;
         private static ConfigEntry<bool> showStaticCrosshair;
         private static ConfigEntry<float> crosshairScale;
-        private static ConfigEntry<bool> recenterOnStart;
+
+        // Controls Settings
+        private static ConfigEntry<bool> enableHands;
+        private static ConfigEntry<bool> useLookLocomotion;
+        private static ConfigEntry<string> preferredHand;
 
         // Graphics Settings
         private static ConfigEntry<bool> useAmplifyOcclusion;
 
         public static void InitializeConfiguration(ConfigFile config)
         {
+            InitializeGeneralSettings(config);
+            InitializeUISettings(config);
+            InitializeControlsSettings(config);
+            InitializeGraphicsSettings(config);
+        }
+
+        private static void InitializeGeneralSettings(ConfigFile config)
+        {
             vrModEnabled = config.Bind("General",
                                        "ModEnabled",
                                        true,
                                        "Used to toggle the mod on and off.");
+            recenterOnStart = config.Bind("General",
+                                          "RecenterOnStart",
+                                          true,
+                                          "Set this to true if you want tracking to be automatically re-centered when the game first starts up.");
             mirrorMode = config.Bind("General",
                                      "MirrorMode",
                                      "Right",
@@ -42,31 +58,6 @@ namespace ValheimVRMod.Utilities
                                      " mirror mode causes some issue that requires SteamVR to be restarted after closing the game, so unless you" +
                                      " need it for some specific reason, I recommend using another mirror mode or None.",
                                      new AcceptableValueList<string>(new string[] { "Right", "Left", "OpenVR", "None" })));
-            useOverlayGui = config.Bind("General",
-                                        "UseOverlayGui",
-                                        true,
-                                        "Whether or not to use OpenVR overlay for the GUI. This produces a" +
-                                        " cleaner GUI but will only be compatible with M&K or Gamepad controls.");
-            preferredHand = config.Bind("General",
-                                        "PreferredHand",
-                                        "Right",
-                                        new ConfigDescription("Which hand do you want to use for the main laser pointer input? If" +
-                                        " only one hand is active, it will be used automatically regardless of this setting.",
-                                        new AcceptableValueList<string>(new string[] { "Right", "Left" })));
-            useAmplifyOcclusion = config.Bind("Graphics",
-                                              "UseAmplifyOcclusion",
-                                              true,
-                                              "RECOMMENDED - Determines whether or not to use the Amplify Occlusion post processing effect." +
-                                              " This implements an effect similar to SSAO but with much less performance" +
-                                              " cost. While you can enable SSAO and UseAmplifyOcclusion simultaneously, it is" +
-                                              " not recommended. SSAO impacts performance significantly, which is bad for VR especially. Therefore" +
-                                              " you should disable SSAO in the graphics settings of the game when using this.");
-            overlayCurvature = config.Bind("General",
-                                           "OverlayCurvature",
-                                           0.25f,
-                                           new ConfigDescription("The amount of curvature to use for the GUI overlay. Only used when UseOverlayGui is true. " +
-                                           "Valid values are  0.0 - 1.0. Use the -/= keys to adjust in game (setting will be remembered).",
-                                           new AcceptableValueRange<float>(0f, 1f)));
             headOffsetX = config.Bind("General",
                                       "FirstPersonHeadOffsetX",
                                       0.0f,
@@ -87,33 +78,67 @@ namespace ValheimVRMod.Utilities
             enableHeadReposition = config.Bind("General",
                                                 "EnableHeadRepositioning",
                                                 true,
-                                                "Set to this true enable using the arrow keys to position the camera when in first person mode. You can use this to set the values of FirstPersonHeadOffsetX/Z while in game " +
-                                                "rather than having to edit them manually in the config file. Your settings will be remembered between gameplay sessions via this config file."
-                                                );
-            enableHands = config.Bind("General",
-                                       "EnableHands",
-                                       true,
-                                       "Set this true to allow hands and laser pointers to be rendered in game. Note: motion controls are only minimally enabled, so right now this is just for fun.");
-            useLookLocomotion = config.Bind("General",
-                                            "UseLookLocomotion",
-                                            false,
-                                            "Setting this to true ties the direction you are looking to the walk direction while in first person mode. Set this to false if you prefer to disconnect these so you can look" +
-                                            " look by turning your head without affecting movement direction.");
-            showStaticCrosshair = config.Bind("General",
-                                               "ShowStaticCrosshair",
-                                               false,
-                                               "This determines whether or not the normal crosshair that is visible by default is visible in VR. I recommend leaving this off as having the crosshair out front is visually" +
-                                               " awkward and results in double vision of the crosshair when you are not focusing on it. All the other crosshair elements will be visible, and are more approriate because the" +
-                                               " player will tend to be focusing on them since they are context specific.");
-            crosshairScale = config.Bind("General",
+                                                "Set to this true enable using the arrow keys to position the camera when in first person mode. You can use this to" +
+                                                " set the values of FirstPersonHeadOffsetX/Z while in game rather than having to edit them manually in the config file. " +
+                                                "Your settings will be remembered between gameplay sessions via this config file.");
+
+        }
+
+        private static void InitializeUISettings(ConfigFile config)
+        {
+            useOverlayGui = config.Bind("UI",
+                            "UseOverlayGui",
+                            true,
+                            "Whether or not to use OpenVR overlay for the GUI. This produces a" +
+                            " cleaner GUI but will only be compatible with M&K or Gamepad controls.");
+            overlayCurvature = config.Bind("UI",
+                                           "OverlayCurvature",
+                                           0.25f,
+                                           new ConfigDescription("The amount of curvature to use for the GUI overlay. Only used when UseOverlayGui is true. " +
+                                           "Valid values are  0.0 - 1.0. Use the -/= keys to adjust in game (setting will be remembered).",
+                                           new AcceptableValueRange<float>(0f, 1f)));
+            showStaticCrosshair = config.Bind("UI",
+                                   "ShowStaticCrosshair",
+                                   true,
+                                   "This determines whether or not the normal crosshair that is visible by default is visible in VR.");
+            crosshairScale = config.Bind("UI",
                                          "CrosshairScale",
                                          1.0f,
                                          new ConfigDescription("Scalar multiplier to adjust the size of the crosshair to your preference. 1.0 is probably fine.",
                                          new AcceptableValueRange<float>(0.8f, 2.5f)));
-            recenterOnStart = config.Bind("General",
-                                          "RecenterOnStart",
-                                          true,
-                                          "Set this to true if you want tracking to be automatically re-centered when the game first starts up.");
+        }
+
+        private static void InitializeControlsSettings(ConfigFile config)
+        {
+            useLookLocomotion = config.Bind("Controls",
+                                            "UseLookLocomotion",
+                                            false,
+                                            "Setting this to true ties the direction you are looking to the walk direction while in first person mode. " +
+                                            "Set this to false if you prefer to disconnect these so you can look" +
+                                            " look by turning your head without affecting movement direction.");
+            enableHands = config.Bind("Controls",
+                                       "EnableHands",
+                                       true,
+                                       "Set this true to allow hands and laser pointers to be rendered in game. Note: motion controls are only" +
+                                       " minimally enabled, so right now this is just for fun.");
+            preferredHand = config.Bind("Controls",
+                                        "PreferredHand",
+                                        "Right",
+                                        new ConfigDescription("Which hand do you want to use for the main laser pointer input? If" +
+                                        " only one hand is active, it will be used automatically regardless of this setting.",
+                                        new AcceptableValueList<string>(new string[] { "Right", "Left" })));
+        }
+
+        private static void InitializeGraphicsSettings(ConfigFile config)
+        {
+            useAmplifyOcclusion = config.Bind("Graphics",
+                                              "UseAmplifyOcclusion",
+                                              true,
+                                              "RECOMMENDED - Determines whether or not to use the Amplify Occlusion post processing effect." +
+                                              " This implements an effect similar to SSAO but with much less performance" +
+                                              " cost. While you can enable SSAO and UseAmplifyOcclusion simultaneously, it is" +
+                                              " not recommended. SSAO impacts performance significantly, which is bad for VR especially. Therefore" +
+                                              " you should disable SSAO in the graphics settings of the game when using this.");
         }
 
         public static bool ModEnabled()
