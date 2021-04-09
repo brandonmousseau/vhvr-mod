@@ -12,6 +12,9 @@ namespace ValheimVRMod
     [BepInPlugin("org.bepinex.plugins.valheimvrmod", "ValheimVR Mod", "0.0.0.1")]
     public class ValheimVRMod : BaseUnityPlugin
     {
+
+        public static readonly string VERSION = "v0.1.7";
+
         // Instance of VRPlayer
         private GameObject vrPlayer;
         private GameObject vrGui;
@@ -26,7 +29,7 @@ namespace ValheimVRMod
                 return;
             }
             LogInfo("ValheimVR Mod Awakens!");
-            LogInfo("VHVR v0.1.6");
+            LogInfo("VHVR " + VERSION);
             StartValheimVR();
         }
 
