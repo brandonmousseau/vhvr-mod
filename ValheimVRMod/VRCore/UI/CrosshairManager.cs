@@ -145,7 +145,7 @@ namespace ValheimVRMod.VRCore.UI
             clone.transform.rotation = rotation;
             clone.transform.localScale = CROSSHAIR_SCALAR * VVRConfig.CrosshairScalar();
             if (clone.name == "crosshair" && clone.transform.parent != null &&
-                clone.transform.parent.gameObject.name == "crosshair")
+                clone.transform.parent.gameObject == _canvasCrosshairRootClone)
             {
                 clone.SetActive(VVRConfig.ShowStaticCrosshair());
             }
@@ -226,7 +226,7 @@ namespace ValheimVRMod.VRCore.UI
             }
         }
 
-        // Make sure the HUD is always using to our copies of the
+        // Make sure the HUD is always pointing to our copies of the
         // crosshair elements.
         private void UpdateHudReferences()
         {
