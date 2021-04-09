@@ -24,6 +24,9 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> overlayWidth;
         private static ConfigEntry<float> overlayVerticalPosition;
         private static ConfigEntry<float> overlayDistance;
+        private static ConfigEntry<float> uiPanelSize;
+        private static ConfigEntry<float> uiPanelVerticalOffset;
+        private static ConfigEntry<float> uiPanelDistance;
         private static ConfigEntry<bool> showStaticCrosshair;
         private static ConfigEntry<float> crosshairScale;
 
@@ -98,23 +101,38 @@ namespace ValheimVRMod.Utilities
                                        "OverlayWidth",
                                        4f,
                                        new ConfigDescription("Width, in meters, that you want the Overlay GUI to be.",
-                                       new AcceptableValueRange<float>(1f, 15f)));
+                                       new AcceptableValueRange<float>(0.5f, 15f)));
             overlayDistance = config.Bind("UI",
                                           "OverlayDistance",
                                           2f,
                                            new ConfigDescription("The distance from you that you want the Overlay GUI to be rendered at.",
-                                           new AcceptableValueRange<float>(0.2f, 10f)));
+                                           new AcceptableValueRange<float>(0.5f, 15f)));
             overlayVerticalPosition = config.Bind("UI",
                                                    "OverlayVerticalPosition",
                                                    1f,
                                                    new ConfigDescription("Vertical offset for the Overlay GUI to make it higher or lower",
-                                                   new AcceptableValueRange<float>(-3f, 5f)));
+                                                   new AcceptableValueRange<float>(-0.5f, 3f)));
             overlayCurvature = config.Bind("UI",
                                            "OverlayCurvature",
                                            0.25f,
                                            new ConfigDescription("The amount of curvature to use for the GUI overlay. Only used when UseOverlayGui is true. " +
                                            "Valid values are  0.0 - 1.0. Use the -/= keys to adjust in game (setting will be remembered).",
                                            new AcceptableValueRange<float>(0f, 1f)));
+            uiPanelSize = config.Bind("UI",
+                                      "UIPanelSize",
+                                      3f,
+                                      new ConfigDescription("Size for the UI panel display (non-Overlay GUI).",
+                                      new AcceptableValueRange<float>(0.5f, 15f)));
+            uiPanelDistance = config.Bind("UI",
+                                      "UIPanelDistance",
+                                      3f,
+                                      new ConfigDescription("Distance to draw the UI panel at.",
+                                      new AcceptableValueRange<float>(0.5f, 15f)));
+            uiPanelVerticalOffset  = config.Bind("UI",
+                                      "UIPanelVerticalOffset",
+                                      1f,
+                                      new ConfigDescription("Height the UI Panel will be drawn.",
+                                      new AcceptableValueRange<float>(-0.5f, 3f)));
             showStaticCrosshair = config.Bind("UI",
                                    "ShowStaticCrosshair",
                                    true,
@@ -220,6 +238,21 @@ namespace ValheimVRMod.Utilities
         {
             value = Mathf.Clamp(value, 0f, 1f);
             overlayCurvature.Value = value;
+        }
+
+        public static float GetUiPanelSize()
+        {
+            return uiPanelSize.Value;
+        }
+
+        public static float GetUiPanelVerticalOffset()
+        {
+            return uiPanelVerticalOffset.Value;
+        }
+
+        public static float GetUiPanelDistance()
+        {
+            return uiPanelDistance.Value;
         }
 
         public static bool UseAmplifyOcclusion()

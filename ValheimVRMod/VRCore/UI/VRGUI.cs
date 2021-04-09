@@ -52,10 +52,6 @@ namespace ValheimVRMod.VRCore.UI
         private static readonly string OVERLAY_KEY = "VALHEIM_VR_MOD_OVERLAY";
         private static readonly string OVERLAY_NAME = "Valheim VR";
         private static readonly string UI_PANEL_NAME = "VRUIPanel";
-        // Default UI Panel Size & Position
-        private static readonly float UI_PANEL_SCALER = 3.0f;
-        private static readonly float UI_PANEL_DISTANCE = 3f;
-        private static readonly float UI_PANEL_HEIGHT = 1f;
 
         private float OVERLAY_CURVATURE = 0.25f; /* 0f - 1f */
         private bool USING_OVERLAY = true;
@@ -150,9 +146,11 @@ namespace ValheimVRMod.VRCore.UI
         {
             _uiPanel.transform.rotation = VRPlayer.instance.transform.rotation;
             _uiPanel.transform.position = VRPlayer.instance.transform.position +
-                VRPlayer.instance.transform.forward * UI_PANEL_DISTANCE + Vector3.up * UI_PANEL_HEIGHT;
+                VRPlayer.instance.transform.forward * VVRConfig.GetUiPanelDistance() +
+                Vector3.up * VVRConfig.GetUiPanelVerticalOffset();
             float ratio = (float)Screen.width / (float)Screen.height;
-            _uiPanel.transform.localScale = new Vector3(UI_PANEL_SCALER * ratio, UI_PANEL_SCALER, 1f);
+            _uiPanel.transform.localScale = new Vector3(VVRConfig.GetUiPanelSize() * ratio,
+                                                        VVRConfig.GetUiPanelSize(), 1f);
         }
 
         private bool ensureUIPanel()
