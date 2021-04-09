@@ -18,6 +18,9 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> headOffsetX;
         private static ConfigEntry<float> headOffsetZ;
         private static ConfigEntry<float> headOffsetY;
+        private static ConfigEntry<float> headOffsetThirdPersonX;
+        private static ConfigEntry<float> headOffsetThirdPersonZ;
+        private static ConfigEntry<float> headOffsetThirdPersonY;
         private static ConfigEntry<bool> enableHeadReposition;
         private static ConfigEntry<bool> recenterOnStart;
 
@@ -91,11 +94,26 @@ namespace ValheimVRMod.Utilities
                           0.0f,
                           new ConfigDescription("See FirstPersonHeadOffsetX description.",
                           new AcceptableValueRange<float>(-2.0f, 2.0f)));
+            headOffsetThirdPersonX = config.Bind("General",
+                          "ThirdPersonHeadOffsetX",
+                          0.0f,
+                          new ConfigDescription("Same as FirstPerson offsets, but for the third person views. All third person zoom levels all share same offset.",
+                          new AcceptableValueRange<float>(-2.0f, 2.0f)));
+            headOffsetThirdPersonZ = config.Bind("General",
+                          "ThirdPersonHeadOffsetZ",
+                          0.0f,
+                          new ConfigDescription("Same as FirstPerson offsets, but for the third person views. All third person zoom levels all share same offset.",
+                          new AcceptableValueRange<float>(-2.0f, 2.0f)));
+            headOffsetThirdPersonY = config.Bind("General",
+                          "ThirdPersonHeadOffsetY",
+                          0.0f,
+                          new ConfigDescription("Same as FirstPerson offsets, but for the third person views. All third person zoom levels all share same offset.",
+                          new AcceptableValueRange<float>(-2.0f, 2.0f)));
             enableHeadReposition = config.Bind("General",
                                                 "EnableHeadRepositioning",
                                                 true,
-                                                "Set to this true enable using the arrow keys to position the camera when in first person mode. You can use this to" +
-                                                " set the values of FirstPersonHeadOffsetX/Z while in game rather than having to edit them manually in the config file. " +
+                                                "Set to this true enable using the arrow keys to position the camera when in first or third person mode. You can use this to" +
+                                                " set the values of First/ThirdPersonHeadOffsetX/Y/Z while in game rather than having to edit them manually in the config file. " +
                                                 "Your settings will be remembered between gameplay sessions via this config file.");
 
         }
@@ -303,9 +321,14 @@ namespace ValheimVRMod.Utilities
             return useAmplifyOcclusion.Value;
         }
 
-        public static Vector3 GetHeadOffset()
+        public static Vector3 GetFirstPersonHeadOffset()
         {
             return new Vector3(headOffsetX.Value, headOffsetY.Value, headOffsetZ.Value);
+        }
+
+        public static Vector3 GetThirdPersonHeadOffset()
+        {
+            return new Vector3(headOffsetThirdPersonX.Value, headOffsetThirdPersonY.Value, headOffsetThirdPersonZ.Value);
         }
 
         public static bool AllowHeadRepositioning()
@@ -313,10 +336,17 @@ namespace ValheimVRMod.Utilities
             return enableHeadReposition.Value;
         }
 
-        public static void UpdateHeadOffset(Vector3 offset) {
+        public static void UpdateFirstPersonHeadOffset(Vector3 offset) {
             headOffsetX.Value = Mathf.Clamp(offset.x, -2f, 2f);
             headOffsetY.Value = Mathf.Clamp(offset.y, -2f, 2f);
             headOffsetZ.Value = Mathf.Clamp(offset.z, -2f, 2f);
+        }
+
+        public static void UpdateThirdPersonHeadOffset(Vector3 offset)
+        {
+            headOffsetThirdPersonX.Value = Mathf.Clamp(offset.x, -2f, 2f);
+            headOffsetThirdPersonY.Value = Mathf.Clamp(offset.y, -2f, 2f);
+            headOffsetThirdPersonZ.Value = Mathf.Clamp(offset.z, -2f, 2f);
         }
 
         public static bool HandsEnabled()

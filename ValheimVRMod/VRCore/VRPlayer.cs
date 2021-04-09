@@ -41,11 +41,12 @@ namespace ValheimVRMod.VRCore
         // the hands won't be rendered by the handsCam.
         private static readonly int HANDS_LAYER = 23;
         private static readonly int HANDS_LAYER_MASK = (1 << HANDS_LAYER);
-        private static Vector3 FIRST_PERSON_OFFSET = new Vector3(0f, 0f, 0f);
+        private static Vector3 FIRST_PERSON_OFFSET = Vector3.zero;
         private static Vector3 THIRD_PERSON_0_OFFSET = new Vector3(-0.5f, 1.0f, -0.6f);
         private static Vector3 THIRD_PERSON_1_OFFSET = new Vector3(-0.5f, 1.4f, -1.5f);
         private static Vector3 THIRD_PERSON_2_OFFSET = new Vector3(-0.5f, 1.9f, -2.6f);
         private static Vector3 THIRD_PERSON_3_OFFSET = new Vector3(-0.5f, 3.2f, -4.4f);
+        private static Vector3 THIRD_PERSON_CONFIG_OFFSET = Vector3.zero;
 
         private static GameObject _prefab;
         private static GameObject _instance;
@@ -95,7 +96,8 @@ namespace ValheimVRMod.VRCore
         {
             _prefab = VRAssetManager.GetAsset<GameObject>(PLAYER_PREFAB_NAME);
             _preferredHand = VVRConfig.GetPreferredHand();
-            FIRST_PERSON_OFFSET = VVRConfig.GetHeadOffset();
+            FIRST_PERSON_OFFSET = VVRConfig.GetFirstPersonHeadOffset();
+            THIRD_PERSON_CONFIG_OFFSET = VVRConfig.GetThirdPersonHeadOffset();
             ensurePlayerInstance();
         }
 
@@ -118,29 +120,45 @@ namespace ValheimVRMod.VRCore
             {
                 if (Input.GetKeyDown(VVRConfig.GetHeadForwardKey()))
                 {
-                    FIRST_PERSON_OFFSET += new Vector3(0f, 0f, 0.1f);
+                    updateHeadOffset(new Vector3(0f, 0f, 0.1f));
                 }
                 if (Input.GetKeyDown(VVRConfig.GetHeadBackwardKey()))
                 {
-                    FIRST_PERSON_OFFSET += new Vector3(0f, 0f, -0.1f);
+                    updateHeadOffset(new Vector3(0f, 0f, -0.1f));
                 }
                 if (Input.GetKeyDown(VVRConfig.GetHeadLeftKey()))
                 {
-                    FIRST_PERSON_OFFSET += new Vector3(-0.1f, 0f, 0f);
+                    updateHeadOffset(new Vector3(-0.1f, 0f, 0f));
                 }
                 if (Input.GetKeyDown(VVRConfig.GetHeadRightKey()))
                 {
-                    FIRST_PERSON_OFFSET += new Vector3(0.1f, 0f, 0f);
+                    updateHeadOffset(new Vector3(0.1f, 0f, 0f));
                 }
                 if (Input.GetKeyDown(VVRConfig.GetHeadUpKey()))
                 {
-                    FIRST_PERSON_OFFSET += new Vector3(0f, 0.1f, 0f);
+                    updateHeadOffset(new Vector3(0f, 0.1f, 0f));
                 }
                 if (Input.GetKeyDown(VVRConfig.GetHeadDownKey()))
                 {
-                    FIRST_PERSON_OFFSET += new Vector3(0f, -0.1f, 0f);
+                    updateHeadOffset(new Vector3(0f, -0.1f, 0f));
                 }
-                VVRConfig.UpdateHeadOffset(FIRST_PERSON_OFFSET);
+            }
+        }
+
+        private void updateHeadOffset(Vector3 offset)
+        {
+            if (!attachedToPlayer)
+            {
+                return;
+            }
+            if (inFirstPerson)
+            {
+                FIRST_PERSON_OFFSET += offset;
+                VVRConfig.UpdateFirstPersonHeadOffset(FIRST_PERSON_OFFSET);
+            } else
+            {
+                THIRD_PERSON_CONFIG_OFFSET += offset;
+                VVRConfig.UpdateThirdPersonHeadOffset(THIRD_PERSON_CONFIG_OFFSET);
             }
         }
 
@@ -423,13 +441,13 @@ namespace ValheimVRMod.VRCore
                 case HeadZoomLevel.FirstPerson:
                     return FIRST_PERSON_OFFSET;
                 case HeadZoomLevel.ThirdPerson0:
-                    return THIRD_PERSON_0_OFFSET;
+                    return THIRD_PERSON_0_OFFSET + THIRD_PERSON_CONFIG_OFFSET;
                 case HeadZoomLevel.ThirdPerson1:
-                    return THIRD_PERSON_1_OFFSET;
+                    return THIRD_PERSON_1_OFFSET + THIRD_PERSON_CONFIG_OFFSET;
                 case HeadZoomLevel.ThirdPerson2:
-                    return THIRD_PERSON_2_OFFSET;
+                    return THIRD_PERSON_2_OFFSET + THIRD_PERSON_CONFIG_OFFSET;
                 case HeadZoomLevel.ThirdPerson3:
-                    return THIRD_PERSON_3_OFFSET;
+                    return THIRD_PERSON_3_OFFSET + THIRD_PERSON_CONFIG_OFFSET;
                 default:
                     return FIRST_PERSON_OFFSET;
             }
