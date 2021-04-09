@@ -52,8 +52,10 @@ namespace ValheimVRMod.VRCore.UI
         private static readonly string OVERLAY_KEY = "VALHEIM_VR_MOD_OVERLAY";
         private static readonly string OVERLAY_NAME = "Valheim VR";
         private static readonly string UI_PANEL_NAME = "VRUIPanel";
+        // Default UI Panel Size & Position
         private static readonly float UI_PANEL_SCALER = 3.0f;
-        private static readonly Vector3 UI_PANEL_OFFSET = new Vector3(0f, 1f, 3f);
+        private static readonly float UI_PANEL_DISTANCE = 3f;
+        private static readonly float UI_PANEL_HEIGHT = 1f;
 
         private float OVERLAY_CURVATURE = 0.25f; /* 0f - 1f */
         private bool USING_OVERLAY = true;
@@ -136,11 +138,21 @@ namespace ValheimVRMod.VRCore.UI
             if (!ensureUIPanel())
             {
                 return;
-            }         
+            }
+            updateUiPanelScaleAndPosition();
             if (_guiCanvas != null && _guiTexture != null) 
             {
                 _uiPanel.GetComponent<Renderer>().material.mainTexture = _guiTexture;
             }
+        }
+
+        private void updateUiPanelScaleAndPosition()
+        {
+            _uiPanel.transform.rotation = VRPlayer.instance.transform.rotation;
+            _uiPanel.transform.position = VRPlayer.instance.transform.position +
+                VRPlayer.instance.transform.forward * UI_PANEL_DISTANCE + Vector3.up * UI_PANEL_HEIGHT;
+            float ratio = (float)Screen.width / (float)Screen.height;
+            _uiPanel.transform.localScale = new Vector3(UI_PANEL_SCALER * ratio, UI_PANEL_SCALER, 1f);
         }
 
         private bool ensureUIPanel()
@@ -159,11 +171,6 @@ namespace ValheimVRMod.VRCore.UI
             _uiPanel.layer = UI_PANEL_LAYER;
             Material mat = VRAssetManager.GetAsset<Material>("vr_panel_unlit");
             _uiPanel.GetComponent<Renderer>().material = mat;
-            _uiPanel.transform.SetParent(VRPlayer.instance.transform, false);
-            float ratio = (float)Screen.width / (float)Screen.height;
-            _uiPanel.transform.position = VRPlayer.instance.transform.position;
-            _uiPanel.transform.localPosition = UI_PANEL_OFFSET;
-            _uiPanel.transform.localScale = new Vector3(UI_PANEL_SCALER * ratio, UI_PANEL_SCALER, 1f);
             _uiPanel.GetComponent<Renderer>().material.mainTexture = _guiTexture;
             return (_uiPanel != null);
         }
