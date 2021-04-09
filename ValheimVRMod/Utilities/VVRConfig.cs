@@ -21,6 +21,9 @@ namespace ValheimVRMod.Utilities
         // UI Settings
         private static ConfigEntry<bool> useOverlayGui;
         private static ConfigEntry<float> overlayCurvature;
+        private static ConfigEntry<float> overlayWidth;
+        private static ConfigEntry<float> overlayVerticalPosition;
+        private static ConfigEntry<float> overlayDistance;
         private static ConfigEntry<bool> showStaticCrosshair;
         private static ConfigEntry<float> crosshairScale;
 
@@ -91,6 +94,21 @@ namespace ValheimVRMod.Utilities
                             true,
                             "Whether or not to use OpenVR overlay for the GUI. This produces a" +
                             " cleaner GUI but will only be compatible with M&K or Gamepad controls.");
+            overlayWidth = config.Bind("UI",
+                                       "OverlayWidth",
+                                       4f,
+                                       new ConfigDescription("Width, in meters, that you want the Overlay GUI to be.",
+                                       new AcceptableValueRange<float>(1f, 15f)));
+            overlayDistance = config.Bind("UI",
+                                          "OverlayDistance",
+                                          2f,
+                                           new ConfigDescription("The distance from you that you want the Overlay GUI to be rendered at.",
+                                           new AcceptableValueRange<float>(0.2f, 10f)));
+            overlayVerticalPosition = config.Bind("UI",
+                                                   "OverlayVerticalPosition",
+                                                   1f,
+                                                   new ConfigDescription("Vertical offset for the Overlay GUI to make it higher or lower",
+                                                   new AcceptableValueRange<float>(-3f, 5f)));
             overlayCurvature = config.Bind("UI",
                                            "OverlayCurvature",
                                            0.25f,
@@ -176,6 +194,21 @@ namespace ValheimVRMod.Utilities
         public static bool GetUseOverlayGui()
         {
             return useOverlayGui.Value;
+        }
+
+        public static float GetOverlayWidth()
+        {
+            return overlayWidth.Value;
+        }
+
+        public static float GetOverlayDistance()
+        {
+            return overlayDistance.Value;
+        }
+
+        public static float GetOverlayVerticalOffset()
+        {
+            return overlayVerticalPosition.Value;
         }
 
         public static float GetOverlayCurvature()

@@ -320,9 +320,7 @@ namespace ValheimVRMod.VRCore.UI
             Texture_t tex = new Texture_t();
             // We need to blit the _guiTexture into a secondary texture upside down
             // and pass the second texture into the overlay instead to get the gui
-            // to display right-side up. Alternative to this was using a negative scale
-            // on the immediate children of the canvas, but that results in having inverted
-            // mouse cursor controls.
+            // to display right-side up.
             Graphics.Blit(_guiTexture, _overlayTexture, new Vector2(1, -1), new Vector2(0, 1));
             tex.handle = _overlayTexture.GetNativeTexturePtr();
             tex.eType = SteamVR.instance.textureType;
@@ -331,19 +329,10 @@ namespace ValheimVRMod.VRCore.UI
             overlay.SetOverlayAlpha(_overlay, 1.0f);
             if (VRPlayer.instance != null)
             {
-                // Passing the same transform to this RigidTransform constructor returns a RigidTransform
-                // with the same position but inverse rotation. We then offset it in the Z direction, which creates
-                // the result of having a screen "z" units offset in front of the player. The screen will be at a fixed
-                // distance in front of the character and drawn over top of everything else regardless of distance,
-                // hence "overlay". This is great for the GUI because things like minimap and health won't ever be
-                // obstructed by world objects, regardless of whether or not the GUI element is behind the object with
-                // regard to distance from the camera.
-                var offset = new SteamVR_Utils.RigidTransform(VRPlayer.instance.transform, VRPlayer.instance.transform);
-                float width = 4;
-                overlay.SetOverlayWidthInMeters(_overlay, width);
-                offset.pos.z += 2f;
-                offset.pos.y += 1f;
-                offset.pos.x += 0.5f;
+                var offset = new SteamVR_Utils.RigidTransform(
+                    new Vector3(0f, VVRConfig.GetOverlayVerticalOffset(), VVRConfig.GetOverlayDistance()),
+                    Quaternion.identity);
+                overlay.SetOverlayWidthInMeters(_overlay, VVRConfig.GetOverlayWidth());
                 var t = offset.ToHmdMatrix34();
                 overlay.SetOverlayTransformAbsolute(_overlay, SteamVR.settings.trackingSpace, ref t);
             }
