@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection.Emit;
 using System.Reflection;
+using ValheimVRMod.Utilities;
 
 using static ValheimVRMod.Utilities.LogUtils;
 
@@ -133,14 +134,34 @@ namespace ValheimVRMod.Patches
     class Player_PlaceMode_RaycastPatch
     {
 
-        static Vector3 getStartingPosition()
+        static Vector3 getStartingPositionPlaceMode()
         {
             return PlaceModeRayVectorProvider.startingPosition;
         }
 
-        static Vector3 getRayDirection ()
+        static Vector3 getRayDirectionPlaceMode()
         {
             return PlaceModeRayVectorProvider.rayDirection;
+        }
+
+        static Vector3 getStartingPositionCameraFacing()
+        {
+            Camera vrCam = CameraUtils.getCamera(CameraUtils.VR_CAMERA);
+            if (vrCam == null)
+            {
+                return Vector3.zero;
+            }
+            return vrCam.transform.position;
+        }
+
+        static Vector3 getRayDirectionCameraFacing()
+        {
+            Camera vrCam = CameraUtils.getCamera(CameraUtils.VR_CAMERA);
+            if (vrCam == null)
+            {
+                return Vector3.zero;
+            }
+            return vrCam.transform.forward;
         }
 
         [HarmonyPatch(typeof(Player), "PieceRayTest")]
@@ -148,7 +169,7 @@ namespace ValheimVRMod.Patches
         {
             static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
             {
-                return GetPatchedInstructions(instructions, 4);
+                return GetRaycastPatchedInstructions(instructions, 4, nameof(getStartingPositionPlaceMode), nameof(getRayDirectionPlaceMode));
             }
         }
 
@@ -157,7 +178,7 @@ namespace ValheimVRMod.Patches
         {
             static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
             {
-                return GetPatchedInstructions(instructions, 5);
+                return GetRaycastPatchedInstructions(instructions, 5, nameof(getStartingPositionPlaceMode), nameof(getRayDirectionPlaceMode));
             }
         }
 
@@ -166,14 +187,29 @@ namespace ValheimVRMod.Patches
         {
             static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
             {
-                return GetPatchedInstructions(instructions, 5);
+                return GetRaycastPatchedInstructions(instructions, 5, nameof(getStartingPositionPlaceMode), nameof(getRayDirectionPlaceMode));
             }
         }
 
-        static IEnumerable<CodeInstruction> GetPatchedInstructions(IEnumerable<CodeInstruction> instructions, int popOffset)
+        [HarmonyPatch(typeof(Player), "FindHoverObject")]
+        class Player_FindHoverObject_Patch
         {
-            return Rayscast_VectorReplace_Transpiler.GetPatchedInstructions(instructions, typeof(Player_PlaceMode_RaycastPatch),
-                "getStartingPosition", "getRayDirection", popOffset);
+            static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+            {
+                return GetRaycastAllPatchedInstructions(instructions, 4, nameof(getStartingPositionCameraFacing), nameof(getRayDirectionCameraFacing));
+            }
+        }
+
+        static IEnumerable<CodeInstruction> GetRaycastPatchedInstructions(IEnumerable<CodeInstruction> instructions, int popOffset, string startingPosition, string rayDirection)
+        {
+            return Rayscast_VectorReplace_Transpiler.GetRaycastPatchedInstructions(instructions, typeof(Player_PlaceMode_RaycastPatch),
+                startingPosition, rayDirection, popOffset);
+        }
+
+        static IEnumerable<CodeInstruction> GetRaycastAllPatchedInstructions(IEnumerable<CodeInstruction> instructions, int popOffset, string startingPosition, string rayDirection)
+        {
+            return Rayscast_VectorReplace_Transpiler.GetRaycastAllPatchedInstructions(instructions, typeof(Player_PlaceMode_RaycastPatch),
+                startingPosition, rayDirection, popOffset);
         }
     }
 
@@ -183,11 +219,34 @@ namespace ValheimVRMod.Patches
         private static MethodInfo raycastMethod = AccessTools.Method(typeof(Physics), "Raycast",
             new Type[] { typeof(Vector3), typeof(Vector3), typeof(RaycastHit).MakeByRefType(), typeof(float), typeof(int) });
 
-        public static IEnumerable<CodeInstruction> GetPatchedInstructions(IEnumerable<CodeInstruction> instructions,
+        private static MethodInfo raycastAllMethod = AccessTools.Method(typeof(Physics), "RaycastAll",
+            new Type[] { typeof(Vector3), typeof(Vector3), typeof(float), typeof(int) });
+
+
+        public static IEnumerable<CodeInstruction> GetRaycastPatchedInstructions(IEnumerable<CodeInstruction> instructions,
                                                                             Type methodType,
                                                                             string startingPosition,
                                                                             string rayDirection,
                                                                             int popOffset)
+        {
+            return GetPatchedInstructions(instructions, methodType, startingPosition, rayDirection, popOffset, raycastMethod);
+        }
+
+        public static IEnumerable<CodeInstruction> GetRaycastAllPatchedInstructions(IEnumerable<CodeInstruction> instructions,
+                                                                    Type methodType,
+                                                                    string startingPosition,
+                                                                    string rayDirection,
+                                                                    int popOffset)
+        {
+            return GetPatchedInstructions(instructions, methodType, startingPosition, rayDirection, popOffset, raycastAllMethod);
+        }
+
+        private static IEnumerable<CodeInstruction> GetPatchedInstructions(IEnumerable<CodeInstruction> instructions,
+                                                                            Type methodType,
+                                                                            string startingPosition,
+                                                                            string rayDirection,
+                                                                            int popOffset,
+                                                                            MethodInfo raycastMethod)
         {
             if (raycastMethod == null)
             {
