@@ -74,10 +74,10 @@ namespace ValheimVRMod.VRCore.UI
         public void Awake()
         {
             LogDebug("VRGUI: Awake()");
-            USING_OVERLAY = VVRConfig.GetUseOverlayGui();
+            USING_OVERLAY = VHVRConfig.GetUseOverlayGui();
 
             LogInfo("VRGUI: Using Overlay - " + USING_OVERLAY);
-            OVERLAY_CURVATURE = VVRConfig.GetOverlayCurvature();
+            OVERLAY_CURVATURE = VHVRConfig.GetOverlayCurvature();
 
             _inputModule = EventSystem.current.gameObject.AddComponent<VRGUI_InputModule>();
         }
@@ -126,7 +126,7 @@ namespace ValheimVRMod.VRCore.UI
                 OVERLAY_CURVATURE += 0.01f;
             }
             OVERLAY_CURVATURE = Mathf.Clamp(OVERLAY_CURVATURE, 0f, 1f);
-            VVRConfig.UpdateOverlayCurvature(OVERLAY_CURVATURE);
+            VHVRConfig.UpdateOverlayCurvature(OVERLAY_CURVATURE);
         }
 
         private void updateUiPanel()
@@ -146,11 +146,11 @@ namespace ValheimVRMod.VRCore.UI
         {
             _uiPanel.transform.rotation = VRPlayer.instance.transform.rotation;
             _uiPanel.transform.position = VRPlayer.instance.transform.position +
-                VRPlayer.instance.transform.forward * VVRConfig.GetUiPanelDistance() +
-                Vector3.up * VVRConfig.GetUiPanelVerticalOffset();
+                VRPlayer.instance.transform.forward * VHVRConfig.GetUiPanelDistance() +
+                Vector3.up * VHVRConfig.GetUiPanelVerticalOffset();
             float ratio = (float)Screen.width / (float)Screen.height;
-            _uiPanel.transform.localScale = new Vector3(VVRConfig.GetUiPanelSize() * ratio,
-                                                        VVRConfig.GetUiPanelSize(), 1f);
+            _uiPanel.transform.localScale = new Vector3(VHVRConfig.GetUiPanelSize() * ratio,
+                                                        VHVRConfig.GetUiPanelSize(), 1f);
         }
 
         private bool ensureUIPanel()
@@ -328,9 +328,9 @@ namespace ValheimVRMod.VRCore.UI
             if (VRPlayer.instance != null)
             {
                 var offset = new SteamVR_Utils.RigidTransform(
-                    new Vector3(0f, VVRConfig.GetOverlayVerticalOffset(), VVRConfig.GetOverlayDistance()),
+                    new Vector3(0f, VHVRConfig.GetOverlayVerticalOffset(), VHVRConfig.GetOverlayDistance()),
                     Quaternion.identity);
-                overlay.SetOverlayWidthInMeters(_overlay, VVRConfig.GetOverlayWidth());
+                overlay.SetOverlayWidthInMeters(_overlay, VHVRConfig.GetOverlayWidth());
                 var t = offset.ToHmdMatrix34();
                 overlay.SetOverlayTransformAbsolute(_overlay, SteamVR.settings.trackingSpace, ref t);
             }

@@ -143,11 +143,11 @@ namespace ValheimVRMod.VRCore.UI
             clone.layer = layer;
             clone.transform.position = position;
             clone.transform.rotation = rotation;
-            clone.transform.localScale = CROSSHAIR_SCALAR * VVRConfig.CrosshairScalar();
+            clone.transform.localScale = CROSSHAIR_SCALAR * VHVRConfig.CrosshairScalar();
             if (clone.name == "crosshair" && clone.transform.parent != null &&
                 clone.transform.parent.gameObject == _canvasCrosshairRootClone)
             {
-                clone.SetActive(VVRConfig.ShowStaticCrosshair());
+                clone.SetActive(VHVRConfig.ShowStaticCrosshair());
             }
             foreach (Transform t in clone.transform)
             {

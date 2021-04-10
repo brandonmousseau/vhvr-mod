@@ -31,7 +31,7 @@ namespace ValheimVRMod.Patches
             {
                 return;
             }
-            if (VVRConfig.UseLookLocomotion() && VRPlayer.inFirstPerson)
+            if (VHVRConfig.UseLookLocomotion() && VRPlayer.inFirstPerson)
             {
                 float currentEyeRotationAngle = __instance.m_eye.rotation.eulerAngles.y;
                 float difference = currentEyeRotationAngle - lastEyeRotationAngle;
@@ -47,7 +47,7 @@ namespace ValheimVRMod.Patches
             }
             if (VRPlayer.attachedToPlayer)
             {
-                if (!VVRConfig.UseLookLocomotion() || !VRPlayer.inFirstPerson)
+                if (!VHVRConfig.UseLookLocomotion() || !VRPlayer.inFirstPerson)
                 {
                     ___m_lookDir = __instance.gameObject.transform.forward;
                 }

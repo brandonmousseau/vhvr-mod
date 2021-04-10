@@ -287,7 +287,7 @@
     <Compile Include="Patches\Misc.cs" />
     <Compile Include="Patches\UIPatches.cs" />
     <Compile Include="Utilities\CameraUtils.cs" />
-    <Compile Include="Utilities\VVRConfig.cs" />
+    <Compile Include="Utilities\VHVRConfig.cs" />
     <Compile Include="Utilities\LogUtils.cs" />
     <Compile Include="Utilities\VRAssetManager.cs" />
     <Compile Include="VRCore\UI\CrosshairManager.cs" />

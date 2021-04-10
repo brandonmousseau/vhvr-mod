@@ -95,9 +95,9 @@ namespace ValheimVRMod.VRCore
         void Awake()
         {
             _prefab = VRAssetManager.GetAsset<GameObject>(PLAYER_PREFAB_NAME);
-            _preferredHand = VVRConfig.GetPreferredHand();
-            FIRST_PERSON_OFFSET = VVRConfig.GetFirstPersonHeadOffset();
-            THIRD_PERSON_CONFIG_OFFSET = VVRConfig.GetThirdPersonHeadOffset();
+            _preferredHand = VHVRConfig.GetPreferredHand();
+            FIRST_PERSON_OFFSET = VHVRConfig.GetFirstPersonHeadOffset();
+            THIRD_PERSON_CONFIG_OFFSET = VHVRConfig.GetThirdPersonHeadOffset();
             ensurePlayerInstance();
         }
 
@@ -116,29 +116,29 @@ namespace ValheimVRMod.VRCore
 
         void maybeUpdateHeadPosition()
         {
-            if (VVRConfig.AllowHeadRepositioning())
+            if (VHVRConfig.AllowHeadRepositioning())
             {
-                if (Input.GetKeyDown(VVRConfig.GetHeadForwardKey()))
+                if (Input.GetKeyDown(VHVRConfig.GetHeadForwardKey()))
                 {
                     updateHeadOffset(new Vector3(0f, 0f, 0.1f));
                 }
-                if (Input.GetKeyDown(VVRConfig.GetHeadBackwardKey()))
+                if (Input.GetKeyDown(VHVRConfig.GetHeadBackwardKey()))
                 {
                     updateHeadOffset(new Vector3(0f, 0f, -0.1f));
                 }
-                if (Input.GetKeyDown(VVRConfig.GetHeadLeftKey()))
+                if (Input.GetKeyDown(VHVRConfig.GetHeadLeftKey()))
                 {
                     updateHeadOffset(new Vector3(-0.1f, 0f, 0f));
                 }
-                if (Input.GetKeyDown(VVRConfig.GetHeadRightKey()))
+                if (Input.GetKeyDown(VHVRConfig.GetHeadRightKey()))
                 {
                     updateHeadOffset(new Vector3(0.1f, 0f, 0f));
                 }
-                if (Input.GetKeyDown(VVRConfig.GetHeadUpKey()))
+                if (Input.GetKeyDown(VHVRConfig.GetHeadUpKey()))
                 {
                     updateHeadOffset(new Vector3(0f, 0.1f, 0f));
                 }
-                if (Input.GetKeyDown(VVRConfig.GetHeadDownKey()))
+                if (Input.GetKeyDown(VHVRConfig.GetHeadDownKey()))
                 {
                     updateHeadOffset(new Vector3(0f, -0.1f, 0f));
                 }
@@ -154,11 +154,11 @@ namespace ValheimVRMod.VRCore
             if (inFirstPerson)
             {
                 FIRST_PERSON_OFFSET += offset;
-                VVRConfig.UpdateFirstPersonHeadOffset(FIRST_PERSON_OFFSET);
+                VHVRConfig.UpdateFirstPersonHeadOffset(FIRST_PERSON_OFFSET);
             } else
             {
                 THIRD_PERSON_CONFIG_OFFSET += offset;
-                VVRConfig.UpdateThirdPersonHeadOffset(THIRD_PERSON_CONFIG_OFFSET);
+                VHVRConfig.UpdateThirdPersonHeadOffset(THIRD_PERSON_CONFIG_OFFSET);
             }
         }
 
@@ -170,7 +170,7 @@ namespace ValheimVRMod.VRCore
             }
             var effect = _vrCam.gameObject.GetComponent<AmplifyOcclusionEffect>();
             effect.SampleCount = SampleCountLevel.Medium;
-            effect.enabled = VVRConfig.UseAmplifyOcclusion();
+            effect.enabled = VHVRConfig.UseAmplifyOcclusion();
         }
 
         private void checkAndSetHandsAndPointers()
@@ -194,11 +194,11 @@ namespace ValheimVRMod.VRCore
             }
             if (_leftHand != null)
             {
-                _leftHand.enabled = VVRConfig.HandsEnabled();
+                _leftHand.enabled = VHVRConfig.HandsEnabled();
             }
             if (_rightHand != null)
             {
-                _rightHand.enabled = VVRConfig.HandsEnabled();
+                _rightHand.enabled = VHVRConfig.HandsEnabled();
             }
             // Next check whether the hands are active, and enable the appropriate pointer based
             // on what is available and what the options set as preferred. Disable the inactive pointer(s).
@@ -243,7 +243,7 @@ namespace ValheimVRMod.VRCore
 
         private bool shouldLaserPointersBeActive()
         {
-            return VVRConfig.HandsEnabled() &&
+            return VHVRConfig.HandsEnabled() &&
                 (Cursor.visible || (getPlayerCharacter() != null && getPlayerCharacter().InPlaceMode()));
         }
 

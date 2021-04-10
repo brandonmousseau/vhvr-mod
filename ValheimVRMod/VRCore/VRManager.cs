@@ -62,7 +62,6 @@ namespace ValheimVRMod
                 return false;
             }
             LogDebug("Calling SteamVR_Input.Initialize()");
-            //SteamVR_Input.Initialize();
             if (!SteamVR_Input.initialized)
             {
                 LogError("Problem Initializing SteamVR_Input");
@@ -146,7 +145,7 @@ namespace ValheimVRMod
             OpenVRSettings openVrSettings = OpenVRSettings.GetSettings(false);
             if (openVrSettings != null)
             {
-                OpenVRSettings.MirrorViewModes mirrorMode = VVRConfig.GetMirrorViewMode();
+                OpenVRSettings.MirrorViewModes mirrorMode = VHVRConfig.GetMirrorViewMode();
                 LogInfo("Mirror View Mode: " + mirrorMode);
                 openVrSettings.SetMirrorViewMode(mirrorMode);
             }

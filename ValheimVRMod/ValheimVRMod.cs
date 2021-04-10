@@ -19,8 +19,8 @@ namespace ValheimVRMod
 
         void Awake()
         {
-            VVRConfig.InitializeConfiguration(Config);
-            if (!VVRConfig.ModEnabled())
+            VHVRConfig.InitializeConfiguration(Config);
+            if (!VHVRConfig.ModEnabled())
             {
                 LogInfo("ValheimVRMod is disabled via configuration.");
                 enabled = false;
@@ -32,7 +32,7 @@ namespace ValheimVRMod
 
         void Update()
         {
-            if (Input.GetKeyDown(VVRConfig.GetRecenterKey()))
+            if (Input.GetKeyDown(VHVRConfig.GetRecenterKey()))
             {
                 VRManager.tryRecenter();
             }
@@ -56,7 +56,7 @@ namespace ValheimVRMod
                 vrGui = new GameObject("VRGui");
                 DontDestroyOnLoad(vrGui);
                 vrGui.AddComponent<VRGUI>();
-                if (VVRConfig.RecenterOnStart())
+                if (VHVRConfig.RecenterOnStart())
                 {
                     VRManager.tryRecenter();
                 }

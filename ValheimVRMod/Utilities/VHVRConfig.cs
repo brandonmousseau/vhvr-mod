@@ -9,7 +9,7 @@ using static ValheimVRMod.Utilities.LogUtils;
 namespace ValheimVRMod.Utilities
 {
 
-    class VVRConfig
+    class VHVRConfig
     {
 
         // General Settings
