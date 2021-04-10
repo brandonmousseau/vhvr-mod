@@ -14,22 +14,19 @@ namespace ValheimVRMod.VRCore.UI
 
         public static PlaceModeRayVectorProvider instance { get
             {
-                if (_instance == null)
-                {
-                    _instance = new GameObject("PlaceModeRayVectorProvider");
-                    DontDestroyOnLoad(_instance);
-                    _instance.AddComponent<PlaceModeRayVectorProvider>();
-                }
+                ensureInstance();
                 return _instance.GetComponent<PlaceModeRayVectorProvider>();
             }
         }
 
         public static Vector3 startingPosition { get {
+                ensureInstance();
                 return _startingPosition;
             } 
         }
 
         public static Vector3 rayDirection { get {
+                ensureInstance();
                 return _rayDirection * Vector3.forward;
             }
         }
@@ -43,6 +40,16 @@ namespace ValheimVRMod.VRCore.UI
         private static GameObject _vrCamObj;
 
         private bool inPlaceMode = false;
+
+        private static void ensureInstance()
+        {
+            if (_instance == null)
+            {
+                _instance = new GameObject("PlaceModeRayVectorProvider");
+                DontDestroyOnLoad(_instance);
+                _instance.AddComponent<PlaceModeRayVectorProvider>();
+            }
+        }
 
         void Update()
         {

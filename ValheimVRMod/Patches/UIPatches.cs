@@ -133,49 +133,62 @@ namespace ValheimVRMod.Patches
     class Player_PlaceMode_RaycastPatch
     {
 
-        private static PlaceModeRayVectorProvider _placeModeRayVectorProvider;
-        private static MethodInfo raycastMethod = AccessTools.Method(typeof(Physics), "Raycast",
-            new Type[] { typeof(Vector3), typeof(Vector3), typeof(RaycastHit).MakeByRefType(), typeof(float), typeof(int) });
+        static Vector3 getStartingPosition()
+        {
+            return PlaceModeRayVectorProvider.startingPosition;
+        }
+
+        static Vector3 getRayDirection ()
+        {
+            return PlaceModeRayVectorProvider.rayDirection;
+        }
 
         [HarmonyPatch(typeof(Player), "PieceRayTest")]
         class Player_PieceRaytest_Patch
         {
-            private static int popOffset = 4;
-
             static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
             {
-                return GetPatchedInstructions(instructions, popOffset);
+                return GetPatchedInstructions(instructions, 4);
             }
         }
 
         [HarmonyPatch(typeof(Player), "RemovePiece")]
         class Player_RemovePiece_Patch
         {
-            private static int popOffset = 5;
-
             static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
             {
-                return GetPatchedInstructions(instructions, popOffset);
+                return GetPatchedInstructions(instructions, 5);
             }
         }
 
         [HarmonyPatch(typeof(Player), "UpdateWearNTearHover")]
         class Player_UpdateWearNTearHover_Patch
         {
-            private static int popOffset = 5;
-
             static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
             {
-                return GetPatchedInstructions(instructions, popOffset);
+                return GetPatchedInstructions(instructions, 5);
             }
         }
 
         static IEnumerable<CodeInstruction> GetPatchedInstructions(IEnumerable<CodeInstruction> instructions, int popOffset)
         {
-            if (_placeModeRayVectorProvider == null)
-            {
-                _placeModeRayVectorProvider = PlaceModeRayVectorProvider.instance;
-            }
+            return Rayscast_VectorReplace_Transpiler.GetPatchedInstructions(instructions, typeof(Player_PlaceMode_RaycastPatch),
+                "getStartingPosition", "getRayDirection", popOffset);
+        }
+    }
+
+    class Rayscast_VectorReplace_Transpiler
+    {
+
+        private static MethodInfo raycastMethod = AccessTools.Method(typeof(Physics), "Raycast",
+            new Type[] { typeof(Vector3), typeof(Vector3), typeof(RaycastHit).MakeByRefType(), typeof(float), typeof(int) });
+
+        public static IEnumerable<CodeInstruction> GetPatchedInstructions(IEnumerable<CodeInstruction> instructions,
+                                                                            Type methodType,
+                                                                            string startingPosition,
+                                                                            string rayDirection,
+                                                                            int popOffset)
+        {
             if (raycastMethod == null)
             {
                 LogError("Raycast MethodInfo is null");
@@ -212,13 +225,12 @@ namespace ValheimVRMod.Patches
                     patched.Add(new CodeInstruction(OpCodes.Pop)); // Pop GameCamera.instance.transform.position
                     // Now call methods from PlaceModeRayVectorProvider to get new values onto
                     // the evaluation stack.
-                    patched.Add(CodeInstruction.Call(typeof(PlaceModeRayVectorProvider), "get_startingPosition"));
-                    patched.Add(CodeInstruction.Call(typeof(PlaceModeRayVectorProvider), "get_rayDirection"));
+                    patched.Add(CodeInstruction.Call(methodType, startingPosition));
+                    patched.Add(CodeInstruction.Call(methodType, rayDirection));
                 }
             }
             return patched;
         }
-
     }
 
 }
