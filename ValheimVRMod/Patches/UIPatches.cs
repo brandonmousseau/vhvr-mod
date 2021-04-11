@@ -124,14 +124,18 @@ namespace ValheimVRMod.Patches
         }
     }
 
-    // Without this patch, where an object is placed is controlled by the
+    // Without these patches, where an object is placed is controlled by the
     // direction of the player camera. In VR, this meant the player has to
     // physically look at the exact spot they want to place an object. It ended
     // up being very uncomfortable & hard to do for building. With this patch,
     // the vectors being used for the Raycast are swapped out with my own that allows
     // for controlling the position of the placed objects using controls more suited
     // for comfort in VR.
-    class Player_PlaceMode_RaycastPatch
+    // This set of patches also updates the vectors that are used to determine what
+    // the current object that is being hovered over is. Since originally it is
+    // using the MainCamera, the patch updates it to use the VR Camera so the thing
+    // object being selected is the center of the players view.
+    class Player_RaycastVector_Patches
     {
 
         static Vector3 getStartingPositionPlaceMode()
@@ -202,94 +206,166 @@ namespace ValheimVRMod.Patches
 
         static IEnumerable<CodeInstruction> GetRaycastPatchedInstructions(IEnumerable<CodeInstruction> instructions, int popOffset, string startingPosition, string rayDirection)
         {
-            return Rayscast_VectorReplace_Transpiler.GetRaycastPatchedInstructions(instructions, typeof(Player_PlaceMode_RaycastPatch),
+            return Rayscast_VectorReplace_Transpiler.GetRaycastPatchedInstructions(instructions, typeof(Player_RaycastVector_Patches),
                 startingPosition, rayDirection, popOffset);
         }
 
         static IEnumerable<CodeInstruction> GetRaycastAllPatchedInstructions(IEnumerable<CodeInstruction> instructions, int popOffset, string startingPosition, string rayDirection)
         {
-            return Rayscast_VectorReplace_Transpiler.GetRaycastAllPatchedInstructions(instructions, typeof(Player_PlaceMode_RaycastPatch),
+            return Rayscast_VectorReplace_Transpiler.GetRaycastAllPatchedInstructions(instructions, typeof(Player_RaycastVector_Patches),
                 startingPosition, rayDirection, popOffset);
         }
+        class Rayscast_VectorReplace_Transpiler
+        {
+
+            private static MethodInfo raycastMethod = AccessTools.Method(typeof(Physics), "Raycast",
+                new Type[] { typeof(Vector3), typeof(Vector3), typeof(RaycastHit).MakeByRefType(), typeof(float), typeof(int) });
+
+            private static MethodInfo raycastAllMethod = AccessTools.Method(typeof(Physics), "RaycastAll",
+                new Type[] { typeof(Vector3), typeof(Vector3), typeof(float), typeof(int) });
+
+
+            public static IEnumerable<CodeInstruction> GetRaycastPatchedInstructions(IEnumerable<CodeInstruction> instructions,
+                                                                                Type methodType,
+                                                                                string startingPosition,
+                                                                                string rayDirection,
+                                                                                int popOffset)
+            {
+                return GetPatchedInstructions(instructions, methodType, startingPosition, rayDirection, popOffset, raycastMethod);
+            }
+
+            public static IEnumerable<CodeInstruction> GetRaycastAllPatchedInstructions(IEnumerable<CodeInstruction> instructions,
+                                                                        Type methodType,
+                                                                        string startingPosition,
+                                                                        string rayDirection,
+                                                                        int popOffset)
+            {
+                return GetPatchedInstructions(instructions, methodType, startingPosition, rayDirection, popOffset, raycastAllMethod);
+            }
+
+            private static IEnumerable<CodeInstruction> GetPatchedInstructions(IEnumerable<CodeInstruction> instructions,
+                                                                                Type methodType,
+                                                                                string startingPosition,
+                                                                                string rayDirection,
+                                                                                int popOffset,
+                                                                                MethodInfo raycastMethod)
+            {
+                if (raycastMethod == null)
+                {
+                    LogError("Raycast MethodInfo is null");
+                    return instructions;
+                }
+                var original = new List<CodeInstruction>(instructions);
+                var patched = new List<CodeInstruction>();
+                int startPopIndex = 0;
+                bool foundIndex = false;
+                for (int i = 0; i < original.Count; i++)
+                {
+                    var instruction = original[i];
+                    if (instruction.opcode == OpCodes.Call && instruction.Calls(raycastMethod))
+                    {
+                        // We will pop off the first two elements from evaluation stack
+                        // starting at this index and then add the values
+                        // from PlaceModeRayVectorProvider
+                        startPopIndex = i - popOffset;
+                        foundIndex = true;
+                        break;
+                    }
+                }
+                if (!foundIndex)
+                {
+                    LogError("Could not find Raycast Method call.");
+                    return instructions;
+                }
+                for (int i = 0; i < original.Count; i++)
+                {
+                    patched.Add(original[i]);
+                    if (i == startPopIndex)
+                    {
+                        patched.Add(new CodeInstruction(OpCodes.Pop)); // Pop GameCamera.instance.transform.forward
+                        patched.Add(new CodeInstruction(OpCodes.Pop)); // Pop GameCamera.instance.transform.position
+                        // Now call methods from PlaceModeRayVectorProvider to get new values onto
+                        // the evaluation stack.
+                        patched.Add(CodeInstruction.Call(methodType, startingPosition));
+                        patched.Add(CodeInstruction.Call(methodType, rayDirection));
+                    }
+                }
+                return patched;
+            }
+        }
     }
 
-    class Rayscast_VectorReplace_Transpiler
+    // This set of patches is used to inject some method calls into the
+    // existing EnemyHud code so that the mirror EnemyHud data being used
+    // to generate worlspace UI is updated properly
+    class EnemyHud_Patches
     {
 
-        private static MethodInfo raycastMethod = AccessTools.Method(typeof(Physics), "Raycast",
-            new Type[] { typeof(Vector3), typeof(Vector3), typeof(RaycastHit).MakeByRefType(), typeof(float), typeof(int) });
-
-        private static MethodInfo raycastAllMethod = AccessTools.Method(typeof(Physics), "RaycastAll",
-            new Type[] { typeof(Vector3), typeof(Vector3), typeof(float), typeof(int) });
-
-
-        public static IEnumerable<CodeInstruction> GetRaycastPatchedInstructions(IEnumerable<CodeInstruction> instructions,
-                                                                            Type methodType,
-                                                                            string startingPosition,
-                                                                            string rayDirection,
-                                                                            int popOffset)
+        // This patch is used to add a duplicate of whatever
+        // HUD is added to the base class to the EnemyHudManager
+        // mirror class.
+        [HarmonyPatch(typeof(EnemyHud), "ShowHud")]
+        class EnemyHud_ShowHud_Patch
         {
-            return GetPatchedInstructions(instructions, methodType, startingPosition, rayDirection, popOffset, raycastMethod);
+            public static void Prefix(Character c, GameObject ___m_baseHudPlayer, GameObject ___m_baseHud, GameObject ___m_baseHudBoss)
+            {
+                EnemyHudManager.instance.AddEnemyHud(c, ___m_baseHudPlayer, ___m_baseHud, ___m_baseHudBoss);
+            }
         }
 
-        public static IEnumerable<CodeInstruction> GetRaycastAllPatchedInstructions(IEnumerable<CodeInstruction> instructions,
-                                                                    Type methodType,
-                                                                    string startingPosition,
-                                                                    string rayDirection,
-                                                                    int popOffset)
+        // The UpdateHuds method is responsible for updating values
+        // of any active Enemy huds (ie, health, level, alert status etc) as
+        // well as removing any huds that should no longer active. Rather
+        // than duplicate this logic for our mirror hud, we'll insert some
+        // method calls to our EnemyHudManager class to update the values
+        // at the right points. This requires the use of a transpiler to insert
+        // the method calls at the right place in the code.
+        [HarmonyPatch(typeof(EnemyHud), "UpdateHuds")]
+        class EnemyHud_UpdateHuds_Patch
         {
-            return GetPatchedInstructions(instructions, methodType, startingPosition, rayDirection, popOffset, raycastAllMethod);
-        }
 
-        private static IEnumerable<CodeInstruction> GetPatchedInstructions(IEnumerable<CodeInstruction> instructions,
-                                                                            Type methodType,
-                                                                            string startingPosition,
-                                                                            string rayDirection,
-                                                                            int popOffset,
-                                                                            MethodInfo raycastMethod)
-        {
-            if (raycastMethod == null)
+            private static MethodInfo destroyMethod = AccessTools.Method(typeof(UnityEngine.Object), "Destroy", new Type[] { typeof(UnityEngine.Object) });
+            private static Type enemyHudDataType = AccessTools.TypeByName("EnemyHud+HudData");
+
+            private static void LoadCharacterField(ref List<CodeInstruction> patched)
             {
-                LogError("Raycast MethodInfo is null");
-                return instructions;
+                patched.Add(new CodeInstruction(OpCodes.Ldloc_S, 5));
+                patched.Add(CodeInstruction.LoadField(enemyHudDataType, "m_character"));
             }
-            var original = new List<CodeInstruction>(instructions);
-            var patched = new List<CodeInstruction>();
-            int startPopIndex = 0;
-            bool foundIndex = false;
-            for (int i = 0; i < original.Count; i++)
+
+            // Some wrapper methods to use as the Transpiler's Call targets
+            static void RemoveHud(Character c)
             {
-                var instruction = original[i];
-                if (instruction.opcode == OpCodes.Call && instruction.Calls(raycastMethod))
-                {
-                    // We will pop off the first two elements from evaluation stack
-                    // starting at this index and then add the values
-                    // from PlaceModeRayVectorProvider
-                    startPopIndex = i - popOffset;
-                    foundIndex = true;
-                    break;
+                LogDebug("RemoveHud");
+                EnemyHudManager.instance.RemoveEnemyHud(c);
+            }
+            // Need to insert method calls to UpdateHudCoordinates, RemoveEnemyHud, UpdateHealth,
+            // UpdateLevel, UpdateAlerted, and UpdateAware. We also need to always set the
+            // original enemy hud canvases to inactive.
+            static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+            {
+                var original = new List<CodeInstruction>(instructions);
+                var patched = new List<CodeInstruction>();
+                for (int i = 0; i < original.Count; i++) {
+                    var instruction = original[i];
+                    patched.Add(instruction);
+                    if (instruction.Calls(destroyMethod))
+                    {
+                        // The current hud is being destroyed here so
+                        // lets remove our mirror too.
+                        LoadCharacterField(ref patched);
+                        patched.Add(CodeInstruction.Call(typeof(EnemyHud_UpdateHuds_Patch), nameof(RemoveHud)));
+                    }
                 }
+                return patched;
             }
-            if (!foundIndex)
+
+            static void Postfix()
             {
-                LogError("Could not find Raycast Method call.");
-                return instructions;
+                EnemyHudManager.instance.UpdateAll();
             }
-            for (int i = 0; i < original.Count; i++)
-            {
-                patched.Add(original[i]);
-                if (i == startPopIndex)
-                {
-                    patched.Add(new CodeInstruction(OpCodes.Pop)); // Pop GameCamera.instance.transform.forward
-                    patched.Add(new CodeInstruction(OpCodes.Pop)); // Pop GameCamera.instance.transform.position
-                    // Now call methods from PlaceModeRayVectorProvider to get new values onto
-                    // the evaluation stack.
-                    patched.Add(CodeInstruction.Call(methodType, startingPosition));
-                    patched.Add(CodeInstruction.Call(methodType, rayDirection));
-                }
-            }
-            return patched;
         }
     }
+
 
 }

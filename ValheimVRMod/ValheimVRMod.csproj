@@ -291,6 +291,7 @@
     <Compile Include="Utilities\LogUtils.cs" />
     <Compile Include="Utilities\VRAssetManager.cs" />
     <Compile Include="VRCore\UI\CrosshairManager.cs" />
+    <Compile Include="VRCore\UI\EnemyHudManager.cs" />
     <Compile Include="VRCore\UI\PlaceModeRayVectorProvider.cs" />
     <Compile Include="VRCore\UI\SoftwareCursor.cs" />
     <Compile Include="VRCore\UI\VRGUI.cs" />

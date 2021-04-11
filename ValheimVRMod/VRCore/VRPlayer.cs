@@ -332,6 +332,7 @@ namespace ValheimVRMod.VRCore
             vrCam.cullingMask &= ~(1 << VRGUI.UI_LAYER);
             vrCam.cullingMask &= ~(1 << HANDS_LAYER);
             vrCam.cullingMask &= ~(1 << CrosshairManager.CROSSHAIR_LAYER);
+            vrCam.cullingMask &= ~(1 << EnemyHudManager.HUD_LAYER);
             mainCamera.enabled = false;
             AudioListener mainCamListener = mainCamera.GetComponent<AudioListener>();
             if (mainCamListener != null)

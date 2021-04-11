@@ -15,6 +15,7 @@ namespace ValheimVRMod.Utilities
         public static readonly string VRSKYBOX_CAMERA = "VRSkyboxCamera";
         public static readonly string VRGUI_SCREENSPACE_CAM = "VRGuiScreenSpace";
         public static readonly string CROSSHAIR_CAMERA = "VRCrosshairCamera";
+        public static readonly string HUD_CAMERA = "HudCamera";
 
         public static void copyCamera(Camera from, Camera to)
         {
