@@ -38,7 +38,7 @@ namespace ValheimVRMod.Utilities
 
         // Controls Settings
         private static ConfigEntry<bool> enableHands;
-        private static ConfigEntry<bool> useLookLocomotion;
+        //private static ConfigEntry<bool> useLookLocomotion;
         private static ConfigEntry<string> preferredHand;
         private static ConfigEntry<string> headReposFowardKey;
         private static ConfigEntry<string> headReposBackwardKey;
@@ -174,12 +174,12 @@ namespace ValheimVRMod.Utilities
 
         private static void InitializeControlsSettings(ConfigFile config)
         {
-            useLookLocomotion = config.Bind("Controls",
-                                            "UseLookLocomotion",
-                                            false,
-                                            "Setting this to true ties the direction you are looking to the walk direction while in first person mode. " +
-                                            "Set this to false if you prefer to disconnect these so you can look" +
-                                            " look by turning your head without affecting movement direction.");
+            //useLookLocomotion = config.Bind("Controls",
+            //                                "UseLookLocomotion",
+            //                                false,
+            //                                "Setting this to true ties the direction you are looking to the walk direction while in first person mode. " +
+            //                                "Set this to false if you prefer to disconnect these so you can look" +
+            //                                " look by turning your head without affecting movement direction.");
             enableHands = config.Bind("Controls",
                                        "EnableHands",
                                        true,
@@ -356,7 +356,7 @@ namespace ValheimVRMod.Utilities
 
         public static bool UseLookLocomotion()
         {
-            return useLookLocomotion.Value;
+            return false;
         }
 
         public static bool ShowStaticCrosshair()
