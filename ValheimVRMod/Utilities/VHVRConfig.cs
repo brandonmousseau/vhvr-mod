@@ -80,34 +80,34 @@ namespace ValheimVRMod.Utilities
             headOffsetX = config.Bind("General",
                                       "FirstPersonHeadOffsetX",
                                       0.0f,
-                                      new ConfigDescription("This is an offset you can adjust, if needed, to center the camera position over the player model in first person mode. " +
-                                      "I haven't found a way to programatically fully determine the exact right spot at runtime, so I need to use an offset, and based on tracking, it" +
-                                      " might be different for different players. It shouldn't need to be adjusted much.",
+                                      new ConfigDescription("**OBSOLETE**: Due to some changes made to recentering tracking, the first person positional values are" +
+                                      "no longer saved/used between play sessions. You can still manually adjust position in game, but it will be reset each time you restart" +
+                                      " the game or recenter HMD tracking.",
                                       new AcceptableValueRange<float>(-2.0f, 2.0f)));
             headOffsetZ = config.Bind("General",
                           "FirstPersonHeadOffsetZ",
                           0.0f,
-                          new ConfigDescription("See FirstPersonHeadOffsetX description.",
+                          new ConfigDescription("**OBSOLETE**: See FirstPersonHeadOffsetX description.",
                           new AcceptableValueRange<float>(-2.0f, 2.0f)));
             headOffsetY = config.Bind("General",
                           "FirstPersonHeadOffsetY",
                           0.0f,
-                          new ConfigDescription("See FirstPersonHeadOffsetX description.",
+                          new ConfigDescription("**OBSOLETE**: See FirstPersonHeadOffsetX description.",
                           new AcceptableValueRange<float>(-2.0f, 2.0f)));
             headOffsetThirdPersonX = config.Bind("General",
                           "ThirdPersonHeadOffsetX",
                           0.0f,
-                          new ConfigDescription("Same as FirstPerson offsets, but for the third person views. All third person zoom levels all share same offset.",
+                          new ConfigDescription("Adjusts X position in third person cam. All third person zoom levels all share same offset.",
                           new AcceptableValueRange<float>(-2.0f, 2.0f)));
             headOffsetThirdPersonZ = config.Bind("General",
                           "ThirdPersonHeadOffsetZ",
                           0.0f,
-                          new ConfigDescription("Same as FirstPerson offsets, but for the third person views. All third person zoom levels all share same offset.",
+                          new ConfigDescription("Adjusts Y position in third person cam. All third person zoom levels all share same offset.",
                           new AcceptableValueRange<float>(-2.0f, 2.0f)));
             headOffsetThirdPersonY = config.Bind("General",
                           "ThirdPersonHeadOffsetY",
                           0.0f,
-                          new ConfigDescription("Same as FirstPerson offsets, but for the third person views. All third person zoom levels all share same offset.",
+                          new ConfigDescription("Adjusts Z position in third person cam. All third person zoom levels all share same offset.",
                           new AcceptableValueRange<float>(-2.0f, 2.0f)));
             enableHeadReposition = config.Bind("General",
                                                 "EnableHeadRepositioning",

@@ -9,7 +9,7 @@ using System.IO;
 using UnityEngine.XR.Management;
 using ValheimVRMod.Utilities;
 
-namespace ValheimVRMod
+namespace ValheimVRMod.VRCore
 {
     /**
      * VRManager is responsible for initializing/starting the OpenVR XRSDK and the SteamVR
@@ -162,6 +162,8 @@ namespace ValheimVRMod
                 LogDebug("Recentering Input Subsystem: " + subsystem);
                 subsystem.TryRecenter();
             }
+            // Trigger recentering head position on player body
+            VRPlayer.headPositionInitialized = false;
         }
 
         private static void PrintSteamVRSettings()

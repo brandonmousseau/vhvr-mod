@@ -391,7 +391,6 @@ namespace ValheimVRMod.Patches
 
             private static bool UpdateActive(bool active, Character c)
             {
-                LogDebug("UpdateActive C: " + c.name + "  Active: " + active);
                 EnemyHudManager.instance.SetHudActive(c, active);
                 return active;
             }
