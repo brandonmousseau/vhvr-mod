@@ -45,7 +45,7 @@ namespace ValheimVRMod.VRCore.UI
 
         public void maybeReparentCrosshair()
         {
-            if (SceneManager.GetActiveScene().name != "main" || guiCanvas == null || !ensureCrosshairCanvas())
+            if (SceneManager.GetActiveScene().name != "main" || guiCanvas == null || !ensureCrosshairCanvas() || !ensureCrosshairCamera())
             {
                 return;
             }
@@ -75,7 +75,7 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return true;
             }
-            createCrosshairCamera();
+            ensureCrosshairCamera();
             _crosshairCanvasParent = new GameObject("CrosshairCanvasGameObject");
             _crosshairCanvasParent.layer = CROSSHAIR_LAYER;
             GameObject.DontDestroyOnLoad(_crosshairCanvasParent);
@@ -115,11 +115,11 @@ namespace ValheimVRMod.VRCore.UI
             return _crosshairCamera.farClipPlane * 0.95f;
         }
 
-        private void createCrosshairCamera()
+        private bool ensureCrosshairCamera()
         {
             if (_crosshairCamera != null)
             {
-                return;
+                return true;
             }
             GameObject crosshairCameraObject = new GameObject(CameraUtils.CROSSHAIR_CAMERA);
             GameObject.DontDestroyOnLoad(crosshairCameraObject);
@@ -132,6 +132,7 @@ namespace ValheimVRMod.VRCore.UI
             _crosshairCamera.orthographic = true;
             _crosshairCamera.enabled = true;
             LogDebug("Created Crosshair Camera");
+            return true;
         }
 
         private void configureCrosshairElements(GameObject clone, int layer, Vector3 position, Quaternion rotation)

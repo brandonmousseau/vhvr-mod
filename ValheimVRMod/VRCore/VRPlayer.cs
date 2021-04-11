@@ -472,7 +472,8 @@ namespace ValheimVRMod.VRCore
             return getPlayerCharacter() != null &&
                 SceneManager.GetActiveScene().name != START_SCENE &&
                 ensurePlayerInstance() &&
-                !getPlayerCharacter().InCutscene();
+                !getPlayerCharacter().InCutscene() &&
+                !getPlayerCharacter().IsDead();
         }
 
         private void attachVrPlayerToPlayerCharacter()

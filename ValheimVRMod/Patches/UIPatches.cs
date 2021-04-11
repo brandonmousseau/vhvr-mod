@@ -324,8 +324,21 @@ namespace ValheimVRMod.Patches
         class EnemyHud_UpdateHuds_Patch
         {
 
-            private static MethodInfo destroyMethod = AccessTools.Method(typeof(UnityEngine.Object), "Destroy", new Type[] { typeof(UnityEngine.Object) });
+            private static MethodInfo destroyMethod =
+                AccessTools.Method(typeof(UnityEngine.Object), "Destroy", new Type[] { typeof(UnityEngine.Object) });
+            private static MethodInfo getHealthPercentageMethod =
+                AccessTools.Method(typeof(Character), nameof(Character.GetHealthPercentage));
+            private static MethodInfo getLevelMethod =
+                AccessTools.Method(typeof(Character), nameof(Character.GetLevel));
+            private static MethodInfo isAlertedMethod =
+                AccessTools.Method(typeof(BaseAI), nameof(BaseAI.IsAlerted));
+            private static MethodInfo setActiveMethod =
+                AccessTools.Method(typeof(GameObject), nameof(GameObject.SetActive));
             private static Type enemyHudDataType = AccessTools.TypeByName("EnemyHud+HudData");
+            private static FieldInfo guiField = AccessTools.Field(enemyHudDataType, "m_gui");
+
+            private static bool patchedSetActiveTrue = false;
+            private static bool patchedSetActiveFalse = false;
 
             private static void LoadCharacterField(ref List<CodeInstruction> patched)
             {
@@ -334,30 +347,160 @@ namespace ValheimVRMod.Patches
             }
 
             // Some wrapper methods to use as the Transpiler's Call targets
-            static void RemoveHud(Character c)
+            private static void RemoveHud(Character c)
             {
-                LogDebug("RemoveHud");
                 EnemyHudManager.instance.RemoveEnemyHud(c);
             }
+
+            private static float UpdateHealth(float health, Character c)
+            {
+                EnemyHudManager.instance.UpdateHealth(c, health);
+                // Return health so that it gets put back onto the
+                // evaluation stack right after we use it
+                return health;
+            }
+
+            private static int UpdateLevel(int level, Character c)
+            {
+                EnemyHudManager.instance.UpdateLevel(c, level);
+                // Return level so that it gets put back onto the
+                // evaluation stack right after we use it
+                return level;
+            }
+
+            private static bool UpdateAlertAndAware(bool alerted, bool haveTarget, Character c)
+            {
+                bool aware = !alerted & haveTarget;
+                UpdateAlerted(c, alerted);
+                UpdateAware(c, aware);
+                // We will call this right before alerted should be stored
+                // into a local variable, so return the variable to put it
+                // back onto eval stack.
+                return alerted;
+            }
+
+            private static void UpdateAlerted(Character c, bool alerted)
+            {
+                EnemyHudManager.instance.UpdateAlerted(c, alerted);
+            }
+
+            private static void UpdateAware(Character c, bool aware)
+            {
+                EnemyHudManager.instance.UpdateAware(c, aware);
+            }
+
+            private static bool UpdateActive(bool active, Character c)
+            {
+                LogDebug("UpdateActive C: " + c.name + "  Active: " + active);
+                EnemyHudManager.instance.SetHudActive(c, active);
+                return active;
+            }
+
             // Need to insert method calls to UpdateHudCoordinates, RemoveEnemyHud, UpdateHealth,
-            // UpdateLevel, UpdateAlerted, and UpdateAware. We also need to always set the
-            // original enemy hud canvases to inactive.
+            // UpdateLevel, UpdateAlerted, and UpdateAware and SetActive.
             static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
             {
+                patchedSetActiveTrue = false;
+                patchedSetActiveFalse = false;
                 var original = new List<CodeInstruction>(instructions);
                 var patched = new List<CodeInstruction>();
                 for (int i = 0; i < original.Count; i++) {
-                    var instruction = original[i];
-                    patched.Add(instruction);
-                    if (instruction.Calls(destroyMethod))
-                    {
-                        // The current hud is being destroyed here so
-                        // lets remove our mirror too.
-                        LoadCharacterField(ref patched);
-                        patched.Add(CodeInstruction.Call(typeof(EnemyHud_UpdateHuds_Patch), nameof(RemoveHud)));
-                    }
+                    patched.Add(original[i]);
+                    MaybeAddRemoveHudInstructions(original, ref patched, i);
+                    MaybeAddUpdateHealthInstructions(original, ref patched, i);
+                    MaybeAddUpdateLevelInstructions(original, ref patched, i);
+                    MaybeAddAIAlertnessUpdateInstructions(original, ref patched, i);
+                    MaybeAddSetActiveInstructions(original, ref patched, i);
                 }
                 return patched;
+            }
+
+            private static void MaybeAddRemoveHudInstructions(List<CodeInstruction> original, ref List<CodeInstruction> patched, int i)
+            {
+                var instruction = original[i];
+                if (instruction.Calls(destroyMethod))
+                {
+                    // The current hud is being destroyed here so
+                    // lets remove our mirror too. Load the Character field and
+                    // call RemoveHud
+                    LoadCharacterField(ref patched);
+                    patched.Add(CodeInstruction.Call(typeof(EnemyHud_UpdateHuds_Patch), nameof(RemoveHud)));
+                }
+            }
+
+            private static void MaybeAddUpdateHealthInstructions(List<CodeInstruction> original, ref List<CodeInstruction> patched, int i)
+            {
+                var instruction = original[i];
+                if (instruction.Calls(getHealthPercentageMethod))
+                {
+                    // Health percentage method just called, so health percentage is on eval
+                    // stack. Load the character field and then call UpdateHealth
+                    LoadCharacterField(ref patched);
+                    patched.Add(CodeInstruction.Call(typeof(EnemyHud_UpdateHuds_Patch), nameof(UpdateHealth)));
+                }
+            }
+
+            private static void MaybeAddUpdateLevelInstructions(List<CodeInstruction> original, ref List<CodeInstruction> patched, int i)
+            {
+                var instruction = original[i];
+                if (instruction.Calls(getLevelMethod))
+                {
+                    // GetLevel method just called, so character's level is on eval stack.
+                    // Load the character field and call UpdateLevel
+                    LoadCharacterField(ref patched);
+                    patched.Add(CodeInstruction.Call(typeof(EnemyHud_UpdateHuds_Patch), nameof(UpdateLevel)));
+                }
+            }
+
+            private static void MaybeAddAIAlertnessUpdateInstructions(List<CodeInstruction> original, ref List<CodeInstruction> patched, int i)
+            {
+                var instruction = original[i];
+                if (instruction.Calls(isAlertedMethod))
+                {
+                    // IsAlerted was just called, so it is on the eval stack. "HaveTarget" was stored
+                    // into V_8, so load it onto the eval stack + the Character reference and call UpdateAlertAndAware
+                    patched.Add(new CodeInstruction(OpCodes.Ldloc_S, 8)); // ldloc.s V_8
+                    LoadCharacterField(ref patched);
+                    patched.Add(CodeInstruction.Call(typeof(EnemyHud_UpdateHuds_Patch), nameof(UpdateAlertAndAware)));
+                }
+            }
+
+            private static void MaybeAddSetActiveInstructions(List<CodeInstruction> original, ref List<CodeInstruction> patched, int i)
+            {
+                var instruction = original[i];
+                // Find instruction with opcode ldc.i4.1, verify next instruction is "SetActive(bool)" and previous function
+                // loaded the gui field. If these conditions met, call our own SetActive function with (true).
+                // We only do this once for the SetActive true case, so set a flag to indicate it is done.
+                if (instruction.opcode.Equals(OpCodes.Ldc_I4_1) && !patchedSetActiveTrue)
+                {
+                    if ((i + 1) < original.Count && (i - 1) >= 0) {
+                        var previousInstruction = original[i - 1];
+                        var nextInstruction = original[i + 1];
+                        if (previousInstruction.Is(OpCodes.Ldfld, guiField) && nextInstruction.Is(OpCodes.Callvirt, setActiveMethod))
+                        {
+                            patchedSetActiveTrue = true;
+                            LoadCharacterField(ref patched);
+                            patched.Add(CodeInstruction.Call(typeof(EnemyHud_UpdateHuds_Patch), nameof(UpdateActive)));
+                        }
+                    }
+                }
+                // Find instruction with opcode ldc.i4.0, verify next instruction is "SetActive(bool)" and previous function
+                // loaded the gui field. If these conditions met, call our own SetActive function with (true).
+                // We only do this once for the SetActive false case, so set a flag to indicate it is done.
+                if (instruction.opcode.Equals(OpCodes.Ldc_I4_0) && !patchedSetActiveFalse)
+                {
+                    if ((i + 1) < original.Count && (i - 1) >= 0)
+                    {
+                        var previousInstruction = original[i - 1];
+                        var nextInstruction = original[i + 1];
+                        if (previousInstruction.Is(OpCodes.Ldfld, guiField) && nextInstruction.Is(OpCodes.Callvirt, setActiveMethod))
+                        {
+                            patchedSetActiveFalse = true;
+                            LoadCharacterField(ref patched);
+                            patched.Add(CodeInstruction.Call(typeof(EnemyHud_UpdateHuds_Patch), nameof(UpdateActive)));
+                        }
+                    }
+                }
             }
 
             static void Postfix()

@@ -28,26 +28,29 @@ namespace ValheimVRMod.VRCore.UI
         private EnemyHudManager()
         {
             _enemyHuds = new Dictionary<Character, HudData>();
-            _hudCamera = createHudCamera();
+            ensureHudCamera();
         }
 
-        private static Camera createHudCamera()
+        private void ensureHudCamera()
         {
+            if (_hudCamera != null)
+            {
+                return;
+            }
             GameObject hudCameraParent = new GameObject(CameraUtils.HUD_CAMERA);
             GameObject.DontDestroyOnLoad(hudCameraParent);
             Camera hudCam = hudCameraParent.AddComponent<Camera>();
             hudCam.depth = 2;
             hudCam.clearFlags = CameraClearFlags.Depth;
             hudCam.cullingMask = HUD_LAYER_MASK;
-            hudCam.transform.SetParent(CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform, false);
-            hudCam.orthographic = false;
+            hudCameraParent.transform.SetParent(CameraUtils.getCamera(CameraUtils.VR_CAMERA).gameObject.transform, false);
+            hudCam.orthographic = true;
             hudCam.enabled = true;
-            return hudCam;
+            _hudCamera = hudCam;
         }
 
         public void UpdateAll()
         {
-            LogDebug("UpdateAll");
             foreach(KeyValuePair<Character, HudData> entry in _enemyHuds)
             {
                 UpdateHudCoordinates(entry.Key);
@@ -58,11 +61,14 @@ namespace ValheimVRMod.VRCore.UI
         {
             if (c != null)
             {
-                LogDebug("AddEnemyHud Character: " + c.name);
+                if (c.IsBoss())
+                {
+                    // Boss is displayed on main GUI instead of world space.
+                    return;
+                }
                 HudData existingData = getEnemyHud(c);
                 if (existingData == null)
                 {
-                    LogDebug("Existing data is null. Adding new HudData");
                     HudData newData = createHudDataForCharacter(c, baseHudPlayer, baseHudEnemy, baseHudBoss);
                     if (newData != null)
                     {
@@ -72,16 +78,26 @@ namespace ValheimVRMod.VRCore.UI
             }
         }
 
-        public void UpdateHudCoordinates(Character c)
+        public void SetHudActive(Character c, bool active)
         {
             HudData data = getEnemyHud(c);
             if (data != null)
             {
+                data.gui.SetActive(active);
+            }
+        }
+
+        public void UpdateHudCoordinates(Character c)
+        {
+            ensureHudCamera();
+            HudData data = getEnemyHud(c);
+            if (data != null)
+            {
                 data.hudCanvasRoot.transform.position = c.IsPlayer() ? c.GetHeadPoint() : c.GetTopPoint();
-                data.hudCanvasRoot.transform.LookAt(VRPlayer.instance.transform);
+                data.hudCanvasRoot.transform.LookAt(_hudCamera.transform);
                 data.hudCanvasRoot.transform.rotation *= Quaternion.Euler(0f, 180f, 0f);
                 float scale = 0.06f / data.hudCanvasRoot.GetComponent<Canvas>().GetComponent<RectTransform>().rect.width;
-                float distance = Vector3.Distance(VRPlayer.instance.transform.position, data.hudCanvasRoot.transform.position);
+                float distance = Vector3.Distance(_hudCamera.transform.position, data.gui.transform.position);
                 data.hudCanvasRoot.GetComponent<Canvas>().GetComponent<RectTransform>().localScale = Vector3.one * scale * distance;
             }
         }
@@ -91,7 +107,7 @@ namespace ValheimVRMod.VRCore.UI
             HudData data = getEnemyHud(c);
             if (data != null)
             {
-                LogDebug("RemoveEnemyHud Character " + c.m_name);
+                Object.Destroy(data.gui);
                 Object.Destroy(data.hudCanvasRoot);
                 _enemyHuds.Remove(c);
             }
@@ -114,11 +130,13 @@ namespace ValheimVRMod.VRCore.UI
             {
                 if (data.level2)
                 {
-                    data.level2.gameObject.SetActive(level == 2);
+                    bool isLevel2 = level == 2;
+                    data.level2.gameObject.SetActive(isLevel2);
                 }
                 if (data.level3)
                 {
-                    data.level3.gameObject.SetActive(level == 3);
+                    bool isLevel3 = level == 3;
+                    data.level3.gameObject.SetActive(isLevel3);
                 }
             }
         }
@@ -143,20 +161,9 @@ namespace ValheimVRMod.VRCore.UI
 
         private HudData getEnemyHud(Character c)
         {
-            LogDebug("getEnemyHud");
-            if (c == null)
-            {
-                LogDebug("Null c");
-                return null;
-            }
             HudData data;
-            if(_enemyHuds.TryGetValue(c, out data))
-            {
-                LogDebug("Got Data for C: " + c.name);
-                return data;
-            }
-            LogDebug("Got no data.");
-            return null;
+            _enemyHuds.TryGetValue(c, out data);
+            return data;
         }
 
         private HudData createHudDataForCharacter(Character c, GameObject baseHudPlayer,
@@ -196,6 +203,7 @@ namespace ValheimVRMod.VRCore.UI
                 gui = Object.Instantiate(baseHud, canvas.transform)
             };
             updateGuiLayers(data.gui.transform);
+            data.gui.SetActive(true);
             data.hudCanvasRoot = canvasRoot;
             data.healthRoot = data.gui.transform.Find("Health").gameObject;
             data.healthFast = data.healthRoot.transform.Find("health_fast").GetComponent<GuiBar>();
@@ -207,7 +215,6 @@ namespace ValheimVRMod.VRCore.UI
             data.name = data.gui.transform.Find("Name").GetComponent<Text>();
             data.name.text = Localization.instance.Localize(c.GetHoverName());
             data.gui.transform.localPosition = data.hudCanvasRoot.GetComponent<Canvas>().GetComponent<RectTransform>().rect.center;
-            data.gui.SetActive(true);
             return data;
         }
 
@@ -227,10 +234,11 @@ namespace ValheimVRMod.VRCore.UI
         private GameObject createEnemyHudCanvas()
         {
             GameObject hudCanvasRoot = new GameObject(System.Guid.NewGuid().ToString());
-            hudCanvasRoot.layer = HUD_LAYER;
             GameObject.DontDestroyOnLoad(hudCanvasRoot);
+            hudCanvasRoot.layer = HUD_LAYER;
             Canvas hudCanvas = hudCanvasRoot.AddComponent<Canvas>();
             hudCanvas.renderMode = RenderMode.WorldSpace;
+            ensureHudCamera();
             hudCanvas.worldCamera = _hudCamera;
             hudCanvas.GetComponent<RectTransform>().SetParent(hudCanvasRoot.transform, false);
             return hudCanvasRoot;

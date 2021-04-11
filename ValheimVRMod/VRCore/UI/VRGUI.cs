@@ -135,6 +135,10 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return;
             }
+            if (_uiPanelCamera == null)
+            {
+                createUiPanelCamera();
+            }
             updateUiPanelScaleAndPosition();
             if (_guiCanvas != null && _guiTexture != null) 
             {
