@@ -509,5 +509,22 @@ namespace ValheimVRMod.Patches
         }
     }
 
+    // In the base game, ship rudder control is positioned on the rudder using
+    // a worldspace -> screen space conversion, which doesn't work in VR. Instead
+    // let's just move the rudder control UI to just below the ship wind indicator.
+    [HarmonyPatch(typeof(Hud), "UpdateShipHud")]
+    class Hud_UpdateShipHud_Patch
+    {
+
+        public static void Postfix(Hud __instance)
+        {
+            __instance.m_shipControlsRoot.transform.position =
+                new Vector3(__instance.m_shipWindIndicatorRoot.transform.position.x,
+                __instance.m_shipWindIndicatorRoot.transform.position.y -
+                __instance.m_shipWindIndicatorRoot.GetComponent<RectTransform>().rect.height * 1.25f);
+        }
+
+    }
+
 
 }
