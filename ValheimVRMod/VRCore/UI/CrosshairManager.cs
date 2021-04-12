@@ -12,6 +12,7 @@ namespace ValheimVRMod.VRCore.UI
         public static readonly int CROSSHAIR_LAYER = 29;
         public static readonly int CROSSHAIR_LAYER_MASK = (1 << CROSSHAIR_LAYER);
         private static readonly Vector3 CROSSHAIR_SCALAR = new Vector3(0.3f, 0.3f);
+        private static readonly float MIN_CROSSHAIR_DISTANCE = 0.5f;
 
         public static int crosshairDepth = 1;
 
@@ -97,6 +98,7 @@ namespace ValheimVRMod.VRCore.UI
             float canvasWidth = _crosshairCanvas.GetComponent<RectTransform>().rect.width;
             float scaleFactor = 1f / canvasWidth;
             _crosshairCamera.transform.rotation = CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform.rotation;
+            _crosshairCamera.transform.position = CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform.position;
             _crosshairCanvasParent.transform.SetParent(_crosshairCamera.gameObject.transform, false);
             _crosshairCanvasParent.transform.position = VRPlayer.instance.transform.position;
             float crosshairDistance = calculateCrosshairDistance();
@@ -108,11 +110,27 @@ namespace ValheimVRMod.VRCore.UI
         private float calculateCrosshairDistance()
         {
             RaycastHit hit;
-            if(Physics.Raycast(new Ray(_crosshairCamera.transform.position, _crosshairCamera.transform.forward), out hit))
+            if (Physics.Raycast(new Ray(_crosshairCamera.transform.position, _crosshairCamera.transform.forward), out hit,
+                _crosshairCamera.farClipPlane * 0.95f, getCrosshairRaycastLayerMask()))
             {
-                return hit.distance;
+                return Mathf.Max(MIN_CROSSHAIR_DISTANCE, hit.distance);
             }
             return _crosshairCamera.farClipPlane * 0.95f;
+        }
+
+        private static int getCrosshairRaycastLayerMask()
+        {
+            int mask = Physics.DefaultRaycastLayers;
+            mask &= ~(1 << 14); // Heat Layers
+            mask &= ~(1 << 21); // Water volume
+            mask &= ~(1 << 4);  // Water surface
+            mask &= ~(1 << 25); // Viewblock layer
+            mask &= ~(1 << VRGUI.UI_PANEL_LAYER);
+            mask &= ~(1 << VRGUI.UI_LAYER);
+            mask &= ~(1 << VRPlayer.HANDS_LAYER);
+            mask &= ~(1 << CROSSHAIR_LAYER);
+            mask &= ~(1 << EnemyHudManager.HUD_LAYER);
+            return mask;
         }
 
         private bool ensureCrosshairCamera()
