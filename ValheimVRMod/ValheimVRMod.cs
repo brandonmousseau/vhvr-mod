@@ -9,7 +9,7 @@ using ValheimVRMod.Patches;
 
 namespace ValheimVRMod
 {
-    [BepInPlugin("org.bepinex.plugins.valheimvrmod", "ValheimVR Mod", "0.1.9")]
+    [BepInPlugin("org.bepinex.plugins.valheimvrmod", "ValheimVR Mod", "0.2.0")]
     public class ValheimVRMod : BaseUnityPlugin
     {
 
