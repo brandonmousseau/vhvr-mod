@@ -71,7 +71,7 @@ namespace ValheimVRMod.VRCore.UI
             HudData data = getEnemyHud(c);
             if (data != null)
             {
-                data.gui.SetActive(active);
+                data.gui.SetActive(active && VHVRConfig.ShowEnemyHuds());
             }
         }
 
@@ -86,7 +86,8 @@ namespace ValheimVRMod.VRCore.UI
                 data.hudCanvasRoot.transform.rotation *= Quaternion.Euler(0f, 180f, 0f);
                 float scale = 0.06f / data.hudCanvasRoot.GetComponent<Canvas>().GetComponent<RectTransform>().rect.width;
                 float distance = Vector3.Distance(_hudCamera.transform.position, data.gui.transform.position);
-                data.hudCanvasRoot.GetComponent<Canvas>().GetComponent<RectTransform>().localScale = Vector3.one * scale * distance;
+                data.hudCanvasRoot.GetComponent<Canvas>().GetComponent<RectTransform>().localScale =
+                    Vector3.one * scale * distance * VHVRConfig.EnemyHudScale();
             }
         }
 

@@ -36,6 +36,8 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> showStaticCrosshair;
         private static ConfigEntry<float> crosshairScale;
         private static ConfigEntry<bool> showRepairHammer;
+        private static ConfigEntry<bool> showEnemyHuds;
+        private static ConfigEntry<float> enemyHudScale;
 
         // Controls Settings
         private static ConfigEntry<bool> enableHands;
@@ -175,6 +177,15 @@ namespace ValheimVRMod.Utilities
                                            "ShowRepairHammer",
                                            true,
                                            "This adds an indicator on screen when in repair mode that shows where the repair cursor currently is.");
+            showEnemyHuds = config.Bind("UI",
+                                        "ShowEnemyHuds",
+                                        true,
+                                        "Enable or disable displaying enemy names and stats above them in game.");
+            enemyHudScale = config.Bind("UI",
+                                        "EnemyHudScale",
+                                         1.0f,
+                                         new ConfigDescription("Scalar multiplier to adjust the size of enemy huds to your preference. 1.0 is probably fine.",
+                                         new AcceptableValueRange<float>(0.5f, 3f)));
         }
 
         private static void InitializeControlsSettings(ConfigFile config)
@@ -438,6 +449,16 @@ namespace ValheimVRMod.Utilities
         public static bool ShowRepairHammer()
         {
             return showRepairHammer.Value;
+        }
+
+        public static bool ShowEnemyHuds()
+        {
+            return showEnemyHuds.Value;
+        }
+
+        public static float EnemyHudScale()
+        {
+            return enemyHudScale.Value;
         }
 
     }
