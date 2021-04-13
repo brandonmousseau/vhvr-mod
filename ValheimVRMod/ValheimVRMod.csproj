@@ -294,6 +294,7 @@
     <Compile Include="VRCore\UI\CrosshairManager.cs" />
     <Compile Include="VRCore\UI\EnemyHudManager.cs" />
     <Compile Include="VRCore\UI\PlaceModeRayVectorProvider.cs" />
+    <Compile Include="VRCore\UI\RepairModePositionIndicator.cs" />
     <Compile Include="VRCore\UI\SoftwareCursor.cs" />
     <Compile Include="VRCore\UI\VRGUI.cs" />
     <Compile Include="VRCore\VRManager.cs" />

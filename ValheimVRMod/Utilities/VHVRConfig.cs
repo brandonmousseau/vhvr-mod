@@ -35,6 +35,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> uiPanelDistance;
         private static ConfigEntry<bool> showStaticCrosshair;
         private static ConfigEntry<float> crosshairScale;
+        private static ConfigEntry<bool> showRepairHammer;
 
         // Controls Settings
         private static ConfigEntry<bool> enableHands;
@@ -170,6 +171,10 @@ namespace ValheimVRMod.Utilities
                                          1.0f,
                                          new ConfigDescription("Scalar multiplier to adjust the size of the crosshair to your preference. 1.0 is probably fine.",
                                          new AcceptableValueRange<float>(0.8f, 2.5f)));
+            showRepairHammer = config.Bind("UI",
+                                           "ShowRepairHammer",
+                                           true,
+                                           "This adds an indicator on screen when in repair mode that shows where the repair cursor currently is.");
         }
 
         private static void InitializeControlsSettings(ConfigFile config)
@@ -428,6 +433,11 @@ namespace ValheimVRMod.Utilities
                 LogError("Invalid configured key: " + configuredKey + " Using Default Key: " + defaultValue);
             }
             return defaultValue;
+        }
+
+        public static bool ShowRepairHammer()
+        {
+            return showRepairHammer.Value;
         }
 
     }

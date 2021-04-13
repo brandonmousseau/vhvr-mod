@@ -93,6 +93,10 @@ namespace ValheimVRMod.VRCore.UI
             if (ensureGuiCanvas())
             {
                 CrosshairManager.instance.maybeReparentCrosshair();
+                if (VHVRConfig.ShowRepairHammer() && RepairModePositionIndicator.instance != null)
+                {
+                    RepairModePositionIndicator.instance.Update();
+                }
                 if (USING_OVERLAY)
                 {
                     checkAndSetCurvatureUpdates();
