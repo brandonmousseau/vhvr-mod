@@ -469,7 +469,8 @@ namespace ValheimVRMod.Patches
                 var instruction = original[i];
                 // Find instruction with opcode ldc.i4.1, verify next instruction is "SetActive(bool)" and previous function
                 // loaded the gui field. If these conditions met, call our own SetActive function with (true).
-                // We only do this once for the SetActive true case, so set a flag to indicate it is done.
+                // For the second time we find SetActive, we'll then set it to false to disable the original enemy huds
+                // except for the boss hud.
                 if (instruction.opcode.Equals(OpCodes.Ldc_I4_1) && !patchedSetActiveTrue)
                 {
                     if ((i + 1) < original.Count && (i - 1) >= 0) {
@@ -477,14 +478,26 @@ namespace ValheimVRMod.Patches
                         var nextInstruction = original[i + 1];
                         if (previousInstruction.Is(OpCodes.Ldfld, guiField) && nextInstruction.Is(OpCodes.Callvirt, setActiveMethod))
                         {
-                            patchedSetActiveTrue = true;
-                            LoadCharacterField(ref patched);
-                            patched.Add(CodeInstruction.Call(typeof(EnemyHud_UpdateHuds_Patch), nameof(UpdateActive)));
+                            if (!patchedSetActiveTrue)
+                            {
+                                // First time we encountered the SetActive(true) call, so mirror it to our EnemeyHudsManager
+                                patchedSetActiveTrue = true;
+                                LoadCharacterField(ref patched);
+                                patched.Add(CodeInstruction.Call(typeof(EnemyHud_UpdateHuds_Patch), nameof(UpdateActive)));
+                            } else
+                            {
+                                // Second time we encounter it, so lets now call SetActive(false) on the original EnemyHud
+                                // to make sure it is never visible. The current instruction loaded "true" onto the evalutation
+                                // stack, so lets pop that off, and load false in its place.
+                                patched.Add(new CodeInstruction(OpCodes.Pop)); // Pop off "true"
+                                patched.Add(new CodeInstruction(OpCodes.Ldc_I4_0)); // Put false onto eval stack
+                            }
                         }
                     }
                 }
+
                 // Find instruction with opcode ldc.i4.0, verify next instruction is "SetActive(bool)" and previous function
-                // loaded the gui field. If these conditions met, call our own SetActive function with (true).
+                // loaded the gui field. If these conditions met, call our own SetActive function with (false).
                 // We only do this once for the SetActive false case, so set a flag to indicate it is done.
                 if (instruction.opcode.Equals(OpCodes.Ldc_I4_0) && !patchedSetActiveFalse)
                 {
