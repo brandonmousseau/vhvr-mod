@@ -54,6 +54,7 @@ namespace ValheimVRMod.Utilities
             worldSpaceUiCamParent.transform.SetParent(getCamera(VR_CAMERA).gameObject.transform);
             _worldSpaceUiCamera = worldSpaceUiCamParent.AddComponent<Camera>();
             _worldSpaceUiCamera.CopyFrom(getCamera(VR_CAMERA));
+            _worldSpaceUiCamera.clearFlags = CameraClearFlags.Depth;
             _worldSpaceUiCamera.depth = worldSpaceUiDepth;
             _worldSpaceUiCamera.cullingMask = LayerUtils.WORLDSPACE_UI_LAYER_MASK;
             _worldSpaceUiCamera.orthographic = true;
