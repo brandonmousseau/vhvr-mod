@@ -24,6 +24,8 @@ namespace Valve.VR.Extras
         public event PointerEventHandler PointerOut;
         public event PointerEventHandler PointerClick;
         public event PointerEventHandler PointerTracking;
+        public float maxRaycastDistance = Mathf.Infinity;
+        public int raycastLayerMask = Physics.DefaultRaycastLayers;
 
         Transform previousContact = null;
 
@@ -117,7 +119,7 @@ namespace Valve.VR.Extras
 
             Ray raycast = new Ray(transform.position, transform.forward);
             RaycastHit hit;
-            bool bHit = Physics.Raycast(raycast, out hit);
+            bool bHit = Physics.Raycast(raycast, out hit, maxRaycastDistance, raycastLayerMask);
 
             if (previousContact && previousContact != hit.transform)
             {

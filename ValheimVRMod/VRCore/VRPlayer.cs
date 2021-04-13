@@ -193,23 +193,7 @@ namespace ValheimVRMod.VRCore
 
         private void checkAndSetHandsAndPointers()
         {
-            // First try and initialize both hands and pointer scripts
-            if (_leftHand == null || _leftPointer == null)
-            {
-                _leftHand = getHand(LEFT_HAND, _instance);
-                if (_leftHand != null)
-                {
-                    _leftPointer = _leftHand.GetComponent<SteamVR_LaserPointer>();
-                }
-            }
-            if (_rightHand == null || _rightPointer == null)
-            {
-                _rightHand = getHand(RIGHT_HAND, _instance);
-                if (_rightHand != null)
-                {
-                    _rightPointer = _rightHand.GetComponent<SteamVR_LaserPointer>();
-                }
-            }
+            tryInitializeHands();
             if (_leftHand != null)
             {
                 _leftHand.enabled = VHVRConfig.HandsEnabled();
@@ -244,6 +228,35 @@ namespace ValheimVRMod.VRCore
             {
                 setPointerActive(_leftPointer, false);
                 setPointerActive(_rightPointer, false);
+            }
+        }
+
+        private void tryInitializeHands()
+        {
+            // First try and initialize both hands and pointer scripts
+            if (_leftHand == null || _leftPointer == null)
+            {
+                _leftHand = getHand(LEFT_HAND, _instance);
+                if (_leftHand != null)
+                {
+                    _leftPointer = _leftHand.GetComponent<SteamVR_LaserPointer>();
+                    if (_leftPointer != null)
+                    {
+                        _leftPointer.raycastLayerMask = LayerUtils.UI_PANEL_LAYER_MASK;
+                    }
+                }
+            }
+            if (_rightHand == null || _rightPointer == null)
+            {
+                _rightHand = getHand(RIGHT_HAND, _instance);
+                if (_rightHand != null)
+                {
+                    _rightPointer = _rightHand.GetComponent<SteamVR_LaserPointer>();
+                    if (_rightPointer != null)
+                    {
+                        _rightPointer.raycastLayerMask = LayerUtils.UI_PANEL_LAYER_MASK;
+                    }
+                }
             }
         }
 
