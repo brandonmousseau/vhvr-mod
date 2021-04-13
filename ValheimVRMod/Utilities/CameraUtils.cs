@@ -14,8 +14,10 @@ namespace ValheimVRMod.Utilities
         public static readonly string SKYBOX_CAMERA = "SkyboxCamera";
         public static readonly string VRSKYBOX_CAMERA = "VRSkyboxCamera";
         public static readonly string VRGUI_SCREENSPACE_CAM = "VRGuiScreenSpace";
-        public static readonly string CROSSHAIR_CAMERA = "VRCrosshairCamera";
-        public static readonly string HUD_CAMERA = "HudCamera";
+        public static readonly string WORLD_SPACE_UI_CAMERA = "WorldSpaceUiCamera";
+
+        private static Camera _worldSpaceUiCamera;
+        private static int worldSpaceUiDepth = 1;
 
         public static void copyCamera(Camera from, Camera to)
         {
@@ -40,6 +42,23 @@ namespace ValheimVRMod.Utilities
             to.useOcclusionCulling = from.useOcclusionCulling;
             to.allowHDR = false; // Force this to off for VR
             to.backgroundColor = from.backgroundColor;
+        }
+
+        public static Camera getWorldspaceUiCamera()
+        {
+            if (_worldSpaceUiCamera != null)
+            {
+                return _worldSpaceUiCamera;
+            }
+            GameObject worldSpaceUiCamParent = new GameObject(WORLD_SPACE_UI_CAMERA);
+            worldSpaceUiCamParent.transform.SetParent(getCamera(VR_CAMERA).gameObject.transform);
+            _worldSpaceUiCamera = worldSpaceUiCamParent.AddComponent<Camera>();
+            _worldSpaceUiCamera.CopyFrom(getCamera(VR_CAMERA));
+            _worldSpaceUiCamera.depth = worldSpaceUiDepth;
+            _worldSpaceUiCamera.cullingMask = LayerUtils.WORLDSPACE_UI_LAYER_MASK;
+            _worldSpaceUiCamera.orthographic = true;
+            _worldSpaceUiCamera.enabled = true;
+            return _worldSpaceUiCamera;
         }
 
         public static Camera getCamera(string name)

@@ -9,9 +9,7 @@ namespace ValheimVRMod.VRCore.UI
 {
     class CrosshairManager
     {
-        public static readonly int CROSSHAIR_LAYER = 29;
-        public static readonly int CROSSHAIR_LAYER_MASK = (1 << CROSSHAIR_LAYER);
-        private static readonly Vector3 CROSSHAIR_SCALAR = new Vector3(0.3f, 0.3f);
+        private static readonly float CROSSHAIR_SCALAR = 0.1f;
         private static readonly float MIN_CROSSHAIR_DISTANCE = 0.5f;
 
         public static int crosshairDepth = 1;
@@ -26,6 +24,8 @@ namespace ValheimVRMod.VRCore.UI
             } }
 
         private static CrosshairManager _instance;
+
+        private static int CROSSHAIR_RAYCAST_LAYERMASK = getCrosshairRaycastLayerMask();
 
         public Canvas guiCanvas;
 
@@ -43,6 +43,7 @@ namespace ValheimVRMod.VRCore.UI
         private GameObject _sneakAlertClone;
         private GameObject _stealthBarClone;
         private GameObject _pieceHealthRoot;
+        private GameObject _pieceHealthBar;
 
         public void maybeReparentCrosshair()
         {
@@ -57,8 +58,8 @@ namespace ValheimVRMod.VRCore.UI
             }
             _canvasCrosshairRoot.SetActive(false); // Disable the original crosshairs
             _canvasCrosshairRootClone.SetActive(VRPlayer.attachedToPlayer);
-            configureCrosshairElements(_canvasCrosshairRootClone, CROSSHAIR_LAYER,
-                _crosshairCanvasParent.transform.position, _crosshairCanvasParent.transform.rotation);
+            _canvasCrosshairRootClone.transform.SetParent(_crosshairCanvas.transform, false);
+            _crosshairClone.SetActive(VHVRConfig.ShowStaticCrosshair());
             var rectTransform = _canvasCrosshairRootClone.GetComponent<RectTransform>();
             setCanvasPositionAndScale();
             UpdateHudReferences();
@@ -78,7 +79,7 @@ namespace ValheimVRMod.VRCore.UI
             }
             ensureCrosshairCamera();
             _crosshairCanvasParent = new GameObject("CrosshairCanvasGameObject");
-            _crosshairCanvasParent.layer = CROSSHAIR_LAYER;
+            _crosshairCanvasParent.layer = LayerUtils.getWorldspaceUiLayer();
             GameObject.DontDestroyOnLoad(_crosshairCanvasParent);
             _crosshairCanvas = _crosshairCanvasParent.AddComponent<Canvas>();
             _crosshairCanvas.renderMode = RenderMode.WorldSpace;
@@ -96,7 +97,7 @@ namespace ValheimVRMod.VRCore.UI
                 return;
             }
             float canvasWidth = _crosshairCanvas.GetComponent<RectTransform>().rect.width;
-            float scaleFactor = 1f / canvasWidth;
+            float scaleFactor = CROSSHAIR_SCALAR * VHVRConfig.CrosshairScalar() / canvasWidth;
             _crosshairCamera.transform.rotation = CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform.rotation;
             _crosshairCamera.transform.position = CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform.position;
             _crosshairCanvasParent.transform.SetParent(_crosshairCamera.gameObject.transform, false);
@@ -111,7 +112,7 @@ namespace ValheimVRMod.VRCore.UI
         {
             RaycastHit hit;
             if (Physics.Raycast(new Ray(_crosshairCamera.transform.position, _crosshairCamera.transform.forward), out hit,
-                _crosshairCamera.farClipPlane * 0.95f, getCrosshairRaycastLayerMask()))
+                _crosshairCamera.farClipPlane * 0.95f, CROSSHAIR_RAYCAST_LAYERMASK))
             {
                 return Mathf.Max(MIN_CROSSHAIR_DISTANCE, hit.distance);
             }
@@ -121,15 +122,17 @@ namespace ValheimVRMod.VRCore.UI
         private static int getCrosshairRaycastLayerMask()
         {
             int mask = Physics.DefaultRaycastLayers;
-            mask &= ~(1 << 14); // Heat Layers
-            mask &= ~(1 << 21); // Water volume
-            mask &= ~(1 << 4);  // Water surface
-            mask &= ~(1 << 25); // Viewblock layer
-            mask &= ~(1 << VRGUI.UI_PANEL_LAYER);
-            mask &= ~(1 << VRGUI.UI_LAYER);
-            mask &= ~(1 << VRPlayer.HANDS_LAYER);
-            mask &= ~(1 << CROSSHAIR_LAYER);
-            mask &= ~(1 << EnemyHudManager.HUD_LAYER);
+            // Ignore these layers
+            mask &= ~(1 << 14); // character_trigger
+            mask &= ~(1 << 21); // WaterVolume
+            mask &= ~(1 << 4);  // Water
+            mask &= ~(1 << 25); // viewblock
+            mask &= ~(1 << 31); // smoke
+            mask &= ~(1 << 5);  // UI
+            mask &= ~(1 << 24); // pathblocker
+            mask &= ~(1 << LayerUtils.getUiPanelLayer());
+            mask &= ~(1 << LayerUtils.getHandsLayer());
+            mask &= ~(1 << LayerUtils.getWorldspaceUiLayer());
             return mask;
         }
 
@@ -139,38 +142,22 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return true;
             }
-            GameObject crosshairCameraObject = new GameObject(CameraUtils.CROSSHAIR_CAMERA);
-            GameObject.DontDestroyOnLoad(crosshairCameraObject);
-            _crosshairCamera = crosshairCameraObject.AddComponent<Camera>();
-            _crosshairCamera.CopyFrom(CameraUtils.getCamera(CameraUtils.VR_CAMERA));
-            _crosshairCamera.depth = crosshairDepth;
-            _crosshairCamera.clearFlags = CameraClearFlags.Depth;
-            _crosshairCamera.cullingMask = CROSSHAIR_LAYER_MASK;
-            _crosshairCamera.transform.SetParent(CameraUtils.getCamera(CameraUtils.VR_CAMERA).gameObject.transform, false);
-            _crosshairCamera.orthographic = true;
-            _crosshairCamera.enabled = true;
-            LogDebug("Created Crosshair Camera");
+            _crosshairCamera = CameraUtils.getWorldspaceUiCamera();
+            LogDebug("Got Crosshair Camera");
             return true;
         }
 
-        private void configureCrosshairElements(GameObject clone, int layer, Vector3 position, Quaternion rotation)
+        private void configureCrosshairElements(GameObject clone)
         {
             if (clone == null)
             {
+                LogError("Null Crosshair Clone while configuring clones.");
                 return;
             }
-            clone.layer = layer;
-            clone.transform.position = position;
-            clone.transform.rotation = rotation;
-            clone.transform.localScale = CROSSHAIR_SCALAR * VHVRConfig.CrosshairScalar();
-            if (clone.name == "crosshair" && clone.transform.parent != null &&
-                clone.transform.parent.gameObject == _canvasCrosshairRootClone)
-            {
-                clone.SetActive(VHVRConfig.ShowStaticCrosshair());
-            }
+            clone.layer = LayerUtils.getWorldspaceUiLayer();
             foreach (Transform t in clone.transform)
             {
-                configureCrosshairElements(t.gameObject, layer, position, rotation);
+                configureCrosshairElements(t.gameObject);
             }
         }
 
@@ -188,6 +175,7 @@ namespace ValheimVRMod.VRCore.UI
                 LogDebug("Found crosshair canvas root element.");
                 _canvasCrosshairRoot = t.gameObject;
                 _canvasCrosshairRootClone = GameObject.Instantiate(_canvasCrosshairRoot);
+                configureCrosshairElements(_canvasCrosshairRootClone);
                 _canvasCrosshairRootClone.SetActive(true);
                 cacheClones();
                 return true;
@@ -241,6 +229,14 @@ namespace ValheimVRMod.VRCore.UI
                 else if (child.gameObject.name == "PieceHealthRoot")
                 {
                     _pieceHealthRoot = child.gameObject;
+                    foreach (Transform healthRootChild in child)
+                    {
+                        if (healthRootChild.gameObject.name == "PieceHealthBar")
+                        {
+                            _pieceHealthBar = healthRootChild.gameObject;
+                            break;
+                        }
+                    }
                 }
             }
         }
@@ -351,12 +347,26 @@ namespace ValheimVRMod.VRCore.UI
                 }
                 else
                 {
-                    LogDebug("Steal GUI Bar is null");
+                    LogDebug("Stealth GUI Bar is null");
                 }
             }
             else
             {
                 LogDebug("Stealth Bar clone is null");
+            }
+            if (_pieceHealthBar != null)
+            {
+                GuiBar pieceHealthGuiBar = _pieceHealthBar.GetComponent<GuiBar>();
+                if (pieceHealthGuiBar != null)
+                {
+                    hud.m_pieceHealthBar = pieceHealthGuiBar;
+                } else
+                {
+                    LogDebug("PieceHealthBar GUI bar is null");
+                }
+            } else
+            {
+                LogDebug("PieceHealthBar is null.");
             }
         }
 

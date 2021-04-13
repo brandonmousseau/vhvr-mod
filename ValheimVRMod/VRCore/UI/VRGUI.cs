@@ -45,10 +45,6 @@ namespace ValheimVRMod.VRCore.UI
     class VRGUI : MonoBehaviour
     {
         public static readonly string GUI_CANVAS = "GUI";
-        public static readonly int UI_LAYER = LayerMask.NameToLayer("UI");
-        public static readonly int UI_LAYER_MASK = (1 << UI_LAYER);
-        public static readonly int UI_PANEL_LAYER = 22;
-        public static readonly int UI_PANEL_LAYER_MASK = (1 << UI_PANEL_LAYER);
         private static readonly string OVERLAY_KEY = "VALHEIM_VR_MOD_OVERLAY";
         private static readonly string OVERLAY_NAME = "Valheim VR";
         private static readonly string UI_PANEL_NAME = "VRUIPanel";
@@ -170,7 +166,7 @@ namespace ValheimVRMod.VRCore.UI
             createUiPanelCamera();
             _uiPanel = GameObject.CreatePrimitive(PrimitiveType.Quad);
             _uiPanel.name = UI_PANEL_NAME;
-            _uiPanel.layer = UI_PANEL_LAYER;
+            _uiPanel.layer = LayerUtils.getUiPanelLayer();
             Material mat = VRAssetManager.GetAsset<Material>("vr_panel_unlit");
             _uiPanel.GetComponent<Renderer>().material = mat;
             _uiPanel.GetComponent<Renderer>().material.mainTexture = _guiTexture;
@@ -210,7 +206,7 @@ namespace ValheimVRMod.VRCore.UI
             _uiPanelCamera.CopyFrom(CameraUtils.getCamera(CameraUtils.VR_CAMERA));
             _uiPanelCamera.depth = _guiCamera.depth;
             _uiPanelCamera.clearFlags = CameraClearFlags.Depth;
-            _uiPanelCamera.cullingMask = UI_PANEL_LAYER_MASK;
+            _uiPanelCamera.cullingMask = LayerUtils.UI_PANEL_LAYER_MASK;
             _uiPanelCamera.transform.parent =
                CameraUtils.getCamera(CameraUtils.VR_CAMERA).gameObject.transform;
         }
@@ -379,7 +375,7 @@ namespace ValheimVRMod.VRCore.UI
             // just works...
             _guiCamera.clearFlags = CameraClearFlags.Color;
             // Required to actually capture only the GUI layer
-            _guiCamera.cullingMask = UI_LAYER_MASK;
+            _guiCamera.cullingMask = (1 << LayerMask.NameToLayer("UI"));
             _guiCamera.farClipPlane = 1.1f;
             _guiCamera.nearClipPlane = 0.9f;
             _guiCamera.enabled = true;

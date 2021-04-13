@@ -9,9 +9,6 @@ namespace ValheimVRMod.VRCore.UI
 {
     class EnemyHudManager
     {
-        public static readonly int HUD_LAYER = 27;
-        public static readonly int HUD_LAYER_MASK = (1 << HUD_LAYER);
-
         private static EnemyHudManager _instance;
         private Dictionary<Character, HudData> _enemyHuds;
         private Camera _hudCamera;
@@ -37,16 +34,7 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return;
             }
-            GameObject hudCameraParent = new GameObject(CameraUtils.HUD_CAMERA);
-            GameObject.DontDestroyOnLoad(hudCameraParent);
-            Camera hudCam = hudCameraParent.AddComponent<Camera>();
-            hudCam.depth = 2;
-            hudCam.clearFlags = CameraClearFlags.Depth;
-            hudCam.cullingMask = HUD_LAYER_MASK;
-            hudCameraParent.transform.SetParent(CameraUtils.getCamera(CameraUtils.VR_CAMERA).gameObject.transform, false);
-            hudCam.orthographic = true;
-            hudCam.enabled = true;
-            _hudCamera = hudCam;
+            _hudCamera = CameraUtils.getWorldspaceUiCamera();
         }
 
         public void UpdateAll()
@@ -224,7 +212,7 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return;
             }
-            gui.gameObject.layer = HUD_LAYER;
+            gui.gameObject.layer = LayerUtils.getWorldspaceUiLayer();
             foreach (Transform child in gui)
             {
                 updateGuiLayers(child);
@@ -235,7 +223,7 @@ namespace ValheimVRMod.VRCore.UI
         {
             GameObject hudCanvasRoot = new GameObject(System.Guid.NewGuid().ToString());
             GameObject.DontDestroyOnLoad(hudCanvasRoot);
-            hudCanvasRoot.layer = HUD_LAYER;
+            hudCanvasRoot.layer = LayerUtils.getWorldspaceUiLayer();
             Canvas hudCanvas = hudCanvasRoot.AddComponent<Canvas>();
             hudCanvas.renderMode = RenderMode.WorldSpace;
             ensureHudCamera();

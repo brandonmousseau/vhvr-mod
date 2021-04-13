@@ -39,8 +39,6 @@ namespace ValheimVRMod.VRCore
         // This layer must be set in the hand model prefab in the
         // Unity AssetBundle project too. If they don't match,
         // the hands won't be rendered by the handsCam.
-        public static readonly int HANDS_LAYER = 23;
-        private static readonly int HANDS_LAYER_MASK = (1 << HANDS_LAYER);
         private static Vector3 FIRST_PERSON_OFFSET = Vector3.zero;
         private static Vector3 THIRD_PERSON_0_OFFSET = new Vector3(0f, 1.0f, -0.6f);
         private static Vector3 THIRD_PERSON_1_OFFSET = new Vector3(0f, 1.4f, -1.5f);
@@ -348,11 +346,10 @@ namespace ValheimVRMod.VRCore
             // Turn off rendering the UI panel layer. We need to capture
             // it in a camera of higher depth so that it
             // is rendered on top of everything else. (except hands)
-            vrCam.cullingMask &= ~(1 << VRGUI.UI_PANEL_LAYER);
-            vrCam.cullingMask &= ~(1 << VRGUI.UI_LAYER);
-            vrCam.cullingMask &= ~(1 << HANDS_LAYER);
-            vrCam.cullingMask &= ~(1 << CrosshairManager.CROSSHAIR_LAYER);
-            vrCam.cullingMask &= ~(1 << EnemyHudManager.HUD_LAYER);
+            vrCam.cullingMask &= ~(1 << LayerUtils.getUiPanelLayer());
+            vrCam.cullingMask &= ~(1 << LayerMask.NameToLayer("UI"));
+            vrCam.cullingMask &= ~(1 << LayerUtils.getHandsLayer());
+            vrCam.cullingMask &= ~(1 << LayerUtils.getWorldspaceUiLayer());
             mainCamera.enabled = false;
             AudioListener mainCamListener = mainCamera.GetComponent<AudioListener>();
             if (mainCamListener != null)
@@ -377,7 +374,7 @@ namespace ValheimVRMod.VRCore
             handsCamera.CopyFrom(CameraUtils.getCamera(CameraUtils.VR_CAMERA));
             handsCamera.depth = 4;
             handsCamera.clearFlags = CameraClearFlags.Depth;
-            handsCamera.cullingMask = HANDS_LAYER_MASK;
+            handsCamera.cullingMask = LayerUtils.HANDS_LAYER_MASK;
             handsCamera.transform.parent =
                 CameraUtils.getCamera(CameraUtils.VR_CAMERA).gameObject.transform;
             handsCamera.enabled = true;
