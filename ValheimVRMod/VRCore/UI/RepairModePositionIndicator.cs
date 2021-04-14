@@ -39,13 +39,15 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return;
             }
+            if (!ensureHammerCam())
+            {
+                return;
+            }
             _hammerCanvasRoot = new GameObject("RepairModeHammerIndicatorRoot");
             GameObject.DontDestroyOnLoad(_hammerCanvasRoot);
             _hammerCanvasRoot.layer = LayerUtils.getWorldspaceUiLayer();
             _hammerCanvas = _hammerCanvasRoot.AddComponent<Canvas>();
             _hammerCanvas.renderMode = RenderMode.WorldSpace;
-            _hammerCam = CameraUtils.getWorldspaceUiCamera();
-            _hammerCanvas.worldCamera = _hammerCam;
             _hammerImageParent = new GameObject("RepairModeHammerIndicatorParent");
             _hammerImageParent.transform.SetParent(_hammerCanvas.GetComponent<RectTransform>(), false);
             _hammerImageParent.transform.localPosition = _hammerCanvas.GetComponent<RectTransform>().rect.center;
@@ -63,17 +65,12 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return;
             }
-            if (!inPlaceMode())
+            if (!inPlaceMode() || hasPlacementGhost() || !ensureHammerCam())
             {
                 _hammerCanvasRoot.SetActive(false);
                 return;
             }
-            if (hasPlacementGhost())
-            {
-                _hammerCanvasRoot.SetActive(false);
-                return;
-            }
-            _hammerCam = CameraUtils.getWorldspaceUiCamera();
+            _hammerCanvas.worldCamera = _hammerCam;
             _hammerCanvasRoot.transform.LookAt(_hammerCam.transform);
             _hammerCanvasRoot.transform.Rotate(new Vector3(0f, 180f, 0f));
             Vector3 position;
@@ -84,6 +81,16 @@ namespace ValheimVRMod.VRCore.UI
             _hammerCanvasRoot.SetActive(true);
         }
 
+        private bool ensureHammerCam()
+        {
+            if (_hammerCam != null)
+            {
+                return true;
+            }
+            _hammerCam = CameraUtils.getWorldspaceUiCamera();
+            return _hammerCam != null;
+        }
+
         private void getPosition(out Vector3 position, out float distance)
         {
             RaycastHit hit;
@@ -92,8 +99,7 @@ namespace ValheimVRMod.VRCore.UI
             float maxDistance = 50f;
             if (!Physics.Raycast(rayStart, rayDirection, out hit, maxDistance, getRayMask()) ||
                 !hit.collider ||
-                hit.collider.attachedRigidbody ||
-                Vector3.Distance(Player.m_localPlayer.m_eye.position , hit.point) > Player.m_localPlayer.m_maxPlaceDistance)
+                hit.collider.attachedRigidbody)
             {
                 position = rayStart + rayDirection * maxDistance;
                 distance = maxDistance;

@@ -28,13 +28,14 @@ namespace ValheimVRMod.VRCore.UI
             ensureHudCamera();
         }
 
-        private void ensureHudCamera()
+        private bool ensureHudCamera()
         {
             if (_hudCamera != null)
             {
-                return;
+                return true;
             }
             _hudCamera = CameraUtils.getWorldspaceUiCamera();
+            return _hudCamera != null;
         }
 
         public void UpdateAll()
@@ -77,7 +78,10 @@ namespace ValheimVRMod.VRCore.UI
 
         public void UpdateHudCoordinates(Character c)
         {
-            ensureHudCamera();
+            if (!ensureHudCamera())
+            {
+                return;
+            }
             HudData data = getEnemyHud(c);
             if (data != null)
             {

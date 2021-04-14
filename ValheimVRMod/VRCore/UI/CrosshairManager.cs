@@ -79,7 +79,7 @@ namespace ValheimVRMod.VRCore.UI
 
         private void maybeCreatePieceHealthObjects()
         {
-            if (_pieceHealthCanvasParent != null && _pieceHealthCanvas != null)
+            if (_pieceHealthCanvasParent != null && _pieceHealthCanvas != null || !ensureCrosshairCamera())
             {
                 return;
             }
@@ -88,18 +88,17 @@ namespace ValheimVRMod.VRCore.UI
             _pieceHealthCanvasParent.layer = LayerUtils.getWorldspaceUiLayer();
             _pieceHealthCanvas = _pieceHealthCanvasParent.AddComponent<Canvas>();
             _pieceHealthCanvas.renderMode = RenderMode.WorldSpace;
-            _pieceHealthCanvas.worldCamera = CameraUtils.getWorldspaceUiCamera();
+            _pieceHealthCanvas.worldCamera = _crosshairCamera;
         }
 
         private void reparentPieceHealthObjects()
         {
             maybeCreatePieceHealthObjects();
-            if (_pieceHealthRoot != null)
+            if (_pieceHealthRoot != null && _pieceHealthCanvas != null)
             {
                 _pieceHealthRoot.transform.SetParent(_pieceHealthCanvas.GetComponent<RectTransform>(), false);
                 _pieceHealthCanvas.transform.localPosition = _pieceHealthCanvas.GetComponent<RectTransform>().rect.center;
             }
-
         }
 
         private bool ensureCrosshairCanvas()
@@ -201,8 +200,7 @@ namespace ValheimVRMod.VRCore.UI
                 return true;
             }
             _crosshairCamera = CameraUtils.getWorldspaceUiCamera();
-            LogDebug("Got Crosshair Camera");
-            return true;
+            return _crosshairCamera != null;
         }
 
         private void configureCrosshairElements(GameObject clone)
