@@ -544,6 +544,8 @@ namespace ValheimVRMod.VRCore
                 // Measure the distance between HMD and desires location, and save it.
                 FIRST_PERSON_INIT_OFFSET = desiredPosition - hmd;
                 headPositionInitialized = true;
+                _instance.transform.localRotation = Quaternion.identity;
+                _instance.transform.rotation = playerCharacter.transform.rotation;
             }
         }
 

@@ -3,6 +3,7 @@ using Valve.VR;
 using ValheimVRMod.Utilities;
 using UnityEngine.EventSystems;
 using Valve.VR.Extras;
+using HarmonyLib;
 
 using static ValheimVRMod.Utilities.LogUtils;
 
@@ -64,6 +65,12 @@ namespace ValheimVRMod.VRCore.UI
 
         private VRGUI_InputModule _inputModule;
 
+        private static float MAX_STATIONARY_HEAD_ANGLE = 75f;
+        private static float MAX_MOBILE_HEAD_ANGLE = 50f;
+        private static float RECENTERED_TOLERANCE = 1f;
+        private static bool isRecentering = false;
+        private static Quaternion lastVrPlayerRotation = Quaternion.identity;
+
         // Native handle to OpenVR overlay
         private ulong _overlay = OpenVR.k_ulOverlayHandleInvalid;
 
@@ -97,6 +104,7 @@ namespace ValheimVRMod.VRCore.UI
                 {
                     RepairModePositionIndicator.instance.Update();
                 }
+                maybeTriggerGuiRecenter();
                 if (USING_OVERLAY)
                 {
                     checkAndSetCurvatureUpdates();
@@ -148,10 +156,36 @@ namespace ValheimVRMod.VRCore.UI
 
         private void updateUiPanelScaleAndPosition()
         {
-            _uiPanel.transform.rotation = VRPlayer.instance.transform.rotation;
-            _uiPanel.transform.position = VRPlayer.instance.transform.position +
-                VRPlayer.instance.transform.forward * VHVRConfig.GetUiPanelDistance() +
-                Vector3.up * VHVRConfig.GetUiPanelVerticalOffset();
+            if (VRPlayer.attachedToPlayer && VRPlayer.inFirstPerson && VHVRConfig.UseLookLocomotion())
+            {
+                var playerInstance = Player.m_localPlayer;
+                Vector3 offsetPosition = new Vector3(0f, VHVRConfig.GetUiPanelVerticalOffset(), VHVRConfig.GetUiPanelDistance());
+                var target = getTargetGuiRotation();
+                var current = getCurrentGuiRotation();
+                LogDebug("Target: " + target.eulerAngles.y + " Current: " + current.eulerAngles.y +
+                    " VRPlayer.rotation: " + VRPlayer.instance.transform.rotation.eulerAngles.y +
+                    " VRPlayer.localRotation: " + VRPlayer.instance.transform.localRotation.eulerAngles.y +
+                    " Player.m_localPlayer.rotation: " + playerInstance.transform.rotation + " Player.m_localPlayer.localRotation: " + playerInstance.transform.localRotation);
+                if (isRecentering)
+                {
+                    Quaternion stepRotation = Quaternion.RotateTowards(current, target, getRecenterStepSize(target, current));
+                    _uiPanel.transform.rotation = stepRotation;
+                    _uiPanel.transform.position = playerInstance.transform.position + stepRotation * offsetPosition;
+                    maybeResetIsRecentering(stepRotation, target);
+                } else
+                {
+                    float angleDelta = VRPlayer.instance.transform.eulerAngles.y - lastVrPlayerRotation.eulerAngles.y;
+                    lastVrPlayerRotation = VRPlayer.instance.transform.rotation;
+                    Quaternion newRotation = current * Quaternion.Euler(0f, angleDelta, 0f);
+                    _uiPanel.transform.rotation = newRotation;
+                    _uiPanel.transform.position = playerInstance.transform.position +  newRotation * offsetPosition;
+                }
+            }
+            else
+            {
+                _uiPanel.transform.rotation = VRPlayer.instance.transform.rotation;
+                _uiPanel.transform.position = VRPlayer.instance.transform.position + VRPlayer.instance.transform.forward * VHVRConfig.GetUiPanelDistance() + Vector3.up * VHVRConfig.GetUiPanelVerticalOffset();
+            }
             float ratio = (float)Screen.width / (float)Screen.height;
             _uiPanel.transform.localScale = new Vector3(VHVRConfig.GetUiPanelSize() * ratio,
                                                         VHVRConfig.GetUiPanelSize(), 1f);
@@ -331,13 +365,117 @@ namespace ValheimVRMod.VRCore.UI
             overlay.SetOverlayAlpha(_overlay, 1.0f);
             if (VRPlayer.instance != null)
             {
-                var offset = new SteamVR_Utils.RigidTransform(
-                    new Vector3(0f, VHVRConfig.GetOverlayVerticalOffset(), VHVRConfig.GetOverlayDistance()),
-                    Quaternion.identity);
+                Vector3 offsetPosition = new Vector3(0f, VHVRConfig.GetOverlayVerticalOffset(), VHVRConfig.GetOverlayDistance());
+                Quaternion offsetRotation = Quaternion.identity;
+                if (VRPlayer.attachedToPlayer && VRPlayer.inFirstPerson && VHVRConfig.UseLookLocomotion())
+                {
+                    Quaternion target = getTargetGuiRotation();
+                    Quaternion currentRotation = getCurrentGuiRotation();
+                    if (isRecentering)
+                    {
+                        Quaternion stepRotation = Quaternion.RotateTowards(currentRotation, target, getRecenterStepSize(target, currentRotation));
+                        offsetPosition = stepRotation * offsetPosition;
+                        offsetRotation = stepRotation;
+                        maybeResetIsRecentering(stepRotation, target);
+                    } else
+                    {
+                        offsetPosition = currentRotation * offsetPosition;
+                        offsetRotation = currentRotation;
+                    }
+                }
+                var offset = new SteamVR_Utils.RigidTransform(offsetPosition, offsetRotation);
                 overlay.SetOverlayWidthInMeters(_overlay, VHVRConfig.GetOverlayWidth());
                 var t = offset.ToHmdMatrix34();
                 overlay.SetOverlayTransformAbsolute(_overlay, SteamVR.settings.trackingSpace, ref t);
             }
+        }
+
+        private void maybeResetIsRecentering(Quaternion updatedAngle, Quaternion target)
+        {
+            if (Mathf.Abs(Quaternion.Angle(updatedAngle, target)) <= RECENTERED_TOLERANCE)
+            {
+                isRecentering = false;
+            }
+        }
+
+        private float getRecenterStepSize(Quaternion target, Quaternion current)
+        {
+            return Mathf.Abs(Quaternion.Angle(target, current)) * .1f;
+        }
+
+        private Quaternion getTargetGuiRotation()
+        {
+            if (Player.m_localPlayer != null)
+            {
+                if (USING_OVERLAY)
+                {
+                    return Player.m_localPlayer.transform.rotation * Quaternion.Inverse(VRPlayer.instance.transform.rotation);
+                } else
+                {
+                    return Player.m_localPlayer.transform.rotation;
+                }
+            } else
+            {
+                return Quaternion.identity;
+            }
+        }
+
+        private Quaternion getCurrentGuiRotation()
+        {
+            if (USING_OVERLAY)
+            {
+                var overlay = OpenVR.Overlay;
+                if (overlay == null)
+                {
+                    return Quaternion.identity;
+                }
+                HmdMatrix34_t currentTransform = new HmdMatrix34_t();
+                var trackingOrigin = SteamVR.settings.trackingSpace;
+                overlay.GetOverlayTransformAbsolute(_overlay, ref trackingOrigin, ref currentTransform);
+                return new SteamVR_Utils.RigidTransform(currentTransform).rot;
+            } else
+            {
+                if (!ensureUIPanel())
+                {
+                    return Quaternion.identity;
+                }
+                return _uiPanel.transform.rotation;
+            }
+        }
+
+        private void maybeTriggerGuiRecenter()
+        {
+            if (!isRecentering && headGuiAngleExceeded())
+            {
+                triggerRecenter();
+            }
+        }
+
+        private bool headGuiAngleExceeded()
+        {
+            var maxAngle = playerIsMoving() ? MAX_MOBILE_HEAD_ANGLE : MAX_STATIONARY_HEAD_ANGLE;
+            bool result = Mathf.Abs(Quaternion.Angle(getCurrentGuiRotation(), getTargetGuiRotation())) > MAX_STATIONARY_HEAD_ANGLE;
+            return result;
+        }
+
+        private bool playerIsMoving()
+        {
+            var player = Player.m_localPlayer;
+            if (player != null)
+            {
+                return (player.IsDebugFlying() ||
+                        player.IsFlying() ||
+                        player.IsRunning() ||
+                        player.IsSwiming() ||
+                        player.IsWalking() ||
+                        player.IsWallRunning());
+            }
+            return false;
+        }
+
+        private void triggerRecenter()
+        {
+            isRecentering = true;
         }
 
         private void onGuiCanvasFound()
