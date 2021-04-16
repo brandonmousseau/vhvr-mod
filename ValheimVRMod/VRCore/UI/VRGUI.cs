@@ -203,6 +203,8 @@ namespace ValheimVRMod.VRCore.UI
             Material mat = VRAssetManager.GetAsset<Material>("vr_panel_unlit");
             _uiPanel.GetComponent<Renderer>().material = mat;
             _uiPanel.GetComponent<Renderer>().material.mainTexture = _guiTexture;
+            _uiPanel.GetComponent<MeshCollider>().convex = true;
+            _uiPanel.GetComponent<MeshCollider>().isTrigger = true;
             return (_uiPanel != null);
         }
 
