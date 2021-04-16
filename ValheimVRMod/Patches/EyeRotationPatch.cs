@@ -2,23 +2,24 @@
 using UnityEngine;
 using ValheimVRMod.VRCore;
 using ValheimVRMod.Utilities;
+using Valve.VR.InteractionSystem;
 using static ValheimVRMod.Utilities.LogUtils;
 
 namespace ValheimVRMod.Patches
 {
-    // If the user has configured to disconnect walk direction from look direction, we
-    // want movement direction tied to the direction the player body is facing
-    // m_lookDir's only is to determine movement direction. In original code it is set to
-    // the forward direction of the eyes, but that would cause movement based on look
-    // direction instead.
-    //
+    // We always want forward movement direction tied to the direction
+    // the player body is facing. m_lookDir's only is to determine movement direction.
     // So we'll patch it here to set it to the forward direction of the Player
     // game object.
     //
     // If the player prefers to keep look direction and walk direction tied together,
     // we want to rotate the look yaw by the amount the head set has rotated since
     // the last update (so total yaw will be headset rotation + mouse/joystick rotation).
-    // The player character should be rotated to whatever the lookYaw is.
+    // The player character should be rotated to whatever the lookYaw is. We need to
+    // rotate the VRPlayer localRotation in the opposite direction by the same amount
+    // to offset the affect updating the yaw has on rotating the player model, which
+    // would create a positive feedback loop and constantly create a rotation if your
+    // head isn't exactly centered.
     //
     [HarmonyPatch(typeof(Player), "SetMouseLook")]
     class Player_SetMouseLook_Patch
@@ -28,12 +29,12 @@ namespace ValheimVRMod.Patches
 
         public static void Prefix(Player __instance, ref Quaternion ___m_lookYaw)
         {
-            if (__instance != Player.m_localPlayer || !VRPlayer.attachedToPlayer || !VHVRConfig.UseLookLocomotion())
+            if (__instance != Player.m_localPlayer || !VRPlayer.attachedToPlayer || !VRPlayer.inFirstPerson || !VHVRConfig.UseLookLocomotion())
             {
                 return;
             }
             // Calculate the current head local rotation
-            float currentHeadLocalRotation = GameObject.Find(CameraUtils.VR_CAMERA).transform.localRotation.eulerAngles.y;
+            float currentHeadLocalRotation = VRPlayer.instance.GetComponent<Valve.VR.InteractionSystem.Player>().hmdTransform.localRotation.eulerAngles.y;
             // Find the difference between the current rotation and previous rotation
             float difference = currentHeadLocalRotation - previousHeadLocalRotation;
             // Save the current rotation for use in next iteration
@@ -78,15 +79,16 @@ namespace ValheimVRMod.Patches
     {
         public static void Postfix(Player __instance, Quaternion ___m_lookYaw, float ___m_lookPitch)
         {
-            if (__instance != Player.m_localPlayer)
+            if (__instance != Player.m_localPlayer || VRPlayer.instance == null ||
+                VRPlayer.instance.GetComponent<Valve.VR.InteractionSystem.Player>() == null)
             {
                 return;
             }
-            GameObject vrCamObj = GameObject.Find(CameraUtils.VR_CAMERA);
-            if (VRPlayer.attachedToPlayer && vrCamObj != null)
+            var hmdTransform = VRPlayer.instance.GetComponent<Valve.VR.InteractionSystem.Player>().hmdTransform;
+            if (VRPlayer.attachedToPlayer && hmdTransform != null)
             {
                 // Set the eye rotation equal to HMD rotation
-                __instance.m_eye.rotation = vrCamObj.transform.rotation;
+                __instance.m_eye.rotation = hmdTransform.transform.rotation;
                 // Update body position to what eye rotation used to be, but only horizontal plane
                 __instance.transform.rotation = ___m_lookYaw;
             } else if (!VRPlayer.attachedToPlayer)

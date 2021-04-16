@@ -1,9 +1,8 @@
 ﻿using UnityEngine;
-using Valve.VR;
-using ValheimVRMod.Utilities;
 using UnityEngine.EventSystems;
+using ValheimVRMod.Utilities;
+using Valve.VR;
 using Valve.VR.Extras;
-using HarmonyLib;
 
 using static ValheimVRMod.Utilities.LogUtils;
 
@@ -49,10 +48,9 @@ namespace ValheimVRMod.VRCore.UI
         private static readonly string OVERLAY_KEY = "VALHEIM_VR_MOD_OVERLAY";
         private static readonly string OVERLAY_NAME = "Valheim VR";
         private static readonly string UI_PANEL_NAME = "VRUIPanel";
-
-        private float MAX_STATIONARY_HEAD_ANGLE = 75f;
-        private float MAX_MOBILE_HEAD_ANGLE = 50f;
-        private float RECENTERED_TOLERANCE = 1f;
+        // The angle difference that is acceptable for the GUI being
+        // considered to be "centered"
+        private static readonly float RECENTERED_TOLERANCE = 1f;
 
         private float OVERLAY_CURVATURE = 0.25f; /* 0f - 1f */
         private bool USING_OVERLAY = true;
@@ -69,7 +67,8 @@ namespace ValheimVRMod.VRCore.UI
 
         private VRGUI_InputModule _inputModule;
 
-        private bool isRecentering = false;
+        private static bool isRecentering = false;
+        private bool movingLastFrame = false;
         private Quaternion lastVrPlayerRotation = Quaternion.identity;
 
         // Native handle to OpenVR overlay
@@ -152,7 +151,7 @@ namespace ValheimVRMod.VRCore.UI
         private void updateUiPanelScaleAndPosition()
         {
             var offsetPosition = new Vector3(0f, VHVRConfig.GetUiPanelVerticalOffset(), VHVRConfig.GetUiPanelDistance());
-            if (VRPlayer.attachedToPlayer && VRPlayer.inFirstPerson && VHVRConfig.UseLookLocomotion())
+            if (useDynamicallyPositionedGui())
             {
                 var playerInstance = Player.m_localPlayer;
                 var currentRotation = getCurrentGuiRotation();
@@ -359,42 +358,62 @@ namespace ValheimVRMod.VRCore.UI
             tex.eColorSpace = EColorSpace.Auto;
             overlay.SetOverlayTexture(_overlay, ref tex);
             overlay.SetOverlayAlpha(_overlay, 1.0f);
-            if (VRPlayer.instance != null)
+            updateOverlayGuiSizeAndPosition();
+        }
+
+        private void updateOverlayGuiSizeAndPosition()
+        {
+            var overlay = OpenVR.Overlay;
+            if (overlay == null)
             {
-                var offsetPosition = new Vector3(0f, VHVRConfig.GetOverlayVerticalOffset(), VHVRConfig.GetOverlayDistance());
-                var offsetRotation = Quaternion.identity;
-                if (VRPlayer.attachedToPlayer && VRPlayer.inFirstPerson && VHVRConfig.UseLookLocomotion())
-                {
-                    var currentRotation = getCurrentGuiRotation();
-                    if (isRecentering)
-                    {
-                        // We are currently recentering, so calculate a new rotation a step towards the target
-                        // rotation and reposition the GUI to that rotation. If the new rotation is close
-                        // enough to the target, then end recentering for next frame.
-                        var targetRotation = getTargetGuiRotation();
-                        var stepRotation = Quaternion.RotateTowards(currentRotation, targetRotation, getRecenterStepSize(targetRotation, currentRotation));
-                        offsetPosition = stepRotation * offsetPosition;
-                        offsetRotation = stepRotation;
-                        maybeResetIsRecentering(stepRotation, targetRotation);
-                    } else
-                    {
-                        // Not recentering, so leave the GUI position where it is at
-                        offsetPosition = currentRotation * offsetPosition;
-                        offsetRotation = currentRotation;
-                    }
-                }
-                var offset = new SteamVR_Utils.RigidTransform(offsetPosition, offsetRotation);
-                overlay.SetOverlayWidthInMeters(_overlay, VHVRConfig.GetOverlayWidth());
-                var t = offset.ToHmdMatrix34();
-                overlay.SetOverlayTransformAbsolute(_overlay, SteamVR.settings.trackingSpace, ref t);
+                return;
             }
+            var offsetPosition = new Vector3(0f, VHVRConfig.GetOverlayVerticalOffset(), VHVRConfig.GetOverlayDistance());
+            var offsetRotation = Quaternion.identity;
+            if (useDynamicallyPositionedGui())
+            {
+                var currentRotation = getCurrentGuiRotation();
+                if (isRecentering)
+                {
+                    // We are currently recentering, so calculate a new rotation a step towards the target
+                    // rotation and reposition the GUI to that rotation. If the new rotation is close
+                    // enough to the target, then end recentering for next frame.
+                    var targetRotation = getTargetGuiRotation();
+                    var stepRotation = Quaternion.RotateTowards(currentRotation, targetRotation, getRecenterStepSize(targetRotation, currentRotation));
+                    offsetPosition = stepRotation * offsetPosition;
+                    offsetRotation = stepRotation;
+                    maybeResetIsRecentering(stepRotation, targetRotation);
+                }
+                else
+                {
+                    // Not recentering, so leave the GUI position where it is at
+                    offsetPosition = currentRotation * offsetPosition;
+                    offsetRotation = currentRotation;
+                }
+            }
+            var offset = new SteamVR_Utils.RigidTransform(offsetPosition, offsetRotation);
+            overlay.SetOverlayWidthInMeters(_overlay, VHVRConfig.GetOverlayWidth());
+            var t = offset.ToHmdMatrix34();
+            overlay.SetOverlayTransformAbsolute(_overlay, SteamVR.settings.trackingSpace, ref t);
+        }
+
+        private bool useDynamicallyPositionedGui()
+        {
+            return VRPlayer.attachedToPlayer && VRPlayer.inFirstPerson && VHVRConfig.UseLookLocomotion();
         }
 
         private void maybeTriggerGuiRecenter()
         {
-            if (!isRecentering && headGuiAngleExceeded())
+            if (isRecentering)
             {
-                triggerRecenter();
+                return;
+            }
+            bool movingThisFrame = VRPlayer.isMoving;
+            bool startedMovingThisFrame = movingThisFrame && !movingLastFrame;
+            movingLastFrame = movingThisFrame;
+            if ((startedMovingThisFrame && VHVRConfig.RecenterGuiOnMove()) || headGuiAngleExceeded(movingThisFrame))
+            {
+                triggerGuiRecenter();
             }
         }
 
@@ -408,6 +427,8 @@ namespace ValheimVRMod.VRCore.UI
 
         private float getRecenterStepSize(Quaternion target, Quaternion current)
         {
+            // Scale the step size by the angle difference between the
+            // target rotation and current rotation
             return Mathf.Abs(Quaternion.Angle(target, current)) * .1f;
         }
 
@@ -455,29 +476,13 @@ namespace ValheimVRMod.VRCore.UI
             }
         }
 
-        private bool headGuiAngleExceeded()
+        private bool headGuiAngleExceeded(bool moving)
         {
-            var maxAngle = playerIsMoving() ? MAX_MOBILE_HEAD_ANGLE : MAX_STATIONARY_HEAD_ANGLE;
-            bool result = Mathf.Abs(Quaternion.Angle(getCurrentGuiRotation(), getTargetGuiRotation())) > maxAngle;
-            return result;
+            var maxAngle = moving ? VHVRConfig.MobileGuiRecenterAngle() : VHVRConfig.StationaryGuiRecenterAngle();
+            return Mathf.Abs(Quaternion.Angle(getCurrentGuiRotation(), getTargetGuiRotation())) > maxAngle;
         }
 
-        private bool playerIsMoving()
-        {
-            var player = Player.m_localPlayer;
-            if (player != null)
-            {
-                return (player.IsDebugFlying() ||
-                        player.IsFlying() ||
-                        player.IsRunning() ||
-                        player.IsSwiming() ||
-                        player.IsWalking() ||
-                        player.IsWallRunning());
-            }
-            return false;
-        }
-
-        private void triggerRecenter()
+        public static void triggerGuiRecenter()
         {
             isRecentering = true;
         }

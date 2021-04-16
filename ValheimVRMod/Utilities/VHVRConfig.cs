@@ -38,6 +38,9 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> showRepairHammer;
         private static ConfigEntry<bool> showEnemyHuds;
         private static ConfigEntry<float> enemyHudScale;
+        private static ConfigEntry<float> stationaryGuiRecenterAngle;
+        private static ConfigEntry<float> mobileGuiRecenterAngle;
+        private static ConfigEntry<bool> recenterGuiOnMove;
 
         // Controls Settings
         private static ConfigEntry<bool> enableHands;
@@ -186,6 +189,22 @@ namespace ValheimVRMod.Utilities
                                          1.0f,
                                          new ConfigDescription("Scalar multiplier to adjust the size of enemy huds to your preference. 1.0 is probably fine.",
                                          new AcceptableValueRange<float>(0.5f, 3f)));
+            stationaryGuiRecenterAngle = config.Bind("UI",
+                                                     "StationaryGuiRecenterAngle",
+                                                     75f,
+                                                     new ConfigDescription("Only used when UseLookLocomotion is true. This is the angle away from the center of the GUI that will trigger the GUI to" +
+                                                     " recenter on your current look direction while stationary.",
+                                                     new AcceptableValueRange<float>(25f, 100f)));
+            mobileGuiRecenterAngle = config.Bind("UI",
+                                     "StationaryGuiRecenterAngle",
+                                     50f,
+                                     new ConfigDescription("Only used when UseLookLocomotion is true. This is the angle away from the center of the GUI that will trigger the GUI to" +
+                                     " recenter on your current look direction while moving.",
+                                     new AcceptableValueRange<float>(25f, 100f)));
+            recenterGuiOnMove = config.Bind("UI",
+                                            "RecenterGuiOnMove",
+                                            true,
+                                            "Only used when UseLookLocomotion is true. This will cause the GUI to recenter to your current look direction when you first start moving.");
         }
 
         private static void InitializeControlsSettings(ConfigFile config)
@@ -459,6 +478,21 @@ namespace ValheimVRMod.Utilities
         public static float EnemyHudScale()
         {
             return enemyHudScale.Value;
+        }
+
+        public static float MobileGuiRecenterAngle()
+        {
+            return mobileGuiRecenterAngle.Value;
+        }
+
+        public static float StationaryGuiRecenterAngle()
+        {
+            return stationaryGuiRecenterAngle.Value;
+        }
+
+        public static bool RecenterGuiOnMove()
+        {
+            return recenterGuiOnMove.Value;
         }
 
     }

@@ -7,7 +7,6 @@ using UnityEngine.PostProcessing;
 using UnityEngine.SceneManagement;
 using UnityStandardAssets.ImageEffects;
 using ValheimVRMod.Utilities;
-using ValheimVRMod.VRCore.UI;
 using Valve.VR.Extras;
 using Valve.VR.InteractionSystem;
 
@@ -85,6 +84,18 @@ namespace ValheimVRMod.VRCore
         public static bool inFirstPerson { get
             {
                 return (_headZoomLevel == HeadZoomLevel.FirstPerson) && attachedToPlayer;
+            }
+        }
+
+        public static bool isMoving
+        {
+            get
+            {
+                if (Player.m_localPlayer != null && attachedToPlayer)
+                {
+                    return Player.m_localPlayer.GetVelocity().magnitude > 0.5f;
+                }
+                return false;
             }
         }
 
@@ -544,8 +555,7 @@ namespace ValheimVRMod.VRCore
                 // Measure the distance between HMD and desires location, and save it.
                 FIRST_PERSON_INIT_OFFSET = desiredPosition - hmd;
                 headPositionInitialized = true;
-                _instance.transform.localRotation = Quaternion.identity;
-                _instance.transform.rotation = playerCharacter.transform.rotation;
+                //_instance.transform.localRotation = Quaternion.identity;
             }
         }
 
