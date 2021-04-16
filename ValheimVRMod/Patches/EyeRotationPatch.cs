@@ -27,14 +27,20 @@ namespace ValheimVRMod.Patches
 
         private static float previousHeadLocalRotation = 0f;
 
-        public static void Prefix(Player __instance, ref Quaternion ___m_lookYaw)
+        public static void Prefix(Player __instance, ref Quaternion ___m_lookYaw, CraftingStation ___m_currentStation)
         {
-            if (__instance != Player.m_localPlayer || !VRPlayer.attachedToPlayer || !VRPlayer.inFirstPerson || !VHVRConfig.UseLookLocomotion())
+            if (__instance != Player.m_localPlayer ||
+                !VRPlayer.attachedToPlayer ||
+                !VRPlayer.inFirstPerson ||
+                !VHVRConfig.UseLookLocomotion() ||
+                __instance.IsAttached() ||  /* Not attached to something, like boat controls */
+                ___m_currentStation != null /* Not Crafting */)
             {
                 return;
             }
             // Calculate the current head local rotation
-            float currentHeadLocalRotation = VRPlayer.instance.GetComponent<Valve.VR.InteractionSystem.Player>().hmdTransform.localRotation.eulerAngles.y;
+            float currentHeadLocalRotation =
+                VRPlayer.instance.GetComponent<Valve.VR.InteractionSystem.Player>().hmdTransform.localRotation.eulerAngles.y;
             // Find the difference between the current rotation and previous rotation
             float difference = currentHeadLocalRotation - previousHeadLocalRotation;
             // Save the current rotation for use in next iteration
@@ -48,7 +54,7 @@ namespace ValheimVRMod.Patches
             VRPlayer.instance.transform.localRotation = localRot;
         }
 
-        public static void Postfix(Player __instance, ref Vector3 ___m_lookDir, Quaternion ___m_lookYaw)
+        public static void Postfix(Player __instance, ref Vector3 ___m_lookDir)
         {
             if (__instance != Player.m_localPlayer || !VRPlayer.attachedToPlayer)
             {
@@ -77,20 +83,17 @@ namespace ValheimVRMod.Patches
     [HarmonyPatch(typeof(Player), "UpdateEyeRotation")]
     class Player_UpdateEyeRotation_Patch
     {
-        public static void Postfix(Player __instance, Quaternion ___m_lookYaw, float ___m_lookPitch)
+        public static void Postfix(Player __instance, Quaternion ___m_lookYaw)
         {
-            if (__instance != Player.m_localPlayer || VRPlayer.instance == null ||
-                VRPlayer.instance.GetComponent<Valve.VR.InteractionSystem.Player>() == null)
+            if (__instance != Player.m_localPlayer || VRPlayer.instance == null)
             {
                 return;
             }
-            var hmdTransform = VRPlayer.instance.GetComponent<Valve.VR.InteractionSystem.Player>().hmdTransform;
-            if (VRPlayer.attachedToPlayer && hmdTransform != null)
+            if (VRPlayer.attachedToPlayer)
             {
+                var hmdTransform = VRPlayer.instance.GetComponent<Valve.VR.InteractionSystem.Player>().hmdTransform;
                 // Set the eye rotation equal to HMD rotation
-                __instance.m_eye.rotation = hmdTransform.transform.rotation;
-                // Update body position to what eye rotation used to be, but only horizontal plane
-                __instance.transform.rotation = ___m_lookYaw;
+                __instance.m_eye.rotation = hmdTransform.rotation;
             } else if (!VRPlayer.attachedToPlayer)
             {
                 // We still want to restrict camera movement via the mouse to the
@@ -99,6 +102,51 @@ namespace ValheimVRMod.Patches
                 __instance.m_eye.rotation = ___m_lookYaw;
             }
         }
+    }
+
+    // Force the Player body rotatoin to always equal the yaw.
+    class Player_Rotation_Patch
+    {
+
+        [HarmonyPatch(typeof(Player), "Update")]
+        class Player_Update_RotationPatch
+        {
+            public static void Postfix(Player __instance)
+            {
+                if (__instance != Player.m_localPlayer)
+                {
+                    return;
+                }
+                __instance.FaceLookDirection();
+            }
+        }
+
+        [HarmonyPatch(typeof(Player), "LateUpdate")]
+        class Player_LateUpdate_RotationPatch
+        {
+            public static void Postfix(Player __instance)
+            {
+                if (__instance != Player.m_localPlayer)
+                {
+                    return;
+                }
+                __instance.FaceLookDirection();
+            }
+        }
+
+        [HarmonyPatch(typeof(Player), "FixedUpdate")]
+        class Player_FixedUpdate_RotationPatch
+        {
+            public static void Postfix(Player __instance)
+            {
+                if (__instance != Player.m_localPlayer)
+                {
+                    return;
+                }
+                __instance.FaceLookDirection();
+            }
+        }
+
     }
 
 }
