@@ -539,5 +539,21 @@ namespace ValheimVRMod.Patches
 
     }
 
+    // Minimap player marker should face the direction the player body
+    // is facing, which will always match the actual forward movement
+    // direction, rather than the direction the player is looking.
+    [HarmonyPatch(typeof(Minimap), "UpdatePlayerMarker")]
+    class Minimap_UpdatePlayerMarker_RotationPatch
+    {
+        public static void Prefix(Player player, ref Quaternion playerRot)
+        {
+            if (player != Player.m_localPlayer)
+            {
+                return;
+            }
+            playerRot = player.transform.rotation;
+        }
+    }
+
 
 }
