@@ -50,18 +50,13 @@ namespace ValheimVRMod.VRCore
 
         public static bool InitializeSteamVR()
         {
-            LogInfo("initializing SteamVR...");
-            // Creating an instance of SteamVR_Behavior kicks off a bunch of
-            // initialization, including creating the [SteamVR] game object
-            LogDebug("Calling SteamVR.Initialize()");
+            LogInfo("Initializing SteamVR...");
             SteamVR.Initialize();
-            LogDebug("SteamVR.initializedState == " + SteamVR.initializedState);
             if (!(SteamVR.initializedState == SteamVR.InitializedStates.InitializeSuccess))
             {
                 LogError("Problem Initializing SteamVR");
                 return false;
             }
-            LogDebug("Calling SteamVR_Input.Initialize()");
             if (!SteamVR_Input.initialized)
             {
                 LogError("Problem Initializing SteamVR_Input");

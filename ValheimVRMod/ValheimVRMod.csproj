@@ -282,6 +282,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Patches\ControlPatches.cs" />
     <Compile Include="Patches\HarmonyPatcher.cs" />
     <Compile Include="Patches\EyeRotationPatch.cs" />
     <Compile Include="Patches\Misc.cs" />
@@ -296,6 +297,7 @@
     <Compile Include="VRCore\UI\PlaceModeRayVectorProvider.cs" />
     <Compile Include="VRCore\UI\RepairModePositionIndicator.cs" />
     <Compile Include="VRCore\UI\SoftwareCursor.cs" />
+    <Compile Include="VRCore\UI\VRControls.cs" />
     <Compile Include="VRCore\UI\VRGUI.cs" />
     <Compile Include="VRCore\VRManager.cs" />
     <Compile Include="ValheimVRMod.cs" />

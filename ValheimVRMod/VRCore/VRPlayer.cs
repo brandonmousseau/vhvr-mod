@@ -7,6 +7,7 @@ using UnityEngine.PostProcessing;
 using UnityEngine.SceneManagement;
 using UnityStandardAssets.ImageEffects;
 using ValheimVRMod.Utilities;
+using ValheimVRMod.VRCore.UI;
 using Valve.VR.Extras;
 using Valve.VR.InteractionSystem;
 
@@ -54,11 +55,19 @@ namespace ValheimVRMod.VRCore
         private Camera _handsCam;
         private Camera _skyboxCam;
 
-        private Hand _leftHand;
+        private static Hand _leftHand;
         private static SteamVR_LaserPointer _leftPointer;
-        private Hand _rightHand;
+        private static Hand _rightHand;
         private static SteamVR_LaserPointer _rightPointer;
         private string _preferredHand;
+
+        public static bool handsActive
+        {
+            get
+            {
+                return handIsActive(_leftHand, _leftPointer) && handIsActive(_rightHand, _rightPointer);
+            }
+        }
 
         public static SteamVR_LaserPointer leftPointer { get { return _leftPointer;} }
         public static SteamVR_LaserPointer rightPointer { get { return _rightPointer; } }
@@ -129,6 +138,7 @@ namespace ValheimVRMod.VRCore
             FIRST_PERSON_OFFSET = Vector3.zero;
             THIRD_PERSON_CONFIG_OFFSET = VHVRConfig.GetThirdPersonHeadOffset();
             ensurePlayerInstance();
+            gameObject.AddComponent<VRControls>();
         }
 
         void Update()
@@ -280,18 +290,20 @@ namespace ValheimVRMod.VRCore
                 return;
             }
             p.enabled = active && shouldLaserPointersBeActive();
-            p.setVisible(active && shouldLaserPointersBeActive());
+            // Don't need visual indicator in place mode since hammer icon is rendered.
+            bool isInPlaceMode = (getPlayerCharacter() != null) && getPlayerCharacter().InPlaceMode();
+            p.setVisible(p.enabled && !isInPlaceMode);
         }
 
         private bool shouldLaserPointersBeActive()
         {
-            return VHVRConfig.HandsEnabled() &&
-                (Cursor.visible || (getPlayerCharacter() != null && getPlayerCharacter().InPlaceMode()));
+            bool isInPlaceMode = (getPlayerCharacter() != null) && getPlayerCharacter().InPlaceMode();
+            return VHVRConfig.HandsEnabled() && (Cursor.visible || isInPlaceMode);
         }
 
         // Returns true if both the hand and pointer are not null
         // and the hand is active
-        private bool handIsActive(Hand h, SteamVR_LaserPointer p)
+        private static bool handIsActive(Hand h, SteamVR_LaserPointer p)
         {
             if (h == null || p == null)
             {

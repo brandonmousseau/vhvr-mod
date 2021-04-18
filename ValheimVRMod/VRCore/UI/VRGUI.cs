@@ -219,7 +219,6 @@ namespace ValheimVRMod.VRCore.UI
                 _leftPointer = VRPlayer.leftPointer;
                 if (_leftPointer != null)
                 {
-                    _leftPointer.PointerClick += OnPointerClick;
                     _leftPointer.PointerTracking += OnPointerTracking;
                 }
             }
@@ -228,7 +227,6 @@ namespace ValheimVRMod.VRCore.UI
                 _rightPointer = VRPlayer.rightPointer;
                 if (_rightPointer != null)
                 {
-                    _rightPointer.PointerClick += OnPointerClick;
                     _rightPointer.PointerTracking += OnPointerTracking;
                 }
             }
@@ -249,9 +247,13 @@ namespace ValheimVRMod.VRCore.UI
         public void OnPointerClick(object p, PointerEventArgs e)
         {
             if (isUiPanel(e.target))
-            {
                 _inputModule.SimulateClick();
-            }
+        }
+
+        public void OnPointerRightClick(object p, PointerEventArgs e)
+        {
+            if (isUiPanel(e.target))
+                _inputModule.SimulateRightClick();
         }
 
         public void OnPointerTracking(object p, PointerEventArgs e)
@@ -260,6 +262,8 @@ namespace ValheimVRMod.VRCore.UI
             {
                 SoftwareCursor.simulatedMousePosition =
                     convertLocalUiPanelCoordinatesToCursorCoordinates(e.target.InverseTransformPoint(e.position));
+                _inputModule.UpdateLeftButtonState(e.buttonStateLeft);
+                _inputModule.UpdateRightButtonState(e.buttonStateRight);
             }
         }
 
@@ -443,7 +447,8 @@ namespace ValheimVRMod.VRCore.UI
                     return Player.m_localPlayer.transform.rotation * Quaternion.Inverse(VRPlayer.instance.transform.rotation);
                 } else
                 {
-                    return Player.m_localPlayer.transform.rotation;
+                    float hmdAngle = VRPlayer.instance.GetComponent<Valve.VR.InteractionSystem.Player>().hmdTransform.rotation.eulerAngles.y;
+                    return Quaternion.Euler(0f, hmdAngle, 0f);
                 }
             } else
             {
@@ -536,16 +541,75 @@ namespace ValheimVRMod.VRCore.UI
 
         class VRGUI_InputModule : StandaloneInputModule
         {
-            public void SimulateClick()
+            bool lastLeftState = false;
+            bool lastRightState = false;
+
+            private void SimulateButtonState(PointerEventData.FramePressState state, PointerEventData.InputButton button)
             {
                 // Use the existing EventSystems input module input as the
                 // input for our custom input module.
                 m_InputOverride = EventSystem.current.currentInputModule.input;
                 MouseState mousePointerEventData = GetMousePointerEventData();
-                MouseButtonEventData buttonState = mousePointerEventData.GetButtonState(PointerEventData.InputButton.Left).eventData;
-                // Set the mouse button state to "PressedAndReleased" to indicate a mouse click occurred
-                buttonState.buttonState = PointerEventData.FramePressState.PressedAndReleased;
+                // Retrieve button state data for intended button
+                MouseButtonEventData buttonState = mousePointerEventData.GetButtonState(button).eventData;
+                // Set the mouse button state to required state
+                buttonState.buttonState = state;
                 ProcessMousePress(buttonState);
+            }
+
+            public void SimulateClick()
+            {
+                SimulateButtonState(PointerEventData.FramePressState.PressedAndReleased, PointerEventData.InputButton.Left);
+            }
+
+            public void SimulateRightClick()
+            {
+                SimulateButtonState(PointerEventData.FramePressState.PressedAndReleased, PointerEventData.InputButton.Right);
+            }
+
+            public void SimulateLeftMouseHold()
+            {
+                SimulateButtonState(PointerEventData.FramePressState.Pressed, PointerEventData.InputButton.Left);
+            }
+
+            public void SimulateRightMouseHold()
+            {
+                SimulateButtonState(PointerEventData.FramePressState.Pressed, PointerEventData.InputButton.Right);
+            }
+
+            public void UpdateLeftButtonState(bool state)
+            {
+                var buttonState = PointerEventData.FramePressState.NotChanged;
+                if (lastLeftState != state)
+                {
+                    if (state)
+                    {
+                        buttonState = PointerEventData.FramePressState.Pressed;
+                    } else
+                    {
+                        buttonState = PointerEventData.FramePressState.Released;
+                    }
+                }
+                lastLeftState = state;
+                SimulateButtonState(buttonState, PointerEventData.InputButton.Left);
+            }
+
+            public void UpdateRightButtonState(bool state)
+            {
+                var buttonState = PointerEventData.FramePressState.NotChanged;
+                if (lastRightState != state)
+                {
+                    if (state)
+                    {
+                        buttonState = PointerEventData.FramePressState.Pressed;
+                    }
+                    else
+                    {
+                        buttonState = PointerEventData.FramePressState.Released;
+                    }
+                }
+                lastRightState = state;
+                SimulateButtonState(buttonState, PointerEventData.InputButton.Right);
             }
         }
 
