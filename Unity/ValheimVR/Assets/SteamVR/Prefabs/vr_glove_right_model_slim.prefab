@@ -272,7 +272,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   skeletonAction:
-    actionPath: 
+    actionPath: /actions/Valheim/in/SkeletonRightHand
     needsReinit: 0
   inputSource: 2
   rangeOfMotion: 1
