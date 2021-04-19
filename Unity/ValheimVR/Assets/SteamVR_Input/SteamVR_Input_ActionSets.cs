@@ -21,6 +21,8 @@ namespace Valve.VR
         
         private static SteamVR_Input_ActionSet_Valheim p_Valheim;
         
+        private static SteamVR_Input_ActionSet_LaserPointers p_LaserPointers;
+        
         public static SteamVR_Input_ActionSet_default _default
         {
             get
@@ -37,13 +39,23 @@ namespace Valve.VR
             }
         }
         
+        public static SteamVR_Input_ActionSet_LaserPointers LaserPointers
+        {
+            get
+            {
+                return SteamVR_Actions.p_LaserPointers.GetCopy<SteamVR_Input_ActionSet_LaserPointers>();
+            }
+        }
+        
         private static void StartPreInitActionSets()
         {
             SteamVR_Actions.p__default = ((SteamVR_Input_ActionSet_default)(SteamVR_ActionSet.Create<SteamVR_Input_ActionSet_default>("/actions/default")));
             SteamVR_Actions.p_Valheim = ((SteamVR_Input_ActionSet_Valheim)(SteamVR_ActionSet.Create<SteamVR_Input_ActionSet_Valheim>("/actions/Valheim")));
+            SteamVR_Actions.p_LaserPointers = ((SteamVR_Input_ActionSet_LaserPointers)(SteamVR_ActionSet.Create<SteamVR_Input_ActionSet_LaserPointers>("/actions/LaserPointers")));
             Valve.VR.SteamVR_Input.actionSets = new Valve.VR.SteamVR_ActionSet[] {
                     SteamVR_Actions._default,
-                    SteamVR_Actions.Valheim};
+                    SteamVR_Actions.Valheim,
+                    SteamVR_Actions.LaserPointers};
         }
     }
 }

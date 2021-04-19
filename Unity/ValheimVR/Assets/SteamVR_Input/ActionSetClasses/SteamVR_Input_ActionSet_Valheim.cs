@@ -41,27 +41,115 @@ namespace Valve.VR
             }
         }
         
-        public virtual SteamVR_Action_Skeleton SkeletonLeftHand
-        {
-            get
-            {
-                return SteamVR_Actions.valheim_SkeletonLeftHand;
-            }
-        }
-        
-        public virtual SteamVR_Action_Skeleton SkeletonRightHand
-        {
-            get
-            {
-                return SteamVR_Actions.valheim_SkeletonRightHand;
-            }
-        }
-        
         public virtual SteamVR_Action_Pose Pose
         {
             get
             {
                 return SteamVR_Actions.valheim_Pose;
+            }
+        }
+        
+        public virtual SteamVR_Action_Boolean Attack
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_Attack;
+            }
+        }
+        
+        public virtual SteamVR_Action_Boolean SecondaryAttack
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_SecondaryAttack;
+            }
+        }
+        
+        public virtual SteamVR_Action_Boolean Jump
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_Jump;
+            }
+        }
+        
+        public virtual SteamVR_Action_Boolean Block
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_Block;
+            }
+        }
+        
+        public virtual SteamVR_Action_Boolean Crouch
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_Crouch;
+            }
+        }
+        
+        public virtual SteamVR_Action_Boolean Run
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_Run;
+            }
+        }
+        
+        public virtual SteamVR_Action_Boolean Use
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_Use;
+            }
+        }
+        
+        public virtual SteamVR_Action_Boolean Hide
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_Hide;
+            }
+        }
+        
+        public virtual SteamVR_Action_Boolean Sit
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_Sit;
+            }
+        }
+        
+        public virtual SteamVR_Action_Boolean GPower
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_GPower;
+            }
+        }
+        
+        public virtual SteamVR_Action_Boolean HotbarDown
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_HotbarDown;
+            }
+        }
+        
+        public virtual SteamVR_Action_Boolean HotbarUp
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_HotbarUp;
+            }
+        }
+        
+        public virtual SteamVR_Action_Vector2 PitchAndYaw
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_PitchAndYaw;
             }
         }
     }

@@ -213,6 +213,64 @@
             }
          ]
       },
+      "/actions/laserpointers" : {
+         "sources" : [
+            {
+               "inputs" : {
+                  "scroll" : {
+                     "output" : "/actions/laserpointers/in/scroll"
+                  }
+               },
+               "mode" : "scroll",
+               "path" : "/user/hand/left/input/trackpad"
+            },
+            {
+               "inputs" : {
+                  "scroll" : {
+                     "output" : "/actions/laserpointers/in/scroll"
+                  }
+               },
+               "mode" : "scroll",
+               "path" : "/user/hand/right/input/trackpad"
+            },
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/laserpointers/in/rightclick"
+                  }
+               },
+               "mode" : "button",
+               "path" : "/user/hand/left/input/b"
+            },
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/laserpointers/in/rightclick"
+                  }
+               },
+               "mode" : "button",
+               "path" : "/user/hand/right/input/b"
+            },
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/laserpointers/in/leftclick"
+                  }
+               },
+               "mode" : "button",
+               "path" : "/user/hand/left/input/a"
+            },
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/laserpointers/in/leftclick"
+                  }
+               },
+               "mode" : "button",
+               "path" : "/user/hand/right/input/a"
+            }
+         ]
+      },
       "/actions/platformer" : {
          "chords" : [],
          "haptics" : [],
@@ -227,8 +285,8 @@
                "path" : "/user/hand/left/pose/raw"
             },
             {
-               "output" : "/actions/valheim/in/pose",
-               "path" : "/user/hand/right/pose/raw"
+               "output" : "none",
+               "path" : "/user/hand/left/pose/gdc2015"
             }
          ],
          "skeleton" : [
@@ -245,11 +303,32 @@
             {
                "inputs" : {
                   "click" : {
-                     "output" : "/actions/valheim/in/toggleinventory"
+                     "output" : "/actions/valheim/in/run"
+                  },
+                  "position" : {
+                     "output" : "/actions/valheim/in/walk"
+                  }
+               },
+               "mode" : "joystick",
+               "path" : "/user/hand/left/input/thumbstick"
+            },
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/valheim/in/attack"
                   }
                },
                "mode" : "button",
-               "path" : "/user/hand/left/input/a"
+               "path" : "/user/hand/right/input/trigger"
+            },
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/valheim/in/secondaryattack"
+                  }
+               },
+               "mode" : "button",
+               "path" : "/user/hand/left/input/trigger"
             },
             {
                "inputs" : {
@@ -258,16 +337,85 @@
                   }
                },
                "mode" : "button",
+               "path" : "/user/hand/left/input/trackpad"
+            },
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/valheim/in/toggleinventory"
+                  }
+               },
+               "mode" : "button",
+               "path" : "/user/hand/right/input/trackpad"
+            },
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/valheim/in/jump"
+                  }
+               },
+               "mode" : "button",
+               "path" : "/user/hand/left/input/a"
+            },
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/valheim/in/block"
+                  }
+               },
+               "mode" : "button",
                "path" : "/user/hand/left/input/b"
             },
             {
                "inputs" : {
+                  "click" : {
+                     "output" : "/actions/valheim/in/crouch"
+                  },
                   "position" : {
-                     "output" : "/actions/valheim/in/walk"
+                     "output" : "/actions/valheim/in/pitchandyaw"
                   }
                },
                "mode" : "joystick",
-               "path" : "/user/hand/left/input/thumbstick"
+               "path" : "/user/hand/right/input/thumbstick"
+            },
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/valheim/in/use"
+                  },
+                  "touch" : {
+                     "output" : "/actions/valheim/in/hotbardown"
+                  }
+               },
+               "mode" : "button",
+               "path" : "/user/hand/right/input/a"
+            },
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/valheim/in/hide"
+                  },
+                  "touch" : {
+                     "output" : "/actions/valheim/in/hotbarup"
+                  }
+               },
+               "mode" : "button",
+               "path" : "/user/hand/right/input/b"
+            },
+            {
+               "inputs" : {
+                  "north" : {
+                     "output" : "/actions/valheim/in/gpower"
+                  },
+                  "south" : {
+                     "output" : "/actions/valheim/in/sit"
+                  }
+               },
+               "mode" : "dpad",
+               "parameters" : {
+                  "sub_mode" : "touch"
+               },
+               "path" : "/user/hand/right/input/thumbstick"
             }
          ]
       }

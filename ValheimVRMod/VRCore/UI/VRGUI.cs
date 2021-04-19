@@ -94,6 +94,7 @@ namespace ValheimVRMod.VRCore.UI
         {
             if (ensureGuiCanvas())
             {
+                UpdateLasersActionSetState();
                 CrosshairManager.instance.maybeReparentCrosshair();
                 if (VHVRConfig.ShowRepairHammer() && RepairModePositionIndicator.instance != null)
                 {
@@ -220,6 +221,7 @@ namespace ValheimVRMod.VRCore.UI
                 if (_leftPointer != null)
                 {
                     _leftPointer.PointerClick += OnPointerClick;
+                    _leftPointer.PointerRightClick += OnPointerRightClick;
                     _leftPointer.PointerTracking += OnPointerTracking;
                 }
             }
@@ -229,8 +231,21 @@ namespace ValheimVRMod.VRCore.UI
                 if (_rightPointer != null)
                 {
                     _rightPointer.PointerClick += OnPointerClick;
+                    _rightPointer.PointerRightClick += OnPointerRightClick;
                     _rightPointer.PointerTracking += OnPointerTracking;
                 }
+            }
+        }
+
+        private void UpdateLasersActionSetState()
+        {
+            if (SteamVR_Actions.LaserPointers.IsActive() && VRPlayer.activePointer == null)
+            {
+                SteamVR_Actions.LaserPointers.Deactivate();
+            }
+            else if (!SteamVR_Actions.LaserPointers.IsActive() && VRPlayer.activePointer != null)
+            {
+                SteamVR_Actions.LaserPointers.Activate(SteamVR_Input_Sources.Any, 1);
             }
         }
 
@@ -251,6 +266,14 @@ namespace ValheimVRMod.VRCore.UI
             if (isUiPanel(e.target))
             {
                 _inputModule.SimulateClick();
+            }
+        }
+
+        public void OnPointerRightClick(object p, PointerEventArgs e)
+        {
+            if (isUiPanel(e.target))
+            {
+                _inputModule.SimulateRightClick();
             }
         }
 
@@ -543,6 +566,18 @@ namespace ValheimVRMod.VRCore.UI
                 m_InputOverride = EventSystem.current.currentInputModule.input;
                 MouseState mousePointerEventData = GetMousePointerEventData();
                 MouseButtonEventData buttonState = mousePointerEventData.GetButtonState(PointerEventData.InputButton.Left).eventData;
+                // Set the mouse button state to "PressedAndReleased" to indicate a mouse click occurred
+                buttonState.buttonState = PointerEventData.FramePressState.PressedAndReleased;
+                ProcessMousePress(buttonState);
+            }
+
+            public void SimulateRightClick()
+            {
+                // Use the existing EventSystems input module input as the
+                // input for our custom input module.
+                m_InputOverride = EventSystem.current.currentInputModule.input;
+                MouseState mousePointerEventData = GetMousePointerEventData();
+                MouseButtonEventData buttonState = mousePointerEventData.GetButtonState(PointerEventData.InputButton.Right).eventData;
                 // Set the mouse button state to "PressedAndReleased" to indicate a mouse click occurred
                 buttonState.buttonState = PointerEventData.FramePressState.PressedAndReleased;
                 ProcessMousePress(buttonState);

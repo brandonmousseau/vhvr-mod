@@ -55,11 +55,19 @@ namespace ValheimVRMod.VRCore
         private Camera _handsCam;
         private Camera _skyboxCam;
 
-        private Hand _leftHand;
+        private static Hand _leftHand;
         private static SteamVR_LaserPointer _leftPointer;
-        private Hand _rightHand;
+        private static Hand _rightHand;
         private static SteamVR_LaserPointer _rightPointer;
         private string _preferredHand;
+
+        public static bool handsActive
+        {
+            get
+            {
+                return handIsActive(_leftHand, _leftPointer) && handIsActive(_rightHand, _rightPointer);
+            }
+        }
 
         public static SteamVR_LaserPointer leftPointer { get { return _leftPointer;} }
         public static SteamVR_LaserPointer rightPointer { get { return _rightPointer; } }
@@ -130,6 +138,7 @@ namespace ValheimVRMod.VRCore
             FIRST_PERSON_OFFSET = Vector3.zero;
             THIRD_PERSON_CONFIG_OFFSET = VHVRConfig.GetThirdPersonHeadOffset();
             ensurePlayerInstance();
+            gameObject.AddComponent<VRControls>();
         }
 
         void Update()
@@ -251,7 +260,6 @@ namespace ValheimVRMod.VRCore
                 _leftHand = getHand(LEFT_HAND, _instance);
                 if (_leftHand != null)
                 {
-                    _leftHand.gameObject.AddComponent<VRControls>();
                     _leftPointer = _leftHand.GetComponent<SteamVR_LaserPointer>();
                     if (_leftPointer != null)
                     {
@@ -264,7 +272,6 @@ namespace ValheimVRMod.VRCore
                 _rightHand = getHand(RIGHT_HAND, _instance);
                 if (_rightHand != null)
                 {
-                    _rightHand.gameObject.AddComponent<VRControls>();
                     _rightPointer = _rightHand.GetComponent<SteamVR_LaserPointer>();
                     if (_rightPointer != null)
                     {
@@ -294,7 +301,7 @@ namespace ValheimVRMod.VRCore
 
         // Returns true if both the hand and pointer are not null
         // and the hand is active
-        private bool handIsActive(Hand h, SteamVR_LaserPointer p)
+        private static bool handIsActive(Hand h, SteamVR_LaserPointer p)
         {
             if (h == null || p == null)
             {

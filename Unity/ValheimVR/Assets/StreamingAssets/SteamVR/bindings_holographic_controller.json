@@ -163,40 +163,6 @@
               "output": "/actions/default/in/teleport"
             }
           }
-        },
-        {
-          "path": "/user/hand/left/input/joystick",
-          "mode": "dpad",
-          "parameters": {
-            "deadzone_pct": "85",
-            "overlap_pct": "0",
-            "sub_mode": "touch"
-          },
-          "inputs": {
-            "east": {
-              "output": "/actions/default/in/snapturnright"
-            },
-            "west": {
-              "output": "/actions/default/in/snapturnleft"
-            }
-          }
-        },
-        {
-          "path": "/user/hand/right/input/joystick",
-          "mode": "dpad",
-          "parameters": {
-            "deadzone_pct": "85",
-            "overlap_pct": "0",
-            "sub_mode": "touch"
-          },
-          "inputs": {
-            "east": {
-              "output": "/actions/default/in/snapturnright"
-            },
-            "west": {
-              "output": "/actions/default/in/snapturnleft"
-            }
-          }
         }
       ],
       "skeleton": []

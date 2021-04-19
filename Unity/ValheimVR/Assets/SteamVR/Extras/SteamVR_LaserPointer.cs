@@ -8,8 +8,8 @@ namespace Valve.VR.Extras
     {
         public SteamVR_Behaviour_Pose pose;
 
-        //public SteamVR_Action_Boolean interactWithUI = SteamVR_Input.__actions_default_in_InteractUI;
-        public SteamVR_Action_Boolean interactWithUI = SteamVR_Input.GetBooleanAction("InteractUI");
+        public SteamVR_Action_Boolean leftClick = SteamVR_Input.GetBooleanActionFromPath("/actions/LaserPointers/in/LeftClick");
+        public SteamVR_Action_Boolean rightClick = SteamVR_Input.GetBooleanActionFromPath("/actions/LaserPointers/in/RightClick");
 
         public bool active = true;
         public Color color;
@@ -23,6 +23,7 @@ namespace Valve.VR.Extras
         public event PointerEventHandler PointerIn;
         public event PointerEventHandler PointerOut;
         public event PointerEventHandler PointerClick;
+        public event PointerEventHandler PointerRightClick;
         public event PointerEventHandler PointerTracking;
         public float maxRaycastDistance = Mathf.Infinity;
         public int raycastLayerMask = Physics.DefaultRaycastLayers;
@@ -46,9 +47,10 @@ namespace Valve.VR.Extras
             if (pose == null)
                 Debug.LogError("No SteamVR_Behaviour_Pose component found on this object", this);
 
-            if (interactWithUI == null)
-                Debug.LogError("No ui interaction action has been set on this component.", this);
-
+            if (leftClick == null)
+                Debug.LogError("No LeftClick action has been set on this component.", this);
+            if (rightClick == null)
+                Debug.LogError("No RightClick action has been set on this component.", this);
 
             holder = new GameObject();
             holder.transform.parent = this.transform;
@@ -95,6 +97,12 @@ namespace Valve.VR.Extras
                 PointerClick(this, e);
         }
 
+
+        public virtual void OnPointerRightClick(PointerEventArgs e)
+        {
+            if (PointerClick != null)
+                PointerRightClick(this, e);
+        }
         public virtual void OnPointerOut(PointerEventArgs e)
         {
             if (PointerOut != null)
@@ -161,7 +169,7 @@ namespace Valve.VR.Extras
                 dist = hit.distance;
             }
 
-            if (bHit && interactWithUI.GetStateUp(pose.inputSource))
+            if (bHit && leftClick.GetStateUp(pose.inputSource))
             {
                 PointerEventArgs argsClick = new PointerEventArgs();
                 argsClick.fromInputSource = pose.inputSource;
@@ -172,7 +180,19 @@ namespace Valve.VR.Extras
                 OnPointerClick(argsClick);
             }
 
-            if (interactWithUI != null && interactWithUI.GetState(pose.inputSource))
+            if (bHit && rightClick.GetStateUp(pose.inputSource))
+            {
+                PointerEventArgs argsClick = new PointerEventArgs();
+                argsClick.fromInputSource = pose.inputSource;
+                argsClick.distance = hit.distance;
+                argsClick.flags = 0;
+                argsClick.target = hit.transform;
+                argsClick.position = hit.point;
+                OnPointerRightClick(argsClick);
+            }
+
+
+            if (leftClick != null && leftClick.GetState(pose.inputSource))
             {
                 pointer.transform.localScale = new Vector3(thickness * 5f, thickness * 5f, dist);
                 pointer.GetComponent<MeshRenderer>().material.color = clickColor;

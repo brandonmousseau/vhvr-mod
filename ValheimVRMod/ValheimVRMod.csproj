@@ -282,6 +282,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Patches\ControlPatches.cs" />
     <Compile Include="Patches\HarmonyPatcher.cs" />
     <Compile Include="Patches\EyeRotationPatch.cs" />
     <Compile Include="Patches\Misc.cs" />
