@@ -7,6 +7,7 @@ using UnityEngine.PostProcessing;
 using UnityEngine.SceneManagement;
 using UnityStandardAssets.ImageEffects;
 using ValheimVRMod.Utilities;
+using ValheimVRMod.VRCore.UI;
 using Valve.VR.Extras;
 using Valve.VR.InteractionSystem;
 
@@ -250,6 +251,7 @@ namespace ValheimVRMod.VRCore
                 _leftHand = getHand(LEFT_HAND, _instance);
                 if (_leftHand != null)
                 {
+                    _leftHand.gameObject.AddComponent<VRControls>();
                     _leftPointer = _leftHand.GetComponent<SteamVR_LaserPointer>();
                     if (_leftPointer != null)
                     {
@@ -262,6 +264,7 @@ namespace ValheimVRMod.VRCore
                 _rightHand = getHand(RIGHT_HAND, _instance);
                 if (_rightHand != null)
                 {
+                    _rightHand.gameObject.AddComponent<VRControls>();
                     _rightPointer = _rightHand.GetComponent<SteamVR_LaserPointer>();
                     if (_rightPointer != null)
                     {
