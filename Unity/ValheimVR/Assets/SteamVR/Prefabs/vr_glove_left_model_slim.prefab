@@ -840,7 +840,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   skeletonAction:
-    actionPath: /actions/Valheim/in/SkeletonLeftHand
+    actionPath: /actions/default/in/SkeletonLeftHand
     needsReinit: 0
   inputSource: 1
   rangeOfMotion: 1
@@ -865,7 +865,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   mirroring: 2
-  fallbackPoser: {fileID: 0}
+  fallbackPoser: {fileID: 114000012036868996}
   fallbackCurlAction:
     actionPath: /actions/default/in/Squeeze
     needsReinit: 0

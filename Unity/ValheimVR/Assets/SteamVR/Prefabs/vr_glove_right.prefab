@@ -46,8 +46,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   skeletonAction:
-    actionPath: 
-    needsReinit: 1
+    actionPath: /actions/default/in/SkeletonRightHand
+    needsReinit: 0
   inputSource: 2
   rangeOfMotion: 1
   skeletonRoot: {fileID: 4000011531312562}
