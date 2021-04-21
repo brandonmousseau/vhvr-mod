@@ -290,13 +290,15 @@ namespace ValheimVRMod.VRCore
                 return;
             }
             p.enabled = active && shouldLaserPointersBeActive();
-            p.setVisible(active && shouldLaserPointersBeActive());
+            // Don't need visual indicator in place mode since hammer icon is rendered.
+            bool isInPlaceMode = (getPlayerCharacter() != null) && getPlayerCharacter().InPlaceMode();
+            p.setVisible(p.enabled && !isInPlaceMode);
         }
 
         private bool shouldLaserPointersBeActive()
         {
-            return VHVRConfig.HandsEnabled() &&
-                (Cursor.visible || (getPlayerCharacter() != null && getPlayerCharacter().InPlaceMode()));
+            bool isInPlaceMode = (getPlayerCharacter() != null) && getPlayerCharacter().InPlaceMode();
+            return VHVRConfig.HandsEnabled() && (Cursor.visible || isInPlaceMode);
         }
 
         // Returns true if both the hand and pointer are not null

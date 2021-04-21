@@ -43,8 +43,6 @@ namespace Valve.VR
         
         private static SteamVR_Action_Vector2 p_valheim_Walk;
         
-        private static SteamVR_Action_Pose p_valheim_Pose;
-        
         private static SteamVR_Action_Boolean p_valheim_Attack;
         
         private static SteamVR_Action_Boolean p_valheim_SecondaryAttack;
@@ -65,17 +63,27 @@ namespace Valve.VR
         
         private static SteamVR_Action_Boolean p_valheim_GPower;
         
-        private static SteamVR_Action_Boolean p_valheim_HotbarDown;
+        private static SteamVR_Action_Vector2 p_valheim_PitchAndYaw;
+        
+        private static SteamVR_Action_Pose p_valheim_PoseL;
+        
+        private static SteamVR_Action_Pose p_valheim_PoseR;
         
         private static SteamVR_Action_Boolean p_valheim_HotbarUp;
         
-        private static SteamVR_Action_Vector2 p_valheim_PitchAndYaw;
+        private static SteamVR_Action_Boolean p_valheim_HotbarDown;
+        
+        private static SteamVR_Action_Vector2 p_valheim_HotbarScroll;
+        
+        private static SteamVR_Action_Boolean p_valheim_ToggleMap;
+        
+        private static SteamVR_Action_Boolean p_valheim_HotbarUse;
+        
+        private static SteamVR_Action_Vector2 p_valheim_ContextScroll;
         
         private static SteamVR_Action_Boolean p_laserPointers_LeftClick;
         
         private static SteamVR_Action_Boolean p_laserPointers_RightClick;
-        
-        private static SteamVR_Action_Vector2 p_laserPointers_Scroll;
         
         public static SteamVR_Action_Boolean default_InteractUI
         {
@@ -181,14 +189,6 @@ namespace Valve.VR
             }
         }
         
-        public static SteamVR_Action_Pose valheim_Pose
-        {
-            get
-            {
-                return SteamVR_Actions.p_valheim_Pose.GetCopy<SteamVR_Action_Pose>();
-            }
-        }
-        
         public static SteamVR_Action_Boolean valheim_Attack
         {
             get
@@ -269,11 +269,27 @@ namespace Valve.VR
             }
         }
         
-        public static SteamVR_Action_Boolean valheim_HotbarDown
+        public static SteamVR_Action_Vector2 valheim_PitchAndYaw
         {
             get
             {
-                return SteamVR_Actions.p_valheim_HotbarDown.GetCopy<SteamVR_Action_Boolean>();
+                return SteamVR_Actions.p_valheim_PitchAndYaw.GetCopy<SteamVR_Action_Vector2>();
+            }
+        }
+        
+        public static SteamVR_Action_Pose valheim_PoseL
+        {
+            get
+            {
+                return SteamVR_Actions.p_valheim_PoseL.GetCopy<SteamVR_Action_Pose>();
+            }
+        }
+        
+        public static SteamVR_Action_Pose valheim_PoseR
+        {
+            get
+            {
+                return SteamVR_Actions.p_valheim_PoseR.GetCopy<SteamVR_Action_Pose>();
             }
         }
         
@@ -285,11 +301,43 @@ namespace Valve.VR
             }
         }
         
-        public static SteamVR_Action_Vector2 valheim_PitchAndYaw
+        public static SteamVR_Action_Boolean valheim_HotbarDown
         {
             get
             {
-                return SteamVR_Actions.p_valheim_PitchAndYaw.GetCopy<SteamVR_Action_Vector2>();
+                return SteamVR_Actions.p_valheim_HotbarDown.GetCopy<SteamVR_Action_Boolean>();
+            }
+        }
+        
+        public static SteamVR_Action_Vector2 valheim_HotbarScroll
+        {
+            get
+            {
+                return SteamVR_Actions.p_valheim_HotbarScroll.GetCopy<SteamVR_Action_Vector2>();
+            }
+        }
+        
+        public static SteamVR_Action_Boolean valheim_ToggleMap
+        {
+            get
+            {
+                return SteamVR_Actions.p_valheim_ToggleMap.GetCopy<SteamVR_Action_Boolean>();
+            }
+        }
+        
+        public static SteamVR_Action_Boolean valheim_HotbarUse
+        {
+            get
+            {
+                return SteamVR_Actions.p_valheim_HotbarUse.GetCopy<SteamVR_Action_Boolean>();
+            }
+        }
+        
+        public static SteamVR_Action_Vector2 valheim_ContextScroll
+        {
+            get
+            {
+                return SteamVR_Actions.p_valheim_ContextScroll.GetCopy<SteamVR_Action_Vector2>();
             }
         }
         
@@ -309,14 +357,6 @@ namespace Valve.VR
             }
         }
         
-        public static SteamVR_Action_Vector2 laserPointers_Scroll
-        {
-            get
-            {
-                return SteamVR_Actions.p_laserPointers_Scroll.GetCopy<SteamVR_Action_Vector2>();
-            }
-        }
-        
         private static void InitializeActionArrays()
         {
             Valve.VR.SteamVR_Input.actions = new Valve.VR.SteamVR_Action[] {
@@ -333,7 +373,6 @@ namespace Valve.VR
                     SteamVR_Actions.valheim_ToggleInventory,
                     SteamVR_Actions.valheim_ToggleMenu,
                     SteamVR_Actions.valheim_Walk,
-                    SteamVR_Actions.valheim_Pose,
                     SteamVR_Actions.valheim_Attack,
                     SteamVR_Actions.valheim_SecondaryAttack,
                     SteamVR_Actions.valheim_Jump,
@@ -344,12 +383,17 @@ namespace Valve.VR
                     SteamVR_Actions.valheim_Hide,
                     SteamVR_Actions.valheim_Sit,
                     SteamVR_Actions.valheim_GPower,
-                    SteamVR_Actions.valheim_HotbarDown,
-                    SteamVR_Actions.valheim_HotbarUp,
                     SteamVR_Actions.valheim_PitchAndYaw,
+                    SteamVR_Actions.valheim_PoseL,
+                    SteamVR_Actions.valheim_PoseR,
+                    SteamVR_Actions.valheim_HotbarUp,
+                    SteamVR_Actions.valheim_HotbarDown,
+                    SteamVR_Actions.valheim_HotbarScroll,
+                    SteamVR_Actions.valheim_ToggleMap,
+                    SteamVR_Actions.valheim_HotbarUse,
+                    SteamVR_Actions.valheim_ContextScroll,
                     SteamVR_Actions.laserPointers_LeftClick,
-                    SteamVR_Actions.laserPointers_RightClick,
-                    SteamVR_Actions.laserPointers_Scroll};
+                    SteamVR_Actions.laserPointers_RightClick};
             Valve.VR.SteamVR_Input.actionsIn = new Valve.VR.ISteamVR_Action_In[] {
                     SteamVR_Actions.default_InteractUI,
                     SteamVR_Actions.default_Teleport,
@@ -363,7 +407,6 @@ namespace Valve.VR
                     SteamVR_Actions.valheim_ToggleInventory,
                     SteamVR_Actions.valheim_ToggleMenu,
                     SteamVR_Actions.valheim_Walk,
-                    SteamVR_Actions.valheim_Pose,
                     SteamVR_Actions.valheim_Attack,
                     SteamVR_Actions.valheim_SecondaryAttack,
                     SteamVR_Actions.valheim_Jump,
@@ -374,19 +417,25 @@ namespace Valve.VR
                     SteamVR_Actions.valheim_Hide,
                     SteamVR_Actions.valheim_Sit,
                     SteamVR_Actions.valheim_GPower,
-                    SteamVR_Actions.valheim_HotbarDown,
-                    SteamVR_Actions.valheim_HotbarUp,
                     SteamVR_Actions.valheim_PitchAndYaw,
+                    SteamVR_Actions.valheim_PoseL,
+                    SteamVR_Actions.valheim_PoseR,
+                    SteamVR_Actions.valheim_HotbarUp,
+                    SteamVR_Actions.valheim_HotbarDown,
+                    SteamVR_Actions.valheim_HotbarScroll,
+                    SteamVR_Actions.valheim_ToggleMap,
+                    SteamVR_Actions.valheim_HotbarUse,
+                    SteamVR_Actions.valheim_ContextScroll,
                     SteamVR_Actions.laserPointers_LeftClick,
-                    SteamVR_Actions.laserPointers_RightClick,
-                    SteamVR_Actions.laserPointers_Scroll};
+                    SteamVR_Actions.laserPointers_RightClick};
             Valve.VR.SteamVR_Input.actionsOut = new Valve.VR.ISteamVR_Action_Out[] {
                     SteamVR_Actions.default_Haptic};
             Valve.VR.SteamVR_Input.actionsVibration = new Valve.VR.SteamVR_Action_Vibration[] {
                     SteamVR_Actions.default_Haptic};
             Valve.VR.SteamVR_Input.actionsPose = new Valve.VR.SteamVR_Action_Pose[] {
                     SteamVR_Actions.default_Pose,
-                    SteamVR_Actions.valheim_Pose};
+                    SteamVR_Actions.valheim_PoseL,
+                    SteamVR_Actions.valheim_PoseR};
             Valve.VR.SteamVR_Input.actionsBoolean = new Valve.VR.SteamVR_Action_Boolean[] {
                     SteamVR_Actions.default_InteractUI,
                     SteamVR_Actions.default_Teleport,
@@ -405,8 +454,10 @@ namespace Valve.VR
                     SteamVR_Actions.valheim_Hide,
                     SteamVR_Actions.valheim_Sit,
                     SteamVR_Actions.valheim_GPower,
-                    SteamVR_Actions.valheim_HotbarDown,
                     SteamVR_Actions.valheim_HotbarUp,
+                    SteamVR_Actions.valheim_HotbarDown,
+                    SteamVR_Actions.valheim_ToggleMap,
+                    SteamVR_Actions.valheim_HotbarUse,
                     SteamVR_Actions.laserPointers_LeftClick,
                     SteamVR_Actions.laserPointers_RightClick};
             Valve.VR.SteamVR_Input.actionsSingle = new Valve.VR.SteamVR_Action_Single[] {
@@ -414,7 +465,8 @@ namespace Valve.VR
             Valve.VR.SteamVR_Input.actionsVector2 = new Valve.VR.SteamVR_Action_Vector2[] {
                     SteamVR_Actions.valheim_Walk,
                     SteamVR_Actions.valheim_PitchAndYaw,
-                    SteamVR_Actions.laserPointers_Scroll};
+                    SteamVR_Actions.valheim_HotbarScroll,
+                    SteamVR_Actions.valheim_ContextScroll};
             Valve.VR.SteamVR_Input.actionsVector3 = new Valve.VR.SteamVR_Action_Vector3[0];
             Valve.VR.SteamVR_Input.actionsSkeleton = new Valve.VR.SteamVR_Action_Skeleton[] {
                     SteamVR_Actions.default_SkeletonLeftHand,
@@ -439,12 +491,15 @@ namespace Valve.VR
                     SteamVR_Actions.valheim_Hide,
                     SteamVR_Actions.valheim_Sit,
                     SteamVR_Actions.valheim_GPower,
-                    SteamVR_Actions.valheim_HotbarDown,
-                    SteamVR_Actions.valheim_HotbarUp,
                     SteamVR_Actions.valheim_PitchAndYaw,
+                    SteamVR_Actions.valheim_HotbarUp,
+                    SteamVR_Actions.valheim_HotbarDown,
+                    SteamVR_Actions.valheim_HotbarScroll,
+                    SteamVR_Actions.valheim_ToggleMap,
+                    SteamVR_Actions.valheim_HotbarUse,
+                    SteamVR_Actions.valheim_ContextScroll,
                     SteamVR_Actions.laserPointers_LeftClick,
-                    SteamVR_Actions.laserPointers_RightClick,
-                    SteamVR_Actions.laserPointers_Scroll};
+                    SteamVR_Actions.laserPointers_RightClick};
         }
         
         private static void PreInitActions()
@@ -462,7 +517,6 @@ namespace Valve.VR
             SteamVR_Actions.p_valheim_ToggleInventory = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/Valheim/in/ToggleInventory")));
             SteamVR_Actions.p_valheim_ToggleMenu = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/Valheim/in/ToggleMenu")));
             SteamVR_Actions.p_valheim_Walk = ((SteamVR_Action_Vector2)(SteamVR_Action.Create<SteamVR_Action_Vector2>("/actions/Valheim/in/Walk")));
-            SteamVR_Actions.p_valheim_Pose = ((SteamVR_Action_Pose)(SteamVR_Action.Create<SteamVR_Action_Pose>("/actions/Valheim/in/Pose")));
             SteamVR_Actions.p_valheim_Attack = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/Valheim/in/Attack")));
             SteamVR_Actions.p_valheim_SecondaryAttack = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/Valheim/in/SecondaryAttack")));
             SteamVR_Actions.p_valheim_Jump = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/Valheim/in/Jump")));
@@ -473,12 +527,17 @@ namespace Valve.VR
             SteamVR_Actions.p_valheim_Hide = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/Valheim/in/Hide")));
             SteamVR_Actions.p_valheim_Sit = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/Valheim/in/Sit")));
             SteamVR_Actions.p_valheim_GPower = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/Valheim/in/GPower")));
-            SteamVR_Actions.p_valheim_HotbarDown = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/Valheim/in/HotbarDown")));
-            SteamVR_Actions.p_valheim_HotbarUp = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/Valheim/in/HotbarUp")));
             SteamVR_Actions.p_valheim_PitchAndYaw = ((SteamVR_Action_Vector2)(SteamVR_Action.Create<SteamVR_Action_Vector2>("/actions/Valheim/in/PitchAndYaw")));
+            SteamVR_Actions.p_valheim_PoseL = ((SteamVR_Action_Pose)(SteamVR_Action.Create<SteamVR_Action_Pose>("/actions/Valheim/in/PoseL")));
+            SteamVR_Actions.p_valheim_PoseR = ((SteamVR_Action_Pose)(SteamVR_Action.Create<SteamVR_Action_Pose>("/actions/Valheim/in/PoseR")));
+            SteamVR_Actions.p_valheim_HotbarUp = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/Valheim/in/HotbarUp")));
+            SteamVR_Actions.p_valheim_HotbarDown = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/Valheim/in/HotbarDown")));
+            SteamVR_Actions.p_valheim_HotbarScroll = ((SteamVR_Action_Vector2)(SteamVR_Action.Create<SteamVR_Action_Vector2>("/actions/Valheim/in/HotbarScroll")));
+            SteamVR_Actions.p_valheim_ToggleMap = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/Valheim/in/ToggleMap")));
+            SteamVR_Actions.p_valheim_HotbarUse = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/Valheim/in/HotbarUse")));
+            SteamVR_Actions.p_valheim_ContextScroll = ((SteamVR_Action_Vector2)(SteamVR_Action.Create<SteamVR_Action_Vector2>("/actions/Valheim/in/ContextScroll")));
             SteamVR_Actions.p_laserPointers_LeftClick = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/LaserPointers/in/LeftClick")));
             SteamVR_Actions.p_laserPointers_RightClick = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/LaserPointers/in/RightClick")));
-            SteamVR_Actions.p_laserPointers_Scroll = ((SteamVR_Action_Vector2)(SteamVR_Action.Create<SteamVR_Action_Vector2>("/actions/LaserPointers/in/Scroll")));
         }
     }
 }

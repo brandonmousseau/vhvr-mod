@@ -2,19 +2,23 @@
   "actions": [
     {
       "name": "/actions/default/in/InteractUI",
-      "type": "boolean"
+      "type": "boolean",
+      "requirement": "optional"
     },
     {
       "name": "/actions/default/in/Teleport",
-      "type": "boolean"
+      "type": "boolean",
+      "requirement": "optional"
     },
     {
       "name": "/actions/default/in/GrabPinch",
-      "type": "boolean"
+      "type": "boolean",
+      "requirement": "optional"
     },
     {
       "name": "/actions/default/in/GrabGrip",
-      "type": "boolean"
+      "type": "boolean",
+      "requirement": "optional"
     },
     {
       "name": "/actions/default/in/Pose",
@@ -60,10 +64,6 @@
       "requirement": "mandatory"
     },
     {
-      "name": "/actions/Valheim/in/Pose",
-      "type": "pose"
-    },
-    {
       "name": "/actions/Valheim/in/Attack",
       "type": "boolean",
       "requirement": "mandatory"
@@ -106,20 +106,10 @@
     {
       "name": "/actions/Valheim/in/Sit",
       "type": "boolean",
-      "requirement": "mandatory"
+      "requirement": "optional"
     },
     {
       "name": "/actions/Valheim/in/GPower",
-      "type": "boolean",
-      "requirement": "mandatory"
-    },
-    {
-      "name": "/actions/Valheim/in/HotbarDown",
-      "type": "boolean",
-      "requirement": "mandatory"
-    },
-    {
-      "name": "/actions/Valheim/in/HotbarUp",
       "type": "boolean",
       "requirement": "mandatory"
     },
@@ -129,6 +119,45 @@
       "requirement": "mandatory"
     },
     {
+      "name": "/actions/Valheim/in/PoseL",
+      "type": "pose",
+      "requirement": "mandatory"
+    },
+    {
+      "name": "/actions/Valheim/in/PoseR",
+      "type": "pose",
+      "requirement": "mandatory"
+    },
+    {
+      "name": "/actions/Valheim/in/HotbarUp",
+      "type": "boolean",
+      "requirement": "optional"
+    },
+    {
+      "name": "/actions/Valheim/in/HotbarDown",
+      "type": "boolean",
+      "requirement": "optional"
+    },
+    {
+      "name": "/actions/Valheim/in/HotbarScroll",
+      "type": "vector2",
+      "requirement": "optional"
+    },
+    {
+      "name": "/actions/Valheim/in/ToggleMap",
+      "type": "boolean"
+    },
+    {
+      "name": "/actions/Valheim/in/HotbarUse",
+      "type": "boolean",
+      "requirement": "optional"
+    },
+    {
+      "name": "/actions/Valheim/in/ContextScroll",
+      "type": "vector2",
+      "requirement": "suggested"
+    },
+    {
       "name": "/actions/LaserPointers/in/LeftClick",
       "type": "boolean",
       "requirement": "mandatory"
@@ -136,11 +165,6 @@
     {
       "name": "/actions/LaserPointers/in/RightClick",
       "type": "boolean",
-      "requirement": "mandatory"
-    },
-    {
-      "name": "/actions/LaserPointers/in/Scroll",
-      "type": "vector2",
       "requirement": "mandatory"
     }
   ],

@@ -108,12 +108,12 @@ namespace ValheimVRMod.Utilities
             headOffsetThirdPersonZ = config.Bind("General",
                           "ThirdPersonHeadOffsetZ",
                           0.0f,
-                          new ConfigDescription("Adjusts Y position in third person cam. All third person zoom levels all share same offset.",
+                          new ConfigDescription("Adjusts Z position in third person cam. All third person zoom levels all share same offset.",
                           new AcceptableValueRange<float>(-2.0f, 2.0f)));
             headOffsetThirdPersonY = config.Bind("General",
                           "ThirdPersonHeadOffsetY",
                           0.0f,
-                          new ConfigDescription("Adjusts Z position in third person cam. All third person zoom levels all share same offset.",
+                          new ConfigDescription("Adjusts Y position in third person cam. All third person zoom levels all share same offset.",
                           new AcceptableValueRange<float>(-2.0f, 2.0f)));
             enableHeadReposition = config.Bind("General",
                                                 "EnableHeadRepositioning",

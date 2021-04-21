@@ -41,14 +41,6 @@ namespace Valve.VR
             }
         }
         
-        public virtual SteamVR_Action_Pose Pose
-        {
-            get
-            {
-                return SteamVR_Actions.valheim_Pose;
-            }
-        }
-        
         public virtual SteamVR_Action_Boolean Attack
         {
             get
@@ -129,11 +121,27 @@ namespace Valve.VR
             }
         }
         
-        public virtual SteamVR_Action_Boolean HotbarDown
+        public virtual SteamVR_Action_Vector2 PitchAndYaw
         {
             get
             {
-                return SteamVR_Actions.valheim_HotbarDown;
+                return SteamVR_Actions.valheim_PitchAndYaw;
+            }
+        }
+        
+        public virtual SteamVR_Action_Pose PoseL
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_PoseL;
+            }
+        }
+        
+        public virtual SteamVR_Action_Pose PoseR
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_PoseR;
             }
         }
         
@@ -145,11 +153,43 @@ namespace Valve.VR
             }
         }
         
-        public virtual SteamVR_Action_Vector2 PitchAndYaw
+        public virtual SteamVR_Action_Boolean HotbarDown
         {
             get
             {
-                return SteamVR_Actions.valheim_PitchAndYaw;
+                return SteamVR_Actions.valheim_HotbarDown;
+            }
+        }
+        
+        public virtual SteamVR_Action_Vector2 HotbarScroll
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_HotbarScroll;
+            }
+        }
+        
+        public virtual SteamVR_Action_Boolean ToggleMap
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_ToggleMap;
+            }
+        }
+        
+        public virtual SteamVR_Action_Boolean HotbarUse
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_HotbarUse;
+            }
+        }
+        
+        public virtual SteamVR_Action_Vector2 ContextScroll
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_ContextScroll;
             }
         }
     }
