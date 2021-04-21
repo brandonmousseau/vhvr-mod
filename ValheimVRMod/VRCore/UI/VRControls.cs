@@ -295,36 +295,36 @@ namespace ValheimVRMod.VRCore.UI
 
         private void init()
         {
-            zInputToBooleanAction.Add("JoyMenu", SteamVR_Input.GetBooleanActionFromPath("/actions/valheim/in/ToggleMenu"));
-            zInputToBooleanAction.Add("Inventory", SteamVR_Input.GetBooleanActionFromPath("/actions/valheim/in/ToggleInventory"));
-            zInputToBooleanAction.Add("Attack", SteamVR_Input.GetBooleanActionFromPath("/actions/valheim/in/Attack"));
-            zInputToBooleanAction.Add("SecondAttack", SteamVR_Input.GetBooleanActionFromPath("/actions/valheim/in/SecondaryAttack"));
-            zInputToBooleanAction.Add("Jump", SteamVR_Input.GetBooleanActionFromPath("/actions/valheim/in/Jump"));
-            zInputToBooleanAction.Add("Block", SteamVR_Input.GetBooleanActionFromPath("/actions/valheim/in/Block"));
-            zInputToBooleanAction.Add("Crouch", SteamVR_Input.GetBooleanActionFromPath("/actions/valheim/in/Crouch"));
-            zInputToBooleanAction.Add("Run", SteamVR_Input.GetBooleanActionFromPath("/actions/valheim/in/Run"));
-            zInputToBooleanAction.Add("Use", SteamVR_Input.GetBooleanActionFromPath("/actions/valheim/in/Use"));
-            zInputToBooleanAction.Add("Hide", SteamVR_Input.GetBooleanActionFromPath("/actions/valheim/in/Hide"));
-            zInputToBooleanAction.Add("Sit", SteamVR_Input.GetBooleanActionFromPath("/actions/valheim/in/Sit"));
-            zInputToBooleanAction.Add("GPower", SteamVR_Input.GetBooleanActionFromPath("/actions/valheim/in/GPower"));
-            zInputToBooleanAction.Add("Map", SteamVR_Input.GetBooleanActionFromPath("/actions/valheim/in/ToggleMap"));
+            zInputToBooleanAction.Add("JoyMenu", SteamVR_Actions.valheim_ToggleMenu);
+            zInputToBooleanAction.Add("Inventory", SteamVR_Actions.valheim_ToggleInventory);
+            zInputToBooleanAction.Add("Attack", SteamVR_Actions.valheim_Attack);
+            zInputToBooleanAction.Add("SecondAttack", SteamVR_Actions.valheim_SecondaryAttack);
+            zInputToBooleanAction.Add("Jump", SteamVR_Actions.valheim_Jump);
+            zInputToBooleanAction.Add("Block", SteamVR_Actions.valheim_Block);
+            zInputToBooleanAction.Add("Crouch", SteamVR_Actions.valheim_Crouch);
+            zInputToBooleanAction.Add("Run", SteamVR_Actions.valheim_Run);
+            zInputToBooleanAction.Add("Use", SteamVR_Actions.valheim_Use);
+            zInputToBooleanAction.Add("Hide", SteamVR_Actions.valheim_Hide);
+            zInputToBooleanAction.Add("Sit", SteamVR_Actions.valheim_Sit);
+            zInputToBooleanAction.Add("GPower", SteamVR_Actions.valheim_GPower);
+            zInputToBooleanAction.Add("Map", SteamVR_Actions.valheim_ToggleMap);
 
             // These placement commands re-use some of the normal game inputs
-            zInputToBooleanAction.Add("BuildMenu", SteamVR_Input.GetBooleanActionFromPath("/actions/laserpointers/in/rightclick"));
-            zInputToBooleanAction.Add("Remove", SteamVR_Input.GetBooleanActionFromPath("/actions/valheim/in/SecondaryAttack"));
-            zInputToBooleanAction.Add("AltPlace", SteamVR_Input.GetBooleanActionFromPath("/actions/valheim/in/GPower"));
+            zInputToBooleanAction.Add("BuildMenu", SteamVR_Actions.laserPointers_RightClick);
+            zInputToBooleanAction.Add("Remove", SteamVR_Actions.valheim_SecondaryAttack);
+            zInputToBooleanAction.Add("AltPlace", SteamVR_Actions.valheim_GPower);
 
-            hotbarDown = SteamVR_Input.GetBooleanActionFromPath("/actions/valheim/in/HotbarDown");
-            hotbarUp = SteamVR_Input.GetBooleanActionFromPath("/actions/valheim/in/HotbarUp");
-            hotbarScroll = SteamVR_Input.GetVector2ActionFromPath("/actions/valheim/in/HotbarScroll");
-            hotbarUse = SteamVR_Input.GetBooleanActionFromPath("/actions/valheim/in/HotbarUse");
+            hotbarDown = SteamVR_Actions.valheim_HotbarDown;
+            hotbarUp = SteamVR_Actions.valheim_HotbarUp;
+            hotbarScroll = SteamVR_Actions.valheim_HotbarScroll;
+            hotbarUse = SteamVR_Actions.valheim_HotbarUse;
 
-            contextScroll = SteamVR_Input.GetVector2ActionFromPath("/actions/Valheim/in/ContextScroll");
+            contextScroll = SteamVR_Actions.valheim_ContextScroll;
 
-            walk = SteamVR_Input.GetVector2ActionFromPath("/actions/Valheim/in/Walk");
-            pitchAndYaw = SteamVR_Input.GetVector2ActionFromPath("/actions/Valheim/in/PitchAndYaw");
-            poseL = SteamVR_Input.GetPoseActionFromPath("/actions/Valheim/in/PoseL");
-            poseR = SteamVR_Input.GetPoseActionFromPath("/actions/Valheim/in/PoseR");
+            walk = SteamVR_Actions.valheim_Walk;
+            pitchAndYaw = SteamVR_Actions.valheim_PitchAndYaw;
+            poseL = SteamVR_Actions.valheim_PoseL;
+            poseR = SteamVR_Actions.valheim_PoseR;
             initIgnoredZInputs();
         }
 
