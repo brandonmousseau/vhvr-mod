@@ -201,5 +201,63 @@ namespace ValheimVRMod.Patches
 
         }
 
+        // If using VR controls, disable the joystick for the purposes
+        // of moving the map around since that will be done with
+        // simulated mouse cursor click and drag via laser pointer.
+        [HarmonyPatch(typeof(Minimap), "UpdateMap")]
+        class Minimap_UpdateMap_MapTranslationPatch
+        {
+
+            private static MethodInfo getJoyLeftStickX =
+                AccessTools.Method(typeof(ZInput), nameof(ZInput.GetJoyLeftStickX));
+            private static MethodInfo getJoyLeftStickY =
+    AccessTools.Method(typeof(ZInput), nameof(ZInput.GetJoyLeftStickY));
+
+            private static float getJoyLeftStickXPatched()
+            {
+                if (VRControls.mainControlsActive)
+                {
+                    return 0.0f;
+                } else
+                {
+                    return ZInput.GetJoyLeftStickX();
+                }
+            }
+
+            private static float getJoyLeftStickYPatched()
+            {
+                if (VRControls.mainControlsActive)
+                {
+                    return 0.0f;
+                }
+                else
+                {
+                    return ZInput.GetJoyLeftStickY();
+                }
+            }
+
+            static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+            {
+                var original = new List<CodeInstruction>(instructions);
+                var patched = new List<CodeInstruction>();
+                foreach (var instruction in original)
+                {
+                    if (instruction.Calls(getJoyLeftStickX))
+                    {
+                        patched.Add(CodeInstruction.Call(typeof(Minimap_UpdateMap_MapTranslationPatch),
+                            nameof(getJoyLeftStickXPatched)));
+                    } else if (instruction.Calls(getJoyLeftStickY))
+                    {
+                        patched.Add(CodeInstruction.Call(typeof(Minimap_UpdateMap_MapTranslationPatch),
+                            nameof(getJoyLeftStickYPatched)));
+                    } else
+                    {
+                        patched.Add(instruction);
+                    }
+                }
+                return patched;
+            }
+        }
+
     }
 }

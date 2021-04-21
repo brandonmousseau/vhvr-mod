@@ -336,8 +336,6 @@ namespace ValheimVRMod.VRCore.UI
             ignoredZInputs.Add("JoyButtonB");
             ignoredZInputs.Add("JoyButtonX");
             ignoredZInputs.Add("JoyLStickLeft");
-            //ignoredZInputs.Add("MapZoomOut");
-            //ignoredZInputs.Add("MapZoomIn");
             ignoredZInputs.Add("JoyHide");
             ignoredZInputs.Add("JoyUse");
             ignoredZInputs.Add("JoyRemove");
@@ -370,7 +368,6 @@ namespace ValheimVRMod.VRCore.UI
             ignoredZInputs.Add("JoyDPadUp");
             ignoredZInputs.Add("BuildNext");
             ignoredZInputs.Add("BuildPrev");
-
             ignoredZInputs.Add("AltPlace");
             ignoredZInputs.Add("JoyAltPlace");
             ignoredZInputs.Add("JoyPlace");
