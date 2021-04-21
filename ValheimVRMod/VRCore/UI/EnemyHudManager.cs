@@ -83,6 +83,10 @@ namespace ValheimVRMod.VRCore.UI
                 return;
             }
             HudData data = getEnemyHud(c);
+            if (data == null || data.gui == null || !data.gui.activeSelf)
+            {
+                return;
+            }
             if (data != null)
             {
                 data.hudCanvasRoot.transform.position = c.IsPlayer() ? c.GetHeadPoint() : c.GetTopPoint();
