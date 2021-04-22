@@ -54,12 +54,14 @@ namespace ValheimVRMod.VRCore
         private Camera _handsCam;
         private Camera _skyboxCam;
 
-        private Hand _leftHand;
+        private static Hand _leftHand;
         private static SteamVR_LaserPointer _leftPointer;
-        private Hand _rightHand;
+        private static Hand _rightHand;
         private static SteamVR_LaserPointer _rightPointer;
         private string _preferredHand;
 
+        public static Hand leftHand { get { return _leftHand;} }
+        public static Hand rightHand { get { return _rightHand;} }
         public static SteamVR_LaserPointer leftPointer { get { return _leftPointer;} }
         public static SteamVR_LaserPointer rightPointer { get { return _rightPointer; } }
         public static SteamVR_LaserPointer activePointer
