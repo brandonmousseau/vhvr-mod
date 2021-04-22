@@ -324,6 +324,8 @@ namespace ValheimVRMod.Patches
         class EnemyHud_UpdateHuds_Patch
         {
 
+            private static Type enemyHudDataType = AccessTools.TypeByName("EnemyHud+HudData");
+            private static FieldInfo guiField = AccessTools.Field(enemyHudDataType, "m_gui");
             private static MethodInfo destroyMethod =
                 AccessTools.Method(typeof(UnityEngine.Object), "Destroy", new Type[] { typeof(UnityEngine.Object) });
             private static MethodInfo getHealthPercentageMethod =
@@ -334,8 +336,10 @@ namespace ValheimVRMod.Patches
                 AccessTools.Method(typeof(BaseAI), nameof(BaseAI.IsAlerted));
             private static MethodInfo setActiveMethod =
                 AccessTools.Method(typeof(GameObject), nameof(GameObject.SetActive));
-            private static Type enemyHudDataType = AccessTools.TypeByName("EnemyHud+HudData");
-            private static FieldInfo guiField = AccessTools.Field(enemyHudDataType, "m_gui");
+            private static MethodInfo enemyHudRemoveMethod =
+                AccessTools.Method(AccessTools.Field(typeof(EnemyHud), "m_huds").FieldType, "Remove", new Type[] { typeof(Character) });
+            private static MethodInfo worldToScreenPointMethod =
+                AccessTools.Method(typeof(Camera), nameof(Camera.WorldToScreenPoint), new Type[] { typeof(Vector3) });
 
             private static bool patchedSetActiveTrue = false;
             private static bool patchedSetActiveFalse = false;
@@ -344,6 +348,11 @@ namespace ValheimVRMod.Patches
             {
                 patched.Add(new CodeInstruction(OpCodes.Ldloc_S, 5));
                 patched.Add(CodeInstruction.LoadField(enemyHudDataType, "m_character"));
+            }
+
+            private static void DestroyHud(Character c)
+            {
+                EnemyHudManager.instance.DestroyHudGui(c);
             }
 
             // Some wrapper methods to use as the Transpiler's Call targets
@@ -395,6 +404,11 @@ namespace ValheimVRMod.Patches
                 return active;
             }
 
+            private static Vector3 UpdateLocation(Vector3 worldToScreenPoint, Character c) {
+                EnemyHudManager.instance.UpdateHudCoordinates(c);
+                return worldToScreenPoint;
+            }
+
             // Need to insert method calls to UpdateHudCoordinates, RemoveEnemyHud, UpdateHealth,
             // UpdateLevel, UpdateAlerted, and UpdateAware and SetActive.
             static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
@@ -405,25 +419,53 @@ namespace ValheimVRMod.Patches
                 var patched = new List<CodeInstruction>();
                 for (int i = 0; i < original.Count; i++) {
                     patched.Add(original[i]);
-                    MaybeAddRemoveHudInstructions(original, ref patched, i);
+                    MaybeAddDestroyHudInstructions(original, ref patched, i);
                     MaybeAddUpdateHealthInstructions(original, ref patched, i);
                     MaybeAddUpdateLevelInstructions(original, ref patched, i);
                     MaybeAddAIAlertnessUpdateInstructions(original, ref patched, i);
                     MaybeAddSetActiveInstructions(original, ref patched, i);
+                    MaybeAddRemoveEnemyHudInstruction(original, ref patched, i);
+                    MaybeAddUpdateHudLocationInstructions(original, ref patched, i);
                 }
                 return patched;
             }
 
-            private static void MaybeAddRemoveHudInstructions(List<CodeInstruction> original, ref List<CodeInstruction> patched, int i)
+            private static void MaybeAddUpdateHudLocationInstructions(List<CodeInstruction> original, ref List<CodeInstruction> patched, int i)
+            {
+                var instruction = original[i];
+                if (instruction.Calls(worldToScreenPointMethod))
+                {
+                    // Reposition our mirror hud to the world space coordinates
+                    LoadCharacterField(ref patched);
+                    patched.Add(CodeInstruction.Call(typeof(EnemyHud_UpdateHuds_Patch), nameof(UpdateLocation)));
+                }
+            }
+
+            private static void MaybeAddRemoveEnemyHudInstruction(List<CodeInstruction> original, ref List<CodeInstruction> patched, int i)
+            {
+                if (i - 1 < 0)
+                {
+                    return;
+                }
+                var instruction = original[i];
+                var previousInstruction = original[i - 1];
+                if (instruction.opcode == OpCodes.Pop && previousInstruction.Calls(enemyHudRemoveMethod))
+                {
+                    // Need to remove our mirror from the enemy hud dictionary
+                    patched.Add(new CodeInstruction(OpCodes.Ldloc_2));
+                    patched.Add(CodeInstruction.Call(typeof(EnemyHud_UpdateHuds_Patch), nameof(RemoveHud)));
+                }
+            }
+
+            private static void MaybeAddDestroyHudInstructions(List<CodeInstruction> original, ref List<CodeInstruction> patched, int i)
             {
                 var instruction = original[i];
                 if (instruction.Calls(destroyMethod))
                 {
                     // The current hud is being destroyed here so
-                    // lets remove our mirror too. Load the Character field and
-                    // call RemoveHud
+                    // lets destroy out mirror gui too.
                     LoadCharacterField(ref patched);
-                    patched.Add(CodeInstruction.Call(typeof(EnemyHud_UpdateHuds_Patch), nameof(RemoveHud)));
+                    patched.Add(CodeInstruction.Call(typeof(EnemyHud_UpdateHuds_Patch), nameof(DestroyHud)));
                 }
             }
 
@@ -513,11 +555,6 @@ namespace ValheimVRMod.Patches
                         }
                     }
                 }
-            }
-
-            static void Postfix()
-            {
-                EnemyHudManager.instance.UpdateAll();
             }
         }
     }
