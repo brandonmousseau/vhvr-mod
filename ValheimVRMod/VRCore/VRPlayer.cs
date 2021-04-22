@@ -290,15 +290,13 @@ namespace ValheimVRMod.VRCore
                 return;
             }
             p.enabled = active && shouldLaserPointersBeActive();
-            // Don't need visual indicator in place mode since hammer icon is rendered.
-            bool isInPlaceMode = (getPlayerCharacter() != null) && getPlayerCharacter().InPlaceMode();
-            p.setVisible(p.enabled && !isInPlaceMode);
+            p.setVisible(p.enabled && Cursor.visible);
         }
 
         private bool shouldLaserPointersBeActive()
         {
             bool isInPlaceMode = (getPlayerCharacter() != null) && getPlayerCharacter().InPlaceMode();
-            return VHVRConfig.HandsEnabled() && (Cursor.visible || isInPlaceMode);
+            return VHVRConfig.UseVrControls() && VHVRConfig.HandsEnabled() && (Cursor.visible || isInPlaceMode);
         }
 
         // Returns true if both the hand and pointer are not null
@@ -563,11 +561,14 @@ namespace ValheimVRMod.VRCore
                 Vector3 desiredPosition = getDesiredPosition(playerCharacter);
                 _instance.transform.localPosition = desiredPosition -
                     playerCharacter.transform.position + getHeadOffset(_headZoomLevel);
-                Vector3 hmd = Valve.VR.InteractionSystem.Player.instance.hmdTransform.position;
+                var hmd = Valve.VR.InteractionSystem.Player.instance.hmdTransform;
                 // Measure the distance between HMD and desires location, and save it.
-                FIRST_PERSON_INIT_OFFSET = desiredPosition - hmd;
+                FIRST_PERSON_INIT_OFFSET = desiredPosition - hmd.position;
+                if (VHVRConfig.UseLookLocomotion())
+                {
+                    _instance.transform.localRotation = Quaternion.Euler(0f, -hmd.localRotation.eulerAngles.y, 0f);
+                }
                 headPositionInitialized = true;
-                //_instance.transform.localRotation = Quaternion.identity;
             }
         }
 
