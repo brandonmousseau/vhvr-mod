@@ -2,6 +2,8 @@
 using UnityEngine;
 using Valve.VR;
 using HarmonyLib;
+using ValheimVRMod.Utilities;
+
 using static ValheimVRMod.Utilities.LogUtils;
 
 namespace ValheimVRMod.VRCore.UI
@@ -103,11 +105,12 @@ namespace ValheimVRMod.VRCore.UI
 
         private void updateMainActionSetState()
         {
-            if (mainActionSet.IsActive() && !VRPlayer.handsActive)
+            bool useVrControls = VHVRConfig.UseVrControls();
+            if (!useVrControls || mainActionSet.IsActive() && !VRPlayer.handsActive)
             {
                 mainActionSet.Deactivate();
             }
-            else if (!mainActionSet.IsActive() && VRPlayer.handsActive)
+            else if (useVrControls && !mainActionSet.IsActive() && VRPlayer.handsActive)
             {
                 mainActionSet.Activate();
             }
