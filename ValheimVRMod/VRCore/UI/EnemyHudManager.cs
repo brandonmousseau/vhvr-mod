@@ -38,31 +38,24 @@ namespace ValheimVRMod.VRCore.UI
             return _hudCamera != null;
         }
 
-        public void UpdateAll()
-        {
-            foreach(KeyValuePair<Character, HudData> entry in _enemyHuds)
-            {
-                UpdateHudCoordinates(entry.Key);
-            }
-        }
-
         public void AddEnemyHud(Character c, GameObject baseHudPlayer, GameObject baseHudEnemy, GameObject baseHudBoss)
         {
-            if (c != null)
+            if (c != null && c)
             {
                 if (c.IsBoss())
                 {
                     // Boss is displayed on main GUI instead of world space.
                     return;
                 }
-                HudData existingData = getEnemyHud(c);
-                if (existingData == null)
+                HudData existingData;
+                if (_enemyHuds.TryGetValue(c, out existingData))
                 {
-                    HudData newData = createHudDataForCharacter(c, baseHudPlayer, baseHudEnemy, baseHudBoss);
-                    if (newData != null)
-                    {
-                        _enemyHuds.Add(c, newData);
-                    }
+                    return;
+                }
+                HudData newData = createHudDataForCharacter(c, baseHudPlayer, baseHudEnemy, baseHudBoss);
+                if (newData != null)
+                {
+                    _enemyHuds.Add(c, newData);
                 }
             }
         }
@@ -99,13 +92,21 @@ namespace ValheimVRMod.VRCore.UI
             }
         }
 
+        public void DestroyHudGui(Character c)
+        {
+            HudData data = getEnemyHud(c);
+            if (data != null && data.gui != null)
+            {
+                Object.Destroy(data.gui);
+                Object.Destroy(data.hudCanvasRoot);
+            }
+        }
+
         public void RemoveEnemyHud(Character c)
         {
             HudData data = getEnemyHud(c);
             if (data != null)
             {
-                Object.Destroy(data.gui);
-                Object.Destroy(data.hudCanvasRoot);
                 _enemyHuds.Remove(c);
             }
         }
