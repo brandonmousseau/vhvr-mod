@@ -84,7 +84,7 @@ namespace ValheimVRMod.VRCore.UI
 
         private void setRayDirection()
         {
-            if (VRPlayer.rightPointer != null)
+            if (VHVRConfig.UseVrControls() && VRPlayer.rightPointer != null)
             {
                 _rayDirection = VRPlayer.rightPointer.pointerTransform.rotation;
             }
@@ -96,7 +96,7 @@ namespace ValheimVRMod.VRCore.UI
 
         private void setRayStartingPosition()
         {
-            if (VRPlayer.rightPointer != null)
+            if (VHVRConfig.UseVrControls() && VRPlayer.rightPointer != null)
             {
                 _startingPosition = VRPlayer.rightPointer.pointerTransform.position;
             }
