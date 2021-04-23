@@ -5,11 +5,30 @@ using UnityEngine;
 public class VR_IK_Creator : MonoBehaviour
 {
 
+    private bool initialized;
+
     public Transform leftController;
     public Transform rightController;
     public Transform camera;
 
-    void Awake()
+
+    // Update is called once per frame
+    void Update()
+    {
+        if (initialized)
+        {
+            return;
+        }
+
+        if (leftController != null && rightController != null && camera != null)
+        {
+            initialize();
+            initialized = true;
+        }
+        
+    }
+
+    private void initialize()
     {
         
         RootMotion.FinalIK.VRIK vrik = this.gameObject.AddComponent<RootMotion.FinalIK.VRIK>();
@@ -84,11 +103,5 @@ public class VR_IK_Creator : MonoBehaviour
         vrik.solver.spine.headTarget = head;
 
     }
-
-
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
+    
 }
