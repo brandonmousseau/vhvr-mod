@@ -533,6 +533,7 @@ namespace ValheimVRMod.VRCore
                 return;
             }
             _instance.transform.SetParent(playerCharacter.transform, false);
+            maybeAddVrik(playerCharacter);
             attachedToPlayer = true;
             maybeInitHeadPosition(playerCharacter);
             Vector3 firstPersonAdjust = inFirstPerson ? FIRST_PERSON_INIT_OFFSET : Vector3.zero;
@@ -543,6 +544,18 @@ namespace ValheimVRMod.VRCore
                                                + firstPersonAdjust  // Offset from calibration on tracking recenter
                                                + getHeadOffset(_headZoomLevel) // Player controlled offset (zeroed on tracking reset)
                                                + Vector3.forward * NECK_OFFSET; // Move slightly forward to position on neck
+        }
+
+        private void maybeAddVrik(Player player)
+        {
+            if (player.gameObject.GetComponent<VR_IK_Creator>() != null)
+            {
+                return;
+            }
+            var vrik = player.gameObject.AddComponent<VR_IK_Creator>();
+            vrik.leftController = getHand(LEFT_HAND, _instance).transform;
+            vrik.rightController = getHand(RIGHT_HAND, _instance).transform;
+            vrik.camera = CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform;
         }
 
         private void maybeInitHeadPosition(Player playerCharacter)

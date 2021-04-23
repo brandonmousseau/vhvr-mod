@@ -76,6 +76,15 @@
     <Reference Include="BepInEx">
       <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\BepInEx\core\BepInEx.dll</HintPath>
     </Reference>
+    <Reference Include="final_ik">
+      <HintPath>..\Unity\build\ValheimVR_Data\Managed\final_ik.dll</HintPath>
+    </Reference>
+    <Reference Include="root_motion_demo_assets">
+      <HintPath>..\Unity\build\ValheimVR_Data\Managed\root_motion_demo_assets.dll</HintPath>
+    </Reference>
+    <Reference Include="root_motion_shared">
+      <HintPath>..\Unity\build\ValheimVR_Data\Managed\root_motion_shared.dll</HintPath>
+    </Reference>
     <Reference Include="SteamVR, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\Unity\build\ValheimVR_Data\Managed\SteamVR.dll</HintPath>
