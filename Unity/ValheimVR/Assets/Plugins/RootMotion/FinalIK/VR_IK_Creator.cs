@@ -10,6 +10,7 @@ public class VR_IK_Creator : MonoBehaviour
     public Transform leftController;
     public Transform rightController;
     public Transform camera;
+    public RootMotion.FinalIK.VRIK vrik;
 
 
     // Update is called once per frame
@@ -31,24 +32,31 @@ public class VR_IK_Creator : MonoBehaviour
     private void initialize()
     {
         
-        RootMotion.FinalIK.VRIK vrik = this.gameObject.AddComponent<RootMotion.FinalIK.VRIK>();
+        vrik = this.gameObject.AddComponent<RootMotion.FinalIK.VRIK>();
         vrik.AutoDetectReferences();
+        vrik.references.leftThigh = null;
+        vrik.references.leftCalf = null;
+        vrik.references.leftFoot = null;
+        vrik.references.leftToes = null;
+        vrik.references.rightThigh = null;
+        vrik.references.rightCalf = null;
+        vrik.references.rightFoot = null;
+        vrik.references.rightToes = null;
 
 
-        Transform leftHand = (new GameObject()).transform;
+        Transform leftHand = Instantiate(vrik.references.leftHand.gameObject).transform;
         leftHand.parent = leftController;
         leftHand.transform.localPosition = new Vector3(0.03f, 0.02f, -0.17f);
         leftHand.transform.localRotation = Quaternion.Euler(140.56f, -94.25f, -80.0f);
         vrik.solver.leftArm.target = leftHand;
 
-
-        Transform rightHand = (new GameObject()).transform;
+        Transform rightHand =  Instantiate(vrik.references.rightHand.gameObject).transform;
         rightHand.parent = rightController;
         rightHand.transform.localPosition = new Vector3(-0.03f, 0.02f, -0.17f);
         rightHand.transform.localRotation = Quaternion.Euler(115.88f, 88.74f, 80.0f);
         vrik.solver.rightArm.target = rightHand;
 
-        Transform head = (new GameObject()).transform;
+        Transform head = Instantiate(vrik.references.head.gameObject).transform;
         head.parent = camera;
         head.localPosition = new Vector3(0, -0.175f, -0.151f);
         head.localRotation = Quaternion.Euler(0, 90, 0);
