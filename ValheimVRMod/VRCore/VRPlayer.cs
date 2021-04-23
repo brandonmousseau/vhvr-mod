@@ -565,8 +565,11 @@ namespace ValheimVRMod.VRCore
             }
             var vrik = player.gameObject.AddComponent<VR_IK_Creator>();
             vrik.leftController = getHand(LEFT_HAND, _instance).transform;
+            getHand(LEFT_HAND, _instance).SetVisibility(false);
             vrik.rightController = getHand(RIGHT_HAND, _instance).transform;
+            getHand(RIGHT_HAND, _instance).SetVisibility(false);
             vrik.camera = CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform;
+
         }
 
         private void maybeInitHeadPosition(Player playerCharacter)
