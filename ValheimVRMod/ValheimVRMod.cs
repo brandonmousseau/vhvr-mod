@@ -1,19 +1,18 @@
-﻿using static ValheimVRMod.Utilities.LogUtils;
-
-using BepInEx;
+﻿using BepInEx;
 using UnityEngine;
 using ValheimVRMod.VRCore;
 using ValheimVRMod.VRCore.UI;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.Patches;
 
+using static ValheimVRMod.Utilities.LogUtils;
+
 namespace ValheimVRMod
 {
-    [BepInPlugin("org.bepinex.plugins.valheimvrmod", "ValheimVR Mod", "0.2.0")]
+    [BepInPlugin("org.bepinex.plugins.valheimvrmod", "ValheimVR Mod", "0.2.1")]
     public class ValheimVRMod : BaseUnityPlugin
     {
 
-        // Instance of VRPlayer
         private GameObject vrPlayer;
         private GameObject vrGui;
 

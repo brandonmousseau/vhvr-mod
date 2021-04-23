@@ -5,7 +5,7 @@
       "app_key": "application.generated.unity.valheimvr.exe",
       "launch_type": "url",
       "url": "steam://launch/",
-      "action_manifest_path": "D:\\Unity Projects\\vhvr-mod\\Unity\\ValheimVR\\Assets\\StreamingAssets\\SteamVR\\actions.json",
+      "action_manifest_path": "C:\\Users\\fathe\\source\\repos\\github\\vhvr-mod\\Unity\\ValheimVR\\Assets\\StreamingAssets\\SteamVR\\actions.json",
       "strings": {
         "en_us": {
           "name": "ValheimVR [Testing]"

@@ -2,19 +2,23 @@
   "actions": [
     {
       "name": "/actions/default/in/InteractUI",
-      "type": "boolean"
+      "type": "boolean",
+      "requirement": "optional"
     },
     {
       "name": "/actions/default/in/Teleport",
-      "type": "boolean"
+      "type": "boolean",
+      "requirement": "optional"
     },
     {
       "name": "/actions/default/in/GrabPinch",
-      "type": "boolean"
+      "type": "boolean",
+      "requirement": "optional"
     },
     {
       "name": "/actions/default/in/GrabGrip",
-      "type": "boolean"
+      "type": "boolean",
+      "requirement": "optional"
     },
     {
       "name": "/actions/default/in/Pose",
@@ -41,46 +45,127 @@
       "requirement": "optional"
     },
     {
-      "name": "/actions/default/in/SnapTurnLeft",
-      "type": "boolean",
-      "requirement": "suggested"
-    },
-    {
-      "name": "/actions/default/in/SnapTurnRight",
-      "type": "boolean"
-    },
-    {
       "name": "/actions/default/out/Haptic",
       "type": "vibration"
     },
     {
-      "name": "/actions/platformer/in/Move",
-      "type": "vector2"
+      "name": "/actions/Valheim/in/ToggleInventory",
+      "type": "boolean",
+      "requirement": "mandatory"
     },
     {
-      "name": "/actions/platformer/in/Jump",
-      "type": "boolean"
+      "name": "/actions/Valheim/in/ToggleMenu",
+      "type": "boolean",
+      "requirement": "mandatory"
     },
     {
-      "name": "/actions/buggy/in/Steering",
-      "type": "vector2"
+      "name": "/actions/Valheim/in/Walk",
+      "type": "vector2",
+      "requirement": "mandatory"
     },
     {
-      "name": "/actions/buggy/in/Throttle",
-      "type": "vector1"
+      "name": "/actions/Valheim/in/Attack",
+      "type": "boolean",
+      "requirement": "mandatory"
     },
     {
-      "name": "/actions/buggy/in/Brake",
-      "type": "boolean"
+      "name": "/actions/Valheim/in/SecondaryAttack",
+      "type": "boolean",
+      "requirement": "mandatory"
     },
     {
-      "name": "/actions/buggy/in/Reset",
-      "type": "boolean"
+      "name": "/actions/Valheim/in/Jump",
+      "type": "boolean",
+      "requirement": "mandatory"
     },
     {
-      "name": "/actions/mixedreality/in/ExternalCamera",
-      "type": "pose",
+      "name": "/actions/Valheim/in/Block",
+      "type": "boolean",
+      "requirement": "mandatory"
+    },
+    {
+      "name": "/actions/Valheim/in/Crouch",
+      "type": "boolean",
+      "requirement": "mandatory"
+    },
+    {
+      "name": "/actions/Valheim/in/Run",
+      "type": "boolean",
+      "requirement": "mandatory"
+    },
+    {
+      "name": "/actions/Valheim/in/Use",
+      "type": "boolean",
+      "requirement": "mandatory"
+    },
+    {
+      "name": "/actions/Valheim/in/Hide",
+      "type": "boolean",
+      "requirement": "mandatory"
+    },
+    {
+      "name": "/actions/Valheim/in/Sit",
+      "type": "boolean",
       "requirement": "optional"
+    },
+    {
+      "name": "/actions/Valheim/in/GPower",
+      "type": "boolean",
+      "requirement": "mandatory"
+    },
+    {
+      "name": "/actions/Valheim/in/PitchAndYaw",
+      "type": "vector2",
+      "requirement": "mandatory"
+    },
+    {
+      "name": "/actions/Valheim/in/PoseL",
+      "type": "pose",
+      "requirement": "mandatory"
+    },
+    {
+      "name": "/actions/Valheim/in/PoseR",
+      "type": "pose",
+      "requirement": "mandatory"
+    },
+    {
+      "name": "/actions/Valheim/in/HotbarUp",
+      "type": "boolean",
+      "requirement": "optional"
+    },
+    {
+      "name": "/actions/Valheim/in/HotbarDown",
+      "type": "boolean",
+      "requirement": "optional"
+    },
+    {
+      "name": "/actions/Valheim/in/HotbarScroll",
+      "type": "vector2",
+      "requirement": "optional"
+    },
+    {
+      "name": "/actions/Valheim/in/ToggleMap",
+      "type": "boolean"
+    },
+    {
+      "name": "/actions/Valheim/in/HotbarUse",
+      "type": "boolean",
+      "requirement": "optional"
+    },
+    {
+      "name": "/actions/Valheim/in/ContextScroll",
+      "type": "vector2",
+      "requirement": "suggested"
+    },
+    {
+      "name": "/actions/LaserPointers/in/LeftClick",
+      "type": "boolean",
+      "requirement": "mandatory"
+    },
+    {
+      "name": "/actions/LaserPointers/in/RightClick",
+      "type": "boolean",
+      "requirement": "mandatory"
     }
   ],
   "action_sets": [
@@ -89,15 +174,11 @@
       "usage": "single"
     },
     {
-      "name": "/actions/platformer",
-      "usage": "single"
+      "name": "/actions/Valheim",
+      "usage": "leftright"
     },
     {
-      "name": "/actions/buggy",
-      "usage": "single"
-    },
-    {
-      "name": "/actions/mixedreality",
+      "name": "/actions/LaserPointers",
       "usage": "single"
     }
   ],
@@ -166,10 +247,7 @@
       "/actions/default/in/SkeletonLeftHand": "Skeleton (Left)",
       "/actions/default/in/SkeletonRightHand": "Skeleton (Right)",
       "/actions/default/in/Teleport": "Teleport",
-      "/actions/default/out/Haptic": "Haptic",
-      "/actions/platformer/in/Jump": "Jump",
-      "/actions/default/in/SnapTurnLeft": "Snap Turn (Left)",
-      "/actions/default/in/SnapTurnRight": "Snap Turn (Right)"
+      "/actions/default/out/Haptic": "Haptic"
     }
   ]
 }

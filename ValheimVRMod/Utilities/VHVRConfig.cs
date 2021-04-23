@@ -44,6 +44,7 @@ namespace ValheimVRMod.Utilities
 
         // Controls Settings
         private static ConfigEntry<bool> enableHands;
+        private static ConfigEntry<bool> useVrControls;
         private static ConfigEntry<bool> useLookLocomotion;
         private static ConfigEntry<string> preferredHand;
         private static ConfigEntry<string> headReposFowardKey;
@@ -108,12 +109,12 @@ namespace ValheimVRMod.Utilities
             headOffsetThirdPersonZ = config.Bind("General",
                           "ThirdPersonHeadOffsetZ",
                           0.0f,
-                          new ConfigDescription("Adjusts Y position in third person cam. All third person zoom levels all share same offset.",
+                          new ConfigDescription("Adjusts Z position in third person cam. All third person zoom levels all share same offset.",
                           new AcceptableValueRange<float>(-2.0f, 2.0f)));
             headOffsetThirdPersonY = config.Bind("General",
                           "ThirdPersonHeadOffsetY",
                           0.0f,
-                          new ConfigDescription("Adjusts Z position in third person cam. All third person zoom levels all share same offset.",
+                          new ConfigDescription("Adjusts Y position in third person cam. All third person zoom levels all share same offset.",
                           new AcceptableValueRange<float>(-2.0f, 2.0f)));
             enableHeadReposition = config.Bind("General",
                                                 "EnableHeadRepositioning",
@@ -220,6 +221,12 @@ namespace ValheimVRMod.Utilities
                                        true,
                                        "Set this true to allow hands and laser pointers to be rendered in game. Note: motion controls are only" +
                                        " minimally enabled, so right now this is just for fun.");
+            useVrControls = config.Bind("Controls",
+                                        "UseVRControls",
+                                        false,
+                                        "This setting enables the use of the VR motion controllers as input (only Valve Knuckles supported currently. " +
+                                        "This setting, if true, will force EnableHands to be true and UseOverlayGui to be false as both of these settings " +
+                                        "must be set this way for VR controllers to work.");
             preferredHand = config.Bind("Controls",
                                         "PreferredHand",
                                         "Right",
@@ -307,7 +314,8 @@ namespace ValheimVRMod.Utilities
 
         public static bool GetUseOverlayGui()
         {
-            return useOverlayGui.Value;
+            // Force this to be off if UseVrControls is on
+            return useOverlayGui.Value && !UseVrControls();
         }
 
         public static float GetOverlayWidth()
@@ -386,7 +394,8 @@ namespace ValheimVRMod.Utilities
 
         public static bool HandsEnabled()
         {
-            return enableHands.Value;
+            // Force hands to be on if UseVrControls is on
+            return enableHands.Value || UseVrControls();
         }
 
         public static bool UseLookLocomotion()
@@ -493,6 +502,11 @@ namespace ValheimVRMod.Utilities
         public static bool RecenterGuiOnMove()
         {
             return recenterGuiOnMove.Value;
+        }
+
+        public static bool UseVrControls()
+        {
+            return useVrControls.Value;
         }
 
     }

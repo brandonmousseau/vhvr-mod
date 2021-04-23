@@ -7,6 +7,7 @@ using UnityEngine.PostProcessing;
 using UnityEngine.SceneManagement;
 using UnityStandardAssets.ImageEffects;
 using ValheimVRMod.Utilities;
+using ValheimVRMod.VRCore.UI;
 using Valve.VR.Extras;
 using Valve.VR.InteractionSystem;
 
@@ -62,6 +63,15 @@ namespace ValheimVRMod.VRCore
 
         public static Hand leftHand { get { return _leftHand;} }
         public static Hand rightHand { get { return _rightHand;} }
+
+        public static bool handsActive
+        {
+            get
+            {
+                return handIsActive(_leftHand, _leftPointer) && handIsActive(_rightHand, _rightPointer);
+            }
+        }
+
         public static SteamVR_LaserPointer leftPointer { get { return _leftPointer;} }
         public static SteamVR_LaserPointer rightPointer { get { return _rightPointer; } }
         public static SteamVR_LaserPointer activePointer
@@ -131,6 +141,7 @@ namespace ValheimVRMod.VRCore
             FIRST_PERSON_OFFSET = Vector3.zero;
             THIRD_PERSON_CONFIG_OFFSET = VHVRConfig.GetThirdPersonHeadOffset();
             ensurePlayerInstance();
+            gameObject.AddComponent<VRControls>();
         }
 
         void Update()
@@ -282,18 +293,18 @@ namespace ValheimVRMod.VRCore
                 return;
             }
             p.enabled = active && shouldLaserPointersBeActive();
-            p.setVisible(active && shouldLaserPointersBeActive());
+            p.setVisible(p.enabled && Cursor.visible);
         }
 
         private bool shouldLaserPointersBeActive()
         {
-            return VHVRConfig.HandsEnabled() &&
-                (Cursor.visible || (getPlayerCharacter() != null && getPlayerCharacter().InPlaceMode()));
+            bool isInPlaceMode = (getPlayerCharacter() != null) && getPlayerCharacter().InPlaceMode();
+            return VHVRConfig.UseVrControls() && VHVRConfig.HandsEnabled() && (Cursor.visible || isInPlaceMode);
         }
 
         // Returns true if both the hand and pointer are not null
         // and the hand is active
-        private bool handIsActive(Hand h, SteamVR_LaserPointer p)
+        private static bool handIsActive(Hand h, SteamVR_LaserPointer p)
         {
             if (h == null || p == null)
             {
@@ -566,11 +577,14 @@ namespace ValheimVRMod.VRCore
                 Vector3 desiredPosition = getDesiredPosition(playerCharacter);
                 _instance.transform.localPosition = desiredPosition -
                     playerCharacter.transform.position + getHeadOffset(_headZoomLevel);
-                Vector3 hmd = Valve.VR.InteractionSystem.Player.instance.hmdTransform.position;
+                var hmd = Valve.VR.InteractionSystem.Player.instance.hmdTransform;
                 // Measure the distance between HMD and desires location, and save it.
-                FIRST_PERSON_INIT_OFFSET = desiredPosition - hmd;
+                FIRST_PERSON_INIT_OFFSET = desiredPosition - hmd.position;
+                if (VHVRConfig.UseLookLocomotion())
+                {
+                    _instance.transform.localRotation = Quaternion.Euler(0f, -hmd.localRotation.eulerAngles.y, 0f);
+                }
                 headPositionInitialized = true;
-                //_instance.transform.localRotation = Quaternion.identity;
             }
         }
 
