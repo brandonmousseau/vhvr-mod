@@ -212,7 +212,7 @@ namespace ValheimVRMod.Utilities
         {
             useLookLocomotion = config.Bind("Controls",
                                             "UseLookLocomotion",
-                                            false,
+                                            true,
                                             "Setting this to true ties the direction you are looking to the walk direction while in first person mode. " +
                                             "Set this to false if you prefer to disconnect these so you can look" +
                                             " look by turning your head without affecting movement direction.");

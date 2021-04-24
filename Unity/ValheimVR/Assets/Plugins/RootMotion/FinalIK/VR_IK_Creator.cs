@@ -58,7 +58,7 @@ public class VR_IK_Creator : MonoBehaviour
 
         Transform head = Instantiate(vrik.references.head.gameObject).transform;
         head.parent = camera;
-        head.localPosition = new Vector3(0, -0.175f, -0.151f);
+        head.localPosition = new Vector3(0, -0.133f, -0.089f);
         head.localRotation = Quaternion.Euler(0, 90, 0);
         vrik.solver.spine.headTarget = head;
 
