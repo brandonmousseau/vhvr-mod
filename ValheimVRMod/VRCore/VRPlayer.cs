@@ -571,11 +571,11 @@ namespace ValheimVRMod.VRCore
             if (vrik != null && vrik.vrik != null) {
                 vrik.vrik.enabled = VHVRConfig.UseVRIK() &&
                     inFirstPerson &&
-                    validAnimatorState(player.GetComponentInChildren<Animator>());
+                    validVrikAnimatorState(player.GetComponentInChildren<Animator>());
             }
         }
 
-        private bool validAnimatorState(Animator animator)
+        private bool validVrikAnimatorState(Animator animator)
         {
             if (animator == null)
             {
