@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 public class VR_IK_Creator : MonoBehaviour
 {
@@ -32,7 +30,7 @@ public class VR_IK_Creator : MonoBehaviour
     private void initialize()
     {
         
-        vrik = this.gameObject.AddComponent<RootMotion.FinalIK.VRIK>();
+        vrik = gameObject.AddComponent<RootMotion.FinalIK.VRIK>();
         vrik.AutoDetectReferences();
         vrik.references.leftThigh = null;
         vrik.references.leftCalf = null;
@@ -46,14 +44,14 @@ public class VR_IK_Creator : MonoBehaviour
 
         Transform leftHand = Instantiate(vrik.references.leftHand.gameObject).transform;
         leftHand.parent = leftController;
-        leftHand.transform.localPosition = new Vector3(0.03f, 0.02f, -0.17f);
-        leftHand.transform.localRotation = Quaternion.Euler(140.56f, -94.25f, -80.0f);
+        leftHand.transform.localPosition = new Vector3(0.0107f, 0.0469f, -0.1774f);
+        leftHand.transform.localRotation = Quaternion.Euler(181.978f, -90.343f, -45.733f);
         vrik.solver.leftArm.target = leftHand;
 
         Transform rightHand =  Instantiate(vrik.references.rightHand.gameObject).transform;
         rightHand.parent = rightController;
-        rightHand.transform.localPosition = new Vector3(-0.03f, 0.02f, -0.17f);
-        rightHand.transform.localRotation = Quaternion.Euler(115.88f, 88.74f, 80.0f);
+        rightHand.transform.localPosition = new Vector3(0.0107f, 0.0469f, -0.1774f);
+        rightHand.transform.localRotation = Quaternion.Euler(181.978f, 90.343f, 45.733f);
         vrik.solver.rightArm.target = rightHand;
 
         Transform head = Instantiate(vrik.references.head.gameObject).transform;
