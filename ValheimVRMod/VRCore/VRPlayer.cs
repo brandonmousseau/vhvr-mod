@@ -154,6 +154,7 @@ namespace ValheimVRMod.VRCore
             attachVrPlayerToWorldObject();
             enableCameras();
             checkAndSetHandsAndPointers();
+            updateVrik();
             UpdateAmplifyOcclusionStatus();
         }
 
@@ -221,10 +222,12 @@ namespace ValheimVRMod.VRCore
             if (_leftHand != null)
             {
                 _leftHand.enabled = VHVRConfig.HandsEnabled();
+                _leftHand.SetVisibility(_leftHand.enabled && !vrikEnabled());
             }
             if (_rightHand != null)
             {
                 _rightHand.enabled = VHVRConfig.HandsEnabled();
+                _rightHand.SetVisibility(_rightHand.enabled && !vrikEnabled());
             }
             // Next check whether the hands are active, and enable the appropriate pointer based
             // on what is available and what the options set as preferred. Disable the inactive pointer(s).
@@ -544,7 +547,6 @@ namespace ValheimVRMod.VRCore
                 return;
             }
             _instance.transform.SetParent(playerCharacter.transform, false);
-            maybeAddVrik(playerCharacter);
             attachedToPlayer = true;
             maybeInitHeadPosition(playerCharacter);
             Vector3 firstPersonAdjust = inFirstPerson ? FIRST_PERSON_INIT_OFFSET : Vector3.zero;
@@ -557,19 +559,45 @@ namespace ValheimVRMod.VRCore
                                                + Vector3.forward * NECK_OFFSET; // Move slightly forward to position on neck
         }
 
+        private void updateVrik()
+        {
+            var player = getPlayerCharacter();
+            if (player == null)
+            {
+                return;
+            }
+            maybeAddVrik(player);
+            var vrik = player.gameObject.GetComponent<VR_IK_Creator>();
+            if (vrik != null && vrik.vrik != null) {
+                vrik.vrik.enabled = VHVRConfig.UseVRIK() && inFirstPerson;
+            }
+        }
+
         private void maybeAddVrik(Player player)
         {
-            if (player.gameObject.GetComponent<VR_IK_Creator>() != null)
+            if (!VHVRConfig.UseVRIK() || player.gameObject.GetComponent<VR_IK_Creator>() != null)
             {
                 return;
             }
             var vrik = player.gameObject.AddComponent<VR_IK_Creator>();
             vrik.leftController = getHand(LEFT_HAND, _instance).transform;
-            getHand(LEFT_HAND, _instance).SetVisibility(false);
             vrik.rightController = getHand(RIGHT_HAND, _instance).transform;
-            getHand(RIGHT_HAND, _instance).SetVisibility(false);
             vrik.camera = CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform;
+        }
 
+        private bool vrikEnabled()
+        {
+            var player = getPlayerCharacter();
+            if (player == null)
+            {
+                return false;
+            }
+            var vrik = player.gameObject.GetComponent<VR_IK_Creator>();
+            if (vrik != null && vrik.vrik != null)
+            {
+                return vrik.vrik.enabled;
+            }
+            return false;
         }
 
         private void maybeInitHeadPosition(Player playerCharacter)

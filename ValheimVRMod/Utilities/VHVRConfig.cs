@@ -23,6 +23,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> headOffsetThirdPersonY;
         private static ConfigEntry<bool> enableHeadReposition;
         private static ConfigEntry<bool> recenterOnStart;
+        private static ConfigEntry<bool> useVrik;
 
         // UI Settings
         private static ConfigEntry<bool> useOverlayGui;
@@ -76,6 +77,10 @@ namespace ValheimVRMod.Utilities
                                           "RecenterOnStart",
                                           true,
                                           "Set this to true if you want tracking to be automatically re-centered when the game first starts up.");
+            useVrik = config.Bind("General",
+                                  "UseVRIK",
+                                  false,
+                                  "Determines whether to use VRIK or not to use motion controls to track player limbs.");
             mirrorMode = config.Bind("General",
                                      "MirrorMode",
                                      "Right",
@@ -507,6 +512,11 @@ namespace ValheimVRMod.Utilities
         public static bool UseVrControls()
         {
             return useVrControls.Value;
+        }
+
+        public static bool UseVRIK()
+        {
+            return useVrik.Value;
         }
 
     }
