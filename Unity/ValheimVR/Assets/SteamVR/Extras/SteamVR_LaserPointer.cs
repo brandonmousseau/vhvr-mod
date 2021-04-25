@@ -27,6 +27,8 @@ namespace Valve.VR.Extras
         public event PointerEventHandler PointerTracking;
         public float maxRaycastDistance = Mathf.Infinity;
         public int raycastLayerMask = Physics.DefaultRaycastLayers;
+        public Vector3 rayStartingPosition = Vector3.zero;
+        public Quaternion rayDirection = Quaternion.identity;
 
         private bool mouseButtonsLocked = false;
 
@@ -56,8 +58,8 @@ namespace Valve.VR.Extras
 
             holder = new GameObject();
             holder.transform.parent = this.transform;
-            holder.transform.localPosition = Vector3.zero;
-            holder.transform.localRotation = Quaternion.identity;
+            holder.transform.localPosition = new Vector3(0.04f, -0.05f, -0.01f);
+            holder.transform.localRotation = Quaternion.Euler(40f, 3f, 0f);
 
             pointer = GameObject.CreatePrimitive(PrimitiveType.Cube);
             pointer.layer = 23; // Hands layer
@@ -139,8 +141,9 @@ namespace Valve.VR.Extras
             bool rightButtonState = mouseButtonsLocked ? false : rightClick.GetState(pose.inputSource);
 
             float dist = 100f;
-
-            Ray raycast = new Ray(transform.position, transform.forward);
+            rayStartingPosition = holder.transform.position;
+            rayDirection = holder.transform.rotation;
+            Ray raycast = new Ray(rayStartingPosition, rayDirection * Vector3.forward);
             RaycastHit hit;
             bool bHit = Physics.Raycast(raycast, out hit, maxRaycastDistance, raycastLayerMask);
 
