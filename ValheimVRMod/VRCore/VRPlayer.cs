@@ -569,8 +569,19 @@ namespace ValheimVRMod.VRCore
             maybeAddVrik(player);
             var vrik = player.gameObject.GetComponent<VR_IK_Creator>();
             if (vrik != null && vrik.vrik != null) {
-                vrik.vrik.enabled = VHVRConfig.UseVRIK() && inFirstPerson;
+                vrik.vrik.enabled = VHVRConfig.UseVRIK() &&
+                    inFirstPerson &&
+                    validAnimatorState(player.GetComponentInChildren<Animator>());
             }
+        }
+
+        private bool validAnimatorState(Animator animator)
+        {
+            if (animator == null)
+            {
+                return false;
+            }
+            return !animator.GetBool("wakeup");
         }
 
         private void maybeAddVrik(Player player)
