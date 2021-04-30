@@ -1,0 +1,772 @@
+[33mcommit 16a3cdd2f88fe33627fb4d364fcc4ab07b7f02ac[m[33m ([m[1;36mHEAD -> [m[1;32mvr_body_prototype[m[33m)[m
+Author: Andi1986 <andreas.hof@gmx.de>
+Date:   Sun Apr 25 19:13:57 2021 +0200
+
+    fix hand rotation
+
+[33mcommit 5a5c3e386802e0fa6a34aac209b856721da01362[m[33m ([m[1;31morigin/vr_body_prototype[m[33m)[m
+Author: Andi1986 <andreas.hof@gmx.de>
+Date:   Sat Apr 24 02:09:03 2021 +0200
+
+    tweak head camera
+
+[33mcommit 49ee9c238ad7033396fb8bae2cf43f7435d1bfeb[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Fri Apr 23 16:57:21 2021 -0700
+
+    Hide SteamVR hands after attaching to player character
+
+[33mcommit bd97f85e64bbbee60748ad575b959390668ca81a[m
+Merge: 81fedff 48a359f
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Fri Apr 23 15:36:49 2021 -0700
+
+    Merge branch 'master' into vr_body_prototype
+
+[33mcommit 48a359fd4b220b030506efa2cca507732518df21[m[33m ([m[1;31morigin/master[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Thu Apr 22 11:24:39 2021 -0700
+
+    Update enemy hud patch to match original logic more closely
+
+[33mcommit 1a2c2e9167eb8e903fcda32dda77f0b98c1bed60[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Thu Apr 22 11:23:57 2021 -0700
+
+    Only enable lasers if using VR controls
+
+[33mcommit 25572d1555e67c4d603ea2979909b8b26d287265[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Thu Apr 22 11:23:28 2021 -0700
+
+    Only use VR controls for placement if using VRControls
+
+[33mcommit 223652a3c9fe22e24611335b2b8a3f1b9e8c17a6[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Thu Apr 22 11:22:56 2021 -0700
+
+    Use UseVrControls option
+
+[33mcommit 28f49482c4aade15327180e8df267010552f402c[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Thu Apr 22 11:22:33 2021 -0700
+
+    Add UseVrControls option
+
+[33mcommit 8bf2eccf3dedef25c5d0a6e2731ea9afc42970fe[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Wed Apr 21 15:18:19 2021 -0700
+
+    Don't reposition null or inactive enemyhud gui
+
+[33mcommit 1e4f961509fa5d1bf754e34fc59533b3dc599e10[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Sun Apr 18 16:57:47 2021 -0700
+
+    Enable index controllers
+    
+    This change maps required inputs for the Valve Index controllers into
+    the game.
+
+[33mcommit 81fedff83d730f35bc835e5c1c50fa1d521f1f70[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Fri Apr 23 14:40:07 2021 -0700
+
+    Set legs to null and copy target transforms
+
+[33mcommit 627a7ee764e8e48e16af3ed316e743fb44ca7600[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Fri Apr 23 14:37:35 2021 -0700
+
+    Attach VRIK to PlayerModel
+    
+    This change moves the VR_IK_Creator into the FinalIK directory so that
+    it is built with the dll file. It also replaces the bone initialization
+    with the auto-initializer and sets all the leg bones to null.
+    
+    The VR_IK_Creator is assigned to the game's player character and assigns
+    camera and hand targets.
+
+[33mcommit a675ca7e945f8c1587daf3b49bbeae4dc5ed221c[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Fri Apr 23 06:05:57 2021 -0700
+
+    Create assembly definition for FinalIK
+    
+    This change adds assembly definitions for Root Motion's FinalIK library
+    so that we can generate DLL files to be copied and used in the mod
+    project.
+
+[33mcommit 77ad9434af75bd6c4993c9ae91fe4bbbdfbf3f05[m
+Author: Andi1986 <andreas.hof@gmx.de>
+Date:   Fri Apr 23 14:24:24 2021 +0200
+
+    fix, better use custom initialize instead of awake
+
+[33mcommit fc7173766712d61df56b27769edc63d113f20c96[m
+Author: Andi1986 <andreas.hof@gmx.de>
+Date:   Fri Apr 23 12:57:33 2021 +0200
+
+    VR_IK_Creator Script to enable IK at runtime for ingame model
+
+[33mcommit d68a2a122edf7920a5f7d60b996bf5674e5b1be9[m
+Author: Andi1986 <andreas.hof@gmx.de>
+Date:   Fri Apr 23 01:51:06 2021 +0200
+
+    remove dependencies
+
+[33mcommit 742ca84a501a487a7ee46b636c36455d23a063a6[m
+Author: Andi1986 <andreas.hof@gmx.de>
+Date:   Fri Apr 23 01:40:36 2021 +0200
+
+    added no-leg variant
+
+[33mcommit fe06de5dc077de76a9958ded81c56a0bd7375e7b[m
+Author: Andi1986 <andreas.hof@gmx.de>
+Date:   Thu Apr 22 23:56:30 2021 +0200
+
+    VR Body Prototype - intial commit
+
+[33mcommit 20e8f0f0e813133a5af04988d9092e9c0a347396[m[33m ([m[1;33mtag: v0.2.0[m[33m, [m[1;32mmaster[m[33m)[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Fri Apr 16 17:40:51 2021 -0700
+
+    Fix config option name
+
+[33mcommit ee49c768c113dd5d8f0200f9553cc4810b2a3322[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Fri Apr 16 16:26:00 2021 -0700
+
+    Minimap player icon matches body rotation
+    
+    Instead of using the default behavior where the minimap icon rotation
+    matches the game camera rotation, since we are in first person and look
+    direction might diverge from walk direction, we should use the direction
+    the body is facing as the rotation, as this will now always match
+    forward walk direction.
+
+[33mcommit d202936dd5dca982c5a69ab0aca2f9e43ea9c70e[m[33m ([m[1;31morigin/LookLocomotion[m[33m)[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Fri Apr 16 15:30:32 2021 -0700
+
+    Keep player body always rotated with look yaw
+
+[33mcommit 4d47902c160d3ce9a8ddd3d736ba6b0d87225873[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Fri Apr 16 14:51:19 2021 -0700
+
+    Prevent UIPanel from interacting with physics engine
+
+[33mcommit ee55d85bf7d0cd3cac45427f9d8b01bc3213ece7[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Thu Apr 15 21:42:52 2021 -0700
+
+    Updates to looklocomotion
+
+[33mcommit 857996746110cbcbc2d734c94e08e105904db88b[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Thu Apr 15 08:21:27 2021 -0700
+
+    Some small refactoring & bugfixes
+
+[33mcommit dbc05992a7b826d19082ce41819697be432c247e[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Wed Apr 14 22:15:15 2021 -0700
+
+    Enabled look based locomotion
+    
+    This change adds look based locomotion along with a system whereby the
+    GUI will rotate only when the head turns outside of some pre-defined
+    angle to allow the player to move their head around while checking the
+    GUI without having it constanly move away from where they want to look.
+
+[33mcommit 34ce0b876c8103bb2c5bd0aafbb78b2f439e91d1[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Tue Apr 13 19:50:29 2021 -0700
+
+    Small changes to prevent null reference exception
+
+[33mcommit 2ade68888dc287030aa1b11c4f2a7fb80d23daee[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Tue Apr 13 07:30:44 2021 -0700
+
+    Use layer mask for SteamVR_LaserPointer
+    
+    The laser pointer originally uses hte default raycast layer mask. This
+    update adds the ability to set it as an option and changes it to only
+    interact with the UI panel.
+
+[33mcommit 66984399b9724855fd8dedf05b7e98aff3806995[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Tue Apr 13 06:54:33 2021 -0700
+
+    Add EnemyHuds configuration options
+    
+    Added the ability to disable enemy huds if desired as well as scale
+    their size up or down.
+
+[33mcommit cac3a076cf4b3a01645076df0661edc476cb9245[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Tue Apr 13 06:40:45 2021 -0700
+
+    Update version string to 0.2.0
+
+[33mcommit b31034cf7378b902c531ddb4c0e763b9c3703ec6[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Mon Apr 12 21:41:22 2021 -0700
+
+    Update version string
+
+[33mcommit a1687d12fcb6908e31c40d813fefa3177154e442[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Mon Apr 12 21:38:57 2021 -0700
+
+    Ensure original enemy huds always inactive
+    
+    Update the EnemyHuds transpiler to always set the second
+    SetActive(true) call to false instead. This doesn't impact the boss huds
+    which will be displayed on GUI panel.
+
+[33mcommit cbdcb39b1722ae305642420aabe0732d56db5a2d[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Mon Apr 12 21:21:28 2021 -0700
+
+    Move piece health bar to hovering piece
+    
+    In the base game, the health bar for the hovered piece in place mode is
+    placed at the crosshair, which is disconnected in the VR mod from the
+    placement ray vector. This moves the health bar to be positioned on top
+    of the currently hovered object.
+
+[33mcommit 72b9816b323f040d557a942308b5817854a932cc[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Mon Apr 12 20:46:52 2021 -0700
+
+    Add missing properlty to world space UI camera.
+
+[33mcommit 3f3f18285de6f1cea7fed6fb48e34e3c59b557ef[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Mon Apr 12 20:44:10 2021 -0700
+
+    Add placement mode visual cue
+    
+    In the base game, the placement cursor is centered on the crosshair, so
+    it is easy to know where the placement cursor is. Since I separated the
+    cursor from the crosshair, it can be difficult. This change adds a
+    visual cursor in the form of the Hammer icon to indicate where the
+    placement cursor is whenever there is not an active placement ghost.
+    
+    fixes #26
+
+[33mcommit eb4cb5f2e0db575866b32a4ebb6306518fa4dbf9[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Mon Apr 12 17:38:53 2021 -0700
+
+    Fix crosshair and layer related things
+    
+    This commit bundles a few updates. First the crosshair position
+    management was fixed. It was pushing all the elements in the crosshair
+    right to the center of the crosshair canvas. Now rather than doing that
+    I'm just properly parenting things so everything is moved automatically
+    but in the correct location on the canvas. This fixes the position of
+    things like the stealth bar and piece health bar.
+    
+    I also refactored the layer management to a central class since it was
+    starting to become difficult to keep track of. I combined the crosshair
+    and enemy hud layers into a central "world space UI" layer and camera
+    that can be used going forward for any UI that needs to be rendered in
+    world space outside of the normal UI canvas.
+
+[33mcommit f47456ad3c314819c3f54f29f352882ef7877e9e[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Sun Apr 11 21:58:34 2021 -0700
+
+    Fix crosshair raycast
+    
+    Fixed bugs related to the crosshair camera raycast not being positioned
+    correctly resulting in bad distance calculation for the crosshair.
+    Filtering out non-solid layers for the crosshair distance raycast.
+
+[33mcommit df0ec45acd6c722d7a004de96a44f6cd752bb4dd[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Sun Apr 11 17:41:18 2021 -0700
+
+    Fix rudder control UI
+    
+    This change moves the Rudder control UI to be positioned just below the
+    ship wind indicator on the UI.
+    
+    fixes #24
+
+[33mcommit 9b0e70bbd8d09662a4ff929fe0444140eb3f432c[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Sun Apr 11 11:29:25 2021 -0700
+
+    Update First Person camera positioning
+    
+    Previous to this change, the first person camera position was being tied
+    to the player model position using the current HMD transform every
+    cycle. This turned out to be a bad idea because it means if the player
+    leans forward, the positioning of the camera is moved backwards to
+    compensate and keep it on the player model, which creates the effect that
+    the whole world is moving forwards with your head rather than you moving
+    your head.
+    
+    Instead, now it will only account for the current HMD position on first
+    startup or after HMD tracking is recentered. The offset calculated is
+    saved and used as a constant offset until next recenter. This change
+    also removes the usage of the head repositioning config options for
+    first person modeas it no longer makes sense to use them given this new
+    strategy. The player can still adjust them in game, but everytime the
+    tracking is recentered this offset will be reset to zero.
+
+[33mcommit a66edb8b8041bf1093beb772ca762f343df8ff5c[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Sat Apr 10 23:13:31 2021 -0700
+
+    Complete EnemyHuds impelmentation
+    
+    This change completes implementing EnemyHuds, so other characters health
+    bars etc should be visible for a time after the player vision hovers
+    over them. It is using a Transpiler to inject method calls to my own
+    class that is being used to create on-demand world-space Canvases that
+    will be located at the character with the Hud. The transpiler injects
+    method calls to the UpdateHuds method to update my copy of the hud data
+    to make sure it is getting updated appropriately.
+
+[33mcommit 2648faa6fb4b1bc127cae1e3416b4a85e9ae1ff9[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Sat Apr 10 17:47:58 2021 -0700
+
+    Add basic EnemyHud support
+    
+    This implements super basic functionality for displaying the EnemyHud
+    GUI elements above the actual characters in world space. It is
+    incomplete as there needs to be some functionality to update different
+    values etc as defined by the EnemyHud class.
+
+[33mcommit a22e3a8194145ad96d89bf3c228558b2f3192269[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Sat Apr 10 08:15:45 2021 -0700
+
+    Fix Hover object raycast
+    
+    This change fixes the Raycast that is used to determine what is the
+    current hover object or character. The original method uses the game
+    camera as the origin and direction of the raycast. This patch swaps that
+    with the VR camera.
+
+[33mcommit 73a4457348c3e025bf8fa959a47b0bad26b7d32e[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Sat Apr 10 07:25:18 2021 -0700
+
+    Further refactor Raycast vector transpiler
+    
+    Refactor this transpiler more so it can be used in some additional
+    contexts.
+
+[33mcommit 0f0377e6f27c94d528eaf64e967388da7ad470ff[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Fri Apr 9 19:46:04 2021 -0700
+
+    Rename VVRConfig to VHVRConfig
+
+[33mcommit a219193d66b74cabde78bb87d79f2da4ed768523[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Fri Apr 9 08:51:24 2021 -0700
+
+    Remove custom version string and use BepInEx versioning
+
+[33mcommit 50560ce3a36b43d26e3622c52c63a058c9a15a0a[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Fri Apr 9 07:27:11 2021 -0700
+
+    Fix cursor alignment
+    
+    Updated the cursor image position on the canvas so that the pointer part
+    aligns with the simulated cursor position.
+
+[33mcommit d31f7a4405cd4f2c3c5ccb0a2225f9aff8e01a54[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Thu Apr 8 22:55:30 2021 -0700
+
+    Update version string
+
+[33mcommit cbeed05e995ff0d357522bcec9e81982a3f4b66c[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Thu Apr 8 22:41:17 2021 -0700
+
+    Add ability to reposition third person camera.
+    
+    This change adds the ability to resposition the third person camera in
+    the same way as the first person camera for players who wish to adjust
+    this. The offset for each of the 3 third person zoom levels will be
+    shared, but third and first person offsets are separate.
+
+[33mcommit eb4bb321f09be135c2ec817994f7a128317ec27a[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Thu Apr 8 22:15:53 2021 -0700
+
+    Added options to reconfigure VR specific keys
+    
+    Added new config file options to allow the player to pick which keys
+    they want to use for repositioning the head as well as what key to use
+    for recentering tracking if they want.
+    
+    resolves #12
+
+[33mcommit 1be26d021c2a33e7956392feb344fc735ac63549[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Thu Apr 8 21:34:19 2021 -0700
+
+    Add config options for UI panel size and position
+    
+    Added some additional options for the user to customize the size
+    position of the GUI when not using the overlay.
+
+[33mcommit b8c8e54647f8963cb682ca4956dfb27e12c8fd5a[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Thu Apr 8 21:16:24 2021 -0700
+
+    Fix overlay gui positioning and add config options
+    
+    There was a bad offset causing the overlay gui to be slightly off
+    center. That was fixed and several new config file options were added to
+    allow a player to customize the size and position of the overlay.
+
+[33mcommit f83466ba572fc26205e8948910b7709b4c147f53[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Thu Apr 8 20:22:29 2021 -0700
+
+    Reorganize config entries
+    
+    Reorganized config file settings into better categories. Unfortunately
+    will require overwrite for anyone who has an existing config file.
+
+[33mcommit a8bbe335c6115be2bc32d640d1f3b326f7f0f89e[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Thu Apr 8 18:04:20 2021 -0700
+
+    Do not set VRPlayer as UIPanel parent
+    
+    The UI Panel uses a non-convex MeshCollider. After parenting the UI
+    Panel to the VRPlayer, and subsequently parenting the VRPlayer to the
+    game's Player model, an error is thrown related to using a non-convex
+    mesh collider with RigidBodies, which is not allowed.
+    
+    This was causing the laser pointers to no longer get a raycast hit with
+    the UI panel once attached to the Player.
+    
+    The position and rotation are now updated manually each frame.
+    
+    fixes #18
+
+[33mcommit 48950d8cd537221ec04ce4084b0576df5ffd1f6b[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Thu Apr 8 17:27:17 2021 -0700
+
+    Fix Set FOV Log Warning Spam
+    
+    fixes #11
+
+[33mcommit 44e9d77b3abfbe87389072a0d187ae1587722cbf[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Thu Apr 8 17:25:23 2021 -0700
+
+    Fix ShowStaticCrosshair option
+    
+    fixes #19
+
+[33mcommit 01fe51de952c0e8c7fa25c7b010e15133a55ef5f[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Wed Apr 7 22:38:59 2021 -0700
+
+    Add version log statement
+
+[33mcommit 6829eaa8f70e25ffd0741213c0b5fbfcb178ce24[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Wed Apr 7 22:20:27 2021 -0700
+
+    Center cursor when it becomes visible
+    
+    The cursor will now be centered whenever it becomes visible.
+    
+    resolve #17
+
+[33mcommit e9658e6fcf0860adf9b4c95f0c0eed7e7483cab4[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Wed Apr 7 22:16:32 2021 -0700
+
+    Move crosshair to unused layer
+
+[33mcommit 69fc4f933d1bf3946a5c1425b5ea25af3b98843e[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Wed Apr 7 21:34:14 2021 -0700
+
+    Account for depth in crosshair positioning
+    
+    This change causes the crosshair to be rendered at the depth that the
+    object being aimed at exists as well as scales it appropriately to keep
+    it at the same draw size on screen.
+    
+    This allows the crosshair to actually be effective in aiming with ranged
+    weapons and prevents double images from forming since you will no longer
+    have to focus on the crosshair and an object at a different depth
+    simultaneously.
+    
+    resolves #15
+
+[33mcommit 9cd5adba3431a7c864097a0a4753629b448ed457[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Wed Apr 7 20:43:22 2021 -0700
+
+    Fix bug with broken crosshair after death
+    
+    It turns out simply moving the crosshair elements off of the man GUI
+    canvas onto the separate canvas broke things after the player died. All
+    of the crosshair elements are normally destroyed and rebuilt on death &
+    respawn, but because I removed the elements from the canvas, they were
+    not getting recreated correctly.
+    
+    Instead of moving the crosshairs off of the canvas, I am just cloning
+    them, adding the clones to the separate canvas, and disabling the main
+    canvas crosshair elements.
+    
+    This change also moves crosshair management into its own class as there
+    will need to be more logic to deal with moving the crosshairs to the
+    proper depth and scaling them.
+    
+    fixes #16
+
+[33mcommit 1f221918ff6ece1b1ae05e83a1de4856285b2300[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Tue Apr 6 20:59:17 2021 -0700
+
+    Add default on option to recenter on start
+    
+    To help avoid players starting the game facing backwards depending on
+    their tracking, this change provides an option to just always recenter
+    tracking on startup.
+
+[33mcommit bd36992559688b91e7e9383d1cde0efab40dbba1[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Tue Apr 6 20:50:23 2021 -0700
+
+    Add crosshair support
+    
+    This change adds support for the crosshairs. What you interact with and
+    aiming is tied to the direction you are looking, so this change places
+    all the relevant crosshair and interaction info into a canvas directly
+    in front of you.
+    
+    This is not an ideal solution for the crosshair and it needs work. The
+    text that is displayed for interacting with objects is alright, but the
+    normal aiming reticle and the bow aimer, while in the center of your
+    vision, are off when it comes to where you are actually aiming due to
+    how the eyes are focusing on objects with stereoscopic displays.
+    
+    I'm including it in the next release since, while flawed, is an
+    improvement over the current crosshair, which just sits in the middle of
+    the GUI.
+    
+    This should be replaced with a reticlule that is displayed at the depth
+    the object being aimed at is actually at. Eventually with motion
+    controller support, the aiming reticle can be attached directly to the
+    bow and aiming can happen more naturally.
+
+[33mcommit 7f245bd116242e63eba969e6c8b0c5e9bcf879ac[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Tue Apr 6 10:08:26 2021 -0700
+
+    Refactor recenter method
+    
+    Refactor this to allow for recentering for other scenarios where it
+    makes sense.
+
+[33mcommit a95d24e8c95775879d00cab4aa91d4066a631042[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Mon Apr 5 21:37:55 2021 -0700
+
+    Dont pause or change render scale on dashboard
+    
+    This patch skips a SteamVR_Render function that is called when the
+    dashboard gains or loses focus. The function is responsible for pausing
+    the game when the dashboard is visible as well as setting render scale
+    to 0.5. Pausing the game breaks the game completely, so when the game is
+    unpaused, things do not get restored.
+    
+    Setting the renderscale to half doesn't break the game completely, but
+    things still end up being blurry even after the render scale is
+    restored, so something doesn't work right there.
+    
+    Skipping it doesn't cause any problems and fixes a major problem users
+    have.
+    
+    fixes #4
+
+[33mcommit b271477893b0a8e56ce84d23688694fc238f4a9f[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Mon Apr 5 17:44:38 2021 -0700
+
+    Enable joystick use for placement
+    
+    Takes input from the Right joystick on a gamepad to provide vertical
+    axis placement with the gamepad.
+
+[33mcommit 69082e190681fa95b22580750a585fae8356bd9c[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Mon Apr 5 17:26:26 2021 -0700
+
+    Only patch for local player
+
+[33mcommit d60563c1c4af17f5d1ccb9deff22808dae50a877[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Sun Apr 4 20:24:07 2021 -0700
+
+    Link to Amplify github page
+
+[33mcommit a75ede7cd027a1b08599c72e0d94b93e7993d8cc[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Sun Apr 4 20:02:30 2021 -0700
+
+    Zero out the defaults for positioning
+
+[33mcommit edc76d102095d07482dd5e4a00931fdf40827bd2[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Sun Apr 4 19:57:19 2021 -0700
+
+    Update DLL reference paths
+
+[33mcommit 932ca93f41d95da67e9d675cdc7376a6c5350b89[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Sun Apr 4 17:08:21 2021 -0700
+
+    More reliable head positioning
+    
+    This updates the positioning of the head to account for the HMD world
+    position and should resolve problems of players having their head
+    position be offset from the character body. Leaving the ability for the
+    player to adjust manually if they need or want a slightly different
+    position for preference.
+
+[33mcommit 9f16b08eb2a5604b728a7ca711026fcac464a3fe[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Sat Apr 3 22:58:41 2021 -0700
+
+    Enable look locomotion
+    
+    Added a configuration option to allow, while in first person, tying the
+    player body rotation and forward motion direction to whatever direction
+    the player is looking.
+
+[33mcommit ca6c682e9a00f972b9add43ded7ae443f54ec805[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Sat Apr 3 20:57:26 2021 -0700
+
+    Add ability to recenter tracking using Home key
+    
+    If you press the Home key, the tracking is recentered. As an aside, I
+    noticed while testing this that recentering resulted in my shifting away
+    from the head position of the player. This is probably the root cause of
+    why I have been having issues finding the correct center location of the
+    player head for first person mode. I probably either need to get the
+    tracking data of the headset and center the camera relative to that or I
+    need to recenter right before finding the head position. Calculating the
+    offset based on current tracking position seems better since there might
+    be side effects of recentering.
+
+[33mcommit bc0f5a4fb69c1e9021067318e4d663ea22514158[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Sat Apr 3 20:28:41 2021 -0700
+
+    Enable repositioning head in vertical direction
+    
+    Some users reported their vertical head position is wrong. This change
+    allows users to reposition the Y axis of their camera with the PageUp
+    and PageDown keys and have the value saved back to the config file in
+    the same way the X & Z axis positions are saved.
+    
+    resolves #3
+
+[33mcommit 92bc43e88d797a37d6c3db1722a06fb1b9e28758[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Sat Apr 3 17:52:59 2021 -0700
+
+    Update readme
+
+[33mcommit eb5ed1c72490c0fd04f87b1216440a02664ef7cd[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Sat Apr 3 13:53:39 2021 -0700
+
+    Leave hands on by default
+    
+    Decided to leave the hands on by default and a user can turn them off if
+    they really want.
+
+[33mcommit 2b216261c24fe2610451bc94c41a73d4ce8be234[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Sat Apr 3 13:50:56 2021 -0700
+
+    Make IsUsingSteamVRInput fix a Harmony patch
+    
+    Just use a simple patch for this workaround instead of checking in the
+    entire com.valvesoftware.unity.openvr package.
+
+[33mcommit dd03b7a92a9723c8561917c931b39337b5ef2ea3[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Fri Apr 2 18:01:28 2021 -0700
+
+    Dont copy SubsystemRegistration dll. not needed.
+
+[33mcommit 14cf1fab10520c23833144be6f50b358ca477c46[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Fri Apr 2 16:33:16 2021 -0700
+
+    Disable hands by default
+    
+    Added a configuration option to disable the hands by default. Since
+    motion controls aren't working disabling this makes sense, especially
+    to avoid any potential conflicts on various devices.
+
+[33mcommit fb43f50f36759480dc230a63979fdcf83c29e024[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Fri Apr 2 16:25:05 2021 -0700
+
+    Fix capitalization in directory name
+
+[33mcommit e43c51c50a34531ef0c6d181b09d4cb36b2f9009[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Fri Apr 2 13:33:56 2021 -0700
+
+    Enable updating head position in game
+    
+    This adds a new option that allows a user to use the arrow keys to
+    reposition the head while playing so that they don't need to continually
+    restart the game to tweak the values. The setting is saved back into the
+    config file as they update.
+
+[33mcommit 53355bc87e7f2c4f5b67110ee730840c9059ad89[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Fri Apr 2 13:03:25 2021 -0700
+
+    Workaround to avoid incompatibility
+    
+    This changes the Valve OpenVR plugin to always return true for the
+    method used to determine whether or not to use steamvr input. This is
+    necessary because I found that there is at least one incompatibility
+    with another BepInEx plugin name ConfigurationManager. It isn't clear
+    what the root cause is, but calling GetTypes, as is done in
+    OpenVRHelpers.cs, causes an exception to be thrown when this plugin is
+    loaded first. Since for this mod we want this to always be true, I'll
+    just hard code it instead to avoid the exception. It would be best to
+    understand the root cause of why the error is thrown, but this seems to
+    at least prevent the crash.
+
+[33mcommit a6f4e3911ebbaa33e6378d585b56818d9ea7e4ce[m
+Author: Brandon Mousseau <brandon.a.mousseau@gmail.com>
+Date:   Thu Apr 1 17:41:54 2021 -0700
+
+    Commit all mod code
+    
+    This adds all of the mod code up to the current state to this public
+    repository. Future work on the mod will continue here.

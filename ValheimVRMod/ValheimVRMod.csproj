@@ -32,10 +32,11 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>3</WarningLevel>
+    <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="0Harmony">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\BepInEx\core\0Harmony.dll</HintPath>
+      <HintPath>dependencies\0Harmony.dll</HintPath>
     </Reference>
     <Reference Include="amplify_occlusion, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -43,47 +44,38 @@
     </Reference>
     <Reference Include="assembly_guiutils, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\valheim_assemblies\assembly_guiutils.dll</HintPath>
+      <HintPath>dependencies\assembly_guiutils.dll</HintPath>
     </Reference>
     <Reference Include="assembly_lux, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\valheim_assemblies\assembly_lux.dll</HintPath>
+      <HintPath>dependencies\assembly_lux.dll</HintPath>
     </Reference>
     <Reference Include="assembly_postprocessing, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\valheim_assemblies\assembly_postprocessing.dll</HintPath>
+      <HintPath>dependencies\assembly_postprocessing.dll</HintPath>
     </Reference>
     <Reference Include="assembly_simplemeshcombine, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\valheim_assemblies\assembly_simplemeshcombine.dll</HintPath>
+      <HintPath>dependencies\assembly_simplemeshcombine.dll</HintPath>
     </Reference>
     <Reference Include="assembly_steamworks, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\valheim_assemblies\assembly_steamworks.dll</HintPath>
+      <HintPath>dependencies\assembly_steamworks.dll</HintPath>
     </Reference>
     <Reference Include="assembly_sunshafts, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\valheim_assemblies\assembly_sunshafts.dll</HintPath>
+      <HintPath>dependencies\assembly_sunshafts.dll</HintPath>
     </Reference>
     <Reference Include="assembly_utils, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\valheim_assemblies\assembly_utils.dll</HintPath>
+      <HintPath>dependencies\assembly_utils.dll</HintPath>
     </Reference>
     <Reference Include="assembly_valheim, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\valheim_assemblies\assembly_valheim.dll</HintPath>
+      <HintPath>dependencies\assembly_valheim.dll</HintPath>
     </Reference>
     <Reference Include="BepInEx">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\BepInEx\core\BepInEx.dll</HintPath>
-    </Reference>
-    <Reference Include="final_ik">
-      <HintPath>..\Unity\build\ValheimVR_Data\Managed\final_ik.dll</HintPath>
-    </Reference>
-    <Reference Include="root_motion_demo_assets">
-      <HintPath>..\Unity\build\ValheimVR_Data\Managed\root_motion_demo_assets.dll</HintPath>
-    </Reference>
-    <Reference Include="root_motion_shared">
-      <HintPath>..\Unity\build\ValheimVR_Data\Managed\root_motion_shared.dll</HintPath>
+      <HintPath>dependencies\BepInEx.dll</HintPath>
     </Reference>
     <Reference Include="SteamVR, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -106,201 +98,220 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\Unity\build\ValheimVR_Data\Managed\Unity.XR.OpenVR.dll</HintPath>
     </Reference>
+    <Reference Include="System.Runtime, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\Unity\build\ValheimVR_Data\Managed\netstandard.dll</HintPath>
+    </Reference>
     <Reference Include="UnityEngine">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.AccessibilityModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.AccessibilityModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.AccessibilityModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.AIModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.AIModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.AIModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.AndroidJNIModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.AndroidJNIModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.AndroidJNIModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.AnimationModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.AnimationModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.AnimationModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.ARModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.ARModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.ARModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.AssetBundleModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.AssetBundleModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.AssetBundleModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.AudioModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.AudioModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.AudioModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.ClothModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.ClothModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.ClothModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.ClusterInputModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.ClusterInputModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.ClusterInputModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.ClusterRendererModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.ClusterRendererModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.ClusterRendererModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.CoreModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.CoreModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.CrashReportingModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.CrashReportingModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.CrashReportingModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.DirectorModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.DirectorModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.DirectorModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.DSPGraphModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.DSPGraphModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.DSPGraphModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.GameCenterModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.GameCenterModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.GameCenterModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.GridModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.GridModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.GridModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.HotReloadModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.HotReloadModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.HotReloadModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.ImageConversionModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.ImageConversionModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.ImageConversionModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.IMGUIModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.IMGUIModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.IMGUIModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.InputLegacyModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.InputLegacyModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.InputLegacyModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.InputModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.InputModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.InputModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.JSONSerializeModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.JSONSerializeModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.JSONSerializeModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.LocalizationModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.LocalizationModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.LocalizationModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.ParticleSystemModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.ParticleSystemModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.ParticleSystemModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.PerformanceReportingModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.PerformanceReportingModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.PerformanceReportingModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.Physics2DModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.Physics2DModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.Physics2DModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.PhysicsModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.PhysicsModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.PhysicsModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.ProfilerModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.ProfilerModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.ProfilerModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.ScreenCaptureModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.ScreenCaptureModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.ScreenCaptureModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.SharedInternalsModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.SharedInternalsModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.SharedInternalsModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.SpriteMaskModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.SpriteMaskModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.SpriteMaskModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.SpriteShapeModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.SpriteShapeModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.SpriteShapeModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.StreamingModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.StreamingModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.StreamingModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.SubstanceModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.SubstanceModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.SubstanceModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.SubsystemsModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.SubsystemsModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.SubsystemsModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.TerrainModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.TerrainModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.TerrainModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.TerrainPhysicsModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.TerrainPhysicsModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.TerrainPhysicsModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.TextCoreModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.TextCoreModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.TextCoreModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.TextRenderingModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.TextRenderingModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.TextRenderingModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.TilemapModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.TilemapModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.TilemapModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.TLSModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.TLSModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.TLSModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.UI">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.UI.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.UI.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.UIElementsModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.UIElementsModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.UIElementsModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.UIModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.UIModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.UIModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.UmbraModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.UmbraModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.UmbraModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.UNETModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.UNETModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.UNETModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.UnityAnalyticsModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.UnityAnalyticsModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.UnityAnalyticsModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.UnityConnectModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.UnityConnectModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.UnityConnectModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.UnityTestProtocolModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.UnityTestProtocolModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.UnityTestProtocolModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.UnityWebRequestAssetBundleModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.UnityWebRequestAssetBundleModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.UnityWebRequestAssetBundleModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.UnityWebRequestAudioModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.UnityWebRequestAudioModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.UnityWebRequestAudioModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.UnityWebRequestModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.UnityWebRequestModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.UnityWebRequestModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.UnityWebRequestTextureModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.UnityWebRequestTextureModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.UnityWebRequestTextureModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.UnityWebRequestWWWModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.UnityWebRequestWWWModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.UnityWebRequestWWWModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.VehiclesModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.VehiclesModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.VehiclesModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.VFXModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.VFXModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.VFXModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.VideoModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.VideoModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.VideoModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.VRModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.VRModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.VRModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.WindModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.WindModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.WindModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.XRModule">
-      <HintPath>..\..\..\denikson-BepInExPack_Valheim-5.4.800\BepInExPack_Valheim\unstripped_corlib\UnityEngine.XRModule.dll</HintPath>
+      <HintPath>dependencies\unstripped_corlib\UnityEngine.XRModule.dll</HintPath>
+    </Reference>
+    <Reference Include="final_ik.dll">
+      <HintPath>..\Unity\build\ValheimVR_Data\Managed\final_ik.dll</HintPath>
+    </Reference>
+    <Reference Include="root_motion_demo_assets">
+      <HintPath>..\Unity\build\ValheimVR_Data\Managed\root_motion_demo_assets.dll</HintPath>
+    </Reference>
+    <Reference Include="root_motion_shared">
+      <HintPath>..\Unity\build\ValheimVR_Data\Managed\root_motion_shared.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Patches\ColliderPatches.cs" />
+    <Compile Include="Patches\DebugPatches.cs" />
     <Compile Include="Patches\ControlPatches.cs" />
     <Compile Include="Patches\HarmonyPatcher.cs" />
     <Compile Include="Patches\EyeRotationPatch.cs" />
     <Compile Include="Patches\Misc.cs" />
+    <Compile Include="Patches\PlayerPatches.cs" />
     <Compile Include="Patches\UIPatches.cs" />
+    <Compile Include="Scripts\CollisionDetection.cs" />
     <Compile Include="Utilities\CameraUtils.cs" />
+    <Compile Include="Utilities\WeaponCollider.cs" />
     <Compile Include="Utilities\LayerUtils.cs" />
     <Compile Include="Utilities\VHVRConfig.cs" />
     <Compile Include="Utilities\LogUtils.cs" />
     <Compile Include="Utilities\VRAssetManager.cs" />
+    <Compile Include="Utilities\WeaponUtils.cs" />
     <Compile Include="VRCore\UI\CrosshairManager.cs" />
     <Compile Include="VRCore\UI\EnemyHudManager.cs" />
     <Compile Include="VRCore\UI\PlaceModeRayVectorProvider.cs" />
@@ -313,91 +324,94 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="VRCore\VRPlayer.cs" />
   </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>if not exist  "C:\Program Files (x86)\Steam\steamapps\common\Valheim\BepInEx\plugins" mkdir  "C:\Program Files (x86)\Steam\steamapps\common\Valheim\BepInEx\plugins"
-copy "$(TargetDir)ValheimVRMod.dll" "C:\Program Files (x86)\Steam\steamapps\common\Valheim\BepInEx\plugins"
-
-if not exist "C:\Program Files (x86)\Steam\steamapps\common\Valheim\Valheim_Data\Managed" mkdir "C:\Program Files (x86)\Steam\steamapps\common\Valheim\Valheim_Data\Managed"
-copy "$(SolutionDir)Unity\build\ValheimVR_Data\Managed\SteamVR.dll" "C:\Program Files (x86)\Steam\steamapps\common\Valheim\Valheim_Data\Managed"
-copy "$(SolutionDir)Unity\build\ValheimVR_Data\Managed\SteamVR_Actions.dll" "C:\Program Files (x86)\Steam\steamapps\common\Valheim\Valheim_Data\Managed"
-copy "$(SolutionDir)Unity\build\ValheimVR_Data\Managed\Unity.XR.Management.dll" "C:\Program Files (x86)\Steam\steamapps\common\Valheim\Valheim_Data\Managed"
-copy "$(SolutionDir)Unity\build\ValheimVR_Data\Managed\Unity.XR.OpenVR.dll" "C:\Program Files (x86)\Steam\steamapps\common\Valheim\Valheim_Data\Managed"
-copy "$(SolutionDir)Unity\build\ValheimVR_Data\Managed\netstandard.dll" "C:\Program Files (x86)\Steam\steamapps\common\Valheim\Valheim_Data\Managed"
-copy "$(SolutionDir)Unity\build\ValheimVR_Data\Managed\UnityEngine.XR.LegacyInputHelpers.dll" "C:\Program Files (x86)\Steam\steamapps\common\Valheim\Valheim_Data\Managed"
-copy "$(SolutionDir)Unity\build\ValheimVR_Data\Managed\UnityEngine.SpatialTracking.dll" "C:\Program Files (x86)\Steam\steamapps\common\Valheim\Valheim_Data\Managed"
-copy "$(SolutionDir)Unity\build\ValheimVR_Data\Managed\amplify_occlusion.dll" "C:\Program Files (x86)\Steam\steamapps\common\Valheim\Valheim_Data\Managed"
-
-if not exist "C:\Program Files (x86)\Steam\steamapps\common\Valheim\Valheim_Data\Plugins\x86_64" mkdir "C:\Program Files (x86)\Steam\steamapps\common\Valheim\Valheim_Data\Plugins\x86_64"
-copy "$(SolutionDir)Unity\build\ValheimVR_Data\Plugins\x86_64\XRSDKOpenVR.dll" "C:\Program Files (x86)\Steam\steamapps\common\Valheim\Valheim_Data\Plugins\x86_64"
-copy "$(SolutionDir)Unity\build\ValheimVR_Data\Plugins\x86_64\openvr_api.dll" "C:\Program Files (x86)\Steam\steamapps\common\Valheim\Valheim_Data\Plugins\x86_64"
-copy "$(SolutionDir)Unity\build\ValheimVR_Data\Plugins\x86_64\ucrtbased.dll" "C:\Program Files (x86)\Steam\steamapps\common\Valheim\Valheim_Data\Plugins\x86_64"
-
-if not exist "C:\Program Files (x86)\Steam\steamapps\common\Valheim\Valheim_Data\UnitySubsystems" mkdir "C:\Program Files (x86)\Steam\steamapps\common\Valheim\Valheim_Data\UnitySubsystems"
-if not exist "C:\Program Files (x86)\Steam\steamapps\common\Valheim\Valheim_Data\UnitySubsystems\XRSDKOpenVR" mkdir "C:\Program Files (x86)\Steam\steamapps\common\Valheim\Valheim_Data\UnitySubsystems\XRSDKOpenVR"
-copy "$(SolutionDir)Unity\build\ValheimVR_Data\UnitySubsystems\XRSDKOpenVR\UnitySubsystemsManifest.json" "C:\Program Files (x86)\Steam\steamapps\common\Valheim\Valheim_Data\UnitySubsystems\XRSDKOpenVR"
-
-if not exist  "C:\Program Files (x86)\Steam\steamapps\common\Valheim\Valheim_Data\StreamingAssets\SteamVR" mkdir  "C:\Program Files (x86)\Steam\steamapps\common\Valheim\Valheim_Data\StreamingAssets\SteamVR"
-Xcopy /Y /E /I "$(SolutionDir)Unity\build\ValheimVR_Data\StreamingAssets\SteamVR"  "C:\Program Files (x86)\Steam\steamapps\common\Valheim\Valheim_Data\StreamingAssets\SteamVR"
-
-if not exist "C:\Program Files (x86)\Steam\steamapps\common\Valheim\Valheim_Data\StreamingAssets" mkdir "C:\Program Files (x86)\Steam\steamapps\common\Valheim\Valheim_Data\StreamingAssets"
-copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\AssetBundles"  "C:\Program Files (x86)\Steam\steamapps\common\Valheim\Valheim_Data\StreamingAssets"
-copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\AssetBundles.manifest"  "C:\Program Files (x86)\Steam\steamapps\common\Valheim\Valheim_Data\StreamingAssets"
-copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\steamvr_shaders"  "C:\Program Files (x86)\Steam\steamapps\common\Valheim\Valheim_Data\StreamingAssets"
-copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\steamvr_shaders.manifest"  "C:\Program Files (x86)\Steam\steamapps\common\Valheim\Valheim_Data\StreamingAssets"
-copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\xrmanager"  "C:\Program Files (x86)\Steam\steamapps\common\Valheim\Valheim_Data\StreamingAssets"
-copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\xrmanager.manifest"  "C:\Program Files (x86)\Steam\steamapps\common\Valheim\Valheim_Data\StreamingAssets"
-copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\steamvr_player_prefabs" "C:\Program Files (x86)\Steam\steamapps\common\Valheim\Valheim_Data\StreamingAssets"
-copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\steamvr_player_prefabs.manifest"  "C:\Program Files (x86)\Steam\steamapps\common\Valheim\Valheim_Data\StreamingAssets"
-copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\vhvr_custom" "C:\Program Files (x86)\Steam\steamapps\common\Valheim\Valheim_Data\StreamingAssets"
-copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\vhvr_custom.manifest"  "C:\Program Files (x86)\Steam\steamapps\common\Valheim\Valheim_Data\StreamingAssets"
-copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\amplify_resources" "C:\Program Files (x86)\Steam\steamapps\common\Valheim\Valheim_Data\StreamingAssets"
-copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\amplify_resources.manifest"  "C:\Program Files (x86)\Steam\steamapps\common\Valheim\Valheim_Data\StreamingAssets"
+    <PostBuildEvent>if not exist  "D:\Spiele\Steam\steamapps\common\Valheim\BepInEx\plugins" mkdir  "D:\Spiele\Steam\steamapps\common\Valheim\BepInEx\plugins"
+      copy "D:\Unity Projects\vhvr-mod\ValheimVRMod\bin\Debug\ValheimVRMod.dll" "D:\Spiele\Steam\steamapps\common\Valheim\BepInEx\plugins"
+      if not exist "D:\Spiele\Steam\steamapps\common\Valheim\Valheim_Data\Managed" mkdir "D:\Spiele\Steam\steamapps\common\Valheim\Valheim_Data\Managed"
+      copy "D:\Unity Projects\vhvr-mod\Unity\build\ValheimVR_Data\Managed\SteamVR.dll" "D:\Spiele\Steam\steamapps\common\Valheim\Valheim_Data\Managed"
+      copy "D:\Unity Projects\vhvr-mod\Unity\build\ValheimVR_Data\Managed\SteamVR_Actions.dll" "D:\Spiele\Steam\steamapps\common\Valheim\Valheim_Data\Managed"
+      copy "D:\Unity Projects\vhvr-mod\Unity\build\ValheimVR_Data\Managed\Unity.XR.Management.dll" "D:\Spiele\Steam\steamapps\common\Valheim\Valheim_Data\Managed"
+      copy "D:\Unity Projects\vhvr-mod\Unity\build\ValheimVR_Data\Managed\Unity.XR.OpenVR.dll" "D:\Spiele\Steam\steamapps\common\Valheim\Valheim_Data\Managed"
+      copy "D:\Unity Projects\vhvr-mod\Unity\build\ValheimVR_Data\Managed\netstandard.dll" "D:\Spiele\Steam\steamapps\common\Valheim\Valheim_Data\Managed"
+      copy "D:\Unity Projects\vhvr-mod\Unity\build\ValheimVR_Data\Managed\UnityEngine.XR.LegacyInputHelpers.dll" "D:\Spiele\Steam\steamapps\common\Valheim\Valheim_Data\Managed"
+      copy "D:\Unity Projects\vhvr-mod\Unity\build\ValheimVR_Data\Managed\UnityEngine.SpatialTracking.dll" "D:\Spiele\Steam\steamapps\common\Valheim\Valheim_Data\Managed"
+      copy "D:\Unity Projects\vhvr-mod\Unity\build\ValheimVR_Data\Managed\amplify_occlusion.dll" "D:\Spiele\Steam\steamapps\common\Valheim\Valheim_Data\Managed"
+      copy "D:\Unity Projects\vhvr-mod\Unity\build\ValheimVR_Data\Managed\final_ik.dll" "D:\Spiele\Steam\steamapps\common\Valheim\Valheim_Data\Managed"
+      copy "D:\Unity Projects\vhvr-mod\Unity\build\ValheimVR_Data\Managed\root_motion_demo_assets.dll" "D:\Spiele\Steam\steamapps\common\Valheim\Valheim_Data\Managed"
+      copy "D:\Unity Projects\vhvr-mod\Unity\build\ValheimVR_Data\Managed\root_motion_shared.dll" "D:\Spiele\Steam\steamapps\common\Valheim\Valheim_Data\Managed"
 
 
+      if not exist "D:\Spiele\Steam\steamapps\common\Valheim\Valheim_Data\Plugins\x86_64" mkdir "D:\Spiele\Steam\steamapps\common\Valheim\Valheim_Data\Plugins\x86_64"
+      copy "D:\Unity Projects\vhvr-mod\Unity\build\ValheimVR_Data\Plugins\x86_64\XRSDKOpenVR.dll" "D:\Spiele\Steam\steamapps\common\Valheim\Valheim_Data\Plugins\x86_64"
+      copy "D:\Unity Projects\vhvr-mod\Unity\build\ValheimVR_Data\Plugins\x86_64\openvr_api.dll" "D:\Spiele\Steam\steamapps\common\Valheim\Valheim_Data\Plugins\x86_64"
+      copy "D:\Unity Projects\vhvr-mod\Unity\build\ValheimVR_Data\Plugins\x86_64\ucrtbased.dll" "D:\Spiele\Steam\steamapps\common\Valheim\Valheim_Data\Plugins\x86_64"
 
-if not exist "$(ProjectDir)release" mkdir "$(ProjectDir)release"
-if not exist "$(ProjectDir)release\BepInEx" mkdir "$(ProjectDir)release\BepInEx"
-if not exist "$(ProjectDir)release\BepInEx\plugins" mkdir  "$(ProjectDir)release\BepInEx\plugins"
-copy "$(TargetDir)ValheimVRMod.dll" "$(ProjectDir)release\BepInEx\plugins"
+      if not exist "D:\Spiele\Steam\steamapps\common\Valheim\Valheim_Data\UnitySubsystems" mkdir "D:\Spiele\Steam\steamapps\common\Valheim\Valheim_Data\UnitySubsystems"
+      if not exist "D:\Spiele\Steam\steamapps\common\Valheim\Valheim_Data\UnitySubsystems\XRSDKOpenVR" mkdir "D:\Spiele\Steam\steamapps\common\Valheim\Valheim_Data\UnitySubsystems\XRSDKOpenVR"
+      copy "D:\Unity Projects\vhvr-mod\Unity\build\ValheimVR_Data\UnitySubsystems\XRSDKOpenVR\UnitySubsystemsManifest.json" "D:\Spiele\Steam\steamapps\common\Valheim\Valheim_Data\UnitySubsystems\XRSDKOpenVR"
 
-if not exist "$(ProjectDir)release\Valheim_Data" mkdir "$(ProjectDir)release\Valheim_Data"
-if not exist "$(ProjectDir)release\Valheim_Data\Managed" mkdir "$(ProjectDir)release\Valheim_Data\Managed"
-copy "$(SolutionDir)Unity\build\ValheimVR_Data\Managed\SteamVR.dll" "$(ProjectDir)release\Valheim_Data\Managed"
-copy "$(SolutionDir)Unity\build\ValheimVR_Data\Managed\SteamVR_Actions.dll" "$(ProjectDir)release\Valheim_Data\Managed"
-copy "$(SolutionDir)Unity\build\ValheimVR_Data\Managed\Unity.XR.Management.dll" "$(ProjectDir)release\Valheim_Data\Managed"
-copy "$(SolutionDir)Unity\build\ValheimVR_Data\Managed\Unity.XR.OpenVR.dll" "$(ProjectDir)release\Valheim_Data\Managed"
-copy "$(SolutionDir)Unity\build\ValheimVR_Data\Managed\netstandard.dll" "$(ProjectDir)release\Valheim_Data\Managed"
-copy "$(SolutionDir)Unity\build\ValheimVR_Data\Managed\UnityEngine.XR.LegacyInputHelpers.dll" "$(ProjectDir)release\Valheim_Data\Managed"
-copy "$(SolutionDir)Unity\build\ValheimVR_Data\Managed\UnityEngine.SpatialTracking.dll" "$(ProjectDir)release\Valheim_Data\Managed"
-copy "$(SolutionDir)Unity\build\ValheimVR_Data\Managed\amplify_occlusion.dll" "$(ProjectDir)release\Valheim_Data\Managed"
+      if not exist  "D:\Spiele\Steam\steamapps\common\Valheim\Valheim_Data\StreamingAssets\SteamVR" mkdir  "D:\Spiele\Steam\steamapps\common\Valheim\Valheim_Data\StreamingAssets\SteamVR"
+      Xcopy /Y /E /I "D:\Unity Projects\vhvr-mod\Unity\build\ValheimVR_Data\StreamingAssets\SteamVR"  "D:\Spiele\Steam\steamapps\common\Valheim\Valheim_Data\StreamingAssets\SteamVR"
 
-if not exist "$(ProjectDir)release\Valheim_Data\Plugins" mkdir if not exist "$(ProjectDir)release\Valheim_Data\Plugins"
-if not exist "$(ProjectDir)release\Valheim_Data\Plugins\x86_64" mkdir "$(ProjectDir)release\Valheim_Data\Plugins\x86_64"
-copy "$(SolutionDir)Unity\build\ValheimVR_Data\Plugins\x86_64\XRSDKOpenVR.dll" "$(ProjectDir)release\Valheim_Data\Plugins\x86_64"
-copy "$(SolutionDir)Unity\build\ValheimVR_Data\Plugins\x86_64\openvr_api.dll" "$(ProjectDir)release\Valheim_Data\Plugins\x86_64"
-copy "$(SolutionDir)Unity\build\ValheimVR_Data\Plugins\x86_64\ucrtbased.dll" "$(ProjectDir)release\Valheim_Data\Plugins\x86_64"
+      if not exist "D:\Spiele\Steam\steamapps\common\Valheim\Valheim_Data\StreamingAssets" mkdir "D:\Spiele\Steam\steamapps\common\Valheim\Valheim_Data\StreamingAssets"
+      copy  "D:\Unity Projects\vhvr-mod\Unity\ValheimVR\Assets\AssetBundles\AssetBundles"  "D:\Spiele\Steam\steamapps\common\Valheim\Valheim_Data\StreamingAssets"
+      copy  "D:\Unity Projects\vhvr-mod\Unity\ValheimVR\Assets\AssetBundles\AssetBundles.manifest"  "D:\Spiele\Steam\steamapps\common\Valheim\Valheim_Data\StreamingAssets"
+      copy  "D:\Unity Projects\vhvr-mod\Unity\ValheimVR\Assets\AssetBundles\steamvr_shaders"  "D:\Spiele\Steam\steamapps\common\Valheim\Valheim_Data\StreamingAssets"
+      copy  "D:\Unity Projects\vhvr-mod\Unity\ValheimVR\Assets\AssetBundles\steamvr_shaders.manifest"  "D:\Spiele\Steam\steamapps\common\Valheim\Valheim_Data\StreamingAssets"
+      copy  "D:\Unity Projects\vhvr-mod\Unity\ValheimVR\Assets\AssetBundles\xrmanager"  "D:\Spiele\Steam\steamapps\common\Valheim\Valheim_Data\StreamingAssets"
+      copy  "D:\Unity Projects\vhvr-mod\Unity\ValheimVR\Assets\AssetBundles\xrmanager.manifest"  "D:\Spiele\Steam\steamapps\common\Valheim\Valheim_Data\StreamingAssets"
+      copy  "D:\Unity Projects\vhvr-mod\Unity\ValheimVR\Assets\AssetBundles\steamvr_player_prefabs" "D:\Spiele\Steam\steamapps\common\Valheim\Valheim_Data\StreamingAssets"
+      copy  "D:\Unity Projects\vhvr-mod\Unity\ValheimVR\Assets\AssetBundles\steamvr_player_prefabs.manifest"  "D:\Spiele\Steam\steamapps\common\Valheim\Valheim_Data\StreamingAssets"
+      copy  "D:\Unity Projects\vhvr-mod\Unity\ValheimVR\Assets\AssetBundles\vhvr_custom" "D:\Spiele\Steam\steamapps\common\Valheim\Valheim_Data\StreamingAssets"
+      copy  "D:\Unity Projects\vhvr-mod\Unity\ValheimVR\Assets\AssetBundles\vhvr_custom.manifest"  "D:\Spiele\Steam\steamapps\common\Valheim\Valheim_Data\StreamingAssets"
+      copy  "D:\Unity Projects\vhvr-mod\Unity\ValheimVR\Assets\AssetBundles\amplify_resources" "D:\Spiele\Steam\steamapps\common\Valheim\Valheim_Data\StreamingAssets"
+      copy  "D:\Unity Projects\vhvr-mod\Unity\ValheimVR\Assets\AssetBundles\amplify_resources.manifest"  "D:\Spiele\Steam\steamapps\common\Valheim\Valheim_Data\StreamingAssets"
 
-if not exist "$(ProjectDir)release\Valheim_Data\UnitySubsystems" mkdir "$(ProjectDir)release\Valheim_Data\UnitySubsystems"
-if not exist "$(ProjectDir)release\Valheim_Data\UnitySubsystems\XRSDKOpenVR" mkdir "$(ProjectDir)release\Valheim_Data\UnitySubsystems\XRSDKOpenVR"
-copy "$(SolutionDir)Unity\build\ValheimVR_Data\UnitySubsystems\XRSDKOpenVR\UnitySubsystemsManifest.json" "$(ProjectDir)release\Valheim_Data\UnitySubsystems\XRSDKOpenVR"
+      if not exist "D:\Unity Projects\vhvr-mod\ValheimVRMod\release" mkdir "D:\Unity Projects\vhvr-mod\ValheimVRMod\release"
+      if not exist "D:\Unity Projects\vhvr-mod\ValheimVRMod\release\BepInEx" mkdir "D:\Unity Projects\vhvr-mod\ValheimVRMod\release\BepInEx"
+      if not exist "D:\Unity Projects\vhvr-mod\ValheimVRMod\release\BepInEx\plugins" mkdir  "D:\Unity Projects\vhvr-mod\ValheimVRMod\release\BepInEx\plugins"
+      copy "D:\Unity Projects\vhvr-mod\ValheimVRMod\bin\Debug\ValheimVRMod.dll" "D:\Unity Projects\vhvr-mod\ValheimVRMod\release\BepInEx\plugins"
 
-if not exist "$(ProjectDir)release\Valheim_Data\StreamingAssets" mkdir "$(ProjectDir)release\Valheim_Data\StreamingAssets"
-if not exist "$(ProjectDir)release\Valheim_Data\StreamingAssets\SteamVR" mkdir  "$(ProjectDir)release\Valheim_Data\StreamingAssets\SteamVR"
-Xcopy /Y /E /I "$(SolutionDir)Unity\build\ValheimVR_Data\StreamingAssets\SteamVR"  "$(ProjectDir)release\Valheim_Data\StreamingAssets\SteamVR"
+      if not exist "D:\Unity Projects\vhvr-mod\ValheimVRMod\release\Valheim_Data" mkdir "D:\Unity Projects\vhvr-mod\ValheimVRMod\release\Valheim_Data"
+      if not exist "D:\Unity Projects\vhvr-mod\ValheimVRMod\release\Valheim_Data\Managed" mkdir "D:\Unity Projects\vhvr-mod\ValheimVRMod\release\Valheim_Data\Managed"
+      copy "D:\Unity Projects\vhvr-mod\Unity\build\ValheimVR_Data\Managed\SteamVR.dll" "D:\Unity Projects\vhvr-mod\ValheimVRMod\release\Valheim_Data\Managed"
+      copy "D:\Unity Projects\vhvr-mod\Unity\build\ValheimVR_Data\Managed\SteamVR_Actions.dll" "D:\Unity Projects\vhvr-mod\ValheimVRMod\release\Valheim_Data\Managed"
+      copy "D:\Unity Projects\vhvr-mod\Unity\build\ValheimVR_Data\Managed\Unity.XR.Management.dll" "D:\Unity Projects\vhvr-mod\ValheimVRMod\release\Valheim_Data\Managed"
+      copy "D:\Unity Projects\vhvr-mod\Unity\build\ValheimVR_Data\Managed\Unity.XR.OpenVR.dll" "D:\Unity Projects\vhvr-mod\ValheimVRMod\release\Valheim_Data\Managed"
+      copy "D:\Unity Projects\vhvr-mod\Unity\build\ValheimVR_Data\Managed\netstandard.dll" "D:\Unity Projects\vhvr-mod\ValheimVRMod\release\Valheim_Data\Managed"
+      copy "D:\Unity Projects\vhvr-mod\Unity\build\ValheimVR_Data\Managed\UnityEngine.XR.LegacyInputHelpers.dll" "D:\Unity Projects\vhvr-mod\ValheimVRMod\release\Valheim_Data\Managed"
+      copy "D:\Unity Projects\vhvr-mod\Unity\build\ValheimVR_Data\Managed\UnityEngine.SpatialTracking.dll" "D:\Unity Projects\vhvr-mod\ValheimVRMod\release\Valheim_Data\Managed"
+      copy "D:\Unity Projects\vhvr-mod\Unity\build\ValheimVR_Data\Managed\amplify_occlusion.dll" "D:\Unity Projects\vhvr-mod\ValheimVRMod\release\Valheim_Data\Managed"
+      copy "D:\Unity Projects\vhvr-mod\Unity\build\ValheimVR_Data\Managed\final_ik.dll" "D:\Unity Projects\vhvr-mod\ValheimVRMod\release\Valheim_Data\Managed"
+      copy "D:\Unity Projects\vhvr-mod\Unity\build\ValheimVR_Data\Managed\root_motion_demo_assets.dll" "D:\Unity Projects\vhvr-mod\ValheimVRMod\release\Valheim_Data\Managed"
+      copy "D:\Unity Projects\vhvr-mod\Unity\build\ValheimVR_Data\Managed\root_motion_shared.dll" "D:\Unity Projects\vhvr-mod\ValheimVRMod\release\Valheim_Data\Managed"
 
-copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\AssetBundles"  "$(ProjectDir)release\Valheim_Data\StreamingAssets"
-copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\AssetBundles.manifest"  "$(ProjectDir)release\Valheim_Data\StreamingAssets"
-copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\steamvr_shaders"  "$(ProjectDir)release\Valheim_Data\StreamingAssets"
-copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\steamvr_shaders.manifest"  "$(ProjectDir)release\Valheim_Data\StreamingAssets"
-copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\xrmanager"  "$(ProjectDir)release\Valheim_Data\StreamingAssets"
-copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\xrmanager.manifest"  "$(ProjectDir)release\Valheim_Data\StreamingAssets"
-copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\steamvr_player_prefabs" "$(ProjectDir)release\Valheim_Data\StreamingAssets"
-copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\steamvr_player_prefabs.manifest"  "$(ProjectDir)release\Valheim_Data\StreamingAssets"
-copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\vhvr_custom" "$(ProjectDir)release\Valheim_Data\StreamingAssets"
-copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\vhvr_custom.manifest"  "$(ProjectDir)release\Valheim_Data\StreamingAssets"
-copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\amplify_resources" "$(ProjectDir)release\Valheim_Data\StreamingAssets"
-copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\amplify_resources.manifest"  "$(ProjectDir)release\Valheim_Data\StreamingAssets"</PostBuildEvent>
+      if not exist "D:\Unity Projects\vhvr-mod\ValheimVRMod\release\Valheim_Data\Plugins" mkdir if not exist "D:\Unity Projects\vhvr-mod\ValheimVRMod\release\Valheim_Data\Plugins"
+      if not exist "D:\Unity Projects\vhvr-mod\ValheimVRMod\release\Valheim_Data\Plugins\x86_64" mkdir "D:\Unity Projects\vhvr-mod\ValheimVRMod\release\Valheim_Data\Plugins\x86_64"
+      copy "D:\Unity Projects\vhvr-mod\Unity\build\ValheimVR_Data\Plugins\x86_64\XRSDKOpenVR.dll" "D:\Unity Projects\vhvr-mod\ValheimVRMod\release\Valheim_Data\Plugins\x86_64"
+      copy "D:\Unity Projects\vhvr-mod\Unity\build\ValheimVR_Data\Plugins\x86_64\openvr_api.dll" "D:\Unity Projects\vhvr-mod\ValheimVRMod\release\Valheim_Data\Plugins\x86_64"
+      copy "D:\Unity Projects\vhvr-mod\Unity\build\ValheimVR_Data\Plugins\x86_64\ucrtbased.dll" "D:\Unity Projects\vhvr-mod\ValheimVRMod\release\Valheim_Data\Plugins\x86_64"
+
+      if not exist "D:\Unity Projects\vhvr-mod\ValheimVRMod\release\Valheim_Data\UnitySubsystems" mkdir "D:\Unity Projects\vhvr-mod\ValheimVRMod\release\Valheim_Data\UnitySubsystems"
+      if not exist "D:\Unity Projects\vhvr-mod\ValheimVRMod\release\Valheim_Data\UnitySubsystems\XRSDKOpenVR" mkdir "D:\Unity Projects\vhvr-mod\ValheimVRMod\release\Valheim_Data\UnitySubsystems\XRSDKOpenVR"
+      copy "D:\Unity Projects\vhvr-mod\Unity\build\ValheimVR_Data\UnitySubsystems\XRSDKOpenVR\UnitySubsystemsManifest.json" "D:\Unity Projects\vhvr-mod\ValheimVRMod\release\Valheim_Data\UnitySubsystems\XRSDKOpenVR"
+
+      if not exist "D:\Unity Projects\vhvr-mod\ValheimVRMod\release\Valheim_Data\StreamingAssets" mkdir "D:\Unity Projects\vhvr-mod\ValheimVRMod\release\Valheim_Data\StreamingAssets"
+      if not exist "D:\Unity Projects\vhvr-mod\ValheimVRMod\release\Valheim_Data\StreamingAssets\SteamVR" mkdir  "D:\Unity Projects\vhvr-mod\ValheimVRMod\release\Valheim_Data\StreamingAssets\SteamVR"
+      Xcopy /Y /E /I "D:\Unity Projects\vhvr-mod\Unity\build\ValheimVR_Data\StreamingAssets\SteamVR"  "D:\Unity Projects\vhvr-mod\ValheimVRMod\release\Valheim_Data\StreamingAssets\SteamVR"
+
+      copy  "D:\Unity Projects\vhvr-mod\Unity\ValheimVR\Assets\AssetBundles\AssetBundles"  "D:\Unity Projects\vhvr-mod\ValheimVRMod\release\Valheim_Data\StreamingAssets"
+      copy  "D:\Unity Projects\vhvr-mod\Unity\ValheimVR\Assets\AssetBundles\AssetBundles.manifest"  "D:\Unity Projects\vhvr-mod\ValheimVRMod\release\Valheim_Data\StreamingAssets"
+      copy  "D:\Unity Projects\vhvr-mod\Unity\ValheimVR\Assets\AssetBundles\steamvr_shaders"  "D:\Unity Projects\vhvr-mod\ValheimVRMod\release\Valheim_Data\StreamingAssets"
+      copy  "D:\Unity Projects\vhvr-mod\Unity\ValheimVR\Assets\AssetBundles\steamvr_shaders.manifest"  "D:\Unity Projects\vhvr-mod\ValheimVRMod\release\Valheim_Data\StreamingAssets"
+      copy  "D:\Unity Projects\vhvr-mod\Unity\ValheimVR\Assets\AssetBundles\xrmanager"  "D:\Unity Projects\vhvr-mod\ValheimVRMod\release\Valheim_Data\StreamingAssets"
+      copy  "D:\Unity Projects\vhvr-mod\Unity\ValheimVR\Assets\AssetBundles\xrmanager.manifest"  "D:\Unity Projects\vhvr-mod\ValheimVRMod\release\Valheim_Data\StreamingAssets"
+      copy  "D:\Unity Projects\vhvr-mod\Unity\ValheimVR\Assets\AssetBundles\steamvr_player_prefabs" "D:\Unity Projects\vhvr-mod\ValheimVRMod\release\Valheim_Data\StreamingAssets"
+      copy  "D:\Unity Projects\vhvr-mod\Unity\ValheimVR\Assets\AssetBundles\steamvr_player_prefabs.manifest"  "D:\Unity Projects\vhvr-mod\ValheimVRMod\release\Valheim_Data\StreamingAssets"
+      copy  "D:\Unity Projects\vhvr-mod\Unity\ValheimVR\Assets\AssetBundles\vhvr_custom" "D:\Unity Projects\vhvr-mod\ValheimVRMod\release\Valheim_Data\StreamingAssets"
+      copy  "D:\Unity Projects\vhvr-mod\Unity\ValheimVR\Assets\AssetBundles\vhvr_custom.manifest"  "D:\Unity Projects\vhvr-mod\ValheimVRMod\release\Valheim_Data\StreamingAssets"
+      copy  "D:\Unity Projects\vhvr-mod\Unity\ValheimVR\Assets\AssetBundles\amplify_resources" "D:\Unity Projects\vhvr-mod\ValheimVRMod\release\Valheim_Data\StreamingAssets"
+      copy  "D:\Unity Projects\vhvr-mod\Unity\ValheimVR\Assets\AssetBundles\amplify_resources.manifest"  "D:\Unity Projects\vhvr-mod\ValheimVRMod\release\Valheim_Data\StreamingAssets"</PostBuildEvent>
   </PropertyGroup>
 </Project>

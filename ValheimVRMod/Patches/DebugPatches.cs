@@ -1,10 +1,5 @@
 ﻿using static ValheimVRMod.Utilities.LogUtils;
 using HarmonyLib;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Reflection.Emit;
-using UnityEngine;
-using ValheimVRMod.VRCore;
 
 
 namespace ValheimVRMod.Patches {
@@ -87,41 +82,45 @@ namespace ValheimVRMod.Patches {
     [HarmonyPatch(typeof(Humanoid), "EquipItem")]
     class HumanoidEquipItem {
         
-        static void Postfix(ref bool __result, ItemDrop.ItemData item, bool triggerEquipEffects = true)
+        static void Postfix(ref Humanoid __instance, ref bool __result, ItemDrop.ItemData item, bool triggerEquipEffects = true)
         {
+            
             LogDebug("EQUIP_DEBUG: NAME: " + item.m_shared.m_name);
-
+    
             if (!__result) {
                 LogDebug("EQUIP_DEBUG: EQUIP FAILED");
                 return;
             }
 
-            
-            GameObject component = UnityEngine.Object.Instantiate<GameObject>(item.m_dropPrefab);
-            //TODO NEU:
-            //item.m_shared.m_armorMaterial auf neues gameobject
-
-
-
-
-            if (component == null)
-            {
-                LogDebug("FUCK 1 !!!!!!!!!!!!!");
-            }
-            else if(VRPlayer.rightHand == null)
-            {
-                LogDebug("FUCK 2 !!!!!!!!!!!!!");
-            } else
-            {
-                Object.Destroy(component.GetComponent<Rigidbody>());
-                component.transform.SetParent(VRPlayer.rightHand.transform);
-                component.transform.position = Vector3.zero;
-            }
+            //
+            //
+            // //GameObject component = UnityEngine.Object.Instantiate<GameObject>(item.m_dropPrefab);
+            //
+            //
+            //
+            //
+            // if (component == null)
+            // {
+            //     LogDebug("FUCK 1 !!!!!!!!!!!!!");
+            // }
+            // else if(VRPlayer.rightHand == null)
+            // {
+            //     LogDebug("FUCK 2 !!!!!!!!!!!!!");
+            // } else
+            // {
+            //     Object.Destroy(component.GetComponent<Rigidbody>());
+            //     component.transform.SetParent(VRPlayer.rightHand.transform);
+            //     component.transform.position = Vector3.zero;
+            // }
 
             if (item.m_shared.m_itemType == ItemDrop.ItemData.ItemType.Tool)
             {
                 
                 LogDebug("EQUIP_DEBUG: ITS A TOOL");
+                
+             
+
+
                 //this.UnequipItem(this.m_rightItem, triggerEquipEffects);
                 //this.UnequipItem(this.m_leftItem, triggerEquipEffects);
                 //this.m_rightItem = item;
@@ -152,7 +151,7 @@ namespace ValheimVRMod.Patches {
             {
                 
                 LogDebug("EQUIP_DEBUG: ONE HANDED");
-                
+
                 // if (this.m_rightItem != null &&
                 //     this.m_rightItem.m_shared.m_itemType == ItemDrop.ItemData.ItemType.Torch && this.m_leftItem == null)
                 // {
@@ -251,5 +250,4 @@ namespace ValheimVRMod.Patches {
             // return true;
         }
     }
-
 }

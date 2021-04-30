@@ -6,6 +6,7 @@ using UnityEngine;
 using UnityEngine.PostProcessing;
 using UnityEngine.SceneManagement;
 using UnityStandardAssets.ImageEffects;
+using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore.UI;
 using Valve.VR.Extras;
@@ -64,6 +65,24 @@ namespace ValheimVRMod.VRCore
         public static Hand leftHand { get { return _leftHand;} }
         public static Hand rightHand { get { return _rightHand;} }
 
+        private static GameObject _collisionCube;
+
+        public static GameObject colliderCube()
+        {
+            if (_collisionCube != null)
+            {
+                return _collisionCube;
+            }
+            
+            _collisionCube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            _collisionCube.GetComponent<BoxCollider>().isTrigger = true;
+            Rigidbody rigidbody = _collisionCube.AddComponent<Rigidbody>();
+            rigidbody.useGravity = false;
+            _collisionCube.AddComponent<CollisionDetection>();
+            _collisionCube.layer = LayerUtils.ITEM_LAYER;
+            return _collisionCube;
+        } 
+        
         public static bool handsActive
         {
             get
