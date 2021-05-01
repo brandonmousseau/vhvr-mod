@@ -3,4 +3,5 @@
   &lt;Assembly Path="D:\Unity Projects\vhvr-mod\ValheimVRMod\dependencies\assembly_valheim.dll" /&gt;&#xD;
   &lt;Assembly Path="D:\Unity Projects\vhvr-mod\ValheimVRMod\dependencies\unstripped_corlib\UnityEngine.PhysicsModule.dll" /&gt;&#xD;
   &lt;Assembly Path="D:\Unity Projects\vhvr-mod\ValheimVRMod\dependencies\unstripped_corlib\UnityEngine.CoreModule.dll" /&gt;&#xD;
+  &lt;Assembly Path="D:\Unity Projects\vhvr-mod\ValheimVRMod\bin\Debug\assembly_utils.dll" /&gt;&#xD;
 &lt;/AssemblyExplorer&gt;</s:String></wpf:ResourceDictionary>

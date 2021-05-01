@@ -296,7 +296,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Patches\ColliderPatches.cs" />
+    <Compile Include="Patches\CollisionPatches.cs" />
     <Compile Include="Patches\DebugPatches.cs" />
     <Compile Include="Patches\ControlPatches.cs" />
     <Compile Include="Patches\HarmonyPatcher.cs" />
