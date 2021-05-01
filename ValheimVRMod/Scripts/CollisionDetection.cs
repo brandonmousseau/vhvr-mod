@@ -14,9 +14,9 @@ namespace ValheimVRMod.Scripts
         private const float MIN_DISTANCE = 0.75f;
         private const int MAX_SNAPSHOTS = 10;    
         
-        private bool scriptActive = false;
+        private bool scriptActive;
         private GameObject colliderParent = new GameObject();
-        private int tickCounter = 0;
+        private int tickCounter;
         private List<Vector3> snapshots = new List<Vector3>();
 
         public Vector3 lastHitPoint;
@@ -30,7 +30,7 @@ namespace ValheimVRMod.Scripts
                 return;
             }
             
-            ItemDrop.ItemData item = Player.m_localPlayer.GetRightItem();
+            var item = Player.m_localPlayer.GetRightItem();
 
             if (item == null)
             {
@@ -39,19 +39,14 @@ namespace ValheimVRMod.Scripts
 
             if (hasMomentum())
             {
-                Debug.Log("YES, HAS MOMEMNTUM");
                 lastHitPoint = transform.position;
                 lastHitCollider = collider;
 
-                Attack attack = Player.m_localPlayer.GetRightItem().m_shared.m_attack.Clone();
+                var attack = Player.m_localPlayer.GetRightItem().m_shared.m_attack.Clone();
                 attack.Start(Player.m_localPlayer, null,null,
                     AccessTools.FieldRefAccess<Player, CharacterAnimEvent>(Player.m_localPlayer, "m_animEvent"), 
                     null,  Player.m_localPlayer.GetRightItem(), null, 0.0f, 0.0f);
                 
-            }
-            else
-            {
-                Debug.Log("NOPE, HAS NO MOMEMNTUM");
             }
             
             Debug.Log("ITEM SHARED NAME: " + Player.m_localPlayer.GetRightItem().m_shared.m_name);
@@ -63,7 +58,7 @@ namespace ValheimVRMod.Scripts
         private void OnRenderObject()
         {
 
-            if (!scriptActive)
+            if (!isCollisionAllowed())
             {
                 return;
             }
@@ -96,8 +91,14 @@ namespace ValheimVRMod.Scripts
             }
         }
 
-        public void setScriptActive(bool active)
+        private bool isCollisionAllowed()
         {
+            return scriptActive && VRPlayer.inFirstPerson;
+        }
+
+        private void setScriptActive(bool active)
+        {
+
             scriptActive = active;
             
             if (!active)
@@ -109,13 +110,13 @@ namespace ValheimVRMod.Scripts
         private void FixedUpdate() 
         {
 
-            if (!scriptActive)
+            if (!isCollisionAllowed())
             {
                 return;
             }
             
             tickCounter++;
-            if (tickCounter < 10)
+            if (tickCounter < 7)
             {
                 return;
             }
