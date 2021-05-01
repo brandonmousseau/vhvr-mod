@@ -12,7 +12,7 @@ namespace ValheimVRMod.Scripts
     {
         
         private const float MIN_DISTANCE = 0.75f;
-        private const int MAX_SNAPSHOTS = 10;    
+        private const int MAX_SNAPSHOTS = 7;    
         
         private bool scriptActive;
         private GameObject colliderParent = new GameObject();
@@ -47,6 +47,8 @@ namespace ValheimVRMod.Scripts
                     AccessTools.FieldRefAccess<Player, CharacterAnimEvent>(Player.m_localPlayer, "m_animEvent"), 
                     null,  Player.m_localPlayer.GetRightItem(), null, 0.0f, 0.0f);
                 
+                snapshots.Clear();
+
             }
             
             Debug.Log("ITEM SHARED NAME: " + Player.m_localPlayer.GetRightItem().m_shared.m_name);
@@ -116,7 +118,7 @@ namespace ValheimVRMod.Scripts
             }
             
             tickCounter++;
-            if (tickCounter < 7)
+            if (tickCounter < 10)
             {
                 return;
             }

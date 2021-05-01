@@ -34,6 +34,7 @@ namespace ValheimVRMod.Patches
     class PatchAttackStart
     {
         private static MethodInfo doMeleeAttackMethod = AccessTools.Method(typeof(Attack), "DoMeleeAttack");
+        private static MethodInfo getStaminaUsageMethod = AccessTools.Method(typeof(Attack), "GetStaminaUsage");
 
         static bool Prefix(
             Humanoid character,
@@ -48,6 +49,15 @@ namespace ValheimVRMod.Patches
             ___m_character = character;
             ___m_animEvent = animEvent;
             ___m_weapon = weapon;
+            
+            float staminaUsage = (float)getStaminaUsageMethod.Invoke(__instance, null);;
+            if (staminaUsage > 0.0f && !character.HaveStamina(staminaUsage + 0.1f))
+            {
+                if (character.IsPlayer())
+                    Hud.instance.StaminaBarNoStaminaFlash();
+                return false;
+            }
+            character.UseStamina(staminaUsage);
             doMeleeAttackMethod.Invoke(__instance, null);
             return false;
         }
