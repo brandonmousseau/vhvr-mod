@@ -132,9 +132,7 @@ GameObject:
   - component: {fileID: 154479083}
   - component: {fileID: 154479082}
   - component: {fileID: 154479081}
-  - component: {fileID: 154479079}
   - component: {fileID: 154479080}
-  - component: {fileID: 154479084}
   - component: {fileID: 154479085}
   m_Layer: 0
   m_Name: Sphere
@@ -143,22 +141,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!54 &154479079
-Rigidbody:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 154479078}
-  serializedVersion: 2
-  m_Mass: 1
-  m_Drag: 0
-  m_AngularDrag: 0
-  m_UseGravity: 1
-  m_IsKinematic: 0
-  m_Interpolate: 0
-  m_Constraints: 0
-  m_CollisionDetection: 0
 --- !u!64 &154479080
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -234,18 +216,6 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &154479084
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 154479078}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 854d8064d6e8452d93edb567ae85b759, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!135 &154479085
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -1667,10 +1637,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b41bc8ad5dd5ca14ab571d3ccbabd0e5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  player: {fileID: 5354770950832915943}
-  sourceLeftHand: {fileID: 669114453}
-  sourceRightHand: {fileID: 669109667}
-  rotationMod: {x: 0, y: 0, z: 0}
 --- !u!1 &669452013
 GameObject:
   m_ObjectHideFlags: 0
@@ -2097,7 +2063,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1514496398}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.2, y: 0.83670044, z: 2.909}
+  m_LocalPosition: {x: -0.54, y: 0.83670044, z: 2.43}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}

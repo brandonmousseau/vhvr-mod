@@ -11,7 +11,7 @@ namespace ValheimVRMod.Scripts
     public class CollisionDetection : MonoBehaviour
     {
         
-        private const float MIN_DISTANCE = 0.75f;
+        private const float MIN_DISTANCE = 1.25f;
         private const int MAX_SNAPSHOTS = 7;    
         
         private bool scriptActive;
@@ -25,35 +25,27 @@ namespace ValheimVRMod.Scripts
         private void OnTriggerEnter(Collider collider)
         {
             
-            if (Player.m_localPlayer == null)
+            if (! isCollisionAllowed() || Player.m_localPlayer == null)
             {
                 return;
             }
             
             var item = Player.m_localPlayer.GetRightItem();
 
-            if (item == null)
+            if (item == null || !hasMomentum())
             {
                 return;
             }
-
-            if (hasMomentum())
-            {
-                lastHitPoint = transform.position;
-                lastHitCollider = collider;
-
-                var attack = Player.m_localPlayer.GetRightItem().m_shared.m_attack.Clone();
-                attack.Start(Player.m_localPlayer, null,null,
-                    AccessTools.FieldRefAccess<Player, CharacterAnimEvent>(Player.m_localPlayer, "m_animEvent"), 
-                    null,  Player.m_localPlayer.GetRightItem(), null, 0.0f, 0.0f);
-                
-                snapshots.Clear();
-
-            }
             
-            Debug.Log("ITEM SHARED NAME: " + Player.m_localPlayer.GetRightItem().m_shared.m_name);
-            Debug.Log("Collision Detected. OWN: " + gameObject.layer + " - " + name +
-                      " OTHER: " + collider.gameObject.layer + " - " + collider.gameObject.name);
+            lastHitPoint = transform.position;
+            lastHitCollider = collider;
+
+            var attack = Player.m_localPlayer.GetRightItem().m_shared.m_attack.Clone();
+            attack.Start(Player.m_localPlayer, null,null,
+                AccessTools.FieldRefAccess<Player, CharacterAnimEvent>(Player.m_localPlayer, "m_animEvent"), 
+                null,  Player.m_localPlayer.GetRightItem(), null, 0.0f, 0.0f);
+            
+            snapshots.Clear();
 
         }
 
@@ -76,6 +68,12 @@ namespace ValheimVRMod.Scripts
         public void setColliderParent(Transform obj, string name)
         {
 
+
+            if (colliderParent == null)
+            {
+                colliderParent = new GameObject();
+            }
+            
             try
             {
                 WeaponCollider colliderData = WeaponUtils.getForName(name);
@@ -95,7 +93,7 @@ namespace ValheimVRMod.Scripts
 
         private bool isCollisionAllowed()
         {
-            return scriptActive && VRPlayer.inFirstPerson;
+            return scriptActive && VRPlayer.inFirstPerson && colliderParent != null;
         }
 
         private void setScriptActive(bool active)

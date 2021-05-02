@@ -45,6 +45,11 @@ namespace ValheimVRMod.Utilities
                     0,  0.956f, 0,
                     0,  0, 0,
                     0.9030886f,  0.3803992f, 0.3803992f
+                )}, {
+                "Club", WeaponCollider.create( 
+                    -0.013f,  -0.022f, 0.603f,
+                    0,  -5.241f, 45,
+                    0.1044289f,  -0.09270307f, 0.5340722f
                 )}
             // TODO: more weapons
         };

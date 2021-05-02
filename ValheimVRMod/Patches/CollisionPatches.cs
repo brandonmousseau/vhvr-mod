@@ -13,8 +13,8 @@ namespace ValheimVRMod.Patches
     {
         static void Postfix(bool __result, string ___m_rightItem, ref GameObject ___m_rightItemInstance)
         {
-            if (!__result || ___m_rightItemInstance == null)
-            {
+
+            if (!__result || ___m_rightItemInstance == null) {
                 return;
             }
 
@@ -24,18 +24,32 @@ namespace ValheimVRMod.Patches
             {
                 return;
             }
+            
+            Player player = ___m_rightItemInstance.GetComponentInParent<Player>();
+            // only local player must trigger this
+            if (player == null || Player.m_localPlayer != player)
+            {
+                return;
+            }
 
             Transform item = meshFilter.transform;
-            VRPlayer.colliderCube().GetComponent<CollisionDetection>().setColliderParent(item, ___m_rightItem);
+            VRPlayer.collisionCube().GetComponent<CollisionDetection>().setColliderParent(item, ___m_rightItem);
         }
     }
 
     [HarmonyPatch(typeof(Attack), "Start")]
     class PatchAttackStart
     {
-        private static MethodInfo doMeleeAttackMethod = AccessTools.Method(typeof(Attack), "DoMeleeAttack");
+        
         private static MethodInfo getStaminaUsageMethod = AccessTools.Method(typeof(Attack), "GetStaminaUsage");
+        private static MethodInfo getLevelDamageFactorMethod =
+            AccessTools.Method(typeof(Attack), "GetLevelDamageFactor");
+        private static MethodInfo spawnOnHitTerrainMethod = AccessTools.Method(typeof(Attack), "SpawnOnHitTerrain",
+            new Type[] {typeof(Vector3), typeof(GameObject)});
 
+        /**
+         * in Start Patch we put some logic from original Start method and some more logic from original DoMeleeAttack
+         */
         static bool Prefix(
             Humanoid character,
             CharacterAnimEvent animEvent,
@@ -43,9 +57,27 @@ namespace ValheimVRMod.Patches
             ref Humanoid ___m_character,
             ref CharacterAnimEvent ___m_animEvent,
             ref ItemDrop.ItemData ___m_weapon,
-            ref Attack __instance
-        )
-        {
+            ref Attack __instance,
+            ref EffectList ___m_hitEffect,
+            ref Skills.SkillType ___m_specialHitSkill,
+            ref DestructibleType ___m_specialHitType,
+            bool ___m_lowerDamagePerHit,
+            float ___m_forceMultiplier,
+            float ___m_staggerMultiplier,
+            float ___m_damageMultiplier,
+            int ___m_attackChainLevels,
+            int ___m_currentAttackCainLevel,
+            ref DestructibleType ___m_resetChainIfHit,
+            ref int ___m_nextAttackChainLevel,
+            ref EffectList ___m_hitTerrainEffect,
+            float ___m_attackHitNoise,
+            GameObject ___m_spawnOnTrigger
+        ) {
+            // if character is not local player, use original Start method
+            if (character != Player.m_localPlayer) {
+                return true;
+            }
+            
             ___m_character = character;
             ___m_animEvent = animEvent;
             ___m_weapon = weapon;
@@ -58,51 +90,18 @@ namespace ValheimVRMod.Patches
                 return false;
             }
             character.UseStamina(staminaUsage);
-            doMeleeAttackMethod.Invoke(__instance, null);
-            return false;
-        }
-    }
 
-
-    [HarmonyPatch(typeof(Attack), "DoMeleeAttack")]
-    class PatchDoMeleeAttack
-    {
-        private static MethodInfo getLevelDamageFactorMethod =
-            AccessTools.Method(typeof(Attack), "GetLevelDamageFactor");
-
-        private static MethodInfo spawnOnHitTerrainMethod = AccessTools.Method(typeof(Attack), "SpawnOnHitTerrain",
-            new Type[] {typeof(Vector3), typeof(GameObject)});
-
-
-        public static bool Prefix(
-            ref Attack __instance,
-            ref ItemDrop.ItemData ___m_weapon,
-            ref EffectList ___m_hitEffect,
-            ref Skills.SkillType ___m_specialHitSkill,
-            ref DestructibleType ___m_specialHitType,
-            ref Humanoid ___m_character,
-            bool ___m_lowerDamagePerHit,
-            float ___m_forceMultiplier,
-            float ___m_staggerMultiplier,
-            float ___m_damageMultiplier,
-            int ___m_attackChainLevels,
-            int ___m_currentAttackCainLevel,
-            ref DestructibleType ___m_resetChainIfHit,
-            ref int ___m_nextAttackChainLevel,
-            ref EffectList ___m_hitTerrainEffect,
-            float ___m_attackHitNoise,
-            GameObject ___m_spawnOnTrigger
-        )
-        {
+            // all rest is copied stuff from original DoMeleeAttack:
             Vector3 zero = Vector3.zero;
             bool flag2 = false; //rename
             HashSet<Skills.SkillType> skillTypeSet = new HashSet<Skills.SkillType>();
             bool hitOccured = false;
-            CollisionDetection colliderDetection = VRPlayer.colliderCube().GetComponent<CollisionDetection>();
+            CollisionDetection colliderDetection = VRPlayer.collisionCube().GetComponent<CollisionDetection>();
             Collider col = colliderDetection.lastHitCollider;
             Vector3 pos = colliderDetection.lastHitPoint;
             ___m_weapon.m_shared.m_hitEffect.Create(pos, Quaternion.identity);
             ___m_hitEffect.Create(pos, Quaternion.identity);
+
             GameObject hitObject = Projectile.FindHitObject(col);
 
             if (!(hitObject == ___m_character.gameObject))
@@ -192,7 +191,7 @@ namespace ValheimVRMod.Patches
             if (___m_weapon.m_shared.m_useDurability && ___m_character.IsPlayer())
                 ___m_weapon.m_durability -= ___m_weapon.m_shared.m_useDurabilityDrain;
             ___m_character.AddNoise(___m_attackHitNoise);
-            //___m_animEvent.FreezeFrame(0.15f);
+            
             if ((bool) (UnityEngine.Object) ___m_weapon.m_shared.m_spawnOnHit)
                 UnityEngine.Object.Instantiate(___m_weapon.m_shared.m_spawnOnHit, pos,
                         Quaternion.identity).GetComponent<IProjectile>()
@@ -207,6 +206,7 @@ namespace ValheimVRMod.Patches
                 ___m_character.transform.forward, -1f, null, ___m_weapon);
 
             return false;
+
         }
     }
 }

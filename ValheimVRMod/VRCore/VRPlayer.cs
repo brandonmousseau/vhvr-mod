@@ -67,7 +67,7 @@ namespace ValheimVRMod.VRCore
 
         private static GameObject _collisionCube;
 
-        public static GameObject colliderCube()
+        public static GameObject collisionCube()
         {
             if (_collisionCube != null)
             {
@@ -79,7 +79,7 @@ namespace ValheimVRMod.VRCore
             Rigidbody rigidbody = _collisionCube.AddComponent<Rigidbody>();
             rigidbody.useGravity = false;
             _collisionCube.AddComponent<CollisionDetection>();
-            _collisionCube.layer = LayerUtils.ITEM_LAYER;
+            _collisionCube.layer = LayerUtils.WEAPON_LAYER;
             return _collisionCube;
         } 
         
@@ -687,7 +687,7 @@ namespace ValheimVRMod.VRCore
             var headBone = getHeadBone();
             if (headBone != null)
             {
-                headBone.localScale = isVisible ? new Vector3(1f, 1f, 1f) : new Vector3(0f, 0f, 0f);
+                headBone.localScale = isVisible ? new Vector3(1f, 1f, 1f) : new Vector3(0.001f, 0.001f, 0.001f);
             }
         }
 
