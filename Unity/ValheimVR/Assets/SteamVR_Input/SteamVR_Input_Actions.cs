@@ -81,6 +81,8 @@ namespace Valve.VR
         
         private static SteamVR_Action_Vector2 p_valheim_ContextScroll;
         
+        private static SteamVR_Action_Vibration p_valheim_Haptic;
+        
         private static SteamVR_Action_Boolean p_laserPointers_LeftClick;
         
         private static SteamVR_Action_Boolean p_laserPointers_RightClick;
@@ -341,6 +343,14 @@ namespace Valve.VR
             }
         }
         
+        public static SteamVR_Action_Vibration valheim_Haptic
+        {
+            get
+            {
+                return SteamVR_Actions.p_valheim_Haptic.GetCopy<SteamVR_Action_Vibration>();
+            }
+        }
+        
         public static SteamVR_Action_Boolean laserPointers_LeftClick
         {
             get
@@ -392,6 +402,7 @@ namespace Valve.VR
                     SteamVR_Actions.valheim_ToggleMap,
                     SteamVR_Actions.valheim_HotbarUse,
                     SteamVR_Actions.valheim_ContextScroll,
+                    SteamVR_Actions.valheim_Haptic,
                     SteamVR_Actions.laserPointers_LeftClick,
                     SteamVR_Actions.laserPointers_RightClick};
             Valve.VR.SteamVR_Input.actionsIn = new Valve.VR.ISteamVR_Action_In[] {
@@ -429,9 +440,11 @@ namespace Valve.VR
                     SteamVR_Actions.laserPointers_LeftClick,
                     SteamVR_Actions.laserPointers_RightClick};
             Valve.VR.SteamVR_Input.actionsOut = new Valve.VR.ISteamVR_Action_Out[] {
-                    SteamVR_Actions.default_Haptic};
+                    SteamVR_Actions.default_Haptic,
+                    SteamVR_Actions.valheim_Haptic};
             Valve.VR.SteamVR_Input.actionsVibration = new Valve.VR.SteamVR_Action_Vibration[] {
-                    SteamVR_Actions.default_Haptic};
+                    SteamVR_Actions.default_Haptic,
+                    SteamVR_Actions.valheim_Haptic};
             Valve.VR.SteamVR_Input.actionsPose = new Valve.VR.SteamVR_Action_Pose[] {
                     SteamVR_Actions.default_Pose,
                     SteamVR_Actions.valheim_PoseL,
@@ -536,6 +549,7 @@ namespace Valve.VR
             SteamVR_Actions.p_valheim_ToggleMap = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/Valheim/in/ToggleMap")));
             SteamVR_Actions.p_valheim_HotbarUse = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/Valheim/in/HotbarUse")));
             SteamVR_Actions.p_valheim_ContextScroll = ((SteamVR_Action_Vector2)(SteamVR_Action.Create<SteamVR_Action_Vector2>("/actions/Valheim/in/ContextScroll")));
+            SteamVR_Actions.p_valheim_Haptic = ((SteamVR_Action_Vibration)(SteamVR_Action.Create<SteamVR_Action_Vibration>("/actions/Valheim/out/Haptic")));
             SteamVR_Actions.p_laserPointers_LeftClick = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/LaserPointers/in/LeftClick")));
             SteamVR_Actions.p_laserPointers_RightClick = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/LaserPointers/in/RightClick")));
         }

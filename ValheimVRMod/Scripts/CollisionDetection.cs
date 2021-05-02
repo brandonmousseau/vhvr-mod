@@ -61,7 +61,7 @@ namespace ValheimVRMod.Scripts
             transform.localRotation = Quaternion.identity;
             transform.localPosition = Vector3.zero;
             transform.localScale = Vector3.one;
-            transform.SetParent(null, true);
+            transform.SetParent(Player.m_localPlayer.transform, true);
             
         }
 
@@ -121,7 +121,7 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            snapshots.Add(transform.position);
+            snapshots.Add(transform.localPosition);
         
             if (snapshots.Count > MAX_SNAPSHOTS)
             {
@@ -134,7 +134,7 @@ namespace ValheimVRMod.Scripts
         {
             foreach (Vector3 snapshot in snapshots)
             {
-                if (Vector3.Distance(snapshot, transform.position) > MIN_DISTANCE)
+                if (Vector3.Distance(snapshot, transform.localPosition) > MIN_DISTANCE)
                 {
                     return true;
                 }

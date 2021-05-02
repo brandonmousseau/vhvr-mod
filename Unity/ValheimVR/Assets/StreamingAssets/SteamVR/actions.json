@@ -158,6 +158,11 @@
       "requirement": "suggested"
     },
     {
+      "name": "/actions/Valheim/out/Haptic",
+      "type": "vibration",
+      "requirement": "mandatory"
+    },
+    {
       "name": "/actions/LaserPointers/in/LeftClick",
       "type": "boolean",
       "requirement": "mandatory"

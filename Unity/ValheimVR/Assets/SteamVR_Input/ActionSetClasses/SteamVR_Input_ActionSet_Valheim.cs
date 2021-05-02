@@ -192,5 +192,13 @@ namespace Valve.VR
                 return SteamVR_Actions.valheim_ContextScroll;
             }
         }
+        
+        public virtual SteamVR_Action_Vibration Haptic
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_Haptic;
+            }
+        }
     }
 }

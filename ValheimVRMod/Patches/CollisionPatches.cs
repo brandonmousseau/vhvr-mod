@@ -5,6 +5,7 @@ using HarmonyLib;
 using UnityEngine;
 using ValheimVRMod.Scripts;
 using ValheimVRMod.VRCore;
+using Valve.VR;
 
 namespace ValheimVRMod.Patches
 {
@@ -89,6 +90,8 @@ namespace ValheimVRMod.Patches
                     Hud.instance.StaminaBarNoStaminaFlash();
                 return false;
             }
+            
+            VRPlayer.rightHand.hapticAction.Execute(0, 0.2f, 100, 0.3f, SteamVR_Input_Sources.RightHand);
             character.UseStamina(staminaUsage);
 
             // all rest is copied stuff from original DoMeleeAttack:
