@@ -75,6 +75,9 @@ namespace ValheimVRMod.VRCore
             }
             
             _collisionCube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+#if ! DEBUG
+            Destroy(_collisionCube.GetComponent<MeshRenderer>());
+#endif
             _collisionCube.GetComponent<BoxCollider>().isTrigger = true;
             Rigidbody rigidbody = _collisionCube.AddComponent<Rigidbody>();
             rigidbody.useGravity = false;
