@@ -119,6 +119,22 @@ namespace ValheimVRMod.Utilities
             loopChildren(obj, withComponents);
         }
         
+        /**
+         * Logs all Components in Parents of a given object
+         */
+        public static void LogParentComponents(Transform obj)
+        {
+            
+            string output = "LOG PARENT COMPONENTS OF " + obj + ": ";
+            Component[] components = obj.GetComponentsInParent(typeof(Component));
+            for (int i = 0; i < components.Length; i++)
+            {
+                output += components[i].GetType() + ";";
+            }
+            LogDebug(output);
+            
+        }
+        
         private static string getComponentTypes(Transform obj)
         {
             string output = "";

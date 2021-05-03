@@ -4,6 +4,7 @@ using System.Reflection;
 using HarmonyLib;
 using UnityEngine;
 using ValheimVRMod.Scripts;
+using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using Valve.VR;
 
@@ -37,6 +38,43 @@ namespace ValheimVRMod.Patches
             VRPlayer.collisionCube().GetComponent<CollisionDetection>().setColliderParent(item, ___m_rightItem);
         }
     }
+    
+    [HarmonyPatch(typeof(VisEquipment), "SetLeftHandEquiped")]
+    class PatchSetLeftHandEquiped
+    {
+        static void Postfix(bool __result, ref GameObject ___m_leftItemInstance)
+        {
+
+            if (!__result || ___m_leftItemInstance == null) {
+                return;
+            }
+
+            MeshFilter meshFilter = ___m_leftItemInstance.GetComponentInChildren<MeshFilter>();
+
+            if (meshFilter == null)
+            {
+                return;
+            }
+            
+            Player player = ___m_leftItemInstance.GetComponentInParent<Player>();
+            // only local player must trigger this
+            if (player == null || Player.m_localPlayer != player)
+            {
+                return;
+            }
+            
+            Debug.Log("LEFT ITEM TYPE: " + Player.m_localPlayer.GetLeftItem().m_shared.m_itemType);
+            
+            if (Player.m_localPlayer.GetLeftItem().m_shared.m_itemType == ItemDrop.ItemData.ItemType.Bow)
+            {
+                meshFilter.gameObject.AddComponent<RemoveBowString>();
+            }
+        }
+    }
+    
+    
+    
+    
 
     [HarmonyPatch(typeof(Attack), "Start")]
     class PatchAttackStart
@@ -90,18 +128,30 @@ namespace ValheimVRMod.Patches
                     Hud.instance.StaminaBarNoStaminaFlash();
                 return false;
             }
-            
+
             VRPlayer.rightHand.hapticAction.Execute(0, 0.2f, 100, 0.3f, SteamVR_Input_Sources.RightHand);
             character.UseStamina(staminaUsage);
 
+            CollisionDetection colliderDetection = VRPlayer.collisionCube().GetComponent<CollisionDetection>();
+            if (colliderDetection.itemIsTool)
+            {
+
+                return false;
+            }
+            
+            Collider col = colliderDetection.lastHitCollider;
+            Vector3 pos = colliderDetection.lastHitPoint;
+
+            Debug.Log("WeaponType: " + weapon.GetType());
+            LogUtils.LogParentComponents(col.transform);
+            
+            
             // all rest is copied stuff from original DoMeleeAttack:
             Vector3 zero = Vector3.zero;
             bool flag2 = false; //rename
             HashSet<Skills.SkillType> skillTypeSet = new HashSet<Skills.SkillType>();
             bool hitOccured = false;
-            CollisionDetection colliderDetection = VRPlayer.collisionCube().GetComponent<CollisionDetection>();
-            Collider col = colliderDetection.lastHitCollider;
-            Vector3 pos = colliderDetection.lastHitPoint;
+            
             ___m_weapon.m_shared.m_hitEffect.Create(pos, Quaternion.identity);
             ___m_hitEffect.Create(pos, Quaternion.identity);
 

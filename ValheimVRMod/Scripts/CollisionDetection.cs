@@ -18,7 +18,8 @@ namespace ValheimVRMod.Scripts
         private GameObject colliderParent = new GameObject();
         private int tickCounter;
         private List<Vector3> snapshots = new List<Vector3>();
-
+        
+        public bool itemIsTool;
         public Vector3 lastHitPoint;
         public Collider lastHitCollider;
 
@@ -32,7 +33,17 @@ namespace ValheimVRMod.Scripts
             
             var item = Player.m_localPlayer.GetRightItem();
 
-            if (item == null || !hasMomentum())
+            if (item == null)
+            {
+                Debug.Log("YOYOYOYO");
+            }
+            
+            if (!hasMomentum())
+            {
+                Debug.Log("BLABLABLA");
+            }
+            
+            if ((item == null && !itemIsTool) || !hasMomentum())
             {
                 return;
             }
@@ -67,7 +78,8 @@ namespace ValheimVRMod.Scripts
 
         public void setColliderParent(Transform obj, string name)
         {
-
+            
+            itemIsTool = name == "Hammer";
 
             if (colliderParent == null)
             {
@@ -142,6 +154,5 @@ namespace ValheimVRMod.Scripts
 
             return false;
         }
-        
     }
 }
