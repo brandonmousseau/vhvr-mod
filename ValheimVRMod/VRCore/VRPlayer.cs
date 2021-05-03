@@ -2,6 +2,7 @@
 
 using AmplifyOcclusion;
 using System.Reflection;
+using RootMotion.FinalIK;
 using UnityEngine;
 using UnityEngine.PostProcessing;
 using UnityEngine.SceneManagement;
@@ -589,9 +590,9 @@ namespace ValheimVRMod.VRCore
                 return;
             }
             maybeAddVrik(player);
-            var vrik = player.gameObject.GetComponent<VR_IK_Creator>();
-            if (vrik != null && vrik.vrik != null) {
-                vrik.vrik.enabled = VHVRConfig.UseVRIK() &&
+            var vrik = player.gameObject.GetComponent<VRIK>();
+            if (vrik != null) {
+                vrik.enabled = VHVRConfig.UseVRIK() &&
                     inFirstPerson &&
                     validVrikAnimatorState(player.GetComponentInChildren<Animator>());
             }
@@ -612,10 +613,10 @@ namespace ValheimVRMod.VRCore
             {
                 return;
             }
-            var vrik = player.gameObject.AddComponent<VR_IK_Creator>();
-            vrik.leftController = getHand(LEFT_HAND, _instance).transform;
-            vrik.rightController = getHand(RIGHT_HAND, _instance).transform;
-            vrik.camera = CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform;
+            var vrikCrerator = player.gameObject.AddComponent<VR_IK_Creator>();
+            vrikCrerator.leftController = getHand(LEFT_HAND, _instance).transform;
+            vrikCrerator.rightController = getHand(RIGHT_HAND, _instance).transform;
+            vrikCrerator.camera = CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform;
         }
 
         private bool vrikEnabled()
@@ -625,10 +626,10 @@ namespace ValheimVRMod.VRCore
             {
                 return false;
             }
-            var vrik = player.gameObject.GetComponent<VR_IK_Creator>();
-            if (vrik != null && vrik.vrik != null)
+            var vrik = player.gameObject.GetComponent<VRIK>();
+            if (vrik != null && vrik != null)
             {
-                return vrik.vrik.enabled;
+                return vrik.enabled;
             }
             return false;
         }

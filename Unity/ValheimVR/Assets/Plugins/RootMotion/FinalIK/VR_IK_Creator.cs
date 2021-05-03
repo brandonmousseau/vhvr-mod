@@ -8,7 +8,6 @@ public class VR_IK_Creator : MonoBehaviour
     public Transform leftController;
     public Transform rightController;
     public Transform camera;
-    public RootMotion.FinalIK.VRIK vrik;
 
 
     // Update is called once per frame
@@ -30,7 +29,7 @@ public class VR_IK_Creator : MonoBehaviour
     private void initialize()
     {
         
-        vrik = gameObject.AddComponent<RootMotion.FinalIK.VRIK>();
+        RootMotion.FinalIK.VRIK vrik = gameObject.AddComponent<RootMotion.FinalIK.VRIK>();
         vrik.AutoDetectReferences();
         vrik.references.leftThigh = null;
         vrik.references.leftCalf = null;
