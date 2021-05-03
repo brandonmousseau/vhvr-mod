@@ -26,10 +26,10 @@ public class RemoveBowString : MonoBehaviour
                 Vector3.Distance(v3, v1) < maxDistance) {
                 drawTriangle = true;
             }
-			
-            for (int j = 0; j < 3; j++)
+
+            if (drawTriangle)
             {
-                if (drawTriangle)
+                for (int j = 0; j < 3; j++)
                 {
                     trilist.Add(mesh.triangles[i * 3 + j]);
                 }
