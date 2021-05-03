@@ -59,6 +59,7 @@ public class VR_IK_Creator : MonoBehaviour
         head.localPosition = new Vector3(0, -0.133f, -0.089f);
         head.localRotation = Quaternion.Euler(0, 90, 0);
         vrik.solver.spine.headTarget = head;
+        vrik.solver.spine.maxRootAngle = 180;
 
     }
     
