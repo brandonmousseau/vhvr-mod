@@ -50,7 +50,20 @@ namespace ValheimVRMod.Utilities
                     -0.013f,  -0.022f, 0.603f,
                     0,  -5.241f, 45,
                     0.1044289f,  -0.09270307f, 0.5340722f
-                )}
+                )} 
+            // ,{
+                // "Bow", WeaponCollider.create( 
+                //     0,  0, 0.333164f
+                // )}, {
+                // "BowFineWood", WeaponCollider.create( 
+                //     0,  0, 0.135982f
+                // )}, {
+                // "BowDraugrFang", WeaponCollider.create( 
+                //     0,  0, 0.150583f
+                // )}, {
+                // "BowHuntsman", WeaponCollider.create( 
+                //     0,  0, 0.234361f
+                // )}
             // TODO: more weapons
         };
 

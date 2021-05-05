@@ -67,15 +67,11 @@ namespace ValheimVRMod.Patches
             
             if (Player.m_localPlayer.GetLeftItem().m_shared.m_itemType == ItemDrop.ItemData.ItemType.Bow)
             {
-                meshFilter.gameObject.AddComponent<RemoveBowString>();
+                meshFilter.gameObject.AddComponent<BowManager>();
             }
         }
     }
     
-    
-    
-    
-
     [HarmonyPatch(typeof(Attack), "Start")]
     class PatchAttackStart
     {
@@ -121,7 +117,7 @@ namespace ValheimVRMod.Patches
             ___m_animEvent = animEvent;
             ___m_weapon = weapon;
             
-            float staminaUsage = (float)getStaminaUsageMethod.Invoke(__instance, null);;
+            float staminaUsage = (float)getStaminaUsageMethod.Invoke(__instance, null);
             if (staminaUsage > 0.0f && !character.HaveStamina(staminaUsage + 0.1f))
             {
                 if (character.IsPlayer())

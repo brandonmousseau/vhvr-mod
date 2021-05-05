@@ -10,6 +10,7 @@ using UnityStandardAssets.ImageEffects;
 using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore.UI;
+using Valve.VR;
 using Valve.VR.Extras;
 using Valve.VR.InteractionSystem;
 
@@ -65,6 +66,9 @@ namespace ValheimVRMod.VRCore
 
         public static Hand leftHand { get { return _leftHand;} }
         public static Hand rightHand { get { return _rightHand;} }
+
+        public static bool toggleShowLeftHand = true;
+        public static bool toggleShowRightHand = true;
 
         private static GameObject _collisionCube;
 
@@ -179,6 +183,7 @@ namespace ValheimVRMod.VRCore
             checkAndSetHandsAndPointers();
             updateVrik();
             UpdateAmplifyOcclusionStatus();
+            checkInteractions();
         }
 
         void maybeUpdateHeadPosition()
@@ -809,6 +814,66 @@ namespace ValheimVRMod.VRCore
             foreach (var sc in root.GetComponentsInChildren<SphereCollider>())
             {
                 sc.gameObject.SetActive(false);
+            }
+        }
+
+        private void checkInteractions()
+        {
+            
+            if (getPlayerCharacter() == null || !VRControls.mainControlsActive)
+            {
+                return;
+            }
+
+            checkRightHandOverShoulder();
+            checkLeftHandOverShoulder();
+        }
+
+        private void checkRightHandOverShoulder()
+        {
+            var rightController = getHand(RIGHT_HAND, _instance).transform;
+            var camera = CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform;
+            var action = SteamVR_Actions.valheim_Hide;  // TODO Change the action button when we have rearranged all buttons
+            
+            if (camera.InverseTransformPoint(rightController.position).y > -0.2f &&
+                camera.InverseTransformPoint(rightController.position).z < 0)
+            {
+
+                if (action.GetStateDown(SteamVR_Input_Sources.RightHand))
+                {
+                    toggleShowLeftHand = false;
+                    rightHand.hapticAction.Execute(0, 0.2f, 100, 0.3f, SteamVR_Input_Sources.RightHand);
+
+                    if (getPlayerCharacter().GetRightItem() != null) {
+                        getPlayerCharacter().HideHandItems();
+                    } else {
+                        getPlayerCharacter().ShowHandItems();
+                    }
+                }
+            }
+        }
+        
+        private void checkLeftHandOverShoulder()
+        {
+            var leftController = getHand(LEFT_HAND, _instance).transform;
+            var camera = CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform;
+            var action = SteamVR_Actions.valheim_Run;  // TODO Change the action button when we have rearranged all buttons
+            
+            if (camera.InverseTransformPoint(leftController.position).y > -0.2f &&
+                camera.InverseTransformPoint(leftController.position).z < 0)
+            {
+                
+                if (action.GetStateDown(SteamVR_Input_Sources.LeftHand))
+                {
+                    toggleShowRightHand = false;
+                    leftHand.hapticAction.Execute(0, 0.2f, 100, 0.3f, SteamVR_Input_Sources.LeftHand);
+
+                    if (getPlayerCharacter().GetLeftItem() != null) {
+                        getPlayerCharacter().HideHandItems();
+                    } else {
+                        getPlayerCharacter().ShowHandItems();
+                    }
+                }
             }
         }
     }

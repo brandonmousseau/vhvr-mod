@@ -18,9 +18,9 @@ namespace ValheimVRMod.Utilities
         public Vector3 euler { get; }
         public Vector3 scale { get; }
         
-        public static WeaponCollider create (float f_pos_x, float f_pos_y, float f_pos_z,
-                                             float f_euler_x, float f_euler_y, float f_euler_z,
-                                             float f_scale_x, float f_scale_y, float f_scale_z)
+        public static WeaponCollider create (float f_pos_x = 0, float f_pos_y = 0, float f_pos_z = 0,
+                                             float f_euler_x = 0, float f_euler_y = 0, float f_euler_z = 0,
+                                             float f_scale_x = 0, float f_scale_y = 0, float f_scale_z = 0)
         {
             return new WeaponCollider(
                 new Vector3(f_pos_x,f_pos_y,f_pos_z),

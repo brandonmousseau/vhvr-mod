@@ -303,11 +303,11 @@ namespace ValheimVRMod.VRCore.UI
             zInputToBooleanAction.Add("Attack", SteamVR_Actions.valheim_Attack);
             zInputToBooleanAction.Add("SecondAttack", SteamVR_Actions.valheim_SecondaryAttack);
             zInputToBooleanAction.Add("Jump", SteamVR_Actions.valheim_Jump);
-            zInputToBooleanAction.Add("Block", SteamVR_Actions.valheim_Block);
+            //zInputToBooleanAction.Add("Block", SteamVR_Actions.valheim_Block);
             zInputToBooleanAction.Add("Crouch", SteamVR_Actions.valheim_Crouch);
             zInputToBooleanAction.Add("Run", SteamVR_Actions.valheim_Run);
             zInputToBooleanAction.Add("Use", SteamVR_Actions.valheim_Use);
-            zInputToBooleanAction.Add("Hide", SteamVR_Actions.valheim_Hide);
+            //zInputToBooleanAction.Add("Hide", SteamVR_Actions.valheim_Hide);
             zInputToBooleanAction.Add("Sit", SteamVR_Actions.valheim_Sit);
             zInputToBooleanAction.Add("GPower", SteamVR_Actions.valheim_GPower);
             zInputToBooleanAction.Add("Map", SteamVR_Actions.valheim_ToggleMap);
@@ -351,6 +351,8 @@ namespace ValheimVRMod.VRCore.UI
             ignoredZInputs.Add("Backward");
             ignoredZInputs.Add("Left");
             ignoredZInputs.Add("Right");
+            ignoredZInputs.Add("Block");
+            ignoredZInputs.Add("Hide");
             ignoredZInputs.Add("JoyAttack");
             ignoredZInputs.Add("JoyBlock");
             ignoredZInputs.Add("JoyRotate");
