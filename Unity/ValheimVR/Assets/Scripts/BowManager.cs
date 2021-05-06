@@ -6,11 +6,13 @@ using Valve.VR;
 
 public class BowManager : MonoBehaviour {
 
-    float y1 = -0.0053254f;
-    float y2 = 0.00497f;
-    private GameObject goT;
+    private static float yT = -0.0053254f;
+    private static float yB = 0.00497f;
+    private static float pullLength = 0.4f;
+    private static float attachDistance = 0.1f;
+    private Vector3 topPosition;
+    private Vector3 bottomPosition;
     private GameObject goS;
-    private GameObject goB;
     private GameObject pullObj;
     
     private bool isPulling;
@@ -41,16 +43,16 @@ public class BowManager : MonoBehaviour {
                 var v = mesh.vertices[mesh.triangles[i * 3 + j]];
                 float y = v.y;
 
-                if (y >= y1 && y <= y2) {
+                if (y >= yT && y <= yB) {
                     drawTriangle = true;
                     break;
                 }
 
-                if (y > y2) {
+                if (y > yB) {
                     top = v;
                 }
 
-                if (y < y1) {
+                if (y < yT) {
                     bottom = v;
                 }
             }
@@ -81,22 +83,17 @@ public class BowManager : MonoBehaviour {
                     trilist.Add(0);
                 }
             }
+
         }
 
-        goT = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        goT.transform.parent = transform;
-        goT.transform.localScale *= 0.1f;
-        goT.transform.localPosition = stringTop;
+        topPosition = stringTop;
+        bottomPosition = stringBottom;
         goS = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         goS.transform.parent = transform;
         goS.transform.localScale *= 0.1f;
         goS.transform.localPosition = pullStart;
         goS.transform.localRotation = Quaternion.identity;
-        goB = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        goB.transform.parent = transform;
-        goB.transform.localScale *= 0.1f;
-        goB.transform.localPosition = stringBottom;
-        
+
         pullObj = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         pullObj.transform.parent = transform;
         pullObj.transform.localScale *= 0.1f;
@@ -105,7 +102,25 @@ public class BowManager : MonoBehaviour {
         GetComponent<MeshFilter>().mesh.triangles = trilist.ToArray();
     }
 
-    private void Update() {
+    private void createString() {
+        var lineRenderer = gameObject.AddComponent<LineRenderer>();
+        lineRenderer.useWorldSpace = false;
+        lineRenderer.widthMultiplier = 0.01f;
+        lineRenderer.positionCount = 3;
+        lineRenderer.SetPosition(0, topPosition);
+        lineRenderer.SetPosition(1, topPosition);
+        lineRenderer.SetPosition(2, bottomPosition);
+        lineRenderer.material.color = new Color(0.703125f,0.48828125f,0.28515625f);
+    }
+
+
+    private bool lineRendererExists;
+    private void OnRenderObject() {
+
+        if (!lineRendererExists) {
+            createString();
+            lineRendererExists = true;
+        }
         
         if (SteamVR_Actions.valheim_Hide.GetState(SteamVR_Input_Sources.RightHand)) {
             Debug.Log("blub..");
@@ -126,11 +141,13 @@ public class BowManager : MonoBehaviour {
             return;
         }
         
-        if (Vector3.Distance(VR_IK_Creator.rightHand.position, goS.transform.position) < 0.5f) {
+        if (Vector3.Distance(VR_IK_Creator.rightHand.position, goS.transform.position) < pullLength) {
             pullObj.transform.position = VR_IK_Creator.rightHand.position;
+            gameObject.GetComponent<LineRenderer>().SetPosition(1, pullObj.transform.localPosition);
         }
-
-        transform.LookAt(VR_IK_Creator.rightHand);
+        
+        transform.LookAt(VR_IK_Creator.rightHand.transform,  transform.parent.forward);
+        transform.Rotate(new Vector3(0,0, 1), 90);
 
     }
 
@@ -139,6 +156,7 @@ public class BowManager : MonoBehaviour {
         pullObj.transform.position = goS.transform.position;
         goS.GetComponent<MeshRenderer>().material.color = Color.white;
         transform.localRotation = originalRotation;
+        gameObject.GetComponent<LineRenderer>().SetPosition(1, topPosition);
     }
 
     private void checkHandNearString() {
@@ -146,14 +164,12 @@ public class BowManager : MonoBehaviour {
         
         Debug.Log(Vector3.Distance(VR_IK_Creator.rightHand.position, goS.transform.position));
         
-        if (Vector3.Distance(VR_IK_Creator.rightHand.position, goS.transform.position) > 0.1f) {
+        if (Vector3.Distance(VR_IK_Creator.rightHand.position, goS.transform.position) > attachDistance) {
             return;
         }
         
         isPulling = true;
         goS.GetComponent<MeshRenderer>().material.color = Color.red;
-        
-        
 
     }
 }
