@@ -1,19 +1,16 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using ValheimVRMod.VRCore;
 using Valve.VR;
 
 public class BowManager : MonoBehaviour {
 
-    private static float yT = -0.0053254f;
-    private static float yB = 0.00497f;
-    private static float pullLength = 0.4f;
-    private static float attachDistance = 0.1f;
-    private Vector3 topPosition;
-    private Vector3 bottomPosition;
-    private GameObject goS;
+    private static float minStringSize = 0.965f;
+    private static float maxPullLength = 0.4f;
+    private static float attachRange = 0.1f;
+    private Vector3 stringTop;
+    private Vector3 stringBottom;
+    private Vector3 pullStart;
     private GameObject pullObj;
     private bool lineRendererExists;
     
@@ -27,75 +24,51 @@ public class BowManager : MonoBehaviour {
         
         originalRotation = transform.localRotation;
 
-        Vector3 stringTop = new Vector3();
-        Vector3 stringBottom = new Vector3();
-        Vector3 pullStart = new Vector3();
+        stringTop = new Vector3();
+        stringBottom = new Vector3();
+        pullStart = new Vector3();
         
         Mesh mesh = GetComponent<MeshFilter>().mesh;
         var trilist = new List<int>();
 
         for (int i = 0; i < mesh.triangles.Length / 3; i++) {
+            
             bool drawTriangle = false;
-            Vector3 top = Vector3.zero;
-            Vector3 bottom = Vector3.zero;
+            Vector3 v1 = mesh.vertices[mesh.triangles[i * 3]];
+            Vector3 v2 = mesh.vertices[mesh.triangles[i * 3 + 1]];
+            Vector3 v3 = mesh.vertices[mesh.triangles[i * 3 + 2]];
 
-            for (int j = 0; j < 3; j++) {
-                var v = mesh.vertices[mesh.triangles[i * 3 + j]];
-                float y = v.y;
-
-                if (y >= yT && y <= yB) {
-                    drawTriangle = true;
-                    break;
-                }
-
-                if (y > yB) {
-                    top = v;
-                }
-
-                if (y < yT) {
-                    bottom = v;
-                }
-            }
-
-            if (top == Vector3.zero || bottom == Vector3.zero) {
+            if (Vector3.Distance(v1, v2) < minStringSize &&
+                Vector3.Distance(v2, v3) < minStringSize &&
+                Vector3.Distance(v3, v1) < minStringSize) {
                 drawTriangle = true;
             }
+            else {
 
+                foreach (Vector3 v in new[] {v1, v2, v3}) {
+                    if (stringTop == null || v.y > stringTop.y) {
+                        stringTop = v;
+                    }
 
-            if (!drawTriangle) {
-                
-                if (top.y > stringTop.y) {
-                    stringTop = top;    
+                    if (stringBottom == null || v.y < stringBottom.y) {
+                        stringBottom = v;
+                    }
                 }
-
-                if (bottom.y < stringBottom.y) {
-                    stringBottom = bottom;
-                }
-                
-                pullStart = Vector3.Lerp(stringTop, stringBottom, 0.5f);
             }
 
-            for (int j = 0; j < 3; j++) {
-                if (drawTriangle) {
+            if (drawTriangle) {
+                for (int j = 0; j < 3; j++) {
                     trilist.Add(mesh.triangles[i * 3 + j]);
-                } else {
-                    trilist.Add(0);
                 }
             }
         }
-
-        topPosition = stringTop;
-        bottomPosition = stringBottom;
         
-        goS = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        goS.transform.parent = transform;
-        goS.transform.localScale *= 0.1f;
-        goS.transform.localPosition = pullStart;
-        goS.transform.localRotation = Quaternion.identity;
+        pullStart = Vector3.Lerp(stringTop, stringBottom, 0.5f);
 
-        pullObj = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        Debug.Log(stringTop + "__" + stringBottom);
+
+        pullObj = new GameObject();
         pullObj.transform.parent = transform;
-        pullObj.transform.localScale *= 0.1f;
         pullObj.transform.localPosition = pullStart;
 
         GetComponent<MeshFilter>().mesh.triangles = trilist.ToArray();
@@ -106,12 +79,16 @@ public class BowManager : MonoBehaviour {
         lineRenderer.useWorldSpace = false;
         lineRenderer.widthMultiplier = 0.01f;
         lineRenderer.positionCount = 3;
-        lineRenderer.SetPosition(0, topPosition);
-        lineRenderer.SetPosition(1, topPosition);
-        lineRenderer.SetPosition(2, bottomPosition);
+        lineRenderer.SetPosition(0, stringTop);
+        lineRenderer.SetPosition(1, stringTop);
+        lineRenderer.SetPosition(2, stringBottom);
         lineRenderer.material.color = new Color(0.703125f,0.48828125f,0.28515625f);
     }
-
+    
+    /**
+     * Need to use OnRenderObject instead of Update or LateUpdate,
+     * because of VRIK Bone Updates happening in LateUpdate 
+     */
     private void OnRenderObject() {
         
         if (!lineRendererExists) {
@@ -119,53 +96,46 @@ public class BowManager : MonoBehaviour {
             lineRendererExists = true;
         }
 
-        
         if (SteamVR_Actions.valheim_Hide.GetState(SteamVR_Input_Sources.RightHand)) {
-            checkPullStuff();
+            handlePulling();
         }
         
         if (SteamVR_Actions.valheim_Hide.GetStateUp(SteamVR_Input_Sources.RightHand)) {
-            checkReleasetuff();
+            handleReleasing();
         }
         
     }
 
-    private void checkPullStuff() {
+    private void handlePulling() {
         
         if (!isPulling) {
             checkHandNearString();
             return;
         }
         
-        if (Vector3.Distance(VRPlayer.rightHand.transform.position, goS.transform.position) < pullLength) {
+        if (Vector3.Distance(VRPlayer.rightHand.transform.position, transform.TransformPoint(pullStart)) < maxPullLength) {
             pullObj.transform.position = VRPlayer.rightHand.transform.position;
             gameObject.GetComponent<LineRenderer>().SetPosition(1, pullObj.transform.localPosition);
         }
 
-        transform.LookAt(VRPlayer.rightHand.transform,  transform.parent.forward);
-        transform.Rotate(new Vector3(0,0, 1), 180);
+        transform.LookAt(VRPlayer.rightHand.transform, -transform.parent.forward);
 
     }
 
-    private void checkReleasetuff() {
+    private void handleReleasing() {
         isPulling = false;
-        pullObj.transform.position = goS.transform.position;
-        goS.GetComponent<MeshRenderer>().material.color = Color.white;
+        pullObj.transform.localPosition = pullStart;
         transform.localRotation = originalRotation;
-        gameObject.GetComponent<LineRenderer>().SetPosition(1, topPosition);
+        gameObject.GetComponent<LineRenderer>().SetPosition(1, stringTop);
     }
 
     private void checkHandNearString() {
-
         
-        Debug.Log(Vector3.Distance(VRPlayer.rightHand.transform.position, goS.transform.position));
-        
-        if (Vector3.Distance(VRPlayer.rightHand.transform.position, goS.transform.position) > attachDistance) {
+        if (Vector3.Distance(VRPlayer.rightHand.transform.position, transform.TransformPoint(pullStart)) > attachRange) {
             return;
         }
         
         isPulling = true;
-        goS.GetComponent<MeshRenderer>().material.color = Color.red;
 
     }
 }
