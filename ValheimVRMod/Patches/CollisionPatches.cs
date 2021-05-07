@@ -65,7 +65,7 @@ namespace ValheimVRMod.Patches
             
             Debug.Log("LEFT ITEM TYPE: " + Player.m_localPlayer.GetLeftItem().m_shared.m_itemType);
             
-            if (Player.m_localPlayer.GetLeftItem().m_shared.m_itemType == ItemDrop.ItemData.ItemType.Bow)
+            if (VRPlayer.isUsingBow())
             {
                 meshFilter.gameObject.AddComponent<BowManager>();
             }
@@ -109,10 +109,11 @@ namespace ValheimVRMod.Patches
             GameObject ___m_spawnOnTrigger
         ) {
             // if character is not local player, use original Start method
-            if (character != Player.m_localPlayer) {
+            if (character != Player.m_localPlayer 
+                || character.GetLeftItem().m_shared.m_itemType == ItemDrop.ItemData.ItemType.Bow) {
                 return true;
             }
-            
+
             ___m_character = character;
             ___m_animEvent = animEvent;
             ___m_weapon = weapon;
@@ -131,7 +132,6 @@ namespace ValheimVRMod.Patches
             CollisionDetection colliderDetection = VRPlayer.collisionCube().GetComponent<CollisionDetection>();
             if (colliderDetection.itemIsTool)
             {
-
                 return false;
             }
             

@@ -5,28 +5,42 @@ using Valve.VR;
 
 public class BowManager : MonoBehaviour {
 
-    private static float minStringSize = 0.965f;
-    private static float maxPullLength = 0.4f;
-    private static float attachRange = 0.1f;
+    private const float minStringSize = 0.965f;
+    private const float maxPullLength = 0.5f;
+    private const float attachRange = 0.2f;
     private Vector3 stringTop;
     private Vector3 stringBottom;
     private Vector3 pullStart;
     private GameObject pullObj;
     private bool lineRendererExists;
-    
+    private Quaternion originalRotation;
+    private GameObject arrow;
     private bool isPulling;
     
-    private Quaternion originalRotation;
+    public static BowManager instance;
+    public static float attackDrawPercentage;
+    public static Vector3 spawnPoint;
+    public static Vector3 aimDir;
 
+    public static bool c_isPulling;
+    public static bool c_startedPulling;
+    public static bool c_aborting;
     
 
     void Awake() {
-        
-        originalRotation = transform.localRotation;
 
+        instance = this;
+        originalRotation = transform.localRotation;
         stringTop = new Vector3();
         stringBottom = new Vector3();
-        pullStart = new Vector3();
+        removeOldString();
+        pullStart = Vector3.Lerp(stringTop, stringBottom, 0.5f);
+        pullObj = new GameObject();
+        pullObj.transform.SetParent(transform, false);
+        pullObj.transform.forward *= -1;
+    }
+
+    private void removeOldString() {
         
         Mesh mesh = GetComponent<MeshFilter>().mesh;
         var trilist = new List<int>();
@@ -63,18 +77,11 @@ public class BowManager : MonoBehaviour {
             }
         }
         
-        pullStart = Vector3.Lerp(stringTop, stringBottom, 0.5f);
-
-        Debug.Log(stringTop + "__" + stringBottom);
-
-        pullObj = new GameObject();
-        pullObj.transform.parent = transform;
-        pullObj.transform.localPosition = pullStart;
-
-        GetComponent<MeshFilter>().mesh.triangles = trilist.ToArray();
+        mesh.triangles = trilist.ToArray();
+        
     }
     
-    private void createString() {
+    private void createNewString() {
         var lineRenderer = gameObject.AddComponent<LineRenderer>();
         lineRenderer.useWorldSpace = false;
         lineRenderer.widthMultiplier = 0.01f;
@@ -92,50 +99,120 @@ public class BowManager : MonoBehaviour {
     private void OnRenderObject() {
         
         if (!lineRendererExists) {
-            createString();
+            createNewString();
             lineRendererExists = true;
         }
 
-        if (SteamVR_Actions.valheim_Hide.GetState(SteamVR_Input_Sources.RightHand)) {
+        if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand)) {
             handlePulling();
         }
         
-        if (SteamVR_Actions.valheim_Hide.GetStateUp(SteamVR_Input_Sources.RightHand)) {
-            handleReleasing();
+        if (SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.RightHand)) {
+            releaseString();
         }
         
     }
 
     private void handlePulling() {
         
-        if (!isPulling) {
-            checkHandNearString();
+        if (!isPulling && !checkHandNearString()) {
+            return;
+        }
+
+        if (Player.m_localPlayer.GetStamina() <= 0) {
+            releaseString(true);
             return;
         }
         
         if (Vector3.Distance(VRPlayer.rightHand.transform.position, transform.TransformPoint(pullStart)) < maxPullLength) {
-            pullObj.transform.position = VRPlayer.rightHand.transform.position;
-            gameObject.GetComponent<LineRenderer>().SetPosition(1, pullObj.transform.localPosition);
-        }
 
+            Vector3 previous = pullObj.transform.localPosition;
+            pullObj.transform.position = VRPlayer.rightHand.transform.position;
+            Vector3 next = pullObj.transform.localPosition;
+            
+            if (next.z - pullStart.z < 0) {
+                next = pullStart;
+            }
+            else {
+                Player.m_localPlayer.UseStamina(((next.z - previous.z)) / maxPullLength * 10);
+            }
+            gameObject.GetComponent<LineRenderer>().SetPosition(1, next);
+
+        } // in case of low framerate and the string is pulled lightning fast and released instantly afterwards, we might not have 100% pullLength
+          // ... but lets ignore this edgecase
+          
         transform.LookAt(VRPlayer.rightHand.transform, -transform.parent.forward);
 
     }
 
-    private void handleReleasing() {
-        isPulling = false;
-        pullObj.transform.localPosition = pullStart;
-        transform.localRotation = originalRotation;
-        gameObject.GetComponent<LineRenderer>().SetPosition(1, stringTop);
-    }
+    private void releaseString(bool withoutShoot = false) {
 
-    private void checkHandNearString() {
-        
-        if (Vector3.Distance(VRPlayer.rightHand.transform.position, transform.TransformPoint(pullStart)) > attachRange) {
+        if (!isPulling) {
             return;
         }
         
-        isPulling = true;
+        isPulling = c_isPulling = false;
+        attackDrawPercentage = pullPercentage();
+        spawnPoint = transform.position;
+        aimDir = -transform.forward;
+        
+        pullObj.transform.localPosition = pullStart;
+        transform.localRotation = originalRotation;
+        gameObject.GetComponent<LineRenderer>().SetPosition(1, stringTop);
+        
+        if (withoutShoot || arrow == null || attackDrawPercentage <= 0.0f) {
+            
+            if (arrow) {
+                arrow.transform.SetParent(VRPlayer.rightHand.transform, false);
+                if (attackDrawPercentage <= 0.0f) {
+                    c_aborting = true;
+                }
+            }
+            
+            return;
+        }
 
+        Destroy(arrow);
+
+    }
+    private float pullPercentage() {
+        return (pullObj.transform.localPosition.z - pullStart.z) / maxPullLength;
+    }
+
+    private bool checkHandNearString() {
+        
+        if (Vector3.Distance(VRPlayer.rightHand.transform.position, transform.TransformPoint(pullStart)) > attachRange) {
+            return false;
+        }
+
+        if (arrow != null) {
+            arrow.transform.SetParent(pullObj.transform, false);
+            c_startedPulling = true;
+            c_isPulling = true;
+        }
+        
+        return isPulling = true;
+
+    }
+
+    public void toggleArrow() {
+
+        if (arrow != null) {
+            Destroy(arrow);
+            return;
+        }
+
+        ItemDrop.ItemData ammoItem = Player.m_localPlayer.GetInventory().GetAmmoItem(Player.m_localPlayer.GetLeftItem().m_shared.m_ammoType);
+        if (ammoItem.m_shared.m_itemType != ItemDrop.ItemData.ItemType.Ammo) {
+            return;
+        }
+        
+        arrow = Instantiate(ammoItem.m_shared.m_attack.m_attackProjectile);
+        // we need to disable the Projectile Component, else the arrow will shoot out of the hands like a New Year rocket
+        arrow.GetComponent<Projectile>().enabled = false;
+        arrow.transform.SetParent(VRPlayer.rightHand.transform, false);
+        arrow.transform.localRotation = Quaternion.identity;
+        arrow.transform.localPosition = new Vector3(0, 0, 1.3f);
+        
     }
 }

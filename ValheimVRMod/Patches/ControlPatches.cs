@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using ValheimVRMod.VRCore.UI;
 using HarmonyLib;
 using System.Reflection;
+using ValheimVRMod.VRCore;
 
 namespace ValheimVRMod.Patches
 {
@@ -104,13 +105,22 @@ namespace ValheimVRMod.Patches
         }
 
         [HarmonyPatch(typeof(ZInput), nameof(ZInput.GetJoyRightStickY))]
-        class ZInput_GetJoyRightStickY_Patch
-        {
+        class ZInput_GetJoyRightStickY_Patch {
+
+            public static bool isCrouching;
+            public static bool isRunning;
+            
             static void Postfix(ref float __result)
             {
-                if (VRControls.mainControlsActive)
-                {
-                    __result = __result + VRControls.instance.GetJoyRightStickY();
+                if (VRControls.mainControlsActive) {
+                    
+                    var joystick = VRControls.instance.GetJoyRightStickY();
+
+                    isRunning = joystick < -0.3f;
+                    isCrouching = joystick > 0.7f;
+                    
+                    __result = __result + joystick;
+
                 }
             }
         }
@@ -258,6 +268,31 @@ namespace ValheimVRMod.Patches
                 return patched;
             }
         }
+        
+        [HarmonyPatch(typeof(Player), "SetControls")]
+        class PlayerSetControlsPatch
+        {
 
+            static void Prefix(Player __instance, ref bool attack, ref bool attackHold, ref bool secondaryAttack, ref bool crouch, ref bool run)
+            {
+                if (!VRControls.mainControlsActive || __instance != Player.m_localPlayer || ! VRPlayer.isUsingBow()) {
+                    return;
+                }
+
+                if (BowManager.c_aborting) {
+                    secondaryAttack = BowManager.c_aborting;
+                    BowManager.c_aborting = false;
+                } else if (BowManager.c_startedPulling) {
+                    attack = true;
+                    BowManager.c_startedPulling = false;
+                } else if (BowManager.c_isPulling) {
+                    attackHold = true;
+                } else if (ZInput_GetJoyRightStickY_Patch.isRunning) {
+                    run = true;
+                } else if (ZInput_GetJoyRightStickY_Patch.isCrouching) {
+                    crouch = true;
+                }
+            }
+        }
     }
 }

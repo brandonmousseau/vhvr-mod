@@ -300,21 +300,15 @@ namespace ValheimVRMod.VRCore.UI
         {
             zInputToBooleanAction.Add("JoyMenu", SteamVR_Actions.valheim_ToggleMenu);
             zInputToBooleanAction.Add("Inventory", SteamVR_Actions.valheim_ToggleInventory);
-            zInputToBooleanAction.Add("Attack", SteamVR_Actions.valheim_Attack);
-            zInputToBooleanAction.Add("SecondAttack", SteamVR_Actions.valheim_SecondaryAttack);
             zInputToBooleanAction.Add("Jump", SteamVR_Actions.valheim_Jump);
-            //zInputToBooleanAction.Add("Block", SteamVR_Actions.valheim_Block);
-            zInputToBooleanAction.Add("Crouch", SteamVR_Actions.valheim_Crouch);
-            zInputToBooleanAction.Add("Run", SteamVR_Actions.valheim_Run);
             zInputToBooleanAction.Add("Use", SteamVR_Actions.valheim_Use);
-            //zInputToBooleanAction.Add("Hide", SteamVR_Actions.valheim_Hide);
             zInputToBooleanAction.Add("Sit", SteamVR_Actions.valheim_Sit);
             zInputToBooleanAction.Add("GPower", SteamVR_Actions.valheim_GPower);
             zInputToBooleanAction.Add("Map", SteamVR_Actions.valheim_ToggleMap);
 
             // These placement commands re-use some of the normal game inputs
             zInputToBooleanAction.Add("BuildMenu", SteamVR_Actions.laserPointers_RightClick);
-            zInputToBooleanAction.Add("Remove", SteamVR_Actions.valheim_SecondaryAttack);
+            zInputToBooleanAction.Add("Remove", SteamVR_Actions.valheim_Jump);
             zInputToBooleanAction.Add("AltPlace", SteamVR_Actions.valheim_GPower);
 
             hotbarDown = SteamVR_Actions.valheim_HotbarDown;
@@ -328,6 +322,8 @@ namespace ValheimVRMod.VRCore.UI
             pitchAndYaw = SteamVR_Actions.valheim_PitchAndYaw;
             poseL = SteamVR_Actions.valheim_PoseL;
             poseR = SteamVR_Actions.valheim_PoseR;
+            //crouch = SteamVR_Actions.valheim_Crouch;
+            //run = SteamVR_Actions.valheim_Run;
             initIgnoredZInputs();
         }
 
@@ -346,6 +342,11 @@ namespace ValheimVRMod.VRCore.UI
             ignoredZInputs.Add("JoySit");
             ignoredZInputs.Add("JoyGPower");
             ignoredZInputs.Add("JoyJump");
+            ignoredZInputs.Add("Attack");
+            ignoredZInputs.Add("SecondAttack");
+            ignoredZInputs.Add("Crouch");
+            ignoredZInputs.Add("Run");
+            ignoredZInputs.Add("Crouch");
             ignoredZInputs.Add("AutoRun");
             ignoredZInputs.Add("Forward");
             ignoredZInputs.Add("Backward");

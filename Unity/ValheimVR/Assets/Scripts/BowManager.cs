@@ -122,12 +122,12 @@ public class BowManager : MonoBehaviour {
             lineRendererExists = true;
         }
         
-        if (SteamVR_Actions.valheim_Hide.GetState(SteamVR_Input_Sources.RightHand)) {
+        if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand)) {
             Debug.Log("blub..");
             checkPullStuff();
         }
         
-        if (SteamVR_Actions.valheim_Hide.GetStateUp(SteamVR_Input_Sources.RightHand)) {
+        if (SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.RightHand)) {
             Debug.Log("blab..");
             checkReleasetuff();
         }

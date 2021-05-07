@@ -833,7 +833,7 @@ namespace ValheimVRMod.VRCore
         {
             var rightController = getHand(RIGHT_HAND, _instance).transform;
             var camera = CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform;
-            var action = SteamVR_Actions.valheim_Hide;  // TODO Change the action button when we have rearranged all buttons
+            var action = SteamVR_Actions.valheim_Grab;  // TODO Change the action button when we have rearranged all buttons
             
             if (camera.InverseTransformPoint(rightController.position).y > -0.2f &&
                 camera.InverseTransformPoint(rightController.position).z < 0)
@@ -844,7 +844,9 @@ namespace ValheimVRMod.VRCore
                     toggleShowLeftHand = false;
                     rightHand.hapticAction.Execute(0, 0.2f, 100, 0.3f, SteamVR_Input_Sources.RightHand);
 
-                    if (getPlayerCharacter().GetRightItem() != null) {
+                    if (isUsingBow()) {
+                        BowManager.instance?.toggleArrow();
+                    } else if (getPlayerCharacter().GetRightItem() != null) {
                         getPlayerCharacter().HideHandItems();
                     } else {
                         getPlayerCharacter().ShowHandItems();
@@ -857,7 +859,7 @@ namespace ValheimVRMod.VRCore
         {
             var leftController = getHand(LEFT_HAND, _instance).transform;
             var camera = CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform;
-            var action = SteamVR_Actions.valheim_Run;  // TODO Change the action button when we have rearranged all buttons
+            var action = SteamVR_Actions.valheim_Grab;  // TODO Change the action button when we have rearranged all buttons
             
             if (camera.InverseTransformPoint(leftController.position).y > -0.2f &&
                 camera.InverseTransformPoint(leftController.position).z < 0)
@@ -875,6 +877,10 @@ namespace ValheimVRMod.VRCore
                     }
                 }
             }
+        }
+        
+        public static bool isUsingBow() {
+            return Player.m_localPlayer.GetLeftItem()?.m_shared.m_itemType == ItemDrop.ItemData.ItemType.Bow;
         }
     }
 }
