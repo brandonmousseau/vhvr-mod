@@ -2,6 +2,7 @@
 using UnityEngine;
 using Valve.VR;
 using HarmonyLib;
+using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
 
 using static ValheimVRMod.Utilities.LogUtils;
@@ -72,8 +73,27 @@ namespace ValheimVRMod.VRCore.UI
             {
                 checkRecenterPose(Time.deltaTime);
             }
+
+            checkQuickSwitch();
         }
 
+        private void checkQuickSwitch() {
+            
+            var quickSwitch = VRPlayer.quickSwitch;
+            if (quickSwitch == null) {
+                return;
+            }
+            
+            if (SteamVR_Actions.valheim_QuickSwitch.GetStateDown(SteamVR_Input_Sources.RightHand)) {
+                quickSwitch.SetActive(true);
+            }
+            
+            if (SteamVR_Actions.valheim_QuickSwitch.GetStateUp(SteamVR_Input_Sources.RightHand)) {
+                quickSwitch.GetComponent<QuickSwitch>().selectHoveredItem();
+                quickSwitch.SetActive(false);
+            }
+        }
+        
         private void checkRecenterPose(float dt)
         {
             if (isInRecenterPose())
@@ -322,8 +342,6 @@ namespace ValheimVRMod.VRCore.UI
             pitchAndYaw = SteamVR_Actions.valheim_PitchAndYaw;
             poseL = SteamVR_Actions.valheim_PoseL;
             poseR = SteamVR_Actions.valheim_PoseR;
-            //crouch = SteamVR_Actions.valheim_Crouch;
-            //run = SteamVR_Actions.valheim_Run;
             initIgnoredZInputs();
         }
 

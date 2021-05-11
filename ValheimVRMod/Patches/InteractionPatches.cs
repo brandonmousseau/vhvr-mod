@@ -1,5 +1,6 @@
 using System.Reflection;
 using HarmonyLib;
+using ValheimVRMod.Scripts;
 using ValheimVRMod.VRCore;
 
 namespace ValheimVRMod.Patches
@@ -15,6 +16,10 @@ namespace ValheimVRMod.Patches
             ref ItemDrop.ItemData ___m_leftItem, ref ItemDrop.ItemData ___m_rightItem, 
             ref ItemDrop.ItemData ___m_hiddenLeftItem, ref ItemDrop.ItemData ___m_hiddenRightItem, 
             ref VisEquipment ___m_visEquipment, ref ZSyncAnimation ___m_zanim) {
+
+            if (__instance != Player.m_localPlayer) {
+                return true;
+            }
             
             bool leftHand = VRPlayer.toggleShowLeftHand;
             bool rightHand = VRPlayer.toggleShowRightHand;
@@ -54,6 +59,10 @@ namespace ValheimVRMod.Patches
             ref ItemDrop.ItemData ___m_hiddenLeftItem, ref ItemDrop.ItemData ___m_hiddenRightItem,
             ref ZSyncAnimation ___m_zanim)
         {
+            
+            if (__instance != Player.m_localPlayer) {
+                return true;
+            }
     
             bool leftHand = VRPlayer.toggleShowLeftHand;
             bool rightHand = VRPlayer.toggleShowRightHand;
@@ -85,6 +94,19 @@ namespace ValheimVRMod.Patches
             ___m_zanim.SetTrigger("equip_hip");
             
             return false;
+        }
+    }
+
+    [HarmonyPatch(typeof(Humanoid), "EquipItem")]
+    class PatchEquipItem {
+
+        static void Postfix(Humanoid __instance, bool __result) {
+            
+            if (__instance != Player.m_localPlayer || ! __result) {
+                return;
+            }
+
+            VRPlayer.quickSwitch.GetComponent<QuickSwitch>().loopHotbarItems();
         }
     }
 }

@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using static ValheimVRMod.Utilities.LogUtils;
 using System.ComponentModel;
 using HarmonyLib;
 using UnityEngine;
@@ -33,16 +32,6 @@ namespace ValheimVRMod.Scripts
             
             var item = Player.m_localPlayer.GetRightItem();
 
-            if (item == null)
-            {
-                Debug.Log("YOYOYOYO");
-            }
-            
-            if (!hasMomentum())
-            {
-                Debug.Log("BLABLABLA");
-            }
-            
             if ((item == null && !itemIsTool) || !hasMomentum())
             {
                 return;
@@ -99,7 +88,7 @@ namespace ValheimVRMod.Scripts
             catch (InvalidEnumArgumentException)
             {
                 setScriptActive(false);
-                LogDebug("Invalid Weapon Data for: " + name);
+                Debug.LogError("Invalid Weapon Data for: " + name);
             }
         }
 

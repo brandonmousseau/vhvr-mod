@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using Valve.VR;
 
@@ -110,7 +111,6 @@ public class BowManager : MonoBehaviour {
         if (SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.RightHand)) {
             releaseString();
         }
-        
     }
 
     private void handlePulling() {
@@ -118,7 +118,11 @@ public class BowManager : MonoBehaviour {
         if (!isPulling && !checkHandNearString()) {
             return;
         }
-
+        
+        spawnPoint = transform.position;
+        aimDir = -transform.forward;
+        attackDrawPercentage = pullPercentage();
+        
         if (Player.m_localPlayer.GetStamina() <= 0) {
             releaseString(true);
             return;
@@ -207,12 +211,13 @@ public class BowManager : MonoBehaviour {
             return;
         }
         
-        arrow = Instantiate(ammoItem.m_shared.m_attack.m_attackProjectile);
+        arrow = Instantiate(ammoItem.m_shared.m_attack.m_attackProjectile, VRPlayer.rightHand.transform);
         // we need to disable the Projectile Component, else the arrow will shoot out of the hands like a New Year rocket
         arrow.GetComponent<Projectile>().enabled = false;
-        arrow.transform.SetParent(VRPlayer.rightHand.transform, false);
         arrow.transform.localRotation = Quaternion.identity;
-        arrow.transform.localPosition = new Vector3(0, 0, 1.3f);
+        arrow.transform.localPosition = new Vector3(0, 0, 1.25f);
+        
+        LogUtils.LogChildTree(arrow.transform);
         
     }
 }

@@ -97,6 +97,11 @@ namespace ValheimVRMod.Patches
         {
             static void Postfix(ref float __result)
             {
+                // dont patch, if quickswitch is active
+                if (VRPlayer.quickSwitch.activeSelf) {
+                    return;
+                }
+                
                 if (VRControls.mainControlsActive)
                 {
                     __result = __result + VRControls.instance.GetJoyRightStickX();
@@ -112,6 +117,12 @@ namespace ValheimVRMod.Patches
             
             static void Postfix(ref float __result)
             {
+
+                // dont patch, if quickswitch is active
+                if (VRPlayer.quickSwitch.activeSelf) {
+                    return;
+                }
+                
                 if (VRControls.mainControlsActive) {
                     
                     var joystick = VRControls.instance.GetJoyRightStickY();
@@ -275,10 +286,17 @@ namespace ValheimVRMod.Patches
 
             static void Prefix(Player __instance, ref bool attack, ref bool attackHold, ref bool secondaryAttack, ref bool crouch, ref bool run)
             {
-                if (!VRControls.mainControlsActive || __instance != Player.m_localPlayer || ! VRPlayer.isUsingBow()) {
+                if (!VRControls.mainControlsActive || __instance != Player.m_localPlayer) {
                     return;
                 }
 
+                run = ZInput_GetJoyRightStickY_Patch.isRunning;
+                crouch = ZInput_GetJoyRightStickY_Patch.isCrouching;
+                
+                if (! VRPlayer.isUsingBow()) {
+                    return;
+                }
+                
                 if (BowManager.c_aborting) {
                     secondaryAttack = BowManager.c_aborting;
                     BowManager.c_aborting = false;
@@ -287,10 +305,6 @@ namespace ValheimVRMod.Patches
                     BowManager.c_startedPulling = false;
                 } else if (BowManager.c_isPulling) {
                     attackHold = true;
-                } else if (ZInput_GetJoyRightStickY_Patch.isRunning) {
-                    run = true;
-                } else if (ZInput_GetJoyRightStickY_Patch.isCrouching) {
-                    crouch = true;
                 }
             }
         }

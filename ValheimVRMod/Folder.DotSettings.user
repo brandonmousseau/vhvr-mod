@@ -5,4 +5,9 @@
   &lt;Assembly Path="D:\Unity Projects\vhvr-mod\ValheimVRMod\dependencies\unstripped_corlib\UnityEngine.CoreModule.dll" /&gt;&#xD;
   &lt;Assembly Path="D:\Unity Projects\vhvr-mod\ValheimVRMod\bin\Debug\assembly_utils.dll" /&gt;&#xD;
   &lt;Assembly Path="D:\Unity Projects\vhvr-mod\Unity\build\ValheimVR_Data\Managed\final_ik.dll" /&gt;&#xD;
+  &lt;Assembly Path="D:\Unity Projects\vhvr-mod\ValheimVRMod\dependencies\unstripped_corlib\UnityEngine.UI.dll" /&gt;&#xD;
+  &lt;Assembly Path="D:\Unity Projects\vhvr-mod\ValheimVRMod\dependencies\unstripped_corlib\UnityEngine.UIModule.dll" /&gt;&#xD;
+  &lt;Assembly Path="C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.6.1\mscorlib.dll" /&gt;&#xD;
+  &lt;Assembly Path="D:\Unity Projects\vhvr-mod\ValheimVRMod\bin\Debug\assembly_guiutils.dll" /&gt;&#xD;
+  &lt;Assembly Path="D:\Unity Projects\vhvr-mod\ValheimVRMod\bin\Debug\assembly_valheim.dll" /&gt;&#xD;
 &lt;/AssemblyExplorer&gt;</s:String></wpf:ResourceDictionary>

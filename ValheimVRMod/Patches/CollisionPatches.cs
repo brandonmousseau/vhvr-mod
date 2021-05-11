@@ -42,7 +42,7 @@ namespace ValheimVRMod.Patches
     [HarmonyPatch(typeof(VisEquipment), "SetLeftHandEquiped")]
     class PatchSetLeftHandEquiped
     {
-        static void Postfix(bool __result, ref GameObject ___m_leftItemInstance)
+        static void Postfix(bool __result, GameObject ___m_leftItemInstance)
         {
 
             if (!__result || ___m_leftItemInstance == null) {
@@ -62,9 +62,7 @@ namespace ValheimVRMod.Patches
             {
                 return;
             }
-            
-            Debug.Log("LEFT ITEM TYPE: " + Player.m_localPlayer.GetLeftItem().m_shared.m_itemType);
-            
+
             if (VRPlayer.isUsingBow())
             {
                 meshFilter.gameObject.AddComponent<BowManager>();
@@ -137,8 +135,6 @@ namespace ValheimVRMod.Patches
             
             Collider col = colliderDetection.lastHitCollider;
             Vector3 pos = colliderDetection.lastHitPoint;
-
-            Debug.Log("WeaponType: " + weapon.GetType());
             LogUtils.LogParentComponents(col.transform);
             
             

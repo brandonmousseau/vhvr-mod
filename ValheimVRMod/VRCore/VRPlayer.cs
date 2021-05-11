@@ -71,6 +71,7 @@ namespace ValheimVRMod.VRCore
         public static bool toggleShowRightHand = true;
 
         private static GameObject _collisionCube;
+        public static GameObject quickSwitch;
 
         public static GameObject collisionCube()
         {
@@ -622,6 +623,14 @@ namespace ValheimVRMod.VRCore
             vrikCrerator.leftController = getHand(LEFT_HAND, _instance).transform;
             vrikCrerator.rightController = getHand(RIGHT_HAND, _instance).transform;
             vrikCrerator.camera = CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform;
+
+            quickSwitch = new GameObject();
+            quickSwitch.transform.SetParent(rightHand.transform, false);
+            quickSwitch.transform.localPosition = new Vector3(0, 0.071f, 0.0123f);
+            quickSwitch.transform.localRotation = Quaternion.Euler(107.34299f, -0.22f, -50.0f);
+            quickSwitch.AddComponent<QuickSwitch>();
+            quickSwitch.SetActive(false);
+
         }
 
         private bool vrikEnabled()
