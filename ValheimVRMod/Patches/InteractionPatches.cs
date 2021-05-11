@@ -97,15 +97,10 @@ namespace ValheimVRMod.Patches
         }
     }
 
-    [HarmonyPatch(typeof(Humanoid), "EquipItem")]
+    [HarmonyPatch(typeof(Inventory), "Changed")]
     class PatchEquipItem {
 
-        static void Postfix(Humanoid __instance, bool __result) {
-            
-            if (__instance != Player.m_localPlayer || ! __result) {
-                return;
-            }
-
+        static void Postfix() {
             VRPlayer.quickSwitch.GetComponent<QuickSwitch>().loopHotbarItems();
         }
     }
