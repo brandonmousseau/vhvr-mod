@@ -108,7 +108,7 @@ namespace ValheimVRMod.Patches
         ) {
             // if character is not local player, use original Start method
             if (character != Player.m_localPlayer 
-                || character.GetLeftItem().m_shared.m_itemType == ItemDrop.ItemData.ItemType.Bow) {
+                || character.GetLeftItem()?.m_shared.m_itemType == ItemDrop.ItemData.ItemType.Bow) {
                 return true;
             }
 

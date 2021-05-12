@@ -98,7 +98,7 @@ namespace ValheimVRMod.Patches
             static void Postfix(ref float __result)
             {
                 // dont patch, if quickswitch is active
-                if (VRPlayer.quickSwitch.activeSelf) {
+                if (VRPlayer.quickSwitch != null && VRPlayer.quickSwitch.activeSelf) {
                     return;
                 }
                 
@@ -119,7 +119,7 @@ namespace ValheimVRMod.Patches
             {
 
                 // dont patch, if quickswitch is active
-                if (VRPlayer.quickSwitch.activeSelf) {
+                if (VRPlayer.quickSwitch != null && VRPlayer.quickSwitch.activeSelf) {
                     return;
                 }
                 
