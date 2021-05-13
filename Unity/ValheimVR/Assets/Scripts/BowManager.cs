@@ -123,12 +123,10 @@ public class BowManager : MonoBehaviour {
         }
         
         if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand)) {
-            Debug.Log("blub..");
             checkPullStuff();
         }
         
         if (SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.RightHand)) {
-            Debug.Log("blab..");
             checkReleasetuff();
         }
         
@@ -136,8 +134,7 @@ public class BowManager : MonoBehaviour {
 
     private void checkPullStuff() {
         
-        if (!isPulling) {
-            checkHandNearString();
+        if (!isPulling && !checkHandNearString()) {
             return;
         }
         
@@ -159,17 +156,18 @@ public class BowManager : MonoBehaviour {
         gameObject.GetComponent<LineRenderer>().SetPosition(1, topPosition);
     }
 
-    private void checkHandNearString() {
+    private bool checkHandNearString() {
 
         
         Debug.Log(Vector3.Distance(VR_IK_Creator.rightHand.position, goS.transform.position));
         
         if (Vector3.Distance(VR_IK_Creator.rightHand.position, goS.transform.position) > attachDistance) {
-            return;
+            return false;
         }
         
         isPulling = true;
         goS.GetComponent<MeshRenderer>().material.color = Color.red;
+        return true;
 
     }
 }

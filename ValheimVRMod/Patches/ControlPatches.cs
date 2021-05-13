@@ -284,7 +284,7 @@ namespace ValheimVRMod.Patches
         class PlayerSetControlsPatch
         {
 
-            static void Prefix(Player __instance, ref bool attack, ref bool attackHold, ref bool secondaryAttack, ref bool crouch, ref bool run)
+            static void Prefix(Player __instance, ref bool attack, ref bool attackHold, ref bool block, ref bool blockHold, ref bool crouch, ref bool run)
             {
                 if (!VRControls.mainControlsActive || __instance != Player.m_localPlayer) {
                     return;
@@ -298,7 +298,8 @@ namespace ValheimVRMod.Patches
                 }
                 
                 if (BowManager.c_aborting) {
-                    secondaryAttack = BowManager.c_aborting;
+                    block = true;
+                    blockHold = true;
                     BowManager.c_aborting = false;
                 } else if (BowManager.c_startedPulling) {
                     attack = true;

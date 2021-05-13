@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using Valve.VR;
@@ -17,6 +18,7 @@ public class BowManager : MonoBehaviour {
     private Quaternion originalRotation;
     private GameObject arrow;
     private bool isPulling;
+    private LineRenderer predictionLine;
     
     public static BowManager instance;
     public static float attackDrawPercentage;
@@ -26,7 +28,17 @@ public class BowManager : MonoBehaviour {
     public static bool c_isPulling;
     public static bool c_startedPulling;
     public static bool c_aborting;
-    
+
+
+    private void Start() {
+        predictionLine = new GameObject().AddComponent<LineRenderer>();
+        predictionLine.widthMultiplier = 0.01f;
+        predictionLine.positionCount = 20;
+        predictionLine.material.color = Color.white;
+        predictionLine.enabled = false;
+        predictionLine.receiveShadows = false;
+        predictionLine.shadowCastingMode = ShadowCastingMode.Off;
+    }
 
     void Awake() {
 
@@ -39,8 +51,16 @@ public class BowManager : MonoBehaviour {
         pullObj = new GameObject();
         pullObj.transform.SetParent(transform, false);
         pullObj.transform.forward *= -1;
+
     }
 
+    /**
+     * Removing the old bow string, which is part of the bow mesh to later replace it with a linerenderer.
+     * we are making use of the fact that string triangles are longer then all other triangles
+     * so we simply iterate all triangles and compare their vertex distances to a certain minimum size
+     * for the new triangle array, we just skip those with bigger vertex distance
+     * but we save the top and bottom points of the deleted vertices so we can use them for our new string. 
+     */
     private void removeOldString() {
         
         Mesh mesh = GetComponent<MeshFilter>().mesh;
@@ -82,6 +102,10 @@ public class BowManager : MonoBehaviour {
         
     }
     
+    /**
+     * now we create a new string out of a linerenderer with 3 points, using the saved top and bottom points
+     * and a new third one in the middle.
+     */
     private void createNewString() {
         var lineRenderer = gameObject.AddComponent<LineRenderer>();
         lineRenderer.useWorldSpace = false;
@@ -90,7 +114,7 @@ public class BowManager : MonoBehaviour {
         lineRenderer.SetPosition(0, stringTop);
         lineRenderer.SetPosition(1, stringTop);
         lineRenderer.SetPosition(2, stringBottom);
-        lineRenderer.material.color = new Color(0.703125f,0.48828125f,0.28515625f);
+        lineRenderer.material.color = new Color(0.703125f,0.48828125f,0.28515625f); // just a random brown color
     }
     
     /**
@@ -111,6 +135,35 @@ public class BowManager : MonoBehaviour {
         if (SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.RightHand)) {
             releaseString();
         }
+
+        updatePredictionLine();
+    }
+
+    /**
+     * calculate predictionline of how the arrow will fly
+     */
+    private void updatePredictionLine() {
+
+        if (!predictionLine.enabled) {
+            return;
+        }
+        
+        float stepLength = 0.1f;
+        float stepSize = 20;
+        float unknownVelFactor = 5;
+        Vector3 pos = transform.position;
+        Vector3 vel = -transform.forward * stepSize * unknownVelFactor * attackDrawPercentage;
+        List<Vector3> pointList = new List<Vector3>();
+        
+        for (int i = 0; i < stepSize; i++) {
+            pointList.Add(pos);
+            vel += Vector3.down * 9.81f * stepLength;
+            pos += vel * stepLength;
+        }
+
+        predictionLine.positionCount = 20;
+        predictionLine.SetPositions(pointList.ToArray());
+        
     }
 
     private void handlePulling() {
@@ -154,7 +207,8 @@ public class BowManager : MonoBehaviour {
         if (!isPulling) {
             return;
         }
-        
+
+        predictionLine.enabled = false;
         isPulling = c_isPulling = false;
         attackDrawPercentage = pullPercentage();
         spawnPoint = transform.position;
@@ -193,6 +247,7 @@ public class BowManager : MonoBehaviour {
             arrow.transform.SetParent(pullObj.transform, false);
             c_startedPulling = true;
             c_isPulling = true;
+            predictionLine.enabled = true;
         }
         
         return isPulling = true;
