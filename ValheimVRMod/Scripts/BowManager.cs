@@ -54,6 +54,12 @@ public class BowManager : MonoBehaviour {
 
     }
 
+    private void OnDestroy() {
+        Destroy(arrow);
+        Destroy(pullObj);
+        Destroy(predictionLine);
+    }
+
     /**
      * Removing the old bow string, which is part of the bow mesh to later replace it with a linerenderer.
      * we are making use of the fact that string triangles are longer then all other triangles

@@ -232,7 +232,7 @@ namespace ValheimVRMod.Patches
             private static MethodInfo getJoyLeftStickX =
                 AccessTools.Method(typeof(ZInput), nameof(ZInput.GetJoyLeftStickX));
             private static MethodInfo getJoyLeftStickY =
-    AccessTools.Method(typeof(ZInput), nameof(ZInput.GetJoyLeftStickY));
+            AccessTools.Method(typeof(ZInput), nameof(ZInput.GetJoyLeftStickY));
 
             private static float getJoyLeftStickXPatched()
             {
@@ -292,20 +292,36 @@ namespace ValheimVRMod.Patches
 
                 run = ZInput_GetJoyRightStickY_Patch.isRunning;
                 crouch = ZInput_GetJoyRightStickY_Patch.isCrouching;
-                
-                if (! VRPlayer.isUsingBow()) {
+
+
+                if (VRPlayer.isUsingFishingRod()) {
+                    if (FishingManager.isThrowing) {
+                        attack = true;
+                        attackHold = true;
+                        FishingManager.isThrowing = false;   
+                    }
+
+                    if (FishingManager.isPulling) {
+                        blockHold = true;
+                    }
+                    
                     return;
                 }
-                
-                if (BowManager.c_aborting) {
-                    block = true;
-                    blockHold = true;
-                    BowManager.c_aborting = false;
-                } else if (BowManager.c_startedPulling) {
-                    attack = true;
-                    BowManager.c_startedPulling = false;
-                } else if (BowManager.c_isPulling) {
-                    attackHold = true;
+
+                if (VRPlayer.isUsingBow()) {
+
+                    if (BowManager.c_aborting) {
+                        block = true;
+                        blockHold = true;
+                        BowManager.c_aborting = false;
+                    }
+                    else if (BowManager.c_startedPulling) {
+                        attack = true;
+                        BowManager.c_startedPulling = false;
+                    }
+                    else if (BowManager.c_isPulling) {
+                        attackHold = true;
+                    }
                 }
             }
         }

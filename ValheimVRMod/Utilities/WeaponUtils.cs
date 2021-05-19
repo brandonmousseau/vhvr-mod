@@ -25,6 +25,11 @@ namespace ValheimVRMod.Utilities
                     -0.1339f,  2.2458f, 0,
                     0,  0, 0,
                     0.9623004f,  0.36668f, 0.2870208f
+                )}, {
+                "AxeStone", WeaponCollider.create( 
+                    -0.608f,  2.267f, 0,
+                    0,  0, 0,
+                    1.000489f,  0.177166f, 0.2626824f
                 )}, {   // PICKAXES
                 "PickaxeStone", WeaponCollider.create( 
                     -0.608f,  2.267f, 0,

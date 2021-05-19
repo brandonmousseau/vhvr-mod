@@ -5,138 +5,109 @@ using UnityEngine;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 
-namespace ValheimVRMod.Scripts
-{
-    public class CollisionDetection : MonoBehaviour
-    {
-        
+namespace ValheimVRMod.Scripts {
+    public class CollisionDetection : MonoBehaviour {
         private const float MIN_DISTANCE = 1.25f;
-        private const int MAX_SNAPSHOTS = 7;    
-        
+        private const int MAX_SNAPSHOTS = 7;
+
         private bool scriptActive;
         private GameObject colliderParent = new GameObject();
         private int tickCounter;
         private List<Vector3> snapshots = new List<Vector3>();
-        
+
         public bool itemIsTool;
         public Vector3 lastHitPoint;
         public Collider lastHitCollider;
 
-        private void OnTriggerEnter(Collider collider)
-        {
-            
-            if (! isCollisionAllowed() || Player.m_localPlayer == null)
-            {
+        private void OnTriggerEnter(Collider collider) {
+            if (!isCollisionAllowed() || Player.m_localPlayer == null) {
                 return;
             }
-            
+
             var item = Player.m_localPlayer.GetRightItem();
 
-            if ((item == null && !itemIsTool) || !hasMomentum())
-            {
+            if ((item == null && !itemIsTool) || !hasMomentum()) {
                 return;
             }
-            
+
             lastHitPoint = transform.position;
             lastHitCollider = collider;
 
             var attack = Player.m_localPlayer.GetRightItem().m_shared.m_attack.Clone();
-            attack.Start(Player.m_localPlayer, null,null,
-                AccessTools.FieldRefAccess<Player, CharacterAnimEvent>(Player.m_localPlayer, "m_animEvent"), 
-                null,  Player.m_localPlayer.GetRightItem(), null, 0.0f, 0.0f);
-            
-            snapshots.Clear();
+            attack.Start(Player.m_localPlayer, null, null,
+                AccessTools.FieldRefAccess<Player, CharacterAnimEvent>(Player.m_localPlayer, "m_animEvent"),
+                null, Player.m_localPlayer.GetRightItem(), null, 0.0f, 0.0f);
 
+            snapshots.Clear();
         }
 
-        private void OnRenderObject()
-        {
-
-            if (!isCollisionAllowed())
-            {
+        private void OnRenderObject() {
+            if (!isCollisionAllowed()) {
                 return;
             }
-            
+
             transform.SetParent(colliderParent.transform);
             transform.localRotation = Quaternion.identity;
             transform.localPosition = Vector3.zero;
             transform.localScale = Vector3.one;
             transform.SetParent(Player.m_localPlayer.transform, true);
-            
         }
 
-        public void setColliderParent(Transform obj, string name)
-        {
-            
+        public void setColliderParent(Transform obj, string name) {
             itemIsTool = name == "Hammer";
 
-            if (colliderParent == null)
-            {
+            if (colliderParent == null) {
                 colliderParent = new GameObject();
             }
-            
-            try
-            {
+
+            try {
                 WeaponCollider colliderData = WeaponUtils.getForName(name);
                 colliderParent.transform.parent = obj;
                 colliderParent.transform.localPosition = colliderData.pos;
                 colliderParent.transform.localRotation = Quaternion.Euler(colliderData.euler);
                 colliderParent.transform.localScale = colliderData.scale;
                 setScriptActive(true);
-
             }
-            catch (InvalidEnumArgumentException)
-            {
+            catch (InvalidEnumArgumentException) {
                 setScriptActive(false);
                 Debug.LogError("Invalid Weapon Data for: " + name);
             }
         }
 
-        private bool isCollisionAllowed()
-        {
+        private bool isCollisionAllowed() {
             return scriptActive && VRPlayer.inFirstPerson && colliderParent != null;
         }
 
-        private void setScriptActive(bool active)
-        {
-
+        private void setScriptActive(bool active) {
             scriptActive = active;
-            
-            if (!active)
-            {
+
+            if (!active) {
                 snapshots.Clear();
             }
         }
-        
-        private void FixedUpdate() 
-        {
 
-            if (!isCollisionAllowed())
-            {
+        private void FixedUpdate() {
+            if (!isCollisionAllowed()) {
                 return;
             }
-            
+
             tickCounter++;
-            if (tickCounter < 10)
-            {
+            if (tickCounter < 10) {
                 return;
             }
 
             snapshots.Add(transform.localPosition);
-        
-            if (snapshots.Count > MAX_SNAPSHOTS)
-            {
-                snapshots.RemoveAt(0);   
+
+            if (snapshots.Count > MAX_SNAPSHOTS) {
+                snapshots.RemoveAt(0);
             }
+
             tickCounter = 0;
         }
-        
-        public bool hasMomentum()
-        {
-            foreach (Vector3 snapshot in snapshots)
-            {
-                if (Vector3.Distance(snapshot, transform.localPosition) > MIN_DISTANCE)
-                {
+
+        public bool hasMomentum() {
+            foreach (Vector3 snapshot in snapshots) {
+                if (Vector3.Distance(snapshot, transform.localPosition) > MIN_DISTANCE) {
                     return true;
                 }
             }

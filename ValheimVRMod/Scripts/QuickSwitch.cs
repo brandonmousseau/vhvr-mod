@@ -13,13 +13,13 @@ namespace ValheimVRMod.Scripts {
 
         private GameObject hoveredItem;
         private int hoveredItemIndex = -1;
-        private GameObject[] equippedLayers = new GameObject[8]; 
-        private GameObject[] items = new GameObject[8]; 
+        private static GameObject[] equippedLayers = new GameObject[8]; 
+        private static GameObject[] items = new GameObject[8]; 
         private Vector2[] positions = new Vector2[8];
     
         private void Awake() {
             initialize();
-            loopHotbarItems();
+            refreshItems();
         }
 
         /**
@@ -91,7 +91,7 @@ namespace ValheimVRMod.Scripts {
         /**
          * loop the inventory hotbar and set corresponding item icons + activate equipped layers
          */
-        public void loopHotbarItems() {
+        public static void refreshItems() {
 
             var inventory = Player.m_localPlayer.GetInventory();
             

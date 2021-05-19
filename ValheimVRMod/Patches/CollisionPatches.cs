@@ -20,6 +20,10 @@ namespace ValheimVRMod.Patches
                 return;
             }
 
+            if (VRPlayer.quickSwitch != null) {
+                QuickSwitch.refreshItems();
+            }
+            
             MeshFilter meshFilter = ___m_rightItemInstance.GetComponentInChildren<MeshFilter>();
 
             if (meshFilter == null)
@@ -31,6 +35,11 @@ namespace ValheimVRMod.Patches
             // only local player must trigger this
             if (player == null || Player.m_localPlayer != player)
             {
+                return;
+            }
+
+            if (___m_rightItem == "FishingRod") {
+                meshFilter.gameObject.AddComponent<FishingManager>();
                 return;
             }
 
@@ -48,7 +57,11 @@ namespace ValheimVRMod.Patches
             if (!__result || ___m_leftItemInstance == null) {
                 return;
             }
-
+            
+            if (VRPlayer.quickSwitch != null) {
+                QuickSwitch.refreshItems();
+            }
+            
             MeshFilter meshFilter = ___m_leftItemInstance.GetComponentInChildren<MeshFilter>();
 
             if (meshFilter == null)
@@ -108,7 +121,7 @@ namespace ValheimVRMod.Patches
         ) {
             // if character is not local player, use original Start method
             if (character != Player.m_localPlayer 
-                || character.GetLeftItem()?.m_shared.m_itemType == ItemDrop.ItemData.ItemType.Bow) {
+                || VRPlayer.isUsingBow() || VRPlayer.isUsingFishingRod()) {
                 return true;
             }
 

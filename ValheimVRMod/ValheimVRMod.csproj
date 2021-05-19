@@ -296,7 +296,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Patches\BowPatches.cs" />
+    <Compile Include="Patches\BowAndFishingPatches.cs" />
     <Compile Include="Patches\CollisionPatches.cs" />
     <Compile Include="Patches\ControlPatches.cs" />
     <Compile Include="Patches\HarmonyPatcher.cs" />
@@ -307,7 +307,9 @@
     <Compile Include="Patches\UIPatches.cs" />
     <Compile Include="Scripts\BowManager.cs" />
     <Compile Include="Scripts\CollisionDetection.cs" />
+    <Compile Include="Scripts\FishingManager.cs" />
     <Compile Include="Scripts\QuickSwitch.cs" />
+    <Compile Include="Scripts\VR_IK_Creator.cs" />
     <Compile Include="Utilities\CameraUtils.cs" />
     <Compile Include="Utilities\WeaponCollider.cs" />
     <Compile Include="Utilities\LayerUtils.cs" />

@@ -101,10 +101,9 @@ namespace ValheimVRMod.Patches
     class PatchEquipItem {
 
         static void Postfix() {
-            if (VRPlayer.quickSwitch == null) {
-                return;
+            if (VRPlayer.quickSwitch != null) {
+                QuickSwitch.refreshItems();
             }
-            VRPlayer.quickSwitch.GetComponent<QuickSwitch>().loopHotbarItems();
         }
     }
 }

@@ -890,6 +890,10 @@ namespace ValheimVRMod.VRCore
         
         public static bool isUsingBow() {
             return Player.m_localPlayer.GetLeftItem()?.m_shared.m_itemType == ItemDrop.ItemData.ItemType.Bow;
+        }        
+        
+        public static bool isUsingFishingRod() {
+            return Player.m_localPlayer.GetRightItem()?.m_shared.m_name == "$item_fishingrod";
         }
     }
 }
