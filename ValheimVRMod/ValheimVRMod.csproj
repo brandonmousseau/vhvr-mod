@@ -253,9 +253,6 @@
     <Reference Include="UnityEngine.UnityTestProtocolModule">
       <HintPath>$(CommonDir)Valheim\unstripped_corlib\UnityEngine.UnityTestProtocolModule.dll</HintPath>
     </Reference>
-    <Reference Include="UnityEngine.UnityWebRequestAssetBundleModule">
-      <HintPath>$(CommonDir)Valheimdencies\unstripped_corlib\UnityEngine.UnityWebRequestAssetBundleModule.dll</HintPath>
-    </Reference>
     <Reference Include="UnityEngine.UnityWebRequestAudioModule">
       <HintPath>$(CommonDir)Valheim\unstripped_corlib\UnityEngine.UnityWebRequestAudioModule.dll</HintPath>
     </Reference>
