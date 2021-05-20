@@ -2,7 +2,7 @@
 
 namespace ValheimVRMod.Utilities
 {
-    class LogUtils
+    static class LogUtils
     {
         private static string TAG = "[ValheimVRMod] ";
 

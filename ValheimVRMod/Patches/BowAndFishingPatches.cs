@@ -1,9 +1,7 @@
-using System.Collections.Generic;
-using System.Reflection;
-using System.Reflection.Emit;
 using HarmonyLib;
 using UnityEngine;
-using ValheimVRMod.VRCore;
+using ValheimVRMod.Scripts;
+using ValheimVRMod.Utilities;
 
 namespace ValheimVRMod.Patches {
 
@@ -18,16 +16,17 @@ namespace ValheimVRMod.Patches {
                 return true;
             }
 
-            if (VRPlayer.isUsingFishingRod()) {
-                __result = FishingManager.attackDrawPercentage;
-                return false;
+            switch (EquipScript.getType()) {
+                
+                case EquipType.Bow:
+                    __result = BowManager.attackDrawPercentage;
+                    return false;
+                
+                case EquipType.Fishing:
+                    __result = FishingManager.attackDrawPercentage;
+                    return false;
             }
             
-            if (VRPlayer.isUsingBow()) {
-                __result = BowManager.attackDrawPercentage;
-                return false;
-            }
-
             return true;
         }
     }
@@ -46,18 +45,18 @@ namespace ValheimVRMod.Patches {
                 return true;
             }
 
-            if (VRPlayer.isUsingBow()) {
-                spawnPoint = BowManager.spawnPoint;
-                aimDir = BowManager.aimDir;
-                return false;
+            switch (EquipScript.getType()) {
+                
+                case EquipType.Bow:
+                    spawnPoint = BowManager.spawnPoint;
+                    aimDir = BowManager.aimDir;
+                    return false;
+                case EquipType.Fishing:
+                    spawnPoint = FishingManager.spawnPoint;
+                    aimDir = FishingManager.aimDir;
+                    return false;
             }
 
-            if (VRPlayer.isUsingFishingRod()) {
-                spawnPoint = FishingManager.spawnPoint;
-                aimDir = FishingManager.aimDir;
-                return false;
-            }
-            
             return true;
 
         }
@@ -74,31 +73,20 @@ namespace ValheimVRMod.Patches {
     }
     
     /**
-     * Remove shoot animation (its not working tho i guess)
+     * Remove attack animation by speeding it up. It only applies to attack moves,
+     * because the original method switches it back to normal for other animations
      */
-    [HarmonyPatch(typeof(Player), "PlayerAttackInput")]
-    class PatchPlayerAttackInput {
-        
-        private static MethodInfo SetBoolCall =
-            AccessTools.Method(typeof(ZSyncAnimation), nameof(ZSyncAnimation.SetBool), new []{typeof(string), typeof(bool)});
-        
-        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
-        {
-            var original = new List<CodeInstruction>(instructions);
-            var patched = new List<CodeInstruction>();
+    [HarmonyPatch(typeof(CharacterAnimEvent), "FixedUpdate")]
+    class PatchFixedUpdate {
+        static void Prefix(Character ___m_character, ref Animator ___m_animator) {
             
-            foreach (var instruction in original) {
-    
-                if (instruction.Calls(SetBoolCall)) {
-                    patched[patched.Count - 1].opcode = OpCodes.Ldc_I4_0;
-                }
-    
-                patched.Add(instruction);
-                
+            if (___m_character != Player.m_localPlayer) {
+                return;
             }
-            return patched;
+            
+            ___m_animator.speed = 1000f;
         }
-    }
+    }  
     
     /**
     * remove character facing and inaccuracy for projectile stuff
@@ -106,8 +94,12 @@ namespace ValheimVRMod.Patches {
     [HarmonyPatch(typeof(Attack), "FireProjectileBurst")]
     class PatchFireProjectileBurst {
         
-        static void Prefix(ref Attack __instance, ref ItemDrop.ItemData ___m_ammoItem) {
+        static void Prefix(ref Attack __instance, ref ItemDrop.ItemData ___m_ammoItem, Humanoid ___m_character) {
            
+            if (___m_character != Player.m_localPlayer) {
+                return;
+            }
+            
             __instance.m_useCharacterFacing = false;
             __instance.m_launchAngle = 0; //maybe adjust this for fishing rod
             __instance.m_projectileAccuracyMin = 0;

@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace ValheimVRMod.Utilities
 {
-    class CameraUtils
+    static class CameraUtils
     {
 
         public static readonly string MAIN_CAMERA = "Main Camera";

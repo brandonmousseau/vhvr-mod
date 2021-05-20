@@ -615,11 +615,11 @@ namespace ValheimVRMod.VRCore
 
         private void maybeAddVrik(Player player)
         {
-            if (!VHVRConfig.UseVRIK() || player.gameObject.GetComponent<VR_IK_Creator>() != null)
+            if (!VHVRConfig.UseVRIK() || player.gameObject.GetComponent<VrikCreator>() != null)
             {
                 return;
             }
-            var vrikCrerator = player.gameObject.AddComponent<VR_IK_Creator>();
+            var vrikCrerator = player.gameObject.AddComponent<VrikCreator>();
             vrikCrerator.leftController = getHand(LEFT_HAND, _instance).transform;
             vrikCrerator.rightController = getHand(RIGHT_HAND, _instance).transform;
             vrikCrerator.camera = CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform;
@@ -853,7 +853,7 @@ namespace ValheimVRMod.VRCore
                     toggleShowLeftHand = false;
                     rightHand.hapticAction.Execute(0, 0.2f, 100, 0.3f, SteamVR_Input_Sources.RightHand);
 
-                    if (isUsingBow()) {
+                    if (EquipScript.getType() == EquipType.Bow) {
                         BowManager.instance?.toggleArrow();
                     } else if (getPlayerCharacter().GetRightItem() != null) {
                         getPlayerCharacter().HideHandItems();
@@ -886,14 +886,6 @@ namespace ValheimVRMod.VRCore
                     }
                 }
             }
-        }
-        
-        public static bool isUsingBow() {
-            return Player.m_localPlayer.GetLeftItem()?.m_shared.m_itemType == ItemDrop.ItemData.ItemType.Bow;
-        }        
-        
-        public static bool isUsingFishingRod() {
-            return Player.m_localPlayer.GetRightItem()?.m_shared.m_name == "$item_fishingrod";
         }
     }
 }

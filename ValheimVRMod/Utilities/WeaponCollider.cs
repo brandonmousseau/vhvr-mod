@@ -4,7 +4,7 @@ using UnityEngine;
 namespace ValheimVRMod.Utilities
 {
 
-    public struct WeaponCollider
+    public readonly struct WeaponCollider
     {
 
         private WeaponCollider(Vector3 pos, Vector3 euler, Vector3 scale)

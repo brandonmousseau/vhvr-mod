@@ -43,7 +43,7 @@ using static ValheimVRMod.Utilities.LogUtils;
  */
 namespace ValheimVRMod.Utilities
 {
-    class LayerUtils
+    static class LayerUtils
     {
         // I need a layer with non-visible objects since
         // layers are short supply, so re-using 23. Must be

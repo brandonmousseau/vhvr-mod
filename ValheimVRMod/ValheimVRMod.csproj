@@ -301,14 +301,15 @@
     <Compile Include="Patches\EyeRotationPatch.cs" />
     <Compile Include="Patches\InteractionPatches.cs" />
     <Compile Include="Patches\Misc.cs" />
-    <Compile Include="Patches\PlayerPatches.cs" />
     <Compile Include="Patches\UIPatches.cs" />
     <Compile Include="Scripts\BowManager.cs" />
     <Compile Include="Scripts\CollisionDetection.cs" />
     <Compile Include="Scripts\FishingManager.cs" />
     <Compile Include="Scripts\QuickSwitch.cs" />
-    <Compile Include="Scripts\VR_IK_Creator.cs" />
+    <Compile Include="Scripts\SpearManager.cs" />
+    <Compile Include="Scripts\VrikCreator.cs" />
     <Compile Include="Utilities\CameraUtils.cs" />
+    <Compile Include="Utilities\EquipScript.cs" />
     <Compile Include="Utilities\WeaponCollider.cs" />
     <Compile Include="Utilities\LayerUtils.cs" />
     <Compile Include="Utilities\VHVRConfig.cs" />

@@ -76,7 +76,7 @@ namespace ValheimVRMod.Patches
                 return;
             }
 
-            if (VRPlayer.isUsingBow())
+            if (EquipScript.getType() == EquipType.Bow)
             {
                 meshFilter.gameObject.AddComponent<BowManager>();
             }
@@ -120,8 +120,11 @@ namespace ValheimVRMod.Patches
             GameObject ___m_spawnOnTrigger
         ) {
             // if character is not local player, use original Start method
-            if (character != Player.m_localPlayer 
-                || VRPlayer.isUsingBow() || VRPlayer.isUsingFishingRod()) {
+            if (character != Player.m_localPlayer) {
+                return true;
+            }
+            
+            if ((EquipScript.getType() & (EquipType.Bow | EquipType.Fishing)) > 0) {
                 return true;
             }
 

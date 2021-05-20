@@ -1,11 +1,9 @@
-using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Runtime.CompilerServices;
 
 namespace ValheimVRMod.Utilities
 {
-    public class WeaponUtils
+    public static class WeaponUtils
     {
         
         private static readonly Dictionary<string, WeaponCollider> colliders = new Dictionary<string, WeaponCollider>
