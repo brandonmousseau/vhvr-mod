@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using System.Reflection;
+using System.Reflection.Emit;
 using HarmonyLib;
 using UnityEngine;
 using ValheimVRMod.Scripts;
@@ -56,6 +59,7 @@ namespace ValheimVRMod.Patches {
                     aimDir = FishingManager.aimDir;
                     return false;
                 case EquipType.Spear:
+                case EquipType.SpearChitin:
                     spawnPoint = SpearManager.spawnPoint;
                     aimDir = SpearManager.aimDir;
                     return false;
@@ -71,7 +75,7 @@ namespace ValheimVRMod.Patches {
      */
     [HarmonyPatch(typeof(Hud), "UpdateCrosshair")]
     class PatchUpdateCrosshair {
-        static void Prefix(Player player, ref float bowDrawPercentage) {
+        static void Prefix(ref float bowDrawPercentage) {
             bowDrawPercentage = 0;
         }
     }
@@ -105,7 +109,7 @@ namespace ValheimVRMod.Patches {
             }
             
             __instance.m_useCharacterFacing = false;
-            __instance.m_launchAngle = 0; //maybe adjust this for fishing rod
+            __instance.m_launchAngle = 0;
             __instance.m_projectileAccuracyMin = 0;
             if (___m_ammoItem != null) {
                 ___m_ammoItem.m_shared.m_attack.m_projectileAccuracyMin = 0;   
@@ -128,6 +132,34 @@ namespace ValheimVRMod.Patches {
 
             __result = FishingManager.fixedRodTop.transform;
             return false;
+        }
+    }
+    
+        
+    /**
+     * Remove bow pulling animation
+     */
+    [HarmonyPatch(typeof(Player), "PlayerAttackInput")]
+    class PatchPlayerAttackInput {
+        
+        private static MethodInfo SetBoolCall =
+            AccessTools.Method(typeof(ZSyncAnimation), nameof(ZSyncAnimation.SetBool), new []{typeof(string), typeof(bool)});
+        
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            var original = new List<CodeInstruction>(instructions);
+            var patched = new List<CodeInstruction>();
+            
+            foreach (var instruction in original) {
+    
+                if (instruction.Calls(SetBoolCall)) {
+                    patched[patched.Count - 1].opcode = OpCodes.Ldc_I4_0;
+                }
+    
+                patched.Add(instruction);
+                
+            }
+            return patched;
         }
     }
 }

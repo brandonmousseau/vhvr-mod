@@ -4,7 +4,7 @@ namespace ValheimVRMod.Utilities {
     
     [Flags]
     public enum EquipType {
-        None, Bow, Fishing, Spear
+        None, Bow, Fishing, Spear, SpearChitin
     }
     
     public static class EquipScript {
@@ -25,8 +25,9 @@ namespace ValheimVRMod.Utilities {
                 case "$item_spear_bronze":
                 case "$item_spear_ancientbark":
                 case "$item_spear_wolffang":
-                //case "$item_spear_chitin":  <== special case
                     return EquipType.Spear;
+                case "$item_spear_chitin":
+                    return EquipType.SpearChitin;
             }
 
             return EquipType.None;

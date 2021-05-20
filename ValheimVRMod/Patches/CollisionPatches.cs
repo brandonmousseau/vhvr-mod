@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
@@ -43,7 +42,8 @@ namespace ValheimVRMod.Patches
                 return;
             }
             
-            if (EquipScript.getType() == EquipType.Spear) {
+            if (EquipScript.getType() == EquipType.Spear
+                || EquipScript.getType() == EquipType.SpearChitin) {
                 meshFilter.gameObject.AddComponent<SpearManager>();
                 // (no return, we want collider for spear also)
             }
@@ -96,7 +96,7 @@ namespace ValheimVRMod.Patches
         private static MethodInfo getLevelDamageFactorMethod =
             AccessTools.Method(typeof(Attack), "GetLevelDamageFactor");
         private static MethodInfo spawnOnHitTerrainMethod = AccessTools.Method(typeof(Attack), "SpawnOnHitTerrain",
-            new Type[] {typeof(Vector3), typeof(GameObject)});
+            new [] {typeof(Vector3), typeof(GameObject)});
 
         /**
          * in Start Patch we put some logic from original Start method and some more logic from original DoMeleeAttack
