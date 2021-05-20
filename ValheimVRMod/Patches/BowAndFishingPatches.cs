@@ -55,6 +55,10 @@ namespace ValheimVRMod.Patches {
                     spawnPoint = FishingManager.spawnPoint;
                     aimDir = FishingManager.aimDir;
                     return false;
+                case EquipType.Spear:
+                    spawnPoint = SpearManager.spawnPoint;
+                    aimDir = SpearManager.aimDir;
+                    return false;
             }
 
             return true;
@@ -103,7 +107,9 @@ namespace ValheimVRMod.Patches {
             __instance.m_useCharacterFacing = false;
             __instance.m_launchAngle = 0; //maybe adjust this for fishing rod
             __instance.m_projectileAccuracyMin = 0;
-            ___m_ammoItem.m_shared.m_attack.m_projectileAccuracyMin = 0;
+            if (___m_ammoItem != null) {
+                ___m_ammoItem.m_shared.m_attack.m_projectileAccuracyMin = 0;   
+            }
         }
     }
     

@@ -172,7 +172,7 @@ namespace ValheimVRMod.Patches {
     [HarmonyPatch(typeof(Player), "SetControls")]
     class PlayerSetControlsPatch {
         static void Prefix(Player __instance, ref bool attack, ref bool attackHold, ref bool block, ref bool blockHold,
-            ref bool crouch, ref bool run) {
+            ref bool secondaryAttack, ref bool crouch, ref bool run) {
             if (!VRControls.mainControlsActive || __instance != Player.m_localPlayer) {
                 return;
             }
@@ -211,8 +211,11 @@ namespace ValheimVRMod.Patches {
                     break;
 
                 case EquipType.Spear:
+                    if (SpearManager.isThrowing) {
+                        secondaryAttack = true;
+                        SpearManager.isThrowing = false;
+                    }
 
-                    //TODO
                     break;
             }
         }
