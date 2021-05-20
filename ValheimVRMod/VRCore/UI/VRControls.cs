@@ -258,36 +258,6 @@ namespace ValheimVRMod.VRCore.UI
             return -pitchAndYaw.axis.y;
         }
 
-        public int getHotbarScrollUpdate()
-        {
-            if (hotbarUp.GetStateDown(SteamVR_Input_Sources.Any))
-            {
-                return 1;
-            } else if (hotbarDown.GetStateDown(SteamVR_Input_Sources.Any))
-            {
-                return -1;
-            } else if (hotbarScroll.axis.y > 0)
-            {
-                return 1;
-            } else if (hotbarScroll.axis.y < 0) {
-                return -1;
-            } else
-            {
-                return 0;
-            }
-        }
-
-        public bool getHotbarUseInput()
-        {
-            if (hotbarUse.activeBinding)
-            {
-                return hotbarUse.GetStateDown(SteamVR_Input_Sources.Any);
-            } else
-            {
-                return !hasHoverObject() && GetButtonDown("Use");
-            }
-        }
-
         public int getPieceRotation()
         {
             if (!contextScroll.activeBinding)
