@@ -84,11 +84,11 @@ namespace ValheimVRMod.VRCore.UI
                 return;
             }
             
-            if (SteamVR_Actions.valheim_QuickSwitch.GetStateDown(SteamVR_Input_Sources.RightHand)) {
+            if (SteamVR_Actions.valheim_QuickSwitch.GetStateDown(SteamVR_Input_Sources.Any)) {
                 quickSwitch.SetActive(true);
             }
             
-            if (SteamVR_Actions.valheim_QuickSwitch.GetStateUp(SteamVR_Input_Sources.RightHand)) {
+            if (SteamVR_Actions.valheim_QuickSwitch.GetStateUp(SteamVR_Input_Sources.Any)) {
                 quickSwitch.GetComponent<QuickSwitch>().selectHoveredItem();
                 quickSwitch.SetActive(false);
             }
