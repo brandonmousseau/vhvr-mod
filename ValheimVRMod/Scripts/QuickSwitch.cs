@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using Valve.VR;
+using ValheimVRMod.Utilities;
 
 namespace ValheimVRMod.Scripts {
     public class QuickSwitch : MonoBehaviour{
@@ -50,6 +51,7 @@ namespace ValheimVRMod.Scripts {
                 positions[i] = new Vector2((float)x, (float)y);
 
                 GameObject standardLayer = new GameObject();
+                standardLayer.layer = LayerUtils.getWorldspaceUiLayer();
                 standardLayer.transform.SetParent(transform, false);
                 standardLayer.transform.localPosition = positions[i];
                 standardLayer.transform.localScale *= 4;
@@ -58,6 +60,7 @@ namespace ValheimVRMod.Scripts {
                 standardRenderer.sortingOrder = 0;
                 
                 GameObject equipedLayer = new GameObject();
+                equipedLayer.layer = LayerUtils.getWorldspaceUiLayer();
                 equipedLayer.transform.SetParent(transform, false);
                 equipedLayer.transform.localPosition = positions[i];
                 equipedLayer.transform.localScale *= 4;
@@ -68,6 +71,7 @@ namespace ValheimVRMod.Scripts {
                 equippedLayers[i] = equipedLayer;
                 
                 GameObject item = new GameObject();
+                item.layer = LayerUtils.getWorldspaceUiLayer();
                 item.transform.SetParent(transform, false);
                 item.transform.localPosition = positions[i];
                 item.transform.localScale /= 15;
@@ -78,6 +82,7 @@ namespace ValheimVRMod.Scripts {
             }
             
             hoveredItem = new GameObject();
+            hoveredItem.layer = LayerUtils.getWorldspaceUiLayer();
             hoveredItem.transform.SetParent(transform, false);
             hoveredItem.transform.localScale *= 4;
             var hoveredItemRenderer = hoveredItem.AddComponent<SpriteRenderer>();
