@@ -240,7 +240,7 @@ namespace ValheimVRMod.Scripts {
                 arrow.transform.SetParent(pullObj.transform, false);
                 startedPulling = true;
                 isPulling = true;
-                predictionLine.enabled = true;
+                predictionLine.enabled = VHVRConfig.UseArrowPredictionGraphic();
             }
 
             return pulling = true;

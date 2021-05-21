@@ -42,6 +42,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> stationaryGuiRecenterAngle;
         private static ConfigEntry<float> mobileGuiRecenterAngle;
         private static ConfigEntry<bool> recenterGuiOnMove;
+        private static ConfigEntry<bool> useArrowPredictionGraphic;
 
         // Controls Settings
         private static ConfigEntry<bool> enableHands;
@@ -211,6 +212,10 @@ namespace ValheimVRMod.Utilities
                                             "RecenterGuiOnMove",
                                             true,
                                             "Only used when UseLookLocomotion is true. This will cause the GUI to recenter to your current look direction when you first start moving.");
+            useArrowPredictionGraphic = config.Bind("UI",
+                                                     "UseArrowPredictionGraphic",
+                                                     true,
+                                                     "Use this to toggle the path predictor when using the bow and arrow with VR controls.");
         }
 
         private static void InitializeControlsSettings(ConfigFile config)
@@ -517,6 +522,11 @@ namespace ValheimVRMod.Utilities
         public static bool UseVRIK()
         {
             return useVrik.Value;
+        }
+
+        public static bool UseArrowPredictionGraphic()
+        {
+            return useArrowPredictionGraphic.Value;
         }
 
     }
