@@ -48,44 +48,17 @@
          "sources" : [
             {
                "inputs" : {
-                  "scroll" : {
-                     "output" : "/actions/laserpointers/in/scroll"
-                  }
-               },
-               "mode" : "scroll",
-               "path" : "/user/hand/right/input/trackpad"
-            },
-            {
-               "inputs" : {
-                  "click" : {
-                     "output" : "/actions/laserpointers/in/rightclick"
-                  }
-               },
-               "mode" : "button",
-               "path" : "/user/hand/left/input/b"
-            },
-            {
-               "inputs" : {
-                  "click" : {
-                     "output" : "/actions/laserpointers/in/rightclick"
-                  }
-               },
-               "mode" : "button",
-               "path" : "/user/hand/right/input/b"
-            },
-            {
-               "inputs" : {
                   "click" : {
                      "output" : "/actions/laserpointers/in/leftclick"
                   }
                },
                "mode" : "button",
-               "path" : "/user/hand/left/input/a"
+               "path" : "/user/hand/right/input/trigger"
             },
             {
                "inputs" : {
                   "click" : {
-                     "output" : "/actions/laserpointers/in/leftclick"
+                     "output" : "/actions/laserpointers/in/rightclick"
                   }
                },
                "mode" : "button",
