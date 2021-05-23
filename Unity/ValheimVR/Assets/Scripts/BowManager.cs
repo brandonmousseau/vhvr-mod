@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using Valve.VR;
 
@@ -138,12 +136,12 @@ public class BowManager : MonoBehaviour {
             return;
         }
         
-        if (Vector3.Distance(VR_IK_Creator.rightHand.position, goS.transform.position) < pullLength) {
-            pullObj.transform.position = VR_IK_Creator.rightHand.position;
+        if (Vector3.Distance(VrikCreator.rightHand.position, goS.transform.position) < pullLength) {
+            pullObj.transform.position = VrikCreator.rightHand.position;
             gameObject.GetComponent<LineRenderer>().SetPosition(1, pullObj.transform.localPosition);
         }
         
-        transform.LookAt(VR_IK_Creator.rightHand.transform,  transform.parent.forward);
+        transform.LookAt(VrikCreator.rightHand.transform,  transform.parent.forward);
         transform.Rotate(new Vector3(0,0, 1), 90);
 
     }
@@ -159,9 +157,9 @@ public class BowManager : MonoBehaviour {
     private bool checkHandNearString() {
 
         
-        Debug.Log(Vector3.Distance(VR_IK_Creator.rightHand.position, goS.transform.position));
+        Debug.Log(Vector3.Distance(VrikCreator.rightHand.position, goS.transform.position));
         
-        if (Vector3.Distance(VR_IK_Creator.rightHand.position, goS.transform.position) > attachDistance) {
+        if (Vector3.Distance(VrikCreator.rightHand.position, goS.transform.position) > attachDistance) {
             return false;
         }
         

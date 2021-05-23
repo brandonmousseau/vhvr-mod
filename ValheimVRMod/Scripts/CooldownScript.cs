@@ -62,7 +62,6 @@ namespace ValheimVRMod.Scripts {
                 grayLayer.SetActive(false);
                 yellowLayer.SetActive(false);
                 yellowLayer.transform.localScale = Vector3.one;
-                yellowLayer.transform.localPosition = Vector3.zero;
             }
         }
     }

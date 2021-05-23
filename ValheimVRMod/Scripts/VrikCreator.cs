@@ -43,12 +43,16 @@ namespace ValheimVRMod.Scripts {
             leftHand.transform.localPosition = new Vector3(0.0107f, 0.07f, -0.1f);
             leftHand.transform.localRotation = Quaternion.Euler(180, -90, 0);
             vrik.solver.leftArm.target = leftHand;
+            vrik.solver.leftArm.wristToPalmAxis = Vector3.zero;
+            vrik.solver.leftArm.palmToThumbAxis = new Vector3(1, -4.5f, 0);
 
             rightHand = (new GameObject()).transform;
             rightHand.parent = rightController;
             rightHand.transform.localPosition = new Vector3(0.0107f, 0.07f, -0.1f);
             rightHand.transform.localRotation = Quaternion.Euler(180, 90, 0);
             vrik.solver.rightArm.target = rightHand;
+            vrik.solver.rightArm.wristToPalmAxis = Vector3.zero;
+            vrik.solver.rightArm.palmToThumbAxis = new Vector3(-1, -4.5f, 0);
 
             Transform head = (new GameObject()).transform;
             head.parent = camera;
