@@ -19,6 +19,11 @@ namespace ValheimVRMod.VRCore.UI
         private static readonly Vector3 RECENTER_POSE_POSITION_R = new Vector3(0.1f, 0f, 0.1f);
         // Tolerance for above pose
         private static readonly float RECENTER_POSE_TOLERANCE = 0.2f; // Magnitude
+        // number of updates to skip before allowing a "rotation" update to occur
+        // when using the alt piece rotation mode (ie, context scroll is not bound).
+        private static readonly int ALT_PIECE_ROTATION_RESISTOR = 5;
+
+        private int currentRotationUpdateFrame = 0;
 
         private HashSet<string> ignoredZInputs = new HashSet<string>();
         private SteamVR_ActionSet mainActionSet = SteamVR_Actions.Valheim;
@@ -154,6 +159,14 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return false;
             }
+            if (zinput == "Jump" && shouldDisableJump())
+            {
+                return false;
+            }
+            if (zinput == "GPower" && shouldDisableGPower())
+            {
+                return false;
+            }
             // Handle Map zoom specially using context scroll input
             if (zinput == "MapZoomOut")
             {
@@ -175,6 +188,12 @@ namespace ValheimVRMod.VRCore.UI
                     return false;
                 }
             }
+            if (zinput == "Map" && altPieceRotationControlsActive())
+            {
+                // Disable the regular map input if alternative piece
+                // rotation controls are active.
+                return false;
+            }
             SteamVR_Action_Boolean action;
             zInputToBooleanAction.TryGetValue(zinput, out action);
             if (action == null)
@@ -191,6 +210,20 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return false;
             }
+            if (zinput == "Jump" && shouldDisableJump())
+            {
+                return false;
+            }
+            if (zinput == "GPower" && shouldDisableGPower())
+            {
+                return false;
+            }
+            if (zinput == "Map" && altPieceRotationControlsActive())
+            {
+                // Disable the regular map input if alternative piece
+                // rotation controls are active.
+                return false;
+            }
             SteamVR_Action_Boolean action;
             zInputToBooleanAction.TryGetValue(zinput, out action);
             if (action == null)
@@ -205,6 +238,20 @@ namespace ValheimVRMod.VRCore.UI
         {
             if (!mainActionSet.IsActive() || ignoredZInputs.Contains(zinput))
             {
+                return false;
+            }
+            if (zinput == "Jump" && shouldDisableJump())
+            {
+                return false;
+            }
+            if (zinput == "GPower" && shouldDisableGPower())
+            {
+                return false;
+            }
+            if (zinput == "Map" && altPieceRotationControlsActive())
+            {
+                // Disable the regular map input if alternative piece
+                // rotation controls are active.
                 return false;
             }
             SteamVR_Action_Boolean action;
@@ -237,7 +284,8 @@ namespace ValheimVRMod.VRCore.UI
 
         public float GetJoyRightStickX()
         {
-            if (!mainActionSet.IsActive())
+            // Disable rotation if "altPieceRotationControlsActive" is true
+            if (!mainActionSet.IsActive() || altPieceRotationControlsActive())
             {
                 return 0.0f;
             }
@@ -246,7 +294,10 @@ namespace ValheimVRMod.VRCore.UI
 
         public float GetJoyRightStickY()
         {
-            if (!mainActionSet.IsActive())
+            // Even though Y axis is not used for piece rotation with alternative
+            // controls, disable it to avoid situations where the player is angling
+            // the joystick up/down while trying to rotate causing unintended actions
+            if (!mainActionSet.IsActive() || altPieceRotationControlsActive())
             {
                 return 0.0f;
             }
@@ -257,7 +308,19 @@ namespace ValheimVRMod.VRCore.UI
         {
             if (!contextScroll.activeBinding)
             {
-                return 0;
+                // Since we don't have a context scroll bound (becaus of limited input
+                // options), we need to control rotation using the right joystick
+                // when a special button is held - we are using the Map button for this purpose.
+                // As a result, when in "build mode", the map button is disabled for the purpose
+                // of bringing up the map and when the player is holding down the map button,
+                // then they cannot rotate their character.
+                if (altPieceRotationControlsActive())
+                {
+                    return getAltPieceRotation();
+                } else
+                {
+                    return 0;
+                }
             }
             if (contextScroll.axis.y > 0)
             {
@@ -271,6 +334,48 @@ namespace ValheimVRMod.VRCore.UI
             }
         }
 
+        private int getAltPieceRotation()
+        {
+            float rightStickXAxis = pitchAndYaw.axis.x;
+            currentRotationUpdateFrame += 1;
+            if (currentRotationUpdateFrame == ALT_PIECE_ROTATION_RESISTOR + 1)
+            {
+                currentRotationUpdateFrame = 0;
+            }
+            // Only allow a rotation every ALT_PIECE_ROTATION_RESISTOR updates
+            if (currentRotationUpdateFrame != ALT_PIECE_ROTATION_RESISTOR)
+            {
+                return 0;
+            }
+            if (rightStickXAxis > 0.1f)
+            {
+                return 1;
+            }
+            else if (rightStickXAxis < -0.1f)
+            {
+                return -1;
+            }
+            else
+            {
+                return 0;
+            }
+        }
+
+        private bool inPlaceMode()
+        {
+            return Player.m_localPlayer != null && Player.m_localPlayer.InPlaceMode();
+        }
+
+        private bool hasPlacementGhost()
+        {
+            if (Player.m_localPlayer == null)
+            {
+                return false;
+            }
+            var fieldRef = AccessTools.FieldRefAccess<Player, GameObject>(Player.m_localPlayer, "m_placementGhost");
+            return fieldRef != null && fieldRef.activeSelf;
+        }
+
         private bool hasHoverObject()
         {
             if (Player.m_localPlayer == null)
@@ -279,6 +384,32 @@ namespace ValheimVRMod.VRCore.UI
             }
             var fieldRef = AccessTools.FieldRefAccess<Player, GameObject>(Player.m_localPlayer, "m_hovering");
             return fieldRef != null;
+        }
+
+        // Used to determine when the player is in a mode where the right joystick should
+        // be used for rotation of an object while building rather than rotating the
+        // player character
+        private bool altPieceRotationControlsActive()
+        {
+            return (!contextScroll.activeBinding) &&
+                        inPlaceMode() &&
+                        hasPlacementGhost() &&
+                        !Hud.IsPieceSelectionVisible() &&
+                        SteamVR_Actions.valheim_ToggleMap.GetState(SteamVR_Input_Sources.Any);
+        }
+
+        // disable Jump input under certain conditions
+        // * In placement mode
+        private bool shouldDisableJump()
+        {
+            return inPlaceMode();
+        }
+
+        // disale GPower input under certain conditions
+        // * In placement mode
+        private bool shouldDisableGPower()
+        {
+            return inPlaceMode();
         }
 
         private void init()
@@ -293,8 +424,9 @@ namespace ValheimVRMod.VRCore.UI
 
             // These placement commands re-use some of the normal game inputs
             zInputToBooleanAction.Add("BuildMenu", SteamVR_Actions.laserPointers_RightClick);
-            zInputToBooleanAction.Add("Remove", SteamVR_Actions.valheim_Jump);
             zInputToBooleanAction.Add("AltPlace", SteamVR_Actions.valheim_GPower);
+            zInputToBooleanAction.Add("JoyPlace", SteamVR_Actions.laserPointers_LeftClick);
+            zInputToBooleanAction.Add("Remove", SteamVR_Actions.valheim_Jump);
 
             contextScroll = SteamVR_Actions.valheim_ContextScroll;
 
@@ -354,7 +486,6 @@ namespace ValheimVRMod.VRCore.UI
             ignoredZInputs.Add("BuildPrev");
             ignoredZInputs.Add("AltPlace");
             ignoredZInputs.Add("JoyAltPlace");
-            ignoredZInputs.Add("JoyPlace");
         }
 
     }

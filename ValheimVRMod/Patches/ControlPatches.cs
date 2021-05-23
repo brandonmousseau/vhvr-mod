@@ -25,6 +25,7 @@ namespace ValheimVRMod.Patches {
         private static bool isUsedJoyZinput(string name) {
             return name == "JoyMenu" ||
                    name == "JoyPlace" ||
+                   name == "JoyPlace" ||
                    name == "JoyRemove";
         }
 
