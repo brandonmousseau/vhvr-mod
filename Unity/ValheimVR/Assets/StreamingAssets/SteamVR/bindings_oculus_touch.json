@@ -193,7 +193,7 @@
                   }
                },
                "mode" : "button",
-               "path" : "/user/hand/left/input/y"
+               "path" : "/user/hand/right/input/y"
             },
             {
                "inputs" : {
@@ -202,7 +202,7 @@
                   }
                },
                "mode" : "button",
-               "path" : "/user/hand/right/input/y"
+               "path" : "/user/hand/right/input/b"
             }
          ]
       },

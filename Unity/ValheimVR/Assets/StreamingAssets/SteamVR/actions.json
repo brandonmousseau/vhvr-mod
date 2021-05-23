@@ -164,7 +164,7 @@
     },
     {
       "name": "/actions/LaserPointers",
-      "usage": "single"
+      "usage": "leftright"
     }
   ],
   "default_bindings": [
