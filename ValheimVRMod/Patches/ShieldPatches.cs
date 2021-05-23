@@ -1,6 +1,4 @@
-using System.Reflection;
 using HarmonyLib;
-using UnityEngine;
 using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
 
@@ -41,7 +39,7 @@ namespace ValheimVRMod.Patches {
     class PatchIsBlocking {
         static bool Prefix(Humanoid __instance, ref bool __result) {
 
-            if (__instance != Player.m_localPlayer) {
+            if (__instance != Player.m_localPlayer || EquipScript.getLeft() != EquipType.Shield) {
                 return true;
             }
 
@@ -55,7 +53,7 @@ namespace ValheimVRMod.Patches {
     class PatchRPCDamager {
         static void Prefix(Character __instance, HitData hit) {
 
-            if (__instance != Player.m_localPlayer) {
+            if (__instance != Player.m_localPlayer || EquipScript.getLeft() != EquipType.Shield) {
                 return;
             }
             
@@ -65,7 +63,7 @@ namespace ValheimVRMod.Patches {
         
         static void Postfix(Character __instance) {
 
-            if (__instance != Player.m_localPlayer) {
+            if (__instance != Player.m_localPlayer || EquipScript.getLeft() != EquipType.Shield) {
                 return;
             }
 
