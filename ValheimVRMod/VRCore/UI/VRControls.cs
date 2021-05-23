@@ -27,12 +27,7 @@ namespace ValheimVRMod.VRCore.UI
 
         private SteamVR_Action_Vector2 walk;
         private SteamVR_Action_Vector2 pitchAndYaw;
-
-        private SteamVR_Action_Boolean hotbarDown;
-        private SteamVR_Action_Boolean hotbarUp;
-        private SteamVR_Action_Vector2 hotbarScroll;
-        private SteamVR_Action_Boolean hotbarUse;
-
+        
         private SteamVR_Action_Vector2 contextScroll;
 
         private SteamVR_Action_Pose poseL;
@@ -79,7 +74,7 @@ namespace ValheimVRMod.VRCore.UI
 
         private void checkQuickSwitch() {
             
-            var quickSwitch = VRPlayer.quickSwitch;
+            var quickSwitch = StaticObjects.quickSwitch;
             if (quickSwitch == null) {
                 return;
             }
@@ -300,11 +295,6 @@ namespace ValheimVRMod.VRCore.UI
             zInputToBooleanAction.Add("BuildMenu", SteamVR_Actions.laserPointers_RightClick);
             zInputToBooleanAction.Add("Remove", SteamVR_Actions.valheim_Jump);
             zInputToBooleanAction.Add("AltPlace", SteamVR_Actions.valheim_GPower);
-
-            hotbarDown = SteamVR_Actions.valheim_HotbarDown;
-            hotbarUp = SteamVR_Actions.valheim_HotbarUp;
-            hotbarScroll = SteamVR_Actions.valheim_HotbarScroll;
-            hotbarUse = SteamVR_Actions.valheim_HotbarUse;
 
             contextScroll = SteamVR_Actions.valheim_ContextScroll;
 

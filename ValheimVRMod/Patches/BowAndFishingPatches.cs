@@ -19,15 +19,14 @@ namespace ValheimVRMod.Patches {
                 return true;
             }
 
-            switch (EquipScript.getType()) {
-                
-                case EquipType.Bow:
-                    __result = BowManager.attackDrawPercentage;
-                    return false;
-                
-                case EquipType.Fishing:
-                    __result = FishingManager.attackDrawPercentage;
-                    return false;
+            if (EquipScript.getLeft() == EquipType.Bow) {
+                __result = BowManager.attackDrawPercentage;
+                return false;
+            }
+
+            if (EquipScript.getRight() == EquipType.Fishing) {
+                __result = FishingManager.attackDrawPercentage;
+                return false;
             }
             
             return true;
@@ -48,12 +47,14 @@ namespace ValheimVRMod.Patches {
                 return true;
             }
 
-            switch (EquipScript.getType()) {
-                
-                case EquipType.Bow:
-                    spawnPoint = BowManager.spawnPoint;
-                    aimDir = BowManager.aimDir;
-                    return false;
+            if (EquipScript.getLeft() == EquipType.Bow) {
+                spawnPoint = BowManager.spawnPoint;
+                aimDir = BowManager.aimDir;
+                return false;
+            }
+            
+            switch (EquipScript.getRight()) {
+
                 case EquipType.Fishing:
                     spawnPoint = FishingManager.spawnPoint;
                     aimDir = FishingManager.aimDir;

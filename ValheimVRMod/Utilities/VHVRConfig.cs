@@ -43,6 +43,12 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> mobileGuiRecenterAngle;
         private static ConfigEntry<bool> recenterGuiOnMove;
         private static ConfigEntry<bool> useArrowPredictionGraphic;
+        private static ConfigEntry<float> DebugPosX;
+        private static ConfigEntry<float> DebugPosY;
+        private static ConfigEntry<float> DebugPosZ;
+        private static ConfigEntry<float> DebugRotX;
+        private static ConfigEntry<float> DebugRotY;
+        private static ConfigEntry<float> DebugRotZ;
 
         // Controls Settings
         private static ConfigEntry<bool> enableHands;
@@ -216,6 +222,31 @@ namespace ValheimVRMod.Utilities
                                                      "UseArrowPredictionGraphic",
                                                      true,
                                                      "Use this to toggle the path predictor when using the bow and arrow with VR controls.");
+            DebugPosX = config.Bind("UI",
+                "DebugPosX",
+                0.0f,
+                "DebugPosX");
+            DebugPosY = config.Bind("UI",
+                "DebugPosY",
+                0.0f,
+                "DebugPosY");
+            DebugPosZ = config.Bind("UI",
+                "DebugPosZ",
+                0.0f,
+                "DebugPosZ");
+            DebugRotX = config.Bind("UI",
+                "DebugRotX",
+                0.0f,
+                "DebugRotX");
+            DebugRotY = config.Bind("UI",
+                "DebugRotY",
+                0.0f,
+                "DebugRotY");
+            DebugRotZ = config.Bind("UI",
+                "DebugRotZ",
+                0.0f,
+                "DebugRotZ");
+            
         }
 
         private static void InitializeControlsSettings(ConfigFile config)
@@ -527,6 +558,16 @@ namespace ValheimVRMod.Utilities
         public static bool UseArrowPredictionGraphic()
         {
             return useArrowPredictionGraphic.Value;
+        }
+        
+        public static Vector3 getDebugPos()
+        {
+            return new Vector3(DebugPosX.Value, DebugPosY.Value, DebugPosZ.Value);
+        }
+        
+        public static Vector3 getDebugRot()
+        {
+            return new Vector3(DebugRotX.Value, DebugRotY.Value, DebugRotZ.Value);
         }
 
     }

@@ -4,17 +4,12 @@ namespace ValheimVRMod.Utilities {
     
     [Flags]
     public enum EquipType {
-        None, Bow, Fishing, Spear, SpearChitin
+        None, Bow, Fishing, Spear, SpearChitin, Shield
     }
     
     public static class EquipScript {
         
-        public static EquipType getType() {
-
-            if (Player.m_localPlayer.GetLeftItem()?.m_shared?.m_itemType 
-                == ItemDrop.ItemData.ItemType.Bow) {
-                return EquipType.Bow;
-            }
+        public static EquipType getRight() {
             
             switch (Player.m_localPlayer.GetRightItem()?.m_shared.m_name) {
                 
@@ -30,6 +25,19 @@ namespace ValheimVRMod.Utilities {
                     return EquipType.SpearChitin;
             }
 
+            return EquipType.None;
+        }
+
+        public static EquipType getLeft() {
+
+            switch (Player.m_localPlayer.GetLeftItem()?.m_shared.m_itemType) {
+                case ItemDrop.ItemData.ItemType.Bow:
+                    return EquipType.Bow;
+
+                case ItemDrop.ItemData.ItemType.Shield:
+                    return EquipType.Shield;
+            }
+            
             return EquipType.None;
         }
     }

@@ -7,96 +7,92 @@ using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using Valve.VR;
 
-namespace ValheimVRMod.Patches
-{
+namespace ValheimVRMod.Patches {
     [HarmonyPatch(typeof(VisEquipment), "SetRightHandEquiped")]
-    class PatchSetRightHandEquiped
-    {
-        static void Postfix(bool __result, string ___m_rightItem, ref GameObject ___m_rightItemInstance)
-        {
-
+    class PatchSetRightHandEquiped {
+        static void Postfix(bool __result, string ___m_rightItem, ref GameObject ___m_rightItemInstance) {
             if (!__result || ___m_rightItemInstance == null) {
                 return;
             }
 
-            if (VRPlayer.quickSwitch != null) {
+            if (StaticObjects.quickSwitch != null) {
                 QuickSwitch.refreshItems();
             }
-            
+
             MeshFilter meshFilter = ___m_rightItemInstance.GetComponentInChildren<MeshFilter>();
 
-            if (meshFilter == null)
-            {
-                return;
-            }
-            
-            Player player = ___m_rightItemInstance.GetComponentInParent<Player>();
-            // only local player must trigger this
-            if (player == null || Player.m_localPlayer != player)
-            {
+            if (meshFilter == null) {
                 return;
             }
 
-            if (EquipScript.getType() == EquipType.Fishing) {
-                meshFilter.gameObject.AddComponent<FishingManager>();
+            Player player = ___m_rightItemInstance.GetComponentInParent<Player>();
+            // only local player must trigger this
+            if (player == null || Player.m_localPlayer != player) {
                 return;
             }
-            
-            if (EquipScript.getType() == EquipType.Spear
-                || EquipScript.getType() == EquipType.SpearChitin) {
-                meshFilter.gameObject.AddComponent<SpearManager>();
-                // (no return, we want collider for spear also)
+
+            switch (EquipScript.getRight()) {
+                case EquipType.Fishing:
+                    meshFilter.gameObject.AddComponent<FishingManager>();
+                    return;
+                    
+                case EquipType.Spear:
+                case EquipType.SpearChitin:
+                    meshFilter.gameObject.AddComponent<SpearManager>();
+                    // (no return, we want collider for spear also)
+                    break;
             }
 
             Transform item = meshFilter.transform;
-            VRPlayer.collisionCube().GetComponent<CollisionDetection>().setColliderParent(item, ___m_rightItem);
+            StaticObjects.weaponCollider().GetComponent<CollisionDetection>().setColliderParent(item, ___m_rightItem);
         }
     }
-    
-    [HarmonyPatch(typeof(VisEquipment), "SetLeftHandEquiped")]
-    class PatchSetLeftHandEquiped
-    {
-        static void Postfix(bool __result, GameObject ___m_leftItemInstance)
-        {
 
+    [HarmonyPatch(typeof(VisEquipment), "SetLeftHandEquiped")]
+    class PatchSetLeftHandEquiped {
+        static void Postfix(bool __result, string ___m_leftItem, GameObject ___m_leftItemInstance) {
             if (!__result || ___m_leftItemInstance == null) {
                 return;
             }
-            
-            if (VRPlayer.quickSwitch != null) {
+
+            if (StaticObjects.quickSwitch != null) {
                 QuickSwitch.refreshItems();
             }
-            
+
             MeshFilter meshFilter = ___m_leftItemInstance.GetComponentInChildren<MeshFilter>();
 
-            if (meshFilter == null)
-            {
-                return;
-            }
-            
-            Player player = ___m_leftItemInstance.GetComponentInParent<Player>();
-            // only local player must trigger this
-            if (player == null || Player.m_localPlayer != player)
-            {
+            if (meshFilter == null) {
                 return;
             }
 
-            if (EquipScript.getType() == EquipType.Bow)
-            {
-                meshFilter.gameObject.AddComponent<BowManager>();
+            Player player = ___m_leftItemInstance.GetComponentInParent<Player>();
+            // only local player must trigger this
+            if (player == null || Player.m_localPlayer != player) {
+                return;
+            }
+
+            switch (EquipScript.getLeft()) {
+                
+                case EquipType.Bow:
+                    meshFilter.gameObject.AddComponent<BowManager>();
+                    return;
+                
+                case EquipType.Shield:
+                    meshFilter.gameObject.AddComponent<ShieldManager>()._name = ___m_leftItem;
+                    return;
             }
         }
     }
-    
+
     [HarmonyPatch(typeof(Attack), "Start")]
-    class PatchAttackStart
-    {
-        
+    class PatchAttackStart {
         private static MethodInfo getStaminaUsageMethod = AccessTools.Method(typeof(Attack), "GetStaminaUsage");
+
         private static MethodInfo getLevelDamageFactorMethod =
             AccessTools.Method(typeof(Attack), "GetLevelDamageFactor");
+
         private static MethodInfo spawnOnHitTerrainMethod = AccessTools.Method(typeof(Attack), "SpawnOnHitTerrain",
-            new [] {typeof(Vector3), typeof(GameObject)});
+            new[] {typeof(Vector3), typeof(GameObject)});
 
         /**
          * in Start Patch we put some logic from original Start method and some more logic from original DoMeleeAttack
@@ -125,7 +121,7 @@ namespace ValheimVRMod.Patches
             GameObject ___m_spawnOnTrigger
         ) {
             // if character is not local player, use original Start method
-            if (character != Player.m_localPlayer 
+            if (character != Player.m_localPlayer
                 || __instance.m_attackType.ToString() == "Projectile") {
                 return true;
             }
@@ -133,10 +129,9 @@ namespace ValheimVRMod.Patches
             ___m_character = character;
             ___m_animEvent = animEvent;
             ___m_weapon = weapon;
-            
-            float staminaUsage = (float)getStaminaUsageMethod.Invoke(__instance, null);
-            if (staminaUsage > 0.0f && !character.HaveStamina(staminaUsage + 0.1f))
-            {
+
+            float staminaUsage = (float) getStaminaUsageMethod.Invoke(__instance, null);
+            if (staminaUsage > 0.0f && !character.HaveStamina(staminaUsage + 0.1f)) {
                 if (character.IsPlayer())
                     Hud.instance.StaminaBarNoStaminaFlash();
                 return false;
@@ -145,65 +140,55 @@ namespace ValheimVRMod.Patches
             VRPlayer.rightHand.hapticAction.Execute(0, 0.2f, 100, 0.3f, SteamVR_Input_Sources.RightHand);
             character.UseStamina(staminaUsage);
 
-            CollisionDetection colliderDetection = VRPlayer.collisionCube().GetComponent<CollisionDetection>();
-            if (colliderDetection.itemIsTool)
-            {
+            CollisionDetection colliderDetection = StaticObjects.weaponCollider().GetComponent<CollisionDetection>();
+            if (colliderDetection.itemIsTool) {
                 return false;
             }
-            
+
             Collider col = colliderDetection.lastHitCollider;
             Vector3 pos = colliderDetection.lastHitPoint;
-            LogUtils.LogParentComponents(col.transform);
-            
-            
+
             // all rest is copied stuff from original DoMeleeAttack:
             Vector3 zero = Vector3.zero;
             bool flag2 = false; //rename
             HashSet<Skills.SkillType> skillTypeSet = new HashSet<Skills.SkillType>();
             bool hitOccured = false;
-            
+
             ___m_weapon.m_shared.m_hitEffect.Create(pos, Quaternion.identity);
             ___m_hitEffect.Create(pos, Quaternion.identity);
 
             GameObject hitObject = Projectile.FindHitObject(col);
 
-            if (!(hitObject == ___m_character.gameObject))
-            {
+            if (!(hitObject == ___m_character.gameObject)) {
                 Vagon component1 = hitObject.GetComponent<Vagon>();
-                if (!(bool) (UnityEngine.Object) component1 || !component1.IsAttached(___m_character))
-                {
+                if (!(bool) (UnityEngine.Object) component1 || !component1.IsAttached(___m_character)) {
                     Character component2 = hitObject.GetComponent<Character>();
                     if (!(component2 != null) ||
                         (___m_character.IsPlayer() || BaseAI.IsEnemy(___m_character, component2)) &&
-                        (!___m_weapon.m_shared.m_dodgeable || !component2.IsDodgeInvincible()))
-                    {
+                        (!___m_weapon.m_shared.m_dodgeable || !component2.IsDodgeInvincible())) {
                         hitOccured = true;
                     }
                 }
             }
 
-            if (!hitOccured)
-            {
+            if (!hitOccured) {
                 return false;
             }
 
             IDestructible component = hitObject.GetComponent<IDestructible>();
 
-            if (component != null)
-            {
+            if (component != null) {
                 DestructibleType destructibleType = component.GetDestructibleType();
                 Skills.SkillType skill = ___m_weapon.m_shared.m_skillType;
 
                 if (___m_specialHitSkill != Skills.SkillType.None &&
-                    (destructibleType & ___m_specialHitType) != DestructibleType.None)
-                {
+                    (destructibleType & ___m_specialHitType) != DestructibleType.None) {
                     skill = ___m_specialHitSkill;
                 }
 
                 float randomSkillFactor = ___m_character.GetRandomSkillFactor(skill);
 
-                if (___m_lowerDamagePerHit)
-                {
+                if (___m_lowerDamagePerHit) {
                     randomSkillFactor /= 0.75f;
                 }
 
@@ -226,8 +211,7 @@ namespace ValheimVRMod.Patches
                 hitData.m_damage.Modify(___m_damageMultiplier);
                 hitData.m_damage.Modify(randomSkillFactor);
                 hitData.m_damage.Modify((float) getLevelDamageFactorMethod.Invoke(__instance, null));
-                if (___m_attackChainLevels > 1 && ___m_currentAttackCainLevel == ___m_attackChainLevels - 1)
-                {
+                if (___m_attackChainLevels > 1 && ___m_currentAttackCainLevel == ___m_attackChainLevels - 1) {
                     hitData.m_damage.Modify(2f);
                     hitData.m_pushForce *= 1.2f;
                 }
@@ -245,8 +229,7 @@ namespace ValheimVRMod.Patches
                 Quaternion.identity); // Quaternion.identity might need to be replaced
             ___m_hitTerrainEffect.Create(pos, Quaternion.identity);
 
-            if ((bool) (UnityEngine.Object) ___m_weapon.m_shared.m_spawnOnHitTerrain)
-            {
+            if ((bool) (UnityEngine.Object) ___m_weapon.m_shared.m_spawnOnHitTerrain) {
                 spawnOnHitTerrainMethod.Invoke(__instance,
                     new object[] {pos, ___m_weapon.m_shared.m_spawnOnHitTerrain});
             }
@@ -254,7 +237,7 @@ namespace ValheimVRMod.Patches
             if (___m_weapon.m_shared.m_useDurability && ___m_character.IsPlayer())
                 ___m_weapon.m_durability -= ___m_weapon.m_shared.m_useDurabilityDrain;
             ___m_character.AddNoise(___m_attackHitNoise);
-            
+
             if ((bool) (UnityEngine.Object) ___m_weapon.m_shared.m_spawnOnHit)
                 UnityEngine.Object.Instantiate(___m_weapon.m_shared.m_spawnOnHit, pos,
                         Quaternion.identity).GetComponent<IProjectile>()
@@ -269,7 +252,6 @@ namespace ValheimVRMod.Patches
                 ___m_character.transform.forward, -1f, null, ___m_weapon);
 
             return false;
-
         }
     }
 }

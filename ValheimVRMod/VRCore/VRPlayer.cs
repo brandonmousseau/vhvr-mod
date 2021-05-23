@@ -70,28 +70,6 @@ namespace ValheimVRMod.VRCore
         public static bool toggleShowLeftHand = true;
         public static bool toggleShowRightHand = true;
 
-        private static GameObject _collisionCube;
-        public static GameObject quickSwitch;
-
-        public static GameObject collisionCube()
-        {
-            if (_collisionCube != null)
-            {
-                return _collisionCube;
-            }
-            
-            _collisionCube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-#if ! DEBUG
-            Destroy(_collisionCube.GetComponent<MeshRenderer>());
-#endif
-            _collisionCube.GetComponent<BoxCollider>().isTrigger = true;
-            Rigidbody rigidbody = _collisionCube.AddComponent<Rigidbody>();
-            rigidbody.useGravity = false;
-            _collisionCube.AddComponent<CollisionDetection>();
-            _collisionCube.layer = LayerUtils.WEAPON_LAYER;
-            return _collisionCube;
-        } 
-        
         public static bool handsActive
         {
             get
@@ -624,12 +602,7 @@ namespace ValheimVRMod.VRCore
             vrikCrerator.rightController = getHand(RIGHT_HAND, _instance).transform;
             vrikCrerator.camera = CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform;
 
-            quickSwitch = new GameObject();
-            quickSwitch.transform.SetParent(rightHand.transform, false);
-            quickSwitch.transform.localPosition = new Vector3(0, 0.071f, 0.0123f);
-            quickSwitch.transform.localRotation = Quaternion.Euler(107.34299f, -0.22f, -50.0f);
-            quickSwitch.AddComponent<QuickSwitch>();
-            quickSwitch.SetActive(false);
+            StaticObjects.addQuickSwitch(rightHand.transform);
 
         }
 
@@ -853,8 +826,8 @@ namespace ValheimVRMod.VRCore
                     toggleShowLeftHand = false;
                     rightHand.hapticAction.Execute(0, 0.2f, 100, 0.3f, SteamVR_Input_Sources.RightHand);
 
-                    if (EquipScript.getType() == EquipType.Bow) {
-                        BowManager.instance?.toggleArrow();
+                    if (EquipScript.getLeft() == EquipType.Bow) {
+                        BowManager.instance.toggleArrow();
                     } else if (getPlayerCharacter().GetRightItem() != null) {
                         getPlayerCharacter().HideHandItems();
                     } else {

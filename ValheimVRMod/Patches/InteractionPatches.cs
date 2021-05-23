@@ -1,6 +1,7 @@
 using System.Reflection;
 using HarmonyLib;
 using ValheimVRMod.Scripts;
+using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 
 namespace ValheimVRMod.Patches
@@ -98,10 +99,25 @@ namespace ValheimVRMod.Patches
     }
 
     [HarmonyPatch(typeof(Inventory), "Changed")]
-    class PatchEquipItem {
+    class PatchInventoryChanged {
 
         static void Postfix() {
-            if (VRPlayer.quickSwitch != null) {
+            if (StaticObjects.quickSwitch != null) {
+                QuickSwitch.refreshItems();
+            }
+        }
+    }
+    
+    [HarmonyPatch(typeof(Humanoid), "UnequipItem")]
+    class PatchUnEquipItem {
+
+        static void Postfix(Humanoid __instance) {
+
+            if (__instance != Player.m_localPlayer) {
+                return;
+            }
+            
+            if (StaticObjects.quickSwitch != null) {
                 QuickSwitch.refreshItems();
             }
         }

@@ -4,7 +4,6 @@ using HarmonyLib;
 using System.Reflection;
 using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
-using ValheimVRMod.VRCore;
 
 namespace ValheimVRMod.Patches {
     // These patches are used to inject the VR inputs into the game's control system
@@ -76,7 +75,7 @@ namespace ValheimVRMod.Patches {
     class ZInput_GetJoyRightStickX_Patch {
         static void Postfix(ref float __result) {
             // dont patch, if quickswitch is active
-            if (VRPlayer.quickSwitch != null && VRPlayer.quickSwitch.activeSelf) {
+            if (StaticObjects.quickSwitch != null && StaticObjects.quickSwitch.activeSelf) {
                 return;
             }
 
@@ -93,7 +92,7 @@ namespace ValheimVRMod.Patches {
 
         static void Postfix(ref float __result) {
             // dont patch, if quickswitch is active
-            if (VRPlayer.quickSwitch != null && VRPlayer.quickSwitch.activeSelf) {
+            if (StaticObjects.quickSwitch != null && StaticObjects.quickSwitch.activeSelf) {
                 return;
             }
 
@@ -180,34 +179,35 @@ namespace ValheimVRMod.Patches {
             run = ZInput_GetJoyRightStickY_Patch.isRunning;
             crouch = ZInput_GetJoyRightStickY_Patch.isCrouching;
 
-            switch (EquipScript.getType()) {
+            if (EquipScript.getLeft() == EquipType.Bow) {
+                if (BowManager.aborting) {
+                    block = true;
+                    blockHold = true;
+                    BowManager.aborting = false;
+                }
+                else if (BowManager.startedPulling) {
+                    attack = true;
+                    BowManager.startedPulling = false;
+                }
+                else {
+                    attackHold = BowManager.isPulling;
+                }
+                return;
+            }
+
+            if (EquipScript.getLeft() == EquipType.Shield) {
+                blockHold = ShieldManager.isBlocking();
+            }
+
+            switch (EquipScript.getRight()) {
                 case EquipType.Fishing:
                     if (FishingManager.isThrowing) {
                         attack = true;
                         attackHold = true;
                         FishingManager.isThrowing = false;
                     }
-
-                    if (FishingManager.isPulling) {
-                        blockHold = true;
-                    }
-
-                    break;
-
-                case EquipType.Bow:
-                    if (BowManager.aborting) {
-                        block = true;
-                        blockHold = true;
-                        BowManager.aborting = false;
-                    }
-                    else if (BowManager.startedPulling) {
-                        attack = true;
-                        BowManager.startedPulling = false;
-                    }
-                    else if (BowManager.isPulling) {
-                        attackHold = true;
-                    }
-
+                    
+                    blockHold = FishingManager.isPulling;
                     break;
 
                 case EquipType.Spear:

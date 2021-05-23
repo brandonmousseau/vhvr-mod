@@ -66,11 +66,10 @@ namespace ValheimVRMod.Scripts {
      * but we save the top and bottom points of the deleted vertices so we can use them for our new string. 
      */
         private void removeOldString() {
-            Mesh mesh = GetComponent<MeshFilter>().mesh;
+            var mesh = GetComponent<MeshFilter>().mesh;
             var trilist = new List<int>();
 
             for (int i = 0; i < mesh.triangles.Length / 3; i++) {
-                bool drawTriangle = false;
                 Vector3 v1 = mesh.vertices[mesh.triangles[i * 3]];
                 Vector3 v2 = mesh.vertices[mesh.triangles[i * 3 + 1]];
                 Vector3 v3 = mesh.vertices[mesh.triangles[i * 3 + 2]];
@@ -78,23 +77,18 @@ namespace ValheimVRMod.Scripts {
                 if (Vector3.Distance(v1, v2) < minStringSize &&
                     Vector3.Distance(v2, v3) < minStringSize &&
                     Vector3.Distance(v3, v1) < minStringSize) {
-                    drawTriangle = true;
-                }
-                else {
-                    foreach (Vector3 v in new[] {v1, v2, v3}) {
-                        if (stringTop == null || v.y > stringTop.y) {
-                            stringTop = v;
-                        }
-
-                        if (stringBottom == null || v.y < stringBottom.y) {
-                            stringBottom = v;
-                        }
-                    }
-                }
-
-                if (drawTriangle) {
                     for (int j = 0; j < 3; j++) {
                         trilist.Add(mesh.triangles[i * 3 + j]);
+                    }
+                    continue;
+                }
+                foreach (Vector3 v in new[] {v1, v2, v3}) {
+                    if (stringTop == null || v.y > stringTop.y) {
+                        stringTop = v;
+                    }
+
+                    if (stringBottom == null || v.y < stringBottom.y) {
+                        stringBottom = v;
                     }
                 }
             }
@@ -263,8 +257,6 @@ namespace ValheimVRMod.Scripts {
             arrow.GetComponent<Projectile>().enabled = false;
             arrow.transform.localRotation = Quaternion.identity;
             arrow.transform.localPosition = new Vector3(0, 0, 1.25f);
-
-            LogUtils.LogChildTree(arrow.transform);
         }
     }
 }
