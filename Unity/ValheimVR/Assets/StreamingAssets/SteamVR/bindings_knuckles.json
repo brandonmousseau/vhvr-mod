@@ -163,9 +163,6 @@
             },
             {
                "inputs" : {
-                  "click" : {
-                     "output" : "/actions/valheim/in/quickswitch"
-                  },
                   "position" : {
                      "output" : "/actions/valheim/in/pitchandyaw"
                   }
@@ -223,7 +220,7 @@
             {
                "inputs" : {
                   "click" : {
-                     "output" : "/actions/valheim/in/use"
+                     "output" : "/actions/valheim/in/quickswitch"
                   }
                },
                "mode" : "button",

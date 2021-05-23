@@ -27,7 +27,7 @@ namespace ValheimVRMod.VRCore.UI
 
         private SteamVR_Action_Vector2 walk;
         private SteamVR_Action_Vector2 pitchAndYaw;
-        
+
         private SteamVR_Action_Vector2 contextScroll;
 
         private SteamVR_Action_Pose poseL;
