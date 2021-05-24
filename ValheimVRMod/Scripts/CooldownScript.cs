@@ -10,6 +10,8 @@ namespace ValheimVRMod.Scripts {
 
         private GameObject grayLayer;
         private GameObject yellowLayer;
+
+        private Transform camera;
         
         private void Awake() {
             
@@ -37,6 +39,12 @@ namespace ValheimVRMod.Scripts {
             yellowRenderer.sortingOrder = 2;
             yellowLayer.SetActive(false);
 
+            camera = CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform;
+
+        }
+
+        private void Update() {
+            transform.LookAt(camera, camera.up);
         }
 
         public void startCooldown() {

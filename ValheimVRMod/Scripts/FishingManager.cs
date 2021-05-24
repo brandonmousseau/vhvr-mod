@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using ValheimVRMod.VRCore;
 using Valve.VR;
 
 namespace ValheimVRMod.Scripts {
@@ -10,6 +11,7 @@ namespace ValheimVRMod.Scripts {
         private int tickCounter;
         private List<Vector3> snapshots = new List<Vector3>();
         private bool preparingThrow;
+        private FishingFloat fishingFloat;
 
         public static float attackDrawPercentage;
         public static Vector3 spawnPoint;
@@ -31,6 +33,7 @@ namespace ValheimVRMod.Scripts {
         private void Update() {
             foreach (FishingFloat instance in FishingFloat.GetAllInstances()) {
                 if (instance.GetOwner() == Player.m_localPlayer) {
+                    fishingFloat = instance;
                     isFishing = true;
                     return;
                 }
@@ -68,6 +71,7 @@ namespace ValheimVRMod.Scripts {
             }
 
             aimDir = (posEnd - posStart).normalized;
+            aimDir = Quaternion.AngleAxis(-30, Vector3.Cross(Vector3.up, aimDir)) * aimDir;
             attackDrawPercentage = Vector3.Distance(snapshots[snapshots.Count - 1], snapshots[snapshots.Count - 2]) /
                                    maxDist;
             isThrowing = true;
@@ -87,6 +91,10 @@ namespace ValheimVRMod.Scripts {
             }
 
             tickCounter = 0;
+
+            if (isFishing && fishingFloat.GetCatch()  && (int) (Time.fixedTime * 10) % 2 >= 1) {
+                VRPlayer.rightHand.hapticAction.Execute(0, 0.001f, 150, 0.7f, SteamVR_Input_Sources.RightHand);
+            }
         }
     }
 }
