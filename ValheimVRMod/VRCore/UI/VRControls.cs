@@ -349,11 +349,11 @@ namespace ValheimVRMod.VRCore.UI
             }
             if (rightStickXAxis > 0.1f)
             {
-                return 1;
+                return -1;
             }
             else if (rightStickXAxis < -0.1f)
             {
-                return -1;
+                return 1;
             }
             else
             {
