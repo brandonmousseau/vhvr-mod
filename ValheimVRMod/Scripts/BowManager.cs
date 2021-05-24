@@ -216,7 +216,8 @@ namespace ValheimVRMod.Scripts {
 
                 return;
             }
-
+            // SHOOTING
+            VRPlayer.leftHand.hapticAction.Execute(0, 0.2f, 100, 0.3f, SteamVR_Input_Sources.LeftHand);
             Destroy(arrow);
         }
 
@@ -246,8 +247,15 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            ItemDrop.ItemData ammoItem = Player.m_localPlayer.GetInventory()
-                .GetAmmoItem(Player.m_localPlayer.GetLeftItem().m_shared.m_ammoType);
+            var ammoType = Player.m_localPlayer.GetLeftItem().m_shared.m_ammoType;
+            
+            ItemDrop.ItemData ammoItem = Player.m_localPlayer.GetInventory().GetAmmoItem(ammoType);
+
+            if (ammoItem == null) {
+                // out of ammo
+                return;
+            }
+            
             if (ammoItem.m_shared.m_itemType != ItemDrop.ItemData.ItemType.Ammo) {
                 return;
             }

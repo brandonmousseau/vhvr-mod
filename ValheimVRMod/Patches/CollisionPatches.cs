@@ -138,7 +138,7 @@ namespace ValheimVRMod.Patches {
                 return false;
             }
 
-            VRPlayer.rightHand.hapticAction.Execute(0, 0.2f, 100, 0.3f, SteamVR_Input_Sources.RightHand);
+            VRPlayer.rightHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, SteamVR_Input_Sources.RightHand);
             character.UseStamina(staminaUsage);
 
             CollisionDetection colliderDetection = StaticObjects.weaponCollider().GetComponent<CollisionDetection>();
