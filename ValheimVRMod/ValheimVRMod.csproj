@@ -307,6 +307,7 @@
     <Compile Include="Scripts\CollisionDetection.cs" />
     <Compile Include="Scripts\CooldownScript.cs" />
     <Compile Include="Scripts\FishingManager.cs" />
+    <Compile Include="Scripts\ParticleFix.cs" />
     <Compile Include="Scripts\QuickSwitch.cs" />
     <Compile Include="Scripts\SpearManager.cs" />
     <Compile Include="Scripts\VrikCreator.cs" />

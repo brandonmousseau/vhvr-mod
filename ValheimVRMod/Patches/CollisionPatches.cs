@@ -45,6 +45,7 @@ namespace ValheimVRMod.Patches {
 
             Transform item = meshFilter.transform;
             StaticObjects.weaponCollider().GetComponent<CollisionDetection>().setColliderParent(item, ___m_rightItem);
+            ParticleFix.maybeFix(___m_rightItemInstance);
         }
     }
 

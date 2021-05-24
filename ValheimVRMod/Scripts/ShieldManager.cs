@@ -42,12 +42,8 @@ namespace ValheimVRMod.Scripts {
             }
         }
 
-        private void FixedUpdate() {
-            
-            StaticObjects.shieldObj().transform.SetParent(transform, false);
-            StaticObjects.shieldObj().transform.localRotation = Quaternion.identity;
-            StaticObjects.shieldObj().transform.SetParent(null, true);
-            
+        private void OnRenderObject() {
+            StaticObjects.shieldObj().transform.rotation = transform.rotation;
         }
     }
 }

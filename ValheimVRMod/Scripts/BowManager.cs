@@ -257,6 +257,7 @@ namespace ValheimVRMod.Scripts {
             arrow.GetComponent<Projectile>().enabled = false;
             arrow.transform.localRotation = Quaternion.identity;
             arrow.transform.localPosition = new Vector3(0, 0, 1.25f);
+            ParticleFix.maybeFix(arrow);
         }
     }
 }
