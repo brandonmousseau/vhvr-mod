@@ -598,10 +598,13 @@ namespace ValheimVRMod.VRCore
                 return;
             }
             
-            VrikCreator.initialize(player.gameObject, 
+            var vrik = VrikCreator.initialize(player.gameObject, 
                 leftHand.transform, rightHand.transform,
                 CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform);
 
+            leftHand.gameObject.AddComponent<HandGestures>().targetHand = vrik.references.leftHand;
+            rightHand.gameObject.AddComponent<HandGestures>().targetHand = vrik.references.rightHand;
+            
             StaticObjects.addQuickSwitch(rightHand.transform);
 
         }

@@ -4,7 +4,7 @@ using ValheimVRMod.VRCore;
 namespace ValheimVRMod.Scripts {
     public class VrikCreator {
 
-        public static void initialize(GameObject target, Transform leftController, Transform rightController, Transform camera) {
+        public static RootMotion.FinalIK.VRIK initialize(GameObject target, Transform leftController, Transform rightController, Transform camera) {
             RootMotion.FinalIK.VRIK vrik = target.AddComponent<RootMotion.FinalIK.VRIK>();
             vrik.AutoDetectReferences();
             vrik.references.leftThigh = null;
@@ -35,9 +35,7 @@ namespace ValheimVRMod.Scripts {
             vrik.solver.spine.headTarget = head;
             vrik.solver.spine.maxRootAngle = 180;
 
-            VRPlayer.leftHand.gameObject.AddComponent<HandGestures>().targetHand = vrik.references.leftHand;
-            VRPlayer.rightHand.gameObject.AddComponent<HandGestures>().targetHand = vrik.references.rightHand;
-
+            return vrik;
         }
     }
 }
