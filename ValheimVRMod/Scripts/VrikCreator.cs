@@ -1,33 +1,11 @@
 ﻿using UnityEngine;
+using ValheimVRMod.VRCore;
 
 namespace ValheimVRMod.Scripts {
-    public class VrikCreator : MonoBehaviour {
+    public class VrikCreator {
 
-        private bool initialized;
-
-        public Transform leftController;
-        public Transform rightController;
-        public Transform camera;
-        public static Transform leftHand;
-        public static Transform rightHand;
-
-
-        // Update is called once per frame
-        void Update() {
-            if (initialized) {
-                return;
-            }
-
-            if (leftController != null && rightController != null && camera != null) {
-                initialize();
-                initialized = true;
-            }
-
-        }
-
-        private void initialize() {
-
-            RootMotion.FinalIK.VRIK vrik = gameObject.AddComponent<RootMotion.FinalIK.VRIK>();
+        public static void initialize(GameObject target, Transform leftController, Transform rightController, Transform camera) {
+            RootMotion.FinalIK.VRIK vrik = target.AddComponent<RootMotion.FinalIK.VRIK>();
             vrik.AutoDetectReferences();
             vrik.references.leftThigh = null;
             vrik.references.leftCalf = null;
@@ -38,21 +16,17 @@ namespace ValheimVRMod.Scripts {
             vrik.references.rightFoot = null;
             vrik.references.rightToes = null;
 
-            leftHand = (new GameObject()).transform;
+            Transform leftHand = (new GameObject()).transform;
             leftHand.parent = leftController;
-            leftHand.transform.localPosition = new Vector3(0.0107f, 0.07f, -0.1f);
-            leftHand.transform.localRotation = Quaternion.Euler(180, -90, 0);
+            leftHand.transform.localPosition = new Vector3(-0.0153f, 0.0662f, -0.1731f);
+            leftHand.transform.localRotation = Quaternion.Euler(-8.222f, 79.485f, 142.351f);
             vrik.solver.leftArm.target = leftHand;
-            vrik.solver.leftArm.wristToPalmAxis = Vector3.zero;
-            vrik.solver.leftArm.palmToThumbAxis = new Vector3(1, -4.5f, 0);
 
-            rightHand = (new GameObject()).transform;
+            Transform rightHand = (new GameObject()).transform;
             rightHand.parent = rightController;
-            rightHand.transform.localPosition = new Vector3(0.0107f, 0.07f, -0.1f);
-            rightHand.transform.localRotation = Quaternion.Euler(180, 90, 0);
+            rightHand.transform.localPosition = new Vector3(0.02300016f, 0.07700036f, -0.1700005f);
+            rightHand.transform.localRotation = Quaternion.Euler(-4.75f, -85.497f, -145.387f);
             vrik.solver.rightArm.target = rightHand;
-            vrik.solver.rightArm.wristToPalmAxis = Vector3.zero;
-            vrik.solver.rightArm.palmToThumbAxis = new Vector3(-1, -4.5f, 0);
 
             Transform head = (new GameObject()).transform;
             head.parent = camera;
@@ -60,6 +34,9 @@ namespace ValheimVRMod.Scripts {
             head.localRotation = Quaternion.Euler(0, 90, 0);
             vrik.solver.spine.headTarget = head;
             vrik.solver.spine.maxRootAngle = 180;
+
+            VRPlayer.leftHand.gameObject.AddComponent<HandGestures>().targetHand = vrik.references.leftHand;
+            VRPlayer.rightHand.gameObject.AddComponent<HandGestures>().targetHand = vrik.references.rightHand;
 
         }
     }

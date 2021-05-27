@@ -593,14 +593,14 @@ namespace ValheimVRMod.VRCore
 
         private void maybeAddVrik(Player player)
         {
-            if (!VHVRConfig.UseVRIK() || player.gameObject.GetComponent<VrikCreator>() != null)
+            if (!VHVRConfig.UseVRIK() || player.gameObject.GetComponent<VRIK>() != null)
             {
                 return;
             }
-            var vrikCrerator = player.gameObject.AddComponent<VrikCreator>();
-            vrikCrerator.leftController = getHand(LEFT_HAND, _instance).transform;
-            vrikCrerator.rightController = getHand(RIGHT_HAND, _instance).transform;
-            vrikCrerator.camera = CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform;
+            
+            VrikCreator.initialize(player.gameObject, 
+                leftHand.transform, rightHand.transform,
+                CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform);
 
             StaticObjects.addQuickSwitch(rightHand.transform);
 

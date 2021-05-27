@@ -4,6 +4,7 @@ using UnityEngine.Rendering;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using Valve.VR;
+using Valve.VR.InteractionSystem;
 
 namespace ValheimVRMod.Scripts {
     public class BowManager : MonoBehaviour {
@@ -266,6 +267,10 @@ namespace ValheimVRMod.Scripts {
             arrow.transform.localRotation = Quaternion.identity;
             arrow.transform.localPosition = new Vector3(0, 0, 1.25f);
             ParticleFix.maybeFix(arrow);
+        }
+        
+        public bool isHoldingArrow() {
+            return arrow != null;
         }
     }
 }

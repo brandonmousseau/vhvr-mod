@@ -166,10 +166,11 @@ namespace ValheimVRMod.Utilities
             }
                 
             LogDebug(msg);
-
+            spaceOffset++;
+            
             for (int i = 0; i < obj.childCount; i++)
             {
-                loopChildren(obj.GetChild(i), withComponents, spaceOffset++);
+                loopChildren(obj.GetChild(i), withComponents, spaceOffset);
             }
         }
     }
