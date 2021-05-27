@@ -156,7 +156,7 @@ namespace ValheimVRMod.VRCore
             {
                 return;
             }
-            maybeUpdateHeadPosition();
+            //maybeUpdateHeadPosition();
             attachVrPlayerToWorldObject();
             enableCameras();
             checkAndSetHandsAndPointers();
@@ -807,28 +807,29 @@ namespace ValheimVRMod.VRCore
                 return;
             }
 
-            checkRightHandOverShoulder();
-            checkLeftHandOverShoulder();
+            checkHandOverShoulder(true, rightHand, SteamVR_Input_Sources.RightHand);
+            checkHandOverShoulder(false, leftHand, SteamVR_Input_Sources.LeftHand);
         }
 
-        private void checkRightHandOverShoulder()
+        private void checkHandOverShoulder(bool isRightHand, Hand hand, SteamVR_Input_Sources inputSource)
         {
-            var rightController = getHand(RIGHT_HAND, _instance).transform;
             var camera = CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform;
             var action = SteamVR_Actions.valheim_Grab;  // TODO Change the action button when we have rearranged all buttons
             
-            if (camera.InverseTransformPoint(rightController.position).y > -0.2f &&
-                camera.InverseTransformPoint(rightController.position).z < 0)
+            if (camera.InverseTransformPoint(hand.transform.position).y > -0.2f &&
+                camera.InverseTransformPoint(hand.transform.position).z < 0)
             {
 
-                if (action.GetStateDown(SteamVR_Input_Sources.RightHand))
+                if (action.GetStateDown(inputSource))
                 {
                     toggleShowLeftHand = false;
-                    rightHand.hapticAction.Execute(0, 0.2f, 100, 0.3f, SteamVR_Input_Sources.RightHand);
+                    hand.hapticAction.Execute(0, 0.2f, 100, 0.3f, inputSource);
 
-                    if (EquipScript.getLeft() == EquipType.Bow) {
+                    
+                    
+                    if (isRightHand && EquipScript.getLeft() == EquipType.Bow) {
                         BowManager.instance.toggleArrow();
-                    } else if (getPlayerCharacter().GetRightItem() != null) {
+                    } else if (isHoldingItem(isRightHand)) {
                         getPlayerCharacter().HideHandItems();
                     } else {
                         getPlayerCharacter().ShowHandItems();
@@ -836,29 +837,10 @@ namespace ValheimVRMod.VRCore
                 }
             }
         }
-        
-        private void checkLeftHandOverShoulder()
-        {
-            var leftController = getHand(LEFT_HAND, _instance).transform;
-            var camera = CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform;
-            var action = SteamVR_Actions.valheim_Grab;  // TODO Change the action button when we have rearranged all buttons
-            
-            if (camera.InverseTransformPoint(leftController.position).y > -0.2f &&
-                camera.InverseTransformPoint(leftController.position).z < 0)
-            {
-                
-                if (action.GetStateDown(SteamVR_Input_Sources.LeftHand))
-                {
-                    toggleShowRightHand = false;
-                    leftHand.hapticAction.Execute(0, 0.2f, 100, 0.3f, SteamVR_Input_Sources.LeftHand);
 
-                    if (getPlayerCharacter().GetLeftItem() != null) {
-                        getPlayerCharacter().HideHandItems();
-                    } else {
-                        getPlayerCharacter().ShowHandItems();
-                    }
-                }
-            }
+        private bool isHoldingItem(bool isRightHand) {
+            return isRightHand && getPlayerCharacter().GetRightItem() != null
+                   || !isRightHand && getPlayerCharacter().GetLeftItem() != null;
         }
     }
 }
