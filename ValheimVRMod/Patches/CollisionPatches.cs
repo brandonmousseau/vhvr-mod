@@ -4,8 +4,6 @@ using HarmonyLib;
 using UnityEngine;
 using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
-using ValheimVRMod.VRCore;
-using Valve.VR;
 
 namespace ValheimVRMod.Patches {
     [HarmonyPatch(typeof(VisEquipment), "SetRightHandEquiped")]
@@ -44,7 +42,7 @@ namespace ValheimVRMod.Patches {
             }
 
             Transform item = meshFilter.transform;
-            StaticObjects.weaponCollider().GetComponent<CollisionDetection>().setColliderParent(item, ___m_rightItem);
+            StaticObjects.weaponCollider().GetComponent<WeaponCollision>().setColliderParent(item, ___m_rightItem);
             ParticleFix.maybeFix(___m_rightItemInstance);
         }
     }
@@ -119,7 +117,8 @@ namespace ValheimVRMod.Patches {
             ref int ___m_nextAttackChainLevel,
             ref EffectList ___m_hitTerrainEffect,
             float ___m_attackHitNoise,
-            GameObject ___m_spawnOnTrigger
+            GameObject ___m_spawnOnTrigger,
+            ref bool __result
         ) {
             // if character is not local player, use original Start method
             if (character != Player.m_localPlayer
@@ -130,24 +129,20 @@ namespace ValheimVRMod.Patches {
             ___m_character = character;
             ___m_animEvent = animEvent;
             ___m_weapon = weapon;
+            __result = true;
 
             float staminaUsage = (float) getStaminaUsageMethod.Invoke(__instance, null);
             if (staminaUsage > 0.0f && !character.HaveStamina(staminaUsage + 0.1f)) {
                 if (character.IsPlayer())
                     Hud.instance.StaminaBarNoStaminaFlash();
+                __result = false;
                 return false;
             }
-
-            VRPlayer.rightHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, SteamVR_Input_Sources.RightHand);
+            
             character.UseStamina(staminaUsage);
-
-            CollisionDetection colliderDetection = StaticObjects.weaponCollider().GetComponent<CollisionDetection>();
-            if (colliderDetection.itemIsTool) {
-                return false;
-            }
-
-            Collider col = colliderDetection.lastHitCollider;
-            Vector3 pos = colliderDetection.lastHitPoint;
+            
+            Collider col = StaticObjects.lastHitCollider;
+            Vector3 pos = StaticObjects.lastHitPoint;
 
             // all rest is copied stuff from original DoMeleeAttack:
             Vector3 zero = Vector3.zero;

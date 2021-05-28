@@ -1,70 +1,81 @@
 using UnityEngine;
 using ValheimVRMod.VRCore;
+using Valve.VR.InteractionSystem;
 
 namespace ValheimVRMod.Scripts {
-    public class HandGestures : MonoBehaviour {
+    public class HandGesture : MonoBehaviour {
         
         private bool isRightHand;
         private Quaternion handFixedRotation;
-        private Transform sourceHand;
-        public  Transform targetHand;
+        private Transform sourceTransform;
+        public Hand sourceHand;
 
-        private void Awake() {
-            isRightHand = gameObject == VRPlayer.rightHand.gameObject;
-            foreach (var t in GetComponentsInChildren<Transform>()) {
+        private void Start() {
+            isRightHand = sourceHand == VRPlayer.rightHand;
+            foreach (var t in sourceHand.GetComponentsInChildren<Transform>()) {
                 if (t.name == "wrist_r") {
-                    sourceHand = t;
+                    sourceTransform = t;
                 }
             }
         }
 
         void OnRenderObject() {
-            handFixedRotation = targetHand.rotation;
+            handFixedRotation = transform.rotation;
         }
 
-        private void Update() {
-            if (isRightHand && (Player.m_localPlayer.GetRightItem() != null || BowManager.instance.isHoldingArrow())) {
-                return;
+        public bool isUnequiped() {
+            if (isRightHand && (Player.m_localPlayer.GetRightItem() != null 
+                                || BowManager.instance != null && BowManager.instance.isHoldingArrow())) {
+                return false;
             }
             
             if (!isRightHand && Player.m_localPlayer.GetLeftItem() != null) {
+                return false;
+            }
+
+            return true;
+        }
+        
+        private void Update() {
+
+            if (!isUnequiped()) {
                 return;
             }
             
-            targetHand.rotation = handFixedRotation ;
+            transform.rotation = handFixedRotation ;
             updateFingerRotations();
         }
 
         private void updateFingerRotations() {
 
-            for (int i = 0; i < targetHand.childCount; i++) {
+            for (int i = 0; i < transform.childCount; i++) {
 
-                var child = targetHand.GetChild(i);
+                var child = transform.GetChild(i);
                 switch (child.name) {
                     
                     case ("LeftHandThumb1"):
                     case ("RightHandThumb1"):
-                        updateFingerPart(sourceHand.GetChild(0).GetChild(0), targetHand.GetChild(i));
+                        updateFingerPart(sourceTransform.GetChild(0).GetChild(0), transform.GetChild(i));
                         break;
                     
                     case ("LeftHandIndex1"):
                     case ("RightHandIndex1"):
-                        updateFingerPart(sourceHand.GetChild(1).GetChild(0), targetHand.GetChild(i));
+                        updateFingerPart(sourceTransform.GetChild(1).GetChild(0), transform.GetChild(i));
                         break;
                     
                     case ("LeftHandMiddle1"):
                     case ("RightHandMiddle1"):
-                        updateFingerPart(sourceHand.GetChild(2).GetChild(0), targetHand.GetChild(i));
+                        updateFingerPart(sourceTransform.GetChild(2).GetChild(0), transform.GetChild(i));
                         break;
 
                     case ("LeftHandRing1"):
                     case ("RightHandRing1"):
-                        updateFingerPart(sourceHand.GetChild(3).GetChild(0), targetHand.GetChild(i));
+                        updateFingerPart(sourceTransform.GetChild(3).GetChild(0), transform.GetChild(i));
                         break;
                     
                     case ("LeftHandPinky1"):
                     case ("RightHandPinky1"):
-                        updateFingerPart(sourceHand.GetChild(4).GetChild(0), targetHand.GetChild(i));
+                        updateFingerPart(sourceTransform.GetChild(4).GetChild(0), transform.GetChild(i));
                         break;
                 }
             }

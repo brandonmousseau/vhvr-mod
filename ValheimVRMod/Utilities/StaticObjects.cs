@@ -5,28 +5,47 @@ using ValheimVRMod.VRCore;
 namespace ValheimVRMod.Utilities {
     public static class StaticObjects {
         
-        private static GameObject _weaponCollider;
+        private static WeaponCollision _weaponCollider;
+        private static FistCollision _leftFist;
+        private static FistCollision _rightFist;
         public static GameObject quickSwitch;
         private static CooldownScript _leftCoolDown;
         private static CooldownScript _rightCoolDown;
         private static GameObject _shieldObj;
         
-        public static GameObject weaponCollider() {
-            if (_weaponCollider != null) {
-                return _weaponCollider;
-            }
-
-            _weaponCollider = GameObject.CreatePrimitive(PrimitiveType.Cube);
-#if ! DEBUG
-            Destroy(_collisionCube.GetComponent<MeshRenderer>());
-#endif
-            _weaponCollider.GetComponent<BoxCollider>().isTrigger = true;
-            Rigidbody rigidbody = _weaponCollider.AddComponent<Rigidbody>();
-            rigidbody.useGravity = false;
-            _weaponCollider.AddComponent<CollisionDetection>();
-            _weaponCollider.layer = LayerUtils.WEAPON_LAYER;
-            return _weaponCollider;
+        public static Vector3 lastHitPoint;
+        public static Collider lastHitCollider;
+        
+        public static WeaponCollision weaponCollider() {
+            return getCollisionScript(ref _weaponCollider);
         }
+        
+        public static FistCollision leftFist() {
+            Debug.Log("LEFT FIST CREATE");
+            return getCollisionScript(ref _leftFist);
+        }
+        
+        public static FistCollision rightFist() {
+            Debug.Log("RIGHT FIST CREATE");
+            return getCollisionScript(ref _rightFist);
+        }
+        
+        private static T getCollisionScript<T>(ref T collisionScript) where T : Component{
+            
+            if (collisionScript != null) {
+                return collisionScript;
+            }
+ 
+            Debug.Log("Creating Collision Script");
+            
+            var collisionObj = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            //Destroy(_collisionCube.GetComponent<MeshRenderer>());
+            collisionObj.GetComponent<BoxCollider>().isTrigger = true;
+            Rigidbody rigidbody = collisionObj.AddComponent<Rigidbody>();
+            rigidbody.useGravity = false;
+            collisionObj.layer = LayerUtils.WEAPON_LAYER;
+            return collisionScript = collisionObj.AddComponent<T>();;
+        } 
         
         public static void addQuickSwitch(Transform hand) {
             quickSwitch = new GameObject();
