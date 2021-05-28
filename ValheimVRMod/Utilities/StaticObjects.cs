@@ -21,12 +21,10 @@ namespace ValheimVRMod.Utilities {
         }
         
         public static FistCollision leftFist() {
-            Debug.Log("LEFT FIST CREATE");
             return getCollisionScript(ref _leftFist);
         }
         
         public static FistCollision rightFist() {
-            Debug.Log("RIGHT FIST CREATE");
             return getCollisionScript(ref _rightFist);
         }
         
@@ -35,11 +33,9 @@ namespace ValheimVRMod.Utilities {
             if (collisionScript != null) {
                 return collisionScript;
             }
- 
-            Debug.Log("Creating Collision Script");
             
             var collisionObj = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            //Destroy(_collisionCube.GetComponent<MeshRenderer>());
+            Object.Destroy(collisionObj.GetComponent<MeshRenderer>());
             collisionObj.GetComponent<BoxCollider>().isTrigger = true;
             Rigidbody rigidbody = collisionObj.AddComponent<Rigidbody>();
             rigidbody.useGravity = false;

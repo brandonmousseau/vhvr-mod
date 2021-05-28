@@ -14,7 +14,7 @@ namespace ValheimVRMod.Scripts {
         private GameObject colliderParent = new GameObject();
         private List<Vector3> snapshots = new List<Vector3>();
         private CooldownScript cooldownScript;
-        private bool isRrightHand;
+        private bool isRightHand;
         private HandGesture handGesture;
 
         private void OnTriggerEnter(Collider collider) {
@@ -39,7 +39,7 @@ namespace ValheimVRMod.Scripts {
             if (attack.Start(Player.m_localPlayer, null, null,
                 AccessTools.FieldRefAccess<Player, CharacterAnimEvent>(Player.m_localPlayer, "m_animEvent"),
                 null, Player.m_localPlayer.m_unarmedWeapon.m_itemData, null, 0.0f, 0.0f)) {
-                if (isRrightHand) {
+                if (isRightHand) {
                     VRPlayer.rightHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, SteamVR_Input_Sources.RightHand);    
                 } else {
                     VRPlayer.leftHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, SteamVR_Input_Sources.LeftHand);
@@ -63,7 +63,7 @@ namespace ValheimVRMod.Scripts {
 
         public void setColliderParent(Transform obj, CooldownScript cds, bool rightHand) {
 
-            isRrightHand = rightHand;
+            isRightHand = rightHand;
             handGesture = obj.GetComponent<HandGesture>();
             cooldownScript = cds;
             colliderParent = new GameObject();
@@ -74,9 +74,18 @@ namespace ValheimVRMod.Scripts {
         }
 
         private bool isCollisionAllowed() {
+
+            SteamVR_Input_Sources inputSource;
+            
+            if (isRightHand) {
+                inputSource = SteamVR_Input_Sources.RightHand;
+            } else {
+                inputSource = SteamVR_Input_Sources.LeftHand;
+            }
+
             return VRPlayer.inFirstPerson && colliderParent != null && handGesture.isUnequiped() 
-                   && SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand)
-                   && SteamVR_Actions.valheim_Use.GetState(SteamVR_Input_Sources.RightHand);
+                   && SteamVR_Actions.valheim_Grab.GetState(inputSource)
+                   && SteamVR_Actions.valheim_Use.GetState(inputSource);
         }
 
         private void FixedUpdate() {
