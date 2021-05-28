@@ -84,11 +84,11 @@ namespace ValheimVRMod.VRCore
         {
             get
             {
-                if (leftPointer != null && leftPointer.enabled)
+                if (leftPointer != null && leftPointer.pointerIsActive())
                 {
                     return leftPointer;
                 }
-                else if (rightPointer != null && rightPointer.enabled)
+                else if (rightPointer != null && rightPointer.pointerIsActive())
                 {
                     return rightPointer;
                 }
@@ -302,8 +302,8 @@ namespace ValheimVRMod.VRCore
             {
                 return;
             }
-            p.enabled = active && shouldLaserPointersBeActive();
-            p.setVisible(p.enabled && Cursor.visible);
+            p.setUsePointer(active && shouldLaserPointersBeActive());
+            p.setVisible(p.pointerIsActive() && Cursor.visible);
         }
 
         private bool shouldLaserPointersBeActive()
