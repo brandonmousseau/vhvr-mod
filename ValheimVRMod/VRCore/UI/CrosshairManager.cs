@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using ValheimVRMod.Utilities;
+using ValheimVRMod.Patches;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using HarmonyLib;
@@ -49,6 +50,9 @@ namespace ValheimVRMod.VRCore.UI
         private GameObject _pieceHealthRoot;
         private GameObject _pieceHealthBar;
 
+        private GameObject _hoverNameCanvasParent;
+        private Canvas _hoverNameCanvas;
+
         public void maybeReparentCrosshair()
         {
             if (SceneManager.GetActiveScene().name != "main" || guiCanvas == null || !ensureCrosshairCanvas() || !ensureCrosshairCamera())
@@ -61,6 +65,10 @@ namespace ValheimVRMod.VRCore.UI
                 return;
             }
             reparentPieceHealthObjects();
+            if (VRControls.mainControlsActive)
+            {
+                reparentHoverNameObjects();
+            }
             _canvasCrosshairRoot.SetActive(false); // Disable the original crosshairs
             _canvasCrosshairRootClone.SetActive(VRPlayer.attachedToPlayer);
             _canvasCrosshairRootClone.transform.SetParent(_crosshairCanvas.transform, false);
@@ -68,6 +76,10 @@ namespace ValheimVRMod.VRCore.UI
             var rectTransform = _canvasCrosshairRootClone.GetComponent<RectTransform>();
             setCrosshairCanvasPositionAndScale();
             setPieceHealthCanvasPositionAndScale();
+            if (VRControls.mainControlsActive)
+            {
+                setHoverNameCanvasPositionAndScale();
+            }
             UpdateHudReferences();
             if (rectTransform == null)
             {
@@ -98,6 +110,29 @@ namespace ValheimVRMod.VRCore.UI
             {
                 _pieceHealthRoot.transform.SetParent(_pieceHealthCanvas.GetComponent<RectTransform>(), false);
                 _pieceHealthCanvas.transform.localPosition = _pieceHealthCanvas.GetComponent<RectTransform>().rect.center;
+            }
+        }
+
+        private void maybeCreateHoverNameObjects()
+        {
+            if (_hoverNameCanvasParent != null && _hoverNameCanvas != null ||  !ensureCrosshairCamera())
+            {
+                return;
+            }
+            _hoverNameCanvasParent = new GameObject("HoverNameCanvasParent");
+            GameObject.DontDestroyOnLoad(_hoverNameCanvasParent);
+            _hoverNameCanvasParent.layer = LayerUtils.getWorldspaceUiLayer();
+            _hoverNameCanvas = _hoverNameCanvasParent.AddComponent<Canvas>();
+            _hoverNameCanvas.renderMode = RenderMode.WorldSpace;
+            _hoverNameCanvas.worldCamera = _crosshairCamera;
+        }
+
+        private void reparentHoverNameObjects()
+        {
+            maybeCreateHoverNameObjects();
+            if (_hoverNameClone != null && _hoverNameCanvas != null)
+            {
+                _hoverNameClone.transform.SetParent(_hoverNameCanvas.GetComponent<RectTransform>(), false);
             }
         }
 
@@ -153,6 +188,22 @@ namespace ValheimVRMod.VRCore.UI
                 _pieceHealthCanvasParent.transform.LookAt(_crosshairCamera.transform);
                 _pieceHealthCanvasParent.transform.Rotate(0f, 180f, 0f);
             }
+        }
+
+        private void setHoverNameCanvasPositionAndScale()
+        {
+            if (_hoverNameCanvasParent == null)
+            {
+                return;
+            }
+            float canvasWidth = _hoverNameCanvas.GetComponent<RectTransform>().rect.width;
+            float scaleFactor = CROSSHAIR_SCALAR * VHVRConfig.CrosshairScalar() / canvasWidth;
+            var position = Player_FindHoverObject_Patch.currentHitPosition;
+            float distance = Vector3.Distance(position, _crosshairCamera.transform.position);
+            _hoverNameCanvasParent.transform.position = position;
+            _hoverNameCanvasParent.transform.localScale = Vector3.one * scaleFactor * distance;
+            _hoverNameCanvasParent.transform.LookAt(_crosshairCamera.transform);
+            _hoverNameCanvasParent.transform.Rotate(0f, 180f, 0f);
         }
 
         private Piece getHoveringPiece()

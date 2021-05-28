@@ -30,6 +30,8 @@ namespace Valve.VR.Extras
         public Vector3 rayStartingPosition = Vector3.zero;
         public Quaternion rayDirection = Quaternion.identity;
 
+
+        private bool __usePointer = true;
         private bool mouseButtonsLocked = false;
 
         Transform previousContact = null;
@@ -38,6 +40,14 @@ namespace Valve.VR.Extras
             if (pointer != null) {
                 pointer.GetComponent<Renderer>().enabled = visible;
             }
+        }
+
+        public void setUsePointer(bool usePointer) {
+            __usePointer = usePointer;
+        }
+
+        public bool pointerIsActive() {
+            return __usePointer;
         }
 
         public Transform pointerTransform { get {
@@ -129,6 +139,11 @@ namespace Valve.VR.Extras
                 isActive = true;
                 this.transform.GetChild(0).gameObject.SetActive(true);
             }
+            rayStartingPosition = holder.transform.position;
+            rayDirection = holder.transform.rotation;
+            if (!__usePointer) {
+                return;
+            }
             if (!leftClick.GetState(pose.inputSource) && !rightClick.GetState(pose.inputSource)) {
                 // We lock the mouse buttons to false if they we pressed when the component
                 // first becomes active and keep them locked until both are released to
@@ -141,8 +156,6 @@ namespace Valve.VR.Extras
             bool rightButtonState = mouseButtonsLocked ? false : rightClick.GetState(pose.inputSource);
 
             float dist = 100f;
-            rayStartingPosition = holder.transform.position;
-            rayDirection = holder.transform.rotation;
             Ray raycast = new Ray(rayStartingPosition, rayDirection * Vector3.forward);
             RaycastHit hit;
             bool bHit = Physics.Raycast(raycast, out hit, maxRaycastDistance, raycastLayerMask);
