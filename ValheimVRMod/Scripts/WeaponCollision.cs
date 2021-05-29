@@ -41,7 +41,7 @@ namespace ValheimVRMod.Scripts {
                     }
                     
                     Debug.Log("Logging Player " + player.GetPlayerName() + " his Children:");
-                    LogUtils.LogChildTree(maybePlayer.transform);
+                    LogUtils.LogChildTree(player.transform);
                 }    
             }
             
