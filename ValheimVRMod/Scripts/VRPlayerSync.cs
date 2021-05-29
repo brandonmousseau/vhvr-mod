@@ -45,8 +45,8 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            VrikCreator.initialize(GetComponent<Player>().gameObject, camera.transform, leftHand.transform,
-                rightHand.transform);
+            VrikCreator.initialize(GetComponent<Player>().gameObject, leftHand.transform,
+                rightHand.transform, camera.transform);
             
             vrikInitialized = true;
         }
