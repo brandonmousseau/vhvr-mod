@@ -37,6 +37,11 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
+            if (maybePlayer != null) {
+                Debug.Log("Logging Other Player's Children:");
+                LogUtils.LogChildTree(maybePlayer.transform);
+            }
+
             var item = Player.m_localPlayer.GetRightItem();
 
             if (item == null && !itemIsTool || !hasMomentum() || StaticObjects.rightCooldown().isInCooldown()) {

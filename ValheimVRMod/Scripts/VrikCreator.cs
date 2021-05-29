@@ -4,6 +4,10 @@ using ValheimVRMod.VRCore;
 namespace ValheimVRMod.Scripts {
     public class VrikCreator {
 
+        // private static GameObject camSynchObj;
+        // private static GameObject rHandSynchObj;
+        // private static GameObject lHandSynchObj;
+        
         public static RootMotion.FinalIK.VRIK initialize(GameObject target, Transform leftController, Transform rightController, Transform camera) {
             RootMotion.FinalIK.VRIK vrik = target.AddComponent<RootMotion.FinalIK.VRIK>();
             vrik.AutoDetectReferences();
@@ -35,7 +39,57 @@ namespace ValheimVRMod.Scripts {
             vrik.solver.spine.headTarget = head;
             vrik.solver.spine.maxRootAngle = 180;
 
+            vrik.references.leftHand.gameObject.AddComponent<ZNetView>();
+            vrik.references.leftHand.gameObject.AddComponent<ZSyncTransform>();
+            
+            vrik.references.rightHand.gameObject.AddComponent<ZNetView>();
+            vrik.references.rightHand.gameObject.AddComponent<ZSyncTransform>();
+            
+            vrik.references.head.gameObject.AddComponent<ZNetView>();
+            vrik.references.head.gameObject.AddComponent<ZSyncTransform>();
+            
+            //initLocalSynchObjects();
+            
             return vrik;
         }
+        
+        // private static void initLocalSynchObjects() {
+        //
+        //     camSynchObj = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        //     camSynchObj.transform.parent = Player.m_localPlayer.transform;
+        //     camSynchObj.GetComponent<MeshRenderer>().material.color = Color.blue;
+        //     camSynchObj.AddComponent<ZNetView>();
+        //     var zst = camSynchObj.AddComponent<ZSyncTransform>();
+        //     zst.m_syncPosition = true;
+        //     zst.m_syncRotation = true;
+        //     zst.m_syncScale = true;
+        //     rHandSynchObj = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        //     rHandSynchObj.transform.parent = Player.m_localPlayer.transform;
+        //     rHandSynchObj.transform.localScale *= .1f;
+        //     rHandSynchObj.GetComponent<MeshRenderer>().material.color = Color.green;
+        //     rHandSynchObj.AddComponent<ZNetView>();
+        //     zst = rHandSynchObj.AddComponent<ZSyncTransform>();
+        //     zst.m_syncPosition = true;
+        //     zst.m_syncRotation = true;
+        //     zst.m_syncScale = true;
+        //     lHandSynchObj = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        //     lHandSynchObj.transform.parent = Player.m_localPlayer.transform;
+        //     lHandSynchObj.transform.localScale *= .1f;
+        //     lHandSynchObj.GetComponent<MeshRenderer>().material.color = Color.red;
+        //     lHandSynchObj.AddComponent<ZNetView>();
+        //     zst = lHandSynchObj.AddComponent<ZSyncTransform>();
+        //     zst.m_syncPosition = true;
+        //     zst.m_syncRotation = true;
+        //     zst.m_syncScale = true;
+        //
+        // }
+        //
+        // public void parentLocalSynchObjects(Transform camera, Transform leftController, Transform rightController) {
+        //
+        //     camSynchObj.transform.SetParent(camera, false);
+        //     rHandSynchObj.transform.SetParent(rightController, false);
+        //     lHandSynchObj.transform.SetParent(leftController, false);
+        //
+        // }
     }
 }
