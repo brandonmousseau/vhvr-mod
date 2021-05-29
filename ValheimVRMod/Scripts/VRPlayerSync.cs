@@ -9,7 +9,7 @@ namespace ValheimVRMod.Scripts {
         public GameObject rightHand = new GameObject();
         public GameObject leftHand = new GameObject();
 
-        private void Update() {
+        private void FixedUpdate() {
 
             Player player = GetComponent<Player>();
 
