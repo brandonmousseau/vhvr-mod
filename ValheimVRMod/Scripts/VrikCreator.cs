@@ -52,7 +52,6 @@ namespace ValheimVRMod.Scripts {
             obj.transform.localRotation = Quaternion.identity;
             obj.GetComponent<MeshRenderer>().material.color = color;
             obj.AddComponent<ZNetView>();
-            obj.AddComponent<SyncScript>();
             var zst = obj.AddComponent<ZSyncTransform>();
             zst.m_syncPosition = true;
             zst.m_syncRotation = true;
