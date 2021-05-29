@@ -36,7 +36,11 @@ namespace ValheimVRMod.Scripts {
             if (maybePlayer != null) {
                 foreach (Player player in AccessTools.StaticFieldRefAccess<Player, List<Player>>("m_players"))
                 {
-                    Debug.Log("Logging Player " + player.m_name + " his Children:");
+                    if (player == Player.m_localPlayer) {
+                        continue;
+                    }
+                    
+                    Debug.Log("Logging Player " + player.GetPlayerName() + " his Children:");
                     LogUtils.LogChildTree(maybePlayer.transform);
                 }    
             }
