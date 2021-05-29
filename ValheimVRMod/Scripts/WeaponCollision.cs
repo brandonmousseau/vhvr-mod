@@ -32,12 +32,15 @@ namespace ValheimVRMod.Scripts {
             }
 
             var maybePlayer = collider.GetComponentInParent<Player>();
-            
-            foreach (Player player in AccessTools.FieldRefAccess<Player, List<Player>>(maybePlayer, "m_players"))
-            {
-                Debug.Log("Logging Player " + player.m_name + " his Children:");
-                LogUtils.LogChildTree(maybePlayer.transform);
+
+            if (maybePlayer != null) {
+                foreach (Player player in AccessTools.StaticFieldRefAccess<Player, List<Player>>("m_players"))
+                {
+                    Debug.Log("Logging Player " + player.m_name + " his Children:");
+                    LogUtils.LogChildTree(maybePlayer.transform);
+                }    
             }
+            
 
             if (maybePlayer != null && maybePlayer == Player.m_localPlayer) {
                 return;
