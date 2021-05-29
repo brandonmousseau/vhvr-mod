@@ -27,19 +27,6 @@ namespace ValheimVRMod.Scripts {
             StaticObjects.rightCooldown().maxCooldown = COOLDOWN;
         }
 
-        private void Update() {
-            foreach (Player player in AccessTools.StaticFieldRefAccess<Player, List<Player>>("m_players"))
-            {
-                if (player == Player.m_localPlayer) {
-                    continue;
-                }
-                    
-                Debug.Log("Try Logging test string of " + player.GetPlayerName());
-                Debug.Log(player.GetComponent<ZNetView>().GetZDO().GetString("vrteststring", "fail..."));
-                Player.m_localPlayer.GetComponent<ZNetView>().GetZDO().Set("vrteststring", Player.m_localPlayer.GetPlayerName() + ": WHASAAAAAP");
-            }    
-        }
-
         private void OnTriggerEnter(Collider collider) {
             if (!isCollisionAllowed()) {
                 return;

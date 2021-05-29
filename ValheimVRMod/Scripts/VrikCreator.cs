@@ -1,10 +1,8 @@
-﻿using RootMotion.FinalIK;
-using UnityEngine;
-using ValheimVRMod.VRCore;
+﻿using UnityEngine;
 
 namespace ValheimVRMod.Scripts {
     public class VrikCreator {
-        
+
         public static RootMotion.FinalIK.VRIK initialize(GameObject target, Transform leftController, Transform rightController, Transform camera) {
             RootMotion.FinalIK.VRIK vrik = target.AddComponent<RootMotion.FinalIK.VRIK>();
             vrik.AutoDetectReferences();
@@ -36,27 +34,7 @@ namespace ValheimVRMod.Scripts {
             vrik.solver.spine.headTarget = head;
             vrik.solver.spine.maxRootAngle = 180;
             
-            syncObj(camera, Color.blue);
-            syncObj(rightController, Color.red);
-            syncObj(leftController, Color.green);
-            
             return vrik;
-        }
-        
-        private static void syncObj(Transform target, Color color) {
-            
-            GameObject obj = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            obj.transform.parent = target;
-            obj.transform.localScale *= 0.1f;
-            obj.transform.localPosition = Vector3.zero;
-            obj.transform.localRotation = Quaternion.identity;
-            obj.GetComponent<MeshRenderer>().material.color = color;
-            obj.AddComponent<ZNetView>();
-            var zst = obj.AddComponent<ZSyncTransform>();
-            zst.m_syncPosition = true;
-            zst.m_syncRotation = true;
-            zst.m_syncScale = true;
-
         }
     }
 }
