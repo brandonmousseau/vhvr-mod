@@ -55,27 +55,27 @@ namespace ValheimVRMod.Scripts {
                     
                     case ("LeftHandThumb1"):
                     case ("RightHandThumb1"):
-                        updateFingerPart(sourceTransform.GetChild(0).GetChild(0), transform.GetChild(i));
+                        updateFingerPart(sourceTransform.GetChild(0).GetChild(0), child);
                         break;
                     
                     case ("LeftHandIndex1"):
                     case ("RightHandIndex1"):
-                        updateFingerPart(sourceTransform.GetChild(1).GetChild(0), transform.GetChild(i));
+                        updateFingerPart(sourceTransform.GetChild(1).GetChild(0), child);
                         break;
                     
                     case ("LeftHandMiddle1"):
                     case ("RightHandMiddle1"):
-                        updateFingerPart(sourceTransform.GetChild(2).GetChild(0), transform.GetChild(i));
+                        updateFingerPart(sourceTransform.GetChild(2).GetChild(0), child);
                         break;
 
                     case ("LeftHandRing1"):
                     case ("RightHandRing1"):
-                        updateFingerPart(sourceTransform.GetChild(3).GetChild(0), transform.GetChild(i));
+                        updateFingerPart(sourceTransform.GetChild(3).GetChild(0), child);
                         break;
                     
                     case ("LeftHandPinky1"):
                     case ("RightHandPinky1"):
-                        updateFingerPart(sourceTransform.GetChild(4).GetChild(0), transform.GetChild(i));
+                        updateFingerPart(sourceTransform.GetChild(4).GetChild(0), child);
                         break;
                 }
             }
