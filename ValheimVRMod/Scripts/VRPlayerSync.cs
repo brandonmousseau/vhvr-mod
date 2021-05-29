@@ -16,7 +16,7 @@ namespace ValheimVRMod.Scripts {
             if (player == Player.m_localPlayer) {
                 sendVrData();
             }
-            else {
+            else if (GetComponent<ZNetView>() != null) {
                 receiveVrData();
             }
         }
