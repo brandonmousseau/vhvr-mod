@@ -297,6 +297,7 @@
     <Compile Include="Patches\BowAndFishingPatches.cs" />
     <Compile Include="Patches\CollisionPatches.cs" />
     <Compile Include="Patches\ControlPatches.cs" />
+    <Compile Include="Patches\HandBasedInteractionPatches.cs" />
     <Compile Include="Patches\HarmonyPatcher.cs" />
     <Compile Include="Patches\EyeRotationPatch.cs" />
     <Compile Include="Patches\InteractionPatches.cs" />

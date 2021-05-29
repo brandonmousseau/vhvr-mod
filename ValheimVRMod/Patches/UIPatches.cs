@@ -196,15 +196,6 @@ namespace ValheimVRMod.Patches
             }
         }
 
-        [HarmonyPatch(typeof(Player), "FindHoverObject")]
-        class Player_FindHoverObject_Patch
-        {
-            static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
-            {
-                return GetRaycastAllPatchedInstructions(instructions, 4, nameof(getStartingPositionCameraFacing), nameof(getRayDirectionCameraFacing));
-            }
-        }
-
         static IEnumerable<CodeInstruction> GetRaycastPatchedInstructions(IEnumerable<CodeInstruction> instructions, int popOffset, string startingPosition, string rayDirection)
         {
             return Rayscast_VectorReplace_Transpiler.GetRaycastPatchedInstructions(instructions, typeof(Player_RaycastVector_Patches),
@@ -592,60 +583,5 @@ namespace ValheimVRMod.Patches
             playerRot = player.transform.rotation;
         }
     }
-
-    [HarmonyPatch(typeof(Player), "FindHoverObject")]
-    class Player_FindHoverObject_Patch
-    {
-
-        public static Vector3 currentHitPosition = Vector3.zero;
-
-        static void Postfix(Player __instance, ref GameObject hover, int ___m_interactMask)
-        {
-            if (__instance != Player.m_localPlayer || !VRControls.mainControlsActive || VRPlayer.rightPointer == null)
-            {
-                currentHitPosition = Vector3.zero;
-                return;
-            }
-            hover = null;
-            var startingPosition = VRPlayer.rightPointer.rayStartingPosition;
-            var rayDirection = VRPlayer.rightPointer.rayDirection;
-            RaycastHit[] raycastHitArray1 = Physics.RaycastAll(startingPosition, rayDirection * Vector3.forward, 50f, ___m_interactMask);
-            Array.Sort(raycastHitArray1, (RaycastHit x, RaycastHit y) => x.distance.CompareTo(y.distance));
-            int num = 0;
-            while (num < raycastHitArray1.Length)
-            {
-                RaycastHit raycastHit = raycastHitArray1[num];
-                if (!raycastHit.collider.attachedRigidbody || !(raycastHit.collider.attachedRigidbody.gameObject == __instance.gameObject))
-                {
-                    if (Vector3.Distance(__instance.m_eye.position, raycastHit.point) >= __instance.m_maxInteractDistance)
-                    {
-                        break;
-                    }
-                    currentHitPosition = raycastHit.point;
-                    if (raycastHit.collider.GetComponent<Hoverable>() != null)
-                    {
-                        hover = raycastHit.collider.gameObject;
-                        return;
-                    }
-                    if (raycastHit.collider.GetComponent<Hoverable>() != null)
-                    {
-                        hover = raycastHit.collider.gameObject;
-                        return;
-                    }
-                    if (!raycastHit.collider.attachedRigidbody)
-                    {
-                        hover = raycastHit.collider.gameObject;
-                        return;
-                    }
-                    hover = raycastHit.collider.attachedRigidbody.gameObject;
-                    return;
-                } else
-                {
-                    num++;
-                }
-            }
-        }
-    }
-
 
 }
