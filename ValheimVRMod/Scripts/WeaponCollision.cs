@@ -36,7 +36,7 @@ namespace ValheimVRMod.Scripts {
                     
                 Debug.Log("Try Logging test string of " + player.GetPlayerName());
                 Debug.Log(player.GetComponent<ZNetView>().GetZDO().GetString("vrteststring", "fail..."));
-                Player.m_localPlayer.GetComponent<ZNetView>().GetZDO().Set("vrteststring", "WHASAAAAAP");
+                Player.m_localPlayer.GetComponent<ZNetView>().GetZDO().Set("vrteststring", Player.m_localPlayer.GetPlayerName() + ": WHASAAAAAP");
             }    
         }
 
