@@ -54,9 +54,13 @@ namespace ValheimVRMod.Scripts {
         }
 
         private void OnDestroy() {
-            Destroy(arrow);
+            destroyArrow();
             Destroy(pullObj);
             Destroy(predictionLine);
+        }
+
+        private void destroyArrow() {
+            arrow.GetComponent<ZNetView>().Destroy();
         }
 
         /**
@@ -219,7 +223,7 @@ namespace ValheimVRMod.Scripts {
             }
             // SHOOTING
             VRPlayer.leftHand.hapticAction.Execute(0, 0.2f, 100, 0.3f, SteamVR_Input_Sources.LeftHand);
-            Destroy(arrow);
+            destroyArrow();
         }
 
         private float pullPercentage() {
@@ -244,7 +248,7 @@ namespace ValheimVRMod.Scripts {
 
         public void toggleArrow() {
             if (arrow != null) {
-                Destroy(arrow);
+                destroyArrow();
                 return;
             }
 

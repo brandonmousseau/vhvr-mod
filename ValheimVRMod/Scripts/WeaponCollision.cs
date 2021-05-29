@@ -31,15 +31,15 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            var maybePlayer = collider.GetComponentInParent<Player>();
-
-            if (maybePlayer != null && maybePlayer == Player.m_localPlayer) {
-                return;
-            }
+            var maybePlayer = collider.GetComponentInParent<Humanoid>();
 
             if (maybePlayer != null) {
                 Debug.Log("Logging Other Player's Children:");
                 LogUtils.LogChildTree(maybePlayer.transform);
+            }
+            
+            if (maybePlayer != null && maybePlayer == Player.m_localPlayer) {
+                return;
             }
 
             var item = Player.m_localPlayer.GetRightItem();
