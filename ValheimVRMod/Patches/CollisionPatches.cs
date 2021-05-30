@@ -9,7 +9,7 @@ namespace ValheimVRMod.Patches {
     [HarmonyPatch(typeof(VisEquipment), "SetRightHandEquiped")]
     class PatchSetRightHandEquiped {
         static void Postfix(bool __result, string ___m_rightItem, ref GameObject ___m_rightItemInstance) {
-            if (!__result || ___m_rightItemInstance == null) {
+            if (!__result || ___m_rightItemInstance == null || !VHVRConfig.UseVrControls()) {
                 return;
             }
 
@@ -50,7 +50,7 @@ namespace ValheimVRMod.Patches {
     [HarmonyPatch(typeof(VisEquipment), "SetLeftHandEquiped")]
     class PatchSetLeftHandEquiped {
         static void Postfix(bool __result, string ___m_leftItem, GameObject ___m_leftItemInstance) {
-            if (!__result || ___m_leftItemInstance == null) {
+            if (!__result || ___m_leftItemInstance == null || !VHVRConfig.UseVrControls()) {
                 return;
             }
 
@@ -122,7 +122,7 @@ namespace ValheimVRMod.Patches {
         ) {
             // if character is not local player, use original Start method
             if (character != Player.m_localPlayer
-                || __instance.m_attackType.ToString() == "Projectile") {
+                || __instance.m_attackType.ToString() == "Projectile" || !VHVRConfig.UseVrControls()) {
                 return true;
             }
 

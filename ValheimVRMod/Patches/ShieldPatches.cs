@@ -14,7 +14,7 @@ namespace ValheimVRMod.Patches {
         
         static void Prefix(Humanoid __instance, ref HitData hit) {
 
-            if (__instance != Player.m_localPlayer || EquipScript.getLeft() != EquipType.Shield) {
+            if (__instance != Player.m_localPlayer || EquipScript.getLeft() != EquipType.Shield || !VHVRConfig.UseVrControls()) {
                 return;
             }
    
@@ -27,7 +27,7 @@ namespace ValheimVRMod.Patches {
         
         static void Postfix(Humanoid __instance, bool __result) {
 
-            if (__instance != Player.m_localPlayer || EquipScript.getLeft() != EquipType.Shield) {
+            if (__instance != Player.m_localPlayer || EquipScript.getLeft() != EquipType.Shield || !VHVRConfig.UseVrControls()) {
                 return;
             }
 
@@ -42,7 +42,7 @@ namespace ValheimVRMod.Patches {
     class PatchIsBlocking {
         static bool Prefix(Humanoid __instance, ref bool __result) {
 
-            if (__instance != Player.m_localPlayer || EquipScript.getLeft() != EquipType.Shield) {
+            if (__instance != Player.m_localPlayer || EquipScript.getLeft() != EquipType.Shield || !VHVRConfig.UseVrControls()) {
                 return true;
             }
 
@@ -56,7 +56,7 @@ namespace ValheimVRMod.Patches {
     class PatchRPCDamager {
         static void Prefix(Character __instance, HitData hit) {
 
-            if (__instance != Player.m_localPlayer || EquipScript.getLeft() != EquipType.Shield) {
+            if (__instance != Player.m_localPlayer || EquipScript.getLeft() != EquipType.Shield || !VHVRConfig.UseVrControls()) {
                 return;
             }
             
@@ -66,7 +66,7 @@ namespace ValheimVRMod.Patches {
         
         static void Postfix(Character __instance) {
 
-            if (__instance != Player.m_localPlayer || EquipScript.getLeft() != EquipType.Shield) {
+            if (__instance != Player.m_localPlayer || EquipScript.getLeft() != EquipType.Shield || !VHVRConfig.UseVrControls()) {
                 return;
             }
 

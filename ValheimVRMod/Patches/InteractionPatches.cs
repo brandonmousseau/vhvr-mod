@@ -18,7 +18,7 @@ namespace ValheimVRMod.Patches
             ref ItemDrop.ItemData ___m_hiddenLeftItem, ref ItemDrop.ItemData ___m_hiddenRightItem, 
             ref VisEquipment ___m_visEquipment, ref ZSyncAnimation ___m_zanim) {
 
-            if (__instance != Player.m_localPlayer) {
+            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls()) {
                 return true;
             }
             
@@ -61,7 +61,7 @@ namespace ValheimVRMod.Patches
             ref ZSyncAnimation ___m_zanim)
         {
             
-            if (__instance != Player.m_localPlayer) {
+            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls()) {
                 return true;
             }
     
@@ -102,7 +102,7 @@ namespace ValheimVRMod.Patches
     class PatchInventoryChanged {
 
         static void Postfix() {
-            if (StaticObjects.quickSwitch != null) {
+            if (StaticObjects.quickSwitch != null && VHVRConfig.UseVrControls()) {
                 QuickSwitch.refreshItems();
             }
         }
@@ -113,7 +113,7 @@ namespace ValheimVRMod.Patches
 
         static void Postfix(Humanoid __instance) {
 
-            if (__instance != Player.m_localPlayer) {
+            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls()) {
                 return;
             }
             

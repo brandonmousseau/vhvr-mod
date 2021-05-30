@@ -15,7 +15,7 @@ namespace ValheimVRMod.Patches {
     class PatchGetAttackDrawPercentage {
         static bool Prefix(Humanoid __instance, ref float __result) {
 
-            if (__instance != Player.m_localPlayer) {
+            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls()) {
                 return true;
             }
 
@@ -43,7 +43,7 @@ namespace ValheimVRMod.Patches {
             spawnPoint = Vector3.zero;
             aimDir = Vector3.zero;
             
-            if (___m_character != Player.m_localPlayer) {
+            if (___m_character != Player.m_localPlayer || !VHVRConfig.UseVrControls()) {
                 return true;
             }
 
@@ -77,7 +77,10 @@ namespace ValheimVRMod.Patches {
     [HarmonyPatch(typeof(Hud), "UpdateCrosshair")]
     class PatchUpdateCrosshair {
         static void Prefix(ref float bowDrawPercentage) {
-            bowDrawPercentage = 0;
+            if (VHVRConfig.UseVrControls())
+            {
+                bowDrawPercentage = 0;
+            }
         }
     }
     
@@ -89,7 +92,7 @@ namespace ValheimVRMod.Patches {
     class PatchFixedUpdate {
         static void Prefix(Character ___m_character, ref Animator ___m_animator) {
             
-            if (___m_character != Player.m_localPlayer) {
+            if (___m_character != Player.m_localPlayer || !VHVRConfig.UseVrControls()) {
                 return;
             }
             
@@ -105,7 +108,7 @@ namespace ValheimVRMod.Patches {
         
         static void Prefix(ref Attack __instance, ref ItemDrop.ItemData ___m_ammoItem, Humanoid ___m_character) {
            
-            if (___m_character != Player.m_localPlayer) {
+            if (___m_character != Player.m_localPlayer || !VHVRConfig.UseVrControls()) {
                 return;
             }
             
@@ -127,7 +130,7 @@ namespace ValheimVRMod.Patches {
         static bool Prefix(ref Transform __result, Character owner) {
 
             if (owner != Player.m_localPlayer
-                || FishingManager.fixedRodTop == null) {
+                || FishingManager.fixedRodTop == null || !VHVRConfig.UseVrControls()) {
                 return true;
             }
 
@@ -150,6 +153,10 @@ namespace ValheimVRMod.Patches {
         {
             var original = new List<CodeInstruction>(instructions);
             var patched = new List<CodeInstruction>();
+            if (!VHVRConfig.UseVrControls())
+            {
+                return original;
+            }
             
             foreach (var instruction in original) {
     
