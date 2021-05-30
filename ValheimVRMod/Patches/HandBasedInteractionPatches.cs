@@ -6,6 +6,7 @@ using UnityEngine;
 using ValheimVRMod.VRCore;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore.UI;
+using Valve.VR;
 using UnityEngine.UI;
 
 using static ValheimVRMod.Utilities.LogUtils;
@@ -106,6 +107,53 @@ namespace ValheimVRMod.Patches
             }
         }
 
+        // Need to call this from Player_Update_Patch Postfix
+        [HarmonyPatch]
+        class Player_Interact_ReversePatch
+        {
+            [HarmonyReversePatch]
+            [HarmonyPatch(typeof(Player), "Interact")]
+            public static void Run(object instance, GameObject go, bool hold)
+            {
+                throw new NotImplementedException("Stub for reverse patch.");
+            }
+        }
+
+        // Check for the left hand use button being used and trigger
+        // interactions based on it
+        [HarmonyPatch(typeof(Player), "Update")]
+        class Player_Update_Patch
+        {
+            static void Postfix(Player __instance, ShipControlls ___m_shipControl)
+            {
+                if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls())
+                {
+                    return;
+                }
+                var useAction = VRControls.instance.useLeftHandAction;
+                if (useAction == null)
+                {
+                    LogWarning("Left Hand Use Action not initialized.");
+                    return;
+                }
+                if (!useAction.GetStateDown(SteamVR_Input_Sources.LeftHand))
+                {
+                    if (useAction.GetState(SteamVR_Input_Sources.LeftHand) && leftHover)
+                    {
+                        Player_Interact_ReversePatch.Run(__instance, leftHover, true);
+                    }
+                } else if (leftHover)
+                {
+                    Player_Interact_ReversePatch.Run(__instance, leftHover, false);
+                } else if (___m_shipControl)
+                {
+                    __instance.StopShipControl();
+                }
+            }
+        }
+
+        // Set the left/right hand hover objects based on
+        // laser pointer vectors
         [HarmonyPatch(typeof(Player), "FindHoverObject")]
         class Player_FindHoverObject_Patch
         {

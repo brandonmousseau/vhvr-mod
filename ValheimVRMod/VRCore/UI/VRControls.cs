@@ -38,6 +38,14 @@ namespace ValheimVRMod.VRCore.UI
         private SteamVR_Action_Pose poseL;
         private SteamVR_Action_Pose poseR;
 
+        // Action for "Use" using the left hand controller
+        private SteamVR_Action_Boolean _useLeftHand = SteamVR_Actions.valheim_UseLeft;
+
+        public SteamVR_Action_Boolean useLeftHandAction { get
+            {
+                return _useLeftHand;
+            } }
+
         private float recenteringPoseDuration;
 
         public static bool mainControlsActive

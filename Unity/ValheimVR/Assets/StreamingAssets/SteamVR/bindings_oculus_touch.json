@@ -261,7 +261,7 @@
             {
                "inputs" : {
                   "click" : {
-                     "output" : "/actions/valheim/in/use"
+                     "output" : "/actions/valheim/in/useleft"
                   }
                },
                "mode" : "trigger",

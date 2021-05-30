@@ -138,6 +138,11 @@
       "requirement": "mandatory"
     },
     {
+      "name": "/actions/Valheim/in/UseLeft",
+      "type": "boolean",
+      "requirement": "mandatory"
+    },
+    {
       "name": "/actions/Valheim/out/Haptic",
       "type": "vibration",
       "requirement": "mandatory"

@@ -161,6 +161,14 @@ namespace Valve.VR
             }
         }
         
+        public virtual SteamVR_Action_Boolean UseLeft
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_UseLeft;
+            }
+        }
+        
         public virtual SteamVR_Action_Vibration Haptic
         {
             get
