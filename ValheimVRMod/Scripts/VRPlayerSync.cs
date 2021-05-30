@@ -22,26 +22,40 @@ namespace ValheimVRMod.Scripts {
         }
 
         private void sendVrData() {
-            GetComponent<ZNetView>().GetZDO().Set("vr_cam_pos", camera.transform.position);
-            GetComponent<ZNetView>().GetZDO().Set("vr_cam_rot", camera.transform.rotation);
-            GetComponent<ZNetView>().GetZDO().Set("vr_rh_pos", rightHand.transform.position);
-            GetComponent<ZNetView>().GetZDO().Set("vr_rh_rot", rightHand.transform.rotation);
-            GetComponent<ZNetView>().GetZDO().Set("vr_lh_pos", leftHand.transform.position);
-            GetComponent<ZNetView>().GetZDO().Set("vr_lh_rot", leftHand.transform.rotation);
+            
+            ZPackage pkg = new ZPackage();
+            pkg.Write(camera.transform.position);
+            pkg.Write(camera.transform.rotation);
+            pkg.Write(leftHand.transform.position);
+            pkg.Write(leftHand.transform.rotation);
+            pkg.Write(rightHand.transform.position);
+            pkg.Write(rightHand.transform.rotation);
+            
+            GetComponent<ZNetView>().GetZDO().Set("vr_data", pkg.GetArray());
         }
         
         private void receiveVrData() {
-             camera.transform.position = GetComponent<ZNetView>().GetZDO().GetVec3("vr_cam_pos", Vector3.zero);
-             camera.transform.rotation = GetComponent<ZNetView>().GetZDO().GetQuaternion("vr_cam_rot", Quaternion.identity);
-             rightHand.transform.position = GetComponent<ZNetView>().GetZDO().GetVec3("vr_rh_pos", Vector3.zero);
-             rightHand.transform.rotation = GetComponent<ZNetView>().GetZDO().GetQuaternion("vr_rh_rot", Quaternion.identity);
-             leftHand.transform.position = GetComponent<ZNetView>().GetZDO().GetVec3("vr_lh_pos", Vector3.zero);
-             leftHand.transform.rotation = GetComponent<ZNetView>().GetZDO().GetQuaternion("vr_lh_rot", Quaternion.identity);
-             maybeAddVrik();
+            
+            var vr_data = GetComponent<ZNetView>().GetZDO().GetByteArray("vr_data");
+            
+            if (vr_data == null) {
+                return;
+            }
+
+            ZPackage pkg = new ZPackage(vr_data);
+            
+            camera.transform.position = pkg.ReadVector3();
+            camera.transform.rotation = pkg.ReadQuaternion();
+            leftHand.transform.position = pkg.ReadVector3();
+            leftHand.transform.rotation = pkg.ReadQuaternion();
+            rightHand.transform.position = pkg.ReadVector3();
+            rightHand.transform.rotation = pkg.ReadQuaternion();
+            
+            maybeAddVrik();
         }
 
         private void maybeAddVrik() {
-            if (vrikInitialized || camera.transform.position == Vector3.zero) {
+            if (vrikInitialized) {
                 return;
             }
 
