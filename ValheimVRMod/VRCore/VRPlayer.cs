@@ -228,12 +228,12 @@ namespace ValheimVRMod.VRCore
             tryInitializeHands();
             if (_leftHand != null)
             {
-                _leftHand.enabled = VHVRConfig.HandsEnabled();
+                _leftHand.enabled = VHVRConfig.UseVrControls();
                 _leftHand.SetVisibility(_leftHand.enabled && !vrikEnabled());
             }
             if (_rightHand != null)
             {
-                _rightHand.enabled = VHVRConfig.HandsEnabled();
+                _rightHand.enabled = VHVRConfig.UseVrControls();
                 _rightHand.SetVisibility(_rightHand.enabled && !vrikEnabled());
             }
             // Next check whether the hands are active, and enable the appropriate pointer based
@@ -309,7 +309,7 @@ namespace ValheimVRMod.VRCore
         private bool shouldLaserPointersBeActive()
         {
             bool isInPlaceMode = (getPlayerCharacter() != null) && getPlayerCharacter().InPlaceMode();
-            return VHVRConfig.UseVrControls() && VHVRConfig.HandsEnabled() && (Cursor.visible || isInPlaceMode);
+            return VHVRConfig.UseVrControls() && (Cursor.visible || isInPlaceMode);
         }
 
         // Returns true if both the hand and pointer are not null
@@ -576,7 +576,7 @@ namespace ValheimVRMod.VRCore
             maybeAddVrik(player);
             var vrik = player.gameObject.GetComponent<VRIK>();
             if (vrik != null) {
-                vrik.enabled = VHVRConfig.UseVRIK() &&
+                vrik.enabled = VHVRConfig.UseVrControls() &&
                     inFirstPerson &&
                     validVrikAnimatorState(player.GetComponentInChildren<Animator>());
             }
@@ -593,7 +593,7 @@ namespace ValheimVRMod.VRCore
 
         private void maybeAddVrik(Player player)
         {
-            if (!VHVRConfig.UseVRIK() || player.gameObject.GetComponent<VRIK>() != null)
+            if (!VHVRConfig.UseVrControls() || player.gameObject.GetComponent<VRIK>() != null)
             {
                 return;
             }

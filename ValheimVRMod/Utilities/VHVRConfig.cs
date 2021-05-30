@@ -23,7 +23,6 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> headOffsetThirdPersonY;
         private static ConfigEntry<bool> enableHeadReposition;
         private static ConfigEntry<bool> recenterOnStart;
-        private static ConfigEntry<bool> useVrik;
 
         // UI Settings
         private static ConfigEntry<bool> useOverlayGui;
@@ -51,7 +50,6 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> DebugRotZ;
 
         // Controls Settings
-        private static ConfigEntry<bool> enableHands;
         private static ConfigEntry<bool> useVrControls;
         private static ConfigEntry<bool> useLookLocomotion;
         private static ConfigEntry<string> preferredHand;
@@ -84,10 +82,6 @@ namespace ValheimVRMod.Utilities
                                           "RecenterOnStart",
                                           true,
                                           "Set this to true if you want tracking to be automatically re-centered when the game first starts up.");
-            useVrik = config.Bind("General",
-                                  "UseVRIK",
-                                  false,
-                                  "Determines whether to use VRIK or not to use motion controls to track player limbs.");
             mirrorMode = config.Bind("General",
                                      "MirrorMode",
                                      "Right",
@@ -257,17 +251,11 @@ namespace ValheimVRMod.Utilities
                                             "Setting this to true ties the direction you are looking to the walk direction while in first person mode. " +
                                             "Set this to false if you prefer to disconnect these so you can look" +
                                             " look by turning your head without affecting movement direction.");
-            enableHands = config.Bind("Controls",
-                                       "EnableHands",
-                                       true,
-                                       "Set this true to allow hands and laser pointers to be rendered in game. Note: motion controls are only" +
-                                       " minimally enabled, so right now this is just for fun.");
             useVrControls = config.Bind("Controls",
                                         "UseVRControls",
                                         false,
-                                        "This setting enables the use of the VR motion controllers as input (only Valve Knuckles supported currently. " +
-                                        "This setting, if true, will force EnableHands to be true and UseOverlayGui to be false as both of these settings " +
-                                        "must be set this way for VR controllers to work.");
+                                        "This setting enables the use of the VR motion controllers as input (Only Oculus Touch and Valve Index supported)." +
+                                        "This setting, if true, will also force UseOverlayGui to be false as this setting Overlay GUI is not compatible with VR laser pointer inputs.");
             preferredHand = config.Bind("Controls",
                                         "PreferredHand",
                                         "Right",
@@ -433,12 +421,6 @@ namespace ValheimVRMod.Utilities
             headOffsetThirdPersonZ.Value = Mathf.Clamp(offset.z, -2f, 2f);
         }
 
-        public static bool HandsEnabled()
-        {
-            // Force hands to be on if UseVrControls is on
-            return enableHands.Value || UseVrControls();
-        }
-
         public static bool UseLookLocomotion()
         {
             return useLookLocomotion.Value;
@@ -548,11 +530,6 @@ namespace ValheimVRMod.Utilities
         public static bool UseVrControls()
         {
             return useVrControls.Value;
-        }
-
-        public static bool UseVRIK()
-        {
-            return useVrik.Value;
         }
 
         public static bool UseArrowPredictionGraphic()
