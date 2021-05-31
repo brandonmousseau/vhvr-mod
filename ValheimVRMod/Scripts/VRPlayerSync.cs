@@ -30,8 +30,6 @@ namespace ValheimVRMod.Scripts {
             "RightHandThumb1","RightHandIndex1","RightHandMiddle1","RightHandRing1","RightHandPinky1"
         };
 
-        private Vector3[] leftFingerPositions = new Vector3[20];
-        private Vector3[] rightFingerPositions = new Vector3[20];
         private Quaternion[] leftFingerRotations = new Quaternion[20];
         private Quaternion[] rightFingerRotations = new Quaternion[20];
 
@@ -90,8 +88,8 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
             
-            applyFingers(vrik.references.leftHand, leftFingerPositions, leftFingerRotations);
-            applyFingers(vrik.references.rightHand, rightFingerPositions, rightFingerRotations);
+            applyFingers(vrik.references.leftHand, leftFingerRotations);
+            applyFingers(vrik.references.rightHand, rightFingerRotations);
             fingersUpdated = false;
         }
 
@@ -239,18 +237,16 @@ namespace ValheimVRMod.Scripts {
         private void readFingers(ZPackage pkg) {
 
             for (int i = 0; i < 20; i++) {
-                leftFingerPositions[i] = pkg.ReadVector3();
                 leftFingerRotations[i] = pkg.ReadQuaternion();
             }
             for (int i = 0; i < 20; i++) {
-                rightFingerPositions[i] = pkg.ReadVector3();
                 rightFingerRotations[i] = pkg.ReadQuaternion();
             }
 
             fingersUpdated = true;
         }
 
-        private void applyFingers(Transform hand, Vector3[] fingerPositions, Quaternion[] fingerRotations) {
+        private void applyFingers(Transform hand, Quaternion[] fingerRotations) {
 
             int fingerCounter = 0;
             
@@ -259,18 +255,17 @@ namespace ValheimVRMod.Scripts {
                 var child = hand.GetChild(i);
 
                 if (FINGERS.Contains(child.name)) {
-                    applyFinger(child, fingerPositions, fingerRotations, ref fingerCounter);
+                    applyFinger(child, fingerRotations, ref fingerCounter);
                 }
             }
         }
 
-        private void applyFinger(Transform finger,  Vector3[] fingerPositions, Quaternion[] fingerRotations, ref int fingerCounter) {
-
-            finger.position = fingerPositions[fingerCounter];
+        private void applyFinger(Transform finger, Quaternion[] fingerRotations, ref int fingerCounter) {
+            
             finger.rotation = fingerRotations[fingerCounter];
             fingerCounter++;
             if (finger.childCount > 0) {
-                applyFinger(finger.GetChild(0), fingerPositions, fingerRotations, ref fingerCounter);
+                applyFinger(finger.GetChild(0), fingerRotations, ref fingerCounter);
             }
         }
     }
