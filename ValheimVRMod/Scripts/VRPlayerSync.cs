@@ -30,6 +30,13 @@ namespace ValheimVRMod.Scripts {
             "RightHandThumb1","RightHandIndex1","RightHandMiddle1","RightHandRing1","RightHandPinky1"
         };
 
+        private Vector3[] leftFingerPositions = new Vector3[20];
+        private Vector3[] rightFingerPositions = new Vector3[20];
+        private Quaternion[] leftFingerRotations = new Quaternion[20];
+        private Quaternion[] rightFingerRotations = new Quaternion[20];
+
+        private bool fingersUpdated;
+
         void Start()
         {
             if (isOwner())
@@ -72,6 +79,19 @@ namespace ValheimVRMod.Scripts {
             {
                 ownerSync();
             }
+
+            if (!fingersUpdated) {
+                return;
+            }
+            
+            var vrik = GetComponent<VRIK>();
+            if (vrik == null) {
+                return;
+            }
+            
+            applyFingers(vrik.references.leftHand, leftFingerPositions, leftFingerRotations);
+            applyFingers(vrik.references.rightHand, rightFingerPositions, rightFingerRotations);
+            fingersUpdated = false;
         }
 
         // Transmit position, rotation, and velocity information to server
@@ -97,6 +117,7 @@ namespace ValheimVRMod.Scripts {
         private void clientSync(float dt)
         {
             syncPositionAndRotation(GetComponent<ZNetView>().GetZDO(), dt);
+            maybeAddVrik();
         }
 
         private void syncPositionAndRotation(ZDO zdo, float dt)
@@ -126,9 +147,7 @@ namespace ValheimVRMod.Scripts {
             extractAndUpdate(pkg, ref camera);
             extractAndUpdate(pkg, ref leftHand);
             extractAndUpdate(pkg, ref rightHand);
-            maybeAddVrik();
-            readFingers(pkg, GetComponent<VRIK>().references.leftHand);
-            readFingers(pkg, GetComponent<VRIK>().references.rightHand);
+            readFingers(pkg);
 
         }
 
@@ -209,30 +228,48 @@ namespace ValheimVRMod.Scripts {
         }
 
         private void writeFinger(ZPackage pkg, Transform finger) {
-            pkg.Write(finger.localPosition);
-            pkg.Write(finger.localRotation);
+            pkg.Write(finger.rotation);
+            pkg.Write(finger.position);
             if (finger.childCount > 0) {
                 writeFinger(pkg, finger.GetChild(0));
             } 
         }
         
-        private void readFingers(ZPackage pkg, Transform hand) {
+        private void readFingers(ZPackage pkg) {
 
+            for (int i = 0; i < 20; i++) {
+                leftFingerPositions[i] = pkg.ReadVector3();
+                leftFingerRotations[i] = pkg.ReadQuaternion();
+            }
+            for (int i = 0; i < 20; i++) {
+                rightFingerPositions[i] = pkg.ReadVector3();
+                rightFingerRotations[i] = pkg.ReadQuaternion();
+            }
+
+            fingersUpdated = true;
+        }
+
+        private void applyFingers(Transform hand, Vector3[] fingerPositions, Quaternion[] fingerRotations) {
+
+            int fingerCounter = 0;
+            
             for (int i = 0; i < hand.childCount; i++) {
 
                 var child = hand.GetChild(i);
 
                 if (FINGERS.Contains(child.name)) {
-                    readFinger(pkg, child);
+                    applyFinger(child, fingerPositions, fingerRotations, ref fingerCounter);
                 }
             }
         }
 
-        private void readFinger(ZPackage pkg, Transform finger) {
-            finger.localPosition = pkg.ReadVector3();
-            finger.localRotation = pkg.ReadQuaternion();
+        private void applyFinger(Transform finger,  Vector3[] fingerPositions, Quaternion[] fingerRotations, ref int fingerCounter) {
+
+            finger.position = fingerPositions[fingerCounter];
+            finger.rotation = fingerRotations[fingerCounter];
+            fingerCounter++;
             if (finger.childCount > 0) {
-                readFinger(pkg, finger.GetChild(0));
+                applyFinger(finger.GetChild(0), fingerPositions, fingerRotations, ref fingerCounter);
             }
         }
     }
