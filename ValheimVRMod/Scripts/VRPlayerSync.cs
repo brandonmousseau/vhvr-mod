@@ -45,18 +45,18 @@ namespace ValheimVRMod.Scripts {
 
         private void calculateOwnerVelocities(float dt)
         {
-            ownerVelocityCamera = (camera.transform.position - ownerLastPositionCamera) / dt;
-            ownerVelocityLeft = (leftHand.transform.position - ownerLastPositionLeft) / dt;
-            ownerVelocityRight = (rightHand.transform.position - ownerLastPositionRight) / dt;
+            ownerVelocityCamera = (camera.transform.localPosition - ownerLastPositionCamera) / dt;
+            ownerVelocityLeft = (leftHand.transform.localPosition - ownerLastPositionLeft) / dt;
+            ownerVelocityRight = (rightHand.transform.localPosition - ownerLastPositionRight) / dt;
             // Update "last" position for next cycle velocity calculation
             updateOwnerLastPositions();
         }
 
         private void updateOwnerLastPositions()
         {
-            ownerLastPositionCamera = camera.transform.position;
-            ownerLastPositionLeft = leftHand.transform.position;
-            ownerLastPositionRight = rightHand.transform.position;
+            ownerLastPositionCamera = camera.transform.localPosition;
+            ownerLastPositionLeft = leftHand.transform.localPosition;
+            ownerLastPositionRight = rightHand.transform.localPosition;
         }
 
         private void LateUpdate()
