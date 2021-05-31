@@ -71,16 +71,19 @@ namespace ValheimVRMod.Scripts {
         private void ownerSync()
         {
             ZPackage pkg = new ZPackage();
-            pkg.Write(camera.transform.position);
-            pkg.Write(camera.transform.rotation);
-            pkg.Write(ownerVelocityCamera);
-            pkg.Write(leftHand.transform.position);
-            pkg.Write(leftHand.transform.rotation);
-            pkg.Write(ownerVelocityLeft);
-            pkg.Write(rightHand.transform.position);
-            pkg.Write(rightHand.transform.rotation);
-            pkg.Write(ownerVelocityRight);
+            writeData(pkg, camera, ownerVelocityCamera);
+            writeData(pkg, leftHand, ownerVelocityLeft);
+            writeData(pkg, rightHand, ownerVelocityRight);
+            // TODO Fingers
+            
             GetComponent<ZNetView>().GetZDO().Set("vr_data", pkg.GetArray());
+        }
+
+        private void writeData(ZPackage pkg, GameObject obj, Vector3 ownerVelocity) 
+        {
+            pkg.Write(obj.transform.localPosition);
+            pkg.Write(obj.transform.localRotation);
+            pkg.Write(ownerVelocity);
         }
         
         private void clientSync(float dt)
@@ -113,46 +116,43 @@ namespace ValheimVRMod.Scripts {
             }
             deltaTimeCounter += dt;
 
+            extractAndUpdate(pkg, ref camera);
+            extractAndUpdate(pkg, ref leftHand);
+            extractAndUpdate(pkg, ref rightHand);
+            // TODO Fingers
+            
+        }
+
+        private void extractAndUpdate(ZPackage pkg, ref GameObject obj) 
+        {
             // Extract package data
-            var camPosition = pkg.ReadVector3();
-            var camRotation = pkg.ReadQuaternion();
-            var camVelocity = pkg.ReadVector3();
-            var leftPosition = pkg.ReadVector3();
-            var leftRotation = pkg.ReadQuaternion();
-            var leftVelocity = pkg.ReadVector3();
-            var rightPosition = pkg.ReadVector3();
-            var rightRotation = pkg.ReadQuaternion();
-            var rightVelocity = pkg.ReadVector3();
-
-            // Update positions based on last written position, velocity, and elapsed time since last data revision
-            camPosition += camVelocity * deltaTimeCounter;
-            leftPosition += leftVelocity * deltaTimeCounter;
-            rightPosition += rightVelocity * deltaTimeCounter;
-
-            // Update the object positions with new calculated positions
-            updatePosition(camera, camPosition);
-            updatePosition(leftHand, leftPosition);
-            updatePosition(rightHand, rightPosition);
-
-            // Update the rotations
-            updateRotation(camera, camRotation);
-            updateRotation(leftHand, leftRotation);
-            updateRotation(rightHand, rightRotation);
+            var position = pkg.ReadVector3();
+            var rotation = pkg.ReadQuaternion();
+            var velocity = pkg.ReadVector3();
+            
+            // Update position based on last written position, velocity, and elapsed time since last data revision
+            position += velocity * deltaTimeCounter;
+            
+            // Update the object position with new calculated position
+            updatePosition(obj, position);
+            
+            // Update the rotation
+            updateRotation(obj, rotation);
         }
 
         private static void updatePosition(GameObject obj, Vector3 position)
         {
-            if (Vector3.Distance(obj.transform.position, position) > MIN_CHANGE)
+            if (Vector3.Distance(obj.transform.localPosition, position) > MIN_CHANGE)
             {
-                obj.transform.position = position;
+                obj.transform.localPosition = position;
             }
         }
 
         private static void updateRotation(GameObject obj, Quaternion rotation)
         {
-            if (Quaternion.Angle(obj.transform.rotation, rotation) > MIN_CHANGE)
+            if (Quaternion.Angle(obj.transform.localRotation, rotation) > MIN_CHANGE)
             {
-                obj.transform.rotation = Quaternion.Slerp(obj.transform.rotation, rotation, 0.2f);
+                obj.transform.localRotation = Quaternion.Slerp(obj.transform.localRotation, rotation, 0.2f);
             }
         }
 
