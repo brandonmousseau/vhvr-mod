@@ -78,6 +78,7 @@ namespace ValheimVRMod.Scripts {
             if (isOwner())
             {
                 ownerSync();
+                return;
             }
 
             if (!fingersUpdated) {
