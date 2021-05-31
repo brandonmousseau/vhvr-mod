@@ -22,6 +22,11 @@ namespace ValheimVRMod.Scripts {
         private Vector3 ownerLastPositionRight = Vector3.zero;
         private Vector3 ownerVelocityRight = Vector3.zero;
 
+        private bool hasTempRelPos = false;
+        private Vector3 clientTempRelPosCamera = Vector3.zero;
+        private Vector3 clientTempRelPosLeft = Vector3.zero;
+        private Vector3 clientTempRelPosRight = Vector3.zero;
+
         private uint lastDataRevision = 0;
         private float deltaTimeCounter = 0f;
             
@@ -142,15 +147,17 @@ namespace ValheimVRMod.Scripts {
                 lastDataRevision = currentDataRevision;
             }
             deltaTimeCounter += dt;
+            deltaTimeCounter = Mathf.Min(deltaTimeCounter, 2f);
 
-            extractAndUpdate(pkg, ref camera);
-            extractAndUpdate(pkg, ref leftHand);
-            extractAndUpdate(pkg, ref rightHand);
+            extractAndUpdate(pkg, ref camera, ref clientTempRelPosCamera, hasTempRelPos);
+            extractAndUpdate(pkg, ref leftHand, ref clientTempRelPosLeft, hasTempRelPos);
+            extractAndUpdate(pkg, ref rightHand, ref clientTempRelPosRight, hasTempRelPos);
+            hasTempRelPos = true;
             readFingers(pkg);
 
         }
 
-        private void extractAndUpdate(ZPackage pkg, ref GameObject obj) 
+        private void extractAndUpdate(ZPackage pkg, ref GameObject obj, ref Vector3 tempRelPos, bool hasTempRelPos)
         {
             // Extract package data
             var position = pkg.ReadVector3();
@@ -160,6 +167,17 @@ namespace ValheimVRMod.Scripts {
             // Update position based on last written position, velocity, and elapsed time since last data revision
             position += velocity * deltaTimeCounter;
             
+            if (!hasTempRelPos)
+            {
+                tempRelPos = position;
+            }
+
+            if (Vector3.Distance(tempRelPos, position) > MIN_CHANGE)
+            {
+                tempRelPos = Vector3.Lerp(tempRelPos, position, 0.2f);
+                position = tempRelPos;
+            }
+
             // Update the object position with new calculated position
             updatePosition(obj, position);
             
