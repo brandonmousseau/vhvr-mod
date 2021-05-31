@@ -1,3 +1,5 @@
+using System.Linq;
+using RootMotion.FinalIK;
 using UnityEngine;
 
 using static ValheimVRMod.Utilities.LogUtils;
@@ -22,6 +24,11 @@ namespace ValheimVRMod.Scripts {
 
         private uint lastDataRevision = 0;
         private float deltaTimeCounter = 0f;
+            
+        private static readonly string[] FINGERS = { 
+            "LeftHandThumb1","LeftHandIndex1","LeftHandMiddle1","LeftHandRing1","LeftHandPinky1",
+            "RightHandThumb1","RightHandIndex1","RightHandMiddle1","RightHandRing1","RightHandPinky1"
+        };
 
         void Start()
         {
@@ -45,18 +52,18 @@ namespace ValheimVRMod.Scripts {
 
         private void calculateOwnerVelocities(float dt)
         {
-            ownerVelocityCamera = (camera.transform.localPosition - ownerLastPositionCamera) / dt;
-            ownerVelocityLeft = (leftHand.transform.localPosition - ownerLastPositionLeft) / dt;
-            ownerVelocityRight = (rightHand.transform.localPosition - ownerLastPositionRight) / dt;
+            ownerVelocityCamera = (camera.transform.position - ownerLastPositionCamera) / dt;
+            ownerVelocityLeft = (leftHand.transform.position - ownerLastPositionLeft) / dt;
+            ownerVelocityRight = (rightHand.transform.position - ownerLastPositionRight) / dt;
             // Update "last" position for next cycle velocity calculation
             updateOwnerLastPositions();
         }
 
         private void updateOwnerLastPositions()
         {
-            ownerLastPositionCamera = camera.transform.localPosition;
-            ownerLastPositionLeft = leftHand.transform.localPosition;
-            ownerLastPositionRight = rightHand.transform.localPosition;
+            ownerLastPositionCamera = camera.transform.position;
+            ownerLastPositionLeft = leftHand.transform.position;
+            ownerLastPositionRight = rightHand.transform.position;
         }
 
         private void LateUpdate()
@@ -74,18 +81,19 @@ namespace ValheimVRMod.Scripts {
             writeData(pkg, camera, ownerVelocityCamera);
             writeData(pkg, leftHand, ownerVelocityLeft);
             writeData(pkg, rightHand, ownerVelocityRight);
-            // TODO Fingers
+            writeFingers(pkg, GetComponent<VRIK>().references.leftHand);
+            writeFingers(pkg, GetComponent<VRIK>().references.rightHand);
             
             GetComponent<ZNetView>().GetZDO().Set("vr_data", pkg.GetArray());
         }
 
         private void writeData(ZPackage pkg, GameObject obj, Vector3 ownerVelocity) 
         {
-            pkg.Write(obj.transform.localPosition);
-            pkg.Write(obj.transform.localRotation);
+            pkg.Write(obj.transform.position);
+            pkg.Write(obj.transform.rotation);
             pkg.Write(ownerVelocity);
         }
-        
+
         private void clientSync(float dt)
         {
             syncPositionAndRotation(GetComponent<ZNetView>().GetZDO(), dt);
@@ -119,8 +127,9 @@ namespace ValheimVRMod.Scripts {
             extractAndUpdate(pkg, ref camera);
             extractAndUpdate(pkg, ref leftHand);
             extractAndUpdate(pkg, ref rightHand);
-            // TODO Fingers
-            
+            readFingers(pkg, GetComponent<VRIK>().references.leftHand);
+            readFingers(pkg, GetComponent<VRIK>().references.rightHand);
+
         }
 
         private void extractAndUpdate(ZPackage pkg, ref GameObject obj) 
@@ -142,17 +151,17 @@ namespace ValheimVRMod.Scripts {
 
         private static void updatePosition(GameObject obj, Vector3 position)
         {
-            if (Vector3.Distance(obj.transform.localPosition, position) > MIN_CHANGE)
+            if (Vector3.Distance(obj.transform.position, position) > MIN_CHANGE)
             {
-                obj.transform.localPosition = position;
+                obj.transform.position = position;
             }
         }
 
         private static void updateRotation(GameObject obj, Quaternion rotation)
         {
-            if (Quaternion.Angle(obj.transform.localRotation, rotation) > MIN_CHANGE)
+            if (Quaternion.Angle(obj.transform.rotation, rotation) > MIN_CHANGE)
             {
-                obj.transform.localRotation = Quaternion.Slerp(obj.transform.localRotation, rotation, 0.2f);
+                obj.transform.rotation = Quaternion.Slerp(obj.transform.rotation, rotation, 0.2f);
             }
         }
 
@@ -185,6 +194,46 @@ namespace ValheimVRMod.Scripts {
         {
             var netview = GetComponent<ZNetView>();
             return netview != null && netview.IsValid();
+        }
+        
+        private void writeFingers(ZPackage pkg, Transform hand) {
+
+            for (int i = 0; i < hand.childCount; i++) {
+
+                var child = hand.GetChild(i);
+
+                if (FINGERS.Contains(child.name)) {
+                    writeFinger(pkg, child);
+                }
+            }
+        }
+
+        private void writeFinger(ZPackage pkg, Transform finger) {
+            pkg.Write(finger.localPosition);
+            pkg.Write(finger.localRotation);
+            if (transform.childCount > 0) {
+                writeFinger(pkg, finger.GetChild(0));
+            } 
+        }
+        
+        private void readFingers(ZPackage pkg, Transform hand) {
+
+            for (int i = 0; i < hand.childCount; i++) {
+
+                var child = hand.GetChild(i);
+
+                if (FINGERS.Contains(child.name)) {
+                    readFinger(pkg, child);
+                }
+            }
+        }
+
+        private void readFinger(ZPackage pkg, Transform finger) {
+            finger.localPosition = pkg.ReadVector3();
+            finger.localRotation = pkg.ReadQuaternion();
+            if (transform.childCount > 0) {
+                readFinger(pkg, finger.GetChild(0));
+            }
         }
     }
 }
