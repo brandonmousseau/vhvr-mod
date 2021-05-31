@@ -39,7 +39,6 @@ namespace ValheimVRMod.Utilities {
             collisionObj.GetComponent<BoxCollider>().isTrigger = true;
             Rigidbody rigidbody = collisionObj.AddComponent<Rigidbody>();
             rigidbody.useGravity = false;
-            collisionObj.layer = LayerUtils.WEAPON_LAYER;
             return collisionScript = collisionObj.AddComponent<T>();;
         } 
         
