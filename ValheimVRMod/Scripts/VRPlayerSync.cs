@@ -38,7 +38,7 @@ namespace ValheimVRMod.Scripts {
             {
                 calculateOwnerVelocities(dt);
             }
-            if (!isOwner() && GetComponent<ZNetView>() != null) {
+            if (isValid() && !isOwner()) {
                 clientSync(dt);
             }
         }
@@ -168,6 +168,10 @@ namespace ValheimVRMod.Scripts {
 
         private bool isOwner()
         {
+            if (!isValid())
+            {
+                return false;
+            }
             var zdo = GetComponent<ZNetView>().GetZDO();
             if (zdo == null)
             {
@@ -175,6 +179,12 @@ namespace ValheimVRMod.Scripts {
                 return false;
             }
             return zdo.IsOwner();
+        }
+
+        private bool isValid()
+        {
+            var netview = GetComponent<ZNetView>();
+            return netview != null && netview.IsValid();
         }
     }
 }
