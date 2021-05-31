@@ -227,8 +227,7 @@ namespace ValheimVRMod.Scripts {
         }
 
         private void writeFinger(ZPackage pkg, Transform finger) {
-            pkg.Write(finger.rotation);
-            pkg.Write(finger.position);
+            pkg.Write(finger.localRotation);
             if (finger.childCount > 0) {
                 writeFinger(pkg, finger.GetChild(0));
             } 
@@ -262,7 +261,7 @@ namespace ValheimVRMod.Scripts {
 
         private void applyFinger(Transform finger, Quaternion[] fingerRotations, ref int fingerCounter) {
             
-            finger.rotation = fingerRotations[fingerCounter];
+            finger.localRotation = fingerRotations[fingerCounter];
             fingerCounter++;
             if (finger.childCount > 0) {
                 applyFinger(finger.GetChild(0), fingerRotations, ref fingerCounter);
