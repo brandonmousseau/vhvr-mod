@@ -608,7 +608,10 @@ namespace ValheimVRMod.VRCore
             vrik.references.rightHand.gameObject.AddComponent<HandGesture>().sourceHand = rightHand;
             StaticObjects.leftFist().setColliderParent(vrik.references.leftHand, StaticObjects.leftCooldown(), false);
             StaticObjects.rightFist().setColliderParent(vrik.references.rightHand, StaticObjects.rightCooldown(), true);
-
+            var vrPlayerSync = player.gameObject.AddComponent<VRPlayerSync>();
+            vrPlayerSync.camera = CameraUtils.getCamera(CameraUtils.VR_CAMERA).gameObject;
+            vrPlayerSync.leftHand = leftHand.gameObject;
+            vrPlayerSync.rightHand = rightHand.gameObject;
             StaticObjects.addQuickSwitch(rightHand.transform);
 
         }

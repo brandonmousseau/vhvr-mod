@@ -1,5 +1,4 @@
 ﻿using UnityEngine;
-using ValheimVRMod.VRCore;
 
 namespace ValheimVRMod.Scripts {
     public class VrikCreator {
@@ -34,7 +33,7 @@ namespace ValheimVRMod.Scripts {
             head.localRotation = Quaternion.Euler(0, 90, 0);
             vrik.solver.spine.headTarget = head;
             vrik.solver.spine.maxRootAngle = 180;
-
+            
             return vrik;
         }
     }

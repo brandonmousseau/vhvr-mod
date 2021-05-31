@@ -302,9 +302,11 @@
     <Compile Include="Patches\EyeRotationPatch.cs" />
     <Compile Include="Patches\InteractionPatches.cs" />
     <Compile Include="Patches\Misc.cs" />
+    <Compile Include="Patches\MultiplayerPatches.cs" />
     <Compile Include="Patches\ShieldPatches.cs" />
     <Compile Include="Patches\UIPatches.cs" />
     <Compile Include="Scripts\BowManager.cs" />
+    <Compile Include="Scripts\VRPlayerSync.cs" />
     <Compile Include="Scripts\WeaponCollision.cs" />
     <Compile Include="Scripts\CooldownScript.cs" />
     <Compile Include="Scripts\FishingManager.cs" />
