@@ -97,7 +97,6 @@ namespace ValheimVRMod.Scripts {
         private void clientSync(float dt)
         {
             syncPositionAndRotation(GetComponent<ZNetView>().GetZDO(), dt);
-            maybeAddVrik();
         }
 
         private void syncPositionAndRotation(ZDO zdo, float dt)
@@ -127,6 +126,7 @@ namespace ValheimVRMod.Scripts {
             extractAndUpdate(pkg, ref camera);
             extractAndUpdate(pkg, ref leftHand);
             extractAndUpdate(pkg, ref rightHand);
+            maybeAddVrik();
             readFingers(pkg, GetComponent<VRIK>().references.leftHand);
             readFingers(pkg, GetComponent<VRIK>().references.rightHand);
 
