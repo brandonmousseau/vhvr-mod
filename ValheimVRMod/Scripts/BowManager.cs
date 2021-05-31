@@ -60,7 +60,9 @@ namespace ValheimVRMod.Scripts {
         }
 
         private void destroyArrow() {
-            arrow.GetComponent<ZNetView>().Destroy();
+            if (arrow != null) {
+                arrow.GetComponent<ZNetView>().Destroy();   
+            }
         }
 
         /**
