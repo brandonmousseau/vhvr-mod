@@ -13,7 +13,6 @@ namespace ValheimVRMod.Scripts {
         public GameObject rightHand = new GameObject();
         public GameObject leftHand = new GameObject();
 
-        private Player player;
         private Vector3 ownerLastPositionCamera = Vector3.zero;
         private Vector3 ownerVelocityCamera = Vector3.zero;
         private Vector3 ownerLastPositionLeft = Vector3.zero;
@@ -26,13 +25,6 @@ namespace ValheimVRMod.Scripts {
 
         void Start()
         {
-            player = GetComponent<Player>();
-            if (player == null)
-            {
-                LogError("Null Player while starting VRPlayerSync.");
-                enabled = false;
-                return;
-            }
             if (isOwner())
             {
                 updateOwnerLastPositions();
@@ -176,7 +168,13 @@ namespace ValheimVRMod.Scripts {
 
         private bool isOwner()
         {
-            return player == Player.m_localPlayer;
+            var zdo = GetComponent<ZNetView>().GetZDO();
+            if (zdo == null)
+            {
+                LogError("Null ZDO during isOwner check.");
+                return false;
+            }
+            return zdo.IsOwner();
         }
     }
 }
