@@ -133,7 +133,6 @@ namespace ValheimVRMod.Scripts {
             }
 
             if (hoveredItemIndex == 0) {
-                Debug.Log("ACTIVATING GPOWER");
                 Player.m_localPlayer.StartGuardianPower();
             }
         }
