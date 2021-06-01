@@ -612,6 +612,7 @@ namespace ValheimVRMod.VRCore
             vrPlayerSync.camera = CameraUtils.getCamera(CameraUtils.VR_CAMERA).gameObject;
             vrPlayerSync.leftHand = leftHand.gameObject;
             vrPlayerSync.rightHand = rightHand.gameObject;
+            StaticObjects.addQuickActions(leftHand.transform);
             StaticObjects.addQuickSwitch(rightHand.transform);
 
         }

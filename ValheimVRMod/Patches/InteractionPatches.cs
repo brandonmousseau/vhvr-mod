@@ -108,6 +108,16 @@ namespace ValheimVRMod.Patches
         }
     }
     
+    [HarmonyPatch(typeof(InventoryGui), "OnSelectedItem")]
+    class PatchOnSelectedItem {
+
+        static void Postfix() {
+            if (StaticObjects.quickSwitch != null && VHVRConfig.UseVrControls()) {
+                QuickSwitch.refreshItems();
+            }
+        }
+    }
+
     [HarmonyPatch(typeof(Humanoid), "UnequipItem")]
     class PatchUnEquipItem {
 
@@ -119,6 +129,21 @@ namespace ValheimVRMod.Patches
             
             if (StaticObjects.quickSwitch != null) {
                 QuickSwitch.refreshItems();
+            }
+        }
+    }
+        
+    [HarmonyPatch(typeof(Player), "SetGuardianPower")]
+    class PatchSetGuardianPower {
+
+        static void Postfix(Humanoid __instance) {
+
+            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls()) {
+                return;
+            }
+            
+            if (StaticObjects.quickActions != null) {
+                QuickActions.refreshItems();
             }
         }
     }

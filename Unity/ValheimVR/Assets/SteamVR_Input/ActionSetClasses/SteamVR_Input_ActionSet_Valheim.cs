@@ -57,14 +57,6 @@ namespace Valve.VR
             }
         }
         
-        public virtual SteamVR_Action_Boolean GPower
-        {
-            get
-            {
-                return SteamVR_Actions.valheim_GPower;
-            }
-        }
-        
         public virtual SteamVR_Action_Vector2 PitchAndYaw
         {
             get
@@ -166,6 +158,14 @@ namespace Valve.VR
             get
             {
                 return SteamVR_Actions.valheim_UseLeft;
+            }
+        }
+        
+        public virtual SteamVR_Action_Boolean QuickActions
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_QuickActions;
             }
         }
         

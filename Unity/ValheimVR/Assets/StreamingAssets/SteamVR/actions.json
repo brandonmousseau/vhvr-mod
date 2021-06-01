@@ -74,11 +74,6 @@
       "requirement": "optional"
     },
     {
-      "name": "/actions/Valheim/in/GPower",
-      "type": "boolean",
-      "requirement": "mandatory"
-    },
-    {
       "name": "/actions/Valheim/in/PitchAndYaw",
       "type": "vector2",
       "requirement": "mandatory"
@@ -139,6 +134,11 @@
     },
     {
       "name": "/actions/Valheim/in/UseLeft",
+      "type": "boolean",
+      "requirement": "mandatory"
+    },
+    {
+      "name": "/actions/Valheim/in/QuickActions",
       "type": "boolean",
       "requirement": "mandatory"
     },

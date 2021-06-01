@@ -83,9 +83,11 @@ namespace ValheimVRMod.Scripts {
                 inputSource = SteamVR_Input_Sources.LeftHand;
             }
 
+           
             return VRPlayer.inFirstPerson && colliderParent != null && handGesture.isUnequiped() 
                    && SteamVR_Actions.valheim_Grab.GetState(inputSource)
-                   && SteamVR_Actions.valheim_Use.GetState(inputSource);
+                   && (isRightHand && SteamVR_Actions.valheim_Use.GetState(inputSource) 
+                   || !isRightHand && SteamVR_Actions.valheim_UseLeft.GetState(inputSource));
         }
 
         private void FixedUpdate() {

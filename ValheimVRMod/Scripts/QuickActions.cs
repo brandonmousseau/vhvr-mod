@@ -4,18 +4,18 @@ using Valve.VR;
 using ValheimVRMod.Utilities;
 
 namespace ValheimVRMod.Scripts {
-    public class QuickSwitch : MonoBehaviour {
+    public class QuickActions : MonoBehaviour {
 
-        private static int SLOTS = 8;
+        private static int SLOTS = 1;
         private static float elementDistance = 0.1f;
         
         private static Color standard = new Color(0.21484375f, 0.21484375f, 0.21484375f, 0.5f);
         private static Color hovered = new Color(0.33203125f, 0.33203125f, 0.33203125f, 0.5f);
-        private static Color selected = new Color(0.34375f, 0.5859375f, 0.796875f, 0.5f);
+        // private static Color selected = new Color(0.34375f, 0.5859375f, 0.796875f, 0.5f);
 
         private GameObject hoveredItem;
         private int hoveredItemIndex = -1;
-        private static GameObject[] equippedLayers = new GameObject[SLOTS]; 
+        // private static GameObject[] equippedLayers = new GameObject[SLOTS]; 
         private static GameObject[] items = new GameObject[SLOTS]; 
         private Vector2[] positions = new Vector2[SLOTS];
     
@@ -40,9 +40,9 @@ namespace ValheimVRMod.Scripts {
             tex_hovered.SetPixel(0,0, hovered);
             tex_hovered.Apply();
         
-            var tex_selected = new Texture2D(1, 1);
-            tex_selected.SetPixel(0,0, selected);
-            tex_selected.Apply();
+            // var tex_selected = new Texture2D(1, 1);
+            // tex_selected.SetPixel(0,0, selected);
+            // tex_selected.Apply();
 
             for (int i = 0; i < SLOTS; i++) {
 
@@ -60,16 +60,16 @@ namespace ValheimVRMod.Scripts {
                 standardRenderer.sprite = Sprite.Create(tex_standard, new Rect(0.0f, 0.0f, tex_standard.width, tex_standard.height), new Vector2(0.5f, 0.5f));
                 standardRenderer.sortingOrder = 0;
                 
-                GameObject equipedLayer = new GameObject();
-                equipedLayer.layer = LayerUtils.getWorldspaceUiLayer();
-                equipedLayer.transform.SetParent(transform, false);
-                equipedLayer.transform.localPosition = positions[i];
-                equipedLayer.transform.localScale *= 4;
-                var equipedRenderer = equipedLayer.AddComponent<SpriteRenderer>();
-                equipedRenderer.sprite = Sprite.Create(tex_selected, new Rect(0.0f, 0.0f, tex_selected.width, tex_selected.height), new Vector2(0.5f, 0.5f));
-                equipedRenderer.sortingOrder = 2;
-                equipedLayer.SetActive(false);
-                equippedLayers[i] = equipedLayer;
+                // GameObject equipedLayer = new GameObject();
+                // equipedLayer.layer = LayerUtils.getWorldspaceUiLayer();
+                // equipedLayer.transform.SetParent(transform, false);
+                // equipedLayer.transform.localPosition = positions[i];
+                // equipedLayer.transform.localScale *= 4;
+                // var equipedRenderer = equipedLayer.AddComponent<SpriteRenderer>();
+                // equipedRenderer.sprite = Sprite.Create(tex_selected, new Rect(0.0f, 0.0f, tex_selected.width, tex_selected.height), new Vector2(0.5f, 0.5f));
+                // equipedRenderer.sortingOrder = 2;
+                // equipedLayer.SetActive(false);
+                // equippedLayers[i] = equipedLayer;
                 
                 GameObject item = new GameObject();
                 item.layer = LayerUtils.getWorldspaceUiLayer();
@@ -79,7 +79,6 @@ namespace ValheimVRMod.Scripts {
                 var renderer = item.AddComponent<SpriteRenderer>();
                 renderer.sortingOrder = 3;
                 items[i] = item;
-
             }
             
             hoveredItem = new GameObject();
@@ -90,31 +89,14 @@ namespace ValheimVRMod.Scripts {
             hoveredItemRenderer.sprite = Sprite.Create(tex_hovered, new Rect(0.0f, 0.0f, tex_hovered.width, tex_hovered.height), new Vector2(0.5f, 0.5f));
             hoveredItemRenderer.sortingOrder = 1;
             hoveredItem.SetActive(false);
-
-
         }
 
-        /**
-         * loop the inventory hotbar and set corresponding item icons + activate equipped layers
-         */
         public static void refreshItems() {
-
-            var inventory = Player.m_localPlayer.GetInventory();
-            
-            for (int i = 0; i < SLOTS; i++) {
-                
-                ItemDrop.ItemData item = inventory.GetItemAt(i, 0);
-                
-                if (item == null) {
-                    equippedLayers[i].SetActive(false);
-                    items[i].GetComponent<SpriteRenderer>().sprite = null;
-                    continue;
-                }
-                
-                equippedLayers[i].SetActive(item.m_equiped);
-                items[i].GetComponent<SpriteRenderer>().sprite = item.GetIcon();
-                
-            }
+        
+            StatusEffect se;
+            float cooldown;
+            Player.m_localPlayer.GetGuardianPowerHUD(out se, out cooldown);
+            items[0].GetComponent<SpriteRenderer>().sprite = se.m_icon;
         }
 
         private void Update() {
@@ -123,8 +105,8 @@ namespace ValheimVRMod.Scripts {
 
         private void hoverItem() {
 
-            float y = SteamVR_Actions.valheim_PitchAndYaw.axis.y;
-            float x = SteamVR_Actions.valheim_PitchAndYaw.axis.x;
+            float y = SteamVR_Actions.valheim_Walk.axis.y;
+            float x = SteamVR_Actions.valheim_Walk.axis.x;
 
             if (Math.Abs(x) < 0.5f && Math.Abs(y) < 0.5f) {
                 hoveredItem.SetActive(false);
@@ -142,15 +124,15 @@ namespace ValheimVRMod.Scripts {
         }
 
         public void selectHoveredItem() {
-
+        
             if (hoveredItemIndex < 0) {
                 return;
             }
 
-            var inventory = Player.m_localPlayer.GetInventory();
-            ItemDrop.ItemData item = inventory.GetItemAt(hoveredItemIndex, 0);
-            Player.m_localPlayer.UseItem(inventory, item, true);
-            
+            if (hoveredItemIndex == 0) {
+                Debug.Log("ACTIVATING GPOWER");
+                Player.m_localPlayer.StartGuardianPower();
+            }
         }
     }
 }

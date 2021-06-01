@@ -1,6 +1,8 @@
+using System;
 using UnityEngine;
 using ValheimVRMod.Scripts;
 using ValheimVRMod.VRCore;
+using Object = UnityEngine.Object;
 
 namespace ValheimVRMod.Utilities {
     public static class StaticObjects {
@@ -8,6 +10,7 @@ namespace ValheimVRMod.Utilities {
         private static WeaponCollision _weaponCollider;
         private static FistCollision _leftFist;
         private static FistCollision _rightFist;
+        public static GameObject quickActions;
         public static GameObject quickSwitch;
         private static CooldownScript _leftCoolDown;
         private static CooldownScript _rightCoolDown;
@@ -42,11 +45,20 @@ namespace ValheimVRMod.Utilities {
             return collisionScript = collisionObj.AddComponent<T>();;
         } 
         
+        public static void addQuickActions(Transform hand) {
+            quickActions = new GameObject();
+            quickActions.transform.SetParent(hand, false);
+            quickActions.transform.localPosition = new Vector3(0, 0.071f, 0.0123f);
+            quickActions.transform.localRotation = Quaternion.Euler(107.34299f, -0.22f, -5.0f);
+            quickActions.AddComponent<QuickActions>();
+            quickActions.SetActive(false);
+        }
+        
         public static void addQuickSwitch(Transform hand) {
             quickSwitch = new GameObject();
             quickSwitch.transform.SetParent(hand, false);
             quickSwitch.transform.localPosition = new Vector3(0, 0.071f, 0.0123f);
-            quickSwitch.transform.localRotation = Quaternion.Euler(107.34299f, -0.22f, -50.0f);
+            quickSwitch.transform.localRotation = Quaternion.Euler(107.34299f, -0.22f, -5.0f);
             quickSwitch.AddComponent<QuickSwitch>();
             quickSwitch.SetActive(false);
         }

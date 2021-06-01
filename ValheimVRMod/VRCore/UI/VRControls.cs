@@ -82,20 +82,39 @@ namespace ValheimVRMod.VRCore.UI
                 checkRecenterPose(Time.deltaTime);
             }
 
+            checkQuickActions();
             checkQuickSwitch();
+        }
+        
+        private void checkQuickActions() {
+            
+            var quickActions = StaticObjects.quickActions;
+            if (!quickActions) {
+                return;
+            }
+            
+            if (SteamVR_Actions.valheim_QuickActions.GetStateDown(SteamVR_Input_Sources.Any)) {
+                quickActions.SetActive(true);
+            }
+
+            if (SteamVR_Actions.valheim_QuickActions.GetStateUp(SteamVR_Input_Sources.Any)) {
+                quickActions.GetComponent<QuickActions>().selectHoveredItem();
+                quickActions.SetActive(false);
+            }
+            
         }
 
         private void checkQuickSwitch() {
             
             var quickSwitch = StaticObjects.quickSwitch;
-            if (quickSwitch == null) {
+            if (!quickSwitch) {
                 return;
             }
-            
+
             if (SteamVR_Actions.valheim_QuickSwitch.GetStateDown(SteamVR_Input_Sources.Any)) {
                 quickSwitch.SetActive(true);
             }
-            
+
             if (SteamVR_Actions.valheim_QuickSwitch.GetStateUp(SteamVR_Input_Sources.Any)) {
                 quickSwitch.GetComponent<QuickSwitch>().selectHoveredItem();
                 quickSwitch.SetActive(false);
@@ -171,10 +190,7 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return false;
             }
-            if (zinput == "GPower" && shouldDisableGPower())
-            {
-                return false;
-            }
+
             // Handle Map zoom specially using context scroll input
             if (zinput == "MapZoomOut")
             {
@@ -222,10 +238,6 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return false;
             }
-            if (zinput == "GPower" && shouldDisableGPower())
-            {
-                return false;
-            }
             if (zinput == "Map" && altPieceRotationControlsActive())
             {
                 // Disable the regular map input if alternative piece
@@ -249,10 +261,6 @@ namespace ValheimVRMod.VRCore.UI
                 return false;
             }
             if (zinput == "Jump" && shouldDisableJump())
-            {
-                return false;
-            }
-            if (zinput == "GPower" && shouldDisableGPower())
             {
                 return false;
             }
@@ -413,13 +421,6 @@ namespace ValheimVRMod.VRCore.UI
             return inPlaceMode();
         }
 
-        // disale GPower input under certain conditions
-        // * In placement mode
-        private bool shouldDisableGPower()
-        {
-            return inPlaceMode();
-        }
-
         private void init()
         {
             zInputToBooleanAction.Add("JoyMenu", SteamVR_Actions.valheim_ToggleMenu);
@@ -427,12 +428,10 @@ namespace ValheimVRMod.VRCore.UI
             zInputToBooleanAction.Add("Jump", SteamVR_Actions.valheim_Jump);
             zInputToBooleanAction.Add("Use", SteamVR_Actions.valheim_Use);
             zInputToBooleanAction.Add("Sit", SteamVR_Actions.valheim_Sit);
-            zInputToBooleanAction.Add("GPower", SteamVR_Actions.valheim_GPower);
             zInputToBooleanAction.Add("Map", SteamVR_Actions.valheim_ToggleMap);
 
             // These placement commands re-use some of the normal game inputs
             zInputToBooleanAction.Add("BuildMenu", SteamVR_Actions.laserPointers_RightClick);
-            zInputToBooleanAction.Add("AltPlace", SteamVR_Actions.valheim_GPower);
             zInputToBooleanAction.Add("JoyPlace", SteamVR_Actions.laserPointers_LeftClick);
             zInputToBooleanAction.Add("Remove", SteamVR_Actions.valheim_Jump);
 
@@ -472,6 +471,7 @@ namespace ValheimVRMod.VRCore.UI
             ignoredZInputs.Add("Right");
             ignoredZInputs.Add("Block");
             ignoredZInputs.Add("Hide");
+            ignoredZInputs.Add("GPower");
             ignoredZInputs.Add("JoyAttack");
             ignoredZInputs.Add("JoyBlock");
             ignoredZInputs.Add("JoyRotate");
