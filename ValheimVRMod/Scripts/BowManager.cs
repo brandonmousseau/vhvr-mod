@@ -254,24 +254,9 @@ namespace ValheimVRMod.Scripts {
                 startedPulling = true;
                 isPulling = true;
                 predictionLine.enabled = VHVRConfig.UseArrowPredictionGraphic();
-                if (predictionLine.enabled) {
-                    setupPredictionLine();   
-                }
             }
 
             return pulling = true;
-        }
-
-        private void setupPredictionLine() {
-            var currentAttack = Player.m_localPlayer.GetCurrentWeapon().m_shared.m_attack;
-            var ammoItem = Player.m_localPlayer.GetAmmoItem();
-            projectileVel = currentAttack.m_projectileVel;
-            projectileVelMin = currentAttack.m_projectileVelMin;
-
-            if (ammoItem != null && ammoItem.m_shared.m_attack.m_attackProjectile) {
-                projectileVel += ammoItem.m_shared.m_attack.m_projectileVel;
-                projectileVelMin += ammoItem.m_shared.m_attack.m_projectileVelMin;
-            }
         }
 
         public void toggleArrow() {
@@ -279,15 +264,18 @@ namespace ValheimVRMod.Scripts {
                 destroyArrow();
                 return;
             }
-
-            ItemDrop.ItemData ammoItem = Player.m_localPlayer.GetAmmoItem();
-            if (ammoItem == null) {
+            
+            var ammoItem = Player.m_localPlayer.GetAmmoItem();
+            
+            if (ammoItem == null || ammoItem.m_shared.m_itemType != ItemDrop.ItemData.ItemType.Ammo) {
                 // out of ammo
                 return;
             }
-            if (ammoItem.m_shared.m_itemType != ItemDrop.ItemData.ItemType.Ammo) {
-                return;
-            }
+
+            var currentAttack = Player.m_localPlayer.GetCurrentWeapon().m_shared.m_attack;
+            projectileVel = currentAttack.m_projectileVel + ammoItem.m_shared.m_attack.m_projectileVel;
+            projectileVelMin = currentAttack.m_projectileVelMin + ammoItem.m_shared.m_attack.m_projectileVelMin;
+            
             arrow = Instantiate(ammoItem.m_shared.m_attack.m_attackProjectile, arrowAttach.transform);
             // we need to disable the Projectile Component, else the arrow will shoot out of the hands like a New Year rocket
             arrow.GetComponent<Projectile>().enabled = false;
