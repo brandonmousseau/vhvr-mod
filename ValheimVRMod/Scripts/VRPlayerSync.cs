@@ -1,6 +1,7 @@
 using System.Linq;
 using RootMotion.FinalIK;
 using UnityEngine;
+using ValheimVRMod.Utilities;
 
 using static ValheimVRMod.Utilities.LogUtils;
 
@@ -26,6 +27,7 @@ namespace ValheimVRMod.Scripts {
         private Vector3 clientTempRelPosCamera = Vector3.zero;
         private Vector3 clientTempRelPosLeft = Vector3.zero;
         private Vector3 clientTempRelPosRight = Vector3.zero;
+        private bool clientUsingVrik = false;
 
         private uint lastDataRevision = 0;
         private float deltaTimeCounter = 0f;
@@ -102,6 +104,9 @@ namespace ValheimVRMod.Scripts {
         private void ownerSync()
         {
             ZPackage pkg = new ZPackage();
+            // Send UseVrControls to notify remote players
+            // of whether or not this player is using VRIK
+            pkg.Write(VHVRConfig.UseVrControls());
             writeData(pkg, camera, ownerVelocityCamera);
             writeData(pkg, leftHand, ownerVelocityLeft);
             writeData(pkg, rightHand, ownerVelocityRight);
@@ -138,6 +143,13 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
             ZPackage pkg = new ZPackage(vr_data);
+            // Check whether or not this player is using VRControls/VRIK
+            // and if not just return immediately
+            clientUsingVrik = pkg.ReadBool();
+            if (!clientUsingVrik)
+            {
+                return;
+            }
             var currentDataRevision = zdo.m_dataRevision;
             if (currentDataRevision != lastDataRevision)
             {
@@ -202,7 +214,7 @@ namespace ValheimVRMod.Scripts {
         }
 
         private void maybeAddVrik() {
-            if (vrikInitialized)
+            if (vrikInitialized || !clientUsingVrik)
             {
                 return;
             }
