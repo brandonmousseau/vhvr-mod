@@ -4,13 +4,12 @@ using UnityEngine.Rendering;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using Valve.VR;
-using Valve.VR.InteractionSystem;
 
 namespace ValheimVRMod.Scripts {
     public class BowManager : MonoBehaviour {
         private const float minStringSize = 0.965f;
-        private const float maxPullLength = 0.5f;
         private const float attachRange = 0.2f;
+        private float maxPullLength;
         private Vector3 stringTop;
         private Vector3 stringBottom;
         private Vector3 pullStart;
@@ -20,6 +19,8 @@ namespace ValheimVRMod.Scripts {
         private GameObject arrow;
         private bool pulling;
         private LineRenderer predictionLine;
+        float projectileVel;
+        float projectileVelMin;
 
         public static BowManager instance;
         public static float attackDrawPercentage;
@@ -30,15 +31,21 @@ namespace ValheimVRMod.Scripts {
         public static bool startedPulling;
         public static bool aborting;
 
+        private GameObject arrowAttach = new GameObject();
+
 
         private void Start() {
             predictionLine = new GameObject().AddComponent<LineRenderer>();
-            predictionLine.widthMultiplier = 0.01f;
+            predictionLine.widthMultiplier = 0.03f;
             predictionLine.positionCount = 20;
             predictionLine.material.color = Color.white;
             predictionLine.enabled = false;
             predictionLine.receiveShadows = false;
             predictionLine.shadowCastingMode = ShadowCastingMode.Off;
+            predictionLine.lightProbeUsage = LightProbeUsage.Off;
+            predictionLine.reflectionProbeUsage = ReflectionProbeUsage.Off;
+            
+            arrowAttach.transform.SetParent(VRPlayer.rightHand.transform, false);
         }
 
         void Awake() {
@@ -48,6 +55,7 @@ namespace ValheimVRMod.Scripts {
             stringBottom = new Vector3();
             removeOldString();
             pullStart = Vector3.Lerp(stringTop, stringBottom, 0.5f);
+            maxPullLength = 0.6f - pullStart.z;
             pullObj = new GameObject();
             pullObj.transform.SetParent(transform, false);
             pullObj.transform.forward *= -1;
@@ -57,6 +65,7 @@ namespace ValheimVRMod.Scripts {
             destroyArrow();
             Destroy(pullObj);
             Destroy(predictionLine);
+            Destroy(arrowAttach);
         }
 
         private void destroyArrow() {
@@ -136,9 +145,11 @@ namespace ValheimVRMod.Scripts {
                 releaseString();
             }
 
-            updatePredictionLine();
+            if (predictionLine.enabled) {
+                updatePredictionLine();   
+            }
         }
-
+        
         /**
      * calculate predictionline of how the arrow will fly
      */
@@ -147,16 +158,16 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
+            Vector3 vel = aimDir * Mathf.Lerp(projectileVelMin, projectileVel, attackDrawPercentage);
+
             float stepLength = 0.1f;
             float stepSize = 20;
-            float unknownVelFactor = 5;
             Vector3 pos = transform.position;
-            Vector3 vel = -transform.forward * stepSize * unknownVelFactor * attackDrawPercentage;
             List<Vector3> pointList = new List<Vector3>();
 
             for (int i = 0; i < stepSize; i++) {
                 pointList.Add(pos);
-                vel += Vector3.down * 9.81f * stepLength;
+                vel += Vector3.down * arrow.GetComponent<Projectile>().m_gravity * stepLength;
                 pos += vel * stepLength;
             }
 
@@ -169,6 +180,7 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
+            arrowAttach.transform.rotation = pullObj.transform.rotation;
             spawnPoint = transform.position;
             aimDir = -transform.forward;
             attackDrawPercentage = pullPercentage();
@@ -215,7 +227,7 @@ namespace ValheimVRMod.Scripts {
 
             if (withoutShoot || arrow == null || attackDrawPercentage <= 0.0f) {
                 if (arrow) {
-                    arrow.transform.SetParent(VRPlayer.rightHand.transform, false);
+                    arrowAttach.transform.localRotation = Quaternion.identity;
                     if (attackDrawPercentage <= 0.0f) {
                         aborting = true;
                     }
@@ -239,13 +251,27 @@ namespace ValheimVRMod.Scripts {
             }
 
             if (arrow != null) {
-                arrow.transform.SetParent(pullObj.transform, false);
                 startedPulling = true;
                 isPulling = true;
                 predictionLine.enabled = VHVRConfig.UseArrowPredictionGraphic();
+                if (predictionLine.enabled) {
+                    setupPredictionLine();   
+                }
             }
 
             return pulling = true;
+        }
+
+        private void setupPredictionLine() {
+            var currentAttack = Player.m_localPlayer.GetCurrentWeapon().m_shared.m_attack;
+            var ammoItem = Player.m_localPlayer.GetAmmoItem();
+            projectileVel = currentAttack.m_projectileVel;
+            projectileVelMin = currentAttack.m_projectileVelMin;
+
+            if (ammoItem != null && ammoItem.m_shared.m_attack.m_attackProjectile) {
+                projectileVel += ammoItem.m_shared.m_attack.m_projectileVel;
+                projectileVelMin += ammoItem.m_shared.m_attack.m_projectileVelMin;
+            }
         }
 
         public void toggleArrow() {
@@ -254,25 +280,34 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            var ammoType = Player.m_localPlayer.GetLeftItem().m_shared.m_ammoType;
-            
-            ItemDrop.ItemData ammoItem = Player.m_localPlayer.GetInventory().GetAmmoItem(ammoType);
-
+            ItemDrop.ItemData ammoItem = Player.m_localPlayer.GetAmmoItem();
             if (ammoItem == null) {
                 // out of ammo
                 return;
             }
-            
             if (ammoItem.m_shared.m_itemType != ItemDrop.ItemData.ItemType.Ammo) {
                 return;
             }
-
-            arrow = Instantiate(ammoItem.m_shared.m_attack.m_attackProjectile, VRPlayer.rightHand.transform);
+            arrow = Instantiate(ammoItem.m_shared.m_attack.m_attackProjectile, arrowAttach.transform);
             // we need to disable the Projectile Component, else the arrow will shoot out of the hands like a New Year rocket
             arrow.GetComponent<Projectile>().enabled = false;
+            // also Destroy the Trail, as this produces particles when moving with arrow in hand
+            Destroy(findTrail(arrow.transform));
             arrow.transform.localRotation = Quaternion.identity;
             arrow.transform.localPosition = new Vector3(0, 0, 1.25f);
-            ParticleFix.maybeFix(arrow);
+            arrowAttach.transform.localRotation = Quaternion.identity;
+        }
+
+        private GameObject findTrail(Transform transform) {
+
+            foreach (ParticleSystem p in transform.GetComponentsInChildren<ParticleSystem>()) {
+                var go = p.gameObject;
+                if (go.name == "trail") {
+                    return go;
+                }
+            }
+
+            return null;
         }
         
         public bool isHoldingArrow() {

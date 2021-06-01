@@ -82,40 +82,27 @@ namespace ValheimVRMod.VRCore.UI
                 checkRecenterPose(Time.deltaTime);
             }
 
-            checkQuickActions();
-            checkQuickSwitch();
+            checkQuickItems();
         }
         
-        private void checkQuickActions() {
+        private void checkQuickItems() {
             
             var quickActions = StaticObjects.quickActions;
-            if (!quickActions) {
-                return;
-            }
-            
-            if (SteamVR_Actions.valheim_QuickActions.GetStateDown(SteamVR_Input_Sources.Any)) {
-                quickActions.SetActive(true);
-            }
-
-            if (SteamVR_Actions.valheim_QuickActions.GetStateUp(SteamVR_Input_Sources.Any)) {
-                quickActions.GetComponent<QuickActions>().selectHoveredItem();
-                quickActions.SetActive(false);
-            }
-            
-        }
-
-        private void checkQuickSwitch() {
-            
             var quickSwitch = StaticObjects.quickSwitch;
-            if (!quickSwitch) {
+            if (!quickActions || !quickSwitch) {
                 return;
             }
-
-            if (SteamVR_Actions.valheim_QuickSwitch.GetStateDown(SteamVR_Input_Sources.Any)) {
+            
+            if (SteamVR_Actions.valheim_QuickActions.GetStateDown(SteamVR_Input_Sources.Any)
+            || SteamVR_Actions.valheim_QuickSwitch.GetStateDown(SteamVR_Input_Sources.Any)) {
+                quickActions.SetActive(true);
                 quickSwitch.SetActive(true);
             }
 
-            if (SteamVR_Actions.valheim_QuickSwitch.GetStateUp(SteamVR_Input_Sources.Any)) {
+            if (SteamVR_Actions.valheim_QuickActions.GetStateUp(SteamVR_Input_Sources.Any)
+            || SteamVR_Actions.valheim_QuickSwitch.GetStateUp(SteamVR_Input_Sources.Any)) {
+                quickActions.GetComponent<QuickActions>().selectHoveredItem();
+                quickActions.SetActive(false);
                 quickSwitch.GetComponent<QuickSwitch>().selectHoveredItem();
                 quickSwitch.SetActive(false);
             }

@@ -9,8 +9,8 @@ namespace ValheimVRMod.Scripts {
         private static int SLOTS = 8;
         private static float elementDistance = 0.1f;
         
-        private static Color standard = new Color(0.21484375f, 0.21484375f, 0.21484375f, 0.5f);
-        private static Color hovered = new Color(0.33203125f, 0.33203125f, 0.33203125f, 0.5f);
+        private static Color standard = new Color(0.2f, 0.2f, 0.2f, 0.5f);
+        private static Color hovered = new Color(0.5f, 0.5f, 0.5f, 0.5f);
         private static Color selected = new Color(0.34375f, 0.5859375f, 0.796875f, 0.5f);
 
         private GameObject hoveredItem;

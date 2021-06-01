@@ -1,4 +1,3 @@
-using System;
 using UnityEngine;
 using ValheimVRMod.Scripts;
 using ValheimVRMod.VRCore;
