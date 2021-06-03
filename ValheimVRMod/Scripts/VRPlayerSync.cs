@@ -125,20 +125,21 @@ namespace ValheimVRMod.Scripts {
 
         private void clientSync(float dt)
         {
-            syncPositionAndRotation(GetComponent<ZNetView>().GetZDO(), dt);
-            maybeAddVrik();
+            if (syncPositionAndRotation(GetComponent<ZNetView>().GetZDO(), dt)) {
+                maybeAddVrik();   
+            }
         }
 
-        private void syncPositionAndRotation(ZDO zdo, float dt)
+        private bool syncPositionAndRotation(ZDO zdo, float dt)
         {
             if (zdo == null)
             {
-                return;
+                return false;
             }
             var vr_data = zdo.GetByteArray("vr_data");
             if (vr_data == null)
             {
-                return;
+                return false;
             }
             ZPackage pkg = new ZPackage(vr_data);
             var currentDataRevision = zdo.m_dataRevision;
@@ -157,6 +158,7 @@ namespace ValheimVRMod.Scripts {
             extractAndUpdate(pkg, ref rightHand, ref clientTempRelPosRight, hasTempRelPos);
             hasTempRelPos = true;
             readFingers(pkg);
+            return true;
 
         }
 
