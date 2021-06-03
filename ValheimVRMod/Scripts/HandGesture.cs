@@ -82,7 +82,7 @@ namespace ValheimVRMod.Scripts {
         }
 
         private void updateFingerPart(Transform source, Transform target) {
-            target.rotation = Quaternion.LookRotation(source.forward, isRightHand ? source.right : -source.right);
+            target.rotation = Quaternion.LookRotation(-source.up, isRightHand ? source.right : -source.right);
 
             if (source.childCount > 0 && target.childCount > 0) {
                 updateFingerPart(source.GetChild(0), target.GetChild(0));

@@ -90,7 +90,7 @@ public class VrikCreator : MonoBehaviour {
     }
 
     private void updateFinger(Transform source, Transform target, bool isRightHand) {
-        target.rotation = Quaternion.LookRotation(source.forward, isRightHand ? source.right : -source.right);
+        target.rotation = Quaternion.LookRotation(-source.up, isRightHand ? source.right : -source.right);
 
         if (source.childCount > 0 && target.childCount > 0) {
             updateFinger(source.GetChild(0), target.GetChild(0), isRightHand);
