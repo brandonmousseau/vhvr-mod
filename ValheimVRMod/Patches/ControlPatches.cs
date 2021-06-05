@@ -181,6 +181,9 @@ namespace ValheimVRMod.Patches {
 
     [HarmonyPatch(typeof(Player), "SetControls")]
     class PlayerSetControlsPatch {
+
+        static bool wasCrouching;
+        
         static void Prefix(Player __instance, ref bool attack, ref bool attackHold, ref bool block, ref bool blockHold,
             ref bool secondaryAttack, ref bool crouch, ref bool run) {
             if (!VRControls.mainControlsActive || __instance != Player.m_localPlayer) {
@@ -188,7 +191,15 @@ namespace ValheimVRMod.Patches {
             }
 
             run = ZInput_GetJoyRightStickY_Patch.isRunning;
-            crouch = ZInput_GetJoyRightStickY_Patch.isCrouching;
+            
+            if (ZInput_GetJoyRightStickY_Patch.isCrouching) {
+                if (!wasCrouching) {
+                    crouch = true;
+                    wasCrouching = true;
+                }
+            } else if (wasCrouching) {
+                wasCrouching = false;
+            }
 
             if (EquipScript.getLeft() == EquipType.Bow) {
                 if (BowManager.aborting) {

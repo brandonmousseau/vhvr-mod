@@ -156,7 +156,7 @@ namespace ValheimVRMod.VRCore
             {
                 return;
             }
-            //maybeUpdateHeadPosition();
+            maybeUpdateHeadPosition();
             attachVrPlayerToWorldObject();
             enableCameras();
             checkAndSetHandsAndPointers();
