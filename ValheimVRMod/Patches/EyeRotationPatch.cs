@@ -2,8 +2,6 @@
 using UnityEngine;
 using ValheimVRMod.VRCore;
 using ValheimVRMod.Utilities;
-using Valve.VR.InteractionSystem;
-using static ValheimVRMod.Utilities.LogUtils;
 
 namespace ValheimVRMod.Patches
 {

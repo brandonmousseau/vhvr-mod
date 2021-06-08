@@ -33,59 +33,11 @@ namespace Valve.VR
             }
         }
         
-        public virtual SteamVR_Action_Vector2 Walk
-        {
-            get
-            {
-                return SteamVR_Actions.valheim_Walk;
-            }
-        }
-        
-        public virtual SteamVR_Action_Boolean Attack
-        {
-            get
-            {
-                return SteamVR_Actions.valheim_Attack;
-            }
-        }
-        
-        public virtual SteamVR_Action_Boolean SecondaryAttack
-        {
-            get
-            {
-                return SteamVR_Actions.valheim_SecondaryAttack;
-            }
-        }
-        
         public virtual SteamVR_Action_Boolean Jump
         {
             get
             {
                 return SteamVR_Actions.valheim_Jump;
-            }
-        }
-        
-        public virtual SteamVR_Action_Boolean Block
-        {
-            get
-            {
-                return SteamVR_Actions.valheim_Block;
-            }
-        }
-        
-        public virtual SteamVR_Action_Boolean Crouch
-        {
-            get
-            {
-                return SteamVR_Actions.valheim_Crouch;
-            }
-        }
-        
-        public virtual SteamVR_Action_Boolean Run
-        {
-            get
-            {
-                return SteamVR_Actions.valheim_Run;
             }
         }
         
@@ -97,27 +49,11 @@ namespace Valve.VR
             }
         }
         
-        public virtual SteamVR_Action_Boolean Hide
-        {
-            get
-            {
-                return SteamVR_Actions.valheim_Hide;
-            }
-        }
-        
         public virtual SteamVR_Action_Boolean Sit
         {
             get
             {
                 return SteamVR_Actions.valheim_Sit;
-            }
-        }
-        
-        public virtual SteamVR_Action_Boolean GPower
-        {
-            get
-            {
-                return SteamVR_Actions.valheim_GPower;
             }
         }
         
@@ -190,6 +126,54 @@ namespace Valve.VR
             get
             {
                 return SteamVR_Actions.valheim_ContextScroll;
+            }
+        }
+        
+        public virtual SteamVR_Action_Boolean Grab
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_Grab;
+            }
+        }
+        
+        public virtual SteamVR_Action_Boolean QuickSwitch
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_QuickSwitch;
+            }
+        }
+        
+        public virtual SteamVR_Action_Vector2 Walk
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_Walk;
+            }
+        }
+        
+        public virtual SteamVR_Action_Boolean UseLeft
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_UseLeft;
+            }
+        }
+        
+        public virtual SteamVR_Action_Boolean QuickActions
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_QuickActions;
+            }
+        }
+        
+        public virtual SteamVR_Action_Vibration Haptic
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_Haptic;
             }
         }
     }

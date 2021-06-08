@@ -2,12 +2,15 @@
 
 using AmplifyOcclusion;
 using System.Reflection;
+using RootMotion.FinalIK;
 using UnityEngine;
 using UnityEngine.PostProcessing;
 using UnityEngine.SceneManagement;
 using UnityStandardAssets.ImageEffects;
+using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore.UI;
+using Valve.VR;
 using Valve.VR.Extras;
 using Valve.VR.InteractionSystem;
 
@@ -61,6 +64,12 @@ namespace ValheimVRMod.VRCore
         private static SteamVR_LaserPointer _rightPointer;
         private string _preferredHand;
 
+        public static Hand leftHand { get { return _leftHand;} }
+        public static Hand rightHand { get { return _rightHand;} }
+
+        public static bool toggleShowLeftHand = true;
+        public static bool toggleShowRightHand = true;
+
         public static bool handsActive
         {
             get
@@ -75,11 +84,11 @@ namespace ValheimVRMod.VRCore
         {
             get
             {
-                if (leftPointer != null && leftPointer.enabled)
+                if (leftPointer != null && leftPointer.pointerIsActive())
                 {
                     return leftPointer;
                 }
-                else if (rightPointer != null && rightPointer.enabled)
+                else if (rightPointer != null && rightPointer.pointerIsActive())
                 {
                     return rightPointer;
                 }
@@ -151,7 +160,9 @@ namespace ValheimVRMod.VRCore
             attachVrPlayerToWorldObject();
             enableCameras();
             checkAndSetHandsAndPointers();
+            updateVrik();
             UpdateAmplifyOcclusionStatus();
+            checkInteractions();
         }
 
         void maybeUpdateHeadPosition()
@@ -217,11 +228,13 @@ namespace ValheimVRMod.VRCore
             tryInitializeHands();
             if (_leftHand != null)
             {
-                _leftHand.enabled = VHVRConfig.HandsEnabled();
+                _leftHand.enabled = VHVRConfig.UseVrControls();
+                _leftHand.SetVisibility(_leftHand.enabled && !vrikEnabled());
             }
             if (_rightHand != null)
             {
-                _rightHand.enabled = VHVRConfig.HandsEnabled();
+                _rightHand.enabled = VHVRConfig.UseVrControls();
+                _rightHand.SetVisibility(_rightHand.enabled && !vrikEnabled());
             }
             // Next check whether the hands are active, and enable the appropriate pointer based
             // on what is available and what the options set as preferred. Disable the inactive pointer(s).
@@ -289,14 +302,14 @@ namespace ValheimVRMod.VRCore
             {
                 return;
             }
-            p.enabled = active && shouldLaserPointersBeActive();
-            p.setVisible(p.enabled && Cursor.visible);
+            p.setUsePointer(active && shouldLaserPointersBeActive());
+            p.setVisible(p.pointerIsActive() && Cursor.visible);
         }
 
         private bool shouldLaserPointersBeActive()
         {
             bool isInPlaceMode = (getPlayerCharacter() != null) && getPlayerCharacter().InPlaceMode();
-            return VHVRConfig.UseVrControls() && VHVRConfig.HandsEnabled() && (Cursor.visible || isInPlaceMode);
+            return VHVRConfig.UseVrControls() && (Cursor.visible || isInPlaceMode);
         }
 
         // Returns true if both the hand and pointer are not null
@@ -553,6 +566,72 @@ namespace ValheimVRMod.VRCore
                                                + Vector3.forward * NECK_OFFSET; // Move slightly forward to position on neck
         }
 
+        private void updateVrik()
+        {
+            var player = getPlayerCharacter();
+            if (player == null)
+            {
+                return;
+            }
+            maybeAddVrik(player);
+            var vrik = player.gameObject.GetComponent<VRIK>();
+            if (vrik != null) {
+                vrik.enabled = VHVRConfig.UseVrControls() &&
+                    inFirstPerson &&
+                    validVrikAnimatorState(player.GetComponentInChildren<Animator>());
+            }
+        }
+
+        private bool validVrikAnimatorState(Animator animator)
+        {
+            if (animator == null)
+            {
+                return false;
+            }
+            return !animator.GetBool("wakeup");
+        }
+
+        private void maybeAddVrik(Player player)
+        {
+            if (!VHVRConfig.UseVrControls() || player.gameObject.GetComponent<VRIK>() != null)
+            {
+                return;
+            }
+            
+            Debug.Log("wtf");
+
+            var vrik = VrikCreator.initialize(player.gameObject, 
+                leftHand.transform, rightHand.transform,
+                CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform);
+
+            vrik.references.leftHand.gameObject.AddComponent<HandGesture>().sourceHand = leftHand;
+            vrik.references.rightHand.gameObject.AddComponent<HandGesture>().sourceHand = rightHand;
+            StaticObjects.leftFist().setColliderParent(vrik.references.leftHand, StaticObjects.leftCooldown(), false);
+            StaticObjects.rightFist().setColliderParent(vrik.references.rightHand, StaticObjects.rightCooldown(), true);
+            var vrPlayerSync = player.gameObject.AddComponent<VRPlayerSync>();
+            vrPlayerSync.camera = CameraUtils.getCamera(CameraUtils.VR_CAMERA).gameObject;
+            vrPlayerSync.leftHand = leftHand.gameObject;
+            vrPlayerSync.rightHand = rightHand.gameObject;
+            StaticObjects.addQuickActions(leftHand.transform);
+            StaticObjects.addQuickSwitch(rightHand.transform);
+
+        }
+
+        private bool vrikEnabled()
+        {
+            var player = getPlayerCharacter();
+            if (player == null)
+            {
+                return false;
+            }
+            var vrik = player.gameObject.GetComponent<VRIK>();
+            if (vrik != null && vrik != null)
+            {
+                return vrik.enabled;
+            }
+            return false;
+        }
+
         private void maybeInitHeadPosition(Player playerCharacter)
         {
             if (!headPositionInitialized && inFirstPerson)
@@ -610,7 +689,7 @@ namespace ValheimVRMod.VRCore
             var headBone = getHeadBone();
             if (headBone != null)
             {
-                headBone.localScale = isVisible ? new Vector3(1f, 1f, 1f) : new Vector3(0f, 0f, 0f);
+                headBone.localScale = isVisible ? new Vector3(1f, 1f, 1f) : new Vector3(0.001f, 0.001f, 0.001f);
             }
         }
 
@@ -729,6 +808,48 @@ namespace ValheimVRMod.VRCore
             {
                 sc.gameObject.SetActive(false);
             }
+        }
+
+        private void checkInteractions()
+        {
+            
+            if (getPlayerCharacter() == null || !VRControls.mainControlsActive)
+            {
+                return;
+            }
+
+            checkHandOverShoulder(true, rightHand, SteamVR_Input_Sources.RightHand, ref toggleShowLeftHand);
+            checkHandOverShoulder(false, leftHand, SteamVR_Input_Sources.LeftHand, ref toggleShowRightHand);
+        }
+
+        private void checkHandOverShoulder(bool isRightHand, Hand hand, SteamVR_Input_Sources inputSource, ref bool toggleShowHand)
+        {
+            var camera = CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform;
+            var action = SteamVR_Actions.valheim_Grab;
+            
+            if (camera.InverseTransformPoint(hand.transform.position).y > -0.2f &&
+                camera.InverseTransformPoint(hand.transform.position).z < 0)
+            {
+
+                if (action.GetStateDown(inputSource))
+                {
+                    toggleShowHand = false;
+                    hand.hapticAction.Execute(0, 0.2f, 100, 0.3f, inputSource);
+                    
+                    if (isRightHand && EquipScript.getLeft() == EquipType.Bow) {
+                        BowManager.instance.toggleArrow();
+                    } else if (isHoldingItem(isRightHand)) {
+                        getPlayerCharacter().HideHandItems();
+                    } else {
+                        getPlayerCharacter().ShowHandItems();
+                    }
+                }
+            }
+        }
+
+        private bool isHoldingItem(bool isRightHand) {
+            return isRightHand && getPlayerCharacter().GetRightItem() != null
+                   || !isRightHand && getPlayerCharacter().GetLeftItem() != null;
         }
     }
 }

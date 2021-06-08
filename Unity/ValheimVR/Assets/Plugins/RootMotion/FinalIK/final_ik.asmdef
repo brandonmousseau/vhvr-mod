@@ -1,0 +1,17 @@
+{
+    "name": "final_ik",
+    "references": [
+        "GUID:1fbf338ef6b952a448262a7ff7df5fe4",
+        "GUID:53e0a48ae46d17f47a2539588ade848f",
+        "GUID:7be7542c28ceda9449b760d5beb5a2a9"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

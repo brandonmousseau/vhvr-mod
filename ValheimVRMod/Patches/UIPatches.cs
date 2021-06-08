@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Reflection.Emit;
 using System.Reflection;
 using ValheimVRMod.Utilities;
+using ValheimVRMod.VRCore;
 
 using static ValheimVRMod.Utilities.LogUtils;
 
@@ -192,15 +193,6 @@ namespace ValheimVRMod.Patches
             static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
             {
                 return GetRaycastPatchedInstructions(instructions, 5, nameof(getStartingPositionPlaceMode), nameof(getRayDirectionPlaceMode));
-            }
-        }
-
-        [HarmonyPatch(typeof(Player), "FindHoverObject")]
-        class Player_FindHoverObject_Patch
-        {
-            static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
-            {
-                return GetRaycastAllPatchedInstructions(instructions, 4, nameof(getStartingPositionCameraFacing), nameof(getRayDirectionCameraFacing));
             }
         }
 
@@ -591,6 +583,5 @@ namespace ValheimVRMod.Patches
             playerRot = player.transform.rotation;
         }
     }
-
 
 }

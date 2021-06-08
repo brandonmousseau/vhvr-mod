@@ -43,11 +43,13 @@ using static ValheimVRMod.Utilities.LogUtils;
  */
 namespace ValheimVRMod.Utilities
 {
-    class LayerUtils
+    static class LayerUtils
     {
         // I need a layer with non-visible objects since
         // layers are short supply, so re-using 23. Must be
         // in sync with what is in the prefab in Unity Editor.
+        public static readonly int ITEM_LAYER = 12;
+        public static readonly int WEAPON_LAYER = 22;
         private static readonly int HANDS_LAYER = 23;
         public static readonly int HANDS_LAYER_MASK = (1 << HANDS_LAYER);
         private static readonly int UI_PANEL_LAYER = 29;

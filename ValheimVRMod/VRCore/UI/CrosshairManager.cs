@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using ValheimVRMod.Utilities;
+using ValheimVRMod.Patches;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using HarmonyLib;
@@ -49,6 +50,14 @@ namespace ValheimVRMod.VRCore.UI
         private GameObject _pieceHealthRoot;
         private GameObject _pieceHealthBar;
 
+        private GameObject _hoverNameCanvasParent;
+        private Canvas _hoverNameCanvas;
+        // Left hand hovername objects
+        public GameObject crosshairCloneLeftHand;
+        public GameObject hoverNameCloneLeftHand;
+        private GameObject _hoverNameCanvasParentLeft;
+        private Canvas _hoverNameCanvasLeft;
+
         public void maybeReparentCrosshair()
         {
             if (SceneManager.GetActiveScene().name != "main" || guiCanvas == null || !ensureCrosshairCanvas() || !ensureCrosshairCamera())
@@ -61,13 +70,25 @@ namespace ValheimVRMod.VRCore.UI
                 return;
             }
             reparentPieceHealthObjects();
+            if (VHVRConfig.UseVrControls())
+            {
+                reparentAndCloneHoverNameObjects();
+            }
             _canvasCrosshairRoot.SetActive(false); // Disable the original crosshairs
             _canvasCrosshairRootClone.SetActive(VRPlayer.attachedToPlayer);
             _canvasCrosshairRootClone.transform.SetParent(_crosshairCanvas.transform, false);
             _crosshairClone.SetActive(VHVRConfig.ShowStaticCrosshair());
+            if (crosshairCloneLeftHand)
+            {
+                crosshairCloneLeftHand.SetActive(VHVRConfig.ShowStaticCrosshair());
+            }
             var rectTransform = _canvasCrosshairRootClone.GetComponent<RectTransform>();
             setCrosshairCanvasPositionAndScale();
             setPieceHealthCanvasPositionAndScale();
+            if (VHVRConfig.UseVrControls())
+            {
+                setHoverNameCanvasesPositionAndScale();
+            }
             UpdateHudReferences();
             if (rectTransform == null)
             {
@@ -98,6 +119,46 @@ namespace ValheimVRMod.VRCore.UI
             {
                 _pieceHealthRoot.transform.SetParent(_pieceHealthCanvas.GetComponent<RectTransform>(), false);
                 _pieceHealthCanvas.transform.localPosition = _pieceHealthCanvas.GetComponent<RectTransform>().rect.center;
+            }
+        }
+
+        private void maybeCreateHoverNameObjects()
+        {
+            if ((_hoverNameCanvasParent != null && _hoverNameCanvas != null && _hoverNameCanvasParentLeft != null && _hoverNameCanvasLeft != null) || !ensureCrosshairCamera())
+            {
+                return;
+            }
+            _hoverNameCanvasParent = new GameObject("HoverNameCanvasParent");
+            GameObject.DontDestroyOnLoad(_hoverNameCanvasParent);
+            _hoverNameCanvasParent.layer = LayerUtils.getWorldspaceUiLayer();
+            _hoverNameCanvas = _hoverNameCanvasParent.AddComponent<Canvas>();
+            _hoverNameCanvas.renderMode = RenderMode.WorldSpace;
+            _hoverNameCanvas.worldCamera = _crosshairCamera;
+
+            // Left hand
+            _hoverNameCanvasParentLeft = new GameObject("HoverNameCanvasParentLeft");
+            GameObject.DontDestroyOnLoad(_hoverNameCanvasParentLeft);
+            _hoverNameCanvasParentLeft.layer = LayerUtils.getWorldspaceUiLayer();
+            _hoverNameCanvasLeft = _hoverNameCanvasParentLeft.AddComponent<Canvas>();
+            _hoverNameCanvasLeft.renderMode = RenderMode.WorldSpace;
+            _hoverNameCanvasLeft.worldCamera = _crosshairCamera;
+            hoverNameCloneLeftHand = GameObject.Instantiate(_hoverNameClone);
+            crosshairCloneLeftHand = GameObject.Instantiate(_crosshairClone);
+        }
+
+        private void reparentAndCloneHoverNameObjects()
+        {
+            if (_hoverNameClone == null)
+            {
+                return;
+            }
+            maybeCreateHoverNameObjects();
+            if (_hoverNameCanvas != null && _hoverNameCanvasLeft != null)
+            {
+                _hoverNameClone.transform.SetParent(_hoverNameCanvas.GetComponent<RectTransform>(), false);
+                _crosshairClone.transform.SetParent(_hoverNameCanvas.GetComponent<RectTransform>(), false);
+                hoverNameCloneLeftHand.transform.SetParent(_hoverNameCanvasLeft.GetComponent<RectTransform>(), false);
+                crosshairCloneLeftHand.transform.SetParent(_hoverNameCanvasLeft.GetComponent<RectTransform>(), false);
             }
         }
 
@@ -153,6 +214,28 @@ namespace ValheimVRMod.VRCore.UI
                 _pieceHealthCanvasParent.transform.LookAt(_crosshairCamera.transform);
                 _pieceHealthCanvasParent.transform.Rotate(0f, 180f, 0f);
             }
+        }
+
+        private void setHoverNameCanvasesPositionAndScale()
+        {
+            if (_hoverNameCanvasParent == null)
+            {
+                return;
+            }
+            float canvasWidth = _hoverNameCanvas.GetComponent<RectTransform>().rect.width;
+            float scaleFactor = CROSSHAIR_SCALAR * VHVRConfig.CrosshairScalar() / canvasWidth;
+            var positionRight = HandBasedInteractionPatches.currentHitPositionRight;
+            var positionLeft = HandBasedInteractionPatches.currentHitPositionLeft;
+            float distanceRight = Vector3.Distance(positionRight, _crosshairCamera.transform.position);
+            float distanceLeft = Vector3.Distance(positionLeft, _crosshairCamera.transform.position);
+            _hoverNameCanvasParent.transform.position = positionRight;
+            _hoverNameCanvasParent.transform.localScale = Vector3.one * scaleFactor * distanceRight;
+            _hoverNameCanvasParent.transform.LookAt(_crosshairCamera.transform);
+            _hoverNameCanvasParent.transform.Rotate(0f, 180f, 0f);
+            _hoverNameCanvasParentLeft.transform.position = positionLeft;
+            _hoverNameCanvasParentLeft.transform.localScale = Vector3.one * scaleFactor * distanceLeft;
+            _hoverNameCanvasParentLeft.transform.LookAt(_crosshairCamera.transform);
+            _hoverNameCanvasParentLeft.transform.Rotate(0f, 180f, 0f);
         }
 
         private Piece getHoveringPiece()

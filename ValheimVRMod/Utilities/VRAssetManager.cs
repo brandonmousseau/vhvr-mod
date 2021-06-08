@@ -10,7 +10,7 @@ using Valve.VR;
  */
 namespace ValheimVRMod.Utilities
 {
-    class VRAssetManager
+    static class VRAssetManager
     {
         private static readonly string STEAMVR_PREFAB_ASSETBUNDLE_NAME = "steamvr_player_prefabs";
         private static readonly string CUSTOM_RESOURCES_ASSETBUNDLE_NAME = "vhvr_custom";

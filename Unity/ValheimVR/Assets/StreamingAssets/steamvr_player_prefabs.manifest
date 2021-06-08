@@ -1,0 +1,222 @@
+ManifestFileVersion: 0
+CRC: 2822903934
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: c6dec5937206322ec5300264a12e0394
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: 8995e20d9dbfedb457e8f8f0314db52f
+HashAppended: 0
+ClassTypes:
+- Class: 1
+  Script: {instanceID: 0}
+- Class: 4
+  Script: {instanceID: 0}
+- Class: 20
+  Script: {instanceID: 0}
+- Class: 21
+  Script: {instanceID: 0}
+- Class: 23
+  Script: {instanceID: 0}
+- Class: 28
+  Script: {instanceID: 0}
+- Class: 33
+  Script: {instanceID: 0}
+- Class: 43
+  Script: {instanceID: 0}
+- Class: 48
+  Script: {instanceID: 0}
+- Class: 54
+  Script: {instanceID: 0}
+- Class: 74
+  Script: {instanceID: 0}
+- Class: 81
+  Script: {instanceID: 0}
+- Class: 82
+  Script: {instanceID: 0}
+- Class: 83
+  Script: {instanceID: 0}
+- Class: 84
+  Script: {instanceID: 0}
+- Class: 90
+  Script: {instanceID: 0}
+- Class: 91
+  Script: {instanceID: 0}
+- Class: 95
+  Script: {instanceID: 0}
+- Class: 114
+  Script: {fileID: 11500000, guid: dc42784cf147c0c48a680349fa168899, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 27991c206a5e66147bb8ee3ef31c8bac, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 29e3e4511966ba94d8ba0b98c6c62f82, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: b2f511c1adaa1e94ebe7ca97bbcabd17, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 1731d642c0b250b48bb8cdfb153d9792, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: c9e05292e0d62b542ac5bba92674a86d, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 3245ec927659c4140ac4f8d17403cc18, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 294fb0b20d456c749966ea34ca82355a, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 158d046322c150348bfed00c688d3142, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 202a6e24b48d1684398409c47161adcb, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 2820b584f2917744bafbfd2f8f387225, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: e90911e410742a1498a167540c7865bf, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 76c392e42b5098c458856cdf6ecaaaa1, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: c30a2316e98e1dc4b97e432a1301f85c, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 7434e43635fb2924583f5e0f2fb6ed3a, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 8ca2cc563cc33f542a5d9f8f661184ba, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: ea1001a6626353541ab4d4b39f4c3569, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: e7afc8c74d1f73b458705e0b946292a0, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 00f6c0d7b5a00aa4a8d38a09a0480032, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 847a4fd831847974bb8d16b469b643e3, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 2ad1e469d4e3e04489f9a36419f1a4f8, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 1aaa8a3afb932fe478757c1e89cf0cd5, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 30649d3a9faa99c48a7b1166b86bf2a0, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 9a5fb0ca93b55ef4b8d54b512b103341, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 5890e3cad70bea64d91aef9145ba3454, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 1f0522eaef74d984591c060d05a095c8, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 46fe9e0b23166454c8cb73040321d78c, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 6f3bba2c36dd79242b3157dbcd876bf2, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: e7418c7dd8f977d4e969202d3fa7e926, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 6043f3be9a21bd74281f9770463bea00, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: e19747de3f5aca642ab2be37e372fb86, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 4f231c4fb786f3946a6b90b886c48677, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: e979227f3384fac4b8ca0b3550bf005c, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 8c3faa610c019764a81eb8497109e2d4, type: 3}
+- Class: 115
+  Script: {instanceID: 0}
+- Class: 120
+  Script: {instanceID: 0}
+- Class: 124
+  Script: {instanceID: 0}
+- Class: 128
+  Script: {instanceID: 0}
+- Class: 135
+  Script: {instanceID: 0}
+- Class: 136
+  Script: {instanceID: 0}
+- Class: 137
+  Script: {instanceID: 0}
+- Class: 213
+  Script: {instanceID: 0}
+- Class: 222
+  Script: {instanceID: 0}
+- Class: 223
+  Script: {instanceID: 0}
+- Class: 224
+  Script: {instanceID: 0}
+- Class: 319
+  Script: {instanceID: 0}
+SerializeReferenceClassIdentifiers: []
+Assets:
+- Assets/SteamVR/Models/Materials/vr_glove_normal.png
+- Assets/SteamVR/InteractionSystem/Poses/longbowPose.asset
+- Assets/SteamVR/Models/vr_glove_graspPoses.controller
+- Assets/SteamVR/Models/Materials/Abyss.mat
+- Assets/SteamVR/Prefabs/vr_glove_right_model_slim.prefab
+- Assets/SteamVR/InteractionSystem/Poses/fallback_fist.asset
+- Assets/SteamVR/InteractionSystem/Core/Prefabs/RightRenderModel.prefab
+- Assets/SteamVR/InteractionSystem/Poses/CubePose small.asset
+- Assets/SteamVR/InteractionSystem/Core/Materials/SeeThru.mat
+- Assets/SteamVR/InteractionSystem/Core/Materials/FallbackHandIndicator.mat
+- Assets/SteamVR/InteractionSystem/Core/Icons/vr_interaction_system_feet.png
+- Assets/SteamVR/InteractionSystem/Core/Prefabs/LeftRenderModel Alien.prefab
+- Assets/SteamVR/Prefabs/vr_hand_alien_left.prefab
+- Assets/SteamVR/Models/Materials/AlienHand.mat
+- Assets/SteamVR/InteractionSystem/Core/Icons/vr_interaction_system_right_hand.png
+- Assets/SteamVR/InteractionSystem/Core/Icons/vr_interaction_system_unknown_hand.png
+- Assets/SteamVR/InteractionSystem/Poses/SquishyBase.asset
+- Assets/SteamVR/InteractionSystem/Core/Materials/SteamVRControllerModel.mat
+- Assets/SteamVR/InteractionSystem/Core/Prefabs/RightRenderModelFloppy.prefab
+- Assets/SteamVR/Prefabs/vr_hand_alien_right.prefab
+- Assets/SteamVR/Models/Materials/knuckles_right.mat
+- Assets/SteamVR/Models/vr_hand_grabposes.fbx
+- Assets/SteamVR/Prefabs/[SteamVR].prefab
+- Assets/SteamVR/InteractionSystem/Poses/HappyBallPose.asset
+- Assets/SteamVR/Prefabs/vr_hand_floppy_right.prefab
+- Assets/SteamVR/Models/Materials/floppyHand Emit.png
+- Assets/SteamVR/Models/vr_floppyHand.fbx
+- Assets/SteamVR/Models/Materials/No Name.mat
+- Assets/SteamVR/InteractionSystem/Core/Prefabs/ValheimVRPlayer.prefab
+- Assets/SteamVR/InteractionSystem/Core/Icons/vr_interaction_system.png
+- Assets/SteamVR/Prefabs/[Status].prefab
+- Assets/SteamVR/Models/vr_glove_model.fbx
+- Assets/SteamVR/Prefabs/vr_glove_right.prefab
+- Assets/SteamVR/InteractionSystem/Poses/SquishySqueeze.asset
+- Assets/SteamVR/Prefabs/vr_glove_left.prefab
+- Assets/SteamVR/Models/Materials/vr_glove_color_red.mat
+- Assets/SteamVR/InteractionSystem/Poses/fallback_point.asset
+- Assets/SteamVR/Models/Materials/AlienHand_MetallicSmoothness.png
+- Assets/SteamVR/InteractionSystem/Poses/sphereSmallPose.asset
+- Assets/SteamVR/Models/handFingers.mask
+- Assets/SteamVR/Models/Materials/vr_glove_color.jpg
+- Assets/SteamVR/Models/Materials/AlienHand_Normal.png
+- Assets/SteamVR/Prefabs/vr_glove_left_model_slim.prefab
+- Assets/SteamVR/InteractionSystem/Poses/fallback_relaxed.asset
+- Assets/SteamVR/InteractionSystem/Core/Icons/vr_interaction_system_left_hand_question.png
+- Assets/SteamVR/Prefabs/vr_hand_floppy_left.prefab
+- Assets/SteamVR/Models/vr_glove_left_model_slim.fbx
+- Assets/SteamVR/Models/Materials/floppyHand.mat
+- Assets/SteamVR/InteractionSystem/Poses/GrenadePose.asset
+- Assets/SteamVR/Models/Materials/vr_glove_color.mat
+- Assets/SteamVR/InteractionSystem/Poses/spherePose.asset
+- Assets/SteamVR/Models/Materials/AlienHand_AlbedoTransparency.png
+- Assets/SteamVR/InteractionSystem/Poses/GrenadePose_pinch.asset
+- Assets/SteamVR/Models/Materials/vr_glove_color_red.jpg
+- Assets/SteamVR/InteractionSystem/Poses/CubePose.asset
+- Assets/SteamVR/Prefabs/controller.prefab
+- Assets/SteamVR/InteractionSystem/Poses/HappyBallPoseSqueezed.asset
+- Assets/SteamVR/InteractionSystem/Core/Prefabs/LeftRenderModel Slim.prefab
+- Assets/SteamVR/InteractionSystem/Core/Prefabs/HandColliderLeft.prefab
+- Assets/SteamVR/InteractionSystem/Core/Shaders/Silhouette.shader
+- Assets/SteamVR/InteractionSystem/Poses/longbowArrowPose.asset
+- Assets/SteamVR/InteractionSystem/Core/Materials/HoverHighlight.mat
+- Assets/SteamVR/InteractionSystem/Core/Shaders/SeeThru.shader
+- Assets/SteamVR/Prefabs/[CameraRig].prefab
+- Assets/SteamVR/InteractionSystem/Core/Icons/vr_interaction_system_right_hand_question.png
+- Assets/SteamVR/InteractionSystem/Core/Prefabs/RightRenderModel Slim.prefab
+- Assets/SteamVR/InteractionSystem/Core/Prefabs/LeftRenderModel.prefab
+- Assets/SteamVR/Models/vr_glove_right_model_slim.fbx
+- Assets/SteamVR/InteractionSystem/Core/Prefabs/RightRenderModel Alien.prefab
+- Assets/SteamVR/InteractionSystem/Core/Prefabs/LeftRenderModelFloppy.prefab
+- Assets/SteamVR/Models/Materials/models_hands_vr_glove.vmat.mat
+- Assets/SteamVR/InteractionSystem/Core/Prefabs/HandColliderRight.prefab
+- Assets/SteamVR/InteractionSystem/Core/Icons/vr_interaction_system_left_hand.png
+- Assets/SteamVR/Models/vr_alien_hand.fbx
+Dependencies: []

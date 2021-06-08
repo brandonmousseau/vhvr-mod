@@ -1,0 +1,15 @@
+{
+    "name": "root_motion_demo_assets",
+    "references": [
+        "GUID:53e0a48ae46d17f47a2539588ade848f"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

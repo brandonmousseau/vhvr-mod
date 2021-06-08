@@ -9,7 +9,7 @@ using static ValheimVRMod.Utilities.LogUtils;
 namespace ValheimVRMod.Utilities
 {
 
-    class VHVRConfig
+    static class VHVRConfig
     {
 
         // General Settings
@@ -41,9 +41,15 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> stationaryGuiRecenterAngle;
         private static ConfigEntry<float> mobileGuiRecenterAngle;
         private static ConfigEntry<bool> recenterGuiOnMove;
+        private static ConfigEntry<bool> useArrowPredictionGraphic;
+        private static ConfigEntry<float> DebugPosX;
+        private static ConfigEntry<float> DebugPosY;
+        private static ConfigEntry<float> DebugPosZ;
+        private static ConfigEntry<float> DebugRotX;
+        private static ConfigEntry<float> DebugRotY;
+        private static ConfigEntry<float> DebugRotZ;
 
         // Controls Settings
-        private static ConfigEntry<bool> enableHands;
         private static ConfigEntry<bool> useVrControls;
         private static ConfigEntry<bool> useLookLocomotion;
         private static ConfigEntry<string> preferredHand;
@@ -206,27 +212,50 @@ namespace ValheimVRMod.Utilities
                                             "RecenterGuiOnMove",
                                             true,
                                             "Only used when UseLookLocomotion is true. This will cause the GUI to recenter to your current look direction when you first start moving.");
+            useArrowPredictionGraphic = config.Bind("UI",
+                                                     "UseArrowPredictionGraphic",
+                                                     true,
+                                                     "Use this to toggle the path predictor when using the bow and arrow with VR controls.");
+            DebugPosX = config.Bind("UI",
+                "DebugPosX",
+                0.0f,
+                "DebugPosX");
+            DebugPosY = config.Bind("UI",
+                "DebugPosY",
+                0.0f,
+                "DebugPosY");
+            DebugPosZ = config.Bind("UI",
+                "DebugPosZ",
+                0.0f,
+                "DebugPosZ");
+            DebugRotX = config.Bind("UI",
+                "DebugRotX",
+                0.0f,
+                "DebugRotX");
+            DebugRotY = config.Bind("UI",
+                "DebugRotY",
+                0.0f,
+                "DebugRotY");
+            DebugRotZ = config.Bind("UI",
+                "DebugRotZ",
+                0.0f,
+                "DebugRotZ");
+            
         }
 
         private static void InitializeControlsSettings(ConfigFile config)
         {
             useLookLocomotion = config.Bind("Controls",
                                             "UseLookLocomotion",
-                                            false,
+                                            true,
                                             "Setting this to true ties the direction you are looking to the walk direction while in first person mode. " +
                                             "Set this to false if you prefer to disconnect these so you can look" +
                                             " look by turning your head without affecting movement direction.");
-            enableHands = config.Bind("Controls",
-                                       "EnableHands",
-                                       true,
-                                       "Set this true to allow hands and laser pointers to be rendered in game. Note: motion controls are only" +
-                                       " minimally enabled, so right now this is just for fun.");
             useVrControls = config.Bind("Controls",
                                         "UseVRControls",
                                         false,
-                                        "This setting enables the use of the VR motion controllers as input (only Valve Knuckles supported currently. " +
-                                        "This setting, if true, will force EnableHands to be true and UseOverlayGui to be false as both of these settings " +
-                                        "must be set this way for VR controllers to work.");
+                                        "This setting enables the use of the VR motion controllers as input (Only Oculus Touch and Valve Index supported)." +
+                                        "This setting, if true, will also force UseOverlayGui to be false as this setting Overlay GUI is not compatible with VR laser pointer inputs.");
             preferredHand = config.Bind("Controls",
                                         "PreferredHand",
                                         "Right",
@@ -392,12 +421,6 @@ namespace ValheimVRMod.Utilities
             headOffsetThirdPersonZ.Value = Mathf.Clamp(offset.z, -2f, 2f);
         }
 
-        public static bool HandsEnabled()
-        {
-            // Force hands to be on if UseVrControls is on
-            return enableHands.Value || UseVrControls();
-        }
-
         public static bool UseLookLocomotion()
         {
             return useLookLocomotion.Value;
@@ -507,6 +530,21 @@ namespace ValheimVRMod.Utilities
         public static bool UseVrControls()
         {
             return useVrControls.Value;
+        }
+
+        public static bool UseArrowPredictionGraphic()
+        {
+            return useArrowPredictionGraphic.Value;
+        }
+        
+        public static Vector3 getDebugPos()
+        {
+            return new Vector3(DebugPosX.Value, DebugPosY.Value, DebugPosZ.Value);
+        }
+        
+        public static Vector3 getDebugRot()
+        {
+            return new Vector3(DebugRotX.Value, DebugRotY.Value, DebugRotZ.Value);
         }
 
     }

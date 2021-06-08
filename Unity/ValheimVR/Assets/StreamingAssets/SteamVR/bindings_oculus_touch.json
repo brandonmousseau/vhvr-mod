@@ -1,4 +1,5 @@
 {
+  "app_key": "application.generated.unity.valheimvr.exe",
   "bindings": {
     "/actions/buggy": {
       "chords": [],
@@ -163,15 +164,197 @@
         }
       ]
     },
+    "/actions/laserpointers": {
+      "chords": [],
+      "poses": [],
+      "haptics": [],
+      "sources": [
+        {
+          "path": "/user/hand/left/input/trigger",
+          "mode": "trigger",
+          "parameters": {},
+          "inputs": {
+            "click": {
+              "output": "/actions/laserpointers/in/leftclick"
+            }
+          }
+        },
+        {
+          "path": "/user/hand/right/input/trigger",
+          "mode": "trigger",
+          "parameters": {},
+          "inputs": {
+            "click": {
+              "output": "/actions/laserpointers/in/leftclick"
+            }
+          }
+        },
+        {
+          "path": "/user/hand/right/input/y",
+          "mode": "button",
+          "parameters": {},
+          "inputs": {
+            "click": {
+              "output": "/actions/laserpointers/in/rightclick"
+            }
+          }
+        },
+        {
+          "path": "/user/hand/right/input/b",
+          "mode": "button",
+          "parameters": {},
+          "inputs": {
+            "click": {
+              "output": "/actions/laserpointers/in/rightclick"
+            }
+          }
+        }
+      ],
+      "skeleton": []
+    },
     "/actions/platformer": {
       "chords": [],
       "poses": [],
       "haptics": [],
       "sources": [],
       "skeleton": []
+    },
+    "/actions/valheim": {
+      "chords": [],
+      "poses": [
+        {
+          "output": "/actions/valheim/in/posel",
+          "path": "/user/hand/left/pose/base"
+        },
+        {
+          "output": "/actions/valheim/in/poser",
+          "path": "/user/hand/right/pose/base"
+        }
+      ],
+      "haptics": [
+        {
+          "output": "/actions/valheim/out/haptic",
+          "path": "/user/hand/left/output/haptic"
+        },
+        {
+          "output": "/actions/valheim/out/haptic",
+          "path": "/user/hand/right/output/haptic"
+        }
+      ],
+      "sources": [
+        {
+          "path": "/user/hand/left/input/system",
+          "mode": "button",
+          "parameters": {},
+          "inputs": {
+            "click": {
+              "output": "/actions/valheim/in/togglemenu"
+            }
+          }
+        },
+        {
+          "path": "/user/hand/left/input/joystick",
+          "mode": "joystick",
+          "parameters": {},
+          "inputs": {
+            "click": {
+              "output": "/actions/valheim/in/quickswitch"
+            },
+            "position": {
+              "output": "/actions/valheim/in/walk"
+            }
+          }
+        },
+        {
+          "path": "/user/hand/left/input/trigger",
+          "mode": "trigger",
+          "parameters": {},
+          "inputs": {
+            "click": {
+              "output": "/actions/valheim/in/useleft"
+            }
+          }
+        },
+        {
+          "path": "/user/hand/right/input/trigger",
+          "mode": "trigger",
+          "parameters": {},
+          "inputs": {
+            "click": {
+              "output": "/actions/valheim/in/use"
+            }
+          }
+        },
+        {
+          "path": "/user/hand/right/input/joystick",
+          "mode": "joystick",
+          "parameters": {},
+          "inputs": {
+            "click": {
+              "output": "/actions/valheim/in/quickactions"
+            },
+            "position": {
+              "output": "/actions/valheim/in/pitchandyaw"
+            }
+          }
+        },
+        {
+          "path": "/user/hand/right/input/a",
+          "mode": "button",
+          "parameters": {},
+          "inputs": {
+            "click": {
+              "output": "/actions/valheim/in/jump"
+            }
+          }
+        },
+        {
+          "path": "/user/hand/left/input/y",
+          "mode": "button",
+          "parameters": {},
+          "inputs": {
+            "click": {
+              "output": "/actions/valheim/in/togglemap"
+            }
+          }
+        },
+        {
+          "path": "/user/hand/left/input/x",
+          "mode": "button",
+          "parameters": {},
+          "inputs": {
+            "click": {
+              "output": "/actions/valheim/in/toggleinventory"
+            }
+          }
+        },
+        {
+          "path": "/user/hand/left/input/grip",
+          "mode": "button",
+          "parameters": {
+            "haptic_amplitude": "0"
+          },
+          "inputs": {
+            "click": {
+              "output": "/actions/valheim/in/grab"
+            }
+          }
+        },
+        {
+          "path": "/user/hand/right/input/grip",
+          "mode": "trigger",
+          "parameters": {},
+          "inputs": {
+            "click": {
+              "output": "/actions/valheim/in/grab"
+            }
+          }
+        }
+      ],
+      "skeleton": []
     }
   },
   "controller_type": "oculus_touch",
   "description": "",
-  "name": "oculus_touch"
+  "name": "Konfiguration „ValheimVR [Testing]“ für Oculus Touch gespeichert"
 }
