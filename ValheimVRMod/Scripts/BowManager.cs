@@ -83,21 +83,23 @@ namespace ValheimVRMod.Scripts {
      */
         private void removeOldString() {
             var mesh = GetComponent<MeshFilter>().mesh;
-            var trilist = new List<int>();
 
+            var verts = mesh.vertices;
+            
             for (int i = 0; i < mesh.triangles.Length / 3; i++) {
-                Vector3 v1 = mesh.vertices[mesh.triangles[i * 3]];
-                Vector3 v2 = mesh.vertices[mesh.triangles[i * 3 + 1]];
-                Vector3 v3 = mesh.vertices[mesh.triangles[i * 3 + 2]];
+                Vector3 v1 = verts[mesh.triangles[i * 3]];
+                Vector3 v2 = verts[mesh.triangles[i * 3 + 1]];
+                Vector3 v3 = verts[mesh.triangles[i * 3 + 2]];
 
                 if (Vector3.Distance(v1, v2) < minStringSize &&
                     Vector3.Distance(v2, v3) < minStringSize &&
                     Vector3.Distance(v3, v1) < minStringSize) {
-                    for (int j = 0; j < 3; j++) {
-                        trilist.Add(mesh.triangles[i * 3 + j]);
-                    }
                     continue;
                 }
+                
+                verts[mesh.triangles[i * 3 + 1]] = verts[mesh.triangles[i * 3]];
+                verts[mesh.triangles[i * 3 + 2]] = verts[mesh.triangles[i * 3]];
+                
                 foreach (Vector3 v in new[] {v1, v2, v3}) {
                     if (stringTop == null || v.y > stringTop.y) {
                         stringTop = v;
@@ -109,7 +111,7 @@ namespace ValheimVRMod.Scripts {
                 }
             }
 
-            mesh.triangles = trilist.ToArray();
+            mesh.vertices = verts;
         }
 
         /**
@@ -119,7 +121,7 @@ namespace ValheimVRMod.Scripts {
         private void createNewString() {
             var lineRenderer = gameObject.AddComponent<LineRenderer>();
             lineRenderer.useWorldSpace = false;
-            lineRenderer.widthMultiplier = 0.01f;
+            lineRenderer.widthMultiplier = 0.005f;
             lineRenderer.positionCount = 3;
             lineRenderer.SetPosition(0, stringTop);
             lineRenderer.SetPosition(1, stringTop);

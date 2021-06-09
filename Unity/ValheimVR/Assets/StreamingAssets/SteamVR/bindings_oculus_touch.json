@@ -243,45 +243,15 @@
       ],
       "sources": [
         {
-          "path": "/user/hand/left/input/system",
-          "mode": "button",
-          "parameters": {},
-          "inputs": {
-            "click": {
-              "output": "/actions/valheim/in/togglemenu"
-            }
-          }
-        },
-        {
           "path": "/user/hand/left/input/joystick",
           "mode": "joystick",
           "parameters": {},
           "inputs": {
             "click": {
-              "output": "/actions/valheim/in/quickswitch"
+              "output": "/actions/valheim/in/togglemap"
             },
             "position": {
               "output": "/actions/valheim/in/walk"
-            }
-          }
-        },
-        {
-          "path": "/user/hand/left/input/trigger",
-          "mode": "trigger",
-          "parameters": {},
-          "inputs": {
-            "click": {
-              "output": "/actions/valheim/in/useleft"
-            }
-          }
-        },
-        {
-          "path": "/user/hand/right/input/trigger",
-          "mode": "trigger",
-          "parameters": {},
-          "inputs": {
-            "click": {
-              "output": "/actions/valheim/in/use"
             }
           }
         },
@@ -291,7 +261,7 @@
           "parameters": {},
           "inputs": {
             "click": {
-              "output": "/actions/valheim/in/quickactions"
+              "output": "/actions/valheim/in/togglemenu"
             },
             "position": {
               "output": "/actions/valheim/in/pitchandyaw"
@@ -314,7 +284,7 @@
           "parameters": {},
           "inputs": {
             "click": {
-              "output": "/actions/valheim/in/togglemap"
+              "output": "/actions/valheim/in/quickswitch"
             }
           }
         },
@@ -330,13 +300,41 @@
         },
         {
           "path": "/user/hand/left/input/grip",
-          "mode": "button",
-          "parameters": {
-            "haptic_amplitude": "0"
-          },
+          "mode": "trigger",
+          "parameters": {},
           "inputs": {
             "click": {
               "output": "/actions/valheim/in/grab"
+            }
+          }
+        },
+        {
+          "path": "/user/hand/right/input/b",
+          "mode": "button",
+          "parameters": {},
+          "inputs": {
+            "click": {
+              "output": "/actions/valheim/in/quickactions"
+            }
+          }
+        },
+        {
+          "path": "/user/hand/left/input/trigger",
+          "mode": "trigger",
+          "parameters": {},
+          "inputs": {
+            "click": {
+              "output": "/actions/valheim/in/useleft"
+            }
+          }
+        },
+        {
+          "path": "/user/hand/right/input/trigger",
+          "mode": "trigger",
+          "parameters": {},
+          "inputs": {
+            "click": {
+              "output": "/actions/valheim/in/use"
             }
           }
         },

@@ -827,7 +827,7 @@ namespace ValheimVRMod.VRCore
             var camera = CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform;
             var action = SteamVR_Actions.valheim_Grab;
             
-            if (camera.InverseTransformPoint(hand.transform.position).y > -0.2f &&
+            if (camera.InverseTransformPoint(hand.transform.position).y > -0.4f &&
                 camera.InverseTransformPoint(hand.transform.position).z < 0)
             {
 
