@@ -140,11 +140,11 @@ namespace ValheimVRMod.VRCore.UI
         private void updateMainActionSetState()
         {
             bool useVrControls = VHVRConfig.UseVrControls();
-            if (!useVrControls || mainActionSet.IsActive() && !VRPlayer.handsActive)
+            if (!useVrControls && mainActionSet.IsActive())
             {
                 mainActionSet.Deactivate();
             }
-            else if (useVrControls && !mainActionSet.IsActive() && VRPlayer.handsActive)
+            else if (useVrControls && !mainActionSet.IsActive())
             {
                 mainActionSet.Activate();
             }
