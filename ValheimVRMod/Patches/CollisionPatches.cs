@@ -50,14 +50,10 @@ namespace ValheimVRMod.Patches {
     [HarmonyPatch(typeof(VisEquipment), "SetLeftHandEquiped")]
     class PatchSetLeftHandEquiped {
         static void Postfix(bool __result, string ___m_leftItem, GameObject ___m_leftItemInstance) {
-            if (!__result || ___m_leftItemInstance == null || !VHVRConfig.UseVrControls()) {
+            if (!__result || ___m_leftItemInstance == null) {
                 return;
-            }
-
-            if (StaticObjects.quickSwitch != null) {
-                QuickSwitch.refreshItems();
-            }
-
+            } 
+                          
             MeshFilter meshFilter = ___m_leftItemInstance.GetComponentInChildren<MeshFilter>();
 
             if (meshFilter == null) {
@@ -65,15 +61,28 @@ namespace ValheimVRMod.Patches {
             }
 
             Player player = ___m_leftItemInstance.GetComponentInParent<Player>();
-            // only local player must trigger this
-            if (player == null || Player.m_localPlayer != player) {
+            
+            if (player == null) {
                 return;
+            }
+
+            if (Player.m_localPlayer != player) {
+                player.GetComponent<VRPlayerSync>().currentLeftWeapon = meshFilter.gameObject;
+                return;
+            }           
+            
+            if (!VHVRConfig.UseVrControls()) {
+                return;
+            }
+
+            if (StaticObjects.quickSwitch != null) {
+                QuickSwitch.refreshItems();
             }
 
             switch (EquipScript.getLeft()) {
                 
                 case EquipType.Bow:
-                    meshFilter.gameObject.AddComponent<BowManager>();
+                    meshFilter.gameObject.AddComponent<BowLocalManager>();
                     return;
                 
                 case EquipType.Shield:

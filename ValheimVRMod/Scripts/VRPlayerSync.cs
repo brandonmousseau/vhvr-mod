@@ -8,8 +8,8 @@ using static ValheimVRMod.Utilities.LogUtils;
 namespace ValheimVRMod.Scripts {
     public class VRPlayerSync : MonoBehaviour {
 
-        private bool vrikInitialized;
-
+        private VRIK vrik;
+        
         static readonly float MIN_CHANGE = 0.001f;
         
         public GameObject camera = new GameObject();
@@ -30,7 +30,7 @@ namespace ValheimVRMod.Scripts {
 
         private uint lastDataRevision = 0;
         private float deltaTimeCounter = 0f;
-            
+
         private static readonly string[] FINGERS = { 
             "LeftHandThumb1","LeftHandIndex1","LeftHandMiddle1","LeftHandRing1","LeftHandPinky1",
             "RightHandThumb1","RightHandIndex1","RightHandMiddle1","RightHandRing1","RightHandPinky1"
@@ -40,6 +40,9 @@ namespace ValheimVRMod.Scripts {
         private Quaternion[] rightFingerRotations = new Quaternion[20];
 
         private bool fingersUpdated;
+
+        public BowManager bowManager;
+        public GameObject currentLeftWeapon;
 
         void Start()
         {
@@ -112,7 +115,8 @@ namespace ValheimVRMod.Scripts {
             writeData(pkg, rightHand, ownerVelocityRight);
             writeFingers(pkg, GetComponent<VRIK>().references.leftHand);
             writeFingers(pkg, GetComponent<VRIK>().references.rightHand);
-            
+            pkg.Write(BowLocalManager.instance != null && BowLocalManager.instance.pulling);
+
             GetComponent<ZNetView>().GetZDO().Set("vr_data", pkg.GetArray());
         }
 
@@ -123,23 +127,20 @@ namespace ValheimVRMod.Scripts {
             pkg.Write(ownerVelocity);
         }
 
-        private void clientSync(float dt)
-        {
-            if (syncPositionAndRotation(GetComponent<ZNetView>().GetZDO(), dt)) {
-                maybeAddVrik();   
-            }
+        private void clientSync(float dt) {
+            syncPositionAndRotation(GetComponent<ZNetView>().GetZDO(), dt);
         }
 
-        private bool syncPositionAndRotation(ZDO zdo, float dt)
+        private void syncPositionAndRotation(ZDO zdo, float dt)
         {
             if (zdo == null)
             {
-                return false;
+                return;
             }
             var vr_data = zdo.GetByteArray("vr_data");
             if (vr_data == null)
             {
-                return false;
+                return;
             }
             ZPackage pkg = new ZPackage(vr_data);
             var currentDataRevision = zdo.m_dataRevision;
@@ -156,10 +157,24 @@ namespace ValheimVRMod.Scripts {
             extractAndUpdate(pkg, ref camera, ref clientTempRelPosCamera, hasTempRelPos);
             extractAndUpdate(pkg, ref leftHand, ref clientTempRelPosLeft, hasTempRelPos);
             extractAndUpdate(pkg, ref rightHand, ref clientTempRelPosRight, hasTempRelPos);
+            maybeAddVrik();
             hasTempRelPos = true;
             readFingers(pkg);
-            return true;
+            maybePullBow(pkg.ReadBool());
+        }
 
+        private void maybePullBow(bool pulling) {
+
+            if (bowManager == null) {
+                if (!pulling) {
+                    return;
+                }
+                
+                bowManager = currentLeftWeapon.AddComponent<BowManager>();
+                bowManager.rightHand = rightHand.transform;
+            }
+
+            bowManager.pulling = pulling;
         }
 
         private void extractAndUpdate(ZPackage pkg, ref GameObject obj, ref Vector3 tempRelPos, bool hasTempRelPos)
@@ -207,13 +222,12 @@ namespace ValheimVRMod.Scripts {
         }
 
         private void maybeAddVrik() {
-            if (vrikInitialized)
+            if (vrik != null)
             {
                 return;
             }
-            VrikCreator.initialize(gameObject, leftHand.transform,
+            vrik = VrikCreator.initialize(gameObject, leftHand.transform,
                 rightHand.transform, camera.transform);
-            vrikInitialized = true;
         }
 
         private bool isOwner()

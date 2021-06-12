@@ -305,6 +305,7 @@
     <Compile Include="Patches\MultiplayerPatches.cs" />
     <Compile Include="Patches\ShieldPatches.cs" />
     <Compile Include="Patches\UIPatches.cs" />
+    <Compile Include="Scripts\BowLocalManager.cs" />
     <Compile Include="Scripts\BowManager.cs" />
     <Compile Include="Scripts\QuickActions.cs" />
     <Compile Include="Scripts\VRPlayerSync.cs" />

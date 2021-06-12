@@ -1,5 +1,4 @@
 using HarmonyLib;
-using UnityEngine;
 using ValheimVRMod.Scripts;
 
 namespace ValheimVRMod.Patches {
@@ -10,7 +9,6 @@ namespace ValheimVRMod.Patches {
             if (__instance == Player.m_localPlayer) {
                 return;
             }
-            Debug.Log("PATCHING VR PLAYER !");
             __instance.gameObject.AddComponent<VRPlayerSync>();
         }
     }

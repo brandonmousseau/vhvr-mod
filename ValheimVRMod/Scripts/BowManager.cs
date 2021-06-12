@@ -1,77 +1,44 @@
-﻿using System.Collections.Generic;
+﻿using System.Threading;
 using UnityEngine;
-using UnityEngine.Rendering;
-using ValheimVRMod.Utilities;
-using ValheimVRMod.VRCore;
-using Valve.VR;
 
 namespace ValheimVRMod.Scripts {
     public class BowManager : MonoBehaviour {
+        
         private const float minStringSize = 0.965f;
-        private const float attachRange = 0.2f;
-        private float maxPullLength;
-        private Vector3 stringTop;
-        private Vector3 stringBottom;
-        private Vector3 pullStart;
-        private GameObject pullObj;
-        private bool lineRendererExists;
-        private Quaternion originalRotation;
-        private GameObject arrow;
-        private bool pulling;
-        private LineRenderer predictionLine;
-        float projectileVel;
-        float projectileVelMin;
-
-        public static BowManager instance;
-        public static float attackDrawPercentage;
-        public static Vector3 spawnPoint;
-        public static Vector3 aimDir;
-
-        public static bool isPulling;
-        public static bool startedPulling;
-        public static bool aborting;
-
-        private GameObject arrowAttach = new GameObject();
-
-
-        private void Start() {
-            predictionLine = new GameObject().AddComponent<LineRenderer>();
-            predictionLine.widthMultiplier = 0.03f;
-            predictionLine.positionCount = 20;
-            predictionLine.material.color = Color.white;
-            predictionLine.enabled = false;
-            predictionLine.receiveShadows = false;
-            predictionLine.shadowCastingMode = ShadowCastingMode.Off;
-            predictionLine.lightProbeUsage = LightProbeUsage.Off;
-            predictionLine.reflectionProbeUsage = ReflectionProbeUsage.Off;
-            
-            arrowAttach.transform.SetParent(VRPlayer.rightHand.transform, false);
-        }
+        private Vector3[] verts;
+        private bool wasPulling;
+        
+        protected float maxPullLength;
+        protected Vector3 stringTop;
+        protected Vector3 stringBottom;
+        protected Vector3 pullStart;
+        protected GameObject pullObj;
+        protected Quaternion originalRotation;
+        protected bool initialized;
+        protected bool wasInitialized;
+        
+        public bool pulling;
+        public Transform rightHand;
 
         void Awake() {
-            instance = this;
+            
             originalRotation = transform.localRotation;
             stringTop = new Vector3();
             stringBottom = new Vector3();
-            removeOldString();
-            pullStart = Vector3.Lerp(stringTop, stringBottom, 0.5f);
-            maxPullLength = 0.6f - pullStart.z;
+
+            Mesh mesh = GetComponent<MeshFilter>().mesh;
+            verts = mesh.vertices;
+            // we need to run this method in thread as it takes longer than a frame and freezes game for a moment
+            Thread thread = new Thread(()=>removeOldString(mesh));
+            thread.Start();
+            
             pullObj = new GameObject();
             pullObj.transform.SetParent(transform, false);
             pullObj.transform.forward *= -1;
         }
 
-        private void OnDestroy() {
-            destroyArrow();
+        protected void OnDestroy() {
             Destroy(pullObj);
-            Destroy(predictionLine);
-            Destroy(arrowAttach);
-        }
-
-        private void destroyArrow() {
-            if (arrow != null) {
-                arrow.GetComponent<ZNetView>().Destroy();   
-            }
         }
 
         /**
@@ -81,10 +48,7 @@ namespace ValheimVRMod.Scripts {
      * for the new triangle array, we just skip those with bigger vertex distance
      * but we save the top and bottom points of the deleted vertices so we can use them for our new string. 
      */
-        private void removeOldString() {
-            var mesh = GetComponent<MeshFilter>().mesh;
-
-            var verts = mesh.vertices;
+        private void removeOldString(Mesh mesh) {
             
             for (int i = 0; i < mesh.triangles.Length / 3; i++) {
                 Vector3 v1 = verts[mesh.triangles[i * 3]];
@@ -110,8 +74,10 @@ namespace ValheimVRMod.Scripts {
                     }
                 }
             }
-
-            mesh.vertices = verts;
+            
+            pullStart = Vector3.Lerp(stringTop, stringBottom, 0.5f);
+            maxPullLength = 0.6f - pullStart.z;
+            initialized = true;
         }
 
         /**
@@ -133,175 +99,44 @@ namespace ValheimVRMod.Scripts {
      * Need to use OnRenderObject instead of Update or LateUpdate,
      * because of VRIK Bone Updates happening in LateUpdate 
      */
-        private void OnRenderObject() {
-            if (!lineRendererExists) {
+        protected void OnRenderObject() {
+
+            if (!initialized) {
+                return;
+            }
+
+            if (!wasInitialized) {
+                GetComponent<MeshFilter>().mesh.vertices = verts;
                 createNewString();
-                lineRendererExists = true;
+                wasInitialized = true;
             }
 
-            if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand)) {
-                handlePulling();
-            }
+            if (pulling) {
+                if (!wasPulling) {
+                    wasPulling = true;
+                }
 
-            if (SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.RightHand)) {
-                releaseString();
-            }
-
-            if (predictionLine.enabled) {
-                updatePredictionLine();   
+                pullString();
+                gameObject.GetComponent<LineRenderer>().SetPosition(1, pullObj.transform.localPosition);
+                transform.LookAt(rightHand, -transform.parent.forward);   
+                
+            } else if (wasPulling) {
+                wasPulling = false;
+                pullObj.transform.localPosition = pullStart;
+                transform.localRotation = originalRotation;
+                gameObject.GetComponent<LineRenderer>().SetPosition(1, stringTop);
             }
         }
-        
-        /**
-     * calculate predictionline of how the arrow will fly
-     */
-        private void updatePredictionLine() {
-            if (!predictionLine.enabled) {
-                return;
-            }
 
-            Vector3 vel = aimDir * Mathf.Lerp(projectileVelMin, projectileVel, attackDrawPercentage);
-
-            float stepLength = 0.1f;
-            float stepSize = 20;
-            Vector3 pos = transform.position;
-            List<Vector3> pointList = new List<Vector3>();
-
-            for (int i = 0; i < stepSize; i++) {
-                pointList.Add(pos);
-                vel += Vector3.down * arrow.GetComponent<Projectile>().m_gravity * stepLength;
-                pos += vel * stepLength;
-            }
-
-            predictionLine.positionCount = 20;
-            predictionLine.SetPositions(pointList.ToArray());
-        }
-
-        private void handlePulling() {
-            if (!pulling && !checkHandNearString()) {
-                return;
-            }
-
-            arrowAttach.transform.rotation = pullObj.transform.rotation;
-            spawnPoint = transform.position;
-            aimDir = -transform.forward;
-            attackDrawPercentage = pullPercentage();
-
-            if (Player.m_localPlayer.GetStamina() <= 0) {
-                releaseString(true);
-                return;
-            }
-
-            if (Vector3.Distance(VRPlayer.rightHand.transform.position, transform.TransformPoint(pullStart)) <
+        private void pullString() {
+            if (Vector3.Distance(rightHand.position, transform.TransformPoint(pullStart)) <
                 maxPullLength) {
-                Vector3 previous = pullObj.transform.localPosition;
-                pullObj.transform.position = VRPlayer.rightHand.transform.position;
-                Vector3 next = pullObj.transform.localPosition;
+                pullObj.transform.position = rightHand.position;
 
-                if (next.z - pullStart.z < 0) {
-                    next = pullStart;
+                if (pullObj.transform.localPosition.z - pullStart.z < 0) {
+                    pullObj.transform.localPosition = new Vector3(pullObj.transform.localPosition.x, pullObj.transform.localPosition.y, pullStart.z);
                 }
-                else {
-                    Player.m_localPlayer.UseStamina(((next.z - previous.z)) / maxPullLength * 10);
-                }
-
-                gameObject.GetComponent<LineRenderer>().SetPosition(1, next);
-            } // in case of low framerate and the string is pulled lightning fast and released instantly afterwards, we might not have 100% pullLength
-            // ... but lets ignore this edgecase
-
-            transform.LookAt(VRPlayer.rightHand.transform, -transform.parent.forward);
-        }
-
-        private void releaseString(bool withoutShoot = false) {
-            if (!pulling) {
-                return;
-            }
-
-            predictionLine.enabled = false;
-            pulling = isPulling = false;
-            attackDrawPercentage = pullPercentage();
-            spawnPoint = transform.position;
-            aimDir = -transform.forward;
-
-            pullObj.transform.localPosition = pullStart;
-            transform.localRotation = originalRotation;
-            gameObject.GetComponent<LineRenderer>().SetPosition(1, stringTop);
-
-            if (withoutShoot || arrow == null || attackDrawPercentage <= 0.0f) {
-                if (arrow) {
-                    arrowAttach.transform.localRotation = Quaternion.identity;
-                    if (attackDrawPercentage <= 0.0f) {
-                        aborting = true;
-                    }
-                }
-
-                return;
-            }
-            // SHOOTING
-            VRPlayer.leftHand.hapticAction.Execute(0, 0.2f, 100, 0.3f, SteamVR_Input_Sources.LeftHand);
-            destroyArrow();
-        }
-
-        private float pullPercentage() {
-            return (pullObj.transform.localPosition.z - pullStart.z) / maxPullLength;
-        }
-
-        private bool checkHandNearString() {
-            if (Vector3.Distance(VRPlayer.rightHand.transform.position, transform.TransformPoint(pullStart)) >
-                attachRange) {
-                return false;
-            }
-
-            if (arrow != null) {
-                startedPulling = true;
-                isPulling = true;
-                predictionLine.enabled = VHVRConfig.UseArrowPredictionGraphic();
-            }
-
-            return pulling = true;
-        }
-
-        public void toggleArrow() {
-            if (arrow != null) {
-                destroyArrow();
-                return;
-            }
-            
-            var ammoItem = Player.m_localPlayer.GetAmmoItem();
-            
-            if (ammoItem == null || ammoItem.m_shared.m_itemType != ItemDrop.ItemData.ItemType.Ammo) {
-                // out of ammo
-                return;
-            }
-
-            var currentAttack = Player.m_localPlayer.GetCurrentWeapon().m_shared.m_attack;
-            projectileVel = currentAttack.m_projectileVel + ammoItem.m_shared.m_attack.m_projectileVel;
-            projectileVelMin = currentAttack.m_projectileVelMin + ammoItem.m_shared.m_attack.m_projectileVelMin;
-            
-            arrow = Instantiate(ammoItem.m_shared.m_attack.m_attackProjectile, arrowAttach.transform);
-            // we need to disable the Projectile Component, else the arrow will shoot out of the hands like a New Year rocket
-            arrow.GetComponent<Projectile>().enabled = false;
-            // also Destroy the Trail, as this produces particles when moving with arrow in hand
-            Destroy(findTrail(arrow.transform));
-            arrow.transform.localRotation = Quaternion.identity;
-            arrow.transform.localPosition = new Vector3(0, 0, 1.25f);
-            arrowAttach.transform.localRotation = Quaternion.identity;
-        }
-
-        private GameObject findTrail(Transform transform) {
-
-            foreach (ParticleSystem p in transform.GetComponentsInChildren<ParticleSystem>()) {
-                var go = p.gameObject;
-                if (go.name == "trail") {
-                    return go;
-                }
-            }
-
-            return null;
-        }
-        
-        public bool isHoldingArrow() {
-            return arrow != null;
+            } 
         }
     }
 }

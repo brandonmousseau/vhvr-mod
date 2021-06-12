@@ -202,17 +202,17 @@ namespace ValheimVRMod.Patches {
             }
 
             if (EquipScript.getLeft() == EquipType.Bow) {
-                if (BowManager.aborting) {
+                if (BowLocalManager.aborting) {
                     block = true;
                     blockHold = true;
-                    BowManager.aborting = false;
+                    BowLocalManager.aborting = false;
                 }
-                else if (BowManager.startedPulling) {
+                else if (BowLocalManager.startedPulling) {
                     attack = true;
-                    BowManager.startedPulling = false;
+                    BowLocalManager.startedPulling = false;
                 }
                 else {
-                    attackHold = BowManager.isPulling;
+                    attackHold = BowLocalManager.isPulling;
                 }
                 return;
             }
