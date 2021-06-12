@@ -43,6 +43,8 @@ namespace ValheimVRMod.VRCore
         // Unity AssetBundle project too. If they don't match,
         // the hands won't be rendered by the handsCam.
         private static Vector3 FIRST_PERSON_OFFSET = Vector3.zero;
+        private static float SIT_HEIGHT_ADJUST = -0.7f;
+        private static float CROUCH_HEIGHT_ADJUST = -0.4f;
         private static Vector3 THIRD_PERSON_0_OFFSET = new Vector3(0f, 1.0f, -0.6f);
         private static Vector3 THIRD_PERSON_1_OFFSET = new Vector3(0f, 1.4f, -1.5f);
         private static Vector3 THIRD_PERSON_2_OFFSET = new Vector3(0f, 1.9f, -2.6f);
@@ -563,7 +565,21 @@ namespace ValheimVRMod.VRCore
             _instance.transform.localPosition = desiredPosition - playerCharacter.transform.position  // Base Positioning
                                                + firstPersonAdjust  // Offset from calibration on tracking recenter
                                                + getHeadOffset(_headZoomLevel) // Player controlled offset (zeroed on tracking reset)
-                                               + Vector3.forward * NECK_OFFSET; // Move slightly forward to position on neck
+                                               + Vector3.forward * NECK_OFFSET // Move slightly forward to position on neck
+                                               + Vector3.up * getHeadHeightAdjust(playerCharacter);
+        }
+
+        private float getHeadHeightAdjust(Player player)
+        {
+            if (player.IsSitting())
+            {
+                return SIT_HEIGHT_ADJUST;
+            }
+            if (player.IsCrouching())
+            {
+                return CROUCH_HEIGHT_ADJUST;
+            }
+            return 0f;
         }
 
         private void updateVrik()
