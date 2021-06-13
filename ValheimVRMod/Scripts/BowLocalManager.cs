@@ -22,7 +22,7 @@ namespace ValheimVRMod.Scripts {
         public static bool startedPulling;
         public static bool aborting;
 
-        private GameObject arrowAttach = new GameObject();
+        private readonly GameObject arrowAttach = new GameObject();
 
         private void Start() {
             instance = this;
@@ -43,7 +43,6 @@ namespace ValheimVRMod.Scripts {
         protected new void OnDestroy() {
             base.OnDestroy();
             destroyArrow();
-            Destroy(pullObj);
             Destroy(predictionLine);
             Destroy(arrowAttach);
         }
@@ -110,6 +109,7 @@ namespace ValheimVRMod.Scripts {
             }
 
             arrowAttach.transform.rotation = pullObj.transform.rotation;
+            arrowAttach.transform.position = pullObj.transform.position;
             spawnPoint = transform.position;
             aimDir = -transform.forward;
             attackDrawPercentage = pullPercentage();
@@ -133,6 +133,7 @@ namespace ValheimVRMod.Scripts {
             if (withoutShoot || arrow == null || attackDrawPercentage <= 0.0f) {
                 if (arrow) {
                     arrowAttach.transform.localRotation = Quaternion.identity;
+                    arrowAttach.transform.localPosition = Vector3.zero;
                     if (attackDrawPercentage <= 0.0f) {
                         aborting = true;
                     }
@@ -189,6 +190,7 @@ namespace ValheimVRMod.Scripts {
             arrow.transform.localRotation = Quaternion.identity;
             arrow.transform.localPosition = new Vector3(0, 0, 1.25f);
             arrowAttach.transform.localRotation = Quaternion.identity;
+            arrowAttach.transform.localPosition = Vector3.zero;
         }
 
         private GameObject findTrail(Transform transform) {
