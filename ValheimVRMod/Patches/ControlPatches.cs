@@ -58,7 +58,7 @@ namespace ValheimVRMod.Patches {
     class ZInput_GetJoyLeftStickX_Patch {
         static void Postfix(ref float __result) {
             // dont patch, if quickswitch is active
-            if (StaticObjects.quickSwitch != null && StaticObjects.quickSwitch.activeSelf) {
+            if (QuickActions.movementLocked) {
                 return;
             }
             
@@ -72,7 +72,7 @@ namespace ValheimVRMod.Patches {
     class ZInput_GetJoyLeftStickY_Patch {
         static void Postfix(ref float __result) {
             // dont patch, if quickswitch is active
-            if (StaticObjects.quickSwitch != null && StaticObjects.quickSwitch.activeSelf) {
+            if (QuickActions.movementLocked) {
                 return;
             }
             

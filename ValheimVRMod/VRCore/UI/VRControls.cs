@@ -106,6 +106,11 @@ namespace ValheimVRMod.VRCore.UI
                 quickSwitch.GetComponent<QuickSwitch>().selectHoveredItem();
                 quickSwitch.SetActive(false);
             }
+
+
+            if (QuickActions.movementLocked && ! StaticObjects.quickSwitch.activeSelf && GetJoyLeftStickY() == 0 && GetJoyLeftStickX() == 0) {
+                QuickActions.movementLocked = false;
+            }
         }
         
         private void checkRecenterPose(float dt)

@@ -1,4 +1,6 @@
 using System;
+using System.Reflection;
+using HarmonyLib;
 using UnityEngine;
 using Valve.VR;
 using ValheimVRMod.Utilities;
@@ -6,7 +8,7 @@ using ValheimVRMod.Utilities;
 namespace ValheimVRMod.Scripts {
     public class QuickActions : MonoBehaviour {
 
-        private static int SLOTS = 1;
+        private static int SLOTS = 2;
         private static float elementDistance = 0.1f;
         
         private static Color standard = new Color(0.2f, 0.2f, 0.2f, 0.5f);
@@ -18,10 +20,17 @@ namespace ValheimVRMod.Scripts {
         // private static GameObject[] equippedLayers = new GameObject[SLOTS]; 
         private static GameObject[] items = new GameObject[SLOTS]; 
         private Vector2[] positions = new Vector2[SLOTS];
+        
+        private static MethodInfo stopEmote = AccessTools.Method(typeof(Player), "StopEmote");
+        public static bool movementLocked;
     
         private void Awake() {
             initialize();
             refreshItems();
+        }
+
+        private void OnEnable() {
+            movementLocked = true;
         }
 
         /**
@@ -46,7 +55,7 @@ namespace ValheimVRMod.Scripts {
 
             for (int i = 0; i < SLOTS; i++) {
 
-                double a = (i * 45 * (Math.PI)) / 180;
+                double a = i * 2 * Math.PI / SLOTS;
                 double x = Math.Cos(a) * elementDistance;
                 double y = Math.Sin(a) * elementDistance;
                 positions[i] = new Vector2((float)x, (float)y);
@@ -96,10 +105,14 @@ namespace ValheimVRMod.Scripts {
             StatusEffect se;
             float cooldown;
             Player.m_localPlayer.GetGuardianPowerHUD(out se, out cooldown);
-            if (!se) {
-                return;
+            if (se) {
+                items[0].GetComponent<SpriteRenderer>().sprite = se.m_icon;
             }
-            items[0].GetComponent<SpriteRenderer>().sprite = se.m_icon;
+            
+            Texture2D sitTexture = VRAssetManager.GetAsset<Texture2D>("sit");
+            items[1].GetComponent<SpriteRenderer>().sprite =  Sprite.Create(sitTexture,
+                new Rect(0.0f, 0.0f, sitTexture.width, sitTexture.height),
+                new Vector2(0.5f, 0.5f), 500);
         }
 
         private void Update() {
@@ -121,7 +134,7 @@ namespace ValheimVRMod.Scripts {
                 hoveredItem.SetActive(true);   
             }
             
-            hoveredItemIndex = (int) Math.Round(Math.Atan2(y, x) * 180 / Math.PI / 45 + SLOTS) % SLOTS;
+            hoveredItemIndex = (int) Math.Round(Math.Atan2(y, x) * 180 / Math.PI * SLOTS / 360 + SLOTS) % SLOTS;
             hoveredItem.transform.localPosition = positions[hoveredItemIndex];
 
         }
@@ -132,8 +145,17 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            if (hoveredItemIndex == 0) {
-                Player.m_localPlayer.StartGuardianPower();
+            switch (hoveredItemIndex) {
+                
+                case 0:
+                    Player.m_localPlayer.StartGuardianPower();
+                    break;
+                case 1:
+                    if (Player.m_localPlayer.InEmote() && Player.m_localPlayer.IsSitting())
+                        stopEmote.Invoke(Player.m_localPlayer, null);
+                    else
+                        Player.m_localPlayer.StartEmote("sit", false);
+                    break;
             }
         }
     }

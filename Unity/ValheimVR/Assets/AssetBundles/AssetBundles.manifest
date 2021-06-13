@@ -1,5 +1,5 @@
 ManifestFileVersion: 0
-CRC: 2126275086
+CRC: 4099820618
 AssetBundleManifest:
   AssetBundleInfos:
     Info_0:
@@ -9,11 +9,11 @@ AssetBundleManifest:
       Name: amplify_resources
       Dependencies: {}
     Info_2:
-      Name: vhvr_custom
+      Name: xrmanager
       Dependencies: {}
     Info_3:
       Name: steamvr_shaders
       Dependencies: {}
     Info_4:
-      Name: xrmanager
+      Name: vhvr_custom
       Dependencies: {}

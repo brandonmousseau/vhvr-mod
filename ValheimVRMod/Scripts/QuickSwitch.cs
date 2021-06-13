@@ -46,7 +46,7 @@ namespace ValheimVRMod.Scripts {
 
             for (int i = 0; i < SLOTS; i++) {
 
-                double a = (i * 45 * (Math.PI)) / 180;
+                double a = i * 2 * Math.PI / SLOTS;
                 double x = Math.Cos(a) * elementDistance;
                 double y = Math.Sin(a) * elementDistance;
                 positions[i] = new Vector2((float)x, (float)y);
@@ -136,7 +136,7 @@ namespace ValheimVRMod.Scripts {
                 hoveredItem.SetActive(true);   
             }
             
-            hoveredItemIndex = (int) Math.Round(Math.Atan2(y, x) * 180 / Math.PI / 45 + SLOTS) % SLOTS;
+            hoveredItemIndex = (int) Math.Round(Math.Atan2(y, x) * 180 / Math.PI * SLOTS / 360 + SLOTS) % SLOTS;
             hoveredItem.transform.localPosition = positions[hoveredItemIndex];
 
         }
