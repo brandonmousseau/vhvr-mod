@@ -178,11 +178,12 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            var currentAttack = Player.m_localPlayer.GetCurrentWeapon().m_shared.m_attack;
-            projectileVel = currentAttack.m_projectileVel + ammoItem.m_shared.m_attack.m_projectileVel;
-            projectileVelMin = currentAttack.m_projectileVelMin + ammoItem.m_shared.m_attack.m_projectileVelMin;
+            try {
+                arrow = Instantiate(ammoItem.m_shared.m_attack.m_attackProjectile, arrowAttach.transform);
+            } catch {
+                return;
+            }
             
-            arrow = Instantiate(ammoItem.m_shared.m_attack.m_attackProjectile, arrowAttach.transform);
             // we need to disable the Projectile Component, else the arrow will shoot out of the hands like a New Year rocket
             arrow.GetComponent<Projectile>().enabled = false;
             // also Destroy the Trail, as this produces particles when moving with arrow in hand
@@ -191,6 +192,11 @@ namespace ValheimVRMod.Scripts {
             arrow.transform.localPosition = new Vector3(0, 0, 1.25f);
             arrowAttach.transform.localRotation = Quaternion.identity;
             arrowAttach.transform.localPosition = Vector3.zero;
+            
+            var currentAttack = Player.m_localPlayer.GetCurrentWeapon().m_shared.m_attack;
+            projectileVel = currentAttack.m_projectileVel + ammoItem.m_shared.m_attack.m_projectileVel;
+            projectileVelMin = currentAttack.m_projectileVelMin + ammoItem.m_shared.m_attack.m_projectileVelMin;
+            
         }
 
         private GameObject findTrail(Transform transform) {

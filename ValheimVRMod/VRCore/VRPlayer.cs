@@ -559,7 +559,6 @@ namespace ValheimVRMod.VRCore
             attachedToPlayer = true;
             maybeInitHeadPosition(playerCharacter);
             Vector3 firstPersonAdjust = inFirstPerson ? FIRST_PERSON_INIT_OFFSET : Vector3.zero;
-            setHeadVisibility(!inFirstPerson);
             // Update the position with the first person adjustment calculated in init phase
             Vector3 desiredPosition = getDesiredPosition(playerCharacter);
             _instance.transform.localPosition = desiredPosition - playerCharacter.transform.position  // Base Positioning
@@ -613,12 +612,12 @@ namespace ValheimVRMod.VRCore
             {
                 return;
             }
-            
-            Debug.Log("wtf");
 
+            var cam = CameraUtils.getCamera(CameraUtils.VR_CAMERA);
+            cam.nearClipPlane = 0.05f;
+            
             var vrik = VrikCreator.initialize(player.gameObject, 
-                leftHand.transform, rightHand.transform,
-                CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform);
+                leftHand.transform, rightHand.transform, cam.transform);
 
             vrik.references.leftHand.gameObject.AddComponent<HandGesture>().sourceHand = leftHand;
             vrik.references.rightHand.gameObject.AddComponent<HandGesture>().sourceHand = rightHand;
@@ -690,23 +689,12 @@ namespace ValheimVRMod.VRCore
                 LogError("Main camera not found.");
                 return;
             }
-            setHeadVisibility(true);
             // Orient the player with the main camera
             _instance.transform.parent = mainCamera.gameObject.transform;
             _instance.transform.position = mainCamera.gameObject.transform.position;
             _instance.transform.rotation = mainCamera.gameObject.transform.rotation;
             attachedToPlayer = false;
             headPositionInitialized = false;
-        }
-
-        // Used to turn off the head model when player is currently occupying it.
-        private void setHeadVisibility(bool isVisible)
-        {
-            var headBone = getHeadBone();
-            if (headBone != null)
-            {
-                headBone.localScale = isVisible ? new Vector3(1f, 1f, 1f) : new Vector3(0.001f, 0.001f, 0.001f);
-            }
         }
 
         private Transform getHeadBone()

@@ -2,96 +2,10 @@ using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
 using UnityEngine;
-using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
 
 namespace ValheimVRMod.Patches {
-    [HarmonyPatch(typeof(VisEquipment), "SetRightHandEquiped")]
-    class PatchSetRightHandEquiped {
-        static void Postfix(bool __result, string ___m_rightItem, ref GameObject ___m_rightItemInstance) {
-            if (!__result || ___m_rightItemInstance == null || !VHVRConfig.UseVrControls()) {
-                return;
-            }
-
-            if (StaticObjects.quickSwitch != null) {
-                QuickSwitch.refreshItems();
-            }
-
-            MeshFilter meshFilter = ___m_rightItemInstance.GetComponentInChildren<MeshFilter>();
-
-            if (meshFilter == null) {
-                return;
-            }
-
-            Player player = ___m_rightItemInstance.GetComponentInParent<Player>();
-            // only local player must trigger this
-            if (player == null || Player.m_localPlayer != player) {
-                return;
-            }
-
-            switch (EquipScript.getRight()) {
-                case EquipType.Fishing:
-                    meshFilter.gameObject.AddComponent<FishingManager>();
-                    return;
-                    
-                case EquipType.Spear:
-                case EquipType.SpearChitin:
-                    meshFilter.gameObject.AddComponent<SpearManager>();
-                    // (no return, we want collider for spear also)
-                    break;
-            }
-
-            Transform item = meshFilter.transform;
-            StaticObjects.weaponCollider().GetComponent<WeaponCollision>().setColliderParent(item, ___m_rightItem);
-            ParticleFix.maybeFix(___m_rightItemInstance);
-        }
-    }
-
-    [HarmonyPatch(typeof(VisEquipment), "SetLeftHandEquiped")]
-    class PatchSetLeftHandEquiped {
-        static void Postfix(bool __result, string ___m_leftItem, GameObject ___m_leftItemInstance) {
-            if (!__result || ___m_leftItemInstance == null) {
-                return;
-            } 
-                          
-            MeshFilter meshFilter = ___m_leftItemInstance.GetComponentInChildren<MeshFilter>();
-
-            if (meshFilter == null) {
-                return;
-            }
-
-            Player player = ___m_leftItemInstance.GetComponentInParent<Player>();
-            
-            if (player == null) {
-                return;
-            }
-
-            if (Player.m_localPlayer != player) {
-                player.GetComponent<VRPlayerSync>().currentLeftWeapon = meshFilter.gameObject;
-                return;
-            }           
-            
-            if (!VHVRConfig.UseVrControls()) {
-                return;
-            }
-
-            if (StaticObjects.quickSwitch != null) {
-                QuickSwitch.refreshItems();
-            }
-
-            switch (EquipScript.getLeft()) {
-                
-                case EquipType.Bow:
-                    meshFilter.gameObject.AddComponent<BowLocalManager>();
-                    return;
-                
-                case EquipType.Shield:
-                    meshFilter.gameObject.AddComponent<ShieldManager>()._name = ___m_leftItem;
-                    return;
-            }
-        }
-    }
-
+    
     [HarmonyPatch(typeof(Attack), "Start")]
     class PatchAttackStart {
         private static MethodInfo getStaminaUsageMethod = AccessTools.Method(typeof(Attack), "GetStaminaUsage");
@@ -166,7 +80,7 @@ namespace ValheimVRMod.Patches {
 
             if (!(hitObject == ___m_character.gameObject)) {
                 Vagon component1 = hitObject.GetComponent<Vagon>();
-                if (!(bool) (UnityEngine.Object) component1 || !component1.IsAttached(___m_character)) {
+                if (!component1 || !component1.IsAttached(___m_character)) {
                     Character component2 = hitObject.GetComponent<Character>();
                     if (!(component2 != null) ||
                         (___m_character.IsPlayer() || BaseAI.IsEnemy(___m_character, component2)) &&
@@ -199,7 +113,7 @@ namespace ValheimVRMod.Patches {
 
                 HitData hitData = new HitData();
                 hitData.m_toolTier = ___m_weapon.m_shared.m_toolTier;
-                hitData.m_statusEffect = (bool) (UnityEngine.Object) ___m_weapon.m_shared.m_attackStatusEffect
+                hitData.m_statusEffect = ___m_weapon.m_shared.m_attackStatusEffect
                     ? ___m_weapon.m_shared.m_attackStatusEffect.name
                     : "";
                 hitData.m_pushForce = ___m_weapon.m_shared.m_attackForce * randomSkillFactor * ___m_forceMultiplier;
@@ -234,7 +148,7 @@ namespace ValheimVRMod.Patches {
                 Quaternion.identity); // Quaternion.identity might need to be replaced
             ___m_hitTerrainEffect.Create(pos, Quaternion.identity);
 
-            if ((bool) (UnityEngine.Object) ___m_weapon.m_shared.m_spawnOnHitTerrain) {
+            if (___m_weapon.m_shared.m_spawnOnHitTerrain) {
                 spawnOnHitTerrainMethod.Invoke(__instance,
                     new object[] {pos, ___m_weapon.m_shared.m_spawnOnHitTerrain});
             }
@@ -243,16 +157,16 @@ namespace ValheimVRMod.Patches {
                 ___m_weapon.m_durability -= ___m_weapon.m_shared.m_useDurabilityDrain;
             ___m_character.AddNoise(___m_attackHitNoise);
 
-            if ((bool) (UnityEngine.Object) ___m_weapon.m_shared.m_spawnOnHit)
-                UnityEngine.Object.Instantiate(___m_weapon.m_shared.m_spawnOnHit, pos,
+            if (___m_weapon.m_shared.m_spawnOnHit)
+                Object.Instantiate(___m_weapon.m_shared.m_spawnOnHit, pos,
                         Quaternion.identity).GetComponent<IProjectile>()
                     ?.Setup(___m_character, zero, ___m_attackHitNoise, null, ___m_weapon);
             foreach (Skills.SkillType skill in skillTypeSet)
                 ___m_character.RaiseSkill(skill, flag2 ? 1.5f : 1f);
 
-            if (!(bool) (UnityEngine.Object) ___m_spawnOnTrigger)
+            if (!___m_spawnOnTrigger)
                 return false;
-            UnityEngine.Object.Instantiate(___m_spawnOnTrigger, zero,
+            Object.Instantiate(___m_spawnOnTrigger, zero,
                 Quaternion.identity).GetComponent<IProjectile>()?.Setup(___m_character,
                 ___m_character.transform.forward, -1f, null, ___m_weapon);
 

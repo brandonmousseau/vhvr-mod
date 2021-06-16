@@ -123,7 +123,7 @@ public class VrikCreator : MonoBehaviour {
 
         Transform head = (new GameObject()).transform;
         head.parent = camera;
-        head.localPosition = new Vector3(0, -0.133f, -0.089f);
+        head.localPosition = new Vector3(0, -0.165f, -0.085f);
         head.localRotation = Quaternion.Euler(0, 90, 0);
         vrik.solver.spine.headTarget = head;
         vrik.solver.spine.maxRootAngle = 180;
