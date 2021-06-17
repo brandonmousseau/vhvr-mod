@@ -90,42 +90,42 @@ namespace ValheimVRMod.Patches {
     
     [HarmonyPatch(typeof(VisEquipment), "SetHelmetEquiped")]
     class PatchHelmet {
-        static void Postfix(bool __result, ref GameObject ___m_helmetItemInstance) {
+        static void Postfix(bool __result, GameObject ___m_helmetItemInstance) {
             
-            if (!__result) {
+            if (!__result || !VHVRConfig.UseVrControls()) {
                 return;
             }
             
-            MeshHider.hide(ref ___m_helmetItemInstance);
+            MeshHider.hide(___m_helmetItemInstance);
         }
     }
     
     [HarmonyPatch(typeof(VisEquipment), "SetHairEquiped")]
     class PatchHair {
-        static void Postfix(bool __result, ref GameObject ___m_hairItemInstance) {
+        static void Postfix(bool __result, GameObject ___m_hairItemInstance) {
             
-            if (!__result) {
+            if (!__result || !VHVRConfig.UseVrControls()) {
                 return;
             }
             
-            MeshHider.hide(ref ___m_hairItemInstance);
+            MeshHider.hide(___m_hairItemInstance);
         }
     }
     
     [HarmonyPatch(typeof(VisEquipment), "SetBeardEquiped")]
     class PatchBeard {
-        static void Postfix(bool __result, ref GameObject ___m_beardItemInstance) {
+        static void Postfix(bool __result, GameObject ___m_beardItemInstance) {
             
-            if (!__result) {
+            if (!__result || !VHVRConfig.UseVrControls()) {
                 return;
             }
             
-            MeshHider.hide(ref ___m_beardItemInstance);
+            MeshHider.hide(___m_beardItemInstance);
         }
     }
 
     static class MeshHider {
-        public static void hide(ref GameObject obj) {
+        public static void hide(GameObject obj) {
 
             if (obj == null) {
                 return;
