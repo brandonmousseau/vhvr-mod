@@ -630,6 +630,9 @@ namespace ValheimVRMod.VRCore
             vrPlayerSync.rightHand = rightHand.gameObject;
             StaticObjects.addQuickActions(leftHand.transform);
             StaticObjects.addQuickSwitch(rightHand.transform);
+            
+            // remove stupid keyboard/mouse hints:
+            Destroy(KeyHints.instance.gameObject);
 
         }
 
