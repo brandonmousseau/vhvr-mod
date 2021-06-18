@@ -102,7 +102,7 @@ namespace ValheimVRMod.VRCore.UI
             }
             updateCursorLocation();
             _instance.GetComponent<Image>().enabled = Cursor.visible;
-            if (Application.isFocused)
+            if (Application.isFocused && !VHVRConfig.UnlockDesktopCursor())
             {
                 // We'll lock the hardware cursor in place using this
                 // system function. I found that using Cursor.lockState

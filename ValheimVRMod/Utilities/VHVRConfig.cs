@@ -48,6 +48,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> DebugRotX;
         private static ConfigEntry<float> DebugRotY;
         private static ConfigEntry<float> DebugRotZ;
+        private static ConfigEntry<bool> unlockDesktopCursor;
 
         // Controls Settings
         private static ConfigEntry<bool> useVrControls;
@@ -240,7 +241,11 @@ namespace ValheimVRMod.Utilities
                 "DebugRotZ",
                 0.0f,
                 "DebugRotZ");
-            
+            unlockDesktopCursor = config.Bind("UI",
+                "UnlockDesktopCursor",
+                false,
+                "Normally the desktop cursor is locked to the center of the screen to avoid having the player accidentally lose focus when playing. This option can be used to free the mouse " +
+                "cursor which some users may want, especially if exclusively using motion controls where window focus is not needed.");
         }
 
         private static void InitializeControlsSettings(ConfigFile config)
@@ -253,7 +258,7 @@ namespace ValheimVRMod.Utilities
                                             " look by turning your head without affecting movement direction.");
             useVrControls = config.Bind("Controls",
                                         "UseVRControls",
-                                        false,
+                                        true,
                                         "This setting enables the use of the VR motion controllers as input (Only Oculus Touch and Valve Index supported)." +
                                         "This setting, if true, will also force UseOverlayGui to be false as this setting Overlay GUI is not compatible with VR laser pointer inputs.");
             preferredHand = config.Bind("Controls",
@@ -545,6 +550,11 @@ namespace ValheimVRMod.Utilities
         public static Vector3 getDebugRot()
         {
             return new Vector3(DebugRotX.Value, DebugRotY.Value, DebugRotZ.Value);
+        }
+
+        public static bool UnlockDesktopCursor()
+        {
+            return unlockDesktopCursor.Value;
         }
 
     }
