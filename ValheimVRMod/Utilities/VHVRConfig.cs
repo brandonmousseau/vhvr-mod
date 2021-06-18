@@ -258,7 +258,7 @@ namespace ValheimVRMod.Utilities
                                             " look by turning your head without affecting movement direction.");
             useVrControls = config.Bind("Controls",
                                         "UseVRControls",
-                                        false,
+                                        true,
                                         "This setting enables the use of the VR motion controllers as input (Only Oculus Touch and Valve Index supported)." +
                                         "This setting, if true, will also force UseOverlayGui to be false as this setting Overlay GUI is not compatible with VR laser pointer inputs.");
             preferredHand = config.Bind("Controls",
