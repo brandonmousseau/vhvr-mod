@@ -13,10 +13,6 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
-            if (StaticObjects.quickSwitch != null) {
-                QuickSwitch.refreshItems();
-            }
-
             MeshFilter meshFilter = ___m_rightItemInstance.GetComponentInChildren<MeshFilter>();
 
             if (meshFilter == null) {
@@ -28,6 +24,13 @@ namespace ValheimVRMod.Patches {
             if (player == null || Player.m_localPlayer != player) {
                 return;
             }
+            
+            VrikCreator.resetVrikHandTransform();
+            
+            if (StaticObjects.quickSwitch != null) {
+                QuickSwitch.refreshItems();
+            }
+            
 
             switch (EquipScript.getRight()) {
                 case EquipType.Fishing:
@@ -70,6 +73,8 @@ namespace ValheimVRMod.Patches {
                 player.GetComponent<VRPlayerSync>().currentLeftWeapon = meshFilter.gameObject;
                 return;
             }
+            
+            VrikCreator.resetVrikHandTransform();
 
             if (StaticObjects.quickSwitch != null) {
                 QuickSwitch.refreshItems();

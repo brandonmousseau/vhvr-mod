@@ -201,7 +201,7 @@
                   "haptic_amplitude" : "0",
                   "haptic_frequency" : "15"
                },
-               "path" : "/user/hand/left/input/trigger"
+               "path" : "/user/hand/right/input/trigger"
             },
             {
                "inputs" : {
@@ -209,12 +209,8 @@
                      "output" : "/actions/laserpointers/in/rightclick"
                   }
                },
-               "mode" : "button",
-               "parameters" : {
-                  "haptic_amplitude" : "0",
-                  "haptic_frequency" : "15"
-               },
-               "path" : "/user/hand/right/input/trigger"
+               "mode" : "trackpad",
+               "path" : "/user/hand/right/input/trackpad"
             }
          ]
       },

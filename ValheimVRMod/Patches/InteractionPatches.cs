@@ -130,6 +130,8 @@ namespace ValheimVRMod.Patches
             if (StaticObjects.quickSwitch != null) {
                 QuickSwitch.refreshItems();
             }
+            
+            VrikCreator.resetVrikHandTransform();
         }
     }
         

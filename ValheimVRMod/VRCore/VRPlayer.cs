@@ -619,6 +619,7 @@ namespace ValheimVRMod.VRCore
             
             var vrik = VrikCreator.initialize(player.gameObject, 
                 leftHand.transform, rightHand.transform, cam.transform);
+            VrikCreator.resetVrikHandTransform(vrik);
 
             vrik.references.leftHand.gameObject.AddComponent<HandGesture>().sourceHand = leftHand;
             vrik.references.rightHand.gameObject.AddComponent<HandGesture>().sourceHand = rightHand;

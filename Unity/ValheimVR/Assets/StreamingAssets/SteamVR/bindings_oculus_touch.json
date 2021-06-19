@@ -175,15 +175,6 @@
                   }
                },
                "mode" : "trigger",
-               "path" : "/user/hand/left/input/trigger"
-            },
-            {
-               "inputs" : {
-                  "click" : {
-                     "output" : "/actions/laserpointers/in/leftclick"
-                  }
-               },
-               "mode" : "trigger",
                "path" : "/user/hand/right/input/trigger"
             },
             {
