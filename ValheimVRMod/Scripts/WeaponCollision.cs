@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using HarmonyLib;
@@ -17,16 +16,14 @@ namespace ValheimVRMod.Scripts {
         private bool scriptActive;
         private GameObject colliderParent = new GameObject();
         private List<Vector3> snapshots = new List<Vector3>();
+        private CooldownScript cooldownScript;
+        private bool isRightHand;
 
         public bool itemIsTool;
         
         private int maxSnapshots;
         private float colliderDistance;
         
-        private void Awake() {
-            StaticObjects.rightCooldown().maxCooldown = COOLDOWN;
-        }
-
         private void OnTriggerEnter(Collider collider) {
             if (!isCollisionAllowed()) {
                 return;
@@ -38,24 +35,36 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            var item = Player.m_localPlayer.GetRightItem();
+            ItemDrop.ItemData item;
+            
+            if (isRightHand) {
+                item = Player.m_localPlayer.GetRightItem();   
+            }
+            else {
+                item = Player.m_localPlayer.GetLeftItem();
+            }
 
-            if (item == null && !itemIsTool || !hasMomentum() || StaticObjects.rightCooldown().isInCooldown()) {
+            if (item == null && !itemIsTool || !hasMomentum() || cooldownScript.isInCooldown()) {
                 return;
             }
 
             StaticObjects.lastHitPoint = transform.position;
             StaticObjects.lastHitCollider = collider;
 
-            var attack = Player.m_localPlayer.GetRightItem().m_shared.m_attack.Clone();
+            var attack = item.m_shared.m_attack.Clone();
             if (attack.Start(Player.m_localPlayer, null, null,
                 AccessTools.FieldRefAccess<Player, CharacterAnimEvent>(Player.m_localPlayer, "m_animEvent"),
-                null, Player.m_localPlayer.GetRightItem(), null, 0.0f, 0.0f)) {
-                VRPlayer.rightHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, SteamVR_Input_Sources.RightHand);
+                null, item, null, 0.0f, 0.0f)) {
+                if (isRightHand) {
+                    VRPlayer.rightHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, SteamVR_Input_Sources.RightHand);
+                }
+                else {
+                    VRPlayer.leftHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, SteamVR_Input_Sources.LeftHand);
+                }
             }
 
             snapshots.Clear();
-            StaticObjects.rightCooldown().startCooldown();
+            cooldownScript.startCooldown();
         }
 
         private void OnRenderObject() {
@@ -63,6 +72,10 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
+            // colliderParent.transform.localPosition = VHVRConfig.getDebugPos();
+            // colliderParent.transform.localRotation = Quaternion.Euler(VHVRConfig.getDebugRot());
+            // colliderParent.transform.localScale = Vector3.one * VHVRConfig.getDebugScale();
+            
             transform.SetParent(colliderParent.transform);
             transform.localRotation = Quaternion.identity;
             transform.localPosition = Vector3.zero;
@@ -70,7 +83,19 @@ namespace ValheimVRMod.Scripts {
             transform.SetParent(Player.m_localPlayer.transform, true);
         }
 
-        public void setColliderParent(Transform obj, string name) {
+        public void setColliderParent(Transform obj, string name, bool rightHand) {
+
+            isRightHand = rightHand;
+            if (isRightHand) {
+                cooldownScript = StaticObjects.rightCooldown();
+            }
+            else {
+                cooldownScript = StaticObjects.leftCooldown();
+            }
+            
+            cooldownScript.maxCooldown = COOLDOWN;
+            
+            
             itemIsTool = name == "Hammer";
 
             if (colliderParent == null) {

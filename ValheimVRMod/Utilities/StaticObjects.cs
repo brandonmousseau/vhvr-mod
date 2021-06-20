@@ -6,7 +6,8 @@ using Object = UnityEngine.Object;
 namespace ValheimVRMod.Utilities {
     public static class StaticObjects {
         
-        private static WeaponCollision _weaponCollider;
+        private static WeaponCollision _leftWeaponCollider;
+        private static WeaponCollision _rightWeaponCollider;
         private static FistCollision _leftFist;
         private static FistCollision _rightFist;
         public static GameObject quickActions;
@@ -18,8 +19,12 @@ namespace ValheimVRMod.Utilities {
         public static Vector3 lastHitPoint;
         public static Collider lastHitCollider;
         
-        public static WeaponCollision weaponCollider() {
-            return getCollisionScript(ref _weaponCollider);
+        public static WeaponCollision leftWeaponCollider() {
+            return getCollisionScript(ref _leftWeaponCollider);
+        }
+        
+        public static WeaponCollision rightWeaponCollider() {
+            return getCollisionScript(ref _rightWeaponCollider);
         }
         
         public static FistCollision leftFist() {

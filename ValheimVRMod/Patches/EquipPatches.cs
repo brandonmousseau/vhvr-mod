@@ -43,9 +43,8 @@ namespace ValheimVRMod.Patches {
                     // (no return, we want collider for spear also)
                     break;
             }
-
-            Transform item = meshFilter.transform;
-            StaticObjects.weaponCollider().GetComponent<WeaponCollision>().setColliderParent(item, ___m_rightItem);
+            
+            StaticObjects.rightWeaponCollider().GetComponent<WeaponCollision>().setColliderParent(meshFilter.transform, ___m_rightItem, true);
             ParticleFix.maybeFix(___m_rightItemInstance);
         }
     }
@@ -91,6 +90,7 @@ namespace ValheimVRMod.Patches {
                     return;
             }
             
+            StaticObjects.leftWeaponCollider().GetComponent<WeaponCollision>().setColliderParent(meshFilter.transform, ___m_leftItem, false);
             ParticleFix.maybeFix(___m_leftItemInstance);
         }
     }

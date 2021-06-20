@@ -59,6 +59,11 @@ namespace ValheimVRMod.Utilities
                     0,  0, 0,
                     0.9030886f,  0.3803992f, 0.3803992f
                 )}, {   // WEAPONS
+                "Torch", WeaponColData.create( 
+                    0,  0.385f, 0,
+                    0,  0, 0,
+                    0.1f,  0.3f, 0.1f
+                )}, {
                 "Club", WeaponColData.create( 
                     -0.013f,  -0.022f, 0.603f,
                     0,  -5.241f, 45,

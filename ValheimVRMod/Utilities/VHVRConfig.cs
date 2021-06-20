@@ -48,6 +48,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> DebugRotX;
         private static ConfigEntry<float> DebugRotY;
         private static ConfigEntry<float> DebugRotZ;
+        private static ConfigEntry<float> DebugScale;
         private static ConfigEntry<bool> unlockDesktopCursor;
 
         // Controls Settings
@@ -241,6 +242,10 @@ namespace ValheimVRMod.Utilities
                 "DebugRotZ",
                 0.0f,
                 "DebugRotZ");
+            DebugScale = config.Bind("UI",
+                "DebugScale",
+                1.0f,
+                "DebugScale");
             unlockDesktopCursor = config.Bind("UI",
                 "UnlockDesktopCursor",
                 false,
@@ -550,6 +555,10 @@ namespace ValheimVRMod.Utilities
         public static Vector3 getDebugRot()
         {
             return new Vector3(DebugRotX.Value, DebugRotY.Value, DebugRotZ.Value);
+        }
+        
+        public static float getDebugScale() {
+            return DebugScale.Value;
         }
 
         public static bool UnlockDesktopCursor()

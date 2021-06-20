@@ -53,8 +53,6 @@ namespace ValheimVRMod.Scripts {
             sphere.layer = LayerUtils.getWorldspaceUiLayer();
             sphere.GetComponent<MeshRenderer>().material.color = Color.red;
         }
-
-
         
         /**
          * create:
