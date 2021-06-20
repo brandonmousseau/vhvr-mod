@@ -28,7 +28,7 @@ namespace ValheimVRMod.Patches {
             VrikCreator.resetVrikHandTransform();
             
             if (StaticObjects.quickSwitch != null) {
-                QuickSwitch.refreshItems();
+                StaticObjects.quickSwitch.GetComponent<QuickSwitch>().refreshItems();
             }
             
 
@@ -77,7 +77,7 @@ namespace ValheimVRMod.Patches {
             VrikCreator.resetVrikHandTransform();
 
             if (StaticObjects.quickSwitch != null) {
-                QuickSwitch.refreshItems();
+                StaticObjects.quickSwitch.GetComponent<QuickSwitch>().refreshItems();
             }
 
             switch (EquipScript.getLeft()) {

@@ -331,7 +331,7 @@
             {
                "inputs" : {
                   "click" : {
-                     "output" : "/actions/valheim/in/quickswitch"
+                     "output" : "/actions/valheim/in/quickactions"
                   }
                },
                "mode" : "button",
@@ -340,7 +340,7 @@
             {
                "inputs" : {
                   "click" : {
-                     "output" : "/actions/valheim/in/quickactions"
+                     "output" : "/actions/valheim/in/quickswitch"
                   }
                },
                "mode" : "button",

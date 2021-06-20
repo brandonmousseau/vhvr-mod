@@ -46,19 +46,13 @@ namespace ValheimVRMod.Utilities {
         
         public static void addQuickActions(Transform hand) {
             quickActions = new GameObject();
-            quickActions.transform.SetParent(hand, false);
-            quickActions.transform.localPosition = new Vector3(0, 0.071f, 0.0123f);
-            quickActions.transform.localRotation = Quaternion.Euler(107.34299f, -0.22f, -5.0f);
-            quickActions.AddComponent<QuickActions>();
+            quickActions.AddComponent<QuickActions>().parent = hand;
             quickActions.SetActive(false);
         }
         
         public static void addQuickSwitch(Transform hand) {
             quickSwitch = new GameObject();
-            quickSwitch.transform.SetParent(hand, false);
-            quickSwitch.transform.localPosition = new Vector3(0, 0.071f, 0.0123f);
-            quickSwitch.transform.localRotation = Quaternion.Euler(107.34299f, -0.22f, -5.0f);
-            quickSwitch.AddComponent<QuickSwitch>();
+            quickSwitch.AddComponent<QuickSwitch>().parent = hand;
             quickSwitch.SetActive(false);
         }
         

@@ -103,7 +103,7 @@ namespace ValheimVRMod.Patches
 
         static void Postfix() {
             if (StaticObjects.quickSwitch != null && VHVRConfig.UseVrControls()) {
-                QuickSwitch.refreshItems();
+                StaticObjects.quickSwitch.GetComponent<QuickSwitch>().refreshItems();
             }
         }
     }
@@ -113,7 +113,7 @@ namespace ValheimVRMod.Patches
 
         static void Postfix() {
             if (StaticObjects.quickSwitch != null && VHVRConfig.UseVrControls()) {
-                QuickSwitch.refreshItems();
+                StaticObjects.quickSwitch.GetComponent<QuickSwitch>().refreshItems();
             }
         }
     }
@@ -128,7 +128,7 @@ namespace ValheimVRMod.Patches
             }
             
             if (StaticObjects.quickSwitch != null) {
-                QuickSwitch.refreshItems();
+                StaticObjects.quickSwitch.GetComponent<QuickSwitch>().refreshItems();
             }
             
             VrikCreator.resetVrikHandTransform();
@@ -145,7 +145,7 @@ namespace ValheimVRMod.Patches
             }
             
             if (StaticObjects.quickActions != null) {
-                QuickActions.refreshItems();
+                StaticObjects.quickActions.GetComponent<QuickActions>().refreshItems();
             }
         }
     }

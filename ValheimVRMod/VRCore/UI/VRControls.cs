@@ -82,37 +82,26 @@ namespace ValheimVRMod.VRCore.UI
                 checkRecenterPose(Time.deltaTime);
             }
 
-            checkQuickItems();
+            checkQuickItems<QuickSwitch>(StaticObjects.quickSwitch, SteamVR_Actions.valheim_QuickSwitch);
+            checkQuickItems<QuickActions>(StaticObjects.quickActions, SteamVR_Actions.valheim_QuickActions);
         }
         
-        private void checkQuickItems() {
+        private void checkQuickItems<T>(GameObject obj, SteamVR_Action_Boolean action) where T : QuickAbstract {
             
-            var quickActions = StaticObjects.quickActions;
-            var quickSwitch = StaticObjects.quickSwitch;
-            if (!quickActions || !quickSwitch) {
+            if (!obj) {
                 return;
             }
             
-            if (SteamVR_Actions.valheim_QuickActions.GetStateDown(SteamVR_Input_Sources.Any)
-            || SteamVR_Actions.valheim_QuickSwitch.GetStateDown(SteamVR_Input_Sources.Any)) {
-                quickActions.SetActive(true);
-                quickSwitch.SetActive(true);
+            if (action.GetStateDown(SteamVR_Input_Sources.Any)) {
+                obj.SetActive(true);
             }
 
-            if (SteamVR_Actions.valheim_QuickActions.GetStateUp(SteamVR_Input_Sources.Any)
-            || SteamVR_Actions.valheim_QuickSwitch.GetStateUp(SteamVR_Input_Sources.Any)) {
-                quickActions.GetComponent<QuickActions>().selectHoveredItem();
-                quickActions.SetActive(false);
-                quickSwitch.GetComponent<QuickSwitch>().selectHoveredItem();
-                quickSwitch.SetActive(false);
-            }
-
-
-            if (QuickActions.movementLocked && ! StaticObjects.quickSwitch.activeSelf && GetJoyLeftStickY() == 0 && GetJoyLeftStickX() == 0) {
-                QuickActions.movementLocked = false;
+            if (action.GetStateUp(SteamVR_Input_Sources.Any)) {
+                obj.GetComponent<T>().selectHoveredItem();
+                obj.SetActive(false);
             }
         }
-        
+
         private void checkRecenterPose(float dt)
         {
             if (isInRecenterPose())
