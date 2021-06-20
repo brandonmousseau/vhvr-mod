@@ -90,6 +90,8 @@ namespace ValheimVRMod.Patches {
                     meshFilter.gameObject.AddComponent<ShieldManager>()._name = ___m_leftItem;
                     return;
             }
+            
+            ParticleFix.maybeFix(___m_leftItemInstance);
         }
     }
     
