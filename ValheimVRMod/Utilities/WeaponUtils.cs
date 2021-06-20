@@ -14,6 +14,11 @@ namespace ValheimVRMod.Utilities
                     0,  -9, 0,
                     0.01f,  0.001f, 0.021f
                 )}, {
+                "AxeIron", WeaponColData.create(
+                    0.0105f,  0, -0.03929f,
+                    0,  -9, 0,
+                    0.01f,  0.001f, 0.021f
+                )}, {
                 "AxeBlackMetal", WeaponColData.create(
                     0.058f,  0.714f, 0,
                     0,  0, 0,
