@@ -1,12 +1,13 @@
+using System;
 using UnityEngine;
 
 namespace ValheimVRMod.Scripts {
     public class QuickSwitch : QuickAbstract {
 
-        protected int SLOTS = 8;
+        private int elementCount;
 
-        protected override int getSlots() {
-            return SLOTS;
+        protected override int getElementCount() {
+            return elementCount;
         }
         
         /**
@@ -14,32 +15,41 @@ namespace ValheimVRMod.Scripts {
          */
         public override void refreshItems() {
 
+            elementCount = 0;
             var inventory = Player.m_localPlayer.GetInventory();
-            
-            for (int i = 0; i < SLOTS; i++) {
+
+            for (int i = 0; i < 8; i++) {
                 
                 ItemDrop.ItemData item = inventory.GetItemAt(i, 0);
-                
+
                 if (item == null) {
-                    equippedLayers[i].SetActive(false);
-                    items[i].GetComponent<SpriteRenderer>().sprite = null;
                     continue;
                 }
                 
-                equippedLayers[i].SetActive(item.m_equiped);
-                items[i].GetComponent<SpriteRenderer>().sprite = item.GetIcon();
-                
+                switch (item.m_shared.m_itemType) {
+                    case ItemDrop.ItemData.ItemType.Tool:
+                    case ItemDrop.ItemData.ItemType.Torch:
+                    case ItemDrop.ItemData.ItemType.OneHandedWeapon:
+                    case ItemDrop.ItemData.ItemType.TwoHandedWeapon:
+                        elements[elementCount].transform.GetChild(1).gameObject.SetActive(item.m_equiped);
+                        elements[elementCount].transform.GetChild(2).GetComponent<SpriteRenderer>().sprite = item.GetIcon();
+                        elements[elementCount].name = i.ToString() ;
+                        elementCount++;
+                        break;
+                }
             }
+
+            reorderElements();
         }
 
         public override void selectHoveredItem() {
 
-            if (hoveredItemIndex < 0) {
+            if (hoveredIndex < 0) {
                 return;
             }
 
             var inventory = Player.m_localPlayer.GetInventory();
-            ItemDrop.ItemData item = inventory.GetItemAt(hoveredItemIndex, 0);
+            ItemDrop.ItemData item = inventory.GetItemAt(Int32.Parse(elements[hoveredIndex].name), 0);
             Player.m_localPlayer.UseItem(inventory, item, true);
             
         }

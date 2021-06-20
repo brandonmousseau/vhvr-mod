@@ -6,26 +6,24 @@ namespace ValheimVRMod.Scripts {
     public abstract class QuickAbstract : MonoBehaviour {
         
         private float elementDistance = 0.1f;
-        
+        private const int MAX_ELEMENTS = 10;
+
         private Color standard = new Color(0.2f, 0.2f, 0.2f, 0.5f);
         private Color hovered = new Color(0.5f, 0.5f, 0.5f, 0.5f);
         private Color selected = new Color(0.34375f, 0.5859375f, 0.796875f, 0.5f);
 
         protected GameObject hoveredItem;
-        protected int hoveredItemIndex = -1;
-        protected GameObject[] equippedLayers;
-        protected GameObject[] items;
-        private Vector2[] positions;
-        private GameObject sphere;
+        protected int hoveredIndex = -1;
+        protected GameObject[] elements;
         
+        private GameObject sphere;
+
         public Transform parent;
         
         
         private void Awake() {
-            equippedLayers = new GameObject[getSlots()]; 
-            items = new GameObject[getSlots()]; 
-            positions = new Vector2[getSlots()];
             
+            elements = new GameObject[MAX_ELEMENTS];
             initialize();
             refreshItems();
             createSphere();
@@ -42,7 +40,7 @@ namespace ValheimVRMod.Scripts {
             hoverItem();
         }
 
-        protected abstract int getSlots();
+        protected abstract int getElementCount();
         public abstract void refreshItems();
         public abstract void selectHoveredItem();
 
@@ -74,41 +72,34 @@ namespace ValheimVRMod.Scripts {
             tex_selected.SetPixel(0,0, selected);
             tex_selected.Apply();
 
-            for (int i = 0; i < getSlots(); i++) {
+            for (int i = 0; i < MAX_ELEMENTS; i++) {
 
-                double a = i * 2 * Math.PI / getSlots();
-                double x = Math.Cos(a) * elementDistance;
-                double y = Math.Sin(a) * elementDistance;
-                positions[i] = new Vector2((float)x, (float)y);
-
+                elements[i] = new GameObject();
+                elements[i].transform.SetParent(transform, false);
+                
                 GameObject standardLayer = new GameObject();
                 standardLayer.layer = LayerUtils.getWorldspaceUiLayer();
-                standardLayer.transform.SetParent(transform, false);
-                standardLayer.transform.localPosition = positions[i];
+                standardLayer.transform.SetParent(elements[i].transform, false);
                 standardLayer.transform.localScale *= 4;
                 var standardRenderer = standardLayer.AddComponent<SpriteRenderer>();
                 standardRenderer.sprite = Sprite.Create(tex_standard, new Rect(0.0f, 0.0f, tex_standard.width, tex_standard.height), new Vector2(0.5f, 0.5f));
                 standardRenderer.sortingOrder = 0;
-                
+
                 GameObject equipedLayer = new GameObject();
                 equipedLayer.layer = LayerUtils.getWorldspaceUiLayer();
-                equipedLayer.transform.SetParent(transform, false);
-                equipedLayer.transform.localPosition = positions[i];
+                equipedLayer.transform.SetParent(elements[i].transform, false);
                 equipedLayer.transform.localScale *= 4;
                 var equipedRenderer = equipedLayer.AddComponent<SpriteRenderer>();
                 equipedRenderer.sprite = Sprite.Create(tex_selected, new Rect(0.0f, 0.0f, tex_selected.width, tex_selected.height), new Vector2(0.5f, 0.5f));
                 equipedRenderer.sortingOrder = 2;
                 equipedLayer.SetActive(false);
-                equippedLayers[i] = equipedLayer;
-                
+
                 GameObject item = new GameObject();
                 item.layer = LayerUtils.getWorldspaceUiLayer();
-                item.transform.SetParent(transform, false);
-                item.transform.localPosition = positions[i];
+                item.transform.SetParent(elements[i].transform, false);
                 item.transform.localScale /= 15;
                 var renderer = item.AddComponent<SpriteRenderer>();
                 renderer.sortingOrder = 3;
-                items[i] = item;
 
             }
             
@@ -122,24 +113,43 @@ namespace ValheimVRMod.Scripts {
             hoveredItem.SetActive(false);
             
         }
+
+        protected void reorderElements() {
+            
+            for (int i = 0; i < MAX_ELEMENTS; i++) {
+
+                if (i >= getElementCount()) {
+                    elements[i].SetActive(false);
+                    continue;
+                }
+                
+                double a = i * 2 * Math.PI / getElementCount();
+                double x = Math.Cos(a) * elementDistance;
+                double y = Math.Sin(a) * elementDistance;
+                var position = new Vector2((float)x, (float)y);
+                
+                elements[i].SetActive(true);
+                elements[i].transform.localPosition = position;
+            }
+        }
         
         private void hoverItem() {
 
             float maxDist = 0.05f;
-            hoveredItemIndex = -1;
+            hoveredIndex = -1;
             
-            for (int i = 0; i < items.Length; i++) {
-                var dist = Vector3.Distance(parent.position, items[i].transform.position);
+            for (int i = 0; i < getElementCount(); i++) {
+                var dist = Vector3.Distance(parent.position, elements[i].transform.position);
 
                 if (dist < maxDist) {
                     maxDist = dist;
-                    hoveredItemIndex = i;
+                    hoveredIndex = i;
                 }
             }
 
-            var hovering = hoveredItemIndex >= 0;
+            var hovering = hoveredIndex >= 0;
             if (hovering) {
-                hoveredItem.transform.position = items[hoveredItemIndex].transform.position;    
+                hoveredItem.transform.position = elements[hoveredIndex].transform.position;    
             }
             hoveredItem.SetActive(hovering);
         }

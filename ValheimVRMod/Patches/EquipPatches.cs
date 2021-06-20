@@ -26,11 +26,11 @@ namespace ValheimVRMod.Patches {
             }
             
             VrikCreator.resetVrikHandTransform();
-            
+
             if (StaticObjects.quickSwitch != null) {
                 StaticObjects.quickSwitch.GetComponent<QuickSwitch>().refreshItems();
+                StaticObjects.quickActions.GetComponent<QuickActions>().refreshItems();
             }
-            
 
             switch (EquipScript.getRight()) {
                 case EquipType.Fishing:
@@ -77,6 +77,7 @@ namespace ValheimVRMod.Patches {
 
             if (StaticObjects.quickSwitch != null) {
                 StaticObjects.quickSwitch.GetComponent<QuickSwitch>().refreshItems();
+                StaticObjects.quickActions.GetComponent<QuickActions>().refreshItems();
             }
 
             switch (EquipScript.getLeft()) {
