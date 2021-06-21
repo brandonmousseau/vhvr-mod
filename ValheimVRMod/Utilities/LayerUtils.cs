@@ -48,7 +48,9 @@ namespace ValheimVRMod.Utilities
         // I need a layer with non-visible objects since
         // layers are short supply, so re-using 23. Must be
         // in sync with what is in the prefab in Unity Editor.
+        public static readonly int WATER = 4;
         public static readonly int ITEM_LAYER = 12;
+        public static readonly int WATERVOLUME_LAYER = 21;
         public static readonly int WEAPON_LAYER = 22;
         private static readonly int HANDS_LAYER = 23;
         public static readonly int HANDS_LAYER_MASK = (1 << HANDS_LAYER);

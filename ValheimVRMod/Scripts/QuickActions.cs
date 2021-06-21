@@ -40,7 +40,13 @@ namespace ValheimVRMod.Scripts {
                         break;
                     default:
                         
-                        elements[elementCount].transform.GetChild(1).gameObject.SetActive(item.m_equiped);
+                        elements[elementCount].transform.GetChild(1).gameObject.SetActive(item.m_equiped || item.m_durability == 0);
+                        if (item.m_durability == 0) {
+                            elements[elementCount].transform.GetChild(1).GetComponent<SpriteRenderer>().color = Color.red;
+                        }
+                        else {
+                            elements[elementCount].transform.GetChild(1).GetComponent<SpriteRenderer>().color = Color.white;
+                        }
                         elements[elementCount].transform.GetChild(2).GetComponent<SpriteRenderer>().sprite = item.GetIcon();
                         elements[elementCount].name = i.ToString();
                         elementCount++;

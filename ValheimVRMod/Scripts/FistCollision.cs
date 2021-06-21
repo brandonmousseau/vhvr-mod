@@ -22,6 +22,11 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
+            // ignore water
+            if (collider.gameObject.layer == LayerUtils.WATERVOLUME_LAYER || collider.gameObject.layer == LayerUtils.WATER) {
+                return;
+            }
+            
             var maybePlayer = collider.GetComponentInParent<Player>();
 
             if (maybePlayer != null && maybePlayer == Player.m_localPlayer) {

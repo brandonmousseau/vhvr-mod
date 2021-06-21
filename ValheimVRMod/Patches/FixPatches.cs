@@ -28,5 +28,4 @@ namespace ValheimVRMod.Patches {
             return __instance != Player.m_localPlayer;
         }
     }
-    
 }
