@@ -20,4 +20,13 @@ namespace ValheimVRMod.Patches {
             return true;
         }
     }
+    
+    [HarmonyPatch(typeof(Character), "SetVisible")]
+    class PatchFixVanishing {
+
+        static bool Prefix(Player __instance) {
+            return __instance != Player.m_localPlayer;
+        }
+    }
+    
 }
