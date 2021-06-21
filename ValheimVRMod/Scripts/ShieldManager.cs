@@ -4,14 +4,13 @@ using ValheimVRMod.Utilities;
 namespace ValheimVRMod.Scripts {
     public class ShieldManager : MonoBehaviour {
         
-        private const float COOLDOWN = 5.0f;
         public string _name;
 
         private static bool _blocking;
         private static ShieldManager instance;
 
         private void Awake() {
-            StaticObjects.leftCooldown().maxCooldown = COOLDOWN;
+            StaticObjects.leftCooldown().maxCooldown = VHVRConfig.CooldownShield();
             instance = this;
         }
 

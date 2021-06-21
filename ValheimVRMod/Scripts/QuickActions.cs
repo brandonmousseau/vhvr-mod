@@ -11,7 +11,11 @@ namespace ValheimVRMod.Scripts {
         private int elementCount;
         private MethodInfo stopEmote = AccessTools.Method(typeof(Player), "StopEmote");
         private bool hasGPower;
-
+        private Texture2D sitTexture; 
+        
+        QuickActions() {
+            sitTexture = VRAssetManager.GetAsset<Texture2D>("sit");    
+        }
 
         protected override int getElementCount() {
             return elementCount;
@@ -63,7 +67,6 @@ namespace ValheimVRMod.Scripts {
                 elementCount++;
             }
             
-            Texture2D sitTexture = VRAssetManager.GetAsset<Texture2D>("sit");
             elements[elementCount].transform.GetChild(2).GetComponent<SpriteRenderer>().sprite =  Sprite.Create(sitTexture,
                 new Rect(0.0f, 0.0f, sitTexture.width, sitTexture.height),
                 new Vector2(0.5f, 0.5f), 500);

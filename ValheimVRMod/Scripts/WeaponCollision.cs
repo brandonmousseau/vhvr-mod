@@ -8,22 +8,24 @@ using Valve.VR;
 
 namespace ValheimVRMod.Scripts {
     public class WeaponCollision : MonoBehaviour {
-        private const float MIN_DISTANCE = 0.3f;
-        private const int MAX_SNAPSHOTS_BASE = 15;
+        private const float MIN_DISTANCE = 0.2f;
+        private const int MAX_SNAPSHOTS_BASE = 20;
         private const int MAX_SNAPSHOTS_FACTOR = -5;
-        private const float COOLDOWN = 1.5f;
 
         private bool scriptActive;
         private GameObject colliderParent = new GameObject();
         private List<Vector3> snapshots = new List<Vector3>();
         private CooldownScript cooldownScript;
+        private ItemDrop.ItemData item;
+        private Attack attack;
         private bool isRightHand;
+        private bool weaponNotUsable;
 
         public bool itemIsTool;
         
         private int maxSnapshots;
         private float colliderDistance;
-        
+
         private void OnTriggerEnter(Collider collider) {
             if (!isCollisionAllowed()) {
                 return;
@@ -41,18 +43,6 @@ namespace ValheimVRMod.Scripts {
             if (maybePlayer != null && maybePlayer == Player.m_localPlayer) {
                 return;
             }
-            
-            Debug.Log("Collider Layer: " + collider.gameObject.layer);
-            LogUtils.LogChildTree(collider.transform);
-
-            ItemDrop.ItemData item;
-            
-            if (isRightHand) {
-                item = Player.m_localPlayer.GetRightItem();   
-            }
-            else {
-                item = Player.m_localPlayer.GetLeftItem();
-            }
 
             if (item == null && !itemIsTool || !hasMomentum() || cooldownScript.isInCooldown()) {
                 return;
@@ -60,8 +50,7 @@ namespace ValheimVRMod.Scripts {
 
             StaticObjects.lastHitPoint = transform.position;
             StaticObjects.lastHitCollider = collider;
-
-            var attack = item.m_shared.m_attack.Clone();
+            
             if (attack.Start(Player.m_localPlayer, null, null,
                 AccessTools.FieldRefAccess<Player, CharacterAnimEvent>(Player.m_localPlayer, "m_animEvent"),
                 null, item, null, 0.0f, 0.0f)) {
@@ -73,7 +62,7 @@ namespace ValheimVRMod.Scripts {
                 }
             }
 
-            snapshots.Clear();
+            //snapshots.Clear();
             cooldownScript.startCooldown();
         }
 
@@ -98,14 +87,18 @@ namespace ValheimVRMod.Scripts {
             isRightHand = rightHand;
             if (isRightHand) {
                 cooldownScript = StaticObjects.rightCooldown();
+                item = Player.m_localPlayer.GetRightItem();   
             }
             else {
                 cooldownScript = StaticObjects.leftCooldown();
+                item = Player.m_localPlayer.GetLeftItem();
+            }
+
+            if (item != null) {
+                attack = item.m_shared.m_attack.Clone();   
             }
             
-            cooldownScript.maxCooldown = COOLDOWN;
-            
-            
+            cooldownScript.maxCooldown = VHVRConfig.CooldownWeapon();
             itemIsTool = name == "Hammer";
 
             if (colliderParent == null) {
@@ -124,8 +117,31 @@ namespace ValheimVRMod.Scripts {
             }
             catch (InvalidEnumArgumentException) {
                 setScriptActive(false);
-                Debug.LogError("Invalid Weapon Data for: " + name);
             }
+        }
+
+        private void Update() {
+
+            if (weaponNotUsable && ! cooldownScript.isInCooldown() && Player.m_localPlayer.HaveStamina(getStaminaUsage() + 0.1f)) {
+                foreach (MeshRenderer meshRenderer in colliderParent.transform.parent.GetComponentsInChildren<MeshRenderer>()) {
+                    meshRenderer.material.color = Color.white;
+                }
+                weaponNotUsable = false;
+            } else if (! weaponNotUsable && (cooldownScript.isInCooldown() || ! Player.m_localPlayer.HaveStamina(getStaminaUsage() + 0.1f))) {
+                foreach (MeshRenderer meshRenderer in colliderParent.transform.parent.GetComponentsInChildren<MeshRenderer>()) {
+                    meshRenderer.material.color = Color.red;
+                }
+                weaponNotUsable = true;
+            }
+        }
+
+        private float getStaminaUsage() {
+            
+            if (attack.m_attackStamina <= 0.0) {
+                return 0.0f;   
+            }
+            double attackStamina = attack.m_attackStamina;
+            return (float) (attackStamina - attackStamina * 0.330000013113022 * Player.m_localPlayer.GetSkillFactor(item.m_shared.m_skillType));
         }
 
         private bool isCollisionAllowed() {
@@ -140,6 +156,8 @@ namespace ValheimVRMod.Scripts {
             }
         }
 
+        
+        
         private void FixedUpdate() {
             if (!isCollisionAllowed()) {
                 return;

@@ -48,6 +48,11 @@ namespace ValheimVRMod.Scripts {
         }
 
         public void startCooldown() {
+
+            if (maxCooldown == 0) {
+                return;
+            }
+            
             cooldownTimer = maxCooldown;
             grayLayer.SetActive(true);
             yellowLayer.SetActive(true);

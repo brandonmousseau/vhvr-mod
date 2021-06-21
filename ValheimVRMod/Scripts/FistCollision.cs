@@ -9,8 +9,7 @@ namespace ValheimVRMod.Scripts {
     public class FistCollision : MonoBehaviour {
         private const float MIN_DISTANCE = 0.2f;
         private const int MAX_SNAPSHOTS = 20;
-        private const float COOLDOWN = 1.5f;
-        
+
         private GameObject colliderParent = new GameObject();
         private List<Vector3> snapshots = new List<Vector3>();
         private CooldownScript cooldownScript;
@@ -54,8 +53,8 @@ namespace ValheimVRMod.Scripts {
                 
             }
 
-            snapshots.Clear();
-            cooldownScript.maxCooldown = COOLDOWN;
+            //snapshots.Clear();
+            cooldownScript.maxCooldown = VHVRConfig.CooldownFists();
             cooldownScript.startCooldown();
         }
 
