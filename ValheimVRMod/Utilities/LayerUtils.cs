@@ -54,7 +54,7 @@ namespace ValheimVRMod.Utilities
         public static readonly int WEAPON_LAYER = 22;
         private static readonly int HANDS_LAYER = 23;
         public static readonly int HANDS_LAYER_MASK = (1 << HANDS_LAYER);
-        private static readonly int UI_PANEL_LAYER = 29;
+        public static readonly int UI_PANEL_LAYER = 29;
         public static readonly int UI_PANEL_LAYER_MASK = (1 << UI_PANEL_LAYER);
         private static readonly int WORLDSPACE_UI_LAYER = 30;
         public static readonly int WORLDSPACE_UI_LAYER_MASK = (1 << WORLDSPACE_UI_LAYER);

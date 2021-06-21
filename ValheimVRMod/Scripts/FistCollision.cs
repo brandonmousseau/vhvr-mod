@@ -22,8 +22,10 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            // ignore water
-            if (collider.gameObject.layer == LayerUtils.WATERVOLUME_LAYER || collider.gameObject.layer == LayerUtils.WATER) {
+            // ignore water and UI panel
+            if (collider.gameObject.layer == LayerUtils.WATERVOLUME_LAYER 
+                || collider.gameObject.layer == LayerUtils.WATER
+                || collider.gameObject.layer == LayerUtils.UI_PANEL_LAYER) {
                 return;
             }
             
