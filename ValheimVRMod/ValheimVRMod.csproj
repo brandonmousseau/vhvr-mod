@@ -297,6 +297,7 @@
     <Compile Include="Patches\BowAndFishingPatches.cs" />
     <Compile Include="Patches\CollisionPatches.cs" />
     <Compile Include="Patches\ControlPatches.cs" />
+    <Compile Include="Patches\FixPatches.cs" />
     <Compile Include="Patches\HandBasedInteractionPatches.cs" />
     <Compile Include="Patches\HarmonyPatcher.cs" />
     <Compile Include="Patches\EyeRotationPatch.cs" />
@@ -309,6 +310,7 @@
     <Compile Include="Scripts\BowLocalManager.cs" />
     <Compile Include="Scripts\BowManager.cs" />
     <Compile Include="Scripts\QuickActions.cs" />
+    <Compile Include="Scripts\QuickAbstract.cs" />
     <Compile Include="Scripts\VRPlayerSync.cs" />
     <Compile Include="Scripts\WeaponCollision.cs" />
     <Compile Include="Scripts\CooldownScript.cs" />
