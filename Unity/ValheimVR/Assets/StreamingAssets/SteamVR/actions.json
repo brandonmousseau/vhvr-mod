@@ -156,6 +156,11 @@
       "name": "/actions/LaserPointers/in/RightClick",
       "type": "boolean",
       "requirement": "mandatory"
+    },
+    {
+      "name": "/actions/LaserPointers/in/ClickModifier",
+      "type": "boolean",
+      "requirement": "optional"
     }
   ],
   "action_sets": [

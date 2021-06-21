@@ -41,6 +41,9 @@ namespace ValheimVRMod.VRCore.UI
         // Action for "Use" using the left hand controller
         private SteamVR_Action_Boolean _useLeftHand = SteamVR_Actions.valheim_UseLeft;
 
+        // An input where the user holds down the button when clicking for an alternate behavior (ie, stack split)
+        private SteamVR_Action_Boolean _clickModifier = SteamVR_Actions.laserPointers_ClickModifier;
+
         public SteamVR_Action_Boolean useLeftHandAction { get
             {
                 return _useLeftHand;
@@ -329,6 +332,11 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return 0;
             }
+        }
+
+        public bool getClickModifier()
+        {
+            return _clickModifier.GetState(SteamVR_Input_Sources.Any);
         }
 
         private int getAltPieceRotation()

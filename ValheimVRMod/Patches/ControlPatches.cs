@@ -4,6 +4,8 @@ using HarmonyLib;
 using System.Reflection;
 using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
+using System.Reflection.Emit;
+using UnityEngine;
 
 namespace ValheimVRMod.Patches {
     // These patches are used to inject the VR inputs into the game's control system
@@ -236,6 +238,48 @@ namespace ValheimVRMod.Patches {
 
                     break;
             }
+        }
+    }
+
+    // Used to enable stack splitting in inventory
+    [HarmonyPatch(typeof(InventoryGrid), "OnLeftClick")]
+    class InventoryGrid_OnLeftClick_Patch {
+
+        static bool getClickModifier()
+        {
+            return VRControls.laserControlsActive && VRControls.instance.getClickModifier();
+        }
+
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            var original = new List<CodeInstruction>(instructions);
+            var patched = new List<CodeInstruction>();
+            if (!VHVRConfig.UseVrControls())
+            {
+                return original;
+            }
+            bool addedInstruction = false;
+            for (int i = 0; i < original.Count; i++)
+            {
+                var instruction = original[i];
+                if (!addedInstruction && instruction.opcode == OpCodes.Ldc_I4)
+                {
+                    int operand = (int)instruction.operand;
+                    if (operand == (int)KeyCode.LeftShift)
+                    {
+                        // Add our custom check
+                        patched.Add(CodeInstruction.Call(typeof(InventoryGrid_OnLeftClick_Patch), nameof(getClickModifier)));
+                        addedInstruction = true;
+                        // Skip over the next instruction too since it will be the keycode comparison
+                        i++;
+                    }
+                }
+                else
+                {
+                    patched.Add(instruction);
+                }
+            }
+            return patched;
         }
     }
 }

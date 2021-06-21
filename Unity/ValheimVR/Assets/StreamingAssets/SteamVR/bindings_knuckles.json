@@ -45,10 +45,6 @@
          "sources" : []
       },
       "/actions/laserpointers" : {
-         "chords" : [],
-         "haptics" : [],
-         "poses" : [],
-         "skeleton" : [],
          "sources" : [
             {
                "inputs" : {
@@ -67,14 +63,19 @@
                },
                "mode" : "button",
                "path" : "/user/hand/right/input/b"
+            },
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/laserpointers/in/clickmodifier"
+                  }
+               },
+               "mode" : "button",
+               "path" : "/user/hand/left/input/trigger"
             }
          ]
       },
       "/actions/placementmode" : {
-         "chords" : [],
-         "haptics" : [],
-         "poses" : [],
-         "skeleton" : [],
          "sources" : []
       },
       "/actions/platformer" : {
@@ -107,11 +108,32 @@
                "path" : "/user/hand/left/pose/raw"
             },
             {
+               "output" : "none",
+               "path" : "/user/hand/left/pose/gdc2015"
+            },
+            {
+               "output" : "/actions/valheim/in/recenterl",
+               "path" : "/user/hand/left/pose/handgrip"
+            },
+            {
+               "output" : "/actions/valheim/in/recenterr",
+               "path" : "/user/hand/right/pose/handgrip"
+            },
+            {
                "output" : "/actions/valheim/in/poser",
                "path" : "/user/hand/right/pose/raw"
             }
          ],
-         "skeleton" : [],
+         "skeleton" : [
+            {
+               "output" : "/actions/valheim/in/skeletonlefthand",
+               "path" : "/user/hand/left/input/skeleton/left"
+            },
+            {
+               "output" : "/actions/valheim/in/skeletonrighthand",
+               "path" : "/user/hand/right/input/skeleton/right"
+            }
+         ],
          "sources" : [
             {
                "inputs" : {

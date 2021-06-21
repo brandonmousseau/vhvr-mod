@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Reflection.Emit;
 using System.Reflection;
 using ValheimVRMod.Utilities;
-using ValheimVRMod.VRCore;
 
 using static ValheimVRMod.Utilities.LogUtils;
 
