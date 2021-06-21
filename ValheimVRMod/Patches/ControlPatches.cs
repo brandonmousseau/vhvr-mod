@@ -75,12 +75,15 @@ namespace ValheimVRMod.Patches {
     [HarmonyPatch(typeof(ZInput), nameof(ZInput.GetJoyRightStickX))]
     class ZInput_GetJoyRightStickX_Patch {
         static void Postfix(ref float __result) {
-            // dont patch, if quickswitch is active
-            if (StaticObjects.quickSwitch != null && StaticObjects.quickSwitch.activeSelf) {
-                return;
-            }
-
             if (VRControls.mainControlsActive) {
+                
+                if (ZInput_GetJoyRightStickY_Patch.isRunning 
+                    && VRControls.instance.GetJoyRightStickX() > -0.5f 
+                    && VRControls.instance.GetJoyRightStickX() < 0.5f)
+                {
+                    return;
+                }
+                
                 __result = __result + VRControls.instance.GetJoyRightStickX();
             }
         }
@@ -92,11 +95,6 @@ namespace ValheimVRMod.Patches {
         public static bool isRunning;
 
         static void Postfix(ref float __result) {
-            // dont patch, if quickswitch is active
-            if (StaticObjects.quickSwitch != null && StaticObjects.quickSwitch.activeSelf) {
-                return;
-            }
-
             if (VRControls.mainControlsActive) {
                 var joystick = VRControls.instance.GetJoyRightStickY();
 
