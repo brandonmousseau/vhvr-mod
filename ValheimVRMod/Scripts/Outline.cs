@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using ValheimVRMod.Utilities;
 
 [DisallowMultipleComponent]
 
@@ -86,8 +87,8 @@ public class Outline : MonoBehaviour {
     renderers = GetComponentsInChildren<Renderer>();
 
     // Instantiate outline materials
-    outlineMaskMaterial = Instantiate(VRAssetManager.GetAsset<Texture2D>("")   Resources.Load<Material>(@"Materials/OutlineMask"));
-    outlineFillMaterial = Instantiate(Resources.Load<Material>(@"Materials/OutlineFill"));
+    outlineMaskMaterial = Instantiate(VRAssetManager.GetAsset<Material>("OutlineMask"));
+    outlineFillMaterial = Instantiate(VRAssetManager.GetAsset<Material>("OutlineFill"));
 
     outlineMaskMaterial.name = "OutlineMask (Instance)";
     outlineFillMaterial.name = "OutlineFill (Instance)";

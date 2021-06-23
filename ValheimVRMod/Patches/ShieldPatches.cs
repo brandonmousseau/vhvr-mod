@@ -33,7 +33,7 @@ namespace ValheimVRMod.Patches {
 
             if (__result) {
                 VRPlayer.leftHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, SteamVR_Input_Sources.LeftHand);
-                StaticObjects.leftCooldown().startCooldown();   
+                ShieldManager.block();
             }
         }
     }

@@ -12,7 +12,6 @@ namespace ValheimVRMod.Scripts {
 
         private GameObject colliderParent = new GameObject();
         private List<Vector3> snapshots = new List<Vector3>();
-        private CooldownScript cooldownScript;
         private bool isRightHand;
         private HandGesture handGesture;
 
@@ -34,7 +33,7 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            if (!hasMomentum() || cooldownScript.isInCooldown()) {
+            if (!hasMomentum()) {
                 return;
             }
 
@@ -50,12 +49,7 @@ namespace ValheimVRMod.Scripts {
                 } else {
                     VRPlayer.leftHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, SteamVR_Input_Sources.LeftHand);
                 }
-                
             }
-
-            //snapshots.Clear();
-            cooldownScript.maxCooldown = VHVRConfig.CooldownFists();
-            cooldownScript.startCooldown();
         }
 
         private void OnRenderObject() {
@@ -67,11 +61,10 @@ namespace ValheimVRMod.Scripts {
 
         }
 
-        public void setColliderParent(Transform obj, CooldownScript cds, bool rightHand) {
+        public void setColliderParent(Transform obj, bool rightHand) {
 
             isRightHand = rightHand;
             handGesture = obj.GetComponent<HandGesture>();
-            cooldownScript = cds;
             colliderParent = new GameObject();
             colliderParent.transform.parent = obj;
             colliderParent.transform.localPosition = new Vector3(0, 0.00078f, 0.00016f);

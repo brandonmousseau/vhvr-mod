@@ -1,12 +1,11 @@
 using UnityEngine;
 
 namespace ValheimVRMod.Scripts {
-    public class TriggerCooldown : MonoBehaviour {
+    public class MeshCooldown : MonoBehaviour {
         private float cooldown;
         private Outline outline;
-        private bool sharingCooldown;
 
-        public static float sharedCooldown;
+        public static MeshCooldown sharedInstance;
         public static bool staminaDrained;
         
         public bool tryTrigger(float cd) {
@@ -14,11 +13,10 @@ namespace ValheimVRMod.Scripts {
                 return false;
             }
 
-            getOutline().enabled = true;
+            getOutline();
             cooldown = cd;
-            if (sharedCooldown <= 0) {
-                sharingCooldown = true;
-                sharedCooldown = cd;
+            if (sharedInstance == null) {
+                sharedInstance = this;
             }
             return true;
         }
@@ -28,6 +26,7 @@ namespace ValheimVRMod.Scripts {
         }
 
         private Outline getOutline() {
+            
             if (outline != null) {
                 return outline;
             }
@@ -46,15 +45,14 @@ namespace ValheimVRMod.Scripts {
             }
 
             cooldown -= Time.fixedDeltaTime;
-
-            if (sharingCooldown) {
-                sharedCooldown = cooldown;
-            }
             
             if (! inCoolDown()) {
-                getOutline().enabled = false;
-                sharingCooldown = false;
-                staminaDrained = false;
+                Destroy(getOutline());
+                
+                if (sharedInstance == this) {
+                    staminaDrained = false;
+                    sharedInstance = null;
+                }
             }
         }
     }

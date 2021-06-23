@@ -15,11 +15,11 @@ namespace ValheimVRMod.Scripts {
         private bool scriptActive;
         private GameObject colliderParent = new GameObject();
         private List<Vector3> snapshots = new List<Vector3>();
-        private CooldownScript cooldownScript;
         private ItemDrop.ItemData item;
         private Attack attack;
         private bool isRightHand;
-        private bool weaponNotUsable;
+        private Outline outline;
+        private float hitTime;
 
         public bool itemIsTool;
         
@@ -44,10 +44,14 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            if (item == null && !itemIsTool || !hasMomentum() || cooldownScript.isInCooldown()) {
+            if (item == null && !itemIsTool || !hasMomentum()) {
                 return;
             }
 
+            if (!tryHitEnemy(collider.gameObject)) {
+                return;
+            }
+            
             StaticObjects.lastHitPoint = transform.position;
             StaticObjects.lastHitCollider = collider;
             
@@ -61,19 +65,26 @@ namespace ValheimVRMod.Scripts {
                     VRPlayer.leftHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, SteamVR_Input_Sources.LeftHand);
                 }
             }
+        }
 
-            //snapshots.Clear();
-            cooldownScript.startCooldown();
+        /**
+         * https://valheim.fandom.com/wiki/Weapons
+         * time = sum attackspeed / sum modifiers
+         */
+        private bool tryHitEnemy(GameObject target) {
+
+            var enemyHitValidator = target.GetComponent<MeshCooldown>();
+            if (enemyHitValidator == null) {
+                enemyHitValidator = target.AddComponent<MeshCooldown>();
+            }
+            
+            return enemyHitValidator.tryTrigger(hitTime);
         }
 
         private void OnRenderObject() {
             if (!isCollisionAllowed()) {
                 return;
             }
-
-            // colliderParent.transform.localPosition = VHVRConfig.getDebugPos();
-            // colliderParent.transform.localRotation = Quaternion.Euler(VHVRConfig.getDebugRot());
-            // colliderParent.transform.localScale = Vector3.one * VHVRConfig.getDebugScale();
             
             transform.SetParent(colliderParent.transform);
             transform.localRotation = Quaternion.identity;
@@ -84,21 +95,54 @@ namespace ValheimVRMod.Scripts {
 
         public void setColliderParent(Transform obj, string name, bool rightHand) {
 
+            outline = obj.parent.gameObject.AddComponent<Outline>();
+            outline.OutlineColor = Color.red;
+            outline.OutlineWidth = 5;
+            outline.OutlineMode = Outline.Mode.OutlineVisible;
+            
             isRightHand = rightHand;
             if (isRightHand) {
-                cooldownScript = StaticObjects.rightCooldown();
                 item = Player.m_localPlayer.GetRightItem();   
             }
             else {
-                cooldownScript = StaticObjects.leftCooldown();
                 item = Player.m_localPlayer.GetLeftItem();
             }
 
             if (item != null) {
-                attack = item.m_shared.m_attack.Clone();   
+                attack = item.m_shared.m_attack.Clone();
             }
             
-            cooldownScript.maxCooldown = VHVRConfig.CooldownWeapon();
+            switch (attack.m_attackAnimation) {
+                case "unarmed_attack":
+                    hitTime = 0.63f;
+                    break;
+                case "atgeir_attack":
+                    hitTime = 0.81f;
+                    break;
+                case "battleaxe_attack":
+                    hitTime = 0.87f;
+                    break;
+                case "knife_stab":
+                    hitTime = 0.49f;
+                    break;
+                case "swing_longsword":
+                case "spear_poke":
+                    hitTime = 0.63f;
+                    break;
+                case "swing_pickaxe":
+                    hitTime = 1.3f;
+                    break;
+                case "swing_sledge":
+                    hitTime = 2.15f;
+                    break;
+                case "swing_axe":
+                    hitTime = 0.64f;
+                    break;
+                default:
+                    hitTime = 0.63f;
+                    break;
+            }
+
             itemIsTool = name == "Hammer";
 
             if (colliderParent == null) {
@@ -122,16 +166,14 @@ namespace ValheimVRMod.Scripts {
 
         private void Update() {
 
-            if (weaponNotUsable && ! cooldownScript.isInCooldown() && Player.m_localPlayer.HaveStamina(getStaminaUsage() + 0.1f)) {
-                foreach (MeshRenderer meshRenderer in colliderParent.transform.parent.GetComponentsInChildren<MeshRenderer>()) {
-                    meshRenderer.material.color = Color.white;
-                }
-                weaponNotUsable = false;
-            } else if (! weaponNotUsable && (cooldownScript.isInCooldown() || ! Player.m_localPlayer.HaveStamina(getStaminaUsage() + 0.1f))) {
-                foreach (MeshRenderer meshRenderer in colliderParent.transform.parent.GetComponentsInChildren<MeshRenderer>()) {
-                    meshRenderer.material.color = Color.red;
-                }
-                weaponNotUsable = true;
+            if (!outline) {
+                return;
+            }
+            
+            if (outline.enabled && Player.m_localPlayer.HaveStamina(getStaminaUsage() + 0.1f)) {
+                outline.enabled = false;
+            } else if (! outline.enabled && ! Player.m_localPlayer.HaveStamina(getStaminaUsage() + 0.1f)) {
+                outline.enabled = true;
             }
         }
 

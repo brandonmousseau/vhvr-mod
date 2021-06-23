@@ -31,6 +31,10 @@ namespace ValheimVRMod
 
         void Update()
         {
+            if (VHVRConfig.NonVrPlayer()) {
+                return;
+            }
+            
             if (Input.GetKeyDown(VHVRConfig.GetRecenterKey()))
             {
                 VRManager.tryRecenter();
@@ -45,6 +49,11 @@ namespace ValheimVRMod
 
         void StartValheimVR()
         {
+            if (VHVRConfig.NonVrPlayer()) {
+                HarmonyPatcher.doNonVrPatching();
+                return;
+            }
+            
             HarmonyPatcher.DoPatching();
             if (VRManager.InitializeVR())
             {

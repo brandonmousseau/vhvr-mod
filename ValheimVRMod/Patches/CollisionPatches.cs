@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
 using UnityEngine;
+using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
 
 namespace ValheimVRMod.Patches {
@@ -54,16 +55,19 @@ namespace ValheimVRMod.Patches {
             ___m_weapon = weapon;
             __result = true;
 
-            float staminaUsage = (float) getStaminaUsageMethod.Invoke(__instance, null);
-            if (staminaUsage > 0.0f && !character.HaveStamina(staminaUsage + 0.1f)) {
-                if (character.IsPlayer())
-                    Hud.instance.StaminaBarNoStaminaFlash();
-                __result = false;
-                return false;
+            if (!MeshCooldown.staminaDrained) {
+                float staminaUsage = (float) getStaminaUsageMethod.Invoke(__instance, null);
+                if (staminaUsage > 0.0f && !character.HaveStamina(staminaUsage + 0.1f)) {
+                    if (character.IsPlayer())
+                        Hud.instance.StaminaBarNoStaminaFlash();
+                    __result = false;
+                    return false;
+                }
+            
+                character.UseStamina(staminaUsage);
+                MeshCooldown.staminaDrained = true;
             }
-            
-            character.UseStamina(staminaUsage);
-            
+
             Collider col = StaticObjects.lastHitCollider;
             Vector3 pos = StaticObjects.lastHitPoint;
 

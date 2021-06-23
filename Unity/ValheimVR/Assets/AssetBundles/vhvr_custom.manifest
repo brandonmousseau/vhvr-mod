@@ -1,9 +1,9 @@
 ManifestFileVersion: 0
-CRC: 3358238996
+CRC: 207764035
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 377c2c1c9ed7f67dd3f045af21750d07
+    Hash: a83c267247936508ee7133b3ed0fe404
   TypeTreeHash:
     serializedVersion: 2
     Hash: 700cce780156dfdd5fdd2ee7678caad4
@@ -19,7 +19,13 @@ ClassTypes:
   Script: {instanceID: 0}
 SerializeReferenceClassIdentifiers: []
 Assets:
+- Assets/QuickOutline/Resources/Shaders/OutlineFill.shader
+- Assets/QuickOutline/Resources/Materials/OutlineMask.mat
+- Assets/CustomResources/Shaders/OutlineShader.shader
 - Assets/CustomResources/Textures/sit.png
+- Assets/CustomResources/Materials/OutlineMaterial.mat
+- Assets/QuickOutline/Resources/Shaders/OutlineMask.shader
 - Assets/CustomResources/Textures/black_screen.png
 - Assets/CustomResources/Materials/vr_panel_unlit.mat
+- Assets/QuickOutline/Resources/Materials/OutlineFill.mat
 Dependencies: []

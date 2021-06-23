@@ -5,12 +5,14 @@ namespace ValheimVRMod.Scripts {
     public class ShieldManager : MonoBehaviour {
         
         public string _name;
-
+        
+        private const float cooldown = 1;
         private static bool _blocking;
         private static ShieldManager instance;
+        private static MeshCooldown _meshCooldown;
 
         private void Awake() {
-            StaticObjects.leftCooldown().maxCooldown = VHVRConfig.CooldownShield();
+            _meshCooldown = gameObject.AddComponent<MeshCooldown>();
             instance = this;
         }
 
@@ -23,7 +25,11 @@ namespace ValheimVRMod.Scripts {
         }
 
         public static bool isBlocking() {
-            return _blocking && ! StaticObjects.leftCooldown().isInCooldown();
+            return _blocking && ! _meshCooldown.inCoolDown();
+        }
+        
+        public static void block() {
+            _meshCooldown.tryTrigger(cooldown);
         }
         
         private Vector3 getForward() {
