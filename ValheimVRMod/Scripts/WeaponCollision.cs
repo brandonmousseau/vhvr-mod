@@ -30,14 +30,7 @@ namespace ValheimVRMod.Scripts {
             if (!isCollisionAllowed()) {
                 return;
             }
-
-            // ignore water and UI panel
-            if (collider.gameObject.layer == LayerUtils.WATERVOLUME_LAYER 
-                || collider.gameObject.layer == LayerUtils.WATER
-                || collider.gameObject.layer == LayerUtils.UI_PANEL_LAYER) {
-                return;
-            }
-
+            
             var maybePlayer = collider.GetComponentInParent<Player>();
 
             if (maybePlayer != null && maybePlayer == Player.m_localPlayer) {
@@ -48,7 +41,7 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            if (!tryHitEnemy(collider.gameObject)) {
+            if (!tryHitTarget(collider.gameObject)) {
                 return;
             }
             
@@ -67,18 +60,21 @@ namespace ValheimVRMod.Scripts {
             }
         }
 
-        /**
-         * https://valheim.fandom.com/wiki/Weapons
-         * time = sum attackspeed / sum modifiers
-         */
-        private bool tryHitEnemy(GameObject target) {
+        private bool tryHitTarget(GameObject target) {
 
-            var enemyHitValidator = target.GetComponent<MeshCooldown>();
-            if (enemyHitValidator == null) {
-                enemyHitValidator = target.AddComponent<MeshCooldown>();
+            // ignore water and UI panel
+            if (target.layer == LayerUtils.WATERVOLUME_LAYER 
+                || target.layer == LayerUtils.WATER
+                || target.layer == LayerUtils.UI_PANEL_LAYER) {
+                return false;
             }
             
-            return enemyHitValidator.tryTrigger(hitTime);
+            var meshCooldown = target.GetComponent<MeshCooldown>();
+            if (meshCooldown == null) {
+                meshCooldown = target.AddComponent<MeshCooldown>();
+            }
+            
+            return meshCooldown.tryTrigger(hitTime);
         }
 
         private void OnRenderObject() {
@@ -206,7 +202,6 @@ namespace ValheimVRMod.Scripts {
             }
             
             snapshots.Add(transform.localPosition);
-            // little calculation to get needed speed based on weapon collider (e.g. atgeir needs mor speed than sword)
             if (snapshots.Count > maxSnapshots) {
                 snapshots.RemoveAt(0);
             }
