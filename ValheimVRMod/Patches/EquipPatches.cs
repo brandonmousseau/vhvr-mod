@@ -144,13 +144,9 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
-            MeshRenderer meshRenderer = obj.GetComponentInChildren<MeshRenderer>();
-
-            if (meshRenderer == null) {
-                return;
+            foreach (Renderer renderer in obj.GetComponentsInChildren<Renderer>()) {
+                renderer.shadowCastingMode = ShadowCastingMode.ShadowsOnly;    
             }
-
-            meshRenderer.shadowCastingMode = ShadowCastingMode.ShadowsOnly;
         }
     }
 }
