@@ -12,8 +12,7 @@
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
-    <CommonDir>D:\Spiele\Steam\steamapps\common\</CommonDir>
-    <SolutionDir>D:\Unity Projects\vhvr-mod\</SolutionDir>
+    <CommonDir>C:\Program Files (x86)\Steam\steamapps\common\</CommonDir>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
