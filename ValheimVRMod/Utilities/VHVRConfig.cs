@@ -42,6 +42,9 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> mobileGuiRecenterAngle;
         private static ConfigEntry<bool> recenterGuiOnMove;
         private static ConfigEntry<bool> useArrowPredictionGraphic;
+        private static ConfigEntry<float> cooldownShield;
+        private static ConfigEntry<float> cooldownWeapon;
+        private static ConfigEntry<float> cooldownFists;
         private static ConfigEntry<float> DebugPosX;
         private static ConfigEntry<float> DebugPosY;
         private static ConfigEntry<float> DebugPosZ;
@@ -218,6 +221,18 @@ namespace ValheimVRMod.Utilities
                                                      "UseArrowPredictionGraphic",
                                                      true,
                                                      "Use this to toggle the path predictor when using the bow and arrow with VR controls.");
+            cooldownShield = config.Bind("UI",
+                "cooldownShield",
+                0.0f,
+                "add cooldown in Seconds for Shield");
+            cooldownWeapon = config.Bind("UI",
+                "cooldownWeapon",
+                0.0f,
+                "add cooldown in Seconds for Weapon");
+            cooldownFists = config.Bind("UI",
+                "cooldownFists",
+                0.0f,
+                "add cooldown in Seconds for Fists");
             DebugPosX = config.Bind("UI",
                 "DebugPosX",
                 0.0f,
@@ -547,6 +562,21 @@ namespace ValheimVRMod.Utilities
             return useArrowPredictionGraphic.Value;
         }
         
+        public static float CooldownShield()
+        {
+            return cooldownShield.Value;
+        }
+        
+        public static float CooldownWeapon()
+        {
+            return cooldownWeapon.Value;
+        }        
+        
+        public static float CooldownFists()
+        {
+            return cooldownFists.Value;
+        }
+
         public static Vector3 getDebugPos()
         {
             return new Vector3(DebugPosX.Value, DebugPosY.Value, DebugPosZ.Value);
