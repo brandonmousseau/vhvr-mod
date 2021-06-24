@@ -859,7 +859,7 @@ namespace ValheimVRMod.VRCore
                 {
                     toggleShowHand = false;
                     hand.hapticAction.Execute(0, 0.2f, 100, 0.3f, inputSource);
-                    if(isRightHand && isHoldingItem(isRightHand) && (EquipScript.getRight() == EquipType.Spear || EquipScript.getRight() == EquipType.SpearChitin)) {
+                    if(isRightHand && isHoldingItem(isRightHand) && isHoldingSpear()) {
 
                     } else if (isRightHand && EquipScript.getLeft() == EquipType.Bow) {
                         BowLocalManager.instance.toggleArrow();
@@ -876,11 +876,13 @@ namespace ValheimVRMod.VRCore
                     }
                 }
             }
-            if (justUnsheathed && isRightHand && action.GetStateUp(inputSource)&& (EquipScript.getRight() == EquipType.Spear || EquipScript.getRight() == EquipType.SpearChitin)) {
+            if (justUnsheathed && isRightHand && action.GetStateUp(inputSource)&& isHoldingSpear()) {
                 justUnsheathed = false;
             }
         }
-
+        private bool isHoldingSpear() {
+            return EquipScript.getRight() == EquipType.Spear || EquipScript.getRight() == EquipType.SpearChitin;
+        }
         private bool isHoldingItem(bool isRightHand) {
             return isRightHand && getPlayerCharacter().GetRightItem() != null
                    || !isRightHand && getPlayerCharacter().GetLeftItem() != null;
