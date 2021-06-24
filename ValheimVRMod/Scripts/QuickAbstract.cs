@@ -32,7 +32,14 @@ namespace ValheimVRMod.Scripts {
         private void OnEnable() {
             transform.SetParent(parent, false);
             transform.localPosition = Vector3.zero;
-            transform.localRotation = Quaternion.Euler(VHVRConfig.getQuickMenuAngle(), 0, -5);
+
+            //Config Version (more to muscle memory than seeing)
+            //transform.localRotation = Quaternion.Euler(VHVRConfig.getQuickMenuAngle(), 0, -5);
+
+            //Camera Version
+            Camera vrCam = CameraUtils.getCamera(CameraUtils.VR_CAMERA);
+            transform.LookAt(vrCam.transform.position);
+
             transform.SetParent(Player.m_localPlayer.transform);
             transform.parent = null;
             offset = transform.position - Player.m_localPlayer.transform.position ;
