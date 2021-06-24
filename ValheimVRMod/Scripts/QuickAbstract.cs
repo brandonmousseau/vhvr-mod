@@ -28,17 +28,23 @@ namespace ValheimVRMod.Scripts {
             refreshItems();
             createSphere();
         }
-        
+
         private void OnEnable() {
             transform.SetParent(parent, false);
             transform.localPosition = Vector3.zero;
 
-            //Config Version (more to muscle memory than seeing)
-            //transform.localRotation = Quaternion.Euler(VHVRConfig.getQuickMenuAngle(), 0, -5);
 
-            //Camera Version
-            Camera vrCam = CameraUtils.getCamera(CameraUtils.VR_CAMERA);
-            transform.LookAt(vrCam.transform.position);
+            
+            if (VHVRConfig.getQuickMenuFollowCam()) {
+                //Camera Version
+                Camera vrCam = CameraUtils.getCamera(CameraUtils.VR_CAMERA);
+                transform.LookAt(vrCam.transform.position);
+            }
+            else {
+                //Hand Version
+                transform.localRotation = Quaternion.Euler(VHVRConfig.getQuickMenuAngle(), 0, -5);
+            }
+            
 
             transform.SetParent(Player.m_localPlayer.transform);
             transform.parent = null;

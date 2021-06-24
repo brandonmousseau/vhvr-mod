@@ -50,6 +50,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> DebugRotZ;
         private static ConfigEntry<float> DebugScale;
         private static ConfigEntry<bool> unlockDesktopCursor;
+        private static ConfigEntry<bool> QuickMenuFollowCam;
         private static ConfigEntry<int> QuickMenuAngle;
 
         // Controls Settings
@@ -253,9 +254,13 @@ namespace ValheimVRMod.Utilities
                 false,
                 "Normally the desktop cursor is locked to the center of the screen to avoid having the player accidentally lose focus when playing. This option can be used to free the mouse " +
                 "cursor which some users may want, especially if exclusively using motion controls where window focus is not needed.");
+            QuickMenuFollowCam = config.Bind("UI",
+                "QuickMenuFollowCam",
+                true,
+                "If Set to true, the quickmenu will rotate towards your head (ignoring Quickmenu angle option),if set to false, it will rotate towards your hands at start");
             QuickMenuAngle = config.Bind("UI",
                 "QuickMenuAngle",
-                107,
+                60,
                 "Set the quickmenu vertical angle ");
         }
 
@@ -581,6 +586,9 @@ namespace ValheimVRMod.Utilities
             return unlockDesktopCursor.Value;
         }
 
+        public static bool getQuickMenuFollowCam() {
+            return QuickMenuFollowCam.Value;
+        }
         public static int getQuickMenuAngle()
         {
             return QuickMenuAngle.Value;
