@@ -12,6 +12,9 @@ namespace ValheimVRMod.Scripts {
         private LineRenderer predictionLine;
         private float projectileVel;
         private float projectileVelMin;
+        private Outline outline;
+        private ItemDrop.ItemData item;
+        private Attack attack;
 
         public static BowLocalManager instance;
         public static float attackDrawPercentage;
@@ -38,6 +41,18 @@ namespace ValheimVRMod.Scripts {
             predictionLine.reflectionProbeUsage = ReflectionProbeUsage.Off;
             
             arrowAttach.transform.SetParent(rightHand, false);
+            
+            outline = gameObject.AddComponent<Outline>();
+            outline.OutlineColor = Color.red;
+            outline.OutlineWidth = 10;
+            outline.OutlineMode = Outline.Mode.OutlineVisible;
+            outline.enabled = false;
+            
+            item = Player.m_localPlayer.GetLeftItem();
+            if (item != null) {
+                attack = item.m_shared.m_attack.Clone();
+            }
+            
         }
 
         protected new void OnDestroy() {
@@ -76,6 +91,26 @@ namespace ValheimVRMod.Scripts {
             if (predictionLine.enabled) {
                 updatePredictionLine();   
             }
+
+            updateOutline();
+        }
+
+        private void updateOutline() {
+            
+            if (outline.enabled && Player.m_localPlayer.HaveStamina(getStaminaUsage() + 0.1f)) {
+                outline.enabled = false;
+            } else if (! outline.enabled && ! Player.m_localPlayer.HaveStamina(getStaminaUsage() + 0.1f)) {
+                outline.enabled = true;
+            }
+        }
+        
+        private float getStaminaUsage() {
+            
+            if (attack.m_attackStamina <= 0.0) {
+                return 0.0f;   
+            }
+            double attackStamina = attack.m_attackStamina;
+            return (float) (attackStamina - attackStamina * 0.330000013113022 * Player.m_localPlayer.GetSkillFactor(item.m_shared.m_skillType));
         }
         
         /**
