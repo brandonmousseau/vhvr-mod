@@ -76,8 +76,8 @@ public class Outline : MonoBehaviour {
   private List<ListVector3> bakeValues = new List<ListVector3>();
 
   private Renderer[] renderers;
-  private Material outlineMaskMaterial;
-  private Material outlineFillMaterial;
+  private static Material outlineMaskMaterial;
+  private static Material outlineFillMaterial;
 
   private bool needsUpdate;
 
@@ -86,18 +86,27 @@ public class Outline : MonoBehaviour {
     // Cache renderers
     renderers = GetComponentsInChildren<Renderer>();
 
-    // Instantiate outline materials
-    outlineMaskMaterial = Instantiate(VRAssetManager.GetAsset<Material>("OutlineMask"));
-    outlineFillMaterial = Instantiate(VRAssetManager.GetAsset<Material>("OutlineFill"));
-
-    outlineMaskMaterial.name = "OutlineMask (Instance)";
-    outlineFillMaterial.name = "OutlineFill (Instance)";
+    tryInitMaterials();
 
     // Retrieve or generate smooth normals
     LoadSmoothNormals();
 
     // Apply material properties immediately
     needsUpdate = true;
+  }
+
+  // Instantiate outline materials
+  private void tryInitMaterials() {
+
+    if (outlineMaskMaterial != null && outlineFillMaterial != null) {
+      return;
+    }
+    
+    outlineMaskMaterial = Instantiate(VRAssetManager.GetAsset<Material>("OutlineMask"));
+    outlineFillMaterial = Instantiate(VRAssetManager.GetAsset<Material>("OutlineFill"));
+
+    outlineMaskMaterial.name = "OutlineMask (Instance)";
+    outlineFillMaterial.name = "OutlineFill (Instance)";
   }
 
   void OnEnable() {
@@ -149,13 +158,6 @@ public class Outline : MonoBehaviour {
 
       renderer.materials = materials.ToArray();
     }
-  }
-
-  void OnDestroy() {
-
-    // Destroy material instances
-    Destroy(outlineMaskMaterial);
-    Destroy(outlineFillMaterial);
   }
 
   void Bake() {
