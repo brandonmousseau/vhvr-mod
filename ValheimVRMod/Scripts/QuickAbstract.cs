@@ -19,8 +19,9 @@ namespace ValheimVRMod.Scripts {
         private GameObject sphere;
 
         public Transform parent;
-        
-        
+        public Transform grandParent;
+        private Vector3 offset;
+
         private void Awake() {
             
             elements = new GameObject[MAX_ELEMENTS];
@@ -32,10 +33,13 @@ namespace ValheimVRMod.Scripts {
         private void OnEnable() {
             transform.SetParent(parent, false);
             transform.localPosition = Vector3.zero;
-            transform.localRotation = Quaternion.Euler(107, 0, -5);
+            transform.localRotation = Quaternion.Euler(VHVRConfig.getQuickMenuAngle(), 0, -5);
             transform.SetParent(Player.m_localPlayer.transform);
+            transform.parent = null;
+            offset = transform.position - Player.m_localPlayer.transform.position ;
         }
         private void Update() {
+            transform.position = offset + Player.m_localPlayer.transform.position;
             sphere.transform.position = parent.position;
             hoverItem();
         }
@@ -132,7 +136,6 @@ namespace ValheimVRMod.Scripts {
                 elements[i].transform.localPosition = position;
             }
         }
-        
         private void hoverItem() {
 
             float maxDist = 0.05f;
