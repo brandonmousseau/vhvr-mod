@@ -97,7 +97,7 @@ namespace ValheimVRMod.Scripts {
           
             var inventory = Player.m_localPlayer.GetInventory();
             ItemDrop.ItemData item = inventory.GetItemAt(Int32.Parse(elements[hoveredIndex].name), 0);
-            Player.m_localPlayer.UseItem(inventory, item, true);
+            Player.m_localPlayer.UseItem(inventory, item, false);
             
         }
     }
