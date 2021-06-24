@@ -19,7 +19,6 @@ namespace ValheimVRMod.Scripts {
         private GameObject sphere;
 
         public Transform parent;
-        public Transform grandParent;
         private Vector3 offset;
 
         private void Awake() {
