@@ -208,12 +208,6 @@ namespace ValheimVRMod.VRCore.UI
                     return false;
                 }
             }
-            if (zinput == "Map" && altPieceRotationControlsActive())
-            {
-                // Disable the regular map input if alternative piece
-                // rotation controls are active.
-                return false;
-            }
             SteamVR_Action_Boolean action;
             zInputToBooleanAction.TryGetValue(zinput, out action);
             if (action == null)
@@ -234,12 +228,6 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return false;
             }
-            if (zinput == "Map" && altPieceRotationControlsActive())
-            {
-                // Disable the regular map input if alternative piece
-                // rotation controls are active.
-                return false;
-            }
             SteamVR_Action_Boolean action;
             zInputToBooleanAction.TryGetValue(zinput, out action);
             if (action == null)
@@ -258,12 +246,6 @@ namespace ValheimVRMod.VRCore.UI
             }
             if (zinput == "Jump" && shouldDisableJump())
             {
-                return false;
-            }
-            if (zinput == "Map" && altPieceRotationControlsActive())
-            {
-                // Disable the regular map input if alternative piece
-                // rotation controls are active.
                 return false;
             }
             SteamVR_Action_Boolean action;
@@ -412,7 +394,7 @@ namespace ValheimVRMod.VRCore.UI
                         inPlaceMode() &&
                         hasPlacementGhost() &&
                         !Hud.IsPieceSelectionVisible() &&
-                        SteamVR_Actions.valheim_ToggleMap.GetState(SteamVR_Input_Sources.Any);
+                        SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand);
         }
 
         // disable Jump input under certain conditions
