@@ -85,21 +85,33 @@ namespace ValheimVRMod.VRCore.UI
                 checkRecenterPose(Time.deltaTime);
             }
 
-            checkQuickItems<QuickSwitch>(StaticObjects.quickSwitch, SteamVR_Actions.valheim_QuickSwitch);
-            checkQuickItems<QuickActions>(StaticObjects.quickActions, SteamVR_Actions.valheim_QuickActions);
+            checkQuickItems<QuickSwitch>(StaticObjects.quickSwitch, SteamVR_Actions.valheim_QuickSwitch, true);
+            checkQuickItems<QuickActions>(StaticObjects.quickActions, SteamVR_Actions.valheim_QuickActions, false);
         }
         
-        private void checkQuickItems<T>(GameObject obj, SteamVR_Action_Boolean action) where T : QuickAbstract {
+        private void checkQuickItems<T>(GameObject obj, SteamVR_Action_Boolean action, bool useRightClick) where T : QuickAbstract {
             
             if (!obj) {
                 return;
             }
+
+            // Due to complicated bindings/limited inputs, the QuickSwitch and Right click are sharing a button
+            // and when the hammer is equipped, the bindings conflict... so we'll share the right click button
+            // here to activate quick switch. This is hacky because rebinding things can break the controls, but
+            // it works and allows users to use the quick select while the hammer is equipped.
+            bool rightClickDown = false;
+            bool rightClickUp = false;
+            if (useRightClick && laserControlsActive && inPlaceMode())
+            {
+                rightClickDown = SteamVR_Actions.laserPointers_RightClick.GetStateDown(SteamVR_Input_Sources.Any);
+                rightClickUp = SteamVR_Actions.laserPointers_RightClick.GetStateUp(SteamVR_Input_Sources.Any);
+            }
             
-            if (action.GetStateDown(SteamVR_Input_Sources.Any)) {
+            if (action.GetStateDown(SteamVR_Input_Sources.Any) || rightClickDown) {
                 obj.SetActive(true);
             }
 
-            if (action.GetStateUp(SteamVR_Input_Sources.Any)) {
+            if (action.GetStateUp(SteamVR_Input_Sources.Any) || rightClickUp) {
                 obj.GetComponent<T>().selectHoveredItem();
                 obj.SetActive(false);
             }
