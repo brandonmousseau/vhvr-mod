@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 using Valve.VR;
+using ValheimVRMod.VRCore;
 
 namespace ValheimVRMod.Scripts {
     public class SpearManager : MonoBehaviour {
@@ -8,7 +9,7 @@ namespace ValheimVRMod.Scripts {
         private int tickCounter;
         private List<Vector3> snapshots = new List<Vector3>();
         private GameObject fixedSpear;
-        
+
         public static Vector3 spawnPoint;
         public static Vector3 aimDir;
         public static bool isThrowing;
@@ -28,34 +29,39 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
+            if (snapshots.Count < 3) {
+                return;
+            }
+
             if (isThrowing) {
                 return;
             }
 
+            
+            Vector3 posEnd = snapshots[snapshots.Count-1];
+            Vector3 posStart = snapshots[0];
             spawnPoint = transform.position;
-            var dist = 0.0f;
-            Vector3 posEnd = spawnPoint;
-            Vector3 posStart = spawnPoint;
 
-            foreach (Vector3 snapshot in snapshots) {
-                var curDist = Vector3.Distance(snapshot, posEnd);
-                if (curDist > dist) {
-                    dist = curDist;
-                    posStart = snapshot;
-                }
+            aimDir = (posEnd - posStart)*2;
+
+
+            if (Vector3.Distance(posEnd,posStart) > 0.16f&& VRPlayer.justUnsheathed == false) {
+                isThrowing = true;
             }
-
-            aimDir = (posEnd - posStart).normalized;
-            isThrowing = true;
         }
-
         private void FixedUpdate() {
             tickCounter++;
             if (tickCounter < 5) {
                 return;
             }
 
-            snapshots.Add(fixedSpear.transform.position);
+            if (VRPlayer.justUnsheathed == true) {
+                snapshots.Clear();
+            }
+            else {
+                snapshots.Add(fixedSpear.transform.localPosition - Player.m_localPlayer.transform.position);
+            }
+            
 
             if (snapshots.Count > MAX_SNAPSHOTS) {
                 snapshots.RemoveAt(0);

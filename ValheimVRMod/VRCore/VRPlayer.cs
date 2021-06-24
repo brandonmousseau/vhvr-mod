@@ -51,6 +51,7 @@ namespace ValheimVRMod.VRCore
         private static Vector3 THIRD_PERSON_3_OFFSET = new Vector3(0f, 3.2f, -4.4f);
         private static Vector3 THIRD_PERSON_CONFIG_OFFSET = Vector3.zero;
         private static float NECK_OFFSET = 0.2f;
+        public static bool justUnsheathed = false;
 
         private static GameObject _prefab;
         private static GameObject _instance;
@@ -850,7 +851,6 @@ namespace ValheimVRMod.VRCore
         {
             var camera = CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform;
             var action = SteamVR_Actions.valheim_Grab;
-            
             if (camera.InverseTransformPoint(hand.transform.position).y > -0.4f &&
                 camera.InverseTransformPoint(hand.transform.position).z < 0)
             {
@@ -859,15 +859,25 @@ namespace ValheimVRMod.VRCore
                 {
                     toggleShowHand = false;
                     hand.hapticAction.Execute(0, 0.2f, 100, 0.3f, inputSource);
-                    
-                    if (isRightHand && EquipScript.getLeft() == EquipType.Bow) {
+                    if(isRightHand && isHoldingItem(isRightHand) && (EquipScript.getRight() == EquipType.Spear || EquipScript.getRight() == EquipType.SpearChitin)) {
+
+                    } else if (isRightHand && EquipScript.getLeft() == EquipType.Bow) {
                         BowLocalManager.instance.toggleArrow();
                     } else if (isHoldingItem(isRightHand)) {
                         getPlayerCharacter().HideHandItems();
                     } else {
                         getPlayerCharacter().ShowHandItems();
+                        justUnsheathed = true;
                     }
                 }
+                else if (!justUnsheathed && isRightHand && action.GetStateUp(inputSource)) {
+                    if (isHoldingItem(isRightHand) && (EquipScript.getRight() == EquipType.Spear || EquipScript.getRight() == EquipType.SpearChitin)) {
+                        getPlayerCharacter().HideHandItems();
+                    }
+                }
+            }
+            if (justUnsheathed && isRightHand && action.GetStateUp(inputSource)&& (EquipScript.getRight() == EquipType.Spear || EquipScript.getRight() == EquipType.SpearChitin)) {
+                justUnsheathed = false;
             }
         }
 
