@@ -36,6 +36,10 @@ namespace ValheimVRMod.Scripts {
             if (!hasMomentum()) {
                 return;
             }
+            
+            if (!tryHitTarget(collider.gameObject)) {
+                return;
+            }
 
             StaticObjects.lastHitPoint = transform.position;
             StaticObjects.lastHitCollider = collider;
@@ -50,6 +54,23 @@ namespace ValheimVRMod.Scripts {
                     VRPlayer.leftHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, SteamVR_Input_Sources.LeftHand);
                 }
             }
+        }
+        
+        private bool tryHitTarget(GameObject target) {
+
+            // ignore water and UI panel
+            if (target.layer == LayerUtils.WATERVOLUME_LAYER 
+                || target.layer == LayerUtils.WATER
+                || target.layer == LayerUtils.UI_PANEL_LAYER) {
+                return false;
+            }
+            
+            var meshCooldown = target.GetComponent<MeshCooldown>();
+            if (meshCooldown == null) {
+                meshCooldown = target.AddComponent<MeshCooldown>();
+            }
+            
+            return meshCooldown.tryTrigger(0.63f);
         }
 
         private void OnRenderObject() {

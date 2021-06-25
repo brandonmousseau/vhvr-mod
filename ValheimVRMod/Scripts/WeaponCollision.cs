@@ -111,9 +111,6 @@ namespace ValheimVRMod.Scripts {
             }
             
             switch (attack.m_attackAnimation) {
-                case "unarmed_attack":
-                    hitTime = 0.63f;
-                    break;
                 case "atgeir_attack":
                     hitTime = 0.81f;
                     break;
