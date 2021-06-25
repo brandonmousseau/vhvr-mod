@@ -66,6 +66,7 @@ namespace ValheimVRMod.Scripts {
             sphere.transform.localScale *= 0.02f;
             sphere.layer = LayerUtils.getWorldspaceUiLayer();
             sphere.GetComponent<MeshRenderer>().material.color = Color.red;
+            Destroy(sphere.GetComponent<Collider>());
         }
         
         /**
