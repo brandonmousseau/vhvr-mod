@@ -9,12 +9,14 @@ using Valve.VR;
 namespace ValheimVRMod.Scripts {
     public class WeaponCollision : MonoBehaviour {
         private const float MIN_DISTANCE = 0.2f;
+        private const float MIN_DISTANCE_STAB = 0.2f;
         private const int MAX_SNAPSHOTS_BASE = 20;
         private const int MAX_SNAPSHOTS_FACTOR = -5;
 
         private bool scriptActive;
         private GameObject colliderParent = new GameObject();
         private List<Vector3> snapshots = new List<Vector3>();
+        private List<Vector3> snapshotsC = new List<Vector3>();
         private ItemDrop.ItemData item;
         private Attack attack;
         private bool isRightHand;
@@ -160,6 +162,7 @@ namespace ValheimVRMod.Scripts {
             }
         }
 
+
         private void Update() {
 
             if (!outline) {
@@ -191,6 +194,7 @@ namespace ValheimVRMod.Scripts {
 
             if (!active) {
                 snapshots.Clear();
+                snapshotsC.Clear();
             }
         }
 
@@ -202,19 +206,37 @@ namespace ValheimVRMod.Scripts {
             }
             
             snapshots.Add(transform.localPosition);
+            if (colliderParent) {
+                snapshotsC.Add(VRPlayer.rightHand.transform.position + colliderParent.transform.parent.localPosition);
+            }
             if (snapshots.Count > maxSnapshots) {
                 snapshots.RemoveAt(0);
             }
+            if (snapshotsC.Count > maxSnapshots) {
+                snapshotsC.RemoveAt(0);
+            }
         }
-        
+
         public bool hasMomentum() {
             foreach (Vector3 snapshot in snapshots) {
                 if (Vector3.Distance(snapshot, transform.localPosition) > MIN_DISTANCE + colliderDistance / 2) {
                     return true;
                 }
             }
+            
+            if (Vector3.Distance(snapshots[Mathf.Max(0,snapshots.Count-7)], transform.localPosition) > MIN_DISTANCE_STAB && isStab()) {
+                return true;
+            }
 
             return false;
+        }
+        public float SwingAngle() {
+            float angle = Vector3.Angle(snapshotsC[0] - snapshotsC[snapshotsC.Count - 1], snapshotsC[0] - transform.position);
+            return angle;
+        }
+
+        public bool isStab() {
+            return (SwingAngle() < 20);
         }
     }
 }
