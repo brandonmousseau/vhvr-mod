@@ -12,12 +12,12 @@ namespace ValheimVRMod.Patches {
     [HarmonyPatch(typeof(Humanoid), "BlockAttack")]
     class PatchBlockAttack {
         
-        static void Prefix(Humanoid __instance, ref HitData hit) {
+        static void Prefix(Humanoid __instance, ref HitData hit, ref float ___m_blockTimer) {
 
             if (__instance != Player.m_localPlayer || EquipScript.getLeft() != EquipType.Shield || !VHVRConfig.UseVrControls()) {
                 return;
             }
-   
+            ___m_blockTimer = ShieldManager.blockTimer;
             if (ShieldManager.isBlocking()) {
                 hit.m_dir = -__instance.transform.forward;   
             } else {

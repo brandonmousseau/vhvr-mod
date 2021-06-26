@@ -1,5 +1,8 @@
+using System.Collections.Generic;
 using UnityEngine;
 using ValheimVRMod.Utilities;
+using ValheimVRMod.VRCore;
+
 
 namespace ValheimVRMod.Scripts {
     public class ShieldManager : MonoBehaviour {
@@ -8,8 +11,13 @@ namespace ValheimVRMod.Scripts {
         
         private const float cooldown = 1;
         private static bool _blocking;
+        public static float blockTimer;
         private static ShieldManager instance;
         private static MeshCooldown _meshCooldown;
+
+        private const int MAX_SNAPSHOTS = 7;
+        private int tickCounter;
+        private List<Vector3> snapshots = new List<Vector3>();
 
         private void Awake() {
             _meshCooldown = gameObject.AddComponent<MeshCooldown>();
@@ -22,6 +30,7 @@ namespace ValheimVRMod.Scripts {
 
         public static void resetBlocking() {
             _blocking = false;
+            blockTimer = 9999f;
         }
 
         public static bool isBlocking() {
@@ -45,6 +54,46 @@ namespace ValheimVRMod.Scripts {
                 default:
                     return -StaticObjects.shieldObj().transform.forward;
             }
+        }
+        private void ParryCheck() {
+            var dist = 0.0f;
+            Vector3 posEnd = VRPlayer.leftHand.transform.position;
+            Vector3 posStart = VRPlayer.leftHand.transform.position;
+
+            foreach (Vector3 snapshot in snapshots) {
+                var curDist = Vector3.Distance(snapshot, posEnd);
+                if (curDist > dist) {
+                    dist = curDist;
+                    posStart = snapshot;
+                }
+            }
+
+            Transform lHand = VRPlayer.leftHand.transform;
+            Vector3 shieldPos = (snapshots[snapshots.Count - 1] + (-lHand.right / 2) );
+
+            if (Vector3.Distance(posEnd, posStart) > 0.4f) {
+                if (Vector3.Angle(shieldPos - snapshots[0] , snapshots[snapshots.Count - 1] - snapshots[0]) < 25) {
+                    blockTimer = 0.1f;
+                }
+                
+            } else {
+                blockTimer = 9999f;
+            }
+        }
+        private void FixedUpdate() {
+            tickCounter++;
+            if (tickCounter < 5) {
+                return;
+            }
+            snapshots.Add(VRPlayer.leftHand.transform.position);
+
+            if (snapshots.Count > MAX_SNAPSHOTS) {
+                snapshots.RemoveAt(0);
+            }
+
+            tickCounter = 0;
+
+            ParryCheck();
         }
 
         private void OnRenderObject() {
