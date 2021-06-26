@@ -12,6 +12,7 @@ namespace ValheimVRMod.Scripts {
 
         public static Vector3 spawnPoint;
         public static Vector3 aimDir;
+        public static Vector3 startAim; 
         public static bool isThrowing;
 
         private void Awake() {
@@ -25,6 +26,12 @@ namespace ValheimVRMod.Scripts {
         private void OnRenderObject() {
             fixedSpear.transform.position = transform.position;
 
+            if (SteamVR_Actions.valheim_Grab.GetStateDown(SteamVR_Input_Sources.RightHand)) {
+                if (startAim == Vector3.zero) {
+                    startAim = fixedSpear.transform.localPosition - Player.m_localPlayer.transform.position;
+                }
+            }
+
             if (!SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.RightHand)) {
                 return;
             }
@@ -34,19 +41,38 @@ namespace ValheimVRMod.Scripts {
             }
 
             if (isThrowing) {
+                startAim = Vector3.zero;
                 return;
             }
 
-            
-            Vector3 posEnd = snapshots[snapshots.Count-1];
-            Vector3 posStart = snapshots[0];
             spawnPoint = transform.position;
+            var dist = 0.0f;
+            Vector3 posEnd = fixedSpear.transform.localPosition - Player.m_localPlayer.transform.position;
+            Vector3 posStart = fixedSpear.transform.localPosition - Player.m_localPlayer.transform.position;
 
-            aimDir = (posEnd - posStart)*2;
+            foreach (Vector3 snapshot in snapshots) {
+                var curDist = Vector3.Distance(snapshot, posEnd);
+                if (curDist > dist) {
+                    dist = curDist;
+                    posStart = snapshot;
+                }
+            }
 
+            var speedModifier = 1.5f;
+            if (dist > 0.65f) {
+                speedModifier = 2f;
+            }else if (dist > 0.9f) {
+                speedModifier = 2.5f;
+            }
+
+            aimDir = (posEnd - startAim).normalized*Vector3.Distance(posEnd, posStart)* speedModifier;
 
             if (Vector3.Distance(posEnd,posStart) > 0.16f&& VRPlayer.justUnsheathed == false) {
                 isThrowing = true;
+            }
+
+            if (SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.RightHand)&& Vector3.Distance(posEnd, posStart) < 0.16f ) {
+                startAim = Vector3.zero;
             }
         }
         private void FixedUpdate() {
@@ -61,7 +87,6 @@ namespace ValheimVRMod.Scripts {
             else {
                 snapshots.Add(fixedSpear.transform.localPosition - Player.m_localPlayer.transform.position);
             }
-            
 
             if (snapshots.Count > MAX_SNAPSHOTS) {
                 snapshots.RemoveAt(0);
