@@ -65,6 +65,10 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<string> headReposUpKey;
         private static ConfigEntry<string> headReposDownKey;
         private static ConfigEntry<string> hmdRecenterKey;
+        private static ConfigEntry<bool> snapTurnEnabled;
+        private static ConfigEntry<float> snapTurnAngle;
+        private static ConfigEntry<bool> smoothSnapTurn;
+        private static ConfigEntry<float> smoothSnapSpeed;
 
         // Graphics Settings
         private static ConfigEntry<bool> useAmplifyOcclusion;
@@ -281,6 +285,22 @@ namespace ValheimVRMod.Utilities
                                         true,
                                         "This setting enables the use of the VR motion controllers as input (Only Oculus Touch and Valve Index supported)." +
                                         "This setting, if true, will also force UseOverlayGui to be false as this setting Overlay GUI is not compatible with VR laser pointer inputs.");
+            snapTurnEnabled = config.Bind("Controls",
+                                          "SnapTurnEnabled",
+                                          false,
+                                          "Enable Snap Turning");
+            snapTurnAngle = config.Bind("Controls",
+                                        "SnapTurnAngle",
+                                        45f,
+                                        "Angle to snap to when snap turning is used.");
+            smoothSnapTurn = config.Bind("Controls",
+                                         "SmoothSnapTurn",
+                                         true,
+                                         "While snap turn is enabled, this will cause the snap to be a very quick turn rather than an immediate change to the new snapped angle.");
+            smoothSnapSpeed = config.Bind("Controls",
+                                          "SmoothSnapSpeed",
+                                          10f,
+                                          "This will affect the speed that the smooth snap turns occur at.");
             preferredHand = config.Bind("Controls",
                                         "PreferredHand",
                                         "Right",
@@ -593,5 +613,26 @@ namespace ValheimVRMod.Utilities
         {
             return QuickMenuAngle.Value;
         }
+
+        public static float GetSnapTurnAngle()
+        {
+            return Mathf.Abs(snapTurnAngle.Value);
+        }
+
+        public static bool SnapTurnEnabled()
+        {
+            return snapTurnEnabled.Value;
+        }
+
+        public static bool SmoothSnapTurn()
+        {
+            return smoothSnapTurn.Value;
+        }
+
+        public static float SmoothSnapSpeed()
+        {
+            return Mathf.Abs(smoothSnapSpeed.Value);
+        }
+
     }
 }

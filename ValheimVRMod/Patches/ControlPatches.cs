@@ -282,4 +282,139 @@ namespace ValheimVRMod.Patches {
             return patched;
         }
     }
+
+    class SnapTurnPatches
+    {
+        [HarmonyPatch(typeof(Player), nameof(Player.SetMouseLook))]
+        class Player_SetMouseLook_Patch
+        {
+
+            private static readonly float MINIMUM_SNAP_SENSITIVITY = 1f;
+            private static readonly float SMOOTH_SNAP_INCREMENT_TIME_DELTA = 0.01f;
+            private static bool snapTriggered = false;
+            private static bool isSmoothSnapping = false;
+
+            private static float currentSmoothSnapAmount = 0f;
+            private static float currentDt = 0f;
+            private static int smoothSnapDirection = 1;
+
+            static void Prefix(Player __instance, ref Vector2 mouseLook)
+            {
+                if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls() || !VHVRConfig.SnapTurnEnabled())
+                {
+                    return;
+                }
+                if (snapTriggered && !isSmoothSnapping)
+                {
+                    if (turnInputApplied(mouseLook.x))
+                    {
+                        mouseLook.x = 0f;
+                        return;
+                    }
+                    snapTriggered = false;
+                }
+                if (VHVRConfig.SmoothSnapTurn())
+                {
+                    handleSmoothSnap(ref mouseLook);
+                } else
+                {
+                    handleImmediateSnap(ref mouseLook);
+                }
+            }
+
+            private static void handleSmoothSnap(ref Vector2 mouseLook)
+            {
+                if (!isSmoothSnapping)
+                {
+                    // On this update, we are not currently smooth snapping.
+                    // Check if the turnInput is applied and trigger the snap if it is
+                    // otherwise set turn angle to zero.
+                    if (turnInputApplied(mouseLook.x))
+                    {
+                        isSmoothSnapping = true;
+                        snapTriggered = true;
+                        // reset the current smooth snapped amount/dt
+                        currentSmoothSnapAmount = 0f;
+                        currentDt = 0f;
+                        smoothSnapDirection = (mouseLook.x > 0) ? 1 : -1;
+                        // Determine how much the current update should snap by
+                        float snapIncrementAmount = calculateSmoothSnapAngle(mouseLook.x);
+                        currentSmoothSnapAmount += snapIncrementAmount;
+                        if (Mathf.Abs(currentSmoothSnapAmount) >= VHVRConfig.GetSnapTurnAngle())
+                        {
+                            // Immediately hit the snap target ? Config is probably weirdly set.
+                            // Handle this case anyways.
+                            isSmoothSnapping = false;
+                        }
+                        mouseLook.x = snapIncrementAmount;
+                    } else
+                    {
+                        snapTriggered = false;
+                        mouseLook.x = 0f;
+                    }
+                } else
+                {
+                    // We are in the middle of a smooth snap
+                    float snapIncrementAmount = calculateSmoothSnapAngle(mouseLook.x);
+                    currentSmoothSnapAmount += snapIncrementAmount;
+                    if (Mathf.Abs(currentSmoothSnapAmount) >= VHVRConfig.GetSnapTurnAngle())
+                    {
+                        // We've exceeded our target, so disable smooth snapping
+                        isSmoothSnapping = false;
+                    }
+                    mouseLook.x = snapIncrementAmount;
+                }
+            }
+
+            private static void handleImmediateSnap(ref Vector2 mouseLook)
+            {
+                if (turnInputApplied(mouseLook.x))
+                {
+                    // The player triggered a turn this update, so incremement
+                    // by the full snap angle.
+                    snapTriggered = true;
+                    mouseLook.x = (mouseLook.x > 0 ? VHVRConfig.GetSnapTurnAngle() : -VHVRConfig.GetSnapTurnAngle());
+                    return;
+                }
+                else
+                {
+                    snapTriggered = false;
+                    mouseLook.x = 0f;
+                }
+            }
+
+            private static float calculateSmoothSnapAngle(float mouseX)
+            {
+                float dt = Time.deltaTime;
+                currentDt += dt;
+                if (currentDt < SMOOTH_SNAP_INCREMENT_TIME_DELTA)
+                {
+                    return 0f;
+                } else
+                {
+                    // We've hit our deltaT target, so reset it and continue
+                    // with calculating the next increment.
+                    currentDt = 0f;
+                }
+                float finalSnapTarget = VHVRConfig.GetSnapTurnAngle() * smoothSnapDirection;
+                float smoothSnapIncrement = VHVRConfig.SmoothSnapSpeed() * smoothSnapDirection;
+                if (Mathf.Abs(finalSnapTarget) > Mathf.Abs(currentSmoothSnapAmount + smoothSnapIncrement))
+                {
+                    // We can still increment by the full "smoothSnapIncrement" and 
+                    // be below our final target.
+                    return smoothSnapIncrement;
+                } else
+                {
+                    // If we increment by the full amount, we'll exceed our target, so
+                    // we should only return the difference
+                    return (Mathf.Abs(finalSnapTarget) - Mathf.Abs(currentSmoothSnapAmount)) * smoothSnapDirection;
+                }
+            }
+
+            private static bool turnInputApplied(float angle)
+            {
+                return Mathf.Abs(angle) > MINIMUM_SNAP_SENSITIVITY;
+            }
+        }
+    }
 }
