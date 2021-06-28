@@ -32,7 +32,7 @@ namespace ValheimVRMod.Patches {
             }
 
             if (__result) {
-                if (___m_blockTimer < 5f) {
+                if (___m_blockTimer < ShieldManager.blockTimerTolerance) {
                     VRPlayer.leftHand.hapticAction.Execute(0, 0.4f, 100, 0.5f, SteamVR_Input_Sources.LeftHand);
                     VRPlayer.leftHand.hapticAction.Execute(0.4f, 0.7f, 100, 0.2f, SteamVR_Input_Sources.LeftHand);
                 }

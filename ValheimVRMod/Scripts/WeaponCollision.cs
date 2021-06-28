@@ -12,6 +12,7 @@ namespace ValheimVRMod.Scripts {
         private const float MIN_DISTANCE_STAB = 0.25f;
         private const int MAX_SNAPSHOTS_BASE = 20;
         private const int MAX_SNAPSHOTS_FACTOR = -5;
+        private const float MAX_STAB_ANGLE = 20f;
 
         private bool scriptActive;
         private GameObject colliderParent = new GameObject();
@@ -231,7 +232,7 @@ namespace ValheimVRMod.Scripts {
         }
 
         public bool isStab() {
-            return (SwingAngle() < 20);
+            return (SwingAngle() < MAX_STAB_ANGLE);
         }
         private Vector3 GetHandPosition() {
             if (isRightHand) {

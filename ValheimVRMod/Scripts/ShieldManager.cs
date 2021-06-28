@@ -9,6 +9,11 @@ namespace ValheimVRMod.Scripts {
         public string _name;
         
         private const float cooldown = 1;
+        private const float blockTimerParry = 0.1f;
+        public const float blockTimerTolerance = blockTimerParry + 0.2f;
+        private const float blockTimerNonParry = 9999f;
+        private const float minDist = 0.4f;
+        private const float maxParryAngle = 25f;
         private static bool _blocking;
         public static float blockTimer;
         private static ShieldManager instance;
@@ -29,7 +34,7 @@ namespace ValheimVRMod.Scripts {
 
         public static void resetBlocking() {
             _blocking = false;
-            blockTimer = 9999f;
+            blockTimer = blockTimerNonParry;
         }
 
         public static bool isBlocking() {
@@ -67,16 +72,15 @@ namespace ValheimVRMod.Scripts {
                 }
             }
 
-            Transform lHand = VRPlayer.leftHand.transform;
             Vector3 shieldPos = (snapshots[snapshots.Count - 1] + (Player.m_localPlayer.transform.InverseTransformDirection(-VRPlayer.leftHand.transform.right) / 2) );
 
-            if (Vector3.Distance(posEnd, posStart) > 0.4f) {
-                if (Vector3.Angle(shieldPos - snapshots[0] , snapshots[snapshots.Count - 1] - snapshots[0]) < 25) {
-                    blockTimer = 0.1f;
+            if (Vector3.Distance(posEnd, posStart) > minDist) {
+                if (Vector3.Angle(shieldPos - snapshots[0] , snapshots[snapshots.Count - 1] - snapshots[0]) < maxParryAngle) {
+                    blockTimer = blockTimerParry;
                 }
                 
             } else {
-                blockTimer = 9999f;
+                blockTimer = blockTimerNonParry;
             }
         }
         private void FixedUpdate() {

@@ -6,6 +6,8 @@ using Valve.VR;
 namespace ValheimVRMod.Scripts {
     public class FishingManager : MonoBehaviour {
         private const int MAX_SNAPSHOTS = 7;
+        private const int MIN_SNAPSHOTSCHECK = 3;
+        private const float MIN_DISTANCE = 0.2f;
         private static float maxDist = 1.0f;
         private Transform rodTop;
         private int tickCounter;
@@ -57,7 +59,7 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            if (snapshots.Count < 3) {
+            if (snapshots.Count < MIN_SNAPSHOTSCHECK) {
                 return;
             }
 
@@ -79,7 +81,7 @@ namespace ValheimVRMod.Scripts {
             attackDrawPercentage = Vector3.Distance(snapshots[snapshots.Count - 1], snapshots[snapshots.Count - 2]) /
                                    maxDist;
 
-            if (Vector3.Distance(posEnd, posStart)> 2.0f) {
+            if (Vector3.Distance(posEnd, posStart)> MIN_DISTANCE) {
                 isThrowing = true;
                 preparingThrow = false;
             }
