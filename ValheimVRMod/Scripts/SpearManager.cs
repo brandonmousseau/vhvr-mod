@@ -28,7 +28,7 @@ namespace ValheimVRMod.Scripts {
 
             if (SteamVR_Actions.valheim_Grab.GetStateDown(SteamVR_Input_Sources.RightHand)) {
                 if (startAim == Vector3.zero) {
-                    startAim = fixedSpear.transform.localPosition - Player.m_localPlayer.transform.position;
+                    startAim = Player.m_localPlayer.transform.InverseTransformPoint(VRPlayer.rightHand.transform.position);
                 }
             }
 
@@ -47,8 +47,8 @@ namespace ValheimVRMod.Scripts {
 
             spawnPoint = transform.position;
             var dist = 0.0f;
-            Vector3 posEnd = fixedSpear.transform.localPosition - Player.m_localPlayer.transform.position;
-            Vector3 posStart = fixedSpear.transform.localPosition - Player.m_localPlayer.transform.position;
+            Vector3 posEnd = Player.m_localPlayer.transform.InverseTransformPoint(VRPlayer.rightHand.transform.position);
+            Vector3 posStart = Player.m_localPlayer.transform.InverseTransformPoint(VRPlayer.rightHand.transform.position);
 
             foreach (Vector3 snapshot in snapshots) {
                 var curDist = Vector3.Distance(snapshot, posEnd);
@@ -65,7 +65,7 @@ namespace ValheimVRMod.Scripts {
                 speedModifier = 2.5f;
             }
 
-            aimDir = (posEnd - startAim).normalized*Vector3.Distance(posEnd, posStart)* speedModifier;
+            aimDir = Player.m_localPlayer.transform.TransformDirection(posEnd - startAim).normalized*Vector3.Distance(posEnd, posStart)* speedModifier;
 
             if (Vector3.Distance(posEnd,posStart) > 0.16f&& VRPlayer.justUnsheathed == false) {
                 isThrowing = true;
@@ -85,7 +85,7 @@ namespace ValheimVRMod.Scripts {
                 snapshots.Clear();
             }
             else {
-                snapshots.Add(fixedSpear.transform.localPosition - Player.m_localPlayer.transform.position);
+                snapshots.Add(Player.m_localPlayer.transform.InverseTransformPoint(VRPlayer.rightHand.transform.position));
             }
 
             if (snapshots.Count > MAX_SNAPSHOTS) {
