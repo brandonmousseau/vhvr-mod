@@ -6,6 +6,7 @@ using ValheimVRMod.VRCore;
 namespace ValheimVRMod.Scripts {
     public class SpearManager : MonoBehaviour {
         private const int MAX_SNAPSHOTS = 7;
+        private const int MIN_SNAPSHOTSCHECK = 3;
         private int tickCounter;
         private List<Vector3> snapshots = new List<Vector3>();
         private GameObject fixedSpear;
@@ -15,7 +16,7 @@ namespace ValheimVRMod.Scripts {
         private const float mediumThrowModifier = 2f;
         private const float fastThrowModifier = 2.5f;
         private const float mediumThrowMinDist = 0.65f;
-        private const float fastThrowMinDist = 0.65f;
+        private const float fastThrowMinDist = 0.9f;
 
         public static Vector3 spawnPoint;
         public static Vector3 aimDir;
@@ -43,7 +44,7 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            if (snapshots.Count < 3) {
+            if (snapshots.Count < MIN_SNAPSHOTSCHECK) {
                 return;
             }
 
