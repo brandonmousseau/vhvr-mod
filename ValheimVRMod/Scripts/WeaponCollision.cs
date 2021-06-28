@@ -9,7 +9,7 @@ using Valve.VR;
 namespace ValheimVRMod.Scripts {
     public class WeaponCollision : MonoBehaviour {
         private const float MIN_DISTANCE = 0.2f;
-        private const float MIN_DISTANCE_STAB = 0.2f;
+        private const float MIN_DISTANCE_STAB = 0.25f;
         private const int MAX_SNAPSHOTS_BASE = 20;
         private const int MAX_SNAPSHOTS_FACTOR = -5;
 
@@ -83,7 +83,6 @@ namespace ValheimVRMod.Scripts {
             if (!isCollisionAllowed()) {
                 return;
             }
-            
             transform.SetParent(colliderParent.transform);
             transform.localRotation = Quaternion.identity;
             transform.localPosition = Vector3.zero;
@@ -203,9 +202,7 @@ namespace ValheimVRMod.Scripts {
             }
             
             snapshots.Add(transform.localPosition);
-            if (colliderParent) {
-                snapshotsC.Add(VRPlayer.rightHand.transform.position + colliderParent.transform.parent.localPosition);
-            }
+            snapshotsC.Add(GetHandPosition());
             if (snapshots.Count > maxSnapshots) {
                 snapshots.RemoveAt(0);
             }
@@ -220,20 +217,29 @@ namespace ValheimVRMod.Scripts {
                     return true;
                 }
             }
-            
-            if (Vector3.Distance(snapshots[Mathf.Max(0,snapshots.Count-7)], transform.localPosition) > MIN_DISTANCE_STAB && isStab()) {
-                return true;
+            foreach (Vector3 snapshot in snapshotsC) {
+                if (Vector3.Distance(snapshot, GetHandPosition()) > MIN_DISTANCE_STAB && isStab()) {
+                    return true;
+                }
             }
 
             return false;
         }
         public float SwingAngle() {
-            float angle = Vector3.Angle(snapshotsC[0] - snapshotsC[snapshotsC.Count - 1], snapshotsC[0] - transform.position);
+            float angle = Vector3.Angle(snapshotsC[0] - snapshotsC[snapshotsC.Count - 1], snapshotsC[0] - Player.m_localPlayer.transform.InverseTransformPoint(transform.position));
             return angle;
         }
 
         public bool isStab() {
             return (SwingAngle() < 20);
+        }
+        private Vector3 GetHandPosition() {
+            if (isRightHand) {
+                return Player.m_localPlayer.transform.InverseTransformPoint(VRPlayer.rightHand.transform.position);
+            }
+            else {
+                return Player.m_localPlayer.transform.InverseTransformPoint(VRPlayer.leftHand.transform.position);
+            }
         }
     }
 }
