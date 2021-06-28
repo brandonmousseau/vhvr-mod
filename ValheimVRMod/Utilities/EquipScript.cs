@@ -4,7 +4,10 @@ namespace ValheimVRMod.Utilities {
     
     [Flags]
     public enum EquipType {
-        None, Bow, Fishing, Spear, SpearChitin, Shield
+        None, 
+        Fishing, Cultivator, Hammer, Hoe,
+        Bow,  Spear, SpearChitin,
+        Shield
     }
     
     public static class EquipScript {
@@ -13,8 +16,15 @@ namespace ValheimVRMod.Utilities {
             
             switch (Player.m_localPlayer.GetRightItem()?.m_shared.m_name) {
                 
+                //tool
                 case "$item_fishingrod":
                     return EquipType.Fishing;
+                case "$item_cultivator":
+                    return EquipType.Cultivator;
+                case "$item_hammer":
+                    return EquipType.Hammer;
+                case "$item_hoe":
+                    return EquipType.Hoe;
 
                 case "$item_spear_flint":
                 case "$item_spear_bronze":
@@ -23,6 +33,8 @@ namespace ValheimVRMod.Utilities {
                     return EquipType.Spear;
                 case "$item_spear_chitin":
                     return EquipType.SpearChitin;
+
+
             }
 
             return EquipType.None;

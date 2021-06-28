@@ -859,7 +859,7 @@ namespace ValheimVRMod.VRCore
                 {
                     toggleShowHand = false;
                     hand.hapticAction.Execute(0, 0.2f, 100, 0.3f, inputSource);
-                    if(isRightHand && isHoldingItem(isRightHand) && isHoldingSpear()) {
+                    if(isRightHand && isHoldingItem(isRightHand) && isUnpressSheath()) {
 
                     } else if (isRightHand && EquipScript.getLeft() == EquipType.Bow) {
                         BowLocalManager.instance.toggleArrow();
@@ -871,17 +871,29 @@ namespace ValheimVRMod.VRCore
                     }
                 }
                 else if (!justUnsheathed && isRightHand && action.GetStateUp(inputSource)) {
-                    if (isHoldingItem(isRightHand) && (EquipScript.getRight() == EquipType.Spear || EquipScript.getRight() == EquipType.SpearChitin)) {
+                    if (isHoldingItem(isRightHand) && isUnpressSheath()) {
                         getPlayerCharacter().HideHandItems();
                     }
                 }
             }
-            if (justUnsheathed && isRightHand && action.GetStateUp(inputSource)&& isHoldingSpear()) {
+            if (justUnsheathed && isRightHand && action.GetStateUp(inputSource)&& isUnpressSheath()) {
                 justUnsheathed = false;
             }
         }
-        private bool isHoldingSpear() {
-            return EquipScript.getRight() == EquipType.Spear || EquipScript.getRight() == EquipType.SpearChitin;
+
+        private bool isUnpressSheath() {
+            return isBuildingTool() 
+                || isHoldingThrowable();
+        }
+        private bool isHoldingThrowable() {
+            return EquipScript.getRight() == EquipType.Spear 
+                || EquipScript.getRight() == EquipType.SpearChitin 
+                || EquipScript.getRight() == EquipType.Fishing;
+        }
+        private bool isBuildingTool() {
+            return EquipScript.getRight() == EquipType.Hammer 
+                || EquipScript.getRight() == EquipType.Hoe 
+                || EquipScript.getRight() == EquipType.Cultivator;
         }
         private bool isHoldingItem(bool isRightHand) {
             return isRightHand && getPlayerCharacter().GetRightItem() != null

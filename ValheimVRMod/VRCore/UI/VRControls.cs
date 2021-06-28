@@ -394,7 +394,7 @@ namespace ValheimVRMod.VRCore.UI
                         inPlaceMode() &&
                         hasPlacementGhost() &&
                         !Hud.IsPieceSelectionVisible() &&
-                        SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand);
+                        SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand);
         }
 
         // disable Jump input under certain conditions
