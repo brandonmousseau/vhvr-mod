@@ -12,7 +12,7 @@ EditorBuildSettings:
     path: Assets/SteamVR/InteractionSystem/Samples/Interactions_Example.unity
     guid: e3b77830391f10343929883b18f4d5ae
   m_configObjects:
-    Unity.XR.Oculus.Settings: {fileID: 11400000, guid: 034c7842e20913744963f89ef9f05b7b,
+    Unity.XR.Oculus.Settings: {fileID: 11400000, guid: 44b470fe75c4e744cbc53624ce5f2668,
       type: 2}
     Unity.XR.OpenVR.Settings: {fileID: 11400000, guid: bb9cb1b58774ce841b3441539054a39e,
       type: 2}

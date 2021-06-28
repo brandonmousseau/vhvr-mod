@@ -3,7 +3,6 @@ using UnityEngine;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 
-
 namespace ValheimVRMod.Scripts {
     public class ShieldManager : MonoBehaviour {
         
@@ -57,8 +56,8 @@ namespace ValheimVRMod.Scripts {
         }
         private void ParryCheck() {
             var dist = 0.0f;
-            Vector3 posEnd = VRPlayer.leftHand.transform.position;
-            Vector3 posStart = VRPlayer.leftHand.transform.position;
+            Vector3 posEnd = Player.m_localPlayer.transform.InverseTransformPoint(VRPlayer.leftHand.transform.position);
+            Vector3 posStart = Player.m_localPlayer.transform.InverseTransformPoint(VRPlayer.leftHand.transform.position);
 
             foreach (Vector3 snapshot in snapshots) {
                 var curDist = Vector3.Distance(snapshot, posEnd);
@@ -69,7 +68,7 @@ namespace ValheimVRMod.Scripts {
             }
 
             Transform lHand = VRPlayer.leftHand.transform;
-            Vector3 shieldPos = (snapshots[snapshots.Count - 1] + (-lHand.right / 2) );
+            Vector3 shieldPos = (snapshots[snapshots.Count - 1] + (Player.m_localPlayer.transform.InverseTransformDirection(-VRPlayer.leftHand.transform.right) / 2) );
 
             if (Vector3.Distance(posEnd, posStart) > 0.4f) {
                 if (Vector3.Angle(shieldPos - snapshots[0] , snapshots[snapshots.Count - 1] - snapshots[0]) < 25) {
@@ -85,7 +84,7 @@ namespace ValheimVRMod.Scripts {
             if (tickCounter < 5) {
                 return;
             }
-            snapshots.Add(VRPlayer.leftHand.transform.position);
+            snapshots.Add(Player.m_localPlayer.transform.InverseTransformPoint(VRPlayer.leftHand.transform.position));
 
             if (snapshots.Count > MAX_SNAPSHOTS) {
                 snapshots.RemoveAt(0);
