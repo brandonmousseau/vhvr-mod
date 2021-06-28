@@ -18,6 +18,7 @@ namespace ValheimVRMod.Patches {
 
         private static void OnUpdate(string text) {
             instance.m_textField.text = text;
+            instance.m_textField.caretPosition = text.Length;
         }
         
         private static void OnClose() {
@@ -43,9 +44,49 @@ namespace ValheimVRMod.Patches {
         
         private static void OnUpdate(string text) {
             instance.text = text;
+            instance.caretPosition = instance.text.Length;
         }
         
         private static void OnClose() {}
+
+    }
+
+    [HarmonyPatch(typeof(InputField), "OnFocus")]
+    class PatchPasswordFieldFocus {
+        
+        private static InputField instance;
+        private static TextInput textInputInstance;
+        private static InputFieldSubmit inputFieldSubmitInstance;
+        
+        public static void Postfix(InputField __instance) {
+            if(__instance.inputType == InputField.InputType.Password)
+            {
+                instance = __instance;
+                textInputInstance = __instance.gameObject.GetComponent<TextInput>();
+                inputFieldSubmitInstance = __instance.gameObject.GetComponent<InputFieldSubmit>();
+                InputManager.start(__instance.text, OnUpdate, OnClose);
+            }
+        }
+        
+        private static void OnUpdate(string text) {
+            instance.text = text;
+            instance.caretPosition = instance.text.Length;
+        }
+        
+        private static void OnClose() 
+        {
+            if(inputFieldSubmitInstance != null)
+                inputFieldSubmitInstance.m_onSubmit.Invoke(instance.text);
+            else if(textInputInstance != null)
+            {
+                try {
+                    AccessTools.Method(typeof(TextInput), "OnEnter", new[] {typeof(string)})
+                        .Invoke(instance, new object[] {textInputInstance.m_textField.text});
+                }
+                catch {}
+            }
+            else instance.DeactivateInputField();
+        }
 
     }
     
