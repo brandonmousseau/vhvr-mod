@@ -15,6 +15,7 @@ namespace ValheimVRMod.Utilities {
         private static GameObject _shieldObj;
         
         public static Vector3 lastHitPoint;
+        public static Vector3 lastHitDir;
         public static Collider lastHitCollider;
         
         public static WeaponCollision leftWeaponCollider() {

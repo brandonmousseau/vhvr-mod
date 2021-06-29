@@ -49,6 +49,7 @@ namespace ValheimVRMod.Scripts {
             }
             
             StaticObjects.lastHitPoint = transform.position;
+            StaticObjects.lastHitDir = snapshots[snapshots.Count - 1] - snapshots[snapshots.Count - 5];
             StaticObjects.lastHitCollider = collider;
             
             if (attack.Start(Player.m_localPlayer, null, null,

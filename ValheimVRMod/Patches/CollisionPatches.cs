@@ -70,6 +70,7 @@ namespace ValheimVRMod.Patches {
 
             Collider col = StaticObjects.lastHitCollider;
             Vector3 pos = StaticObjects.lastHitPoint;
+            Vector3 dir = StaticObjects.lastHitDir;
 
             // all rest is copied stuff from original DoMeleeAttack:
             Vector3 zero = Vector3.zero;
@@ -128,7 +129,7 @@ namespace ValheimVRMod.Patches {
                 hitData.m_skill = skill;
                 hitData.m_damage = ___m_weapon.GetDamage();
                 hitData.m_point = pos;
-                hitData.m_dir = pos.normalized;
+                hitData.m_dir = dir;
                 hitData.m_hitCollider = col;
                 hitData.SetAttacker(___m_character);
                 hitData.m_damage.Modify(___m_damageMultiplier);
