@@ -52,6 +52,8 @@ namespace ValheimVRMod.VRCore
         private static Vector3 THIRD_PERSON_CONFIG_OFFSET = Vector3.zero;
         private static float NECK_OFFSET = 0.2f;
         public static bool justUnsheathed = false;
+
+        private static float initHeadPos;
         public static bool isRoomscaleSneak = false;
         public static bool isNonRSSneaking = false;
 
@@ -168,10 +170,8 @@ namespace ValheimVRMod.VRCore
             updateVrik();
             UpdateAmplifyOcclusionStatus();
             checkInteractions();
-
-            if (VHVRConfig.RoomScaleSneakEnabled()) {
-                CheckSneakRoomscale();
-            }
+            CheckSneakRoomscale();
+            
         }
 
         void maybeUpdateHeadPosition()
@@ -677,6 +677,8 @@ namespace ValheimVRMod.VRCore
                     _instance.transform.localRotation = Quaternion.Euler(0f, -hmd.localRotation.eulerAngles.y, 0f);
                 }
                 headPositionInitialized = true;
+
+                initHeadPos = Valve.VR.InteractionSystem.Player.instance.eyeHeight;
             }
         }
 
@@ -890,11 +892,14 @@ namespace ValheimVRMod.VRCore
         }
         
         private void CheckSneakRoomscale() {
-            var camera = CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform;
-            if (camera.localPosition.y < VHVRConfig.RoomScaleSneakHeight()) {
-                isRoomscaleSneak = true;
-            }else {
-                isRoomscaleSneak = false;
+            if (VHVRConfig.RoomScaleSneakEnabled()) {
+                float height = Valve.VR.InteractionSystem.Player.instance.eyeHeight;
+                if (height < initHeadPos * VHVRConfig.RoomScaleSneakHeight()) {
+                    isRoomscaleSneak = true;
+                }
+                else {
+                    isRoomscaleSneak = false;
+                }
             }
         }
 
