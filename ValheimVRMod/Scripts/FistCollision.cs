@@ -118,6 +118,11 @@ namespace ValheimVRMod.Scripts {
         }
         
         public bool hasMomentum() {
+            
+            if (!VHVRConfig.WeaponNeedsSpeed()) {
+                return true;
+            }
+            
             foreach (Vector3 snapshot in snapshots) {
                 if (Vector3.Distance(snapshot, transform.localPosition) > MIN_DISTANCE) {
                     return true;

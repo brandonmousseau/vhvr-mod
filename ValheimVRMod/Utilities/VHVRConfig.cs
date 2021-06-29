@@ -69,6 +69,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> snapTurnAngle;
         private static ConfigEntry<bool> smoothSnapTurn;
         private static ConfigEntry<float> smoothSnapSpeed;
+        private static ConfigEntry<bool> weaponNeedsSpeed;
 
         // Graphics Settings
         private static ConfigEntry<bool> useAmplifyOcclusion;
@@ -307,6 +308,10 @@ namespace ValheimVRMod.Utilities
                                         new ConfigDescription("Which hand do you want to use for the main laser pointer input? If" +
                                         " only one hand is active, it will be used automatically regardless of this setting.",
                                         new AcceptableValueList<string>(new string[] { "Right", "Left" })));
+            weaponNeedsSpeed = config.Bind("Controls",
+                "SwingWeapons",
+                true,
+                "Defines if Swinging a Weapon needs certain speed. if set to false, single touch will already trigger hit");
             InitializeConfigurableKeyBindings(config);
         }
 
@@ -632,6 +637,11 @@ namespace ValheimVRMod.Utilities
         public static float SmoothSnapSpeed()
         {
             return Mathf.Abs(smoothSnapSpeed.Value);
+        }
+        
+        public static bool WeaponNeedsSpeed()
+        {
+            return weaponNeedsSpeed.Value;
         }
 
     }
