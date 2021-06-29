@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using ValheimVRMod.VRCore;
 using ValheimVRMod.VRCore.UI;
 using HarmonyLib;
 using System.Reflection;
@@ -180,15 +181,34 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
-            run = ZInput_GetJoyRightStickY_Patch.isRunning;
-            
-            if (ZInput_GetJoyRightStickY_Patch.isCrouching) {
-                if (!wasCrouching) {
+            if (VHVRConfig.RoomScaleSneakEnabled()) {
+                if (!wasCrouching && VRPlayer.isSneaking) {
                     crouch = true;
                     wasCrouching = true;
                 }
-            } else if (wasCrouching) {
-                wasCrouching = false;
+                else if (wasCrouching && !VRPlayer.isSneaking) {
+                    crouch = true;
+                    wasCrouching = false;
+                }
+
+                if (wasCrouching) {
+                    run = false;
+                }
+                else {
+                    run = ZInput_GetJoyRightStickY_Patch.isRunning;
+                }
+            }
+            else {
+                run = ZInput_GetJoyRightStickY_Patch.isRunning;
+                if (ZInput_GetJoyRightStickY_Patch.isCrouching) {
+                    if (!wasCrouching) {
+                        crouch = true;
+                        wasCrouching = true;
+                    }
+                }
+                else if (wasCrouching) {
+                    wasCrouching = false;
+                }
             }
 
             if (EquipScript.getLeft() == EquipType.Bow) {

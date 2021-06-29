@@ -69,6 +69,8 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> snapTurnAngle;
         private static ConfigEntry<bool> smoothSnapTurn;
         private static ConfigEntry<float> smoothSnapSpeed;
+        private static ConfigEntry<bool> roomScaleSneaking;
+        private static ConfigEntry<float> roomScaleSneakHeight;
 
         // Graphics Settings
         private static ConfigEntry<bool> useAmplifyOcclusion;
@@ -301,6 +303,14 @@ namespace ValheimVRMod.Utilities
                                           "SmoothSnapSpeed",
                                           10f,
                                           "This will affect the speed that the smooth snap turns occur at.");
+            roomScaleSneaking = config.Bind("Controls",
+                                          "RoomScale Sneaking",
+                                          false,
+                                          "Enable RoomScale Sneaking. (This will disable sneak button and running while sneaking)");
+            roomScaleSneakHeight = config.Bind("Controls",
+                                          "RoomScaleSneakHeight",
+                                          1.2f,
+                                          "This will affect the height that the roomscale sneak occur at. (e.g. 1.2f means if your headset lower than 1.2 Meter, it will do sneak) ");
             preferredHand = config.Bind("Controls",
                                         "PreferredHand",
                                         "Right",
@@ -634,5 +644,12 @@ namespace ValheimVRMod.Utilities
             return Mathf.Abs(smoothSnapSpeed.Value);
         }
 
+        public static bool RoomScaleSneakEnabled() {
+            return roomScaleSneaking.Value;
+        }
+
+        public static float RoomScaleSneakHeight() {
+            return roomScaleSneakHeight.Value;
+        }
     }
 }
