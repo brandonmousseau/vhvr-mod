@@ -52,7 +52,8 @@ namespace ValheimVRMod.VRCore
         private static Vector3 THIRD_PERSON_CONFIG_OFFSET = Vector3.zero;
         private static float NECK_OFFSET = 0.2f;
         public static bool justUnsheathed = false;
-        public static bool isSneaking = false;
+        public static bool isRoomscaleSneak = false;
+        public static bool isNonRSSneaking = false;
 
         private static GameObject _prefab;
         private static GameObject _instance;
@@ -583,7 +584,7 @@ namespace ValheimVRMod.VRCore
             }
             if (player.IsCrouching())
             {
-                if (!VHVRConfig.RoomScaleSneakEnabled()) {
+                if (!VHVRConfig.RoomScaleSneakEnabled()|| isNonRSSneaking) {
                     return CROUCH_HEIGHT_ADJUST;
                 }
             }
@@ -890,11 +891,10 @@ namespace ValheimVRMod.VRCore
         
         private void CheckSneakRoomscale() {
             var camera = CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform;
-            LogDebug("Check Pos : " + camera.localPosition);
             if (camera.localPosition.y < VHVRConfig.RoomScaleSneakHeight()) {
-                isSneaking = true;
+                isRoomscaleSneak = true;
             }else {
-                isSneaking = false;
+                isRoomscaleSneak = false;
             }
         }
 

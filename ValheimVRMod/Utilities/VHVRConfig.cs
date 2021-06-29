@@ -306,7 +306,7 @@ namespace ValheimVRMod.Utilities
             roomScaleSneaking = config.Bind("Controls",
                                           "RoomScale Sneaking",
                                           false,
-                                          "Enable RoomScale Sneaking. (This will disable sneak button and running while sneaking)");
+                                          "Enable RoomScale Sneaking.");
             roomScaleSneakHeight = config.Bind("Controls",
                                           "RoomScaleSneakHeight",
                                           1.2f,

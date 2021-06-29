@@ -174,6 +174,9 @@ namespace ValheimVRMod.Patches {
     class PlayerSetControlsPatch {
 
         static bool wasCrouching;
+        static bool wasNonRSCrouching;
+        static bool wasRunning;
+        static bool wasNoStamina;
         
         static void Prefix(Player __instance, ref bool attack, ref bool attackHold, ref bool block, ref bool blockHold,
             ref bool secondaryAttack, ref bool crouch, ref bool run) {
@@ -182,32 +185,107 @@ namespace ValheimVRMod.Patches {
             }
 
             if (VHVRConfig.RoomScaleSneakEnabled()) {
-                if (!wasCrouching && VRPlayer.isSneaking) {
-                    crouch = true;
+                ////Roomscale Sneak Check 
+                //Check sneak 
+                if (!wasCrouching && VRPlayer.isRoomscaleSneak && !VRPlayer.isNonRSSneaking) {
                     wasCrouching = true;
+                    if (wasRunning) {
+                        crouch = false;
+                    }
+                    else {
+                        crouch = true;
+                    }
                 }
-                else if (wasCrouching && !VRPlayer.isSneaking) {
-                    crouch = true;
+                //Roomscale unsneak check
+                else if (wasCrouching && !VRPlayer.isRoomscaleSneak) {
+                    if (!wasNoStamina) {
+                        crouch = true;
+                    }
                     wasCrouching = false;
+                    VRPlayer.isNonRSSneaking = false;
                 }
 
-                if (wasCrouching) {
+                //sneak check when non-roomscale sneak and then go to roomscale sneak
+                if (!wasCrouching && VRPlayer.isRoomscaleSneak && VRPlayer.isNonRSSneaking) {
+                    wasCrouching = true;
+                    wasRunning = false;
                     run = false;
+                    VRPlayer.isNonRSSneaking = false;
+                }
+
+                ////Sneak Check if stamina empty 
+                //sneak check if still Roomscale sneaking and resneak when stamina is more than 20
+                if (wasCrouching && wasNoStamina && Player.m_localPlayer.HaveStamina(20) && !Player.m_localPlayer.IsCrouching() && VRPlayer.isRoomscaleSneak) {
+                    crouch = true;
+                    wasNoStamina = false;
+                }
+                //Check if stamina empty while Roomscale sneaking
+                if (wasCrouching && VRPlayer.isRoomscaleSneak && !Player.m_localPlayer.HaveStamina(1) && Player.m_localPlayer.IsCrouching() && !wasNoStamina) {
+                    wasNoStamina = true;
+                }
+                //sneak check when not sneaking in Roomscale
+                else if (wasCrouching && wasNoStamina && Player.m_localPlayer.HaveStamina(1) && !VRPlayer.isRoomscaleSneak) {
+                    wasNoStamina = false;
+                    wasCrouching = false;
+                    if (Player.m_localPlayer.IsCrouching()) {
+                        crouch = true;
+                    }
+                }
+
+                //Non-Roomscale Sneak Check (only when not sneaking roomscale)
+                if (ZInput_GetJoyRightStickY_Patch.isCrouching) {
+                    if (!VRPlayer.isRoomscaleSneak) {
+                        if (!wasNonRSCrouching && !VRPlayer.isNonRSSneaking) {
+                            crouch = true;
+                            wasNonRSCrouching = true;
+                            VRPlayer.isNonRSSneaking = true;
+                        }
+                        else if (!wasNonRSCrouching && VRPlayer.isNonRSSneaking) {
+                            crouch = true;
+                            wasNonRSCrouching = true;
+                            VRPlayer.isNonRSSneaking = false;
+                        }
+                    }
+                }
+                else{
+                    wasNonRSCrouching = false;
+                }
+
+                //Run Check while roomscale sneaking
+                if (wasCrouching&& VRPlayer.isRoomscaleSneak) {
+                    if (ZInput_GetJoyRightStickY_Patch.isRunning) {
+                        run = true;
+                        wasRunning = true;
+                    }
+                    else if(wasRunning && !ZInput_GetJoyRightStickY_Patch.isRunning) {
+                        run = false;
+                        crouch = true;
+                        wasRunning = false;
+                    }
                 }
                 else {
                     run = ZInput_GetJoyRightStickY_Patch.isRunning;
+                    //RunCheck when not roomscale sneaking
+                    if (!ZInput_GetJoyRightStickY_Patch.isRunning) {
+                        wasRunning = false;
+                    }
+                    else {
+                        wasRunning = true;
+                        VRPlayer.isNonRSSneaking = false;
+                    }
                 }
             }
             else {
+                //True Non-Roomscale sneak check
                 run = ZInput_GetJoyRightStickY_Patch.isRunning;
                 if (ZInput_GetJoyRightStickY_Patch.isCrouching) {
-                    if (!wasCrouching) {
+                    if (!wasNonRSCrouching) {
                         crouch = true;
-                        wasCrouching = true;
+                        wasNonRSCrouching = true;
                     }
                 }
-                else if (wasCrouching) {
-                    wasCrouching = false;
+                else if (wasNonRSCrouching) {
+                    wasNonRSCrouching = false;
                 }
             }
 
