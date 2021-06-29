@@ -53,7 +53,7 @@ namespace ValheimVRMod.VRCore
         private static float NECK_OFFSET = 0.2f;
         public static bool justUnsheathed = false;
 
-        private static float initHeadPos;
+        private static float referencePlayerHeight;
         public static bool isRoomscaleSneak = false;
         public static bool isNonRSSneaking = false;
 
@@ -678,7 +678,7 @@ namespace ValheimVRMod.VRCore
                 }
                 headPositionInitialized = true;
 
-                initHeadPos = Valve.VR.InteractionSystem.Player.instance.eyeHeight;
+                referencePlayerHeight = Valve.VR.InteractionSystem.Player.instance.eyeHeight;
             }
         }
 
@@ -894,10 +894,12 @@ namespace ValheimVRMod.VRCore
         private void CheckSneakRoomscale() {
             if (VHVRConfig.RoomScaleSneakEnabled()) {
                 float height = Valve.VR.InteractionSystem.Player.instance.eyeHeight;
-                if (height < initHeadPos * VHVRConfig.RoomScaleSneakHeight()) {
+                float heightThreshold = referencePlayerHeight * VHVRConfig.RoomScaleSneakHeight();
+                if (height < heightThreshold) {
                     isRoomscaleSneak = true;
                 }
-                else {
+                else if (height > heightThreshold + heightThreshold * 0.05f)
+                {
                     isRoomscaleSneak = false;
                 }
             }
