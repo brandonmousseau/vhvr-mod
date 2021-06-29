@@ -10,7 +10,7 @@ using UnityEngine.XR;
 using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
 
-namespace ValheimVRMod.Patches 
+namespace ValheimVRMod.Patches
 {
     [HarmonyPatch]
     class TemporalAntialiasingPatches
@@ -49,19 +49,19 @@ namespace ValheimVRMod.Patches
         public class VRTaaComponent : PostProcessingComponentRenderTexture<AntialiasingModel>
         {
             public static VRTaaComponent Instance;
-	        private const string k_ShaderString = "Hidden/Post FX/Temporal Anti-aliasing";
-	        private const int k_SampleCount = 8;
-            
+            private const string k_ShaderString = "Hidden/Post FX/Temporal Anti-aliasing";
+            private const int k_SampleCount = 8;
+
             readonly RenderBuffer[] m_Mrt = new RenderBuffer[2];
             bool m_ResetHistory = true;
-
-            private Func<Vector2, Matrix4x4> m_jitteredFunc;
+            Func<Vector2, Matrix4x4> m_jitteredFunc;
 
             /// <summary>
             /// The current sample index.
             /// </summary>
             public int sampleIndex { get; private set; }
-	        public Vector2 jitterVector { get; private set; }
+
+            public Vector2 jitterVector { get; private set; }
 
             // Ping-pong between two history textures as we can't read & write the same target in the
             // same pass
@@ -69,7 +69,7 @@ namespace ValheimVRMod.Patches
             const int k_NumHistoryTextures = 2;
             readonly RenderTexture[][] m_HistoryTextures = new RenderTexture[k_NumEyes][];
 
-            readonly int[] m_HistoryPingPong = new int [k_NumEyes];
+            readonly int[] m_HistoryPingPong = new int[k_NumEyes];
 
             private static class Uniforms
             {
@@ -84,13 +84,13 @@ namespace ValheimVRMod.Patches
                 internal static int _MainTex = Shader.PropertyToID("_MainTex");
             }
 
-            public override bool active 
+            public override bool active
             {
                 get
                 {
-                    if (base.model.enabled && base.model.settings.method == AntialiasingModel.Method.Taa && SystemInfo.supportsMotionVectors && SystemInfo.supportedRenderTargetCount >= 2)
+                    if (model.enabled && model.settings.method == AntialiasingModel.Method.Taa && SystemInfo.supportsMotionVectors && SystemInfo.supportedRenderTargetCount >= 2)
                     {
-                        return !base.context.interrupted;
+                        return !context.interrupted;
                     }
                     return false;
                 }
@@ -99,11 +99,6 @@ namespace ValheimVRMod.Patches
             public override DepthTextureMode GetCameraFlags()
             {
                 return DepthTextureMode.Depth | DepthTextureMode.MotionVectors;
-            }
-
-            public override void Init(PostProcessingContext pcontext, AntialiasingModel pmodel)
-            {
-                base.Init(pcontext, pmodel);
             }
 
             public void ResetHistory()
@@ -135,7 +130,7 @@ namespace ValheimVRMod.Patches
             /// <returns>A jittered projection matrix.</returns>
             public Matrix4x4 GetJitteredProjectionMatrix(Camera camera, Func<Vector2, Matrix4x4> jitteredFunc)
             {
-		        AntialiasingModel.TaaSettings taaSettings = model.settings.taaSettings;
+                AntialiasingModel.TaaSettings taaSettings = model.settings.taaSettings;
                 Matrix4x4 cameraProj;
                 jitterVector = GenerateRandomOffset();
                 jitterVector *= taaSettings.jitterSpread;
@@ -174,7 +169,7 @@ namespace ValheimVRMod.Patches
             // TODO: We'll probably need to isolate most of this for SRPs
             public void ConfigureStereoJitteredProjectionMatrices(Func<Vector2, Matrix4x4> jitteredFunc)
             {
-		        AntialiasingModel.TaaSettings taaSettings = model.settings.taaSettings;
+                AntialiasingModel.TaaSettings taaSettings = model.settings.taaSettings;
                 var camera = context.camera;
                 var eye = (Camera.StereoscopicEye)camera.stereoActiveEye;
                 jitterVector = GenerateRandomOffset();
@@ -232,7 +227,7 @@ namespace ValheimVRMod.Patches
                 Material material = context.materialFactory.Get(k_ShaderString);
                 material.shaderKeywords = null;
                 AntialiasingModel.TaaSettings taaSettings = model.settings.taaSettings;
-                
+
                 int activeEye = (int)context.camera.stereoActiveEye % k_NumEyes;
                 int pp = m_HistoryPingPong[activeEye];
                 var historyRead = CheckHistory(activeEye, ++pp % k_NumEyes, source, material);
@@ -288,7 +283,7 @@ namespace ValheimVRMod.Patches
                     {
                         if (m_HistoryTextures[i] == null)
                             continue;
-                        
+
                         for (int j = 0; j < m_HistoryTextures[i].Length; j++)
                         {
                             RenderTexture.ReleaseTemporary(m_HistoryTextures[i][j]);
@@ -316,7 +311,7 @@ namespace ValheimVRMod.Patches
             ___m_ComponentStates.Remove(___m_Taa);
             ___m_Components.Remove(___m_Taa);
 
-            if(VRTaaComponent.Instance == null) VRTaaComponent.Instance = new VRTaaComponent();
+            if (VRTaaComponent.Instance == null) VRTaaComponent.Instance = new VRTaaComponent();
 
             ___m_Components.Remove(VRTaaComponent.Instance);
             ___m_ComponentStates.Remove(VRTaaComponent.Instance);
@@ -353,38 +348,37 @@ namespace ValheimVRMod.Patches
         [HarmonyPatch(typeof(PostProcessingBehaviour), "ResetTemporalEffects")]
         static IEnumerable<CodeInstruction> TranspileTaaComponentAway(IEnumerable<CodeInstruction> instructions)
         {
+            if (VHVRConfig.NonVrPlayer()) return instructions;
+            
             var original = new List<CodeInstruction>(instructions);
             var patched = new List<CodeInstruction>();
-            if (VHVRConfig.NonVrPlayer())
+            
+            foreach (var instruction in original)
             {
-                return original;
-            }
-            foreach (var instruction in original) 
-            {
-                if (instruction.LoadsField(LoadsTaaComponent)) 
+                if (instruction.LoadsField(LoadsTaaComponent))
                 {
                     Debug.Log("Patched TAA reference");
                     var lastInstuction = patched[patched.Count - 1];
-                    if(lastInstuction != null && lastInstuction.opcode == OpCodes.Ldarg_0)
+                    if (lastInstuction != null && lastInstuction.opcode == OpCodes.Ldarg_0)
                         patched.RemoveAt(patched.Count - 1);
                     patched.Add(new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(VRTaaComponent), nameof(VRTaaComponent.Instance))));
                 }
-                else if(instruction.Calls(CallsTaaSetProjectionMatrix))
+                else if (instruction.Calls(CallsTaaSetProjectionMatrix))
                 {
                     Debug.Log("Patched TAA SetProjectionMatrix");
                     patched.Add(new CodeInstruction(instruction.opcode, AccessTools.Method(typeof(VRTaaComponent), nameof(VRTaaComponent.ConfigureStereoMonoProjectionMatrices), new Type[] { typeof(Func<Vector2, Matrix4x4>) })));
                 }
-                else if(instruction.Calls(CallsTaaRender))
+                else if (instruction.Calls(CallsTaaRender))
                 {
                     Debug.Log("Patched TAA Render");
                     patched.Add(new CodeInstruction(instruction.opcode, AccessTools.Method(typeof(VRTaaComponent), nameof(VRTaaComponent.Render), new Type[] { typeof(RenderTexture), typeof(RenderTexture) })));
                 }
-                else if(instruction.Calls(CallsTaaGetJitterVector))
+                else if (instruction.Calls(CallsTaaGetJitterVector))
                 {
                     Debug.Log("Patched TAA GetJitterVector");
                     patched.Add(new CodeInstruction(instruction.opcode, AccessTools.PropertyGetter(typeof(VRTaaComponent), nameof(VRTaaComponent.jitterVector))));
                 }
-                else if(instruction.Calls(CallsTaaResetHistory))
+                else if (instruction.Calls(CallsTaaResetHistory))
                 {
                     Debug.Log("Patched TAA ResetHistory");
                     patched.Add(new CodeInstruction(instruction.opcode, AccessTools.Method(typeof(VRTaaComponent), nameof(VRTaaComponent.ResetHistory))));
