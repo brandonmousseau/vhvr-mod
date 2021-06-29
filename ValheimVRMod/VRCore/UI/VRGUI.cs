@@ -44,6 +44,7 @@ namespace ValheimVRMod.VRCore.UI
      */
     class VRGUI : MonoBehaviour
     {
+        public static readonly Vector2 GUI_DIMENSIONS = new Vector2(1920, 1080);
         public static readonly string GUI_CANVAS = "GUI";
         private static readonly string OVERLAY_KEY = "VALHEIM_VR_MOD_OVERLAY";
         private static readonly string OVERLAY_NAME = "Valheim VR";
@@ -94,6 +95,8 @@ namespace ValheimVRMod.VRCore.UI
         {
             if (ensureGuiCanvas())
             {
+                _guiCanvas.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, GUI_DIMENSIONS.x);
+                _guiCanvas.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, GUI_DIMENSIONS.y);
                 CrosshairManager.instance.maybeReparentCrosshair();
                 if (VHVRConfig.ShowRepairHammer() && RepairModePositionIndicator.instance != null)
                 {
@@ -181,8 +184,7 @@ namespace ValheimVRMod.VRCore.UI
                 _uiPanel.transform.rotation = VRPlayer.instance.transform.rotation;
                 _uiPanel.transform.position = VRPlayer.instance.transform.position + VRPlayer.instance.transform.rotation * offsetPosition;
             }
-            float ratio = (float)Screen.width / (float)Screen.height;
-            _uiPanel.transform.localScale = new Vector3(VHVRConfig.GetUiPanelSize() * ratio,
+            _uiPanel.transform.localScale = new Vector3(VHVRConfig.GetUiPanelSize() * GUI_DIMENSIONS.x / GUI_DIMENSIONS.y,
                                                         VHVRConfig.GetUiPanelSize(), 1f);
         }
 
@@ -271,7 +273,7 @@ namespace ValheimVRMod.VRCore.UI
         {
             float x = localCoordinates.x + 0.5f;
             float y = localCoordinates.y + 0.5f;
-            Vector2 cursorSpace = new Vector2(Screen.width*x, Screen.height*y);
+            Vector2 cursorSpace = new Vector2(GUI_DIMENSIONS.x * x, GUI_DIMENSIONS.y * y);
             return cursorSpace;
         }
 
@@ -286,7 +288,7 @@ namespace ValheimVRMod.VRCore.UI
             var overlay = OpenVR.Overlay;
             if (overlay != null)
             {
-                _overlayTexture = new RenderTexture(new RenderTextureDescriptor(Screen.width, Screen.height));
+                _overlayTexture = new RenderTexture(new RenderTextureDescriptor((int) GUI_DIMENSIONS.x, (int) GUI_DIMENSIONS.y));
                 var error = overlay.CreateOverlay(OVERLAY_KEY, OVERLAY_NAME, ref _overlay);
                 if (error != EVROverlayError.None)
                 {
@@ -511,14 +513,16 @@ namespace ValheimVRMod.VRCore.UI
             // i.e. 1 pixel on screen = 1 unit of world space. That way when any elements are added to the GUI
             // at a specific pixel size, they are scaled properly.
             _guiCanvas.renderMode = RenderMode.WorldSpace;
+            _guiCanvas.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, GUI_DIMENSIONS.x);
+            _guiCanvas.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, GUI_DIMENSIONS.y);
             _guiCamera.gameObject.transform.position = new Vector3(Screen.width * 0.5f, Screen.height * 0.5f, -1);
-            _guiCamera.orthographicSize = Screen.height * 0.5f;
+            _guiCamera.orthographicSize = GUI_DIMENSIONS.y * 0.5f;
         }
 
         private void creatGuiCamera()
         {
             LogDebug("Creating GUI Camera");
-            _guiTexture = new RenderTexture(new RenderTextureDescriptor(Screen.width, Screen.height));
+            _guiTexture = new RenderTexture(new RenderTextureDescriptor((int)GUI_DIMENSIONS.x, (int)GUI_DIMENSIONS.y));
             GameObject guiCamObj = new GameObject(CameraUtils.VRGUI_SCREENSPACE_CAM);
             DontDestroyOnLoad(guiCamObj);
             _guiCamera = guiCamObj.AddComponent<Camera>();

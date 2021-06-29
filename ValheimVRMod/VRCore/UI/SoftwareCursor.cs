@@ -34,8 +34,8 @@ namespace ValheimVRMod.VRCore.UI
                 Vector2 position = lastCursorPosition;
                 // Shift from 0,0 in center to 0,0 is top left
                 position += new Vector2(p.rect.width, p.rect.height) * 0.5f;
-                float xScale = p.rect.width / Screen.width;
-                float yScale = p.rect.height / Screen.height;
+                float xScale = p.rect.width / VRGUI.GUI_DIMENSIONS.x;
+                float yScale = p.rect.height / VRGUI.GUI_DIMENSIONS.y;
                 return new Vector3(position.x / xScale, position.y / yScale);
             } set
             {
@@ -44,8 +44,8 @@ namespace ValheimVRMod.VRCore.UI
                     return;
                 }
                 RectTransform p = instance.GetComponent<SoftwareCursor>().parent;
-                float xScale = p.rect.width / Screen.width;
-                float yScale = p.rect.height / Screen.height;
+                float xScale = p.rect.width / VRGUI.GUI_DIMENSIONS.x;
+                float yScale = p.rect.height / VRGUI.GUI_DIMENSIONS.y;
                 float xValue = value.x * xScale;
                 float yValue = value.y * yScale;
                 Vector2 lastPosition = new Vector2(xValue, yValue);
