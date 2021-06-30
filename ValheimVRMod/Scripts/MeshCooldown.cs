@@ -21,6 +21,10 @@ namespace ValheimVRMod.Scripts {
             return true;
         }
 
+        private void OnDisable() {
+            Destroy(this);
+        }
+
         public bool inCoolDown() {
             return cooldown > 0;
         }

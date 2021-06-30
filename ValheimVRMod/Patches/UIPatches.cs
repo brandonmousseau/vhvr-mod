@@ -582,5 +582,14 @@ namespace ValheimVRMod.Patches
             playerRot = player.transform.rotation;
         }
     }
+    
+    // remove stupid keyboard/mouse hints:
+    [HarmonyPatch(typeof(KeyHints), "Awake")]
+    class PatchKeyHints {
+
+        public static void Prefix(ref KeyHints __instance) {
+            GameObject.Destroy(__instance);
+        }
+    }
 
 }

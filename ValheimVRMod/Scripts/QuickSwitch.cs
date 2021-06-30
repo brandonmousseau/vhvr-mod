@@ -15,12 +15,16 @@ namespace ValheimVRMod.Scripts {
          */
         public override void refreshItems() {
 
+            if (Player.m_localPlayer == null) {
+                return;
+            }
+            
             elementCount = 0;
             var inventory = Player.m_localPlayer.GetInventory();
-
+            
             for (int i = 0; i < 8; i++) {
                 
-                ItemDrop.ItemData item = inventory.GetItemAt(i, 0);
+                ItemDrop.ItemData item = inventory?.GetItemAt(i, 0);
 
                 if (item == null) {
                     continue;

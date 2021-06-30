@@ -72,6 +72,16 @@ namespace ValheimVRMod.Scripts {
                 || target.layer == LayerUtils.UI_PANEL_LAYER) {
                 return false;
             }
+
+            // if attack is vertical, we can only hit one target at a time
+            if (attack.m_attackType == Attack.AttackType.Vertical && 
+                MeshCooldown.sharedInstance != null && MeshCooldown.sharedInstance.inCoolDown()) {
+                return false;
+            }
+
+            if (target.GetComponentInParent<MineRock5>() != null) {
+                target = target.transform.parent.gameObject;
+            }
             
             var meshCooldown = target.GetComponent<MeshCooldown>();
             if (meshCooldown == null) {
@@ -106,11 +116,9 @@ namespace ValheimVRMod.Scripts {
             else {
                 item = Player.m_localPlayer.GetLeftItem();
             }
-
-            if (item != null) {
-                attack = item.m_shared.m_attack.Clone();
-            }
             
+            attack = item.m_shared.m_attack.Clone();
+
             switch (attack.m_attackAnimation) {
                 case "atgeir_attack":
                     hitTime = 0.81f;
