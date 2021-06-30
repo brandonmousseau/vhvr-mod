@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
 using UnityEngine;
@@ -12,9 +11,13 @@ namespace ValheimVRMod.Scripts {
         private MethodInfo stopEmote = AccessTools.Method(typeof(Player), "StopEmote");
         private bool hasGPower;
         private Texture2D sitTexture; 
+        private Texture2D mapTexture;
+
+        public static bool toggleMap;
         
         QuickActions() {
             sitTexture = VRAssetManager.GetAsset<Texture2D>("sit");    
+            mapTexture = VRAssetManager.GetAsset<Texture2D>("map");    
         }
 
         protected override int getElementCount() {
@@ -28,7 +31,6 @@ namespace ValheimVRMod.Scripts {
             }
             
             elementCount = 0;
-            
             var inventory = Player.m_localPlayer.GetInventory();
 
             for (int i = 0; i < 8; i++) {
@@ -75,6 +77,11 @@ namespace ValheimVRMod.Scripts {
                 new Vector2(0.5f, 0.5f), 500);
             elementCount++;
             
+            elements[elementCount].transform.GetChild(2).GetComponent<SpriteRenderer>().sprite =  Sprite.Create(mapTexture,
+                new Rect(0.0f, 0.0f, mapTexture.width, mapTexture.height),
+                new Vector2(0.5f, 0.5f), 500);
+            elementCount++;
+            
             reorderElements();
             
         }
@@ -84,8 +91,13 @@ namespace ValheimVRMod.Scripts {
             if (hoveredIndex < 0) {
                 return;
             }
-
+            
             if (hoveredIndex == elementCount - 1) {
+                toggleMap = true;
+                return;
+            }
+
+            if (hoveredIndex == elementCount - 2) {
                 if (Player.m_localPlayer.InEmote() && Player.m_localPlayer.IsSitting())
                     stopEmote.Invoke(Player.m_localPlayer, null);
                 else
@@ -93,7 +105,7 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            if (hasGPower && hoveredIndex == elementCount - 2) {
+            if (hasGPower && hoveredIndex == elementCount - 3) {
                 Player.m_localPlayer.StartGuardianPower();
                 return;
             }
