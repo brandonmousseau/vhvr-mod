@@ -74,7 +74,7 @@ namespace ValheimVRMod.Scripts {
             }
 
             // if attack is vertical, we can only hit one target at a time
-            if (attack.m_attackType == Attack.AttackType.Vertical && 
+            if (attack.m_attackType != Attack.AttackType.Horizontal  && 
                 MeshCooldown.sharedInstance != null && MeshCooldown.sharedInstance.inCoolDown()) {
                 return false;
             }
