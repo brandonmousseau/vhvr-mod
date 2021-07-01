@@ -1,5 +1,6 @@
 using System.Reflection;
 using HarmonyLib;
+using UnityEngine;
 using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
@@ -123,7 +124,27 @@ namespace ValheimVRMod.Patches
     [HarmonyPatch(typeof(Humanoid), "UnequipItem")]
     class PatchUnEquipItem {
 
-        static void Postfix(Humanoid __instance) {
+        static void Prefix(Humanoid __instance, ItemDrop.ItemData item, ItemDrop.ItemData ___m_leftItem, ItemDrop.ItemData ___m_rightItem) {
+
+            if (__instance.GetType() != typeof(Player)) {
+                return;
+            }
+
+            var vrPlayerSync = __instance.GetComponent<VRPlayerSync>();
+            
+            if (vrPlayerSync != null && __instance != Player.m_localPlayer || VHVRConfig.UseVrControls()) {
+                if (item == ___m_leftItem) {
+                    Debug.Log("Hiding Left Item");
+                    vrPlayerSync.currentLeftWeapon = null;
+                }
+
+                if (item == ___m_rightItem) {
+                    Debug.Log("Hiding Right Item");
+                    vrPlayerSync.currentRightWeapon = null;
+                }
+
+                VrikCreator.resetVrikHandTransform(__instance);   
+            }
 
             if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls()) {
                 return;
@@ -133,8 +154,6 @@ namespace ValheimVRMod.Patches
                 StaticObjects.quickSwitch.GetComponent<QuickSwitch>().refreshItems();
                 StaticObjects.quickActions.GetComponent<QuickActions>().refreshItems();
             }
-
-            VrikCreator.resetVrikHandTransform();
         }
     }
         

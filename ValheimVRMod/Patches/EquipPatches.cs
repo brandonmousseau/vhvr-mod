@@ -20,12 +20,17 @@ namespace ValheimVRMod.Patches {
             }
 
             Player player = ___m_rightItemInstance.GetComponentInParent<Player>();
-            // only local player must trigger this
-            if (player == null || Player.m_localPlayer != player) {
+            
+            if (player == null) {
                 return;
             }
             
-            VrikCreator.resetVrikHandTransform();
+            player.GetComponent<VRPlayerSync>().currentRightWeapon = meshFilter.gameObject;
+            VrikCreator.resetVrikHandTransform(player);
+            
+            if (Player.m_localPlayer != player) {
+                return;
+            }
 
             if (StaticObjects.quickSwitch != null) {
                 StaticObjects.quickSwitch.GetComponent<QuickSwitch>().refreshItems();
@@ -68,12 +73,12 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
+            player.GetComponent<VRPlayerSync>().currentLeftWeapon = meshFilter.gameObject;
+            VrikCreator.resetVrikHandTransform(player);
+
             if (Player.m_localPlayer != player) {
-                player.GetComponent<VRPlayerSync>().currentLeftWeapon = meshFilter.gameObject;
                 return;
             }
-            
-            VrikCreator.resetVrikHandTransform();
 
             if (StaticObjects.quickSwitch != null) {
                 StaticObjects.quickSwitch.GetComponent<QuickSwitch>().refreshItems();

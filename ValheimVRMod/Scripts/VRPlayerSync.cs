@@ -43,6 +43,7 @@ namespace ValheimVRMod.Scripts {
 
         public BowManager bowManager;
         public GameObject currentLeftWeapon;
+        public GameObject currentRightWeapon;
 
         void Start()
         {
@@ -166,7 +167,7 @@ namespace ValheimVRMod.Scripts {
         private void maybePullBow(bool pulling) {
 
             if (bowManager == null) {
-                if (!pulling) {
+                if (!pulling || currentLeftWeapon == null) {
                     return;
                 }
                 

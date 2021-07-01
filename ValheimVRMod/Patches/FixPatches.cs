@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using HarmonyLib;
-using UnityEngine;
+using ValheimVRMod.Utilities;
 using Valve.VR.InteractionSystem;
 
 namespace ValheimVRMod.Patches {
@@ -25,6 +25,9 @@ namespace ValheimVRMod.Patches {
     class PatchFixVanishing {
 
         static bool Prefix(Player __instance) {
+            if (VHVRConfig.NonVrPlayer()) {
+                return true;
+            }
             return __instance != Player.m_localPlayer;
         }
     }
