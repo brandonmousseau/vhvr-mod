@@ -3,6 +3,8 @@ using UnityEngine;
 using Valve.VR;
 using ValheimVRMod.VRCore;
 
+using ValheimVRMod.Utilities;
+
 namespace ValheimVRMod.Scripts {
     public class SpearManager : MonoBehaviour {
         private const int MAX_SNAPSHOTS = 7;
@@ -22,21 +24,36 @@ namespace ValheimVRMod.Scripts {
         public static Vector3 aimDir;
         public static Vector3 startAim; 
         public static bool isThrowing;
+        private GameObject rotSave;
+        private static bool isPressed;
 
         private void Awake() {
             fixedSpear = new GameObject();
+            rotSave = new GameObject();
+            rotSave.transform.SetParent(transform.parent);
+            rotSave.transform.position = transform.position;
+            rotSave.transform.localRotation = transform.localRotation;
         }
 
         private void OnDestroy() {
             Destroy(fixedSpear);
+            Destroy(rotSave);
         }
 
         private void OnRenderObject() {
             fixedSpear.transform.position = transform.position;
-
             if (SteamVR_Actions.valheim_Grab.GetStateDown(SteamVR_Input_Sources.RightHand)) {
                 if (startAim == Vector3.zero) {
                     startAim = Player.m_localPlayer.transform.InverseTransformPoint(VRPlayer.rightHand.transform.position);
+                }
+                isPressed = true;
+            }
+
+            if (isPressed) {
+                transform.position = VRPlayer.rightHand.transform.position;
+                transform.LookAt(VRPlayer.rightHand.transform.position + Player.m_localPlayer.transform.TransformDirection(Player.m_localPlayer.transform.InverseTransformPoint(VRPlayer.rightHand.transform.position) - startAim).normalized);
+                if (EquipScript.getRight() == EquipType.SpearChitin) {
+                    transform.rotation = transform.rotation * Quaternion.AngleAxis(90, Vector3.right);
                 }
             }
 
@@ -49,11 +66,12 @@ namespace ValheimVRMod.Scripts {
             }
 
             if (isThrowing) {
+                ResetSpearOffset();
                 startAim = Vector3.zero;
                 return;
             }
 
-            spawnPoint = transform.position;
+            spawnPoint = VRPlayer.rightHand.transform.position;
             var dist = 0.0f;
             Vector3 posEnd = Player.m_localPlayer.transform.InverseTransformPoint(VRPlayer.rightHand.transform.position);
             Vector3 posStart = Player.m_localPlayer.transform.InverseTransformPoint(VRPlayer.rightHand.transform.position);
@@ -78,9 +96,10 @@ namespace ValheimVRMod.Scripts {
             if (Vector3.Distance(posEnd,posStart) > minDist && VRPlayer.justUnsheathed == false) {
                 isThrowing = true;
             }
-
+            
             if (SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.RightHand)&& Vector3.Distance(posEnd, posStart) <= minDist) {
                 startAim = Vector3.zero;
+                ResetSpearOffset();
             }
         }
         private void FixedUpdate() {
@@ -101,6 +120,13 @@ namespace ValheimVRMod.Scripts {
             }
 
             tickCounter = 0;
+        }
+
+        private void ResetSpearOffset()
+        {
+            transform.position = rotSave.transform.position;
+            transform.localRotation = rotSave.transform.localRotation;
+            isPressed = false;
         }
     }
 }
