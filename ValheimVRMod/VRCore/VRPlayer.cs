@@ -770,10 +770,11 @@ namespace ValheimVRMod.VRCore
                     foundMainCameraPostProcesor = true;
                     postProcessingBehavior = vrCamera.gameObject.AddComponent<PostProcessingBehaviour>();
                     LogDebug("Copying Main Camera PostProcessingBehaviour");
-                    // Copy the values over from the MainCamera's PostProcessingBehaviour
-                    CopyClassFields(ppb, ref postProcessingBehavior);
                     var profileClone = Instantiate(ppb.profile);
+                    //Need to copy only the profile and jitterFuncMatrix, everything else will be instanciated when enabled
                     postProcessingBehavior.profile = profileClone;
+                    postProcessingBehavior.jitteredMatrixFunc = ppb.jitteredMatrixFunc;
+                    if(ppb.enabled) ppb.enabled = false;
                 }
             }
             if (!foundMainCameraPostProcesor)

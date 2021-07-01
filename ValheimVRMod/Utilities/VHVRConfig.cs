@@ -73,6 +73,7 @@ namespace ValheimVRMod.Utilities
 
         // Graphics Settings
         private static ConfigEntry<bool> useAmplifyOcclusion;
+        private static ConfigEntry<float> taaSharpenAmmount;
 
         public static void InitializeConfiguration(ConfigFile config)
         {
@@ -357,6 +358,11 @@ namespace ValheimVRMod.Utilities
                                               " cost. While you can enable SSAO and UseAmplifyOcclusion simultaneously, it is" +
                                               " not recommended. SSAO impacts performance significantly, which is bad for VR especially. Therefore" +
                                               " you should disable SSAO in the graphics settings of the game when using this.");
+            taaSharpenAmmount = config.Bind("Graphics",
+                                              "TAASharpenAmmount",
+                                              -1.0f,
+                                              "Ammount of Sharpen applied after the TAA filter, values should be in the range [0.0,3.0]." +
+                                              " Values outside this range will be ignored and the default game settings will be used instead.");
         }
 
         public static bool ModEnabled()
@@ -441,6 +447,11 @@ namespace ValheimVRMod.Utilities
         public static bool UseAmplifyOcclusion()
         {
             return useAmplifyOcclusion.Value;
+        }
+
+        public static float GetTaaSharpenAmmount()
+        {
+            return taaSharpenAmmount.Value;
         }
 
         public static Vector3 GetFirstPersonHeadOffset()

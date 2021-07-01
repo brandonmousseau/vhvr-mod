@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using HarmonyLib;
 using UnityEngine;
 using UnityEngine.PostProcessing;
@@ -48,12 +49,14 @@ namespace ValheimVRMod.Patches
         */
         public class VRTaaComponent : PostProcessingComponentRenderTexture<AntialiasingModel>
         {
-            public static VRTaaComponent Instance;
+            public static readonly ConditionalWeakTable<PostProcessingBehaviour, VRTaaComponent> PostProcessingExtension =
+                new ConditionalWeakTable<PostProcessingBehaviour, VRTaaComponent>();
             private const string k_ShaderString = "Hidden/Post FX/Temporal Anti-aliasing";
             private const int k_SampleCount = 8;
 
             readonly RenderBuffer[] m_Mrt = new RenderBuffer[2];
             bool m_ResetHistory = true;
+            float? m_sharpenOverride;
             Func<Vector2, Matrix4x4> m_jitteredFunc;
 
             /// <summary>
@@ -235,7 +238,7 @@ namespace ValheimVRMod.Patches
                 m_HistoryPingPong[activeEye] = ++pp % k_NumEyes;
 
                 material.SetVector(Uniforms._Jitter, jitterVector);
-                material.SetVector(Uniforms._SharpenParameters, new Vector4(taaSettings.sharpen, 0f, 0f, 0f));
+                material.SetVector(Uniforms._SharpenParameters, new Vector4(m_sharpenOverride ?? taaSettings.sharpen, 0f, 0f, 0f));
                 material.SetVector(Uniforms._FinalBlendParameters, new Vector4(taaSettings.stationaryBlending, taaSettings.motionBlending, 6000f, 0f));
                 material.SetTexture(Uniforms._MainTex, source);
                 material.SetTexture(Uniforms._HistoryTex, historyRead);
@@ -301,31 +304,37 @@ namespace ValheimVRMod.Patches
                 context.camera.useJitteredProjectionMatrixForTransparentRendering = true;
                 base.OnDisable();
             }
+
+            public override void OnEnable()
+            {
+                base.OnEnable();
+                var sharpenAmmount = VHVRConfig.GetTaaSharpenAmmount();
+                m_sharpenOverride = sharpenAmmount >= 0 && sharpenAmmount <= 3 ? (float?)sharpenAmmount : null;
+            }
         }
 
         [HarmonyPostfix]
         [HarmonyPatch(typeof(PostProcessingBehaviour), "OnEnable")]
-        static void PostfixPostProcessingOnEnable(TaaComponent ___m_Taa, Dictionary<PostProcessingComponentBase, bool> ___m_ComponentStates, List<PostProcessingComponentBase> ___m_Components)
+        static void PostfixPostProcessingOnEnable(PostProcessingBehaviour __instance, TaaComponent ___m_Taa, Dictionary<PostProcessingComponentBase, bool> ___m_ComponentStates, List<PostProcessingComponentBase> ___m_Components)
         {
             if (VHVRConfig.NonVrPlayer()) return;
             ___m_ComponentStates.Remove(___m_Taa);
             ___m_Components.Remove(___m_Taa);
 
-            if (VRTaaComponent.Instance == null) VRTaaComponent.Instance = new VRTaaComponent();
+            var vrTaaComponent = new VRTaaComponent();
+            VRTaaComponent.PostProcessingExtension.Add(__instance, vrTaaComponent);
 
-            ___m_Components.Remove(VRTaaComponent.Instance);
-            ___m_ComponentStates.Remove(VRTaaComponent.Instance);
-            ___m_Components.Add(VRTaaComponent.Instance);
-            ___m_ComponentStates.Add(VRTaaComponent.Instance, false);
+            ___m_Components.Add(vrTaaComponent);
+            ___m_ComponentStates.Add(vrTaaComponent, false);
         }
 
         internal static readonly int RenderViewportScaleFactor = Shader.PropertyToID("_RenderViewportScaleFactor");
         [HarmonyPostfix]
         [HarmonyPatch(typeof(PostProcessingBehaviour), "OnPostRender")]
-        static void PostfixOnPostRender(PostProcessingProfile ___profile, bool ___m_RenderingInSceneView, Camera ___m_Camera, PostProcessingContext ___m_Context)
+        static void PostfixOnPostRender(PostProcessingBehaviour __instance, PostProcessingProfile ___profile, bool ___m_RenderingInSceneView, Camera ___m_Camera, PostProcessingContext ___m_Context)
         {
             if (VHVRConfig.NonVrPlayer()) return;
-            if (!(___profile == null) && !(___m_Camera == null) && !___m_RenderingInSceneView && VRTaaComponent.Instance.active && !___profile.debugViews.willInterrupt)
+            if (!(___profile == null) && !(___m_Camera == null) && !___m_RenderingInSceneView && VRTaaComponent.PostProcessingExtension.GetOrCreateValue(__instance).active && !___profile.debugViews.willInterrupt)
             {
                 ___m_Context.camera.ResetStereoProjectionMatrices();
                 Shader.SetGlobalFloat(RenderViewportScaleFactor, XRSettings.renderViewportScale);
@@ -361,7 +370,9 @@ namespace ValheimVRMod.Patches
                     var lastInstuction = patched[patched.Count - 1];
                     if (lastInstuction != null && lastInstuction.opcode == OpCodes.Ldarg_0)
                         patched.RemoveAt(patched.Count - 1);
-                    patched.Add(new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(VRTaaComponent), nameof(VRTaaComponent.Instance))));
+                    patched.Add(new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(VRTaaComponent), nameof(VRTaaComponent.PostProcessingExtension))));
+                    patched.Add(new CodeInstruction(OpCodes.Ldarg_0));
+                    patched.Add(new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(ConditionalWeakTable<PostProcessingBehaviour, VRTaaComponent>), nameof(ConditionalWeakTable<PostProcessingBehaviour, VRTaaComponent>.GetOrCreateValue), new Type[] { typeof(PostProcessingBehaviour)})));
                 }
                 else if (instruction.Calls(CallsTaaSetProjectionMatrix))
                 {
