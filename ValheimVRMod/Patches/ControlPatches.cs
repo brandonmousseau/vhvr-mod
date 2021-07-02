@@ -170,99 +170,104 @@ namespace ValheimVRMod.Patches {
         }
     }
 
-    [HarmonyPatch(typeof(Player), "SetControls")]
-    class Player_SetControls_SneakAndRunPatch
+    [HarmonyPatch(typeof(Player), nameof(Player.SetControls))]
+    class Player_SetControls_RunPatch
     {
-
-        static bool wasCrouching;
-        static bool wasNonRSCrouching;
-        static bool wasRSCrouching;
-
-        static void Prefix(Player __instance, ref bool crouch, ref bool run)
+        static void Prefix(Player __instance, ref bool run)
         {
             if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls())
             {
                 return;
             }
-            if (VHVRConfig.RoomScaleSneakEnabled())
-            {
-                handleRoomscaleSneak(__instance, ref run, ref crouch);
-            }
-            else
-            {
-                handleControllerOnlySneak(ref run, ref crouch);
-            }
-        }
-
-        static void handleRoomscaleSneak(Player player, ref bool run, ref bool crouch)
-        {
             run = ZInput_GetJoyRightStickY_Patch.isRunning;
-            //Non-Roomscale Sneak Check (only when not sneaking roomscale)
-            if (ZInput_GetJoyRightStickY_Patch.isCrouching)
-            {
-                if (!VRPlayer.isRoomscaleSneak && !wasNonRSCrouching)
-                {
-                    crouch = true;
-                    wasNonRSCrouching = true;
-                    VRPlayer.isNonRSSneaking = !VRPlayer.isNonRSSneaking;
-                }
-            }
-            else
-            {
-                wasNonRSCrouching = false;
-            }
-
-            if (!wasRSCrouching)
-            {
-                if (VRPlayer.isRoomscaleSneak)
-                {
-                    if (!player.IsCrouching() && !player.IsRunning())
-                    {
-                        crouch = true;
-                        wasCrouching = true;
-                        wasRSCrouching = true;
-                    }
-                    //convert non-roomscale sneak to roomscale sneak when roomscale sneaking
-                    if (VRPlayer.isNonRSSneaking && player.IsCrouching())
-                    {
-                        wasCrouching = true;
-                        wasRSCrouching = true;
-                        VRPlayer.isNonRSSneaking = false;
-                    }
-                }
-                //roomscale unsneak check 
-                else if (!VRPlayer.isRoomscaleSneak && player.IsCrouching() && wasCrouching)
-                {
-                    crouch = true;
-                    wasRSCrouching = true;
-                    wasCrouching = false;
-                }
-            }
-            else
-            {
-                wasRSCrouching = false;
-            }
-        }
-
-        static void handleControllerOnlySneak(ref bool run, ref bool crouch)
-        {
-            run = ZInput_GetJoyRightStickY_Patch.isRunning;
-            if (ZInput_GetJoyRightStickY_Patch.isCrouching)
-            {
-                if (!wasNonRSCrouching)
-                {
-                    crouch = true;
-                    wasNonRSCrouching = true;
-                }
-            }
-            else if (wasNonRSCrouching)
-            {
-                wasNonRSCrouching = false;
-            }
         }
     }
 
-    [HarmonyPatch(typeof(Player), "SetControls")]
+    [HarmonyPatch(typeof(Player), nameof(Player.SetControls))]
+    public class Player_SetControls_SneakPatch
+    {
+
+        public static bool isJoystickSneaking { get { return _isJoystickSneaking; } }
+        private static bool _isJoystickSneaking = false;
+
+        // Used for joystick crouch to make sure the player
+        // returns the joystick out of "crouch" position to reset
+        // it so it doesn't toggle continuously while held down
+        private static bool lastUpdateCrouchInput = false;
+
+        // bool crouch is a toggle
+        static void Prefix(Player __instance, ref bool crouch)
+        {
+            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls())
+            {
+                return;
+            }
+            // Indicates whether the crouch is toggled on or not
+            bool isCrouchToggled = AccessTools.FieldRefAccess<Player, bool>(__instance, "m_crouchToggled");
+            if (VHVRConfig.RoomScaleSneakEnabled())
+            {
+                handleRoomscaleSneak(__instance, ref crouch, isCrouchToggled);
+            }
+            else
+            {
+                handleControllerOnlySneak(__instance, ref crouch, isCrouchToggled);
+            }
+        }
+
+        static void handleRoomscaleSneak(Player player, ref bool crouch, bool isCrouchToggled)
+        {
+            if (VRPlayer.isRoomscaleSneaking)
+            {
+                // First check if player is crouching in real life and
+                // use that as highest priority input.
+                if (!isCrouchToggled)
+                {
+                    crouch = true;
+                }
+                _isJoystickSneaking = false;
+                lastUpdateCrouchInput = false;
+                // Return immediately since we want to treat
+                // physical crouching as higher priority
+                return;
+            } else if (isCrouchToggled && !_isJoystickSneaking)
+            {
+                // Player is not crouching physically, but game character is
+                // in crouch mode, so toggle it off
+                lastUpdateCrouchInput = false;
+                _isJoystickSneaking = false;
+                crouch = true;
+            } else
+            {
+                // Don't do any toggling.
+                crouch = false;
+            }
+            // Player is physically standing, but may still want to crouch using joystick
+            handleControllerOnlySneak(player, ref crouch, isCrouchToggled);
+        }
+
+        static void handleControllerOnlySneak(Player player, ref bool crouch, bool isCrouchToggled)
+        {
+            bool crouchToggleTriggered = ZInput_GetJoyRightStickY_Patch.isCrouching && !lastUpdateCrouchInput;
+            if (crouchToggleTriggered)
+            {
+                crouch = true;
+                if (isCrouchToggled)
+                {
+                    // Player is currently crouching, but we just set the crouch trigger to "true"
+                    // which means the player will about to be not crouching anymore.
+                    _isJoystickSneaking = false;
+                } else
+                {
+                    // Player is about to be toggled to crouch position;
+                    _isJoystickSneaking = true;
+                }
+            }
+            // Save for next update
+            lastUpdateCrouchInput = ZInput_GetJoyRightStickY_Patch.isCrouching;
+        }
+    }
+
+    [HarmonyPatch(typeof(Player), nameof(Player.SetControls))]
     class Player_SetControls_EquipPatch {
       
         static void Prefix(Player __instance, ref bool attack, ref bool attackHold, ref bool block, ref bool blockHold,
