@@ -24,10 +24,14 @@ namespace ValheimVRMod.Patches {
             if (player == null) {
                 return;
             }
+
+            var vrPlayerSync = player.GetComponent<VRPlayerSync>();
             
-            player.GetComponent<VRPlayerSync>().currentRightWeapon = meshFilter.gameObject;
-            VrikCreator.resetVrikHandTransform(player);
-            
+            if (vrPlayerSync != null) {
+                player.GetComponent<VRPlayerSync>().currentRightWeapon = meshFilter.gameObject;
+                VrikCreator.resetVrikHandTransform(player);   
+            }
+
             if (Player.m_localPlayer != player || !VHVRConfig.UseVrControls()) {
                 return;
             }
@@ -73,9 +77,13 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
-            player.GetComponent<VRPlayerSync>().currentLeftWeapon = meshFilter.gameObject;
-            VrikCreator.resetVrikHandTransform(player);
-                
+            var vrPlayerSync = player.GetComponent<VRPlayerSync>();
+
+            if (vrPlayerSync != null) {
+                player.GetComponent<VRPlayerSync>().currentLeftWeapon = meshFilter.gameObject;
+                VrikCreator.resetVrikHandTransform(player);
+            }
+
             if (Player.m_localPlayer != player || !VHVRConfig.UseVrControls()) {
                 return;
             }
