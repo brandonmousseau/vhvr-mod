@@ -132,7 +132,7 @@ namespace ValheimVRMod.Patches
 
             var vrPlayerSync = __instance.GetComponent<VRPlayerSync>();
             
-            if (vrPlayerSync != null && __instance != Player.m_localPlayer || VHVRConfig.UseVrControls()) {
+            if (vrPlayerSync != null && (__instance != Player.m_localPlayer || VHVRConfig.UseVrControls())) {
                 if (item == ___m_leftItem) {
                     Debug.Log("Hiding Left Item");
                     vrPlayerSync.currentLeftWeapon = null;
