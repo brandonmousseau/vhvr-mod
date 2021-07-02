@@ -25,7 +25,7 @@ namespace ValheimVRMod.Scripts {
         public static Vector3 startAim; 
         public static bool isThrowing;
         private GameObject rotSave;
-        private static bool isPressed;
+        private static bool isThrowingStance;
 
         private void Awake() {
             fixedSpear = new GameObject();
@@ -46,10 +46,10 @@ namespace ValheimVRMod.Scripts {
                 if (startAim == Vector3.zero) {
                     startAim = Player.m_localPlayer.transform.InverseTransformPoint(VRPlayer.rightHand.transform.position);
                 }
-                isPressed = true;
+                isThrowingStance = true;
             }
 
-            if (isPressed) {
+            if (isThrowingStance) {
                 transform.position = VRPlayer.rightHand.transform.position;
                 transform.LookAt(VRPlayer.rightHand.transform.position + Player.m_localPlayer.transform.TransformDirection(Player.m_localPlayer.transform.InverseTransformPoint(VRPlayer.rightHand.transform.position) - startAim).normalized);
                 if (EquipScript.getRight() == EquipType.SpearChitin) {
@@ -126,7 +126,7 @@ namespace ValheimVRMod.Scripts {
         {
             transform.position = rotSave.transform.position;
             transform.localRotation = rotSave.transform.localRotation;
-            isPressed = false;
+            isThrowingStance = false;
         }
     }
 }
