@@ -582,7 +582,7 @@ namespace ValheimVRMod.VRCore
             {
                 return SIT_HEIGHT_ADJUST;
             }
-            if (player.IsCrouching() && isNonRSSneaking)
+            if (player.IsCrouching() && (isNonRSSneaking || !VHVRConfig.RoomScaleSneakEnabled()))
             {
                 return CROUCH_HEIGHT_ADJUST;
             }
