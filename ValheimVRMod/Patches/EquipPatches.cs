@@ -9,7 +9,7 @@ namespace ValheimVRMod.Patches {
      [HarmonyPatch(typeof(VisEquipment), "SetRightHandEquiped")]
      class PatchSetRightHandEquiped {
         static void Postfix(bool __result, string ___m_rightItem, ref GameObject ___m_rightItemInstance) {
-            if (!__result || ___m_rightItemInstance == null || !VHVRConfig.UseVrControls()) {
+            if (!__result || ___m_rightItemInstance == null) {
                 return;
             }
 
@@ -28,7 +28,7 @@ namespace ValheimVRMod.Patches {
             player.GetComponent<VRPlayerSync>().currentRightWeapon = meshFilter.gameObject;
             VrikCreator.resetVrikHandTransform(player);
             
-            if (Player.m_localPlayer != player) {
+            if (Player.m_localPlayer != player || !VHVRConfig.UseVrControls()) {
                 return;
             }
 
@@ -57,7 +57,7 @@ namespace ValheimVRMod.Patches {
     [HarmonyPatch(typeof(VisEquipment), "SetLeftHandEquiped")]
     class PatchSetLeftHandEquiped {
         static void Postfix(bool __result, string ___m_leftItem, GameObject ___m_leftItemInstance) {
-            if (!__result || ___m_leftItemInstance == null || !VHVRConfig.UseVrControls()) {
+            if (!__result || ___m_leftItemInstance == null) {
                 return;
             } 
                           
@@ -75,8 +75,8 @@ namespace ValheimVRMod.Patches {
 
             player.GetComponent<VRPlayerSync>().currentLeftWeapon = meshFilter.gameObject;
             VrikCreator.resetVrikHandTransform(player);
-
-            if (Player.m_localPlayer != player) {
+                
+            if (Player.m_localPlayer != player || !VHVRConfig.UseVrControls()) {
                 return;
             }
 
