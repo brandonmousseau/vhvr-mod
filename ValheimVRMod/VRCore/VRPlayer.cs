@@ -53,6 +53,10 @@ namespace ValheimVRMod.VRCore
         private static float NECK_OFFSET = 0.2f;
         public static bool justUnsheathed = false;
 
+        private static float referencePlayerHeight;
+        public static bool isRoomscaleSneak = false;
+        public static bool isNonRSSneaking = false;
+
         private static GameObject _prefab;
         private static GameObject _instance;
         private static HeadZoomLevel _headZoomLevel = HeadZoomLevel.FirstPerson;
@@ -166,6 +170,8 @@ namespace ValheimVRMod.VRCore
             updateVrik();
             UpdateAmplifyOcclusionStatus();
             checkInteractions();
+            CheckSneakRoomscale();
+            
         }
 
         void maybeUpdateHeadPosition()
@@ -578,7 +584,9 @@ namespace ValheimVRMod.VRCore
             }
             if (player.IsCrouching())
             {
-                return CROUCH_HEIGHT_ADJUST;
+                if (!VHVRConfig.RoomScaleSneakEnabled()|| isNonRSSneaking) {
+                    return CROUCH_HEIGHT_ADJUST;
+                }
             }
             return 0f;
         }
@@ -666,6 +674,8 @@ namespace ValheimVRMod.VRCore
                     _instance.transform.localRotation = Quaternion.Euler(0f, -hmd.localRotation.eulerAngles.y, 0f);
                 }
                 headPositionInitialized = true;
+
+                referencePlayerHeight = Valve.VR.InteractionSystem.Player.instance.eyeHeight;
             }
         }
 
@@ -876,6 +886,23 @@ namespace ValheimVRMod.VRCore
             }
             if (justUnsheathed && isRightHand && action.GetStateUp(inputSource)&& isUnpressSheath()) {
                 justUnsheathed = false;
+            }
+        }
+        
+        private void CheckSneakRoomscale() {
+            if (VHVRConfig.RoomScaleSneakEnabled()) {
+                float height = Valve.VR.InteractionSystem.Player.instance.eyeHeight;
+                float heightThreshold = referencePlayerHeight * VHVRConfig.RoomScaleSneakHeight();
+                if (height < heightThreshold) {
+                    isRoomscaleSneak = true;
+                }
+                else if (height > heightThreshold + heightThreshold * 0.05f)
+                {
+                    isRoomscaleSneak = false;
+                }
+            }
+            else {
+                isRoomscaleSneak = false;
             }
         }
 

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using ValheimVRMod.VRCore;
 using ValheimVRMod.VRCore.UI;
 using HarmonyLib;
 using System.Reflection;
@@ -173,6 +174,8 @@ namespace ValheimVRMod.Patches {
     class PlayerSetControlsPatch {
 
         static bool wasCrouching;
+        static bool wasNonRSCrouching;
+        static bool wasRSCrouching;
         
         static void Prefix(Player __instance, ref bool attack, ref bool attackHold, ref bool block, ref bool blockHold,
             ref bool secondaryAttack, ref bool crouch, ref bool run) {
@@ -180,15 +183,58 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
-            run = ZInput_GetJoyRightStickY_Patch.isRunning;
-            
-            if (ZInput_GetJoyRightStickY_Patch.isCrouching) {
-                if (!wasCrouching) {
-                    crouch = true;
-                    wasCrouching = true;
+            if (VHVRConfig.RoomScaleSneakEnabled()) {
+                var player = Player.m_localPlayer;
+                run = ZInput_GetJoyRightStickY_Patch.isRunning;
+                //Non-Roomscale Sneak Check (only when not sneaking roomscale)
+                if (ZInput_GetJoyRightStickY_Patch.isCrouching) {
+                    if (!VRPlayer.isRoomscaleSneak && !wasNonRSCrouching) {
+                        crouch = true;
+                        wasNonRSCrouching = true;
+                        VRPlayer.isNonRSSneaking = !VRPlayer.isNonRSSneaking;
+                    }
                 }
-            } else if (wasCrouching) {
-                wasCrouching = false;
+                else {
+                    wasNonRSCrouching = false;
+                }
+
+                if (!wasRSCrouching) {
+                    if (VRPlayer.isRoomscaleSneak) {
+                        if (!player.IsCrouching()&& !player.IsRunning()) {
+                            crouch = true;
+                            wasCrouching = true;
+                            wasRSCrouching = true;
+                        }
+                        //convert non-roomscale sneak to roomscale sneak when roomscale sneaking
+                        if (VRPlayer.isNonRSSneaking && player.IsCrouching()) {
+                            wasCrouching = true;
+                            wasRSCrouching = true;
+                            VRPlayer.isNonRSSneaking = false;
+                        }
+                    }
+                    //roomscale unsneak check 
+                    else if(!VRPlayer.isRoomscaleSneak && player.IsCrouching() && wasCrouching) {
+                        crouch = true;
+                        wasRSCrouching = true;
+                        wasCrouching = false;
+                    }
+                }
+                else {
+                    wasRSCrouching = false;
+                }
+            }
+            else {
+                //True Non-Roomscale sneak check
+                run = ZInput_GetJoyRightStickY_Patch.isRunning;
+                if (ZInput_GetJoyRightStickY_Patch.isCrouching) {
+                    if (!wasNonRSCrouching) {
+                        crouch = true;
+                        wasNonRSCrouching = true;
+                    }
+                }
+                else if (wasNonRSCrouching) {
+                    wasNonRSCrouching = false;
+                }
             }
 
             if (EquipScript.getLeft() == EquipType.Bow) {
