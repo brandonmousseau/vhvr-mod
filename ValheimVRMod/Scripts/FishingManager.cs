@@ -6,6 +6,8 @@ using Valve.VR;
 namespace ValheimVRMod.Scripts {
     public class FishingManager : MonoBehaviour {
         private const int MAX_SNAPSHOTS = 7;
+        private const int MIN_SNAPSHOTSCHECK = 3;
+        private const float MIN_DISTANCE = 0.2f;
         private static float maxDist = 1.0f;
         private Transform rodTop;
         private int tickCounter;
@@ -57,6 +59,10 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
+            if (snapshots.Count < MIN_SNAPSHOTSCHECK) {
+                return;
+            }
+
             spawnPoint = rodTop.position;
             var dist = 0.0f;
             Vector3 posEnd = fixedRodTop.transform.position;
@@ -74,8 +80,11 @@ namespace ValheimVRMod.Scripts {
             aimDir = Quaternion.AngleAxis(-30, Vector3.Cross(Vector3.up, aimDir)) * aimDir;
             attackDrawPercentage = Vector3.Distance(snapshots[snapshots.Count - 1], snapshots[snapshots.Count - 2]) /
                                    maxDist;
-            isThrowing = true;
-            preparingThrow = false;
+
+            if (Vector3.Distance(posEnd, posStart)> MIN_DISTANCE) {
+                isThrowing = true;
+                preparingThrow = false;
+            }
         }
 
         private void FixedUpdate() {
@@ -83,8 +92,13 @@ namespace ValheimVRMod.Scripts {
             if (tickCounter < 5) {
                 return;
             }
-
-            snapshots.Add(fixedRodTop.transform.position);
+            if (VRPlayer.justUnsheathed == true) {
+                snapshots.Clear();
+            }
+            else {
+                snapshots.Add(fixedRodTop.transform.position);
+            }
+            
 
             if (snapshots.Count > MAX_SNAPSHOTS) {
                 snapshots.RemoveAt(0);

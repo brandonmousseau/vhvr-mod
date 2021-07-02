@@ -49,18 +49,19 @@ namespace ValheimVRMod
 
         void StartValheimVR()
         {
+            HarmonyPatcher.DoPatching();
+            
             if (VHVRConfig.NonVrPlayer()) {
-                HarmonyPatcher.doNonVrPatching();
+                LogDebug("Non VR Mode Patching Complete.");
                 return;
             }
             
-            HarmonyPatcher.DoPatching();
             if (VRManager.InitializeVR())
             {
                 VRManager.StartVR();
                 vrPlayer = new GameObject("VRPlayer");
                 DontDestroyOnLoad(vrPlayer);
-                VRPlayer playerComponent = vrPlayer.AddComponent<VRPlayer>();
+                vrPlayer.AddComponent<VRPlayer>();
                 vrGui = new GameObject("VRGui");
                 DontDestroyOnLoad(vrGui);
                 vrGui.AddComponent<VRGUI>();

@@ -8,6 +8,7 @@ using UnityEngine.PostProcessing;
 using UnityEngine.SceneManagement;
 using UnityStandardAssets.ImageEffects;
 using ValheimVRMod.Scripts;
+using ValheimVRMod.Patches;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore.UI;
 using Valve.VR;
@@ -52,6 +53,10 @@ namespace ValheimVRMod.VRCore
         private static Vector3 THIRD_PERSON_CONFIG_OFFSET = Vector3.zero;
         private static float NECK_OFFSET = 0.2f;
         public static bool justUnsheathed = false;
+
+        private static float referencePlayerHeight;
+        public static bool isRoomscaleSneaking {  get { return _isRoomscaleSneaking; } }
+        private static bool _isRoomscaleSneaking = false;
 
         private static GameObject _prefab;
         private static GameObject _instance;
@@ -166,6 +171,8 @@ namespace ValheimVRMod.VRCore
             updateVrik();
             UpdateAmplifyOcclusionStatus();
             checkInteractions();
+            CheckSneakRoomscale();
+            
         }
 
         void maybeUpdateHeadPosition()
@@ -393,6 +400,8 @@ namespace ValheimVRMod.VRCore
             CameraUtils.copyCamera(mainCamera, vrCam);
             maybeCopyPostProcessingEffects(vrCam, mainCamera);
             maybeAddAmplifyOcclusion(vrCam);
+            // Prevent visibility of the head
+            vrCam.nearClipPlane = VHVRConfig.GetNearClipPlane();
             // Turn off rendering the UI panel layer. We need to capture
             // it in a camera of higher depth so that it
             // is rendered on top of everything else. (except hands)
@@ -576,7 +585,7 @@ namespace ValheimVRMod.VRCore
             {
                 return SIT_HEIGHT_ADJUST;
             }
-            if (player.IsCrouching())
+            if (player.IsCrouching() && Player_SetControls_SneakPatch.isJoystickSneaking)
             {
                 return CROUCH_HEIGHT_ADJUST;
             }
@@ -614,27 +623,20 @@ namespace ValheimVRMod.VRCore
             {
                 return;
             }
-
             var cam = CameraUtils.getCamera(CameraUtils.VR_CAMERA);
-            cam.nearClipPlane = 0.05f;
-            
             var vrik = VrikCreator.initialize(player.gameObject, 
                 leftHand.transform, rightHand.transform, cam.transform);
-            VrikCreator.resetVrikHandTransform(vrik);
-
+            VrikCreator.resetVrikHandTransform(player);
             vrik.references.leftHand.gameObject.AddComponent<HandGesture>().sourceHand = leftHand;
             vrik.references.rightHand.gameObject.AddComponent<HandGesture>().sourceHand = rightHand;
             StaticObjects.leftFist().setColliderParent(vrik.references.leftHand, false);
             StaticObjects.rightFist().setColliderParent(vrik.references.rightHand, true);
             var vrPlayerSync = player.gameObject.AddComponent<VRPlayerSync>();
-            vrPlayerSync.camera = CameraUtils.getCamera(CameraUtils.VR_CAMERA).gameObject;
+            vrPlayerSync.camera = cam.gameObject;
             vrPlayerSync.leftHand = leftHand.gameObject;
             vrPlayerSync.rightHand = rightHand.gameObject;
             StaticObjects.addQuickActions(leftHand.transform);
             StaticObjects.addQuickSwitch(rightHand.transform);
-            
-            // remove stupid keyboard/mouse hints:
-            Destroy(KeyHints.instance.gameObject);
 
         }
 
@@ -669,6 +671,8 @@ namespace ValheimVRMod.VRCore
                     _instance.transform.localRotation = Quaternion.Euler(0f, -hmd.localRotation.eulerAngles.y, 0f);
                 }
                 headPositionInitialized = true;
+
+                referencePlayerHeight = Valve.VR.InteractionSystem.Player.instance.eyeHeight;
             }
         }
 
@@ -773,10 +777,11 @@ namespace ValheimVRMod.VRCore
                     foundMainCameraPostProcesor = true;
                     postProcessingBehavior = vrCamera.gameObject.AddComponent<PostProcessingBehaviour>();
                     LogDebug("Copying Main Camera PostProcessingBehaviour");
-                    // Copy the values over from the MainCamera's PostProcessingBehaviour
-                    CopyClassFields(ppb, ref postProcessingBehavior);
                     var profileClone = Instantiate(ppb.profile);
+                    //Need to copy only the profile and jitterFuncMatrix, everything else will be instanciated when enabled
                     postProcessingBehavior.profile = profileClone;
+                    postProcessingBehavior.jitteredMatrixFunc = ppb.jitteredMatrixFunc;
+                    if(ppb.enabled) ppb.enabled = false;
                 }
             }
             if (!foundMainCameraPostProcesor)
@@ -859,7 +864,7 @@ namespace ValheimVRMod.VRCore
                 {
                     toggleShowHand = false;
                     hand.hapticAction.Execute(0, 0.2f, 100, 0.3f, inputSource);
-                    if(isRightHand && isHoldingItem(isRightHand) && isHoldingSpear()) {
+                    if(isRightHand && isHoldingItem(isRightHand) && isUnpressSheath()) {
 
                     } else if (isRightHand && EquipScript.getLeft() == EquipType.Bow) {
                         BowLocalManager.instance.toggleArrow();
@@ -871,17 +876,46 @@ namespace ValheimVRMod.VRCore
                     }
                 }
                 else if (!justUnsheathed && isRightHand && action.GetStateUp(inputSource)) {
-                    if (isHoldingItem(isRightHand) && (EquipScript.getRight() == EquipType.Spear || EquipScript.getRight() == EquipType.SpearChitin)) {
+                    if (isHoldingItem(isRightHand) && isUnpressSheath()) {
                         getPlayerCharacter().HideHandItems();
                     }
                 }
             }
-            if (justUnsheathed && isRightHand && action.GetStateUp(inputSource)&& isHoldingSpear()) {
+            if (justUnsheathed && isRightHand && action.GetStateUp(inputSource)&& isUnpressSheath()) {
                 justUnsheathed = false;
             }
         }
-        private bool isHoldingSpear() {
-            return EquipScript.getRight() == EquipType.Spear || EquipScript.getRight() == EquipType.SpearChitin;
+        
+        private void CheckSneakRoomscale() {
+            if (VHVRConfig.RoomScaleSneakEnabled()) {
+                float height = Valve.VR.InteractionSystem.Player.instance.eyeHeight;
+                float heightThreshold = referencePlayerHeight * VHVRConfig.RoomScaleSneakHeight();
+                if (height < heightThreshold) {
+                    _isRoomscaleSneaking = true;
+                }
+                else if (height > heightThreshold + heightThreshold * 0.05f)
+                {
+                    _isRoomscaleSneaking = false;
+                }
+            }
+            else {
+                _isRoomscaleSneaking = false;
+            }
+        }
+
+        private bool isUnpressSheath() {
+            return isBuildingTool() 
+                || isHoldingThrowable();
+        }
+        private bool isHoldingThrowable() {
+            return EquipScript.getRight() == EquipType.Spear 
+                || EquipScript.getRight() == EquipType.SpearChitin 
+                || EquipScript.getRight() == EquipType.Fishing;
+        }
+        private bool isBuildingTool() {
+            return EquipScript.getRight() == EquipType.Hammer 
+                || EquipScript.getRight() == EquipType.Hoe 
+                || EquipScript.getRight() == EquipType.Cultivator;
         }
         private bool isHoldingItem(bool isRightHand) {
             return isRightHand && getPlayerCharacter().GetRightItem() != null

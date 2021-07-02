@@ -22,7 +22,9 @@ namespace ValheimVRMod.Patches
     {
         public static void Postfix(ref Vector3 __result)
         {
-            __result = SoftwareCursor.simulatedMousePosition;
+            if (! VHVRConfig.NonVrPlayer()) {
+                __result = SoftwareCursor.simulatedMousePosition;
+            }
         }
     }
 
@@ -38,6 +40,10 @@ namespace ValheimVRMod.Patches
     {
         public static bool Prefix(Chat __instance, List<Chat.NpcText> ___m_npcTexts, float dt)
         {
+            if (VHVRConfig.NonVrPlayer()) {
+                return true;
+            }
+            
             Chat.NpcText npcText = null;
             Camera mainCamera = Utils.GetMainCamera();
             foreach (Chat.NpcText mNpcText in ___m_npcTexts)
@@ -120,6 +126,10 @@ namespace ValheimVRMod.Patches
         [HarmonyPatch(typeof(Chat), "ClearNpcText", new Type[] { typeof(Chat.NpcText) })]
         public static void ReversePatchClearNpcText(object instance, Chat.NpcText npcText)
         {
+            if (VHVRConfig.NonVrPlayer()) {
+                return;
+            }
+            
             throw new NotImplementedException("Stub for reverse patch.");
         }
     }
@@ -173,6 +183,9 @@ namespace ValheimVRMod.Patches
         {
             static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
             {
+                if (VHVRConfig.NonVrPlayer()) {
+                    return instructions;
+                }
                 return GetRaycastPatchedInstructions(instructions, 4, nameof(getStartingPositionPlaceMode), nameof(getRayDirectionPlaceMode));
             }
         }
@@ -182,6 +195,9 @@ namespace ValheimVRMod.Patches
         {
             static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
             {
+                if (VHVRConfig.NonVrPlayer()) {
+                    return instructions;
+                }
                 return GetRaycastPatchedInstructions(instructions, 5, nameof(getStartingPositionPlaceMode), nameof(getRayDirectionPlaceMode));
             }
         }
@@ -191,6 +207,9 @@ namespace ValheimVRMod.Patches
         {
             static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
             {
+                if (VHVRConfig.NonVrPlayer()) {
+                    return instructions;
+                }
                 return GetRaycastPatchedInstructions(instructions, 5, nameof(getStartingPositionPlaceMode), nameof(getRayDirectionPlaceMode));
             }
         }
@@ -300,6 +319,9 @@ namespace ValheimVRMod.Patches
         {
             public static void Prefix(Character c, GameObject ___m_baseHudPlayer, GameObject ___m_baseHud, GameObject ___m_baseHudBoss)
             {
+                if (VHVRConfig.NonVrPlayer()) {
+                    return;
+                }
                 EnemyHudManager.instance.AddEnemyHud(c, ___m_baseHudPlayer, ___m_baseHud, ___m_baseHudBoss);
             }
         }
@@ -404,6 +426,10 @@ namespace ValheimVRMod.Patches
             // UpdateLevel, UpdateAlerted, and UpdateAware and SetActive.
             static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
             {
+                if (VHVRConfig.NonVrPlayer()) {
+                    return instructions;
+                }
+                
                 patchedSetActiveTrue = false;
                 patchedSetActiveFalse = false;
                 var original = new List<CodeInstruction>(instructions);
@@ -559,6 +585,10 @@ namespace ValheimVRMod.Patches
 
         public static void Postfix(Hud __instance)
         {
+            if (VHVRConfig.NonVrPlayer()) {
+                return;
+            }
+            
             __instance.m_shipControlsRoot.transform.position =
                 new Vector3(__instance.m_shipWindIndicatorRoot.transform.position.x,
                 __instance.m_shipWindIndicatorRoot.transform.position.y -
@@ -575,11 +605,27 @@ namespace ValheimVRMod.Patches
     {
         public static void Prefix(Player player, ref Quaternion playerRot)
         {
+            if (VHVRConfig.NonVrPlayer()) {
+                return;
+            }
+            
             if (player != Player.m_localPlayer)
             {
                 return;
             }
             playerRot = player.transform.rotation;
+        }
+    }
+    
+    // remove stupid keyboard/mouse hints:
+    [HarmonyPatch(typeof(KeyHints), "Awake")]
+    class PatchKeyHints {
+
+        public static void Prefix(ref KeyHints __instance) {
+            if (VHVRConfig.NonVrPlayer()) {
+                return;
+            }
+            GameObject.Destroy(__instance);
         }
     }
 

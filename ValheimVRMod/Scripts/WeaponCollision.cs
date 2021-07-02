@@ -9,12 +9,15 @@ using Valve.VR;
 namespace ValheimVRMod.Scripts {
     public class WeaponCollision : MonoBehaviour {
         private const float MIN_DISTANCE = 0.2f;
+        private const float MIN_DISTANCE_STAB = 0.25f;
         private const int MAX_SNAPSHOTS_BASE = 20;
         private const int MAX_SNAPSHOTS_FACTOR = -5;
+        private const float MAX_STAB_ANGLE = 20f;
 
         private bool scriptActive;
         private GameObject colliderParent = new GameObject();
         private List<Vector3> snapshots = new List<Vector3>();
+        private List<Vector3> snapshotsC = new List<Vector3>();
         private ItemDrop.ItemData item;
         private Attack attack;
         private bool isRightHand;
@@ -46,6 +49,7 @@ namespace ValheimVRMod.Scripts {
             }
             
             StaticObjects.lastHitPoint = transform.position;
+            StaticObjects.lastHitDir = snapshots[snapshots.Count - 1] - snapshots[snapshots.Count - 5];
             StaticObjects.lastHitCollider = collider;
             
             if (attack.Start(Player.m_localPlayer, null, null,
@@ -68,6 +72,16 @@ namespace ValheimVRMod.Scripts {
                 || target.layer == LayerUtils.UI_PANEL_LAYER) {
                 return false;
             }
+
+            // if attack is vertical, we can only hit one target at a time
+            if (attack.m_attackType != Attack.AttackType.Horizontal  && 
+                MeshCooldown.sharedInstance != null && MeshCooldown.sharedInstance.inCoolDown()) {
+                return false;
+            }
+
+            if (target.GetComponentInParent<MineRock5>() != null) {
+                target = target.transform.parent.gameObject;
+            }
             
             var meshCooldown = target.GetComponent<MeshCooldown>();
             if (meshCooldown == null) {
@@ -81,7 +95,6 @@ namespace ValheimVRMod.Scripts {
             if (!isCollisionAllowed()) {
                 return;
             }
-            
             transform.SetParent(colliderParent.transform);
             transform.localRotation = Quaternion.identity;
             transform.localPosition = Vector3.zero;
@@ -103,11 +116,9 @@ namespace ValheimVRMod.Scripts {
             else {
                 item = Player.m_localPlayer.GetLeftItem();
             }
-
-            if (item != null) {
-                attack = item.m_shared.m_attack.Clone();
-            }
             
+            attack = item.m_shared.m_attack.Clone();
+
             switch (attack.m_attackAnimation) {
                 case "atgeir_attack":
                     hitTime = 0.81f;
@@ -157,6 +168,7 @@ namespace ValheimVRMod.Scripts {
             }
         }
 
+
         private void Update() {
 
             if (!outline) {
@@ -188,6 +200,7 @@ namespace ValheimVRMod.Scripts {
 
             if (!active) {
                 snapshots.Clear();
+                snapshotsC.Clear();
             }
         }
 
@@ -199,19 +212,49 @@ namespace ValheimVRMod.Scripts {
             }
             
             snapshots.Add(transform.localPosition);
+            snapshotsC.Add(GetHandPosition());
             if (snapshots.Count > maxSnapshots) {
                 snapshots.RemoveAt(0);
             }
+            if (snapshotsC.Count > maxSnapshots) {
+                snapshotsC.RemoveAt(0);
+            }
         }
-        
+
         public bool hasMomentum() {
+            
+            if (!VHVRConfig.WeaponNeedsSpeed()) {
+                return true;
+            }
+            
             foreach (Vector3 snapshot in snapshots) {
                 if (Vector3.Distance(snapshot, transform.localPosition) > MIN_DISTANCE + colliderDistance / 2) {
                     return true;
                 }
             }
+            foreach (Vector3 snapshot in snapshotsC) {
+                if (Vector3.Distance(snapshot, GetHandPosition()) > MIN_DISTANCE_STAB && isStab()) {
+                    return true;
+                }
+            }
 
             return false;
+        }
+        public float SwingAngle() {
+            float angle = Vector3.Angle(snapshotsC[0] - snapshotsC[snapshotsC.Count - 1], snapshotsC[0] - Player.m_localPlayer.transform.InverseTransformPoint(transform.position));
+            return angle;
+        }
+
+        public bool isStab() {
+            return (SwingAngle() < MAX_STAB_ANGLE);
+        }
+        private Vector3 GetHandPosition() {
+            if (isRightHand) {
+                return Player.m_localPlayer.transform.InverseTransformPoint(VRPlayer.rightHand.transform.position);
+            }
+            else {
+                return Player.m_localPlayer.transform.InverseTransformPoint(VRPlayer.leftHand.transform.position);
+            }
         }
     }
 }

@@ -8,6 +8,7 @@
   &lt;Assembly Path="D:\Spiele\Steam\steamapps\common\Valheim\unstripped_corlib\UnityEngine.AIModule.dll" /&gt;&#xD;
   &lt;Assembly Path="C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.6.1\mscorlib.dll" /&gt;&#xD;
   &lt;Assembly Path="D:\Spiele\Steam\steamapps\common\Valheim\unstripped_corlib\UnityEngine.UI.dll" /&gt;&#xD;
+  &lt;Assembly Path="D:\Spiele\Steam\steamapps\common\Valheim\unstripped_corlib\UnityEngine.IMGUIModule.dll" /&gt;&#xD;
 &lt;/AssemblyExplorer&gt;</s:String>
 	<s:String x:Key="/Default/Environment/Hierarchy/Build/BuildTool/CustomBuildToolPath/@EntryValue">C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Current\Bin\MSBuild.exe</s:String>
 	

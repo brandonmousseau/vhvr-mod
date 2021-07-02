@@ -1,7 +1,10 @@
+using System.Text;
+using System.Threading;
 using HarmonyLib;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
+using ValheimVRMod.Utilities;
 using Valve.VR;
 
 namespace ValheimVRMod.Patches {
@@ -12,106 +15,112 @@ namespace ValheimVRMod.Patches {
         private static TextInput instance;
 
         public static void Postfix(TextInput __instance) {
-            instance = __instance;
-            InputManager.start(__instance.m_textField.text, OnUpdate, OnClose);
+            if (VHVRConfig.UseVrControls()) {
+                instance = __instance;
+                InputManager.start(instance.m_textField, true, OnClose);
+            }
         }
 
-        private static void OnUpdate(string text) {
-            instance.m_textField.text = text;
-        }
-        
         private static void OnClose() {
-            try {
-                AccessTools.Method(typeof(TextInput), "OnEnter", new[] {typeof(string)})
-                    .Invoke(instance, new object[] {instance.m_textField.text});
-            }
-            catch {}
             instance.Hide();
         }
     }
     
-    
     [HarmonyPatch(typeof(InputField), "OnPointerClick")]
     class PatchInputFieldClick {
-        
-        private static InputField instance;
-        
         public static void Postfix(InputField __instance) {
-            instance = __instance;
-            InputManager.start(__instance.text, OnUpdate, OnClose);
+            if (VHVRConfig.UseVrControls()) {
+                InputManager.start(__instance);
+            }
         }
-        
-        private static void OnUpdate(string text) {
-            instance.text = text;
-        }
-        
-        private static void OnClose() {}
+    }
 
+    [HarmonyPatch(typeof(InputField), "OnFocus")]
+    class PatchPasswordFieldFocus {
+        public static void Postfix(InputField __instance) {
+            if(VHVRConfig.UseVrControls() && __instance.inputType == InputField.InputType.Password) {
+                InputManager.start(__instance, true);
+            }
+        }
+    }
+    
+    [HarmonyPatch(typeof(Minimap), "ShowPinNameInput")]
+    class PatchMinimap {
+        public static void Postfix(InputField ___m_nameInput) {
+            if (VHVRConfig.UseVrControls()) {
+                InputManager.start(___m_nameInput, true);
+            }
+        }
     }
     
     [HarmonyPatch(typeof(Player), "Interact")]
     class PatchPlayerInteract {
-        
         public static bool Prefix() {
-            return Time.fixedTime - InputManager.closeTime > 0.2f;
+            return !VHVRConfig.UseVrControls() || Time.fixedTime - InputManager.closeTime > 0.2f;
         }
     }
     
+    [HarmonyPatch(typeof(Input), "GetKeyDownInt")]
+    class PatchInputGetKeyDownInt {
+        public static bool Prefix(ref bool __result, KeyCode key) {
+            return !VHVRConfig.UseVrControls() || InputManager.handleReturnKeyInput(ref __result, key);
+        }
+    }
     
+    [HarmonyPatch(typeof(Input), "GetKeyInt")]
+    class PatchInputGetKeyInt {
+        
+        public static bool Prefix(ref bool __result, KeyCode key) {
+            return !VHVRConfig.UseVrControls() || InputManager.handleReturnKeyInput(ref __result, key);
+        }
+    }
+
     public static class InputManager {
 
         private static bool initialized;
-
-        private static string _text;
-        private static UnityAction<string> _updateAction;
+        private static InputField _inputField;
         private static UnityAction _closedAction;
-
+        private static bool _returnOnClose;
+        
         public static float closeTime;
+        public static bool triggerReturn;
 
-        public static void start(string text, UnityAction<string> updateAction,  UnityAction closedAction) {
+        public static void start(InputField inputField, bool returnOnClose = false, UnityAction closedAction = null) {
 
-            _text = text;
-            if (_text == "...") {
-                _text = "";
-            }
-            _updateAction = updateAction;
+            _inputField = inputField;
+            _returnOnClose = returnOnClose;
             _closedAction = closedAction;
             
+            if (_inputField.text == "...") {
+                _inputField.text = "";
+            }
+            
             if (!initialized) {
-                SteamVR_Events.System(EVREventType.VREvent_KeyboardCharInput).Listen(OnKeyboardCharInput);
                 SteamVR_Events.System(EVREventType.VREvent_KeyboardClosed).Listen(OnKeyboardClosed);
                 initialized = true;
             }
             
-            SteamVR.instance.overlay.ShowKeyboard(0, 0, 1, "TextInput", 256, text, 1);
-            
-        }
-        
-        private static void OnKeyboardCharInput(VREvent_t args) {
-            Debug.Log("Giving INPUT");
-            VREvent_Keyboard_t keyboard = args.data.keyboard;
-            byte[] inputBytes = {
-                keyboard.cNewInput0, keyboard.cNewInput1, keyboard.cNewInput2, keyboard.cNewInput3, keyboard.cNewInput4,
-                keyboard.cNewInput5, keyboard.cNewInput6, keyboard.cNewInput7
-            };
-            int len = 0;
-            for (; inputBytes[len] != 0 && len < 7; len++) ;
-            string input = System.Text.Encoding.UTF8.GetString(inputBytes, 0, len);
-
-            if (input == "\b") {
-                if (_text.Length > 0) {
-                    _text = _text.Substring(0, _text.Length - 1);
-                }
-            }
-            else {
-                _text += input;
-            }
-            _updateAction.Invoke(_text);
+            SteamVR.instance.overlay.ShowKeyboard(0, 0, 0, "TextInput", 256, _inputField.text, 1);
         }
 
         private static void OnKeyboardClosed(VREvent_t args) {
             closeTime = Time.fixedTime;
-            _closedAction.Invoke();
+            StringBuilder text = new StringBuilder(256);
+            _inputField.caretPosition = (int) SteamVR.instance.overlay.GetKeyboardText(text, 256);
+            _inputField.text = text.ToString();
+            triggerReturn = _returnOnClose;
+        }
+
+        public static bool handleReturnKeyInput(ref bool result, KeyCode key) {
+            
+            if (triggerReturn && key == KeyCode.Return) {
+                result = true;
+                triggerReturn = false;
+                new Thread(()=>_closedAction?.Invoke()).Start();
+                return false;
+            }
+
+            return true;
         }
     }
 }

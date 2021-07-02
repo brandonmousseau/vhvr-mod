@@ -7,6 +7,20 @@ using ValheimVRMod.Utilities;
 
 namespace ValheimVRMod.Patches {
     
+    [HarmonyPatch(typeof(Attack), "GetAttackOrigin")]
+    class PatchAreaAttack {
+
+        static bool Prefix(ref Transform __result,  ref Humanoid ___m_character) {
+            if (___m_character != Player.m_localPlayer || ! VHVRConfig.UseVrControls()) {
+                return true;
+            }
+             
+            __result = StaticObjects.rightWeaponCollider().transform;
+            return false;
+        }
+    }
+    
+    
     [HarmonyPatch(typeof(Attack), "Start")]
     class PatchAttackStart {
         private static MethodInfo getStaminaUsageMethod = AccessTools.Method(typeof(Attack), "GetStaminaUsage");
@@ -40,6 +54,9 @@ namespace ValheimVRMod.Patches {
             ref DestructibleType ___m_resetChainIfHit,
             ref int ___m_nextAttackChainLevel,
             ref EffectList ___m_hitTerrainEffect,
+            ref float ___m_attackHeight,
+            ref float ___m_attackRange,
+            ref float ___m_attackOffset,
             float ___m_attackHitNoise,
             GameObject ___m_spawnOnTrigger,
             ref bool __result
@@ -53,6 +70,9 @@ namespace ValheimVRMod.Patches {
             ___m_character = character;
             ___m_animEvent = animEvent;
             ___m_weapon = weapon;
+            ___m_attackHeight = 0;
+            ___m_attackRange = 0;
+            ___m_attackOffset = 0;
             __result = true;
 
             if (!MeshCooldown.staminaDrained) {
@@ -70,8 +90,24 @@ namespace ValheimVRMod.Patches {
 
             Collider col = StaticObjects.lastHitCollider;
             Vector3 pos = StaticObjects.lastHitPoint;
+            Vector3 dir = StaticObjects.lastHitDir;
 
-            // all rest is copied stuff from original DoMeleeAttack:
+            if (__instance.m_attackType == Attack.AttackType.Area) {
+                __instance.OnAttackTrigger();
+            }
+            
+            doMeleeAttack(___m_character, ___m_weapon, __instance, ___m_hitEffect, ___m_specialHitSkill, ___m_specialHitType, ___m_lowerDamagePerHit, ___m_forceMultiplier, ___m_staggerMultiplier, ___m_damageMultiplier, ___m_attackChainLevels, ___m_currentAttackCainLevel, ___m_resetChainIfHit, ref ___m_nextAttackChainLevel, ___m_hitTerrainEffect, ___m_attackHitNoise, pos, col, dir, ___m_spawnOnTrigger);
+            return false;
+            
+        }
+
+        private static void doMeleeAttack(Humanoid ___m_character, ItemDrop.ItemData ___m_weapon, Attack __instance,
+            EffectList ___m_hitEffect, Skills.SkillType ___m_specialHitSkill, DestructibleType ___m_specialHitType,
+            bool ___m_lowerDamagePerHit, float ___m_forceMultiplier, float ___m_staggerMultiplier, float ___m_damageMultiplier,
+            int ___m_attackChainLevels, int ___m_currentAttackCainLevel, DestructibleType ___m_resetChainIfHit,
+            ref int ___m_nextAttackChainLevel, EffectList ___m_hitTerrainEffect, float ___m_attackHitNoise, Vector3 pos,
+            Collider col, Vector3 dir, GameObject ___m_spawnOnTrigger) {
+            
             Vector3 zero = Vector3.zero;
             bool flag2 = false; //rename
             HashSet<Skills.SkillType> skillTypeSet = new HashSet<Skills.SkillType>();
@@ -95,7 +131,7 @@ namespace ValheimVRMod.Patches {
             }
 
             if (!hitOccured) {
-                return false;
+                return;
             }
 
             IDestructible component = hitObject.GetComponent<IDestructible>();
@@ -128,7 +164,7 @@ namespace ValheimVRMod.Patches {
                 hitData.m_skill = skill;
                 hitData.m_damage = ___m_weapon.GetDamage();
                 hitData.m_point = pos;
-                hitData.m_dir = pos.normalized;
+                hitData.m_dir = dir;
                 hitData.m_hitCollider = col;
                 hitData.SetAttacker(___m_character);
                 hitData.m_damage.Modify(___m_damageMultiplier);
@@ -138,6 +174,7 @@ namespace ValheimVRMod.Patches {
                     hitData.m_damage.Modify(2f);
                     hitData.m_pushForce *= 1.2f;
                 }
+                hitData.m_damage.Modify(MeshCooldown.calcDamageMultiplier());
 
                 ___m_character.GetSEMan().ModifyAttack(skill, ref hitData);
                 if (component is Character)
@@ -169,12 +206,12 @@ namespace ValheimVRMod.Patches {
                 ___m_character.RaiseSkill(skill, flag2 ? 1.5f : 1f);
 
             if (!___m_spawnOnTrigger)
-                return false;
+                return;
             Object.Instantiate(___m_spawnOnTrigger, zero,
                 Quaternion.identity).GetComponent<IProjectile>()?.Setup(___m_character,
                 ___m_character.transform.forward, -1f, null, ___m_weapon);
 
-            return false;
+            return;
         }
     }
 }

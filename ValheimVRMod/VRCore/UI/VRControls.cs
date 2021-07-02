@@ -186,6 +186,10 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return false;
             }
+            if (zinput == "Map" && QuickActions.toggleMap) {
+                QuickActions.toggleMap = false;
+                return true;
+            }
 
             // Handle Map zoom specially using context scroll input
             if (zinput == "MapZoomOut")
@@ -394,7 +398,7 @@ namespace ValheimVRMod.VRCore.UI
                         inPlaceMode() &&
                         hasPlacementGhost() &&
                         !Hud.IsPieceSelectionVisible() &&
-                        SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand);
+                        SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand);
         }
 
         // disable Jump input under certain conditions

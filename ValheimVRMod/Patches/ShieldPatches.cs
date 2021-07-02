@@ -12,12 +12,12 @@ namespace ValheimVRMod.Patches {
     [HarmonyPatch(typeof(Humanoid), "BlockAttack")]
     class PatchBlockAttack {
         
-        static void Prefix(Humanoid __instance, ref HitData hit) {
+        static void Prefix(Humanoid __instance, ref HitData hit, ref float ___m_blockTimer) {
 
             if (__instance != Player.m_localPlayer || EquipScript.getLeft() != EquipType.Shield || !VHVRConfig.UseVrControls()) {
                 return;
             }
-   
+            ___m_blockTimer = ShieldManager.blockTimer;
             if (ShieldManager.isBlocking()) {
                 hit.m_dir = -__instance.transform.forward;   
             } else {
@@ -25,14 +25,20 @@ namespace ValheimVRMod.Patches {
             }
         }
         
-        static void Postfix(Humanoid __instance, bool __result) {
+        static void Postfix(Humanoid __instance, bool __result, ref float ___m_blockTimer) {
 
             if (__instance != Player.m_localPlayer || EquipScript.getLeft() != EquipType.Shield || !VHVRConfig.UseVrControls()) {
                 return;
             }
 
             if (__result) {
-                VRPlayer.leftHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, SteamVR_Input_Sources.LeftHand);
+                if (___m_blockTimer < ShieldManager.blockTimerTolerance) {
+                    VRPlayer.leftHand.hapticAction.Execute(0, 0.4f, 100, 0.5f, SteamVR_Input_Sources.LeftHand);
+                    VRPlayer.leftHand.hapticAction.Execute(0.4f, 0.7f, 100, 0.2f, SteamVR_Input_Sources.LeftHand);
+                }
+                else {
+                    VRPlayer.leftHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, SteamVR_Input_Sources.LeftHand);
+                }
                 ShieldManager.block();
             }
         }

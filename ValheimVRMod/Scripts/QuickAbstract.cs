@@ -6,7 +6,7 @@ namespace ValheimVRMod.Scripts {
     public abstract class QuickAbstract : MonoBehaviour {
         
         private float elementDistance = 0.1f;
-        private const int MAX_ELEMENTS = 10;
+        private const int MAX_ELEMENTS = 11;
 
         private Color standard = new Color(0.2f, 0.2f, 0.2f, 0.5f);
         private Color hovered = new Color(0.5f, 0.5f, 0.5f, 0.5f);
