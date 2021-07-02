@@ -76,6 +76,7 @@ namespace ValheimVRMod.Utilities
         // Graphics Settings
         private static ConfigEntry<bool> useAmplifyOcclusion;
         private static ConfigEntry<float> taaSharpenAmmount;
+        private static ConfigEntry<float> nearClipPlane;
 
         public static void InitializeConfiguration(ConfigFile config)
         {
@@ -375,6 +376,11 @@ namespace ValheimVRMod.Utilities
                                               -1.0f,
                                               "Ammount of Sharpen applied after the TAA filter, values should be in the range [0.0,3.0]." +
                                               " Values outside this range will be ignored and the default game settings will be used instead.");
+            nearClipPlane = config.Bind("Graphics",
+                                        "NearClipPlane",
+                                        .05f,
+                                        "This can be used to adjust the distance where where anything inside will be clipped out and not rendered. You can try adjusting this if you experience" +
+                                        " problems where you see the nose of the player character for example.");
         }
 
         public static bool ModEnabled()
@@ -673,6 +679,11 @@ namespace ValheimVRMod.Utilities
 
         public static float RoomScaleSneakHeight() {
             return roomScaleSneakHeight.Value;
+        }
+
+        public static float GetNearClipPlane()
+        {
+            return nearClipPlane.Value;
         }
     }
 }

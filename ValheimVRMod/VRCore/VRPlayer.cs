@@ -399,6 +399,8 @@ namespace ValheimVRMod.VRCore
             CameraUtils.copyCamera(mainCamera, vrCam);
             maybeCopyPostProcessingEffects(vrCam, mainCamera);
             maybeAddAmplifyOcclusion(vrCam);
+            // Prevent visibility of the head
+            vrCam.nearClipPlane = VHVRConfig.GetNearClipPlane();
             // Turn off rendering the UI panel layer. We need to capture
             // it in a camera of higher depth so that it
             // is rendered on top of everything else. (except hands)
@@ -620,20 +622,16 @@ namespace ValheimVRMod.VRCore
             {
                 return;
             }
-
             var cam = CameraUtils.getCamera(CameraUtils.VR_CAMERA);
-            cam.nearClipPlane = 0.05f;
-            
             var vrik = VrikCreator.initialize(player.gameObject, 
                 leftHand.transform, rightHand.transform, cam.transform);
             VrikCreator.resetVrikHandTransform(player);
-
             vrik.references.leftHand.gameObject.AddComponent<HandGesture>().sourceHand = leftHand;
             vrik.references.rightHand.gameObject.AddComponent<HandGesture>().sourceHand = rightHand;
             StaticObjects.leftFist().setColliderParent(vrik.references.leftHand, false);
             StaticObjects.rightFist().setColliderParent(vrik.references.rightHand, true);
             var vrPlayerSync = player.gameObject.AddComponent<VRPlayerSync>();
-            vrPlayerSync.camera = CameraUtils.getCamera(CameraUtils.VR_CAMERA).gameObject;
+            vrPlayerSync.camera = cam.gameObject;
             vrPlayerSync.leftHand = leftHand.gameObject;
             vrPlayerSync.rightHand = rightHand.gameObject;
             StaticObjects.addQuickActions(leftHand.transform);
