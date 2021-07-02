@@ -8,6 +8,7 @@ using UnityEngine.PostProcessing;
 using UnityEngine.SceneManagement;
 using UnityStandardAssets.ImageEffects;
 using ValheimVRMod.Scripts;
+using ValheimVRMod.Patches;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore.UI;
 using Valve.VR;
@@ -54,8 +55,8 @@ namespace ValheimVRMod.VRCore
         public static bool justUnsheathed = false;
 
         private static float referencePlayerHeight;
-        public static bool isRoomscaleSneak = false;
-        public static bool isNonRSSneaking = false;
+        public static bool isRoomscaleSneaking {  get { return _isRoomscaleSneaking; } }
+        private static bool _isRoomscaleSneaking = false;
 
         private static GameObject _prefab;
         private static GameObject _instance;
@@ -584,7 +585,7 @@ namespace ValheimVRMod.VRCore
             {
                 return SIT_HEIGHT_ADJUST;
             }
-            if (player.IsCrouching() && (isNonRSSneaking || !VHVRConfig.RoomScaleSneakEnabled()))
+            if (player.IsCrouching() && Player_SetControls_SneakPatch.isJoystickSneaking)
             {
                 return CROUCH_HEIGHT_ADJUST;
             }
@@ -890,15 +891,15 @@ namespace ValheimVRMod.VRCore
                 float height = Valve.VR.InteractionSystem.Player.instance.eyeHeight;
                 float heightThreshold = referencePlayerHeight * VHVRConfig.RoomScaleSneakHeight();
                 if (height < heightThreshold) {
-                    isRoomscaleSneak = true;
+                    _isRoomscaleSneaking = true;
                 }
                 else if (height > heightThreshold + heightThreshold * 0.05f)
                 {
-                    isRoomscaleSneak = false;
+                    _isRoomscaleSneaking = false;
                 }
             }
             else {
-                isRoomscaleSneak = false;
+                _isRoomscaleSneaking = false;
             }
         }
 
