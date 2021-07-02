@@ -52,6 +52,7 @@ namespace ValheimVRMod
             HarmonyPatcher.DoPatching();
             
             if (VHVRConfig.NonVrPlayer()) {
+                LogDebug("Non VR Mode Patching Complete.");
                 return;
             }
             
