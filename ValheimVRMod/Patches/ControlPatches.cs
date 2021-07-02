@@ -188,12 +188,10 @@ namespace ValheimVRMod.Patches {
                 run = ZInput_GetJoyRightStickY_Patch.isRunning;
                 //Non-Roomscale Sneak Check (only when not sneaking roomscale)
                 if (ZInput_GetJoyRightStickY_Patch.isCrouching) {
-                    if (!VRPlayer.isRoomscaleSneak) {
-                        if (!wasNonRSCrouching) {
-                            crouch = true;
-                            wasNonRSCrouching = true;
-                            VRPlayer.isNonRSSneaking = !VRPlayer.isNonRSSneaking;
-                        }
+                    if (!VRPlayer.isRoomscaleSneak && !wasNonRSCrouching) {
+                        crouch = true;
+                        wasNonRSCrouching = true;
+                        VRPlayer.isNonRSSneaking = !VRPlayer.isNonRSSneaking;
                     }
                 }
                 else {
@@ -215,7 +213,7 @@ namespace ValheimVRMod.Patches {
                         }
                     }
                     //roomscale unsneak check 
-                    else if(!VRPlayer.isRoomscaleSneak && player.IsCrouching()&&wasCrouching) {
+                    else if(!VRPlayer.isRoomscaleSneak && player.IsCrouching() && wasCrouching) {
                         crouch = true;
                         wasRSCrouching = true;
                         wasCrouching = false;

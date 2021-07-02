@@ -903,6 +903,9 @@ namespace ValheimVRMod.VRCore
                     isRoomscaleSneak = false;
                 }
             }
+            else {
+                isRoomscaleSneak = false;
+            }
         }
 
         private bool isUnpressSheath() {
