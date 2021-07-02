@@ -71,9 +71,11 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> smoothSnapSpeed;
         private static ConfigEntry<bool> roomScaleSneaking;
         private static ConfigEntry<float> roomScaleSneakHeight;
+        private static ConfigEntry<bool> weaponNeedsSpeed;
 
         // Graphics Settings
         private static ConfigEntry<bool> useAmplifyOcclusion;
+        private static ConfigEntry<float> taaSharpenAmmount;
 
         public static void InitializeConfiguration(ConfigFile config)
         {
@@ -319,6 +321,10 @@ namespace ValheimVRMod.Utilities
                                         new ConfigDescription("Which hand do you want to use for the main laser pointer input? If" +
                                         " only one hand is active, it will be used automatically regardless of this setting.",
                                         new AcceptableValueList<string>(new string[] { "Right", "Left" })));
+            weaponNeedsSpeed = config.Bind("Controls",
+                "SwingWeapons",
+                true,
+                "Defines if Swinging a Weapon needs certain speed. if set to false, single touch will already trigger hit");
             InitializeConfigurableKeyBindings(config);
         }
 
@@ -364,6 +370,11 @@ namespace ValheimVRMod.Utilities
                                               " cost. While you can enable SSAO and UseAmplifyOcclusion simultaneously, it is" +
                                               " not recommended. SSAO impacts performance significantly, which is bad for VR especially. Therefore" +
                                               " you should disable SSAO in the graphics settings of the game when using this.");
+            taaSharpenAmmount = config.Bind("Graphics",
+                                              "TAASharpenAmmount",
+                                              -1.0f,
+                                              "Ammount of Sharpen applied after the TAA filter, values should be in the range [0.0,3.0]." +
+                                              " Values outside this range will be ignored and the default game settings will be used instead.");
         }
 
         public static bool ModEnabled()
@@ -448,6 +459,11 @@ namespace ValheimVRMod.Utilities
         public static bool UseAmplifyOcclusion()
         {
             return useAmplifyOcclusion.Value;
+        }
+
+        public static float GetTaaSharpenAmmount()
+        {
+            return taaSharpenAmmount.Value;
         }
 
         public static Vector3 GetFirstPersonHeadOffset()
@@ -644,6 +660,11 @@ namespace ValheimVRMod.Utilities
         public static float SmoothSnapSpeed()
         {
             return Mathf.Abs(smoothSnapSpeed.Value);
+        }
+        
+        public static bool WeaponNeedsSpeed()
+        {
+            return weaponNeedsSpeed.Value;
         }
 
         public static bool RoomScaleSneakEnabled() {

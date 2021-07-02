@@ -42,6 +42,7 @@ namespace ValheimVRMod.Scripts {
             }
 
             StaticObjects.lastHitPoint = transform.position;
+            StaticObjects.lastHitDir = snapshots[snapshots.Count - 1] - snapshots[snapshots.Count - 5];
             StaticObjects.lastHitCollider = collider;
 
             var attack = Player.m_localPlayer.m_unarmedWeapon.m_itemData.m_shared.m_attack;
@@ -118,6 +119,11 @@ namespace ValheimVRMod.Scripts {
         }
         
         public bool hasMomentum() {
+            
+            if (!VHVRConfig.WeaponNeedsSpeed()) {
+                return true;
+            }
+            
             foreach (Vector3 snapshot in snapshots) {
                 if (Vector3.Distance(snapshot, transform.localPosition) > MIN_DISTANCE) {
                     return true;

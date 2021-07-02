@@ -49,6 +49,7 @@ namespace ValheimVRMod.Scripts {
             }
             
             StaticObjects.lastHitPoint = transform.position;
+            StaticObjects.lastHitDir = snapshots[snapshots.Count - 1] - snapshots[snapshots.Count - 5];
             StaticObjects.lastHitCollider = collider;
             
             if (attack.Start(Player.m_localPlayer, null, null,
@@ -70,6 +71,16 @@ namespace ValheimVRMod.Scripts {
                 || target.layer == LayerUtils.WATER
                 || target.layer == LayerUtils.UI_PANEL_LAYER) {
                 return false;
+            }
+
+            // if attack is vertical, we can only hit one target at a time
+            if (attack.m_attackType != Attack.AttackType.Horizontal  && 
+                MeshCooldown.sharedInstance != null && MeshCooldown.sharedInstance.inCoolDown()) {
+                return false;
+            }
+
+            if (target.GetComponentInParent<MineRock5>() != null) {
+                target = target.transform.parent.gameObject;
             }
             
             var meshCooldown = target.GetComponent<MeshCooldown>();
@@ -105,11 +116,9 @@ namespace ValheimVRMod.Scripts {
             else {
                 item = Player.m_localPlayer.GetLeftItem();
             }
-
-            if (item != null) {
-                attack = item.m_shared.m_attack.Clone();
-            }
             
+            attack = item.m_shared.m_attack.Clone();
+
             switch (attack.m_attackAnimation) {
                 case "atgeir_attack":
                     hitTime = 0.81f;
@@ -213,6 +222,11 @@ namespace ValheimVRMod.Scripts {
         }
 
         public bool hasMomentum() {
+            
+            if (!VHVRConfig.WeaponNeedsSpeed()) {
+                return true;
+            }
+            
             foreach (Vector3 snapshot in snapshots) {
                 if (Vector3.Distance(snapshot, transform.localPosition) > MIN_DISTANCE + colliderDistance / 2) {
                     return true;

@@ -7,6 +7,7 @@ namespace ValheimVRMod.Scripts {
 
         public static MeshCooldown sharedInstance;
         public static bool staminaDrained;
+        public static float damageMultiplier;
         
         public bool tryTrigger(float cd) {
             if (inCoolDown()) {
@@ -17,8 +18,26 @@ namespace ValheimVRMod.Scripts {
             cooldown = cd;
             if (sharedInstance == null) {
                 sharedInstance = this;
+                damageMultiplier = 1;
             }
             return true;
+        }
+
+        public static float calcDamageMultiplier() {
+            var dmgMultiplier = damageMultiplier;
+            
+            if (damageMultiplier == 1) {
+                damageMultiplier = 0.3333f;
+            }
+            else {
+                damageMultiplier /= 2;
+            }
+
+            return dmgMultiplier;
+        }
+
+        private void OnDisable() {
+            Destroy(this);
         }
 
         public bool inCoolDown() {
