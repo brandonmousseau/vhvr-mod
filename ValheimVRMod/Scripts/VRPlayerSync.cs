@@ -229,6 +229,7 @@ namespace ValheimVRMod.Scripts {
             }
             vrik = VrikCreator.initialize(gameObject, leftHand.transform,
                 rightHand.transform, camera.transform);
+            VrikCreator.resetVrikHandTransform(gameObject.GetComponent<Player>());
         }
 
         private bool isOwner()
