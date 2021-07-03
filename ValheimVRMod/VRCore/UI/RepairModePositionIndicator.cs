@@ -115,8 +115,7 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return 0;
             }
-            var fieldRef = AccessTools.FieldRefAccess<Player, int>(Player.m_localPlayer, "m_placeRayMask");
-            return fieldRef;
+            return Player.m_localPlayer.m_placeRayMask;
         }
 
         private bool inPlaceMode()
@@ -130,8 +129,8 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return false;
             }
-            var fieldRef = AccessTools.FieldRefAccess<Player, GameObject>(Player.m_localPlayer, "m_placementGhost");
-            return fieldRef != null && fieldRef.activeSelf;
+            var ghost = Player.m_localPlayer.m_placementGhost;
+            return ghost != null && ghost.activeSelf;
         }
 
         private static Texture2D loadHammerTexture() { 

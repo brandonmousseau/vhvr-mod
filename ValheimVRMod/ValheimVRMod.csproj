@@ -22,7 +22,7 @@
     <DefineConstants>TRACE;DEBUG</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>3</WarningLevel>
-    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CodeAnalysisRuleSet>CppCoreCheckRules.ruleset</CodeAnalysisRuleSet>
     <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
@@ -34,6 +34,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>3</WarningLevel>
     <PlatformTarget>x64</PlatformTarget>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="0Harmony">
@@ -71,9 +72,8 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(CommonDir)Valheim\valheim_Data\Managed\assembly_utils.dll</HintPath>
     </Reference>
-    <Reference Include="assembly_valheim, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(CommonDir)Valheim\valheim_Data\Managed\assembly_valheim.dll</HintPath>
+    <Reference Include="assembly_valheim_publicized">
+      <HintPath>$(CommonDir)Valheim\valheim_Data\Managed\publicized_assemblies\assembly_valheim_publicized.dll</HintPath>
     </Reference>
     <Reference Include="BepInEx">
       <HintPath>$(CommonDir)Valheim\BepInEx\core\BepInEx.dll</HintPath>
@@ -331,7 +331,7 @@
     <Compile Include="Utilities\LayerUtils.cs" />
     <Compile Include="Utilities\VHVRConfig.cs" />
     <Compile Include="Utilities\LogUtils.cs" />
-    <Compile Include="Utilities\PostProcessingUtils.cs" /> 
+    <Compile Include="Utilities\PostProcessingUtils.cs" />
     <Compile Include="Utilities\VRAssetManager.cs" />
     <Compile Include="Utilities\WeaponUtils.cs" />
     <Compile Include="Utilities\StaticObjects.cs" />

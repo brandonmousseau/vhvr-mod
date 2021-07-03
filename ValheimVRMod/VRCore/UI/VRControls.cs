@@ -386,8 +386,8 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return false;
             }
-            var fieldRef = AccessTools.FieldRefAccess<Player, GameObject>(Player.m_localPlayer, "m_placementGhost");
-            return fieldRef != null && fieldRef.activeSelf;
+            var ghost = Player.m_localPlayer.m_placementGhost;
+            return ghost != null && ghost.activeSelf;
         }
 
         private bool hasHoverObject()
@@ -396,8 +396,7 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return false;
             }
-            var fieldRef = AccessTools.FieldRefAccess<Player, GameObject>(Player.m_localPlayer, "m_hovering");
-            return fieldRef != null;
+            return Player.m_localPlayer.m_hovering != null;
         }
 
         // Used to determine when the player is in a mode where the right joystick should

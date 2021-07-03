@@ -237,7 +237,8 @@ namespace ValheimVRMod.Patches {
                 return;
             }
             // Indicates whether the crouch is toggled on or not
-            bool isCrouchToggled = AccessTools.FieldRefAccess<Player, bool>(__instance, "m_crouchToggled");
+            //bool isCrouchToggled = AccessTools.FieldRefAccess<Player, bool>(__instance, "m_crouchToggled");
+            bool isCrouchToggled = __instance.m_crouchToggled;
             if (VHVRConfig.RoomScaleSneakEnabled())
             {
                 handleRoomscaleSneak(__instance, ref crouch, isCrouchToggled);

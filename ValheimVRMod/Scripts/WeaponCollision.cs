@@ -53,7 +53,7 @@ namespace ValheimVRMod.Scripts {
             StaticObjects.lastHitCollider = collider;
             
             if (attack.Start(Player.m_localPlayer, null, null,
-                AccessTools.FieldRefAccess<Player, CharacterAnimEvent>(Player.m_localPlayer, "m_animEvent"),
+                Player.m_localPlayer.m_animEvent,
                 null, item, null, 0.0f, 0.0f)) {
                 if (isRightHand) {
                     VRPlayer.rightHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, SteamVR_Input_Sources.RightHand);
