@@ -569,11 +569,37 @@ namespace ValheimVRMod.VRCore
             setHeadVisibility(!inFirstPerson);
             // Update the position with the first person adjustment calculated in init phase
             Vector3 desiredPosition = getDesiredPosition(playerCharacter);
+            
             _instance.transform.localPosition = desiredPosition - playerCharacter.transform.position  // Base Positioning
-                                               + firstPersonAdjust  // Offset from calibration on tracking recenter
-                                               + getHeadOffset(_headZoomLevel) // Player controlled offset (zeroed on tracking reset)
-                                               + Vector3.forward * NECK_OFFSET // Move slightly forward to position on neck
-                                               + Vector3.up * getHeadHeightAdjust(playerCharacter);
+                                               + Vector3.up * getHeadHeightAdjust(playerCharacter)
+                                               + Vector3.up * firstPersonAdjust.y; // Offset from calibration on tracking recenter
+                                               
+            if(_headZoomLevel != HeadZoomLevel.FirstPerson)
+            {
+                _instance.transform.localPosition += Vector3.right * firstPersonAdjust.x  // Offset from calibration on tracking recenter
+                            + Vector3.forward * firstPersonAdjust.z
+                            + getHeadOffset(_headZoomLevel) // Player controlled offset (zeroed on tracking reset)
+                            + Vector3.forward * NECK_OFFSET; // Move slightly forward to position on neck
+                setPlayerVisualsOffset(playerCharacter.transform, Vector3.zero);
+            }
+            else
+                setPlayerVisualsOffset(playerCharacter.transform,
+                                -Vector3.right * firstPersonAdjust.x  // Offset from calibration on tracking recenter
+                                -Vector3.forward * firstPersonAdjust.z
+                                -getHeadOffset(_headZoomLevel) // Player controlled offset (zeroed on tracking reset)
+                                -Vector3.forward * NECK_OFFSET // Move slightly forward to position on neck
+                                );
+        }
+
+        //Moves all the effects and the meshes that compose the player, doesn't move the Rigidbody
+        private void setPlayerVisualsOffset(Transform playerTransform, Vector3 offset)
+        {
+            for(int i = 0; i < playerTransform.childCount; i++)
+            {
+                Transform child = playerTransform.GetChild(i);
+                if(child == _instance.transform || child.name == "EyePos") continue;
+                playerTransform.GetChild(i).localPosition = offset;                          
+            }
         }
 
         private float getHeadHeightAdjust(Player player)
@@ -662,8 +688,13 @@ namespace ValheimVRMod.VRCore
             {
                 // First set the position without any adjustment
                 Vector3 desiredPosition = getDesiredPosition(playerCharacter);
-                _instance.transform.localPosition = desiredPosition -
-                    playerCharacter.transform.position + getHeadOffset(_headZoomLevel);
+                _instance.transform.localPosition = desiredPosition - playerCharacter.transform.position;
+
+                if(_headZoomLevel != HeadZoomLevel.FirstPerson)
+                    _instance.transform.localPosition += getHeadOffset(_headZoomLevel);
+                else
+                    setPlayerVisualsOffset(playerCharacter.transform, -getHeadOffset(_headZoomLevel));
+
                 var hmd = Valve.VR.InteractionSystem.Player.instance.hmdTransform;
                 // Measure the distance between HMD and desires location, and save it.
                 FIRST_PERSON_INIT_OFFSET = desiredPosition - hmd.position;
