@@ -619,7 +619,7 @@ namespace ValheimVRMod.Utilities
 
         public static bool UseVrControls()
         {
-            return useVrControls.Value && ! nonVrPlayer.Value;
+            return false;
         }
 
         public static bool UseArrowPredictionGraphic()
@@ -629,7 +629,7 @@ namespace ValheimVRMod.Utilities
 
         public static bool NonVrPlayer()
         {
-            return nonVrPlayer.Value;
+            return true;
         }
 
         public static Vector3 getDebugPos()
