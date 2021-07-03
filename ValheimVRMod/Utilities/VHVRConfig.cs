@@ -72,6 +72,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> roomScaleSneaking;
         private static ConfigEntry<float> roomScaleSneakHeight;
         private static ConfigEntry<bool> weaponNeedsSpeed;
+        private static ConfigEntry<float> altPieceRotationDelay;
 
         // Graphics Settings
         private static ConfigEntry<bool> useAmplifyOcclusion;
@@ -326,6 +327,11 @@ namespace ValheimVRMod.Utilities
                 "SwingWeapons",
                 true,
                 "Defines if Swinging a Weapon needs certain speed. if set to false, single touch will already trigger hit");
+            altPieceRotationDelay = config.Bind("Controls",
+                                                "AltPieceRotationDelay",
+                                                1f,
+                                                new ConfigDescription("Affects speed of piece rotation when using 'Grab' + 'Joystick' method of rotating build objects. Legal values 0.1 - 3. Higher is longer delay.",
+                                                new AcceptableValueRange<float>(0.1f, 3f)));
             InitializeConfigurableKeyBindings(config);
         }
 
@@ -684,6 +690,11 @@ namespace ValheimVRMod.Utilities
         public static float GetNearClipPlane()
         {
             return nearClipPlane.Value;
+        }
+
+        public static float AltPieceRotationDelay()
+        {
+            return altPieceRotationDelay.Value;
         }
     }
 }
