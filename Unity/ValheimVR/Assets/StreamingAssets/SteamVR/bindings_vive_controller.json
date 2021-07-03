@@ -311,7 +311,7 @@
                      "output" : "/actions/valheim/in/useleft"
                   }
                },
-               "mode" : "trigger",
+               "mode" : "button",
                "path" : "/user/hand/left/input/trigger"
             },
             {
@@ -320,7 +320,7 @@
                      "output" : "/actions/valheim/in/use"
                   }
                },
-               "mode" : "trigger",
+               "mode" : "button",
                "path" : "/user/hand/right/input/trigger"
             },
             {
