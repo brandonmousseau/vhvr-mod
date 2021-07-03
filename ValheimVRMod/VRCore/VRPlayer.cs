@@ -8,6 +8,7 @@ using UnityEngine.PostProcessing;
 using UnityEngine.SceneManagement;
 using UnityStandardAssets.ImageEffects;
 using ValheimVRMod.Scripts;
+using ValheimVRMod.Patches;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore.UI;
 using Valve.VR;
@@ -54,8 +55,8 @@ namespace ValheimVRMod.VRCore
         public static bool justUnsheathed = false;
 
         private static float referencePlayerHeight;
-        public static bool isRoomscaleSneak = false;
-        public static bool isNonRSSneaking = false;
+        public static bool isRoomscaleSneaking {  get { return _isRoomscaleSneaking; } }
+        private static bool _isRoomscaleSneaking = false;
 
         private static GameObject _prefab;
         private static GameObject _instance;
@@ -399,6 +400,8 @@ namespace ValheimVRMod.VRCore
             CameraUtils.copyCamera(mainCamera, vrCam);
             maybeCopyPostProcessingEffects(vrCam, mainCamera);
             maybeAddAmplifyOcclusion(vrCam);
+            // Prevent visibility of the head
+            vrCam.nearClipPlane = VHVRConfig.GetNearClipPlane();
             // Turn off rendering the UI panel layer. We need to capture
             // it in a camera of higher depth so that it
             // is rendered on top of everything else. (except hands)
@@ -608,7 +611,7 @@ namespace ValheimVRMod.VRCore
             {
                 return SIT_HEIGHT_ADJUST;
             }
-            if (player.IsCrouching() && (isNonRSSneaking || !VHVRConfig.RoomScaleSneakEnabled()))
+            if (player.IsCrouching() && Player_SetControls_SneakPatch.isJoystickSneaking)
             {
                 return CROUCH_HEIGHT_ADJUST;
             }
@@ -646,20 +649,16 @@ namespace ValheimVRMod.VRCore
             {
                 return;
             }
-
             var cam = CameraUtils.getCamera(CameraUtils.VR_CAMERA);
-            cam.nearClipPlane = 0.05f;
-            
             var vrik = VrikCreator.initialize(player.gameObject, 
                 leftHand.transform, rightHand.transform, cam.transform);
-            VrikCreator.resetVrikHandTransform(vrik);
-
+            VrikCreator.resetVrikHandTransform(player);
             vrik.references.leftHand.gameObject.AddComponent<HandGesture>().sourceHand = leftHand;
             vrik.references.rightHand.gameObject.AddComponent<HandGesture>().sourceHand = rightHand;
             StaticObjects.leftFist().setColliderParent(vrik.references.leftHand, false);
             StaticObjects.rightFist().setColliderParent(vrik.references.rightHand, true);
             var vrPlayerSync = player.gameObject.AddComponent<VRPlayerSync>();
-            vrPlayerSync.camera = CameraUtils.getCamera(CameraUtils.VR_CAMERA).gameObject;
+            vrPlayerSync.camera = cam.gameObject;
             vrPlayerSync.leftHand = leftHand.gameObject;
             vrPlayerSync.rightHand = rightHand.gameObject;
             StaticObjects.addQuickActions(leftHand.transform);
@@ -923,15 +922,15 @@ namespace ValheimVRMod.VRCore
                 float height = Valve.VR.InteractionSystem.Player.instance.eyeHeight;
                 float heightThreshold = referencePlayerHeight * VHVRConfig.RoomScaleSneakHeight();
                 if (height < heightThreshold) {
-                    isRoomscaleSneak = true;
+                    _isRoomscaleSneaking = true;
                 }
                 else if (height > heightThreshold + heightThreshold * 0.05f)
                 {
-                    isRoomscaleSneak = false;
+                    _isRoomscaleSneaking = false;
                 }
             }
             else {
-                isRoomscaleSneak = false;
+                _isRoomscaleSneaking = false;
             }
         }
 

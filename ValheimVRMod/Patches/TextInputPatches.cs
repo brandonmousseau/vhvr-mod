@@ -4,6 +4,7 @@ using HarmonyLib;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
+using ValheimVRMod.Utilities;
 using Valve.VR;
 
 namespace ValheimVRMod.Patches {
@@ -14,8 +15,10 @@ namespace ValheimVRMod.Patches {
         private static TextInput instance;
 
         public static void Postfix(TextInput __instance) {
-            instance = __instance;
-            InputManager.start(instance.m_textField, true, OnClose);
+            if (VHVRConfig.UseVrControls()) {
+                instance = __instance;
+                InputManager.start(instance.m_textField, true, OnClose);
+            }
         }
 
         private static void OnClose() {
@@ -26,15 +29,16 @@ namespace ValheimVRMod.Patches {
     [HarmonyPatch(typeof(InputField), "OnPointerClick")]
     class PatchInputFieldClick {
         public static void Postfix(InputField __instance) {
-            InputManager.start(__instance);
+            if (VHVRConfig.UseVrControls()) {
+                InputManager.start(__instance);
+            }
         }
     }
 
     [HarmonyPatch(typeof(InputField), "OnFocus")]
     class PatchPasswordFieldFocus {
         public static void Postfix(InputField __instance) {
-            if(__instance.inputType == InputField.InputType.Password)
-            {
+            if(VHVRConfig.UseVrControls() && __instance.inputType == InputField.InputType.Password) {
                 InputManager.start(__instance, true);
             }
         }
@@ -43,21 +47,23 @@ namespace ValheimVRMod.Patches {
     [HarmonyPatch(typeof(Minimap), "ShowPinNameInput")]
     class PatchMinimap {
         public static void Postfix(InputField ___m_nameInput) {
-            InputManager.start(___m_nameInput, true);
+            if (VHVRConfig.UseVrControls()) {
+                InputManager.start(___m_nameInput, true);
+            }
         }
     }
     
     [HarmonyPatch(typeof(Player), "Interact")]
     class PatchPlayerInteract {
         public static bool Prefix() {
-            return Time.fixedTime - InputManager.closeTime > 0.2f;
+            return !VHVRConfig.UseVrControls() || Time.fixedTime - InputManager.closeTime > 0.2f;
         }
     }
     
     [HarmonyPatch(typeof(Input), "GetKeyDownInt")]
     class PatchInputGetKeyDownInt {
         public static bool Prefix(ref bool __result, KeyCode key) {
-            return InputManager.handleReturnKeyInput(ref __result, key);
+            return !VHVRConfig.UseVrControls() || InputManager.handleReturnKeyInput(ref __result, key);
         }
     }
     
@@ -65,7 +71,7 @@ namespace ValheimVRMod.Patches {
     class PatchInputGetKeyInt {
         
         public static bool Prefix(ref bool __result, KeyCode key) {
-            return InputManager.handleReturnKeyInput(ref __result, key);
+            return !VHVRConfig.UseVrControls() || InputManager.handleReturnKeyInput(ref __result, key);
         }
     }
 

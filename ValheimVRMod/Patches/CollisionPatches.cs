@@ -11,7 +11,7 @@ namespace ValheimVRMod.Patches {
     class PatchAreaAttack {
 
         static bool Prefix(ref Transform __result,  ref Humanoid ___m_character) {
-            if (___m_character != Player.m_localPlayer) {
+            if (___m_character != Player.m_localPlayer || ! VHVRConfig.UseVrControls()) {
                 return true;
             }
              
@@ -59,6 +59,8 @@ namespace ValheimVRMod.Patches {
             ref float ___m_attackOffset,
             float ___m_attackHitNoise,
             GameObject ___m_spawnOnTrigger,
+            ref int ___m_attackMask,
+            ref int ___m_attackMaskTerrain,
             ref bool __result
         ) {
             // if character is not local player, use original Start method
@@ -74,7 +76,13 @@ namespace ValheimVRMod.Patches {
             ___m_attackRange = 0;
             ___m_attackOffset = 0;
             __result = true;
-
+            
+            if (___m_attackMask == 0)
+            {
+                ___m_attackMask = LayerMask.GetMask("Default", "static_solid", "Default_small", "piece", "piece_nonsolid", nameof (character), "character_net", "character_ghost", "hitbox", "character_noenv", "vehicle");
+                ___m_attackMaskTerrain = LayerMask.GetMask("Default", "static_solid", "Default_small", "piece", "piece_nonsolid", "terrain", nameof (character), "character_net", "character_ghost", "hitbox", "character_noenv", "vehicle");
+            }
+            
             if (!MeshCooldown.staminaDrained) {
                 float staminaUsage = (float) getStaminaUsageMethod.Invoke(__instance, null);
                 if (staminaUsage > 0.0f && !character.HaveStamina(staminaUsage + 0.1f)) {

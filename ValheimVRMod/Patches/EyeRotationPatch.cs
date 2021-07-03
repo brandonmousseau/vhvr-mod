@@ -27,7 +27,8 @@ namespace ValheimVRMod.Patches
 
         public static void Prefix(Player __instance, ref Quaternion ___m_lookYaw, CraftingStation ___m_currentStation)
         {
-            if (__instance != Player.m_localPlayer ||
+            if (VHVRConfig.NonVrPlayer() ||
+                __instance != Player.m_localPlayer ||
                 !VRPlayer.attachedToPlayer ||
                 !VRPlayer.inFirstPerson ||
                 !VHVRConfig.UseLookLocomotion() ||
@@ -54,7 +55,7 @@ namespace ValheimVRMod.Patches
 
         public static void Postfix(Player __instance, ref Vector3 ___m_lookDir)
         {
-            if (__instance != Player.m_localPlayer || !VRPlayer.attachedToPlayer)
+            if (VHVRConfig.NonVrPlayer() || __instance != Player.m_localPlayer || !VRPlayer.attachedToPlayer)
             {
                 return;
             }
@@ -83,7 +84,7 @@ namespace ValheimVRMod.Patches
     {
         public static void Postfix(Player __instance, Quaternion ___m_lookYaw)
         {
-            if (__instance != Player.m_localPlayer || VRPlayer.instance == null)
+            if (VHVRConfig.NonVrPlayer() || __instance != Player.m_localPlayer || VRPlayer.instance == null)
             {
                 return;
             }
@@ -111,7 +112,7 @@ namespace ValheimVRMod.Patches
         {
             public static void Postfix(Player __instance)
             {
-                if (__instance != Player.m_localPlayer)
+                if (VHVRConfig.NonVrPlayer() || __instance != Player.m_localPlayer)
                 {
                     return;
                 }
@@ -124,7 +125,7 @@ namespace ValheimVRMod.Patches
         {
             public static void Postfix(Player __instance)
             {
-                if (__instance != Player.m_localPlayer)
+                if (VHVRConfig.NonVrPlayer() || __instance != Player.m_localPlayer)
                 {
                     return;
                 }
@@ -137,7 +138,7 @@ namespace ValheimVRMod.Patches
         {
             public static void Postfix(Player __instance)
             {
-                if (__instance != Player.m_localPlayer)
+                if (VHVRConfig.NonVrPlayer() || __instance != Player.m_localPlayer)
                 {
                     return;
                 }

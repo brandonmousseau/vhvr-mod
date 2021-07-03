@@ -9,7 +9,7 @@ namespace ValheimVRMod.Patches {
      [HarmonyPatch(typeof(VisEquipment), "SetRightHandEquiped")]
      class PatchSetRightHandEquiped {
         static void Postfix(bool __result, string ___m_rightItem, ref GameObject ___m_rightItemInstance) {
-            if (!__result || ___m_rightItemInstance == null || !VHVRConfig.UseVrControls()) {
+            if (!__result || ___m_rightItemInstance == null) {
                 return;
             }
 
@@ -20,12 +20,21 @@ namespace ValheimVRMod.Patches {
             }
 
             Player player = ___m_rightItemInstance.GetComponentInParent<Player>();
-            // only local player must trigger this
-            if (player == null || Player.m_localPlayer != player) {
+            
+            if (player == null) {
                 return;
             }
+
+            var vrPlayerSync = player.GetComponent<VRPlayerSync>();
             
-            VrikCreator.resetVrikHandTransform();
+            if (vrPlayerSync != null) {
+                player.GetComponent<VRPlayerSync>().currentRightWeapon = meshFilter.gameObject;
+                VrikCreator.resetVrikHandTransform(player);   
+            }
+
+            if (Player.m_localPlayer != player || !VHVRConfig.UseVrControls()) {
+                return;
+            }
 
             if (StaticObjects.quickSwitch != null) {
                 StaticObjects.quickSwitch.GetComponent<QuickSwitch>().refreshItems();
@@ -52,7 +61,7 @@ namespace ValheimVRMod.Patches {
     [HarmonyPatch(typeof(VisEquipment), "SetLeftHandEquiped")]
     class PatchSetLeftHandEquiped {
         static void Postfix(bool __result, string ___m_leftItem, GameObject ___m_leftItemInstance) {
-            if (!__result || ___m_leftItemInstance == null || !VHVRConfig.UseVrControls()) {
+            if (!__result || ___m_leftItemInstance == null) {
                 return;
             } 
                           
@@ -68,12 +77,16 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
-            if (Player.m_localPlayer != player) {
+            var vrPlayerSync = player.GetComponent<VRPlayerSync>();
+
+            if (vrPlayerSync != null) {
                 player.GetComponent<VRPlayerSync>().currentLeftWeapon = meshFilter.gameObject;
+                VrikCreator.resetVrikHandTransform(player);
+            }
+
+            if (Player.m_localPlayer != player || !VHVRConfig.UseVrControls()) {
                 return;
             }
-            
-            VrikCreator.resetVrikHandTransform();
 
             if (StaticObjects.quickSwitch != null) {
                 StaticObjects.quickSwitch.GetComponent<QuickSwitch>().refreshItems();

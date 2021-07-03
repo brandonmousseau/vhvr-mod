@@ -72,10 +72,12 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> roomScaleSneaking;
         private static ConfigEntry<float> roomScaleSneakHeight;
         private static ConfigEntry<bool> weaponNeedsSpeed;
+        private static ConfigEntry<float> altPieceRotationDelay;
 
         // Graphics Settings
         private static ConfigEntry<bool> useAmplifyOcclusion;
         private static ConfigEntry<float> taaSharpenAmmount;
+        private static ConfigEntry<float> nearClipPlane;
 
         public static void InitializeConfiguration(ConfigFile config)
         {
@@ -325,6 +327,11 @@ namespace ValheimVRMod.Utilities
                 "SwingWeapons",
                 true,
                 "Defines if Swinging a Weapon needs certain speed. if set to false, single touch will already trigger hit");
+            altPieceRotationDelay = config.Bind("Controls",
+                                                "AltPieceRotationDelay",
+                                                1f,
+                                                new ConfigDescription("Affects speed of piece rotation when using 'Grab' + 'Joystick' method of rotating build objects. Legal values 0.1 - 3. Higher is longer delay.",
+                                                new AcceptableValueRange<float>(0.1f, 3f)));
             InitializeConfigurableKeyBindings(config);
         }
 
@@ -375,6 +382,11 @@ namespace ValheimVRMod.Utilities
                                               -1.0f,
                                               "Ammount of Sharpen applied after the TAA filter, values should be in the range [0.0,3.0]." +
                                               " Values outside this range will be ignored and the default game settings will be used instead.");
+            nearClipPlane = config.Bind("Graphics",
+                                        "NearClipPlane",
+                                        .05f,
+                                        "This can be used to adjust the distance where where anything inside will be clipped out and not rendered. You can try adjusting this if you experience" +
+                                        " problems where you see the nose of the player character for example.");
         }
 
         public static bool ModEnabled()
@@ -602,7 +614,7 @@ namespace ValheimVRMod.Utilities
 
         public static bool UseVrControls()
         {
-            return useVrControls.Value;
+            return useVrControls.Value && ! nonVrPlayer.Value;
         }
 
         public static bool UseArrowPredictionGraphic()
@@ -673,6 +685,16 @@ namespace ValheimVRMod.Utilities
 
         public static float RoomScaleSneakHeight() {
             return roomScaleSneakHeight.Value;
+        }
+
+        public static float GetNearClipPlane()
+        {
+            return nearClipPlane.Value;
+        }
+
+        public static float AltPieceRotationDelay()
+        {
+            return altPieceRotationDelay.Value;
         }
     }
 }
