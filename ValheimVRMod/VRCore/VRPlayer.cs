@@ -416,6 +416,8 @@ namespace ValheimVRMod.VRCore
                 LogDebug("Destroying MainCamera AudioListener");
                 DestroyImmediate(mainCamListener);
             }
+            //Add fade component to camera for transition handling
+            vrCam.gameObject.AddComponent<FadeToBlackManager>();
             _instance.SetActive(true);
             vrCam.enabled = true;
             _vrCam = vrCam;

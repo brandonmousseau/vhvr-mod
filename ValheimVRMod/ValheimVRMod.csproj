@@ -311,6 +311,7 @@
     <Compile Include="Patches\UIPatches.cs" />
     <Compile Include="Scripts\BowLocalManager.cs" />
     <Compile Include="Scripts\BowManager.cs" />
+    <Compile Include="Scripts\FadeToBlackManager.cs" /> 
     <Compile Include="Scripts\MeshCooldown.cs" />
     <Compile Include="Scripts\Outline.cs" />
     <Compile Include="Scripts\QuickActions.cs" />
