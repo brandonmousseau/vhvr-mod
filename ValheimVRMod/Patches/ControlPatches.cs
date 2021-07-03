@@ -94,6 +94,11 @@ namespace ValheimVRMod.Patches {
 
     [HarmonyPatch(typeof(ZInput), nameof(ZInput.GetJoyRightStickY))]
     class ZInput_GetJoyRightStickY_Patch {
+
+        private const float NON_TOGGLE_RUN_SENSITIVITY = -0.3f;
+        private const float TOGGLE_RUN_SENSITIVITY = -0.8f;
+        private const float CROUCH_SENSITIVITY = 0.7f;
+
         public static bool isCrouching;
         public static bool isRunning;
 
@@ -101,8 +106,8 @@ namespace ValheimVRMod.Patches {
             if (VRControls.mainControlsActive) {
                 var joystick = VRControls.instance.GetJoyRightStickY();
 
-                isRunning = joystick < -0.3f;
-                isCrouching = joystick > 0.7f;
+                isRunning = joystick < (VHVRConfig.ToggleRun() ? TOGGLE_RUN_SENSITIVITY : NON_TOGGLE_RUN_SENSITIVITY);
+                isCrouching = joystick > CROUCH_SENSITIVITY;
 
                 __result = __result + joystick;
             }
@@ -173,13 +178,42 @@ namespace ValheimVRMod.Patches {
     [HarmonyPatch(typeof(Player), nameof(Player.SetControls))]
     class Player_SetControls_RunPatch
     {
+
+        private static bool lastUpdateRunInput = false;
+        private static bool runToggledOn = false;
+
         static void Prefix(Player __instance, ref bool run)
         {
             if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls())
             {
                 return;
             }
-            run = ZInput_GetJoyRightStickY_Patch.isRunning;
+            if (VHVRConfig.ToggleRun())
+            {
+                handleRunToggle(ref run);
+            }
+            else
+            {
+                run = ZInput_GetJoyRightStickY_Patch.isRunning;
+            }
+        }
+
+        private static void handleRunToggle(ref bool run)
+        {
+            bool runIsTriggered = ZInput_GetJoyRightStickY_Patch.isRunning && !lastUpdateRunInput;
+            bool crouchApplied = ZInput_GetJoyRightStickY_Patch.isCrouching;
+            if (crouchApplied || !VRPlayer.isMoving)
+            {
+                // If the player presses crouch or stops moving, then always stop running.
+                runToggledOn = false;
+            }
+            else if (runIsTriggered)
+            {
+                // If the player applies sprint input this update, toggle the sprint.
+                runToggledOn = !runToggledOn;
+            }
+            run = runToggledOn;
+            lastUpdateRunInput = ZInput_GetJoyRightStickY_Patch.isRunning;
         }
     }
 
@@ -248,6 +282,7 @@ namespace ValheimVRMod.Patches {
         static void handleControllerOnlySneak(Player player, ref bool crouch, bool isCrouchToggled)
         {
             bool crouchToggleTriggered = ZInput_GetJoyRightStickY_Patch.isCrouching && !lastUpdateCrouchInput;
+            bool standupTriggered = ZInput_GetJoyRightStickY_Patch.isRunning;
             if (crouchToggleTriggered)
             {
                 crouch = true;
@@ -260,6 +295,14 @@ namespace ValheimVRMod.Patches {
                 {
                     // Player is about to be toggled to crouch position;
                     _isJoystickSneaking = true;
+                }
+            } else if (standupTriggered)
+            {
+                if (isCrouchToggled) {
+                    // The standup input was applied and crouch is currently triggered on,
+                    // so trigger the toggle to make it turn off
+                    crouch = true;
+                    _isJoystickSneaking = false;
                 }
             }
             // Save for next update
