@@ -21,9 +21,10 @@ namespace ValheimVRMod.VRCore.UI
         private static readonly float RECENTER_POSE_TOLERANCE = 0.2f; // Magnitude
         // number of updates to skip before allowing a "rotation" update to occur
         // when using the alt piece rotation mode (ie, context scroll is not bound).
-        private static readonly int ALT_PIECE_ROTATION_RESISTOR = 5;
+        private static readonly float ALT_PIECE_ROTATION_TIME_DELAY = 0.250f;
 
-        private int currentRotationUpdateFrame = 0;
+        private float altPieceRotationElapsedTime = 0f;
+        private bool altPieceTriggered = false;
 
         private HashSet<string> ignoredZInputs = new HashSet<string>();
         private SteamVR_ActionSet mainActionSet = SteamVR_Actions.Valheim;
@@ -87,6 +88,21 @@ namespace ValheimVRMod.VRCore.UI
 
             checkQuickItems<QuickSwitch>(StaticObjects.quickSwitch, SteamVR_Actions.valheim_QuickSwitch, true);
             checkQuickItems<QuickActions>(StaticObjects.quickActions, SteamVR_Actions.valheim_QuickActions, false);
+        }
+
+        public void FixedUpdate()
+        {
+            updateAltPieceRotataionTimer();
+        }
+
+        private void updateAltPieceRotataionTimer()
+        {
+            altPieceRotationElapsedTime += Time.deltaTime;
+            if (altPieceRotationElapsedTime >= ALT_PIECE_ROTATION_TIME_DELAY * VHVRConfig.AltPieceRotationDelay())
+            {
+                altPieceTriggered = true;
+                altPieceRotationElapsedTime = 0f;
+            }
         }
         
         private void checkQuickItems<T>(GameObject obj, SteamVR_Action_Boolean action, bool useRightClick) where T : QuickAbstract {
@@ -339,17 +355,12 @@ namespace ValheimVRMod.VRCore.UI
 
         private int getAltPieceRotation()
         {
-            float rightStickXAxis = pitchAndYaw.axis.x;
-            currentRotationUpdateFrame += 1;
-            if (currentRotationUpdateFrame == ALT_PIECE_ROTATION_RESISTOR + 1)
-            {
-                currentRotationUpdateFrame = 0;
-            }
-            // Only allow a rotation every ALT_PIECE_ROTATION_RESISTOR updates
-            if (currentRotationUpdateFrame != ALT_PIECE_ROTATION_RESISTOR)
+            if (!altPieceTriggered)
             {
                 return 0;
             }
+            altPieceTriggered = false;
+            float rightStickXAxis = pitchAndYaw.axis.x;
             if (rightStickXAxis > 0.1f)
             {
                 return -1;
@@ -375,8 +386,8 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return false;
             }
-            var fieldRef = AccessTools.FieldRefAccess<Player, GameObject>(Player.m_localPlayer, "m_placementGhost");
-            return fieldRef != null && fieldRef.activeSelf;
+            var ghost = Player.m_localPlayer.m_placementGhost;
+            return ghost != null && ghost.activeSelf;
         }
 
         private bool hasHoverObject()
@@ -385,8 +396,7 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return false;
             }
-            var fieldRef = AccessTools.FieldRefAccess<Player, GameObject>(Player.m_localPlayer, "m_hovering");
-            return fieldRef != null;
+            return Player.m_localPlayer.m_hovering != null;
         }
 
         // Used to determine when the player is in a mode where the right joystick should

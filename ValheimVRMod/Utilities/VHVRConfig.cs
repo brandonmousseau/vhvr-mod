@@ -69,10 +69,16 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> snapTurnAngle;
         private static ConfigEntry<bool> smoothSnapTurn;
         private static ConfigEntry<float> smoothSnapSpeed;
+        private static ConfigEntry<bool> roomScaleSneaking;
+        private static ConfigEntry<float> roomScaleSneakHeight;
         private static ConfigEntry<bool> weaponNeedsSpeed;
+        private static ConfigEntry<float> altPieceRotationDelay;
+        private static ConfigEntry<bool> runIsToggled;
 
         // Graphics Settings
         private static ConfigEntry<bool> useAmplifyOcclusion;
+        private static ConfigEntry<float> taaSharpenAmmount;
+        private static ConfigEntry<float> nearClipPlane;
 
         public static void InitializeConfiguration(ConfigFile config)
         {
@@ -302,6 +308,16 @@ namespace ValheimVRMod.Utilities
                                           "SmoothSnapSpeed",
                                           10f,
                                           "This will affect the speed that the smooth snap turns occur at.");
+            roomScaleSneaking = config.Bind("Controls",
+                                          "RoomScaleSneaking",
+                                          false,
+                                          "Enable RoomScale Sneaking.");
+            roomScaleSneakHeight = config.Bind("Controls",
+                                          "RoomScaleSneakHeight",
+                                          0.7f,
+                                          new ConfigDescription("This will affect the eye height that the roomscale sneak occur at.  (e.g. 0.7 means if your headset lower than 70% of your height, it will do sneak)  " +
+                                           "Valid values are  0.0 - 0.95.",
+                                           new AcceptableValueRange<float>(0f, 0.95f)));
             preferredHand = config.Bind("Controls",
                                         "PreferredHand",
                                         "Right",
@@ -312,6 +328,15 @@ namespace ValheimVRMod.Utilities
                 "SwingWeapons",
                 true,
                 "Defines if Swinging a Weapon needs certain speed. if set to false, single touch will already trigger hit");
+            altPieceRotationDelay = config.Bind("Controls",
+                                                "AltPieceRotationDelay",
+                                                1f,
+                                                new ConfigDescription("Affects speed of piece rotation when using 'Grab' + 'Joystick' method of rotating build objects. Legal values 0.1 - 3. Higher is longer delay.",
+                                                new AcceptableValueRange<float>(0.1f, 3f)));
+            runIsToggled = config.Bind("Controls",
+                                       "RunIsToggled",
+                                       true,
+                                       "Determine whether or not you need to hold run or it is a toggle. Keep it as toggle (true) to have your thumb free when sprinting.");
             InitializeConfigurableKeyBindings(config);
         }
 
@@ -357,6 +382,16 @@ namespace ValheimVRMod.Utilities
                                               " cost. While you can enable SSAO and UseAmplifyOcclusion simultaneously, it is" +
                                               " not recommended. SSAO impacts performance significantly, which is bad for VR especially. Therefore" +
                                               " you should disable SSAO in the graphics settings of the game when using this.");
+            taaSharpenAmmount = config.Bind("Graphics",
+                                              "TAASharpenAmmount",
+                                              -1.0f,
+                                              "Ammount of Sharpen applied after the TAA filter, values should be in the range [0.0,3.0]." +
+                                              " Values outside this range will be ignored and the default game settings will be used instead.");
+            nearClipPlane = config.Bind("Graphics",
+                                        "NearClipPlane",
+                                        .05f,
+                                        "This can be used to adjust the distance where where anything inside will be clipped out and not rendered. You can try adjusting this if you experience" +
+                                        " problems where you see the nose of the player character for example.");
         }
 
         public static bool ModEnabled()
@@ -441,6 +476,11 @@ namespace ValheimVRMod.Utilities
         public static bool UseAmplifyOcclusion()
         {
             return useAmplifyOcclusion.Value;
+        }
+
+        public static float GetTaaSharpenAmmount()
+        {
+            return taaSharpenAmmount.Value;
         }
 
         public static Vector3 GetFirstPersonHeadOffset()
@@ -579,7 +619,7 @@ namespace ValheimVRMod.Utilities
 
         public static bool UseVrControls()
         {
-            return useVrControls.Value;
+            return useVrControls.Value && ! nonVrPlayer.Value;
         }
 
         public static bool UseArrowPredictionGraphic()
@@ -644,5 +684,27 @@ namespace ValheimVRMod.Utilities
             return weaponNeedsSpeed.Value;
         }
 
+        public static bool RoomScaleSneakEnabled() {
+            return roomScaleSneaking.Value;
+        }
+
+        public static float RoomScaleSneakHeight() {
+            return roomScaleSneakHeight.Value;
+        }
+
+        public static float GetNearClipPlane()
+        {
+            return nearClipPlane.Value;
+        }
+
+        public static float AltPieceRotationDelay()
+        {
+            return altPieceRotationDelay.Value;
+        }
+
+        public static bool ToggleRun()
+        {
+            return runIsToggled.Value;
+        }
     }
 }

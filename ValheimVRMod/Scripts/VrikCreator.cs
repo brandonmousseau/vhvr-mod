@@ -45,16 +45,15 @@ namespace ValheimVRMod.Scripts {
             return vrik;
         }
         
-        public static void resetVrikHandTransform(VRIK vrik = null) {
-
-            if (vrik == null) {
-                vrik = Player.m_localPlayer.gameObject.GetComponent<VRIK>();   
-            }
+        public static void resetVrikHandTransform(Humanoid player) {
+            
+            VRIK vrik = player.GetComponent<VRIK>();   
+            
             if (vrik == null) {
                 return;
             }
             
-            if (Player.m_localPlayer.GetLeftItem() != null) {
+            if (player.GetComponent<VRPlayerSync>()?.currentLeftWeapon != null) {
                 vrik.solver.leftArm.target.localPosition = leftEquippedPosition;
                 vrik.solver.leftArm.target.localRotation = leftEquippedRotation;
                 vrik.solver.leftArm.palmToThumbAxis = leftEquippedEllbow;
@@ -66,7 +65,7 @@ namespace ValheimVRMod.Scripts {
                 vrik.solver.leftArm.palmToThumbAxis = leftUnequippedEllbow;
             }
             
-            if (Player.m_localPlayer.GetRightItem() != null) {
+            if (player.GetComponent<VRPlayerSync>()?.currentRightWeapon != null) {
                 vrik.solver.rightArm.target.localPosition = rightEquippedPosition;
                 vrik.solver.rightArm.target.localRotation = rightEquippedRotation;
                 vrik.solver.rightArm.palmToThumbAxis = rightEquippedEllbow;

@@ -244,8 +244,7 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return null;
             }
-            var fieldRef = AccessTools.FieldRefAccess<Player, Piece>(Player.m_localPlayer, "m_hoveringPiece");
-            return fieldRef;
+            return Player.m_localPlayer.m_hoveringPiece;
         }
 
         private float calculateCrosshairDistance()

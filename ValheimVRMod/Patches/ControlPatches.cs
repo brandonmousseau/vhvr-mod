@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using ValheimVRMod.VRCore;
 using ValheimVRMod.VRCore.UI;
 using HarmonyLib;
 using System.Reflection;
@@ -93,6 +94,11 @@ namespace ValheimVRMod.Patches {
 
     [HarmonyPatch(typeof(ZInput), nameof(ZInput.GetJoyRightStickY))]
     class ZInput_GetJoyRightStickY_Patch {
+
+        private const float NON_TOGGLE_RUN_SENSITIVITY = -0.3f;
+        private const float TOGGLE_RUN_SENSITIVITY = -0.8f;
+        private const float CROUCH_SENSITIVITY = 0.7f;
+
         public static bool isCrouching;
         public static bool isRunning;
 
@@ -100,8 +106,8 @@ namespace ValheimVRMod.Patches {
             if (VRControls.mainControlsActive) {
                 var joystick = VRControls.instance.GetJoyRightStickY();
 
-                isRunning = joystick < -0.3f;
-                isCrouching = joystick > 0.7f;
+                isRunning = joystick < (VHVRConfig.ToggleRun() ? TOGGLE_RUN_SENSITIVITY : NON_TOGGLE_RUN_SENSITIVITY);
+                isCrouching = joystick > CROUCH_SENSITIVITY;
 
                 __result = __result + joystick;
             }
@@ -169,26 +175,149 @@ namespace ValheimVRMod.Patches {
         }
     }
 
-    [HarmonyPatch(typeof(Player), "SetControls")]
-    class PlayerSetControlsPatch {
+    [HarmonyPatch(typeof(Player), nameof(Player.SetControls))]
+    class Player_SetControls_RunPatch
+    {
 
-        static bool wasCrouching;
-        
-        static void Prefix(Player __instance, ref bool attack, ref bool attackHold, ref bool block, ref bool blockHold,
-            ref bool secondaryAttack, ref bool crouch, ref bool run) {
-            if (!VRControls.mainControlsActive || __instance != Player.m_localPlayer) {
+        private static bool lastUpdateRunInput = false;
+        private static bool runToggledOn = false;
+
+        static void Prefix(Player __instance, ref bool run)
+        {
+            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls())
+            {
                 return;
             }
+            if (VHVRConfig.ToggleRun())
+            {
+                handleRunToggle(ref run);
+            }
+            else
+            {
+                run = ZInput_GetJoyRightStickY_Patch.isRunning;
+            }
+        }
 
-            run = ZInput_GetJoyRightStickY_Patch.isRunning;
-            
-            if (ZInput_GetJoyRightStickY_Patch.isCrouching) {
-                if (!wasCrouching) {
+        private static void handleRunToggle(ref bool run)
+        {
+            bool runIsTriggered = ZInput_GetJoyRightStickY_Patch.isRunning && !lastUpdateRunInput;
+            bool crouchApplied = ZInput_GetJoyRightStickY_Patch.isCrouching;
+            if (crouchApplied || !VRPlayer.isMoving)
+            {
+                // If the player presses crouch or stops moving, then always stop running.
+                runToggledOn = false;
+            }
+            else if (runIsTriggered)
+            {
+                // If the player applies sprint input this update, toggle the sprint.
+                runToggledOn = !runToggledOn;
+            }
+            run = runToggledOn;
+            lastUpdateRunInput = ZInput_GetJoyRightStickY_Patch.isRunning;
+        }
+    }
+
+    [HarmonyPatch(typeof(Player), nameof(Player.SetControls))]
+    public class Player_SetControls_SneakPatch
+    {
+
+        public static bool isJoystickSneaking { get { return _isJoystickSneaking; } }
+        private static bool _isJoystickSneaking = false;
+
+        // Used for joystick crouch to make sure the player
+        // returns the joystick out of "crouch" position to reset
+        // it so it doesn't toggle continuously while held down
+        private static bool lastUpdateCrouchInput = false;
+
+        // bool crouch is a toggle
+        static void Prefix(Player __instance, ref bool crouch)
+        {
+            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls())
+            {
+                return;
+            }
+            // Indicates whether the crouch is toggled on or not
+            //bool isCrouchToggled = AccessTools.FieldRefAccess<Player, bool>(__instance, "m_crouchToggled");
+            bool isCrouchToggled = __instance.m_crouchToggled;
+            if (VHVRConfig.RoomScaleSneakEnabled())
+            {
+                handleRoomscaleSneak(__instance, ref crouch, isCrouchToggled);
+            }
+            else
+            {
+                handleControllerOnlySneak(__instance, ref crouch, isCrouchToggled);
+            }
+        }
+
+        static void handleRoomscaleSneak(Player player, ref bool crouch, bool isCrouchToggled)
+        {
+            if (VRPlayer.isRoomscaleSneaking)
+            {
+                // First check if player is crouching in real life and
+                // use that as highest priority input.
+                if (!isCrouchToggled)
+                {
                     crouch = true;
-                    wasCrouching = true;
                 }
-            } else if (wasCrouching) {
-                wasCrouching = false;
+                _isJoystickSneaking = false;
+                lastUpdateCrouchInput = false;
+                // Return immediately since we want to treat
+                // physical crouching as higher priority
+                return;
+            } else if (isCrouchToggled && !_isJoystickSneaking)
+            {
+                // Player is not crouching physically, but game character is
+                // in crouch mode, so toggle it off
+                lastUpdateCrouchInput = false;
+                _isJoystickSneaking = false;
+                crouch = true;
+            } else
+            {
+                // Don't do any toggling.
+                crouch = false;
+            }
+            // Player is physically standing, but may still want to crouch using joystick
+            handleControllerOnlySneak(player, ref crouch, isCrouchToggled);
+        }
+
+        static void handleControllerOnlySneak(Player player, ref bool crouch, bool isCrouchToggled)
+        {
+            bool crouchToggleTriggered = ZInput_GetJoyRightStickY_Patch.isCrouching && !lastUpdateCrouchInput;
+            bool standupTriggered = ZInput_GetJoyRightStickY_Patch.isRunning;
+            if (crouchToggleTriggered)
+            {
+                crouch = true;
+                if (isCrouchToggled)
+                {
+                    // Player is currently crouching, but we just set the crouch trigger to "true"
+                    // which means the player will about to be not crouching anymore.
+                    _isJoystickSneaking = false;
+                } else
+                {
+                    // Player is about to be toggled to crouch position;
+                    _isJoystickSneaking = true;
+                }
+            } else if (standupTriggered)
+            {
+                if (isCrouchToggled) {
+                    // The standup input was applied and crouch is currently triggered on,
+                    // so trigger the toggle to make it turn off
+                    crouch = true;
+                    _isJoystickSneaking = false;
+                }
+            }
+            // Save for next update
+            lastUpdateCrouchInput = ZInput_GetJoyRightStickY_Patch.isCrouching;
+        }
+    }
+
+    [HarmonyPatch(typeof(Player), nameof(Player.SetControls))]
+    class Player_SetControls_EquipPatch {
+      
+        static void Prefix(Player __instance, ref bool attack, ref bool attackHold, ref bool block, ref bool blockHold,
+            ref bool secondaryAttack) {
+            if (!VHVRConfig.UseVrControls() || __instance != Player.m_localPlayer) {
+                return;
             }
 
             if (EquipScript.getLeft() == EquipType.Bow) {
