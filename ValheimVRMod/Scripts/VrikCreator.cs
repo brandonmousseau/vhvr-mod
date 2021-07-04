@@ -19,11 +19,11 @@ namespace ValheimVRMod.Scripts {
         private static readonly Vector3 rightEquippedPosition = new Vector3(0.02f, 0.09f, -0.1f);
         private static readonly Quaternion rightEquippedRotation = Quaternion.Euler(0, -90, -170);
         private static readonly Vector3 rightEquippedEllbow = new Vector3(-1, -3f, 0);
-        
+
         // spear right Hand
-        private static readonly Vector3 rightspearPosition = new Vector3(0.02f, -0.02f, -0.17f);
-        private static readonly Quaternion rightSpearRotation = Quaternion.Euler(0, -90, 270);
-        private static readonly Vector3 rightSpearEllbow = new Vector3(-1, 0, 0);
+        private static readonly Vector3 rightspearPosition = new Vector3(0.02f, 0.06f, -0.15f);
+        private static readonly Quaternion rightSpearRotation = Quaternion.Euler(0, -90, -140);
+        private static readonly Vector3 rightSpearEllbow = new Vector3(-1, -3f, 0);
 
         public static VRIK initialize(GameObject target, Transform leftController, Transform rightController, Transform camera) {
             VRIK vrik = target.AddComponent<VRIK>();
