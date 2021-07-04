@@ -183,6 +183,7 @@ namespace ValheimVRMod.VRCore
 
         public float _currentForwardSpeed = 0.0f;
         public float _currentSideSpeed = 0.0f;
+        private bool _motionFading = false;
         public const float ROOMSCALE_DECAY_FACTOR = 0.5f;
         private void FixedUpdate() 
         {
@@ -190,11 +191,11 @@ namespace ValheimVRMod.VRCore
             {
                 var player = getPlayerCharacter();
                 Vector3 deltaPosition = _vrCam.transform.localPosition - _lastCamPosition;
-                _lastCamPosition = _vrCam.transform.localPosition;
                 deltaPosition.y = 0;
-                bool shouldMove = deltaPosition.magnitude > 0.001f;
+                bool shouldMove = deltaPosition.magnitude > 0.005f;
                 if(shouldMove)
                 {
+                    _lastCamPosition = _vrCam.transform.localPosition;
                     Vector3 globalDeltaPosition = _instance.transform.TransformVector(deltaPosition);
                     globalDeltaPosition.y = 0;
                     player.m_body.MovePosition(player.m_body.position + globalDeltaPosition);
