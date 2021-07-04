@@ -50,24 +50,24 @@ namespace ValheimVRMod.Scripts {
             }
 
             if (isThrowingStance) {
-                transform.position = VRPlayer.rightHand.transform.position;
-                transform.LookAt(VRPlayer.rightHand.transform.position + Player.m_localPlayer.transform.TransformDirection(Player.m_localPlayer.transform.InverseTransformPoint(VRPlayer.rightHand.transform.position) - startAim).normalized);
-                if (EquipScript.getRight() == EquipType.SpearChitin) {
-                    transform.rotation = transform.rotation * Quaternion.AngleAxis(90, Vector3.right);
-                }
+                var inversePosition = Player.m_localPlayer.transform.TransformDirection(Player.m_localPlayer.transform.InverseTransformPoint(VRPlayer.rightHand.transform.position) - startAim).normalized;
+                var offsetPos = Vector3.Distance(VRPlayer.rightHand.transform.position, rotSave.transform.position);
+                transform.position = VRPlayer.rightHand.transform.position - Vector3.ClampMagnitude(inversePosition, offsetPos);
+                transform.LookAt(VRPlayer.rightHand.transform.position + inversePosition);
+                transform.localRotation = transform.localRotation * (rotSave.transform.localRotation) * Quaternion.AngleAxis(180, Vector3.right);
             }
 
-            if (!SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.RightHand)) {
-                return;
-            }
+                    if (!SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.RightHand)) {
+                        return;
+                    }
 
-            if (snapshots.Count < MIN_SNAPSHOTSCHECK) {
-                return;
-            }
+                    if (snapshots.Count < MIN_SNAPSHOTSCHECK) {
+                        return;
+                    }
 
-            if (isThrowing) {
-                ResetSpearOffset();
-                startAim = Vector3.zero;
+                    if (isThrowing) {
+                        ResetSpearOffset();
+                        startAim = Vector3.zero;
                 return;
             }
 
