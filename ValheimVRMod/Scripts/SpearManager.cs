@@ -2,7 +2,7 @@
 using UnityEngine;
 using Valve.VR;
 using ValheimVRMod.VRCore;
-
+using UnityEngine.Rendering;
 using ValheimVRMod.Utilities;
 
 namespace ValheimVRMod.Scripts {
@@ -26,6 +26,9 @@ namespace ValheimVRMod.Scripts {
         public static bool isThrowing;
         private GameObject rotSave;
         private static bool isThrowingStance;
+        private LineRenderer directionLine;
+        private float directionCooldown;
+        private float totalCooldown = 2;
 
         private void Awake() {
             fixedSpear = new GameObject();
@@ -33,11 +36,22 @@ namespace ValheimVRMod.Scripts {
             rotSave.transform.SetParent(transform.parent);
             rotSave.transform.position = transform.position;
             rotSave.transform.localRotation = transform.localRotation;
+
+            directionLine = new GameObject().AddComponent<LineRenderer>();
+            directionLine.widthMultiplier = 0.03f;
+            directionLine.positionCount = 2;
+            directionLine.material.color = Color.white;
+            directionLine.enabled = false;
+            directionLine.receiveShadows = false;
+            directionLine.shadowCastingMode = ShadowCastingMode.Off;
+            directionLine.lightProbeUsage = LightProbeUsage.Off;
+            directionLine.reflectionProbeUsage = ReflectionProbeUsage.Off;
         }
 
         private void OnDestroy() {
             Destroy(fixedSpear);
             Destroy(rotSave);
+            Destroy(directionLine,directionCooldown);
         }
 
         private void OnRenderObject() {
@@ -55,6 +69,7 @@ namespace ValheimVRMod.Scripts {
                 transform.position = VRPlayer.rightHand.transform.position - Vector3.ClampMagnitude(inversePosition, offsetPos);
                 transform.LookAt(VRPlayer.rightHand.transform.position + inversePosition);
                 transform.localRotation = transform.localRotation * (rotSave.transform.localRotation) * Quaternion.AngleAxis(180, Vector3.right);
+                UpdateDirectionLine(inversePosition);
             }
 
                     if (!SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.RightHand)) {
@@ -118,8 +133,19 @@ namespace ValheimVRMod.Scripts {
             if (snapshots.Count > MAX_SNAPSHOTS) {
                 snapshots.RemoveAt(0);
             }
-
+            
             tickCounter = 0;
+            if (!VHVRConfig.UseSpearDirectionGraphic()) {
+                return;
+            }
+
+            if (directionCooldown <= 0) {
+                directionCooldown = 0;
+                directionLine.enabled = false;
+            }
+            else if (!isThrowingStance) {
+                directionCooldown -= Time.deltaTime*5;
+            }
         }
 
         private void ResetSpearOffset()
@@ -127,6 +153,15 @@ namespace ValheimVRMod.Scripts {
             transform.position = rotSave.transform.position;
             transform.localRotation = rotSave.transform.localRotation;
             isThrowingStance = false;
+        }
+        private void UpdateDirectionLine(Vector3 inversePosition)
+        {
+            List<Vector3> pointList = new List<Vector3>();
+            pointList.Add(VRPlayer.rightHand.transform.position - inversePosition);
+            pointList.Add(VRPlayer.rightHand.transform.position + inversePosition.normalized * 50);
+            directionLine.SetPositions(pointList.ToArray());
+            directionLine.enabled = VHVRConfig.UseSpearDirectionGraphic();
+            directionCooldown = totalCooldown;
         }
     }
 }

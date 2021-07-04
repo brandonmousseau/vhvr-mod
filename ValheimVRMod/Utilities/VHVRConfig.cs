@@ -42,6 +42,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> mobileGuiRecenterAngle;
         private static ConfigEntry<bool> recenterGuiOnMove;
         private static ConfigEntry<bool> useArrowPredictionGraphic;
+        private static ConfigEntry<bool> useSpearDirectionGraphic;
         private static ConfigEntry<float> DebugPosX;
         private static ConfigEntry<float> DebugPosY;
         private static ConfigEntry<float> DebugPosZ;
@@ -232,6 +233,10 @@ namespace ValheimVRMod.Utilities
                                                      "UseArrowPredictionGraphic",
                                                      true,
                                                      "Use this to toggle the path predictor when using the bow and arrow with VR controls.");
+            useSpearDirectionGraphic = config.Bind("UI",
+                                                     "useSpearDirectionGraphic",
+                                                     true,
+                                                     "Use this to toggle the direction line of throwing when using the spear with VR controls.");
             DebugPosX = config.Bind("UI",
                 "DebugPosX",
                 0.0f,
@@ -625,6 +630,10 @@ namespace ValheimVRMod.Utilities
         public static bool UseArrowPredictionGraphic()
         {
             return useArrowPredictionGraphic.Value;
+        }
+        public static bool UseSpearDirectionGraphic()
+        {
+            return useSpearDirectionGraphic.Value;
         }
 
         public static bool NonVrPlayer()
