@@ -60,11 +60,13 @@ namespace ValheimVRMod.VRCore
 
         private static GameObject _prefab;
         private static GameObject _instance;
+        private static VRPlayer _vrPlayerInstance;
         private static HeadZoomLevel _headZoomLevel = HeadZoomLevel.FirstPerson;
 
         private Camera _vrCam;
         private Camera _handsCam;
         private Camera _skyboxCam;
+        private Transform _vrCameraRig;
         private Vector3 _lastCamPosition;
 
         private static Hand _leftHand;
@@ -127,6 +129,7 @@ namespace ValheimVRMod.VRCore
         }
 
         public static GameObject instance { get { return _instance; } }
+        public static VRPlayer vrPlayerInstance => _vrPlayerInstance;
         public static bool attachedToPlayer = false;
 
         private static float FIRST_PERSON_HEIGHT_OFFSET = 0.0f;
@@ -150,6 +153,7 @@ namespace ValheimVRMod.VRCore
 
         void Awake()
         {
+            _vrPlayerInstance = this;
             _prefab = VRAssetManager.GetAsset<GameObject>(PLAYER_PREFAB_NAME);
             _preferredHand = VHVRConfig.GetPreferredHand();
             headPositionInitialized = false;
@@ -178,12 +182,10 @@ namespace ValheimVRMod.VRCore
 
         private void FixedUpdate() 
         {
-            if(shouldAttachToPlayerCharacter() && 
-                _headZoomLevel == HeadZoomLevel.FirstPerson)
+            if(inFirstPerson)
             {
                 var player = getPlayerCharacter();
                 Rigidbody playerBody = player.GetComponent<Rigidbody>();
-                Transform vrCameraRig = _vrCam.transform.parent;
                 Vector3 deltaPosition = _vrCam.transform.localPosition - _lastCamPosition;
                 _lastCamPosition = _vrCam.transform.localPosition;
                 deltaPosition.y = 0;
@@ -192,7 +194,7 @@ namespace ValheimVRMod.VRCore
                     Vector3 globalDeltaPosition = _instance.transform.TransformVector(deltaPosition);
                     globalDeltaPosition.y = 0;
                     playerBody.MovePosition(playerBody.position + globalDeltaPosition);
-                    vrCameraRig.localPosition -= deltaPosition;
+                    _vrCameraRig.localPosition -= deltaPosition;
                 }
             }
         }
@@ -441,6 +443,7 @@ namespace ValheimVRMod.VRCore
             _instance.SetActive(true);
             vrCam.enabled = true;
             _vrCam = vrCam;
+            _vrCameraRig = vrCam.transform.parent;
         }
 
         private void enableHandsCamera()
@@ -949,6 +952,16 @@ namespace ValheimVRMod.VRCore
             }
             else {
                 _isRoomscaleSneaking = false;
+            }
+        }
+
+        public void ResetRoomscaleCamera()
+        {
+            if(_vrCameraRig != null)
+            {
+                Vector3 vrCamPosition = vrPlayerInstance._vrCam.transform.localPosition;
+                vrCamPosition.y = 0;
+                vrPlayerInstance._vrCameraRig.localPosition = -vrCamPosition;
             }
         }
 
