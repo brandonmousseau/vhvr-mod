@@ -14,6 +14,7 @@ using ValheimVRMod.VRCore.UI;
 using Valve.VR;
 using Valve.VR.Extras;
 using Valve.VR.InteractionSystem;
+using HarmonyLib;
 
 /**
  * VRPlayer manages instantiating the SteamVR Player
@@ -180,22 +181,28 @@ namespace ValheimVRMod.VRCore
             
         }
 
+        public float _currentForwardSpeed = 0.0f;
+        public float _currentSideSpeed = 0.0f;
+        public const float ROOMSCALE_DECAY_FACTOR = 0.5f;
         private void FixedUpdate() 
         {
             if(inFirstPerson)
             {
                 var player = getPlayerCharacter();
-                Rigidbody playerBody = player.GetComponent<Rigidbody>();
                 Vector3 deltaPosition = _vrCam.transform.localPosition - _lastCamPosition;
                 _lastCamPosition = _vrCam.transform.localPosition;
                 deltaPosition.y = 0;
-                if(deltaPosition.magnitude > Vector3.kEpsilon)
+                bool shouldMove = deltaPosition.magnitude > 0.001f;
+                if(shouldMove)
                 {
                     Vector3 globalDeltaPosition = _instance.transform.TransformVector(deltaPosition);
                     globalDeltaPosition.y = 0;
-                    playerBody.MovePosition(playerBody.position + globalDeltaPosition);
+                    player.m_body.MovePosition(player.m_body.position + globalDeltaPosition);
                     _vrCameraRig.localPosition -= deltaPosition;
                 }
+
+                _currentForwardSpeed = shouldMove ? Mathf.Lerp(_currentForwardSpeed, deltaPosition.z / Time.fixedDeltaTime, ROOMSCALE_DECAY_FACTOR) : Mathf.Lerp(_currentForwardSpeed, 0, ROOMSCALE_DECAY_FACTOR / 10);
+                _currentSideSpeed  = shouldMove ? Mathf.Lerp(_currentSideSpeed, deltaPosition.x / Time.fixedDeltaTime, ROOMSCALE_DECAY_FACTOR) : Mathf.Lerp(_currentSideSpeed, 0, ROOMSCALE_DECAY_FACTOR / 10);
             }
         }
 
@@ -574,7 +581,8 @@ namespace ValheimVRMod.VRCore
                 SceneManager.GetActiveScene().name != START_SCENE &&
                 ensurePlayerInstance() &&
                 !getPlayerCharacter().InCutscene() &&
-                !getPlayerCharacter().IsDead();
+                !getPlayerCharacter().IsDead() &&
+                !getPlayerCharacter().InBed();
         }
 
         private void attachVrPlayerToPlayerCharacter()
