@@ -2,7 +2,7 @@ using System.Linq;
 using RootMotion.FinalIK;
 using UnityEngine;
 using ValheimVRMod.Utilities;
-
+using ValheimVRMod.VRCore;
 using static ValheimVRMod.Utilities.LogUtils;
 
 namespace ValheimVRMod.Scripts {
@@ -12,9 +12,9 @@ namespace ValheimVRMod.Scripts {
         
         static readonly float MIN_CHANGE = 0.001f;
         
-        public GameObject camera = new GameObject();
-        public GameObject rightHand = new GameObject();
-        public GameObject leftHand = new GameObject();
+        private GameObject camera = new GameObject();
+        private GameObject rightHand = new GameObject();
+        private GameObject leftHand = new GameObject();
 
         private Vector3 ownerLastPositionCamera = Vector3.zero;
         private Vector3 ownerVelocityCamera = Vector3.zero;
@@ -49,6 +49,9 @@ namespace ValheimVRMod.Scripts {
         {
             if (isOwner())
             {
+                camera =  CameraUtils.getCamera(CameraUtils.VR_CAMERA).gameObject;
+                leftHand = VRPlayer.leftHand.gameObject;
+                rightHand = VRPlayer.rightHand.gameObject;
                 updateOwnerLastPositions();
             }
         }
@@ -110,12 +113,17 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
+            var vrik = GetComponent<VRIK>();
+            if (vrik == null) {
+                return;
+            }
+
             ZPackage pkg = new ZPackage();
             writeData(pkg, camera, ownerVelocityCamera);
             writeData(pkg, leftHand, ownerVelocityLeft);
             writeData(pkg, rightHand, ownerVelocityRight);
-            writeFingers(pkg, GetComponent<VRIK>().references.leftHand);
-            writeFingers(pkg, GetComponent<VRIK>().references.rightHand);
+            writeFingers(pkg, vrik.references.leftHand);
+            writeFingers(pkg, vrik.references.rightHand);
             pkg.Write(BowLocalManager.instance != null && BowLocalManager.instance.pulling);
 
             GetComponent<ZNetView>().GetZDO().Set("vr_data", pkg.GetArray());
@@ -229,7 +237,6 @@ namespace ValheimVRMod.Scripts {
             }
             vrik = VrikCreator.initialize(gameObject, leftHand.transform,
                 rightHand.transform, camera.transform);
-            VrikCreator.resetVrikHandTransform(gameObject.GetComponent<Player>());
         }
 
         private bool isOwner()
