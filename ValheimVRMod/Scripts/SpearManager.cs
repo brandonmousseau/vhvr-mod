@@ -156,6 +156,9 @@ namespace ValheimVRMod.Scripts {
         }
         private void UpdateDirectionLine(Vector3 inversePosition)
         {
+            if (!VHVRConfig.UseSpearDirectionGraphic()) {
+                return;
+            }
             List<Vector3> pointList = new List<Vector3>();
             pointList.Add(VRPlayer.rightHand.transform.position - inversePosition);
             pointList.Add(VRPlayer.rightHand.transform.position + inversePosition.normalized * 50);
