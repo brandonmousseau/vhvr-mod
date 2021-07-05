@@ -22,6 +22,22 @@ namespace ValheimVRMod.Patches
     }
 
     /// <summary>
+    /// Detach player from ship momentarily if roomscale movement is detects
+    /// </summary>    
+    [HarmonyPatch(typeof(Character), "ApplyGroundForce")]
+    class Character_ApplyGroundForce_DetachIfRoomscaleMovement
+    {
+        private static void Prefix(Character __instance)
+        {
+            if(__instance == Player.m_localPlayer && VRPlayer.inFirstPerson && VRPlayer.roomscaleVelocity != Vector3.zero)
+            {
+                if(__instance.GetStandingOnShip())
+                    __instance.m_lastAttachBody = null;
+            }
+        }
+    }
+
+    /// <summary>
     /// Applies the roomscale velocity to the player rigidbody
     /// </summary>    
     [HarmonyPatch(typeof(Character), "SyncVelocity")]
