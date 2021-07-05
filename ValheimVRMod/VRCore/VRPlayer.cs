@@ -181,10 +181,11 @@ namespace ValheimVRMod.VRCore
             
         }
 
+        private float _forwardSmoothVel = 0.0f, _sideSmoothVel = 0.0f;
         public float _currentForwardSpeed = 0.0f;
         public float _currentSideSpeed = 0.0f;
-        private bool _motionFading = false;
-        public const float ROOMSCALE_DECAY_FACTOR = 0.5f;
+        public const float ROOMSCALE_STEP_ANIMATION_SMOOTHING = 0.3f;
+
         private void FixedUpdate() 
         {
             if(inFirstPerson)
@@ -196,14 +197,14 @@ namespace ValheimVRMod.VRCore
                 if(shouldMove)
                 {
                     _lastCamPosition = _vrCam.transform.localPosition;
-                    Vector3 globalDeltaPosition = _instance.transform.TransformVector(deltaPosition);
+                    var globalDeltaPosition = _instance.transform.TransformVector(deltaPosition);
                     globalDeltaPosition.y = 0;
                     player.m_body.MovePosition(player.m_body.position + globalDeltaPosition);
                     _vrCameraRig.localPosition -= deltaPosition;
                 }
 
-                _currentForwardSpeed = shouldMove ? Mathf.Lerp(_currentForwardSpeed, deltaPosition.z / Time.fixedDeltaTime, ROOMSCALE_DECAY_FACTOR) : Mathf.Lerp(_currentForwardSpeed, 0, ROOMSCALE_DECAY_FACTOR / 10);
-                _currentSideSpeed  = shouldMove ? Mathf.Lerp(_currentSideSpeed, deltaPosition.x / Time.fixedDeltaTime, ROOMSCALE_DECAY_FACTOR) : Mathf.Lerp(_currentSideSpeed, 0, ROOMSCALE_DECAY_FACTOR / 10);
+                _currentForwardSpeed =  Mathf.SmoothDamp(_currentForwardSpeed, shouldMove ? deltaPosition.z / Time.fixedDeltaTime : 0, ref _forwardSmoothVel, ROOMSCALE_STEP_ANIMATION_SMOOTHING, 99f);
+                _currentSideSpeed =  Mathf.SmoothDamp(_currentSideSpeed, shouldMove ? deltaPosition.x / Time.fixedDeltaTime : 0, ref _sideSmoothVel, ROOMSCALE_STEP_ANIMATION_SMOOTHING, 99f);
             }
         }
 
