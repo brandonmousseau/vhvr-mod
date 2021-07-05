@@ -89,6 +89,7 @@ namespace ValheimVRMod.Utilities
             InitializeUISettings(config);
             InitializeControlsSettings(config);
             InitializeGraphicsSettings(config);
+            InitializeSpearControlSetting(config);
         }
 
         private static void InitializeGeneralSettings(ConfigFile config)
@@ -235,10 +236,6 @@ namespace ValheimVRMod.Utilities
                                                      "UseArrowPredictionGraphic",
                                                      true,
                                                      "Use this to toggle the path predictor when using the bow and arrow with VR controls.");
-            useSpearDirectionGraphic = config.Bind("UI",
-                                                     "UseSpearDirectionGraphic",
-                                                     true,
-                                                     "Use this to toggle the direction line of throwing when using the spear with VR controls.");
             DebugPosX = config.Bind("UI",
                 "DebugPosX",
                 0.0f,
@@ -344,17 +341,6 @@ namespace ValheimVRMod.Utilities
                                        "RunIsToggled",
                                        true,
                                        "Determine whether or not you need to hold run or it is a toggle. Keep it as toggle (true) to have your thumb free when sprinting.");
-            spearThrowingType= config.Bind("General",
-                                     "SpearThrowingMode",
-                                     "DartType",
-                                     new ConfigDescription("Change the throwing mode."+
-                                     "DartType - Throw aim is based on first trigger pressed to release, and throwing power is based on how fast you swing. "+
-                                     "TwoStagedThrowing - Throw aim is based on first grab and then aim is locked after pressing trigger, throw by releasing trigger while swinging, throw speed based on how fast you swing.",
-                                     new AcceptableValueList<string>(new string[] { "DartType", "TwoStagedThrowing" })));
-            spearThrowSpeedDynamic= config.Bind("Controls",
-                                       "spearThrowSpeedDynamic",
-                                       true,
-                                       "Determine whether or not your throw power depends on swing speed, setting to false make the throw always on fixed speed.");
             InitializeConfigurableKeyBindings(config);
         }
 
@@ -412,6 +398,24 @@ namespace ValheimVRMod.Utilities
                                         " problems where you see the nose of the player character for example.");
         }
 
+        private static void InitializeSpearControlSetting(ConfigFile config)
+        {
+            spearThrowingType = config.Bind("Motion Control - Spear Throwing",
+                                            "SpearThrowingMode",
+                                            "DartType",
+                                            new ConfigDescription("Change the throwing mode." +
+                                            "DartType - Throw aim is based on first trigger pressed to release, and throwing power is based on how fast you swing. " +
+                                            "TwoStagedThrowing - Throw aim is based on first grab and then aim is locked after pressing trigger, throw by releasing trigger while swinging, throw speed based on how fast you swing.",
+                                            new AcceptableValueList<string>(new string[] { "DartType", "TwoStagedThrowing" })));
+            spearThrowSpeedDynamic = config.Bind("Motion Control - Spear Throwing",
+                                                "SpearThrowSpeedDynamic",
+                                                true,
+                                                "Determine whether or not your throw power depends on swing speed, setting to false make the throw always on fixed speed.");
+            useSpearDirectionGraphic = config.Bind("Motion Control - Spear Throwing",
+                                                    "UseSpearDirectionGraphic",
+                                                    true,
+                                                    "Use this to toggle the direction line of throwing when using the spear with VR controls.");
+        }
         public static bool ModEnabled()
         {
             return vrModEnabled.Value;
