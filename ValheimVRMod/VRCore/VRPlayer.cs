@@ -53,6 +53,7 @@ namespace ValheimVRMod.VRCore
         private static Vector3 THIRD_PERSON_3_OFFSET = new Vector3(0f, 3.2f, -4.4f);
         private static Vector3 THIRD_PERSON_CONFIG_OFFSET = Vector3.zero;
         private static float NECK_OFFSET = 0.2f;
+        public const float ROOMSCALE_STEP_ANIMATION_SMOOTHING = 0.3f;
         public static bool justUnsheathed = false;
 
         private static float referencePlayerHeight;
@@ -67,8 +68,15 @@ namespace ValheimVRMod.VRCore
         private Camera _vrCam;
         private Camera _handsCam;
         private Camera _skyboxCam;
+
+        //Roomscale movement variables
         private Transform _vrCameraRig;
         private Vector3 _lastCamPosition;
+        private float _forwardSmoothVel = 0.0f, _sideSmoothVel = 0.0f;
+        private static float _roomscaleAnimationForwardSpeed = 0.0f;
+        private static float _roomscaleAnimationSideSpeed = 0.0f;
+        public static float roomscaleAnimationForwardSpeed { get { return _roomscaleAnimationForwardSpeed;} }
+        public static float roomscaleAnimationSideSpeed { get { return _roomscaleAnimationSideSpeed;} }
 
         private static Hand _leftHand;
         private static SteamVR_LaserPointer _leftPointer;
@@ -181,30 +189,11 @@ namespace ValheimVRMod.VRCore
             
         }
 
-        private float _forwardSmoothVel = 0.0f, _sideSmoothVel = 0.0f;
-        public float _currentForwardSpeed = 0.0f;
-        public float _currentSideSpeed = 0.0f;
-        public const float ROOMSCALE_STEP_ANIMATION_SMOOTHING = 0.3f;
-
         private void FixedUpdate() 
         {
             if(inFirstPerson)
             {
-                var player = getPlayerCharacter();
-                Vector3 deltaPosition = _vrCam.transform.localPosition - _lastCamPosition;
-                deltaPosition.y = 0;
-                bool shouldMove = deltaPosition.magnitude > 0.005f;
-                if(shouldMove)
-                {
-                    _lastCamPosition = _vrCam.transform.localPosition;
-                    var globalDeltaPosition = _instance.transform.TransformVector(deltaPosition);
-                    globalDeltaPosition.y = 0;
-                    player.m_body.position += globalDeltaPosition;
-                    _vrCameraRig.localPosition -= deltaPosition;
-                }
-
-                _currentForwardSpeed =  Mathf.SmoothDamp(_currentForwardSpeed, shouldMove ? deltaPosition.z / Time.fixedDeltaTime : 0, ref _forwardSmoothVel, ROOMSCALE_STEP_ANIMATION_SMOOTHING, 99f);
-                _currentSideSpeed =  Mathf.SmoothDamp(_currentSideSpeed, shouldMove ? deltaPosition.x / Time.fixedDeltaTime : 0, ref _sideSmoothVel, ROOMSCALE_STEP_ANIMATION_SMOOTHING, 99f);
+                DoRoomScaleMovement();
             }
         }
 
@@ -975,13 +964,35 @@ namespace ValheimVRMod.VRCore
             }
         }
 
+        /// <summary>
+        /// Moves the physics player to the head position and cancels the movement of the VRCamera by moving the VRRig
+        /// </summary>
+        void DoRoomScaleMovement()
+        {
+            var player = getPlayerCharacter();
+            Vector3 deltaPosition = _vrCam.transform.localPosition - _lastCamPosition;
+            deltaPosition.y = 0;
+            bool shouldMove = deltaPosition.magnitude > 0.005f;
+            if(shouldMove)
+            {
+                _lastCamPosition = _vrCam.transform.localPosition;
+                var globalDeltaPosition = _instance.transform.TransformVector(deltaPosition);
+                globalDeltaPosition.y = 0;
+                player.m_body.position += globalDeltaPosition;
+                _vrCameraRig.localPosition -= deltaPosition;
+            }
+
+            _roomscaleAnimationForwardSpeed =  Mathf.SmoothDamp(_roomscaleAnimationForwardSpeed, shouldMove ? deltaPosition.z / Time.fixedDeltaTime : 0, ref _forwardSmoothVel, ROOMSCALE_STEP_ANIMATION_SMOOTHING, 99f);
+            _roomscaleAnimationSideSpeed =  Mathf.SmoothDamp(_roomscaleAnimationSideSpeed, shouldMove ? deltaPosition.x / Time.fixedDeltaTime : 0, ref _sideSmoothVel, ROOMSCALE_STEP_ANIMATION_SMOOTHING, 99f);
+        }
+
         public void ResetRoomscaleCamera()
         {
             if(_vrCameraRig != null)
             {
-                Vector3 vrCamPosition = vrPlayerInstance._vrCam.transform.localPosition;
+                Vector3 vrCamPosition = _vrCam.transform.localPosition;
                 vrCamPosition.y = 0;
-                vrPlayerInstance._vrCameraRig.localPosition = -vrCamPosition;
+                _vrCameraRig.localPosition = -vrCamPosition;
             }
         }
 

@@ -13,10 +13,10 @@ namespace ValheimVRMod.Patches
     {
         private static void Postfix(Character __instance)
         {
-            if(__instance == Player.m_localPlayer)
+            if(__instance == Player.m_localPlayer && VRPlayer.inFirstPerson)
             {
-                __instance.m_zanim.SetFloat(Player.forward_speed, __instance.m_animator.GetFloat(Player.forward_speed) + VRPlayer.vrPlayerInstance._currentForwardSpeed);
-                __instance.m_zanim.SetFloat(Player.sideway_speed, __instance.m_animator.GetFloat(Player.sideway_speed) + VRPlayer.vrPlayerInstance._currentSideSpeed);
+                __instance.m_zanim.SetFloat(Player.forward_speed, __instance.m_animator.GetFloat(Player.forward_speed) + VRPlayer.roomscaleAnimationForwardSpeed);
+                __instance.m_zanim.SetFloat(Player.sideway_speed, __instance.m_animator.GetFloat(Player.sideway_speed) + VRPlayer.roomscaleAnimationSideSpeed);
             }
         }
     }
