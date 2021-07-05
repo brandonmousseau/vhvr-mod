@@ -199,7 +199,7 @@ namespace ValheimVRMod.VRCore
                     _lastCamPosition = _vrCam.transform.localPosition;
                     var globalDeltaPosition = _instance.transform.TransformVector(deltaPosition);
                     globalDeltaPosition.y = 0;
-                    player.m_body.MovePosition(player.m_body.position + globalDeltaPosition);
+                    player.m_body.position += globalDeltaPosition;
                     _vrCameraRig.localPosition -= deltaPosition;
                 }
 
@@ -690,6 +690,14 @@ namespace ValheimVRMod.VRCore
             vrik.references.rightHand.gameObject.AddComponent<HandGesture>().sourceHand = rightHand;
             StaticObjects.leftFist().setColliderParent(vrik.references.leftHand, false);
             StaticObjects.rightFist().setColliderParent(vrik.references.rightHand, true);
+
+            //Avoid akward movements
+            vrik.solver.spine.maintainPelvisPosition = 0f;
+            vrik.solver.spine.pelvisPositionWeight = 0f;
+            vrik.solver.spine.pelvisRotationWeight = 0f;
+            vrik.solver.spine.bodyPosStiffness = 0f;
+            vrik.solver.spine.bodyRotStiffness = 0f;
+
             var vrPlayerSync = player.gameObject.AddComponent<VRPlayerSync>();
             vrPlayerSync.camera = cam.gameObject;
             vrPlayerSync.leftHand = leftHand.gameObject;
