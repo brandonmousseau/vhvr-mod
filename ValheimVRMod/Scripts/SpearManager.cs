@@ -62,6 +62,12 @@ namespace ValheimVRMod.Scripts {
             else if (VHVRConfig.SpearThrowType() == "TwoStagedThrowing") {
                 UpdateTwoStagedThrowCalculation();
             }
+            else if (VHVRConfig.SpearThrowType() == "SecondHandAiming") {
+                UpdateSecondHandAimCalculation();
+            }
+            else {
+                UpdateDartSpearThrowCalculation();
+            }
         }
 
         private void FixedUpdate() {
@@ -87,6 +93,61 @@ namespace ValheimVRMod.Scripts {
             }
             else if (!isThrowingStance) {
                 directionCooldown -= Time.deltaTime*5;
+            }
+        }
+        private void UpdateSecondHandAimCalculation()
+        {
+            Transform cameraHead = CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform;
+            var direction = VRPlayer.leftHand.transform.position - cameraHead.transform.position;
+            if (!SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand)) {
+                startAim = Vector3.zero;
+                ResetSpearOffset();
+                return;
+            }
+            if (!isThrowingStance && !isThrowing) {
+                UpdateDirectionLine(
+                    VRPlayer.rightHand.transform.position,
+                    VRPlayer.rightHand.transform.position + (direction).normalized * 50);
+            }
+            if (SteamVR_Actions.valheim_Use.GetStateDown(SteamVR_Input_Sources.RightHand)) {
+                if (startAim == Vector3.zero) {
+                    startAim = direction.normalized;
+                }
+                isThrowingStance = true;
+            }
+
+            if (isThrowingStance) {
+                UpdateSpearThrowModel(direction.normalized);
+                UpdateDirectionLine(
+                    VRPlayer.rightHand.transform.position - direction.normalized,
+                    VRPlayer.rightHand.transform.position + direction.normalized * 50);
+            }
+
+            if (!SteamVR_Actions.valheim_Use.GetStateUp(SteamVR_Input_Sources.RightHand)) {
+                return;
+            }
+
+            if (snapshots.Count < MIN_SNAPSHOTSCHECK) {
+                return;
+            }
+
+            if (isThrowing) {
+                ResetSpearOffset();
+                startAim = Vector3.zero;
+                return;
+            }
+
+            spawnPoint = VRPlayer.rightHand.transform.position;
+            var throwing = CalculateThrowAndDistance();
+            aimDir = direction.normalized * throwing.ThrowSpeed;
+
+            if (throwing.Distance > minDist) {
+                isThrowing = true;
+            }
+
+            if (SteamVR_Actions.valheim_Use.GetStateUp(SteamVR_Input_Sources.RightHand) && throwing.Distance <= minDist) {
+                startAim = Vector3.zero;
+                ResetSpearOffset();
             }
         }
         private void UpdateTwoStagedThrowCalculation()
@@ -141,7 +202,6 @@ namespace ValheimVRMod.Scripts {
                 startAim = Vector3.zero;
                 ResetSpearOffset();
             }
-
         }
         private void UpdateDartSpearThrowCalculation()
         {
