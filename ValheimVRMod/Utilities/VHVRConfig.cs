@@ -3,7 +3,7 @@ using Unity.XR.OpenVR;
 using System;
 using ValheimVRMod.VRCore;
 using UnityEngine;
-
+using static System.ComponentModel.DescriptionAttribute;
 using static ValheimVRMod.Utilities.LogUtils;
 
 namespace ValheimVRMod.Utilities
@@ -75,6 +75,8 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> weaponNeedsSpeed;
         private static ConfigEntry<float> altPieceRotationDelay;
         private static ConfigEntry<bool> runIsToggled;
+        private static ConfigEntry<string> spearThrowingType;
+        private static ConfigEntry<bool> spearThrowSpeedDynamic;
 
         // Graphics Settings
         private static ConfigEntry<bool> useAmplifyOcclusion;
@@ -234,7 +236,7 @@ namespace ValheimVRMod.Utilities
                                                      true,
                                                      "Use this to toggle the path predictor when using the bow and arrow with VR controls.");
             useSpearDirectionGraphic = config.Bind("UI",
-                                                     "useSpearDirectionGraphic",
+                                                     "UseSpearDirectionGraphic",
                                                      true,
                                                      "Use this to toggle the direction line of throwing when using the spear with VR controls.");
             DebugPosX = config.Bind("UI",
@@ -342,6 +344,17 @@ namespace ValheimVRMod.Utilities
                                        "RunIsToggled",
                                        true,
                                        "Determine whether or not you need to hold run or it is a toggle. Keep it as toggle (true) to have your thumb free when sprinting.");
+            spearThrowingType= config.Bind("General",
+                                     "SpearThrowingMode",
+                                     "DartType",
+                                     new ConfigDescription("Change the throwing mode."+
+                                     "DartType - Throw aim is based on first trigger pressed to release, and throwing power is based on how fast you swing. "+
+                                     "TwoStagedThrowing - Throw aim is based on first grab and then aim is locked after pressing trigger, throw by releasing trigger while swinging, throw speed based on how fast you swing.",
+                                     new AcceptableValueList<string>(new string[] { "DartType", "TwoStagedThrowing" })));
+            spearThrowSpeedDynamic= config.Bind("Controls",
+                                       "spearThrowSpeedDynamic",
+                                       true,
+                                       "Determine whether or not your throw power depends on swing speed, setting to false make the throw always on fixed speed.");
             InitializeConfigurableKeyBindings(config);
         }
 
@@ -714,6 +727,16 @@ namespace ValheimVRMod.Utilities
         public static bool ToggleRun()
         {
             return runIsToggled.Value;
+        }
+
+        public static bool SpearThrowSpeedDynamic()
+        {
+            return spearThrowSpeedDynamic.Value;
+        }
+
+        public static string SpearThrowType()
+        {
+            return spearThrowingType.Value;
         }
     }
 }
