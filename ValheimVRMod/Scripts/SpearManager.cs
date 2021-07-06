@@ -118,6 +118,7 @@ namespace ValheimVRMod.Scripts {
             }
 
             if (isThrowingStance) {
+                ShieldManager.ScaleShieldSize(0.4f);
                 UpdateSpearThrowModel(direction.normalized);
                 UpdateDirectionLine(
                     VRPlayer.rightHand.transform.position - direction.normalized,
@@ -266,6 +267,7 @@ namespace ValheimVRMod.Scripts {
             transform.position = rotSave.transform.position;
             transform.localRotation = rotSave.transform.localRotation;
             isThrowingStance = false;
+            ShieldManager.ScaleShieldSize(1f);
         }
         private void UpdateDirectionLine(Vector3 pos1 ,Vector3 pos2)
         {
