@@ -6,7 +6,7 @@ using ValheimVRMod.Utilities;
 namespace ValheimVRMod.Patches
 {
     /// <summary>
-    /// Properly sets animation parameters to have animation when moving in roomscale
+    /// Properly sets animation parameters to have animations when moving in roomscale
     /// </summary>    
     [HarmonyPatch(typeof(Character), "UpdateWalking")]
     class Character_UpdateWalking_RoomscaleAnimationPatch
@@ -15,14 +15,14 @@ namespace ValheimVRMod.Patches
         {
             if(__instance == Player.m_localPlayer && VRPlayer.inFirstPerson)
             {
-                __instance.m_zanim.SetFloat(Player.forward_speed, __instance.m_animator.GetFloat(Player.forward_speed) + VRPlayer.roomscaleAnimationForwardSpeed);
-                __instance.m_zanim.SetFloat(Player.sideway_speed, __instance.m_animator.GetFloat(Player.sideway_speed) + VRPlayer.roomscaleAnimationSideSpeed);
+                __instance.m_zanim.SetFloat(Player.forward_speed, __instance.m_animator.GetFloat(Player.forward_speed) + VRPlayer.roomscaleAnimationForwardSpeed*VRPlayer.ROOMSCALE_ANIMATION_WEIGHT);
+                __instance.m_zanim.SetFloat(Player.sideway_speed, __instance.m_animator.GetFloat(Player.sideway_speed) + VRPlayer.roomscaleAnimationSideSpeed*VRPlayer.ROOMSCALE_ANIMATION_WEIGHT);
             }
         }
     }
 
     /// <summary>
-    /// Detach player from ship momentarily if roomscale movement is detects
+    /// Detach player from ship momentarily if roomscale movement is detected
     /// </summary>    
     [HarmonyPatch(typeof(Character), "ApplyGroundForce")]
     class Character_ApplyGroundForce_DetachIfRoomscaleMovement
@@ -38,7 +38,7 @@ namespace ValheimVRMod.Patches
     }
 
     /// <summary>
-    /// Applies the roomscale velocity to the player rigidbody
+    /// Applies the roomscale movement to the player rigidbody
     /// </summary>    
     [HarmonyPatch(typeof(Character), "SyncVelocity")]
     class Character_SyncVelocity_ApplyRoomscaleVelocity
@@ -47,7 +47,9 @@ namespace ValheimVRMod.Patches
         {
             if(__instance == Player.m_localPlayer && VRPlayer.inFirstPerson)
             {
-                __instance.m_body.position += VRPlayer.roomscaleMovement;
+                //We need to calculate the required movement to not clip in the ground
+                var groundMovement = __instance.IsOnGround() ? Vector3.ProjectOnPlane(VRPlayer.roomscaleMovement, __instance.m_lastGroundNormal) : VRPlayer.roomscaleMovement;
+                __instance.m_body.position += groundMovement;
             }
         }
     }

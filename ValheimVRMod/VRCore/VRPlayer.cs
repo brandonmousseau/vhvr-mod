@@ -53,6 +53,7 @@ namespace ValheimVRMod.VRCore
         private static Vector3 THIRD_PERSON_CONFIG_OFFSET = Vector3.zero;
         private static float NECK_OFFSET = 0.2f;
         public const float ROOMSCALE_STEP_ANIMATION_SMOOTHING = 0.3f;
+        public const float ROOMSCALE_ANIMATION_WEIGHT = 2f;
         public static bool justUnsheathed = false;
 
         private static float referencePlayerHeight;
