@@ -42,6 +42,14 @@ namespace ValheimVRMod.Scripts {
             vrik.solver.spine.headTarget = head;
             vrik.solver.spine.maxRootAngle = 180;
             
+
+            //Avoid akward movements
+            vrik.solver.spine.maintainPelvisPosition = 0f;
+            vrik.solver.spine.pelvisPositionWeight = 0f;
+            vrik.solver.spine.pelvisRotationWeight = 0f;
+            vrik.solver.spine.bodyPosStiffness = 0f;
+            vrik.solver.spine.bodyRotStiffness = 0f;
+            
             return vrik;
         }
         

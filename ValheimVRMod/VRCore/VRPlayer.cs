@@ -76,7 +76,7 @@ namespace ValheimVRMod.VRCore
         private static float _roomscaleAnimationSideSpeed = 0.0f;
         public static float roomscaleAnimationForwardSpeed { get { return _roomscaleAnimationForwardSpeed;} }
         public static float roomscaleAnimationSideSpeed { get { return _roomscaleAnimationSideSpeed;} }
-        public static Vector3 roomscaleVelocity { get; private set; }
+        public static Vector3 roomscaleMovement { get; private set; }
 
         private static Hand _leftHand;
         private static SteamVR_LaserPointer _leftPointer;
@@ -194,7 +194,7 @@ namespace ValheimVRMod.VRCore
             if(inFirstPerson)
             {
                 DoRoomScaleMovement();
-            } else roomscaleVelocity = Vector3.zero;
+            } else roomscaleMovement = Vector3.zero;
         }
 
         void maybeUpdateHeadPosition()
@@ -679,14 +679,6 @@ namespace ValheimVRMod.VRCore
             vrik.references.rightHand.gameObject.AddComponent<HandGesture>().sourceHand = rightHand;
             StaticObjects.leftFist().setColliderParent(vrik.references.leftHand, false);
             StaticObjects.rightFist().setColliderParent(vrik.references.rightHand, true);
-
-            //Avoid akward movements
-            vrik.solver.spine.maintainPelvisPosition = 0f;
-            vrik.solver.spine.pelvisPositionWeight = 0f;
-            vrik.solver.spine.pelvisRotationWeight = 0f;
-            vrik.solver.spine.bodyPosStiffness = 0f;
-            vrik.solver.spine.bodyRotStiffness = 0f;
-
             var vrPlayerSync = player.gameObject.AddComponent<VRPlayerSync>();
             vrPlayerSync.camera = cam.gameObject;
             vrPlayerSync.leftHand = leftHand.gameObject;
@@ -978,9 +970,9 @@ namespace ValheimVRMod.VRCore
                 _lastCamPosition = _vrCam.transform.localPosition;
                 var globalDeltaPosition = _instance.transform.TransformVector(deltaPosition);
                 globalDeltaPosition.y = 0;
-                roomscaleVelocity = globalDeltaPosition / Time.fixedDeltaTime;
+                roomscaleMovement = globalDeltaPosition;
                 _vrCameraRig.localPosition -= deltaPosition;
-            } else roomscaleVelocity = Vector3.zero;
+            } else roomscaleMovement = Vector3.zero;
 
             _roomscaleAnimationForwardSpeed =  Mathf.SmoothDamp(_roomscaleAnimationForwardSpeed, shouldMove ? deltaPosition.z / Time.fixedDeltaTime : 0, ref _forwardSmoothVel, ROOMSCALE_STEP_ANIMATION_SMOOTHING, 99f);
             _roomscaleAnimationSideSpeed =  Mathf.SmoothDamp(_roomscaleAnimationSideSpeed, shouldMove ? deltaPosition.x / Time.fixedDeltaTime : 0, ref _sideSmoothVel, ROOMSCALE_STEP_ANIMATION_SMOOTHING, 99f);

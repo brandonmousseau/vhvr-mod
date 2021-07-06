@@ -29,7 +29,7 @@ namespace ValheimVRMod.Patches
     {
         private static void Prefix(Character __instance)
         {
-            if(__instance == Player.m_localPlayer && VRPlayer.inFirstPerson && VRPlayer.roomscaleVelocity != Vector3.zero)
+            if(__instance == Player.m_localPlayer && VRPlayer.inFirstPerson && VRPlayer.roomscaleMovement != Vector3.zero)
             {
                 if(__instance.GetStandingOnShip())
                     __instance.m_lastAttachBody = null;
@@ -47,13 +47,7 @@ namespace ValheimVRMod.Patches
         {
             if(__instance == Player.m_localPlayer && VRPlayer.inFirstPerson)
             {
-                __instance.m_body.AddForce(VRPlayer.roomscaleVelocity, ForceMode.VelocityChange);
-                //Need to move the ships backwards after this               
-                if (__instance.m_lastGroundBody && __instance.m_lastGroundBody.gameObject.layer != __instance.gameObject.layer && __instance.m_lastGroundBody.mass > __instance.m_body.mass)
-                {
-                    float massFactor = __instance.m_body.mass / __instance.m_lastGroundBody.mass;
-                    __instance.m_lastGroundBody.AddForceAtPosition(-VRPlayer.roomscaleVelocity * massFactor, __instance.transform.position, ForceMode.VelocityChange);
-                }
+                __instance.m_body.position += VRPlayer.roomscaleMovement;
             }
         }
     }
