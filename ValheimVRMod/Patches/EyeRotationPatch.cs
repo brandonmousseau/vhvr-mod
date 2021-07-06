@@ -24,7 +24,7 @@ namespace ValheimVRMod.Patches
     {
 
         public static Quaternion inversePreviousHeadLocalRotation = Quaternion.Inverse(Quaternion.identity);
-        public static Quaternion inverseLastShipHeading = Quaternion.Inverse(Quaternion.identity);
+        public static Quaternion inverseLastAttachmentHeading = Quaternion.Inverse(Quaternion.identity);
 
         public static void Prefix(Player __instance, ref Quaternion ___m_lookYaw, CraftingStation ___m_currentStation)
         {
@@ -42,15 +42,15 @@ namespace ValheimVRMod.Patches
             if(__instance.IsAttached())
             {
                 //Apply ship rotation
-                if(__instance.m_shipControl)
+                if(__instance.m_attached && __instance.m_attachPoint)
                 {
                     // Rotate VRPlayer together with delta ship rotation
-                    var newPlayerHeading = __instance.m_shipControl.transform.forward;
+                    var newPlayerHeading = __instance.m_attachPoint.forward;
                     newPlayerHeading.y = 0;
                     newPlayerHeading.Normalize();
                     Quaternion newHeadingRotation = Quaternion.LookRotation(newPlayerHeading, __instance.transform.up);
-                    __instance.m_lookYaw *= newHeadingRotation * inverseLastShipHeading;
-                    inverseLastShipHeading = Quaternion.Inverse(newHeadingRotation);
+                    __instance.m_lookYaw *= newHeadingRotation * inverseLastAttachmentHeading;
+                    inverseLastAttachmentHeading = Quaternion.Inverse(newHeadingRotation);
                 }
                 return;
             }
@@ -193,7 +193,7 @@ namespace ValheimVRMod.Patches
 
                     __instance.m_lookYaw = Quaternion.LookRotation(attachmentHeading, __instance.transform.up);
 
-                    if(__instance.m_shipControl) Player_SetMouseLook_Patch.inverseLastShipHeading = Quaternion.Inverse(__instance.m_lookYaw);
+                    Player_SetMouseLook_Patch.inverseLastAttachmentHeading = Quaternion.Inverse(__instance.m_lookYaw);
                 }
             }
         }
