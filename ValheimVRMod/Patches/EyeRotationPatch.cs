@@ -23,7 +23,8 @@ namespace ValheimVRMod.Patches
     class Player_SetMouseLook_Patch
     {
 
-        private static float previousHeadLocalRotation = 0f;
+        private static Quaternion inversePreviousHeadLocalRotation = Quaternion.identity;
+        public static Vector3 lastShipHeading = Vector3.zero;
 
         public static void Prefix(Player __instance, ref Quaternion ___m_lookYaw, CraftingStation ___m_currentStation)
         {
@@ -32,20 +33,38 @@ namespace ValheimVRMod.Patches
                 !VRPlayer.attachedToPlayer ||
                 !VRPlayer.inFirstPerson ||
                 !VHVRConfig.UseLookLocomotion() ||
-                __instance.IsAttached() ||  /* Not attached to something, like boat controls */
                 ___m_currentStation != null /* Not Crafting */)
             {
                 return;
             }
+
+            /* Not attached to something, like boat controls */
+            if(__instance.IsAttached())
+            {
+                //Apply ship rotation
+                if(__instance.m_shipControl)
+                {
+                    // Rotate VRPlayer together with delta ship rotation
+                    var newPlayerHeading = __instance.m_shipControl.transform.forward;
+                    newPlayerHeading.y = 0;
+                    newPlayerHeading.Normalize();
+                    __instance.m_lookYaw *= Quaternion.FromToRotation(lastShipHeading, newPlayerHeading);
+                    lastShipHeading = newPlayerHeading;
+                }
+                return;
+            }
+
             // Calculate the current head local rotation
-            float currentHeadLocalRotation =
-                VRPlayer.instance.GetComponent<Valve.VR.InteractionSystem.Player>().hmdTransform.localRotation.eulerAngles.y;
+            Quaternion currentHeadLocalRotation =
+                VRPlayer.instance.GetComponent<Valve.VR.InteractionSystem.Player>().hmdTransform.localRotation;
             // Find the difference between the current rotation and previous rotation
-            float difference = currentHeadLocalRotation - previousHeadLocalRotation;
+            Quaternion deltaRotation = currentHeadLocalRotation * inversePreviousHeadLocalRotation;
             // Save the current rotation for use in next iteration
-            previousHeadLocalRotation = currentHeadLocalRotation;
+            inversePreviousHeadLocalRotation = Quaternion.Inverse(currentHeadLocalRotation);
+            float difference = deltaRotation.eulerAngles.y;
             // Rotate the look yaw by the amount the player rotated their head since last iteration
             ___m_lookYaw *= Quaternion.Euler(0f, difference, 0f);
+            
             // Rotate the VRPlayer localRotation by the same amount in the opposite direction
             // to offset the rotation the VRPlayer will experience due to rotation of yaw.
             var localRot = VRPlayer.instance.transform.localRotation;
@@ -146,6 +165,38 @@ namespace ValheimVRMod.Patches
             }
         }
 
-    }
+        
+        /// <summary>
+        /// When interacting with thing orient player in the direction of the attachment point
+        /// </summary>
+        [HarmonyPatch(typeof(Player), "AttachStart")]
+        
+        class Player_AttachStart_Patch
+        {
+            static void Postfix(Player __instance, Transform attachPoint)
+            {
+                if (VHVRConfig.NonVrPlayer() ||
+                    __instance != Player.m_localPlayer ||
+                    !VRPlayer.attachedToPlayer ||
+                    !VRPlayer.inFirstPerson)
+                {
+                    return;
+                }
 
+                if(attachPoint)
+                {
+                    // Rotate VRPlayer together with delta ship rotation
+                    var attachmentHeading = attachPoint.transform.forward;
+                    attachmentHeading.y = 0;
+                    attachmentHeading.Normalize();
+                    var playerHeading = __instance.transform.forward;
+                    playerHeading.y = 0;
+                    playerHeading.Normalize();
+                    __instance.m_lookYaw *= Quaternion.FromToRotation(playerHeading, attachmentHeading);
+
+                    if(__instance.m_shipControl) Player_SetMouseLook_Patch.lastShipHeading = attachmentHeading;
+                }
+            }
+        }
+    }
 }

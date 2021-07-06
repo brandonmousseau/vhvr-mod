@@ -169,9 +169,9 @@ namespace ValheimVRMod.VRCore.UI
                 {
                     // We are not recentering, so keep the GUI in front of the player. Need to account for
                     // any rotation of the VRPlayer instance caused by mouse or joystick input since the last frame.
-                    float angleDelta = VRPlayer.instance.transform.eulerAngles.y - lastVrPlayerRotation.eulerAngles.y;
+                    Quaternion rotationDelta = VRPlayer.instance.transform.rotation * Quaternion.Inverse(lastVrPlayerRotation);
                     lastVrPlayerRotation = VRPlayer.instance.transform.rotation;
-                    var newRotation = currentRotation * Quaternion.Euler(0f, angleDelta, 0f);
+                    var newRotation = currentRotation * rotationDelta;
                     _uiPanel.transform.rotation = newRotation;
                     _uiPanel.transform.position = playerInstance.transform.position +  newRotation * offsetPosition;
                 }

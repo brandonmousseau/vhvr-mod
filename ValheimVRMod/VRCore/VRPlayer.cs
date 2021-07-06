@@ -132,7 +132,10 @@ namespace ValheimVRMod.VRCore
             {
                 if (Player.m_localPlayer != null && attachedToPlayer)
                 {
-                    return Player.m_localPlayer.GetVelocity().magnitude > 0.5f;
+                    Vector3 relativeVelocity = Player.m_localPlayer.GetVelocity();
+                    if(Player.m_localPlayer.m_lastGroundBody)
+                        relativeVelocity -= Player.m_localPlayer.m_lastGroundBody.velocity;
+                    return relativeVelocity.magnitude > 0.5f;
                 }
                 return false;
             }
