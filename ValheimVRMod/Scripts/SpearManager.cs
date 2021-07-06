@@ -29,6 +29,7 @@ namespace ValheimVRMod.Scripts {
         private LineRenderer directionLine;
         private float directionCooldown;
         private float totalCooldown = 2;
+        private readonly Vector3 handAimOffset = new Vector3(0, -0.45f, -0.55f);
 
         private void Awake() {
             fixedSpear = new GameObject();
@@ -160,11 +161,11 @@ namespace ValheimVRMod.Scripts {
             if (!isThrowingStance&&!isThrowing) {
                 UpdateDirectionLine(
                     VRPlayer.rightHand.transform.position,
-                    VRPlayer.rightHand.transform.position + (-VRPlayer.rightHand.transform.TransformDirection(new Vector3(0, 0.45f, 0.55f)).normalized * 50));
+                    VRPlayer.rightHand.transform.position + (VRPlayer.rightHand.transform.TransformDirection(handAimOffset).normalized * 50));
             }
             if (SteamVR_Actions.valheim_Use.GetStateDown(SteamVR_Input_Sources.RightHand)) {
                 if (startAim == Vector3.zero) {
-                    startAim = -VRPlayer.rightHand.transform.TransformDirection(new Vector3(0, 0.45f, 0.55f)).normalized;
+                    startAim = VRPlayer.rightHand.transform.TransformDirection(handAimOffset).normalized;
                 }
                 isThrowingStance = true;
             }
