@@ -57,6 +57,7 @@ namespace ValheimVRMod.Scripts {
 
         private void OnRenderObject() {
             fixedSpear.transform.position = transform.position;
+            UpdateTwoHandedWield();
             if (VHVRConfig.SpearThrowType() == "DartType") {
                 UpdateDartSpearThrowCalculation();
             }
@@ -261,6 +262,18 @@ namespace ValheimVRMod.Scripts {
             transform.position = VRPlayer.rightHand.transform.position - Vector3.ClampMagnitude(inversePosition, offsetPos);
             transform.LookAt(VRPlayer.rightHand.transform.position + inversePosition);
             transform.localRotation = transform.localRotation * (rotSave.transform.localRotation) * Quaternion.AngleAxis(180, Vector3.right);
+        }
+        private void UpdateTwoHandedWield()
+        {
+            if (VHVRConfig.SpearTwoHanded()) {
+                if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand)) {
+                    var inversePosition = VRPlayer.rightHand.transform.position - VRPlayer.leftHand.transform.position;
+                    transform.position = VRPlayer.rightHand.transform.position - inversePosition / 3f;
+                    transform.LookAt(VRPlayer.rightHand.transform.position + inversePosition);
+                    transform.localRotation = transform.localRotation * (rotSave.transform.localRotation) * Quaternion.AngleAxis(180, Vector3.right);
+                    return;
+                }
+            }
         }
         private void ResetSpearOffset()
         {

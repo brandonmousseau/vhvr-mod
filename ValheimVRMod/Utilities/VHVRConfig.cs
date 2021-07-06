@@ -77,6 +77,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> runIsToggled;
         private static ConfigEntry<string> spearThrowingType;
         private static ConfigEntry<bool> spearThrowSpeedDynamic;
+        private static ConfigEntry<bool> spearTwoHanded;
 
         // Graphics Settings
         private static ConfigEntry<bool> useAmplifyOcclusion;
@@ -416,6 +417,10 @@ namespace ValheimVRMod.Utilities
                                                     "UseSpearDirectionGraphic",
                                                     true,
                                                     "Use this to toggle the direction line of throwing when using the spear with VR controls.");
+            spearTwoHanded = config.Bind("Motion Control - Spear Throwing",
+                                                    "TwoHandedSpear",
+                                                    false,
+                                                    "Use this to toggle controls of two handed spear (left hand grab while having spear) (experimental)");
         }
         public static bool ModEnabled()
         {
@@ -742,6 +747,10 @@ namespace ValheimVRMod.Utilities
         public static string SpearThrowType()
         {
             return spearThrowingType.Value;
+        }
+        public static bool SpearTwoHanded()
+        {
+            return spearTwoHanded.Value;
         }
     }
 }
