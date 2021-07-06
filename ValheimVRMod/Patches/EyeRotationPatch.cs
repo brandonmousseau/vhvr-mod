@@ -23,8 +23,8 @@ namespace ValheimVRMod.Patches
     class Player_SetMouseLook_Patch
     {
 
-        private static Quaternion inversePreviousHeadLocalRotation = Quaternion.identity;
-        public static Vector3 lastShipHeading = Vector3.zero;
+        public static Quaternion inversePreviousHeadLocalRotation = Quaternion.Inverse(Quaternion.identity);
+        public static Quaternion inverseLastShipHeading = Quaternion.Inverse(Quaternion.identity);
 
         public static void Prefix(Player __instance, ref Quaternion ___m_lookYaw, CraftingStation ___m_currentStation)
         {
@@ -48,8 +48,9 @@ namespace ValheimVRMod.Patches
                     var newPlayerHeading = __instance.m_shipControl.transform.forward;
                     newPlayerHeading.y = 0;
                     newPlayerHeading.Normalize();
-                    __instance.m_lookYaw *= Quaternion.FromToRotation(lastShipHeading, newPlayerHeading);
-                    lastShipHeading = newPlayerHeading;
+                    Quaternion newHeadingRotation = Quaternion.LookRotation(newPlayerHeading, __instance.transform.up);
+                    __instance.m_lookYaw *= newHeadingRotation * inverseLastShipHeading;
+                    inverseLastShipHeading = Quaternion.Inverse(newHeadingRotation);
                 }
                 return;
             }
@@ -167,7 +168,7 @@ namespace ValheimVRMod.Patches
 
         
         /// <summary>
-        /// When interacting with thing orient player in the direction of the attachment point
+        /// When interacting with an attachment point orient player in the direction of the attachment point
         /// </summary>
         [HarmonyPatch(typeof(Player), "AttachStart")]
         
@@ -189,13 +190,42 @@ namespace ValheimVRMod.Patches
                     var attachmentHeading = attachPoint.transform.forward;
                     attachmentHeading.y = 0;
                     attachmentHeading.Normalize();
-                    var playerHeading = __instance.transform.forward;
-                    playerHeading.y = 0;
-                    playerHeading.Normalize();
-                    __instance.m_lookYaw *= Quaternion.FromToRotation(playerHeading, attachmentHeading);
 
-                    if(__instance.m_shipControl) Player_SetMouseLook_Patch.lastShipHeading = attachmentHeading;
+                    __instance.m_lookYaw = Quaternion.LookRotation(attachmentHeading, __instance.transform.up);
+
+                    if(__instance.m_shipControl) Player_SetMouseLook_Patch.inverseLastShipHeading = Quaternion.Inverse(__instance.m_lookYaw);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Orient the player to the body direction when detaching from objects
+        /// </summary>
+        [HarmonyPatch(typeof(Player), "AttachStop")]
+        
+        class Player_AttachStop_Patch
+        {
+            static void Prefix(Player __instance)
+            {
+                if (VHVRConfig.NonVrPlayer() ||
+                    __instance != Player.m_localPlayer ||
+                    !VRPlayer.attachedToPlayer ||
+                    !VRPlayer.inFirstPerson ||
+                    !__instance.m_attached ||
+                    !__instance.m_attachPoint)
+                {
+                    return;
+                }
+
+                // Rotate VRPlayer together with delta ship rotation
+                var bodyHeading = __instance.transform.forward;
+                bodyHeading.y = 0;
+                bodyHeading.Normalize();
+                VRPlayer.instance.transform.rotation = Quaternion.LookRotation(bodyHeading, VRPlayer.instance.transform.up); //Inverse rotation
+                
+                //Reset MouseLook parameters to be centered
+                //Inverse of identity is multiplicative identity so next delta will be null
+                Player_SetMouseLook_Patch.inversePreviousHeadLocalRotation = Quaternion.Inverse(Quaternion.identity); 
             }
         }
     }

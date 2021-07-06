@@ -23,6 +23,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> headOffsetThirdPersonY;
         private static ConfigEntry<bool> enableHeadReposition;
         private static ConfigEntry<bool> recenterOnStart;
+        private static ConfigEntry<bool> roomscaleFadeToBlack;
 
         // UI Settings
         private static ConfigEntry<bool> useOverlayGui;
@@ -98,6 +99,10 @@ namespace ValheimVRMod.Utilities
                                           "RecenterOnStart",
                                           true,
                                           "Set this to true if you want tracking to be automatically re-centered when the game first starts up.");
+            roomscaleFadeToBlack = config.Bind("General",
+                                          "RoomscaleFadeToBlack",
+                                          false,
+                                          "Set this to true if you want the game to fade to black when roomscale movement causes the player to being pushed back.");
             mirrorMode = config.Bind("General",
                                      "MirrorMode",
                                      "Right",
@@ -529,6 +534,11 @@ namespace ValheimVRMod.Utilities
         public static bool RecenterOnStart()
         {
             return recenterOnStart.Value;
+        }
+
+        public static bool RoomscaleFadeToBlack()
+        {
+            return roomscaleFadeToBlack.Value;
         }
 
         public static KeyCode GetRecenterKey()

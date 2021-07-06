@@ -71,7 +71,8 @@ namespace ValheimVRMod.VRCore
 
         //Roomscale movement variables
         private Transform _vrCameraRig;
-        private Vector3 _lastCamPosition;
+        private Vector3 _lastCamPosition = Vector3.zero;
+        private Vector3 _lastPlayerPosition = Vector3.zero;
         private float _forwardSmoothVel = 0.0f, _sideSmoothVel = 0.0f;
         private static float _roomscaleAnimationForwardSpeed = 0.0f;
         private static float _roomscaleAnimationSideSpeed = 0.0f;
@@ -971,6 +972,20 @@ namespace ValheimVRMod.VRCore
             bool shouldMove = deltaPosition.magnitude > 0.005f;
             if(shouldMove)
             {
+                //Check for motion discrepancies
+                if(VHVRConfig.RoomscaleFadeToBlack())
+                {
+                    var lastDeltaMovement = player.m_body.position - _lastPlayerPosition;
+                    lastDeltaMovement.y = 0;
+                    if(roomscaleMovement.magnitude * 0.5 > lastDeltaMovement.magnitude)
+                    {
+                        SteamVR_Fade.Start(Color.black, 0, true);
+                        SteamVR_Fade.Start(Color.clear, 0.75f, true); 
+                    }
+                    _lastPlayerPosition = player.m_body.position;
+                }
+
+                //Calculate new postion
                 _lastCamPosition = _vrCam.transform.localPosition;
                 var globalDeltaPosition = _instance.transform.TransformVector(deltaPosition);
                 globalDeltaPosition.y = 0;
@@ -978,6 +993,7 @@ namespace ValheimVRMod.VRCore
                 _vrCameraRig.localPosition -= deltaPosition;
             } else roomscaleMovement = Vector3.zero;
 
+            //Set animation parameters
             _roomscaleAnimationForwardSpeed =  Mathf.SmoothDamp(_roomscaleAnimationForwardSpeed, shouldMove ? deltaPosition.z / Time.fixedDeltaTime : 0, ref _forwardSmoothVel, ROOMSCALE_STEP_ANIMATION_SMOOTHING, 99f);
             _roomscaleAnimationSideSpeed =  Mathf.SmoothDamp(_roomscaleAnimationSideSpeed, shouldMove ? deltaPosition.x / Time.fixedDeltaTime : 0, ref _sideSmoothVel, ROOMSCALE_STEP_ANIMATION_SMOOTHING, 99f);
         }
