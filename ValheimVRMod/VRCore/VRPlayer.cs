@@ -980,7 +980,7 @@ namespace ValheimVRMod.VRCore
                     if(roomscaleMovement.magnitude * 0.5 > lastDeltaMovement.magnitude)
                     {
                         SteamVR_Fade.Start(Color.black, 0, true);
-                        SteamVR_Fade.Start(Color.clear, 0.75f, true); 
+                        SteamVR_Fade.Start(Color.clear, 1.5f, true); 
                     }
                     _lastPlayerPosition = player.m_body.position;
                 }

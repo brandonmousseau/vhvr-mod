@@ -23,8 +23,8 @@ namespace ValheimVRMod.Patches
     class Player_SetMouseLook_Patch
     {
 
-        public static Quaternion inversePreviousHeadLocalRotation = Quaternion.Inverse(Quaternion.identity);
-        public static Quaternion inverseLastAttachmentHeading = Quaternion.Inverse(Quaternion.identity);
+        public static float? previousHeadLocalRotation;
+        public static float? lastAttachmentHeading;
 
         public static void Prefix(Player __instance, ref Quaternion ___m_lookYaw, CraftingStation ___m_currentStation)
         {
@@ -48,29 +48,34 @@ namespace ValheimVRMod.Patches
                     var newPlayerHeading = __instance.m_attachPoint.forward;
                     newPlayerHeading.y = 0;
                     newPlayerHeading.Normalize();
-                    Quaternion newHeadingRotation = Quaternion.LookRotation(newPlayerHeading, __instance.transform.up);
-                    __instance.m_lookYaw *= newHeadingRotation * inverseLastAttachmentHeading;
-                    inverseLastAttachmentHeading = Quaternion.Inverse(newHeadingRotation);
+                    float newHeadingRotation = Quaternion.LookRotation(newPlayerHeading, __instance.transform.up).eulerAngles.y;
+                    if(lastAttachmentHeading.HasValue)
+                        ___m_lookYaw *= Quaternion.AngleAxis(newHeadingRotation - lastAttachmentHeading.Value, Vector3.up);
+                    lastAttachmentHeading = newHeadingRotation;
                 }
                 return;
             }
 
+
             // Calculate the current head local rotation
-            Quaternion currentHeadLocalRotation =
-                VRPlayer.instance.GetComponent<Valve.VR.InteractionSystem.Player>().hmdTransform.localRotation;
-            // Find the difference between the current rotation and previous rotation
-            Quaternion deltaRotation = currentHeadLocalRotation * inversePreviousHeadLocalRotation;
-            // Save the current rotation for use in next iteration
-            inversePreviousHeadLocalRotation = Quaternion.Inverse(currentHeadLocalRotation);
-            float difference = deltaRotation.eulerAngles.y;
-            // Rotate the look yaw by the amount the player rotated their head since last iteration
-            ___m_lookYaw *= Quaternion.Euler(0f, difference, 0f);
+            Transform hmdTransform = VRPlayer.instance.GetComponent<Valve.VR.InteractionSystem.Player>().hmdTransform;
+            // Calculate the current head local rotation
+            float currentHeadLocalRotation = hmdTransform.localRotation.eulerAngles.y;
+            if(previousHeadLocalRotation.HasValue)
+            {
+                // Find the difference between the current rotation and previous rotation
+                float deltaRotation = currentHeadLocalRotation - previousHeadLocalRotation.Value;
+                
+                // Rotate the look yaw by the amount the player rotated their head since last iteration
+                ___m_lookYaw *= Quaternion.AngleAxis(deltaRotation, Vector3.up);
+        
+                // Rotate the VRPlayer to match the current yaw
+                // to offset the rotation the VRPlayer will experience due to rotation of yaw.
+                VRPlayer.instance.transform.localRotation *= Quaternion.AngleAxis(-deltaRotation, Vector3.up);
+            }
             
-            // Rotate the VRPlayer localRotation by the same amount in the opposite direction
-            // to offset the rotation the VRPlayer will experience due to rotation of yaw.
-            var localRot = VRPlayer.instance.transform.localRotation;
-            localRot *= Quaternion.Euler(0f, -difference, 0f);
-            VRPlayer.instance.transform.localRotation = localRot;
+            // Save the current rotation for use in next iteration
+            previousHeadLocalRotation = currentHeadLocalRotation;
         }
 
         public static void Postfix(Player __instance, ref Vector3 ___m_lookDir)
@@ -193,7 +198,7 @@ namespace ValheimVRMod.Patches
 
                     __instance.m_lookYaw = Quaternion.LookRotation(attachmentHeading, __instance.transform.up);
 
-                    Player_SetMouseLook_Patch.inverseLastAttachmentHeading = Quaternion.Inverse(__instance.m_lookYaw);
+                    Player_SetMouseLook_Patch.lastAttachmentHeading = null;
                 }
             }
         }
@@ -224,8 +229,7 @@ namespace ValheimVRMod.Patches
                 VRPlayer.instance.transform.rotation = Quaternion.LookRotation(bodyHeading, VRPlayer.instance.transform.up); //Inverse rotation
                 
                 //Reset MouseLook parameters to be centered
-                //Inverse of identity is multiplicative identity so next delta will be null
-                Player_SetMouseLook_Patch.inversePreviousHeadLocalRotation = Quaternion.Inverse(Quaternion.identity); 
+                Player_SetMouseLook_Patch.previousHeadLocalRotation = null; 
             }
         }
     }
