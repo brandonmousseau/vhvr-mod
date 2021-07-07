@@ -58,9 +58,7 @@ namespace ValheimVRMod.Patches
 
 
             // Calculate the current head local rotation
-            Transform hmdTransform = VRPlayer.instance.GetComponent<Valve.VR.InteractionSystem.Player>().hmdTransform;
-            // Calculate the current head local rotation
-            float currentHeadLocalRotation = hmdTransform.localRotation.eulerAngles.y;
+            float currentHeadLocalRotation = VRPlayer.hmdTransform.localRotation.eulerAngles.y;
             if(previousHeadLocalRotation.HasValue)
             {
                 // Find the difference between the current rotation and previous rotation
@@ -222,14 +220,10 @@ namespace ValheimVRMod.Patches
                     return;
                 }
 
-                // Rotate VRPlayer together with delta ship rotation
-                var bodyHeading = __instance.transform.forward;
-                bodyHeading.y = 0;
-                bodyHeading.Normalize();
-                VRPlayer.instance.transform.rotation = Quaternion.LookRotation(bodyHeading, VRPlayer.instance.transform.up); //Inverse rotation
-                
-                //Reset MouseLook parameters to be centered
-                Player_SetMouseLook_Patch.previousHeadLocalRotation = null; 
+                //Recenter player on body
+                float deltaRotation = __instance.transform.rotation.eulerAngles.y - VRPlayer.hmdTransform.rotation.eulerAngles.y;
+                VRPlayer.instance.transform.localRotation *= Quaternion.AngleAxis(deltaRotation, Vector3.up);
+                Player_SetMouseLook_Patch.previousHeadLocalRotation = null;
             }
         }
     }

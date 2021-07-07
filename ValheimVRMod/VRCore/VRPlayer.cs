@@ -70,6 +70,8 @@ namespace ValheimVRMod.VRCore
         private Camera _skyboxCam;
 
         //Roomscale movement variables
+        private static Transform _hmdTransfom;
+        public static Transform hmdTransform => _hmdTransfom;
         private Transform _vrCameraRig;
         private Vector3 _lastCamPosition = Vector3.zero;
         private Vector3 _lastPlayerPosition = Vector3.zero;
@@ -619,6 +621,8 @@ namespace ValheimVRMod.VRCore
                                 -getHeadOffset(_headZoomLevel) // Player controlled offset (zeroed on tracking reset)
                                 -Vector3.forward * NECK_OFFSET // Move slightly forward to position on neck
                                 );
+
+            _hmdTransfom = VRPlayer.instance.GetComponent<Valve.VR.InteractionSystem.Player>().hmdTransform;
         }
 
         //Moves all the effects and the meshes that compose the player, doesn't move the Rigidbody
@@ -977,7 +981,7 @@ namespace ValheimVRMod.VRCore
                 {
                     var lastDeltaMovement = player.m_body.position - _lastPlayerPosition;
                     lastDeltaMovement.y = 0;
-                    if(roomscaleMovement.magnitude * 0.5 > lastDeltaMovement.magnitude)
+                    if(roomscaleMovement.sqrMagnitude * 0.5 > lastDeltaMovement.sqrMagnitude)
                     {
                         SteamVR_Fade.Start(Color.black, 0, true);
                         SteamVR_Fade.Start(Color.clear, 1.5f, true); 
