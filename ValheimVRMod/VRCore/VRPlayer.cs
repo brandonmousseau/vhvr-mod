@@ -70,11 +70,12 @@ namespace ValheimVRMod.VRCore
         private Camera _skyboxCam;
 
         //Roomscale movement variables
-        private static Transform _hmdTransfom;
-        public static Transform hmdTransform => _hmdTransfom;
         private Transform _vrCameraRig;
         private Vector3 _lastCamPosition = Vector3.zero;
         private Vector3 _lastPlayerPosition = Vector3.zero;
+        private FadeToBlackManager _fadeManager;
+        private static Transform _hmdTransfom;
+        public static Transform hmdTransform => _hmdTransfom;
         private float _forwardSmoothVel = 0.0f, _sideSmoothVel = 0.0f;
         private static float _roomscaleAnimationForwardSpeed = 0.0f;
         private static float _roomscaleAnimationSideSpeed = 0.0f;
@@ -446,11 +447,17 @@ namespace ValheimVRMod.VRCore
                 DestroyImmediate(mainCamListener);
             }
             //Add fade component to camera for transition handling
-            vrCam.gameObject.AddComponent<FadeToBlackManager>();
+            _fadeManager = vrCam.gameObject.AddComponent<FadeToBlackManager>();
             _instance.SetActive(true);
             vrCam.enabled = true;
             _vrCam = vrCam;
             _vrCameraRig = vrCam.transform.parent;
+
+            _fadeManager.OnFadeToWorld += () => {
+                //Recenter
+                VRPlayer.headPositionInitialized = false;
+                VRPlayer.vrPlayerInstance?.ResetRoomscaleCamera();
+            };
         }
 
         private void enableHandsCamera()
@@ -977,14 +984,14 @@ namespace ValheimVRMod.VRCore
             if(shouldMove)
             {
                 //Check for motion discrepancies
-                if(VHVRConfig.RoomscaleFadeToBlack())
+                if(VHVRConfig.RoomscaleFadeToBlack() && !_fadeManager.IsFadingToBlack)
                 {
                     var lastDeltaMovement = player.m_body.position - _lastPlayerPosition;
                     lastDeltaMovement.y = 0;
                     if(roomscaleMovement.sqrMagnitude * 0.5 > lastDeltaMovement.sqrMagnitude)
                     {
-                        SteamVR_Fade.Start(Color.black, 0, true);
-                        SteamVR_Fade.Start(Color.clear, 1.5f, true); 
+                        SteamVR_Fade.Start(Color.black, 0);
+                        SteamVR_Fade.Start(Color.clear, 1.5f); 
                     }
                     _lastPlayerPosition = player.m_body.position;
                 }
