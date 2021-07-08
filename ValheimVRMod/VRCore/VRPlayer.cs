@@ -74,8 +74,6 @@ namespace ValheimVRMod.VRCore
         private Vector3 _lastCamPosition = Vector3.zero;
         private Vector3 _lastPlayerPosition = Vector3.zero;
         private FadeToBlackManager _fadeManager;
-        private static Transform _hmdTransfom;
-        public static Transform hmdTransform => _hmdTransfom;
         private float _forwardSmoothVel = 0.0f, _sideSmoothVel = 0.0f;
         private static float _roomscaleAnimationForwardSpeed = 0.0f;
         private static float _roomscaleAnimationSideSpeed = 0.0f;
@@ -628,8 +626,6 @@ namespace ValheimVRMod.VRCore
                                 -getHeadOffset(_headZoomLevel) // Player controlled offset (zeroed on tracking reset)
                                 -Vector3.forward * NECK_OFFSET // Move slightly forward to position on neck
                                 );
-
-            _hmdTransfom = VRPlayer.instance.GetComponent<Valve.VR.InteractionSystem.Player>().hmdTransform;
         }
 
         //Moves all the effects and the meshes that compose the player, doesn't move the Rigidbody
@@ -742,6 +738,7 @@ namespace ValheimVRMod.VRCore
                 headPositionInitialized = true;
 
                 referencePlayerHeight = Valve.VR.InteractionSystem.Player.instance.eyeHeight;
+                playerCharacter.GetComponent<CapsuleCollider>().radius = 0.2f;
             }
         }
 

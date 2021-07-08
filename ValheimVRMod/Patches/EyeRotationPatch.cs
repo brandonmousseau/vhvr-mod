@@ -58,7 +58,7 @@ namespace ValheimVRMod.Patches
 
 
             // Calculate the current head local rotation
-            float currentHeadLocalRotation = VRPlayer.hmdTransform.localRotation.eulerAngles.y;
+            float currentHeadLocalRotation = Valve.VR.InteractionSystem.Player.instance.hmdTransform.localRotation.eulerAngles.y;
             if(previousHeadLocalRotation.HasValue)
             {
                 // Find the difference between the current rotation and previous rotation
@@ -221,7 +221,7 @@ namespace ValheimVRMod.Patches
                 }
 
                 //Recenter player on body
-                float deltaRotation = __instance.transform.rotation.eulerAngles.y - VRPlayer.hmdTransform.rotation.eulerAngles.y;
+                float deltaRotation = __instance.transform.rotation.eulerAngles.y - Valve.VR.InteractionSystem.Player.instance.hmdTransform.rotation.eulerAngles.y;
                 VRPlayer.instance.transform.localRotation *= Quaternion.AngleAxis(deltaRotation, Vector3.up);
                 Player_SetMouseLook_Patch.previousHeadLocalRotation = null;
             }
