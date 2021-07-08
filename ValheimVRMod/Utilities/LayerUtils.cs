@@ -49,6 +49,8 @@ namespace ValheimVRMod.Utilities
         // layers are short supply, so re-using 23. Must be
         // in sync with what is in the prefab in Unity Editor.
         public static readonly int WATER = 4;
+        private static readonly int VR_BODY_LAYER = 6;
+        public static readonly int VR_BODY_LAYER_MASK = (1 << VR_BODY_LAYER);
         public static readonly int ITEM_LAYER = 12;
         public static readonly int WATERVOLUME_LAYER = 21;
         public static readonly int WEAPON_LAYER = 22;
@@ -75,6 +77,12 @@ namespace ValheimVRMod.Utilities
         {
             checkLayer(WORLDSPACE_UI_LAYER);
             return WORLDSPACE_UI_LAYER;
+        }
+        
+        public static int getBodyLayer()
+        {
+            checkLayer(VR_BODY_LAYER);
+            return VR_BODY_LAYER;
         }
 
         private static void checkLayer(int layer)

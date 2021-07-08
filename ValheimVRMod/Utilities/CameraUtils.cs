@@ -9,6 +9,7 @@ namespace ValheimVRMod.Utilities
 
         public static readonly string MAIN_CAMERA = "Main Camera";
         public static readonly string VR_CAMERA = "VRCamera";
+        public static readonly string BODY_CAMERA = "BodyCamera";
         public static readonly string VR_UI_CAMERA = "VRUICamera";
         public static readonly string HANDS_CAMERA = "VRHandsCamera";
         public static readonly string SKYBOX_CAMERA = "SkyboxCamera";

@@ -79,6 +79,12 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> useAmplifyOcclusion;
         private static ConfigEntry<float> taaSharpenAmmount;
         private static ConfigEntry<float> nearClipPlane;
+        
+        // Body Cam
+        private static ConfigEntry<bool> bodyCamEnabled;
+        private static ConfigEntry<float> bodyCamPosX;
+        private static ConfigEntry<float> bodyCamPosY;
+        private static ConfigEntry<float> bodyCamSize;
 
         public static void InitializeConfiguration(ConfigFile config)
         {
@@ -86,6 +92,7 @@ namespace ValheimVRMod.Utilities
             InitializeUISettings(config);
             InitializeControlsSettings(config);
             InitializeGraphicsSettings(config);
+            InitializeBodyCamSettings(config);
         }
 
         private static void InitializeGeneralSettings(ConfigFile config)
@@ -392,6 +399,25 @@ namespace ValheimVRMod.Utilities
                                         .05f,
                                         "This can be used to adjust the distance where where anything inside will be clipped out and not rendered. You can try adjusting this if you experience" +
                                         " problems where you see the nose of the player character for example.");
+        }
+
+        private static void InitializeBodyCamSettings(ConfigFile config) {
+            bodyCamEnabled = config.Bind("BodyCam",
+                "BodyCamEnabled",
+                false,
+                "Enables The Body Cam for Streaming");
+            bodyCamPosX = config.Bind("BodyCam",
+                "BodyCamPosX",
+                0f,
+                "X Position of Body Cam");
+            bodyCamPosY = config.Bind("BodyCam",
+                "bodyCamPosY",
+                0f,
+                "Y Position of Body Cam");
+            bodyCamSize = config.Bind("BodyCam",
+                "bodyCamSize",
+                1f,
+                "Size of Body Cam");
         }
 
         public static bool ModEnabled()
@@ -705,6 +731,23 @@ namespace ValheimVRMod.Utilities
         public static bool ToggleRun()
         {
             return runIsToggled.Value;
+        }
+        
+        public static bool BodyCamEnabled()
+        {
+            return bodyCamEnabled.Value;
+        }
+        
+        public static float BodyCamPosX() {
+            return bodyCamPosX.Value;
+        }        
+        
+        public static float BodyCamPosY() {
+            return bodyCamPosY.Value;
+        }
+        
+        public static float BodyCamSize() {
+            return bodyCamSize.Value;
         }
     }
 }

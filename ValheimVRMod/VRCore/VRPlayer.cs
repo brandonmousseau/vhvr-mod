@@ -63,6 +63,7 @@ namespace ValheimVRMod.VRCore
         private static HeadZoomLevel _headZoomLevel = HeadZoomLevel.FirstPerson;
 
         private Camera _vrCam;
+        private Camera _bodyCam;
         private Camera _handsCam;
         private Camera _skyboxCam;
 
@@ -172,6 +173,7 @@ namespace ValheimVRMod.VRCore
             UpdateAmplifyOcclusionStatus();
             checkInteractions();
             CheckSneakRoomscale();
+            updateBodyCamData();
             
         }
 
@@ -231,6 +233,33 @@ namespace ValheimVRMod.VRCore
             var effect = _vrCam.gameObject.GetComponent<AmplifyOcclusionEffect>();
             effect.SampleCount = SampleCountLevel.Medium;
             effect.enabled = VHVRConfig.UseAmplifyOcclusion();
+        }
+
+        void updateBodyCamData() {
+            
+            if (_bodyCam == null) {
+                return;
+            }
+
+            float posX = VHVRConfig.BodyCamPosX();
+            float posY = VHVRConfig.BodyCamPosY();
+            float size = VHVRConfig.BodyCamSize();
+
+            if (_bodyCam.transform.localPosition.x == posX && _bodyCam.transform.localPosition.y == posY && _bodyCam.orthographicSize == size) {
+                return;
+            }
+            
+            Debug.Log("TEST1");
+            Debug.Log("POS_X: " + _bodyCam.transform.localPosition.x + "---" + posX);
+            Debug.Log("POS_Y: " + _bodyCam.transform.localPosition.y + "---" + posY);
+            
+            _bodyCam.transform.localPosition =  new Vector3(posX, posY, 5);
+            
+            Debug.Log("TEST2");
+            Debug.Log("POS_X: " + _bodyCam.transform.localPosition.x + "---" + posX);
+            Debug.Log("POS_Y: " + _bodyCam.transform.localPosition.y + "---" + posY);
+            
+            _bodyCam.orthographicSize = size;
         }
 
         private void checkAndSetHandsAndPointers()
@@ -373,6 +402,10 @@ namespace ValheimVRMod.VRCore
             {
                 enableVrCamera();
             }
+            if (_bodyCam == null || !_bodyCam.enabled)
+            {
+                enableStreamCamera();
+            }
             if (_handsCam == null || !_handsCam.enabled)
             {
                 enableHandsCamera();
@@ -422,7 +455,48 @@ namespace ValheimVRMod.VRCore
             vrCam.enabled = true;
             _vrCam = vrCam;
         }
+        
+        private void enableStreamCamera() {
+            
+            if (getPlayerCharacter() == null) {
+                return;
+            }
 
+            if (! VHVRConfig.BodyCamEnabled()) {
+                return;
+            }
+            
+            Debug.Log("BLAAAAAAAA");
+
+            //setBodyLayers(getPlayerCharacter().transform.Find("Visual"));
+
+            var obj = new GameObject(CameraUtils.BODY_CAMERA);
+            obj.transform.parent = _instance.transform;
+            obj.transform.Rotate(new Vector3(0, 180, 0));
+            obj.transform.localScale = Vector3.one;
+            var cam = obj.AddComponent<Camera>();
+            cam.ResetProjectionMatrix();
+            //cam.cullingMask = LayerUtils.VR_BODY_LAYER_MASK;
+            cam.clearFlags = CameraClearFlags.Nothing;
+            cam.depth = 10;
+            cam.stereoTargetEye = StereoTargetEyeMask.None;
+            cam.orthographic = true;
+            cam.nearClipPlane = 0.01f;
+            _bodyCam = cam;
+        }
+
+        public static void setBodyLayers(Transform target) {
+        
+            Debug.Log("LAYER: " + target.gameObject.layer);
+            target.gameObject.layer = LayerUtils.getBodyLayer();
+        
+            for (int i = 0; i < target.childCount; i++)
+            {
+                setBodyLayers(target.GetChild(i));
+            }
+
+        }
+        
         private void enableHandsCamera()
         {
             // Create a camera and assign its culling mask

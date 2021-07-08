@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
+using ValheimVRMod.VRCore;
 
 namespace ValheimVRMod.Patches {
 
@@ -160,6 +161,18 @@ namespace ValheimVRMod.Patches {
             foreach (Renderer renderer in obj.GetComponentsInChildren<Renderer>()) {
                 renderer.shadowCastingMode = ShadowCastingMode.ShadowsOnly;    
             }
+        }
+    }
+        
+    [HarmonyPatch(typeof(VisEquipment), "AttachItem")]
+    class PatchAttachItem {
+        static void Postfix(VisEquipment __instance, Transform joint) {
+
+            if (__instance.GetComponentInParent<Player>() != Player.m_localPlayer) {
+                return;
+            }
+            
+            VRPlayer.setBodyLayers(joint);
         }
     }
 }
