@@ -12,9 +12,9 @@ namespace ValheimVRMod.Scripts {
         
         static readonly float MIN_CHANGE = 0.001f;
         
-        public GameObject camera = new GameObject();
-        public GameObject rightHand = new GameObject();
-        public GameObject leftHand = new GameObject();
+        public GameObject camera = null;
+        public GameObject rightHand = null;
+        public GameObject leftHand = null;
 
         private Vector3 ownerLastPositionCamera = Vector3.zero;
         private Vector3 ownerVelocityCamera = Vector3.zero;
@@ -44,6 +44,12 @@ namespace ValheimVRMod.Scripts {
         public BowManager bowManager;
         public GameObject currentLeftWeapon;
         public GameObject currentRightWeapon;
+
+        private void Awake() {
+            camera = new GameObject();
+            rightHand = new GameObject();
+            leftHand = new GameObject();
+        }
 
         void Start()
         {
