@@ -120,7 +120,6 @@ namespace ValheimVRMod.Scripts {
         }
         private Vector3 CalculatePos()
         {
-            LogUtils.LogDebug("Scale : " + scaleRef + " - " + scaleRef * scaling + " - " +scaling);
             return VRPlayer.leftHand.transform.InverseTransformDirection(VRPlayer.leftHand.transform.TransformDirection(posRef) *(scaleRef * scaling).x);
         }
     }
