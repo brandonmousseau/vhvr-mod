@@ -165,6 +165,7 @@ namespace ValheimVRMod.VRCore.UI
                     var stepRotation = Quaternion.LookRotation(stepDirection, VRPlayer.instance.transform.up);
                     _uiPanel.transform.rotation = stepRotation;
                     _uiPanel.transform.position = playerInstance.transform.position + stepRotation * offsetPosition;
+                    lastVrPlayerRotation = VRPlayer.instance.transform.rotation;
                     maybeResetIsRecentering(stepDirection, targetDirection);
                 } else
                 {
