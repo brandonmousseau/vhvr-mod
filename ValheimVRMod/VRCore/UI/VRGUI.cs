@@ -154,24 +154,26 @@ namespace ValheimVRMod.VRCore.UI
             if (useDynamicallyPositionedGui())
             {
                 var playerInstance = Player.m_localPlayer;
-                var currentRotation = getCurrentGuiRotation();
+                var currentDirection = getCurrentGuiDirection();
                 if (isRecentering)
                 {
                     // We are currently recentering, so calculate a new rotation a step towards the targe rotation
                     // and set the GUI position using that rotation. If the new rotation is close enough to
                     // the target rotation, then stop recentering for the next frame.
-                    var targetRotation = getTargetGuiRotation();
-                    var stepRotation = Quaternion.RotateTowards(currentRotation, targetRotation, getRecenterStepSize(targetRotation, currentRotation));
+                    var targetDirection = getTargetGuiDirection();
+                    var stepDirection = Vector3.Slerp(currentDirection, targetDirection, VHVRConfig.GuiRecenterSpeed() * Mathf.Deg2Rad * Time.deltaTime);
+                    var stepRotation = Quaternion.LookRotation(stepDirection, VRPlayer.instance.transform.up);
                     _uiPanel.transform.rotation = stepRotation;
                     _uiPanel.transform.position = playerInstance.transform.position + stepRotation * offsetPosition;
-                    maybeResetIsRecentering(stepRotation, targetRotation);
+                    maybeResetIsRecentering(stepDirection, targetDirection);
                 } else
                 {
                     // We are not recentering, so keep the GUI in front of the player. Need to account for
                     // any rotation of the VRPlayer instance caused by mouse or joystick input since the last frame.
-                    Quaternion rotationDelta = VRPlayer.instance.transform.rotation * Quaternion.Inverse(lastVrPlayerRotation);
+                    float rotationDelta = VRPlayer.instance.transform.rotation.eulerAngles.y - lastVrPlayerRotation.eulerAngles.y;
                     lastVrPlayerRotation = VRPlayer.instance.transform.rotation;
-                    var newRotation = currentRotation * rotationDelta;
+                    var newRotation = Quaternion.LookRotation(currentDirection, VRPlayer.instance.transform.up);
+                    newRotation *= Quaternion.AngleAxis(rotationDelta, Vector3.up);
                     _uiPanel.transform.rotation = newRotation;
                     _uiPanel.transform.position = playerInstance.transform.position +  newRotation * offsetPosition;
                 }
@@ -378,21 +380,23 @@ namespace ValheimVRMod.VRCore.UI
             var offsetRotation = Quaternion.identity;
             if (useDynamicallyPositionedGui())
             {
-                var currentRotation = getCurrentGuiRotation();
+                var currentDirection = getCurrentGuiDirection();
                 if (isRecentering)
                 {
                     // We are currently recentering, so calculate a new rotation a step towards the target
                     // rotation and reposition the GUI to that rotation. If the new rotation is close
                     // enough to the target, then end recentering for next frame.
-                    var targetRotation = getTargetGuiRotation();
-                    var stepRotation = Quaternion.RotateTowards(currentRotation, targetRotation, getRecenterStepSize(targetRotation, currentRotation));
+                    var targetDirection = getTargetGuiDirection();
+                    var stepDirection = Vector3.Slerp(currentDirection, targetDirection, VHVRConfig.GuiRecenterSpeed() * Mathf.Deg2Rad * Time.deltaTime);
+                    var stepRotation = Quaternion.LookRotation(stepDirection, VRPlayer.instance.transform.up);
                     offsetPosition = stepRotation * offsetPosition;
                     offsetRotation = stepRotation;
-                    maybeResetIsRecentering(stepRotation, targetRotation);
+                    maybeResetIsRecentering(stepDirection, targetDirection);
                 }
                 else
                 {
                     // Not recentering, so leave the GUI position where it is at
+                    var currentRotation = Quaternion.LookRotation(currentDirection, VRPlayer.instance.transform.up);
                     offsetPosition = currentRotation * offsetPosition;
                     offsetRotation = currentRotation;
                 }
@@ -423,70 +427,62 @@ namespace ValheimVRMod.VRCore.UI
             }
         }
 
-        private void maybeResetIsRecentering(Quaternion updatedAngle, Quaternion target)
+        private void maybeResetIsRecentering(Vector3 newDirection, Vector3 target)
         {
-            if (Mathf.Abs(Quaternion.Angle(updatedAngle, target)) <= RECENTERED_TOLERANCE)
+            float recenterAngle = Mathf.Abs(Vector3.Angle(newDirection, target)) % 180f;
+            if (recenterAngle <= RECENTERED_TOLERANCE || recenterAngle >= 180f - RECENTERED_TOLERANCE)
             {
                 isRecentering = false;
             }
         }
 
-        private float getRecenterStepSize(Quaternion target, Quaternion current)
+        private Vector3 getTargetGuiDirection()
         {
-            // Scale the step size by the angle difference between the
-            // target rotation and current rotation
-            return Mathf.Abs(Quaternion.Angle(target, current)) * .1f;
-        }
-
-        private Quaternion getTargetGuiRotation()
-        {
+            Vector3 forwardDirection = Vector3.forward;
             if (Player.m_localPlayer != null)
             {
-                if (USING_OVERLAY)
+                if (!USING_OVERLAY)
                 {
-                    return Player.m_localPlayer.transform.rotation * Quaternion.Inverse(VRPlayer.instance.transform.rotation);
-                } else
-                {
-                    float hmdAngle = VRPlayer.instance.GetComponent<Valve.VR.InteractionSystem.Player>().hmdTransform.rotation.eulerAngles.y;
-                    return Quaternion.Euler(0f, hmdAngle, 0f);
+                    forwardDirection = Valve.VR.InteractionSystem.Player.instance.hmdTransform.forward;
+                    forwardDirection.y = 0;
+                    forwardDirection.Normalize();
                 }
-            } else
-            {
-                return Quaternion.identity;
             }
+            
+            return forwardDirection;
         }
 
-        private Quaternion getCurrentGuiRotation()
+        private Vector3 getCurrentGuiDirection()
         {
             if (USING_OVERLAY)
             {
                 var overlay = OpenVR.Overlay;
                 if (overlay == null)
                 {
-                    return Quaternion.identity;
+                    return Vector3.forward;
                 }
                 var currentTransform = new HmdMatrix34_t();
                 var trackingOrigin = SteamVR.settings.trackingSpace;
                 var error = overlay.GetOverlayTransformAbsolute(_overlay, ref trackingOrigin, ref currentTransform);
                 if (error != EVROverlayError.None)
                 {
-                    return Quaternion.identity;
+                    return Vector3.forward;
                 }
-                return new SteamVR_Utils.RigidTransform(currentTransform).rot;
+                return new SteamVR_Utils.RigidTransform(currentTransform).rot * Vector3.forward;
             } else
             {
                 if (!ensureUIPanel())
                 {
-                    return Quaternion.identity;
+                    return Vector3.forward;
                 }
-                return _uiPanel.transform.rotation;
+                return _uiPanel.transform.forward;
             }
         }
 
         private bool headGuiAngleExceeded(bool moving)
         {
             var maxAngle = moving ? VHVRConfig.MobileGuiRecenterAngle() : VHVRConfig.StationaryGuiRecenterAngle();
-            return Mathf.Abs(Quaternion.Angle(getCurrentGuiRotation(), getTargetGuiRotation())) > maxAngle;
+            return Mathf.Abs(Vector3.Angle(getCurrentGuiDirection(), getTargetGuiDirection())) % 360f > maxAngle;
         }
 
         public static void triggerGuiRecenter()

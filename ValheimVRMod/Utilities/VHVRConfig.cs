@@ -42,6 +42,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> stationaryGuiRecenterAngle;
         private static ConfigEntry<float> mobileGuiRecenterAngle;
         private static ConfigEntry<bool> recenterGuiOnMove;
+        private static ConfigEntry<float> guiRecenterSpeed;
         private static ConfigEntry<bool> useArrowPredictionGraphic;
         private static ConfigEntry<float> DebugPosX;
         private static ConfigEntry<float> DebugPosY;
@@ -233,6 +234,10 @@ namespace ValheimVRMod.Utilities
                                             "RecenterGuiOnMove",
                                             true,
                                             "Only used when UseLookLocomotion is true. This will cause the GUI to recenter to your current look direction when you first start moving.");
+            guiRecenterSpeed = config.Bind("UI",
+                                            "GuiRecenterSpeed",
+                                            180f,
+                                            "Speed in degrees per second of the Gui recentering algorithm");
             useArrowPredictionGraphic = config.Bind("UI",
                                                      "UseArrowPredictionGraphic",
                                                      true,
@@ -625,6 +630,11 @@ namespace ValheimVRMod.Utilities
         public static bool RecenterGuiOnMove()
         {
             return recenterGuiOnMove.Value;
+        }
+
+        public static float GuiRecenterSpeed()
+        {
+            return guiRecenterSpeed.Value;
         }
 
         public static bool UseVrControls()
