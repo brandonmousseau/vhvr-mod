@@ -113,7 +113,7 @@ namespace ValheimVRMod.Patches
             }
             if (VRPlayer.attachedToPlayer)
             {
-                var hmdTransform = VRPlayer.instance.GetComponent<Valve.VR.InteractionSystem.Player>().hmdTransform;
+                var hmdTransform = Valve.VR.InteractionSystem.Player.instance.hmdTransform;
                 // Set the eye rotation equal to HMD rotation
                 __instance.m_eye.rotation = hmdTransform.rotation;
             } else if (!VRPlayer.attachedToPlayer)

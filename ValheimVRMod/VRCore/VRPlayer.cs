@@ -738,7 +738,6 @@ namespace ValheimVRMod.VRCore
                 headPositionInitialized = true;
 
                 referencePlayerHeight = Valve.VR.InteractionSystem.Player.instance.eyeHeight;
-                playerCharacter.GetComponent<CapsuleCollider>().radius = 0.2f;
             }
         }
 
