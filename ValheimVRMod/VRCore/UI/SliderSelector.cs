@@ -28,23 +28,26 @@ namespace ValheimVRMod.VRCore.UI
 
         private void Update() 
         {
-            float axisValue = VRControls.instance.GetJoyRightStickX();
-            if(Mathf.Abs(axisValue) > SLIDER_DEADZONE)
+            if(VRControls.mainControlsActive)
             {
-                if(_doSliderMovementDelayed == null)
+                float axisValue = VRControls.instance.GetJoyRightStickX();
+                if(Mathf.Abs(axisValue) > SLIDER_DEADZONE)
                 {
-                    float sign = Mathf.Sign(axisValue);
-                    float delay = _cumulativeDirection != 0 ? SLIDER_COOLDOWN / Mathf.Abs(_cumulativeDirection): 0;
-                    StartCoroutine((_doSliderMovementDelayed = DoSliderMovement(delay, sign)));
+                    if(_doSliderMovementDelayed == null)
+                    {
+                        float sign = Mathf.Sign(axisValue);
+                        float delay = _cumulativeDirection != 0 ? SLIDER_COOLDOWN / Mathf.Abs(_cumulativeDirection): 0;
+                        StartCoroutine((_doSliderMovementDelayed = DoSliderMovement(delay, sign)));
+                    }
                 }
+                else if(_doSliderMovementDelayed != null)
+                {
+                    _cumulativeDirection = 0;
+                    StopCoroutine(_doSliderMovementDelayed);
+                    _doSliderMovementDelayed = null;
+                }
+                else _cumulativeDirection = 0;
             }
-            else if(_doSliderMovementDelayed != null)
-            {
-                _cumulativeDirection = 0;
-                StopCoroutine(_doSliderMovementDelayed);
-                _doSliderMovementDelayed = null;
-            }
-            else _cumulativeDirection = 0;
         }
 
         private IEnumerator DoSliderMovement(float delay, float direction)
