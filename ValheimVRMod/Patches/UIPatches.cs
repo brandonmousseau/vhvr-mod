@@ -630,60 +630,80 @@ namespace ValheimVRMod.Patches
     }
 
     
-    // [HarmonyPatch(typeof(InstanceRenderer), "Update")]
-    // class BirchTreeFix {
-    //
-    //     public static void Prefix(ref InstanceRenderer __instance) {
-    //         if (VHVRConfig.NonVrPlayer()) {
-    //             return;
-    //         }
-    //
-    //         __instance.m_bounds.radius = 0;
-    //         __instance.m_lodMinDistance = 0f;
-    //         __instance.m_frustumCull = false;
-    //         __instance.m_useXZLodDistance = false;
-    //         __instance.m_dirtyBounds = false;
-    //
-    //     }
-    // }
-    //
-    // [HarmonyPatch(typeof(CircleProjector), "Update")]
-    // class BirchTreeFix2 {
-    //
-    //     public static void Prefix(ref CircleProjector __instance) {
-    //         if (VHVRConfig.NonVrPlayer()) {
-    //             return;
-    //         }
-    //
-    //         __instance.m_radius = 0;
-    //         
-    //     }
-    // }
-    //
-    // [HarmonyPatch(typeof(GameCamera), "UpdateNearClipping")]
-    // class BirchTreeFix3 {
-    //
-    //     public static void Prefix(ref GameCamera __instance) {
-    //         if (VHVRConfig.NonVrPlayer()) {
-    //             return;
-    //         }
-    //
-    //         __instance.m_nearClipPlaneMin = 0;
-    //         __instance.m_nearClipPlaneMax = 0;
-    //         
-    //     }
-    // }
-    //
-    // [HarmonyPatch(typeof(TreeBase), "Awake")]
-    // class BLALALAL {
-    //
-    //     public static void Postfix(ref TreeBase __instance) {
-    //         if (VHVRConfig.NonVrPlayer()) {
-    //             return;
-    //         }
-    //
-    //         LogChildTree(__instance.m_trunk.transform);
-    //         
-    //     }
-    // }
+    [HarmonyPatch(typeof(InstanceRenderer), "Update")]
+    class BirchTreeFix {
+    
+        public static void Prefix(ref InstanceRenderer __instance) {
+            if (VHVRConfig.NonVrPlayer()) {
+                return;
+            }
+    
+            __instance.m_bounds.radius = 0;
+            __instance.m_lodMinDistance = 0f;
+            __instance.m_frustumCull = false;
+            __instance.m_useXZLodDistance = false;
+            __instance.m_dirtyBounds = false;
+    
+        }
+    }
+    
+    [HarmonyPatch(typeof(CircleProjector), "Update")]
+    class BirchTreeFix2 {
+    
+        public static void Prefix(ref CircleProjector __instance) {
+            if (VHVRConfig.NonVrPlayer()) {
+                return;
+            }
+    
+            __instance.m_radius = 0;
+            
+        }
+    }
+    
+    [HarmonyPatch(typeof(GameCamera), "UpdateNearClipping")]
+    class BirchTreeFix3 {
+    
+        public static void Prefix(ref GameCamera __instance) {
+            if (VHVRConfig.NonVrPlayer()) {
+                return;
+            }
+
+            __instance.m_nearClipPlaneMin = 0;
+            __instance.m_nearClipPlaneMax = 0;
+            
+        }
+    }
+    
+    [HarmonyPatch(typeof(TreeBase), "Awake")]
+    class BLALALAL {
+
+        private static bool done;
+        
+        public static void Prefix(ref TreeBase __instance) {
+            if (VHVRConfig.NonVrPlayer() || ! __instance.gameObject.name.StartsWith("Birch")) {
+                return;
+            }
+
+            if (!done) {
+
+                LogChildTree(__instance.transform);
+                
+                Debug.Log("Name: " +  __instance.GetComponentInChildren<MeshRenderer>().material.shader.name); //Custom/Vegetation
+
+                foreach (MeshRenderer meshRenderer in __instance.GetComponentsInChildren<MeshRenderer>()) {
+                    foreach (string keyword in meshRenderer.material.GetTexturePropertyNames()) {
+                        Debug.Log("Keyword: " + keyword);
+                    }
+                }
+                
+                
+                done = true;
+            }
+
+            foreach (MeshRenderer meshRenderer in __instance.GetComponentsInChildren<MeshRenderer>()) {
+                meshRenderer.material.SetFloat("_CamCull", 0);  
+                meshRenderer.material.SetFloat("_Cull", 0);  
+            }
+        }
+    }
 }
