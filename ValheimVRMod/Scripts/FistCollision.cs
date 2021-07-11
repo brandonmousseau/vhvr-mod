@@ -10,10 +10,14 @@ namespace ValheimVRMod.Scripts {
         private const float MIN_DISTANCE = 0.2f;
         private const int MAX_SNAPSHOTS = 20;
 
-        private GameObject colliderParent = new GameObject();
+        private GameObject colliderParent = null;
         private List<Vector3> snapshots = new List<Vector3>();
         private bool isRightHand;
         private HandGesture handGesture;
+
+        private void Awake() {
+           colliderParent = new GameObject();
+        }
 
         private void OnTriggerEnter(Collider collider) {
             if (!isCollisionAllowed()) {

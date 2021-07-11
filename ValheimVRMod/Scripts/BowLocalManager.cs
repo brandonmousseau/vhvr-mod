@@ -143,15 +143,20 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
+            if (Player.m_localPlayer.GetStamina() <= 0) {
+                releaseString(true);
+                return;
+            }
+            
             arrowAttach.transform.rotation = pullObj.transform.rotation;
             arrowAttach.transform.position = pullObj.transform.position;
             spawnPoint = transform.position;
             aimDir = -transform.forward;
-            attackDrawPercentage = pullPercentage();
-
-            if (Player.m_localPlayer.GetStamina() <= 0) {
-                releaseString(true);
+            var currDrawPercentage = pullPercentage();
+            if (arrow != null) {
+                Player.m_localPlayer.UseStamina((currDrawPercentage - attackDrawPercentage) * 15);   
             }
+            attackDrawPercentage = currDrawPercentage;
         }
 
         private void releaseString(bool withoutShoot = false) {
@@ -195,6 +200,7 @@ namespace ValheimVRMod.Scripts {
                 startedPulling = true;
                 isPulling = true;
                 predictionLine.enabled = VHVRConfig.UseArrowPredictionGraphic();
+                attackDrawPercentage = 0;
             }
 
             return pulling = true;
@@ -225,6 +231,9 @@ namespace ValheimVRMod.Scripts {
             Destroy(findTrail(arrow.transform));
             arrow.transform.localRotation = Quaternion.identity;
             arrow.transform.localPosition = new Vector3(0, 0, 1.25f);
+            foreach (ParticleSystem particleSystem in arrow.GetComponentsInChildren<ParticleSystem>()) {
+                particleSystem.transform.localScale *= VHVRConfig.ArrowParticleSize();
+            }
             arrowAttach.transform.localRotation = Quaternion.identity;
             arrowAttach.transform.localPosition = Vector3.zero;
             

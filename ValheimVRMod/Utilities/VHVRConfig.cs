@@ -83,6 +83,10 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> useAmplifyOcclusion;
         private static ConfigEntry<float> taaSharpenAmmount;
         private static ConfigEntry<float> nearClipPlane;
+        
+        // Bow Settings
+        private static ConfigEntry<bool> useArrowPredictionGraphic;
+        private static ConfigEntry<float> arrowParticleSize;
 
         public static void InitializeConfiguration(ConfigFile config)
         {
@@ -233,10 +237,14 @@ namespace ValheimVRMod.Utilities
                                             "RecenterGuiOnMove",
                                             true,
                                             "Only used when UseLookLocomotion is true. This will cause the GUI to recenter to your current look direction when you first start moving.");
-            useArrowPredictionGraphic = config.Bind("UI",
+            useArrowPredictionGraphic = config.Bind("Bow",
                                                      "UseArrowPredictionGraphic",
                                                      true,
                                                      "Use this to toggle the path predictor when using the bow and arrow with VR controls.");
+            arrowParticleSize = config.Bind("Bow",
+                "ArrowParticleSize",
+                0.5f,
+                "set size of the particles on drawing arrows (fire,poison, etc.)");
             DebugPosX = config.Bind("UI",
                 "DebugPosX",
                 0.0f,
@@ -751,6 +759,10 @@ namespace ValheimVRMod.Utilities
         public static bool SpearTwoHanded()
         {
             return spearTwoHanded.Value;
+        
+        public static float ArrowParticleSize()
+        {
+            return arrowParticleSize.Value;
         }
     }
 }

@@ -80,7 +80,10 @@ namespace ValheimVRMod.Patches
                 ItemDrop.ItemData hiddenLeftItem =___m_hiddenLeftItem;
                 ___m_hiddenLeftItem = null;
                 if (hiddenLeftItem != null) {
+                    var item = ___m_hiddenRightItem;
                     __instance.EquipItem(hiddenLeftItem);
+                    ___m_hiddenRightItem = item;
+                    __instance.SetupVisEquipment(__instance.m_visEquipment, false);
                 }
             }
     
@@ -89,7 +92,10 @@ namespace ValheimVRMod.Patches
                 ItemDrop.ItemData hiddenRightItem = ___m_hiddenRightItem;
                 ___m_hiddenRightItem = null;
                 if (hiddenRightItem != null) {
-                    __instance.EquipItem(hiddenRightItem);    
+                    var item = ___m_hiddenLeftItem;
+                    __instance.EquipItem(hiddenRightItem);
+                    ___m_hiddenLeftItem = item;
+                    __instance.SetupVisEquipment(__instance.m_visEquipment, false);
                 }
             }
             
@@ -124,7 +130,7 @@ namespace ValheimVRMod.Patches
     [HarmonyPatch(typeof(Humanoid), "UnequipItem")]
     class PatchUnEquipItem {
 
-        static void Prefix(Humanoid __instance, ItemDrop.ItemData item, ItemDrop.ItemData ___m_leftItem, ItemDrop.ItemData ___m_rightItem) {
+        static void Postfix(Humanoid __instance, ItemDrop.ItemData item, ItemDrop.ItemData ___m_leftItem, ItemDrop.ItemData ___m_rightItem) {
 
             if (__instance.GetType() != typeof(Player)) {
                 return;
@@ -141,16 +147,12 @@ namespace ValheimVRMod.Patches
                     vrPlayerSync.currentRightWeapon = null;
                 }
 
-                VrikCreator.resetVrikHandTransform((Player) __instance);   
-            }
-
-            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls()) {
-                return;
-            }
-
-            if (StaticObjects.quickSwitch != null) {
-                StaticObjects.quickSwitch.GetComponent<QuickSwitch>().refreshItems();
-                StaticObjects.quickActions.GetComponent<QuickActions>().refreshItems();
+                VrikCreator.resetVrikHandTransform(__instance);   
+                
+                if (StaticObjects.quickSwitch != null) {
+                    StaticObjects.quickSwitch.GetComponent<QuickSwitch>().refreshItems();
+                    StaticObjects.quickActions.GetComponent<QuickActions>().refreshItems();
+                }
             }
         }
     }

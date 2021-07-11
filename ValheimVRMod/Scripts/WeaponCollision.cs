@@ -170,14 +170,19 @@ namespace ValheimVRMod.Scripts {
 
 
         private void Update() {
-
+            
             if (!outline) {
                 return;
             }
-            
-            if (outline.enabled && Player.m_localPlayer.HaveStamina(getStaminaUsage() + 0.1f)) {
+
+            var inCooldown = MeshCooldown.sharedInstance != null && MeshCooldown.sharedInstance.inCoolDown();
+
+            if (outline.enabled && Player.m_localPlayer.HaveStamina(getStaminaUsage() + 0.1f)
+                                && (attack.m_attackType == Attack.AttackType.Horizontal || !inCooldown)) {
                 outline.enabled = false;
-            } else if (! outline.enabled && ! Player.m_localPlayer.HaveStamina(getStaminaUsage() + 0.1f)) {
+            }
+            else if (!outline.enabled && (!Player.m_localPlayer.HaveStamina(getStaminaUsage() + 0.1f)
+                                          || attack.m_attackType != Attack.AttackType.Horizontal && inCooldown)) {
                 outline.enabled = true;
             }
         }

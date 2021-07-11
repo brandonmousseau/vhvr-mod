@@ -109,11 +109,14 @@ namespace ValheimVRMod.Utilities
                     0,  0, 0,
                     0.08946446f,  0.05617056f, 0.1811694f
                 )}, {
-                "SpearChitin", WeaponColData.create( 
-                    0,  1.12f, 0.008f,
-                    0,  0, 0,
-                    0.01591795f,  0.8536723f, 0.09076092f
-                )}, {
+                // SpearChitin currently has no melee attack, thus collider throws error.
+                // Still keeping this commented, in case it changes some day
+                //
+                // "SpearChitin", WeaponColData.create( 
+                //     0,  1.12f, 0.008f,
+                //     0,  0, 0,
+                //     0.01591795f,  0.8536723f, 0.09076092f
+                // )}, {
                 "SpearElderbark", WeaponColData.create( 
                     0,  2.0915f, 0,
                     0,  0, 0,
