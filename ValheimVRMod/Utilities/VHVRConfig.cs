@@ -43,7 +43,6 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> mobileGuiRecenterAngle;
         private static ConfigEntry<bool> recenterGuiOnMove;
         private static ConfigEntry<float> guiRecenterSpeed;
-        private static ConfigEntry<bool> useArrowPredictionGraphic;
         private static ConfigEntry<float> DebugPosX;
         private static ConfigEntry<float> DebugPosY;
         private static ConfigEntry<float> DebugPosZ;
