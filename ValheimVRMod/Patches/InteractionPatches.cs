@@ -80,7 +80,10 @@ namespace ValheimVRMod.Patches
                 ItemDrop.ItemData hiddenLeftItem =___m_hiddenLeftItem;
                 ___m_hiddenLeftItem = null;
                 if (hiddenLeftItem != null) {
+                    var item = ___m_hiddenRightItem;
                     __instance.EquipItem(hiddenLeftItem);
+                    ___m_hiddenRightItem = item;
+                    __instance.SetupVisEquipment(__instance.m_visEquipment, false);
                 }
             }
     
@@ -89,7 +92,10 @@ namespace ValheimVRMod.Patches
                 ItemDrop.ItemData hiddenRightItem = ___m_hiddenRightItem;
                 ___m_hiddenRightItem = null;
                 if (hiddenRightItem != null) {
-                    __instance.EquipItem(hiddenRightItem);    
+                    var item = ___m_hiddenLeftItem;
+                    __instance.EquipItem(hiddenRightItem);
+                    ___m_hiddenLeftItem = item;
+                    __instance.SetupVisEquipment(__instance.m_visEquipment, false);
                 }
             }
             
