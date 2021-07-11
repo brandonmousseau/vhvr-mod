@@ -73,6 +73,7 @@ namespace ValheimVRMod.VRCore
         private Transform _vrCameraRig;
         private Vector3 _lastCamPosition = Vector3.zero;
         private Vector3 _lastPlayerPosition = Vector3.zero;
+        private Vector3 _lastPlayerAttachmentPosition = Vector3.zero;
         private FadeToBlackManager _fadeManager;
         private float _forwardSmoothVel = 0.0f, _sideSmoothVel = 0.0f;
         private static float _roomscaleAnimationForwardSpeed = 0.0f;
@@ -983,13 +984,21 @@ namespace ValheimVRMod.VRCore
                 if(VHVRConfig.RoomscaleFadeToBlack() && !_fadeManager.IsFadingToBlack)
                 {
                     var lastDeltaMovement = player.m_body.position - _lastPlayerPosition;
+                    if(player.m_lastAttachBody && _lastPlayerAttachmentPosition != Vector3.zero)
+                    {
+                        //Account for ships, and moving attachments
+                        lastDeltaMovement -= (player.m_lastAttachBody.position - _lastPlayerAttachmentPosition);
+                    }
                     lastDeltaMovement.y = 0;
-                    if(roomscaleMovement.sqrMagnitude * 0.5 > lastDeltaMovement.sqrMagnitude)
+
+                    if(roomscaleMovement.magnitude * 0.6f > lastDeltaMovement.magnitude)
                     {
                         SteamVR_Fade.Start(Color.black, 0);
                         SteamVR_Fade.Start(Color.clear, 1.5f); 
                     }
+
                     _lastPlayerPosition = player.m_body.position;
+                    _lastPlayerAttachmentPosition = player.m_lastAttachBody ? player.m_lastAttachBody.position : Vector3.zero;
                 }
 
                 //Calculate new postion
