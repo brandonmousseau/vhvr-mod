@@ -341,6 +341,7 @@
     <Compile Include="VRCore\UI\EnemyHudManager.cs" />
     <Compile Include="VRCore\UI\PlaceModeRayVectorProvider.cs" />
     <Compile Include="VRCore\UI\RepairModePositionIndicator.cs" />
+    <Compile Include="VRCore\UI\SliderSelector.cs" />
     <Compile Include="VRCore\UI\SoftwareCursor.cs" />
     <Compile Include="VRCore\UI\VRControls.cs" />
     <Compile Include="VRCore\UI\VRGUI.cs" />
