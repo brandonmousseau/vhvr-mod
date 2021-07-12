@@ -1,4 +1,5 @@
-﻿using static ValheimVRMod.Utilities.LogUtils;
+﻿using System.Collections.Generic;
+using static ValheimVRMod.Utilities.LogUtils;
 
 using UnityEngine;
 
@@ -7,16 +8,17 @@ namespace ValheimVRMod.Utilities
     static class CameraUtils
     {
 
-        public static readonly string MAIN_CAMERA = "Main Camera";
-        public static readonly string VR_CAMERA = "VRCamera";
-        public static readonly string VR_UI_CAMERA = "VRUICamera";
-        public static readonly string HANDS_CAMERA = "VRHandsCamera";
-        public static readonly string SKYBOX_CAMERA = "SkyboxCamera";
-        public static readonly string VRSKYBOX_CAMERA = "VRSkyboxCamera";
-        public static readonly string VRGUI_SCREENSPACE_CAM = "VRGuiScreenSpace";
-        public static readonly string WORLD_SPACE_UI_CAMERA = "WorldSpaceUiCamera";
+        public const string MAIN_CAMERA = "Main Camera";
+        public const string VR_CAMERA = "VRCamera";
+        public const string VR_UI_CAMERA = "VRUICamera";
+        public const string HANDS_CAMERA = "VRHandsCamera";
+        public const string SKYBOX_CAMERA = "SkyboxCamera";
+        public const string VRSKYBOX_CAMERA = "VRSkyboxCamera";
+        public const string VRGUI_SCREENSPACE_CAM = "VRGuiScreenSpace";
+        public const string WORLD_SPACE_UI_CAMERA = "WorldSpaceUiCamera";
 
         private static Camera _worldSpaceUiCamera;
+        private static Dictionary<string, Camera> _cameraCache = new Dictionary<string, Camera>();
         private static int worldSpaceUiDepth = 1;
 
         public static void copyCamera(Camera from, Camera to)
@@ -70,13 +72,20 @@ namespace ValheimVRMod.Utilities
 
         public static Camera getCamera(string name)
         {
+            //Check cache
+            if(_cameraCache.ContainsKey(name) && _cameraCache[name] != null) return _cameraCache[name];
+
+            //Update cache
             foreach (var c in GameObject.FindObjectsOfType<Camera>())
             {
                 if (c.name == name)
                 {
+                    _cameraCache.Remove(name);
+                    _cameraCache.Add(name, c);
                     return c;
                 }
             }
+
             return null;
         }
 
