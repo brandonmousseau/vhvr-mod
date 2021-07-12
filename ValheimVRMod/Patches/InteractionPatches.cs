@@ -130,7 +130,7 @@ namespace ValheimVRMod.Patches
     [HarmonyPatch(typeof(Humanoid), "UnequipItem")]
     class PatchUnEquipItem {
 
-        static void Postfix(Humanoid __instance, ItemDrop.ItemData item, ItemDrop.ItemData ___m_leftItem, ItemDrop.ItemData ___m_rightItem) {
+        static void Prefix(Humanoid __instance, ItemDrop.ItemData item, ItemDrop.ItemData ___m_leftItem, ItemDrop.ItemData ___m_rightItem) {
 
             if (__instance.GetType() != typeof(Player)) {
                 return;
@@ -147,12 +147,14 @@ namespace ValheimVRMod.Patches
                     vrPlayerSync.currentRightWeapon = null;
                 }
 
-                VrikCreator.resetVrikHandTransform(__instance);   
-                
-                if (StaticObjects.quickSwitch != null) {
-                    StaticObjects.quickSwitch.GetComponent<QuickSwitch>().refreshItems();
-                    StaticObjects.quickActions.GetComponent<QuickActions>().refreshItems();
-                }
+                VrikCreator.resetVrikHandTransform(__instance);
+            }
+        }
+
+        static void Postfix() {
+            if (StaticObjects.quickSwitch != null) {
+                StaticObjects.quickSwitch.GetComponent<QuickSwitch>().refreshItems();
+                StaticObjects.quickActions.GetComponent<QuickActions>().refreshItems();
             }
         }
     }

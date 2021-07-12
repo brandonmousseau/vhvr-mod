@@ -8,7 +8,7 @@ namespace ValheimVRMod.Scripts {
         private Vector3[] verts;
         private bool wasPulling;
         
-        protected float maxPullLength;
+        protected const float maxPullLength = 0.6f;
         protected Vector3 stringTop;
         protected Vector3 stringBottom;
         protected Vector3 pullStart;
@@ -76,7 +76,6 @@ namespace ValheimVRMod.Scripts {
             }
             
             pullStart = Vector3.Lerp(stringTop, stringBottom, 0.5f);
-            maxPullLength = 0.6f - pullStart.z;
             initialized = true;
         }
 
@@ -129,14 +128,17 @@ namespace ValheimVRMod.Scripts {
         }
 
         private void pullString() {
-            if (Vector3.Distance(rightHand.position, transform.TransformPoint(pullStart)) <
-                maxPullLength) {
-                pullObj.transform.position = rightHand.position;
-
-                if (pullObj.transform.localPosition.z - pullStart.z < 0) {
-                    pullObj.transform.localPosition = new Vector3(pullObj.transform.localPosition.x, pullObj.transform.localPosition.y, pullStart.z);
-                }
-            } 
+            
+            pullObj.transform.position = rightHand.position;
+            var pullPos = pullObj.transform.localPosition;
+            
+            if (pullPos.z > maxPullLength) {
+                pullObj.transform.localPosition = new Vector3(pullPos.x, pullPos.y, maxPullLength);
+            }
+            
+            if (pullPos.z < pullStart.z) {
+                pullObj.transform.localPosition = new Vector3(pullPos.x, pullPos.y, pullStart.z);
+            }
         }
     }
 }

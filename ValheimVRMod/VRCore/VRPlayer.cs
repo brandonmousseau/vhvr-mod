@@ -895,11 +895,15 @@ namespace ValheimVRMod.VRCore
 
                 if (action.GetStateDown(inputSource))
                 {
+
+                    if(isRightHand && isHoldingItem(isRightHand) && isUnpressSheath()) {
+                        return;
+                    } 
+                 
                     toggleShowHand = false;
                     hand.hapticAction.Execute(0, 0.2f, 100, 0.3f, inputSource);
-                    if(isRightHand && isHoldingItem(isRightHand) && isUnpressSheath()) {
-
-                    } else if (isRightHand && EquipScript.getLeft() == EquipType.Bow) {
+                    
+                    if (isRightHand && EquipScript.getLeft() == EquipType.Bow) {
                         BowLocalManager.instance.toggleArrow();
                     } else if (isHoldingItem(isRightHand)) {
                         getPlayerCharacter().HideHandItems();

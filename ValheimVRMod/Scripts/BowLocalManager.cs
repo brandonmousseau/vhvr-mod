@@ -187,7 +187,7 @@ namespace ValheimVRMod.Scripts {
         }
 
         private float pullPercentage() {
-            return (pullObj.transform.localPosition.z - pullStart.z) / maxPullLength;
+            return (pullObj.transform.localPosition.z - pullStart.z) / (maxPullLength - pullStart.z);
         }
 
         private bool checkHandNearString() {
@@ -229,6 +229,7 @@ namespace ValheimVRMod.Scripts {
             arrow.GetComponent<Projectile>().enabled = false;
             // also Destroy the Trail, as this produces particles when moving with arrow in hand
             Destroy(findTrail(arrow.transform));
+            Destroy(arrow.GetComponentInChildren<Collider>());
             arrow.transform.localRotation = Quaternion.identity;
             arrow.transform.localPosition = new Vector3(0, 0, 1.25f);
             foreach (ParticleSystem particleSystem in arrow.GetComponentsInChildren<ParticleSystem>()) {
