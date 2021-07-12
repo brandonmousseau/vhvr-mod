@@ -5,6 +5,7 @@ using Unity.XR.OpenVR;
 using HarmonyLib;
 using Valve.VR;
 using UnityEngine;
+using ValheimVRMod.Utilities;
 
 namespace ValheimVRMod.Patches
 {
@@ -39,6 +40,20 @@ namespace ValheimVRMod.Patches
         public static bool Prefix()
         {
             return false;
+        }
+    }
+
+    // Disables camera culling for all materials currently loaded (trees, grass, etc.)
+    [HarmonyPatch(typeof(Game), "Awake")]
+    class Game_Awake_Patches
+    {
+        private static void Postfix()
+        {
+            if(!VHVRConfig.NonVrPlayer())
+            {
+                foreach(Material material in Resources.FindObjectsOfTypeAll<Material>())
+                    material.SetInt("_CamCull", 0);
+            }
         }
     }
 
