@@ -29,6 +29,7 @@ namespace ValheimVRMod.Patches {
             
             if (vrPlayerSync != null) {
                 player.GetComponent<VRPlayerSync>().currentRightWeapon = meshFilter.gameObject;
+                player.GetComponent<VRPlayerSync>().currentRightWeapon.name = ___m_rightItem;
                 VrikCreator.resetVrikHandTransform(player);   
             }
 
