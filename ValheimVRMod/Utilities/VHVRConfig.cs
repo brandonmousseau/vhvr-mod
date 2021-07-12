@@ -759,7 +759,7 @@ namespace ValheimVRMod.Utilities
         public static bool SpearTwoHanded()
         {
             return spearTwoHanded.Value;
-        
+        }
         public static float ArrowParticleSize()
         {
             return arrowParticleSize.Value;
