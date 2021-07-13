@@ -267,11 +267,16 @@ namespace ValheimVRMod.Scripts {
         {
             if (VHVRConfig.SpearTwoHanded()) {
                 if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand)) {
+                    var offsetPos = Vector3.Distance(VRPlayer.rightHand.transform.position, rotSave.transform.position);
+                    var handDist = Vector3.Distance(VRPlayer.rightHand.transform.position, VRPlayer.leftHand.transform.position);
                     var inversePosition = VRPlayer.rightHand.transform.position - VRPlayer.leftHand.transform.position;
-                    transform.position = VRPlayer.rightHand.transform.position - inversePosition / 3f;
+                    transform.position = VRPlayer.rightHand.transform.position - Vector3.ClampMagnitude(inversePosition.normalized, offsetPos) - (inversePosition.normalized* handDist / 5f);
                     transform.LookAt(VRPlayer.rightHand.transform.position + inversePosition);
                     transform.localRotation = transform.localRotation * (rotSave.transform.localRotation) * Quaternion.AngleAxis(180, Vector3.right);
                     return;
+                }
+                else if (SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.LeftHand)) {
+                    ResetSpearOffset();
                 }
             }
         }
