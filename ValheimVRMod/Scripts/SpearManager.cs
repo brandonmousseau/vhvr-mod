@@ -57,7 +57,15 @@ namespace ValheimVRMod.Scripts {
 
         private void OnRenderObject() {
             fixedSpear.transform.position = transform.position;
-            UpdateTwoHandedWield();
+            if (VHVRConfig.SpearTwoHanded()) {
+                if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand) && SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand)) {
+                    UpdateTwoHandedWield();
+                    return;
+                }
+                else if (SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.LeftHand) || SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.RightHand)) {
+                    ResetSpearOffset();
+                }
+            }
             if (VHVRConfig.SpearThrowType() == "DartType") {
                 UpdateDartSpearThrowCalculation();
             }
@@ -265,22 +273,20 @@ namespace ValheimVRMod.Scripts {
         }
         private void UpdateTwoHandedWield()
         {
-            if (VHVRConfig.SpearTwoHanded()) {
-                if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand)) {
-                    var offsetPos = Vector3.Distance(VRPlayer.rightHand.transform.position, rotSave.transform.position);
-                    var handDist = Vector3.Distance(VRPlayer.rightHand.transform.position, VRPlayer.leftHand.transform.position);
-                    var inversePosition = VRPlayer.rightHand.transform.position - VRPlayer.leftHand.transform.position;
-                    var calculateSpearDistance = (inversePosition.normalized * 0.08f / handDist)-inversePosition.normalized*0.1f;
-                    transform.position = VRPlayer.rightHand.transform.position - Vector3.ClampMagnitude(inversePosition.normalized, offsetPos) + (calculateSpearDistance);
-                    LogUtils.LogDebug("handDist = " + handDist + " - math : "+ calculateSpearDistance);
-                    transform.LookAt(VRPlayer.rightHand.transform.position + inversePosition.normalized*5);
-                    transform.localRotation = transform.localRotation * (rotSave.transform.localRotation) * Quaternion.AngleAxis(180, Vector3.right);
-                    return;
-                }
-                else if (SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.LeftHand)) {
-                    ResetSpearOffset();
-                }
-            }
+            var offsetPos = Vector3.Distance(VRPlayer.rightHand.transform.position, rotSave.transform.position);
+            var handDist = Vector3.Distance(VRPlayer.rightHand.transform.position, VRPlayer.leftHand.transform.position);
+            var inversePosition = VRPlayer.rightHand.transform.position - VRPlayer.leftHand.transform.position;
+            var spearDistLimit = 0.1f;
+            var calculateSpearDistance = (inversePosition.normalized * 0.1f / Mathf.Max(handDist, spearDistLimit)) - inversePosition.normalized * 0.2f;
+            LogUtils.LogDebug("handDist = " + handDist);
+            transform.position = VRPlayer.rightHand.transform.position - Vector3.ClampMagnitude(inversePosition.normalized, offsetPos) + (calculateSpearDistance);
+            transform.LookAt(VRPlayer.rightHand.transform.position + inversePosition.normalized * 5);
+            transform.localRotation = transform.localRotation * (rotSave.transform.localRotation) * Quaternion.AngleAxis(180, Vector3.right);
+            //trying to rotate spear following the hand direction
+            var handAvgVector = VRPlayer.rightHand.transform.TransformDirection(new Vector3(0, -0.45f, 0.55f)).normalized;
+            var calcSpearRot = Vector3.SignedAngle(transform.forward, handAvgVector, inversePosition);
+            transform.localRotation = transform.localRotation * Quaternion.AngleAxis(calcSpearRot, transform.InverseTransformDirection(inversePosition));
+            return;
         }
         private void ResetSpearOffset()
         {
