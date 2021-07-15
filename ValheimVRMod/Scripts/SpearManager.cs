@@ -278,7 +278,6 @@ namespace ValheimVRMod.Scripts {
             var inversePosition = VRPlayer.rightHand.transform.position - VRPlayer.leftHand.transform.position;
             var spearDistLimit = 0.1f;
             var calculateSpearDistance = (inversePosition.normalized * 0.1f / Mathf.Max(handDist, spearDistLimit)) - inversePosition.normalized * 0.2f;
-            LogUtils.LogDebug("handDist = " + handDist);
             transform.position = VRPlayer.rightHand.transform.position - Vector3.ClampMagnitude(inversePosition.normalized, offsetPos) + (calculateSpearDistance);
             transform.LookAt(VRPlayer.rightHand.transform.position + inversePosition.normalized * 5);
             transform.localRotation = transform.localRotation * (rotSave.transform.localRotation) * Quaternion.AngleAxis(180, Vector3.right);
