@@ -52,6 +52,8 @@ namespace ValheimVRMod.VRCore
         private static Vector3 THIRD_PERSON_3_OFFSET = new Vector3(0f, 3.2f, -4.4f);
         private static Vector3 THIRD_PERSON_CONFIG_OFFSET = Vector3.zero;
         private static float NECK_OFFSET = 0.2f;
+        public const float ROOMSCALE_STEP_ANIMATION_SMOOTHING = 0.3f;
+        public const float ROOMSCALE_ANIMATION_WEIGHT = 2f;
         public static bool justUnsheathed = false;
 
         private static float referencePlayerHeight;
@@ -60,11 +62,25 @@ namespace ValheimVRMod.VRCore
 
         private static GameObject _prefab;
         private static GameObject _instance;
+        private static VRPlayer _vrPlayerInstance;
         private static HeadZoomLevel _headZoomLevel = HeadZoomLevel.FirstPerson;
 
         private Camera _vrCam;
         private Camera _handsCam;
         private Camera _skyboxCam;
+
+        //Roomscale movement variables
+        private Transform _vrCameraRig;
+        private Vector3 _lastCamPosition = Vector3.zero;
+        private Vector3 _lastPlayerPosition = Vector3.zero;
+        private Vector3 _lastPlayerAttachmentPosition = Vector3.zero;
+        private FadeToBlackManager _fadeManager;
+        private float _forwardSmoothVel = 0.0f, _sideSmoothVel = 0.0f;
+        private static float _roomscaleAnimationForwardSpeed = 0.0f;
+        private static float _roomscaleAnimationSideSpeed = 0.0f;
+        public static float roomscaleAnimationForwardSpeed { get { return _roomscaleAnimationForwardSpeed;} }
+        public static float roomscaleAnimationSideSpeed { get { return _roomscaleAnimationSideSpeed;} }
+        public static Vector3 roomscaleMovement { get; private set; }
 
         private static Hand _leftHand;
         private static SteamVR_LaserPointer _leftPointer;
@@ -119,16 +135,20 @@ namespace ValheimVRMod.VRCore
             {
                 if (Player.m_localPlayer != null && attachedToPlayer)
                 {
-                    return Player.m_localPlayer.GetVelocity().magnitude > 0.5f;
+                    Vector3 relativeVelocity = Player.m_localPlayer.GetVelocity();
+                    if(Player.m_localPlayer.m_lastGroundBody)
+                        relativeVelocity -= Player.m_localPlayer.m_lastGroundBody.velocity;
+                    return relativeVelocity.magnitude > 0.5f;
                 }
                 return false;
             }
         }
 
         public static GameObject instance { get { return _instance; } }
+        public static VRPlayer vrPlayerInstance => _vrPlayerInstance;
         public static bool attachedToPlayer = false;
 
-        private static Vector3 FIRST_PERSON_INIT_OFFSET = Vector3.zero;
+        private static float FIRST_PERSON_HEIGHT_OFFSET = 0.0f;
         private static bool _headPositionInitialized = false;
         public static bool headPositionInitialized
         {
@@ -141,7 +161,7 @@ namespace ValheimVRMod.VRCore
                 _headPositionInitialized = value;
                 if (!_headPositionInitialized)
                 {
-                    FIRST_PERSON_INIT_OFFSET = Vector3.zero;
+                    FIRST_PERSON_HEIGHT_OFFSET = 0.0f;
                     FIRST_PERSON_OFFSET = Vector3.zero;
                 }
             }
@@ -149,6 +169,7 @@ namespace ValheimVRMod.VRCore
 
         void Awake()
         {
+            _vrPlayerInstance = this;
             _prefab = VRAssetManager.GetAsset<GameObject>(PLAYER_PREFAB_NAME);
             _preferredHand = VHVRConfig.GetPreferredHand();
             headPositionInitialized = false;
@@ -173,6 +194,14 @@ namespace ValheimVRMod.VRCore
             checkInteractions();
             CheckSneakRoomscale();
             
+        }
+
+        private void FixedUpdate() 
+        {
+            if(inFirstPerson)
+            {
+                DoRoomScaleMovement();
+            } else roomscaleMovement = Vector3.zero;
         }
 
         void maybeUpdateHeadPosition()
@@ -417,10 +446,17 @@ namespace ValheimVRMod.VRCore
                 DestroyImmediate(mainCamListener);
             }
             //Add fade component to camera for transition handling
-            vrCam.gameObject.AddComponent<FadeToBlackManager>();
+            _fadeManager = vrCam.gameObject.AddComponent<FadeToBlackManager>();
             _instance.SetActive(true);
             vrCam.enabled = true;
             _vrCam = vrCam;
+            _vrCameraRig = vrCam.transform.parent;
+
+            _fadeManager.OnFadeToWorld += () => {
+                //Recenter
+                VRPlayer.headPositionInitialized = false;
+                VRPlayer.vrPlayerInstance?.ResetRoomscaleCamera();
+            };
         }
 
         private void enableHandsCamera()
@@ -551,7 +587,8 @@ namespace ValheimVRMod.VRCore
                 SceneManager.GetActiveScene().name != START_SCENE &&
                 ensurePlayerInstance() &&
                 !getPlayerCharacter().InCutscene() &&
-                !getPlayerCharacter().IsDead();
+                !getPlayerCharacter().IsDead() &&
+                !getPlayerCharacter().InBed();
         }
 
         private void attachVrPlayerToPlayerCharacter()
@@ -570,27 +607,23 @@ namespace ValheimVRMod.VRCore
             _instance.transform.SetParent(playerCharacter.transform, false);
             attachedToPlayer = true;
             maybeInitHeadPosition(playerCharacter);
-            Vector3 firstPersonAdjust = inFirstPerson ? FIRST_PERSON_INIT_OFFSET : Vector3.zero;
+            float firstPersonAdjust = inFirstPerson ? FIRST_PERSON_HEIGHT_OFFSET : 0.0f;
             setHeadVisibility(!inFirstPerson);
             // Update the position with the first person adjustment calculated in init phase
             Vector3 desiredPosition = getDesiredPosition(playerCharacter);
             
             _instance.transform.localPosition = desiredPosition - playerCharacter.transform.position  // Base Positioning
                                                + Vector3.up * getHeadHeightAdjust(playerCharacter)
-                                               + Vector3.up * firstPersonAdjust.y; // Offset from calibration on tracking recenter
+                                               + Vector3.up * firstPersonAdjust; // Offset from calibration on tracking recenter
                                                
             if(_headZoomLevel != HeadZoomLevel.FirstPerson)
             {
-                _instance.transform.localPosition += Vector3.right * firstPersonAdjust.x  // Offset from calibration on tracking recenter
-                            + Vector3.forward * firstPersonAdjust.z
-                            + getHeadOffset(_headZoomLevel) // Player controlled offset (zeroed on tracking reset)
+                _instance.transform.localPosition += getHeadOffset(_headZoomLevel) // Player controlled offset (zeroed on tracking reset)
                             + Vector3.forward * NECK_OFFSET; // Move slightly forward to position on neck
                 setPlayerVisualsOffset(playerCharacter.transform, Vector3.zero);
             }
             else
                 setPlayerVisualsOffset(playerCharacter.transform,
-                                -Vector3.right * firstPersonAdjust.x  // Offset from calibration on tracking recenter
-                                -Vector3.forward * firstPersonAdjust.z
                                 -getHeadOffset(_headZoomLevel) // Player controlled offset (zeroed on tracking reset)
                                 -Vector3.forward * NECK_OFFSET // Move slightly forward to position on neck
                                 );
@@ -698,7 +731,7 @@ namespace ValheimVRMod.VRCore
 
                 var hmd = Valve.VR.InteractionSystem.Player.instance.hmdTransform;
                 // Measure the distance between HMD and desires location, and save it.
-                FIRST_PERSON_INIT_OFFSET = desiredPosition - hmd.position;
+                FIRST_PERSON_HEIGHT_OFFSET = desiredPosition.y - hmd.position.y;
                 if (VHVRConfig.UseLookLocomotion())
                 {
                     _instance.transform.localRotation = Quaternion.Euler(0f, -hmd.localRotation.eulerAngles.y, 0f);
@@ -937,6 +970,61 @@ namespace ValheimVRMod.VRCore
             }
             else {
                 _isRoomscaleSneaking = false;
+            }
+        }
+
+        /// <summary>
+        /// Moves the physics player to the head position and cancels the movement of the VRCamera by moving the VRRig
+        /// </summary>
+        void DoRoomScaleMovement()
+        {
+            var player = getPlayerCharacter();
+            Vector3 deltaPosition = _vrCam.transform.localPosition - _lastCamPosition;
+            deltaPosition.y = 0;
+            bool shouldMove = deltaPosition.magnitude > 0.005f;
+            if(shouldMove)
+            {
+                //Check for motion discrepancies
+                if(VHVRConfig.RoomscaleFadeToBlack() && !_fadeManager.IsFadingToBlack)
+                {
+                    var lastDeltaMovement = player.m_body.position - _lastPlayerPosition;
+                    if(player.m_lastAttachBody && _lastPlayerAttachmentPosition != Vector3.zero)
+                    {
+                        //Account for ships, and moving attachments
+                        lastDeltaMovement -= (player.m_lastAttachBody.position - _lastPlayerAttachmentPosition);
+                    }
+                    lastDeltaMovement.y = 0;
+
+                    if(roomscaleMovement.magnitude * 0.6f > lastDeltaMovement.magnitude)
+                    {
+                        SteamVR_Fade.Start(Color.black, 0);
+                        SteamVR_Fade.Start(Color.clear, 1.5f); 
+                    }
+
+                    _lastPlayerPosition = player.m_body.position;
+                    _lastPlayerAttachmentPosition = player.m_lastAttachBody ? player.m_lastAttachBody.position : Vector3.zero;
+                }
+
+                //Calculate new postion
+                _lastCamPosition = _vrCam.transform.localPosition;
+                var globalDeltaPosition = _instance.transform.TransformVector(deltaPosition);
+                globalDeltaPosition.y = 0;
+                roomscaleMovement = globalDeltaPosition;
+                _vrCameraRig.localPosition -= deltaPosition;
+            } else roomscaleMovement = Vector3.zero;
+
+            //Set animation parameters
+            _roomscaleAnimationForwardSpeed =  Mathf.SmoothDamp(_roomscaleAnimationForwardSpeed, shouldMove ? deltaPosition.z / Time.fixedDeltaTime : 0, ref _forwardSmoothVel, ROOMSCALE_STEP_ANIMATION_SMOOTHING, 99f);
+            _roomscaleAnimationSideSpeed =  Mathf.SmoothDamp(_roomscaleAnimationSideSpeed, shouldMove ? deltaPosition.x / Time.fixedDeltaTime : 0, ref _sideSmoothVel, ROOMSCALE_STEP_ANIMATION_SMOOTHING, 99f);
+        }
+
+        public void ResetRoomscaleCamera()
+        {
+            if(_vrCameraRig != null)
+            {
+                Vector3 vrCamPosition = _vrCam.transform.localPosition;
+                vrCamPosition.y = 0;
+                _vrCameraRig.localPosition = -vrCamPosition;
             }
         }
 

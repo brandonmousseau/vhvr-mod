@@ -23,7 +23,8 @@ namespace ValheimVRMod.Patches
     class Player_SetMouseLook_Patch
     {
 
-        private static float previousHeadLocalRotation = 0f;
+        public static float? previousHeadLocalRotation;
+        public static float? lastAttachmentHeading;
 
         public static void Prefix(Player __instance, ref Quaternion ___m_lookYaw, CraftingStation ___m_currentStation)
         {
@@ -32,25 +33,47 @@ namespace ValheimVRMod.Patches
                 !VRPlayer.attachedToPlayer ||
                 !VRPlayer.inFirstPerson ||
                 !VHVRConfig.UseLookLocomotion() ||
-                __instance.IsAttached() ||  /* Not attached to something, like boat controls */
                 ___m_currentStation != null /* Not Crafting */)
             {
                 return;
             }
+
+            /* Not attached to something, like boat controls */
+            if(__instance.IsAttached())
+            {
+                //Apply ship rotation
+                if(__instance.m_attached && __instance.m_attachPoint)
+                {
+                    // Rotate VRPlayer together with delta ship rotation
+                    var newPlayerHeading = __instance.m_attachPoint.forward;
+                    newPlayerHeading.y = 0;
+                    newPlayerHeading.Normalize();
+                    float newHeadingRotation = Quaternion.LookRotation(newPlayerHeading, __instance.transform.up).eulerAngles.y;
+                    if(lastAttachmentHeading.HasValue)
+                        ___m_lookYaw *= Quaternion.AngleAxis(newHeadingRotation - lastAttachmentHeading.Value, Vector3.up);
+                    lastAttachmentHeading = newHeadingRotation;
+                }
+                return;
+            }
+
+
             // Calculate the current head local rotation
-            float currentHeadLocalRotation =
-                VRPlayer.instance.GetComponent<Valve.VR.InteractionSystem.Player>().hmdTransform.localRotation.eulerAngles.y;
-            // Find the difference between the current rotation and previous rotation
-            float difference = currentHeadLocalRotation - previousHeadLocalRotation;
+            float currentHeadLocalRotation = Valve.VR.InteractionSystem.Player.instance.hmdTransform.localRotation.eulerAngles.y;
+            if(previousHeadLocalRotation.HasValue)
+            {
+                // Find the difference between the current rotation and previous rotation
+                float deltaRotation = currentHeadLocalRotation - previousHeadLocalRotation.Value;
+                
+                // Rotate the look yaw by the amount the player rotated their head since last iteration
+                ___m_lookYaw *= Quaternion.AngleAxis(deltaRotation, Vector3.up);
+        
+                // Rotate the VRPlayer to match the current yaw
+                // to offset the rotation the VRPlayer will experience due to rotation of yaw.
+                VRPlayer.instance.transform.localRotation *= Quaternion.AngleAxis(-deltaRotation, Vector3.up);
+            }
+            
             // Save the current rotation for use in next iteration
             previousHeadLocalRotation = currentHeadLocalRotation;
-            // Rotate the look yaw by the amount the player rotated their head since last iteration
-            ___m_lookYaw *= Quaternion.Euler(0f, difference, 0f);
-            // Rotate the VRPlayer localRotation by the same amount in the opposite direction
-            // to offset the rotation the VRPlayer will experience due to rotation of yaw.
-            var localRot = VRPlayer.instance.transform.localRotation;
-            localRot *= Quaternion.Euler(0f, -difference, 0f);
-            VRPlayer.instance.transform.localRotation = localRot;
         }
 
         public static void Postfix(Player __instance, ref Vector3 ___m_lookDir)
@@ -90,7 +113,7 @@ namespace ValheimVRMod.Patches
             }
             if (VRPlayer.attachedToPlayer)
             {
-                var hmdTransform = VRPlayer.instance.GetComponent<Valve.VR.InteractionSystem.Player>().hmdTransform;
+                var hmdTransform = Valve.VR.InteractionSystem.Player.instance.hmdTransform;
                 // Set the eye rotation equal to HMD rotation
                 __instance.m_eye.rotation = hmdTransform.rotation;
             } else if (!VRPlayer.attachedToPlayer)
@@ -146,6 +169,62 @@ namespace ValheimVRMod.Patches
             }
         }
 
-    }
+        
+        /// <summary>
+        /// When interacting with an attachment point orient player in the direction of the attachment point
+        /// </summary>
+        [HarmonyPatch(typeof(Player), "AttachStart")]
+        
+        class Player_AttachStart_Patch
+        {
+            static void Postfix(Player __instance, Transform attachPoint)
+            {
+                if (VHVRConfig.NonVrPlayer() ||
+                    __instance != Player.m_localPlayer ||
+                    !VRPlayer.attachedToPlayer ||
+                    !VRPlayer.inFirstPerson)
+                {
+                    return;
+                }
 
+                if(attachPoint)
+                {
+                    // Rotate VRPlayer together with delta ship rotation
+                    var attachmentHeading = attachPoint.transform.forward;
+                    attachmentHeading.y = 0;
+                    attachmentHeading.Normalize();
+
+                    __instance.m_lookYaw = Quaternion.LookRotation(attachmentHeading, __instance.transform.up);
+
+                    Player_SetMouseLook_Patch.lastAttachmentHeading = null;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Orient the player to the body direction when detaching from objects
+        /// </summary>
+        [HarmonyPatch(typeof(Player), "AttachStop")]
+        
+        class Player_AttachStop_Patch
+        {
+            static void Prefix(Player __instance)
+            {
+                if (VHVRConfig.NonVrPlayer() ||
+                    __instance != Player.m_localPlayer ||
+                    !VRPlayer.attachedToPlayer ||
+                    !VRPlayer.inFirstPerson ||
+                    !__instance.m_attached ||
+                    !__instance.m_attachPoint)
+                {
+                    return;
+                }
+
+                //Recenter player on body
+                float deltaRotation = __instance.transform.rotation.eulerAngles.y - Valve.VR.InteractionSystem.Player.instance.hmdTransform.rotation.eulerAngles.y;
+                VRPlayer.instance.transform.localRotation *= Quaternion.AngleAxis(deltaRotation, Vector3.up);
+                Player_SetMouseLook_Patch.previousHeadLocalRotation = null;
+            }
+        }
+    }
 }

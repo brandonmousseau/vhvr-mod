@@ -305,6 +305,7 @@
     <Compile Include="Patches\InteractionPatches.cs" />
     <Compile Include="Patches\Misc.cs" />
     <Compile Include="Patches\MultiplayerPatches.cs" />
+    <Compile Include="Patches\RoomscalePatches.cs" />
     <Compile Include="Patches\TemporalAntialiasingPatches.cs" />
     <Compile Include="Patches\ShieldPatches.cs" />
     <Compile Include="Patches\TextInputPatches.cs" />

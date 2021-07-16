@@ -23,6 +23,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> headOffsetThirdPersonY;
         private static ConfigEntry<bool> enableHeadReposition;
         private static ConfigEntry<bool> recenterOnStart;
+        private static ConfigEntry<bool> roomscaleFadeToBlack;
 
         // UI Settings
         private static ConfigEntry<bool> useOverlayGui;
@@ -41,6 +42,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> stationaryGuiRecenterAngle;
         private static ConfigEntry<float> mobileGuiRecenterAngle;
         private static ConfigEntry<bool> recenterGuiOnMove;
+        private static ConfigEntry<float> guiRecenterSpeed;
         private static ConfigEntry<float> DebugPosX;
         private static ConfigEntry<float> DebugPosY;
         private static ConfigEntry<float> DebugPosZ;
@@ -101,6 +103,10 @@ namespace ValheimVRMod.Utilities
                                           "RecenterOnStart",
                                           true,
                                           "Set this to true if you want tracking to be automatically re-centered when the game first starts up.");
+            roomscaleFadeToBlack = config.Bind("General",
+                                          "RoomscaleFadeToBlack",
+                                          false,
+                                          "Set this to true if you want the game to fade to black when roomscale movement causes the player to being pushed back.");
             mirrorMode = config.Bind("General",
                                      "MirrorMode",
                                      "Right",
@@ -231,6 +237,10 @@ namespace ValheimVRMod.Utilities
                                             "RecenterGuiOnMove",
                                             true,
                                             "Only used when UseLookLocomotion is true. This will cause the GUI to recenter to your current look direction when you first start moving.");
+            guiRecenterSpeed = config.Bind("UI",
+                                            "GuiRecenterSpeed",
+                                            180f,
+                                            "Speed in degrees per second of the Gui recentering algorithm");
             useArrowPredictionGraphic = config.Bind("Bow",
                                                      "UseArrowPredictionGraphic",
                                                      true,
@@ -538,6 +548,11 @@ namespace ValheimVRMod.Utilities
             return recenterOnStart.Value;
         }
 
+        public static bool RoomscaleFadeToBlack()
+        {
+            return roomscaleFadeToBlack.Value;
+        }
+
         public static KeyCode GetRecenterKey()
         {
             return tryAndParseConfiguredKeycode(hmdRecenterKey.Value, KeyCode.Home);
@@ -622,6 +637,11 @@ namespace ValheimVRMod.Utilities
         public static bool RecenterGuiOnMove()
         {
             return recenterGuiOnMove.Value;
+        }
+
+        public static float GuiRecenterSpeed()
+        {
+            return guiRecenterSpeed.Value;
         }
 
         public static bool UseVrControls()
