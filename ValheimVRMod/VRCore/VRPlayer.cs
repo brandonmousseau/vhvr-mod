@@ -14,6 +14,7 @@ using ValheimVRMod.VRCore.UI;
 using Valve.VR;
 using Valve.VR.Extras;
 using Valve.VR.InteractionSystem;
+using UnityEngine.Rendering;
 
 /**
  * VRPlayer manages instantiating the SteamVR Player
@@ -449,6 +450,14 @@ namespace ValheimVRMod.VRCore
             _fadeManager = vrCam.gameObject.AddComponent<FadeToBlackManager>();
             _instance.SetActive(true);
             vrCam.enabled = true;
+            
+            
+            CommandBuffer cb = new CommandBuffer();
+            cb.name = "FixSea";
+            Mesh quad = PostProcessingUtils.BuildQuad(1,1);
+            cb.DrawMesh(quad, Matrix4x4.identity, VRAssetManager.GetAsset<Material>("SeaStencilFix"));
+            vrCam.AddCommandBuffer(CameraEvent.BeforeGBuffer, cb);
+
             _vrCam = vrCam;
             _vrCameraRig = vrCam.transform.parent;
 
