@@ -69,6 +69,7 @@ namespace ValheimVRMod.VRCore
         private Camera _vrCam;
         private Camera _handsCam;
         private Camera _skyboxCam;
+        private CommandBuffer _seaFixCB;
 
         //Roomscale movement variables
         private Transform _vrCameraRig;
@@ -178,6 +179,11 @@ namespace ValheimVRMod.VRCore
             THIRD_PERSON_CONFIG_OFFSET = VHVRConfig.GetThirdPersonHeadOffset();
             ensurePlayerInstance();
             gameObject.AddComponent<VRControls>();
+        }
+
+        private void OnDestroy() {
+            if(_seaFixCB != null)
+                _vrCam.RemoveCommandBuffer(CameraEvent.BeforeGBuffer, _seaFixCB);
         }
 
         void Update()
@@ -451,13 +457,15 @@ namespace ValheimVRMod.VRCore
             _instance.SetActive(true);
             vrCam.enabled = true;
             
-            
-            CommandBuffer cb = new CommandBuffer();
-            cb.name = "FixSea";
+            if(_seaFixCB != null && _vrCam != null)
+                _vrCam.RemoveCommandBuffer(CameraEvent.BeforeGBuffer, _seaFixCB);
+
+            _seaFixCB = new CommandBuffer();
+            _seaFixCB.name = "FixSea";
             Mesh quad = PostProcessingUtils.BuildQuad(1,1);
-            cb.SetRenderTarget(BuiltinRenderTextureType.CameraTarget);
-            cb.DrawMesh(quad, Matrix4x4.identity, VRAssetManager.GetAsset<Material>("SeaStencilFix"));
-            vrCam.AddCommandBuffer(CameraEvent.BeforeGBuffer, cb);
+            _seaFixCB.SetRenderTarget(BuiltinRenderTextureType.CameraTarget);
+            _seaFixCB.DrawMesh(quad, Matrix4x4.identity, VRAssetManager.GetAsset<Material>("SeaStencilFix"));
+            vrCam.AddCommandBuffer(CameraEvent.BeforeGBuffer, _seaFixCB);
 
             _vrCam = vrCam;
             _vrCameraRig = vrCam.transform.parent;
