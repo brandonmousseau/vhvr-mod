@@ -455,6 +455,7 @@ namespace ValheimVRMod.VRCore
             CommandBuffer cb = new CommandBuffer();
             cb.name = "FixSea";
             Mesh quad = PostProcessingUtils.BuildQuad(1,1);
+            cb.SetRenderTarget(BuiltinRenderTextureType.CameraTarget);
             cb.DrawMesh(quad, Matrix4x4.identity, VRAssetManager.GetAsset<Material>("SeaStencilFix"));
             vrCam.AddCommandBuffer(CameraEvent.BeforeGBuffer, cb);
 
