@@ -31,7 +31,14 @@ namespace ValheimVRMod.Scripts {
         private float totalCooldown = 2;
         private readonly Vector3 handAimOffset = new Vector3(0, -0.45f, -0.55f);
 
-        private static int isTwoHanded;
+        private static isTwoHanded _isTwoHanded;
+
+        private enum isTwoHanded
+        {
+            SingleHanded,
+            MainRight,
+            MainLeft
+        }
 
         private void Awake() {
             fixedSpear = new GameObject();
@@ -50,7 +57,7 @@ namespace ValheimVRMod.Scripts {
             directionLine.lightProbeUsage = LightProbeUsage.Off;
             directionLine.reflectionProbeUsage = ReflectionProbeUsage.Off;
 
-            isTwoHanded = 0;
+            _isTwoHanded = isTwoHanded.SingleHanded;
         }
 
         private void OnDestroy() {
@@ -67,21 +74,23 @@ namespace ValheimVRMod.Scripts {
                     return;
                 }
                 else if (SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.LeftHand) || SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.RightHand)) {
-                    isTwoHanded = 0;
+                    _isTwoHanded = isTwoHanded.SingleHanded;
                     ResetSpearOffset();
                 }
             }
-            if (VHVRConfig.SpearThrowType() == "DartType") {
-                UpdateDartSpearThrowCalculation();
-            }
-            else if (VHVRConfig.SpearThrowType() == "TwoStagedThrowing") {
-                UpdateTwoStagedThrowCalculation();
-            }
-            else if (VHVRConfig.SpearThrowType() == "SecondHandAiming") {
-                UpdateSecondHandAimCalculation();
-            }
-            else {
-                UpdateDartSpearThrowCalculation();
+            switch (VHVRConfig.SpearThrowType()) {
+                case "DartType":
+                    UpdateDartSpearThrowCalculation();
+                    return;
+                case "TwoStagedThrowing":
+                    UpdateTwoStagedThrowCalculation();
+                    return;
+                case "SecondHandAiming":
+                    UpdateSecondHandAimCalculation();
+                    return;
+                default:
+                    UpdateDartSpearThrowCalculation();
+                    return;
             }
         }
 
@@ -281,17 +290,17 @@ namespace ValheimVRMod.Scripts {
             var mainHand = VRPlayer.rightHand;
             var offHand = VRPlayer.leftHand;
             float handAngleDiff = Vector3.Dot(new Vector3(0, 0.45f, 0.55f), VRPlayer.rightHand.transform.InverseTransformPoint(VRPlayer.leftHand.transform.position).normalized); 
-            if (isTwoHanded==0) {
+            if (_isTwoHanded==isTwoHanded.SingleHanded) {
                 if (handAngleDiff > 0.6f) {
-                    isTwoHanded = 2;
+                    _isTwoHanded = isTwoHanded.MainLeft;
                 }else if(handAngleDiff < -0.6f) {
-                    isTwoHanded = 1;
+                    _isTwoHanded = isTwoHanded.MainRight;
                 }
                 else {
                     return;
                 }
             }
-            else if (isTwoHanded == 2) {
+            if (_isTwoHanded == isTwoHanded.MainLeft) {
                 mainHand = VRPlayer.leftHand;
                 offHand = VRPlayer.rightHand;
             }
