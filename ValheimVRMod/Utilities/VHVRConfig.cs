@@ -77,7 +77,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> taaSharpenAmmount;
         private static ConfigEntry<float> nearClipPlane;
         
-        // Misc Settings
+        // Motion Control Settings
         private static ConfigEntry<bool> useArrowPredictionGraphic;
         private static ConfigEntry<float> arrowParticleSize;
         private static ConfigEntry<string> spearThrowingType;
@@ -103,7 +103,7 @@ namespace ValheimVRMod.Utilities
             InitializeUISettings();
             InitializeControlsSettings();
             InitializeGraphicsSettings();
-            InitializeMiscSettings();
+            InitializeMotionControlSettings();
             config.Save();
         }
 
@@ -399,18 +399,18 @@ namespace ValheimVRMod.Utilities
                                         new AcceptableValueRange<float>(0, 0.5f)));
         }
 
-        private static void InitializeMiscSettings() {
+        private static void InitializeMotionControlSettings() {
 
-            useArrowPredictionGraphic = config.Bind("Misc",
+            useArrowPredictionGraphic = config.Bind("Motion Control",
                 "UseArrowPredictionGraphic",
                 true,
                 "Use this to toggle the path predictor when using the bow and arrow with VR controls.");
-            arrowParticleSize = config.Bind("Misc",
+            arrowParticleSize = config.Bind("Motion Control",
                 "ArrowParticleSize",
                 0.5f,
                 new ConfigDescription("set size of the particles on drawing arrows (fire,poison, etc.)",
                     new AcceptableValueRange<float>(0, 1)));
-            spearThrowingType = config.Bind("Motion Control - Spear Throwing",
+            spearThrowingType = config.Bind("Motion Control",
                                             "SpearThrowingMode",
                                             "DartType",
                                             new ConfigDescription("Change the throwing mode." +
@@ -418,44 +418,44 @@ namespace ValheimVRMod.Utilities
                                             "TwoStagedThrowing - Throw aim is based on first grab and then aim is locked after pressing trigger, throw by releasing trigger while swinging, throw speed based on how fast you swing. " +
                                             "SecondHandAiming - Throw by holding grab and trigger and then releasing trigger, Throw aim is based from your head to your left hand in a straight line, throw by releasing trigger while swinging, throw speed based on how fast you swing.",
                                             new AcceptableValueList<string>(new string[] { "DartType", "TwoStagedThrowing", "SecondHandAiming" })));
-            spearThrowSpeedDynamic = config.Bind("Motion Control - Spear Throwing",
+            spearThrowSpeedDynamic = config.Bind("Motion Control",
                                                 "SpearThrowSpeedDynamic",
                                                 true,
                                                 "Determine whether or not your throw power depends on swing speed, setting to false make the throw always on fixed speed.");
-            useSpearDirectionGraphic = config.Bind("Motion Control - Spear Throwing",
+            useSpearDirectionGraphic = config.Bind("Motion Control",
                                                     "UseSpearDirectionGraphic",
                                                     true,
                                                     "Use this to toggle the direction line of throwing when using the spear with VR controls.");
-            spearTwoHanded = config.Bind("Motion Control - Spear Throwing",
+            spearTwoHanded = config.Bind("Motion Control",
                                                     "TwoHandedSpear",
                                                     false,
                                                     "Use this to toggle controls of two handed spear (left hand grab while having spear) (experimental)");
 #if DEBUG
-            DebugPosX = config.Bind("Misc",
+            DebugPosX = config.Bind("Motion Control",
                 "DebugPosX",
                 0.0f,
                 "DebugPosX");
-            DebugPosY = config.Bind("Misc",
+            DebugPosY = config.Bind("Motion Control",
                 "DebugPosY",
                 0.0f,
                 "DebugPosY");
-            DebugPosZ = config.Bind("Misc",
+            DebugPosZ = config.Bind("Motion Control",
                 "DebugPosZ",
                 0.0f,
                 "DebugPosZ");
-            DebugRotX = config.Bind("Misc",
+            DebugRotX = config.Bind("Motion Control",
                 "DebugRotX",
                 0.0f,
                 "DebugRotX");
-            DebugRotY = config.Bind("Misc",
+            DebugRotY = config.Bind("Motion Control",
                 "DebugRotY",
                 0.0f,
                 "DebugRotY");
-            DebugRotZ = config.Bind("Misc",
+            DebugRotZ = config.Bind("Motion Control",
                 "DebugRotZ",
                 0.0f,
                 "DebugRotZ");
-            DebugScale = config.Bind("Misc",
+            DebugScale = config.Bind("Motion Control",
                 "DebugScale",
                 1.0f,
                 "DebugScale");

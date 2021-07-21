@@ -171,7 +171,7 @@ namespace ValheimVRMod.VRCore.UI {
                 tabButtons.GetComponent<TabHandler>().SetActiveTab(activeTabIndex);
             });
             tab.m_default = true;
-            tab.m_page = newTab.GetComponent<RectTransform>(); // todo remove ?
+            tab.m_page = newTab.GetComponent<RectTransform>();
             tab.m_onClick = new UnityEvent();
 
             tabButtons.GetComponent<TabHandler>().m_tabs.Add(tab);
