@@ -6,12 +6,11 @@
 	SubShader {
 		Tags {
 			"RenderType" = "Opaque"
-			"Queue" = "Geometry-100"
+			"Queue" = "Geometry+500"
 		}
 
 		ColorMask 0
 		Cull Off
-		ZTest Off
 		ZWrite Off
 
 		Stencil {

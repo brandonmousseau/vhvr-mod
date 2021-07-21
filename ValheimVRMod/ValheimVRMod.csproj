@@ -52,10 +52,6 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(CommonDir)Valheim\valheim_Data\Managed\assembly_lux.dll</HintPath>
     </Reference>
-    <Reference Include="assembly_postprocessing, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(CommonDir)Valheim\valheim_Data\Managed\assembly_postprocessing.dll</HintPath>
-    </Reference>
     <Reference Include="assembly_simplemeshcombine, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(CommonDir)Valheim\valheim_Data\Managed\assembly_simplemeshcombine.dll</HintPath>
@@ -74,6 +70,10 @@
     </Reference>
     <Reference Include="assembly_valheim_publicized">
       <HintPath>$(CommonDir)Valheim\valheim_Data\Managed\publicized_assemblies\assembly_valheim_publicized.dll</HintPath>
+    </Reference>
+    <Reference Include="assembly_postprocessing_publicized, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(CommonDir)Valheim\valheim_Data\Managed\publicized_assemblies\assembly_postprocessing_publicized.dll</HintPath>
     </Reference>
     <Reference Include="BepInEx">
       <HintPath>$(CommonDir)Valheim\BepInEx\core\BepInEx.dll</HintPath>
@@ -306,7 +306,7 @@
     <Compile Include="Patches\Misc.cs" />
     <Compile Include="Patches\MultiplayerPatches.cs" />
     <Compile Include="Patches\RoomscalePatches.cs" />
-    <Compile Include="Patches\TemporalAntialiasingPatches.cs" />
+    <Compile Include="Patches\PostProcessingPatches.cs" />
     <Compile Include="Patches\ShieldPatches.cs" />
     <Compile Include="Patches\TextInputPatches.cs" />
     <Compile Include="Patches\UIPatches.cs" />
@@ -327,6 +327,8 @@
     <Compile Include="Scripts\SpearManager.cs" />
     <Compile Include="Scripts\VrikCreator.cs" />
     <Compile Include="Scripts\ShieldManager.cs" />
+    <Compile Include="Scripts\PostProcessing\VRTaaComponent.cs" />
+    <Compile Include="Scripts\PostProcessing\WaterStencilFixComponent.cs" />
     <Compile Include="Utilities\CameraUtils.cs" />
     <Compile Include="Utilities\EquipScript.cs" />
     <Compile Include="Utilities\WeaponColData.cs" />
