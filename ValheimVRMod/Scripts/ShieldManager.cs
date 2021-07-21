@@ -22,10 +22,15 @@ namespace ValheimVRMod.Scripts {
         private const int MAX_SNAPSHOTS = 7;
         private int tickCounter;
         private List<Vector3> snapshots = new List<Vector3>();
+        private static float scaling = 1f;
+        private static Vector3 posRef;
+        private static Vector3 scaleRef;
 
         private void Awake() {
             _meshCooldown = gameObject.AddComponent<MeshCooldown>();
             instance = this;
+            posRef = transform.localPosition;
+            scaleRef = transform.localScale;
         }
 
         public static void setBlocking(Vector3 hitDir) {
@@ -100,7 +105,22 @@ namespace ValheimVRMod.Scripts {
         }
 
         private void OnRenderObject() {
+            if(scaling!=1f) {
+                transform.localScale = scaleRef * scaling;
+                transform.localPosition = CalculatePos();
+            }else if(transform.localPosition != posRef||transform.localScale !=scaleRef) {
+                transform.localScale = scaleRef;
+                transform.localPosition = posRef;
+            }
             StaticObjects.shieldObj().transform.rotation = transform.rotation;
+        }
+        public static void ScaleShieldSize(float scale)
+        {
+            scaling = scale;
+        }
+        private Vector3 CalculatePos()
+        {
+            return VRPlayer.leftHand.transform.InverseTransformDirection(VRPlayer.leftHand.transform.TransformDirection(posRef) *(scaleRef * scaling).x);
         }
     }
 }

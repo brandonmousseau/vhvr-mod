@@ -85,12 +85,19 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> useArrowPredictionGraphic;
         private static ConfigEntry<float> arrowParticleSize;
 
+        // Spear Settings
+        private static ConfigEntry<string> spearThrowingType;
+        private static ConfigEntry<bool> useSpearDirectionGraphic;
+        private static ConfigEntry<bool> spearThrowSpeedDynamic;
+        private static ConfigEntry<bool> spearTwoHanded;
+
         public static void InitializeConfiguration(ConfigFile config)
         {
             InitializeGeneralSettings(config);
             InitializeUISettings(config);
             InitializeControlsSettings(config);
             InitializeGraphicsSettings(config);
+            InitializeSpearControlSetting(config);
         }
 
         private static void InitializeGeneralSettings(ConfigFile config)
@@ -411,6 +418,29 @@ namespace ValheimVRMod.Utilities
                                         " problems where you see the nose of the player character for example.");
         }
 
+        private static void InitializeSpearControlSetting(ConfigFile config)
+        {
+            spearThrowingType = config.Bind("Motion Control - Spear Throwing",
+                                            "SpearThrowingMode",
+                                            "DartType",
+                                            new ConfigDescription("Change the throwing mode." +
+                                            "DartType - Throw by holding grab and trigger and then releasing trigger, Throw aim is based on first trigger pressed to release in a straight line, and throwing power is based on how fast you swing. " +
+                                            "TwoStagedThrowing - Throw aim is based on first grab and then aim is locked after pressing trigger, throw by releasing trigger while swinging, throw speed based on how fast you swing. " +
+                                            "SecondHandAiming - Throw by holding grab and trigger and then releasing trigger, Throw aim is based from your head to your left hand in a straight line, throw by releasing trigger while swinging, throw speed based on how fast you swing.",
+                                            new AcceptableValueList<string>(new string[] { "DartType", "TwoStagedThrowing", "SecondHandAiming" })));
+            spearThrowSpeedDynamic = config.Bind("Motion Control - Spear Throwing",
+                                                "SpearThrowSpeedDynamic",
+                                                true,
+                                                "Determine whether or not your throw power depends on swing speed, setting to false make the throw always on fixed speed.");
+            useSpearDirectionGraphic = config.Bind("Motion Control - Spear Throwing",
+                                                    "UseSpearDirectionGraphic",
+                                                    true,
+                                                    "Use this to toggle the direction line of throwing when using the spear with VR controls.");
+            spearTwoHanded = config.Bind("Motion Control - Spear Throwing",
+                                                    "TwoHandedSpear",
+                                                    false,
+                                                    "Use this to toggle controls of two handed spear (left hand grab while having spear) (experimental)");
+        }
         public static bool ModEnabled()
         {
             return vrModEnabled.Value;
@@ -737,6 +767,23 @@ namespace ValheimVRMod.Utilities
         public static float ArrowParticleSize()
         {
             return arrowParticleSize.Value;
+        }
+        public static bool SpearThrowSpeedDynamic()
+        {
+            return spearThrowSpeedDynamic.Value;
+        }
+
+        public static string SpearThrowType()
+        {
+            return spearThrowingType.Value;
+        }
+        public static bool SpearTwoHanded()
+        {
+            return spearTwoHanded.Value;
+        }
+        public static bool UseSpearDirectionGraphic()
+        {
+            return useSpearDirectionGraphic.Value;
         }
     }
 }

@@ -17,7 +17,11 @@ namespace ValheimVRMod.Scripts {
         private static readonly Vector3 rightEquippedPosition = new Vector3(0.02f, 0.09f, -0.1f);
         private static readonly Quaternion rightEquippedRotation = Quaternion.Euler(0, -90, -170);
         private static readonly Vector3 rightEquippedEllbow = new Vector3(-1, -3f, 0);
-        
+
+        private static readonly Vector3 rightspearPosition = new Vector3(0.02f, 0.06f, -0.15f);
+        private static readonly Quaternion rightSpearRotation = Quaternion.Euler(0, -90, -140);
+        private static readonly Vector3 rightSpearEllbow = new Vector3(-1, -3f, 0);
+
         public static VRIK initialize(GameObject target, Transform leftController, Transform rightController, Transform camera) {
             VRIK vrik = target.AddComponent<VRIK>();
             vrik.AutoDetectReferences();
@@ -65,7 +69,6 @@ namespace ValheimVRMod.Scripts {
                 vrik.solver.leftArm.target.localPosition = leftEquippedPosition;
                 vrik.solver.leftArm.target.localRotation = leftEquippedRotation;
                 vrik.solver.leftArm.palmToThumbAxis = leftEquippedEllbow;
-
             }
             else {
                 vrik.solver.leftArm.target.localPosition = leftUnequippedPosition;
@@ -74,15 +77,20 @@ namespace ValheimVRMod.Scripts {
             }
             
             if (player.GetComponent<VRPlayerSync>()?.currentRightWeapon != null) {
+                if (player.GetComponent<VRPlayerSync>().currentRightWeapon.name.StartsWith("Spear")) {
+                    vrik.solver.rightArm.target.localPosition = rightspearPosition;
+                    vrik.solver.rightArm.target.localRotation = rightSpearRotation;
+                    vrik.solver.rightArm.palmToThumbAxis = rightSpearEllbow;
+                    return;
+                }
                 vrik.solver.rightArm.target.localPosition = rightEquippedPosition;
                 vrik.solver.rightArm.target.localRotation = rightEquippedRotation;
                 vrik.solver.rightArm.palmToThumbAxis = rightEquippedEllbow;
+                return;
             }
-            else {
-                vrik.solver.rightArm.target.localPosition = rightUnequippedPosition;
-                vrik.solver.rightArm.target.localRotation = rightUnequippedRotation;
-                vrik.solver.rightArm.palmToThumbAxis = rightUnequippedEllbow;
-            }
+            vrik.solver.rightArm.target.localPosition = rightUnequippedPosition;
+            vrik.solver.rightArm.target.localRotation = rightUnequippedRotation;
+            vrik.solver.rightArm.palmToThumbAxis = rightUnequippedEllbow;
         }
     }
 }
