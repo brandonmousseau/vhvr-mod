@@ -430,36 +430,36 @@ namespace ValheimVRMod.Utilities
                                                     "TwoHandedSpear",
                                                     false,
                                                     "Use this to toggle controls of two handed spear (left hand grab while having spear) (experimental)");
-#if DEBUG
-            DebugPosX = config.Bind("Motion Control",
-                "DebugPosX",
-                0.0f,
-                "DebugPosX");
-            DebugPosY = config.Bind("Motion Control",
-                "DebugPosY",
-                0.0f,
-                "DebugPosY");
-            DebugPosZ = config.Bind("Motion Control",
-                "DebugPosZ",
-                0.0f,
-                "DebugPosZ");
-            DebugRotX = config.Bind("Motion Control",
-                "DebugRotX",
-                0.0f,
-                "DebugRotX");
-            DebugRotY = config.Bind("Motion Control",
-                "DebugRotY",
-                0.0f,
-                "DebugRotY");
-            DebugRotZ = config.Bind("Motion Control",
-                "DebugRotZ",
-                0.0f,
-                "DebugRotZ");
-            DebugScale = config.Bind("Motion Control",
-                "DebugScale",
-                1.0f,
-                "DebugScale");
-#endif
+// #if DEBUG
+//             DebugPosX = config.Bind("Motion Control",
+//                 "DebugPosX",
+//                 0.0f,
+//                 "DebugPosX");
+//             DebugPosY = config.Bind("Motion Control",
+//                 "DebugPosY",
+//                 0.0f,
+//                 "DebugPosY");
+//             DebugPosZ = config.Bind("Motion Control",
+//                 "DebugPosZ",
+//                 0.0f,
+//                 "DebugPosZ");
+//             DebugRotX = config.Bind("Motion Control",
+//                 "DebugRotX",
+//                 0.0f,
+//                 "DebugRotX");
+//             DebugRotY = config.Bind("Motion Control",
+//                 "DebugRotY",
+//                 0.0f,
+//                 "DebugRotY");
+//             DebugRotZ = config.Bind("Motion Control",
+//                 "DebugRotZ",
+//                 0.0f,
+//                 "DebugRotZ");
+//             DebugScale = config.Bind("Motion Control",
+//                 "DebugScale",
+//                 1.0f,
+//                 "DebugScale");
+// #endif
         }
 
         public static bool ModEnabled()
