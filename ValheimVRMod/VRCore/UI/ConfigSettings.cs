@@ -256,7 +256,7 @@ namespace ValheimVRMod.VRCore.UI {
                 switch (child.name) {
                     case "bkg":
                         child.localScale *= 0.8f;
-                        child.GetComponent<RectTransform>().anchoredPosition = new Vector2(175, 0);
+                        child.GetComponent<RectTransform>().anchoredPosition = new Vector2(180, 0);
                         child.GetComponent<RectTransform>().sizeDelta = new Vector2(150, 0);
                         child.GetComponentInChildren<Text>().fontSize = 6;
                         child.GetComponentInChildren<Text>().text = configValue.Value.GetSerializedValue();

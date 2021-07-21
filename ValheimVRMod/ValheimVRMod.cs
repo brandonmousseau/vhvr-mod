@@ -17,8 +17,7 @@ namespace ValheimVRMod
         private GameObject vrGui;
         
         void Awake() {
-            VHVRConfig.config = Config;
-            VHVRConfig.InitializeConfiguration();
+            VHVRConfig.InitializeConfiguration(Config);
             if (!VHVRConfig.ModEnabled())
             {
                 LogInfo("ValheimVRMod is disabled via configuration.");

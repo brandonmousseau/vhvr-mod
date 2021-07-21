@@ -95,8 +95,9 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> DebugScale;
 #endif
 
-        public static void InitializeConfiguration()
-        {
+        public static void InitializeConfiguration(ConfigFile mConfig) {
+            
+            config = mConfig;
             config.SaveOnConfigSet = false;
             InitializeImmutableSettings();
             InitializeGeneralSettings();
