@@ -369,17 +369,7 @@ namespace ValheimVRMod.Patches {
             }
         }
     }
-
     
-    // Used to make stack splitting easier
-    [HarmonyPatch(typeof(InventoryGui), "Awake")]
-    class InventoryGui_Awake_Patch {
-        static void Prefix(InventoryGui __instance)
-        {
-            __instance.m_splitSlider.gameObject.AddComponent<SliderSelector>();
-        }
-    }
-
     // Used to enable stack splitting in inventory
     [HarmonyPatch(typeof(InventoryGrid), "OnLeftClick")]
     class InventoryGrid_OnLeftClick_Patch {

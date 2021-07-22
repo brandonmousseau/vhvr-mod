@@ -552,6 +552,8 @@ namespace ValheimVRMod.VRCore.UI
                 // Set the mouse button state to required state
                 buttonState.buttonState = state;
                 ProcessMousePress(buttonState);
+                ProcessMove(buttonState.buttonData);
+                ProcessDrag(buttonState.buttonData);
             }
 
             public void SimulateClick()
