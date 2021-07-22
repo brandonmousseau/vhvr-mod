@@ -47,7 +47,6 @@ namespace ValheimVRMod.Scripts.PostProcessing
 
         readonly RenderBuffer[] m_Mrt = new RenderBuffer[2];
         bool m_ResetHistory = true;
-        float? m_sharpenOverride;
         Func<Vector2, Matrix4x4> m_jitteredFunc;
 
         /// <summary>
@@ -229,7 +228,7 @@ namespace ValheimVRMod.Scripts.PostProcessing
             m_HistoryPingPong[activeEye] = ++pp % k_NumEyes;
 
             material.SetVector(Uniforms._Jitter, jitterVector);
-            material.SetVector(Uniforms._SharpenParameters, new Vector4(m_sharpenOverride ?? taaSettings.sharpen, 0f, 0f, 0f));
+            material.SetVector(Uniforms._SharpenParameters, new Vector4(VHVRConfig.GetTaaSharpenAmmount(), 0f, 0f, 0f));
             material.SetVector(Uniforms._FinalBlendParameters, new Vector4(taaSettings.stationaryBlending, taaSettings.motionBlending, 6000f, 0f));
             material.SetTexture(Uniforms._MainTex, source);
             material.SetTexture(Uniforms._HistoryTex, historyRead);
@@ -294,13 +293,6 @@ namespace ValheimVRMod.Scripts.PostProcessing
             ResetHistory();
             context.camera.useJitteredProjectionMatrixForTransparentRendering = true;
             base.OnDisable();
-        }
-
-        public override void OnEnable()
-        {
-            base.OnEnable();
-            var sharpenAmmount = VHVRConfig.GetTaaSharpenAmmount();
-            m_sharpenOverride = sharpenAmmount >= 0 && sharpenAmmount <= 3 ? (float?)sharpenAmmount : null;
         }
     }
 }
