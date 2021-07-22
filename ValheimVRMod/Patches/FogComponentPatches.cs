@@ -39,11 +39,11 @@ class FogComponentPatches
             //Instead of the camera direction (used in the game) we use world corners so the effect is stereoscopically accurate
             var cam = __instance.context.camera;
             var camTransform = cam.transform;
-            cam.CalculateFrustumCorners(new Rect(0, 0, 1, 1), cam.farClipPlane, cam.stereoActiveEye, _frustumCornersBuffer);        
-            var topLeftWorldFrustum = camTransform.TransformPoint(_frustumCornersBuffer[1]);
-            var topRightWorldFrustum = camTransform.TransformPoint(_frustumCornersBuffer[2]);
-            var bottomLeftWorldFrustum = camTransform.TransformPoint(_frustumCornersBuffer[0]);
-            var bottomRightWorldFrustum = camTransform.TransformPoint(_frustumCornersBuffer[3]);
+            cam.CalculateFrustumCorners(new Rect(0, 0, 1, 1), cam.farClipPlane, cam.stereoActiveEye, _frustumCornersBuffer);
+            var topLeftWorldFrustum = camTransform.TransformPoint(_frustumCornersBuffer[1]) - camTransform.position;
+            var topRightWorldFrustum = camTransform.TransformPoint(_frustumCornersBuffer[2]) - camTransform.position;
+            var bottomLeftWorldFrustum = camTransform.TransformPoint(_frustumCornersBuffer[0]) - camTransform.position;
+            var bottomRightWorldFrustum = camTransform.TransformPoint(_frustumCornersBuffer[3]) - camTransform.position;
             material.SetVector(Uniforms._TopLeft, topLeftWorldFrustum);
             material.SetVector(Uniforms._TopRight, topRightWorldFrustum);
             material.SetVector(Uniforms._BottomLeft, bottomLeftWorldFrustum);
