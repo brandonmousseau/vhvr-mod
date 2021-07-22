@@ -14,7 +14,6 @@ using ValheimVRMod.VRCore.UI;
 using Valve.VR;
 using Valve.VR.Extras;
 using Valve.VR.InteractionSystem;
-using UnityEngine.Rendering;
 
 /**
  * VRPlayer manages instantiating the SteamVR Player
@@ -450,7 +449,6 @@ namespace ValheimVRMod.VRCore
             _fadeManager = vrCam.gameObject.AddComponent<FadeToBlackManager>();
             _instance.SetActive(true);
             vrCam.enabled = true;
-
             _vrCam = vrCam;
             _vrCameraRig = vrCam.transform.parent;
 
