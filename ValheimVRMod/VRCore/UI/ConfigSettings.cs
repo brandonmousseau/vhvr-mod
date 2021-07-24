@@ -15,7 +15,6 @@ namespace ValheimVRMod.VRCore.UI {
 
         private const string MenuName = "VHVR";
         
-        private static bool prefabsGenerated;
         private static GameObject tabButtonPrefab;
         private static GameObject tabPrefab;
         private static GameObject togglePrefab;
@@ -69,10 +68,6 @@ namespace ValheimVRMod.VRCore.UI {
         /// </summary>
         private static void generatePrefabs() {
 
-            if (prefabsGenerated) {
-                return;
-            }
-            
             var tabButtons = settingsPrefab.transform.Find("panel").Find("TabButtons");
             tabButtonPrefab = tabButtons.GetChild(0).gameObject;
             var tabs = settingsPrefab.transform.Find("panel").Find("Tabs");
@@ -82,14 +77,15 @@ namespace ValheimVRMod.VRCore.UI {
             keyBindingPrefab = tabPrefab.transform.Find("Key_Binding").gameObject;
             chooserPrefab = settingsPrefab.transform.Find("panel").Find("Tabs").Find("Misc").Find("Language")
                 .gameObject;
-            createToolTip();
-            prefabsGenerated = true;
+
         }
 
-        private static void createToolTip() {
+        private static void createToolTip(Transform settings) {
+
             var padding = 4;
             var width = 400;
             toolTip = new GameObject();
+            toolTip.transform.SetParent(settings, false);
             var bkgImage = toolTip.AddComponent<Image>();
             bkgImage.rectTransform.anchoredPosition = new Vector2(-600, 0);
             bkgImage.color = new Color(0,0,0,0.5f);
@@ -108,7 +104,7 @@ namespace ValheimVRMod.VRCore.UI {
         private static void createModSettings() {
             settings = Object.Instantiate(settingsPrefab, menuParent);
             settings.transform.Find("panel").Find("Settings_topic").GetComponent<Text>().text = MenuName;
-            toolTip.transform.SetParent(settings.transform, false);
+            createToolTip(settings.transform);
             var tabButtons = settings.transform.Find("panel").Find("TabButtons");
 
             // destroy old tab buttons
