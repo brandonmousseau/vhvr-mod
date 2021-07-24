@@ -52,10 +52,6 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(CommonDir)Valheim\valheim_Data\Managed\assembly_lux.dll</HintPath>
     </Reference>
-    <Reference Include="assembly_postprocessing, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(CommonDir)Valheim\valheim_Data\Managed\assembly_postprocessing.dll</HintPath>
-    </Reference>
     <Reference Include="assembly_simplemeshcombine, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>$(CommonDir)Valheim\valheim_Data\Managed\assembly_simplemeshcombine.dll</HintPath>
@@ -74,6 +70,10 @@
     </Reference>
     <Reference Include="assembly_valheim_publicized">
       <HintPath>$(CommonDir)Valheim\valheim_Data\Managed\publicized_assemblies\assembly_valheim_publicized.dll</HintPath>
+    </Reference>
+    <Reference Include="assembly_postprocessing_publicized, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(CommonDir)Valheim\valheim_Data\Managed\publicized_assemblies\assembly_postprocessing_publicized.dll</HintPath>
     </Reference>
     <Reference Include="BepInEx">
       <HintPath>$(CommonDir)Valheim\BepInEx\core\BepInEx.dll</HintPath>
@@ -307,7 +307,7 @@
     <Compile Include="Patches\Misc.cs" />
     <Compile Include="Patches\MultiplayerPatches.cs" />
     <Compile Include="Patches\RoomscalePatches.cs" />
-    <Compile Include="Patches\TemporalAntialiasingPatches.cs" />
+    <Compile Include="Patches\PostProcessingPatches.cs" />
     <Compile Include="Patches\ShieldPatches.cs" />
     <Compile Include="Patches\TextInputPatches.cs" />
     <Compile Include="Patches\UIPatches.cs" />
@@ -328,6 +328,8 @@
     <Compile Include="Scripts\SpearManager.cs" />
     <Compile Include="Scripts\VrikCreator.cs" />
     <Compile Include="Scripts\ShieldManager.cs" />
+    <Compile Include="Scripts\PostProcessing\VRTaaComponent.cs" />
+    <Compile Include="Scripts\PostProcessing\WaterStencilFixComponent.cs" />
     <Compile Include="Utilities\CameraUtils.cs" />
     <Compile Include="Utilities\EquipScript.cs" />
     <Compile Include="Utilities\WeaponColData.cs" />
@@ -394,6 +396,8 @@ copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\vhvr_custom" "$(CommonD
 copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\vhvr_custom.manifest"  "$(CommonDir)Valheim\Valheim_Data\StreamingAssets"
 copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\amplify_resources" "$(CommonDir)Valheim\Valheim_Data\StreamingAssets"
 copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\amplify_resources.manifest"  "$(CommonDir)Valheim\Valheim_Data\StreamingAssets"
+copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\game_fixes" "$(CommonDir)Valheim\Valheim_Data\StreamingAssets"
+copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\game_fixes.manifest"  "$(CommonDir)Valheim\Valheim_Data\StreamingAssets"
 
 if not exist "$(SolutionDir)ValheimVRMod\release" mkdir "$(SolutionDir)ValheimVRMod\release"
 if not exist "$(SolutionDir)ValheimVRMod\release\BepInEx" mkdir "$(SolutionDir)ValheimVRMod\release\BepInEx"
@@ -439,6 +443,8 @@ copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\steamvr_player_prefabs.
 copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\vhvr_custom" "$(SolutionDir)ValheimVRMod\release\Valheim_Data\StreamingAssets"
 copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\vhvr_custom.manifest"  "$(SolutionDir)ValheimVRMod\release\Valheim_Data\StreamingAssets"
 copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\amplify_resources" "$(SolutionDir)ValheimVRMod\release\Valheim_Data\StreamingAssets"
-copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\amplify_resources.manifest"  "$(SolutionDir)ValheimVRMod\release\Valheim_Data\StreamingAssets"</PostBuildEvent>
+copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\amplify_resources.manifest"  "$(SolutionDir)ValheimVRMod\release\Valheim_Data\StreamingAssets"
+copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\game_fixes" "$(SolutionDir)ValheimVRMod\release\Valheim_Data\StreamingAssets"
+copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\game_fixes.manifest"  "$(SolutionDir)ValheimVRMod\release\Valheim_Data\StreamingAssets"</PostBuildEvent>
   </PropertyGroup>
 </Project>

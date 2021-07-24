@@ -14,6 +14,7 @@ namespace ValheimVRMod.Utilities
     {
         private static readonly string STEAMVR_PREFAB_ASSETBUNDLE_NAME = "steamvr_player_prefabs";
         private static readonly string CUSTOM_RESOURCES_ASSETBUNDLE_NAME = "vhvr_custom";
+        private static readonly string GAME_FIXES = "game_fixes";
         private static readonly string STEAM_VR_SHADERS = "steamvr_shaders";
         private static readonly string AMPLIFY_SHADERS = "amplify_resources";
         private static Dictionary<string, Object> _assets;
@@ -34,7 +35,7 @@ namespace ValheimVRMod.Utilities
             _assets = new Dictionary<string, Object>();
             bool loadResult = true;
             foreach (var assetBundleName in new string[]
-                { STEAMVR_PREFAB_ASSETBUNDLE_NAME, CUSTOM_RESOURCES_ASSETBUNDLE_NAME })
+                { STEAMVR_PREFAB_ASSETBUNDLE_NAME, CUSTOM_RESOURCES_ASSETBUNDLE_NAME, GAME_FIXES })
             {
                 loadResult &= LoadAssets(assetBundleName);
             }
