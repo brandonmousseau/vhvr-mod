@@ -12,7 +12,7 @@ namespace ValheimVRMod.Scripts {
         public void OnPointerEnter(PointerEventData eventData) {
             var textObj = ConfigSettings.toolTip.GetComponentInChildren<Text>();
             textObj.text = text;
-            ConfigSettings.toolTip.GetComponent<Image>().rectTransform.sizeDelta =  new Vector2( 408 , textObj.preferredHeight + 8);
+            ConfigSettings.toolTip.GetComponent<Image>().rectTransform.sizeDelta =  new Vector2( 758 , textObj.preferredHeight + 8);
             ConfigSettings.toolTip.SetActive(true);
         }
 
