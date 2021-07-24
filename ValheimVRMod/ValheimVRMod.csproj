@@ -318,6 +318,7 @@
     <Compile Include="Scripts\Outline.cs" />
     <Compile Include="Scripts\QuickActions.cs" />
     <Compile Include="Scripts\QuickAbstract.cs" />
+    <Compile Include="Scripts\ToolTipTrigger.cs" />
     <Compile Include="Scripts\VRPlayerSync.cs" />
     <Compile Include="Scripts\WeaponCollision.cs" />
     <Compile Include="Scripts\FishingManager.cs" />
@@ -342,6 +343,7 @@
     <Compile Include="Utilities\StaticObjects.cs" />
     <Compile Include="VRCore\UI\CrosshairManager.cs" />
     <Compile Include="VRCore\UI\EnemyHudManager.cs" />
+    <Compile Include="VRCore\UI\ConfigSettings.cs" />
     <Compile Include="VRCore\UI\PlaceModeRayVectorProvider.cs" />
     <Compile Include="VRCore\UI\RepairModePositionIndicator.cs" />
     <Compile Include="VRCore\UI\SliderSelector.cs" />

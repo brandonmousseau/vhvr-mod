@@ -8,12 +8,18 @@ using static ValheimVRMod.Utilities.LogUtils;
 
 namespace ValheimVRMod.Utilities
 {
+    
+    static class VHVRConfig {
 
-    static class VHVRConfig
-    {
-
-        // General Settings
+        public static ConfigFile config;
+        
+        // Immutable Settings
         private static ConfigEntry<bool> vrModEnabled;
+        private static ConfigEntry<bool> nonVrPlayer;
+        private static ConfigEntry<bool> useVrControls;
+        private static ConfigEntry<bool> useOverlayGui;
+        
+        // General Settings
         private static ConfigEntry<string> mirrorMode;
         private static ConfigEntry<float> headOffsetX;
         private static ConfigEntry<float> headOffsetZ;
@@ -26,7 +32,6 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> roomscaleFadeToBlack;
 
         // UI Settings
-        private static ConfigEntry<bool> useOverlayGui;
         private static ConfigEntry<float> overlayCurvature;
         private static ConfigEntry<float> overlayWidth;
         private static ConfigEntry<float> overlayVerticalPosition;
@@ -42,21 +47,12 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> stationaryGuiRecenterAngle;
         private static ConfigEntry<float> mobileGuiRecenterAngle;
         private static ConfigEntry<bool> recenterGuiOnMove;
-        private static ConfigEntry<float> guiRecenterSpeed;
-        private static ConfigEntry<float> DebugPosX;
-        private static ConfigEntry<float> DebugPosY;
-        private static ConfigEntry<float> DebugPosZ;
-        private static ConfigEntry<float> DebugRotX;
-        private static ConfigEntry<float> DebugRotY;
-        private static ConfigEntry<float> DebugRotZ;
-        private static ConfigEntry<float> DebugScale;
+        private static ConfigEntry<int> guiRecenterSpeed;
         private static ConfigEntry<bool> unlockDesktopCursor;
         private static ConfigEntry<bool> QuickMenuFollowCam;
         private static ConfigEntry<int> QuickMenuAngle;
 
         // Controls Settings
-        private static ConfigEntry<bool> nonVrPlayer;
-        private static ConfigEntry<bool> useVrControls;
         private static ConfigEntry<bool> useLookLocomotion;
         private static ConfigEntry<string> preferredHand;
         private static ConfigEntry<string> headReposFowardKey;
@@ -67,7 +63,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<string> headReposDownKey;
         private static ConfigEntry<string> hmdRecenterKey;
         private static ConfigEntry<bool> snapTurnEnabled;
-        private static ConfigEntry<float> snapTurnAngle;
+        private static ConfigEntry<int> snapTurnAngle;
         private static ConfigEntry<bool> smoothSnapTurn;
         private static ConfigEntry<float> smoothSnapSpeed;
         private static ConfigEntry<bool> roomScaleSneaking;
@@ -81,31 +77,61 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> taaSharpenAmmount;
         private static ConfigEntry<float> nearClipPlane;
         
-        // Bow Settings
+        // Motion Control Settings
         private static ConfigEntry<bool> useArrowPredictionGraphic;
         private static ConfigEntry<float> arrowParticleSize;
-
-        // Spear Settings
         private static ConfigEntry<string> spearThrowingType;
         private static ConfigEntry<bool> useSpearDirectionGraphic;
         private static ConfigEntry<bool> spearThrowSpeedDynamic;
         private static ConfigEntry<bool> spearTwoHanded;
 
-        public static void InitializeConfiguration(ConfigFile config)
-        {
-            InitializeGeneralSettings(config);
-            InitializeUISettings(config);
-            InitializeControlsSettings(config);
-            InitializeGraphicsSettings(config);
-            InitializeSpearControlSetting(config);
+#if DEBUG
+        private static ConfigEntry<float> DebugPosX;
+        private static ConfigEntry<float> DebugPosY;
+        private static ConfigEntry<float> DebugPosZ;
+        private static ConfigEntry<float> DebugRotX;
+        private static ConfigEntry<float> DebugRotY;
+        private static ConfigEntry<float> DebugRotZ;
+        private static ConfigEntry<float> DebugScale;
+#endif
+
+        public static void InitializeConfiguration(ConfigFile mConfig) {
+            
+            config = mConfig;
+            config.SaveOnConfigSet = false;
+            InitializeImmutableSettings();
+            InitializeGeneralSettings();
+            InitializeUISettings();
+            InitializeControlsSettings();
+            InitializeGraphicsSettings();
+            InitializeMotionControlSettings();
+            config.Save();
         }
 
-        private static void InitializeGeneralSettings(ConfigFile config)
+        private static void InitializeImmutableSettings() 
         {
-            vrModEnabled = config.Bind("General",
-                                       "ModEnabled",
-                                       true,
-                                       "Used to toggle the mod on and off.");
+            vrModEnabled = config.Bind("Immutable",
+                "ModEnabled",
+                true,
+                "Used to toggle the mod on and off.");
+            nonVrPlayer = config.Bind("Immutable",
+                "nonVrPlayer",
+                false,
+                "Disables VR completely. This is for Non-Vr Players that want to see their Multiplayer companions in VR Bodys");
+            useVrControls = config.Bind("Immutable",
+                "UseVRControls",
+                true,
+                "This setting enables the use of the VR motion controllers as input (Only Oculus Touch and Valve Index supported)." +
+                "This setting, if true, will also force UseOverlayGui to be false as this setting Overlay GUI is not compatible with VR laser pointer inputs.");
+            useOverlayGui = config.Bind("Immutable",
+                "UseOverlayGui",
+                true,
+                "Whether or not to use OpenVR overlay for the GUI. This produces a" +
+                " cleaner GUI but will only be compatible with M&K or Gamepad controls.");
+        }
+        
+        private static void InitializeGeneralSettings()
+        {
             recenterOnStart = config.Bind("General",
                                           "RecenterOnStart",
                                           true,
@@ -163,13 +189,8 @@ namespace ValheimVRMod.Utilities
 
         }
 
-        private static void InitializeUISettings(ConfigFile config)
+        private static void InitializeUISettings()
         {
-            useOverlayGui = config.Bind("UI",
-                            "UseOverlayGui",
-                            true,
-                            "Whether or not to use OpenVR overlay for the GUI. This produces a" +
-                            " cleaner GUI but will only be compatible with M&K or Gamepad controls.");
             overlayWidth = config.Bind("UI",
                                        "OverlayWidth",
                                        4f,
@@ -246,44 +267,9 @@ namespace ValheimVRMod.Utilities
                                             "Only used when UseLookLocomotion is true. This will cause the GUI to recenter to your current look direction when you first start moving.");
             guiRecenterSpeed = config.Bind("UI",
                                             "GuiRecenterSpeed",
-                                            180f,
-                                            "Speed in degrees per second of the Gui recentering algorithm");
-            useArrowPredictionGraphic = config.Bind("Bow",
-                                                     "UseArrowPredictionGraphic",
-                                                     true,
-                                                     "Use this to toggle the path predictor when using the bow and arrow with VR controls.");
-            arrowParticleSize = config.Bind("Bow",
-                "ArrowParticleSize",
-                0.5f,
-                "set size of the particles on drawing arrows (fire,poison, etc.)");
-            DebugPosX = config.Bind("UI",
-                "DebugPosX",
-                0.0f,
-                "DebugPosX");
-            DebugPosY = config.Bind("UI",
-                "DebugPosY",
-                0.0f,
-                "DebugPosY");
-            DebugPosZ = config.Bind("UI",
-                "DebugPosZ",
-                0.0f,
-                "DebugPosZ");
-            DebugRotX = config.Bind("UI",
-                "DebugRotX",
-                0.0f,
-                "DebugRotX");
-            DebugRotY = config.Bind("UI",
-                "DebugRotY",
-                0.0f,
-                "DebugRotY");
-            DebugRotZ = config.Bind("UI",
-                "DebugRotZ",
-                0.0f,
-                "DebugRotZ");
-            DebugScale = config.Bind("UI",
-                "DebugScale",
-                1.0f,
-                "DebugScale");
+                                            180,
+                                            new ConfigDescription("Speed in degrees per second of the Gui recentering algorithm",
+                                                new AcceptableValueRange<int>(0, 360)));
             unlockDesktopCursor = config.Bind("UI",
                 "UnlockDesktopCursor",
                 false,
@@ -296,34 +282,27 @@ namespace ValheimVRMod.Utilities
             QuickMenuAngle = config.Bind("UI",
                 "QuickMenuAngle",
                 60,
-                "Set the quickmenu vertical angle ");
+                new ConfigDescription("Set the quickmenu vertical angle ",
+                    new AcceptableValueRange<int>(0, 360)));
         }
 
-        private static void InitializeControlsSettings(ConfigFile config)
+        private static void InitializeControlsSettings()
         {
-            nonVrPlayer = config.Bind("Controls",
-                "nonVrPlayer",
-                false,
-                "Disables VR completely. This is for Non-Vr Players that want to see their Multiplayer companions in VR Bodys");
             useLookLocomotion = config.Bind("Controls",
                                             "UseLookLocomotion",
                                             true,
                                             "Setting this to true ties the direction you are looking to the walk direction while in first person mode. " +
                                             "Set this to false if you prefer to disconnect these so you can look" +
                                             " look by turning your head without affecting movement direction.");
-            useVrControls = config.Bind("Controls",
-                                        "UseVRControls",
-                                        true,
-                                        "This setting enables the use of the VR motion controllers as input (Only Oculus Touch and Valve Index supported)." +
-                                        "This setting, if true, will also force UseOverlayGui to be false as this setting Overlay GUI is not compatible with VR laser pointer inputs.");
             snapTurnEnabled = config.Bind("Controls",
                                           "SnapTurnEnabled",
                                           false,
                                           "Enable Snap Turning");
             snapTurnAngle = config.Bind("Controls",
                                         "SnapTurnAngle",
-                                        45f,
-                                        "Angle to snap to when snap turning is used.");
+                                        45,
+                                        new ConfigDescription("Angle to snap to when snap turning is used.",
+                                            new AcceptableValueRange<int>(0, 90)));
             smoothSnapTurn = config.Bind("Controls",
                                          "SmoothSnapTurn",
                                          true,
@@ -331,7 +310,8 @@ namespace ValheimVRMod.Utilities
             smoothSnapSpeed = config.Bind("Controls",
                                           "SmoothSnapSpeed",
                                           10f,
-                                          "This will affect the speed that the smooth snap turns occur at.");
+                                          new ConfigDescription("This will affect the speed that the smooth snap turns occur at.",
+                                              new AcceptableValueRange<float>(5, 30)));
             roomScaleSneaking = config.Bind("Controls",
                                           "RoomScaleSneaking",
                                           false,
@@ -369,34 +349,34 @@ namespace ValheimVRMod.Utilities
             headReposFowardKey = config.Bind("Controls",
                                              "HeadRepositionForwardKey",
                                              "UpArrow",
-                                             "Key used to move head camera forwards. Must be matching key from https://docs.unity3d.com/2019.4/Documentation/ScriptReference/KeyCode.html");
+                                             "[Key] used to move head camera forwards. Must be matching key from https://docs.unity3d.com/2019.4/Documentation/ScriptReference/KeyCode.html");
             headReposBackwardKey = config.Bind("Controls",
                                                "HeadRepositionBackwardKey",
                                                "DownArrow",
-                                               "Key used to move head camera backwards. Must be matching key from https://docs.unity3d.com/2019.4/Documentation/ScriptReference/KeyCode.html");
+                                               "[Key] used to move head camera backwards. Must be matching key from https://docs.unity3d.com/2019.4/Documentation/ScriptReference/KeyCode.html");
             headReposLeftKey = config.Bind("Controls",
                                            "HeadRepositionLeftKey",
                                            "LeftArrow",
-                                           "Key used to move head camera left. Must be matching key from https://docs.unity3d.com/2019.4/Documentation/ScriptReference/KeyCode.html");
+                                           "[Key] used to move head camera left. Must be matching key from https://docs.unity3d.com/2019.4/Documentation/ScriptReference/KeyCode.html");
             headReposRightKey = config.Bind("Controls",
                                            "HeadRepositionRightKey",
                                            "RightArrow",
-                                           "Key used to move head camera right. Must be matching key from https://docs.unity3d.com/2019.4/Documentation/ScriptReference/KeyCode.html");
+                                           "[Key] used to move head camera right. Must be matching key from https://docs.unity3d.com/2019.4/Documentation/ScriptReference/KeyCode.html");
             headReposUpKey = config.Bind("Controls",
                                            "HeadRepositionUpKey",
                                            "PageUp",
-                                           "Key used to move head camera up. Must be matching key from https://docs.unity3d.com/2019.4/Documentation/ScriptReference/KeyCode.html");
+                                           "[Key] used to move head camera up. Must be matching key from https://docs.unity3d.com/2019.4/Documentation/ScriptReference/KeyCode.html");
             headReposDownKey = config.Bind("Controls",
                                            "HeadRepositionDownKey",
                                            "PageDown",
-                                           "Key used to move head camera down. Must be matching key from https://docs.unity3d.com/2019.4/Documentation/ScriptReference/KeyCode.html");
+                                           "[Key] used to move head camera down. Must be matching key from https://docs.unity3d.com/2019.4/Documentation/ScriptReference/KeyCode.html");
             hmdRecenterKey = config.Bind("Controls",
                                            "HMDRecenterKey",
                                            "Home",
-                                           "Used to recenter HMD tracking. Must be matching key from https://docs.unity3d.com/2019.4/Documentation/ScriptReference/KeyCode.html");
+                                           "[Key] used to recenter HMD tracking. Must be matching key from https://docs.unity3d.com/2019.4/Documentation/ScriptReference/KeyCode.html");
         }
 
-        private static void InitializeGraphicsSettings(ConfigFile config)
+        private static void InitializeGraphicsSettings()
         {
             useAmplifyOcclusion = config.Bind("Graphics",
                                               "UseAmplifyOcclusion",
@@ -408,19 +388,30 @@ namespace ValheimVRMod.Utilities
                                               " you should disable SSAO in the graphics settings of the game when using this.");
             taaSharpenAmmount = config.Bind("Graphics",
                                               "TAASharpenAmmount",
-                                              -1.0f,
-                                              "Ammount of Sharpen applied after the TAA filter, values should be in the range [0.0,3.0]." +
-                                              " Values outside this range will be ignored and the default game settings will be used instead.");
+                                              0.3f,
+                                              new ConfigDescription("Ammount of Sharpen applied after the TAA filter, values should be in the range [0.0,3.0]." +
+                                                                    " Values outside this range will be ignored and the default game settings will be used instead.",
+                                                  new AcceptableValueRange<float>(0, 3)));
             nearClipPlane = config.Bind("Graphics",
                                         "NearClipPlane",
                                         .05f,
-                                        "This can be used to adjust the distance where where anything inside will be clipped out and not rendered. You can try adjusting this if you experience" +
-                                        " problems where you see the nose of the player character for example.");
+                                        new ConfigDescription("This can be used to adjust the distance where where anything inside will be clipped out and not rendered. You can try adjusting this if you experience" +
+                                                              " problems where you see the nose of the player character for example.",
+                                        new AcceptableValueRange<float>(0, 0.5f)));
         }
 
-        private static void InitializeSpearControlSetting(ConfigFile config)
-        {
-            spearThrowingType = config.Bind("Motion Control - Spear Throwing",
+        private static void InitializeMotionControlSettings() {
+
+            useArrowPredictionGraphic = config.Bind("Motion Control",
+                "UseArrowPredictionGraphic",
+                true,
+                "Use this to toggle the path predictor when using the bow and arrow with VR controls.");
+            arrowParticleSize = config.Bind("Motion Control",
+                "ArrowParticleSize",
+                0.5f,
+                new ConfigDescription("set size of the particles on drawing arrows (fire,poison, etc.)",
+                    new AcceptableValueRange<float>(0, 1)));
+            spearThrowingType = config.Bind("Motion Control",
                                             "SpearThrowingMode",
                                             "DartType",
                                             new ConfigDescription("Change the throwing mode." +
@@ -428,19 +419,50 @@ namespace ValheimVRMod.Utilities
                                             "TwoStagedThrowing - Throw aim is based on first grab and then aim is locked after pressing trigger, throw by releasing trigger while swinging, throw speed based on how fast you swing. " +
                                             "SecondHandAiming - Throw by holding grab and trigger and then releasing trigger, Throw aim is based from your head to your left hand in a straight line, throw by releasing trigger while swinging, throw speed based on how fast you swing.",
                                             new AcceptableValueList<string>(new string[] { "DartType", "TwoStagedThrowing", "SecondHandAiming" })));
-            spearThrowSpeedDynamic = config.Bind("Motion Control - Spear Throwing",
+            spearThrowSpeedDynamic = config.Bind("Motion Control",
                                                 "SpearThrowSpeedDynamic",
                                                 true,
                                                 "Determine whether or not your throw power depends on swing speed, setting to false make the throw always on fixed speed.");
-            useSpearDirectionGraphic = config.Bind("Motion Control - Spear Throwing",
+            useSpearDirectionGraphic = config.Bind("Motion Control",
                                                     "UseSpearDirectionGraphic",
                                                     true,
                                                     "Use this to toggle the direction line of throwing when using the spear with VR controls.");
-            spearTwoHanded = config.Bind("Motion Control - Spear Throwing",
+            spearTwoHanded = config.Bind("Motion Control",
                                                     "TwoHandedSpear",
                                                     false,
                                                     "Use this to toggle controls of two handed spear (left hand grab while having spear) (experimental)");
+// #if DEBUG
+//             DebugPosX = config.Bind("Motion Control",
+//                 "DebugPosX",
+//                 0.0f,
+//                 "DebugPosX");
+//             DebugPosY = config.Bind("Motion Control",
+//                 "DebugPosY",
+//                 0.0f,
+//                 "DebugPosY");
+//             DebugPosZ = config.Bind("Motion Control",
+//                 "DebugPosZ",
+//                 0.0f,
+//                 "DebugPosZ");
+//             DebugRotX = config.Bind("Motion Control",
+//                 "DebugRotX",
+//                 0.0f,
+//                 "DebugRotX");
+//             DebugRotY = config.Bind("Motion Control",
+//                 "DebugRotY",
+//                 0.0f,
+//                 "DebugRotY");
+//             DebugRotZ = config.Bind("Motion Control",
+//                 "DebugRotZ",
+//                 0.0f,
+//                 "DebugRotZ");
+//             DebugScale = config.Bind("Motion Control",
+//                 "DebugScale",
+//                 1.0f,
+//                 "DebugScale");
+// #endif
         }
+
         public static bool ModEnabled()
         {
             return vrModEnabled.Value;
@@ -688,7 +710,8 @@ namespace ValheimVRMod.Utilities
         {
             return nonVrPlayer.Value;
         }
-
+        
+#if DEBUG
         public static Vector3 getDebugPos()
         {
             return new Vector3(DebugPosX.Value, DebugPosY.Value, DebugPosZ.Value);
@@ -702,7 +725,8 @@ namespace ValheimVRMod.Utilities
         public static float getDebugScale() {
             return DebugScale.Value;
         }
-
+#endif
+        
         public static bool UnlockDesktopCursor()
         {
             return unlockDesktopCursor.Value;
@@ -718,7 +742,7 @@ namespace ValheimVRMod.Utilities
 
         public static float GetSnapTurnAngle()
         {
-            return Mathf.Abs(snapTurnAngle.Value);
+            return snapTurnAngle.Value;
         }
 
         public static bool SnapTurnEnabled()

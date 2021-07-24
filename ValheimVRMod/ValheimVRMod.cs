@@ -15,9 +15,8 @@ namespace ValheimVRMod
 
         private GameObject vrPlayer;
         private GameObject vrGui;
-
-        void Awake()
-        {
+        
+        void Awake() {
             VHVRConfig.InitializeConfiguration(Config);
             if (!VHVRConfig.ModEnabled())
             {
