@@ -6,6 +6,7 @@ using HarmonyLib;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
+using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
 using Object = UnityEngine.Object;
 
@@ -14,6 +15,7 @@ namespace ValheimVRMod.VRCore.UI {
 
         private const string MenuName = "VHVR";
         
+        private static bool prefabsGenerated;
         private static GameObject tabButtonPrefab;
         private static GameObject tabPrefab;
         private static GameObject togglePrefab;
@@ -21,16 +23,14 @@ namespace ValheimVRMod.VRCore.UI {
         private static GameObject chooserPrefab;
         private static GameObject settingsPrefab;
         private static GameObject keyBindingPrefab;
+        private static GameObject settings;
         private static Transform menuList;
         private static Transform menuParent;
+        private static KeyValuePair<string, ConfigEntryBase>? saveConfigValue;
         private static int tabCounter;
 
-        private static Dictionary<string, Dictionary<string, ConfigEntryBase>> orderedConfig =
-            new Dictionary<string, Dictionary<string, ConfigEntryBase>>();
-
-        private static GameObject settings;
-        private static KeyValuePair<string, ConfigEntryBase>? saveConfigValue;
-
+        public static GameObject toolTip;
+        
         public static void instantiate(Transform mList, Transform mParent, GameObject sPrefab) {
             menuList = mList;
             menuParent = mParent;
@@ -68,6 +68,10 @@ namespace ValheimVRMod.VRCore.UI {
         /// Create temporary prefabs out of existing elements
         /// </summary>
         private static void generatePrefabs() {
+
+            if (prefabsGenerated) {
+                return;
+            }
             
             var tabButtons = settingsPrefab.transform.Find("panel").Find("TabButtons");
             tabButtonPrefab = tabButtons.GetChild(0).gameObject;
@@ -78,6 +82,24 @@ namespace ValheimVRMod.VRCore.UI {
             keyBindingPrefab = tabPrefab.transform.Find("Key_Binding").gameObject;
             chooserPrefab = settingsPrefab.transform.Find("panel").Find("Tabs").Find("Misc").Find("Language")
                 .gameObject;
+            createToolTip();
+            prefabsGenerated = true;
+        }
+
+        private static void createToolTip() {
+            var padding = 4;
+            var width = 400;
+            toolTip = new GameObject();
+            var bkgImage = toolTip.AddComponent<Image>();
+            bkgImage.rectTransform.anchoredPosition = new Vector2(-600, 0);
+            bkgImage.color = new Color(0,0,0,0.5f);
+            var textObj = Object.Instantiate(togglePrefab.transform.GetChild(0), toolTip.transform);
+            var text = textObj.GetComponent<Text>();
+            text.rectTransform.sizeDelta = new Vector2(width, 1000);
+            text.fontSize = 14;
+            text.alignment = TextAnchor.MiddleLeft;
+            text.rectTransform.anchoredPosition = new Vector2(padding, padding);
+            toolTip.SetActive(false);
         }
 
         /// <summary>
@@ -86,6 +108,7 @@ namespace ValheimVRMod.VRCore.UI {
         private static void createModSettings() {
             settings = Object.Instantiate(settingsPrefab, menuParent);
             settings.transform.Find("panel").Find("Settings_topic").GetComponent<Text>().text = MenuName;
+            toolTip.transform.SetParent(settings.transform, false);
             var tabButtons = settings.transform.Find("panel").Find("TabButtons");
 
             // destroy old tab buttons
@@ -101,6 +124,7 @@ namespace ValheimVRMod.VRCore.UI {
             }
 
             // reorder bepinex configs by sections
+            var orderedConfig = new Dictionary<string, Dictionary<string, ConfigEntryBase>>();
             foreach (KeyValuePair<ConfigDefinition, ConfigEntryBase> keyValuePair in VHVRConfig.config) {
 
                 // skip entries with section "Immutable", these are not changeable at runtime
@@ -228,6 +252,7 @@ namespace ValheimVRMod.VRCore.UI {
             AcceptableValueBase acceptableValues) {
 
             var sliderObj = Object.Instantiate(sliderPrefab, parent);
+            sliderObj.AddComponent<ToolTipTrigger>().text = configValue.Value.Description.Description;
             sliderObj.GetComponent<Text>().text = configValue.Key;
             sliderObj.GetComponent<RectTransform>().anchoredPosition = pos;
             var slider = sliderObj.GetComponentInChildren<Slider>();
@@ -246,6 +271,7 @@ namespace ValheimVRMod.VRCore.UI {
         AcceptableValueBase acceptableValues) {
             
             var chooserObj = Object.Instantiate(chooserPrefab, parent);
+            chooserObj.AddComponent<ToolTipTrigger>().text = configValue.Value.Description.Description;
             chooserObj.GetComponent<Text>().text = configValue.Key;
             chooserObj.GetComponent<RectTransform>().anchoredPosition = pos;
             var valueList = (string[]) type.GetProperty("AcceptableValues").GetValue(acceptableValues);
@@ -289,6 +315,7 @@ namespace ValheimVRMod.VRCore.UI {
         private static void createToggle(KeyValuePair<string, ConfigEntryBase> configValue, Transform parent, Vector2 pos) {
             
             var toggle = Object.Instantiate(togglePrefab, parent);
+            toggle.AddComponent<ToolTipTrigger>().text = configValue.Value.Description.Description;
             toggle.GetComponentInChildren<Text>().text = configValue.Key;
             toggle.GetComponent<Toggle>().isOn = configValue.Value.GetSerializedValue() == "true";
             toggle.GetComponent<Toggle>().onValueChanged.AddListener(mToggle => {
@@ -301,6 +328,7 @@ namespace ValheimVRMod.VRCore.UI {
         private static void createKeyBinding(KeyValuePair<string, ConfigEntryBase> configValue, Transform parent, Vector2 pos) {
             
             var keyBinding = Object.Instantiate(keyBindingPrefab, parent);
+            keyBinding.AddComponent<ToolTipTrigger>().text = configValue.Value.Description.Description;
             keyBinding.GetComponent<Text>().text = configValue.Key;
             Settings.m_instance.m_keys.Add(new Settings.KeySetting {m_keyName = configValue.Key, m_keyTransform = keyBinding.GetComponent<RectTransform>()});
             keyBinding.GetComponentInChildren<Button>().onClick.AddListener(() => {

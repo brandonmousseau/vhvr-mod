@@ -540,6 +540,7 @@ namespace ValheimVRMod.VRCore.UI
         {
             bool lastLeftState = false;
             bool lastRightState = false;
+            private bool inDragDeadZone;
 
             private void SimulateButtonState(PointerEventData.FramePressState state, PointerEventData.InputButton button)
             {
@@ -552,8 +553,23 @@ namespace ValheimVRMod.VRCore.UI
                 // Set the mouse button state to required state
                 buttonState.buttonState = state;
                 ProcessMousePress(buttonState);
-                ProcessMove(buttonState.buttonData);
-                ProcessDrag(buttonState.buttonData);
+
+                if (button != PointerEventData.InputButton.Left) {
+                    return;
+                }
+                
+                if (state == PointerEventData.FramePressState.Pressed) {
+                    inDragDeadZone = true;
+                }
+                
+                if (inDragDeadZone && Vector2.Distance(buttonState.buttonData.pressPosition, buttonState.buttonData.position) > 15) {
+                    inDragDeadZone = false;
+                }
+                
+                if (! inDragDeadZone) {
+                    ProcessMove(buttonState.buttonData);
+                    ProcessDrag(buttonState.buttonData);   
+                }
             }
 
             public void SimulateClick()
@@ -611,6 +627,5 @@ namespace ValheimVRMod.VRCore.UI
                 SimulateButtonState(buttonState, PointerEventData.InputButton.Right);
             }
         }
-
     }
 }

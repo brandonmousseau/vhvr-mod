@@ -317,6 +317,7 @@
     <Compile Include="Scripts\Outline.cs" />
     <Compile Include="Scripts\QuickActions.cs" />
     <Compile Include="Scripts\QuickAbstract.cs" />
+    <Compile Include="Scripts\ToolTipTrigger.cs" />
     <Compile Include="Scripts\VRPlayerSync.cs" />
     <Compile Include="Scripts\WeaponCollision.cs" />
     <Compile Include="Scripts\FishingManager.cs" />

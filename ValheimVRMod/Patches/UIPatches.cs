@@ -632,6 +632,9 @@ namespace ValheimVRMod.Patches
     [HarmonyPatch(typeof(FejdStartup), "SetupGui")]
     class PatchFejd {
         public static void Postfix(FejdStartup __instance) {
+            if (VHVRConfig.NonVrPlayer()) {
+                return;
+            }
             ConfigSettings.instantiate(__instance.m_mainMenu.transform.Find("MenuList"), __instance.m_mainMenu.transform, __instance.m_settingsPrefab);
         }
     }
@@ -639,6 +642,9 @@ namespace ValheimVRMod.Patches
     [HarmonyPatch(typeof(Menu), "Start")]
     class PatchMenu {
         public static void Postfix(Menu __instance) {
+            if (VHVRConfig.NonVrPlayer()) {
+                return;
+            }
             ConfigSettings.instantiate(__instance.m_menuDialog, __instance.transform, __instance.m_settingsPrefab);
         }
     }    
@@ -646,6 +652,9 @@ namespace ValheimVRMod.Patches
     [HarmonyPatch(typeof(Settings), "UpdateBindings")]
     class PatchEndBindKey {
         public static void Postfix() {
+            if (VHVRConfig.NonVrPlayer()) {
+                return;
+            }
             ConfigSettings.updateBindings();
         }
     }

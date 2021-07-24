@@ -388,7 +388,7 @@ namespace ValheimVRMod.Utilities
                                               " you should disable SSAO in the graphics settings of the game when using this.");
             taaSharpenAmmount = config.Bind("Graphics",
                                               "TAASharpenAmmount",
-                                              0f,
+                                              0.3f,
                                               new ConfigDescription("Ammount of Sharpen applied after the TAA filter, values should be in the range [0.0,3.0]." +
                                                                     " Values outside this range will be ignored and the default game settings will be used instead.",
                                                   new AcceptableValueRange<float>(0, 3)));
