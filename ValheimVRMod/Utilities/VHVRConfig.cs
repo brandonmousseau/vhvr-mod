@@ -98,14 +98,12 @@ namespace ValheimVRMod.Utilities
         public static void InitializeConfiguration(ConfigFile mConfig) {
             
             config = mConfig;
-            config.SaveOnConfigSet = false;
             InitializeImmutableSettings();
             InitializeGeneralSettings();
             InitializeUISettings();
             InitializeControlsSettings();
             InitializeGraphicsSettings();
             InitializeMotionControlSettings();
-            config.Save();
         }
 
         private static void InitializeImmutableSettings() 

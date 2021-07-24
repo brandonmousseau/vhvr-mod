@@ -25,9 +25,9 @@ namespace ValheimVRMod.VRCore.UI {
         private static GameObject settings;
         private static Transform menuList;
         private static Transform menuParent;
-        private static KeyValuePair<string, ConfigEntryBase>? saveConfigValue;
+        private static ConfigComponent tmpComfigComponent;
         private static int tabCounter;
-
+        public static bool doSave;
         public static GameObject toolTip;
         
         public static void instantiate(Transform mList, Transform mParent, GameObject sPrefab) {
@@ -173,10 +173,10 @@ namespace ValheimVRMod.VRCore.UI {
 
                 switch (child.name) {
                     case "Ok":
-                        child.GetComponent<Button>().onClick.AddListener(() => {VHVRConfig.config.Save();});
+                        child.GetComponent<Button>().onClick.AddListener(() => {doSave = true;});
                         break;
                     case "Back":
-                        child.GetComponent<Button>().onClick.AddListener(() => {VHVRConfig.config.Reload();});
+                        child.GetComponent<Button>().onClick.AddListener(() => {doSave = false;});
                         break;
                     default:
                         Object.Destroy(child.gameObject);
@@ -249,7 +249,8 @@ namespace ValheimVRMod.VRCore.UI {
             AcceptableValueBase acceptableValues) {
 
             var sliderObj = Object.Instantiate(sliderPrefab, parent);
-            sliderObj.AddComponent<ToolTipTrigger>().text = configValue.Value.Description.Description;
+            var configComponent = sliderObj.AddComponent<ConfigComponent>();
+            configComponent.configValue = configValue;
             sliderObj.GetComponent<Text>().text = configValue.Key;
             sliderObj.GetComponent<RectTransform>().anchoredPosition = pos;
             var slider = sliderObj.GetComponentInChildren<Slider>();
@@ -259,21 +260,23 @@ namespace ValheimVRMod.VRCore.UI {
             if (acceptableValues.ValueType == typeof(int)) {
                 slider.wholeNumbers = true;
             }
-            slider.onValueChanged.AddListener(mValue => {
-                configValue.Value.SetSerializedValue(mValue.ToString(CultureInfo.InvariantCulture));
-            });
+            
+            configComponent.saveAction = param => {
+                configValue.Value.SetSerializedValue(slider.value.ToString(CultureInfo.InvariantCulture));
+            };
         }
 
         private static void createValueList(KeyValuePair<string, ConfigEntryBase> configValue, Transform parent, Vector2 pos, Type type,
         AcceptableValueBase acceptableValues) {
             
             var chooserObj = Object.Instantiate(chooserPrefab, parent);
-            chooserObj.AddComponent<ToolTipTrigger>().text = configValue.Value.Description.Description;
+            var configComponent = chooserObj.AddComponent<ConfigComponent>();
+            configComponent.configValue = configValue;
             chooserObj.GetComponent<Text>().text = configValue.Key;
             chooserObj.GetComponent<RectTransform>().anchoredPosition = pos;
             var valueList = (string[]) type.GetProperty("AcceptableValues").GetValue(acceptableValues);
             var currentIndex = Array.IndexOf(valueList, configValue.Value.GetSerializedValue());
-            
+
             for (int i = 0; i < chooserObj.transform.childCount; i++) {
                 var child = chooserObj.transform.GetChild(i);
                 switch (child.name) {
@@ -290,7 +293,6 @@ namespace ValheimVRMod.VRCore.UI {
                         child.GetComponent<Button>().onClick.AddListener(() => {
                             var text = valueList[mod(--currentIndex, valueList.Length)];
                             chooserObj.transform.Find("bkg").GetComponentInChildren<Text>().text = text;
-                            configValue.Value.SetSerializedValue(text);
                         });
                         break;
                     case "Right":
@@ -299,7 +301,6 @@ namespace ValheimVRMod.VRCore.UI {
                         child.GetComponent<Button>().onClick.AddListener(() => {
                             var text = valueList[mod(++currentIndex, valueList.Length)];
                             chooserObj.transform.Find("bkg").GetComponentInChildren<Text>().text = text;
-                            configValue.Value.SetSerializedValue(text);
                         });
                         break;
                     default:
@@ -307,17 +308,23 @@ namespace ValheimVRMod.VRCore.UI {
                         break;
                 }
             }
+            
+            configComponent.saveAction = param => {
+                configValue.Value.SetSerializedValue(chooserObj.transform.Find("bkg").GetComponentInChildren<Text>().text);
+            };
         }
         
         private static void createToggle(KeyValuePair<string, ConfigEntryBase> configValue, Transform parent, Vector2 pos) {
             
             var toggle = Object.Instantiate(togglePrefab, parent);
-            toggle.AddComponent<ToolTipTrigger>().text = configValue.Value.Description.Description;
+            var configComponent = toggle.AddComponent<ConfigComponent>();
+            configComponent.configValue = configValue;
+            configComponent.saveAction = param => {
+                configValue.Value.SetSerializedValue(toggle.GetComponent<Toggle>().isOn ? "true" : "false");
+            };
             toggle.GetComponentInChildren<Text>().text = configValue.Key;
             toggle.GetComponent<Toggle>().isOn = configValue.Value.GetSerializedValue() == "true";
-            toggle.GetComponent<Toggle>().onValueChanged.AddListener(mToggle => {
-                configValue.Value.SetSerializedValue(mToggle ? "true" : "false");
-            });
+            
             pos.x -= 210;
             toggle.GetComponent<RectTransform>().anchoredPosition = pos;
         }
@@ -325,12 +332,16 @@ namespace ValheimVRMod.VRCore.UI {
         private static void createKeyBinding(KeyValuePair<string, ConfigEntryBase> configValue, Transform parent, Vector2 pos) {
             
             var keyBinding = Object.Instantiate(keyBindingPrefab, parent);
-            keyBinding.AddComponent<ToolTipTrigger>().text = configValue.Value.Description.Description;
+            var configComponent = keyBinding.AddComponent<ConfigComponent>();
+            configComponent.configValue = configValue;
+            configComponent.saveAction = param => {
+                configValue.Value.SetSerializedValue(param);
+            };
             keyBinding.GetComponent<Text>().text = configValue.Key;
             Settings.m_instance.m_keys.Add(new Settings.KeySetting {m_keyName = configValue.Key, m_keyTransform = keyBinding.GetComponent<RectTransform>()});
             keyBinding.GetComponentInChildren<Button>().onClick.AddListener(() => {
                 Settings.instance.OnKeySet();
-                saveConfigValue = configValue;
+                tmpComfigComponent = configComponent;
             });
             keyBinding.GetComponent<RectTransform>().anchoredPosition = pos;
             ZInput.instance.AddButton(configValue.Key, (KeyCode) Enum.Parse(typeof(KeyCode), configValue.Value.GetSerializedValue()));
@@ -342,20 +353,20 @@ namespace ValheimVRMod.VRCore.UI {
 
         public static void updateBindings() {
             
-            if (saveConfigValue == null) {
+            if (tmpComfigComponent == null) {
                 return;
             }
-
+            
             foreach (Settings.KeySetting key in Settings.instance.m_keys) {
-                if (key.m_keyName == saveConfigValue.Value.Key) {
+                if (key.m_keyName == tmpComfigComponent.configValue.Key) {
                     var buttons = AccessTools.FieldRefAccess<ZInput, Dictionary<string, ZInput.ButtonDef>>(ZInput.instance, "m_buttons");
                     ZInput.ButtonDef buttonDef;
                     buttons.TryGetValue(key.m_keyName, out buttonDef);
-                    saveConfigValue.Value.Value.SetSerializedValue(buttonDef.m_key.ToString());
+                    tmpComfigComponent.value = buttonDef.m_key.ToString();
                 }
             }
-
-            saveConfigValue = null;
+            
+            tmpComfigComponent = null;
         }
     }
 }
