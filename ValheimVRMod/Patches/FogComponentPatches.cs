@@ -40,10 +40,10 @@ class FogComponentPatches
             var cam = __instance.context.camera;
             var camTransform = cam.transform;
             cam.CalculateFrustumCorners(new Rect(0, 0, 1, 1), cam.farClipPlane, cam.stereoActiveEye, _frustumCornersBuffer);
-            var topLeftWorldFrustum = camTransform.TransformPoint(_frustumCornersBuffer[1]) - camTransform.position;
-            var topRightWorldFrustum = camTransform.TransformPoint(_frustumCornersBuffer[2]) - camTransform.position;
-            var bottomLeftWorldFrustum = camTransform.TransformPoint(_frustumCornersBuffer[0]) - camTransform.position;
-            var bottomRightWorldFrustum = camTransform.TransformPoint(_frustumCornersBuffer[3]) - camTransform.position;
+            var topLeftWorldFrustum = camTransform.TransformVector(_frustumCornersBuffer[1]);
+            var topRightWorldFrustum = camTransform.TransformVector(_frustumCornersBuffer[2]);
+            var bottomLeftWorldFrustum = camTransform.TransformVector(_frustumCornersBuffer[0]);
+            var bottomRightWorldFrustum = camTransform.TransformVector(_frustumCornersBuffer[3]);
             material.SetVector(Uniforms._TopLeft, topLeftWorldFrustum);
             material.SetVector(Uniforms._TopRight, topRightWorldFrustum);
             material.SetVector(Uniforms._BottomLeft, bottomLeftWorldFrustum);
