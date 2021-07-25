@@ -22,6 +22,7 @@ namespace ValheimVRMod.Patches
         [HarmonyPatch(typeof(PostProcessingBehaviour), "CheckObservers")]
         static void PrefixCheckObservers(PostProcessingBehaviour __instance, PostProcessingContext ___m_Context)
         {
+            if (VHVRConfig.NonVrPlayer()) return;
             var waterFixComponent = WaterStencilFixComponent.PostProcessingExtension.GetOrCreateValue(__instance);
             if(waterFixComponent != null) waterFixComponent.Init(___m_Context, WaterStencilFixComponent.fakeModel);
         }
@@ -65,6 +66,8 @@ namespace ValheimVRMod.Patches
         [HarmonyPatch(typeof(PostProcessingBehaviour), "OnPreRender")]
         static void PostfixOnPreRender(PostProcessingBehaviour __instance, PostProcessingProfile ___profile)
         {
+            if (VHVRConfig.NonVrPlayer()) return;
+        
             if(___profile != null)
             {
                 var waterFixComponent = WaterStencilFixComponent.PostProcessingExtension.GetOrCreateValue(__instance);
