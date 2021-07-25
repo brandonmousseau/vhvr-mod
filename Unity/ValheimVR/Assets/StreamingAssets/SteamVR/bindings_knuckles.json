@@ -1,7 +1,7 @@
 {
    "action_manifest_version" : 0,
    "alias_info" : {},
-   "app_key" : "application.generated.unity.valheimvr.exe",
+   "app_key" : "steam.app.892970",
    "bindings" : {
       "/actions/buggy" : {
          "chords" : [],
