@@ -32,6 +32,7 @@ namespace ValheimVRMod.Patches
                 try
                 {
                     __result = uint.Parse(environmentVariable);
+                    return false;
                 } catch
                 {
                     LogError("Error parsing 'SteamAppId' environment variable. Using steam_appid.txt instead.");
