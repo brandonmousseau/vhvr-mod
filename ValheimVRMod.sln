@@ -11,12 +11,18 @@ Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
+		SyncOnlyDebug|Any CPU = SyncOnlyDebug|Any CPU
+		SyncOnlyRelease|Any CPU = SyncOnlyRelease|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{86B846A5-747B-47DC-AC73-FDA218E4361F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{86B846A5-747B-47DC-AC73-FDA218E4361F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{86B846A5-747B-47DC-AC73-FDA218E4361F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{86B846A5-747B-47DC-AC73-FDA218E4361F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{86B846A5-747B-47DC-AC73-FDA218E4361F}.SyncOnlyDebug|Any CPU.ActiveCfg = SyncOnlyDebug|Any CPU
+		{86B846A5-747B-47DC-AC73-FDA218E4361F}.SyncOnlyDebug|Any CPU.Build.0 = SyncOnlyDebug|Any CPU
+		{86B846A5-747B-47DC-AC73-FDA218E4361F}.SyncOnlyRelease|Any CPU.ActiveCfg = SyncOnlyRelease|Any CPU
+		{86B846A5-747B-47DC-AC73-FDA218E4361F}.SyncOnlyRelease|Any CPU.Build.0 = SyncOnlyRelease|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

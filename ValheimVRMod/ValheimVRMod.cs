@@ -25,6 +25,9 @@ namespace ValheimVRMod
                 return;
             }
             LogInfo("ValheimVR Mod Awakens!");
+#if NONVRMODE
+            LogInfo("Running non-VR mode companion mod!");
+#endif
             StartValheimVR();
         }
 
