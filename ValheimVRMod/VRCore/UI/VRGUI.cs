@@ -112,6 +112,13 @@ namespace ValheimVRMod.VRCore.UI
             }
         }
 
+        public void LateUpdate()
+        {
+            // Needs to go into LateUpdate to ensure it runs after VRIK calculations
+            // since the model HumanBodyBones are being referenced
+            VRHud.instance.Update();
+        }
+
         public void OnDisable()
         {
             destroyOverlay();

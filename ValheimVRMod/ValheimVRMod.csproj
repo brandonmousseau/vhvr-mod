@@ -373,6 +373,7 @@
     <Compile Include="VRCore\UI\SoftwareCursor.cs" />
     <Compile Include="VRCore\UI\VRControls.cs" />
     <Compile Include="VRCore\UI\VRGUI.cs" />
+    <Compile Include="VRCore\UI\VRHud.cs" />
     <Compile Include="VRCore\VRManager.cs" />
     <Compile Include="ValheimVRMod.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

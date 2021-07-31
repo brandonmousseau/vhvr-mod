@@ -52,6 +52,18 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> QuickMenuFollowCam;
         private static ConfigEntry<int> QuickMenuAngle;
 
+        // VR Hud Settings
+        private static ConfigEntry<bool> useLegacyHud;
+        private static ConfigEntry<string> hudPanelPosition;
+        private static ConfigEntry<float> hudPanelScale;
+        private static ConfigEntry<float> hudPanelXOffset;
+        private static ConfigEntry<float> hudPanelYOffset;
+        private static ConfigEntry<float> hudPanelZOffset;
+        private static ConfigEntry<float> hudPanelXRotOffset;
+        private static ConfigEntry<float> hudPanelYRotOffset;
+        private static ConfigEntry<float> hudPanelZRotOffset;
+        private static ConfigEntry<bool> allowHudFade;
+
         // Controls Settings
         private static ConfigEntry<bool> useLookLocomotion;
         private static ConfigEntry<string> preferredHand;
@@ -101,6 +113,7 @@ namespace ValheimVRMod.Utilities
             InitializeImmutableSettings();
             InitializeGeneralSettings();
             InitializeUISettings();
+            InitializeVrHudSettings();
             InitializeControlsSettings();
             InitializeGraphicsSettings();
             InitializeMotionControlSettings();
@@ -282,6 +295,58 @@ namespace ValheimVRMod.Utilities
                 60,
                 new ConfigDescription("Set the quickmenu vertical angle ",
                     new AcceptableValueRange<int>(0, 360)));
+        }
+
+        private static void InitializeVrHudSettings()
+        {
+            useLegacyHud = config.Bind("VRHUD",
+                                        "UseLegacyHud",
+                                        false,
+                                        "Disables custom VR HUD features and moves HUD elements to main UI panel.");
+            hudPanelPosition = config.Bind("VRHUD",
+                                              "HudPanelPlacement",
+                                              "LeftWrist",
+                                              new ConfigDescription("Where should the health panel be placed?",
+                                              new AcceptableValueList<string>(new string[] { "LeftWrist", "RightWrist", "CameraLocked" })));
+            hudPanelScale = config.Bind("VRHUD",
+                                            "HudPanelScale",
+                                            1f,
+                                            new ConfigDescription("Scalar multiple to determine VR health panel scale.",
+                                                new AcceptableValueRange<float>(.25f, 3f)));
+            hudPanelXOffset = config.Bind("VRHUD",
+                                             "HudPanelXOffset",
+                                             0f,
+                                            new ConfigDescription("Offset to reposition VR health panel.",
+                                                new AcceptableValueRange<float>(-0.001f, 0.001f)));
+            hudPanelYOffset = config.Bind("VRHUD",
+                                             "HudPanelYOffset",
+                                             0f,
+                                            new ConfigDescription("Offset to reposition VR health panel.",
+                                                new AcceptableValueRange<float>(-0.001f, 0.001f)));
+            hudPanelZOffset = config.Bind("VRHUD",
+                                             "HudPanelZOffset",
+                                             0f,
+                                            new ConfigDescription("Offset to reposition VR health panel.",
+                                                new AcceptableValueRange<float>(-0.001f, 0.001f)));
+            hudPanelXRotOffset = config.Bind("VRHUD",
+                                             "HudPanelXRotOffset",
+                                             0f,
+                                            new ConfigDescription("Modify the angle of the wrist-based VR HUD panel.",
+                                                new AcceptableValueRange<float>(-180f, 180f)));
+            hudPanelYRotOffset = config.Bind("VRHUD",
+                                             "HudPanelYRotOffset",
+                                             0f,
+                                            new ConfigDescription("Modify the angle of the wrist-based VR HUD panel.",
+                                                new AcceptableValueRange<float>(-180f, 180f)));
+            hudPanelZRotOffset = config.Bind("VRHUD",
+                                             "HudPanelZRotOffset",
+                                             0f,
+                                            new ConfigDescription("Modify the angle of the wrist-based VR HUD panel.",
+                                                new AcceptableValueRange<float>(-180f, 180f)));
+            allowHudFade = config.Bind("VRHUD",
+                                        "AllowHudFade",
+                                        true,
+                                        "When the HUD is attached to a wrist, allow it to fade away unless you are actively looking at it.");
         }
 
         private static void InitializeControlsSettings()
@@ -810,6 +875,55 @@ namespace ValheimVRMod.Utilities
         public static bool UseSpearDirectionGraphic()
         {
             return useSpearDirectionGraphic.Value;
+        }
+
+        public static bool UseLegacyHud()
+        {
+            return useLegacyHud.Value;
+        }
+
+        public static string HudPanelPosition()
+        {
+            return hudPanelPosition.Value;
+        }
+
+        public static float HudPanelScale()
+        {
+            return hudPanelScale.Value;
+        }
+
+        public static float HudPanelXOffset()
+        {
+            return hudPanelXOffset.Value;
+        }
+
+        public static float HudPanelYOffset()
+        {
+            return hudPanelYOffset.Value;
+        }
+
+        public static float HudPanelZOffset()
+        {
+            return hudPanelZOffset.Value;
+        }
+
+        public static float HudPanelXRotationOffset()
+        {
+            return hudPanelXRotOffset.Value;
+        }
+        public static float HudPanelYRotationOffset()
+        {
+            return hudPanelYRotOffset.Value;
+        }
+
+        public static float HudPanelZRotationOffset()
+        {
+            return hudPanelZRotOffset.Value;
+        }
+
+        public static bool AllowHudFade()
+        {
+            return allowHudFade.Value;
         }
     }
 }

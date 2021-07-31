@@ -14,6 +14,7 @@ namespace ValheimVRMod.VRCore.UI {
     public class ConfigSettings {
 
         private const string MenuName = "VHVR";
+        private const int TabButtonWidth = 100;
         
         private static GameObject tabButtonPrefab;
         private static GameObject tabPrefab;
@@ -122,15 +123,16 @@ namespace ValheimVRMod.VRCore.UI {
 
             // reorder bepinex configs by sections
             var orderedConfig = new Dictionary<string, Dictionary<string, ConfigEntryBase>>();
+            int sectionCount = 0;
             foreach (KeyValuePair<ConfigDefinition, ConfigEntryBase> keyValuePair in VHVRConfig.config) {
 
                 // skip entries with section "Immutable", these are not changeable at runtime
                 if (keyValuePair.Key.Section == "Immutable") {
                     continue;
                 }
-                
                 if (!orderedConfig.ContainsKey(keyValuePair.Key.Section)) {
                     orderedConfig.Add(keyValuePair.Key.Section, new Dictionary<string, ConfigEntryBase>());
+                    sectionCount++;
                 }
 
                 orderedConfig[keyValuePair.Key.Section][keyValuePair.Key.Key] = keyValuePair.Value;
@@ -139,7 +141,7 @@ namespace ValheimVRMod.VRCore.UI {
             tabCounter = 0;
             // iterate ordered configs and create tabs out of each section
             foreach (KeyValuePair<string, Dictionary<string, ConfigEntryBase>> section in orderedConfig) {
-                createTabForSection(section);
+                createTabForSection(section, sectionCount);
             }
 
             tabButtons.GetComponent<TabHandler>().SetActiveTab(0);
@@ -149,15 +151,16 @@ namespace ValheimVRMod.VRCore.UI {
         /// <summary>
         /// Create a new Tab out of a config section
         /// </summary>
-        private static void createTabForSection(KeyValuePair<string, Dictionary<string, ConfigEntryBase>> section) {
+        private static void createTabForSection(KeyValuePair<string, Dictionary<string, ConfigEntryBase>> section, int sectionCount) {
             var tabButtons = settings.transform.Find("panel").Find("TabButtons");
 
             // Create new tab button
             var newTabButton = Object.Instantiate(tabButtonPrefab, tabButtons);
             newTabButton.name = section.Key;
             var rectTransform = newTabButton.GetComponent<RectTransform>();
-            rectTransform.anchoredPosition = new Vector2(rectTransform.anchoredPosition.x + tabCounter * 100,
-                rectTransform.anchoredPosition.y);
+            var tabButtonsTotalWidth = settings.transform.Find("panel").gameObject.GetComponent<RectTransform>().sizeDelta.x;
+            var tabButtonXPosition = (tabButtonsTotalWidth - sectionCount * TabButtonWidth) * 0.5f + tabCounter*TabButtonWidth;
+            rectTransform.anchoredPosition = new Vector2(tabButtonXPosition, rectTransform.anchoredPosition.y);
 
             foreach (Text text in newTabButton.GetComponentsInChildren<Text>()) {
                 text.text = section.Key;
@@ -170,7 +173,6 @@ namespace ValheimVRMod.VRCore.UI {
 
             // add listeners for ok and back buttons, remove all other elements 
             foreach (Transform child in newTab.transform) {
-
                 switch (child.name) {
                     case "Ok":
                         child.GetComponent<Button>().onClick.AddListener(() => {doSave = true;});
