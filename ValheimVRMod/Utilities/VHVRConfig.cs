@@ -63,6 +63,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> hudPanelYRotOffset;
         private static ConfigEntry<float> hudPanelZRotOffset;
         private static ConfigEntry<bool> allowHudFade;
+        private static ConfigEntry<bool> hideHotbar;
 
         // Controls Settings
         private static ConfigEntry<bool> useLookLocomotion;
@@ -347,6 +348,10 @@ namespace ValheimVRMod.Utilities
                                         "AllowHudFade",
                                         true,
                                         "When the HUD is attached to a wrist, allow it to fade away unless you are actively looking at it.");
+            hideHotbar = config.Bind("VRHUD",
+                                        "HideHotbar",
+                                        true,
+                                        "Hide the hotbar, as it is generally unused when playing in VR. Ignored if not playing with VR controls.");
         }
 
         private static void InitializeControlsSettings()
@@ -924,6 +929,11 @@ namespace ValheimVRMod.Utilities
         public static bool AllowHudFade()
         {
             return allowHudFade.Value;
+        }
+
+        public static bool HideHotbar()
+        {
+            return hideHotbar.Value && UseVrControls();
         }
     }
 }

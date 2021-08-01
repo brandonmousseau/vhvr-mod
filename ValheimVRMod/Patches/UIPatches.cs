@@ -658,5 +658,30 @@ namespace ValheimVRMod.Patches
             ConfigSettings.updateBindings();
         }
     }
+
+    [HarmonyPatch(typeof(HotkeyBar), nameof(HotkeyBar.Update))]
+    class HotkeyBarHidePatch
+    {
+        static bool Prefix(HotkeyBar __instance)
+        {
+            if (VHVRConfig.HideHotbar())
+            {
+                clearHotbar(__instance);
+                return false;
+            } else
+            {
+                return true;
+            }
+        }
+
+        private static void clearHotbar(HotkeyBar hotkeyBar)
+        {
+            foreach (var element in hotkeyBar.m_elements)
+            {
+                UnityEngine.Object.Destroy(element.m_go);
+            }
+            hotkeyBar.m_elements.Clear();
+        }
+    }
 }
 
