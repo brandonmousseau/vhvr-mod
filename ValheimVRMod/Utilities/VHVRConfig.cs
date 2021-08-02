@@ -54,7 +54,8 @@ namespace ValheimVRMod.Utilities
 
         // VR Hud Settings
         private static ConfigEntry<bool> useLegacyHud;
-        private static ConfigEntry<string> hudPanelPosition;
+        private static ConfigEntry<string> healthPanelPosition;
+        private static ConfigEntry<string> staminaPanelPosition;
         private static ConfigEntry<float> hudPanelScale;
         private static ConfigEntry<float> hudPanelXOffset;
         private static ConfigEntry<float> hudPanelYOffset;
@@ -62,6 +63,13 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> hudPanelXRotOffset;
         private static ConfigEntry<float> hudPanelYRotOffset;
         private static ConfigEntry<float> hudPanelZRotOffset;
+        private static ConfigEntry<float> staminaPanelScale;
+        private static ConfigEntry<float> staminaPanelXOffset;
+        private static ConfigEntry<float> staminaPanelYOffset;
+        private static ConfigEntry<float> staminaPanelZOffset;
+        private static ConfigEntry<float> staminaPanelXRotOffset;
+        private static ConfigEntry<float> staminaPanelYRotOffset;
+        private static ConfigEntry<float> staminaPanelZRotOffset;
         private static ConfigEntry<bool> allowHudFade;
         private static ConfigEntry<bool> hideHotbar;
 
@@ -304,10 +312,15 @@ namespace ValheimVRMod.Utilities
                                         "UseLegacyHud",
                                         false,
                                         "Disables custom VR HUD features and moves HUD elements to main UI panel.");
-            hudPanelPosition = config.Bind("VRHUD",
-                                              "HudPanelPlacement",
+            healthPanelPosition = config.Bind("VRHUD",
+                                              "HealthPanelPlacement",
                                               "LeftWrist",
                                               new ConfigDescription("Where should the health panel be placed?",
+                                              new AcceptableValueList<string>(new string[] { "LeftWrist", "RightWrist", "CameraLocked" })));
+            staminaPanelPosition = config.Bind("VRHUD",
+                                              "StaminaPanelPlacement",
+                                              "CameraLocked",
+                                              new ConfigDescription("Where should the stamina panel be placed?",
                                               new AcceptableValueList<string>(new string[] { "LeftWrist", "RightWrist", "CameraLocked" })));
             hudPanelScale = config.Bind("VRHUD",
                                             "HudPanelScale",
@@ -343,6 +356,41 @@ namespace ValheimVRMod.Utilities
                                              "HudPanelZRotOffset",
                                              0f,
                                             new ConfigDescription("Modify the angle of the wrist-based VR HUD panel.",
+                                                new AcceptableValueRange<float>(-180f, 180f)));
+            staminaPanelScale = config.Bind("VRHUD",
+                                            "StaminaPanelScale",
+                                            1f,
+                                            new ConfigDescription("Scalar multiple to determine VR stamina panel scale. If health and stamina bar are in same location, this option is ignored.",
+                                                new AcceptableValueRange<float>(.25f, 3f)));
+            staminaPanelXOffset = config.Bind("VRHUD",
+                                             "StaminaPanelXOffset",
+                                             0f,
+                                            new ConfigDescription("Offset to reposition VR stamina panel. If health and stamina bar are in same location, this option is ignored.",
+                                                new AcceptableValueRange<float>(-0.001f, 0.001f)));
+            staminaPanelYOffset = config.Bind("VRHUD",
+                                             "StaminaPanelYOffset",
+                                             0f,
+                                            new ConfigDescription("Offset to reposition VR stamina panel. If health and stamina bar are in same location, this option is ignored.",
+                                                new AcceptableValueRange<float>(-0.001f, 0.001f)));
+            staminaPanelZOffset = config.Bind("VRHUD",
+                                             "StaminaPanelZOffset",
+                                             0f,
+                                            new ConfigDescription("Offset to reposition VR stamina panel. If health and stamina bar are in same location, this option is ignored.",
+                                                new AcceptableValueRange<float>(-0.001f, 0.001f)));
+            staminaPanelXRotOffset = config.Bind("VRHUD",
+                                             "StaminaPanelXRotOffset",
+                                             0f,
+                                            new ConfigDescription("Modify the angle of the wrist-based VR stamina panel. If health and stamina bar are in same location, this option is ignored.",
+                                                new AcceptableValueRange<float>(-180f, 180f)));
+            staminaPanelYRotOffset = config.Bind("VRHUD",
+                                             "StaminaPanelYRotOffset",
+                                             0f,
+                                            new ConfigDescription("Modify the angle of the wrist-based VR stamina panel. If health and stamina bar are in same location, this option is ignored.",
+                                                new AcceptableValueRange<float>(-180f, 180f)));
+            staminaPanelZRotOffset = config.Bind("VRHUD",
+                                             "StaminaPanelZRotOffset",
+                                             0f,
+                                            new ConfigDescription("Modify the angle of the wrist-based VR stamina panel. If health and stamina bar are in same location, this option is ignored.",
                                                 new AcceptableValueRange<float>(-180f, 180f)));
             allowHudFade = config.Bind("VRHUD",
                                         "AllowHudFade",
@@ -887,9 +935,14 @@ namespace ValheimVRMod.Utilities
             return useLegacyHud.Value;
         }
 
-        public static string HudPanelPosition()
+        public static string HealthPanelPosition()
         {
-            return hudPanelPosition.Value;
+            return healthPanelPosition.Value;
+        }
+
+        public static string StaminaPanelPoisition()
+        {
+            return staminaPanelPosition.Value;
         }
 
         public static float HudPanelScale()
@@ -924,6 +977,40 @@ namespace ValheimVRMod.Utilities
         public static float HudPanelZRotationOffset()
         {
             return hudPanelZRotOffset.Value;
+        }
+
+        public static float StaminaPanelScale()
+        {
+            return staminaPanelScale.Value;
+        }
+
+        public static float StaminaPanelXOffset()
+        {
+            return staminaPanelXOffset.Value;
+        }
+
+        public static float StaminaPanelYOffset()
+        {
+            return staminaPanelYOffset.Value;
+        }
+
+        public static float StaminaPanelZOffset()
+        {
+            return staminaPanelZOffset.Value;
+        }
+
+        public static float StaminaPanelXRotationOffset()
+        {
+            return staminaPanelXRotOffset.Value;
+        }
+        public static float StaminaPanelYRotationOffset()
+        {
+            return staminaPanelYRotOffset.Value;
+        }
+
+        public static float StaminaPanelZRotationOffset()
+        {
+            return staminaPanelZRotOffset.Value;
         }
 
         public static bool AllowHudFade()
