@@ -23,6 +23,7 @@ namespace ValheimVRMod.VRCore.UI {
         private static GameObject chooserPrefab;
         private static GameObject settingsPrefab;
         private static GameObject keyBindingPrefab;
+        private static GameObject buttonPrefab;
         private static GameObject settings;
         private static Transform menuList;
         private static Transform menuParent;
@@ -78,6 +79,7 @@ namespace ValheimVRMod.VRCore.UI {
             keyBindingPrefab = tabPrefab.transform.Find("Key_Binding").gameObject;
             chooserPrefab = settingsPrefab.transform.Find("panel").Find("Tabs").Find("Misc").Find("Language")
                 .gameObject;
+            buttonPrefab = tabPrefab.transform.Find("Back").gameObject;
 
         }
 
@@ -208,7 +210,11 @@ namespace ValheimVRMod.VRCore.UI {
             
             // iterate all config entries of current section and create elements 
             foreach (KeyValuePair<string, ConfigEntryBase> configValue in section.Value) {
-                createElement(configValue, newTab, new Vector2(posX, posY));
+                
+                if (! createElement(configValue, newTab, new Vector2(posX, posY), section.Key)) {
+                    continue;
+                }
+                
                 posY -= 30;
                 if (posY < -330) {
                     posY = -20;
@@ -222,29 +228,45 @@ namespace ValheimVRMod.VRCore.UI {
         /// <summary>
         /// Create a Settings Element out of a Config Entry
         /// </summary>
-        private static void createElement(KeyValuePair<string, ConfigEntryBase> configEntry, Transform parent, Vector2 pos) {
+        private static bool createElement(KeyValuePair<string, ConfigEntryBase> configEntry, Transform parent, Vector2 pos, string sectionName) {
             
             if (configEntry.Value.SettingType == typeof(bool)) {
                 createToggle(configEntry, parent, pos);
-                return;
+                return true;
             }
 
-            if (configEntry.Value.Description.Description.StartsWith("[Key]")) {
+            if (configEntry.Value.SettingType == typeof(KeyCode)) {
                 createKeyBinding(configEntry, parent, pos);
-                return;
+                return true;
+            }
+            
+            if (configEntry.Value.SettingType == typeof(Vector3)) {
+                createTransformButton(configEntry, parent, pos, sectionName);
+                return true;
+            }
+            
+            if (configEntry.Value.SettingType == typeof(Quaternion)) {
+                // ignore
+                return false;
             }
             
             var acceptableValues = configEntry.Value.Description.AcceptableValues;
             if (acceptableValues == null) {
-                return;
+                return false;
             }
 
             var type = acceptableValues.GetType();
             if (type.GetGenericTypeDefinition() == typeof(AcceptableValueList<>)) {
                 createValueList(configEntry, parent, pos, type, acceptableValues);
-            } else if (type.GetGenericTypeDefinition() == typeof(AcceptableValueRange<>)) {
-                createValueRange(configEntry, parent, pos, type, acceptableValues);
+                return true;
             }
+            
+            if (type.GetGenericTypeDefinition() == typeof(AcceptableValueRange<>)) {
+                createValueRange(configEntry, parent, pos, type, acceptableValues);
+                return true;
+            }
+
+            return false;
         }
 
         private static void createValueRange(KeyValuePair<string, ConfigEntryBase> configValue, Transform parent, Vector2 pos, Type type,
@@ -331,6 +353,64 @@ namespace ValheimVRMod.VRCore.UI {
             toggle.GetComponent<RectTransform>().anchoredPosition = pos;
         }
 
+        private static void createTransformButton(KeyValuePair<string, ConfigEntryBase> configValue, Transform parent, Vector2 pos, string sectionName) {
+            
+            ConfigEntry<Quaternion> confRot;
+            if (!VHVRConfig.config.TryGetEntry(sectionName, configValue.Key + "Rot", out confRot)) {
+                Debug.LogError(configValue.Key + "Rot not found. Please make sure a Quaternion with this name exists in section " + sectionName);
+                return;
+            }
+            var labledButton = new GameObject();
+            labledButton.transform.SetParent(parent, false);
+            var configComponent = labledButton.AddComponent<ConfigComponent>();
+            configComponent.configValue = configValue;
+            configComponent.saveAction = param => {};
+            
+            // Label
+            var label = Object.Instantiate(sliderPrefab, labledButton.transform);
+            foreach (Transform child in label.transform) {
+                GameObject.Destroy(child.gameObject);
+            }
+            var text = label.GetComponent<Text>();
+            text.text = configValue.Key;
+            
+            pos.y += 180;
+            text.GetComponent<RectTransform>().anchoredPosition = pos;
+            
+            // Button
+            var button = Object.Instantiate(buttonPrefab, labledButton.transform);
+            pos.x += 150;
+            button.GetComponent<RectTransform>().anchoredPosition = pos;
+            button.GetComponent<RectTransform>().localScale *= 0.5f;
+            button.GetComponentInChildren<Text>().text = "Set";
+
+            if (menuList.name != "Menu") {
+                button.GetComponent<Button>().enabled = false;
+                return;
+            }
+            
+            button.GetComponent<Button>().onClick.SetPersistentListenerState(0, UnityEventCallState.Off);
+            button.GetComponent<Button>().onClick.RemoveAllListeners();
+            button.GetComponent<Button>().onClick.AddListener(() => {
+                if (! (bool) typeof(SettingCallback).GetMethod(configValue.Key).Invoke(null,
+                    new UnityAction<Vector3, Quaternion>[] {
+                        (mPos, mRot) => {
+                            configValue.Value.SetSerializedValue(String.Format(CultureInfo.InvariantCulture,
+                                "{{\"x\":{0}, \"y\":{1}, \"z\":{2}}}", mPos.x, mPos.y, mPos.z));
+                            confRot.SetSerializedValue(String.Format(CultureInfo.InvariantCulture,
+                                "{{\"x\":{0}, \"y\":{1}, \"z\":{2}, \"w\":{3}}}", mRot.x, mRot.y, mRot.z, mRot.w));
+                        }
+                    })) {
+                    return;
+                }
+                
+                doSave = false;
+                Settings.instance.OnBack();
+                Menu.instance.OnClose();
+            });
+
+        }
+
         private static void createKeyBinding(KeyValuePair<string, ConfigEntryBase> configValue, Transform parent, Vector2 pos) {
             
             var keyBinding = Object.Instantiate(keyBindingPrefab, parent);
@@ -348,7 +428,7 @@ namespace ValheimVRMod.VRCore.UI {
             keyBinding.GetComponent<RectTransform>().anchoredPosition = pos;
             ZInput.instance.AddButton(configValue.Key, (KeyCode) Enum.Parse(typeof(KeyCode), configValue.Value.GetSerializedValue()));
         }
-        
+
         private static int mod(int x, int m) {
             return (x%m + m)%m;
         }
