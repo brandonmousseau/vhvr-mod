@@ -354,6 +354,7 @@
     <Compile Include="Scripts\ShieldManager.cs" />
     <Compile Include="Scripts\PostProcessing\VRTaaComponent.cs" />
     <Compile Include="Scripts\PostProcessing\WaterStencilFixComponent.cs" />
+    <Compile Include="Utilities\SettingCallback.cs" />
     <Compile Include="Utilities\CameraUtils.cs" />
     <Compile Include="Utilities\EquipScript.cs" />
     <Compile Include="Utilities\WeaponColData.cs" />

@@ -13,7 +13,10 @@ namespace ValheimVRMod.VRCore.UI
 
     class VRHud
     {
-        private const string LEFT_WRIST = "LeftWrist";
+        public const string LEFT_WRIST = "LeftWrist";
+        public const string RIGHT_WRIST = "RightWrist";
+        public const string CAMERA_LOCKED = "CameraLocked";
+        
         private readonly Vector3 leftWristPositionHealth = new Vector3(0.0009f, -0.0005f, -0.0005f);
         private readonly Vector3 leftWristPositionStamina = new Vector3(0.0002f, 0.0003f, -0.0005f);
         private readonly Vector3 rightWristPositionHealth = new Vector3(-0.0009f, 0.0005f, -0.0005f);
@@ -203,54 +206,44 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return;
             }
-            string healthPanelPosition = VHVRConfig.HealthPanelPosition();
-            string staminaPanelPosition = VHVRConfig.StaminaPanelPoisition();
+            string healthPanelPosition = VHVRConfig.HealthPanelPlacement();
+            string staminaPanelPosition = VHVRConfig.StaminaPanelPlacement();
             parentHudComponents(healthPanelPosition, staminaPanelPosition);
             updateStaminaPanelLocalPosition(healthPanelPosition, staminaPanelPosition);
-            if (healthPanelPosition.Equals("CameraLocked"))
+            if (healthPanelPosition.Equals(CAMERA_LOCKED))
             {
-                setCameraLockedPositioning(hudCanvasParent, hudCanvas, hudCanvasGroup, VHVRConfig.HudPanelXOffset(), VHVRConfig.HudPanelYOffset(), VHVRConfig.HudPanelScale());
+                setCameraLockedPositioning(hudCanvasParent, hudCanvas, hudCanvasGroup, VHVRConfig.HealthPanelCameraX(), VHVRConfig.HealthPanelCameraY(), VHVRConfig.HealthPanelScale());
             } else
             {
-                var wristHudOffset = healthPanelPosition == LEFT_WRIST ? leftWristPositionHealth : rightWristPositionHealth;
-                var wristHudRotation = healthPanelPosition == LEFT_WRIST ? leftWristRotation : rightWristRotatation;
-                var xSign = healthPanelPosition == LEFT_WRIST ? 1 : -1;
-                var ySign = healthPanelPosition == LEFT_WRIST ? -1 : 1;
                 Transform handBone = getHandParent(healthPanelPosition);
                 if (handBone != null) {
-                    setWristPosition(hudCanvasParent, hudCanvas, handBone, wristHudOffset, wristHudRotation, xSign, ySign,
-                        VHVRConfig.HudPanelXOffset(), VHVRConfig.HudPanelYOffset(), VHVRConfig.HudPanelZOffset(), VHVRConfig.HudPanelXRotationOffset(),
-                        VHVRConfig.HudPanelYRotationOffset(), VHVRConfig.HudPanelZRotationOffset(), VHVRConfig.HudPanelScale());
+                    setWristPosition(hudCanvasParent, hudCanvas, handBone, healthPanelPosition, leftWristPositionHealth, rightWristPositionHealth,
+                        VHVRConfig.HealthPanelPos(), VHVRConfig.HealthPanelRot(), VHVRConfig.HealthPanelScale());
                     hudCanvasGroup.alpha = VHVRConfig.AllowHudFade() ? calculateHudCanvasAlpha(hudCanvasParent) : 1f;
                 } else
                 {
                     LogError("handBone is null while setting health panel position. Falling back to camera locked.");
-                    setCameraLockedPositioning(hudCanvasParent, hudCanvas, hudCanvasGroup, VHVRConfig.HudPanelXOffset(), VHVRConfig.HudPanelYOffset(), VHVRConfig.HudPanelScale());
+                    setCameraLockedPositioning(hudCanvasParent, hudCanvas, hudCanvasGroup, VHVRConfig.HealthPanelCameraX(), VHVRConfig.HealthPanelCameraY(), VHVRConfig.HealthPanelScale());
                 }
             }
             if (!healthPanelPosition.Equals(staminaPanelPosition))
             {
                 // Need to position the altHudCanvas since the stamina bar is separated from health bar
-                if (staminaPanelPosition.Equals("CameraLocked"))
+                if (staminaPanelPosition.Equals(CAMERA_LOCKED))
                 {
-                    setCameraLockedPositioning(altHudCanvasParent, altHudCanvas, altHudCanvasGroup, VHVRConfig.StaminaPanelXOffset(), VHVRConfig.StaminaPanelYOffset(), VHVRConfig.StaminaPanelScale());
+                    setCameraLockedPositioning(altHudCanvasParent, altHudCanvas, altHudCanvasGroup, VHVRConfig.StaminaPanelCameraX(), VHVRConfig.StaminaPanelCameraY(), VHVRConfig.StaminaPanelScale());
                 } else
                 {
-                    var wristHudOffset = staminaPanelPosition == LEFT_WRIST ? leftWristPositionStamina : rightWristPositionStamina;
-                    var wristHudRotation = staminaPanelPosition == LEFT_WRIST ? leftWristRotation : rightWristRotatation;
-                    var xSign = staminaPanelPosition == LEFT_WRIST ? 1 : -1;
-                    var ySign = staminaPanelPosition == LEFT_WRIST ? -1 : 1;
                     Transform handBone = getHandParent(staminaPanelPosition);
                     if (handBone != null)
                     {
-                        setWristPosition(altHudCanvasParent, altHudCanvas, handBone, wristHudOffset, wristHudRotation, xSign, ySign,
-                            VHVRConfig.StaminaPanelXOffset(), VHVRConfig.StaminaPanelYOffset(), VHVRConfig.StaminaPanelZOffset(), VHVRConfig.StaminaPanelXRotationOffset(),
-                            VHVRConfig.StaminaPanelYRotationOffset(), VHVRConfig.StaminaPanelZRotationOffset(), VHVRConfig.StaminaPanelScale());
+                        setWristPosition(altHudCanvasParent, altHudCanvas, handBone, staminaPanelPosition, leftWristPositionStamina, rightWristPositionStamina,
+                            VHVRConfig.StaminaPanelPos(), VHVRConfig.StaminaPanelRot(), VHVRConfig.StaminaPanelScale());
                         altHudCanvasGroup.alpha = VHVRConfig.AllowHudFade() ? calculateHudCanvasAlpha(altHudCanvasParent) : 1f;
                     } else
                     {
                         LogError("handBone is null while setting stamina panel position. Falling back to camera locked.");
-                        setCameraLockedPositioning(altHudCanvasParent, altHudCanvas, altHudCanvasGroup, VHVRConfig.StaminaPanelXOffset(), VHVRConfig.StaminaPanelYOffset(), VHVRConfig.StaminaPanelScale());
+                        setCameraLockedPositioning(altHudCanvasParent, altHudCanvas, altHudCanvasGroup, VHVRConfig.StaminaPanelCameraX(), VHVRConfig.StaminaPanelCameraY(), VHVRConfig.StaminaPanelScale());
                     }
                 }
             }
@@ -312,16 +305,23 @@ namespace ValheimVRMod.VRCore.UI
             group.alpha = 1f;
         }
 
-        private void setWristPosition(GameObject hCanvasParent, Canvas hCanvas, Transform hand, Vector3 pos, Vector3 rot, int xSign, int ySign, float xOffset, float yOffset, float zOffset, float xRot, float yRot, float zRot, float scale)
+        private void setWristPosition(GameObject hCanvasParent, Canvas hCanvas, Transform hand, string panelPosition, Vector3 leftWristPosition, Vector3 rightWristPosition, Vector3 offset, Quaternion rot, float scale)
         {
+            var isLeftWrist = panelPosition == LEFT_WRIST;
+            var wristHudOffset = isLeftWrist ? leftWristPosition : rightWristPosition;
+            var wristHudRotation = isLeftWrist ? leftWristRotation : rightWristRotatation;
+
+            // var xSign = isLeftWrist ? 1 : -1;
+            // var ySign = isLeftWrist ? -1 : 1;
+            //
+            // offset = new Vector3(ySign * offset.y, xSign * offset.x, offset.z);
+
             float canvasWidth = hCanvas.GetComponent<RectTransform>().rect.width;
-            float scaleFactor = 0.001f / canvasWidth * scale;
             hCanvasParent.transform.SetParent(hand, false);
             var hudCanvasRect = hCanvas.GetComponent<RectTransform>();
-            hudCanvasRect.localScale = Vector3.one * scaleFactor;
-            hCanvasParent.transform.position = hand.position;
-            hCanvasParent.transform.localPosition = pos + new Vector3(ySign * yOffset, xSign * xOffset, zOffset); // X/Y swapped so it makes sense in game
-            hCanvasParent.transform.localRotation = Quaternion.Euler(rot + new Vector3(yRot, xRot, zRot));
+            hudCanvasRect.localScale = Vector3.one * scale * 0.001f / canvasWidth;
+            hCanvasParent.transform.localPosition = wristHudOffset + offset; 
+            hCanvasParent.transform.localRotation = Quaternion.Euler(wristHudRotation + rot.eulerAngles);
         }
 
         private float calculateHudCanvasAlpha(GameObject hCanvasParent)

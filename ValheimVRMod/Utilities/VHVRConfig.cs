@@ -1,10 +1,7 @@
 ﻿using BepInEx.Configuration;
 using Unity.XR.OpenVR;
-using System;
 using ValheimVRMod.VRCore;
 using UnityEngine;
-
-using static ValheimVRMod.Utilities.LogUtils;
 
 namespace ValheimVRMod.Utilities
 {
@@ -54,35 +51,31 @@ namespace ValheimVRMod.Utilities
 
         // VR Hud Settings
         private static ConfigEntry<bool> useLegacyHud;
-        private static ConfigEntry<string> healthPanelPosition;
-        private static ConfigEntry<string> staminaPanelPosition;
-        private static ConfigEntry<float> hudPanelScale;
-        private static ConfigEntry<float> hudPanelXOffset;
-        private static ConfigEntry<float> hudPanelYOffset;
-        private static ConfigEntry<float> hudPanelZOffset;
-        private static ConfigEntry<float> hudPanelXRotOffset;
-        private static ConfigEntry<float> hudPanelYRotOffset;
-        private static ConfigEntry<float> hudPanelZRotOffset;
+        private static ConfigEntry<string> healthPanelPlacement;
+        private static ConfigEntry<float> healthPanelScale;
+        private static ConfigEntry<Vector3> healthPanelPos;
+        private static ConfigEntry<Quaternion> healthPanelRot;
+        private static ConfigEntry<float> healthPanelCameraX;
+        private static ConfigEntry<float> healthPanelCameraY;
+        private static ConfigEntry<string> staminaPanelPlacement;
         private static ConfigEntry<float> staminaPanelScale;
-        private static ConfigEntry<float> staminaPanelXOffset;
-        private static ConfigEntry<float> staminaPanelYOffset;
-        private static ConfigEntry<float> staminaPanelZOffset;
-        private static ConfigEntry<float> staminaPanelXRotOffset;
-        private static ConfigEntry<float> staminaPanelYRotOffset;
-        private static ConfigEntry<float> staminaPanelZRotOffset;
+        private static ConfigEntry<Vector3> staminaPanelPos;
+        private static ConfigEntry<Quaternion> staminaPanelRot;
+        private static ConfigEntry<float> staminaPanelCameraX;
+        private static ConfigEntry<float> staminaPanelCameraY;
         private static ConfigEntry<bool> allowHudFade;
         private static ConfigEntry<bool> hideHotbar;
 
         // Controls Settings
         private static ConfigEntry<bool> useLookLocomotion;
         private static ConfigEntry<string> preferredHand;
-        private static ConfigEntry<string> headReposFowardKey;
-        private static ConfigEntry<string> headReposBackwardKey;
-        private static ConfigEntry<string> headReposLeftKey;
-        private static ConfigEntry<string> headReposRightKey;
-        private static ConfigEntry<string> headReposUpKey;
-        private static ConfigEntry<string> headReposDownKey;
-        private static ConfigEntry<string> hmdRecenterKey;
+        private static ConfigEntry<KeyCode> headReposFowardKey;
+        private static ConfigEntry<KeyCode> headReposBackwardKey;
+        private static ConfigEntry<KeyCode> headReposLeftKey;
+        private static ConfigEntry<KeyCode> headReposRightKey;
+        private static ConfigEntry<KeyCode> headReposUpKey;
+        private static ConfigEntry<KeyCode> headReposDownKey;
+        private static ConfigEntry<KeyCode> hmdRecenterKey;
         private static ConfigEntry<bool> snapTurnEnabled;
         private static ConfigEntry<int> snapTurnAngle;
         private static ConfigEntry<bool> smoothSnapTurn;
@@ -312,86 +305,62 @@ namespace ValheimVRMod.Utilities
                                         "UseLegacyHud",
                                         false,
                                         "Disables custom VR HUD features and moves HUD elements to main UI panel.");
-            healthPanelPosition = config.Bind("VRHUD",
+            healthPanelPlacement = config.Bind("VRHUD",
                                               "HealthPanelPlacement",
                                               "LeftWrist",
                                               new ConfigDescription("Where should the health panel be placed?",
                                               new AcceptableValueList<string>(new string[] { "LeftWrist", "RightWrist", "CameraLocked" })));
-            staminaPanelPosition = config.Bind("VRHUD",
-                                              "StaminaPanelPlacement",
-                                              "CameraLocked",
-                                              new ConfigDescription("Where should the stamina panel be placed?",
-                                              new AcceptableValueList<string>(new string[] { "LeftWrist", "RightWrist", "CameraLocked" })));
-            hudPanelScale = config.Bind("VRHUD",
-                                            "HudPanelScale",
+            healthPanelScale = config.Bind("VRHUD",
+                                            "HealthPanelScale",
                                             1f,
                                             new ConfigDescription("Scalar multiple to determine VR health panel scale.",
                                                 new AcceptableValueRange<float>(.25f, 3f)));
-            hudPanelXOffset = config.Bind("VRHUD",
-                                             "HudPanelXOffset",
-                                             0f,
-                                            new ConfigDescription("Offset to reposition VR health panel.",
+            healthPanelPos = config.Bind("VRHUD",
+                                            "HealthPanel",
+                                            Vector3.zero,
+                                            "Offset to reposition VR health panel.");
+            healthPanelRot = config.Bind("VRHUD",
+                                            "HealthPanelRot",
+                                            Quaternion.identity,
+                                                "Modify the angle of the wrist-based VR HUD panel.");
+            healthPanelCameraX = config.Bind("VRHUD",
+                                            "HealthPanelCameraX",
+                                            0f,
+                                            new ConfigDescription("Offset to reposition VR health panel for Camera Position.",
                                                 new AcceptableValueRange<float>(-0.001f, 0.001f)));
-            hudPanelYOffset = config.Bind("VRHUD",
-                                             "HudPanelYOffset",
-                                             0f,
-                                            new ConfigDescription("Offset to reposition VR health panel.",
+            healthPanelCameraY = config.Bind("VRHUD",
+                                            "HealthPanelCameraY",
+                                            0f,
+                                            new ConfigDescription("Offset to reposition VR health panel for Camera Position.",
                                                 new AcceptableValueRange<float>(-0.001f, 0.001f)));
-            hudPanelZOffset = config.Bind("VRHUD",
-                                             "HudPanelZOffset",
-                                             0f,
-                                            new ConfigDescription("Offset to reposition VR health panel.",
-                                                new AcceptableValueRange<float>(-0.001f, 0.001f)));
-            hudPanelXRotOffset = config.Bind("VRHUD",
-                                             "HudPanelXRotOffset",
-                                             0f,
-                                            new ConfigDescription("Modify the angle of the wrist-based VR HUD panel.",
-                                                new AcceptableValueRange<float>(-180f, 180f)));
-            hudPanelYRotOffset = config.Bind("VRHUD",
-                                             "HudPanelYRotOffset",
-                                             0f,
-                                            new ConfigDescription("Modify the angle of the wrist-based VR HUD panel.",
-                                                new AcceptableValueRange<float>(-180f, 180f)));
-            hudPanelZRotOffset = config.Bind("VRHUD",
-                                             "HudPanelZRotOffset",
-                                             0f,
-                                            new ConfigDescription("Modify the angle of the wrist-based VR HUD panel.",
-                                                new AcceptableValueRange<float>(-180f, 180f)));
+            staminaPanelPlacement = config.Bind("VRHUD",
+                                            "StaminaPanelPlacement",
+                                            "CameraLocked",
+                                            new ConfigDescription("Where should the stamina panel be placed?",
+                                                new AcceptableValueList<string>(new string[] { "LeftWrist", "RightWrist", "CameraLocked" })));
             staminaPanelScale = config.Bind("VRHUD",
                                             "StaminaPanelScale",
                                             1f,
                                             new ConfigDescription("Scalar multiple to determine VR stamina panel scale. If health and stamina bar are in same location, this option is ignored.",
                                                 new AcceptableValueRange<float>(.25f, 3f)));
-            staminaPanelXOffset = config.Bind("VRHUD",
-                                             "StaminaPanelXOffset",
-                                             0f,
-                                            new ConfigDescription("Offset to reposition VR stamina panel. If health and stamina bar are in same location, this option is ignored.",
+            staminaPanelPos = config.Bind("VRHUD",
+                                            "StaminaPanel",
+                                            Vector3.zero,
+                                            "Offset to reposition VR stamina panel. If health and stamina bar are in same location, this option is ignored.");
+            staminaPanelRot = config.Bind("VRHUD",
+                                            "StaminaPanelRot",
+                                            Quaternion.identity,
+                                            "Modify the angle of the wrist-based VR stamina panel. If health and stamina bar are in same location, this option is ignored.");
+            staminaPanelCameraX = config.Bind("VRHUD",
+                                            "StaminaPanelCameraX",
+                                            0f,
+                                            new ConfigDescription("Offset to reposition VR stamina panel for Camera Position.",
                                                 new AcceptableValueRange<float>(-0.001f, 0.001f)));
-            staminaPanelYOffset = config.Bind("VRHUD",
-                                             "StaminaPanelYOffset",
-                                             0f,
-                                            new ConfigDescription("Offset to reposition VR stamina panel. If health and stamina bar are in same location, this option is ignored.",
+            staminaPanelCameraY = config.Bind("VRHUD",
+                                            "StaminaPanelCameraY",
+                                            0f,
+                                            new ConfigDescription("Offset to reposition VR stamina panel for Camera Position.",
                                                 new AcceptableValueRange<float>(-0.001f, 0.001f)));
-            staminaPanelZOffset = config.Bind("VRHUD",
-                                             "StaminaPanelZOffset",
-                                             0f,
-                                            new ConfigDescription("Offset to reposition VR stamina panel. If health and stamina bar are in same location, this option is ignored.",
-                                                new AcceptableValueRange<float>(-0.001f, 0.001f)));
-            staminaPanelXRotOffset = config.Bind("VRHUD",
-                                             "StaminaPanelXRotOffset",
-                                             0f,
-                                            new ConfigDescription("Modify the angle of the wrist-based VR stamina panel. If health and stamina bar are in same location, this option is ignored.",
-                                                new AcceptableValueRange<float>(-180f, 180f)));
-            staminaPanelYRotOffset = config.Bind("VRHUD",
-                                             "StaminaPanelYRotOffset",
-                                             0f,
-                                            new ConfigDescription("Modify the angle of the wrist-based VR stamina panel. If health and stamina bar are in same location, this option is ignored.",
-                                                new AcceptableValueRange<float>(-180f, 180f)));
-            staminaPanelZRotOffset = config.Bind("VRHUD",
-                                             "StaminaPanelZRotOffset",
-                                             0f,
-                                            new ConfigDescription("Modify the angle of the wrist-based VR stamina panel. If health and stamina bar are in same location, this option is ignored.",
-                                                new AcceptableValueRange<float>(-180f, 180f)));
             allowHudFade = config.Bind("VRHUD",
                                         "AllowHudFade",
                                         true,
@@ -464,32 +433,32 @@ namespace ValheimVRMod.Utilities
         {
             headReposFowardKey = config.Bind("Controls",
                                              "HeadRepositionForwardKey",
-                                             "UpArrow",
-                                             "[Key] used to move head camera forwards. Must be matching key from https://docs.unity3d.com/2019.4/Documentation/ScriptReference/KeyCode.html");
+                                             KeyCode.UpArrow,
+                                             "Key used to move head camera forwards. Must be matching key from https://docs.unity3d.com/2019.4/Documentation/ScriptReference/KeyCode.html");
             headReposBackwardKey = config.Bind("Controls",
                                                "HeadRepositionBackwardKey",
-                                               "DownArrow",
-                                               "[Key] used to move head camera backwards. Must be matching key from https://docs.unity3d.com/2019.4/Documentation/ScriptReference/KeyCode.html");
+                                               KeyCode.DownArrow,
+                                               "Key used to move head camera backwards. Must be matching key from https://docs.unity3d.com/2019.4/Documentation/ScriptReference/KeyCode.html");
             headReposLeftKey = config.Bind("Controls",
                                            "HeadRepositionLeftKey",
-                                           "LeftArrow",
-                                           "[Key] used to move head camera left. Must be matching key from https://docs.unity3d.com/2019.4/Documentation/ScriptReference/KeyCode.html");
+                                           KeyCode.LeftArrow,
+                                           "Key used to move head camera left. Must be matching key from https://docs.unity3d.com/2019.4/Documentation/ScriptReference/KeyCode.html");
             headReposRightKey = config.Bind("Controls",
                                            "HeadRepositionRightKey",
-                                           "RightArrow",
-                                           "[Key] used to move head camera right. Must be matching key from https://docs.unity3d.com/2019.4/Documentation/ScriptReference/KeyCode.html");
+                                           KeyCode.RightArrow,
+                                           "Key used to move head camera right. Must be matching key from https://docs.unity3d.com/2019.4/Documentation/ScriptReference/KeyCode.html");
             headReposUpKey = config.Bind("Controls",
                                            "HeadRepositionUpKey",
-                                           "PageUp",
-                                           "[Key] used to move head camera up. Must be matching key from https://docs.unity3d.com/2019.4/Documentation/ScriptReference/KeyCode.html");
+                                           KeyCode.PageUp,
+                                           "Key used to move head camera up. Must be matching key from https://docs.unity3d.com/2019.4/Documentation/ScriptReference/KeyCode.html");
             headReposDownKey = config.Bind("Controls",
                                            "HeadRepositionDownKey",
-                                           "PageDown",
-                                           "[Key] used to move head camera down. Must be matching key from https://docs.unity3d.com/2019.4/Documentation/ScriptReference/KeyCode.html");
+                                           KeyCode.PageDown,
+                                           "Key used to move head camera down. Must be matching key from https://docs.unity3d.com/2019.4/Documentation/ScriptReference/KeyCode.html");
             hmdRecenterKey = config.Bind("Controls",
                                            "HMDRecenterKey",
-                                           "Home",
-                                           "[Key] used to recenter HMD tracking. Must be matching key from https://docs.unity3d.com/2019.4/Documentation/ScriptReference/KeyCode.html");
+                                           KeyCode.Home,
+                                           "Key used to recenter HMD tracking. Must be matching key from https://docs.unity3d.com/2019.4/Documentation/ScriptReference/KeyCode.html");
         }
 
         private static void InitializeGraphicsSettings()
@@ -723,58 +692,37 @@ namespace ValheimVRMod.Utilities
 
         public static KeyCode GetRecenterKey()
         {
-            return tryAndParseConfiguredKeycode(hmdRecenterKey.Value, KeyCode.Home);
+            return hmdRecenterKey.Value;
         }
 
         public static KeyCode GetHeadForwardKey()
         {
-            return tryAndParseConfiguredKeycode(headReposFowardKey.Value, KeyCode.UpArrow);
+            return headReposFowardKey.Value;
         }
 
         public static KeyCode GetHeadBackwardKey()
         {
-            return tryAndParseConfiguredKeycode(headReposBackwardKey.Value, KeyCode.DownArrow);
+            return headReposBackwardKey.Value;
         }
 
         public static KeyCode GetHeadLeftKey()
         {
-            return tryAndParseConfiguredKeycode(headReposLeftKey.Value, KeyCode.LeftArrow);
+            return headReposLeftKey.Value;
         }
 
         public static KeyCode GetHeadRightKey()
         {
-            return tryAndParseConfiguredKeycode(headReposRightKey.Value, KeyCode.RightArrow);
+            return headReposRightKey.Value;
         }
 
         public static KeyCode GetHeadUpKey()
         {
-            return tryAndParseConfiguredKeycode(headReposUpKey.Value, KeyCode.PageUp);
+            return headReposUpKey.Value;
         }
 
         public static KeyCode GetHeadDownKey()
         {
-            return tryAndParseConfiguredKeycode(headReposDownKey.Value, KeyCode.PageDown);
-        }
-
-        private static KeyCode tryAndParseConfiguredKeycode(string configuredKey, KeyCode defaultValue)
-        {
-            try
-            {
-                return (KeyCode)Enum.Parse(typeof(KeyCode), configuredKey, true);
-            }
-            catch (ArgumentNullException)
-            {
-                LogError("Invalid configured key: " + configuredKey + " Using Default Key: " + defaultValue);
-            }
-            catch (ArgumentException)
-            {
-                LogError("Invalid configured key: " + configuredKey + " Using Default Key: " + defaultValue);
-            }
-            catch (OverflowException)
-            {
-                LogError("Invalid configured key: " + configuredKey + " Using Default Key: " + defaultValue);
-            }
-            return defaultValue;
+            return headReposDownKey.Value;
         }
 
         public static bool ShowRepairHammer()
@@ -935,82 +883,64 @@ namespace ValheimVRMod.Utilities
             return useLegacyHud.Value;
         }
 
-        public static string HealthPanelPosition()
+        public static string HealthPanelPlacement()
         {
-            return healthPanelPosition.Value;
+            return healthPanelPlacement.Value;
         }
 
-        public static string StaminaPanelPoisition()
+        public static float HealthPanelScale()
         {
-            return staminaPanelPosition.Value;
+            return healthPanelScale.Value;
         }
 
-        public static float HudPanelScale()
+        public static Vector3 HealthPanelPos()
         {
-            return hudPanelScale.Value;
+            return healthPanelPos.Value;
         }
 
-        public static float HudPanelXOffset()
+        public static Quaternion HealthPanelRot()
         {
-            return hudPanelXOffset.Value;
+            return healthPanelRot.Value;
         }
-
-        public static float HudPanelYOffset()
+        
+        public static float HealthPanelCameraX()
         {
-            return hudPanelYOffset.Value;
+            return healthPanelCameraX.Value;
         }
-
-        public static float HudPanelZOffset()
+        
+        public static float HealthPanelCameraY()
         {
-            return hudPanelZOffset.Value;
+            return healthPanelCameraY.Value;
         }
-
-        public static float HudPanelXRotationOffset()
+        
+        public static string StaminaPanelPlacement()
         {
-            return hudPanelXRotOffset.Value;
+            return staminaPanelPlacement.Value;
         }
-        public static float HudPanelYRotationOffset()
-        {
-            return hudPanelYRotOffset.Value;
-        }
-
-        public static float HudPanelZRotationOffset()
-        {
-            return hudPanelZRotOffset.Value;
-        }
-
+        
         public static float StaminaPanelScale()
         {
             return staminaPanelScale.Value;
         }
 
-        public static float StaminaPanelXOffset()
+        public static Vector3 StaminaPanelPos()
         {
-            return staminaPanelXOffset.Value;
+            return staminaPanelPos.Value;
         }
 
-        public static float StaminaPanelYOffset()
+        public static Quaternion StaminaPanelRot()
         {
-            return staminaPanelYOffset.Value;
+            return staminaPanelRot.Value;
         }
-
-        public static float StaminaPanelZOffset()
+        
+        public static float StaminaPanelCameraX()
         {
-            return staminaPanelZOffset.Value;
+            return staminaPanelCameraX.Value;
         }
-
-        public static float StaminaPanelXRotationOffset()
+        
+        public static float StaminaPanelCameraY()
         {
-            return staminaPanelXRotOffset.Value;
-        }
-        public static float StaminaPanelYRotationOffset()
-        {
-            return staminaPanelYRotOffset.Value;
-        }
-
-        public static float StaminaPanelZRotationOffset()
-        {
-            return staminaPanelZRotOffset.Value;
+            return staminaPanelCameraY.Value;
         }
 
         public static bool AllowHudFade()
