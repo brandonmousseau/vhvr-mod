@@ -1,6 +1,5 @@
 using UnityEngine;
 using ValheimVRMod.Scripts;
-using ValheimVRMod.VRCore;
 using Object = UnityEngine.Object;
 
 namespace ValheimVRMod.Utilities {
@@ -43,6 +42,7 @@ namespace ValheimVRMod.Utilities {
             var collisionObj = GameObject.CreatePrimitive(PrimitiveType.Cube);
             Object.Destroy(collisionObj.GetComponent<MeshRenderer>());
             collisionObj.GetComponent<BoxCollider>().isTrigger = true;
+            collisionObj.layer = LayerUtils.CHARACTER;
             Rigidbody rigidbody = collisionObj.AddComponent<Rigidbody>();
             rigidbody.useGravity = false;
             return collisionScript = collisionObj.AddComponent<T>();

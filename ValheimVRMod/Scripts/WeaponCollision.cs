@@ -83,6 +83,11 @@ namespace ValheimVRMod.Scripts {
                 target = target.transform.parent.gameObject;
             }
             
+            var character = target.GetComponentInParent<Character>();
+            if (character != null) {
+                target = character.gameObject;
+            }
+            
             var meshCooldown = target.GetComponent<MeshCooldown>();
             if (meshCooldown == null) {
                 meshCooldown = target.AddComponent<MeshCooldown>();
