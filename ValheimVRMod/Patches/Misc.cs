@@ -1,14 +1,57 @@
 ﻿using System.Collections.Generic;
 using System.Reflection.Emit;
 using System.Reflection;
+using System.IO;
+using System;
 using Unity.XR.OpenVR;
 using HarmonyLib;
 using Valve.VR;
 using UnityEngine;
 using ValheimVRMod.Utilities;
 
+using static ValheimVRMod.Utilities.LogUtils;
+
 namespace ValheimVRMod.Patches
 {
+
+    // Ensure there are no problems parsing the environment variable. One user had some issue
+    // where the environment variable had an invalid format, causing the steam app id to not load
+    // properly. Normally without the mod installed, the game uses steam_appid.txt, but SteamVR
+    // is setting the environment variable. This patch just does some additional error checking
+    // instead and falls back to the steam_appid.txt file if there is a problem with the
+    // environment variable.
+    [HarmonyPatch(typeof(SteamManager), "LoadAPPID")]
+    class SteamManager_LoadAppId_Patch
+    {
+        static bool Prefix(ref uint __result)
+        {
+            string environmentVariable = Environment.GetEnvironmentVariable("SteamAppId");
+            if (environmentVariable != null)
+            {
+                ZLog.Log(string.Concat("Using environment steamid ", environmentVariable));
+                try
+                {
+                    __result = uint.Parse(environmentVariable);
+                    return false;
+                } catch
+                {
+                    LogError("Error parsing 'SteamAppId' environment variable. Using steam_appid.txt instead.");
+                }
+            }
+            try
+            {
+                string str = File.ReadAllText("steam_appid.txt");
+                ZLog.Log("Using steam_appid.txt");
+                __result = uint.Parse(str);
+            }
+            catch
+            {
+                ZLog.LogWarning("Failed to find APPID");
+                __result = (uint)0;
+            }
+            return false;
+        }
+    }
 
     // This patch just forces IsUsingSteamVRInput to always return true.
     // Without this, there seems to be some problem with how the DLL namespacest

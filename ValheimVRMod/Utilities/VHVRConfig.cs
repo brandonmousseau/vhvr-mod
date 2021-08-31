@@ -696,7 +696,7 @@ namespace ValheimVRMod.Utilities
 
         public static bool UseVrControls()
         {
-            return useVrControls.Value && ! nonVrPlayer.Value;
+            return useVrControls.Value && !NonVrPlayer();
         }
 
         public static bool UseArrowPredictionGraphic()
@@ -706,7 +706,11 @@ namespace ValheimVRMod.Utilities
 
         public static bool NonVrPlayer()
         {
+#if NONVRMODE
+            return true;
+#else
             return nonVrPlayer.Value;
+#endif
         }
         
 #if DEBUG
