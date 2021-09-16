@@ -633,7 +633,8 @@ namespace ValheimVRMod.Patches
     }
     
     // remove stupid keyboard/mouse hints:
-    [HarmonyPatch(typeof(KeyHints), "Awake")]
+    // for some reason after Hearth&Home "Awake" isn't called on the cloned hud, so to be sure we destroy it in Update
+    [HarmonyPatch(typeof(KeyHints), "Update")]
     class PatchKeyHints {
 
         public static void Prefix(ref KeyHints __instance) {
