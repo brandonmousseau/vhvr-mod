@@ -38,7 +38,7 @@ namespace ValheimVRMod.VRCore.UI
             return _hudCamera != null;
         }
 
-        public void AddEnemyHud(Character c, GameObject baseHudPlayer, GameObject baseHudEnemy, GameObject baseHudBoss)
+        public void AddEnemyHud(Character c, bool isMount, GameObject baseHudPlayer, GameObject baseHudEnemy, GameObject baseHudMount, GameObject baseHudBoss)
         {
             if (c != null && c)
             {
@@ -52,9 +52,10 @@ namespace ValheimVRMod.VRCore.UI
                 {
                     return;
                 }
-                HudData newData = createHudDataForCharacter(c, baseHudPlayer, baseHudEnemy, baseHudBoss);
+                HudData newData = createHudDataForCharacter(c, isMount, baseHudPlayer, baseHudEnemy, baseHudMount, baseHudBoss);
                 if (newData != null)
                 {
+                    Debug.LogWarning($"Added entry for character {c.name}");
                     _enemyHuds.Add(c, newData);
                 }
             }
@@ -164,8 +165,8 @@ namespace ValheimVRMod.VRCore.UI
             return data;
         }
 
-        private HudData createHudDataForCharacter(Character c, GameObject baseHudPlayer,
-            GameObject baseHudEnemy, GameObject baseHudBoss)
+        private HudData createHudDataForCharacter(Character c, bool isMount, GameObject baseHudPlayer,
+            GameObject baseHudEnemy, GameObject baseHudMount, GameObject baseHudBoss)
         {
             if (baseHudPlayer == null)
             {
@@ -189,6 +190,9 @@ namespace ValheimVRMod.VRCore.UI
             } else if (c.IsBoss())
             {
                 baseHud = baseHudBoss;
+            } else if (isMount)
+            {
+                baseHud = baseHudMount;
             } else
             {
                 baseHud = baseHudEnemy;
@@ -203,7 +207,7 @@ namespace ValheimVRMod.VRCore.UI
             updateGuiLayers(data.gui.transform);
             data.gui.SetActive(true);
             data.hudCanvasRoot = canvasRoot;
-            data.healthRoot = data.gui.transform.Find("Health").gameObject;
+            data.healthRoot = data.gui.transform.Find("Health").gameObject; //FIXME: This is no longer used in the base game
             data.healthFast = data.healthRoot.transform.Find("health_fast").GetComponent<GuiBar>();
             data.healthSlow = data.healthRoot.transform.Find("health_slow").GetComponent<GuiBar>();
             data.level2 = data.gui.transform.Find("level_2") as RectTransform;
@@ -212,6 +216,15 @@ namespace ValheimVRMod.VRCore.UI
             data.aware = data.gui.transform.Find("Aware") as RectTransform;
             data.name = data.gui.transform.Find("Name").GetComponent<Text>();
             data.name.text = Localization.instance.Localize(c.GetHoverName());
+            data.isMount = isMount;
+
+            if (isMount)
+            {
+                data.mountStamina = data.gui.transform.Find("Stamina/stamina_fast").GetComponent<GuiBar>();
+                data.mountStaminaText = data.gui.transform.Find("Stamina/StaminaText").GetComponent<Text>();
+                data.mountHealthText = data.gui.transform.Find("Health/HealthText").GetComponent<Text>();
+            }
+
             data.gui.transform.localPosition = data.hudCanvasRoot.GetComponent<Canvas>().GetComponent<RectTransform>().rect.center;
             return data;
         }
@@ -255,6 +268,11 @@ namespace ValheimVRMod.VRCore.UI
             public GuiBar healthFast;
             public GuiBar healthSlow;
             public Text name;
+            public bool isMount;
+            public GuiBar mountStamina; 
+            public Text mountStaminaText;
+            public Text mountHealthText;
+
             public HudData() { }
         }
 

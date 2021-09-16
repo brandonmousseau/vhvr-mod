@@ -8,6 +8,7 @@ using System.Reflection;
 using ValheimVRMod.Utilities;
 
 using static ValheimVRMod.Utilities.LogUtils;
+using System.Runtime.CompilerServices;
 
 namespace ValheimVRMod.Patches
 {
@@ -317,12 +318,12 @@ namespace ValheimVRMod.Patches
         [HarmonyPatch(typeof(EnemyHud), "ShowHud")]
         class EnemyHud_ShowHud_Patch
         {
-            public static void Prefix(Character c, GameObject ___m_baseHudPlayer, GameObject ___m_baseHud, GameObject ___m_baseHudBoss)
+            public static void Prefix(Character c, bool isMount, GameObject ___m_baseHudPlayer, GameObject ___m_baseHud, GameObject ___m_baseHudMount, GameObject ___m_baseHudBoss)
             {
                 if (VHVRConfig.NonVrPlayer()) {
                     return;
                 }
-                EnemyHudManager.instance.AddEnemyHud(c, ___m_baseHudPlayer, ___m_baseHud, ___m_baseHudBoss);
+                EnemyHudManager.instance.AddEnemyHud(c, isMount, ___m_baseHudPlayer, ___m_baseHud, ___m_baseHudMount, ___m_baseHudBoss);
             }
         }
 
@@ -336,9 +337,8 @@ namespace ValheimVRMod.Patches
         [HarmonyPatch(typeof(EnemyHud), "UpdateHuds")]
         class EnemyHud_UpdateHuds_Patch
         {
-
-            private static Type enemyHudDataType = AccessTools.TypeByName("EnemyHud+HudData");
-            private static FieldInfo guiField = AccessTools.Field(enemyHudDataType, "m_gui");
+            //FIXME: Add mount support (stamina, staminaText, healthText)
+            private static FieldInfo guiField = AccessTools.Field(typeof(EnemyHud.HudData), nameof(EnemyHud.HudData.m_gui));
             private static MethodInfo destroyMethod =
                 AccessTools.Method(typeof(UnityEngine.Object), "Destroy", new Type[] { typeof(UnityEngine.Object) });
             private static MethodInfo getHealthPercentageMethod =
@@ -359,8 +359,8 @@ namespace ValheimVRMod.Patches
 
             private static void LoadCharacterField(ref List<CodeInstruction> patched)
             {
-                patched.Add(new CodeInstruction(OpCodes.Ldloc_S, 5));
-                patched.Add(CodeInstruction.LoadField(enemyHudDataType, "m_character"));
+                patched.Add(new CodeInstruction(OpCodes.Ldloc_S, 6));
+                patched.Add(CodeInstruction.LoadField(typeof(EnemyHud.HudData), nameof(EnemyHud.HudData.m_character)));
             }
 
             private static void DestroyHud(Character c)
@@ -417,7 +417,8 @@ namespace ValheimVRMod.Patches
                 return active;
             }
 
-            private static Vector3 UpdateLocation(Vector3 worldToScreenPoint, Character c) {
+            private static Vector3 UpdateLocation(Vector3 worldToScreenPoint, Character c)
+            {
                 EnemyHudManager.instance.UpdateHudCoordinates(c);
                 return worldToScreenPoint;
             }
