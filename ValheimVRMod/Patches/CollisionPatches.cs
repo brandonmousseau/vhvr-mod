@@ -23,13 +23,6 @@ namespace ValheimVRMod.Patches {
     
     [HarmonyPatch(typeof(Attack), "Start")]
     class PatchAttackStart {
-        private static MethodInfo getStaminaUsageMethod = AccessTools.Method(typeof(Attack), "GetStaminaUsage");
-
-        private static MethodInfo getLevelDamageFactorMethod =
-            AccessTools.Method(typeof(Attack), "GetLevelDamageFactor");
-
-        private static MethodInfo spawnOnHitTerrainMethod = AccessTools.Method(typeof(Attack), "SpawnOnHitTerrain",
-            new[] {typeof(Vector3), typeof(GameObject)});
 
         /**
          * in Start Patch we put some logic from original Start method and some more logic from original DoMeleeAttack
@@ -84,7 +77,7 @@ namespace ValheimVRMod.Patches {
             }
             
             if (!MeshCooldown.staminaDrained) {
-                float staminaUsage = (float) getStaminaUsageMethod.Invoke(__instance, null);
+                float staminaUsage = (float) __instance.GetAttackStamina();
                 if (staminaUsage > 0.0f && !character.HaveStamina(staminaUsage + 0.1f)) {
                     if (character.IsPlayer())
                         Hud.instance.StaminaBarNoStaminaFlash();
@@ -177,7 +170,7 @@ namespace ValheimVRMod.Patches {
                 hitData.SetAttacker(___m_character);
                 hitData.m_damage.Modify(___m_damageMultiplier);
                 hitData.m_damage.Modify(randomSkillFactor);
-                hitData.m_damage.Modify((float) getLevelDamageFactorMethod.Invoke(__instance, null));
+                hitData.m_damage.Modify(__instance.GetLevelDamageFactor());
                 if (___m_attackChainLevels > 1 && ___m_currentAttackCainLevel == ___m_attackChainLevels - 1) {
                     hitData.m_damage.Modify(2f);
                     hitData.m_pushForce *= 1.2f;
@@ -198,8 +191,7 @@ namespace ValheimVRMod.Patches {
             ___m_hitTerrainEffect.Create(pos, Quaternion.identity);
 
             if (___m_weapon.m_shared.m_spawnOnHitTerrain) {
-                spawnOnHitTerrainMethod.Invoke(__instance,
-                    new object[] {pos, ___m_weapon.m_shared.m_spawnOnHitTerrain});
+                __instance.SpawnOnHitTerrain(pos, ___m_weapon.m_shared.m_spawnOnHitTerrain);
             }
 
             if (___m_weapon.m_shared.m_useDurability && ___m_character.IsPlayer())
