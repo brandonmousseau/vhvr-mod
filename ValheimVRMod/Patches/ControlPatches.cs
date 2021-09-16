@@ -136,7 +136,7 @@ namespace ValheimVRMod.Patches {
             AccessTools.Method(typeof(ZInput), nameof(ZInput.GetJoyLeftStickX), new [] { typeof(bool) });
 
         private static MethodInfo getJoyLeftStickY =
-            AccessTools.Method(typeof(ZInput), nameof(ZInput.GetJoyLeftStickY));
+            AccessTools.Method(typeof(ZInput), nameof(ZInput.GetJoyLeftStickY), new[] { typeof(bool) });
 
         private static float getJoyLeftStickXPatched(bool smooth) {
             if (VRControls.mainControlsActive) {
@@ -146,33 +146,33 @@ namespace ValheimVRMod.Patches {
             return ZInput.GetJoyLeftStickX(smooth: true);
         }
 
-        private static float getJoyLeftStickYPatched() {
+        private static float getJoyLeftStickYPatched(bool smooth) {
             if (VRControls.mainControlsActive) {
                 return 0.0f;
             }
 
             return ZInput.GetJoyLeftStickY();
         }
-          //FIXME: Stack changed, map will scroll when moving
-        //static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
-        //    var original = new List<CodeInstruction>(instructions);
-        //    var patched = new List<CodeInstruction>();
-        //    foreach (var instruction in original) {
-        //        if (instruction.Calls(getJoyLeftStickX)) {
-        //            patched.Add(CodeInstruction.Call(typeof(Minimap_UpdateMap_MapTranslationPatch),
-        //                nameof(getJoyLeftStickXPatched), new[] { typeof(bool) }));
-        //        }
-        //        else if (instruction.Calls(getJoyLeftStickY)) {
-        //            patched.Add(CodeInstruction.Call(typeof(Minimap_UpdateMap_MapTranslationPatch),
-        //                nameof(getJoyLeftStickYPatched)));
-        //        }
-        //        else {
-        //            patched.Add(instruction);
-        //        }
-        //    }
-        //
-        //    return patched;
-        //}
+
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
+            var original = new List<CodeInstruction>(instructions);
+            var patched = new List<CodeInstruction>();
+            foreach (var instruction in original) {
+                if (instruction.Calls(getJoyLeftStickX)) {
+                    patched.Add(CodeInstruction.Call(typeof(Minimap_UpdateMap_MapTranslationPatch),
+                        nameof(getJoyLeftStickXPatched), new[] { typeof(bool) }));
+                }
+                else if (instruction.Calls(getJoyLeftStickY)) {
+                    patched.Add(CodeInstruction.Call(typeof(Minimap_UpdateMap_MapTranslationPatch),
+                        nameof(getJoyLeftStickYPatched), new[] { typeof(bool) }));
+                }
+                else {
+                    patched.Add(instruction);
+                }
+            }
+        
+            return patched;
+        }
     }
 
     [HarmonyPatch(typeof(Player), nameof(Player.SetControls))]
