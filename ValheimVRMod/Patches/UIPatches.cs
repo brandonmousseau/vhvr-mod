@@ -350,7 +350,7 @@ namespace ValheimVRMod.Patches
             private static MethodInfo setActiveMethod =
                 AccessTools.Method(typeof(GameObject), nameof(GameObject.SetActive));
             private static MethodInfo enemyHudRemoveMethod =
-                AccessTools.Method(AccessTools.Field(typeof(EnemyHud), "m_huds").FieldType, "Remove", new Type[] { typeof(Character) });
+                AccessTools.Method(AccessTools.Field(typeof(EnemyHud), nameof(EnemyHud.m_huds)).FieldType, "Remove", new Type[] { typeof(Character) });
             private static MethodInfo worldToScreenPointMethod =
                 AccessTools.Method(typeof(Camera), nameof(Camera.WorldToScreenPoint), new Type[] { typeof(Vector3) });
 
@@ -363,19 +363,27 @@ namespace ValheimVRMod.Patches
                 patched.Add(CodeInstruction.LoadField(typeof(EnemyHud.HudData), nameof(EnemyHud.HudData.m_character)));
             }
 
+            private static void AssertCharacter(Character c, [CallerMemberName] string caller = "")
+            {
+                if (c is null) Debug.LogError($"ASSERT FAILED: Character c is null in {caller}");
+            }
+
             private static void DestroyHud(Character c)
             {
+                AssertCharacter(c);
                 EnemyHudManager.instance.DestroyHudGui(c);
             }
 
             // Some wrapper methods to use as the Transpiler's Call targets
             private static void RemoveHud(Character c)
             {
+                AssertCharacter(c);
                 EnemyHudManager.instance.RemoveEnemyHud(c);
             }
 
             private static float UpdateHealth(float health, Character c)
             {
+                AssertCharacter(c);
                 EnemyHudManager.instance.UpdateHealth(c, health);
                 // Return health so that it gets put back onto the
                 // evaluation stack right after we use it
@@ -384,6 +392,7 @@ namespace ValheimVRMod.Patches
 
             private static int UpdateLevel(int level, Character c)
             {
+                AssertCharacter(c);
                 EnemyHudManager.instance.UpdateLevel(c, level);
                 // Return level so that it gets put back onto the
                 // evaluation stack right after we use it
@@ -392,6 +401,7 @@ namespace ValheimVRMod.Patches
 
             private static bool UpdateAlertAndAware(bool alerted, bool haveTarget, Character c)
             {
+                AssertCharacter(c);
                 bool aware = !alerted & haveTarget;
                 UpdateAlerted(c, alerted);
                 UpdateAware(c, aware);
@@ -403,22 +413,26 @@ namespace ValheimVRMod.Patches
 
             private static void UpdateAlerted(Character c, bool alerted)
             {
+                AssertCharacter(c);
                 EnemyHudManager.instance.UpdateAlerted(c, alerted);
             }
 
             private static void UpdateAware(Character c, bool aware)
             {
+                AssertCharacter(c);
                 EnemyHudManager.instance.UpdateAware(c, aware);
             }
 
             private static bool UpdateActive(bool active, Character c)
             {
+                AssertCharacter(c);
                 EnemyHudManager.instance.SetHudActive(c, active);
                 return active;
             }
 
             private static Vector3 UpdateLocation(Vector3 worldToScreenPoint, Character c)
             {
+                AssertCharacter(c);
                 EnemyHudManager.instance.UpdateHudCoordinates(c);
                 return worldToScreenPoint;
             }
@@ -470,7 +484,7 @@ namespace ValheimVRMod.Patches
                 if (instruction.opcode == OpCodes.Pop && previousInstruction.Calls(enemyHudRemoveMethod))
                 {
                     // Need to remove our mirror from the enemy hud dictionary
-                    patched.Add(new CodeInstruction(OpCodes.Ldloc_2));
+                    patched.Add(new CodeInstruction(OpCodes.Ldloc_3));
                     patched.Add(CodeInstruction.Call(typeof(EnemyHud_UpdateHuds_Patch), nameof(RemoveHud)));
                 }
             }
@@ -517,8 +531,8 @@ namespace ValheimVRMod.Patches
                 if (instruction.Calls(isAlertedMethod))
                 {
                     // IsAlerted was just called, so it is on the eval stack. "HaveTarget" was stored
-                    // into V_8, so load it onto the eval stack + the Character reference and call UpdateAlertAndAware
-                    patched.Add(new CodeInstruction(OpCodes.Ldloc_S, 8)); // ldloc.s V_8
+                    // into V_9, so load it onto the eval stack + the Character reference and call UpdateAlertAndAware
+                    patched.Add(new CodeInstruction(OpCodes.Ldloc_S, 9)); // ldloc.s V_9
                     LoadCharacterField(ref patched);
                     patched.Add(CodeInstruction.Call(typeof(EnemyHud_UpdateHuds_Patch), nameof(UpdateAlertAndAware)));
                 }
