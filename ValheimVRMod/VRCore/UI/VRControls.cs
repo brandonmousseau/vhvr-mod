@@ -491,6 +491,7 @@ namespace ValheimVRMod.VRCore.UI
             ignoredZInputs.Add("BuildPrev");
             ignoredZInputs.Add("AltPlace");
             ignoredZInputs.Add("JoyAltPlace");
+            ignoredZInputs.Add("AutoPickup");
         }
 
     }
