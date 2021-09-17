@@ -492,6 +492,10 @@ namespace ValheimVRMod.VRCore.UI
             ignoredZInputs.Add("AltPlace");
             ignoredZInputs.Add("JoyAltPlace");
             ignoredZInputs.Add("AutoPickup");
+            ignoredZInputs.Add("ChatUp");
+            ignoredZInputs.Add("ChatDown");
+            ignoredZInputs.Add("ScrollChatUp");
+            ignoredZInputs.Add("ScrollChatDown");
         }
 
     }
