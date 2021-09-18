@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using System.ComponentModel;
-using HarmonyLib;
+using System.Linq;
 using UnityEngine;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
@@ -28,6 +28,13 @@ namespace ValheimVRMod.Scripts {
         
         private int maxSnapshots;
         private float colliderDistance;
+
+        private static readonly int[] ignoreLayers = {
+            LayerUtils.WATERVOLUME_LAYER,
+            LayerUtils.WATER,
+            LayerUtils.UI_PANEL_LAYER,
+            LayerUtils.CHARARCTER_TRIGGER
+        };
 
         private void OnTriggerEnter(Collider collider) {
             if (!isCollisionAllowed()) {
@@ -66,10 +73,8 @@ namespace ValheimVRMod.Scripts {
 
         private bool tryHitTarget(GameObject target) {
 
-            // ignore water and UI panel
-            if (target.layer == LayerUtils.WATERVOLUME_LAYER 
-                || target.layer == LayerUtils.WATER
-                || target.layer == LayerUtils.UI_PANEL_LAYER) {
+            // ignore certain Layers
+            if (ignoreLayers.Contains(target.layer)) {
                 return false;
             }
 
