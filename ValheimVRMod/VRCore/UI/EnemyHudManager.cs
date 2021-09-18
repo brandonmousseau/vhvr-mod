@@ -227,7 +227,7 @@ namespace ValheimVRMod.VRCore.UI
             updateGuiLayers(data.gui.transform);
             data.gui.SetActive(true);
             data.hudCanvasRoot = canvasRoot;
-            data.healthRoot = data.gui.transform.Find("Health").gameObject; //FIXME: This is no longer used in the base game
+            data.healthRoot = data.gui.transform.Find("Health").gameObject; //This is no longer set in the base game
             data.healthFast = data.healthRoot.transform.Find("health_fast").GetComponent<GuiBar>();
             data.healthSlow = data.healthRoot.transform.Find("health_slow").GetComponent<GuiBar>();
             data.level2 = data.gui.transform.Find("level_2") as RectTransform;

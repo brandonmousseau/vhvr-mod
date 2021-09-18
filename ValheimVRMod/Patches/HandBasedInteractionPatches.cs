@@ -112,7 +112,6 @@ namespace ValheimVRMod.Patches
         [HarmonyPatch(typeof(Player), "Update")]
         class Player_Update_Patch
         {
-            //FIXME: Player.Interact has a new parameter "alt"
             static void Postfix(Player __instance, IDoodadController ___m_doodadController)
             {
                 if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls())

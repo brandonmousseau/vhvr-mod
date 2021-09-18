@@ -337,7 +337,6 @@ namespace ValheimVRMod.Patches
         [HarmonyPatch(typeof(EnemyHud), "UpdateHuds")]
         class EnemyHud_UpdateHuds_Patch
         {
-            //FIXME: Add mount support (stamina, staminaText, healthText)
             private static FieldInfo guiField = AccessTools.Field(typeof(EnemyHud.HudData), nameof(EnemyHud.HudData.m_gui));
             private static MethodInfo destroyMethod =
                 AccessTools.Method(typeof(UnityEngine.Object), "Destroy", new Type[] { typeof(UnityEngine.Object) });
