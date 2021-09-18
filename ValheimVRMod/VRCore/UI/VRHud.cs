@@ -56,7 +56,6 @@ namespace ValheimVRMod.VRCore.UI
             public GameObject healthBarFast; // GuiBar
             public GameObject healthBarSlow; // GuiBar
             public GameObject healthText; // Text
-            public GameObject healthMaxText; // Text
             // Food
             public GameObject foodBarRoot; // RectTransform
             public GameObject foodBaseBar; // RectTransform
@@ -73,7 +72,6 @@ namespace ValheimVRMod.VRCore.UI
                 healthBarFast = null;
                 healthBarSlow = null;
                 healthText = null;
-                healthMaxText = null;
                 foodBarRoot = null;
                 foodBaseBar = null;
                 foodBars = null;
@@ -536,7 +534,6 @@ namespace ValheimVRMod.VRCore.UI
             cache.healthbarRoot = cache.healthPanel.transform.Find("Health").gameObject;
             cache.healthBarFast = cache.healthbarRoot.transform.Find("fast").gameObject;
             cache.healthBarSlow = cache.healthbarRoot.transform.Find("slow").gameObject;
-            cache.healthMaxText = cache.healthPanel.transform.Find("MaxHealth").gameObject;
             cache.healthText = cache.healthBarFast.transform.Find("bar").Find("HealthText").gameObject;
             // Food
             cache.foodBarRoot = cache.healthPanel.transform.Find("Food").gameObject;
@@ -586,7 +583,6 @@ namespace ValheimVRMod.VRCore.UI
             Hud.instance.m_healthBarFast = newComponents.healthBarFast.GetComponent<GuiBar>();
             Hud.instance.m_healthBarSlow = newComponents.healthBarSlow.GetComponent<GuiBar>();
             Hud.instance.m_healthText = newComponents.healthText.GetComponent<Text>();
-            Hud.instance.m_healthMaxText = newComponents.healthMaxText.GetComponent<Text>();
             // Food
             Hud.instance.m_foodBarRoot = newComponents.foodBarRoot.GetComponent<RectTransform>();
             Hud.instance.m_foodBaseBar = newComponents.foodBaseBar.GetComponent<RectTransform>();
