@@ -347,6 +347,10 @@ namespace ValheimVRMod.Patches
                 AccessTools.Method(typeof(Character), nameof(Character.GetLevel));
             private static MethodInfo isAlertedMethod =
                 AccessTools.Method(typeof(BaseAI), nameof(BaseAI.IsAlerted));
+            private static MethodInfo getMaxStaminaMethod =
+                AccessTools.Method(typeof(Sadle), nameof(Sadle.GetMaxStamina));
+            private static MethodInfo localizeMethod =
+                AccessTools.Method(typeof(Localization), nameof(Localization.Localize), new[] { typeof(string) });
             private static MethodInfo setActiveMethod =
                 AccessTools.Method(typeof(GameObject), nameof(GameObject.SetActive));
             private static MethodInfo enemyHudRemoveMethod =
@@ -411,6 +415,26 @@ namespace ValheimVRMod.Patches
                 return alerted;
             }
 
+            private static float UpdateMount(float maxStamina, float stamina, Character c)
+            {
+                AssertCharacter(c);
+                EnemyHudManager.instance.UpdateMount(c, maxStamina, stamina);
+                // We will call this right before alerted should be stored
+                // into a local variable, so return the variable to put it
+                // back onto eval stack.
+                return maxStamina;
+            }
+
+            private static string UpdateName(string name, Character c)
+            {
+                AssertCharacter(c);
+                EnemyHudManager.instance.UpdateName(c, name);
+                // We will call this right before alerted should be stored
+                // into a local variable, so return the variable to put it
+                // back onto eval stack.
+                return name;
+            }
+
             private static void UpdateAlerted(Character c, bool alerted)
             {
                 AssertCharacter(c);
@@ -455,6 +479,8 @@ namespace ValheimVRMod.Patches
                     MaybeAddUpdateHealthInstructions(original, ref patched, i);
                     MaybeAddUpdateLevelInstructions(original, ref patched, i);
                     MaybeAddAIAlertnessUpdateInstructions(original, ref patched, i);
+                    MaybeAddMountUpdateInstructions(original, ref patched, i);
+                    MaybeAddNameplateUpdateInstructions(original, ref patched, i);
                     MaybeAddSetActiveInstructions(original, ref patched, i);
                     MaybeAddRemoveEnemyHudInstruction(original, ref patched, i);
                     MaybeAddUpdateHudLocationInstructions(original, ref patched, i);
@@ -535,6 +561,31 @@ namespace ValheimVRMod.Patches
                     patched.Add(new CodeInstruction(OpCodes.Ldloc_S, 9)); // ldloc.s V_9
                     LoadCharacterField(ref patched);
                     patched.Add(CodeInstruction.Call(typeof(EnemyHud_UpdateHuds_Patch), nameof(UpdateAlertAndAware)));
+                }
+            }
+
+            private static void MaybeAddMountUpdateInstructions(List<CodeInstruction> original, ref List<CodeInstruction> patched, int i)
+            {
+                var instruction = original[i];
+                if (instruction.Calls(getMaxStaminaMethod))
+                {
+                    // MaxStamina was just called, so it is on the eval stack. "GetStamina" was stored into V_11.
+                    // Before storing the value of GetStamina we detour to UpdateMound
+                    patched.Add(new CodeInstruction(OpCodes.Ldloc_S, 11)); // ldloc.s V_9
+                    LoadCharacterField(ref patched);
+                    patched.Add(CodeInstruction.Call(typeof(EnemyHud_UpdateHuds_Patch), nameof(UpdateMount)));
+                }
+            }
+
+            private static void MaybeAddNameplateUpdateInstructions(List<CodeInstruction> original, ref List<CodeInstruction> patched, int i)
+            {
+                var instruction = original[i];
+                if (instruction.Calls(localizeMethod))
+                {
+                    // Localize was just called, so it is on the eval stack.
+                    // We detour to UpdateName and then leave the localization on the eval stack again
+                    LoadCharacterField(ref patched);
+                    patched.Add(CodeInstruction.Call(typeof(EnemyHud_UpdateHuds_Patch), nameof(UpdateName)));
                 }
             }
 

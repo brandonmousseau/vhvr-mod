@@ -140,6 +140,26 @@ namespace ValheimVRMod.VRCore.UI
             }
         }
 
+        public void UpdateMount(Character c, float maxStamina, float stamina)
+        {
+            HudData data = getEnemyHud(c);
+            if (data != null)
+            {
+                data.mountStamina.SetValue(stamina / maxStamina);
+                data.mountHealthText.text = Mathf.CeilToInt(c.GetHealth()).ToString();
+                data.mountStaminaText.text = Mathf.CeilToInt(stamina).ToString();
+            }
+        }
+
+        public void UpdateName(Character c, string name)
+        {
+            HudData data = getEnemyHud(c);
+            if (data != null)
+            {
+                data.name.text = name;
+            }
+        }
+
         public void UpdateAlerted(Character c, bool alerted)
         {
             HudData data = getEnemyHud(c);
