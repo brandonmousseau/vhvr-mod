@@ -689,15 +689,15 @@ namespace ValheimVRMod.VRCore
             var cam = CameraUtils.getCamera(CameraUtils.VR_CAMERA);
             _vrik = VrikCreator.initialize(player.gameObject, 
                 leftHand.transform, rightHand.transform, cam.transform);
+            var vrPlayerSync = player.gameObject.GetComponent<VRPlayerSync>();
+            vrPlayerSync.camera = cam.gameObject;
+            vrPlayerSync.leftHand = leftHand.gameObject;
+            vrPlayerSync.rightHand = rightHand.gameObject;
             VrikCreator.resetVrikHandTransform(player);
             _vrik.references.leftHand.gameObject.AddComponent<HandGesture>().sourceHand = leftHand;
             _vrik.references.rightHand.gameObject.AddComponent<HandGesture>().sourceHand = rightHand;
             StaticObjects.leftFist().setColliderParent(_vrik.references.leftHand, false);
             StaticObjects.rightFist().setColliderParent(_vrik.references.rightHand, true);
-            var vrPlayerSync = player.gameObject.AddComponent<VRPlayerSync>();
-            vrPlayerSync.camera = cam.gameObject;
-            vrPlayerSync.leftHand = leftHand.gameObject;
-            vrPlayerSync.rightHand = rightHand.gameObject;
             StaticObjects.addQuickActions(leftHand.transform);
             StaticObjects.addQuickSwitch(rightHand.transform);
 

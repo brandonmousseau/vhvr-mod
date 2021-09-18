@@ -107,24 +107,12 @@ namespace ValheimVRMod.Patches
             }
         }
 
-        // Need to call this from Player_Update_Patch Postfix
-        [HarmonyPatch]
-        class Player_Interact_ReversePatch
-        {
-            [HarmonyReversePatch]
-            [HarmonyPatch(typeof(Player), "Interact")]
-            public static void Run(object instance, GameObject go, bool hold)
-            {
-                throw new NotImplementedException("Stub for reverse patch.");
-            }
-        }
-
         // Check for the left hand use button being used and trigger
         // interactions based on it
         [HarmonyPatch(typeof(Player), "Update")]
         class Player_Update_Patch
         {
-            static void Postfix(Player __instance, ShipControlls ___m_shipControl)
+            static void Postfix(Player __instance, IDoodadController ___m_doodadController)
             {
                 if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls())
                 {
@@ -140,14 +128,14 @@ namespace ValheimVRMod.Patches
                 {
                     if (useAction.GetState(SteamVR_Input_Sources.LeftHand) && leftHover)
                     {
-                        Player_Interact_ReversePatch.Run(__instance, leftHover, true);
+                        __instance.Interact(leftHover, true, false);
                     }
                 } else if (leftHover)
                 {
-                    Player_Interact_ReversePatch.Run(__instance, leftHover, false);
-                } else if (___m_shipControl)
+                    __instance.Interact(leftHover, false, false);
+                } else if (___m_doodadController != null)
                 {
-                    __instance.StopShipControl();
+                    __instance.StopDoodadControl();
                 }
             }
         }
