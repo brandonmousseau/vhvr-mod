@@ -18,15 +18,6 @@ namespace ValheimVRMod.Patches
     [HarmonyPatch]
     public class PostProcessingPatches
     {
-        [HarmonyPrefix]
-        [HarmonyPatch(typeof(PostProcessingBehaviour), "CheckObservers")]
-        static void PrefixCheckObservers(PostProcessingBehaviour __instance, PostProcessingContext ___m_Context)
-        {
-            if (VHVRConfig.NonVrPlayer()) return;
-            var waterFixComponent = WaterStencilFixComponent.PostProcessingExtension.GetOrCreateValue(__instance);
-            if(waterFixComponent != null) waterFixComponent.Init(___m_Context, WaterStencilFixComponent.fakeModel);
-        }
-
         [HarmonyPostfix]
         [HarmonyPatch(typeof(PostProcessingBehaviour), "OnEnable")]
         static void PostfixPostProcessingOnEnable(PostProcessingBehaviour __instance, TaaComponent ___m_Taa, Dictionary<PostProcessingComponentBase, bool> ___m_ComponentStates, List<PostProcessingComponentBase> ___m_Components)
@@ -38,15 +29,8 @@ namespace ValheimVRMod.Patches
             var vrTaaComponent = new VRTaaComponent();
             VRTaaComponent.PostProcessingExtension.Add(__instance, vrTaaComponent);
 
-            var waterStencilComponent = new WaterStencilFixComponent();
-            WaterStencilFixComponent.PostProcessingExtension.Add(__instance, waterStencilComponent);
-
             ___m_Components.Add(vrTaaComponent);
             ___m_ComponentStates.Add(vrTaaComponent, false);
-            ___m_Components.Add(waterStencilComponent);
-            ___m_ComponentStates.Add(waterStencilComponent, false);
-            
-            waterStencilComponent.OnEnable();
         }
 
         internal static readonly int RenderViewportScaleFactor = Shader.PropertyToID("_RenderViewportScaleFactor");
@@ -59,19 +43,6 @@ namespace ValheimVRMod.Patches
             {
                 ___m_Context.camera.ResetStereoProjectionMatrices();
                 Shader.SetGlobalFloat(RenderViewportScaleFactor, XRSettings.renderViewportScale);
-            }
-        }
-
-        [HarmonyPostfix]
-        [HarmonyPatch(typeof(PostProcessingBehaviour), "OnPreRender")]
-        static void PostfixOnPreRender(PostProcessingBehaviour __instance, PostProcessingProfile ___profile)
-        {
-            if (VHVRConfig.NonVrPlayer()) return;
-        
-            if(___profile != null)
-            {
-                var waterFixComponent = WaterStencilFixComponent.PostProcessingExtension.GetOrCreateValue(__instance);
-                if(waterFixComponent != null) __instance.TryExecuteCommandBuffer(waterFixComponent);
             }
         }
 
