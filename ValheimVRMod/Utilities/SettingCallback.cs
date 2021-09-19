@@ -12,6 +12,8 @@ namespace ValheimVRMod.Utilities {
         private static UnityAction<Vector3, Quaternion> action;
         private static Transform target;
         private static Transform sourceHand;
+
+        public static bool configRunning;
         
         /**
          * called by ConfigSettings.createTransformButton()
@@ -31,6 +33,11 @@ namespace ValheimVRMod.Utilities {
         
         private static bool createSettingObj(string position, Vector3 pos, Quaternion rot) {
 
+            if (configRunning) {
+                //TODO show message ?
+                return false;
+            }
+            
             switch (position) {
                 
                 case VRHud.CAMERA_LOCKED:
@@ -57,6 +64,7 @@ namespace ValheimVRMod.Utilities {
             settingObj.transform.SetParent(target, false);
             settingObj.transform.localPosition = pos;
             settingObj.transform.localRotation = rot;
+            configRunning = true;
             return true;
         }
 
@@ -65,8 +73,8 @@ namespace ValheimVRMod.Utilities {
             if (SteamVR_Actions.valheim_Jump.GetState(SteamVR_Input_Sources.Any)) {
                 VHVRConfig.config.Save();
                 VHVRConfig.config.SaveOnConfigSet = true;
+                configRunning = false;
                 Destroy(gameObject);
-                // TODO Popup message ?
                 return;
             }
             

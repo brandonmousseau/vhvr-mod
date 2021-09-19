@@ -217,7 +217,7 @@ namespace ValheimVRMod.VRCore.UI
                 if (handBone != null) {
                     setWristPosition(hudCanvasParent, hudCanvas, handBone, healthPanelPosition, leftWristPositionHealth, rightWristPositionHealth,
                         VHVRConfig.HealthPanelPos(), VHVRConfig.HealthPanelRot(), VHVRConfig.HealthPanelScale());
-                    hudCanvasGroup.alpha = VHVRConfig.AllowHudFade() ? calculateHudCanvasAlpha(hudCanvasParent) : 1f;
+                    hudCanvasGroup.alpha = VHVRConfig.AllowHudFade() && ! SettingCallback.configRunning ? calculateHudCanvasAlpha(hudCanvasParent) : 1f;
                 } else
                 {
                     LogError("handBone is null while setting health panel position. Falling back to camera locked.");
@@ -237,7 +237,7 @@ namespace ValheimVRMod.VRCore.UI
                     {
                         setWristPosition(altHudCanvasParent, altHudCanvas, handBone, staminaPanelPosition, leftWristPositionStamina, rightWristPositionStamina,
                             VHVRConfig.StaminaPanelPos(), VHVRConfig.StaminaPanelRot(), VHVRConfig.StaminaPanelScale());
-                        altHudCanvasGroup.alpha = VHVRConfig.AllowHudFade() ? calculateHudCanvasAlpha(altHudCanvasParent) : 1f;
+                        altHudCanvasGroup.alpha = VHVRConfig.AllowHudFade() && ! SettingCallback.configRunning ? calculateHudCanvasAlpha(altHudCanvasParent) : 1f;
                     } else
                     {
                         LogError("handBone is null while setting stamina panel position. Falling back to camera locked.");
