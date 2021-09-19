@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.UI;
 using ValheimVRMod.VRCore;
 using ValheimVRMod.VRCore.UI;
 using Valve.VR;
@@ -12,6 +13,7 @@ namespace ValheimVRMod.Utilities {
         private static UnityAction<Vector3, Quaternion> action;
         private static Transform target;
         private static Transform sourceHand;
+        private static GameObject notification;
 
         public static bool configRunning;
         
@@ -20,7 +22,7 @@ namespace ValheimVRMod.Utilities {
          */
         public static bool HealthPanel(UnityAction<Vector3, Quaternion> pAction) {
             action = pAction;
-            return createSettingObj(VHVRConfig.HealthPanelPlacement(), VHVRConfig.HealthPanelPos(), VHVRConfig.HealthPanelRot());
+            return createSettingObj(VHVRConfig.HealthPanelPlacement(), VHVRConfig.HealthPanelPos(), VHVRConfig.HealthPanelRot(), "Health Panel");
         }
 
         /**
@@ -28,10 +30,10 @@ namespace ValheimVRMod.Utilities {
          */
         public static bool StaminaPanel(UnityAction<Vector3, Quaternion> pAction) {
             action = pAction;
-            return createSettingObj(VHVRConfig.StaminaPanelPlacement(), VHVRConfig.StaminaPanelPos(), VHVRConfig.StaminaPanelRot());
+            return createSettingObj(VHVRConfig.StaminaPanelPlacement(), VHVRConfig.StaminaPanelPos(), VHVRConfig.StaminaPanelRot(), "Stamina Panel");
         }
         
-        private static bool createSettingObj(string position, Vector3 pos, Quaternion rot) {
+        private static bool createSettingObj(string position, Vector3 pos, Quaternion rot, string panel) {
 
             if (configRunning) {
                 //TODO show message ?
@@ -65,15 +67,39 @@ namespace ValheimVRMod.Utilities {
             settingObj.transform.localPosition = pos;
             settingObj.transform.localRotation = rot;
             configRunning = true;
+            showNotification(panel);
+            
             return true;
         }
 
+        private static void showNotification(string panel) {
+            
+            var rect = new Vector2(400, 70);
+            notification = new GameObject();
+            var image = notification.AddComponent<Image>();
+            Color black = Color.black;
+            image.color = black;
+            image.transform.SetParent(Hud.instance.m_rootObject.transform, false);
+            image.rectTransform.sizeDelta = rect;
+
+            var text = new GameObject().AddComponent<Text>();
+            text.text = "Configuring " + panel + ". Hold Front Trigger of other Hand to position panel, Press Jump to save.";
+            text.fontSize = 20;
+            text.color = Color.red;
+            text.font =  Resources.GetBuiltinResource(typeof(Font), "Arial.ttf") as Font;
+            text.gameObject.AddComponent<ContentSizeFitter>();
+            text.transform.SetParent(notification.transform, false);
+            text.rectTransform.sizeDelta = rect;
+
+        }
+        
         private void OnRenderObject() {
             
             if (SteamVR_Actions.valheim_Jump.GetState(SteamVR_Input_Sources.Any)) {
                 VHVRConfig.config.Save();
                 VHVRConfig.config.SaveOnConfigSet = true;
                 configRunning = false;
+                Destroy(notification);
                 Destroy(gameObject);
                 return;
             }
