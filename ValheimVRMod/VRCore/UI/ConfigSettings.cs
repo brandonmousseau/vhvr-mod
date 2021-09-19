@@ -160,8 +160,7 @@ namespace ValheimVRMod.VRCore.UI {
             var newTabButton = Object.Instantiate(tabButtonPrefab, tabButtons);
             newTabButton.name = section.Key;
             var rectTransform = newTabButton.GetComponent<RectTransform>();
-            var tabButtonsTotalWidth = settings.transform.Find("panel").gameObject.GetComponent<RectTransform>().sizeDelta.x;
-            var tabButtonXPosition = (tabButtonsTotalWidth - sectionCount * TabButtonWidth) * 0.5f + tabCounter*TabButtonWidth;
+            var tabButtonXPosition = TabButtonWidth * (tabCounter - (sectionCount - 1) * 0.5f);
             rectTransform.anchoredPosition = new Vector2(tabButtonXPosition, rectTransform.anchoredPosition.y);
 
             foreach (Text text in newTabButton.GetComponentsInChildren<Text>()) {
@@ -374,7 +373,7 @@ namespace ValheimVRMod.VRCore.UI {
             var text = label.GetComponent<Text>();
             text.text = configValue.Key;
             
-            pos.y += 180;
+            pos.y += 225;
             text.GetComponent<RectTransform>().anchoredPosition = pos;
             
             // Button
