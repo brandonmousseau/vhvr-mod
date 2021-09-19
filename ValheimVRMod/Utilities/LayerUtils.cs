@@ -51,6 +51,7 @@ namespace ValheimVRMod.Utilities
         public static readonly int WATER = 4;
         public static readonly int CHARACTER = 9;
         public static readonly int ITEM_LAYER = 12;
+        public static readonly int CHARARCTER_TRIGGER = 14;
         public static readonly int WATERVOLUME_LAYER = 21;
         public static readonly int WEAPON_LAYER = 22;
         private static readonly int HANDS_LAYER = 23;
