@@ -61,6 +61,7 @@ namespace ValheimVRMod.VRCore.UI
             public GameObject foodBaseBar; // RectTransform
             public GameObject[] foodBars; // Image Array
             public GameObject[] foodIcons; // Image Array
+            public GameObject[] foodTimes; // Image Array
             public GameObject foodIcon; // Image
             public GameObject foodText; // Text
 
@@ -77,6 +78,7 @@ namespace ValheimVRMod.VRCore.UI
                 foodBars = null;
                 foodIcons = null;
                 foodIcon = null;
+                foodTimes = null;
                 foodText = null;
             }
 
@@ -88,6 +90,7 @@ namespace ValheimVRMod.VRCore.UI
             public GameObject staminaBarRoot; // public RectTransform m_staminaBar2Root; "staminapanel" ROOT
             public GameObject staminaBarFast; // public GuiBar m_staminaBar2Fast; "stamina_fast"
             public GameObject staminaBarSlow; // public GuiBar m_staminaBar2Slow; "stamina_slow"
+            public GameObject staminaText; // public GuiBar m_staminaBar2Slow; "stamina_slow"
             public Animator staminaAnimator; // public Animator m_staminaAnimator; component of staminaBarRoot
 
             public void clear()
@@ -95,6 +98,7 @@ namespace ValheimVRMod.VRCore.UI
                 staminaBarRoot = null;
                 staminaBarFast = null;
                 staminaBarSlow = null;
+                staminaText = null;
                 staminaAnimator = null;
             }
         }
@@ -339,110 +343,36 @@ namespace ValheimVRMod.VRCore.UI
 
         /**
          Health Panel Hierarchy:
-         Healthbar Panel Object: healthpanel(Clone) 
-           Component: RectTransform 
-           Component: Animator 
-             Healthbar Panel Object: darken 
-               Component: RectTransform 
-               Component: CanvasRenderer 
-               Component: Image 
-             Healthbar Panel Object: Health 
-               Component: RectTransform 
-                 Healthbar Panel Object: border 
-                   Component: RectTransform 
-                   Component: CanvasRenderer 
-                   Component: Image 
-                 Healthbar Panel Object: bkg 
-                   Component: RectTransform 
-                   Component: CanvasRenderer 
-                   Component: Image 
-                 Healthbar Panel Object: slow 
-                   Component: RectTransform 
-                   Component: GuiBar 
-                     Healthbar Panel Object: bar 
-                       Component: RectTransform 
-                       Component: CanvasRenderer 
-                       Component: Image 
-                 Healthbar Panel Object: fast 
-                   Component: RectTransform 
-                   Component: GuiBar 
-                     Healthbar Panel Object: bar 
-                       Component: RectTransform 
-                       Component: CanvasRenderer 
-                       Component: Image 
-                         Healthbar Panel Object: HealthText 
-                           Component: RectTransform 
-                           Component: CanvasRenderer 
-                           Component: UI.Text 
-                           Component: UI.Outline 
-             Healthbar Panel Object: Food 
-               Component: RectTransform 
-                 Healthbar Panel Object: border 
-                   Component: RectTransform 
-                   Component: CanvasRenderer 
-                   Component: Image 
-                 Healthbar Panel Object: bar1 
-                   Component: RectTransform 
-                   Component: CanvasRenderer 
-                   Component: Image 
-                 Healthbar Panel Object: bar2 
-                   Component: RectTransform 
-                   Component: CanvasRenderer 
-                   Component: Image 
-                 Healthbar Panel Object: bar3 
-                   Component: RectTransform 
-                   Component: CanvasRenderer 
-                   Component: Image 
-                 Healthbar Panel Object: baseBar 
-                   Component: RectTransform 
-                   Component: CanvasRenderer 
-                   Component: Image 
-                 Healthbar Panel Object: overlay 
-                   Component: RectTransform 
-                   Component: CanvasRenderer 
-                   Component: Image 
-             Healthbar Panel Object: FoodText 
-               Component: RectTransform 
-               Component: CanvasRenderer 
-               Component: UI.Text 
-               Component: UI.Outline 
-             Healthbar Panel Object: MaxHealth 
-               Component: RectTransform 
-               Component: CanvasRenderer 
-               Component: UI.Text 
-               Component: UI.Outline 
-             Healthbar Panel Object: healthicon 
-               Component: RectTransform 
-               Component: CanvasRenderer 
-               Component: Image 
-             Healthbar Panel Object: foodicon 
-               Component: RectTransform 
-               Component: CanvasRenderer 
-               Component: Image 
-             Healthbar Panel Object: food0 
-               Component: RectTransform 
-               Component: CanvasRenderer 
-               Component: Image 
-                 Healthbar Panel Object: foodicon0 
-                   Component: RectTransform 
-                   Component: CanvasRenderer 
-                   Component: Image 
-             Healthbar Panel Object: food1 
-               Component: RectTransform 
-               Component: CanvasRenderer 
-               Component: Image 
-                 Healthbar Panel Object: foodicon1 
-                   Component: RectTransform 
-                   Component: CanvasRenderer 
-                   Component: Image 
-             Healthbar Panel Object: food2 
-               Component:UnityEngine.RectTransform 
-               Component: CanvasRenderer 
-               Component: Image 
-                 Healthbar Panel Object: foodicon2 
-                   Component: RectTransform 
-                   Component: CanvasRenderer 
-                   Component: Image 
+         healthpanel(Clone) (UnityEngine.RectTransform;UnityEngine.Animator;)
+            |darken (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
+            |Health (UnityEngine.RectTransform;)
+            |   |border (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
+            |   |bkg (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
+            |   |slow (UnityEngine.RectTransform;GuiBar;)
+            |   |   |bar (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
+            |   |fast (UnityEngine.RectTransform;GuiBar;)
+            |   |   |bar (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
+            |   |   |   |HealthText (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Text;UnityEngine.UI.Outline;)
+            |healthicon (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
+            |Food (UnityEngine.RectTransform;)
+            |   |border (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
+            |   |bar1 (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
+            |   |bar2 (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
+            |   |bar3 (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
+            |   |baseBar (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
+            |   |overlay (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
+            |FoodText (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Text;UnityEngine.UI.Outline;)
+            |foodicon (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
+            |foodicon (1) (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
+            |food2 (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
+            |   |foodicon2 (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
+            |   |time (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Text;UnityEngine.UI.Outline;)
+            |food1 (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
+            |   |foodicon1 (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
+            |   |time (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Text;UnityEngine.UI.Outline;)
+            |food0 (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
+            |   |foodicon0 (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
+            |   |time (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Text;UnityEngine.UI.Outline;)
          */
         private void maybeCloneHealthPanelComponents()
         {
@@ -467,42 +397,17 @@ namespace ValheimVRMod.VRCore.UI
 
 
         /**
-            staminapanel
-              Component: UnityEngine.RectTransform
-              Component: UnityEngine.Animator
-              Stamina
-                Component: UnityEngine.RectTransform
-                darken
-                  Component: UnityEngine.RectTransform
-                  Component: UnityEngine.CanvasRenderer
-                  Component: UnityEngine.UI.Image
-                border
-                  Component: UnityEngine.RectTransform
-                  Component: UnityEngine.CanvasRenderer
-                  Component: UnityEngine.UI.Image
-                bkg
-                  Component: UnityEngine.RectTransform
-                  Component: UnityEngine.CanvasRenderer
-                  Component: UnityEngine.UI.Image
-                stamina_slow
-                  Component: UnityEngine.RectTransform
-                  Component: GuiBar
-                  bar
-                    Component: UnityEngine.RectTransform
-                    Component: UnityEngine.CanvasRenderer
-                    Component: UnityEngine.UI.Image
-                stamina_fast
-                  Component: UnityEngine.RectTransform
-                  Component: GuiBar
-                  bar
-                    Component: UnityEngine.RectTransform
-                    Component: UnityEngine.CanvasRenderer
-                    Component: UnityEngine.UI.Image
-                HealthText
-                  Component: UnityEngine.RectTransform
-                  Component: UnityEngine.CanvasRenderer
-                  Component: UnityEngine.UI.Text
-                  Component: UnityEngine.UI.Outline
+         * Stamina Panel Hierarchy:
+            staminapanel (UnityEngine.RectTransform;UnityEngine.Animator;)
+               |Stamina (UnityEngine.RectTransform;)
+               |   |darken (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
+               |   |border (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
+               |   |bkg (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
+               |   |stamina_slow (UnityEngine.RectTransform;GuiBar;)
+               |   |   |bar (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
+               |   |stamina_fast (UnityEngine.RectTransform;GuiBar;)
+               |   |   |bar (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
+               |   |StaminaText (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Text;UnityEngine.UI.Outline;)
          */
         private void maybeCloneStaminaPanelComponents()
         {
@@ -547,11 +452,13 @@ namespace ValheimVRMod.VRCore.UI
             }
             int foodIconLength = Hud.instance.m_foodIcons.Length;
             cache.foodIcons = new GameObject[foodIconLength];
+            cache.foodTimes = new GameObject[foodIconLength];
             for (int i = 0; i < foodIconLength; i++)
             {
                 string foodName = "food" + i; // // food0..foodN
                 string foodIconName = "foodicon" + i; // foodicon0..foodiconN
                 cache.foodIcons[i] = cache.healthPanel.transform.Find(foodName).Find(foodIconName).gameObject;
+                cache.foodTimes[i] = cache.healthPanel.transform.Find(foodName).Find("time").gameObject;
             }
             cache.foodIcon = cache.healthPanel.transform.Find("foodicon").gameObject;
             cache.foodText = cache.healthPanel.transform.Find("FoodText").gameObject;
@@ -566,6 +473,7 @@ namespace ValheimVRMod.VRCore.UI
             cache.staminaBarRoot = root;
             cache.staminaBarSlow = root.transform.Find("Stamina").Find("stamina_slow").gameObject;
             cache.staminaBarFast = root.transform.Find("Stamina").Find("stamina_fast").gameObject;
+            cache.staminaText = root.transform.Find("Stamina").Find("StaminaText").gameObject;
             cache.staminaAnimator = root.GetComponent<Animator>();
         }
 
@@ -600,6 +508,12 @@ namespace ValheimVRMod.VRCore.UI
                 foodIconImages[i] = newComponents.foodIcons[i].GetComponent<Image>();
             }
             Hud.instance.m_foodIcons = foodIconImages;
+            Text[] foodTimes = new Text[newComponents.foodTimes.Length];
+            for (int i = 0; i < foodTimes.Length; i++)
+            {
+                foodTimes[i] = newComponents.foodTimes[i].GetComponent<Text>();
+            }
+            Hud.instance.m_foodTime = foodTimes;
         }
 
         private void updateStaminaPanelHudReferences(StaminaPanelComponents newComponents)
@@ -608,6 +522,7 @@ namespace ValheimVRMod.VRCore.UI
             Hud.instance.m_staminaAnimator = newComponents.staminaAnimator;
             Hud.instance.m_staminaBar2Fast = newComponents.staminaBarFast.GetComponent<GuiBar>();
             Hud.instance.m_staminaBar2Slow = newComponents.staminaBarSlow.GetComponent<GuiBar>();
+            Hud.instance.m_staminaText = newComponents.staminaText.GetComponent<Text>();
         }
 
         private bool ensureHudCanvas()
