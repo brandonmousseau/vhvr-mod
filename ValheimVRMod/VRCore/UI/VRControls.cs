@@ -248,6 +248,10 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return false;
             }
+            if(zinput == "JoyAltPlace")
+            {
+                return CheckAltButton();
+            }
             SteamVR_Action_Boolean action;
             zInputToBooleanAction.TryGetValue(zinput, out action);
             if (action == null)
@@ -256,6 +260,13 @@ namespace ValheimVRMod.VRCore.UI
                 return false;
             }
             return action.GetState(SteamVR_Input_Sources.Any);
+        }
+
+        private bool CheckAltButton()
+        {
+            //If both triggers are pressed during this check, the alternate action is enabled
+            return (SteamVR_Actions.valheim_Use.GetState(SteamVR_Input_Sources.Any) && SteamVR_Actions.valheim_UseLeft.GetState(SteamVR_Input_Sources.Any))
+                || (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand));
         }
 
         public bool GetButtonUp(string zinput)
@@ -490,7 +501,11 @@ namespace ValheimVRMod.VRCore.UI
             ignoredZInputs.Add("BuildNext");
             ignoredZInputs.Add("BuildPrev");
             ignoredZInputs.Add("AltPlace");
-            ignoredZInputs.Add("JoyAltPlace");
+            ignoredZInputs.Add("AutoPickup");
+            ignoredZInputs.Add("ChatUp");
+            ignoredZInputs.Add("ChatDown");
+            ignoredZInputs.Add("ScrollChatUp");
+            ignoredZInputs.Add("ScrollChatDown");
         }
 
     }

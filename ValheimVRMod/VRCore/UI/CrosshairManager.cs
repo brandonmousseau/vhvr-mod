@@ -62,6 +62,18 @@ namespace ValheimVRMod.VRCore.UI
         {
             if (SceneManager.GetActiveScene().name != "main" || guiCanvas == null || !ensureCrosshairCanvas() || !ensureCrosshairCamera())
             {
+                if (_hoverNameCanvasParentLeft)
+                {
+                    _hoverNameCanvasParentLeft.SetActive(false);
+                }
+                if (_hoverNameCanvasParent)
+                {
+                    _hoverNameCanvasParent.SetActive(false);
+                }
+                if (_crosshairCanvasParent)
+                {
+                    _crosshairCanvasParent.SetActive(false);
+                }
                 return;
             }
             if ((_canvasCrosshairRoot == null || _canvasCrosshairRootClone == null)
@@ -81,6 +93,14 @@ namespace ValheimVRMod.VRCore.UI
             if (crosshairCloneLeftHand)
             {
                 crosshairCloneLeftHand.SetActive(VHVRConfig.ShowStaticCrosshair());
+            }
+            if (_hoverNameCanvasParentLeft)
+            {
+                _hoverNameCanvasParentLeft.SetActive(VRPlayer.attachedToPlayer);
+            }
+            if (_hoverNameCanvasParent)
+            {
+                _hoverNameCanvasParent.SetActive(VRPlayer.attachedToPlayer);
             }
             var rectTransform = _canvasCrosshairRootClone.GetComponent<RectTransform>();
             setCrosshairCanvasPositionAndScale();
