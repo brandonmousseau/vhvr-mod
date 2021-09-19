@@ -42,6 +42,7 @@ namespace ValheimVRMod.VRCore.UI
      * way we want without having to do anything messy with the existing user input system
      * and all the GUI interaction stuff just works out of the box.
      */
+    [DefaultExecutionOrder(int.MaxValue)]
     class VRGUI : MonoBehaviour
     {
         public static readonly string GUI_CANVAS = "GUI";
