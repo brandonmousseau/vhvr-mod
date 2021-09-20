@@ -20,44 +20,37 @@ namespace ValheimVRMod.Utilities {
         /**
          * called by ConfigSettings.createTransformButton()
          */
-        public static bool HealthPanel(UnityAction<Vector3, Quaternion> pAction) {
+        public static bool LeftWrist(UnityAction<Vector3, Quaternion> pAction) {
             action = pAction;
-            return createSettingObj(VHVRConfig.HealthPanelPlacement(), VHVRConfig.HealthPanelPos(), VHVRConfig.HealthPanelRot(), "Health Panel");
+            return createSettingObj(VHVRConfig.LeftWristPos(), VHVRConfig.LeftWristRot(), "Left Wrist", false);
         }
 
         /**
          * called by ConfigSettings.createTransformButton()
          */
-        public static bool StaminaPanel(UnityAction<Vector3, Quaternion> pAction) {
+        public static bool RightWrist(UnityAction<Vector3, Quaternion> pAction) {
             action = pAction;
-            return createSettingObj(VHVRConfig.StaminaPanelPlacement(), VHVRConfig.StaminaPanelPos(), VHVRConfig.StaminaPanelRot(), "Stamina Panel");
+            return createSettingObj(VHVRConfig.RightWristPos(), VHVRConfig.RightWristRot(), "Right Wrist", true);
         }
         
-        private static bool createSettingObj(string position, Vector3 pos, Quaternion rot, string panel) {
+        private static bool createSettingObj(Vector3 pos, Quaternion rot, string panel, bool isRightWrist) {
 
             if (configRunning) {
                 //TODO show message ?
                 return false;
             }
-            
-            switch (position) {
-                
-                case VRHud.CAMERA_LOCKED:
-                    return false;
-                
-                case VRHud.LEFT_WRIST:
-                    inputAction = SteamVR_Actions.valheim_Use;
-                    inputHand = SteamVR_Input_Sources.RightHand;
-                    target = VRPlayer.vrikRef.references.leftHand;
-                    sourceHand = VRPlayer.rightHand.transform;
-                    break;
-                
-                case VRHud.RIGHT_WRIST:
-                    inputAction = SteamVR_Actions.valheim_UseLeft;
-                    inputHand = SteamVR_Input_Sources.LeftHand;
-                    target = VRPlayer.vrikRef.references.rightHand;
-                    sourceHand = VRPlayer.leftHand.transform;
-                    break;
+
+            if (isRightWrist) {
+                inputAction = SteamVR_Actions.valheim_UseLeft;
+                inputHand = SteamVR_Input_Sources.LeftHand;
+                target = VRPlayer.vrikRef.references.rightHand;
+                sourceHand = VRPlayer.leftHand.transform;
+            }
+            else {
+                inputAction = SteamVR_Actions.valheim_Use;
+                inputHand = SteamVR_Input_Sources.RightHand;
+                target = VRPlayer.vrikRef.references.leftHand;
+                sourceHand = VRPlayer.rightHand.transform;
             }
             
             VHVRConfig.config.SaveOnConfigSet = false;

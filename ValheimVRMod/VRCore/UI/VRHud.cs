@@ -17,12 +17,6 @@ namespace ValheimVRMod.VRCore.UI
         public const string RIGHT_WRIST = "RightWrist";
         public const string CAMERA_LOCKED = "CameraLocked";
         
-        private readonly Vector3 leftWristPositionHealth = new Vector3(0.0009f, -0.0005f, -0.0005f);
-        private readonly Vector3 leftWristPositionStamina = new Vector3(0.0002f, 0.0003f, -0.0005f);
-        private readonly Vector3 rightWristPositionHealth = new Vector3(-0.0009f, 0.0005f, -0.0005f);
-        private readonly Vector3 rightWristPositionStamina = new Vector3(-0.0002f, 0.0003f, -0.0005f);
-        private readonly Vector3 leftWristRotation = new Vector3(0f, 0f, 100f);
-        private readonly Vector3 rightWristRotatation = new Vector3(0f, 0f, -100f);
         private const float FULL_ALPHA_ANGLE = 5f;
         private const float ZERO_ALPHA_ANGLE = 90f;
 
@@ -107,15 +101,20 @@ namespace ValheimVRMod.VRCore.UI
 
         private Camera hudCamera;
 
-        // Main Canvas - health panel always goes here. Stamina maybe goes here.
-        private Canvas hudCanvas;
-        private CanvasGroup hudCanvasGroup;
-        private GameObject hudCanvasParent;
+        // Camera Canvas
+        private Canvas cameraHudCanvas;
+        private CanvasGroup cameraHudCanvasGroup;
+        private GameObject cameraHudCanvasParent;
+        
+        // Left Wrist Canvas
+        private Canvas leftHudCanvas;
+        private CanvasGroup leftHudCanvasGroup;
+        private GameObject leftHudCanvasParent;
 
-        // Stamina goes here if user selects different HUD location for bar versus health
-        private Canvas altHudCanvas;
-        private CanvasGroup altHudCanvasGroup;
-        private GameObject altHudCanvasParent;
+        // Right Wrist Canvas
+        private Canvas rightHudCanvas;
+        private CanvasGroup rightHudCanvasGroup;
+        private GameObject rightHudCanvasParent;
 
         // References to all the relevant UI components
         private HealthPanelComponents healthPanelComponents;
@@ -162,28 +161,32 @@ namespace ValheimVRMod.VRCore.UI
             }
             updateStaminaPanelHudReferences(staminaPanelComponents);
             // Set the cloned panel as active only when attached to player
-            if (hudCanvasParent)
+            if (leftHudCanvasParent)
             {
-                hudCanvasParent.SetActive(VRPlayer.attachedToPlayer);
+                leftHudCanvasParent.SetActive(VRPlayer.attachedToPlayer);
             }
             updateHudPositionAndScale();
         }
 
         private void revertToLegacyHud()
         {
-            if (hudCanvasParent)
+            if (leftHudCanvasParent)
             {
-                hudCanvasParent.SetActive(false);
+                leftHudCanvasParent.SetActive(false);
                 GameObject.Destroy(healthPanelComponents.healthPanel);
                 GameObject.Destroy(staminaPanelComponents.staminaBarRoot);
-                hudCanvas = null;
-                hudCanvasGroup = null;
-                GameObject.Destroy(hudCanvasParent);
-                hudCanvasParent = null;
-                altHudCanvas = null;
-                altHudCanvasGroup = null;
-                GameObject.Destroy(altHudCanvasParent);
-                altHudCanvasParent = null;
+                cameraHudCanvas = null;
+                cameraHudCanvasGroup = null;
+                GameObject.Destroy(cameraHudCanvasParent);
+                cameraHudCanvasParent = null;
+                leftHudCanvas = null;
+                leftHudCanvasGroup = null;
+                GameObject.Destroy(leftHudCanvasParent);
+                leftHudCanvasParent = null;
+                rightHudCanvas = null;
+                rightHudCanvasGroup = null;
+                GameObject.Destroy(rightHudCanvasParent);
+                rightHudCanvasParent = null;
                 hudCamera = null;
                 healthPanelComponents.clear();
                 staminaPanelComponents.clear();
@@ -204,50 +207,51 @@ namespace ValheimVRMod.VRCore.UI
 
         private void updateHudPositionAndScale()
         {
-            if (hudCanvasParent == null || !VRPlayer.attachedToPlayer || hudCamera == null)
+            if (leftHudCanvasParent == null || !VRPlayer.attachedToPlayer || hudCamera == null)
             {
                 return;
             }
-            string healthPanelPosition = VHVRConfig.HealthPanelPlacement();
-            string staminaPanelPosition = VHVRConfig.StaminaPanelPlacement();
-            parentHudComponents(healthPanelPosition, staminaPanelPosition);
-            updateStaminaPanelLocalPosition(healthPanelPosition, staminaPanelPosition);
-            if (healthPanelPosition.Equals(CAMERA_LOCKED))
+            
+            placePanelToHud(VHVRConfig.HealthPanelPlacement(), healthPanelComponents.healthPanel.transform);
+            placePanelToHud(VHVRConfig.StaminaPanelPlacement(), staminaPanelComponents.staminaBarRoot.transform);
+
+            setCameraHudPosition();
+            
+            var vrik = VRPlayer.vrikRef;
+            
+            if (vrik == null)
             {
-                setCameraLockedPositioning(hudCanvasParent, hudCanvas, hudCanvasGroup, VHVRConfig.HealthPanelCameraX(), VHVRConfig.HealthPanelCameraY(), VHVRConfig.HealthPanelScale());
-            } else
-            {
-                Transform handBone = getHandParent(healthPanelPosition);
-                if (handBone != null) {
-                    setWristPosition(hudCanvasParent, hudCanvas, handBone, healthPanelPosition, leftWristPositionHealth, rightWristPositionHealth,
-                        VHVRConfig.HealthPanelPos(), VHVRConfig.HealthPanelRot(), VHVRConfig.HealthPanelScale());
-                    hudCanvasGroup.alpha = VHVRConfig.AllowHudFade() && ! SettingCallback.configRunning ? calculateHudCanvasAlpha(hudCanvasParent) : 1f;
-                } else
-                {
-                    LogError("handBone is null while setting health panel position. Falling back to camera locked.");
-                    setCameraLockedPositioning(hudCanvasParent, hudCanvas, hudCanvasGroup, VHVRConfig.HealthPanelCameraX(), VHVRConfig.HealthPanelCameraY(), VHVRConfig.HealthPanelScale());
-                }
+                LogError("handBone is null while setting vr hud panel positions");
+                return;
             }
-            if (!healthPanelPosition.Equals(staminaPanelPosition))
-            {
-                // Need to position the altHudCanvas since the stamina bar is separated from health bar
-                if (staminaPanelPosition.Equals(CAMERA_LOCKED))
-                {
-                    setCameraLockedPositioning(altHudCanvasParent, altHudCanvas, altHudCanvasGroup, VHVRConfig.StaminaPanelCameraX(), VHVRConfig.StaminaPanelCameraY(), VHVRConfig.StaminaPanelScale());
-                } else
-                {
-                    Transform handBone = getHandParent(staminaPanelPosition);
-                    if (handBone != null)
-                    {
-                        setWristPosition(altHudCanvasParent, altHudCanvas, handBone, staminaPanelPosition, leftWristPositionStamina, rightWristPositionStamina,
-                            VHVRConfig.StaminaPanelPos(), VHVRConfig.StaminaPanelRot(), VHVRConfig.StaminaPanelScale());
-                        altHudCanvasGroup.alpha = VHVRConfig.AllowHudFade() && ! SettingCallback.configRunning ? calculateHudCanvasAlpha(altHudCanvasParent) : 1f;
-                    } else
-                    {
-                        LogError("handBone is null while setting stamina panel position. Falling back to camera locked.");
-                        setCameraLockedPositioning(altHudCanvasParent, altHudCanvas, altHudCanvasGroup, VHVRConfig.StaminaPanelCameraX(), VHVRConfig.StaminaPanelCameraY(), VHVRConfig.StaminaPanelScale());
-                    }
-                }
+
+            setWristPosition(leftHudCanvasParent, leftHudCanvas, vrik.references.leftHand, VHVRConfig.LeftWristPos(), VHVRConfig.LeftWristRot());
+            leftHudCanvasGroup.alpha = VHVRConfig.AllowHudFade() && ! SettingCallback.configRunning ? calculateHudCanvasAlpha(leftHudCanvasParent) : 1f;
+
+            setWristPosition(rightHudCanvasParent, rightHudCanvas, vrik.references.rightHand, VHVRConfig.RightWristPos(), VHVRConfig.RightWristRot());
+            rightHudCanvasGroup.alpha = VHVRConfig.AllowHudFade() && ! SettingCallback.configRunning ? calculateHudCanvasAlpha(rightHudCanvasParent) : 1f;
+
+            // TODO @artum: Replace this function with horizontal and vertical layout ?
+            // aparently stamina is rotated 90 degree if its on same panel as health bar so we need to find a way to handle this with layout 
+            updateStaminaPanelLocalPosition(VHVRConfig.HealthPanelPlacement(), VHVRConfig.StaminaPanelPlacement());
+        }
+
+        private void placePanelToHud(string placement, Transform panelTransform)
+        {
+
+            switch (placement) {
+                
+                case LEFT_WRIST:
+                    panelTransform.SetParent(leftHudCanvas.GetComponent<RectTransform>(), false);
+                    break;
+                
+                case RIGHT_WRIST:
+                    panelTransform.SetParent(rightHudCanvas.GetComponent<RectTransform>(), false);
+                    break;
+                
+                case CAMERA_LOCKED:
+                    panelTransform.SetParent(cameraHudCanvas.GetComponent<RectTransform>(), false);
+                    break;
             }
         }
 
@@ -256,7 +260,7 @@ namespace ValheimVRMod.VRCore.UI
             if (healthPanelPosition.Equals(staminaPanelPosition))
             {
                 Vector3 healthPanelLocation = healthPanelComponents.healthPanel.GetComponent<RectTransform>().localPosition;
-                // Need to make sure stamina and healthbar and positioned on same canvas correctly
+                // Need to make sure stamina and healthbar are positioned on same canvas correctly
                 float healthPanelWidth = healthPanelComponents.healthPanel.GetComponent<RectTransform>().sizeDelta.x;
                 float staminaPanelWidth = staminaPanelComponents.staminaBarRoot.GetComponent<RectTransform>().sizeDelta.x;
                 float staminaPanelHeight = staminaPanelComponents.staminaBarRoot.GetComponent<RectTransform>().sizeDelta.y;
@@ -271,59 +275,29 @@ namespace ValheimVRMod.VRCore.UI
             }
         }
 
-        private void parentHudComponents(string healthPanelPosition, string staminaPanelPosition)
-        {
-            healthPanelComponents.healthPanel.transform.SetParent(hudCanvas.GetComponent<RectTransform>(), false);
-            if (healthPanelPosition.Equals(staminaPanelPosition))
-            {
-                staminaPanelComponents.staminaBarRoot.transform.SetParent(hudCanvas.GetComponent<RectTransform>(), false);
-            } else
-            {
-                staminaPanelComponents.staminaBarRoot.transform.SetParent(altHudCanvas.GetComponent<RectTransform>(), false);
-            }
-        }
-
-        private Transform getHandParent(string position)
-        {
-            var vrik = VRPlayer.vrikRef;
-            if (vrik == null)
-            {
-                return null;
-            }
-            return position == LEFT_WRIST ? vrik.references.leftHand : vrik.references.rightHand;
-        }
-
-        private void setCameraLockedPositioning(GameObject hCanvasParent, Canvas hCanvas, CanvasGroup group, float xOffset, float yOffset, float scalar)
-        {
-            float canvasWidth = hCanvas.GetComponent<RectTransform>().rect.width;
-            float scaleFactor = 0.1f / canvasWidth * scalar;
-            hCanvasParent.transform.SetParent(hudCamera.gameObject.transform, false);
-            hCanvasParent.transform.position = VRPlayer.instance.transform.position;
+        private void setCameraHudPosition() {
+            
+            float canvasWidth = cameraHudCanvas.GetComponent<RectTransform>().rect.width;
+            float scaleFactor = 0.1f / canvasWidth * VHVRConfig.CameraHudScale();
+            cameraHudCanvasParent.transform.SetParent(hudCamera.gameObject.transform, false);
+            cameraHudCanvasParent.transform.position = VRPlayer.instance.transform.position;
             float hudDistance = 1f;
             float hudVerticalOffset = -0.5f;
-            hCanvasParent.transform.localPosition = new Vector3(xOffset * 1000, hudVerticalOffset + yOffset * 1000, hudDistance);
-            hCanvas.GetComponent<RectTransform>().localScale = Vector3.one * scaleFactor * hudDistance;
-            hCanvasParent.transform.localRotation = Quaternion.Euler(Vector3.zero);
-            group.alpha = 1f;
+            cameraHudCanvasParent.transform.localPosition = new Vector3(VHVRConfig.CameraHudX() * 1000, hudVerticalOffset + VHVRConfig.CameraHudY() * 1000, hudDistance);
+            cameraHudCanvas.GetComponent<RectTransform>().localScale = Vector3.one * scaleFactor * hudDistance;
+            cameraHudCanvasParent.transform.localRotation = Quaternion.Euler(Vector3.zero);
+            cameraHudCanvasGroup.alpha = 1f;
+            
         }
 
-        private void setWristPosition(GameObject hCanvasParent, Canvas hCanvas, Transform hand, string panelPosition, Vector3 leftWristPosition, Vector3 rightWristPosition, Vector3 offset, Quaternion rot, float scale)
+        private void setWristPosition(GameObject hCanvasParent, Canvas hCanvas, Transform hand, Vector3 pos, Quaternion rot)
         {
-            var isLeftWrist = panelPosition == LEFT_WRIST;
-            var wristHudOffset = isLeftWrist ? leftWristPosition : rightWristPosition;
-            var wristHudRotation = isLeftWrist ? leftWristRotation : rightWristRotatation;
-
-            // var xSign = isLeftWrist ? 1 : -1;
-            // var ySign = isLeftWrist ? -1 : 1;
-            //
-            // offset = new Vector3(ySign * offset.y, xSign * offset.x, offset.z);
-
-            float canvasWidth = hCanvas.GetComponent<RectTransform>().rect.width;
-            hCanvasParent.transform.SetParent(hand, false);
             var hudCanvasRect = hCanvas.GetComponent<RectTransform>();
-            hudCanvasRect.localScale = Vector3.one * scale * 0.001f / canvasWidth;
-            hCanvasParent.transform.localPosition = wristHudOffset + offset; 
-            hCanvasParent.transform.localRotation = Quaternion.Euler(wristHudRotation + rot.eulerAngles);
+            hudCanvasRect.localScale = Vector3.one * 0.001f /  hudCanvasRect.rect.width;
+            
+            hCanvasParent.transform.SetParent(hand, false);
+            hCanvasParent.transform.localPosition = pos;
+            hCanvasParent.transform.localRotation = rot;
         }
 
         private float calculateHudCanvasAlpha(GameObject hCanvasParent)
@@ -426,7 +400,7 @@ namespace ValheimVRMod.VRCore.UI
             }
             cacheStaminaPanelComponents(Hud.instance.m_staminaBar2Root.gameObject, originalStaminaPanelComponents);
             GameObject staminaPanelClone = GameObject.Instantiate(Hud.instance.m_staminaBar2Root.gameObject);
-            staminaPanelClone.transform.SetParent(hudCanvas.GetComponent<RectTransform>(), false); // TODO: Move this maybe?
+            staminaPanelClone.transform.SetParent(leftHudCanvas.GetComponent<RectTransform>(), false); // TODO: Move this maybe?
             cacheStaminaPanelComponents(staminaPanelClone, staminaPanelComponents);
         }
 
@@ -527,49 +501,67 @@ namespace ValheimVRMod.VRCore.UI
 
         private bool ensureHudCanvas()
         {
-            if (hudCanvas != null && hudCanvasParent && altHudCanvas != null && altHudCanvasParent)
+            if (leftHudCanvas != null && leftHudCanvasParent && rightHudCanvas != null && rightHudCanvasParent)
             {
                 return true;
             }
-            if (!hudCanvasParent)
+            if (!cameraHudCanvasParent)
             {
-                hudCanvasParent = new GameObject("VRHudCanvasParent");
-                hudCanvasParent.layer = LayerUtils.getWorldspaceUiLayer();
-                GameObject.DontDestroyOnLoad(hudCanvasParent);
+                cameraHudCanvasParent = new GameObject("CameraHudCanvasParent");
+                cameraHudCanvasParent.layer = LayerUtils.getWorldspaceUiLayer();
+                GameObject.DontDestroyOnLoad(cameraHudCanvasParent);
             }
-            if (!altHudCanvasParent)
+            if (!leftHudCanvasParent)
             {
-                altHudCanvasParent = new GameObject("VRAltHudCanvasParent");
-                altHudCanvasParent.layer = LayerUtils.getWorldspaceUiLayer();
-                GameObject.DontDestroyOnLoad(altHudCanvasParent);
+                leftHudCanvasParent = new GameObject("LeftHudCanvasParent");
+                leftHudCanvasParent.layer = LayerUtils.getWorldspaceUiLayer();
+                GameObject.DontDestroyOnLoad(leftHudCanvasParent);
+            }
+            if (!rightHudCanvasParent)
+            {
+                rightHudCanvasParent = new GameObject("RightHudCanvasParent");
+                rightHudCanvasParent.layer = LayerUtils.getWorldspaceUiLayer();
+                GameObject.DontDestroyOnLoad(rightHudCanvasParent);
             }
             if (!ensureHudCamera())
             {
                 LogError("Error getting HUD Camera.");
                 return false;
             }
-            hudCanvas = hudCanvasParent.AddComponent<Canvas>();
-            hudCanvasGroup = hudCanvasParent.AddComponent<CanvasGroup>();
-            hudCanvasGroup.interactable = false;
-            hudCanvasGroup.blocksRaycasts = false;
-            hudCanvasGroup.alpha = 1f;
-            hudCanvas.renderMode = RenderMode.WorldSpace;
-            hudCanvas.transform.position = hudCanvasParent.transform.position;
-            hudCanvas.transform.rotation = hudCanvasParent.transform.rotation;
-            hudCanvas.transform.localPosition = Vector3.zero;
-            hudCanvas.transform.localRotation = Quaternion.identity;
-            hudCanvas.worldCamera = hudCamera;
-            altHudCanvas = altHudCanvasParent.AddComponent<Canvas>();
-            altHudCanvasGroup = altHudCanvasParent.AddComponent<CanvasGroup>();
-            altHudCanvasGroup.interactable = false;
-            altHudCanvasGroup.blocksRaycasts = false;
-            altHudCanvasGroup.alpha = 1f;
-            altHudCanvas.renderMode = RenderMode.WorldSpace;
-            altHudCanvas.transform.position = altHudCanvasParent.transform.position;
-            altHudCanvas.transform.rotation = altHudCanvasParent.transform.rotation;
-            altHudCanvas.transform.localPosition = Vector3.zero;
-            altHudCanvas.transform.localRotation = Quaternion.identity;
-            altHudCanvas.worldCamera = hudCamera;
+            cameraHudCanvas = cameraHudCanvasParent.AddComponent<Canvas>();
+            cameraHudCanvasGroup = cameraHudCanvasParent.AddComponent<CanvasGroup>();
+            cameraHudCanvasGroup.interactable = false;
+            cameraHudCanvasGroup.blocksRaycasts = false;
+            cameraHudCanvasGroup.alpha = 1f;
+            cameraHudCanvas.renderMode = RenderMode.WorldSpace;
+            cameraHudCanvas.transform.position = cameraHudCanvasParent.transform.position;
+            cameraHudCanvas.transform.rotation = cameraHudCanvasParent.transform.rotation;
+            cameraHudCanvas.transform.localPosition = Vector3.zero;
+            cameraHudCanvas.transform.localRotation = Quaternion.identity;
+            cameraHudCanvas.worldCamera = hudCamera;
+            
+            leftHudCanvas = leftHudCanvasParent.AddComponent<Canvas>();
+            leftHudCanvasGroup = leftHudCanvasParent.AddComponent<CanvasGroup>();
+            leftHudCanvasGroup.interactable = false;
+            leftHudCanvasGroup.blocksRaycasts = false;
+            leftHudCanvasGroup.alpha = 1f;
+            leftHudCanvas.renderMode = RenderMode.WorldSpace;
+            leftHudCanvas.transform.position = leftHudCanvasParent.transform.position;
+            leftHudCanvas.transform.rotation = leftHudCanvasParent.transform.rotation;
+            leftHudCanvas.transform.localPosition = Vector3.zero;
+            leftHudCanvas.transform.localRotation = Quaternion.identity;
+            leftHudCanvas.worldCamera = hudCamera;
+            rightHudCanvas = rightHudCanvasParent.AddComponent<Canvas>();
+            rightHudCanvasGroup = rightHudCanvasParent.AddComponent<CanvasGroup>();
+            rightHudCanvasGroup.interactable = false;
+            rightHudCanvasGroup.blocksRaycasts = false;
+            rightHudCanvasGroup.alpha = 1f;
+            rightHudCanvas.renderMode = RenderMode.WorldSpace;
+            rightHudCanvas.transform.position = rightHudCanvasParent.transform.position;
+            rightHudCanvas.transform.rotation = rightHudCanvasParent.transform.rotation;
+            rightHudCanvas.transform.localPosition = Vector3.zero;
+            rightHudCanvas.transform.localRotation = Quaternion.identity;
+            rightHudCanvas.worldCamera = hudCamera;
             return true;
         }
 

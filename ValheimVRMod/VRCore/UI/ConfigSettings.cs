@@ -201,9 +201,9 @@ namespace ValheimVRMod.VRCore.UI {
             tabButtons.GetComponent<TabHandler>().m_tabs.Add(tab);
 
             int posX = -85;
-            int posY = -20;
+            int posY = -30;
             
-            if (section.Value.Count > 11) {
+            if (section.Value.Count > 14) {
                 posX = -250;
             }
             
@@ -215,8 +215,8 @@ namespace ValheimVRMod.VRCore.UI {
                 }
                 
                 posY -= 30;
-                if (posY < -330) {
-                    posY = -20;
+                if (posY < -420) {
+                    posY = -30;
                     posX = 75;
                 }
             }

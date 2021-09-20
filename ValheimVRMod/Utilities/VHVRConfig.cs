@@ -51,18 +51,15 @@ namespace ValheimVRMod.Utilities
 
         // VR Hud Settings
         private static ConfigEntry<bool> useLegacyHud;
+        private static ConfigEntry<float> cameraHudX;
+        private static ConfigEntry<float> cameraHudY;
+        private static ConfigEntry<float> cameraHudScale;
+        private static ConfigEntry<Vector3> leftWristPos;
+        private static ConfigEntry<Quaternion> leftWristRot;
+        private static ConfigEntry<Vector3> rightWristPos;
+        private static ConfigEntry<Quaternion> rightWristRot;
         private static ConfigEntry<string> healthPanelPlacement;
-        private static ConfigEntry<float> healthPanelScale;
-        private static ConfigEntry<Vector3> healthPanelPos;
-        private static ConfigEntry<Quaternion> healthPanelRot;
-        private static ConfigEntry<float> healthPanelCameraX;
-        private static ConfigEntry<float> healthPanelCameraY;
         private static ConfigEntry<string> staminaPanelPlacement;
-        private static ConfigEntry<float> staminaPanelScale;
-        private static ConfigEntry<Vector3> staminaPanelPos;
-        private static ConfigEntry<Quaternion> staminaPanelRot;
-        private static ConfigEntry<float> staminaPanelCameraX;
-        private static ConfigEntry<float> staminaPanelCameraY;
         private static ConfigEntry<bool> allowHudFade;
         private static ConfigEntry<bool> hideHotbar;
 
@@ -302,65 +299,50 @@ namespace ValheimVRMod.Utilities
         private static void InitializeVrHudSettings()
         {
             useLegacyHud = config.Bind("VRHUD",
-                                        "UseLegacyHud",
-                                        false,
-                                        "Disables custom VR HUD features and moves HUD elements to main UI panel.");
+                                            "UseLegacyHud",
+                                            false,
+                                            "Disables custom VR HUD features and moves HUD elements to main UI panel.");
+            cameraHudX = config.Bind("VRHUD",
+                                            "CameraHudX",
+                                            0f,
+                                            new ConfigDescription("Offset to reposition VR health panel for Camera Position.",
+                                                new AcceptableValueRange<float>(-0.001f, 0.001f)));
+            cameraHudY = config.Bind("VRHUD",
+                                            "CameraHudY",
+                                            0f,
+                                            new ConfigDescription("Offset to reposition VR health panel for Camera Position.",
+                                                new AcceptableValueRange<float>(-0.001f, 0.001f)));
+            cameraHudScale = config.Bind("VRHUD",
+                                            "CameraHudScale",
+                                            1f,
+                                            new ConfigDescription("Scalar multiple to determine VR Camera Hud scale.",
+                                                new AcceptableValueRange<float>(.25f, 3f)));
+            leftWristPos = config.Bind("VRHUD",
+                                            "LeftWrist",
+                                            Vector3.zero,
+                                            "Position of VR Hud on Left Wrist.");
+            leftWristRot = config.Bind("VRHUD",
+                                            "LeftWristRot",
+                                            Quaternion.identity,
+                                            "Rotation for reposition VR Hud on Left Wrist.");
+            rightWristPos = config.Bind("VRHUD",
+                                            "RightWrist",
+                                            Vector3.zero,
+                                            "Position of VR Hud on Right Wrist.");
+            rightWristRot = config.Bind("VRHUD",
+                                            "RightWristRot",
+                                            Quaternion.identity,
+                                            "Rotation for reposition VR Hud on Right Wrist");
             healthPanelPlacement = config.Bind("VRHUD",
                                               "HealthPanelPlacement",
                                               "LeftWrist",
                                               new ConfigDescription("Where should the health panel be placed?",
                                               new AcceptableValueList<string>(new string[] { "LeftWrist", "RightWrist", "CameraLocked" })));
-            healthPanelScale = config.Bind("VRHUD",
-                                            "HealthPanelScale",
-                                            1f,
-                                            new ConfigDescription("Scalar multiple to determine VR health panel scale.",
-                                                new AcceptableValueRange<float>(.25f, 3f)));
-            healthPanelPos = config.Bind("VRHUD",
-                                            "HealthPanel",
-                                            Vector3.zero,
-                                            "Offset to reposition VR health panel.");
-            healthPanelRot = config.Bind("VRHUD",
-                                            "HealthPanelRot",
-                                            Quaternion.identity,
-                                                "Modify the angle of the wrist-based VR HUD panel.");
-            healthPanelCameraX = config.Bind("VRHUD",
-                                            "HealthPanelCameraX",
-                                            0f,
-                                            new ConfigDescription("Offset to reposition VR health panel for Camera Position.",
-                                                new AcceptableValueRange<float>(-0.001f, 0.001f)));
-            healthPanelCameraY = config.Bind("VRHUD",
-                                            "HealthPanelCameraY",
-                                            0f,
-                                            new ConfigDescription("Offset to reposition VR health panel for Camera Position.",
-                                                new AcceptableValueRange<float>(-0.001f, 0.001f)));
             staminaPanelPlacement = config.Bind("VRHUD",
                                             "StaminaPanelPlacement",
                                             "CameraLocked",
                                             new ConfigDescription("Where should the stamina panel be placed?",
                                                 new AcceptableValueList<string>(new string[] { "LeftWrist", "RightWrist", "CameraLocked" })));
-            staminaPanelScale = config.Bind("VRHUD",
-                                            "StaminaPanelScale",
-                                            1f,
-                                            new ConfigDescription("Scalar multiple to determine VR stamina panel scale. If health and stamina bar are in same location, this option is ignored.",
-                                                new AcceptableValueRange<float>(.25f, 3f)));
-            staminaPanelPos = config.Bind("VRHUD",
-                                            "StaminaPanel",
-                                            Vector3.zero,
-                                            "Offset to reposition VR stamina panel. If health and stamina bar are in same location, this option is ignored.");
-            staminaPanelRot = config.Bind("VRHUD",
-                                            "StaminaPanelRot",
-                                            Quaternion.identity,
-                                            "Modify the angle of the wrist-based VR stamina panel. If health and stamina bar are in same location, this option is ignored.");
-            staminaPanelCameraX = config.Bind("VRHUD",
-                                            "StaminaPanelCameraX",
-                                            0f,
-                                            new ConfigDescription("Offset to reposition VR stamina panel for Camera Position.",
-                                                new AcceptableValueRange<float>(-0.001f, 0.001f)));
-            staminaPanelCameraY = config.Bind("VRHUD",
-                                            "StaminaPanelCameraY",
-                                            0f,
-                                            new ConfigDescription("Offset to reposition VR stamina panel for Camera Position.",
-                                                new AcceptableValueRange<float>(-0.001f, 0.001f)));
             allowHudFade = config.Bind("VRHUD",
                                         "AllowHudFade",
                                         true,
@@ -882,65 +864,50 @@ namespace ValheimVRMod.Utilities
         {
             return useLegacyHud.Value;
         }
+        
+        public static float CameraHudX()
+        {
+            return cameraHudX.Value;
+        }
+        
+        public static float CameraHudY()
+        {
+            return cameraHudY.Value;
+        }
+        
+        public static float CameraHudScale()
+        {
+            return cameraHudScale.Value;
+        }
+
+        public static Vector3 LeftWristPos()
+        {
+            return leftWristPos.Value;
+        }
+
+        public static Quaternion LeftWristRot()
+        {
+            return leftWristRot.Value;
+        }
+
+        public static Vector3 RightWristPos()
+        {
+            return rightWristPos.Value;
+        }
+
+        public static Quaternion RightWristRot()
+        {
+            return rightWristRot.Value;
+        }
 
         public static string HealthPanelPlacement()
         {
             return healthPanelPlacement.Value;
         }
 
-        public static float HealthPanelScale()
-        {
-            return healthPanelScale.Value;
-        }
-
-        public static Vector3 HealthPanelPos()
-        {
-            return healthPanelPos.Value;
-        }
-
-        public static Quaternion HealthPanelRot()
-        {
-            return healthPanelRot.Value;
-        }
-        
-        public static float HealthPanelCameraX()
-        {
-            return healthPanelCameraX.Value;
-        }
-        
-        public static float HealthPanelCameraY()
-        {
-            return healthPanelCameraY.Value;
-        }
-        
         public static string StaminaPanelPlacement()
         {
             return staminaPanelPlacement.Value;
-        }
-        
-        public static float StaminaPanelScale()
-        {
-            return staminaPanelScale.Value;
-        }
-
-        public static Vector3 StaminaPanelPos()
-        {
-            return staminaPanelPos.Value;
-        }
-
-        public static Quaternion StaminaPanelRot()
-        {
-            return staminaPanelRot.Value;
-        }
-        
-        public static float StaminaPanelCameraX()
-        {
-            return staminaPanelCameraX.Value;
-        }
-        
-        public static float StaminaPanelCameraY()
-        {
-            return staminaPanelCameraY.Value;
         }
 
         public static bool AllowHudFade()
