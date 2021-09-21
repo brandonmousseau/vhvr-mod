@@ -108,6 +108,7 @@ namespace ValheimVRMod.VRCore.UI.HudElements
             cacheSmallMinimapPanelComponents(smallMinimapPanelClone, _clone);
 
             var cloneTransform = _clone.Root.GetComponent<RectTransform>();
+            _clone.Root.AddComponent<LayoutElement>();
             cloneTransform.localPosition = Vector3.zero;
             cloneTransform.localRotation = Quaternion.identity;
         }

@@ -180,7 +180,7 @@ namespace ValheimVRMod.VRCore.UI
             rightHudCanvasGroup.alpha = VHVRConfig.AllowHudFade() && ! SettingCallback.configRunning ? calculateHudCanvasAlpha(rightHudCanvasParent) : 1f;
         }
 
-        private void placePanelToHud(string placement, IVRHudElement panelElement, int siblingIndex)
+        private void placePanelToHud(string placement, IVRHudElement panelElement)
         {
             //TODO: Maybe do this on changes and not every frame
             switch (placement) {
@@ -201,7 +201,6 @@ namespace ValheimVRMod.VRCore.UI
                     if (panelElement.Clone.Root) panelElement.Reset();
                     break;
             }
-            panelElement.Clone?.Root?.transform.SetSiblingIndex(siblingIndex);
         }
 
         private void placeInHorizontalVerticalHud(Transform verticalHud, Transform horizontalHud, Transform panel, HudOrientation orientation)
@@ -331,38 +330,44 @@ namespace ValheimVRMod.VRCore.UI
             rightHudCanvas.transform.rotation = rightHudCanvasParent.transform.rotation;
             rightHudCanvas.transform.localPosition = Vector3.zero;
             rightHudCanvas.transform.localRotation = Quaternion.identity;
+            rightHudCanvas.worldCamera = hudCamera;
 
             //Setup layouts
-            rightHudHorizontalLayout = rightHudCanvasParent.AddComponent<HorizontalLayoutGroup>();
-            var rightHudCanvasVerticalLayout = new GameObject("VerticalLayout");
-            rightHudCanvasVerticalLayout.transform.SetParent(rightHudCanvas.transform, false);
-            rightHudCanvasVerticalLayout.transform.SetSiblingIndex(99); //Always first
-            rightHudVerticalLayout = rightHudCanvasVerticalLayout.AddComponent<VerticalLayoutGroup>();
-            setupLayoutGroup(rightHudVerticalLayout);
-            setupLayoutGroup(rightHudHorizontalLayout);
-            leftHudHorizontalLayout = leftHudCanvasParent.AddComponent<HorizontalLayoutGroup>();
-            var leftHudCanvasVerticalLayout = new GameObject("VerticalLayout");
-            leftHudCanvasVerticalLayout.transform.SetParent(leftHudCanvas.transform, false);
-            leftHudCanvasVerticalLayout.transform.SetSiblingIndex(-99); //Always last
-            leftHudVerticalLayout = leftHudCanvasVerticalLayout.AddComponent<VerticalLayoutGroup>();
-            setupLayoutGroup(leftHudVerticalLayout);
-            setupLayoutGroup(leftHudHorizontalLayout);
+            setupWristCanvas(ref rightHudHorizontalLayout, ref rightHudVerticalLayout, rightHudCanvasGroup.transform, false);
+            setupWristCanvas(ref leftHudHorizontalLayout, ref leftHudVerticalLayout, leftHudCanvasGroup.transform, true);
 
-
-            rightHudCanvas.worldCamera = hudCamera;
             return true;
+        }
+
+        private void setupWristCanvas(ref HorizontalLayoutGroup horizontalLayoutGroup, ref VerticalLayoutGroup verticalLayoutGroup, Transform hudCanvasGroup, bool isLeft)
+        {
+            var horizontalLayout = new GameObject("HorizontalLayout");
+            horizontalLayout.transform.SetParent(hudCanvasGroup.transform, false);
+            horizontalLayoutGroup = horizontalLayout.AddComponent<HorizontalLayoutGroup>();
+            var verticalLayout = new GameObject("VerticalLayout");
+            verticalLayout.transform.SetParent(horizontalLayout.transform, false);
+            //verticalLayout.transform.SetSiblingIndex(isLeft ? -99 : 99);
+            verticalLayoutGroup = verticalLayout.AddComponent<VerticalLayoutGroup>();
+            var verticalLayoutElement = verticalLayout.AddComponent<LayoutElement>();
+            verticalLayoutElement.flexibleWidth = 1f;
+            verticalLayoutElement.flexibleHeight = 1f;
+            setupLayoutGroup(verticalLayoutGroup);
+            setupLayoutGroup(horizontalLayoutGroup);
         }
 
         private void setupLayoutGroup(HorizontalOrVerticalLayoutGroup layoutGroup)
         {
-            layoutGroup.spacing = 4;
-            layoutGroup.childAlignment = TextAnchor.MiddleCenter;
+            layoutGroup.spacing = 1;
+            if(layoutGroup is VerticalLayoutGroup)
+                layoutGroup.childAlignment = TextAnchor.MiddleCenter;
             layoutGroup.childControlHeight = false;
             layoutGroup.childControlWidth = false;
             layoutGroup.childForceExpandHeight = false;
             layoutGroup.childForceExpandWidth = false;
             layoutGroup.childScaleHeight = false;
             layoutGroup.childScaleWidth = false;
+            layoutGroup.transform.localPosition = Vector3.zero;
+            layoutGroup.transform.localRotation = Quaternion.identity;
         }
 
         private bool ensureHudCamera()

@@ -144,6 +144,8 @@ namespace ValheimVRMod.VRCore.UI.HudElements
             //Declare sizes for the auto-layout
             var layoutElement = healthPanelClone.AddComponent<LayoutElement>();
             var panelTransform = healthPanelClone.GetComponent<RectTransform>();
+            panelTransform.localPosition = Vector3.zero;
+            panelTransform.localRotation = Quaternion.identity;
             layoutElement.preferredWidth = panelTransform.sizeDelta.x;
             layoutElement.minWidth = panelTransform.sizeDelta.x;
             layoutElement.preferredHeight = panelTransform.sizeDelta.y;
