@@ -160,8 +160,7 @@ namespace ValheimVRMod.VRCore.UI
                 return;
             }
 
-            int order = 0;
-            VRHudElements.ForEach(x => placePanelToHud(x.Placement, x, order++));
+            VRHudElements.ForEach(x => placePanelToHud(x.Placement, x));
 
             setCameraHudPosition();
             
