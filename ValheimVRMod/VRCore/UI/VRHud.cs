@@ -1,7 +1,8 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 using ValheimVRMod.Utilities;
-
+using ValheimVRMod.VRCore.UI.HudElements;
+using Valve.VR.InteractionSystem;
 using static ValheimVRMod.Utilities.LogUtils;
 
 /**
@@ -11,12 +12,13 @@ using static ValheimVRMod.Utilities.LogUtils;
 namespace ValheimVRMod.VRCore.UI
 {
 
-    class VRHud
+    public class VRHud
     {
         public const string LEFT_WRIST = "LeftWrist";
         public const string RIGHT_WRIST = "RightWrist";
         public const string CAMERA_LOCKED = "CameraLocked";
-        
+        public const string LEGACY = "Legacy";
+
         private const float FULL_ALPHA_ANGLE = 5f;
         private const float ZERO_ALPHA_ANGLE = 90f;
 
@@ -39,62 +41,30 @@ namespace ValheimVRMod.VRCore.UI
             }
         }
 
-        // Data class to encapsulate all the references needed to be maintained for Health panel
-        private class HealthPanelComponents
+        public enum HudOrientation
         {
-            // Root Component
-            public GameObject healthPanel; // RectTransform ROOT
-            public Animator healthPanelAnimator;
-            // HealthBar
-            public GameObject healthbarRoot; // RectTransform
-            public GameObject healthBarFast; // GuiBar
-            public GameObject healthBarSlow; // GuiBar
-            public GameObject healthText; // Text
-            // Food
-            public GameObject foodBarRoot; // RectTransform
-            public GameObject foodBaseBar; // RectTransform
-            public GameObject[] foodBars; // Image Array
-            public GameObject[] foodIcons; // Image Array
-            public GameObject[] foodTimes; // Image Array
-            public GameObject foodIcon; // Image
-            public GameObject foodText; // Text
-
-            public void clear()
-            {
-                healthPanel = null;
-                healthPanelAnimator = null;
-                healthbarRoot = null;
-                healthBarFast = null;
-                healthBarSlow = null;
-                healthText = null;
-                foodBarRoot = null;
-                foodBaseBar = null;
-                foodBars = null;
-                foodIcons = null;
-                foodIcon = null;
-                foodTimes = null;
-                foodText = null;
-            }
-
+            Horizontal,
+            Veritcal
         }
 
-        // Data class to store references to important stamina bar componentts
-        private class StaminaPanelComponents
+        public interface IVRPanelComponent
         {
-            public GameObject staminaBarRoot; // public RectTransform m_staminaBar2Root; "staminapanel" ROOT
-            public GameObject staminaBarFast; // public GuiBar m_staminaBar2Fast; "stamina_fast"
-            public GameObject staminaBarSlow; // public GuiBar m_staminaBar2Slow; "stamina_slow"
-            public GameObject staminaText; // public GuiBar m_staminaBar2Slow; "stamina_slow"
-            public Animator staminaAnimator; // public Animator m_staminaAnimator; component of staminaBarRoot
+            GameObject Root { get; }
+            void Clear();
+        }
 
-            public void clear()
-            {
-                staminaBarRoot = null;
-                staminaBarFast = null;
-                staminaBarSlow = null;
-                staminaText = null;
-                staminaAnimator = null;
-            }
+        /// <summary>
+        /// Interface for cloned UI Elements, offers parameters and methods to move UI Elements around
+        /// </summary>
+        public interface IVRHudElement
+        {
+            string Placement { get; }
+            HudOrientation Orientation { get; }
+            IVRPanelComponent Original { get; }
+            IVRPanelComponent Clone { get; }
+
+            void Update();
+            void Reset();
         }
 
         private static VRHud _instance = null;
@@ -109,25 +79,25 @@ namespace ValheimVRMod.VRCore.UI
         // Left Wrist Canvas
         private Canvas leftHudCanvas;
         private CanvasGroup leftHudCanvasGroup;
+        private VerticalLayoutGroup leftHudVerticalLayout;
+        private HorizontalLayoutGroup leftHudHorizontalLayout;
         private GameObject leftHudCanvasParent;
 
         // Right Wrist Canvas
         private Canvas rightHudCanvas;
         private CanvasGroup rightHudCanvasGroup;
+        private VerticalLayoutGroup rightHudVerticalLayout;
+        private HorizontalLayoutGroup rightHudHorizontalLayout;
         private GameObject rightHudCanvasParent;
 
         // References to all the relevant UI components
-        private HealthPanelComponents healthPanelComponents;
-        private HealthPanelComponents originalHealthPanelComponents;
-        private StaminaPanelComponents staminaPanelComponents;
-        private StaminaPanelComponents originalStaminaPanelComponents;
-
-        private VRHud() {
-            healthPanelComponents = new HealthPanelComponents();
-            originalHealthPanelComponents = new HealthPanelComponents();
-            staminaPanelComponents = new StaminaPanelComponents();
-            originalStaminaPanelComponents = new StaminaPanelComponents();
-        }
+        private IVRHudElement[] VRHudElements = new IVRHudElement[]
+        {
+            //This also gives the order of precedence
+            new HealthPanelElement(), //Vertical START
+            new StaminaPanelElement(), //Horizontal START
+            new MinimapPanelElement()
+        };
 
         public void Update()
         {
@@ -148,18 +118,11 @@ namespace ValheimVRMod.VRCore.UI
                 LogError("Problem getting HUD camera.");
                 return;
             }
-            maybeCloneHealthPanelComponents();
-            if (originalHealthPanelComponents.healthPanel)
+            foreach (var hudElement in VRHudElements)
             {
-                originalHealthPanelComponents.healthPanel.SetActive(false);
+                //Only update elements that aren't on the legacy hud
+                if(hudElement.Placement != LEGACY) hudElement.Update();
             }
-            updateHealthPanelHudReferences(healthPanelComponents);
-            maybeCloneStaminaPanelComponents();
-            if (originalStaminaPanelComponents.staminaBarRoot)
-            {
-                originalStaminaPanelComponents.staminaBarRoot.SetActive(false);
-            }
-            updateStaminaPanelHudReferences(staminaPanelComponents);
             // Set the cloned panel as active only when attached to player
             if (leftHudCanvasParent)
             {
@@ -170,11 +133,10 @@ namespace ValheimVRMod.VRCore.UI
 
         private void revertToLegacyHud()
         {
+            VRHudElements.ForEach(x => x.Reset());
             if (leftHudCanvasParent)
             {
                 leftHudCanvasParent.SetActive(false);
-                GameObject.Destroy(healthPanelComponents.healthPanel);
-                GameObject.Destroy(staminaPanelComponents.staminaBarRoot);
                 cameraHudCanvas = null;
                 cameraHudCanvasGroup = null;
                 GameObject.Destroy(cameraHudCanvasParent);
@@ -188,20 +150,6 @@ namespace ValheimVRMod.VRCore.UI
                 GameObject.Destroy(rightHudCanvasParent);
                 rightHudCanvasParent = null;
                 hudCamera = null;
-                healthPanelComponents.clear();
-                staminaPanelComponents.clear();
-            }
-            if (originalHealthPanelComponents.healthPanel && !originalHealthPanelComponents.healthPanel.activeSelf)
-            {
-                originalHealthPanelComponents.healthPanel.SetActive(true);
-                updateHealthPanelHudReferences(originalHealthPanelComponents);
-                originalHealthPanelComponents.clear();
-            }
-            if (originalStaminaPanelComponents.staminaBarRoot && !originalStaminaPanelComponents.staminaBarRoot.activeSelf)
-            {
-                originalStaminaPanelComponents.staminaBarRoot.SetActive(true);
-                updateStaminaPanelHudReferences(originalStaminaPanelComponents);
-                originalStaminaPanelComponents.clear();
             }
         }
 
@@ -211,9 +159,9 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return;
             }
-            
-            placePanelToHud(VHVRConfig.HealthPanelPlacement(), healthPanelComponents.healthPanel.transform);
-            placePanelToHud(VHVRConfig.StaminaPanelPlacement(), staminaPanelComponents.staminaBarRoot.transform);
+
+            int order = 0;
+            VRHudElements.ForEach(x => placePanelToHud(x.Placement, x, order++));
 
             setCameraHudPosition();
             
@@ -230,50 +178,56 @@ namespace ValheimVRMod.VRCore.UI
 
             setWristPosition(rightHudCanvasParent, rightHudCanvas, vrik.references.rightHand, VHVRConfig.RightWristPos(), VHVRConfig.RightWristRot());
             rightHudCanvasGroup.alpha = VHVRConfig.AllowHudFade() && ! SettingCallback.configRunning ? calculateHudCanvasAlpha(rightHudCanvasParent) : 1f;
-
-            // TODO @artum: Replace this function with horizontal and vertical layout ?
-            // aparently stamina is rotated 90 degree if its on same panel as health bar so we need to find a way to handle this with layout 
-            updateStaminaPanelLocalPosition(VHVRConfig.HealthPanelPlacement(), VHVRConfig.StaminaPanelPlacement());
         }
 
-        private void placePanelToHud(string placement, Transform panelTransform)
+        private void placePanelToHud(string placement, IVRHudElement panelElement, int siblingIndex)
         {
-
+            //TODO: Maybe do this on changes and not every frame
             switch (placement) {
                 
                 case LEFT_WRIST:
-                    panelTransform.SetParent(leftHudCanvas.GetComponent<RectTransform>(), false);
+                    placeInHorizontalVerticalHud(leftHudVerticalLayout.transform, leftHudHorizontalLayout.transform, panelElement.Clone.Root.transform, panelElement.Orientation);
                     break;
                 
                 case RIGHT_WRIST:
-                    panelTransform.SetParent(rightHudCanvas.GetComponent<RectTransform>(), false);
+                    placeInHorizontalVerticalHud(rightHudVerticalLayout.transform, rightHudHorizontalLayout.transform, panelElement.Clone.Root.transform, panelElement.Orientation);
                     break;
                 
                 case CAMERA_LOCKED:
-                    panelTransform.SetParent(cameraHudCanvas.GetComponent<RectTransform>(), false);
+                    panelElement.Clone.Root.transform.SetParent(cameraHudCanvas.GetComponent<RectTransform>(), false);
+                    break;
+
+                case LEGACY:
+                    if (panelElement.Clone.Root) panelElement.Reset();
                     break;
             }
+            panelElement.Clone?.Root?.transform.SetSiblingIndex(siblingIndex);
         }
 
-        private void updateStaminaPanelLocalPosition(string healthPanelPosition, string staminaPanelPosition)
+        private void placeInHorizontalVerticalHud(Transform verticalHud, Transform horizontalHud, Transform panel, HudOrientation orientation)
         {
-            if (healthPanelPosition.Equals(staminaPanelPosition))
-            {
-                Vector3 healthPanelLocation = healthPanelComponents.healthPanel.GetComponent<RectTransform>().localPosition;
-                // Need to make sure stamina and healthbar are positioned on same canvas correctly
-                float healthPanelWidth = healthPanelComponents.healthPanel.GetComponent<RectTransform>().sizeDelta.x;
-                float staminaPanelWidth = staminaPanelComponents.staminaBarRoot.GetComponent<RectTransform>().sizeDelta.x;
-                float staminaPanelHeight = staminaPanelComponents.staminaBarRoot.GetComponent<RectTransform>().sizeDelta.y;
-                staminaPanelComponents.staminaBarRoot.GetComponent<RectTransform>().localRotation = Quaternion.Euler(0f, 0f, 90f);
-                staminaPanelComponents.staminaBarRoot.GetComponent<RectTransform>().localPosition =
-                    new Vector3(healthPanelLocation.x + 0.5f * healthPanelWidth + 0.5f * staminaPanelHeight, healthPanelLocation.y + 0.5f * staminaPanelWidth, healthPanelLocation.z);
-            }
-            else
-            {
-                staminaPanelComponents.staminaBarRoot.GetComponent<RectTransform>().localRotation = Quaternion.identity;
-                staminaPanelComponents.staminaBarRoot.GetComponent<RectTransform>().localPosition = Vector3.zero;
-            }
+            panel.SetParent(orientation == HudOrientation.Horizontal ? verticalHud : horizontalHud, false);
         }
+
+        //private void updateStaminaPanelLocalPosition(string healthPanelPosition, string staminaPanelPosition)
+        //{
+        //    if (healthPanelPosition.Equals(staminaPanelPosition))
+        //    {
+        //        Vector3 healthPanelLocation = healthPanelComponents.healthPanel.GetComponent<RectTransform>().localPosition;
+        //        // Need to make sure stamina and healthbar are positioned on same canvas correctly
+        //        float healthPanelWidth = healthPanelComponents.healthPanel.GetComponent<RectTransform>().sizeDelta.x;
+        //        float staminaPanelWidth = staminaPanelComponents.staminaBarRoot.GetComponent<RectTransform>().sizeDelta.x;
+        //        float staminaPanelHeight = staminaPanelComponents.staminaBarRoot.GetComponent<RectTransform>().sizeDelta.y;
+        //        staminaPanelComponents.staminaBarRoot.GetComponent<RectTransform>().localRotation = Quaternion.Euler(0f, 0f, 90f);
+        //        staminaPanelComponents.staminaBarRoot.GetComponent<RectTransform>().localPosition =
+        //            new Vector3(healthPanelLocation.x + 0.5f * healthPanelWidth + 0.5f * staminaPanelHeight, healthPanelLocation.y + 0.5f * staminaPanelWidth, healthPanelLocation.z);
+        //    }
+        //    else
+        //    {
+        //        staminaPanelComponents.staminaBarRoot.GetComponent<RectTransform>().localRotation = Quaternion.identity;
+        //        staminaPanelComponents.staminaBarRoot.GetComponent<RectTransform>().localPosition = Vector3.zero;
+        //    }
+        //}
 
         private void setCameraHudPosition() {
             
@@ -313,190 +267,6 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return 0f;
             }
-        }
-
-        /**
-         Health Panel Hierarchy:
-         healthpanel(Clone) (UnityEngine.RectTransform;UnityEngine.Animator;)
-            |darken (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
-            |Health (UnityEngine.RectTransform;)
-            |   |border (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
-            |   |bkg (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
-            |   |slow (UnityEngine.RectTransform;GuiBar;)
-            |   |   |bar (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
-            |   |fast (UnityEngine.RectTransform;GuiBar;)
-            |   |   |bar (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
-            |   |   |   |HealthText (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Text;UnityEngine.UI.Outline;)
-            |healthicon (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
-            |Food (UnityEngine.RectTransform;)
-            |   |border (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
-            |   |bar1 (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
-            |   |bar2 (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
-            |   |bar3 (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
-            |   |baseBar (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
-            |   |overlay (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
-            |FoodText (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Text;UnityEngine.UI.Outline;)
-            |foodicon (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
-            |foodicon (1) (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
-            |food2 (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
-            |   |foodicon2 (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
-            |   |time (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Text;UnityEngine.UI.Outline;)
-            |food1 (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
-            |   |foodicon1 (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
-            |   |time (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Text;UnityEngine.UI.Outline;)
-            |food0 (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
-            |   |foodicon0 (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
-            |   |time (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Text;UnityEngine.UI.Outline;)
-         */
-        private void maybeCloneHealthPanelComponents()
-        {
-            if (healthPanelComponents.healthPanel)
-            {
-                // Already cloned
-                return;
-            }
-            if (Hud.instance == null)
-            {
-                return;
-            }
-            if (Hud.instance.m_healthPanel == null)
-            {
-                // Early exit since health panel doesn't exist yet
-                return;
-            }
-            cacheHealthPanelComponents(Hud.instance.m_healthPanel.gameObject, originalHealthPanelComponents);
-            GameObject healthPanelClone = GameObject.Instantiate(Hud.instance.m_healthPanel.gameObject);
-            cacheHealthPanelComponents(healthPanelClone, healthPanelComponents);
-        }
-
-
-        /**
-         * Stamina Panel Hierarchy:
-            staminapanel (UnityEngine.RectTransform;UnityEngine.Animator;)
-               |Stamina (UnityEngine.RectTransform;)
-               |   |darken (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
-               |   |border (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
-               |   |bkg (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
-               |   |stamina_slow (UnityEngine.RectTransform;GuiBar;)
-               |   |   |bar (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
-               |   |stamina_fast (UnityEngine.RectTransform;GuiBar;)
-               |   |   |bar (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
-               |   |StaminaText (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Text;UnityEngine.UI.Outline;)
-         */
-        private void maybeCloneStaminaPanelComponents()
-        {
-            if (staminaPanelComponents.staminaBarRoot)
-            {
-                // Already cloned
-                return;
-            }
-            if (Hud.instance == null)
-            {
-                return;
-            }
-            if (Hud.instance.m_staminaBar2Root == null)
-            {
-                return;
-            }
-            cacheStaminaPanelComponents(Hud.instance.m_staminaBar2Root.gameObject, originalStaminaPanelComponents);
-            GameObject staminaPanelClone = GameObject.Instantiate(Hud.instance.m_staminaBar2Root.gameObject);
-            staminaPanelClone.transform.SetParent(leftHudCanvas.GetComponent<RectTransform>(), false); // TODO: Move this maybe?
-            cacheStaminaPanelComponents(staminaPanelClone, staminaPanelComponents);
-        }
-
-        // Cache references to all the important game objects in the health panel
-        private void cacheHealthPanelComponents(GameObject root, HealthPanelComponents cache)
-        {
-            cache.healthPanel = root;
-            cache.healthPanelAnimator = root.GetComponent<Animator>();
-            // HealthBar
-            cache.healthbarRoot = cache.healthPanel.transform.Find("Health").gameObject;
-            cache.healthBarFast = cache.healthbarRoot.transform.Find("fast").gameObject;
-            cache.healthBarSlow = cache.healthbarRoot.transform.Find("slow").gameObject;
-            cache.healthText = cache.healthBarFast.transform.Find("bar").Find("HealthText").gameObject;
-            // Food
-            cache.foodBarRoot = cache.healthPanel.transform.Find("Food").gameObject;
-            cache.foodBaseBar = cache.foodBarRoot.transform.Find("baseBar").gameObject;
-            int foodBarsLength = Hud.instance.m_foodBars.Length;
-            cache.foodBars = new GameObject[foodBarsLength];
-            for (int i = 0; i < foodBarsLength; i++)
-            {
-                string foodBarName = "bar" + (i + 1); // bar1...barN+1
-                cache.foodBars[i] = cache.foodBarRoot.transform.Find(foodBarName).gameObject;
-            }
-            int foodIconLength = Hud.instance.m_foodIcons.Length;
-            cache.foodIcons = new GameObject[foodIconLength];
-            cache.foodTimes = new GameObject[foodIconLength];
-            for (int i = 0; i < foodIconLength; i++)
-            {
-                string foodName = "food" + i; // // food0..foodN
-                string foodIconName = "foodicon" + i; // foodicon0..foodiconN
-                cache.foodIcons[i] = cache.healthPanel.transform.Find(foodName).Find(foodIconName).gameObject;
-                cache.foodTimes[i] = cache.healthPanel.transform.Find(foodName).Find("time").gameObject;
-            }
-            cache.foodIcon = cache.healthPanel.transform.Find("foodicon").gameObject;
-            cache.foodText = cache.healthPanel.transform.Find("FoodText").gameObject;
-        }
-
-        private void cacheStaminaPanelComponents(GameObject root, StaminaPanelComponents cache)
-        {
-            if (!root)
-            {
-                LogError("Invalid root object while caching StaminaPanel");
-            }
-            cache.staminaBarRoot = root;
-            cache.staminaBarSlow = root.transform.Find("Stamina").Find("stamina_slow").gameObject;
-            cache.staminaBarFast = root.transform.Find("Stamina").Find("stamina_fast").gameObject;
-            cache.staminaText = root.transform.Find("Stamina").Find("StaminaText").gameObject;
-            cache.staminaAnimator = root.GetComponent<Animator>();
-        }
-
-        private void updateHealthPanelHudReferences(HealthPanelComponents newComponents)
-        {
-            if (newComponents == null || !newComponents.healthPanel || Hud.instance == null || Hud.instance.m_healthPanel.gameObject == newComponents.healthPanel)
-            {
-                return;
-            }
-            // HealthBar
-            Hud.instance.m_healthPanel = newComponents.healthPanel.GetComponent<RectTransform>();
-            Hud.instance.m_healthAnimator = newComponents.healthPanelAnimator;
-            Hud.instance.m_healthBarRoot = newComponents.healthbarRoot.GetComponent<RectTransform>();
-            Hud.instance.m_healthAnimator = newComponents.healthPanel.GetComponent<Animator>();
-            Hud.instance.m_healthBarFast = newComponents.healthBarFast.GetComponent<GuiBar>();
-            Hud.instance.m_healthBarSlow = newComponents.healthBarSlow.GetComponent<GuiBar>();
-            Hud.instance.m_healthText = newComponents.healthText.GetComponent<Text>();
-            // Food
-            Hud.instance.m_foodBarRoot = newComponents.foodBarRoot.GetComponent<RectTransform>();
-            Hud.instance.m_foodBaseBar = newComponents.foodBaseBar.GetComponent<RectTransform>();
-            Hud.instance.m_foodIcon = newComponents.foodIcon.GetComponent<Image>();
-            Hud.instance.m_foodText = newComponents.foodText.GetComponent<Text>();
-            Image[] foodBarImages = new Image[newComponents.foodBars.Length];
-            for (int i = 0; i < foodBarImages.Length; i++)
-            {
-                foodBarImages[i] = newComponents.foodBars[i].GetComponent<Image>();
-            }
-            Hud.instance.m_foodBars = foodBarImages;
-            Image[] foodIconImages = new Image[newComponents.foodIcons.Length];
-            for (int i = 0; i < foodIconImages.Length; i++)
-            {
-                foodIconImages[i] = newComponents.foodIcons[i].GetComponent<Image>();
-            }
-            Hud.instance.m_foodIcons = foodIconImages;
-            Text[] foodTimes = new Text[newComponents.foodTimes.Length];
-            for (int i = 0; i < foodTimes.Length; i++)
-            {
-                foodTimes[i] = newComponents.foodTimes[i].GetComponent<Text>();
-            }
-            Hud.instance.m_foodTime = foodTimes;
-        }
-
-        private void updateStaminaPanelHudReferences(StaminaPanelComponents newComponents)
-        {
-            Hud.instance.m_staminaBar2Root = newComponents.staminaBarRoot.GetComponent<RectTransform>();
-            Hud.instance.m_staminaAnimator = newComponents.staminaAnimator;
-            Hud.instance.m_staminaBar2Fast = newComponents.staminaBarFast.GetComponent<GuiBar>();
-            Hud.instance.m_staminaBar2Slow = newComponents.staminaBarSlow.GetComponent<GuiBar>();
-            Hud.instance.m_staminaText = newComponents.staminaText.GetComponent<Text>();
         }
 
         private bool ensureHudCanvas()
@@ -561,8 +331,38 @@ namespace ValheimVRMod.VRCore.UI
             rightHudCanvas.transform.rotation = rightHudCanvasParent.transform.rotation;
             rightHudCanvas.transform.localPosition = Vector3.zero;
             rightHudCanvas.transform.localRotation = Quaternion.identity;
+
+            //Setup layouts
+            rightHudHorizontalLayout = rightHudCanvasParent.AddComponent<HorizontalLayoutGroup>();
+            var rightHudCanvasVerticalLayout = new GameObject("VerticalLayout");
+            rightHudCanvasVerticalLayout.transform.SetParent(rightHudCanvas.transform, false);
+            rightHudCanvasVerticalLayout.transform.SetSiblingIndex(99); //Always first
+            rightHudVerticalLayout = rightHudCanvasVerticalLayout.AddComponent<VerticalLayoutGroup>();
+            setupLayoutGroup(rightHudVerticalLayout);
+            setupLayoutGroup(rightHudHorizontalLayout);
+            leftHudHorizontalLayout = leftHudCanvasParent.AddComponent<HorizontalLayoutGroup>();
+            var leftHudCanvasVerticalLayout = new GameObject("VerticalLayout");
+            leftHudCanvasVerticalLayout.transform.SetParent(leftHudCanvas.transform, false);
+            leftHudCanvasVerticalLayout.transform.SetSiblingIndex(-99); //Always last
+            leftHudVerticalLayout = leftHudCanvasVerticalLayout.AddComponent<VerticalLayoutGroup>();
+            setupLayoutGroup(leftHudVerticalLayout);
+            setupLayoutGroup(leftHudHorizontalLayout);
+
+
             rightHudCanvas.worldCamera = hudCamera;
             return true;
+        }
+
+        private void setupLayoutGroup(HorizontalOrVerticalLayoutGroup layoutGroup)
+        {
+            layoutGroup.spacing = 4;
+            layoutGroup.childAlignment = TextAnchor.MiddleCenter;
+            layoutGroup.childControlHeight = false;
+            layoutGroup.childControlWidth = false;
+            layoutGroup.childForceExpandHeight = false;
+            layoutGroup.childForceExpandWidth = false;
+            layoutGroup.childScaleHeight = false;
+            layoutGroup.childScaleWidth = false;
         }
 
         private bool ensureHudCamera()

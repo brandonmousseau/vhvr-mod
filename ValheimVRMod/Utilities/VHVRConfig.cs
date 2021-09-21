@@ -60,6 +60,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<Quaternion> rightWristRot;
         private static ConfigEntry<string> healthPanelPlacement;
         private static ConfigEntry<string> staminaPanelPlacement;
+        private static ConfigEntry<string> minimapPanelPlacement;
         private static ConfigEntry<bool> allowHudFade;
         private static ConfigEntry<bool> hideHotbar;
 
@@ -105,6 +106,9 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> DebugRotZ;
         private static ConfigEntry<float> DebugScale;
 #endif
+
+        // Common values
+        private static readonly string[] k_HudAlignmentValues = { "LeftWrist", "RightWrist", "CameraLocked", "Legacy" };
 
         public static void InitializeConfiguration(ConfigFile mConfig) {
             
@@ -337,12 +341,17 @@ namespace ValheimVRMod.Utilities
                                               "HealthPanelPlacement",
                                               "LeftWrist",
                                               new ConfigDescription("Where should the health panel be placed?",
-                                              new AcceptableValueList<string>(new string[] { "LeftWrist", "RightWrist", "CameraLocked" })));
+                                              new AcceptableValueList<string>(k_HudAlignmentValues)));
             staminaPanelPlacement = config.Bind("VRHUD",
                                             "StaminaPanelPlacement",
                                             "CameraLocked",
                                             new ConfigDescription("Where should the stamina panel be placed?",
-                                                new AcceptableValueList<string>(new string[] { "LeftWrist", "RightWrist", "CameraLocked" })));
+                                                new AcceptableValueList<string>(k_HudAlignmentValues)));
+            minimapPanelPlacement = config.Bind("VRHUD",
+                                            "MinimapPanelPlacement",
+                                            "RightWrist",
+                                            new ConfigDescription("Where should the minimap panel be placed?",
+                                                new AcceptableValueList<string>(k_HudAlignmentValues)));
             allowHudFade = config.Bind("VRHUD",
                                         "AllowHudFade",
                                         true,
@@ -908,6 +917,11 @@ namespace ValheimVRMod.Utilities
         public static string StaminaPanelPlacement()
         {
             return staminaPanelPlacement.Value;
+        }
+
+        public static string MinimapPanelPlacement()
+        {
+            return minimapPanelPlacement.Value;
         }
 
         public static bool AllowHudFade()

@@ -367,6 +367,9 @@
     <Compile Include="VRCore\UI\CrosshairManager.cs" />
     <Compile Include="VRCore\UI\EnemyHudManager.cs" />
     <Compile Include="VRCore\UI\ConfigSettings.cs" />
+    <Compile Include="VRCore\UI\HudElements\MinimapPanelElement.cs" />
+    <Compile Include="VRCore\UI\HudElements\StaminaPanelElement.cs" />
+    <Compile Include="VRCore\UI\HudElements\HealthPanelElement.cs" />
     <Compile Include="VRCore\UI\PlaceModeRayVectorProvider.cs" />
     <Compile Include="VRCore\UI\RepairModePositionIndicator.cs" />
     <Compile Include="VRCore\UI\SliderSelector.cs" />
