@@ -206,20 +206,35 @@
             {
                "inputs" : {
                   "click" : {
-                     "output" : "/actions/laserpointers/in/rightclick"
-                  }
-               },
-               "mode" : "trackpad",
-               "path" : "/user/hand/right/input/trackpad"
-            },
-            {
-               "inputs" : {
-                  "click" : {
                      "output" : "/actions/laserpointers/in/clickmodifier"
                   }
                },
                "mode" : "button",
                "path" : "/user/hand/left/input/trigger"
+            },
+            {
+               "inputs" : {
+                  "north" : {
+                     "output" : "/actions/laserpointers/in/jump"
+                  },
+                  "south" : {
+                     "output" : "/actions/laserpointers/in/rightclick"
+                  }
+               },
+               "mode" : "dpad",
+               "parameters" : {
+                  "sub_mode" : "click"
+               },
+               "path" : "/user/hand/right/input/trackpad"
+            },
+            {
+               "inputs" : {
+                  "position" : {
+                     "output" : "/actions/laserpointers/in/pitchandyaw"
+                  }
+               },
+               "mode" : "trackpad",
+               "path" : "/user/hand/right/input/trackpad"
             }
          ]
       },
@@ -231,32 +246,20 @@
          "sources" : []
       },
       "/actions/valheim" : {
-         "chords": [
+         "chords" : [
             {
-               "output": "/actions/valheim/in/togglemenu",
-               "inputs": [
-                  [
-                     "/user/hand/right/input/application_menu",
-                     "click"
-                  ],
-                  [
-                     "/user/hand/right/input/grip",
-                     "click"
-                  ]
-               ]
+               "inputs" : [
+                  [ "/user/hand/right/input/application_menu", "click" ],
+                  [ "/user/hand/right/input/grip", "click" ]
+               ],
+               "output" : "/actions/valheim/in/togglemenu"
             },
             {
-               "output": "/actions/valheim/in/togglemap",
-               "inputs": [
-                  [
-                     "/user/hand/left/input/grip",
-                     "click"
-                  ],
-                  [
-                     "/user/hand/left/input/application_menu",
-                     "click"
-                  ]
-               ]
+               "inputs" : [
+                  [ "/user/hand/left/input/grip", "click" ],
+                  [ "/user/hand/left/input/application_menu", "click" ]
+               ],
+               "output" : "/actions/valheim/in/togglemap"
             }
          ],
          "haptics" : [
