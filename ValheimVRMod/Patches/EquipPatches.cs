@@ -28,8 +28,15 @@ namespace ValheimVRMod.Patches {
             var vrPlayerSync = player.GetComponent<VRPlayerSync>();
             
             if (vrPlayerSync != null) {
-                player.GetComponent<VRPlayerSync>().currentRightWeapon = meshFilter.gameObject;
-                player.GetComponent<VRPlayerSync>().currentRightWeapon.name = ___m_rightItem;
+                if (VHVRConfig.LeftHanded()) {
+                    player.GetComponent<VRPlayerSync>().currentLeftWeapon = meshFilter.gameObject;
+                    player.GetComponent<VRPlayerSync>().currentLeftWeapon.name = ___m_rightItem;    
+                }
+                else {
+                    player.GetComponent<VRPlayerSync>().currentRightWeapon = meshFilter.gameObject;
+                    player.GetComponent<VRPlayerSync>().currentRightWeapon.name = ___m_rightItem;
+                }
+                
                 VrikCreator.resetVrikHandTransform(player);   
             }
 
@@ -81,7 +88,13 @@ namespace ValheimVRMod.Patches {
             var vrPlayerSync = player.GetComponent<VRPlayerSync>();
 
             if (vrPlayerSync != null) {
-                player.GetComponent<VRPlayerSync>().currentLeftWeapon = meshFilter.gameObject;
+                if (VHVRConfig.LeftHanded()) {
+                    player.GetComponent<VRPlayerSync>().currentRightWeapon = meshFilter.gameObject;    
+                }
+                else {
+                    player.GetComponent<VRPlayerSync>().currentLeftWeapon = meshFilter.gameObject;
+                }
+                
                 VrikCreator.resetVrikHandTransform(player);
             }
 
@@ -143,6 +156,39 @@ namespace ValheimVRMod.Patches {
             }
             
             MeshHider.hide(___m_beardItemInstance);
+        }
+    }    
+    
+    [HarmonyPatch(typeof(VisEquipment), "AttachItem")]
+    class PatchAttachItem {
+        static void Prefix(VisEquipment __instance, ref Transform joint) {
+
+            if (joint.GetComponentInParent<Player>() != Player.m_localPlayer
+                || !VHVRConfig.UseVrControls() 
+                || !VHVRConfig.LeftHanded()) {
+                return;
+            }
+
+            if (joint == __instance.m_rightHand) {
+                joint = __instance.m_leftHand;
+            }
+            else if (joint == __instance.m_leftHand) {
+                joint = __instance.m_rightHand;
+            }
+        }
+
+        static void Postfix(GameObject __result) {
+            
+            if (Player.m_localPlayer == null 
+                ||__result.GetComponentInParent<Player>() != Player.m_localPlayer
+                || !VHVRConfig.UseVrControls() 
+                || !VHVRConfig.LeftHanded()
+                || EquipScript.getLeft() != EquipType.Shield) {
+                return;
+            }
+            
+            __result.transform.localScale = new Vector3 (__result.transform.localScale.x, __result.transform.localScale.y * -1 , __result.transform.localScale.z);
+
         }
     }
 

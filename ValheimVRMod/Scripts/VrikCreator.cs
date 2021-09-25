@@ -1,5 +1,6 @@
 ﻿using RootMotion.FinalIK;
 using UnityEngine;
+using ValheimVRMod.Utilities;
 
 namespace ValheimVRMod.Scripts {
     public class VrikCreator {
@@ -18,6 +19,9 @@ namespace ValheimVRMod.Scripts {
         private static readonly Quaternion rightEquippedRotation = Quaternion.Euler(0, -90, -170);
         private static readonly Vector3 rightEquippedEllbow = new Vector3(-1, -3f, 0);
 
+        private static readonly Vector3 leftspearPosition = new Vector3(-0.02f, 0.06f, -0.15f);
+        private static readonly Quaternion leftSpearRotation = Quaternion.Euler(0, 90, 140);
+        private static readonly Vector3 leftSpearEllbow = new Vector3(1, -3f, 0);
         private static readonly Vector3 rightspearPosition = new Vector3(0.02f, 0.06f, -0.15f);
         private static readonly Quaternion rightSpearRotation = Quaternion.Euler(0, -90, -140);
         private static readonly Vector3 rightSpearEllbow = new Vector3(-1, -3f, 0);
@@ -66,6 +70,12 @@ namespace ValheimVRMod.Scripts {
             }
             
             if (player.GetComponent<VRPlayerSync>()?.currentLeftWeapon != null) {
+                if (VHVRConfig.LeftHanded() && player.GetComponent<VRPlayerSync>().currentLeftWeapon.name.StartsWith("Spear")) {
+                    vrik.solver.leftArm.target.localPosition = leftspearPosition;
+                    vrik.solver.leftArm.target.localRotation = leftSpearRotation;
+                    vrik.solver.leftArm.palmToThumbAxis = leftSpearEllbow;
+                    return;
+                }
                 vrik.solver.leftArm.target.localPosition = leftEquippedPosition;
                 vrik.solver.leftArm.target.localRotation = leftEquippedRotation;
                 vrik.solver.leftArm.palmToThumbAxis = leftEquippedEllbow;
@@ -77,7 +87,7 @@ namespace ValheimVRMod.Scripts {
             }
             
             if (player.GetComponent<VRPlayerSync>()?.currentRightWeapon != null) {
-                if (player.GetComponent<VRPlayerSync>().currentRightWeapon.name.StartsWith("Spear")) {
+                if (! VHVRConfig.LeftHanded() && player.GetComponent<VRPlayerSync>().currentRightWeapon.name.StartsWith("Spear")) {
                     vrik.solver.rightArm.target.localPosition = rightspearPosition;
                     vrik.solver.rightArm.target.localRotation = rightSpearRotation;
                     vrik.solver.rightArm.palmToThumbAxis = rightSpearEllbow;

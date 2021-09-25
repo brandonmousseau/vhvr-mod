@@ -696,8 +696,8 @@ namespace ValheimVRMod.VRCore
             vrik.references.rightHand.gameObject.AddComponent<HandGesture>().sourceHand = rightHand;
             StaticObjects.leftFist().setColliderParent(vrik.references.leftHand, false);
             StaticObjects.rightFist().setColliderParent(vrik.references.rightHand, true);
-            StaticObjects.addQuickActions(leftHand.transform);
-            StaticObjects.addQuickSwitch(rightHand.transform);
+            StaticObjects.addQuickActions(VHVRConfig.LeftHanded() ? rightHand.transform : leftHand.transform);
+            StaticObjects.addQuickSwitch(VHVRConfig.LeftHanded() ? leftHand.transform : rightHand.transform);
 
         }
 
@@ -914,12 +914,16 @@ namespace ValheimVRMod.VRCore
                 return;
             }
 
-            checkHandOverShoulder(true, rightHand, SteamVR_Input_Sources.RightHand, ref toggleShowLeftHand);
-            checkHandOverShoulder(false, leftHand, SteamVR_Input_Sources.LeftHand, ref toggleShowRightHand);
+            checkHandOverShoulder(true, ref toggleShowLeftHand);
+            checkHandOverShoulder(false, ref toggleShowRightHand);
         }
 
-        private void checkHandOverShoulder(bool isRightHand, Hand hand, SteamVR_Input_Sources inputSource, ref bool toggleShowHand)
-        {
+        private void checkHandOverShoulder(bool isRightHand, ref bool toggleShowHand) {
+
+            var isMainHand = isRightHand ^ VHVRConfig.LeftHanded();
+            var inputSource = isMainHand ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand;
+            var hand = isMainHand ? rightHand : leftHand;
+            
             var camera = CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform;
             var action = SteamVR_Actions.valheim_Grab;
             if (camera.InverseTransformPoint(hand.transform.position).y > -0.4f &&
@@ -929,14 +933,14 @@ namespace ValheimVRMod.VRCore
                 if (action.GetStateDown(inputSource))
                 {
 
-                    if(isRightHand && isHoldingItem(isRightHand) && isUnpressSheath()) {
+                    if(isMainHand && isHoldingItem(isRightHand) && isUnpressSheath()) {
                         return;
                     } 
                  
                     toggleShowHand = false;
                     hand.hapticAction.Execute(0, 0.2f, 100, 0.3f, inputSource);
                     
-                    if (isRightHand && EquipScript.getLeft() == EquipType.Bow) {
+                    if (isMainHand && EquipScript.getLeft() == EquipType.Bow) {
                         BowLocalManager.instance.toggleArrow();
                     } else if (isHoldingItem(isRightHand)) {
                         getPlayerCharacter().HideHandItems();

@@ -71,6 +71,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> weaponNeedsSpeed;
         private static ConfigEntry<float> altPieceRotationDelay;
         private static ConfigEntry<bool> runIsToggled;
+        private static ConfigEntry<bool> leftHanded;
 
         // Graphics Settings
         private static ConfigEntry<bool> useAmplifyOcclusion;
@@ -339,6 +340,10 @@ namespace ValheimVRMod.Utilities
                                        "RunIsToggled",
                                        true,
                                        "Determine whether or not you need to hold run or it is a toggle. Keep it as toggle (true) to have your thumb free when sprinting.");
+            leftHanded = config.Bind("Controls",
+                "Left Handed",
+                false,
+                "Left Handed Mode");
             InitializeConfigurableKeyBindings(config);
         }
 
@@ -788,6 +793,11 @@ namespace ValheimVRMod.Utilities
         public static bool ToggleRun()
         {
             return runIsToggled.Value;
+        }
+        
+        public static bool LeftHanded()
+        {
+            return leftHanded.Value;
         }
         
         public static float ArrowParticleSize()

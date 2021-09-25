@@ -86,8 +86,10 @@ namespace ValheimVRMod.VRCore.UI
                 checkRecenterPose(Time.deltaTime);
             }
 
-            checkQuickItems<QuickSwitch>(StaticObjects.quickSwitch, SteamVR_Actions.valheim_QuickSwitch, true);
-            checkQuickItems<QuickActions>(StaticObjects.quickActions, SteamVR_Actions.valheim_QuickActions, false);
+            checkQuickItems<QuickSwitch>(StaticObjects.quickSwitch, 
+                VHVRConfig.LeftHanded() ?  SteamVR_Actions.valheim_QuickActions : SteamVR_Actions.valheim_QuickSwitch, true);
+            checkQuickItems<QuickActions>(StaticObjects.quickActions,  
+                VHVRConfig.LeftHanded() ?  SteamVR_Actions.valheim_QuickSwitch : SteamVR_Actions.valheim_QuickActions, false);
         }
 
         public void FixedUpdate()

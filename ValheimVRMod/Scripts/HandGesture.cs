@@ -1,4 +1,5 @@
 using UnityEngine;
+using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using Valve.VR.InteractionSystem;
 
@@ -6,12 +7,14 @@ namespace ValheimVRMod.Scripts {
     public class HandGesture : MonoBehaviour {
         
         private bool isRightHand;
+        private bool isMainHand;
         private Quaternion handFixedRotation;
         private Transform sourceTransform;
         public Hand sourceHand;
 
         private void Start() {
             isRightHand = sourceHand == VRPlayer.rightHand;
+            isMainHand = isRightHand ^ VHVRConfig.LeftHanded();
             foreach (var t in sourceHand.GetComponentsInChildren<Transform>()) {
                 if (t.name == "wrist_r") {
                     sourceTransform = t;
@@ -24,12 +27,12 @@ namespace ValheimVRMod.Scripts {
         }
 
         public bool isUnequiped() {
-            if (isRightHand && (Player.m_localPlayer.GetRightItem() != null 
-                                || BowLocalManager.instance != null && BowLocalManager.instance.isHoldingArrow())) {
+            if (isMainHand && (Player.m_localPlayer.GetRightItem() != null 
+                               || BowLocalManager.instance != null && BowLocalManager.instance.isHoldingArrow())) {
                 return false;
             }
             
-            if (!isRightHand && Player.m_localPlayer.GetLeftItem() != null) {
+            if (!isMainHand && Player.m_localPlayer.GetLeftItem() != null) {
                 return false;
             }
 

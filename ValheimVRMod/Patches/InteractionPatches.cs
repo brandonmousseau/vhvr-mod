@@ -140,11 +140,21 @@ namespace ValheimVRMod.Patches
             
             if (vrPlayerSync != null && (__instance != Player.m_localPlayer || VHVRConfig.UseVrControls())) {
                 if (item == ___m_leftItem) {
-                    vrPlayerSync.currentLeftWeapon = null;
+                    if (VHVRConfig.LeftHanded()) {
+                        vrPlayerSync.currentRightWeapon = null;
+                    }
+                    else {
+                        vrPlayerSync.currentLeftWeapon = null;   
+                    }
                 }
 
                 if (item == ___m_rightItem) {
-                    vrPlayerSync.currentRightWeapon = null;
+                    if (VHVRConfig.LeftHanded()) {
+                        vrPlayerSync.currentLeftWeapon = null;
+                    }
+                    else {
+                        vrPlayerSync.currentRightWeapon = null;   
+                    }
                 }
 
                 VrikCreator.resetVrikHandTransform(__instance);

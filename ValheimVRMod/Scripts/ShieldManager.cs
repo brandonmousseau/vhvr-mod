@@ -26,11 +26,15 @@ namespace ValheimVRMod.Scripts {
         private static Vector3 posRef;
         private static Vector3 scaleRef;
 
+        private Transform shieldHand;
+
         private void Awake() {
             _meshCooldown = gameObject.AddComponent<MeshCooldown>();
             instance = this;
             posRef = transform.localPosition;
             scaleRef = transform.localScale;
+
+            shieldHand = VHVRConfig.LeftHanded() ? VRPlayer.rightHand.transform : VRPlayer.leftHand.transform;
         }
 
         public static void setBlocking(Vector3 hitDir) {
@@ -66,8 +70,8 @@ namespace ValheimVRMod.Scripts {
         }
         private void ParryCheck() {
             var dist = 0.0f;
-            Vector3 posEnd = Player.m_localPlayer.transform.InverseTransformPoint(VRPlayer.leftHand.transform.position);
-            Vector3 posStart = Player.m_localPlayer.transform.InverseTransformPoint(VRPlayer.leftHand.transform.position);
+            Vector3 posEnd = Player.m_localPlayer.transform.InverseTransformPoint(shieldHand.position);
+            Vector3 posStart = Player.m_localPlayer.transform.InverseTransformPoint(shieldHand.position);
 
             foreach (Vector3 snapshot in snapshots) {
                 var curDist = Vector3.Distance(snapshot, posEnd);
@@ -77,7 +81,7 @@ namespace ValheimVRMod.Scripts {
                 }
             }
 
-            Vector3 shieldPos = (snapshots[snapshots.Count - 1] + (Player.m_localPlayer.transform.InverseTransformDirection(-VRPlayer.leftHand.transform.right) / 2) );
+            Vector3 shieldPos = (snapshots[snapshots.Count - 1] + (Player.m_localPlayer.transform.InverseTransformDirection(-shieldHand.right) / 2) );
 
             if (Vector3.Distance(posEnd, posStart) > minDist) {
                 if (Vector3.Angle(shieldPos - snapshots[0] , snapshots[snapshots.Count - 1] - snapshots[0]) < maxParryAngle) {
@@ -93,7 +97,7 @@ namespace ValheimVRMod.Scripts {
             if (tickCounter < 5) {
                 return;
             }
-            snapshots.Add(Player.m_localPlayer.transform.InverseTransformPoint(VRPlayer.leftHand.transform.position));
+            snapshots.Add(Player.m_localPlayer.transform.InverseTransformPoint(shieldHand.position));
 
             if (snapshots.Count > MAX_SNAPSHOTS) {
                 snapshots.RemoveAt(0);
@@ -120,7 +124,7 @@ namespace ValheimVRMod.Scripts {
         }
         private Vector3 CalculatePos()
         {
-            return VRPlayer.leftHand.transform.InverseTransformDirection(VRPlayer.leftHand.transform.TransformDirection(posRef) *(scaleRef * scaling).x);
+            return VRPlayer.leftHand.transform.InverseTransformDirection(shieldHand.TransformDirection(posRef) *(scaleRef * scaling).x);
         }
     }
 }
