@@ -196,6 +196,11 @@ namespace ValheimVRMod.Utilities
                     0,  0.208f, 0.027f,
                     15.689f,  0, 0,
                     0.0150678f,  0.3227402f, 0.086121f
+                )}, {
+                "KnifeButcher", WeaponColData.create( 
+                    -0.3549f,  0.968f, 0.472f,
+                    15.689f,  20.2f, -1.5f,
+                    0.4f,  -0.01f, 0.06f
                 )}
         };
 
