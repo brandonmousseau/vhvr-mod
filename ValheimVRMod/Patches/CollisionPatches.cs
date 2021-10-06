@@ -122,10 +122,15 @@ namespace ValheimVRMod.Patches {
             if (!(hitObject == ___m_character.gameObject)) {
                 Vagon component1 = hitObject.GetComponent<Vagon>();
                 if (!component1 || !component1.IsAttached(___m_character)) {
-                    Character component2 = hitObject.GetComponent<Character>();
-                    if (!(component2 != null) ||
-                        (___m_character.IsPlayer() || BaseAI.IsEnemy(___m_character, component2)) &&
-                        (!___m_weapon.m_shared.m_dodgeable || !component2.IsDodgeInvincible())) {
+                    
+                    Character character = hitObject.GetComponent<Character>();
+                    
+                    if (character == null) {
+                        hitOccured = !___m_weapon.m_shared.m_tamedOnly;
+                    } else if ((___m_character.IsPlayer() ||  BaseAI.IsEnemy(___m_character, character)) &&
+                               (___m_weapon.m_shared.m_tamedOnly || !___m_character.IsPlayer() || !(!___m_character.IsPVPEnabled() && ! BaseAI.IsEnemy(___m_character, character))) &&
+                               (!___m_weapon.m_shared.m_tamedOnly || character.IsTamed()) &&
+                               (!___m_weapon.m_shared.m_dodgeable || !character.IsDodgeInvincible())) {
                         hitOccured = true;
                     }
                 }
