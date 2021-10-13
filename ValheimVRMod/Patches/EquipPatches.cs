@@ -161,6 +161,10 @@ namespace ValheimVRMod.Patches {
     
     [HarmonyPatch(typeof(VisEquipment), "AttachItem")]
     class PatchAttachItem {
+        
+        /// <summary>
+        /// For Left Handed mode, switch left with right items
+        /// </summary>
         static void Prefix(VisEquipment __instance, ref Transform joint) {
 
             if (joint.GetComponentInParent<Player>() != Player.m_localPlayer
@@ -177,6 +181,9 @@ namespace ValheimVRMod.Patches {
             }
         }
 
+        /// <summary>
+        /// For Left Handed mode we need to mirror models of shields and tankard 
+        /// </summary>
         static void Postfix(GameObject __result) {
             
             if (Player.m_localPlayer == null 
