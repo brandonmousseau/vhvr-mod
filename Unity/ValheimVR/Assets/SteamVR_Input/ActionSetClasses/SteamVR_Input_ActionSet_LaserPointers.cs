@@ -40,5 +40,21 @@ namespace Valve.VR
                 return SteamVR_Actions.laserPointers_ClickModifier;
             }
         }
+        
+        public virtual SteamVR_Action_Boolean Jump
+        {
+            get
+            {
+                return SteamVR_Actions.laserPointers_Jump;
+            }
+        }
+        
+        public virtual SteamVR_Action_Vector2 PitchAndYaw
+        {
+            get
+            {
+                return SteamVR_Actions.laserPointers_PitchAndYaw;
+            }
+        }
     }
 }

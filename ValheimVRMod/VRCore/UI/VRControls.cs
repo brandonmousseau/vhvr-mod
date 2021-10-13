@@ -6,12 +6,12 @@ using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
 
 using static ValheimVRMod.Utilities.LogUtils;
+using System.Linq;
 
 namespace ValheimVRMod.VRCore.UI
 {
     class VRControls : MonoBehaviour
     {
-
         // Time in seconds that Recenter pose must be held to recenter
         private static readonly float RECENTER_POSE_TIME = 3f;
         // Local Position relative to HMD that will trigger the Recenter action
@@ -29,10 +29,18 @@ namespace ValheimVRMod.VRCore.UI
         private HashSet<string> ignoredZInputs = new HashSet<string>();
         private SteamVR_ActionSet mainActionSet = SteamVR_Actions.Valheim;
         private SteamVR_ActionSet laserActionSet = SteamVR_Actions.LaserPointers;
-        private Dictionary<string, SteamVR_Action_Boolean> zInputToBooleanAction = new Dictionary<string, SteamVR_Action_Boolean>();
+
+        // Since some controllers have most actions on trackpads (Vive Wands),
+        // SteamVR as of 22/09/2021 will still disable all the actions bound to 
+        // a lower priority action set even if they are of a completely different type
+        // This means that we have to duplicate actions in some actionsets so zInputToBooleanAction
+        // should map to an array that is the conjunction of the same action in different actionsets
+        private Dictionary<string, SteamVR_Action_Boolean[]> zInputToBooleanAction = new Dictionary<string, SteamVR_Action_Boolean[]>();
 
         private SteamVR_Action_Vector2 walk;
         private SteamVR_Action_Vector2 pitchAndYaw;
+        private SteamVR_Action_Vector2 buildPitchAndYaw; //for the same logic as zInputToBooleanAction, this is needed for controllers that have multiple actionsets using the trackpad
+        private float combinedPitchAndYawX => buildPitchAndYaw.active ? buildPitchAndYaw.axis.x : pitchAndYaw.axis.x;
 
         private SteamVR_Action_Vector2 contextScroll;
 
@@ -200,7 +208,11 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return false;
             }
-            if (zinput == "Jump" && shouldDisableJump())
+            if (zinput == "Jump" && shouldEnableRemove())
+            {
+                return false;
+            }
+            if (zinput == "Remove" && !shouldEnableRemove())
             {
                 return false;
             }
@@ -230,14 +242,14 @@ namespace ValheimVRMod.VRCore.UI
                     return false;
                 }
             }
-            SteamVR_Action_Boolean action;
+            SteamVR_Action_Boolean[] action;
             zInputToBooleanAction.TryGetValue(zinput, out action);
             if (action == null)
             {
                 LogWarning("Unmapped ZInput Key:" + zinput);
                 return false;
             }
-            return action.GetStateDown(SteamVR_Input_Sources.Any);
+            return action.Any(x => x.GetStateDown(SteamVR_Input_Sources.Any));
         }
 
         public bool GetButton(string zinput)
@@ -246,22 +258,26 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return false;
             }
-            if (zinput == "Jump" && shouldDisableJump())
+            if (zinput == "Jump" && shouldEnableRemove())
             {
                 return false;
             }
-            if(zinput == "JoyAltPlace")
+            if (zinput == "Remove" && !shouldEnableRemove())
+            {
+                return false;
+            }
+            if (zinput == "JoyAltPlace")
             {
                 return CheckAltButton();
             }
-            SteamVR_Action_Boolean action;
+            SteamVR_Action_Boolean[] action;
             zInputToBooleanAction.TryGetValue(zinput, out action);
             if (action == null)
             {
                 LogWarning("Unmapped ZInput Key:" + zinput);
                 return false;
             }
-            return action.GetState(SteamVR_Input_Sources.Any);
+            return action.Any(x => x.GetState(SteamVR_Input_Sources.Any));
         }
 
         private bool CheckAltButton()
@@ -277,18 +293,22 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return false;
             }
-            if (zinput == "Jump" && shouldDisableJump())
+            if (zinput == "Jump" && shouldEnableRemove())
             {
                 return false;
             }
-            SteamVR_Action_Boolean action;
+            if (zinput == "Remove" && !shouldEnableRemove())
+            {
+                return false;
+            }
+            SteamVR_Action_Boolean[] action;
             zInputToBooleanAction.TryGetValue(zinput, out action);
             if (action == null)
             {
                 LogWarning("Unmapped ZInput Key:" + zinput);
                 return false;
             }
-            return action.GetStateUp(SteamVR_Input_Sources.Any);
+            return action.Any(x => x.GetStateUp(SteamVR_Input_Sources.Any));
         }
 
         public float GetJoyLeftStickX()
@@ -316,7 +336,7 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return 0.0f;
             }
-            return pitchAndYaw.axis.x;
+            return combinedPitchAndYawX;
         }
 
         public float GetJoyRightStickY()
@@ -373,7 +393,7 @@ namespace ValheimVRMod.VRCore.UI
                 return 0;
             }
             altPieceTriggered = false;
-            float rightStickXAxis = pitchAndYaw.axis.x;
+            float rightStickXAxis = combinedPitchAndYawX;
             if (rightStickXAxis > 0.1f)
             {
                 return -1;
@@ -426,29 +446,30 @@ namespace ValheimVRMod.VRCore.UI
 
         // disable Jump input under certain conditions
         // * In placement mode
-        private bool shouldDisableJump()
+        // * Grab Modifier is Pressed
+        private bool shouldEnableRemove()
         {
-            return inPlaceMode();
+            return inPlaceMode() && SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand);
         }
-
         private void init()
         {
-            zInputToBooleanAction.Add("JoyMenu", SteamVR_Actions.valheim_ToggleMenu);
-            zInputToBooleanAction.Add("Inventory", SteamVR_Actions.valheim_ToggleInventory);
-            zInputToBooleanAction.Add("Jump", SteamVR_Actions.valheim_Jump);
-            zInputToBooleanAction.Add("Use", SteamVR_Actions.valheim_Use);
-            zInputToBooleanAction.Add("Sit", SteamVR_Actions.valheim_Sit);
-            zInputToBooleanAction.Add("Map", SteamVR_Actions.valheim_ToggleMap);
+            zInputToBooleanAction.Add("JoyMenu", new[] { SteamVR_Actions.valheim_ToggleMenu });
+            zInputToBooleanAction.Add("Inventory", new[] { SteamVR_Actions.valheim_ToggleInventory });
+            zInputToBooleanAction.Add("Jump", new [] { SteamVR_Actions.valheim_Jump, SteamVR_Actions.laserPointers_Jump });
+            zInputToBooleanAction.Add("Use", new[] { SteamVR_Actions.valheim_Use });
+            zInputToBooleanAction.Add("Sit", new[] { SteamVR_Actions.valheim_Sit });
+            zInputToBooleanAction.Add("Map", new[] { SteamVR_Actions.valheim_ToggleMap });
 
             // These placement commands re-use some of the normal game inputs
-            zInputToBooleanAction.Add("BuildMenu", SteamVR_Actions.laserPointers_RightClick);
-            zInputToBooleanAction.Add("JoyPlace", SteamVR_Actions.laserPointers_LeftClick);
-            zInputToBooleanAction.Add("Remove", SteamVR_Actions.valheim_Jump);
+            zInputToBooleanAction.Add("BuildMenu", new[] { SteamVR_Actions.laserPointers_RightClick });
+            zInputToBooleanAction.Add("JoyPlace", new[] { SteamVR_Actions.laserPointers_LeftClick });
+            zInputToBooleanAction.Add("Remove", new[] { SteamVR_Actions.valheim_Jump, SteamVR_Actions.laserPointers_Jump });
 
             contextScroll = SteamVR_Actions.valheim_ContextScroll;
 
             walk = SteamVR_Actions.valheim_Walk;
             pitchAndYaw = SteamVR_Actions.valheim_PitchAndYaw;
+            buildPitchAndYaw = SteamVR_Actions.laserPointers_PitchAndYaw;
             poseL = SteamVR_Actions.valheim_PoseL;
             poseR = SteamVR_Actions.valheim_PoseR;
             initIgnoredZInputs();

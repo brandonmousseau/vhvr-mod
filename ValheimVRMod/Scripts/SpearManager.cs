@@ -161,9 +161,8 @@ namespace ValheimVRMod.Scripts {
                 }
                 isThrowingStance = true;
             }
-
+            ShieldManager.ScaleShieldSize(0.4f);
             if (isThrowingStance) {
-                ShieldManager.ScaleShieldSize(0.4f);
                 UpdateSpearThrowModel(direction.normalized);
                 UpdateDirectionLine(
                     mainHandTransform.position - direction.normalized,

@@ -161,6 +161,16 @@
       "name": "/actions/LaserPointers/in/ClickModifier",
       "type": "boolean",
       "requirement": "optional"
+    },
+    {
+      "name": "/actions/LaserPointers/in/Jump",
+      "type": "boolean",
+      "requirement": "optional"
+    },
+    {
+      "name": "/actions/LaserPointers/in/PitchAndYaw",
+      "type": "vector2",
+      "requirement": "optional"
     }
   ],
   "action_sets": [
