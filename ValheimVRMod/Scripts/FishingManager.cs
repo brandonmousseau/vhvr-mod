@@ -2,6 +2,7 @@
 using UnityEngine;
 using ValheimVRMod.VRCore;
 using Valve.VR;
+using Pose = ValheimVRMod.Utilities.Pose;
 
 namespace ValheimVRMod.Scripts {
     public class FishingManager : MonoBehaviour {
@@ -92,7 +93,7 @@ namespace ValheimVRMod.Scripts {
             if (tickCounter < 5) {
                 return;
             }
-            if (VRPlayer.justUnsheathed == true) {
+            if (Pose.justUnsheathed) {
                 snapshots.Clear();
             }
             else {

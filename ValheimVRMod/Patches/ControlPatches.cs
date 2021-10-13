@@ -7,6 +7,7 @@ using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
 using System.Reflection.Emit;
 using UnityEngine;
+using Pose = ValheimVRMod.Utilities.Pose;
 
 namespace ValheimVRMod.Patches {
     // These patches are used to inject the VR inputs into the game's control system
@@ -363,6 +364,14 @@ namespace ValheimVRMod.Patches {
                     if (SpearManager.isThrowing) {
                         attack = true;
                         SpearManager.isThrowing = false;
+                    }
+
+                    break;
+                
+                case EquipType.Tankard:
+                    if (WeaponCollision.isDrinking) {
+                        attack = true;
+                        WeaponCollision.isDrinking = false;
                     }
 
                     break;

@@ -14,6 +14,7 @@ using ValheimVRMod.VRCore.UI;
 using Valve.VR;
 using Valve.VR.Extras;
 using Valve.VR.InteractionSystem;
+using Pose = ValheimVRMod.Utilities.Pose;
 
 /**
  * VRPlayer manages instantiating the SteamVR Player
@@ -54,7 +55,6 @@ namespace ValheimVRMod.VRCore
         private static float NECK_OFFSET = 0.2f;
         public const float ROOMSCALE_STEP_ANIMATION_SMOOTHING = 0.3f;
         public const float ROOMSCALE_ANIMATION_WEIGHT = 2f;
-        public static bool justUnsheathed = false;
 
         private static float referencePlayerHeight;
         public static bool isRoomscaleSneaking {  get { return _isRoomscaleSneaking; } }
@@ -90,9 +90,6 @@ namespace ValheimVRMod.VRCore
 
         public static Hand leftHand { get { return _leftHand;} }
         public static Hand rightHand { get { return _rightHand;} }
-
-        public static bool toggleShowLeftHand = true;
-        public static bool toggleShowRightHand = true;
 
         public static bool handsActive
         {
@@ -191,7 +188,7 @@ namespace ValheimVRMod.VRCore
             checkAndSetHandsAndPointers();
             updateVrik();
             UpdateAmplifyOcclusionStatus();
-            checkInteractions();
+            Pose.checkInteractions();
             CheckSneakRoomscale();
             
         }
@@ -696,6 +693,7 @@ namespace ValheimVRMod.VRCore
             vrik.references.rightHand.gameObject.AddComponent<HandGesture>().sourceHand = rightHand;
             StaticObjects.leftFist().setColliderParent(vrik.references.leftHand, false);
             StaticObjects.rightFist().setColliderParent(vrik.references.rightHand, true);
+            StaticObjects.mouthCollider(cam.transform);
             StaticObjects.addQuickActions(leftHand.transform);
             StaticObjects.addQuickSwitch(rightHand.transform);
 
@@ -905,56 +903,6 @@ namespace ValheimVRMod.VRCore
                 sc.gameObject.SetActive(false);
             }
         }
-
-        private void checkInteractions()
-        {
-            
-            if (getPlayerCharacter() == null || !VRControls.mainControlsActive)
-            {
-                return;
-            }
-
-            checkHandOverShoulder(true, rightHand, SteamVR_Input_Sources.RightHand, ref toggleShowLeftHand);
-            checkHandOverShoulder(false, leftHand, SteamVR_Input_Sources.LeftHand, ref toggleShowRightHand);
-        }
-
-        private void checkHandOverShoulder(bool isRightHand, Hand hand, SteamVR_Input_Sources inputSource, ref bool toggleShowHand)
-        {
-            var camera = CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform;
-            var action = SteamVR_Actions.valheim_Grab;
-            if (camera.InverseTransformPoint(hand.transform.position).y > -0.4f &&
-                camera.InverseTransformPoint(hand.transform.position).z < 0)
-            {
-
-                if (action.GetStateDown(inputSource))
-                {
-
-                    if(isRightHand && isHoldingItem(isRightHand) && isUnpressSheath()) {
-                        return;
-                    } 
-                 
-                    toggleShowHand = false;
-                    hand.hapticAction.Execute(0, 0.2f, 100, 0.3f, inputSource);
-                    
-                    if (isRightHand && EquipScript.getLeft() == EquipType.Bow) {
-                        BowLocalManager.instance.toggleArrow();
-                    } else if (isHoldingItem(isRightHand)) {
-                        getPlayerCharacter().HideHandItems();
-                    } else {
-                        getPlayerCharacter().ShowHandItems();
-                        justUnsheathed = true;
-                    }
-                }
-                else if (!justUnsheathed && isRightHand && action.GetStateUp(inputSource)) {
-                    if (isHoldingItem(isRightHand) && isUnpressSheath()) {
-                        getPlayerCharacter().HideHandItems();
-                    }
-                }
-            }
-            if (justUnsheathed && isRightHand && action.GetStateUp(inputSource)&& isUnpressSheath()) {
-                justUnsheathed = false;
-            }
-        }
         
         private void CheckSneakRoomscale() {
             if (VHVRConfig.RoomScaleSneakEnabled()) {
@@ -1026,25 +974,6 @@ namespace ValheimVRMod.VRCore
                 vrCamPosition.y = 0;
                 _vrCameraRig.localPosition = -vrCamPosition;
             }
-        }
-
-        private bool isUnpressSheath() {
-            return isBuildingTool() 
-                || isHoldingThrowable();
-        }
-        private bool isHoldingThrowable() {
-            return EquipScript.getRight() == EquipType.Spear 
-                || EquipScript.getRight() == EquipType.SpearChitin 
-                || EquipScript.getRight() == EquipType.Fishing;
-        }
-        private bool isBuildingTool() {
-            return EquipScript.getRight() == EquipType.Hammer 
-                || EquipScript.getRight() == EquipType.Hoe 
-                || EquipScript.getRight() == EquipType.Cultivator;
-        }
-        private bool isHoldingItem(bool isRightHand) {
-            return isRightHand && getPlayerCharacter().GetRightItem() != null
-                   || !isRightHand && getPlayerCharacter().GetLeftItem() != null;
         }
     }
 }

@@ -57,8 +57,9 @@ namespace ValheimVRMod.Patches {
             ref bool __result
         ) {
             // if character is not local player, use original Start method
-            if (character != Player.m_localPlayer
-                || __instance.m_attackType.ToString() == "Projectile" || !VHVRConfig.UseVrControls()) {
+            if (character != Player.m_localPlayer || !VHVRConfig.UseVrControls() 
+                                                  || __instance.m_attackType.ToString() == "Projectile" 
+                                                  || EquipScript.getRight() == EquipType.Tankard) {
                 return true;
             }
 
@@ -128,7 +129,7 @@ namespace ValheimVRMod.Patches {
                     if (character == null) {
                         hitOccured = !___m_weapon.m_shared.m_tamedOnly;
                     } else if ((___m_character.IsPlayer() ||  BaseAI.IsEnemy(___m_character, character)) &&
-                               (___m_weapon.m_shared.m_tamedOnly || !___m_character.IsPlayer() || !(!___m_character.IsPVPEnabled() && ! BaseAI.IsEnemy(___m_character, character))) &&
+                               (___m_weapon.m_shared.m_tamedOnly || !___m_character.IsPlayer() || ___m_character.IsPVPEnabled() || BaseAI.IsEnemy(___m_character, character)) &&
                                (!___m_weapon.m_shared.m_tamedOnly || character.IsTamed()) &&
                                (!___m_weapon.m_shared.m_dodgeable || !character.IsDodgeInvincible())) {
                         hitOccured = true;

@@ -67,7 +67,7 @@ namespace ValheimVRMod.Utilities
                 "Club", WeaponColData.create( 
                     -0.013f,  -0.022f, 0.603f,
                     0,  -5.241f, 45,
-                    0.1044289f,  -0.09270307f, 0.5340722f
+                    0.1044289f,  0.09270307f, 0.5340722f
                 )}, {
                 "SwordBronze", WeaponColData.create( 
                     0,  1.523f, 0,
@@ -176,6 +176,11 @@ namespace ValheimVRMod.Utilities
                     -0.679f,  3.496f, -0.003f,
                     0,  0, 12.943f,
                     0.44454f,  1.314052f, 0.086121f
+                )}, {                
+                "BattleaxeCrystal", WeaponColData.create( 
+                    0.15f,  1.45f, 0,
+                    0,  0, 0,
+                    0.24f,  0.63f, 0.056f
                 )}, {
                 "KnifeCopper", WeaponColData.create( 
                     -0.042f,  0.645f, 0,
@@ -200,7 +205,17 @@ namespace ValheimVRMod.Utilities
                 "KnifeButcher", WeaponColData.create( 
                     -0.3549f,  0.968f, 0.472f,
                     15.689f,  20.2f, -1.5f,
-                    0.4f,  -0.01f, 0.06f
+                    0.4f,  0.01f, 0.06f
+                )}, {
+                "KnifeSilver", WeaponColData.create( 
+                    0,  0.41f, 0,
+                    0, 0, 0,
+                    0.04f,  0.45f, 0.01f
+                )}, {
+                "Tankard", WeaponColData.create( 
+                    0,  0.28f, 0,
+                    0, 0, 0,
+                    0.18f,  0.03f, 0.18f
                 )}
         };
 
