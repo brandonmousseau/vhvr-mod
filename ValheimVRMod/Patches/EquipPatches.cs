@@ -180,10 +180,11 @@ namespace ValheimVRMod.Patches {
         static void Postfix(GameObject __result) {
             
             if (Player.m_localPlayer == null 
-                ||__result.GetComponentInParent<Player>() != Player.m_localPlayer
+                || __result.GetComponentInParent<Player>() != Player.m_localPlayer
                 || !VHVRConfig.UseVrControls() 
                 || !VHVRConfig.LeftHanded()
-                || EquipScript.getLeft() != EquipType.Shield) {
+                || EquipScript.getLeft() != EquipType.Shield
+                && EquipScript.getRight() != EquipType.Tankard) {
                 return;
             }
             
