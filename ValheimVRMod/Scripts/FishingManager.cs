@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using Valve.VR;
 using Pose = ValheimVRMod.Utilities.Pose;
@@ -46,13 +47,18 @@ namespace ValheimVRMod.Scripts {
         }
 
         private void OnRenderObject() {
+
+            var inputSource = VHVRConfig.LeftHanded()
+                ? SteamVR_Input_Sources.LeftHand
+                : SteamVR_Input_Sources.RightHand;
+            
             fixedRodTop.transform.position = rodTop.position;
-            isPulling = isFishing && SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand);
-            if (!isFishing && SteamVR_Actions.valheim_Grab.GetStateDown(SteamVR_Input_Sources.RightHand)) {
+            isPulling = isFishing && SteamVR_Actions.valheim_Grab.GetState(inputSource);
+            if (!isFishing && SteamVR_Actions.valheim_Grab.GetStateDown(inputSource)) {
                 preparingThrow = true;
             }
 
-            if (!SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.RightHand)) {
+            if (!SteamVR_Actions.valheim_Grab.GetStateUp(inputSource)) {
                 return;
             }
 
@@ -107,8 +113,12 @@ namespace ValheimVRMod.Scripts {
 
             tickCounter = 0;
 
+            var inputSource = VHVRConfig.LeftHanded()
+                ? SteamVR_Input_Sources.LeftHand
+                : SteamVR_Input_Sources.RightHand;
+            
             if (isFishing && fishingFloat.GetCatch()  && (int) (Time.fixedTime * 10) % 2 >= 1) {
-                VRPlayer.rightHand.hapticAction.Execute(0, 0.001f, 150, 0.7f, SteamVR_Input_Sources.RightHand);
+                VRPlayer.rightHand.hapticAction.Execute(0, 0.001f, 150, 0.7f, inputSource);
             }
         }
     }

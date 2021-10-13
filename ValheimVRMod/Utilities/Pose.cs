@@ -20,13 +20,17 @@ namespace ValheimVRMod.Utilities {
                 return;
             }
 
-            checkHandOverShoulder(true, VRPlayer.rightHand, SteamVR_Input_Sources.RightHand, ref toggleShowLeftHand);
-            checkHandOverShoulder(false, VRPlayer.leftHand, SteamVR_Input_Sources.LeftHand, ref toggleShowRightHand);
+            checkHandOverShoulder(true, ref toggleShowLeftHand);
+            checkHandOverShoulder(false, ref toggleShowRightHand);
 
         }
         
-        private static void checkHandOverShoulder(bool isRightHand, Hand hand, SteamVR_Input_Sources inputSource, ref bool toggleShowHand)
+        private static void checkHandOverShoulder(bool isRightHand, ref bool toggleShowHand)
         {
+            var isMainHand = isRightHand ^ VHVRConfig.LeftHanded();
+            var inputSource = isMainHand ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand;
+            var hand = isMainHand ? VRPlayer.rightHand : VRPlayer.leftHand;
+            
             var camera = CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform;
             var action = SteamVR_Actions.valheim_Grab;
             if (camera.InverseTransformPoint(hand.transform.position).y > -0.4f &&

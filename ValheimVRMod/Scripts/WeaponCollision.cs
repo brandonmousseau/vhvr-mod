@@ -48,9 +48,11 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
+            var mainHand = VHVRConfig.LeftHanded() ? VRPlayer.leftHand : VRPlayer.rightHand;
+            
             isDrinking = hasDrunk = 
-                VRPlayer.rightHand.transform.rotation.eulerAngles.x > 0 
-                && VRPlayer.rightHand.transform.rotation.eulerAngles.x < 90;
+                mainHand.transform.rotation.eulerAngles.x > 0 
+                && mainHand.transform.rotation.eulerAngles.x < 90;
 
         }
 

@@ -4,6 +4,7 @@ using UnityEngine.Rendering;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using Valve.VR;
+using Valve.VR.InteractionSystem;
 
 namespace ValheimVRMod.Scripts {
     public class BowLocalManager : BowManager {
@@ -26,10 +27,11 @@ namespace ValheimVRMod.Scripts {
         public static bool aborting;
 
         private readonly GameObject arrowAttach = new GameObject();
+        
 
         private void Start() {
             instance = this;
-            rightHand = VRPlayer.rightHand.transform;
+            mainHand = getMainHand().transform;
             predictionLine = new GameObject().AddComponent<LineRenderer>();
             predictionLine.widthMultiplier = 0.03f;
             predictionLine.positionCount = 20;
@@ -40,7 +42,7 @@ namespace ValheimVRMod.Scripts {
             predictionLine.lightProbeUsage = LightProbeUsage.Off;
             predictionLine.reflectionProbeUsage = ReflectionProbeUsage.Off;
             
-            arrowAttach.transform.SetParent(rightHand, false);
+            arrowAttach.transform.SetParent(mainHand, false);
             
             outline = gameObject.AddComponent<Outline>();
             outline.OutlineColor = Color.red;
@@ -67,6 +69,10 @@ namespace ValheimVRMod.Scripts {
                 arrow.GetComponent<ZNetView>().Destroy();   
             }
         }
+
+        private Hand getMainHand() {
+            return VHVRConfig.LeftHanded() ? VRPlayer.leftHand : VRPlayer.rightHand;
+        }        
         
         /**
      * Need to use OnRenderObject instead of Update or LateUpdate,
@@ -80,11 +86,13 @@ namespace ValheimVRMod.Scripts {
             
             base.OnRenderObject();
 
-            if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand)) {
+            var inputSource = VHVRConfig.LeftHanded() ? SteamVR_Input_Sources.LeftHand : SteamVR_Input_Sources.RightHand;
+            
+            if (SteamVR_Actions.valheim_Grab.GetState(inputSource)) {
                 handlePulling();
             }
 
-            if (SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.RightHand)) {
+            if (SteamVR_Actions.valheim_Grab.GetStateUp(inputSource)) {
                 releaseString();
             }
 
@@ -182,7 +190,8 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
             // SHOOTING
-            VRPlayer.leftHand.hapticAction.Execute(0, 0.2f, 100, 0.3f, SteamVR_Input_Sources.LeftHand);
+            getMainHand().hapticAction.Execute(0, 0.2f, 100, 0.3f,
+                VHVRConfig.LeftHanded() ? SteamVR_Input_Sources.LeftHand : SteamVR_Input_Sources.RightHand);
             destroyArrow();
         }
 
@@ -191,7 +200,7 @@ namespace ValheimVRMod.Scripts {
         }
 
         private bool checkHandNearString() {
-            if (Vector3.Distance(rightHand.position, transform.TransformPoint(pullStart)) >
+            if (Vector3.Distance(mainHand.position, transform.TransformPoint(pullStart)) >
                 attachRange) {
                 return false;
             }

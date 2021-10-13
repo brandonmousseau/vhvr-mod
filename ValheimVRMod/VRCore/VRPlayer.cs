@@ -694,8 +694,8 @@ namespace ValheimVRMod.VRCore
             StaticObjects.leftFist().setColliderParent(vrik.references.leftHand, false);
             StaticObjects.rightFist().setColliderParent(vrik.references.rightHand, true);
             StaticObjects.mouthCollider(cam.transform);
-            StaticObjects.addQuickActions(leftHand.transform);
-            StaticObjects.addQuickSwitch(rightHand.transform);
+            StaticObjects.addQuickActions(VHVRConfig.LeftHanded() ? rightHand.transform : leftHand.transform);
+            StaticObjects.addQuickSwitch(VHVRConfig.LeftHanded() ? leftHand.transform : rightHand.transform);
 
         }
 
@@ -903,7 +903,7 @@ namespace ValheimVRMod.VRCore
                 sc.gameObject.SetActive(false);
             }
         }
-        
+
         private void CheckSneakRoomscale() {
             if (VHVRConfig.RoomScaleSneakEnabled()) {
                 float height = Valve.VR.InteractionSystem.Player.instance.eyeHeight;

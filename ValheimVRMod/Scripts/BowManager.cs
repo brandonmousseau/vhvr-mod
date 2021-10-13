@@ -18,7 +18,7 @@ namespace ValheimVRMod.Scripts {
         protected bool wasInitialized;
         
         public bool pulling;
-        public Transform rightHand;
+        public Transform mainHand;
 
         void Awake() {
             
@@ -117,7 +117,7 @@ namespace ValheimVRMod.Scripts {
 
                 pullString();
                 gameObject.GetComponent<LineRenderer>().SetPosition(1, pullObj.transform.localPosition);
-                transform.LookAt(rightHand, -transform.parent.forward);   
+                transform.LookAt(mainHand, -transform.parent.forward);   
                 
             } else if (wasPulling) {
                 wasPulling = false;
@@ -129,7 +129,7 @@ namespace ValheimVRMod.Scripts {
 
         private void pullString() {
             
-            pullObj.transform.position = rightHand.position;
+            pullObj.transform.position = mainHand.position;
             var pullPos = pullObj.transform.localPosition;
             
             if (pullPos.z > maxPullLength) {

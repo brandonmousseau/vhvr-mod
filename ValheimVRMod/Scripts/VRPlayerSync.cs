@@ -178,7 +178,7 @@ namespace ValheimVRMod.Scripts {
                 }
                 
                 bowManager = currentLeftWeapon.AddComponent<BowManager>();
-                bowManager.rightHand = rightHand.transform;
+                bowManager.mainHand = VHVRConfig.LeftHanded() ? leftHand.transform : rightHand.transform;
             }
 
             bowManager.pulling = pulling;
