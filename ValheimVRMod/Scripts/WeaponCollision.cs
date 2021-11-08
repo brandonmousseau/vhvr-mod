@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using System.ComponentModel;
-using HarmonyLib;
+using System.Linq;
 using UnityEngine;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
@@ -23,17 +23,52 @@ namespace ValheimVRMod.Scripts {
         private bool isRightHand;
         private Outline outline;
         private float hitTime;
-
+        private bool hasDrunk;
+        
         public bool itemIsTool;
+        public static bool isDrinking;
         
         private int maxSnapshots;
         private float colliderDistance;
+
+        private static readonly int[] ignoreLayers = {
+            LayerUtils.WATERVOLUME_LAYER,
+            LayerUtils.WATER,
+            LayerUtils.UI_PANEL_LAYER,
+            LayerUtils.CHARARCTER_TRIGGER
+        };
+
+        private void OnTriggerStay(Collider collider) {
+
+            if (!isCollisionAllowed()) {
+                return;
+            }
+
+            if (!isRightHand || EquipScript.getRight() != EquipType.Tankard || collider.name != "MouthCollider" || hasDrunk) {
+                return;
+            }
+
+            var mainHand = VHVRConfig.LeftHanded() ? VRPlayer.leftHand : VRPlayer.rightHand;
+            
+            isDrinking = hasDrunk = 
+                mainHand.transform.rotation.eulerAngles.x > 0 
+                && mainHand.transform.rotation.eulerAngles.x < 90;
+
+        }
 
         private void OnTriggerEnter(Collider collider) {
             if (!isCollisionAllowed()) {
                 return;
             }
             
+            if (isRightHand && EquipScript.getRight() == EquipType.Tankard) {
+                if (collider.name == "MouthCollider" && hasDrunk) {
+                    hasDrunk = false;
+                }
+                
+                return;
+            }
+
             var maybePlayer = collider.GetComponentInParent<Player>();
 
             if (maybePlayer != null && maybePlayer == Player.m_localPlayer) {
@@ -66,10 +101,8 @@ namespace ValheimVRMod.Scripts {
 
         private bool tryHitTarget(GameObject target) {
 
-            // ignore water and UI panel
-            if (target.layer == LayerUtils.WATERVOLUME_LAYER 
-                || target.layer == LayerUtils.WATER
-                || target.layer == LayerUtils.UI_PANEL_LAYER) {
+            // ignore certain Layers
+            if (ignoreLayers.Contains(target.layer)) {
                 return false;
             }
 
@@ -81,6 +114,11 @@ namespace ValheimVRMod.Scripts {
 
             if (target.GetComponentInParent<MineRock5>() != null) {
                 target = target.transform.parent.gameObject;
+            }
+            
+            var character = target.GetComponentInParent<Character>();
+            if (character != null) {
+                target = character.gameObject;
             }
             
             var meshCooldown = target.GetComponent<MeshCooldown>();

@@ -13,6 +13,7 @@ namespace ValheimVRMod.Utilities {
         public static GameObject quickActions;
         public static GameObject quickSwitch;
         private static GameObject _shieldObj;
+        private static GameObject _mouthCollider;
         
         public static Vector3 lastHitPoint;
         public static Vector3 lastHitDir;
@@ -43,6 +44,7 @@ namespace ValheimVRMod.Utilities {
             var collisionObj = GameObject.CreatePrimitive(PrimitiveType.Cube);
             Object.Destroy(collisionObj.GetComponent<MeshRenderer>());
             collisionObj.GetComponent<BoxCollider>().isTrigger = true;
+            collisionObj.layer = LayerUtils.CHARACTER;
             Rigidbody rigidbody = collisionObj.AddComponent<Rigidbody>();
             rigidbody.useGravity = false;
             return collisionScript = collisionObj.AddComponent<T>();
@@ -68,6 +70,23 @@ namespace ValheimVRMod.Utilities {
             
             _shieldObj = new GameObject();
             return _shieldObj;
+        }
+        
+        public static void mouthCollider(Transform head) {
+            
+            if (_mouthCollider != null) {
+                return;
+            }
+            
+            _mouthCollider = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            Object.Destroy(_mouthCollider.GetComponent<MeshRenderer>());
+            _mouthCollider.GetComponent<BoxCollider>().isTrigger = true;
+            _mouthCollider.layer = LayerUtils.CHARACTER;
+            _mouthCollider.name = "MouthCollider";
+            _mouthCollider.transform.parent = head;
+            _mouthCollider.transform.localPosition = new Vector3(0,-0.06f,0.04f);
+            _mouthCollider.transform.localRotation = Quaternion.identity;
+            _mouthCollider.transform.localScale = new Vector3(0.06f, 0.03f, 0.06f);
         }
     }
 }

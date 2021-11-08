@@ -353,10 +353,10 @@
     <Compile Include="Scripts\VrikCreator.cs" />
     <Compile Include="Scripts\ShieldManager.cs" />
     <Compile Include="Scripts\PostProcessing\VRTaaComponent.cs" />
-    <Compile Include="Scripts\PostProcessing\WaterStencilFixComponent.cs" />
     <Compile Include="Utilities\SettingCallback.cs" />
     <Compile Include="Utilities\CameraUtils.cs" />
     <Compile Include="Utilities\EquipScript.cs" />
+    <Compile Include="Utilities\Pose.cs" />
     <Compile Include="Utilities\WeaponColData.cs" />
     <Compile Include="Utilities\LayerUtils.cs" />
     <Compile Include="Utilities\VHVRConfig.cs" />
@@ -423,8 +423,6 @@ copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\vhvr_custom" "$(CommonD
 copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\vhvr_custom.manifest"  "$(CommonDir)Valheim\Valheim_Data\StreamingAssets"
 copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\amplify_resources" "$(CommonDir)Valheim\Valheim_Data\StreamingAssets"
 copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\amplify_resources.manifest"  "$(CommonDir)Valheim\Valheim_Data\StreamingAssets"
-copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\game_fixes" "$(CommonDir)Valheim\Valheim_Data\StreamingAssets"
-copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\game_fixes.manifest"  "$(CommonDir)Valheim\Valheim_Data\StreamingAssets"
 
 if not exist "$(SolutionDir)ValheimVRMod\release" mkdir "$(SolutionDir)ValheimVRMod\release"
 if not exist "$(SolutionDir)ValheimVRMod\release\BepInEx" mkdir "$(SolutionDir)ValheimVRMod\release\BepInEx"
@@ -470,8 +468,6 @@ copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\steamvr_player_prefabs.
 copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\vhvr_custom" "$(SolutionDir)ValheimVRMod\release\Valheim_Data\StreamingAssets"
 copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\vhvr_custom.manifest"  "$(SolutionDir)ValheimVRMod\release\Valheim_Data\StreamingAssets"
 copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\amplify_resources" "$(SolutionDir)ValheimVRMod\release\Valheim_Data\StreamingAssets"
-copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\amplify_resources.manifest"  "$(SolutionDir)ValheimVRMod\release\Valheim_Data\StreamingAssets"
-copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\game_fixes" "$(SolutionDir)ValheimVRMod\release\Valheim_Data\StreamingAssets"
-copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\game_fixes.manifest"  "$(SolutionDir)ValheimVRMod\release\Valheim_Data\StreamingAssets"</PostBuildEvent>
+copy  "$(SolutionDir)Unity\ValheimVR\Assets\AssetBundles\amplify_resources.manifest"  "$(SolutionDir)ValheimVRMod\release\Valheim_Data\StreamingAssets"</PostBuildEvent>
   </PropertyGroup>
 </Project>
