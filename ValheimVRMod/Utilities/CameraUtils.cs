@@ -65,7 +65,6 @@ namespace ValheimVRMod.Utilities
             _worldSpaceUiCamera.clearFlags = CameraClearFlags.Depth;
             _worldSpaceUiCamera.depth = worldSpaceUiDepth;
             _worldSpaceUiCamera.cullingMask = LayerUtils.WORLDSPACE_UI_LAYER_MASK;
-            _worldSpaceUiCamera.orthographic = true;
             _worldSpaceUiCamera.enabled = true;
             return _worldSpaceUiCamera;
         }
