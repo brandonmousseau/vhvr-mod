@@ -1,9 +1,8 @@
 using System.Reflection;
 using HarmonyLib;
-using UnityEngine;
 using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
-using ValheimVRMod.VRCore;
+using Pose = ValheimVRMod.Utilities.Pose;
 
 namespace ValheimVRMod.Patches
 {
@@ -23,11 +22,11 @@ namespace ValheimVRMod.Patches
                 return true;
             }
             
-            bool leftHand = VRPlayer.toggleShowLeftHand;
-            bool rightHand = VRPlayer.toggleShowRightHand;
+            bool leftHand = Pose.toggleShowLeftHand;
+            bool rightHand = Pose.toggleShowRightHand;
             
-            VRPlayer.toggleShowRightHand = true;
-            VRPlayer.toggleShowLeftHand = true;
+            Pose.toggleShowRightHand = true;
+            Pose.toggleShowLeftHand = true;
     
             if (___m_leftItem == null && ___m_rightItem == null) {
                 return false;   
@@ -66,11 +65,11 @@ namespace ValheimVRMod.Patches
                 return true;
             }
     
-            bool leftHand = VRPlayer.toggleShowLeftHand;
-            bool rightHand = VRPlayer.toggleShowRightHand;
+            bool leftHand = Pose.toggleShowLeftHand;
+            bool rightHand = Pose.toggleShowRightHand;
             
-            VRPlayer.toggleShowRightHand = true;
-            VRPlayer.toggleShowLeftHand = true;
+            Pose.toggleShowRightHand = true;
+            Pose.toggleShowLeftHand = true;
             
             if (___m_hiddenLeftItem == null && ___m_hiddenRightItem == null) {
                 return false;   
@@ -140,11 +139,21 @@ namespace ValheimVRMod.Patches
             
             if (vrPlayerSync != null && (__instance != Player.m_localPlayer || VHVRConfig.UseVrControls())) {
                 if (item == ___m_leftItem) {
-                    vrPlayerSync.currentLeftWeapon = null;
+                    if (VHVRConfig.LeftHanded()) {
+                        vrPlayerSync.currentRightWeapon = null;
+                    }
+                    else {
+                        vrPlayerSync.currentLeftWeapon = null;   
+                    }
                 }
 
                 if (item == ___m_rightItem) {
-                    vrPlayerSync.currentRightWeapon = null;
+                    if (VHVRConfig.LeftHanded()) {
+                        vrPlayerSync.currentLeftWeapon = null;
+                    }
+                    else {
+                        vrPlayerSync.currentRightWeapon = null;   
+                    }
                 }
 
                 VrikCreator.resetVrikHandTransform(__instance);

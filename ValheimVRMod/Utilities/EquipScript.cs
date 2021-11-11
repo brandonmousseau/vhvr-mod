@@ -7,7 +7,7 @@ namespace ValheimVRMod.Utilities {
         None, 
         Fishing, Cultivator, Hammer, Hoe,
         Bow,  Spear, SpearChitin,
-        Shield
+        Shield, Tankard
     }
     
     public static class EquipScript {
@@ -33,6 +33,8 @@ namespace ValheimVRMod.Utilities {
                     return EquipType.Spear;
                 case "$item_spear_chitin":
                     return EquipType.SpearChitin;
+                case "$item_tankard":
+                    return EquipType.Tankard;
 
 
             }

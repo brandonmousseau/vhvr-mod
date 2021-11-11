@@ -356,6 +356,7 @@
     <Compile Include="Utilities\SettingCallback.cs" />
     <Compile Include="Utilities\CameraUtils.cs" />
     <Compile Include="Utilities\EquipScript.cs" />
+    <Compile Include="Utilities\Pose.cs" />
     <Compile Include="Utilities\WeaponColData.cs" />
     <Compile Include="Utilities\LayerUtils.cs" />
     <Compile Include="Utilities\VHVRConfig.cs" />

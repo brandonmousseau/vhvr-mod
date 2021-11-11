@@ -23,8 +23,10 @@ namespace ValheimVRMod.Scripts {
         private bool isRightHand;
         private Outline outline;
         private float hitTime;
-
+        private bool hasDrunk;
+        
         public bool itemIsTool;
+        public static bool isDrinking;
         
         private int maxSnapshots;
         private float colliderDistance;
@@ -36,11 +38,37 @@ namespace ValheimVRMod.Scripts {
             LayerUtils.CHARARCTER_TRIGGER
         };
 
+        private void OnTriggerStay(Collider collider) {
+
+            if (!isCollisionAllowed()) {
+                return;
+            }
+
+            if (!isRightHand || EquipScript.getRight() != EquipType.Tankard || collider.name != "MouthCollider" || hasDrunk) {
+                return;
+            }
+
+            var mainHand = VHVRConfig.LeftHanded() ? VRPlayer.leftHand : VRPlayer.rightHand;
+            
+            isDrinking = hasDrunk = 
+                mainHand.transform.rotation.eulerAngles.x > 0 
+                && mainHand.transform.rotation.eulerAngles.x < 90;
+
+        }
+
         private void OnTriggerEnter(Collider collider) {
             if (!isCollisionAllowed()) {
                 return;
             }
             
+            if (isRightHand && EquipScript.getRight() == EquipType.Tankard) {
+                if (collider.name == "MouthCollider" && hasDrunk) {
+                    hasDrunk = false;
+                }
+                
+                return;
+            }
+
             var maybePlayer = collider.GetComponentInParent<Player>();
 
             if (maybePlayer != null && maybePlayer == Player.m_localPlayer) {

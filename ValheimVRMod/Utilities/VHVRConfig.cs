@@ -48,6 +48,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> unlockDesktopCursor;
         private static ConfigEntry<bool> QuickMenuFollowCam;
         private static ConfigEntry<int> QuickMenuAngle;
+        private static ConfigEntry<bool> lockGuiWhileInventoryOpen;
 
         // VR Hud Settings
         private static ConfigEntry<bool> useLegacyHud;
@@ -83,6 +84,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> weaponNeedsSpeed;
         private static ConfigEntry<float> altPieceRotationDelay;
         private static ConfigEntry<bool> runIsToggled;
+        private static ConfigEntry<bool> leftHanded;
 
         // Graphics Settings
         private static ConfigEntry<bool> useAmplifyOcclusion;
@@ -298,6 +300,10 @@ namespace ValheimVRMod.Utilities
                 60,
                 new ConfigDescription("Set the quickmenu vertical angle ",
                     new AcceptableValueRange<int>(0, 360)));
+            lockGuiWhileInventoryOpen = config.Bind("UI",
+                "LockGuiPositionWhenMenuOpen",
+                true,
+                "Use this so that the GUI will remain in place whenever the Inventory or Menu is open.");
         }
 
         private static void InitializeVrHudSettings()
@@ -417,6 +423,10 @@ namespace ValheimVRMod.Utilities
                                        "RunIsToggled",
                                        true,
                                        "Determine whether or not you need to hold run or it is a toggle. Keep it as toggle (true) to have your thumb free when sprinting.");
+            leftHanded = config.Bind("Controls",
+                "Left Handed",
+                false,
+                "Left Handed Mode");
             InitializeConfigurableKeyBindings(config);
         }
 
@@ -847,6 +857,11 @@ namespace ValheimVRMod.Utilities
             return runIsToggled.Value;
         }
         
+        public static bool LeftHanded()
+        {
+            return leftHanded.Value;
+        }
+        
         public static float ArrowParticleSize()
         {
             return arrowParticleSize.Value;
@@ -932,6 +947,11 @@ namespace ValheimVRMod.Utilities
         public static bool HideHotbar()
         {
             return hideHotbar.Value && UseVrControls();
+        }
+        
+        public static bool LockGuiWhileMenuOpen()
+        {
+            return lockGuiWhileInventoryOpen.Value;
         }
     }
 }
