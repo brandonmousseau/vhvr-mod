@@ -51,6 +51,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> unlockDesktopCursor;
         private static ConfigEntry<bool> QuickMenuFollowCam;
         private static ConfigEntry<int> QuickMenuAngle;
+        private static ConfigEntry<bool> lockGuiWhileInventoryOpen;
 
         // Controls Settings
         private static ConfigEntry<bool> useLookLocomotion;
@@ -283,6 +284,10 @@ namespace ValheimVRMod.Utilities
                 60,
                 new ConfigDescription("Set the quickmenu vertical angle ",
                     new AcceptableValueRange<int>(0, 360)));
+            lockGuiWhileInventoryOpen = config.Bind("UI",
+                "LockGuiPositionWhenMenuOpen",
+                true,
+                "Use this so that the GUI will remain in place whenever the Inventory or Menu is open.");
         }
 
         private static void InitializeControlsSettings()
@@ -820,6 +825,11 @@ namespace ValheimVRMod.Utilities
         public static bool UseSpearDirectionGraphic()
         {
             return useSpearDirectionGraphic.Value;
+        }
+
+        public static bool LockGuiWhileMenuOpen()
+        {
+            return lockGuiWhileInventoryOpen.Value;
         }
     }
 }

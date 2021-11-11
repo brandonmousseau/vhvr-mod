@@ -153,6 +153,11 @@ namespace ValheimVRMod.VRCore.UI
             var offsetPosition = new Vector3(0f, VHVRConfig.GetUiPanelVerticalOffset(), VHVRConfig.GetUiPanelDistance());
             if (useDynamicallyPositionedGui())
             {
+                if (shouldLockDynamicGuiPosition())
+                {
+                    isRecentering = false;
+                    return;
+                }
                 var playerInstance = Player.m_localPlayer;
                 var currentDirection = getCurrentGuiDirection();
                 if (isRecentering)
@@ -187,6 +192,16 @@ namespace ValheimVRMod.VRCore.UI
             float ratio = (float)Screen.width / (float)Screen.height;
             _uiPanel.transform.localScale = new Vector3(VHVRConfig.GetUiPanelSize() * ratio,
                                                         VHVRConfig.GetUiPanelSize(), 1f);
+        }
+
+        private bool shouldLockDynamicGuiPosition()
+        {
+            return VHVRConfig.LockGuiWhileMenuOpen() && menuIsOpen();
+        }
+
+        private bool menuIsOpen()
+        {
+            return StoreGui.IsVisible() || InventoryGui.IsVisible() || Menu.IsVisible() || (TextViewer.instance && TextViewer.instance.IsVisible()) || Minimap.IsOpen();
         }
 
         private bool ensureUIPanel()
