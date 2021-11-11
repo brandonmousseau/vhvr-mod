@@ -13,6 +13,23 @@ using System.Runtime.CompilerServices;
 namespace ValheimVRMod.Patches
 {
     /**
+     * This is required because for the VRHud we move the Minimap's Canvas
+     * from the default position/rotation, so setting the absolute rotation
+     * of the player icon doesn't work anymore. This changes it to use
+     * the local rotation instead so it'll work regardless of canvas
+     * position.
+     */
+    [HarmonyPatch(typeof(Minimap), nameof(Minimap.UpdatePlayerMarker))]
+    public class MinimapPlayerMarkerPatch
+    {
+
+        static void Postfix(Minimap __instance, Quaternion playerRot)
+        {
+            __instance.m_smallMarker.localRotation = Quaternion.Euler(0f, 0f, -playerRot.eulerAngles.y);
+        }
+    }
+
+    /**
     * The purpose of this patch is to update the base
     * "mousePosition" getter, which is what all the rest of
     * the UnityEngine uses to determine current mouse
