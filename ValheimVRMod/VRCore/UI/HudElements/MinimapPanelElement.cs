@@ -111,6 +111,11 @@ namespace ValheimVRMod.VRCore.UI.HudElements
             _clone.Root.AddComponent<LayoutElement>();
             cloneTransform.localPosition = Vector3.zero;
             cloneTransform.localRotation = Quaternion.identity;
+
+            // This being enabled this causes icons to not be visible when moving
+            // the canvas around to different HUD locations. It doesn't seem like
+            // anything is broken by just disabling it.
+            _clone.map.GetComponent<RectMask2D>().enabled = false;
         }
 
         private void cacheSmallMinimapPanelComponents(GameObject root, MinimapPanelComponents cache)
