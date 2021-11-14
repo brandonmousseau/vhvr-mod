@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 using ValheimVRMod.Utilities;
 using static ValheimVRMod.VRCore.UI.VRHud;
@@ -72,7 +67,7 @@ namespace ValheimVRMod.VRCore.UI.HudElements
             if (_original.mapRoot && !_original.mapRoot.activeSelf)
             {
                 _original.mapRoot.SetActive(true);
-                updateSmallMinimapPanelHudReferences(_original);
+                updateSmallMinimapPanelHudReferences(_original, true);
                 _original.Clear();
             }
         }
@@ -84,9 +79,8 @@ namespace ValheimVRMod.VRCore.UI.HudElements
             {
                 _original.mapRoot.SetActive(false);
             }
-            updateSmallMinimapPanelHudReferences(_clone);
+            updateSmallMinimapPanelHudReferences(_clone, false);
         }
-
 
         private void maybeCloneSmallMinimapPanelComponents()
         {
@@ -112,7 +106,7 @@ namespace ValheimVRMod.VRCore.UI.HudElements
             cloneTransform.localPosition = Vector3.zero;
             cloneTransform.localRotation = Quaternion.identity;
 
-            // This being enabled this causes icons to not be visible when moving
+            // This being enabled this causes PlayerMarker to not be visible when moving
             // the canvas around to different HUD locations. It doesn't seem like
             // anything is broken by just disabling it.
             _clone.map.GetComponent<RectMask2D>().enabled = false;
@@ -133,13 +127,22 @@ namespace ValheimVRMod.VRCore.UI.HudElements
             cache.mapShipMarker = cache.map.transform.Find("ship_marker").gameObject;
         }
 
-        private void updateSmallMinimapPanelHudReferences(MinimapPanelComponents newComponents)
+        private void updateSmallMinimapPanelHudReferences(MinimapPanelComponents newComponents, bool isOriginal)
         {
             Minimap.instance.m_smallRoot = newComponents.mapRoot;
             Minimap.instance.m_mapSmall = newComponents.map;
             Minimap.instance.m_mapImageSmall = newComponents.map.GetComponent<RawImage>();
             Minimap.instance.m_biomeNameSmall = newComponents.mapBiomeName.GetComponent<Text>();
-            Minimap.instance.m_pinRootSmall = newComponents.mapPinsRoot.GetComponent<RectTransform>();
+            if (isOriginal)
+            {
+                // Use the original pinRoot
+                Minimap.instance.m_pinRootSmall = newComponents.mapPinsRoot.GetComponent<RectTransform>();
+            } else
+            {
+                // Use the map as the pin root for the VR HUD (for...reasons...? can't make them render
+                // otherwise but no idea why xD ....)
+                Minimap.instance.m_pinRootSmall = newComponents.map.GetComponent<RectTransform>();
+            }
             Minimap.instance.m_smallMarker = newComponents.mapMarker.GetComponent<RectTransform>();
             Minimap.instance.m_smallShipMarker = newComponents.mapShipMarker.GetComponent<RectTransform>();
             Minimap.instance.m_windMarker = newComponents.mapWindMarker.GetComponent<RectTransform>();

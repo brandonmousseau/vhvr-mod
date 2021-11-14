@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore.UI.HudElements;
 using Valve.VR.InteractionSystem;
+using System.Collections.Generic;
 using static ValheimVRMod.Utilities.LogUtils;
 
 /**
@@ -21,13 +22,6 @@ namespace ValheimVRMod.VRCore.UI
 
         private const float FULL_ALPHA_ANGLE = 5f;
         private const float ZERO_ALPHA_ANGLE = 90f;
-
-        private float debugXPos = -0.0009f;
-        private float debugYPos = 0.0005f;
-        private float debugZPos = -0.0005f;
-        private float debugXRot = 0f;
-        private float debugYRot = 0f;
-        private float debugZRot = -100f;
 
         public static VRHud instance
         {
@@ -99,6 +93,9 @@ namespace ValheimVRMod.VRCore.UI
             new MinimapPanelElement()
         };
 
+        // Map of "Panel Component" -> "Current Position"
+        IDictionary<IVRHudElement, string> hudElementToPositionMap = new Dictionary<IVRHudElement, string>();
+
         public void Update()
         {
             if (!VRPlayer.attachedToPlayer || VHVRConfig.UseLegacyHud() || !VHVRConfig.UseVrControls())
@@ -133,7 +130,10 @@ namespace ValheimVRMod.VRCore.UI
 
         private void revertToLegacyHud()
         {
-            VRHudElements.ForEach(x => x.Reset());
+            VRHudElements.ForEach(x => {
+                x.Reset();
+                hudElementToPositionMap[x] = LEGACY;
+            });
             if (leftHudCanvasParent)
             {
                 leftHudCanvasParent.SetActive(false);
@@ -181,9 +181,13 @@ namespace ValheimVRMod.VRCore.UI
 
         private void placePanelToHud(string placement, IVRHudElement panelElement)
         {
-            //TODO: Maybe do this on changes and not every frame
+            if (hudElementToPositionMap.ContainsKey(panelElement) && hudElementToPositionMap[panelElement] == placement)
+            {
+                // Return immediately if no change in placement
+                return;
+            }
+            hudElementToPositionMap[panelElement] = placement;
             switch (placement) {
-                
                 case LEFT_WRIST:
                     placeInHorizontalVerticalHud(leftHudVerticalLayout.transform, leftHudHorizontalLayout.transform, panelElement.Clone.Root.transform, panelElement.Orientation);
                     break;
@@ -206,26 +210,6 @@ namespace ValheimVRMod.VRCore.UI
         {
             panel.SetParent(orientation == HudOrientation.Horizontal ? verticalHud : horizontalHud, false);
         }
-
-        //private void updateStaminaPanelLocalPosition(string healthPanelPosition, string staminaPanelPosition)
-        //{
-        //    if (healthPanelPosition.Equals(staminaPanelPosition))
-        //    {
-        //        Vector3 healthPanelLocation = healthPanelComponents.healthPanel.GetComponent<RectTransform>().localPosition;
-        //        // Need to make sure stamina and healthbar are positioned on same canvas correctly
-        //        float healthPanelWidth = healthPanelComponents.healthPanel.GetComponent<RectTransform>().sizeDelta.x;
-        //        float staminaPanelWidth = staminaPanelComponents.staminaBarRoot.GetComponent<RectTransform>().sizeDelta.x;
-        //        float staminaPanelHeight = staminaPanelComponents.staminaBarRoot.GetComponent<RectTransform>().sizeDelta.y;
-        //        staminaPanelComponents.staminaBarRoot.GetComponent<RectTransform>().localRotation = Quaternion.Euler(0f, 0f, 90f);
-        //        staminaPanelComponents.staminaBarRoot.GetComponent<RectTransform>().localPosition =
-        //            new Vector3(healthPanelLocation.x + 0.5f * healthPanelWidth + 0.5f * staminaPanelHeight, healthPanelLocation.y + 0.5f * staminaPanelWidth, healthPanelLocation.z);
-        //    }
-        //    else
-        //    {
-        //        staminaPanelComponents.staminaBarRoot.GetComponent<RectTransform>().localRotation = Quaternion.identity;
-        //        staminaPanelComponents.staminaBarRoot.GetComponent<RectTransform>().localPosition = Vector3.zero;
-        //    }
-        //}
 
         private void setCameraHudPosition() {
             
@@ -345,7 +329,6 @@ namespace ValheimVRMod.VRCore.UI
             horizontalLayoutGroup = horizontalLayout.AddComponent<HorizontalLayoutGroup>();
             var verticalLayout = new GameObject("VerticalLayout");
             verticalLayout.transform.SetParent(horizontalLayout.transform, false);
-            //verticalLayout.transform.SetSiblingIndex(isLeft ? -99 : 99);
             verticalLayoutGroup = verticalLayout.AddComponent<VerticalLayoutGroup>();
             var verticalLayoutElement = verticalLayout.AddComponent<LayoutElement>();
             verticalLayoutElement.flexibleWidth = 1f;
@@ -376,62 +359,6 @@ namespace ValheimVRMod.VRCore.UI
                 hudCamera = CameraUtils.getWorldspaceUiCamera();
             }
             return hudCamera != null;
-        }
-
-        // Helper debug function to manually re-position during gameplay.
-        private void updateWristDebugPositioning()
-        {
-            // Position
-            if (!Input.GetKey(KeyCode.Keypad0) && Input.GetKeyDown(KeyCode.Keypad7))
-            {
-                debugXPos += 0.0001f;
-            }
-            if (!Input.GetKey(KeyCode.Keypad0) && Input.GetKeyDown(KeyCode.Keypad1))
-            {
-                debugXPos -= 0.0001f;
-            }
-            if (!Input.GetKey(KeyCode.Keypad0) && Input.GetKeyDown(KeyCode.Keypad8))
-            {
-                debugYPos += 0.0001f;
-            }
-            if (!Input.GetKey(KeyCode.Keypad0) && Input.GetKeyDown(KeyCode.Keypad2))
-            {
-                debugYPos -= 0.0001f;
-            }
-            if (!Input.GetKey(KeyCode.Keypad0) && Input.GetKeyDown(KeyCode.Keypad9))
-            {
-                debugZPos += 0.0001f;
-            }
-            if (!Input.GetKey(KeyCode.Keypad0) && Input.GetKeyDown(KeyCode.Keypad3))
-            {
-                debugZPos -= 0.0001f;
-            }
-            // Rotation
-            if (Input.GetKey(KeyCode.Keypad0) && Input.GetKeyDown(KeyCode.Keypad7))
-            {
-                debugXRot += 5f;
-            }
-            if (Input.GetKey(KeyCode.Keypad0) && Input.GetKeyDown(KeyCode.Keypad1))
-            {
-                debugXRot -= 5f;
-            }
-            if (Input.GetKey(KeyCode.Keypad0) && Input.GetKeyDown(KeyCode.Keypad8))
-            {
-                debugYRot += 5f;
-            }
-            if (Input.GetKey(KeyCode.Keypad0) && Input.GetKeyDown(KeyCode.Keypad2))
-            {
-                debugYRot -= 5f;
-            }
-            if (Input.GetKey(KeyCode.Keypad0) && Input.GetKeyDown(KeyCode.Keypad9))
-            {
-                debugZRot += 5f;
-            }
-            if (Input.GetKey(KeyCode.Keypad0) && Input.GetKeyDown(KeyCode.Keypad3))
-            {
-                debugZRot -= 5f;
-            }
-            LogDebug("Local Position = ( " + debugXPos + ", " + debugYPos + ", " + debugZPos + " ) Local Rotation = ( " + debugXRot + ", " + debugYRot + ", " + debugZRot + " )");
         }
 
     }

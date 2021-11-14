@@ -12,6 +12,42 @@ using System.Runtime.CompilerServices;
 
 namespace ValheimVRMod.Patches
 {
+
+    // Need this patch to ensure dynamically created pins are positioned
+    // correctly in world space coordinates so they are rendered on the VRHUD
+    // canvases.
+    [HarmonyPatch(typeof(Minimap), nameof(Minimap.UpdatePins))]
+    class Minimap_UpdatePins_SetParentPatch
+    {
+
+        private static MethodInfo setParentMethod = AccessTools.Method(typeof(Transform), "SetParent", new Type[] { typeof(Transform) });
+
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            if (VHVRConfig.NonVrPlayer())
+            {
+                return instructions;
+            }
+            var original = new List<CodeInstruction>(instructions);
+            var patched = new List<CodeInstruction>();
+            for (int i = 0; i < original.Count; i++)
+            {
+                var instruction = original[i];
+                if (instruction.Calls(setParentMethod))
+                {
+                    // Push "false" onto evaluation stack
+                    patched.Add(new CodeInstruction(OpCodes.Ldc_I4_0));
+                    // Call SetParent method that uses the bool input
+                    patched.Add(CodeInstruction.Call(typeof(Transform), "SetParent", new Type[] { typeof(Transform), typeof(bool) }));
+                } else
+                {
+                    patched.Add(instruction);
+                }
+            }
+            return patched;
+        }
+    }
+
     /**
      * This is required because for the VRHud we move the Minimap's Canvas
      * from the default position/rotation, so setting the absolute rotation
