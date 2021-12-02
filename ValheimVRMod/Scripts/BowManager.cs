@@ -143,7 +143,7 @@ namespace ValheimVRMod.Scripts {
         private Vector3 getArrowRestOffset() {
             Vector3 drawVector = pullObj.transform.position - transform.position;
 
-            // The angle between the push directioin and the arrow direction.
+            // The angle between the push direction and the arrow direction.
             double pushOffsetAngle = Math.Asin(VHVRConfig.ArrowRestElevation() / drawVector.magnitude);
 
             // A vector that lies on the bow surface and is perpendicular to the draw direction.
