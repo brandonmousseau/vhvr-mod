@@ -15,7 +15,7 @@ namespace ValheimVRMod.Scripts {
         protected Vector3 stringBottom;
         protected Vector3 pullStart;
         protected GameObject pullObj;
-        protected GameObject stringCenter;
+        protected GameObject arrowRest;
         protected Quaternion originalRotation;
         protected bool initialized;
         protected bool wasInitialized;
@@ -39,13 +39,12 @@ namespace ValheimVRMod.Scripts {
             pullObj.transform.SetParent(transform, false);
             pullObj.transform.forward *= -1;
 
-            stringCenter = new GameObject();
-            stringCenter.transform.SetParent(transform, false);
+            arrowRest = new GameObject();
         }
 
         protected void OnDestroy() {
             Destroy(pullObj);
-            Destroy(stringCenter);
+            Destroy(arrowRest);
         }
 
         /**
@@ -124,8 +123,8 @@ namespace ValheimVRMod.Scripts {
 
                 pullString();
                 gameObject.GetComponent<LineRenderer>().SetPosition(1, pullObj.transform.localPosition);
-                updateStringCenter();
-                transform.LookAt(stringCenter.transform, -transform.parent.forward);
+                udpateArrowRest();
+                transform.rotation = arrowRest.transform.rotation;
 
             } else if (wasPulling) {
                 wasPulling = false;
@@ -135,12 +134,19 @@ namespace ValheimVRMod.Scripts {
             }
 
         }
-        private void updateStringCenter() {
+
+        private void udpateArrowRest() {
+            arrowRest.transform.position = transform.position + getArrowRestOffset();
+            arrowRest.transform.LookAt(pullObj.transform, -transform.parent.forward);
+        }
+
+        private Vector3 getArrowRestOffset() {
             Vector3 drawVector = pullObj.transform.position - transform.position;
             float drawLength = drawVector.magnitude;
-            float nockOffsetAmount = drawLength * (float)Math.Tan(Math.Asin(Math.Min(VHVRConfig.ArrowOffsetDistance() / drawVector.magnitude, 0.9)));
-            Vector3 nockOffsetDir = Vector3.Normalize(transform.parent.forward - Vector3.Project(transform.parent.forward, drawVector));
-            stringCenter.transform.position = pullObj.transform.position - nockOffsetDir * nockOffsetAmount;
+            double arrowOffsetAngle = Math.Asin(VHVRConfig.ArrowOffsetDistance() / drawVector.magnitude);
+            float tanArrowOffset = (float) Math.Tan(arrowOffsetAngle);
+            Vector3 upwardPerpendicularToDraw = Vector3.Normalize(transform.parent.forward - Vector3.Project(transform.parent.forward, drawVector));
+            return Vector3.Lerp(upwardPerpendicularToDraw * drawLength * tanArrowOffset, drawVector, tanArrowOffset * tanArrowOffset);
         }
 
         private void pullString() {
