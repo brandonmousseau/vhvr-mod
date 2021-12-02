@@ -1,5 +1,7 @@
-﻿using System.Threading;
+using System;
+using System.Threading;
 using UnityEngine;
+using ValheimVRMod.Utilities;
 
 namespace ValheimVRMod.Scripts {
     public class BowManager : MonoBehaviour {
@@ -13,6 +15,7 @@ namespace ValheimVRMod.Scripts {
         protected Vector3 stringBottom;
         protected Vector3 pullStart;
         protected GameObject pullObj;
+        protected GameObject stringCenter;
         protected Quaternion originalRotation;
         protected bool initialized;
         protected bool wasInitialized;
@@ -35,10 +38,14 @@ namespace ValheimVRMod.Scripts {
             pullObj = new GameObject();
             pullObj.transform.SetParent(transform, false);
             pullObj.transform.forward *= -1;
+
+            stringCenter = new GameObject();
+            stringCenter.transform.SetParent(transform, false);
         }
 
         protected void OnDestroy() {
             Destroy(pullObj);
+            Destroy(stringCenter);
         }
 
         /**
@@ -75,7 +82,7 @@ namespace ValheimVRMod.Scripts {
                 }
             }
             
-            pullStart = Vector3.Lerp(stringTop, stringBottom, 0.5f);
+            pullStart = Vector3.Lerp(stringTop, stringBottom, 0.5f) - transform.up * VHVRConfig.ArrowOffsetDistance();
             initialized = true;
         }
 
@@ -117,14 +124,23 @@ namespace ValheimVRMod.Scripts {
 
                 pullString();
                 gameObject.GetComponent<LineRenderer>().SetPosition(1, pullObj.transform.localPosition);
-                transform.LookAt(mainHand, -transform.parent.forward);   
-                
+                updateStringCenter();
+                transform.LookAt(stringCenter.transform, -transform.parent.forward);
+
             } else if (wasPulling) {
                 wasPulling = false;
                 pullObj.transform.localPosition = pullStart;
                 transform.localRotation = originalRotation;
                 gameObject.GetComponent<LineRenderer>().SetPosition(1, stringTop);
             }
+
+        }
+        private void updateStringCenter() {
+            Vector3 drawVector = pullObj.transform.position - transform.position;
+            float drawLength = drawVector.magnitude;
+            float nockOffsetAmount = drawLength * (float)Math.Tan(Math.Asin(Math.Min(VHVRConfig.ArrowOffsetDistance() / drawVector.magnitude, 0.9)));
+            Vector3 nockOffsetDir = Vector3.Normalize(transform.parent.forward - Vector3.Project(transform.parent.forward, drawVector));
+            stringCenter.transform.position = pullObj.transform.position - nockOffsetDir * nockOffsetAmount;
         }
 
         private void pullString() {
