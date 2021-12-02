@@ -444,7 +444,7 @@ namespace ValheimVRMod.Utilities
                 "ArrowRestElevation",
                 0.15f,
                 new ConfigDescription("The amount by which the arrow rest is higher than the center of the bow handle",
-                    new AcceptableValueRange<float>(0, 0.5f)));
+                    new AcceptableValueRange<float>(0, 0.25f)));
 
 // #if DEBUG
 //             DebugPosX = config.Bind("Motion Control",
