@@ -146,10 +146,6 @@ namespace ValheimVRMod.Scripts {
             predictionLine.SetPositions(pointList.ToArray());
         }
 
-        private Vector3 getArrowRestPosition() {
-            return transform.position - transform.up * VHVRConfig.ArrowOffsetDistance();
-        }
-
         private void handlePulling() {
             if (!pulling && !checkHandNearString()) {
                 return;
