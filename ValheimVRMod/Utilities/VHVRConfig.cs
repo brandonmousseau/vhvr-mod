@@ -1,4 +1,4 @@
-﻿using BepInEx.Configuration;
+using BepInEx.Configuration;
 using Unity.XR.OpenVR;
 using System;
 using ValheimVRMod.VRCore;
@@ -86,6 +86,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> useSpearDirectionGraphic;
         private static ConfigEntry<bool> spearThrowSpeedDynamic;
         private static ConfigEntry<bool> spearTwoHanded;
+        private static ConfigEntry<float> arrowOffsetDistance;
 
 #if DEBUG
         private static ConfigEntry<float> DebugPosX;
@@ -439,6 +440,12 @@ namespace ValheimVRMod.Utilities
                                                     "TwoHandedSpear",
                                                     false,
                                                     "Use this to toggle controls of two handed spear (left hand grab while having spear) (experimental)");
+            arrowOffsetDistance = config.Bind("Motion Control",
+                "ArrowOffsetDistance",
+                0.125f,
+                new ConfigDescription("The distance by which the arrow rest is above the center of the bow handle",
+                    new AcceptableValueRange<float>(0, 0.2f)));
+
 // #if DEBUG
 //             DebugPosX = config.Bind("Motion Control",
 //                 "DebugPosX",
@@ -712,6 +719,11 @@ namespace ValheimVRMod.Utilities
         public static bool UseArrowPredictionGraphic()
         {
             return useArrowPredictionGraphic.Value;
+        }
+
+        public static float ArrowOffsetDistance()
+        {
+            return arrowOffsetDistance.Value;
         }
 
         public static bool NonVrPlayer()
