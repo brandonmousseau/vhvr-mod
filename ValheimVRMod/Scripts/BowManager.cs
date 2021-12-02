@@ -81,7 +81,7 @@ namespace ValheimVRMod.Scripts {
                 }
             }
             
-            pullStart = Vector3.Lerp(stringTop, stringBottom, 0.5f) - transform.up * VHVRConfig.ArrowOffsetDistance();
+            pullStart = Vector3.Lerp(stringTop, stringBottom, 0.5f);
             initialized = true;
         }
 
