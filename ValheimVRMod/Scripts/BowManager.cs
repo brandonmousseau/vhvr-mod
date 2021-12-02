@@ -81,7 +81,7 @@ namespace ValheimVRMod.Scripts {
                     }
                 }
             }
-            
+
             pullStart = Vector3.Lerp(stringTop, stringBottom, 0.5f);
             initialized = true;
         }
@@ -125,6 +125,7 @@ namespace ValheimVRMod.Scripts {
                 pullString();
                 gameObject.GetComponent<LineRenderer>().SetPosition(1, pullObj.transform.localPosition);
                 rotateBowOnPulling();
+
             } else if (wasPulling) {
                 wasPulling = false;
                 pullObj.transform.localPosition = pullStart;
@@ -140,7 +141,11 @@ namespace ValheimVRMod.Scripts {
             // The angle between the push direction and the arrow direction.
             double pushOffsetAngle = Math.Asin(VHVRConfig.ArrowRestElevation() / drawLength);
 
-            transform.rotation = pushObj.transform.rotation * Quaternion.Euler((float) (-pushOffsetAngle * (180.0 / Math.PI)), 0, 0);
+            // Align the z-axis of the pushObj with the direction of the draw force and determine its y-axis using the orientation of the bow hand.
+            pushObj.transform.LookAt(pullObj.transform, worldUp: -transform.parent.forward);
+
+            // Assuming that the bow is perpendicular to the arrow, the angle between the y-axis of the bow and the y-axis of the pushObj should also be pushOffsetAngle.
+            transform.rotation = pushObj.transform.rotation * Quaternion.AngleAxis((float) (-pushOffsetAngle * (180.0 / Math.PI)), Vector3.right);
         }
 
         private void pullString() {
@@ -155,8 +160,6 @@ namespace ValheimVRMod.Scripts {
             if (pullPos.z < pullStart.z) {
                 pullObj.transform.localPosition = new Vector3(pullPos.x, pullPos.y, pullStart.z);
             }
-
-            pushObj.transform.LookAt(pullObj.transform, worldUp: -transform.parent.forward);
         }
     }
 }
