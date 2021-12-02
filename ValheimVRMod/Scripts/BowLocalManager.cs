@@ -133,7 +133,7 @@ namespace ValheimVRMod.Scripts {
 
             float stepLength = 0.1f;
             float stepSize = 20;
-            Vector3 pos = getArrowRestPosition();
+            Vector3 pos = arrowRest.transform.position;
             List<Vector3> pointList = new List<Vector3>();
 
             for (int i = 0; i < stepSize; i++) {
