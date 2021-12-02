@@ -86,7 +86,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> useSpearDirectionGraphic;
         private static ConfigEntry<bool> spearThrowSpeedDynamic;
         private static ConfigEntry<bool> spearTwoHanded;
-        private static ConfigEntry<float> arrowOffsetDistance;
+        private static ConfigEntry<float> arrowRestElevation;
 
 #if DEBUG
         private static ConfigEntry<float> DebugPosX;
@@ -440,11 +440,11 @@ namespace ValheimVRMod.Utilities
                                                     "TwoHandedSpear",
                                                     false,
                                                     "Use this to toggle controls of two handed spear (left hand grab while having spear) (experimental)");
-            arrowOffsetDistance = config.Bind("Motion Control",
-                "ArrowOffsetDistance",
-                0.125f,
+            arrowRestElevation = config.Bind("Motion Control",
+                "ArrowRestElevation",
+                0.15f,
                 new ConfigDescription("The amount by which the arrow rest is higher than the center of the bow handle",
-                    new AcceptableValueRange<float>(0, 0.2f)));
+                    new AcceptableValueRange<float>(0, 0.5f)));
 
 // #if DEBUG
 //             DebugPosX = config.Bind("Motion Control",
@@ -721,9 +721,9 @@ namespace ValheimVRMod.Utilities
             return useArrowPredictionGraphic.Value;
         }
 
-        public static float ArrowOffsetDistance()
+        public static float ArrowRestElevation()
         {
-            return arrowOffsetDistance.Value;
+            return arrowRestElevation.Value;
         }
 
         public static bool NonVrPlayer()
