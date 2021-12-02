@@ -15,7 +15,7 @@ namespace ValheimVRMod.Scripts {
         protected Vector3 stringBottom;
         protected Vector3 pullStart;
         protected GameObject pullObj;
-        protected GameObject arrowRest;
+        protected GameObject pushObj;
         protected Quaternion originalRotation;
         protected bool initialized;
         protected bool wasInitialized;
@@ -39,12 +39,13 @@ namespace ValheimVRMod.Scripts {
             pullObj.transform.SetParent(transform, false);
             pullObj.transform.forward *= -1;
 
-            arrowRest = new GameObject();
+            pushObj = new GameObject();
+            pushObj.transform.SetParent(transform, false);
         }
 
         protected void OnDestroy() {
             Destroy(pullObj);
-            Destroy(arrowRest);
+            Destroy(pushObj);
         }
 
         /**
@@ -123,9 +124,7 @@ namespace ValheimVRMod.Scripts {
 
                 pullString();
                 gameObject.GetComponent<LineRenderer>().SetPosition(1, pullObj.transform.localPosition);
-                udpateArrowRest();
-                transform.rotation = arrowRest.transform.rotation;
-
+                rotateBowOnPulling();
             } else if (wasPulling) {
                 wasPulling = false;
                 pullObj.transform.localPosition = pullStart;
@@ -135,22 +134,13 @@ namespace ValheimVRMod.Scripts {
 
         }
 
-        private void udpateArrowRest() {
-            arrowRest.transform.position = transform.position + getArrowRestOffset();
-            arrowRest.transform.LookAt(pullObj.transform, -transform.parent.forward);
-        }
-
-        private Vector3 getArrowRestOffset() {
-            Vector3 drawVector = pullObj.transform.position - transform.position;
+        private void rotateBowOnPulling() {
+            float drawLength = (pullObj.transform.position - transform.position).magnitude;
 
             // The angle between the push direction and the arrow direction.
-            double pushOffsetAngle = Math.Asin(VHVRConfig.ArrowRestElevation() / drawVector.magnitude);
+            double pushOffsetAngle = Math.Asin(VHVRConfig.ArrowRestElevation() / drawLength);
 
-            // A vector that lies on the bow surface and is perpendicular to the draw direction.
-            Vector3 upwardPerpendicularToDraw = transform.parent.forward - Vector3.Project(transform.parent.forward, drawVector);
-
-            Vector3 arrowRestOffsetDir = Vector3.RotateTowards(upwardPerpendicularToDraw, target: drawVector, maxRadiansDelta: (float) pushOffsetAngle, maxMagnitudeDelta: 0);
-            return arrowRestOffsetDir.normalized * VHVRConfig.ArrowRestElevation();
+            transform.rotation = pushObj.transform.rotation * Quaternion.Euler((float) (-pushOffsetAngle * (180.0 / Math.PI)), 0, 0);
         }
 
         private void pullString() {
@@ -165,6 +155,9 @@ namespace ValheimVRMod.Scripts {
             if (pullPos.z < pullStart.z) {
                 pullObj.transform.localPosition = new Vector3(pullPos.x, pullPos.y, pullStart.z);
             }
+
+            // pushObj.transform.position = transform.position;
+            pushObj.transform.LookAt(pullObj.transform, worldUp: -transform.parent.forward);
         }
     }
 }
