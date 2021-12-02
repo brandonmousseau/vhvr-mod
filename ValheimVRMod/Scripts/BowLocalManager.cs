@@ -133,7 +133,7 @@ namespace ValheimVRMod.Scripts {
 
             float stepLength = 0.1f;
             float stepSize = 20;
-            Vector3 pos = arrowRest.transform.position;
+            Vector3 pos = getArrowRestPosition();
             List<Vector3> pointList = new List<Vector3>();
 
             for (int i = 0; i < stepSize; i++) {
@@ -144,6 +144,10 @@ namespace ValheimVRMod.Scripts {
 
             predictionLine.positionCount = 20;
             predictionLine.SetPositions(pointList.ToArray());
+        }
+
+        private Vector3 getArrowRestPosition() {
+            return transform.position - transform.up * VHVRConfig.ArrowRestElevation();
         }
 
         private void handlePulling() {
