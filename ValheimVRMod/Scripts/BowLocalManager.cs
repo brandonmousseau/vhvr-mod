@@ -145,11 +145,6 @@ namespace ValheimVRMod.Scripts {
             predictionLine.positionCount = 20;
             predictionLine.SetPositions(pointList.ToArray());
         }
-
-        private Vector3 getArrowRestPosition() {
-            return transform.position - transform.up * VHVRConfig.ArrowRestElevation();
-        }
-
         private void handlePulling() {
             if (!pulling && !checkHandNearString()) {
                 return;
@@ -162,7 +157,7 @@ namespace ValheimVRMod.Scripts {
             
             arrowAttach.transform.rotation = pullObj.transform.rotation;
             arrowAttach.transform.position = pullObj.transform.position;
-            spawnPoint = transform.position;
+            spawnPoint = getArrowRestPosition();
             aimDir = -transform.forward;
             var currDrawPercentage = pullPercentage();
             if (arrow != null) {
@@ -179,7 +174,7 @@ namespace ValheimVRMod.Scripts {
             predictionLine.enabled = false;
             pulling = isPulling = false;
             attackDrawPercentage = pullPercentage();
-            spawnPoint = transform.position;
+            spawnPoint = getArrowRestPosition();
             aimDir = -transform.forward;
 
             if (withoutShoot || arrow == null || attackDrawPercentage <= 0.0f) {
@@ -268,9 +263,15 @@ namespace ValheimVRMod.Scripts {
 
             return null;
         }
-        
+
+        private Vector3 getArrowRestPosition()
+        {
+            return transform.position - transform.up * VHVRConfig.ArrowRestElevation();
+        }
+
         public bool isHoldingArrow() {
             return arrow != null;
         }
+
     }
 }
