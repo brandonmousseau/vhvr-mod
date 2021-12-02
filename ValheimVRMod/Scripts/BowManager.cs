@@ -156,7 +156,6 @@ namespace ValheimVRMod.Scripts {
                 pullObj.transform.localPosition = new Vector3(pullPos.x, pullPos.y, pullStart.z);
             }
 
-            // pushObj.transform.position = transform.position;
             pushObj.transform.LookAt(pullObj.transform, worldUp: -transform.parent.forward);
         }
     }
