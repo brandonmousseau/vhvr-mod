@@ -142,11 +142,15 @@ namespace ValheimVRMod.Scripts {
 
         private Vector3 getArrowRestOffset() {
             Vector3 drawVector = pullObj.transform.position - transform.position;
-            float drawLength = drawVector.magnitude;
-            double arrowOffsetAngle = Math.Asin(VHVRConfig.ArrowOffsetDistance() / drawVector.magnitude);
-            float tanArrowOffset = (float) Math.Tan(arrowOffsetAngle);
-            Vector3 upwardPerpendicularToDraw = Vector3.Normalize(transform.parent.forward - Vector3.Project(transform.parent.forward, drawVector));
-            return Vector3.Lerp(upwardPerpendicularToDraw * drawLength * tanArrowOffset, drawVector, tanArrowOffset * tanArrowOffset);
+
+            // The angle between the push directioin and the arrow direction.
+            double pushOffsetAngle = Math.Asin(VHVRConfig.ArrowRestElevation() / drawVector.magnitude);
+
+            // A vector that lies on the bow surface and is perpendicular to the draw direction.
+            Vector3 upwardPerpendicularToDraw = transform.parent.forward - Vector3.Project(transform.parent.forward, drawVector);
+
+            Vector3 arrowRestOffsetDir = Vector3.RotateTowards(upwardPerpendicularToDraw, target: drawVector, maxRadiansDelta: (float) pushOffsetAngle, maxMagnitudeDelta: 0);
+            return arrowRestOffsetDir.normalized * VHVRConfig.ArrowRestElevation();
         }
 
         private void pullString() {
