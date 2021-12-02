@@ -443,7 +443,7 @@ namespace ValheimVRMod.Utilities
             arrowOffsetDistance = config.Bind("Motion Control",
                 "ArrowOffsetDistance",
                 0.125f,
-                new ConfigDescription("The distance by which the arrow rest is above the center of the bow handle",
+                new ConfigDescription("The amount by which the arrow rest is higher than the center of the bow handle",
                     new AcceptableValueRange<float>(0, 0.2f)));
 
 // #if DEBUG
