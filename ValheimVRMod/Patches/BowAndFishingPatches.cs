@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -20,7 +21,7 @@ namespace ValheimVRMod.Patches {
             }
 
             if (EquipScript.getLeft() == EquipType.Bow) {
-                __result = BowLocalManager.attackDrawPercentage;
+                __result = Math.Min(BowLocalManager.attackDrawPercentage, BowLocalManager.instance.chargePercentage);
                 return false;
             }
 
