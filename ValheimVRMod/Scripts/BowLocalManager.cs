@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -9,13 +10,21 @@ using Valve.VR.InteractionSystem;
 namespace ValheimVRMod.Scripts {
     public class BowLocalManager : BowManager {
         private const float attachRange = 0.2f;
+        private const float incompleteDrawInaccuracyFactor = 10;
+
         private GameObject arrow;
         private LineRenderer predictionLine;
         private float projectileVel;
         private float projectileVelMin;
         private Outline outline;
+        private Outline arrowOutline;
         private ItemDrop.ItemData item;
         private Attack attack;
+        private float fullChargeDurationSecond;
+        private float drawStartTimeSecond;
+
+        // Vanilla-style restriction applied and current charge progress.
+        public float chargePercentage = 0;
 
         public static BowLocalManager instance;
         public static float attackDrawPercentage;
@@ -49,7 +58,7 @@ namespace ValheimVRMod.Scripts {
             outline.OutlineWidth = 10;
             outline.OutlineMode = Outline.Mode.OutlineVisible;
             outline.enabled = false;
-            
+
             item = Player.m_localPlayer.GetLeftItem();
             if (item != null) {
                 attack = item.m_shared.m_attack.Clone();
@@ -72,8 +81,12 @@ namespace ValheimVRMod.Scripts {
 
         private Hand getMainHand() {
             return VHVRConfig.LeftHanded() ? VRPlayer.leftHand : VRPlayer.rightHand;
-        }        
-        
+        }
+
+        private static float getFullChargeDurationSecond(float skillPercentage) {
+            return 0.5f + Math.Max(2.5f * (1 - skillPercentage), 0);
+        }
+
         /**
      * Need to use OnRenderObject instead of Update or LateUpdate,
      * because of VRIK Bone Updates happening in LateUpdate 
@@ -110,6 +123,14 @@ namespace ValheimVRMod.Scripts {
             } else if (! outline.enabled && ! Player.m_localPlayer.HaveStamina(getStaminaUsage() + 0.1f)) {
                 outline.enabled = true;
             }
+
+            if (pulling && chargePercentage < 1) {
+                // Use outline color to hint the charge progress to the player.
+                arrowOutline.OutlineColor = new Vector4(1, 0, 0, 1 - chargePercentage);
+                arrowOutline.enabled = true;
+            } else {
+                arrowOutline.enabled = false;
+            }
         }
         
         private float getStaminaUsage() {
@@ -120,7 +141,7 @@ namespace ValheimVRMod.Scripts {
             double attackStamina = attack.m_attackStamina;
             return (float) (attackStamina - attackStamina * 0.330000013113022 * Player.m_localPlayer.GetSkillFactor(item.m_shared.m_skillType));
         }
-        
+
         /**
      * calculate predictionline of how the arrow will fly
      */
@@ -145,6 +166,7 @@ namespace ValheimVRMod.Scripts {
             predictionLine.positionCount = 20;
             predictionLine.SetPositions(pointList.ToArray());
         }
+
         private void handlePulling() {
             if (!pulling && !checkHandNearString()) {
                 return;
@@ -154,16 +176,37 @@ namespace ValheimVRMod.Scripts {
                 releaseString(true);
                 return;
             }
-            
+
             arrowAttach.transform.rotation = pullObj.transform.rotation;
             arrowAttach.transform.position = pullObj.transform.position;
             spawnPoint = getArrowRestPosition();
             aimDir = -transform.forward;
             var currDrawPercentage = pullPercentage();
-            if (arrow != null) {
-                Player.m_localPlayer.UseStamina((currDrawPercentage - attackDrawPercentage) * 15);   
+            if (arrow != null && currDrawPercentage > attackDrawPercentage && !VHVRConfig.RestrictBowDrawSpeed()) {
+                Player.m_localPlayer.UseStamina((currDrawPercentage - attackDrawPercentage) * 15);
             }
+            updateChargePercentage();
             attackDrawPercentage = currDrawPercentage;
+        }
+
+        private void updateChargePercentage() {
+            float currentTimeSecond = Time.time;
+            if (attackDrawPercentage <= 0 || drawStartTimeSecond > Time.time) {
+                // Reset charge progress.
+                fullChargeDurationSecond = getFullChargeDurationSecond(Player.m_localPlayer.GetSkillFactor(item.m_shared.m_skillType));
+                drawStartTimeSecond = currentTimeSecond;
+                return;
+            }
+
+            if (!VHVRConfig.RestrictBowDrawSpeed()) {
+                chargePercentage = 1;
+                return;
+            }
+
+            // The full charge duration at maximum bow skill level.
+            float minFullChargeDurationSecond = getFullChargeDurationSecond(skillPercentage: 1);
+
+            chargePercentage = Math.Min(Math.Max(currentTimeSecond - drawStartTimeSecond, minFullChargeDurationSecond) / fullChargeDurationSecond, 1);
         }
 
         private void releaseString(bool withoutShoot = false) {
@@ -188,6 +231,15 @@ namespace ValheimVRMod.Scripts {
 
                 return;
             }
+
+            // Add noise to the shooting direction to penalize premature release.
+            float aimNoiseDegree = (1 - chargePercentage) * incompleteDrawInaccuracyFactor;
+            aimDir =
+                Quaternion.Euler(
+                    UnityEngine.Random.Range(0.0f, aimNoiseDegree),
+                    UnityEngine.Random.Range(0.0f, aimNoiseDegree),
+                    UnityEngine.Random.Range(0.0f, aimNoiseDegree)) * aimDir;
+
             // SHOOTING
             getMainHand().hapticAction.Execute(0, 0.2f, 100, 0.3f,
                 VHVRConfig.LeftHanded() ? SteamVR_Input_Sources.LeftHand : SteamVR_Input_Sources.RightHand);
@@ -209,6 +261,8 @@ namespace ValheimVRMod.Scripts {
                 isPulling = true;
                 predictionLine.enabled = VHVRConfig.UseArrowPredictionGraphic();
                 attackDrawPercentage = 0;
+                chargePercentage = 0;
+                drawStartTimeSecond = Time.time;
             }
 
             return pulling = true;
@@ -232,7 +286,13 @@ namespace ValheimVRMod.Scripts {
             } catch {
                 return;
             }
-            
+
+            arrowOutline = arrow.AddComponent<Outline>();
+            arrowOutline.OutlineColor = Color.red;
+            arrowOutline.OutlineWidth = 10;
+            arrowOutline.OutlineMode = Outline.Mode.OutlineVisible;
+            arrowOutline.enabled = false;
+
             // we need to disable the Projectile Component, else the arrow will shoot out of the hands like a New Year rocket
             arrow.GetComponent<Projectile>().enabled = false;
             // also Destroy the Trail, as this produces particles when moving with arrow in hand
@@ -245,7 +305,7 @@ namespace ValheimVRMod.Scripts {
             }
             arrowAttach.transform.localRotation = Quaternion.identity;
             arrowAttach.transform.localPosition = Vector3.zero;
-            
+
             var currentAttack = Player.m_localPlayer.GetCurrentWeapon().m_shared.m_attack;
             projectileVel = currentAttack.m_projectileVel + ammoItem.m_shared.m_attack.m_projectileVel;
             projectileVelMin = currentAttack.m_projectileVelMin + ammoItem.m_shared.m_attack.m_projectileVelMin;
@@ -272,6 +332,5 @@ namespace ValheimVRMod.Scripts {
         public bool isHoldingArrow() {
             return arrow != null;
         }
-
     }
 }
