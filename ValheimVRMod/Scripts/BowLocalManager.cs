@@ -10,7 +10,7 @@ using Valve.VR.InteractionSystem;
 namespace ValheimVRMod.Scripts {
     public class BowLocalManager : BowManager {
         private const float attachRange = 0.2f;
-        private const float incompleteDrawInaccuracyFactor = 10;
+        private const float maxAimNoise = (float) Math.PI / 12;
 
         private GameObject arrow;
         private LineRenderer predictionLine;
@@ -22,6 +22,9 @@ namespace ValheimVRMod.Scripts {
         private Attack attack;
         private float fullChargeDurationSecond;
         private float drawStartTimeSecond;
+
+        private Vector3 reusedMainHandVelocity;
+        private Vector3 reusedMainHandAngularVelocity;
 
         // Vanilla-style restriction applied and current charge progress.
         public float chargePercentage = 0;
@@ -232,13 +235,12 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            // Add noise to the shooting direction to penalize premature release.
-            float aimNoiseDegree = (1 - chargePercentage) * incompleteDrawInaccuracyFactor;
-            aimDir =
-                Quaternion.Euler(
-                    UnityEngine.Random.Range(0.0f, aimNoiseDegree),
-                    UnityEngine.Random.Range(0.0f, aimNoiseDegree),
-                    UnityEngine.Random.Range(0.0f, aimNoiseDegree)) * aimDir;
+            if (chargePercentage < 1) {
+                // Add noise to the shooting direction to penalize premature releases.
+                float aimNoise = UnityEngine.Random.Range(0, 1 - chargePercentage) * maxAimNoise;
+                getMainHand().GetEstimatedPeakVelocities(out reusedMainHandVelocity, out reusedMainHandAngularVelocity);
+                aimDir = Vector3.RotateTowards(aimDir, target: reusedMainHandVelocity, maxRadiansDelta: -aimNoise, maxMagnitudeDelta: 0);
+            }
 
             // SHOOTING
             getMainHand().hapticAction.Execute(0, 0.2f, 100, 0.3f,
