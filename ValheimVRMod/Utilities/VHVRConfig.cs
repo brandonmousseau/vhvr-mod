@@ -449,7 +449,7 @@ namespace ValheimVRMod.Utilities
             restrictBowDrawSpeed = config.Bind("Motion Control",
                 "RestrictBowDrawSpeed",
                 true,
-                "Whether to apply vanilla-style restriction on bow drawing speed and make premature releases inaccurate. If unchecked, extra bow stamina drain is applied for game balancing.");
+                "Whether to apply vanilla-style restriction on bow drawing speed and make premature releases inaccurate. If unchecked, extra bow stamina drain is applied for game balance.");
 
 // #if DEBUG
 //             DebugPosX = config.Bind("Motion Control",
