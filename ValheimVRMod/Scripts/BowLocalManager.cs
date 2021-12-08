@@ -87,7 +87,8 @@ namespace ValheimVRMod.Scripts {
         }
 
         private static float getFullChargeDurationSecond(float skillPercentage) {
-            return 0.5f + Math.Max(2.5f * (1 - skillPercentage), 0);
+            // In non-vr full draw takes 0.8s to 3.3s. In VR it takes around 0.5s to grab and nock an arrow, so the remaining charging time should be 0.3s to 2.8s.
+            return Mathf.Lerp(2.8f, 0.3f, skillPercentage);
         }
 
         /**
@@ -194,7 +195,7 @@ namespace ValheimVRMod.Scripts {
 
         private void updateChargePercentage() {
             float currentTimeSecond = Time.time;
-            if (attackDrawPercentage <= 0 || drawStartTimeSecond > Time.time) {
+            if (attackDrawPercentage <= 0 || drawStartTimeSecond > currentTimeSecond) {
                 // Reset charge progress.
                 fullChargeDurationSecond = getFullChargeDurationSecond(Player.m_localPlayer.GetSkillFactor(item.m_shared.m_skillType));
                 drawStartTimeSecond = currentTimeSecond;
@@ -206,10 +207,7 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            // The full charge duration at maximum bow skill level.
-            float minFullChargeDurationSecond = getFullChargeDurationSecond(skillPercentage: 1);
-
-            chargePercentage = Math.Min(Math.Max(currentTimeSecond - drawStartTimeSecond, minFullChargeDurationSecond) / fullChargeDurationSecond, 1);
+            chargePercentage = Math.Min((currentTimeSecond - drawStartTimeSecond) / fullChargeDurationSecond, 1);
         }
 
         private void releaseString(bool withoutShoot = false) {
