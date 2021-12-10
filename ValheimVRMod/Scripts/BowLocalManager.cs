@@ -186,8 +186,10 @@ namespace ValheimVRMod.Scripts {
             spawnPoint = getArrowRestPosition();
             aimDir = -transform.forward;
             var currDrawPercentage = pullPercentage();
-            if (arrow != null && currDrawPercentage > attackDrawPercentage && !VHVRConfig.RestrictBowDrawSpeed()) {
-                Player.m_localPlayer.UseStamina((currDrawPercentage - attackDrawPercentage) * 15);
+            if (arrow != null && currDrawPercentage > attackDrawPercentage) {
+                // Even with RestrictBowDrawSpeed enabled, charging duration is shorter than the full draw duration on non-vr so some amount of stamina drain should be added to compensate.
+                float additionalStaminaDrain = VHVRConfig.RestrictBowDrawSpeed() ? 3 : 15;
+                Player.m_localPlayer.UseStamina((currDrawPercentage - attackDrawPercentage) * (currDrawPercentage + attackDrawPercentage) * additionalStaminaDrain);
             }
             updateChargePercentage();
             attackDrawPercentage = currDrawPercentage;
