@@ -1,4 +1,4 @@
-﻿using HarmonyLib;
+using HarmonyLib;
 using UnityEngine;
 using ValheimVRMod.VRCore;
 using ValheimVRMod.Utilities;
@@ -33,12 +33,13 @@ namespace ValheimVRMod.Patches
                 !VRPlayer.attachedToPlayer ||
                 !VRPlayer.inFirstPerson ||
                 !VHVRConfig.UseLookLocomotion() ||
+                __instance.IsRiding() ||
                 ___m_currentStation != null /* Not Crafting */)
             {
                 return;
             }
 
-            /* Not attached to something, like boat controls */
+            /* Attached to something, like boat controls */
             if(__instance.IsAttached())
             {
                 //Apply ship rotation
