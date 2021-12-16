@@ -33,8 +33,12 @@ namespace ValheimVRMod.Patches
                 !VRPlayer.attachedToPlayer ||
                 !VRPlayer.inFirstPerson ||
                 !VHVRConfig.UseLookLocomotion() ||
-                __instance.IsRiding() ||
                 ___m_currentStation != null /* Not Crafting */)
+            {
+                return;
+            }
+
+            if (!VHVRConfig.TurnWithMountedAnimal() && __instance.IsRiding())
             {
                 return;
             }
