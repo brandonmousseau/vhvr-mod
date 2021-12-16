@@ -38,7 +38,7 @@ namespace ValheimVRMod.Patches
                 return;
             }
 
-            if (!VHVRConfig.TurnWithMountedAnimal() && __instance.IsRiding())
+            if (!VHVRConfig.ViewTurnWithMountedAnimal() && __instance.IsRiding())
             {
                 return;
             }
