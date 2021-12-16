@@ -73,6 +73,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> altPieceRotationDelay;
         private static ConfigEntry<bool> runIsToggled;
         private static ConfigEntry<bool> leftHanded;
+        private static ConfigEntry<bool> turnWithMountedAnimal;
 
         // Graphics Settings
         private static ConfigEntry<bool> useAmplifyOcclusion;
@@ -350,6 +351,10 @@ namespace ValheimVRMod.Utilities
                 "Left Handed",
                 false,
                 "Left Handed Mode");
+            turnWithMountedAnimal = config.Bind("Controls",
+                                       "TurnWithMountedAnimal",
+                                       false,
+                                       "Whether the view turns automatically together with the mounted animal when the animal turns.");
             InitializeConfigurableKeyBindings(config);
         }
 
@@ -811,12 +816,17 @@ namespace ValheimVRMod.Utilities
         {
             return runIsToggled.Value;
         }
-        
+
         public static bool LeftHanded()
         {
             return leftHanded.Value;
         }
-        
+
+        public static bool TurnWithMountedAnimal()
+        {
+            return turnWithMountedAnimal.Value;
+        }
+
         public static float ArrowParticleSize()
         {
             return arrowParticleSize.Value;
