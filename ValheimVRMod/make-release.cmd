@@ -1,5 +1,5 @@
 if not exist  "%COMMON_DIR%Valheim\BepInEx\plugins" mkdir  "%COMMON_DIR%Valheim\BepInEx\plugins"
-copy "%SOLUTION_DIR%ValheimVRMod\bin\Debug\ValheimVRMod.dll" "%COMMON_DIR%Valheim\BepInEx\plugins"
+copy "%TARGET_PATH%" "%COMMON_DIR%Valheim\BepInEx\plugins"
 if not exist "%COMMON_DIR%Valheim\Valheim_Data\Managed" mkdir "%COMMON_DIR%Valheim\Valheim_Data\Managed"
 copy "%SOLUTION_DIR%Unity\build\ValheimVR_Data\Managed\SteamVR.dll" "%COMMON_DIR%Valheim\Valheim_Data\Managed"
 copy "%SOLUTION_DIR%Unity\build\ValheimVR_Data\Managed\SteamVR_Actions.dll" "%COMMON_DIR%Valheim\Valheim_Data\Managed"
@@ -43,7 +43,7 @@ copy  "%SOLUTION_DIR%Unity\ValheimVR\Assets\AssetBundles\amplify_resources.manif
 if not exist "%SOLUTION_DIR%ValheimVRMod\release" mkdir "%SOLUTION_DIR%ValheimVRMod\release"
 if not exist "%SOLUTION_DIR%ValheimVRMod\release\BepInEx" mkdir "%SOLUTION_DIR%ValheimVRMod\release\BepInEx"
 if not exist "%SOLUTION_DIR%ValheimVRMod\release\BepInEx\plugins" mkdir  "%SOLUTION_DIR%ValheimVRMod\release\BepInEx\plugins"
-copy "%SOLUTION_DIR%ValheimVRMod\bin\Debug\ValheimVRMod.dll" "%SOLUTION_DIR%ValheimVRMod\release\BepInEx\plugins"
+copy "%TARGET_PATH%" "%SOLUTION_DIR%ValheimVRMod\release\BepInEx\plugins"
 
 if not exist "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data" mkdir "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data"
 if not exist "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\Managed" mkdir "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\Managed"
