@@ -247,6 +247,7 @@ namespace ValheimVRMod.VRCore.UI
             if (action == null)
             {
                 LogWarning("Unmapped ZInput Key:" + zinput);
+                ignoredZInputs.Add(zinput); // Don't check for this input again
                 return false;
             }
             return action.Any(x => x.GetStateDown(SteamVR_Input_Sources.Any));
@@ -275,6 +276,7 @@ namespace ValheimVRMod.VRCore.UI
             if (action == null)
             {
                 LogWarning("Unmapped ZInput Key:" + zinput);
+                ignoredZInputs.Add(zinput); // Don't check for this input again
                 return false;
             }
             return action.Any(x => x.GetState(SteamVR_Input_Sources.Any));
@@ -306,6 +308,7 @@ namespace ValheimVRMod.VRCore.UI
             if (action == null)
             {
                 LogWarning("Unmapped ZInput Key:" + zinput);
+                ignoredZInputs.Add(zinput); // Don't check for this input again
                 return false;
             }
             return action.Any(x => x.GetStateUp(SteamVR_Input_Sources.Any));

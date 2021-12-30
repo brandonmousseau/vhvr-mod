@@ -1,4 +1,4 @@
-﻿using BepInEx.Configuration;
+using BepInEx.Configuration;
 using Unity.XR.OpenVR;
 using System;
 using ValheimVRMod.VRCore;
@@ -73,6 +73,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> altPieceRotationDelay;
         private static ConfigEntry<bool> runIsToggled;
         private static ConfigEntry<bool> leftHanded;
+        private static ConfigEntry<bool> viewTurnWithMountedAnimal;
 
         // Graphics Settings
         private static ConfigEntry<bool> useAmplifyOcclusion;
@@ -86,6 +87,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> useSpearDirectionGraphic;
         private static ConfigEntry<bool> spearThrowSpeedDynamic;
         private static ConfigEntry<bool> spearTwoHanded;
+        private static ConfigEntry<float> arrowRestElevation;
 
 #if DEBUG
         private static ConfigEntry<float> DebugPosX;
@@ -349,6 +351,10 @@ namespace ValheimVRMod.Utilities
                 "Left Handed",
                 false,
                 "Left Handed Mode");
+            viewTurnWithMountedAnimal = config.Bind("Controls",
+                                       "ViewTurnWithMountedAnimal",
+                                       false,
+                                       "Whether the view turns automatically together with the mounted animal when the animal turns.");
             InitializeConfigurableKeyBindings(config);
         }
 
@@ -439,6 +445,12 @@ namespace ValheimVRMod.Utilities
                                                     "TwoHandedSpear",
                                                     false,
                                                     "Use this to toggle controls of two handed spear (left hand grab while having spear) (experimental)");
+            arrowRestElevation = config.Bind("Motion Control",
+                "ArrowRestElevation",
+                0.15f,
+                new ConfigDescription("The amount by which the arrow rest is higher than the center of the bow handle",
+                    new AcceptableValueRange<float>(0, 0.25f)));
+
 // #if DEBUG
 //             DebugPosX = config.Bind("Motion Control",
 //                 "DebugPosX",
@@ -714,6 +726,11 @@ namespace ValheimVRMod.Utilities
             return useArrowPredictionGraphic.Value;
         }
 
+        public static float ArrowRestElevation()
+        {
+            return arrowRestElevation.Value;
+        }
+
         public static bool NonVrPlayer()
         {
 #if NONVRMODE
@@ -799,12 +816,17 @@ namespace ValheimVRMod.Utilities
         {
             return runIsToggled.Value;
         }
-        
+
         public static bool LeftHanded()
         {
             return leftHanded.Value;
         }
-        
+
+        public static bool ViewTurnWithMountedAnimal()
+        {
+            return viewTurnWithMountedAnimal.Value;
+        }
+
         public static float ArrowParticleSize()
         {
             return arrowParticleSize.Value;

@@ -1,5 +1,7 @@
-﻿using System.Threading;
+using System;
+using System.Threading;
 using UnityEngine;
+using ValheimVRMod.Utilities;
 
 namespace ValheimVRMod.Scripts {
     public class BowManager : MonoBehaviour {
@@ -13,6 +15,7 @@ namespace ValheimVRMod.Scripts {
         protected Vector3 stringBottom;
         protected Vector3 pullStart;
         protected GameObject pullObj;
+        protected GameObject pushObj;
         protected Quaternion originalRotation;
         protected bool initialized;
         protected bool wasInitialized;
@@ -35,10 +38,14 @@ namespace ValheimVRMod.Scripts {
             pullObj = new GameObject();
             pullObj.transform.SetParent(transform, false);
             pullObj.transform.forward *= -1;
+
+            pushObj = new GameObject();
+            pushObj.transform.SetParent(transform, false);
         }
 
         protected void OnDestroy() {
             Destroy(pullObj);
+            Destroy(pushObj);
         }
 
         /**
@@ -74,7 +81,7 @@ namespace ValheimVRMod.Scripts {
                     }
                 }
             }
-            
+
             pullStart = Vector3.Lerp(stringTop, stringBottom, 0.5f);
             initialized = true;
         }
@@ -117,14 +124,28 @@ namespace ValheimVRMod.Scripts {
 
                 pullString();
                 gameObject.GetComponent<LineRenderer>().SetPosition(1, pullObj.transform.localPosition);
-                transform.LookAt(mainHand, -transform.parent.forward);   
-                
+                rotateBowOnPulling();
+
             } else if (wasPulling) {
                 wasPulling = false;
                 pullObj.transform.localPosition = pullStart;
                 transform.localRotation = originalRotation;
                 gameObject.GetComponent<LineRenderer>().SetPosition(1, stringTop);
             }
+
+        }
+
+        private void rotateBowOnPulling() {
+            float drawLength = (pullObj.transform.position - transform.position).magnitude;
+
+            // The angle between the push direction and the arrow direction.
+            double pushOffsetAngle = Math.Asin(VHVRConfig.ArrowRestElevation() / drawLength);
+
+            // Align the z-axis of the pushObj with the direction of the draw force and determine its y-axis using the orientation of the bow hand.
+            pushObj.transform.LookAt(pullObj.transform, worldUp: -transform.parent.forward);
+
+            // Assuming that the bow is perpendicular to the arrow, the angle between the y-axis of the bow and the y-axis of the pushObj should also be pushOffsetAngle.
+            transform.rotation = pushObj.transform.rotation * Quaternion.AngleAxis((float) (-pushOffsetAngle * (180.0 / Math.PI)), Vector3.right);
         }
 
         private void pullString() {
