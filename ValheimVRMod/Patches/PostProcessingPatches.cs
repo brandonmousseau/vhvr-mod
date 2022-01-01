@@ -127,5 +127,12 @@ namespace ValheimVRMod.Patches
         {
             EnableCameraMotionVectors(__instance.gameObject);
         }
+
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(PostProcessingBehaviour), "OnPreRender")]
+        static void PrefixPostProcessingBehaviorPreRender(PostProcessingBehaviour __instance)
+        {
+            __instance.profile.bloom.m_Settings.lensDirt.intensity = 0f;
+        }
     }
 }

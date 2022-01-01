@@ -32,8 +32,10 @@
 2. Navigate to wherever you checked the source out above, and choose the `Unity\ValheimVR` folder.
 3. Click the newly added project to open it in Unity.
 4. Go to File -> Build Settings, then click Build.
-5. Choose the `Unity` folder inside your mod checkout. You should now have a `Unity\build` folder.
-6. Close Unity.
+5. Navigate to the `vhvr-mod\Unity` folder inside your mod checkout.
+6. Create a new subdirectory there named `build` and navigate into it.
+7. Select that folder for the build. The Unity project's build output should appear in `vhvr-mod\Unity\build`.
+8. Close Unity.
 
 ## Build the mod
 1. Open Visual Studio, and choose "Open a project or solution"
