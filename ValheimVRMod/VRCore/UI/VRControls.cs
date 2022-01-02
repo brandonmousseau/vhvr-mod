@@ -147,7 +147,7 @@ namespace ValheimVRMod.VRCore.UI
 
         private void checkRecenterPose(float dt)
         {
-            if (isInRecenterPose())
+            if (!VHVRConfig.DisableRecenterPose() && isInRecenterPose())
             {
                 recenteringPoseDuration += dt;
                 if (recenteringPoseDuration >= RECENTER_POSE_TIME)

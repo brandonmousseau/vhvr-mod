@@ -27,6 +27,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> enableHeadReposition;
         private static ConfigEntry<bool> recenterOnStart;
         private static ConfigEntry<bool> roomscaleFadeToBlack;
+        private static ConfigEntry<bool> disableRecenterPose;
 
         // UI Settings
         private static ConfigEntry<float> overlayCurvature;
@@ -154,6 +155,10 @@ namespace ValheimVRMod.Utilities
                                           "RecenterOnStart",
                                           true,
                                           "Set this to true if you want tracking to be automatically re-centered when the game first starts up.");
+            disableRecenterPose = config.Bind("General",
+                                          "DisableRecenterPose",
+                                          false,
+                                          "Set this true if you don't want to disable the re-centering the VR view using the \"Hands in front of face\" pose.");
             roomscaleFadeToBlack = config.Bind("General",
                                           "RoomscaleFadeToBlack",
                                           false,
@@ -974,6 +979,11 @@ namespace ValheimVRMod.Utilities
         public static bool LockGuiWhileMenuOpen()
         {
             return lockGuiWhileInventoryOpen.Value;
+        }
+
+        public static bool DisableRecenterPose()
+        {
+            return disableRecenterPose.Value;
         }
     }
 }
