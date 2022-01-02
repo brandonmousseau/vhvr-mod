@@ -21,9 +21,12 @@ namespace ValheimVRMod.VRCore.UI
         // number of updates to skip before allowing a "rotation" update to occur
         // when using the alt piece rotation mode (ie, context scroll is not bound).
         private static readonly float ALT_PIECE_ROTATION_TIME_DELAY = 0.250f;
+        private static readonly float ALT_MAP_ZOOM_TIME_DELAY = 0.125f;
 
         private float altPieceRotationElapsedTime = 0f;
         private bool altPieceTriggered = false;
+        private float altMapZoomElapsedTime = 0f;
+        private bool altMapZoomTriggered = false;
 
         private HashSet<string> ignoredZInputs = new HashSet<string>();
         private HashSet<string> quickActionEnabled = new HashSet<string>(); // never ignore these
@@ -80,14 +83,14 @@ namespace ValheimVRMod.VRCore.UI
 
         public static VRControls instance { get { return _instance; } }
         private static VRControls _instance;
-        public void Awake()
+        void Awake()
         {
             init();
             recenteringPoseDuration = 0f;
             _instance = this;
         }
 
-        public void Update()
+        void Update()
         {
             updateMainActionSetState();
             updateLasersActionSetState();
@@ -102,18 +105,36 @@ namespace ValheimVRMod.VRCore.UI
                 VHVRConfig.LeftHanded() ?  SteamVR_Actions.valheim_QuickSwitch : SteamVR_Actions.valheim_QuickActions, false);
         }
 
-        public void FixedUpdate()
+        void FixedUpdate()
         {
-            updateAltPieceRotataionTimer();
+            updateAltPieceRotationTimer();
+            updateAltMapZoomTimer();
         }
 
-        private void updateAltPieceRotataionTimer()
+        void LateUpdate()
+        {
+            // Reset this at the complete end of the update to allow for
+            // both MapZoomIn and MapZoomOut to test the zoom input.
+            altMapZoomTriggered = false;
+        }
+
+        private void updateAltPieceRotationTimer()
         {
             altPieceRotationElapsedTime += Time.deltaTime;
             if (altPieceRotationElapsedTime >= ALT_PIECE_ROTATION_TIME_DELAY * VHVRConfig.AltPieceRotationDelay())
             {
                 altPieceTriggered = true;
                 altPieceRotationElapsedTime = 0f;
+            }
+        }
+
+        private void updateAltMapZoomTimer()
+        {
+            altMapZoomElapsedTime += Time.deltaTime;
+            if (altMapZoomElapsedTime >= ALT_MAP_ZOOM_TIME_DELAY)
+            {
+                altMapZoomTriggered = true;
+                altMapZoomElapsedTime = 0f;
             }
         }
         
@@ -237,22 +258,35 @@ namespace ValheimVRMod.VRCore.UI
             // Handle Map zoom specially using context scroll input
             if (zinput == "MapZoomOut")
             {
-                if (contextScroll.axis.y < 0)
+                if (contextScroll.activeBinding)
                 {
-                    return true;
+                    if (contextScroll.axis.y < 0)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
                 } else
                 {
-                    return false;
+                    return (getAltMapZoom() < 0);
                 }
             } else if (zinput == "MapZoomIn")
             {
-                if (contextScroll.axis.y > 0)
+                if (contextScroll.activeBinding)
                 {
-                    return true;
-                }
-                else
+                    if (contextScroll.axis.y > 0)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                } else
                 {
-                    return false;
+                    return (getAltMapZoom() > 0);
                 }
             }
             SteamVR_Action_Boolean[] action;
@@ -431,6 +465,31 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return 0;
             }
+        }
+
+        private int getAltMapZoom()
+        {
+            if (!altMapZoomTriggered)
+            {
+                return 0;
+            }
+            bool rightGrip = SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand);
+            if (!rightGrip)
+            {
+                return 0;
+            }
+            float yAxis = GetJoyRightStickY();
+            if (yAxis > 0.5f)
+            {
+                return -1;
+            } else if (yAxis < -0.5f)
+            {
+                return 1;
+            } else
+            {
+                return 0;
+            }
+
         }
 
         private bool inPlaceMode()
