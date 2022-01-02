@@ -195,7 +195,7 @@ namespace ValheimVRMod.Patches {
             }
             else
             {
-                run = ZInput_GetJoyRightStickY_Patch.isRunning;
+                run = run || ZInput_GetJoyRightStickY_Patch.isRunning;
             }
         }
 
