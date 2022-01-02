@@ -1,10 +1,7 @@
 using BepInEx.Configuration;
 using Unity.XR.OpenVR;
-using System;
 using ValheimVRMod.VRCore;
 using UnityEngine;
-
-using static ValheimVRMod.Utilities.LogUtils;
 
 namespace ValheimVRMod.Utilities
 {
@@ -53,16 +50,31 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<int> QuickMenuAngle;
         private static ConfigEntry<bool> lockGuiWhileInventoryOpen;
 
+        // VR Hud Settings
+        private static ConfigEntry<bool> useLegacyHud;
+        private static ConfigEntry<float> cameraHudX;
+        private static ConfigEntry<float> cameraHudY;
+        private static ConfigEntry<float> cameraHudScale;
+        private static ConfigEntry<Vector3> leftWristPos;
+        private static ConfigEntry<Quaternion> leftWristRot;
+        private static ConfigEntry<Vector3> rightWristPos;
+        private static ConfigEntry<Quaternion> rightWristRot;
+        private static ConfigEntry<string> healthPanelPlacement;
+        private static ConfigEntry<string> staminaPanelPlacement;
+        private static ConfigEntry<string> minimapPanelPlacement;
+        private static ConfigEntry<bool> allowHudFade;
+        private static ConfigEntry<bool> hideHotbar;
+
         // Controls Settings
         private static ConfigEntry<bool> useLookLocomotion;
         private static ConfigEntry<string> preferredHand;
-        private static ConfigEntry<string> headReposFowardKey;
-        private static ConfigEntry<string> headReposBackwardKey;
-        private static ConfigEntry<string> headReposLeftKey;
-        private static ConfigEntry<string> headReposRightKey;
-        private static ConfigEntry<string> headReposUpKey;
-        private static ConfigEntry<string> headReposDownKey;
-        private static ConfigEntry<string> hmdRecenterKey;
+        private static ConfigEntry<KeyCode> headReposFowardKey;
+        private static ConfigEntry<KeyCode> headReposBackwardKey;
+        private static ConfigEntry<KeyCode> headReposLeftKey;
+        private static ConfigEntry<KeyCode> headReposRightKey;
+        private static ConfigEntry<KeyCode> headReposUpKey;
+        private static ConfigEntry<KeyCode> headReposDownKey;
+        private static ConfigEntry<KeyCode> hmdRecenterKey;
         private static ConfigEntry<bool> snapTurnEnabled;
         private static ConfigEntry<int> snapTurnAngle;
         private static ConfigEntry<bool> smoothSnapTurn;
@@ -99,12 +111,16 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> DebugScale;
 #endif
 
+        // Common values
+        private static readonly string[] k_HudAlignmentValues = { "LeftWrist", "RightWrist", "CameraLocked", "Legacy" };
+
         public static void InitializeConfiguration(ConfigFile mConfig) {
             
             config = mConfig;
             InitializeImmutableSettings();
             InitializeGeneralSettings();
             InitializeUISettings();
+            InitializeVrHudSettings();
             InitializeControlsSettings();
             InitializeGraphicsSettings();
             InitializeMotionControlSettings();
@@ -292,6 +308,68 @@ namespace ValheimVRMod.Utilities
                 "Use this so that the GUI will remain in place whenever the Inventory or Menu is open.");
         }
 
+        private static void InitializeVrHudSettings()
+        {
+            useLegacyHud = config.Bind("VRHUD",
+                                            "UseLegacyHud",
+                                            false,
+                                            "Disables custom VR HUD features and moves HUD elements to main UI panel.");
+            cameraHudX = config.Bind("VRHUD",
+                                            "CameraHudX",
+                                            0f,
+                                            new ConfigDescription("Offset to reposition VR health panel for Camera Position.",
+                                                new AcceptableValueRange<float>(-0.001f, 0.001f)));
+            cameraHudY = config.Bind("VRHUD",
+                                            "CameraHudY",
+                                            0f,
+                                            new ConfigDescription("Offset to reposition VR health panel for Camera Position.",
+                                                new AcceptableValueRange<float>(-0.001f, 0.001f)));
+            cameraHudScale = config.Bind("VRHUD",
+                                            "CameraHudScale",
+                                            1f,
+                                            new ConfigDescription("Scalar multiple to determine VR Camera Hud scale.",
+                                                new AcceptableValueRange<float>(.25f, 3f)));
+            leftWristPos = config.Bind("VRHUD",
+                                            "LeftWrist",
+                                            Vector3.zero,
+                                            "Position of VR Hud on Left Wrist.");
+            leftWristRot = config.Bind("VRHUD",
+                                            "LeftWristRot",
+                                            Quaternion.identity,
+                                            "Rotation for reposition VR Hud on Left Wrist.");
+            rightWristPos = config.Bind("VRHUD",
+                                            "RightWrist",
+                                            Vector3.zero,
+                                            "Position of VR Hud on Right Wrist.");
+            rightWristRot = config.Bind("VRHUD",
+                                            "RightWristRot",
+                                            Quaternion.identity,
+                                            "Rotation for reposition VR Hud on Right Wrist");
+            healthPanelPlacement = config.Bind("VRHUD",
+                                              "HealthPanelPlacement",
+                                              "LeftWrist",
+                                              new ConfigDescription("Where should the health panel be placed?",
+                                              new AcceptableValueList<string>(k_HudAlignmentValues)));
+            staminaPanelPlacement = config.Bind("VRHUD",
+                                            "StaminaPanelPlacement",
+                                            "CameraLocked",
+                                            new ConfigDescription("Where should the stamina panel be placed?",
+                                                new AcceptableValueList<string>(k_HudAlignmentValues)));
+            minimapPanelPlacement = config.Bind("VRHUD",
+                                            "MinimapPanelPlacement",
+                                            "RightWrist",
+                                            new ConfigDescription("Where should the minimap panel be placed?",
+                                                new AcceptableValueList<string>(k_HudAlignmentValues)));
+            allowHudFade = config.Bind("VRHUD",
+                                        "AllowHudFade",
+                                        true,
+                                        "When the HUD is attached to a wrist, allow it to fade away unless you are actively looking at it.");
+            hideHotbar = config.Bind("VRHUD",
+                                        "HideHotbar",
+                                        true,
+                                        "Hide the hotbar, as it is generally unused when playing in VR. Ignored if not playing with VR controls.");
+        }
+
         private static void InitializeControlsSettings()
         {
             useLookLocomotion = config.Bind("Controls",
@@ -362,32 +440,32 @@ namespace ValheimVRMod.Utilities
         {
             headReposFowardKey = config.Bind("Controls",
                                              "HeadRepositionForwardKey",
-                                             "UpArrow",
-                                             "[Key] used to move head camera forwards. Must be matching key from https://docs.unity3d.com/2019.4/Documentation/ScriptReference/KeyCode.html");
+                                             KeyCode.UpArrow,
+                                             "Key used to move head camera forwards. Must be matching key from https://docs.unity3d.com/2019.4/Documentation/ScriptReference/KeyCode.html");
             headReposBackwardKey = config.Bind("Controls",
                                                "HeadRepositionBackwardKey",
-                                               "DownArrow",
-                                               "[Key] used to move head camera backwards. Must be matching key from https://docs.unity3d.com/2019.4/Documentation/ScriptReference/KeyCode.html");
+                                               KeyCode.DownArrow,
+                                               "Key used to move head camera backwards. Must be matching key from https://docs.unity3d.com/2019.4/Documentation/ScriptReference/KeyCode.html");
             headReposLeftKey = config.Bind("Controls",
                                            "HeadRepositionLeftKey",
-                                           "LeftArrow",
-                                           "[Key] used to move head camera left. Must be matching key from https://docs.unity3d.com/2019.4/Documentation/ScriptReference/KeyCode.html");
+                                           KeyCode.LeftArrow,
+                                           "Key used to move head camera left. Must be matching key from https://docs.unity3d.com/2019.4/Documentation/ScriptReference/KeyCode.html");
             headReposRightKey = config.Bind("Controls",
                                            "HeadRepositionRightKey",
-                                           "RightArrow",
-                                           "[Key] used to move head camera right. Must be matching key from https://docs.unity3d.com/2019.4/Documentation/ScriptReference/KeyCode.html");
+                                           KeyCode.RightArrow,
+                                           "Key used to move head camera right. Must be matching key from https://docs.unity3d.com/2019.4/Documentation/ScriptReference/KeyCode.html");
             headReposUpKey = config.Bind("Controls",
                                            "HeadRepositionUpKey",
-                                           "PageUp",
-                                           "[Key] used to move head camera up. Must be matching key from https://docs.unity3d.com/2019.4/Documentation/ScriptReference/KeyCode.html");
+                                           KeyCode.PageUp,
+                                           "Key used to move head camera up. Must be matching key from https://docs.unity3d.com/2019.4/Documentation/ScriptReference/KeyCode.html");
             headReposDownKey = config.Bind("Controls",
                                            "HeadRepositionDownKey",
-                                           "PageDown",
-                                           "[Key] used to move head camera down. Must be matching key from https://docs.unity3d.com/2019.4/Documentation/ScriptReference/KeyCode.html");
+                                           KeyCode.PageDown,
+                                           "Key used to move head camera down. Must be matching key from https://docs.unity3d.com/2019.4/Documentation/ScriptReference/KeyCode.html");
             hmdRecenterKey = config.Bind("Controls",
                                            "HMDRecenterKey",
-                                           "Home",
-                                           "[Key] used to recenter HMD tracking. Must be matching key from https://docs.unity3d.com/2019.4/Documentation/ScriptReference/KeyCode.html");
+                                           KeyCode.Home,
+                                           "Key used to recenter HMD tracking. Must be matching key from https://docs.unity3d.com/2019.4/Documentation/ScriptReference/KeyCode.html");
         }
 
         private static void InitializeGraphicsSettings()
@@ -627,58 +705,37 @@ namespace ValheimVRMod.Utilities
 
         public static KeyCode GetRecenterKey()
         {
-            return tryAndParseConfiguredKeycode(hmdRecenterKey.Value, KeyCode.Home);
+            return hmdRecenterKey.Value;
         }
 
         public static KeyCode GetHeadForwardKey()
         {
-            return tryAndParseConfiguredKeycode(headReposFowardKey.Value, KeyCode.UpArrow);
+            return headReposFowardKey.Value;
         }
 
         public static KeyCode GetHeadBackwardKey()
         {
-            return tryAndParseConfiguredKeycode(headReposBackwardKey.Value, KeyCode.DownArrow);
+            return headReposBackwardKey.Value;
         }
 
         public static KeyCode GetHeadLeftKey()
         {
-            return tryAndParseConfiguredKeycode(headReposLeftKey.Value, KeyCode.LeftArrow);
+            return headReposLeftKey.Value;
         }
 
         public static KeyCode GetHeadRightKey()
         {
-            return tryAndParseConfiguredKeycode(headReposRightKey.Value, KeyCode.RightArrow);
+            return headReposRightKey.Value;
         }
 
         public static KeyCode GetHeadUpKey()
         {
-            return tryAndParseConfiguredKeycode(headReposUpKey.Value, KeyCode.PageUp);
+            return headReposUpKey.Value;
         }
 
         public static KeyCode GetHeadDownKey()
         {
-            return tryAndParseConfiguredKeycode(headReposDownKey.Value, KeyCode.PageDown);
-        }
-
-        private static KeyCode tryAndParseConfiguredKeycode(string configuredKey, KeyCode defaultValue)
-        {
-            try
-            {
-                return (KeyCode)Enum.Parse(typeof(KeyCode), configuredKey, true);
-            }
-            catch (ArgumentNullException)
-            {
-                LogError("Invalid configured key: " + configuredKey + " Using Default Key: " + defaultValue);
-            }
-            catch (ArgumentException)
-            {
-                LogError("Invalid configured key: " + configuredKey + " Using Default Key: " + defaultValue);
-            }
-            catch (OverflowException)
-            {
-                LogError("Invalid configured key: " + configuredKey + " Using Default Key: " + defaultValue);
-            }
-            return defaultValue;
+            return headReposDownKey.Value;
         }
 
         public static bool ShowRepairHammer()
@@ -849,6 +906,71 @@ namespace ValheimVRMod.Utilities
             return useSpearDirectionGraphic.Value;
         }
 
+        public static bool UseLegacyHud()
+        {
+            return useLegacyHud.Value;
+        }
+        
+        public static float CameraHudX()
+        {
+            return cameraHudX.Value;
+        }
+        
+        public static float CameraHudY()
+        {
+            return cameraHudY.Value;
+        }
+        
+        public static float CameraHudScale()
+        {
+            return cameraHudScale.Value;
+        }
+
+        public static Vector3 LeftWristPos()
+        {
+            return leftWristPos.Value;
+        }
+
+        public static Quaternion LeftWristRot()
+        {
+            return leftWristRot.Value;
+        }
+
+        public static Vector3 RightWristPos()
+        {
+            return rightWristPos.Value;
+        }
+
+        public static Quaternion RightWristRot()
+        {
+            return rightWristRot.Value;
+        }
+
+        public static string HealthPanelPlacement()
+        {
+            return healthPanelPlacement.Value;
+        }
+
+        public static string StaminaPanelPlacement()
+        {
+            return staminaPanelPlacement.Value;
+        }
+
+        public static string MinimapPanelPlacement()
+        {
+            return minimapPanelPlacement.Value;
+        }
+
+        public static bool AllowHudFade()
+        {
+            return allowHudFade.Value;
+        }
+
+        public static bool HideHotbar()
+        {
+            return hideHotbar.Value && UseVrControls();
+        }
+        
         public static bool LockGuiWhileMenuOpen()
         {
             return lockGuiWhileInventoryOpen.Value;

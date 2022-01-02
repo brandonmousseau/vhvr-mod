@@ -56,6 +56,9 @@ namespace ValheimVRMod.VRCore
         public const float ROOMSCALE_STEP_ANIMATION_SMOOTHING = 0.3f;
         public const float ROOMSCALE_ANIMATION_WEIGHT = 2f;
 
+        public static VRIK vrikRef { get { return _vrik; } }
+        private static VRIK _vrik;
+
         private static float referencePlayerHeight;
         public static bool isRoomscaleSneaking {  get { return _isRoomscaleSneaking; } }
         private static bool _isRoomscaleSneaking = false;
@@ -658,9 +661,8 @@ namespace ValheimVRMod.VRCore
                 return;
             }
             maybeAddVrik(player);
-            var vrik = player.gameObject.GetComponent<VRIK>();
-            if (vrik != null) {
-                vrik.enabled = VHVRConfig.UseVrControls() &&
+            if (_vrik != null) {
+                _vrik.enabled = VHVRConfig.UseVrControls() &&
                     inFirstPerson &&
                     validVrikAnimatorState(player.GetComponentInChildren<Animator>());
             }
@@ -682,21 +684,20 @@ namespace ValheimVRMod.VRCore
                 return;
             }
             var cam = CameraUtils.getCamera(CameraUtils.VR_CAMERA);
-            var vrik = VrikCreator.initialize(player.gameObject, 
+            _vrik = VrikCreator.initialize(player.gameObject, 
                 leftHand.transform, rightHand.transform, cam.transform);
             var vrPlayerSync = player.gameObject.GetComponent<VRPlayerSync>();
             vrPlayerSync.camera = cam.gameObject;
             vrPlayerSync.leftHand = leftHand.gameObject;
             vrPlayerSync.rightHand = rightHand.gameObject;
             VrikCreator.resetVrikHandTransform(player);
-            vrik.references.leftHand.gameObject.AddComponent<HandGesture>().sourceHand = leftHand;
-            vrik.references.rightHand.gameObject.AddComponent<HandGesture>().sourceHand = rightHand;
-            StaticObjects.leftFist().setColliderParent(vrik.references.leftHand, false);
-            StaticObjects.rightFist().setColliderParent(vrik.references.rightHand, true);
+            _vrik.references.leftHand.gameObject.AddComponent<HandGesture>().sourceHand = leftHand;
+            _vrik.references.rightHand.gameObject.AddComponent<HandGesture>().sourceHand = rightHand;
+            StaticObjects.leftFist().setColliderParent(_vrik.references.leftHand, false);
+            StaticObjects.rightFist().setColliderParent(_vrik.references.rightHand, true);
             StaticObjects.mouthCollider(cam.transform);
             StaticObjects.addQuickActions(VHVRConfig.LeftHanded() ? rightHand.transform : leftHand.transform);
             StaticObjects.addQuickSwitch(VHVRConfig.LeftHanded() ? leftHand.transform : rightHand.transform);
-
         }
 
         private bool vrikEnabled()
