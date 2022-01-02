@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 using Valve.VR;
-using HarmonyLib;
 using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
 
@@ -27,6 +26,7 @@ namespace ValheimVRMod.VRCore.UI
         private bool altPieceTriggered = false;
 
         private HashSet<string> ignoredZInputs = new HashSet<string>();
+        private HashSet<string> quickActionEnabled = new HashSet<string>(); // never ignore these
         private SteamVR_ActionSet mainActionSet = SteamVR_Actions.Valheim;
         private SteamVR_ActionSet laserActionSet = SteamVR_Actions.LaserPointers;
 
@@ -75,6 +75,8 @@ namespace ValheimVRMod.VRCore.UI
                 return _instance != null && _instance.laserActionSet.IsActive();
             }
         }
+
+        public static string ToggleMiniMap { get { return "ToggleMiniMap"; } }
 
         public static VRControls instance { get { return _instance; } }
         private static VRControls _instance;
@@ -216,9 +218,20 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return false;
             }
-            if (zinput == "Map" && QuickActions.toggleMap) {
-                QuickActions.toggleMap = false;
-                return true;
+            if (zinput == "Map") {
+                if (QuickActions.toggleMap)
+                {
+                    QuickActions.toggleMap = false;
+                    return true;
+                } else
+                {
+                    if (VHVRConfig.MinimapPanelPlacement().Equals("Legacy"))
+                    {
+                        // Revert back to using the regular map toggle if the minimap is in legacy mode
+                        return GetButtonDown(ToggleMiniMap);
+                    }
+                    return false;
+                }
             }
 
             // Handle Map zoom specially using context scroll input
@@ -246,8 +259,11 @@ namespace ValheimVRMod.VRCore.UI
             zInputToBooleanAction.TryGetValue(zinput, out action);
             if (action == null)
             {
-                LogWarning("Unmapped ZInput Key:" + zinput);
-                ignoredZInputs.Add(zinput); // Don't check for this input again
+                if (!quickActionEnabled.Contains(zinput))
+                {
+                    LogWarning("Unmapped ZInput Key:" + zinput);
+                    ignoredZInputs.Add(zinput); // Don't check for this input again
+                }
                 return false;
             }
             return action.Any(x => x.GetStateDown(SteamVR_Input_Sources.Any));
@@ -275,8 +291,11 @@ namespace ValheimVRMod.VRCore.UI
             zInputToBooleanAction.TryGetValue(zinput, out action);
             if (action == null)
             {
-                LogWarning("Unmapped ZInput Key:" + zinput);
-                ignoredZInputs.Add(zinput); // Don't check for this input again
+                if (!quickActionEnabled.Contains(zinput))
+                {
+                    LogWarning("Unmapped ZInput Key:" + zinput);
+                    ignoredZInputs.Add(zinput); // Don't check for this input again
+                }
                 return false;
             }
             return action.Any(x => x.GetState(SteamVR_Input_Sources.Any));
@@ -307,8 +326,11 @@ namespace ValheimVRMod.VRCore.UI
             zInputToBooleanAction.TryGetValue(zinput, out action);
             if (action == null)
             {
-                LogWarning("Unmapped ZInput Key:" + zinput);
-                ignoredZInputs.Add(zinput); // Don't check for this input again
+                if (!quickActionEnabled.Contains(zinput))
+                {
+                    LogWarning("Unmapped ZInput Key:" + zinput);
+                    ignoredZInputs.Add(zinput); // Don't check for this input again
+                }
                 return false;
             }
             return action.Any(x => x.GetStateUp(SteamVR_Input_Sources.Any));
@@ -461,7 +483,7 @@ namespace ValheimVRMod.VRCore.UI
             zInputToBooleanAction.Add("Jump", new [] { SteamVR_Actions.valheim_Jump, SteamVR_Actions.laserPointers_Jump });
             zInputToBooleanAction.Add("Use", new[] { SteamVR_Actions.valheim_Use });
             zInputToBooleanAction.Add("Sit", new[] { SteamVR_Actions.valheim_Sit });
-            zInputToBooleanAction.Add("Map", new[] { SteamVR_Actions.valheim_ToggleMap });
+            zInputToBooleanAction.Add(ToggleMiniMap, new[] { SteamVR_Actions.valheim_ToggleMap });
 
             // These placement commands re-use some of the normal game inputs
             zInputToBooleanAction.Add("BuildMenu", new[] { SteamVR_Actions.laserPointers_RightClick });
@@ -476,6 +498,12 @@ namespace ValheimVRMod.VRCore.UI
             poseL = SteamVR_Actions.valheim_PoseL;
             poseR = SteamVR_Actions.valheim_PoseR;
             initIgnoredZInputs();
+            initQuickActionOnly();
+        }
+
+        private void initQuickActionOnly()
+        {
+            quickActionEnabled.Add("Map");
         }
 
         private void initIgnoredZInputs()

@@ -26,6 +26,8 @@ namespace ValheimVRMod.VRCore.UI.HudElements
         public string Placement => VHVRConfig.MinimapPanelPlacement();
         public HudOrientation Orientation => HudOrientation.Horizontal;
 
+        private bool toggledOn = true;
+
         //Data class to store references to the small minimap elements
         private class MinimapPanelComponents : IVRPanelComponent
         {
@@ -74,10 +76,21 @@ namespace ValheimVRMod.VRCore.UI.HudElements
 
         public void Update()
         {
+            if (ZInput.GetButtonDown(VRControls.ToggleMiniMap))
+            {
+                toggledOn = !toggledOn;
+            }
             maybeCloneSmallMinimapPanelComponents();
             if (_original.mapRoot)
             {
                 _original.mapRoot.SetActive(false);
+            }
+            if (Minimap.m_instance.m_mode == Minimap.MapMode.Small)
+            {
+                _clone.Root.SetActive(toggledOn);
+            } else
+            {
+                _clone.Root.SetActive(false);
             }
             updateSmallMinimapPanelHudReferences(_clone, false);
         }
