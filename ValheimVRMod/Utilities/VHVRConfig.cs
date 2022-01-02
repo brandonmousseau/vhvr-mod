@@ -82,6 +82,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> smoothSnapSpeed;
         private static ConfigEntry<bool> roomScaleSneaking;
         private static ConfigEntry<float> roomScaleSneakHeight;
+        private static ConfigEntry<bool> exclusiveRoomScaleSneak;
         private static ConfigEntry<bool> weaponNeedsSpeed;
         private static ConfigEntry<float> altPieceRotationDelay;
         private static ConfigEntry<bool> runIsToggled;
@@ -411,6 +412,10 @@ namespace ValheimVRMod.Utilities
                                           new ConfigDescription("This will affect the eye height that the roomscale sneak occur at.  (e.g. 0.7 means if your headset lower than 70% of your height, it will do sneak)  " +
                                            "Valid values are  0.0 - 0.95.",
                                            new AcceptableValueRange<float>(0f, 0.95f)));
+            exclusiveRoomScaleSneak = config.Bind("Controls",
+                                          "ExclusiveRoomScaleSneak",
+                                          false,
+                                          "If this is set to true and Room Scale sneaking is on, Controller-based sneak inputs will be disabled. Use this if you ONLY want to sneak by phsyically crouching.");
             preferredHand = config.Bind("Controls",
                                         "PreferredHand",
                                         "Right",
@@ -862,6 +867,11 @@ namespace ValheimVRMod.Utilities
 
         public static float RoomScaleSneakHeight() {
             return roomScaleSneakHeight.Value;
+        }
+
+        public static bool ExlusiveRoomScaleSneak()
+        {
+            return exclusiveRoomScaleSneak.Value;
         }
 
         public static float GetNearClipPlane()

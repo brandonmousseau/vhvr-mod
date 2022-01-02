@@ -276,8 +276,11 @@ namespace ValheimVRMod.Patches {
                 // Don't do any toggling.
                 crouch = false;
             }
-            // Player is physically standing, but may still want to crouch using joystick
-            handleControllerOnlySneak(player, ref crouch, isCrouchToggled);
+            if (!VHVRConfig.ExlusiveRoomScaleSneak())
+            {
+                // Player is physically standing, but may still want to crouch using joystick
+                handleControllerOnlySneak(player, ref crouch, isCrouchToggled);
+            }
         }
 
         static void handleControllerOnlySneak(Player player, ref bool crouch, bool isCrouchToggled)
