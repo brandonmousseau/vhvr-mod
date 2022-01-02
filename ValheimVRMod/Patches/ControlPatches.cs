@@ -431,6 +431,26 @@ namespace ValheimVRMod.Patches {
         }
     }
 
+    // This patch enables adding map pins without needing to "Double Click".
+    // Instead it is triggered using the "click modifier" plus a single left click.
+    [HarmonyPatch(typeof(Minimap), nameof(Minimap.OnMapLeftDown))]
+    class MinimapAddPinPatch
+    {
+        static bool Prefix(Minimap __instance)
+        {
+            if (!VHVRConfig.UseVrControls())
+            {
+                return true;
+            }
+            if (VRControls.instance.getClickModifier())
+            {
+                __instance.OnMapDblClick();
+            }
+            // We are replacing default function entirely.
+            return false;
+        }
+    }
+
     class SnapTurnPatches
     {
         [HarmonyPatch(typeof(Player), nameof(Player.SetMouseLook))]
