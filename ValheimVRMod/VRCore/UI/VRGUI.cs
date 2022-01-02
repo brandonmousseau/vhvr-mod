@@ -209,7 +209,9 @@ namespace ValheimVRMod.VRCore.UI
 
         private bool menuIsOpen()
         {
-            return StoreGui.IsVisible() || InventoryGui.IsVisible() || Menu.IsVisible() || (TextViewer.instance && TextViewer.instance.IsVisible()) || Minimap.IsOpen();
+            bool menuIsOpen = StoreGui.IsVisible() || InventoryGui.IsVisible() || Menu.IsVisible() || (TextViewer.instance && TextViewer.instance.IsVisible()) || Minimap.IsOpen();
+            bool needsRecentering = Player.m_localPlayer.IsRunning() || Player.m_localPlayer.IsAttachedToShip() || Player.m_localPlayer.GetStandingOnShip() != null || Vector3.SqrMagnitude(VRPlayer.instance.transform.position - _uiPanel.transform.position) > 100;
+            return menuIsOpen && !needsRecentering;
         }
 
         private bool ensureUIPanel()
