@@ -928,7 +928,7 @@ namespace ValheimVRMod.VRCore
         void DoRoomScaleMovement()
         {
             var player = getPlayerCharacter();
-            if (player.IsAttached()) {
+            if (!player || player.IsAttached()) {
               return;
             }
             Vector3 deltaPosition = _vrCam.transform.localPosition - _lastCamPosition;
