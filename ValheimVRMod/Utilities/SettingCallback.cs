@@ -25,6 +25,18 @@ namespace ValheimVRMod.Utilities {
             return createSettingObj(VHVRConfig.LeftWristPos(), VHVRConfig.LeftWristRot(), "Left Wrist", false);
         }
 
+        public static bool LeftWristDefault(UnityAction<Vector3, Quaternion> pAction) {
+
+            pAction(VHVRConfig.DefaultLeftWristPos(), VHVRConfig.DefaultLeftWristRot());
+            return true;
+        }
+
+        public static bool RightWristDefault(UnityAction<Vector3, Quaternion> pAction)
+        {
+            pAction(VHVRConfig.DefaultRightWristPos(), VHVRConfig.DefaultRightWristRot());
+            return true;
+        }
+
         /**
          * called by ConfigSettings.createTransformButton()
          */

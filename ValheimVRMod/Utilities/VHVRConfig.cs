@@ -946,9 +946,19 @@ namespace ValheimVRMod.Utilities
             return leftWristPos.Value;
         }
 
+        public static Vector3 DefaultLeftWristPos()
+        {
+            return (Vector3)leftWristPos.DefaultValue;
+        }
+
         public static Quaternion LeftWristRot()
         {
             return leftWristRot.Value;
+        }
+
+        public static Quaternion DefaultLeftWristRot()
+        {
+            return (Quaternion)leftWristRot.DefaultValue;
         }
 
         public static Vector3 RightWristPos()
@@ -956,9 +966,19 @@ namespace ValheimVRMod.Utilities
             return rightWristPos.Value;
         }
 
+        public static Vector3 DefaultRightWristPos()
+        {
+            return (Vector3)rightWristPos.DefaultValue;
+        }
+
         public static Quaternion RightWristRot()
         {
             return rightWristRot.Value;
+        }
+
+        public static Quaternion DefaultRightWristRot()
+        {
+            return (Quaternion)rightWristRot.DefaultValue;
         }
 
         public static string HealthPanelPlacement()

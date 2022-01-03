@@ -385,7 +385,6 @@ namespace ValheimVRMod.VRCore.UI {
 
             if (menuList.name != "Menu") {
                 button.GetComponent<Button>().enabled = false;
-                return;
             }
             
             button.GetComponent<Button>().onClick.SetPersistentListenerState(0, UnityEventCallState.Off);
@@ -406,6 +405,36 @@ namespace ValheimVRMod.VRCore.UI {
                 doSave = false;
                 Settings.instance.OnBack();
                 Menu.instance.OnClose();
+            });
+
+            // This button will just reset the position and rotation back to the default values.
+            var defaultButton = Object.Instantiate(buttonPrefab, labledButton.transform);
+            pos.x += button.GetComponent<RectTransform>().rect.width/2;
+            defaultButton.GetComponent<RectTransform>().anchoredPosition = pos;
+            defaultButton.GetComponent<RectTransform>().localScale *= 0.5f;
+            defaultButton.GetComponentInChildren<Text>().text = "Reset";
+
+            if (menuList.name != "Menu")
+            {
+                defaultButton.GetComponent<Button>().enabled = false;
+                return;
+            }
+
+            defaultButton.GetComponent<Button>().onClick.SetPersistentListenerState(0, UnityEventCallState.Off);
+            defaultButton.GetComponent<Button>().onClick.RemoveAllListeners();
+            defaultButton.GetComponent<Button>().onClick.AddListener(() => {
+                if (!(bool)typeof(SettingCallback).GetMethod(configValue.Key +"Default").Invoke(null,
+                    new UnityAction<Vector3, Quaternion>[] {
+                        (mPos, mRot) => {
+                            configValue.Value.SetSerializedValue(String.Format(CultureInfo.InvariantCulture,
+                                "{{\"x\":{0}, \"y\":{1}, \"z\":{2}}}", mPos.x, mPos.y, mPos.z));
+                            confRot.SetSerializedValue(String.Format(CultureInfo.InvariantCulture,
+                                "{{\"x\":{0}, \"y\":{1}, \"z\":{2}, \"w\":{3}}}", mRot.x, mRot.y, mRot.z, mRot.w));
+                        }
+                    }))
+                {
+                    return;
+                }
             });
 
         }
