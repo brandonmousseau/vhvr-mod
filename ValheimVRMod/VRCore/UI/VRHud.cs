@@ -172,10 +172,10 @@ namespace ValheimVRMod.VRCore.UI
                 return;
             }
 
-            setWristPosition(leftHudCanvasParent, leftHudCanvas, vrik.references.leftHand, VHVRConfig.LeftWristPos(), VHVRConfig.LeftWristRot());
+            setWristPosition(leftHudCanvasParent, leftHudCanvas, VRPlayer.leftHand.transform, VHVRConfig.LeftWristPos(), VHVRConfig.LeftWristRot());
             leftHudCanvasGroup.alpha = VHVRConfig.AllowHudFade() && ! SettingCallback.configRunning ? calculateHudCanvasAlpha(leftHudCanvasParent) : 1f;
 
-            setWristPosition(rightHudCanvasParent, rightHudCanvas, vrik.references.rightHand, VHVRConfig.RightWristPos(), VHVRConfig.RightWristRot());
+            setWristPosition(rightHudCanvasParent, rightHudCanvas, VRPlayer.rightHand.transform, VHVRConfig.RightWristPos(), VHVRConfig.RightWristRot());
             rightHudCanvasGroup.alpha = VHVRConfig.AllowHudFade() && ! SettingCallback.configRunning ? calculateHudCanvasAlpha(rightHudCanvasParent) : 1f;
         }
 
@@ -229,7 +229,7 @@ namespace ValheimVRMod.VRCore.UI
         private void setWristPosition(GameObject hCanvasParent, Canvas hCanvas, Transform hand, Vector3 pos, Quaternion rot)
         {
             var hudCanvasRect = hCanvas.GetComponent<RectTransform>();
-            hudCanvasRect.localScale = Vector3.one * 0.001f /  hudCanvasRect.rect.width;
+            hudCanvasRect.localScale = Vector3.one * 0.1f /  hudCanvasRect.rect.width;
             
             hCanvasParent.transform.SetParent(hand, false);
             hCanvasParent.transform.localPosition = pos;

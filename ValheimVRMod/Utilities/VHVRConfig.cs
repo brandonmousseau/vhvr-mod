@@ -337,19 +337,19 @@ namespace ValheimVRMod.Utilities
                                                 new AcceptableValueRange<float>(.25f, 3f)));
             leftWristPos = config.Bind("VRHUD",
                                             "LeftWrist",
-                                            Vector3.zero,
+                                            new Vector3(0.031569551676511767f, 0.11530060321092606f, -0.11794090270996094f),
                                             "Position of VR Hud on Left Wrist.");
             leftWristRot = config.Bind("VRHUD",
                                             "LeftWristRot",
-                                            Quaternion.identity,
+                                            new Quaternion(-0.29706940054893496f, 0.6141623258590698f, 0.3103596866130829f, -0.6619904041290283f),
                                             "Rotation for reposition VR Hud on Left Wrist.");
             rightWristPos = config.Bind("VRHUD",
                                             "RightWrist",
-                                            Vector3.zero,
+                                            new Vector3(-0.09589999914169312f, 0.008500000461935997f, -0.07050000131130219f),
                                             "Position of VR Hud on Right Wrist.");
             rightWristRot = config.Bind("VRHUD",
                                             "RightWristRot",
-                                            Quaternion.identity,
+                                            new Quaternion(0.29660001397132876f, 0.03720000013709068f, 0.10580000281333924f, 0.9484000205993652f),
                                             "Rotation for reposition VR Hud on Right Wrist");
             healthPanelPlacement = config.Bind("VRHUD",
                                               "HealthPanelPlacement",

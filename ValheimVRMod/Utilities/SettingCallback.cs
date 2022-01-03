@@ -43,13 +43,13 @@ namespace ValheimVRMod.Utilities {
             if (isRightWrist) {
                 inputAction = SteamVR_Actions.valheim_UseLeft;
                 inputHand = SteamVR_Input_Sources.LeftHand;
-                target = VRPlayer.vrikRef.references.rightHand;
+                target = VRPlayer.rightHand.transform;
                 sourceHand = VRPlayer.leftHand.transform;
             }
             else {
                 inputAction = SteamVR_Actions.valheim_Use;
                 inputHand = SteamVR_Input_Sources.RightHand;
-                target = VRPlayer.vrikRef.references.leftHand;
+                target = VRPlayer.leftHand.transform;
                 sourceHand = VRPlayer.rightHand.transform;
             }
             
