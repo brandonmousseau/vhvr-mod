@@ -696,8 +696,8 @@ namespace ValheimVRMod.VRCore
             StaticObjects.leftFist().setColliderParent(_vrik.references.leftHand, false);
             StaticObjects.rightFist().setColliderParent(_vrik.references.rightHand, true);
             StaticObjects.mouthCollider(cam.transform);
-            StaticObjects.addQuickActions(VHVRConfig.LeftHanded() ? rightHand.transform : leftHand.transform);
-            StaticObjects.addQuickSwitch(VHVRConfig.LeftHanded() ? leftHand.transform : rightHand.transform);
+            StaticObjects.addQuickSwitchLeft(VHVRConfig.LeftHanded() ? rightHand.transform : leftHand.transform);
+            StaticObjects.addQuickSwitchRight(VHVRConfig.LeftHanded() ? leftHand.transform : rightHand.transform);
         }
 
         private bool vrikEnabled()

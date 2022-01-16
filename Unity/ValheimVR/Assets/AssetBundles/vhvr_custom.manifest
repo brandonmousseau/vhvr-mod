@@ -1,9 +1,9 @@
 ManifestFileVersion: 0
-CRC: 1350832537
+CRC: 3925902641
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: bc2f73482fb3c503df3c1ad9c02a2ab5
+    Hash: e565dfb7101cf3691eaf366c015a38c6
   TypeTreeHash:
     serializedVersion: 2
     Hash: 700cce780156dfdd5fdd2ee7678caad4
@@ -27,5 +27,6 @@ Assets:
 - Assets/CustomResources/Textures/black_screen.png
 - Assets/CustomResources/Materials/vr_panel_unlit.mat
 - Assets/CustomResources/Textures/map.png
+- Assets/CustomResources/Textures/circle.png
 - Assets/QuickOutline/Resources/Materials/OutlineFill.mat
 Dependencies: []

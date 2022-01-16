@@ -44,9 +44,9 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
-            if (StaticObjects.quickSwitch != null) {
-                StaticObjects.quickSwitch.GetComponent<QuickSwitch>().refreshItems();
-                StaticObjects.quickActions.GetComponent<QuickActions>().refreshItems();
+            if (StaticObjects.quickSwitchRight != null) {
+                StaticObjects.quickSwitchRight.GetComponent<QuickSwitch>().refreshItems();
+                StaticObjects.quickSwitchLeft.GetComponent<QuickSwitchLeft>().refreshItems();
             }
 
             switch (EquipScript.getRight()) {
@@ -102,9 +102,9 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
-            if (StaticObjects.quickSwitch != null) {
-                StaticObjects.quickSwitch.GetComponent<QuickSwitch>().refreshItems();
-                StaticObjects.quickActions.GetComponent<QuickActions>().refreshItems();
+            if (StaticObjects.quickSwitchRight != null) {
+                StaticObjects.quickSwitchRight.GetComponent<QuickSwitch>().refreshItems();
+                StaticObjects.quickSwitchLeft.GetComponent<QuickSwitchLeft>().refreshItems();
             }
 
             switch (EquipScript.getLeft()) {

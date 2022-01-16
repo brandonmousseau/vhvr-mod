@@ -99,10 +99,8 @@ namespace ValheimVRMod.VRCore.UI
                 checkRecenterPose(Time.deltaTime);
             }
 
-            checkQuickItems<QuickSwitch>(StaticObjects.quickSwitch, 
-                VHVRConfig.LeftHanded() ?  SteamVR_Actions.valheim_QuickActions : SteamVR_Actions.valheim_QuickSwitch, true);
-            checkQuickItems<QuickActions>(StaticObjects.quickActions,  
-                VHVRConfig.LeftHanded() ?  SteamVR_Actions.valheim_QuickSwitch : SteamVR_Actions.valheim_QuickActions, false);
+            checkQuickItems<QuickSwitch>(StaticObjects.quickSwitchRight, SteamVR_Actions.valheim_QuickSwitch, true);
+            checkQuickItems<QuickSwitchLeft>(StaticObjects.quickSwitchLeft, SteamVR_Actions.valheim_QuickActions, false);
         }
 
         void FixedUpdate()
@@ -239,7 +237,7 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return false;
             }
-            if (zinput == "Map") {
+            if (zinput == "Map" && QuickSwitchLeft.toggleMap) {
                 if (QuickActions.toggleMap)
                 {
                     QuickActions.toggleMap = false;
@@ -620,6 +618,5 @@ namespace ValheimVRMod.VRCore.UI
             ignoredZInputs.Add("ScrollChatUp");
             ignoredZInputs.Add("ScrollChatDown");
         }
-
     }
 }

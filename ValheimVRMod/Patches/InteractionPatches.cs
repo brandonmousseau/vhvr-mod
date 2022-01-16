@@ -113,9 +113,9 @@ namespace ValheimVRMod.Patches
     class PatchInventoryChanged {
 
         static void Postfix() {
-            if (StaticObjects.quickSwitch != null && VHVRConfig.UseVrControls()) {
-                StaticObjects.quickSwitch.GetComponent<QuickSwitch>()?.refreshItems();
-                StaticObjects.quickActions.GetComponent<QuickActions>()?.refreshItems();
+            if (StaticObjects.quickSwitchRight != null && VHVRConfig.UseVrControls()) {
+                StaticObjects.quickSwitchRight.GetComponent<QuickSwitch>()?.refreshItems();
+                StaticObjects.quickSwitchLeft.GetComponent<QuickSwitchLeft>()?.refreshItems();
             }
         }
     }
@@ -124,9 +124,9 @@ namespace ValheimVRMod.Patches
     class PatchOnSelectedItem {
 
         static void Postfix() {
-            if (StaticObjects.quickSwitch != null && VHVRConfig.UseVrControls()) {
-                StaticObjects.quickSwitch.GetComponent<QuickSwitch>().refreshItems();
-                StaticObjects.quickActions.GetComponent<QuickActions>().refreshItems();
+            if (StaticObjects.quickSwitchRight != null && VHVRConfig.UseVrControls()) {
+                StaticObjects.quickSwitchRight.GetComponent<QuickSwitch>().refreshItems();
+                StaticObjects.quickSwitchLeft.GetComponent<QuickSwitchLeft>().refreshItems();
             }
         }
     }
@@ -142,37 +142,39 @@ namespace ValheimVRMod.Patches
 
             var vrPlayerSync = __instance.GetComponent<VRPlayerSync>();
             
-            if (vrPlayerSync != null && (__instance != Player.m_localPlayer || VHVRConfig.UseVrControls())) {
-                if (item == ___m_leftItem) {
-                    if (VHVRConfig.LeftHanded()) {
-                        vrPlayerSync.currentRightWeapon = null;
-                    }
-                    else {
-                        vrPlayerSync.currentLeftWeapon = null;   
-                    }
-                }
-
-                if (item == ___m_rightItem) {
-                    if (VHVRConfig.LeftHanded()) {
-                        vrPlayerSync.currentLeftWeapon = null;
-                    }
-                    else {
-                        vrPlayerSync.currentRightWeapon = null;   
-                    }
-                }
-
-                VrikCreator.resetVrikHandTransform(__instance);
+            if (vrPlayerSync == null || __instance == Player.m_localPlayer && !VHVRConfig.UseVrControls()) {
+                return;
             }
+
+            if (item == ___m_leftItem) {
+                if (VHVRConfig.LeftHanded()) {
+                    vrPlayerSync.currentRightWeapon = null;
+                }
+                else {
+                    vrPlayerSync.currentLeftWeapon = null;   
+                }
+            }
+
+            if (item == ___m_rightItem) {
+                if (VHVRConfig.LeftHanded()) {
+                    vrPlayerSync.currentLeftWeapon = null;
+                }
+                else {
+                    vrPlayerSync.currentRightWeapon = null;   
+                }
+            }
+
+            VrikCreator.resetVrikHandTransform(__instance);
         }
 
         static void Postfix() {
-            if (StaticObjects.quickSwitch != null) {
-                StaticObjects.quickSwitch.GetComponent<QuickSwitch>().refreshItems();
-                StaticObjects.quickActions.GetComponent<QuickActions>().refreshItems();
+            if (StaticObjects.quickSwitchRight != null) {
+                StaticObjects.quickSwitchRight.GetComponent<QuickSwitch>().refreshItems();
+                StaticObjects.quickSwitchLeft.GetComponent<QuickSwitchLeft>().refreshItems();
             }
         }
     }
-        
+
     [HarmonyPatch(typeof(Player), "SetGuardianPower")]
     class PatchSetGuardianPower {
 
@@ -182,8 +184,8 @@ namespace ValheimVRMod.Patches
                 return;
             }
             
-            if (StaticObjects.quickActions != null) {
-                StaticObjects.quickActions.GetComponent<QuickActions>().refreshItems();
+            if (StaticObjects.quickSwitchLeft != null) {
+                StaticObjects.quickSwitchLeft.GetComponent<QuickSwitchLeft>().refreshItems();
             }
         }
     }

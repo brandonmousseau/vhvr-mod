@@ -3,29 +3,28 @@ using UnityEngine;
 using ValheimVRMod.Utilities;
 
 namespace ValheimVRMod.Scripts {
-    public class VrikCreator {
+    public class VrikCreator
+    {
 
-        private static readonly Vector3 leftUnequippedPosition = new Vector3(-0.027f, 0.05f, -0.18f);
-        private static readonly Quaternion leftUnequippedRotation = Quaternion.Euler(0, 90f, 135f);
-        private static readonly Vector3 leftUnequippedEllbow = new Vector3(1, 0, 0);
-        private static readonly Vector3 rightUnequippedPosition = new Vector3(0.027f, 0.05f, -0.18f);
-        private static readonly Quaternion rightUnequippedRotation = Quaternion.Euler(0, -90f, -135f);
-        private static readonly Vector3 rightUnequippedEllbow = new Vector3(-1, 0, 0);
+        private static ArmConf leftUnequipped = ArmConf.create(new Vector3(-0.027f, 0.05f, -0.18f),
+            Quaternion.Euler(0, 90f, 135f),
+            new Vector3(1, 0, 0));
+        private static ArmConf rightUnequipped = ArmConf.create(new Vector3(0.027f, 0.05f, -0.18f),
+            Quaternion.Euler(0, -90f, -135f),
+            new Vector3(-1, 0, 0));
+        private static ArmConf leftEquipped = ArmConf.create(new Vector3(-0.02f, 0.09f, -0.1f),
+            Quaternion.Euler(0, 90, -170),
+            new Vector3(1, -3f, 0));
+        private static ArmConf rightEquipped = ArmConf.create(new Vector3(0.02f, 0.09f, -0.1f),
+            Quaternion.Euler(0, -90, 170),
+            new Vector3(-1, -3f, 0));
+        private static ArmConf leftSpear = ArmConf.create(new Vector3(-0.02f, 0.06f, -0.15f),
+            Quaternion.Euler(0, 90, 140),
+            new Vector3(1, -3f, 0));
+        private static ArmConf rightSpear = ArmConf.create(new Vector3(0.02f, 0.06f, -0.15f),
+            Quaternion.Euler(0, -90, -140),
+            new Vector3(-1, -3f, 0));
         
-        private static readonly Vector3 leftEquippedPosition = new Vector3(-0.02f, 0.09f, -0.1f);
-        private static readonly Quaternion leftEquippedRotation = Quaternion.Euler(0, 90, -170);
-        private static readonly Vector3 leftEquippedEllbow = new Vector3(1, -3f, 0);
-        private static readonly Vector3 rightEquippedPosition = new Vector3(0.02f, 0.09f, -0.1f);
-        private static readonly Quaternion rightEquippedRotation = Quaternion.Euler(0, -90, -170);
-        private static readonly Vector3 rightEquippedEllbow = new Vector3(-1, -3f, 0);
-
-        private static readonly Vector3 leftspearPosition = new Vector3(-0.02f, 0.06f, -0.15f);
-        private static readonly Quaternion leftSpearRotation = Quaternion.Euler(0, 90, 140);
-        private static readonly Vector3 leftSpearEllbow = new Vector3(1, -3f, 0);
-        private static readonly Vector3 rightspearPosition = new Vector3(0.02f, 0.06f, -0.15f);
-        private static readonly Quaternion rightSpearRotation = Quaternion.Euler(0, -90, -140);
-        private static readonly Vector3 rightSpearEllbow = new Vector3(-1, -3f, 0);
-
         public static VRIK initialize(GameObject target, Transform leftController, Transform rightController, Transform camera) {
             VRIK vrik = target.AddComponent<VRIK>();
             vrik.AutoDetectReferences();
@@ -60,6 +59,13 @@ namespace ValheimVRMod.Scripts {
             
             return vrik;
         }
+
+        private static void setHandTransform(IKSolverVR.Arm arm, ArmConf conf)
+        {
+            arm.target.localPosition = conf.position;
+            arm.target.localRotation = conf.rotation;
+            arm.palmToThumbAxis = conf.ellbow;
+        }
         
         public static void resetVrikHandTransform(Humanoid player) {
             
@@ -71,36 +77,46 @@ namespace ValheimVRMod.Scripts {
             
             if (player.GetComponent<VRPlayerSync>()?.currentLeftWeapon != null) {
                 if (VHVRConfig.LeftHanded() && player.GetComponent<VRPlayerSync>().currentLeftWeapon.name.StartsWith("Spear")) {
-                    vrik.solver.leftArm.target.localPosition = leftspearPosition;
-                    vrik.solver.leftArm.target.localRotation = leftSpearRotation;
-                    vrik.solver.leftArm.palmToThumbAxis = leftSpearEllbow;
-                    return;
+                    Debug.Log("D1");
+                    setHandTransform(vrik.solver.leftArm, leftSpear);
+                } else {
+                    Debug.Log("D2");
+                    setHandTransform(vrik.solver.leftArm, leftEquipped);   
                 }
-                vrik.solver.leftArm.target.localPosition = leftEquippedPosition;
-                vrik.solver.leftArm.target.localRotation = leftEquippedRotation;
-                vrik.solver.leftArm.palmToThumbAxis = leftEquippedEllbow;
             }
             else {
-                vrik.solver.leftArm.target.localPosition = leftUnequippedPosition;
-                vrik.solver.leftArm.target.localRotation = leftUnequippedRotation;
-                vrik.solver.leftArm.palmToThumbAxis = leftUnequippedEllbow;
+                Debug.Log("D3");
+                setHandTransform(vrik.solver.leftArm, leftUnequipped);
             }
             
             if (player.GetComponent<VRPlayerSync>()?.currentRightWeapon != null) {
                 if (! VHVRConfig.LeftHanded() && player.GetComponent<VRPlayerSync>().currentRightWeapon.name.StartsWith("Spear")) {
-                    vrik.solver.rightArm.target.localPosition = rightspearPosition;
-                    vrik.solver.rightArm.target.localRotation = rightSpearRotation;
-                    vrik.solver.rightArm.palmToThumbAxis = rightSpearEllbow;
-                    return;
+                    Debug.Log("D4");
+                    setHandTransform(vrik.solver.rightArm, rightSpear);
+                } else {
+                    Debug.Log("D5");
+                    setHandTransform(vrik.solver.rightArm, rightEquipped);
                 }
-                vrik.solver.rightArm.target.localPosition = rightEquippedPosition;
-                vrik.solver.rightArm.target.localRotation = rightEquippedRotation;
-                vrik.solver.rightArm.palmToThumbAxis = rightEquippedEllbow;
-                return;
+            } else {
+                Debug.Log("D6");
+                setHandTransform(vrik.solver.rightArm, rightUnequipped);   
             }
-            vrik.solver.rightArm.target.localPosition = rightUnequippedPosition;
-            vrik.solver.rightArm.target.localRotation = rightUnequippedRotation;
-            vrik.solver.rightArm.palmToThumbAxis = rightUnequippedEllbow;
+        }
+    }
+
+    class ArmConf
+    {
+        public Vector3 position;
+        public Quaternion rotation;
+        public Vector3 ellbow;
+
+        public static ArmConf create(Vector3 position, Quaternion rotation, Vector3 ellbow)
+        {
+            var armConf = new ArmConf();
+            armConf.position = position;
+            armConf.rotation = rotation;
+            armConf.ellbow = ellbow;
+            return armConf;
         }
     }
 }
