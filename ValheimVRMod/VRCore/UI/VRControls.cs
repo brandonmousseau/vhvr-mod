@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 using Valve.VR;
-using HarmonyLib;
 using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
 
@@ -22,11 +21,15 @@ namespace ValheimVRMod.VRCore.UI
         // number of updates to skip before allowing a "rotation" update to occur
         // when using the alt piece rotation mode (ie, context scroll is not bound).
         private static readonly float ALT_PIECE_ROTATION_TIME_DELAY = 0.250f;
+        private static readonly float ALT_MAP_ZOOM_TIME_DELAY = 0.125f;
 
         private float altPieceRotationElapsedTime = 0f;
         private bool altPieceTriggered = false;
+        private float altMapZoomElapsedTime = 0f;
+        private bool altMapZoomTriggered = false;
 
         private HashSet<string> ignoredZInputs = new HashSet<string>();
+        private HashSet<string> quickActionEnabled = new HashSet<string>(); // never ignore these
         private SteamVR_ActionSet mainActionSet = SteamVR_Actions.Valheim;
         private SteamVR_ActionSet laserActionSet = SteamVR_Actions.LaserPointers;
 
@@ -76,16 +79,18 @@ namespace ValheimVRMod.VRCore.UI
             }
         }
 
+        public static string ToggleMiniMap { get { return "ToggleMiniMap"; } }
+
         public static VRControls instance { get { return _instance; } }
         private static VRControls _instance;
-        public void Awake()
+        void Awake()
         {
             init();
             recenteringPoseDuration = 0f;
             _instance = this;
         }
 
-        public void Update()
+        void Update()
         {
             updateMainActionSetState();
             updateLasersActionSetState();
@@ -100,18 +105,36 @@ namespace ValheimVRMod.VRCore.UI
                 VHVRConfig.LeftHanded() ?  SteamVR_Actions.valheim_QuickSwitch : SteamVR_Actions.valheim_QuickActions, false);
         }
 
-        public void FixedUpdate()
+        void FixedUpdate()
         {
-            updateAltPieceRotataionTimer();
+            updateAltPieceRotationTimer();
+            updateAltMapZoomTimer();
         }
 
-        private void updateAltPieceRotataionTimer()
+        void LateUpdate()
+        {
+            // Reset this at the complete end of the update to allow for
+            // both MapZoomIn and MapZoomOut to test the zoom input.
+            altMapZoomTriggered = false;
+        }
+
+        private void updateAltPieceRotationTimer()
         {
             altPieceRotationElapsedTime += Time.deltaTime;
             if (altPieceRotationElapsedTime >= ALT_PIECE_ROTATION_TIME_DELAY * VHVRConfig.AltPieceRotationDelay())
             {
                 altPieceTriggered = true;
                 altPieceRotationElapsedTime = 0f;
+            }
+        }
+
+        private void updateAltMapZoomTimer()
+        {
+            altMapZoomElapsedTime += Time.deltaTime;
+            if (altMapZoomElapsedTime >= ALT_MAP_ZOOM_TIME_DELAY)
+            {
+                altMapZoomTriggered = true;
+                altMapZoomElapsedTime = 0f;
             }
         }
         
@@ -145,7 +168,7 @@ namespace ValheimVRMod.VRCore.UI
 
         private void checkRecenterPose(float dt)
         {
-            if (isInRecenterPose())
+            if (!VHVRConfig.DisableRecenterPose() && isInRecenterPose())
             {
                 recenteringPoseDuration += dt;
                 if (recenteringPoseDuration >= RECENTER_POSE_TIME)
@@ -216,38 +239,65 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return false;
             }
-            if (zinput == "Map" && QuickActions.toggleMap) {
-                QuickActions.toggleMap = false;
-                return true;
+            if (zinput == "Map") {
+                if (QuickActions.toggleMap)
+                {
+                    QuickActions.toggleMap = false;
+                    return true;
+                } else
+                {
+                    if (VHVRConfig.MinimapPanelPlacement().Equals("Legacy"))
+                    {
+                        // Revert back to using the regular map toggle if the minimap is in legacy mode
+                        return GetButtonDown(ToggleMiniMap);
+                    }
+                    return false;
+                }
             }
 
             // Handle Map zoom specially using context scroll input
             if (zinput == "MapZoomOut")
             {
-                if (contextScroll.axis.y < 0)
+                if (contextScroll.activeBinding)
                 {
-                    return true;
+                    if (contextScroll.axis.y < 0)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
                 } else
                 {
-                    return false;
+                    return (getAltMapZoom() < 0);
                 }
             } else if (zinput == "MapZoomIn")
             {
-                if (contextScroll.axis.y > 0)
+                if (contextScroll.activeBinding)
                 {
-                    return true;
-                }
-                else
+                    if (contextScroll.axis.y > 0)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                } else
                 {
-                    return false;
+                    return (getAltMapZoom() > 0);
                 }
             }
             SteamVR_Action_Boolean[] action;
             zInputToBooleanAction.TryGetValue(zinput, out action);
             if (action == null)
             {
-                LogWarning("Unmapped ZInput Key:" + zinput);
-                ignoredZInputs.Add(zinput); // Don't check for this input again
+                if (!quickActionEnabled.Contains(zinput))
+                {
+                    LogWarning("Unmapped ZInput Key:" + zinput);
+                    ignoredZInputs.Add(zinput); // Don't check for this input again
+                }
                 return false;
             }
             return action.Any(x => x.GetStateDown(SteamVR_Input_Sources.Any));
@@ -275,8 +325,11 @@ namespace ValheimVRMod.VRCore.UI
             zInputToBooleanAction.TryGetValue(zinput, out action);
             if (action == null)
             {
-                LogWarning("Unmapped ZInput Key:" + zinput);
-                ignoredZInputs.Add(zinput); // Don't check for this input again
+                if (!quickActionEnabled.Contains(zinput))
+                {
+                    LogWarning("Unmapped ZInput Key:" + zinput);
+                    ignoredZInputs.Add(zinput); // Don't check for this input again
+                }
                 return false;
             }
             return action.Any(x => x.GetState(SteamVR_Input_Sources.Any));
@@ -307,8 +360,11 @@ namespace ValheimVRMod.VRCore.UI
             zInputToBooleanAction.TryGetValue(zinput, out action);
             if (action == null)
             {
-                LogWarning("Unmapped ZInput Key:" + zinput);
-                ignoredZInputs.Add(zinput); // Don't check for this input again
+                if (!quickActionEnabled.Contains(zinput))
+                {
+                    LogWarning("Unmapped ZInput Key:" + zinput);
+                    ignoredZInputs.Add(zinput); // Don't check for this input again
+                }
                 return false;
             }
             return action.Any(x => x.GetStateUp(SteamVR_Input_Sources.Any));
@@ -411,6 +467,31 @@ namespace ValheimVRMod.VRCore.UI
             }
         }
 
+        private int getAltMapZoom()
+        {
+            if (!altMapZoomTriggered)
+            {
+                return 0;
+            }
+            bool rightGrip = SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand);
+            if (!rightGrip)
+            {
+                return 0;
+            }
+            float yAxis = GetJoyRightStickY();
+            if (yAxis > 0.5f)
+            {
+                return -1;
+            } else if (yAxis < -0.5f)
+            {
+                return 1;
+            } else
+            {
+                return 0;
+            }
+
+        }
+
         private bool inPlaceMode()
         {
             return Player.m_localPlayer != null && Player.m_localPlayer.InPlaceMode();
@@ -461,7 +542,7 @@ namespace ValheimVRMod.VRCore.UI
             zInputToBooleanAction.Add("Jump", new [] { SteamVR_Actions.valheim_Jump, SteamVR_Actions.laserPointers_Jump });
             zInputToBooleanAction.Add("Use", new[] { SteamVR_Actions.valheim_Use });
             zInputToBooleanAction.Add("Sit", new[] { SteamVR_Actions.valheim_Sit });
-            zInputToBooleanAction.Add("Map", new[] { SteamVR_Actions.valheim_ToggleMap });
+            zInputToBooleanAction.Add(ToggleMiniMap, new[] { SteamVR_Actions.valheim_ToggleMap });
 
             // These placement commands re-use some of the normal game inputs
             zInputToBooleanAction.Add("BuildMenu", new[] { SteamVR_Actions.laserPointers_RightClick });
@@ -476,6 +557,12 @@ namespace ValheimVRMod.VRCore.UI
             poseL = SteamVR_Actions.valheim_PoseL;
             poseR = SteamVR_Actions.valheim_PoseR;
             initIgnoredZInputs();
+            initQuickActionOnly();
+        }
+
+        private void initQuickActionOnly()
+        {
+            quickActionEnabled.Add("Map");
         }
 
         private void initIgnoredZInputs()

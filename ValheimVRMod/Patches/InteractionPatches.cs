@@ -1,8 +1,13 @@
-using System.Reflection;
+using System;
 using HarmonyLib;
+using System.Reflection;
+using UnityEngine;
 using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
+using System.Collections.Generic;
+using System.Reflection.Emit;
 using Pose = ValheimVRMod.Utilities.Pose;
+
 
 namespace ValheimVRMod.Patches
 {
@@ -180,6 +185,90 @@ namespace ValheimVRMod.Patches
             if (StaticObjects.quickActions != null) {
                 StaticObjects.quickActions.GetComponent<QuickActions>().refreshItems();
             }
+        }
+    }
+
+    // This swaps the Raycast camera from the original game camera to the VR camera
+    // so that the interaction aligns with the player's head orientation. This
+    // only impacts M&KB players since interaction is done using Hands with VR controls enabled
+    [HarmonyPatch(typeof(Player), nameof(Player.FindHoverObject))]
+    class KBandMouse_FindHoverObjectPatch
+    {
+
+        private static MethodInfo GameCamera_get_instance = AccessTools.Method(typeof(GameCamera), "get_instance", new Type[] { });
+        private static MethodInfo Component_get_transform = AccessTools.Method(typeof(Component), "get_transform", new Type[] { typeof(Component) });
+        private static MethodInfo Transform_get_position = AccessTools.Method(typeof(Transform), "get_position", new Type[] { typeof(Transform) });
+        private static MethodInfo Transform_get_forward = AccessTools.Method(typeof(Transform), "get_forward", new Type[] { typeof(Transform) });
+
+        private static Camera vrCam = null;
+
+        private static Vector3 GetVRCameraPosition()
+        {
+            if (!vrCam)
+            {
+                vrCam = CameraUtils.getCamera(CameraUtils.VR_CAMERA);
+            }
+            if (!vrCam)
+            {
+                // Default to original
+                return GameCamera.instance.transform.position;
+            }
+            return vrCam.transform.position;
+        }
+
+        private static Vector3 GetVRCameraForward()
+        {
+            if (!vrCam)
+            {
+                vrCam = CameraUtils.getCamera(CameraUtils.VR_CAMERA);
+            }
+            if (!vrCam)
+            {
+                // Default to original
+                return GameCamera.instance.transform.forward;
+            }
+            return vrCam.transform.forward;
+        }
+
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            if (VHVRConfig.UseVrControls())
+            {
+                return instructions;
+            }
+            var original = new List<CodeInstruction>(instructions);
+            var patched = new List<CodeInstruction>();
+            int gameCameraCount = 0;
+            for (int i = 0; i < original.Count; i++)
+            {
+                var instruction = original[i];
+                if (instruction.opcode == OpCodes.Call && instruction.Calls(GameCamera_get_instance))
+                {
+                    if (gameCameraCount == 0)
+                    {
+                        LogUtils.LogDebug("Patching FindHoverObject Raycast Starting Position");
+                        patched.Add(CodeInstruction.Call(typeof(KBandMouse_FindHoverObjectPatch), nameof(GetVRCameraPosition)));
+                        i++;
+                        i++;
+                    } else if (gameCameraCount == 1)
+                    {
+                        LogUtils.LogDebug("Patching FindHoverObject Raycast Direction");
+                        patched.Add(CodeInstruction.Call(typeof(KBandMouse_FindHoverObjectPatch), nameof(GetVRCameraForward)));
+                        i++;
+                        i++;
+                    } else
+                    {
+                        LogUtils.LogWarning("Unexpected use of GameCamera instance in FindHoverObject");
+                        patched.Add(instruction);
+                        continue;
+                    }
+                    gameCameraCount++;
+                } else
+                {
+                    patched.Add(instruction);
+                }
+            }
+            return patched;
         }
     }
 }

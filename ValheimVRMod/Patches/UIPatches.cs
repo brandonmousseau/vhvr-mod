@@ -12,6 +12,59 @@ using System.Runtime.CompilerServices;
 
 namespace ValheimVRMod.Patches
 {
+
+    // Need this patch to ensure dynamically created pins are positioned
+    // correctly in world space coordinates so they are rendered on the VRHUD
+    // canvases.
+    [HarmonyPatch(typeof(Minimap), nameof(Minimap.UpdatePins))]
+    class Minimap_UpdatePins_SetParentPatch
+    {
+
+        private static MethodInfo setParentMethod = AccessTools.Method(typeof(Transform), "SetParent", new Type[] { typeof(Transform) });
+
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            if (VHVRConfig.NonVrPlayer())
+            {
+                return instructions;
+            }
+            var original = new List<CodeInstruction>(instructions);
+            var patched = new List<CodeInstruction>();
+            for (int i = 0; i < original.Count; i++)
+            {
+                var instruction = original[i];
+                if (instruction.Calls(setParentMethod))
+                {
+                    // Push "false" onto evaluation stack
+                    patched.Add(new CodeInstruction(OpCodes.Ldc_I4_0));
+                    // Call SetParent method that uses the bool input
+                    patched.Add(CodeInstruction.Call(typeof(Transform), "SetParent", new Type[] { typeof(Transform), typeof(bool) }));
+                } else
+                {
+                    patched.Add(instruction);
+                }
+            }
+            return patched;
+        }
+    }
+
+    /**
+     * This is required because for the VRHud we move the Minimap's Canvas
+     * from the default position/rotation, so setting the absolute rotation
+     * of the player icon doesn't work anymore. This changes it to use
+     * the local rotation instead so it'll work regardless of canvas
+     * position.
+     */
+    [HarmonyPatch(typeof(Minimap), nameof(Minimap.UpdatePlayerMarker))]
+    public class MinimapPlayerMarkerPatch
+    {
+
+        static void Postfix(Minimap __instance, Quaternion playerRot)
+        {
+            __instance.m_smallMarker.localRotation = Quaternion.Euler(0f, 0f, -playerRot.eulerAngles.y);
+        }
+    }
+
     /**
     * The purpose of this patch is to update the base
     * "mousePosition" getter, which is what all the rest of
@@ -722,6 +775,31 @@ namespace ValheimVRMod.Patches
                 return;
             }
             ConfigSettings.updateBindings();
+        }
+    }
+
+    [HarmonyPatch(typeof(HotkeyBar), nameof(HotkeyBar.Update))]
+    class HotkeyBarHidePatch
+    {
+        static bool Prefix(HotkeyBar __instance)
+        {
+            if (VHVRConfig.HideHotbar())
+            {
+                clearHotbar(__instance);
+                return false;
+            } else
+            {
+                return true;
+            }
+        }
+
+        private static void clearHotbar(HotkeyBar hotkeyBar)
+        {
+            foreach (var element in hotkeyBar.m_elements)
+            {
+                UnityEngine.Object.Destroy(element.m_go);
+            }
+            hotkeyBar.m_elements.Clear();
         }
     }
 }

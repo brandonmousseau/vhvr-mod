@@ -42,6 +42,7 @@ namespace ValheimVRMod.VRCore.UI
      * way we want without having to do anything messy with the existing user input system
      * and all the GUI interaction stuff just works out of the box.
      */
+    [DefaultExecutionOrder(int.MaxValue)]
     class VRGUI : MonoBehaviour
     {
         public static readonly string GUI_CANVAS = "GUI";
@@ -110,6 +111,13 @@ namespace ValheimVRMod.VRCore.UI
                     maybeInitializePointers();
                 }
             }
+        }
+
+        public void LateUpdate()
+        {
+            // Needs to go into LateUpdate to ensure it runs after VRIK calculations
+            // since the model HumanBodyBones are being referenced
+            VRHud.instance.Update();
         }
 
         public void OnDisable()
@@ -201,7 +209,9 @@ namespace ValheimVRMod.VRCore.UI
 
         private bool menuIsOpen()
         {
-            return StoreGui.IsVisible() || InventoryGui.IsVisible() || Menu.IsVisible() || (TextViewer.instance && TextViewer.instance.IsVisible()) || Minimap.IsOpen();
+            bool menuIsOpen = StoreGui.IsVisible() || InventoryGui.IsVisible() || Menu.IsVisible() || (TextViewer.instance && TextViewer.instance.IsVisible()) || Minimap.IsOpen();
+            bool needsRecentering = Player.m_localPlayer.IsRunning() || Player.m_localPlayer.IsAttachedToShip() || Player.m_localPlayer.GetStandingOnShip() != null || Vector3.SqrMagnitude(VRPlayer.instance.transform.position - _uiPanel.transform.position) > 100;
+            return menuIsOpen && !needsRecentering;
         }
 
         private bool ensureUIPanel()
