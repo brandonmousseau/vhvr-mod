@@ -296,7 +296,7 @@ namespace ValheimVRMod.Utilities
                                                 new AcceptableValueRange<int>(0, 360)));
             unlockDesktopCursor = config.Bind("UI",
                 "UnlockDesktopCursor",
-                false,
+                true,
                 "Normally the desktop cursor is locked to the center of the screen to avoid having the player accidentally lose focus when playing. This option can be used to free the mouse " +
                 "cursor which some users may want, especially if exclusively using motion controls where window focus is not needed.");
             QuickMenuFollowCam = config.Bind("UI",
