@@ -90,16 +90,16 @@ namespace ValheimVRMod.Scripts {
 
         private void OnRenderObject() {
             fixedSpear.transform.position = transform.position;
-            if (VHVRConfig.SpearTwoHanded()) {
-                if (SteamVR_Actions.valheim_Grab.GetState(offHandInputSource) && SteamVR_Actions.valheim_Grab.GetState(mainHandInputSource)) {
-                    UpdateTwoHandedWield();
-                    return;
-                }
-                else if (SteamVR_Actions.valheim_Grab.GetStateUp(offHandInputSource) || SteamVR_Actions.valheim_Grab.GetStateUp(mainHandInputSource)) {
-                    _isTwoHanded = isTwoHanded.SingleHanded;
-                    ResetSpearOffset();
-                }
-            }
+            //if (VHVRConfig.SpearTwoHanded()) {
+            //    if (SteamVR_Actions.valheim_Grab.GetState(offHandInputSource) && SteamVR_Actions.valheim_Grab.GetState(mainHandInputSource)) {
+            //        UpdateTwoHandedWield();
+            //        return;
+            //    }
+            //    else if (SteamVR_Actions.valheim_Grab.GetStateUp(offHandInputSource) || SteamVR_Actions.valheim_Grab.GetStateUp(mainHandInputSource)) {
+            //        _isTwoHanded = isTwoHanded.SingleHanded;
+            //        ResetSpearOffset();
+            //    }
+            //}
             switch (VHVRConfig.SpearThrowType()) {
                 case "DartType":
                     UpdateDartSpearThrowCalculation();

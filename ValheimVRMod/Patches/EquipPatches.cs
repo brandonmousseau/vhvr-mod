@@ -62,6 +62,7 @@ namespace ValheimVRMod.Patches {
             }
             
             StaticObjects.rightWeaponCollider().GetComponent<WeaponCollision>().setColliderParent(meshFilter.transform, ___m_rightItem, true);
+            ___m_rightItemInstance.AddComponent<WeaponWield>();
             ParticleFix.maybeFix(___m_rightItemInstance);
         }
     }
