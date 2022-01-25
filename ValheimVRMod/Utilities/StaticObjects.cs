@@ -20,22 +20,22 @@ namespace ValheimVRMod.Utilities {
         public static Collider lastHitCollider;
         
         public static WeaponCollision leftWeaponCollider() {
-            return getCollisionScript(ref _leftWeaponCollider);
+            return getCollisionScriptCube(ref _leftWeaponCollider);
         }
         
         public static WeaponCollision rightWeaponCollider() {
-            return getCollisionScript(ref _rightWeaponCollider);
+            return getCollisionScriptCube(ref _rightWeaponCollider);
         }
         
         public static FistCollision leftFist() {
-            return getCollisionScript(ref _leftFist);
+            return getCollisionScriptSphere(ref _leftFist);
         }
         
         public static FistCollision rightFist() {
-            return getCollisionScript(ref _rightFist);
+            return getCollisionScriptSphere(ref _rightFist);
         }
         
-        private static T getCollisionScript<T>(ref T collisionScript) where T : Component{
+        private static T getCollisionScriptCube<T>(ref T collisionScript) where T : Component{
             
             if (collisionScript != null) {
                 return collisionScript;
@@ -44,6 +44,21 @@ namespace ValheimVRMod.Utilities {
             var collisionObj = GameObject.CreatePrimitive(PrimitiveType.Cube);
             Object.Destroy(collisionObj.GetComponent<MeshRenderer>());
             collisionObj.GetComponent<BoxCollider>().isTrigger = true;
+            collisionObj.layer = LayerUtils.CHARACTER;
+            Rigidbody rigidbody = collisionObj.AddComponent<Rigidbody>();
+            rigidbody.useGravity = false;
+            return collisionScript = collisionObj.AddComponent<T>();
+        } 
+        
+        private static T getCollisionScriptSphere<T>(ref T collisionScript) where T : Component{
+            
+            if (collisionScript != null) {
+                return collisionScript;
+            }
+            
+            var collisionObj = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            Object.Destroy(collisionObj.GetComponent<MeshRenderer>());
+            collisionObj.GetComponent<SphereCollider>().isTrigger = true;
             collisionObj.layer = LayerUtils.CHARACTER;
             Rigidbody rigidbody = collisionObj.AddComponent<Rigidbody>();
             rigidbody.useGravity = false;
