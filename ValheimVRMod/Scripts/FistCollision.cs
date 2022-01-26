@@ -19,7 +19,7 @@ namespace ValheimVRMod.Scripts {
            colliderParent = new GameObject();
         }
 
-        private void OnTriggerEnter(Collider collider) {
+        private void OnTriggerStay(Collider collider) {
             if (!isCollisionAllowed()) {
                 return;
             }
@@ -92,9 +92,8 @@ namespace ValheimVRMod.Scripts {
             handGesture = obj.GetComponent<HandGesture>();
             colliderParent = new GameObject();
             colliderParent.transform.parent = obj;
-            colliderParent.transform.localPosition = new Vector3(0, 0.00078f, 0.00016f);
-            colliderParent.transform.localRotation = Quaternion.identity;
-            colliderParent.transform.localScale = new Vector3(0.0013f, 0.001f, 0.0007f);
+            colliderParent.transform.localPosition = new Vector3(0, 0.003f, 0.00016f);
+            colliderParent.transform.localScale *= 0.45f;
         }
 
         private bool isCollisionAllowed() {
@@ -128,7 +127,8 @@ namespace ValheimVRMod.Scripts {
             }
             
             foreach (Vector3 snapshot in snapshots) {
-                if (Vector3.Distance(snapshot, transform.localPosition) > MIN_DISTANCE) {
+                if (Vector3.Distance(snapshot, transform.localPosition) > MIN_DISTANCE
+                    && Vector3.Dot((snapshot - transform.localPosition).normalized, Vector3.forward) < 0) {
                     return true;
                 }
             }
