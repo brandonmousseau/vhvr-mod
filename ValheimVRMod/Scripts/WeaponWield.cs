@@ -12,6 +12,7 @@ namespace ValheimVRMod.Scripts {
         public bool itemIsTool;
         private bool weaponSubPos ;
 
+        public string _name;
         private Transform selectedWeapon;
         private ItemDrop.ItemData item;
         private GameObject rotSave;
@@ -74,19 +75,26 @@ namespace ValheimVRMod.Scripts {
 
         private void WieldHandle()
         {
+            switch (_name)
+            {
+                case "Hoe":
+                case "Hammer":
+                    return;
+            }
             switch (attack.m_attackAnimation)
             {
                 case "knife_stab":
                     KnifeWield();
                     break;
-                case "spear_poke":
-                case "atgeir_attack":
-                case "battleaxe_attack":
-                case "swing_sledge":
-                case "swing_pickaxe":
-                    UpdateTwoHandedWield();
-                    break;
+                //case "spear_poke":
+                //case "atgeir_attack":
+                //case "battleaxe_attack":
+                //case "swing_sledge":
+                //case "swing_pickaxe":
+                    
+                //    break;
                 default:
+                    UpdateTwoHandedWield();
                     break;
             }
         }
@@ -189,6 +197,11 @@ namespace ValheimVRMod.Scripts {
         {
             transform.position = rotSave.transform.position;
             transform.localRotation = rotSave.transform.localRotation;
+        }
+
+        public bool isCurrentlyTwoHanded()
+        {
+            return _isTwoHanded != isTwoHanded.SingleHanded;
         }
     }
 }

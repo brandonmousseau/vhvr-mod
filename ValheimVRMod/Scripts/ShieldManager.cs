@@ -7,6 +7,7 @@ namespace ValheimVRMod.Scripts {
     public class ShieldManager : MonoBehaviour {
         
         public string _name;
+        public static bool isWeapon;
         
         private const float cooldown = 1;
         private const float blockTimerParry = 0.1f;
@@ -18,6 +19,7 @@ namespace ValheimVRMod.Scripts {
         public static float blockTimer;
         private static ShieldManager instance;
         private static MeshCooldown _meshCooldown;
+        private static WeaponWield weaponWieldCheck;
 
         private const int MAX_SNAPSHOTS = 7;
         private int tickCounter;
@@ -34,11 +36,31 @@ namespace ValheimVRMod.Scripts {
             posRef = transform.localPosition;
             scaleRef = transform.localScale;
 
-            shieldHand = VHVRConfig.LeftHanded() ? VRPlayer.rightHand.transform : VRPlayer.leftHand.transform;
+            if (isWeapon)
+                shieldHand = VHVRConfig.LeftHanded() ? VRPlayer.leftHand.transform : VRPlayer.rightHand.transform;
+            else
+                shieldHand = VHVRConfig.LeftHanded() ? VRPlayer.rightHand.transform : VRPlayer.leftHand.transform;
+        }
+
+        public void setStart(string name,bool weapon,WeaponWield wield)
+        {
+            _name = name;
+            isWeapon = weapon;
+            weaponWieldCheck = wield;
         }
 
         public static void setBlocking(Vector3 hitDir) {
-            _blocking = Vector3.Dot(hitDir, instance.getForward()) > 0.5f;
+            var angle = Vector3.Dot(hitDir, instance.getForward());
+            LogUtils.LogDebug("Block Angle : " + angle);
+            if (isWeapon)
+            {
+                if(weaponWieldCheck.isCurrentlyTwoHanded())
+                _blocking = true;
+            }
+            else
+            {
+                _blocking = angle > 0.5f;
+            }
         }
 
         public static void resetBlocking() {
@@ -55,7 +77,12 @@ namespace ValheimVRMod.Scripts {
         }
         
         private Vector3 getForward() {
-            
+
+            if (isWeapon)
+            {
+                return shieldHand.transform.forward;
+            }
+
             switch (_name) {
                 case "ShieldWood":
                 case "ShieldBanded":
@@ -84,8 +111,16 @@ namespace ValheimVRMod.Scripts {
             Vector3 shieldPos = (snapshots[snapshots.Count - 1] + (Player.m_localPlayer.transform.InverseTransformDirection(-shieldHand.right) / 2) );
 
             if (Vector3.Distance(posEnd, posStart) > minDist) {
-                if (Vector3.Angle(shieldPos - snapshots[0] , snapshots[snapshots.Count - 1] - snapshots[0]) < maxParryAngle) {
+                if (isWeapon)
+                {
                     blockTimer = blockTimerParry;
+                }
+                else
+                {
+                    if (Vector3.Angle(shieldPos - snapshots[0], snapshots[snapshots.Count - 1] - snapshots[0]) < maxParryAngle)
+                    {
+                        blockTimer = blockTimerParry;
+                    }
                 }
                 
             } else {
@@ -109,14 +144,20 @@ namespace ValheimVRMod.Scripts {
         }
 
         private void OnRenderObject() {
-            if(scaling!=1f) {
-                transform.localScale = scaleRef * scaling;
-                transform.localPosition = CalculatePos();
-            }else if(transform.localPosition != posRef||transform.localScale !=scaleRef) {
-                transform.localScale = scaleRef;
-                transform.localPosition = posRef;
+            if (!isWeapon)
+            {
+                if (scaling != 1f)
+                {
+                    transform.localScale = scaleRef * scaling;
+                    transform.localPosition = CalculatePos();
+                }
+                else if (transform.localPosition != posRef || transform.localScale != scaleRef)
+                {
+                    transform.localScale = scaleRef;
+                    transform.localPosition = posRef;
+                }
+                StaticObjects.shieldObj().transform.rotation = transform.rotation;
             }
-            StaticObjects.shieldObj().transform.rotation = transform.rotation;
         }
         public static void ScaleShieldSize(float scale)
         {
