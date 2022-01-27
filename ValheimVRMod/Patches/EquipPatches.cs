@@ -49,6 +49,10 @@ namespace ValheimVRMod.Patches {
                 StaticObjects.quickActions.GetComponent<QuickActions>().refreshItems();
             }
 
+            var shield = player.gameObject.GetComponent<ShieldManager>();
+            if (!shield)
+                shield = player.gameObject.AddComponent<ShieldManager>();
+
             switch (EquipScript.getRight()) {
                 case EquipType.Fishing:
                     meshFilter.gameObject.AddComponent<FishingManager>();
@@ -64,7 +68,10 @@ namespace ValheimVRMod.Patches {
             StaticObjects.rightWeaponCollider().GetComponent<WeaponCollision>().setColliderParent(meshFilter.transform, ___m_rightItem, true);
             var wield = ___m_rightItemInstance.AddComponent<WeaponWield>();
             wield._name = ___m_rightItem;
-            meshFilter.gameObject.AddComponent<ShieldManager>().setStart(___m_rightItem,true, wield);
+            //meshFilter.gameObject.AddComponent<ShieldManager>().setStart(___m_rightItem,true, wield);
+
+            shield.SetRight(___m_rightItem,meshFilter.gameObject, wield);
+            
             ParticleFix.maybeFix(___m_rightItemInstance);
         }
     }
@@ -110,6 +117,11 @@ namespace ValheimVRMod.Patches {
                 StaticObjects.quickActions.GetComponent<QuickActions>().refreshItems();
             }
 
+            var shield = player.gameObject.GetComponent<ShieldManager>();
+            if (!shield)
+                shield = player.gameObject.AddComponent<ShieldManager>();
+
+            shield.ClearLeft();
             switch (EquipScript.getLeft()) {
                 
                 case EquipType.Bow:
@@ -117,10 +129,11 @@ namespace ValheimVRMod.Patches {
                     return;
                 
                 case EquipType.Shield:
-                    meshFilter.gameObject.AddComponent<ShieldManager>()._name = ___m_leftItem;
+                    //meshFilter.gameObject.AddComponent<ShieldManager>()._name = ___m_leftItem;
+                    shield.SetLeft(___m_leftItem, meshFilter.gameObject);
                     return;
             }
-            
+
             StaticObjects.leftWeaponCollider().GetComponent<WeaponCollision>().setColliderParent(meshFilter.transform, ___m_leftItem, false);
             ParticleFix.maybeFix(___m_leftItemInstance);
         }
