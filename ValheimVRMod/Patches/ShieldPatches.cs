@@ -34,7 +34,7 @@ namespace ValheimVRMod.Patches {
             if (__result) {
                 var hand = VRPlayer.rightHand;
                 var handSource = SteamVR_Input_Sources.RightHand;
-                if (ShieldManager.leftIsShield)
+                if (ShieldManager.isLeftShield())
                 {
                     hand = VRPlayer.leftHand;
                     handSource = SteamVR_Input_Sources.LeftHand;

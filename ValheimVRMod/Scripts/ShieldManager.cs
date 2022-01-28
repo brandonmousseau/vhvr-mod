@@ -34,7 +34,7 @@ namespace ValheimVRMod.Scripts {
         private static Vector3 posRef;
         private static Vector3 scaleRef;
 
-        private Transform shieldHand;
+        private static Transform shieldHand;
 
         private void Awake() {
             instance = this;
@@ -72,7 +72,7 @@ namespace ValheimVRMod.Scripts {
             InitShield();
         }
 
-        private void InitShield()
+        private static void InitShield()
         {
             if (leftIsShield&&_leftMeshCooldown)
             {
@@ -85,6 +85,7 @@ namespace ValheimVRMod.Scripts {
         }
 
         public static void setBlocking(Vector3 hitDir) {
+            InitShield();
             var angle = Vector3.Dot(hitDir, instance.getForward());
             if (leftIsShield&&_leftMeshCooldown)
             {
@@ -218,6 +219,13 @@ namespace ValheimVRMod.Scripts {
         private Vector3 CalculatePos()
         {
             return VRPlayer.leftHand.transform.InverseTransformDirection(shieldHand.TransformDirection(posRef) *(scaleRef * scaling).x);
+        }
+        public static bool isLeftShield()
+        {
+            if (leftIsShield && _leftMeshCooldown)
+                return true;
+            else
+                return false;
         }
     }
 }
