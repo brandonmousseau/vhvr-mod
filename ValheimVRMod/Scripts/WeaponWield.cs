@@ -12,6 +12,8 @@ namespace ValheimVRMod.Scripts {
         public bool itemIsTool;
         private bool weaponSubPos ;
 
+        private Vector3 weaponForward;
+
         public string _name;
         private Transform selectedWeapon;
         private ItemDrop.ItemData item;
@@ -107,6 +109,7 @@ namespace ValheimVRMod.Scripts {
                     ResetOffset();
                     transform.localRotation = transform.localRotation * Quaternion.AngleAxis(180, Vector3.right);
                     weaponSubPos = true;
+                    weaponForward = transform.forward;
                 }else if (weaponSubPos)
                 {
                     ResetOffset();
@@ -181,6 +184,7 @@ namespace ValheimVRMod.Scripts {
                         transform.LookAt(mainHand.transform.position + inversePosition.normalized * 5, transform.up);
                         transform.localRotation = transform.localRotation * (rotSave.transform.localRotation) * Quaternion.AngleAxis(180, Vector3.right) * Quaternion.AngleAxis(rotOffset, transform.InverseTransformDirection(inversePosition));
                     }
+                    weaponForward = transform.forward;
                     return;
                 }
                 else if (SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.LeftHand) || SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.RightHand)) {
@@ -202,6 +206,10 @@ namespace ValheimVRMod.Scripts {
         public bool isCurrentlyTwoHanded()
         {
             return _isTwoHanded != isTwoHanded.SingleHanded;
+        }
+        public Vector3 getWeaponForward()
+        {
+            return weaponForward;
         }
     }
 }

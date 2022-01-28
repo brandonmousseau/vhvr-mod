@@ -74,7 +74,7 @@ namespace ValheimVRMod.Scripts {
 
         private void InitShield()
         {
-            if (leftIsShield)
+            if (leftIsShield&&_leftMeshCooldown)
             {
                 posRef = _leftMeshCooldown.transform.localPosition;
                 scaleRef = _leftMeshCooldown.transform.localScale;
@@ -86,22 +86,18 @@ namespace ValheimVRMod.Scripts {
 
         public static void setBlocking(Vector3 hitDir) {
             var angle = Vector3.Dot(hitDir, instance.getForward());
-            LogUtils.LogDebug("Block Angle : " + angle);
             if (leftIsShield&&_leftMeshCooldown)
             {
-                LogUtils.LogDebug("Currently Left");
                 _blocking = angle > 0.5f;
             }
             else if (rightIsWeapon&&_rightMeshCooldown)
             {
-                LogUtils.LogDebug("Currently Right");
                 if (weaponWieldCheck.isCurrentlyTwoHanded())
-                _blocking = true;
+                _blocking = angle > -0.5f && angle < 0.5f;
             }
             else
             {
-                LogUtils.LogDebug("Currently None");
-                _blocking = false;
+                _blocking = false; 
             }
         }
 
@@ -140,9 +136,9 @@ namespace ValheimVRMod.Scripts {
                     case "ShieldBronzeBuckler":
                         return -StaticObjects.shieldObj().transform.up;
                 }
-            }else if (rightIsWeapon && _rightMeshCooldown)
+            }else if (rightIsWeapon && _rightMeshCooldown && weaponWieldCheck)
             {
-                return _rightMeshCooldown.transform.forward;
+                return weaponWieldCheck.getWeaponForward();
             }
 
             return -StaticObjects.shieldObj().transform.forward;
@@ -161,18 +157,19 @@ namespace ValheimVRMod.Scripts {
             }
 
             Vector3 shieldPos = (snapshots[snapshots.Count - 1] + (Player.m_localPlayer.transform.InverseTransformDirection(-shieldHand.right) / 2) );
-
+            var parryangle = Vector3.Angle(shieldPos - snapshots[0], snapshots[snapshots.Count - 1] - snapshots[0]);
+            
             if (Vector3.Distance(posEnd, posStart) > minDist) {
-                if (rightIsWeapon)
+                if (leftIsShield)
                 {
-                    blockTimer = blockTimerParry;
-                }
-                else
-                {
-                    if (Vector3.Angle(shieldPos - snapshots[0], snapshots[snapshots.Count - 1] - snapshots[0]) < maxParryAngle)
+                    if (parryangle < maxParryAngle)
                     {
                         blockTimer = blockTimerParry;
                     }
+                }
+                else
+                {
+                    blockTimer = blockTimerParry;
                 }
                 
             } else {
