@@ -90,16 +90,6 @@ namespace ValheimVRMod.Scripts {
 
         private void OnRenderObject() {
             fixedSpear.transform.position = transform.position;
-            //if (VHVRConfig.SpearTwoHanded()) {
-            //    if (SteamVR_Actions.valheim_Grab.GetState(offHandInputSource) && SteamVR_Actions.valheim_Grab.GetState(mainHandInputSource)) {
-            //        UpdateTwoHandedWield();
-            //        return;
-            //    }
-            //    else if (SteamVR_Actions.valheim_Grab.GetStateUp(offHandInputSource) || SteamVR_Actions.valheim_Grab.GetStateUp(mainHandInputSource)) {
-            //        _isTwoHanded = isTwoHanded.SingleHanded;
-            //        ResetSpearOffset();
-            //    }
-            //}
             switch (VHVRConfig.SpearThrowType()) {
                 case "DartType":
                     UpdateDartSpearThrowCalculation();
@@ -305,39 +295,6 @@ namespace ValheimVRMod.Scripts {
             transform.position = mainHandTransform.position - Vector3.ClampMagnitude(inversePosition, offsetPos);
             transform.LookAt(mainHandTransform.position + inversePosition);
             transform.localRotation = transform.localRotation * (rotSave.transform.localRotation) * Quaternion.AngleAxis(180, Vector3.right);
-        }
-        private void UpdateTwoHandedWield()
-        {
-            var mainHand = VRPlayer.rightHand;
-            var offHand = VRPlayer.leftHand;
-            float handAngleDiff = Vector3.Dot(new Vector3(0, 0.45f, 0.55f), mainHandTransform.InverseTransformPoint(offHandTransform.position).normalized); 
-            if (_isTwoHanded==isTwoHanded.SingleHanded) {
-                if (handAngleDiff > 0.6f) {
-                    _isTwoHanded = isTwoHanded.MainLeft;
-                }else if(handAngleDiff < -0.6f) {
-                    _isTwoHanded = isTwoHanded.MainRight;
-                }
-                else {
-                    return;
-                }
-            }
-            if (_isTwoHanded == isTwoHanded.MainLeft) {
-                mainHand = VRPlayer.leftHand;
-                offHand = VRPlayer.rightHand;
-            }
-            var offsetPos = Vector3.Distance(mainHandTransform.position, rotSave.transform.position);
-            var handDist = Vector3.Distance(mainHand.transform.position, offHand.transform.position);
-            var inversePosition = mainHand.transform.position - offHand.transform.position;
-            var spearDistLimit = 0.1f;
-            var calculateSpearDistance = (inversePosition.normalized * 0.1f / Mathf.Max(handDist, spearDistLimit)) - inversePosition.normalized * 0.2f;
-            transform.position = mainHand.transform.position - Vector3.ClampMagnitude(inversePosition.normalized, offsetPos) + (calculateSpearDistance);
-            transform.LookAt(mainHand.transform.position + inversePosition.normalized * 5);
-            transform.localRotation = transform.localRotation * (rotSave.transform.localRotation) * Quaternion.AngleAxis(180, Vector3.right);
-            //trying to rotate spear following the hand direction
-            var handAvgVector = mainHand.transform.TransformDirection(new Vector3(0, -0.45f, 0.55f)).normalized;
-            var calcSpearRot = Vector3.SignedAngle(transform.forward, handAvgVector, inversePosition);
-            transform.localRotation = transform.localRotation * Quaternion.AngleAxis(calcSpearRot, transform.InverseTransformDirection(inversePosition));
-            return;
         }
         private void ResetSpearOffset()
         {

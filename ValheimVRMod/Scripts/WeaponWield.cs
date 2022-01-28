@@ -120,7 +120,7 @@ namespace ValheimVRMod.Scripts {
         }
         private void UpdateTwoHandedWield()
         {
-            if (VHVRConfig.SpearTwoHanded()) {
+            if (VHVRConfig.TwoHandedWield()) {
                 if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand) && SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand)) {
                     var mainHand = VRPlayer.rightHand;
                     var offHand = VRPlayer.leftHand;
