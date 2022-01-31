@@ -108,8 +108,8 @@ namespace ValheimVRMod.Scripts {
                 {
                     ResetOffset();
                     transform.localRotation = transform.localRotation * Quaternion.AngleAxis(180, Vector3.right);
-                    weaponSubPos = true;
                     weaponForward = transform.forward;
+                    weaponSubPos = true;
                 }else if (weaponSubPos)
                 {
                     ResetOffset();
@@ -206,6 +206,16 @@ namespace ValheimVRMod.Scripts {
         public bool isCurrentlyTwoHanded()
         {
             return _isTwoHanded != isTwoHanded.SingleHanded;
+        }
+        public bool allowBlocking()
+        {
+            switch (attack.m_attackAnimation)
+            {
+                case "knife_stab":
+                    return weaponSubPos;
+                default:
+                    return isCurrentlyTwoHanded();
+            }
         }
         public Vector3 getWeaponForward()
         {

@@ -93,7 +93,7 @@ namespace ValheimVRMod.Scripts {
             }
             else if (rightIsWeapon&&_rightMeshCooldown)
             {
-                if (weaponWieldCheck.isCurrentlyTwoHanded())
+                if (weaponWieldCheck.allowBlocking())
                 _blocking = angle > -0.5f && angle < 0.5f;
             }
             else
