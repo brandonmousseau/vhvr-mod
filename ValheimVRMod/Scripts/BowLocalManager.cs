@@ -26,11 +26,10 @@ namespace ValheimVRMod.Scripts {
         private Vector3 reusedMainHandVelocity;
         private Vector3 reusedMainHandAngularVelocity;
 
-        // Vanilla-style restriction applied and current charge progress.
-        public float chargePercentage = 0;
-
         public static BowLocalManager instance;
         public static float attackDrawPercentage;
+        // Vanilla-style restriction applied and current charge progress.
+        public static float chargePercentage = 0;
         public static Vector3 spawnPoint;
         public static Vector3 aimDir;
 
