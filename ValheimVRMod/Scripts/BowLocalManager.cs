@@ -10,7 +10,7 @@ using Valve.VR.InteractionSystem;
 namespace ValheimVRMod.Scripts {
     public class BowLocalManager : BowManager {
         private const float attachRange = 0.2f;
-        private const float maxAimNoise = (float) Math.PI / 12;
+        private const float maxAimNoise = (float) Math.PI / 9;
 
         private GameObject arrow;
         private LineRenderer predictionLine;
