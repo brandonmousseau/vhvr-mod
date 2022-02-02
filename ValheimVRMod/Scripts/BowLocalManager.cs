@@ -128,6 +128,10 @@ namespace ValheimVRMod.Scripts {
                 outline.enabled = true;
             }
 
+            if (arrow == null) {
+                return;
+            }
+
             if (pulling && chargePercentage < 1) {
                 // Use outline color to hint the charge progress to the player.
                 arrowOutline.OutlineColor = new Vector4(1, 0, 0, 1 - chargePercentage);
