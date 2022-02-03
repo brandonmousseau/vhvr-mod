@@ -13,11 +13,11 @@ namespace ValheimVRMod.Scripts {
         private const float maxAimNoise = (float) Math.PI / 9;
 
         private GameObject arrow;
+        private GameObject chargeIndicator;
         private LineRenderer predictionLine;
         private float projectileVel;
         private float projectileVelMin;
         private Outline outline;
-        private Outline arrowOutline;
         private ItemDrop.ItemData item;
         private Attack attack;
         private float fullChargeDurationSecond;
@@ -52,7 +52,9 @@ namespace ValheimVRMod.Scripts {
             predictionLine.shadowCastingMode = ShadowCastingMode.Off;
             predictionLine.lightProbeUsage = LightProbeUsage.Off;
             predictionLine.reflectionProbeUsage = ReflectionProbeUsage.Off;
-            
+
+            createChargeIndicator();
+
             arrowAttach.transform.SetParent(mainHand, false);
             
             outline = gameObject.AddComponent<Outline>();
@@ -73,6 +75,7 @@ namespace ValheimVRMod.Scripts {
             destroyArrow();
             Destroy(predictionLine);
             Destroy(arrowAttach);
+            Destroy(chargeIndicator);
         }
 
         private void destroyArrow() {
@@ -127,17 +130,14 @@ namespace ValheimVRMod.Scripts {
                 outline.enabled = true;
             }
 
-            if (arrow == null) {
-                return;
+            if (pulling && chargePercentage < 1 && chargePercentage > 0) {
+                chargeIndicator.transform.localScale = new Vector3(0.05f * (1 - chargePercentage), 0.0001f, 0.05f * (1 - chargePercentage));
+                chargeIndicator.GetComponent<MeshRenderer>().material.color = new Vector4(1, chargePercentage, 0, 1);
+                chargeIndicator.SetActive(true);
+            } else {
+                chargeIndicator.SetActive(false);
             }
 
-            if (pulling && chargePercentage < 1) {
-                // Use outline color to hint the charge progress to the player.
-                arrowOutline.OutlineColor = new Vector4(1, 0, 0, 1 - chargePercentage);
-                arrowOutline.enabled = true;
-            } else {
-                arrowOutline.enabled = false;
-            }
         }
         
         private float getStaminaUsage() {
@@ -292,12 +292,6 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            arrowOutline = arrow.AddComponent<Outline>();
-            arrowOutline.OutlineColor = Color.red;
-            arrowOutline.OutlineWidth = 10;
-            arrowOutline.OutlineMode = Outline.Mode.OutlineVisible;
-            arrowOutline.enabled = false;
-
             // we need to disable the Projectile Component, else the arrow will shoot out of the hands like a New Year rocket
             arrow.GetComponent<Projectile>().enabled = false;
             // also Destroy the Trail, as this produces particles when moving with arrow in hand
@@ -315,6 +309,22 @@ namespace ValheimVRMod.Scripts {
             projectileVel = currentAttack.m_projectileVel + ammoItem.m_shared.m_attack.m_projectileVel;
             projectileVelMin = currentAttack.m_projectileVelMin + ammoItem.m_shared.m_attack.m_projectileVelMin;
             
+        }
+
+        private void createChargeIndicator() {
+            chargeIndicator = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            chargeIndicator.transform.SetParent(transform);
+            chargeIndicator.transform.localPosition = new Vector3(0, -VHVRConfig.ArrowRestElevation() * 0.75f, 0);
+            chargeIndicator.transform.localRotation = Quaternion.Euler(90, 0, 0);
+            chargeIndicator.layer = LayerUtils.getWorldspaceUiLayer();
+            chargeIndicator.SetActive(false);
+            chargeIndicator.GetComponent<MeshRenderer>().material.color = new Vector4(0.5f, 0.5f, 0, 0.5f);
+            chargeIndicator.GetComponent<MeshRenderer>().receiveShadows = false;
+            chargeIndicator.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
+            chargeIndicator.GetComponent<MeshRenderer>().lightProbeUsage = LightProbeUsage.Off;
+            chargeIndicator.GetComponent<MeshRenderer>().reflectionProbeUsage = ReflectionProbeUsage.Off;
+
+            Destroy(chargeIndicator.GetComponent<Collider>());
         }
 
         private GameObject findTrail(Transform transform) {
