@@ -11,6 +11,7 @@ namespace ValheimVRMod.Scripts {
         private bool wasPulling;
         
         protected const float maxPullLength = 0.6f;
+        protected float pullLength = maxPullLength;
         protected Vector3 stringTop;
         protected Vector3 stringBottom;
         protected Vector3 pullStart;
@@ -153,8 +154,8 @@ namespace ValheimVRMod.Scripts {
             pullObj.transform.position = mainHand.position;
             var pullPos = pullObj.transform.localPosition;
             
-            if (pullPos.z > maxPullLength) {
-                pullObj.transform.localPosition = new Vector3(pullPos.x, pullPos.y, maxPullLength);
+            if (pullPos.z > pullLength) {
+                pullObj.transform.localPosition = new Vector3(pullPos.x, pullPos.y, pullLength);
             }
             
             if (pullPos.z < pullStart.z) {

@@ -14,6 +14,7 @@ namespace ValheimVRMod.Scripts {
 
         private GameObject arrow;
         private GameObject chargeIndicator;
+        private GameObject vrikHandConnector;
         private LineRenderer predictionLine;
         private float projectileVel;
         private float projectileVelMin;
@@ -29,7 +30,7 @@ namespace ValheimVRMod.Scripts {
         public static BowLocalManager instance;
         public static float attackDrawPercentage;
         // Vanilla-style restriction applied and current charge progress.
-        public static float chargePercentage = 0;
+        public static float chargePercentage;
         public static Vector3 spawnPoint;
         public static Vector3 aimDir;
 
@@ -63,6 +64,9 @@ namespace ValheimVRMod.Scripts {
             outline.OutlineMode = Outline.Mode.OutlineVisible;
             outline.enabled = false;
 
+            vrikHandConnector = new GameObject();
+            vrikHandConnector.transform.SetParent(VRPlayer.rightHand.transform, false);
+            
             item = Player.m_localPlayer.GetLeftItem();
             if (item != null) {
                 attack = item.m_shared.m_attack.Clone();
@@ -76,6 +80,7 @@ namespace ValheimVRMod.Scripts {
             Destroy(predictionLine);
             Destroy(arrowAttach);
             Destroy(chargeIndicator);
+            Destroy(vrikHandConnector);
         }
 
         private void destroyArrow() {
@@ -184,6 +189,7 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
+            vrikHandConnector.transform.position = pullObj.transform.position;
             arrowAttach.transform.rotation = pullObj.transform.rotation;
             arrowAttach.transform.position = pullObj.transform.position;
             spawnPoint = getArrowRestPosition();
@@ -209,10 +215,12 @@ namespace ValheimVRMod.Scripts {
 
             if (!VHVRConfig.RestrictBowDrawSpeed()) {
                 chargePercentage = 1;
+                pullLength = maxPullLength;
                 return;
             }
 
             chargePercentage = Math.Min((currentTimeSecond - drawStartTimeSecond) / fullChargeDurationSecond, 1);
+            pullLength = (maxPullLength - pullStart.z) * Math.Max(chargePercentage, 0.01f) + pullStart.z;
         }
 
         private void releaseString(bool withoutShoot = false) {
@@ -220,6 +228,8 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
+            VRPlayer.vrikRef.solver.rightArm.target.SetParent(VRPlayer.rightHand.transform, false);
+            
             predictionLine.enabled = false;
             pulling = isPulling = false;
             attackDrawPercentage = pullPercentage();
@@ -269,6 +279,8 @@ namespace ValheimVRMod.Scripts {
                 chargePercentage = 0;
                 drawStartTimeSecond = Time.time;
             }
+            
+            VRPlayer.vrikRef.solver.rightArm.target.SetParent(vrikHandConnector.transform, false);
 
             return pulling = true;
         }
