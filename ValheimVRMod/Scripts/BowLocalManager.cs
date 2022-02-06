@@ -211,12 +211,12 @@ namespace ValheimVRMod.Scripts {
 
             if (!VHVRConfig.RestrictBowDrawSpeed()) {
                 chargePercentage = 1;
-                pullLength = maxPullLength;
+                chargedPullLength = maxPullLength;
                 return;
             }
 
             chargePercentage = Math.Min((currentTimeSecond - drawStartTimeSecond) / fullChargeDurationSecond, 1);
-            pullLength = (maxPullLength - pullStart.z) * Math.Max(chargePercentage, 0.01f) + pullStart.z;
+            chargedPullLength = Mathf.Lerp(pullStart.z, maxPullLength, Math.Max(chargePercentage, 0.01f));
         }
 
         private void releaseString(bool withoutShoot = false) {
