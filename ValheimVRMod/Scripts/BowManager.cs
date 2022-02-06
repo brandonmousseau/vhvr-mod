@@ -9,11 +9,8 @@ namespace ValheimVRMod.Scripts {
         private const float minStringSize = 0.965f;
         private Vector3[] verts;
         private bool wasPulling;
-
-        public static float realLifePullPercentage;
-
+        
         protected const float maxPullLength = 0.6f;
-        protected float chargedPullLength = maxPullLength;
         protected Vector3 stringTop;
         protected Vector3 stringBottom;
         protected Vector3 pullStart;
@@ -139,10 +136,10 @@ namespace ValheimVRMod.Scripts {
         }
 
         private void rotateBowOnPulling() {
-            float handDistance = (mainHand.position - transform.position).magnitude;
+            float drawLength = (mainHand.position - transform.position).magnitude;
 
             // The angle between the push direction and the arrow direction.
-            double pushOffsetAngle = Math.Asin(VHVRConfig.ArrowRestElevation() / handDistance);
+            double pushOffsetAngle = Math.Asin(VHVRConfig.ArrowRestElevation() / drawLength);
 
             // Align the z-axis of the pushObj with the direction of the draw force and determine its y-axis using the orientation of the bow hand.
             pushObj.transform.LookAt(mainHand, worldUp: -transform.parent.forward);
@@ -152,15 +149,14 @@ namespace ValheimVRMod.Scripts {
         }
 
         private void pullString() {
-
+            
             pullObj.transform.position = mainHand.position;
             var pullPos = pullObj.transform.localPosition;
-            realLifePullPercentage = Math.Min(Math.Max(pullPos.z - pullStart.z, 0) / (maxPullLength - pullStart.z), 1);
-
-            if (pullPos.z > chargedPullLength) {
-                pullObj.transform.localPosition = new Vector3(pullPos.x, pullPos.y, chargedPullLength);
+            
+            if (pullPos.z > maxPullLength) {
+                pullObj.transform.localPosition = new Vector3(pullPos.x, pullPos.y, maxPullLength);
             }
-
+            
             if (pullPos.z < pullStart.z) {
                 pullObj.transform.localPosition = new Vector3(pullPos.x, pullPos.y, pullStart.z);
             }
