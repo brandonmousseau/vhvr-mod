@@ -113,17 +113,20 @@ namespace ValheimVRMod.Scripts {
             }
 
             updateOutline();
+            updateChargeIndicator();
         }
 
         private void updateOutline() {
-            
             if (outline.enabled && Player.m_localPlayer.HaveStamina(getStaminaUsage() + 0.1f)) {
+
                 outline.enabled = false;
-            } else if (! outline.enabled && ! Player.m_localPlayer.HaveStamina(getStaminaUsage() + 0.1f)) {
+            } else if (!outline.enabled && !Player.m_localPlayer.HaveStamina(getStaminaUsage() + 0.1f)) {
                 outline.enabled = true;
             }
+        }
 
-            if (pulling && attackDrawPercentage < 1 && attackDrawPercentage > 0) {
+        private void updateChargeIndicator() {
+            if (VHVRConfig.RestrictBowDrawSpeed() && pulling && attackDrawPercentage < 1 && attackDrawPercentage > 0) {
                 chargeIndicator.transform.localScale = new Vector3(0.05f * (1 - attackDrawPercentage), 0.0001f, 0.05f * (1 - attackDrawPercentage));
                 chargeIndicator.GetComponent<MeshRenderer>().material.color = new Vector4(1, attackDrawPercentage, 0, 1);
                 chargeIndicator.SetActive(true);
