@@ -20,8 +20,8 @@ namespace ValheimVRMod.Patches {
                 return true;
             }
 
-            if (EquipScript.getLeft() == EquipType.Bow) {
-                __result = Math.Min(BowLocalManager.attackDrawPercentage, BowLocalManager.chargePercentage);
+            if (EquipScript.getLeft() == EquipType.Bow && !VHVRConfig.RestrictBowDrawSpeed()) {
+                __result = BowLocalManager.attackDrawPercentage;
                 return false;
             }
 
@@ -29,14 +29,25 @@ namespace ValheimVRMod.Patches {
                 __result = FishingManager.attackDrawPercentage;
                 return false;
             }
-            
+
             return true;
+        }
+
+        static void Postfix(Humanoid __instance, ref float __result) {
+            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls()) {
+                return;
+            }
+
+            if (EquipScript.getLeft() == EquipType.Bow && VHVRConfig.RestrictBowDrawSpeed()) {
+                // Since the attack draw percentage is not patched in the prefix, we need to clamp it here in case the real life pull percentage is smaller than the unpatched attack draw percentage.
+                __result = Math.Min(__result, BowManager.realLifePullPercentage);
+            }
         }
     }
 
     /**
-     * Manipulate Position and Direction of the Arrow SpawnPoint
-     */
+        * Manipulate Position and Direction of the Arrow SpawnPoint
+        */
     [HarmonyPatch(typeof(Attack), "GetProjectileSpawnPoint")]
     class PatchGetProjectileSpawnPoint {
         static bool Prefix(out Vector3 spawnPoint, out Vector3 aimDir, Humanoid ___m_character) {
