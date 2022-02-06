@@ -115,6 +115,11 @@ namespace ValheimVRMod.Patches {
             
             __instance.m_useCharacterFacing = false;
             __instance.m_launchAngle = 0;
+            
+            if (VHVRConfig.RestrictBowDrawSpeed()) {
+                return;
+            }
+
             __instance.m_projectileAccuracyMin = 0;
             if (___m_ammoItem != null) {
                 ___m_ammoItem.m_shared.m_attack.m_projectileAccuracyMin = 0;   
