@@ -122,9 +122,9 @@ namespace ValheimVRMod.Scripts {
                     wasPulling = true;
                 }
 
+                rotateBowOnPulling();
                 pullString();
                 gameObject.GetComponent<LineRenderer>().SetPosition(1, pullObj.transform.localPosition);
-                rotateBowOnPulling();
 
             } else if (wasPulling) {
                 wasPulling = false;
@@ -136,13 +136,13 @@ namespace ValheimVRMod.Scripts {
         }
 
         private void rotateBowOnPulling() {
-            float drawLength = (pullObj.transform.position - transform.position).magnitude;
+            float drawLength = (mainHand.position - transform.position).magnitude;
 
             // The angle between the push direction and the arrow direction.
             double pushOffsetAngle = Math.Asin(VHVRConfig.ArrowRestElevation() / drawLength);
 
             // Align the z-axis of the pushObj with the direction of the draw force and determine its y-axis using the orientation of the bow hand.
-            pushObj.transform.LookAt(pullObj.transform, worldUp: -transform.parent.forward);
+            pushObj.transform.LookAt(mainHand, worldUp: -transform.parent.forward);
 
             // Assuming that the bow is perpendicular to the arrow, the angle between the y-axis of the bow and the y-axis of the pushObj should also be pushOffsetAngle.
             transform.rotation = pushObj.transform.rotation * Quaternion.AngleAxis((float) (-pushOffsetAngle * (180.0 / Math.PI)), Vector3.right);
