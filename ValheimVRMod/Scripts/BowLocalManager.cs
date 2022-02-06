@@ -20,8 +20,6 @@ namespace ValheimVRMod.Scripts {
         private Outline outline;
         private ItemDrop.ItemData item;
         private Attack attack;
-        private float fullChargeDurationSecond;
-        private float drawStartTimeSecond;
 
         public static BowLocalManager instance;
         public static float attackDrawPercentage;
@@ -88,15 +86,10 @@ namespace ValheimVRMod.Scripts {
             return VHVRConfig.LeftHanded() ? VRPlayer.leftHand : VRPlayer.rightHand;
         }
 
-        private static float getFullChargeDurationSecond(float skillPercentage) {
-            // In non-vr full draw takes 0.8s to 3.3s. In VR it takes around 0.5s to grab and nock an arrow, so the remaining charging time should be 0.3s to 2.8s.
-            return Mathf.Lerp(2.8f, 0.3f, skillPercentage);
-        }
-
         /**
-     * Need to use OnRenderObject instead of Update or LateUpdate,
-     * because of VRIK Bone Updates happening in LateUpdate 
-     */
+         * Need to use OnRenderObject instead of Update or LateUpdate,
+         * because of VRIK Bone Updates happening in LateUpdate 
+         */
         protected new void OnRenderObject() {
             
             if (!initialized) {
@@ -253,7 +246,6 @@ namespace ValheimVRMod.Scripts {
                 isPulling = true;
                 predictionLine.enabled = VHVRConfig.UseArrowPredictionGraphic();
                 attackDrawPercentage = 0;
-                drawStartTimeSecond = Time.time;
             }
             
             VRPlayer.vrikRef.solver.rightArm.target.SetParent(vrikHandConnector.transform, false);
