@@ -10,7 +10,6 @@ using Valve.VR.InteractionSystem;
 namespace ValheimVRMod.Scripts {
     public class BowLocalManager : BowManager {
         private const float attachRange = 0.2f;
-        private const float maxAimNoise = (float) Math.PI / 9;
 
         private GameObject arrow;
         private GameObject chargeIndicator;
@@ -23,9 +22,6 @@ namespace ValheimVRMod.Scripts {
         private Attack attack;
         private float fullChargeDurationSecond;
         private float drawStartTimeSecond;
-
-        private Vector3 reusedMainHandVelocity;
-        private Vector3 reusedMainHandAngularVelocity;
 
         public static BowLocalManager instance;
         public static float attackDrawPercentage;
@@ -246,13 +242,6 @@ namespace ValheimVRMod.Scripts {
                 }
 
                 return;
-            }
-
-            if (chargePercentage < 1) {
-                // Add noise to the shooting direction to penalize premature releases.
-                float aimNoise = UnityEngine.Random.Range(0, 1 - chargePercentage) * maxAimNoise;
-                getMainHand().GetEstimatedPeakVelocities(out reusedMainHandVelocity, out reusedMainHandAngularVelocity);
-                aimDir = Vector3.RotateTowards(aimDir, target: reusedMainHandVelocity, maxRadiansDelta: -aimNoise, maxMagnitudeDelta: 0);
             }
 
             // SHOOTING
