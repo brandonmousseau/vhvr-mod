@@ -102,6 +102,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> spearThrowSpeedDynamic;
         private static ConfigEntry<bool> spearTwoHanded;
         private static ConfigEntry<float> arrowRestElevation;
+        private static ConfigEntry<bool> restrictBowDrawSpeed;
 
 #if DEBUG
         private static ConfigEntry<float> DebugPosX;
@@ -538,6 +539,10 @@ namespace ValheimVRMod.Utilities
                 0.15f,
                 new ConfigDescription("The amount by which the arrow rest is higher than the center of the bow handle",
                     new AcceptableValueRange<float>(0, 0.25f)));
+            restrictBowDrawSpeed = config.Bind("Motion Control",
+                "RestrictBowDrawSpeed",
+                false,
+                "Whether to apply vanilla-style restriction on bow drawing speed and make premature releases inaccurate. If unchecked, extra bow stamina drain is applied for game balance.");
 
 // #if DEBUG
 //             DebugPosX = config.Bind("Motion Control",
@@ -796,6 +801,11 @@ namespace ValheimVRMod.Utilities
         public static float ArrowRestElevation()
         {
             return arrowRestElevation.Value;
+        }
+
+        public static bool RestrictBowDrawSpeed()
+        {
+            return restrictBowDrawSpeed.Value;
         }
 
         public static bool NonVrPlayer()
