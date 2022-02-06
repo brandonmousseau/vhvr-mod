@@ -26,7 +26,6 @@ namespace ValheimVRMod.Scripts {
         public static BowLocalManager instance;
         public static float attackDrawPercentage;
         // Vanilla-style restriction applied and current charge progress.
-        public static float chargePercentage;
         public static Vector3 spawnPoint;
         public static Vector3 aimDir;
 
@@ -131,9 +130,9 @@ namespace ValheimVRMod.Scripts {
                 outline.enabled = true;
             }
 
-            if (pulling && chargePercentage < 1 && chargePercentage > 0) {
-                chargeIndicator.transform.localScale = new Vector3(0.05f * (1 - chargePercentage), 0.0001f, 0.05f * (1 - chargePercentage));
-                chargeIndicator.GetComponent<MeshRenderer>().material.color = new Vector4(1, chargePercentage, 0, 1);
+            if (pulling && attackDrawPercentage < 1 && attackDrawPercentage > 0) {
+                chargeIndicator.transform.localScale = new Vector3(0.05f * (1 - attackDrawPercentage), 0.0001f, 0.05f * (1 - attackDrawPercentage));
+                chargeIndicator.GetComponent<MeshRenderer>().material.color = new Vector4(1, attackDrawPercentage, 0, 1);
                 chargeIndicator.SetActive(true);
             } else {
                 chargeIndicator.SetActive(false);
@@ -196,27 +195,16 @@ namespace ValheimVRMod.Scripts {
                 float additionalStaminaDrain = VHVRConfig.RestrictBowDrawSpeed() ? 3 : 15;
                 Player.m_localPlayer.UseStamina((currDrawPercentage - attackDrawPercentage) * (currDrawPercentage + attackDrawPercentage) * additionalStaminaDrain);
             }
-            updateChargePercentage();
+            updateChargedPullLength();
             attackDrawPercentage = currDrawPercentage;
         }
 
-        private void updateChargePercentage() {
-            float currentTimeSecond = Time.time;
-            if (attackDrawPercentage <= 0 || drawStartTimeSecond > currentTimeSecond) {
-                // Reset charge progress.
-                fullChargeDurationSecond = getFullChargeDurationSecond(Player.m_localPlayer.GetSkillFactor(item.m_shared.m_skillType));
-                drawStartTimeSecond = currentTimeSecond;
-                return;
-            }
-
+        private void updateChargedPullLength() {
             if (!VHVRConfig.RestrictBowDrawSpeed()) {
-                chargePercentage = 1;
                 chargedPullLength = maxPullLength;
-                return;
+            } else {
+                chargedPullLength = Mathf.Lerp(pullStart.z, maxPullLength, Math.Max(Player.m_localPlayer.GetAttackDrawPercentage(), 0.01f));
             }
-
-            chargePercentage = Math.Min((currentTimeSecond - drawStartTimeSecond) / fullChargeDurationSecond, 1);
-            chargedPullLength = Mathf.Lerp(pullStart.z, maxPullLength, Math.Max(chargePercentage, 0.01f));
         }
 
         private void releaseString(bool withoutShoot = false) {
@@ -265,7 +253,6 @@ namespace ValheimVRMod.Scripts {
                 isPulling = true;
                 predictionLine.enabled = VHVRConfig.UseArrowPredictionGraphic();
                 attackDrawPercentage = 0;
-                chargePercentage = 0;
                 drawStartTimeSecond = Time.time;
             }
             
