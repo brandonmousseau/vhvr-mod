@@ -154,8 +154,8 @@ namespace ValheimVRMod.Scripts {
             pullObj.transform.position = mainHand.position;
             var pullPos = pullObj.transform.localPosition;
             
-            if (pullPos.z > pullLength) {
-                pullObj.transform.localPosition = new Vector3(pullPos.x, pullPos.y, pullLength);
+            if (pullPos.z > maxPullLength) {
+                pullObj.transform.localPosition = new Vector3(pullPos.x, pullPos.y, maxPullLength);
             }
             
             if (pullPos.z < pullStart.z) {
