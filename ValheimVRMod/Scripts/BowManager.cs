@@ -13,7 +13,6 @@ namespace ValheimVRMod.Scripts {
         public static float realLifePullPercentage;
 
         protected const float maxPullLength = 0.6f;
-        protected float chargedPullLength = maxPullLength;
         protected Vector3 stringTop;
         protected Vector3 stringBottom;
         protected Vector3 pullStart;
@@ -155,10 +154,13 @@ namespace ValheimVRMod.Scripts {
 
             pullObj.transform.position = mainHand.position;
             var pullPos = pullObj.transform.localPosition;
-            realLifePullPercentage = Math.Min(Math.Max(pullPos.z - pullStart.z, 0) / (maxPullLength - pullStart.z), 1);
+            realLifePullPercentage = Mathf.Pow(Math.Min(Math.Max(pullPos.z - pullStart.z, 0) / (maxPullLength - pullStart.z), 1), 2);
 
-            if (pullPos.z > chargedPullLength) {
-                pullObj.transform.localPosition = new Vector3(pullPos.x, pullPos.y, chargedPullLength);
+            // If RestrictBowDrawSpeed is enabled, limit the vr pull length by the square root of the current attack draw percentage to simulate the resistance.
+            float pullLengthRestriction = VHVRConfig.RestrictBowDrawSpeed() ? Mathf.Lerp(pullStart.z, maxPullLength, Math.Max(Mathf.Sqrt(Player.m_localPlayer.GetAttackDrawPercentage()), 0.01f)) : maxPullLength;
+
+            if (pullPos.z > pullLengthRestriction) {
+                pullObj.transform.localPosition = new Vector3(pullPos.x, pullPos.y, pullLengthRestriction);
             }
 
             if (pullPos.z < pullStart.z) {

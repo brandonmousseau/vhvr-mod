@@ -21,7 +21,7 @@ namespace ValheimVRMod.Patches {
             }
 
             if (EquipScript.getLeft() == EquipType.Bow && !VHVRConfig.RestrictBowDrawSpeed()) {
-                __result = BowLocalManager.attackDrawPercentage;
+                __result = BowLocalManager.realLifePullPercentage;
                 return false;
             }
 

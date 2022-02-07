@@ -20,10 +20,9 @@ namespace ValheimVRMod.Scripts {
         private Outline outline;
         private ItemDrop.ItemData item;
         private Attack attack;
+        private float attackDrawPercentage;
 
         public static BowLocalManager instance;
-        public static float attackDrawPercentage;
-        // Vanilla-style restriction applied and current charge progress.
         public static Vector3 spawnPoint;
         public static Vector3 aimDir;
 
@@ -118,7 +117,6 @@ namespace ValheimVRMod.Scripts {
 
         private void updateOutline() {
             if (outline.enabled && Player.m_localPlayer.HaveStamina(getStaminaUsage() + 0.1f)) {
-
                 outline.enabled = false;
             } else if (!outline.enabled && !Player.m_localPlayer.HaveStamina(getStaminaUsage() + 0.1f)) {
                 outline.enabled = true;
@@ -133,7 +131,6 @@ namespace ValheimVRMod.Scripts {
             } else {
                 chargeIndicator.SetActive(false);
             }
-
         }
         
         private float getStaminaUsage() {
@@ -186,21 +183,12 @@ namespace ValheimVRMod.Scripts {
             spawnPoint = getArrowRestPosition();
             aimDir = -transform.forward;
             var currDrawPercentage = pullPercentage();
-            if (arrow != null && currDrawPercentage > attackDrawPercentage) {
+            if (arrow != null && currDrawPercentage > attackDrawPercentage && !VHVRConfig.RestrictBowDrawSpeed()) {
                 // Even with RestrictBowDrawSpeed enabled, charging duration is shorter than the full draw duration on non-vr so some amount of stamina drain should be added to compensate.
-                float additionalStaminaDrain = VHVRConfig.RestrictBowDrawSpeed() ? 3 : 15;
-                Player.m_localPlayer.UseStamina((currDrawPercentage - attackDrawPercentage) * (currDrawPercentage + attackDrawPercentage) * additionalStaminaDrain);
+                float additionalStaminaDrain = 15;
+                Player.m_localPlayer.UseStamina((currDrawPercentage - attackDrawPercentage) * additionalStaminaDrain);
             }
-            updateChargedPullLength();
             attackDrawPercentage = currDrawPercentage;
-        }
-
-        private void updateChargedPullLength() {
-            if (!VHVRConfig.RestrictBowDrawSpeed()) {
-                chargedPullLength = maxPullLength;
-            } else {
-                chargedPullLength = Mathf.Lerp(pullStart.z, maxPullLength, Math.Max(Player.m_localPlayer.GetAttackDrawPercentage(), 0.01f));
-            }
         }
 
         private void releaseString(bool withoutShoot = false) {
@@ -228,14 +216,16 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            // SHOOTING
-            getMainHand().hapticAction.Execute(0, 0.2f, 100, 0.3f,
-                VHVRConfig.LeftHanded() ? SteamVR_Input_Sources.LeftHand : SteamVR_Input_Sources.RightHand);
+            // SHOOTING FEEDBACK
+            SteamVR_Input_Sources arrowHand = VHVRConfig.LeftHanded() ? SteamVR_Input_Sources.LeftHand : SteamVR_Input_Sources.RightHand;
+            SteamVR_Input_Sources bowHand = VHVRConfig.LeftHanded() ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand;
+            getMainHand().hapticAction.Execute(0, 0.1f, 75, 0.9f, arrowHand);
+            getMainHand().otherHand.hapticAction.Execute(0, 0.2f, 100, 0.3f, bowHand);
             destroyArrow();
         }
 
         private float pullPercentage() {
-            return (pullObj.transform.localPosition.z - pullStart.z) / (maxPullLength - pullStart.z);
+            return VHVRConfig.RestrictBowDrawSpeed() ? Math.Min(realLifePullPercentage, Player.m_localPlayer.GetAttackDrawPercentage()) : realLifePullPercentage;
         }
 
         private bool checkHandNearString() {
@@ -250,7 +240,7 @@ namespace ValheimVRMod.Scripts {
                 predictionLine.enabled = VHVRConfig.UseArrowPredictionGraphic();
                 attackDrawPercentage = 0;
             }
-            
+
             (VHVRConfig.LeftHanded() ? VRPlayer.vrikRef.solver.leftArm : VRPlayer.vrikRef.solver.rightArm).target.SetParent(vrikHandConnector.transform, false);
 
             return pulling = true;
