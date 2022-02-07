@@ -58,7 +58,7 @@ namespace ValheimVRMod.Scripts {
             outline.enabled = false;
 
             vrikHandConnector = new GameObject();
-            vrikHandConnector.transform.SetParent(VRPlayer.rightHand.transform, false);
+            vrikHandConnector.transform.SetParent(mainHand, false);
             
             item = Player.m_localPlayer.GetLeftItem();
             if (item != null) {
@@ -208,7 +208,7 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            VRPlayer.vrikRef.solver.rightArm.target.SetParent(VRPlayer.rightHand.transform, false);
+            (VHVRConfig.LeftHanded() ? VRPlayer.vrikRef.solver.leftArm : VRPlayer.vrikRef.solver.rightArm).target.SetParent(mainHand, false);
             
             predictionLine.enabled = false;
             pulling = isPulling = false;
@@ -251,7 +251,7 @@ namespace ValheimVRMod.Scripts {
                 attackDrawPercentage = 0;
             }
             
-            VRPlayer.vrikRef.solver.rightArm.target.SetParent(vrikHandConnector.transform, false);
+            (VHVRConfig.LeftHanded() ? VRPlayer.vrikRef.solver.leftArm : VRPlayer.vrikRef.solver.rightArm).target.SetParent(vrikHandConnector.transform, false);
 
             return pulling = true;
         }
