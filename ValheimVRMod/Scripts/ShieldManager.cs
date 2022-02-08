@@ -63,6 +63,7 @@ namespace ValheimVRMod.Scripts {
                 case "ShieldKnight":
                     return -StaticObjects.shieldObj().transform.right;
                 case "ShieldBronzeBuckler":
+                case "ShieldIronBuckler":
                     return -StaticObjects.shieldObj().transform.up;
                 default:
                     return -StaticObjects.shieldObj().transform.forward;
