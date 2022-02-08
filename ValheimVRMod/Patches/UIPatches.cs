@@ -62,7 +62,7 @@ namespace ValheimVRMod.Patches
         static void Postfix(Minimap __instance, Quaternion playerRot)
         {
             __instance.m_smallMarker.localRotation = Quaternion.Euler(0f, 0f, -playerRot.eulerAngles.y);
-            if (__instance.m_smallShipMarker != null)
+            if (__instance.m_smallShipMarker != null && !VHVRConfig.NonVrPlayer())
             {
                 __instance.m_smallShipMarker.localRotation = Quaternion.Euler(0f, 0f, -playerRot.eulerAngles.y);
             }
