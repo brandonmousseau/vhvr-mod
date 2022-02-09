@@ -166,7 +166,7 @@ namespace ValheimVRMod.VRCore.UI
                 if (shouldLockDynamicGuiPosition())
                 {
                     isRecentering = false;
-                    _uiPanel.transform.position = playerInstance.transform.position + _uiPanel.transform.rotation * offsetPosition;
+                    _uiPanel.transform.position = playerInstance.transform.position - getTargetGuiDirection() * 0.2f + _uiPanel.transform.rotation * offsetPosition;
                     return;
                 }
 
