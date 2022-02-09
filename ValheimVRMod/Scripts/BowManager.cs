@@ -8,6 +8,7 @@ namespace ValheimVRMod.Scripts {
         
         private const float minStringSize = 0.965f;
         private Vector3[] verts;
+        private Vector3[] restingVerts;
         private bool wasPulling;
 
         public static float realLifePullPercentage;
@@ -15,13 +16,15 @@ namespace ValheimVRMod.Scripts {
         protected const float maxPullLength = 0.6f;
         protected Vector3 stringTop;
         protected Vector3 stringBottom;
+        protected Vector3 restingStringTop;
+        protected Vector3 restingStringBottom;
         protected Vector3 pullStart;
         protected GameObject pullObj;
         protected GameObject pushObj;
         protected Quaternion originalRotation;
         protected bool initialized;
         protected bool wasInitialized;
-        
+
         public bool pulling;
         public Transform mainHand;
 
@@ -58,7 +61,7 @@ namespace ValheimVRMod.Scripts {
      * but we save the top and bottom points of the deleted vertices so we can use them for our new string. 
      */
         private void removeOldString(Mesh mesh) {
-            
+
             for (int i = 0; i < mesh.triangles.Length / 3; i++) {
                 Vector3 v1 = verts[mesh.triangles[i * 3]];
                 Vector3 v2 = verts[mesh.triangles[i * 3 + 1]];
@@ -72,7 +75,7 @@ namespace ValheimVRMod.Scripts {
                 
                 verts[mesh.triangles[i * 3 + 1]] = verts[mesh.triangles[i * 3]];
                 verts[mesh.triangles[i * 3 + 2]] = verts[mesh.triangles[i * 3]];
-                
+
                 foreach (Vector3 v in new[] {v1, v2, v3}) {
                     if (stringTop == null || v.y > stringTop.y) {
                         stringTop = v;
@@ -84,7 +87,12 @@ namespace ValheimVRMod.Scripts {
                 }
             }
 
+            restingStringTop = stringTop;
+            restingStringBottom = stringBottom;
             pullStart = Vector3.Lerp(stringTop, stringBottom, 0.5f);
+            restingVerts = new Vector3[verts.Length];
+            verts.CopyTo(restingVerts, 0);
+
             initialized = true;
         }
 
@@ -97,9 +105,7 @@ namespace ValheimVRMod.Scripts {
             lineRenderer.useWorldSpace = false;
             lineRenderer.widthMultiplier = 0.005f;
             lineRenderer.positionCount = 3;
-            lineRenderer.SetPosition(0, stringTop);
-            lineRenderer.SetPosition(1, stringTop);
-            lineRenderer.SetPosition(2, stringBottom);
+            updateStringRenderer();
             lineRenderer.material.color = new Color(0.703125f, 0.48828125f, 0.28515625f); // just a random brown color
         }
 
@@ -126,15 +132,13 @@ namespace ValheimVRMod.Scripts {
 
                 rotateBowOnPulling();
                 pullString();
-                gameObject.GetComponent<LineRenderer>().SetPosition(1, pullObj.transform.localPosition);
-
             } else if (wasPulling) {
                 wasPulling = false;
                 pullObj.transform.localPosition = pullStart;
                 transform.localRotation = originalRotation;
-                gameObject.GetComponent<LineRenderer>().SetPosition(1, stringTop);
             }
 
+            morphBow();
         }
 
         private void rotateBowOnPulling() {
@@ -148,6 +152,46 @@ namespace ValheimVRMod.Scripts {
 
             // Assuming that the bow is perpendicular to the arrow, the angle between the y-axis of the bow and the y-axis of the pushObj should also be pushOffsetAngle.
             transform.rotation = pushObj.transform.rotation * Quaternion.AngleAxis((float) (-pushOffsetAngle * (180.0 / Math.PI)), Vector3.right);
+         }
+
+        private void morphBow() {
+            float pullDelta = pullObj.transform.localPosition.z - pullStart.z;
+
+            if (pullDelta <= 0) {
+                // Restore to resting shape.
+                restingVerts.CopyTo(verts, 0);
+                stringTop = restingStringTop;
+                stringBottom = restingStringBottom;
+            } else {
+                // Just a heuristic and simplified approximation for the bend angle.
+                float bendAngle = Mathf.Asin(Math.Min(1, pullDelta / (stringTop.y - stringBottom.y)));
+
+                for (int i = 0; i < verts.Length; i++) {
+                    verts[i] = rotateBowVertex(restingVerts[i], bendAngle);
+                }
+                stringTop = rotateBowVertex(restingStringTop, bendAngle);
+                stringBottom = rotateBowVertex(restingStringBottom, bendAngle);
+            }
+
+            GetComponent<MeshFilter>().mesh.vertices = verts;
+            updateStringRenderer();
+        }
+
+        private static Vector3 rotateBowVertex(Vector3 v, float angle) {
+            const float rigidRadius = 0.27f;
+
+            if (Math.Abs(v.y) <= rigidRadius) {
+                return v;
+            }
+
+            Vector3 rotationCenter = Vector3.ProjectOnPlane(v, Vector3.right).normalized * rigidRadius + Vector3.Project(v, Vector3.right);
+            return rotationCenter + Vector3.RotateTowards(v - rotationCenter, Vector3.forward, angle, 0);
+        }
+
+        private void updateStringRenderer() {
+            gameObject.GetComponent<LineRenderer>().SetPosition(0, stringTop);
+            gameObject.GetComponent<LineRenderer>().SetPosition(1, pulling ? pullObj.transform.localPosition : stringTop);
+            gameObject.GetComponent<LineRenderer>().SetPosition(2, stringBottom);
         }
 
         private void pullString() {
@@ -162,7 +206,7 @@ namespace ValheimVRMod.Scripts {
             if (pullPos.z > pullLengthRestriction) {
                 pullObj.transform.localPosition = new Vector3(pullPos.x, pullPos.y, pullLengthRestriction);
             }
-
+            
             if (pullPos.z < pullStart.z) {
                 pullObj.transform.localPosition = new Vector3(pullPos.x, pullPos.y, pullStart.z);
             }
