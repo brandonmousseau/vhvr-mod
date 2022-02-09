@@ -161,12 +161,15 @@ namespace ValheimVRMod.VRCore.UI
             var offsetPosition = new Vector3(0f, VHVRConfig.GetUiPanelVerticalOffset(), VHVRConfig.GetUiPanelDistance());
             if (useDynamicallyPositionedGui())
             {
+                var playerInstance = Player.m_localPlayer;
+
                 if (shouldLockDynamicGuiPosition())
                 {
                     isRecentering = false;
+                    _uiPanel.transform.position = playerInstance.transform.position + _uiPanel.transform.rotation * offsetPosition;
                     return;
                 }
-                var playerInstance = Player.m_localPlayer;
+
                 var currentDirection = getCurrentGuiDirection();
                 if (isRecentering)
                 {
@@ -189,7 +192,7 @@ namespace ValheimVRMod.VRCore.UI
                     var newRotation = Quaternion.LookRotation(currentDirection, VRPlayer.instance.transform.up);
                     newRotation *= Quaternion.AngleAxis(rotationDelta, Vector3.up);
                     _uiPanel.transform.rotation = newRotation;
-                    _uiPanel.transform.position = playerInstance.transform.position +  newRotation * offsetPosition;
+                    _uiPanel.transform.position = playerInstance.transform.position + newRotation * offsetPosition;
                 }
             }
             else
