@@ -56,13 +56,11 @@ namespace ValheimVRMod.VRCore.UI
         private float OVERLAY_CURVATURE = 0.25f; /* 0f - 1f */
         private bool USING_OVERLAY = true;
 
-        private bool _wasDynamicGuiPositionLocked;
-        private Vector3 _guiPositionRelatvieToVrCamRig;
-
         private Camera _uiPanelCamera;
         private Camera _guiCamera;
         private Canvas _guiCanvas;
         private GameObject _uiPanel;
+        private GameObject _uiPanelTransformLocker;
         private RenderTexture _guiTexture;
         private RenderTexture _overlayTexture;
 
@@ -166,23 +164,24 @@ namespace ValheimVRMod.VRCore.UI
             {
                 if (shouldLockDynamicGuiPosition())
                 {
-                    if (!_wasDynamicGuiPositionLocked)
-                    {
-                        // Record the GUI's position relative to the VR rig.
-                        _guiPositionRelatvieToVrCamRig = _uiPanel.transform.position - CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform.parent.position;
-                    }
-                    else
-                    {
-                        // Restore the GUI's position relative to the VR rig.
-                        _uiPanel.transform.position = CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform.parent.position + _guiPositionRelatvieToVrCamRig;
-                    }
-                    _wasDynamicGuiPositionLocked = true;
+                    // Restore the locked position and rotation of GUI's relative to the VR camera rig.
+                    _uiPanel.transform.SetPositionAndRotation(_uiPanelTransformLocker.transform.position, _uiPanelTransformLocker.transform.rotation);
                     isRecentering = false;
                     return;
                 }
-                _wasDynamicGuiPositionLocked = false;
+                // Record the GUI's transform in case it will be locked in that position and rotation.
+                _uiPanelTransformLocker.transform.SetPositionAndRotation(_uiPanel.transform.position, _uiPanel.transform.rotation);
 
                 var playerInstance = Player.m_localPlayer;
+
+                if (playerInstance.IsAttachedToShip())
+                {
+                    // Always lock the UI to the forward direction of ship when sailing.
+                    _uiPanel.transform.rotation = Quaternion.LookRotation(getTargetGuiDirection(), VRPlayer.instance.transform.up);
+                    _uiPanel.transform.position = playerInstance.transform.position + _uiPanel.transform.rotation * offsetPosition;
+                    return;
+                }
+
                 var currentDirection = getCurrentGuiDirection();
                 if (isRecentering)
                 {
@@ -220,7 +219,7 @@ namespace ValheimVRMod.VRCore.UI
 
         private bool shouldLockDynamicGuiPosition()
         {
-            bool needsRecentering = Player.m_localPlayer.IsAttachedToShip() || Player.m_localPlayer.GetStandingOnShip() != null;
+            bool needsRecentering = Player.m_localPlayer.IsAttachedToShip();
             return VHVRConfig.LockGuiWhileMenuOpen() && menuIsOpen() && !needsRecentering;
         }
 
@@ -248,6 +247,10 @@ namespace ValheimVRMod.VRCore.UI
             _uiPanel.GetComponent<Renderer>().material.mainTexture = _guiTexture;
             _uiPanel.GetComponent<MeshCollider>().convex = true;
             _uiPanel.GetComponent<MeshCollider>().isTrigger = true;
+            _uiPanelTransformLocker = new GameObject();
+            // The locker should move with the vr camera rig in case we need to use it to lock the UI panel in place.
+            _uiPanelTransformLocker.transform.SetParent(CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform.parent, false);
+
             return (_uiPanel != null);
         }
 
@@ -485,6 +488,11 @@ namespace ValheimVRMod.VRCore.UI
                 if (!USING_OVERLAY)
                 {
                     forwardDirection = Valve.VR.InteractionSystem.Player.instance.hmdTransform.forward;
+                    forwardDirection.y = 0;
+                    forwardDirection.Normalize();
+                }
+                if (Player.m_localPlayer.IsAttachedToShip()) {
+                    forwardDirection = Player.m_localPlayer.m_attachPoint.forward;
                     forwardDirection.y = 0;
                     forwardDirection.Normalize();
                 }
