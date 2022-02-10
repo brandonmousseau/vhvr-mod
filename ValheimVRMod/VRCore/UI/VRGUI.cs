@@ -56,6 +56,9 @@ namespace ValheimVRMod.VRCore.UI
         private float OVERLAY_CURVATURE = 0.25f; /* 0f - 1f */
         private bool USING_OVERLAY = true;
 
+        private bool _wasDynamicGuiPositionLocked;
+        private Vector3 _guiPositionRelatvieToVrCamRig;
+
         private Camera _uiPanelCamera;
         private Camera _guiCamera;
         private Canvas _guiCanvas;
@@ -165,10 +168,21 @@ namespace ValheimVRMod.VRCore.UI
 
                 if (shouldLockDynamicGuiPosition())
                 {
+                    if (!_wasDynamicGuiPositionLocked)
+                    {
+                        // Record the GUI's position relative to the VR rig.
+                        _guiPositionRelatvieToVrCamRig = _uiPanel.transform.position - CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform.parent.position;
+                    }
+                    else
+                    {
+                        // Restore the GUI's position relative to the VR rig.
+                        _uiPanel.transform.position = CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform.parent.position + _guiPositionRelatvieToVrCamRig;
+                    }
+                    _wasDynamicGuiPositionLocked = true;
                     isRecentering = false;
-                    _uiPanel.transform.position = playerInstance.transform.position - getTargetGuiDirection() * 0.2f + _uiPanel.transform.rotation * offsetPosition;
                     return;
                 }
+                _wasDynamicGuiPositionLocked = false;
 
                 var currentDirection = getCurrentGuiDirection();
                 if (isRecentering)
@@ -212,9 +226,7 @@ namespace ValheimVRMod.VRCore.UI
 
         private bool menuIsOpen()
         {
-            bool menuIsOpen = StoreGui.IsVisible() || InventoryGui.IsVisible() || Menu.IsVisible() || (TextViewer.instance && TextViewer.instance.IsVisible()) || Minimap.IsOpen();
-            bool needsRecentering = Player.m_localPlayer.IsRunning() || Player.m_localPlayer.IsAttachedToShip() || Player.m_localPlayer.GetStandingOnShip() != null || Vector3.SqrMagnitude(VRPlayer.instance.transform.position - _uiPanel.transform.position) > 100;
-            return menuIsOpen && !needsRecentering;
+            return StoreGui.IsVisible() || InventoryGui.IsVisible() || Menu.IsVisible() || (TextViewer.instance && TextViewer.instance.IsVisible()) || Minimap.IsOpen();
         }
 
         private bool ensureUIPanel()
