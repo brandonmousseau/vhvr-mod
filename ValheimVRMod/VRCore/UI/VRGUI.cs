@@ -221,7 +221,8 @@ namespace ValheimVRMod.VRCore.UI
 
         private bool shouldLockDynamicGuiPosition()
         {
-            return VHVRConfig.LockGuiWhileMenuOpen() && menuIsOpen();
+            bool needsRecentering = Player.m_localPlayer.IsAttachedToShip() || Player.m_localPlayer.GetStandingOnShip() != null;
+            return VHVRConfig.LockGuiWhileMenuOpen() && menuIsOpen() && !needsRecentering;
         }
 
         private bool menuIsOpen()
