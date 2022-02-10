@@ -164,8 +164,6 @@ namespace ValheimVRMod.VRCore.UI
             var offsetPosition = new Vector3(0f, VHVRConfig.GetUiPanelVerticalOffset(), VHVRConfig.GetUiPanelDistance());
             if (useDynamicallyPositionedGui())
             {
-                var playerInstance = Player.m_localPlayer;
-
                 if (shouldLockDynamicGuiPosition())
                 {
                     if (!_wasDynamicGuiPositionLocked)
@@ -184,6 +182,7 @@ namespace ValheimVRMod.VRCore.UI
                 }
                 _wasDynamicGuiPositionLocked = false;
 
+                var playerInstance = Player.m_localPlayer;
                 var currentDirection = getCurrentGuiDirection();
                 if (isRecentering)
                 {
