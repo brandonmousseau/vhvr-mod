@@ -1,4 +1,4 @@
-﻿using ValheimVRMod.VRCore.UI;
+using ValheimVRMod.VRCore.UI;
 using HarmonyLib;
 using UnityEngine;
 using System;
@@ -58,10 +58,18 @@ namespace ValheimVRMod.Patches
     [HarmonyPatch(typeof(Minimap), nameof(Minimap.UpdatePlayerMarker))]
     public class MinimapPlayerMarkerPatch
     {
-
-        static void Postfix(Minimap __instance, Quaternion playerRot)
+        static void Postfix(Minimap __instance, Player player, Quaternion playerRot)
         {
+            if (VHVRConfig.NonVrPlayer())
+            {
+                return;
+            }
             __instance.m_smallMarker.localRotation = Quaternion.Euler(0f, 0f, -playerRot.eulerAngles.y);
+            Ship controlledShip = player.GetControlledShip();
+            if (controlledShip)
+            {
+                __instance.m_smallShipMarker.localRotation = Quaternion.Euler(0f, 0f, -controlledShip.transform.rotation.eulerAngles.y);
+            }
         }
     }
 
