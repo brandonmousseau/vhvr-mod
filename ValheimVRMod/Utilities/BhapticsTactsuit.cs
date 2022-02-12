@@ -39,7 +39,7 @@ namespace BhapticsTactsuit
             }
         }
 
-        public TactsuitVR()
+        public void initTactsuitVR()
         {
 
             LogInfo("Initializing suit");
@@ -55,6 +55,7 @@ namespace BhapticsTactsuit
             LogInfo("Starting HeartBeat thread...");
             Thread HeartBeatThread = new Thread(HeartBeatFunc);
             HeartBeatThread.Start();
+            PlaybackHaptics("HeartBeat");
         }
 
 

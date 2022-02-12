@@ -72,7 +72,7 @@ namespace ValheimVRMod
                 {
                     VRManager.tryRecenter();
                 }
-                TactsuitVR.Instance.PlaybackHaptics("HeartBeat");
+                TactsuitVR.Instance.initTactsuitVR();
             }
             else
             {
