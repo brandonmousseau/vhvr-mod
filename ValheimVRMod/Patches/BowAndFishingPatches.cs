@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -19,8 +20,8 @@ namespace ValheimVRMod.Patches {
                 return true;
             }
 
-            if (EquipScript.getLeft() == EquipType.Bow) {
-                __result = BowLocalManager.attackDrawPercentage;
+            if (EquipScript.getLeft() == EquipType.Bow && !VHVRConfig.RestrictBowDrawSpeed()) {
+                __result = BowLocalManager.realLifePullPercentage;
                 return false;
             }
 
@@ -28,14 +29,25 @@ namespace ValheimVRMod.Patches {
                 __result = FishingManager.attackDrawPercentage;
                 return false;
             }
-            
+
             return true;
+        }
+
+        static void Postfix(Humanoid __instance, ref float __result) {
+            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls()) {
+                return;
+            }
+
+            if (EquipScript.getLeft() == EquipType.Bow && VHVRConfig.RestrictBowDrawSpeed()) {
+                // Since the attack draw percentage is not patched in the prefix, we need to clamp it here in case the real life pull percentage is smaller than the unpatched attack draw percentage.
+                __result = Math.Min(__result, BowManager.realLifePullPercentage);
+            }
         }
     }
 
     /**
-     * Manipulate Position and Direction of the Arrow SpawnPoint
-     */
+        * Manipulate Position and Direction of the Arrow SpawnPoint
+        */
     [HarmonyPatch(typeof(Attack), "GetProjectileSpawnPoint")]
     class PatchGetProjectileSpawnPoint {
         static bool Prefix(out Vector3 spawnPoint, out Vector3 aimDir, Humanoid ___m_character) {
@@ -114,6 +126,11 @@ namespace ValheimVRMod.Patches {
             
             __instance.m_useCharacterFacing = false;
             __instance.m_launchAngle = 0;
+            
+            if (VHVRConfig.RestrictBowDrawSpeed()) {
+                return;
+            }
+
             __instance.m_projectileAccuracyMin = 0;
             if (___m_ammoItem != null) {
                 ___m_ammoItem.m_shared.m_attack.m_projectileAccuracyMin = 0;   

@@ -38,13 +38,8 @@ namespace ValheimVRMod.Patches
                 return;
             }
 
-            if (!VHVRConfig.ViewTurnWithMountedAnimal() && __instance.IsRiding())
-            {
-                return;
-            }
-
             /* Attached to something, like boat controls */
-            if(__instance.IsAttached())
+            if(__instance.IsAttached() && (VHVRConfig.ViewTurnWithMountedAnimal() || !__instance.IsRiding()))
             {
                 //Apply ship rotation
                 if(__instance.m_attached && __instance.m_attachPoint)

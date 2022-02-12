@@ -124,7 +124,6 @@ namespace ValheimVRMod.Scripts {
         }
         
         private Vector3 getForward() {
-
             if (leftIsShield && _leftMeshCooldown)
             {
                 switch (_rightItemName)
@@ -135,6 +134,7 @@ namespace ValheimVRMod.Scripts {
                     case "ShieldKnight":
                         return -StaticObjects.shieldObj().transform.right;
                     case "ShieldBronzeBuckler":
+                    case "ShieldIronBuckler":
                         return -StaticObjects.shieldObj().transform.up;
                 }
             }else if (rightIsWeapon && _rightMeshCooldown && weaponWieldCheck)
