@@ -14,8 +14,8 @@ namespace BhapticsTactsuit
     {
         public bool suitDisabled = true;
         public bool systemInitialized = false;
-        // Event to start and stop the heartbeat thread
-        private static ManualResetEvent HeartBeat_mrse = new ManualResetEvent(false);
+        // Event to start and stop the thread
+        private static ManualResetEvent Thread_mrse = new ManualResetEvent(false);
         // dictionary of all feedback patterns found in the bHaptics directory
         public Dictionary<string, FileInfo> FeedbackMap = new Dictionary<string, FileInfo>();
 
@@ -28,13 +28,13 @@ namespace BhapticsTactsuit
         private static readonly Lazy<TactsuitVR> instance = new Lazy<TactsuitVR>(() => new TactsuitVR());
         public static TactsuitVR Instance => instance.Value;
 
-        public void HeartBeatFunc()
+        public void ThreadHapticFunc(string name)
         {
             while (true)
             {
                 // Check if reset event is active
-                HeartBeat_mrse.WaitOne();
-                PlaybackHaptics("HeartBeat");
+                Thread_mrse.WaitOne();
+                PlaybackHaptics(name);
                 Thread.Sleep(1000);
             }
         }
@@ -53,8 +53,6 @@ namespace BhapticsTactsuit
             catch { LogInfo("Suit initialization failed!"); }
             RegisterAllTactFiles();
             LogInfo("Starting HeartBeat thread...");
-            Thread HeartBeatThread = new Thread(HeartBeatFunc);
-            HeartBeatThread.Start();
             PlaybackHaptics("HeartBeat");
         }
 
@@ -129,14 +127,14 @@ namespace BhapticsTactsuit
             hapticPlayer.SubmitRegisteredVestRotation(keyVest, keyVest, rotationFront, scaleOption);
         }
 
-        public void StartHeartBeat()
+        public void StartThreadHaptic()
         {
-            HeartBeat_mrse.Set();
+            Thread_mrse.Set();
         }
 
-        public void StopHeartBeat()
+        public void StopThreadHaptic()
         {
-            HeartBeat_mrse.Reset();
+            Thread_mrse.Reset();
         }
 
         public void StopHapticFeedback(string effect)
@@ -155,7 +153,7 @@ namespace BhapticsTactsuit
 
         public void StopThreads()
         {
-            StopHeartBeat();
+            StopThreadHaptic();
         }
 
 
