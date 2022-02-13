@@ -8,11 +8,13 @@ namespace ValheimVRMod.Scripts {
         
         private const float minStringSize = 0.965f;
         private Vector3[] verts;
+        private BoneWeight[] boneWeights;
         private bool wasPulling;
         private Transform upperLimbBone;
         private Transform lowerLimbBone;
         private Transform stringTop;
         private Transform stringBottom;
+        private Outline outline;
 
         public static float realLifePullPercentage;
 
@@ -33,8 +35,9 @@ namespace ValheimVRMod.Scripts {
 
             Mesh mesh = GetComponent<MeshFilter>().mesh;
             verts = mesh.vertices;
+
             // we need to run this method in thread as it takes longer than a frame and freezes game for a moment
-            Thread thread = new Thread(()=>removeOldString(mesh));
+            Thread thread = new Thread(()=>initializeRenderersAsync(mesh));
             thread.Start();
 
             pullObj = new GameObject();
@@ -50,15 +53,13 @@ namespace ValheimVRMod.Scripts {
             Destroy(pushObj);
         }
 
-        /**
-     * Removing the old bow string, which is part of the bow mesh to later replace it with a linerenderer.
-     * we are making use of the fact that string triangles are longer then all other triangles
-     * so we simply iterate all triangles and compare their vertex distances to a certain minimum size
-     * for the new triangle array, we just skip those with bigger vertex distance
-     * but we save the top and bottom points of the deleted vertices so we can use them for our new string. 
-     */
-        private void removeOldString(Mesh mesh) {
+        private void initializeRenderersAsync(Mesh mesh) {
 
+            // Removing the old bow string, which is part of the bow mesh to later replace it with a linerenderer.
+            // we are making use of the fact that string triangles are longer then all other triangles
+            // so we simply iterate all triangles and compare their vertex distances to a certain minimum size
+            // for the new triangle array, we just skip those with bigger vertex distance
+            // but we save the top and bottom points of the deleted vertices so we can use them for our new string.
             Vector3 localStringTopPos = new Vector3(0, 0, 0);
             Vector3 localStringBottomPos = new Vector3(0, 0, 0);
             for (int i = 0; i < mesh.triangles.Length / 3; i++) {
@@ -86,21 +87,33 @@ namespace ValheimVRMod.Scripts {
                 }
             }
 
+            // Calculate vertex bone weights and find the local z coordinates of the top and bottom of the bow handle.
             const float handleHeight = 0.52f;
             Vector3 handleTop = new Vector3(0, 0, 0);
             Vector3 handleBottom = new Vector3(0, 0, 0);
+            boneWeights = new BoneWeight[verts.Length];
             for (int i = 0; i < verts.Length; i++) {
                 Vector3 v = verts[i];
-
-                if (v.y <= handleHeight / 2f && v.y > handleTop.y) {
-                    handleTop = v;
+                if (v.y > handleHeight / 2f) {
+                    // The vertex is in the uppler limb.
+                    boneWeights[i].boneIndex0 = 0;
+                } else if (v.y >= -handleHeight / 2f) {
+                    // The vertex is in the handle.
+                    boneWeights[i].boneIndex0 = 1;
+                    if (v.y > handleTop.y) {
+                        handleTop = v;
+                    }
+                    if (v.y < handleBottom.y) {
+                        handleBottom = v;
+                    }
+                } else {
+                    // The vertex is in the lower limb.
+                    boneWeights[i].boneIndex0 = 2;
                 }
-
-                if (v.y >= -handleHeight / 2f && v.y < handleBottom.y) {
-                    handleBottom = v;
-                }
+                boneWeights[i].weight0 = 1;
             }
 
+            // Create the bones for the limbs.
             upperLimbBone = new GameObject("BowUpperLimbBone").transform;
             lowerLimbBone = new GameObject("BowLowerLimbBone").transform;
             upperLimbBone.parent = lowerLimbBone.parent = transform;
@@ -109,29 +122,16 @@ namespace ValheimVRMod.Scripts {
             upperLimbBone.localRotation = Quaternion.identity;
             lowerLimbBone.localRotation = Quaternion.identity;
 
+            // Initialize string position
             stringTop = new GameObject().transform;
             stringBottom = new GameObject().transform;
             stringTop.SetParent(upperLimbBone, false);
             stringBottom.SetParent(lowerLimbBone, false);
             stringTop.position = transform.TransformPoint(localStringTopPos);
             stringBottom.position = transform.TransformPoint(localStringBottomPos);
-
             pullStart = Vector3.Lerp(localStringTopPos, localStringBottomPos, 0.5f);
 
             initialized = true;
-        }
-
-        /**
-     * now we create a new string out of a linerenderer with 3 points, using the saved top and bottom points
-     * and a new third one in the middle.
-     */
-        private void createNewString() {
-            var lineRenderer = gameObject.AddComponent<LineRenderer>();
-            lineRenderer.useWorldSpace = true;
-            lineRenderer.widthMultiplier = 0.005f;
-            lineRenderer.positionCount = 3;
-            updateStringRenderer();
-            lineRenderer.material.color = new Color(0.703125f, 0.48828125f, 0.28515625f); // just a random brown color
         }
 
         private void skinBones() {
@@ -147,32 +147,42 @@ namespace ValheimVRMod.Scripts {
                 bindPoses[i] = bones[i].worldToLocalMatrix * transform.localToWorldMatrix;
             }
 
-            BoneWeight[] weights = new BoneWeight[verts.Length];
-            for (int i = 0; i < verts.Length; i++) {
-                if (verts[i].y > upperLimbBone.localPosition.y) {
-                    weights[i].boneIndex0 = 0;
-                } else if (verts[i].y >= lowerLimbBone.localPosition.y) {
-                    weights[i].boneIndex0 = 1;
-                } else {
-                    weights[i].boneIndex0 = 2;
-                }
-                weights[i].weight0 = 1;
-            }
-
-            gameObject.AddComponent<SkinnedMeshRenderer>();
-            SkinnedMeshRenderer skinnedMeshRenderer = GetComponent<SkinnedMeshRenderer>();
+            SkinnedMeshRenderer skinnedMeshRenderer = gameObject.AddComponent<SkinnedMeshRenderer>();
             Mesh mesh = GetComponent<MeshFilter>().mesh;
-            mesh.boneWeights = weights;
+            mesh.boneWeights = boneWeights;
             mesh.bindposes = bindPoses;
             skinnedMeshRenderer.bones = bones;
             skinnedMeshRenderer.sharedMesh = mesh;
             skinnedMeshRenderer.material = GetComponent<MeshRenderer>().material;
             skinnedMeshRenderer.forceMatrixRecalculationPerRender = true;
 
-            // Remove the original renderer since we will be using SkinnedMeshRenderer only.
+            // Destroy the original renderer since we will be using SkinnedMeshRenderer only.
             Destroy(GetComponent<MeshRenderer>());
         }
 
+        /**
+     * now we create a new string out of a linerenderer with 3 points, using the saved top and bottom points
+     * and a new third one in the middle.
+     */
+        private void createNewString() {
+            var lineRenderer = gameObject.AddComponent<LineRenderer>();
+            lineRenderer.useWorldSpace = true;
+            lineRenderer.widthMultiplier = 0.005f;
+            lineRenderer.positionCount = 3;
+            updateStringRenderer();
+            lineRenderer.material.color = new Color(0.703125f, 0.48828125f, 0.28515625f); // just a random brown color
+        }
+
+        protected Outline ensureOutline() {
+            if (outline == null) {
+                outline = gameObject.AddComponent<Outline>();
+                outline.OutlineColor = Color.red;
+                outline.OutlineWidth = 10;
+                outline.OutlineMode = Outline.Mode.OutlineVisible;
+                outline.enabled = false;
+            }
+            return outline;
+        }
 
         /**
      * Need to use OnRenderObject instead of Update or LateUpdate,
