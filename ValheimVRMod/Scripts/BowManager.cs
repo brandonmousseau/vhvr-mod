@@ -7,24 +7,12 @@ namespace ValheimVRMod.Scripts {
     public class BowManager : MonoBehaviour {
         
         private const float minStringSize = 0.965f;
-        private const float handleHeight = 0.5f;
         private Vector3[] verts;
         private bool wasPulling;
-        private SkinnedMeshRenderer skinnedMeshRenderer;
-
-        private Transform limbTopBone;
-        private Transform stringTopBone;
-        private Transform handleTopBone;
-        private Transform handleBottomBone;
-        private Transform stringBottomBone;
-        private Transform limbBottomBone;
-
-        private Vector3 restingLimbTop;
-        private Vector3 restingStringTop;
-        private Vector3 handleTop;
-        private Vector3 handleBottom;
-        private Vector3 restingStringBottom;
-        private Vector3 restingLimbBottom;
+        private Transform upperLimbBone;
+        private Transform lowerLimbBone;
+        private Transform stringTop;
+        private Transform stringBottom;
 
         public static float realLifePullPercentage;
 
@@ -71,6 +59,8 @@ namespace ValheimVRMod.Scripts {
      */
         private void removeOldString(Mesh mesh) {
 
+            Vector3 localStringTopPos = new Vector3(0, 0, 0);
+            Vector3 localStringBottomPos = new Vector3(0, 0, 0);
             for (int i = 0; i < mesh.triangles.Length / 3; i++) {
                 Vector3 v1 = verts[mesh.triangles[i * 3]];
                 Vector3 v2 = verts[mesh.triangles[i * 3 + 1]];
@@ -86,43 +76,47 @@ namespace ValheimVRMod.Scripts {
                 verts[mesh.triangles[i * 3 + 2]] = verts[mesh.triangles[i * 3]];
 
                 foreach (Vector3 v in new[] {v1, v2, v3}) {
-                    if (restingStringTop == null || v.y > restingStringTop.y) {
-                        restingStringTop = v;
+                    if (v.y > localStringTopPos.y) {
+                        localStringTopPos = v;
                     }
 
-                    if (restingStringBottom == null || v.y < restingStringBottom.y) {
-                        restingStringBottom = v;
+                    if (v.y < localStringBottomPos.y) {
+                        localStringBottomPos = v;
                     }
                 }
             }
 
-            float limbHeight = 0;
-            float limbDepth = 0;
+            const float handleHeight = 0.52f;
+            Vector3 handleTop = new Vector3(0, 0, 0);
+            Vector3 handleBottom = new Vector3(0, 0, 0);
             for (int i = 0; i < verts.Length; i++) {
                 Vector3 v = verts[i];
 
-                if (v.y <= handleHeight / 2f && (handleTop == null || v.y > handleTop.y)) {
+                if (v.y <= handleHeight / 2f && v.y > handleTop.y) {
                     handleTop = v;
                 }
 
-                if (v.y >= -handleHeight / 2f && (handleBottom == null || v.y < handleBottom.y)) {
+                if (v.y >= -handleHeight / 2f && v.y < handleBottom.y) {
                     handleBottom = v;
-                }
-
-                if (Math.Abs(v.y) > limbHeight) {
-                    limbHeight = v.y;
-                }
-
-                if (v.z > limbDepth) {
-                    limbDepth = v.z;
                 }
             }
 
-            restingLimbTop = new Vector3(0, limbHeight, limbDepth);
-            restingLimbTop = new Vector3(0, -limbHeight, limbDepth);
-            handleTop = new Vector3(0, handleHeight / 2, handleTop.z);
-            handleBottom = new Vector3(0, -handleHeight / 2, handleBottom.z);
-            pullStart = Vector3.Lerp(restingStringTop, restingStringBottom, 0.5f);
+            upperLimbBone = new GameObject("BowUpperLimbBone").transform;
+            lowerLimbBone = new GameObject("BowLowerLimbBone").transform;
+            upperLimbBone.parent = lowerLimbBone.parent = transform;
+            upperLimbBone.localPosition = new Vector3(0, handleHeight / 2, handleTop.z);
+            lowerLimbBone.localPosition = new Vector3(0, -handleHeight / 2, handleBottom.z);
+            upperLimbBone.localRotation = Quaternion.identity;
+            lowerLimbBone.localRotation = Quaternion.identity;
+
+            stringTop = new GameObject().transform;
+            stringBottom = new GameObject().transform;
+            stringTop.SetParent(upperLimbBone, false);
+            stringBottom.SetParent(lowerLimbBone, false);
+            stringTop.position = transform.TransformPoint(localStringTopPos);
+            stringBottom.position = transform.TransformPoint(localStringBottomPos);
+
+            pullStart = Vector3.Lerp(localStringTopPos, localStringBottomPos, 0.5f);
 
             initialized = true;
         }
@@ -133,34 +127,20 @@ namespace ValheimVRMod.Scripts {
      */
         private void createNewString() {
             var lineRenderer = gameObject.AddComponent<LineRenderer>();
-            lineRenderer.useWorldSpace = false;
+            lineRenderer.useWorldSpace = true;
             lineRenderer.widthMultiplier = 0.005f;
             lineRenderer.positionCount = 3;
             updateStringRenderer();
             lineRenderer.material.color = new Color(0.703125f, 0.48828125f, 0.28515625f); // just a random brown color
         }
 
-        private void creatBone() {
-            gameObject.AddComponent<SkinnedMeshRenderer>();
-            skinnedMeshRenderer = GetComponent<SkinnedMeshRenderer>();
-            limbTopBone = new GameObject("FrontTop").transform;
-            stringTopBone = new GameObject("StringTop").transform;
-            handleTopBone = new GameObject("HandleTop").transform;
-            handleBottomBone = new GameObject("HandleBottom").transform;
-            stringBottomBone = new GameObject("StringBottom").transform;
-            limbBottomBone = new GameObject("FrontTop").transform;
-            Transform[] bones = new Transform[6] { limbTopBone, stringTopBone, handleTopBone, handleBottomBone, stringBottomBone, limbBottomBone};
-            for (int i = 0; i < bones.Length; i++) {
-                bones[i].parent = transform;
-                bones[i].rotation = Quaternion.identity;
-            }
+        private void skinBones() {
+            Transform handleBone = new GameObject("BowHandleBone").transform;
+            handleBone.parent = transform;
+            handleBone.localRotation = Quaternion.identity;
+            handleBone.localPosition = Vector3.Lerp(upperLimbBone.localPosition, lowerLimbBone.localPosition, 0);
 
-            limbTopBone.localPosition = restingLimbTop;
-            stringTopBone.localPosition = restingStringTop;
-            handleTopBone.localPosition = handleTop;
-            handleBottomBone.localPosition = handleBottom;
-            stringBottomBone.localPosition = restingStringBottom;
-            limbBottomBone.localPosition = restingLimbBottom;
+            Transform[] bones = new Transform[3] { upperLimbBone, handleBone, lowerLimbBone};
 
             Matrix4x4[] bindPoses = new Matrix4x4[bones.Length];
             for (int i = 0; i < bones.Length; i++) {
@@ -169,34 +149,18 @@ namespace ValheimVRMod.Scripts {
 
             BoneWeight[] weights = new BoneWeight[verts.Length];
             for (int i = 0; i < verts.Length; i++) {
-                if (verts[i].y >= restingStringTop.y) {
-                    // Upper tip
+                if (verts[i].y > upperLimbBone.localPosition.y) {
                     weights[i].boneIndex0 = 0;
-                    weights[i].boneIndex1 = 1;
-                } else if (verts[i].y > handleHeight / 2f) {
-                    // Upper limb
+                } else if (verts[i].y >= lowerLimbBone.localPosition.y) {
                     weights[i].boneIndex0 = 1;
-                    weights[i].boneIndex1 = 2;
-                } else if (verts[i].y >= -handleHeight / 2f) {
-                    // Handle
+                } else {
                     weights[i].boneIndex0 = 2;
-                    weights[i].boneIndex1 = 3;
-                } else if (verts[i].y > restingStringBottom.y) {
-                    // Lower limb
-                    weights[i].boneIndex0 = 4;
-                    weights[i].boneIndex1 = 3;
-               }
-                else {
-                    // Lower tip
-                    weights[i].boneIndex0 = 5;
-                    weights[i].boneIndex1 = 4;
                 }
-                Vector3 b0 = bones[weights[i].boneIndex0].localPosition;
-                Vector3 b1 = bones[weights[i].boneIndex1].localPosition;
-                weights[i].weight0 = Math.Min(1, Mathf.Pow(Vector3.Project(b1 - verts[i], b1 - b0).magnitude / (b1 - b0).magnitude, 1.25f));
-                weights[i].weight1 = 1f - weights[i].weight0;
+                weights[i].weight0 = 1;
             }
 
+            gameObject.AddComponent<SkinnedMeshRenderer>();
+            SkinnedMeshRenderer skinnedMeshRenderer = GetComponent<SkinnedMeshRenderer>();
             Mesh mesh = GetComponent<MeshFilter>().mesh;
             mesh.boneWeights = weights;
             mesh.bindposes = bindPoses;
@@ -204,6 +168,8 @@ namespace ValheimVRMod.Scripts {
             skinnedMeshRenderer.sharedMesh = mesh;
             skinnedMeshRenderer.material = GetComponent<MeshRenderer>().material;
             skinnedMeshRenderer.forceMatrixRecalculationPerRender = true;
+
+            // Remove the original renderer since we will be using SkinnedMeshRenderer only.
             Destroy(GetComponent<MeshRenderer>());
         }
 
@@ -220,7 +186,7 @@ namespace ValheimVRMod.Scripts {
 
             if (!wasInitialized) {
                 GetComponent<MeshFilter>().mesh.vertices = verts;
-                creatBone();
+                skinBones();
                 createNewString();
                 wasInitialized = true;
             }
@@ -258,20 +224,17 @@ namespace ValheimVRMod.Scripts {
             float pullDelta = pullObj.transform.localPosition.z - pullStart.z;
 
             // Just a heuristic and simplified approximation for the bend angle.
-            float bendAngle = pullDelta <= 0 ? 0 : Mathf.Asin(Math.Min(1, pullDelta / (restingStringTop.y - restingStringBottom.y)));
-
-            limbTopBone.localPosition = handleTop + Vector3.RotateTowards(restingLimbTop - handleTop, Vector3.forward, bendAngle, 0);
-            stringTopBone.localPosition = handleTop + Vector3.RotateTowards(restingStringTop - handleTop, Vector3.forward, bendAngle, 0);
-            stringBottomBone.localPosition = handleBottom + Vector3.RotateTowards(restingStringBottom - handleBottom, Vector3.forward, bendAngle, 0);
-            limbBottomBone.localPosition = handleBottom + Vector3.RotateTowards(restingLimbBottom - handleBottom, Vector3.forward, bendAngle, 0);
+            float bendAngleDegrees = pullDelta <= 0 ? 0 : Mathf.Asin(Math.Min(1, pullDelta)) * 180 / Mathf.PI;
+            upperLimbBone.localRotation = Quaternion.Euler(bendAngleDegrees, 0, 0);
+            lowerLimbBone.localRotation = Quaternion.Euler(-bendAngleDegrees, 0, 0);
 
             updateStringRenderer();
         }
 
         private void updateStringRenderer() {
-            gameObject.GetComponent<LineRenderer>().SetPosition(0, stringTopBone.localPosition);
-            gameObject.GetComponent<LineRenderer>().SetPosition(1, pulling ? pullObj.transform.localPosition : restingStringTop);
-            gameObject.GetComponent<LineRenderer>().SetPosition(2, stringBottomBone.localPosition);
+            gameObject.GetComponent<LineRenderer>().SetPosition(0, stringTop.position);
+            gameObject.GetComponent<LineRenderer>().SetPosition(1, pulling ? pullObj.transform.position : stringTop.position);
+            gameObject.GetComponent<LineRenderer>().SetPosition(2, stringBottom.position);
         }
 
         private void pullString() {
@@ -286,7 +249,7 @@ namespace ValheimVRMod.Scripts {
             if (pullPos.z > pullLengthRestriction) {
                 pullObj.transform.localPosition = new Vector3(pullPos.x, pullPos.y, pullLengthRestriction);
             }
-            
+
             if (pullPos.z < pullStart.z) {
                 pullObj.transform.localPosition = new Vector3(pullPos.x, pullPos.y, pullStart.z);
             }
