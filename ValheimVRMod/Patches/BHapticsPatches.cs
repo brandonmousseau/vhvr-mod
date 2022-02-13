@@ -1,5 +1,4 @@
 ﻿using HarmonyLib;
-using System.Threading;
 using BhapticsTactsuit;
 using static ValheimVRMod.Utilities.LogUtils;
 
@@ -29,7 +28,7 @@ namespace ValheimVRMod.Patches
     {
         public static void Postfix(StatusEffect __instance)
         {
-            if (TactsuitVR.Instance.suitDisabled)
+            if (TactsuitVR.Instance.suitDisabled || __instance.m_character != Player.m_localPlayer)
             {
                 return;
             }
@@ -45,7 +44,7 @@ namespace ValheimVRMod.Patches
                 case "$se_burning_name":
                     EffectName = "Flame";
                     break;
-                case "$se_frost_name":
+                case "$se_freezing_name":
                     EffectName = "Freezing";
                     break;
             }
@@ -64,7 +63,7 @@ namespace ValheimVRMod.Patches
     {
         public static void Postfix(StatusEffect __instance)
         {
-            if (TactsuitVR.Instance.suitDisabled)
+            if (TactsuitVR.Instance.suitDisabled || __instance.m_character != Player.m_localPlayer)
             {
                 return;
             }
@@ -80,7 +79,7 @@ namespace ValheimVRMod.Patches
                 case "$se_burning_name":
                     name = "Flame";
                     break;
-                case "$se_frost_name":
+                case "$se_freezing_name":
                     name = "Freezing";
                     break;
             }
