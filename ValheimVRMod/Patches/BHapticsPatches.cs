@@ -5,6 +5,9 @@ using static ValheimVRMod.Utilities.LogUtils;
 
 namespace ValheimVRMod.Patches
 {
+    /**
+     * When player is eating food
+     */
     [HarmonyPatch(typeof(Player), "EatFood")]
     class Player_EatingFood_Patch
     {
@@ -17,8 +20,12 @@ namespace ValheimVRMod.Patches
             TactsuitVR.Instance.PlaybackHaptics("Eating");
         }
     }
+
+    /**
+     * When a status Effect starts, creates and starts thread
+     */
     [HarmonyPatch(typeof(StatusEffect), "TriggerStartEffects")]
-    class StatusEffect_PukeStart_Patch
+    class StatusEffect_Start_Patch
     {
         public static void Postfix(StatusEffect __instance)
         {
@@ -26,17 +33,31 @@ namespace ValheimVRMod.Patches
             {
                 return;
             }
-            LogInfo("Status Effect Name Start: " + __instance.m_name);
-            if (__instance.m_name == "__SE_Puke__")
+            string EffectName = "";
+            switch (__instance.m_name)
             {
-                Thread PukeThread = new Thread(() => TactsuitVR.Instance.ThreadHapticFunc("Vomit"));
-                PukeThread.Start();
+                case "$se_puke_name":
+                    EffectName = "Vomit";
+                    break;
+                case "$se_poison_name":
+                    EffectName = "Poison";
+                    break;
+                case "$se_burning_name":
+                    EffectName = "Flame";
+                    break;
             }
-                
+            if (EffectName != "")
+            {
+                TactsuitVR.Instance.StartThreadHaptic(EffectName);
+            } 
         }
     }
+
+    /**
+     * When a statusEffect stops, stops thread corresponding to effect name
+     */
     [HarmonyPatch(typeof(StatusEffect), "Stop")]
-    class StatusEffect_PukeStop_Patch
+    class StatusEffect_Stop_Patch
     {
         public static void Postfix(StatusEffect __instance)
         {
@@ -44,12 +65,18 @@ namespace ValheimVRMod.Patches
             {
                 return;
             }
-            LogInfo("Status Effect Name Stop: " + __instance.m_name);
-            if (__instance.m_name == "__SE_Puke__")
+            switch (__instance.m_name)
             {
-                TactsuitVR.Instance.StopThreadHaptic();
+                case "$se_puke_name":
+                    TactsuitVR.Instance.StopThreadHaptic("Vomit");
+                    break;
+                case "$se_poison_name":
+                    TactsuitVR.Instance.StopThreadHaptic("Poison");
+                    break;
+                case "$se_burning_name":
+                    TactsuitVR.Instance.StopThreadHaptic("Flame");
+                    break;
             }
-
         }
     }
 }

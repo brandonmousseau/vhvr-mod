@@ -15,7 +15,7 @@ namespace BhapticsTactsuit
         public bool suitDisabled = true;
         public bool systemInitialized = false;
         // Event to start and stop the thread
-        private static ManualResetEvent Thread_mrse = new ManualResetEvent(false);
+        private Dictionary<string, ManualResetEvent> ThreadEffectsEvents = new Dictionary<string, ManualResetEvent>();
         // dictionary of all feedback patterns found in the bHaptics directory
         public Dictionary<string, FileInfo> FeedbackMap = new Dictionary<string, FileInfo>();
 
@@ -27,17 +27,6 @@ namespace BhapticsTactsuit
 
         private static readonly Lazy<TactsuitVR> instance = new Lazy<TactsuitVR>(() => new TactsuitVR());
         public static TactsuitVR Instance => instance.Value;
-
-        public void ThreadHapticFunc(string name)
-        {
-            while (true)
-            {
-                // Check if reset event is active
-                Thread_mrse.WaitOne();
-                PlaybackHaptics(name);
-                Thread.Sleep(1000);
-            }
-        }
 
         public void initTactsuitVR()
         {
@@ -127,14 +116,25 @@ namespace BhapticsTactsuit
             hapticPlayer.SubmitRegisteredVestRotation(keyVest, keyVest, rotationFront, scaleOption);
         }
 
-        public void StartThreadHaptic()
+        public void StartThreadHaptic(string EffectName)
         {
-            Thread_mrse.Set();
+            //checking if evant with name exists
+            if (ThreadEffectsEvents.ContainsKey(EffectName))
+            {
+                ThreadEffectsEvents[EffectName].Set();
+            } else
+            {
+                ManualResetEvent ThreadEvent = new ManualResetEvent(false);
+                ThreadEffectsEvents.Add(EffectName, ThreadEvent);
+                ThreadEvent.Set();
+            }
+            Thread EffectThread = new Thread(() => ThreadHapticFunc(EffectName));
+            EffectThread.Start();
         }
 
-        public void StopThreadHaptic()
+        public void StopThreadHaptic(string name)
         {
-            Thread_mrse.Reset();
+            ThreadEffectsEvents[name].Reset();
         }
 
         public void StopHapticFeedback(string effect)
@@ -153,9 +153,21 @@ namespace BhapticsTactsuit
 
         public void StopThreads()
         {
-            StopThreadHaptic();
+            foreach (var entry in ThreadEffectsEvents.Values)
+            {
+                entry.Reset();
+            }
         }
-
+        public void ThreadHapticFunc(string name)
+        {
+            while (true)
+            {
+                // Check if reset event is active
+                ThreadEffectsEvents[name].WaitOne();
+                PlaybackHaptics(name);
+                Thread.Sleep(1000);
+            }
+        }
 
     }
 }
