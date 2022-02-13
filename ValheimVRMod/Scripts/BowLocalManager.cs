@@ -10,6 +10,7 @@ using Valve.VR.InteractionSystem;
 namespace ValheimVRMod.Scripts {
     public class BowLocalManager : BowManager {
         private const float attachRange = 0.2f;
+        private const float arrowLength = 1.25f;
 
         private GameObject arrow;
         private GameObject chargeIndicator;
@@ -30,7 +31,7 @@ namespace ValheimVRMod.Scripts {
         public static bool aborting;
 
         private readonly GameObject arrowAttach = new GameObject();
-        
+
 
         private void Start() {
             instance = this;
@@ -48,15 +49,15 @@ namespace ValheimVRMod.Scripts {
             createChargeIndicator();
 
             arrowAttach.transform.SetParent(mainHand, false);
-            
+
             vrikHandConnector = new GameObject();
             vrikHandConnector.transform.SetParent(mainHand, false);
-            
+
             item = Player.m_localPlayer.GetLeftItem();
             if (item != null) {
                 attack = item.m_shared.m_attack.Clone();
             }
-            
+
         }
 
         protected new void OnDestroy() {
@@ -70,7 +71,7 @@ namespace ValheimVRMod.Scripts {
 
         private void destroyArrow() {
             if (arrow != null) {
-                arrow.GetComponent<ZNetView>().Destroy();   
+                arrow.GetComponent<ZNetView>().Destroy();
             }
         }
 
@@ -83,15 +84,15 @@ namespace ValheimVRMod.Scripts {
          * because of VRIK Bone Updates happening in LateUpdate 
          */
         protected new void OnRenderObject() {
-            
+
             if (!initialized) {
                 return;
             }
-            
+
             base.OnRenderObject();
 
             var inputSource = VHVRConfig.LeftHanded() ? SteamVR_Input_Sources.LeftHand : SteamVR_Input_Sources.RightHand;
-            
+
             if (SteamVR_Actions.valheim_Grab.GetState(inputSource)) {
                 handlePulling();
             }
@@ -101,7 +102,7 @@ namespace ValheimVRMod.Scripts {
             }
 
             if (predictionLine.enabled) {
-                updatePredictionLine();   
+                updatePredictionLine();
             }
 
             updateOutline();
@@ -177,10 +178,13 @@ namespace ValheimVRMod.Scripts {
             arrowAttach.transform.rotation = pullObj.transform.rotation;
             arrowAttach.transform.position = pullObj.transform.position;
             spawnPoint = getArrowRestPosition();
-            aimDir = -transform.forward;
+            aimDir = getAimDir();
+            if (arrow) {
+                arrow.transform.position = pullObj.transform.position + aimDir * arrowLength;
+                arrow.transform.rotation = Quaternion.LookRotation(aimDir, -transform.up);
+            }
             var currDrawPercentage = pullPercentage();
             if (arrow != null && currDrawPercentage > attackDrawPercentage && !VHVRConfig.RestrictBowDrawSpeed()) {
-                // Even with RestrictBowDrawSpeed enabled, charging duration is shorter than the full draw duration on non-vr so some amount of stamina drain should be added to compensate.
                 float additionalStaminaDrain = 15;
                 Player.m_localPlayer.UseStamina((currDrawPercentage - attackDrawPercentage) * additionalStaminaDrain);
             }
@@ -193,12 +197,12 @@ namespace ValheimVRMod.Scripts {
             }
 
             (VHVRConfig.LeftHanded() ? VRPlayer.vrikRef.solver.leftArm : VRPlayer.vrikRef.solver.rightArm).target.SetParent(mainHand, false);
-            
+
             predictionLine.enabled = false;
             pulling = isPulling = false;
             attackDrawPercentage = pullPercentage();
             spawnPoint = getArrowRestPosition();
-            aimDir = -transform.forward;
+            aimDir = getAimDir();
 
             if (withoutShoot || arrow == null || attackDrawPercentage <= 0.0f) {
                 if (arrow) {
@@ -308,10 +312,13 @@ namespace ValheimVRMod.Scripts {
             return null;
         }
 
-        private Vector3 getArrowRestPosition()
-        {
-            return transform.position - transform.up * VHVRConfig.ArrowRestElevation();
+        private Vector3 getArrowRestPosition() {
+            return transform.position - transform.up * VHVRConfig.ArrowRestElevation() + transform.right * VHVRConfig.ArrowRestHorizontalOffset();
         }
+        
+        private Vector3 getAimDir() {
+            return (getArrowRestPosition() - pullObj.transform.position).normalized;
+        }        
 
         public bool isHoldingArrow() {
             return arrow != null;
