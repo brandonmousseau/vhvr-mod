@@ -45,6 +45,9 @@ namespace ValheimVRMod.Patches
                 case "$se_burning_name":
                     EffectName = "Flame";
                     break;
+                case "$se_frost_name":
+                    EffectName = "Freezing";
+                    break;
             }
             if (EffectName != "")
             {
@@ -65,17 +68,25 @@ namespace ValheimVRMod.Patches
             {
                 return;
             }
+            string name = "";
             switch (__instance.m_name)
             {
                 case "$se_puke_name":
-                    TactsuitVR.Instance.StopThreadHaptic("Vomit");
+                    name = "Vomit";
                     break;
                 case "$se_poison_name":
-                    TactsuitVR.Instance.StopThreadHaptic("Poison");
+                    name = "Poison";
                     break;
                 case "$se_burning_name":
-                    TactsuitVR.Instance.StopThreadHaptic("Flame");
+                    name = "Flame";
                     break;
+                case "$se_frost_name":
+                    name = "Freezing";
+                    break;
+            }
+            if (name != "")
+            {
+                TactsuitVR.Instance.StopThreadHaptic(name);
             }
         }
     }
