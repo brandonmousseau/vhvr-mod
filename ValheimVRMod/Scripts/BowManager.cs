@@ -14,7 +14,6 @@ namespace ValheimVRMod.Scripts {
         private Transform lowerLimbBone;
         private Transform stringTop;
         private Transform stringBottom;
-        private Outline outline;
 
         public static float realLifePullPercentage;
 
@@ -25,6 +24,7 @@ namespace ValheimVRMod.Scripts {
         protected Quaternion originalRotation;
         protected bool initialized;
         protected bool wasInitialized;
+        protected Outline outline;
 
         public bool pulling;
         public Transform mainHand;
@@ -46,6 +46,12 @@ namespace ValheimVRMod.Scripts {
 
             pushObj = new GameObject();
             pushObj.transform.SetParent(transform, false);
+        }
+
+        void Update()  {
+            if (outline == null && gameObject.GetComponent<SkinnedMeshRenderer>() != null) {
+                createOutline();
+            }
         }
 
         protected void OnDestroy() {
@@ -173,15 +179,12 @@ namespace ValheimVRMod.Scripts {
             lineRenderer.material.color = new Color(0.703125f, 0.48828125f, 0.28515625f); // just a random brown color
         }
 
-        protected Outline ensureOutline() {
-            if (outline == null) {
-                outline = gameObject.AddComponent<Outline>();
-                outline.OutlineColor = Color.red;
-                outline.OutlineWidth = 10;
-                outline.OutlineMode = Outline.Mode.OutlineVisible;
-                outline.enabled = false;
-            }
-            return outline;
+        private void createOutline() {
+            outline = gameObject.AddComponent<Outline>();
+            outline.OutlineColor = Color.red;
+            outline.OutlineWidth = 10;
+            outline.OutlineMode = Outline.Mode.OutlineVisible;
+            outline.enabled = false;
         }
 
         /**
