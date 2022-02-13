@@ -17,7 +17,6 @@ namespace ValheimVRMod.Scripts {
         private LineRenderer predictionLine;
         private float projectileVel;
         private float projectileVelMin;
-        private Outline outline;
         private ItemDrop.ItemData item;
         private Attack attack;
         private float attackDrawPercentage;
@@ -50,12 +49,6 @@ namespace ValheimVRMod.Scripts {
 
             arrowAttach.transform.SetParent(mainHand, false);
             
-            outline = gameObject.AddComponent<Outline>();
-            outline.OutlineColor = Color.red;
-            outline.OutlineWidth = 10;
-            outline.OutlineMode = Outline.Mode.OutlineVisible;
-            outline.enabled = false;
-
             vrikHandConnector = new GameObject();
             vrikHandConnector.transform.SetParent(mainHand, false);
             
@@ -116,6 +109,9 @@ namespace ValheimVRMod.Scripts {
         }
 
         private void updateOutline() {
+            if (outline == null) {
+                return;
+            }
             if (outline.enabled && Player.m_localPlayer.HaveStamina(getStaminaUsage() + 0.1f)) {
                 outline.enabled = false;
             } else if (!outline.enabled && !Player.m_localPlayer.HaveStamina(getStaminaUsage() + 0.1f)) {
