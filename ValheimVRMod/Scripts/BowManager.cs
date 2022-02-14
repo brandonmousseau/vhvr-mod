@@ -229,7 +229,7 @@ namespace ValheimVRMod.Scripts {
         }
 
         private void rotateBowOnPulling() {
-            float realLifeHandDistance = transform.TransformPoint(mainHand.position).magnitude;
+            float realLifeHandDistance = transform.InverseTransformPoint(mainHand.position).magnitude;
 
             // The angle between the push direction and the arrow direction.
             double pushOffsetAngle = Math.Asin(VHVRConfig.ArrowRestElevation() / realLifeHandDistance);
