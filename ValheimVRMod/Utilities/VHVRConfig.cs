@@ -118,10 +118,6 @@ namespace ValheimVRMod.Utilities
         // Common values
         private static readonly string[] k_HudAlignmentValues = { "LeftWrist", "RightWrist", "CameraLocked", "Legacy" };
 
-        private const string k_arrowRestCenter = "Center";
-        private const string k_arrowRestAsiatic = "Asiatic";
-        private const string k_arrowRestMediterranean = "Mediterranean";
-
         public static void InitializeConfiguration(ConfigFile mConfig) {
             
             config = mConfig;
