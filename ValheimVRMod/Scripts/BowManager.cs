@@ -25,6 +25,7 @@ namespace ValheimVRMod.Scripts {
         protected bool initialized;
         protected bool wasInitialized;
         protected Outline outline;
+        protected float handleHalfWidth = 0;
 
         public bool pulling;
         public Transform mainHand;
@@ -101,7 +102,7 @@ namespace ValheimVRMod.Scripts {
             for (int i = 0; i < verts.Length; i++) {
                 Vector3 v = verts[i];
                 if (v.y > handleHeight / 2f) {
-                    // The vertex is in the uppler limb.
+                    // The vertex is in the upper limb.
                     boneWeights[i].boneIndex0 = 0;
                 } else if (v.y >= -handleHeight / 2f) {
                     // The vertex is in the handle.
@@ -112,6 +113,7 @@ namespace ValheimVRMod.Scripts {
                     if (v.y < handleBottom.y) {
                         handleBottom = v;
                     }
+                    handleHalfWidth = Math.Max(Math.Abs(v.x), handleHalfWidth);
                 } else {
                     // The vertex is in the lower limb.
                     boneWeights[i].boneIndex0 = 2;
