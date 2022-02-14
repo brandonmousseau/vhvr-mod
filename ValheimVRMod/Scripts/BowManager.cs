@@ -126,7 +126,7 @@ namespace ValheimVRMod.Scripts {
                 }
                 boneWeights[i].weight0 = 1;
             }
-       
+
             // Create the bones for the limbs.
             upperLimbBone = new GameObject("BowUpperLimbBone").transform;
             lowerLimbBone = new GameObject("BowLowerLimbBone").transform;
