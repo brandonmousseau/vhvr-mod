@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.EventSystems;
 using ValheimVRMod.Utilities;
 using Valve.VR;
@@ -177,7 +177,8 @@ namespace ValheimVRMod.VRCore.UI
                 if (playerInstance.IsAttachedToShip())
                 {
                     // Always lock the UI to the forward direction of ship when sailing.
-                    _uiPanel.transform.rotation = Quaternion.LookRotation(getTargetGuiDirection(), VRPlayer.instance.transform.up);
+                    Vector3 forwardDirection = Vector3.ProjectOnPlane(Player.m_localPlayer.m_attachPoint.forward, Vector3.up).normalized;
+                    _uiPanel.transform.rotation = Quaternion.LookRotation(forwardDirection, VRPlayer.instance.transform.up);
                     _uiPanel.transform.position = playerInstance.transform.position + _uiPanel.transform.rotation * offsetPosition;
                     return;
                 }
@@ -219,8 +220,7 @@ namespace ValheimVRMod.VRCore.UI
 
         private bool shouldLockDynamicGuiPosition()
         {
-            bool needsRecentering = Player.m_localPlayer.IsAttachedToShip();
-            return VHVRConfig.LockGuiWhileMenuOpen() && menuIsOpen() && !needsRecentering;
+            return VHVRConfig.LockGuiWhileMenuOpen() && menuIsOpen() && !Player.m_localPlayer.IsAttachedToShip();
         }
 
         private bool menuIsOpen()
@@ -488,11 +488,6 @@ namespace ValheimVRMod.VRCore.UI
                 if (!USING_OVERLAY)
                 {
                     forwardDirection = Valve.VR.InteractionSystem.Player.instance.hmdTransform.forward;
-                    forwardDirection.y = 0;
-                    forwardDirection.Normalize();
-                }
-                if (Player.m_localPlayer.IsAttachedToShip()) {
-                    forwardDirection = Player.m_localPlayer.m_attachPoint.forward;
                     forwardDirection.y = 0;
                     forwardDirection.Normalize();
                 }
