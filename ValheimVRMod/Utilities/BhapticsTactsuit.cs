@@ -4,31 +4,29 @@ using System.IO;
 using System.Reflection;
 using System.Threading;
 using Bhaptics.Tact;
+using UnityEngine;
 
 using static ValheimVRMod.Utilities.LogUtils;
 
 namespace ValheimVRMod.Utilities
 {
 
-    public class TactsuitVR
+    public class TactsuitVR : MonoBehaviour
     {
-        public bool suitDisabled = true;
-        public bool systemInitialized = false;
+        public static bool suitDisabled = true;
+        public static  bool systemInitialized = false;
         // Event to start and stop the thread
-        private Dictionary<string, ManualResetEvent> ThreadEffectsEvents = new Dictionary<string, ManualResetEvent>();
+        public static Dictionary<string, ManualResetEvent> ThreadEffectsEvents = new Dictionary<string, ManualResetEvent>();
         // dictionary of all feedback patterns found in the bHaptics directory
-        public Dictionary<string, FileInfo> FeedbackMap = new Dictionary<string, FileInfo>();
+        public static Dictionary<string, FileInfo> FeedbackMap = new Dictionary<string, FileInfo>();
 
 #pragma warning disable CS0618 // remove warning that the C# library is deprecated
-        public HapticPlayer hapticPlayer;
+        public static HapticPlayer hapticPlayer;
 #pragma warning restore CS0618 
 
-        private static RotationOption defaultRotationOption = new RotationOption(0.0f, 0.0f);
+        public static RotationOption defaultRotationOption = new RotationOption(0.0f, 0.0f);
 
-        private static readonly Lazy<TactsuitVR> instance = new Lazy<TactsuitVR>(() => new TactsuitVR());
-        public static TactsuitVR Instance => instance.Value;
-
-        public void initTactsuitVR()
+        public void Awake()
         {
 
             LogInfo("Initializing suit");
@@ -76,7 +74,7 @@ namespace ValheimVRMod.Utilities
             systemInitialized = true;
         }
 
-        public void PlaybackHaptics(string key, float intensity = 1.0f, float duration = 1.0f)
+        public static void PlaybackHaptics(string key, float intensity = 1.0f, float duration = 1.0f)
         {
             if (suitDisabled) { return; }
             if (FeedbackMap.ContainsKey(key))
@@ -90,7 +88,7 @@ namespace ValheimVRMod.Utilities
             }
         }
 
-        public void PlayBackHit(string key, float xzAngle, float yShift)
+        public static void PlayBackHit(string key, float xzAngle, float yShift)
         {
             // two parameters can be given to the pattern to move it on the vest:
             // 1. An angle in degrees [0, 360] to turn the pattern to the left
@@ -101,7 +99,7 @@ namespace ValheimVRMod.Utilities
             hapticPlayer.SubmitRegisteredVestRotation(key, key, rotationOption, scaleOption);
         }
 
-        public void SwordRecoil(bool isRightHand, float intensity = 1.0f)
+        public static void SwordRecoil(bool isRightHand, float intensity = 1.0f)
         {
             // Melee feedback pattern
             if (suitDisabled) { return; }
@@ -116,7 +114,7 @@ namespace ValheimVRMod.Utilities
             hapticPlayer.SubmitRegisteredVestRotation(keyVest, keyVest, rotationFront, scaleOption);
         }
 
-        public void StartThreadHaptic(string EffectName)
+        public static void StartThreadHaptic(string EffectName)
         {
             //checking if evant with name exists
             if (ThreadEffectsEvents.ContainsKey(EffectName))
@@ -132,17 +130,17 @@ namespace ValheimVRMod.Utilities
             EffectThread.Start();
         }
 
-        public void StopThreadHaptic(string name)
+        public static void StopThreadHaptic(string name)
         {
             ThreadEffectsEvents[name].Reset();
         }
 
-        public void StopHapticFeedback(string effect)
+        public static void StopHapticFeedback(string effect)
         {
             hapticPlayer.TurnOff(effect);
         }
 
-        public void StopAllHapticFeedback()
+        public static void StopAllHapticFeedback()
         {
             StopThreads();
             foreach (string key in FeedbackMap.Keys)
@@ -151,14 +149,14 @@ namespace ValheimVRMod.Utilities
             }
         }
 
-        public void StopThreads()
+        public static void StopThreads()
         {
             foreach (var entry in ThreadEffectsEvents.Values)
             {
                 entry.Reset();
             }
         }
-        public void ThreadHapticFunc(string name)
+        public static void ThreadHapticFunc(string name)
         {
             while (true)
             {

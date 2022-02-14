@@ -1,6 +1,7 @@
 ﻿using HarmonyLib;
 using ValheimVRMod.Utilities;
 
+
 namespace ValheimVRMod.Patches
 {
     /**
@@ -11,11 +12,11 @@ namespace ValheimVRMod.Patches
     {
         public static void Postfix(Player __instance)
         {
-            if (__instance != Player.m_localPlayer || TactsuitVR.Instance.suitDisabled)
+            if (__instance != Player.m_localPlayer || TactsuitVR.suitDisabled)
             {
                 return;
             }
-            TactsuitVR.Instance.PlaybackHaptics("Eating");
+            TactsuitVR.PlaybackHaptics("Eating");
         }
     }
 
@@ -27,7 +28,7 @@ namespace ValheimVRMod.Patches
     {
         public static void Postfix(StatusEffect __instance)
         {
-            if (TactsuitVR.Instance.suitDisabled || __instance.m_character != Player.m_localPlayer)
+            if (TactsuitVR.suitDisabled || __instance.m_character != Player.m_localPlayer)
             {
                 return;
             }
@@ -49,7 +50,7 @@ namespace ValheimVRMod.Patches
             }
             if (EffectName != "")
             {
-                TactsuitVR.Instance.StartThreadHaptic(EffectName);
+                TactsuitVR.StartThreadHaptic(EffectName);
             } 
         }
     }
@@ -62,7 +63,7 @@ namespace ValheimVRMod.Patches
     {
         public static void Postfix(StatusEffect __instance)
         {
-            if (TactsuitVR.Instance.suitDisabled || __instance.m_character != Player.m_localPlayer)
+            if (TactsuitVR.suitDisabled || __instance.m_character != Player.m_localPlayer)
             {
                 return;
             }
@@ -84,8 +85,24 @@ namespace ValheimVRMod.Patches
             }
             if (name != "")
             {
-                TactsuitVR.Instance.StopThreadHaptic(name);
+                TactsuitVR.StopThreadHaptic(name);
             }
+        }
+    }
+
+    /**
+     * When player is eating food
+     */
+    [HarmonyPatch(typeof(Player), "StartGuardianPower")]
+    class Player_GuardianPower_Patch
+    {
+        public static void Postfix(Player __instance)
+        {
+            if (__instance != Player.m_localPlayer || TactsuitVR.suitDisabled)
+            {
+                return;
+            }
+            TactsuitVR.PlaybackHaptics("SuperPower");
         }
     }
 }

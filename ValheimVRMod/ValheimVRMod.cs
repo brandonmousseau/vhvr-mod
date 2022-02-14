@@ -15,7 +15,8 @@ namespace ValheimVRMod
 
         private GameObject vrPlayer;
         private GameObject vrGui;
-        
+        private GameObject tactSuitVR;
+
         void Awake() {
             VHVRConfig.InitializeConfiguration(Config);
             if (!VHVRConfig.ModEnabled())
@@ -71,7 +72,9 @@ namespace ValheimVRMod
                 {
                     VRManager.tryRecenter();
                 }
-                TactsuitVR.Instance.initTactsuitVR();
+                tactSuitVR = new GameObject("TactsuitVR");
+                DontDestroyOnLoad(tactSuitVR);
+                tactSuitVR.AddComponent<TactsuitVR>();
             }
             else
             {
