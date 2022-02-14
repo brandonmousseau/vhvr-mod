@@ -537,7 +537,7 @@ namespace ValheimVRMod.Utilities
                                                     "Use this to toggle controls of two handed spear (left hand grab while having spear) (experimental)");
             arrowRestElevation = config.Bind("Motion Control",
                 "ArrowRestElevation",
-                0.15f,
+                0.1f,
                 new ConfigDescription("The amount by which the arrow rest is higher than the center of the bow handle",
                     new AcceptableValueRange<float>(0, 0.25f)));
             arrowRestHorizontalOffset = config.Bind("Motion Control",
