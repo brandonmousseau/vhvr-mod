@@ -7,7 +7,7 @@ using Bhaptics.Tact;
 
 using static ValheimVRMod.Utilities.LogUtils;
 
-namespace BhapticsTactsuit
+namespace ValheimVRMod.Utilities
 {
 
     public class TactsuitVR
