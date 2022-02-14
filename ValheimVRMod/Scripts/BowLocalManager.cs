@@ -312,11 +312,6 @@ namespace ValheimVRMod.Scripts {
             return null;
         }
 
-        private Vector3 getArrowRestPosition() {
-            float arrowRestHorizontalOffset = handleHalfWidth * VHVRConfig.ArrowRestHorizontalOffsetMultiplier();
-            return transform.position - transform.up * VHVRConfig.ArrowRestElevation() + transform.right * arrowRestHorizontalOffset;
-        }
-        
         private Vector3 getAimDir() {
             return (getArrowRestPosition() - pullObj.transform.position).normalized;
         }        
