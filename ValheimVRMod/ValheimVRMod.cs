@@ -4,7 +4,6 @@ using ValheimVRMod.VRCore;
 using ValheimVRMod.VRCore.UI;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.Patches;
-using BhapticsTactsuit;
 
 using static ValheimVRMod.Utilities.LogUtils;
 

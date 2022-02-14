@@ -1,6 +1,5 @@
 ﻿using HarmonyLib;
-using BhapticsTactsuit;
-using static ValheimVRMod.Utilities.LogUtils;
+using ValheimVRMod.Utilities;
 
 namespace ValheimVRMod.Patches
 {
