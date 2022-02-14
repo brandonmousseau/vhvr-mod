@@ -61,7 +61,7 @@ namespace ValheimVRMod.Scripts {
         }
 
         protected Vector3 getArrowRestPosition() {
-            return transform.TransformPoint(new Vector3(gripLocalHalfWidth * VHVRConfig.ArrowRestHorizontalOffset(), -VHVRConfig.ArrowRestElevation(), 0));
+            return transform.TransformPoint(new Vector3(gripLocalHalfWidth * VHVRConfig.ArrowRestHorizontalOffsetMultiplier(), -VHVRConfig.ArrowRestElevation(), 0));
         }
 
         private void initializeRenderersAsync(Mesh mesh) {
@@ -121,7 +121,7 @@ namespace ValheimVRMod.Scripts {
                     // The vertex is in the lower limb.
                     boneWeights[i].boneIndex0 = 2;
                 }
-                if (0 <= v.y && v.y <= VHVRConfig.ArrowRestElevation()) {
+                if (0 <= v.y && v.y < VHVRConfig.ArrowRestElevation()) {
                     gripLocalHalfWidth = Math.Max(Math.Abs(v.x), gripLocalHalfWidth);
                 }
                 boneWeights[i].weight0 = 1;
