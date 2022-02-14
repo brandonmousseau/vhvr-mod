@@ -102,7 +102,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> spearThrowSpeedDynamic;
         private static ConfigEntry<bool> spearTwoHanded;
         private static ConfigEntry<float> arrowRestElevation;
-        private static ConfigEntry<string> arrowRestHorizontalOffset;
+        private static ConfigEntry<int> arrowRestHorizontalOffset;
         private static ConfigEntry<bool> restrictBowDrawSpeed;
 
 #if DEBUG
@@ -546,9 +546,9 @@ namespace ValheimVRMod.Utilities
                     new AcceptableValueRange<float>(0, 0.25f)));
             arrowRestHorizontalOffset = config.Bind("Motion Control",
                 "ArrowRestHorizontalOffset",
-                k_arrowRestCenter,
-                new ConfigDescription("Which side of the bow should the arrow rest on.",
-                new AcceptableValueList<string>(new string[] { k_arrowRestCenter, k_arrowRestAsiatic, k_arrowRestMediterranean })));
+                0,
+                new ConfigDescription("Whether the arrow should rest on the left, center, or right of the bow handle",
+                    new AcceptableValueRange<int>(-1, 1)));
             restrictBowDrawSpeed = config.Bind("Motion Control",
                 "RestrictBowDrawSpeed",
                 false,
@@ -813,16 +813,9 @@ namespace ValheimVRMod.Utilities
             return arrowRestElevation.Value;
         }
 
-        public static float ArrowRestHorizontalOffsetMultiplier()
+        public static int ArrowRestHorizontalOffset()
         {
-            switch (arrowRestHorizontalOffset.Value) {
-                case k_arrowRestAsiatic:
-                    return LeftHanded() ? -1 : 1;
-                case k_arrowRestMediterranean:
-                    return LeftHanded() ? 1 : -1;
-                default:
-                    return 0;
-            }
+            return arrowRestHorizontalOffset.Value;
         }
 
         public static bool RestrictBowDrawSpeed()
