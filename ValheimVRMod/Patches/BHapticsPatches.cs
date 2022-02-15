@@ -1,6 +1,8 @@
 ﻿using HarmonyLib;
 using ValheimVRMod.Utilities;
+using ValheimVRMod.Scripts;
 
+using static ValheimVRMod.Utilities.LogUtils;
 
 namespace ValheimVRMod.Patches
 {
@@ -51,7 +53,7 @@ namespace ValheimVRMod.Patches
             if (EffectName != "")
             {
                 TactsuitVR.StartThreadHaptic(EffectName);
-            } 
+            }
         }
     }
 
@@ -91,7 +93,7 @@ namespace ValheimVRMod.Patches
     }
 
     /**
-     * When player is eating food
+     * When player is using guardian power
      */
     [HarmonyPatch(typeof(Player), "StartGuardianPower")]
     class Player_GuardianPower_Patch
@@ -103,6 +105,24 @@ namespace ValheimVRMod.Patches
                 return;
             }
             TactsuitVR.PlaybackHaptics("SuperPower");
+        }
+    }
+    /**
+    * on arrow release
+    */
+    [HarmonyPatch(typeof(Attack), "OnAttackTrigger")]
+    class Attack_ArrowThrowing_Patch
+    {
+        public static void Postfix(Attack __instance)
+        {
+            if (__instance.m_character != Player.m_localPlayer || TactsuitVR.suitDisabled)
+            {
+                return;
+            }
+            if (EquipScript.getLeft() == EquipType.Bow)
+            {
+                TactsuitVR.PlaybackHaptics(VHVRConfig.LeftHanded() ? "ArrowThrowLeft" : "ArrowThrowRight");
+            }
         }
     }
 }

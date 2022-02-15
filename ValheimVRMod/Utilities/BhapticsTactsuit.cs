@@ -114,9 +114,9 @@ namespace ValheimVRMod.Utilities
             hapticPlayer.SubmitRegisteredVestRotation(keyVest, keyVest, rotationFront, scaleOption);
         }
 
-        public static void StartThreadHaptic(string EffectName)
+        public static void StartThreadHaptic(string EffectName, float intensity = 1.0f, int sleep = 1000)
         {
-            //checking if evant with name exists
+            //checking if event with name exists
             if (ThreadEffectsEvents.ContainsKey(EffectName))
             {
                 ThreadEffectsEvents[EffectName].Set();
@@ -126,13 +126,16 @@ namespace ValheimVRMod.Utilities
                 ThreadEffectsEvents.Add(EffectName, ThreadEvent);
                 ThreadEvent.Set();
             }
-            Thread EffectThread = new Thread(() => ThreadHapticFunc(EffectName));
+            Thread EffectThread = new Thread(() => ThreadHapticFunc(EffectName, intensity, sleep));
             EffectThread.Start();
         }
 
         public static void StopThreadHaptic(string name)
         {
-            ThreadEffectsEvents[name].Reset();
+            if (ThreadEffectsEvents.ContainsKey(name))
+            {
+                ThreadEffectsEvents[name].Reset();
+            }
         }
 
         public static void StopHapticFeedback(string effect)
@@ -156,14 +159,14 @@ namespace ValheimVRMod.Utilities
                 entry.Reset();
             }
         }
-        public static void ThreadHapticFunc(string name)
+        public static void ThreadHapticFunc(string name, float intensity = 1.0f, int sleep = 1000)
         {
             while (true)
             {
                 // Check if reset event is active
                 ThreadEffectsEvents[name].WaitOne();
-                PlaybackHaptics(name);
-                Thread.Sleep(1000);
+                PlaybackHaptics(name, intensity);
+                Thread.Sleep(sleep);
             }
         }
 
