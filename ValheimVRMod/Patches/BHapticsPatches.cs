@@ -1,6 +1,7 @@
 ﻿using HarmonyLib;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.Scripts;
+using UnityEngine;
 
 using static ValheimVRMod.Utilities.LogUtils;
 
@@ -123,6 +124,70 @@ namespace ValheimVRMod.Patches
             {
                 TactsuitVR.PlaybackHaptics(VHVRConfig.LeftHanded() ? "ArrowThrowLeft" : "ArrowThrowRight");
             }
+        }
+    }
+    /**
+    * on bow string pull
+    */
+    [HarmonyPatch(typeof(BowManager), "pullString")]
+    class BowManager_handlePulling_Patch
+    {
+        public static void Postfix(BowManager __instance, float ___realLifePullPercentage)
+        {
+            if (TactsuitVR.suitDisabled)
+            {
+                return;
+            }
+            if (___realLifePullPercentage == 0)
+            {
+                return;
+            }
+            TactsuitVR.StopThreadHaptic(VHVRConfig.LeftHanded() ? "BowStringLeft" : "BowStringRight");
+            TactsuitVR.StartThreadHaptic(VHVRConfig.LeftHanded() ? "BowStringLeft" : "BowStringRight",
+                ___realLifePullPercentage * 2, 500);
+        }
+    }
+    /**
+    * on bow string stop
+    */
+    [HarmonyPatch(typeof(BowLocalManager), "releaseString")]
+    class BowLocalManager_releaseString_Patch
+    {
+        public static void Postfix(BowLocalManager __instance)
+        {
+            if (TactsuitVR.suitDisabled)
+            {
+                return;
+            }
+            TactsuitVR.StopThreadHaptic(VHVRConfig.LeftHanded() ? "BowStringLeft" : "BowStringRight");
+        }
+    }
+    /**
+    * on getting arrow from your back
+    */
+    [HarmonyPatch(typeof(BowLocalManager), "toggleArrow")]
+    class BowLocalManager_toggleArrow_Patch
+    {
+        public static void Prefix(BowLocalManager __instance, GameObject ___arrow)
+        {
+            if (TactsuitVR.suitDisabled)
+            {
+                return;
+            }
+            if (___arrow != null)
+            {
+                TactsuitVR.PlaybackHaptics(VHVRConfig.LeftHanded() ?
+                    "HolsterArrowLeftShoulder" : "HolsterArrowRightShoulder");
+                return;
+            }
+            var ammoItem = Player.m_localPlayer.GetAmmoItem();
+            if (ammoItem == null || ammoItem.m_shared.m_itemType != ItemDrop.ItemData.ItemType.Ammo)
+            {
+                // out of ammo
+                return;
+            }
+            TactsuitVR.PlaybackHaptics(VHVRConfig.LeftHanded() ?
+               "UnholsterArrowLeftShoulder" : "UnholsterArrowRightShoulder");
         }
     }
 }

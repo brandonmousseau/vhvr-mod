@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Timers;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
@@ -15,6 +16,7 @@ namespace ValheimVRMod.Utilities
     {
         public static bool suitDisabled = true;
         public static  bool systemInitialized = false;
+        public static bool threadEnabled = false;
         // Event to start and stop the thread
         public static Dictionary<string, ManualResetEvent> ThreadEffectsEvents = new Dictionary<string, ManualResetEvent>();
         // dictionary of all feedback patterns found in the bHaptics directory
@@ -25,6 +27,7 @@ namespace ValheimVRMod.Utilities
 #pragma warning restore CS0618 
 
         public static RotationOption defaultRotationOption = new RotationOption(0.0f, 0.0f);
+        private static System.Timers.Timer aTimer;
 
         public void Awake()
         {
@@ -41,6 +44,7 @@ namespace ValheimVRMod.Utilities
             RegisterAllTactFiles();
             LogInfo("Starting HeartBeat thread...");
             PlaybackHaptics("HeartBeat");
+            SetTimer();
         }
 
 
@@ -116,18 +120,44 @@ namespace ValheimVRMod.Utilities
 
         public static void StartThreadHaptic(string EffectName, float intensity = 1.0f, int sleep = 1000)
         {
-            //checking if event with name exists
-            if (ThreadEffectsEvents.ContainsKey(EffectName))
+            try
             {
-                ThreadEffectsEvents[EffectName].Set();
-            } else
+                //checking if event with name exists
+                if (ThreadEffectsEvents.ContainsKey(EffectName))
+                {
+                    LogInfo("THREAD CONTAINED " + EffectName);
+                    /*if (ThreadEffectsEvents[EffectName].WaitOne())
+                    {
+                        LogInfo("THREAD SET OK" + EffectName);
+                        return;
+                    }*/
+                    LogInfo("THREAD SETTING " + EffectName);
+                    ThreadEffectsEvents[EffectName].Set();
+                }
+                else
+                {
+                    LogInfo("MANUAL EVENT CREATED " + EffectName);
+                    ManualResetEvent ThreadEvent = new ManualResetEvent(false);
+                    LogInfo("MANUAL EVENT ADD " + EffectName);
+                    ThreadEffectsEvents.Add(EffectName, ThreadEvent);
+                    LogInfo("MANUAL EVENT SET " + EffectName);
+                    ThreadEvent.Set();
+                }
+                if (threadEnabled)
+                {
+                    LogInfo("THREAD ENABLED " + EffectName);
+                    Thread EffectThread = new Thread(() => ThreadHapticFunc(EffectName, intensity, sleep));
+                    EffectThread.Start();
+                    threadEnabled = false;
+                }
+                else
+                {
+                    LogInfo("NOT ENABLED");
+                }
+            } catch (Exception e)
             {
-                ManualResetEvent ThreadEvent = new ManualResetEvent(false);
-                ThreadEffectsEvents.Add(EffectName, ThreadEvent);
-                ThreadEvent.Set();
+                LogInfo(e.ToString());
             }
-            Thread EffectThread = new Thread(() => ThreadHapticFunc(EffectName, intensity, sleep));
-            EffectThread.Start();
         }
 
         public static void StopThreadHaptic(string name)
@@ -166,9 +196,22 @@ namespace ValheimVRMod.Utilities
                 // Check if reset event is active
                 ThreadEffectsEvents[name].WaitOne();
                 PlaybackHaptics(name, intensity);
-                Thread.Sleep(sleep);
+                Thread.Sleep(sleep == 0 ? 1000 : sleep);
             }
         }
-
+        private static void SetTimer()
+        {
+            // Create a timer with a 200ms interval.
+            aTimer = new System.Timers.Timer(200);
+            // Hook up the Elapsed event for the timer. 
+            aTimer.Elapsed += OnTimedEvent;
+            aTimer.AutoReset = true;
+            aTimer.Enabled = true;
+        }
+        private static void OnTimedEvent(object source, ElapsedEventArgs e)
+        {
+            LogInfo("TIMER EVENT");
+            threadEnabled = true;
+        }
     }
 }
