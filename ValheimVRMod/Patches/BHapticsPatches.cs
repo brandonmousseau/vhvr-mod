@@ -222,4 +222,19 @@ namespace ValheimVRMod.Patches
                "UnholsterArrowLeftShoulder" : "UnholsterArrowRightShoulder");
         }
     }
+
+    [HarmonyPatch(typeof(Humanoid), "IsBlocking")]
+    class Humanoid_IsBlocking_Patch
+    {
+        public static void Postfix(Humanoid __instance)
+        {
+
+            if (__instance != Player.m_localPlayer || EquipScript.getLeft() != EquipType.Shield || !VHVRConfig.UseVrControls())
+            {
+                return;
+            }
+            TactsuitVR.PlaybackHaptics(VHVRConfig.LeftHanded() ?
+                    "BlockVest_L" : "BlockVest_R");
+        }
+    }
 }
