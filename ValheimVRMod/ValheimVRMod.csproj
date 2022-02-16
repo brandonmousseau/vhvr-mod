@@ -14,12 +14,13 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CommonDir>C:\Program Files (x86)\Steam\steamapps\common\</CommonDir>
+    <Configurations>Debug;Release;SyncOnlyDebug;SyncOnlyRelease</Configurations>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
+    <OutputPath>bin\Debug\net46</OutputPath>
     <DefineConstants>TRACE;DEBUG</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>3</WarningLevel>
@@ -29,7 +30,7 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
+    <OutputPath>bin\Release\net46</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>3</WarningLevel>
@@ -37,7 +38,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'SyncOnlyDebug|AnyCPU'">
     <DebugSymbols>true</DebugSymbols>
-    <OutputPath>bin\SyncOnlyDebug\</OutputPath>
+    <OutputPath>bin\SyncOnlyDebug\net46</OutputPath>
     <DefineConstants>TRACE;DEBUG;NONVRMODE</DefineConstants>
     <WarningLevel>3</WarningLevel>
     <DebugType>full</DebugType>
@@ -47,7 +48,7 @@
     <CodeAnalysisRuleSet>CppCoreCheckRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'SyncOnlyRelease|AnyCPU'">
-    <OutputPath>bin\SyncOnlyRelease\</OutputPath>
+    <OutputPath>bin\SyncOnlyRelease\net46</OutputPath>
     <DefineConstants>TRACE;NONVRMODE</DefineConstants>
     <Optimize>true</Optimize>
     <WarningLevel>3</WarningLevel>
@@ -81,7 +82,6 @@
       <HintPath>..\Unity\build\ValheimVR_Data\Managed\UnityEngine.UI.dll</HintPath>
     </Reference>
     <Reference Include="System.Runtime, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\Unity\build\ValheimVR_Data\Managed\netstandard.dll</HintPath>
     </Reference>
     <Reference Include="final_ik.dll">

@@ -3,6 +3,7 @@ using UnityEngine;
 using ValheimVRMod.VRCore;
 using ValheimVRMod.VRCore.UI;
 using ValheimVRMod.Utilities;
+using ValheimVRMod.Scripts;
 using ValheimVRMod.Patches;
 
 using static ValheimVRMod.Utilities.LogUtils;

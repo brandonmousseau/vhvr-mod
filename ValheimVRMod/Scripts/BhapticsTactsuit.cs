@@ -9,7 +9,7 @@ using UnityEngine;
 
 using static ValheimVRMod.Utilities.LogUtils;
 
-namespace ValheimVRMod.Utilities
+namespace ValheimVRMod.Scripts
 {
 
     public class TactsuitVR : MonoBehaviour

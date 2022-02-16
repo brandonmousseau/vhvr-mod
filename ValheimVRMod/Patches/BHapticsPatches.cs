@@ -95,36 +95,6 @@ namespace ValheimVRMod.Patches
     }
 
     /**
-     * Player low Health
-     */
-    [HarmonyPatch(typeof(Player), "SetHealth")]
-    class Player_LowHealth_Patch
-    {
-        public static void Postfix(Player __instance)
-        {
-            if (__instance != Player.m_localPlayer || TactsuitVR.suitDisabled)
-            {
-                return;
-            }
-            int hlth = Convert.ToInt32(__instance.GetHealth() * 100 / __instance.GetMaxHealth());
-            if (  hlth < 20 && hlth > 15) {
-                TactsuitVR.StartThreadHaptic("HeartBeat");
-            } else
-            {
-                TactsuitVR.StopThreadHaptic("HeartBeat");
-            }
-            if (hlth <= 15 && hlth > 0)
-            {
-                TactsuitVR.StartThreadHaptic("HeartBeatFast");
-            }
-            else
-            {
-                TactsuitVR.StopThreadHaptic("HeartBeatFast");
-            }
-        }
-    }
-
-    /**
      * When player is using guardian power
      */
     [HarmonyPatch(typeof(Player), "StartGuardianPower")]
@@ -220,6 +190,38 @@ namespace ValheimVRMod.Patches
             }
             TactsuitVR.PlaybackHaptics(VHVRConfig.LeftHanded() ?
                "UnholsterArrowLeftShoulder" : "UnholsterArrowRightShoulder");
+        }
+    }
+
+    /**
+     * Player low Health
+     */
+    [HarmonyPatch(typeof(Player), "SetHealth")]
+    class Player_LowHealth_Patch
+    {
+        public static void Postfix(Player __instance)
+        {
+            if (__instance != Player.m_localPlayer || TactsuitVR.suitDisabled)
+            {
+                return;
+            }
+            int hlth = Convert.ToInt32(__instance.GetHealth() * 100 / __instance.GetMaxHealth());
+            if (hlth < 20 && hlth > 15)
+            {
+                TactsuitVR.StartThreadHaptic("HeartBeat");
+            }
+            else
+            {
+                TactsuitVR.StopThreadHaptic("HeartBeat");
+            }
+            if (hlth <= 15 && hlth > 0)
+            {
+                TactsuitVR.StartThreadHaptic("HeartBeatFast");
+            }
+            else
+            {
+                TactsuitVR.StopThreadHaptic("HeartBeatFast");
+            }
         }
     }
 
