@@ -94,6 +94,27 @@ namespace ValheimVRMod.Patches
     }
 
     /**
+     * Player low Health
+     */
+    [HarmonyPatch(typeof(Player), "SetHealth")]
+    class Player_LowHealth_Patch
+    {
+        public static void Postfix(Player __instance)
+        {
+            if (__instance != Player.m_localPlayer || TactsuitVR.suitDisabled)
+            {
+                return;
+            }
+            if ( __instance.GetHealth() * 100 /__instance.GetMaxHealth() > 15) {
+                TactsuitVR.StopThreadHaptic("HeartBeatFast");
+            } else
+            {
+                TactsuitVR.StartThreadHaptic("HeartBeatFast");
+            }
+        }
+    }
+
+    /**
      * When player is using guardian power
      */
     [HarmonyPatch(typeof(Player), "StartGuardianPower")]
@@ -145,6 +166,7 @@ namespace ValheimVRMod.Patches
             TactsuitVR.StopThreadHaptic(VHVRConfig.LeftHanded() ? "BowStringLeft" : "BowStringRight");
             TactsuitVR.StartThreadHaptic(VHVRConfig.LeftHanded() ? "BowStringLeft" : "BowStringRight",
                 ___realLifePullPercentage * 2, 500);
+            // TODO ARMS TACTOSY
         }
     }
     /**

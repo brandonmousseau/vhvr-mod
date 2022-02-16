@@ -142,11 +142,11 @@ namespace ValheimVRMod.Utilities
         }
 
         /**
-         * Creates ManualEvent if not exists
-         * Create Thread if not exists and adds it to Dictionary
-         * Creates pair effectname => threadId
-         * Start thread
          * Checks if creation needs to be controlled by timer
+         * Creates ManualEvent if not exists
+         * Create Thread if not exists
+         * creates or update thread params
+         * Start or restart thread with params/updated params
          */
         public static void StartThreadHaptic(string EffectName, float intensity = 1.0f, int sleep = 1000, bool timerNeeded = false, float duration = 1.0f)
         {
