@@ -131,7 +131,7 @@ namespace ValheimVRMod.Patches
     * on bow string pull
     */
     [HarmonyPatch(typeof(BowManager), "pullString")]
-    class BowManager_handlePulling_Patch
+    class BowManager_pullString_Patch
     {
         public static void Postfix(BowManager __instance, float ___realLifePullPercentage)
         {
@@ -143,25 +143,28 @@ namespace ValheimVRMod.Patches
             {
                 return;
             }
-            TactsuitVR.StopThreadHaptic(VHVRConfig.LeftHanded() ? "BowStringLeft" : "BowStringRight");
             TactsuitVR.StartThreadHaptic(VHVRConfig.LeftHanded() ? "BowStringLeft" : "BowStringRight",
-                ___realLifePullPercentage * 2, 500);
+                ___realLifePullPercentage * 1.5f, true);
             // TODO ARMS TACTOSY
         }
     }
     /**
     * on bow string stop
     */
-    [HarmonyPatch(typeof(BowLocalManager), "releaseString")]
-    class BowLocalManager_releaseString_Patch
+    [HarmonyPatch(typeof(BowLocalManager), "OnRenderObject")]
+    class BowLocalManager_OnRenderObject_Patch
     {
-        public static void Postfix(BowLocalManager __instance)
+        public static void Postfix(BowLocalManager __instance, bool ___isPulling)
         {
             if (TactsuitVR.suitDisabled)
             {
                 return;
             }
-            TactsuitVR.StopThreadHaptic(VHVRConfig.LeftHanded() ? "BowStringLeft" : "BowStringRight");
+            LogInfo("PULLIN ? "+___isPulling);
+            if (!___isPulling)
+            {
+                TactsuitVR.StopThreadHaptic(VHVRConfig.LeftHanded() ? "BowStringLeft" : "BowStringRight");
+            }
         }
     }
     /**
@@ -196,10 +199,10 @@ namespace ValheimVRMod.Patches
     /**
      * Player low Health
      */
-    [HarmonyPatch(typeof(Player), "SetHealth")]
-    class Player_LowHealth_Patch
+    [HarmonyPatch(typeof(Character), "SetHealth")]
+    class Character_LowHealth_Patch
     {
-        public static void Postfix(Player __instance)
+        public static void Postfix(Character __instance)
         {
             if (__instance != Player.m_localPlayer || TactsuitVR.suitDisabled)
             {
@@ -225,18 +228,19 @@ namespace ValheimVRMod.Patches
         }
     }
 
-    [HarmonyPatch(typeof(Humanoid), "IsBlocking")]
-    class Humanoid_IsBlocking_Patch
+    [HarmonyPatch(typeof(Humanoid), "BlockAttack")]
+    class Humanoid_BlockAttack_Patch
     {
-        public static void Postfix(Humanoid __instance)
+        public static void Postfix(Humanoid __instance, bool __result)
         {
 
             if (__instance != Player.m_localPlayer || EquipScript.getLeft() != EquipType.Shield || !VHVRConfig.UseVrControls())
             {
                 return;
             }
-            TactsuitVR.PlaybackHaptics(VHVRConfig.LeftHanded() ?
-                    "BlockVest_L" : "BlockVest_R");
+            if (__result)
+                TactsuitVR.PlaybackHaptics(VHVRConfig.LeftHanded() ?
+                    "BlockVest_R" : "BlockVest_L");
         }
     }
 }

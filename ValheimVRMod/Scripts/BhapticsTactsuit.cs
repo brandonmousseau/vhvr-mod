@@ -29,7 +29,7 @@ namespace ValheimVRMod.Scripts
 #pragma warning restore CS0618 
 
         public static RotationOption defaultRotationOption = new RotationOption(0.0f, 0.0f);
-        private static System.Timers.Timer aTimer;
+        private static System.Timers.Timer limiter;
 
         public void Awake()
         {
@@ -44,7 +44,7 @@ namespace ValheimVRMod.Scripts
             }
             catch { LogInfo("Suit initialization failed!"); }
             RegisterAllTactFiles();
-            LogInfo("Starting HeartBeat thread...");
+            LogInfo("Starting HeartBeat");
             PlaybackHaptics("HeartBeat");
             SetTimer();
         }
@@ -53,12 +53,12 @@ namespace ValheimVRMod.Scripts
          */
         private static void SetTimer()
         {
-            // Create a timer with a 200ms interval.
-            aTimer = new System.Timers.Timer(200);
-            // Hook up the Elapsed event for the timer. 
-            aTimer.Elapsed += OnTimedEvent;
-            aTimer.AutoReset = true;
+            System.Timers.Timer aTimer = new System.Timers.Timer();
+            aTimer.Elapsed += new ElapsedEventHandler(OnTimedEvent);
+            aTimer.Interval = 200;
             aTimer.Enabled = true;
+            aTimer.AutoReset = true;
+            limiter = aTimer;
         }
         private static void OnTimedEvent(object source, ElapsedEventArgs e)
         {
@@ -148,8 +148,10 @@ namespace ValheimVRMod.Scripts
          * creates or update thread params
          * Start or restart thread with params/updated params
          */
-        public static void StartThreadHaptic(string EffectName, float intensity = 1.0f, int sleep = 1000, bool timerNeeded = false, float duration = 1.0f)
+        public static void StartThreadHaptic(string EffectName, float intensity = 1.0f, bool timerNeeded = false, float duration = 1.0f)
         {
+            //we sync sleep time and timer delay
+            int sleep = timerNeeded ? 200 : 1000;
             //checks if timer control needed
             if (timerNeeded && !threadEnabled)
             {
@@ -174,12 +176,12 @@ namespace ValheimVRMod.Scripts
                 ThreadsManualResetEvents.Add(EffectName, ThreadEvent);
                 ThreadEvent.Set();
             }
-            Thread EffectThread = new Thread(() => ThreadHapticFunc(EffectName));
-            EffectThread.Start();
-            float[] thParams = { intensity, sleep, duration };
-            ThreadParams.Add(EffectName, thParams);
             //we still turn threadEnabled to false for other timerNeeded processes
             threadEnabled = false;
+            Thread EffectThread = new Thread(() => ThreadHapticFunc(EffectName));
+            float[] thParams = { intensity, sleep, duration };
+            ThreadParams.Add(EffectName, thParams);
+            EffectThread.Start();
         }
 
         /**
@@ -188,7 +190,8 @@ namespace ValheimVRMod.Scripts
          */
         public static void StopThreadHaptic(string name)
         {
-            if (ThreadsManualResetEvents.ContainsKey(name))
+            if (ThreadsManualResetEvents.ContainsKey(name) 
+                && ThreadsManualResetEvents[name].WaitOne())
             {
                 ThreadsManualResetEvents[name].Reset();
             }
