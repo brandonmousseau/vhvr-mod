@@ -148,7 +148,7 @@ namespace ValheimVRMod.Utilities
          * Start thread
          * Checks if creation needs to be controlled by timer
          */
-        public static void StartThreadHaptic(string EffectName, float intensity = 1.0f, int sleep = 1000, bool timerNeeded = false)
+        public static void StartThreadHaptic(string EffectName, float intensity = 1.0f, int sleep = 1000, bool timerNeeded = false, float duration = 1.0f)
         {
             //checks if timer control needed
             if (timerNeeded && !threadEnabled)
@@ -165,6 +165,7 @@ namespace ValheimVRMod.Utilities
                 //update params
                 ThreadParams[EffectName][0] = intensity;
                 ThreadParams[EffectName][1] = sleep;
+                ThreadParams[EffectName][2] = duration;
                 return;
             }
             else
@@ -175,7 +176,7 @@ namespace ValheimVRMod.Utilities
             }
             Thread EffectThread = new Thread(() => ThreadHapticFunc(EffectName));
             EffectThread.Start();
-            float[] thParams = { intensity, sleep };
+            float[] thParams = { intensity, sleep, duration };
             ThreadParams.Add(EffectName, thParams);
             //we still turn threadEnabled to false for other timerNeeded processes
             threadEnabled = false;
@@ -224,7 +225,7 @@ namespace ValheimVRMod.Utilities
             {
                 // Check if reset event is active
                 ThreadsManualResetEvents[name].WaitOne();
-                PlaybackHaptics(name, ThreadParams[name][0]);
+                PlaybackHaptics(name, ThreadParams[name][0], ThreadParams[name][2]);
                 int sleep = (int)ThreadParams[name][1];
                 Thread.Sleep( sleep == 0 ? 1000 : sleep);
             }
