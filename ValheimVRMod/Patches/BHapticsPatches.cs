@@ -1,4 +1,5 @@
-﻿using HarmonyLib;
+﻿using System;
+using HarmonyLib;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.Scripts;
 using UnityEngine;
@@ -105,11 +106,20 @@ namespace ValheimVRMod.Patches
             {
                 return;
             }
-            if ( __instance.GetHealth() * 100 /__instance.GetMaxHealth() > 15) {
-                TactsuitVR.StopThreadHaptic("HeartBeatFast");
+            int hlth = Convert.ToInt32(__instance.GetHealth() * 100 / __instance.GetMaxHealth());
+            if (  hlth < 20 && hlth > 15) {
+                TactsuitVR.StartThreadHaptic("HeartBeat");
             } else
             {
+                TactsuitVR.StopThreadHaptic("HeartBeat");
+            }
+            if (hlth <= 15 && hlth > 0)
+            {
                 TactsuitVR.StartThreadHaptic("HeartBeatFast");
+            }
+            else
+            {
+                TactsuitVR.StopThreadHaptic("HeartBeatFast");
             }
         }
     }
