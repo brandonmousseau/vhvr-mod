@@ -102,6 +102,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> spearThrowSpeedDynamic;
         private static ConfigEntry<bool> twoHandedWield;
         private static ConfigEntry<float> arrowRestElevation;
+        private static ConfigEntry<float> arrowRestHorizontalOffset;
         private static ConfigEntry<bool> restrictBowDrawSpeed;
 
 #if DEBUG
@@ -539,6 +540,11 @@ namespace ValheimVRMod.Utilities
                 0.15f,
                 new ConfigDescription("The amount by which the arrow rest is higher than the center of the bow handle",
                     new AcceptableValueRange<float>(0, 0.25f)));
+            arrowRestHorizontalOffset = config.Bind("Motion Control",
+                "ArrowRestHorizontalOffset",
+                0f,
+                new ConfigDescription("The amount by which the arrow rest is to the left and right of the bow center",
+                    new AcceptableValueRange<float>(-0.03f, 0.03f)));
             restrictBowDrawSpeed = config.Bind("Motion Control",
                 "RestrictBowDrawSpeed",
                 false,
@@ -801,6 +807,11 @@ namespace ValheimVRMod.Utilities
         public static float ArrowRestElevation()
         {
             return arrowRestElevation.Value;
+        }
+
+        public static float ArrowRestHorizontalOffset()
+        {
+            return arrowRestHorizontalOffset.Value;
         }
 
         public static bool RestrictBowDrawSpeed()
