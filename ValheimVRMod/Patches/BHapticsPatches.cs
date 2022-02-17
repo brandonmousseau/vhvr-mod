@@ -239,8 +239,11 @@ namespace ValheimVRMod.Patches
                 return;
             }
             if (__result)
+            {
                 TactsuitVR.PlaybackHaptics(VHVRConfig.LeftHanded() ?
                     "BlockVest_R" : "BlockVest_L");
+                // TODO ARMS TACTOSY
+            }
         }
     }
 }

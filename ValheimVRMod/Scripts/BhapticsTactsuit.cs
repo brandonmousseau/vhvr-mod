@@ -17,8 +17,11 @@ namespace ValheimVRMod.Scripts
         public static bool suitDisabled = true;
         public static  bool systemInitialized = false;
         public static bool threadEnabled = false;
-        // Event to start and stop the thread
-        public static Dictionary<string, ManualResetEvent> ThreadsManualResetEvents = new Dictionary<string, ManualResetEvent>();
+        // Event to start and stop the threads
+        private static ManualResetEvent bHaptics_mrse = new ManualResetEvent(true);
+        //list of allowed thread by effectname
+        public static Dictionary<string, bool> ThreadsConditions = new Dictionary<string, bool>();
+        public static Dictionary<string, bool> ThreadsStatus = new Dictionary<string, bool>();
         //association effect name => params (intensity, sleep)
         public static Dictionary<string, float[]> ThreadParams = new Dictionary<string, float[]>();
         // dictionary of all feedback patterns found in the bHaptics directory
@@ -29,7 +32,7 @@ namespace ValheimVRMod.Scripts
 #pragma warning restore CS0618 
 
         public static RotationOption defaultRotationOption = new RotationOption(0.0f, 0.0f);
-        private static System.Timers.Timer limiter;
+        private static System.Timers.Timer aTimer;
 
         public void Awake()
         {
@@ -44,7 +47,7 @@ namespace ValheimVRMod.Scripts
             }
             catch { LogInfo("Suit initialization failed!"); }
             RegisterAllTactFiles();
-            LogInfo("Starting HeartBeat");
+            LogInfo("Starting HeartBeat thread...");
             PlaybackHaptics("HeartBeat");
             SetTimer();
         }
@@ -53,12 +56,12 @@ namespace ValheimVRMod.Scripts
          */
         private static void SetTimer()
         {
-            System.Timers.Timer aTimer = new System.Timers.Timer();
-            aTimer.Elapsed += new ElapsedEventHandler(OnTimedEvent);
-            aTimer.Interval = 200;
-            aTimer.Enabled = true;
+            // Create a timer with a 200ms interval.
+            aTimer = new System.Timers.Timer(200);
+            // Hook up the Elapsed event for the timer. 
+            aTimer.Elapsed += OnTimedEvent;
             aTimer.AutoReset = true;
-            limiter = aTimer;
+            aTimer.Enabled = true;
         }
         private static void OnTimedEvent(object source, ElapsedEventArgs e)
         {
@@ -143,58 +146,61 @@ namespace ValheimVRMod.Scripts
 
         /**
          * Checks if creation needs to be controlled by timer
-         * Creates ManualEvent if not exists
+         * Creates Thread condition if not exists
          * Create Thread if not exists
          * creates or update thread params
          * Start or restart thread with params/updated params
          */
         public static void StartThreadHaptic(string EffectName, float intensity = 1.0f, bool timerNeeded = false, float duration = 1.0f)
         {
-            //we sync sleep time and timer delay
             int sleep = timerNeeded ? 200 : 1000;
             //checks if timer control needed
             if (timerNeeded && !threadEnabled)
             {
                 return;
             }
-            //checking if event with name exists
-            if (ThreadsManualResetEvents.ContainsKey(EffectName))
+            //params
+            if (!ThreadParams.ContainsKey(EffectName))
             {
-                if (!ThreadsManualResetEvents[EffectName].WaitOne())
-                {
-                    ThreadsManualResetEvents[EffectName].Set();
-                }
+                float[] thParams = { intensity, sleep, duration };
+                ThreadParams.Add(EffectName, thParams);
+            } else
+            {
                 //update params
                 ThreadParams[EffectName][0] = intensity;
                 ThreadParams[EffectName][1] = sleep;
                 ThreadParams[EffectName][2] = duration;
-                return;
+            }
+            //checking if conditions with name exists
+            if (ThreadsConditions.ContainsKey(EffectName))
+            {
+                if (!ThreadsConditions[EffectName])
+                {
+                    ThreadsConditions[EffectName] = true;
+                }
             }
             else
             {
-                ManualResetEvent ThreadEvent = new ManualResetEvent(false);
-                ThreadsManualResetEvents.Add(EffectName, ThreadEvent);
-                ThreadEvent.Set();
+                bool ThreadCondition = true;
+                ThreadsConditions.Add(EffectName, ThreadCondition);
+            }
+            //checking if thread is active
+            if (!ThreadsStatus[EffectName])
+            {
+                Thread EffectThread = new Thread(() => ThreadHapticFunc(EffectName));
+                EffectThread.Start();
             }
             //we still turn threadEnabled to false for other timerNeeded processes
             threadEnabled = false;
-            Thread EffectThread = new Thread(() => ThreadHapticFunc(EffectName));
-            float[] thParams = { intensity, sleep, duration };
-            ThreadParams.Add(EffectName, thParams);
-            EffectThread.Start();
         }
 
         /**
-         * Resets the ManualResetEvent to tell the corresponding
+         * Resets the thread condition to tell the corresponding
          * Thread to stop
          */
         public static void StopThreadHaptic(string name)
         {
-            if (ThreadsManualResetEvents.ContainsKey(name) 
-                && ThreadsManualResetEvents[name].WaitOne())
-            {
-                ThreadsManualResetEvents[name].Reset();
-            }
+            ThreadsConditions[name] = false;
         }
 
         public static void StopHapticFeedback(string effect)
@@ -213,24 +219,29 @@ namespace ValheimVRMod.Scripts
 
         public static void StopThreads()
         {
-            foreach (var entry in ThreadsManualResetEvents.Values)
-            {
-                entry.Reset();
-            }
+            bHaptics_mrse.Reset();
         }
+
         /**
          * Thread function executing haptic effect every sleep value
-         * while corresponding event is not reset
+         * while corresponding name condition is not false
          */
         public static void ThreadHapticFunc(string name)
         {
-            while (true)
+            try
             {
-                // Check if reset event is active
-                ThreadsManualResetEvents[name].WaitOne();
-                PlaybackHaptics(name, ThreadParams[name][0], ThreadParams[name][2]);
-                int sleep = (int)ThreadParams[name][1];
-                Thread.Sleep( sleep == 0 ? 1000 : sleep);
+                ThreadsStatus[name] = true;
+                while (ThreadsConditions[name])
+                {
+                    // Check if reset event is active
+                    bHaptics_mrse.WaitOne();
+                    PlaybackHaptics(name, ThreadParams[name][0], ThreadParams[name][2]);
+                    int sleep = (int)ThreadParams[name][1];
+                    Thread.Sleep(sleep == 0 ? 1000 : sleep);
+                }
+            } finally
+            {
+                ThreadsStatus[name] = false;
             }
         }
     }
