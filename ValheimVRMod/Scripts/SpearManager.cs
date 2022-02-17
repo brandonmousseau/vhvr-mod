@@ -138,7 +138,7 @@ namespace ValheimVRMod.Scripts {
                 directionLine.enabled = false;
             }
             else if (!isThrowingStance) {
-                directionCooldown -= Time.deltaTime*5;
+                directionCooldown -= Time.unscaledDeltaTime*5;
             }
         }
         private void UpdateSecondHandAimCalculation()

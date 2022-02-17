@@ -59,7 +59,7 @@
   <ItemGroup>
     <PackageReference Include="BepInEx.Core" Version="5.4.17" />
     <PackageReference Include="UnityEngine.Modules" Version="2019.4.31" />
-    <PackageReference Include="ValheimGameLibs" Version="0.206.5-r1" />
+    <PackageReference Include="ValheimGameLibs" Version="0.207.15-r0" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -106,7 +106,7 @@
     </Reference>
   </ItemGroup>
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="make-release.cmd" EnvironmentVariables='SOLUTION_DIR=$(SolutionDir);COMMON_DIR=$(CommonDir);TARGET_PATH=$(TargetPath)'>
+    <Exec Command="make-release.cmd" EnvironmentVariables="SOLUTION_DIR=$(SolutionDir);COMMON_DIR=$(CommonDir);TARGET_PATH=$(TargetPath)">
       <Output TaskParameter="ConsoleOutput" ItemName="OutputOfExec" />
     </Exec>
   </Target>
