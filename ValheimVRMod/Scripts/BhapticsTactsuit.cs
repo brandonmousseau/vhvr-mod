@@ -20,8 +20,8 @@ namespace ValheimVRMod.Scripts
         // Event to start and stop the threads
         private static ManualResetEvent bHaptics_mrse = new ManualResetEvent(true);
         //list of allowed thread by effectname
-        public static Dictionary<string, bool> ThreadsConditions = new Dictionary<string, bool>();
-        public static Dictionary<string, bool> ThreadsStatus = new Dictionary<string, bool>();
+        public static volatile Dictionary<string, bool> ThreadsConditions = new Dictionary<string, bool>();
+        public static volatile Dictionary<string, bool> ThreadsStatus = new Dictionary<string, bool>();
         //association effect name => params (intensity, sleep)
         public static Dictionary<string, float[]> ThreadParams = new Dictionary<string, float[]>();
         // dictionary of all feedback patterns found in the bHaptics directory
