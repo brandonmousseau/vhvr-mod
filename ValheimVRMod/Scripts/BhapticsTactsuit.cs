@@ -20,7 +20,7 @@ namespace ValheimVRMod.Scripts
         // Event to start and stop the threads
         private static ManualResetEvent bHaptics_mrse = new ManualResetEvent(true);
         //semaphore allowing one thread at a time
-        private static Semaphore _threadAllowed = new Semaphore(0,1);
+        //private static Semaphore _threadAllowed = new Semaphore(0,1);
         //list of allowed thread by effectname
         public static volatile Dictionary<string, bool> ThreadsConditions = new Dictionary<string, bool>();
         public static volatile Dictionary<string, bool> ThreadsStatus = new Dictionary<string, bool>();
@@ -91,16 +91,29 @@ namespace ValheimVRMod.Scripts
 
         public static void setThreadsStatus(string name, bool value)
         {
-            _threadAllowed.WaitOne();
-            ThreadsStatus[name] = value;
-            _threadAllowed.Release();
+            //_threadAllowed.WaitOne();
+            if (ThreadsStatus.ContainsKey(name))
+            {
+                ThreadsStatus[name] = value;
+            } else
+            {
+                ThreadsStatus.Add(name, value);
+            }
+            //_threadAllowed.Release();
         }
 
         public static void setThreadsConditions(string name, bool value)
         {
-            _threadAllowed.WaitOne();
-            ThreadsConditions[name] = value;
-            _threadAllowed.Release();
+            //_threadAllowed.WaitOne();
+            if (ThreadsConditions.ContainsKey(name))
+            {
+                ThreadsConditions[name] = value;
+            }
+            else
+            {
+                ThreadsConditions.Add(name, value);
+            }
+            //_threadAllowed.Release();
         }
         /**
          * Starts Timer needed for thread creation limiter
@@ -175,10 +188,12 @@ namespace ValheimVRMod.Scripts
          */
         public static void StartThreadHaptic(string EffectName, float intensity = 1.0f, bool timerNeeded = false, float duration = 1.0f)
         {
+            LogInfo("START HAPTICS");
             int sleep = timerNeeded ? 200 : 1000;
             //checks if timer control needed
             if (timerNeeded && !threadEnabled)
             {
+                LogInfo("TIMER NEEDED NOT ENABLED");
                 return;
             }
             //params
@@ -194,22 +209,13 @@ namespace ValheimVRMod.Scripts
                 ThreadParams[EffectName][1] = sleep;
                 ThreadParams[EffectName][2] = duration;
             }
-            //checking if conditions with name exists
-            if (ThreadsConditions.ContainsKey(EffectName))
+            LogInfo("START HAPTICS " + ThreadParams[EffectName]);
+            //set thread condition true cause we are in start function
+            setThreadsConditions(EffectName, true);
+            //checking if thread is created and alive
+            if (!ThreadsStatus.ContainsKey(EffectName) || !ThreadsStatus[EffectName])
             {
-                if (!ThreadsConditions[EffectName])
-                {
-                    setThreadsConditions(EffectName, true);
-                }
-            }
-            else
-            {
-                bool ThreadCondition = true;
-                ThreadsConditions.Add(EffectName, ThreadCondition);
-            }
-            //checking if thread is alive
-            if (!ThreadsStatus[EffectName])
-            {
+                LogInfo("CREATE THREAD ");
                 Thread EffectThread = new Thread(() => ThreadHapticFunc(EffectName));
                 EffectThread.Start();
             }
@@ -223,7 +229,7 @@ namespace ValheimVRMod.Scripts
          */
         public static void StopThreadHaptic(string name)
         {
-            ThreadsConditions[name] = false;
+            setThreadsConditions(name, false);
         }
 
         public static void StopHapticFeedback(string effect)

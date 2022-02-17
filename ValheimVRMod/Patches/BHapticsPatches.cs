@@ -160,7 +160,6 @@ namespace ValheimVRMod.Patches
             {
                 return;
             }
-            LogInfo("PULLIN ? "+___isPulling);
             if (!___isPulling)
             {
                 TactsuitVR.StopThreadHaptic(VHVRConfig.LeftHanded() ? "BowStringLeft" : "BowStringRight");

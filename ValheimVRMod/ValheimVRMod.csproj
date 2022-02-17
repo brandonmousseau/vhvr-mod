@@ -105,6 +105,7 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\Unity\build\ValheimVR_Data\Managed\SteamVR_Actions.dll</HintPath>
     </Reference>
+	<Reference Include="netstandard" />
   </ItemGroup>
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
     <Exec Command="make-release.cmd" EnvironmentVariables="SOLUTION_DIR=$(SolutionDir);COMMON_DIR=$(CommonDir);TARGET_PATH=$(TargetPath)">
