@@ -230,28 +230,39 @@ namespace ValheimVRMod.VRCore.UI
 
         private bool ensureUIPanel()
         {
-            if (_uiPanel != null)
+            if (_uiPanel != null && _uiPanelTransformLocker != null)
             {
                 return true;
             }
-            if (VRPlayer.instance == null || _guiTexture == null)
-            {   
+            var vrCam = CameraUtils.getCamera(CameraUtils.VR_CAMERA);
+            if (VRPlayer.instance == null || _guiTexture == null 
+                || vrCam == null || vrCam.gameObject == null || vrCam.transform.parent == null)
+            {
                 return false;
             }
-            createUiPanelCamera();
-            _uiPanel = GameObject.CreatePrimitive(PrimitiveType.Quad);
-            _uiPanel.name = UI_PANEL_NAME;
-            _uiPanel.layer = LayerUtils.getUiPanelLayer();
-            Material mat = VRAssetManager.GetAsset<Material>("vr_panel_unlit");
-            _uiPanel.GetComponent<Renderer>().material = mat;
-            _uiPanel.GetComponent<Renderer>().material.mainTexture = _guiTexture;
-            _uiPanel.GetComponent<MeshCollider>().convex = true;
-            _uiPanel.GetComponent<MeshCollider>().isTrigger = true;
-            _uiPanelTransformLocker = new GameObject();
-            // The locker should move with the vr camera rig in case we need to use it to lock the UI panel in place.
-            _uiPanelTransformLocker.transform.SetParent(CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform.parent, false);
 
-            return (_uiPanel != null);
+            createUiPanelCamera();
+
+            if (_uiPanel == null)
+            {
+                _uiPanel = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                _uiPanel.name = UI_PANEL_NAME;
+                _uiPanel.layer = LayerUtils.getUiPanelLayer();
+                Material mat = VRAssetManager.GetAsset<Material>("vr_panel_unlit");
+                _uiPanel.GetComponent<Renderer>().material = mat;
+                _uiPanel.GetComponent<Renderer>().material.mainTexture = _guiTexture;
+                _uiPanel.GetComponent<MeshCollider>().convex = true;
+                _uiPanel.GetComponent<MeshCollider>().isTrigger = true;
+            }
+
+            if (_uiPanelTransformLocker == null)
+            {
+                _uiPanelTransformLocker = new GameObject();
+                // The locker should move with the vr camera rig in case we need to use it to lock the UI panel in place.
+                _uiPanelTransformLocker.transform.SetParent(vrCam.transform.parent, false);
+            }
+
+            return _uiPanel != null && _uiPanelTransformLocker != null;
         }
 
         private void maybeInitializePointers()
