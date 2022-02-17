@@ -262,14 +262,19 @@ namespace ValheimVRMod.VRCore.UI
 
         private void createUiPanelCamera()
         {
+            var vrCam = CameraUtils.getCamera(CameraUtils.VR_CAMERA);
+            if(vrCam == null || vrCam.gameObject == null)
+            {
+                return;
+            }
             GameObject uiPanelCameraObj = new GameObject(CameraUtils.VR_UI_CAMERA);
             _uiPanelCamera = uiPanelCameraObj.AddComponent<Camera>();
             _uiPanelCamera.CopyFrom(CameraUtils.getCamera(CameraUtils.VR_CAMERA));
             _uiPanelCamera.depth = _guiCamera.depth;
             _uiPanelCamera.clearFlags = CameraClearFlags.Depth;
+            _uiPanelCamera.renderingPath = RenderingPath.Forward;
             _uiPanelCamera.cullingMask = LayerUtils.UI_PANEL_LAYER_MASK;
-            _uiPanelCamera.transform.parent =
-               CameraUtils.getCamera(CameraUtils.VR_CAMERA).gameObject.transform;
+            _uiPanelCamera.transform.SetParent(vrCam.transform);
         }
 
         public void OnPointerClick(object p, PointerEventArgs e)
@@ -549,6 +554,7 @@ namespace ValheimVRMod.VRCore.UI
             _guiCamera.targetTexture = _guiTexture;
             _guiCamera.depth = 1;
             _guiCamera.useOcclusionCulling = false;
+            _guiCamera.renderingPath = RenderingPath.Forward;
             // This enables transparency on the GUI
             // I tried "Depth" for the clear flags, but
             // it had weird/unexpected results and Color
