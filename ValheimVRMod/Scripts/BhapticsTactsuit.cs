@@ -36,6 +36,8 @@ namespace ValheimVRMod.Scripts
         public static RotationOption defaultRotationOption = new RotationOption(0.0f, 0.0f);
         private static System.Timers.Timer aTimer;
 
+        #region InitializersAndSetters
+
         public void Awake()
         {
 
@@ -52,22 +54,6 @@ namespace ValheimVRMod.Scripts
             LogInfo("Starting HeartBeat thread...");
             PlaybackHaptics("HeartBeat");
             SetTimer();
-        }
-        /**
-         * Starts Timer needed for thread creation limiter
-         */
-        private static void SetTimer()
-        {
-            // Create a timer with a 200ms interval.
-            aTimer = new System.Timers.Timer(200);
-            // Hook up the Elapsed event for the timer. 
-            aTimer.Elapsed += OnTimedEvent;
-            aTimer.AutoReset = true;
-            aTimer.Enabled = true;
-        }
-        private static void OnTimedEvent(object source, ElapsedEventArgs e)
-        {
-            threadEnabled = true;
         }
 
         /**
@@ -102,6 +88,40 @@ namespace ValheimVRMod.Scripts
             }
             systemInitialized = true;
         }
+
+        public static void setThreadsStatus(string name, bool value)
+        {
+            _threadAllowed.WaitOne();
+            ThreadsStatus[name] = value;
+            _threadAllowed.Release();
+        }
+
+        public static void setThreadsConditions(string name, bool value)
+        {
+            _threadAllowed.WaitOne();
+            ThreadsConditions[name] = value;
+            _threadAllowed.Release();
+        }
+        /**
+         * Starts Timer needed for thread creation limiter
+         */
+        private static void SetTimer()
+        {
+            // Create a timer with a 200ms interval.
+            aTimer = new System.Timers.Timer(200);
+            // Hook up the Elapsed event for the timer. 
+            aTimer.Elapsed += OnTimedEvent;
+            aTimer.AutoReset = true;
+            aTimer.Enabled = true;
+        }
+        private static void OnTimedEvent(object source, ElapsedEventArgs e)
+        {
+            threadEnabled = true;
+        }
+        #endregion
+
+
+        #region PlayingHapticsEffects
 
         public static void PlaybackHaptics(string key, float intensity = 1.0f, float duration = 1.0f)
         {
@@ -166,7 +186,8 @@ namespace ValheimVRMod.Scripts
             {
                 float[] thParams = { intensity, sleep, duration };
                 ThreadParams.Add(EffectName, thParams);
-            } else
+            }
+            else
             {
                 //update params
                 ThreadParams[EffectName][0] = intensity;
@@ -224,20 +245,6 @@ namespace ValheimVRMod.Scripts
             bHaptics_mrse.Reset();
         }
 
-        public static void setThreadsStatus(string name, bool value)
-        {
-            _threadAllowed.WaitOne();
-            ThreadsStatus[name] = value;
-            _threadAllowed.Release();
-        }
-
-        public static void setThreadsConditions(string name, bool value)
-        {
-            _threadAllowed.WaitOne();
-            ThreadsConditions[name] = value;
-            _threadAllowed.Release();
-        }
-
         /**
          * Thread function executing haptic effect every sleep value
          * while corresponding name condition is not false
@@ -255,11 +262,13 @@ namespace ValheimVRMod.Scripts
                     int sleep = (int)ThreadParams[name][1];
                     Thread.Sleep(sleep == 0 ? 1000 : sleep);
                 }
-            } finally
+            }
+            finally
             {
                 //thread is dead
                 setThreadsStatus(name, false);
             }
         }
+        #endregion
     }
 }
