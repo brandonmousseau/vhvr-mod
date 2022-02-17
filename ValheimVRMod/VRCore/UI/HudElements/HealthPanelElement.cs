@@ -188,7 +188,12 @@ namespace ValheimVRMod.VRCore.UI.HudElements
 
         private void updateHealthPanelHudReferences(HealthPanelComponents newComponents)
         {
-            if (newComponents == null || !newComponents.healthPanel || Hud.instance == null || Hud.instance.m_healthPanel.gameObject == newComponents.healthPanel)
+            if (newComponents == null 
+                || newComponents.healthPanel == null
+                || newComponents.healthPanel.gameObject == null
+                || Hud.instance == null
+                || Hud.instance.m_healthPanel == null
+                || Hud.instance.m_healthPanel.gameObject == newComponents.healthPanel)
             {
                 return;
             }

@@ -59,11 +59,12 @@ namespace ValheimVRMod.Utilities
                 return null;
             }
             GameObject worldSpaceUiCamParent = new GameObject(WORLD_SPACE_UI_CAMERA);
-            worldSpaceUiCamParent.transform.SetParent(vrCam.gameObject.transform);
+            worldSpaceUiCamParent.transform.SetParent(vrCam.transform);
             _worldSpaceUiCamera = worldSpaceUiCamParent.AddComponent<Camera>();
             _worldSpaceUiCamera.CopyFrom(vrCam);
             _worldSpaceUiCamera.clearFlags = CameraClearFlags.Depth;
             _worldSpaceUiCamera.depth = worldSpaceUiDepth;
+            _worldSpaceUiCamera.renderingPath = RenderingPath.Forward;
             _worldSpaceUiCamera.cullingMask = LayerUtils.WORLDSPACE_UI_LAYER_MASK;
             _worldSpaceUiCamera.enabled = true;
             return _worldSpaceUiCamera;
