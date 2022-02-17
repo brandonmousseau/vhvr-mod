@@ -178,7 +178,7 @@ namespace ValheimVRMod.Scripts
             {
                 if (!ThreadsConditions[EffectName])
                 {
-                    ThreadsConditions[EffectName] = true;
+                    setThreadsConditions(EffectName, true);
                 }
             }
             else
@@ -224,6 +224,20 @@ namespace ValheimVRMod.Scripts
             bHaptics_mrse.Reset();
         }
 
+        public static void setThreadsStatus(string name, bool value)
+        {
+            _threadAllowed.WaitOne();
+            ThreadsStatus[name] = value;
+            _threadAllowed.Release();
+        }
+
+        public static void setThreadsConditions(string name, bool value)
+        {
+            _threadAllowed.WaitOne();
+            ThreadsConditions[name] = value;
+            _threadAllowed.Release();
+        }
+
         /**
          * Thread function executing haptic effect every sleep value
          * while corresponding name condition is not false
@@ -232,21 +246,19 @@ namespace ValheimVRMod.Scripts
         {
             try
             {
-                _threadAllowed.WaitOne();
                 //thread is alive
-                ThreadsStatus[name] = true;
+                setThreadsStatus(name, true);
                 //if false, stops the thread by making it finish
                 while (ThreadsConditions[name] && bHaptics_mrse.WaitOne())
                 {
                     PlaybackHaptics(name, ThreadParams[name][0], ThreadParams[name][2]);
                     int sleep = (int)ThreadParams[name][1];
                     Thread.Sleep(sleep == 0 ? 1000 : sleep);
-                    _threadAllowed.Release();
                 }
             } finally
             {
                 //thread is dead
-                ThreadsStatus[name] = false;
+                setThreadsStatus(name, false);
             }
         }
     }
