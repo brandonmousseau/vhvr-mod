@@ -19,6 +19,8 @@ namespace ValheimVRMod.Scripts
         public static bool threadEnabled = false;
         // Event to start and stop the threads
         private static ManualResetEvent bHaptics_mrse = new ManualResetEvent(true);
+        //semaphore allowing one thread at a time
+        private static Semaphore _threadAllowed = new Semaphore(0,1);
         //list of allowed thread by effectname
         public static volatile Dictionary<string, bool> ThreadsConditions = new Dictionary<string, bool>();
         public static volatile Dictionary<string, bool> ThreadsStatus = new Dictionary<string, bool>();
@@ -184,7 +186,7 @@ namespace ValheimVRMod.Scripts
                 bool ThreadCondition = true;
                 ThreadsConditions.Add(EffectName, ThreadCondition);
             }
-            //checking if thread is active
+            //checking if thread is alive
             if (!ThreadsStatus[EffectName])
             {
                 Thread EffectThread = new Thread(() => ThreadHapticFunc(EffectName));
@@ -230,17 +232,20 @@ namespace ValheimVRMod.Scripts
         {
             try
             {
+                _threadAllowed.WaitOne();
+                //thread is alive
                 ThreadsStatus[name] = true;
-                while (ThreadsConditions[name])
+                //if false, stops the thread by making it finish
+                while (ThreadsConditions[name] && bHaptics_mrse.WaitOne())
                 {
-                    // Check if reset event is active
-                    bHaptics_mrse.WaitOne();
                     PlaybackHaptics(name, ThreadParams[name][0], ThreadParams[name][2]);
                     int sleep = (int)ThreadParams[name][1];
                     Thread.Sleep(sleep == 0 ? 1000 : sleep);
+                    _threadAllowed.Release();
                 }
             } finally
             {
+                //thread is dead
                 ThreadsStatus[name] = false;
             }
         }
