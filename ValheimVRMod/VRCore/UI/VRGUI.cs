@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.EventSystems;
 using ValheimVRMod.Utilities;
 using Valve.VR;
@@ -60,6 +60,7 @@ namespace ValheimVRMod.VRCore.UI
         private Camera _guiCamera;
         private Canvas _guiCanvas;
         private GameObject _uiPanel;
+        private GameObject _uiPanelTransformLocker;
         private RenderTexture _guiTexture;
         private RenderTexture _overlayTexture;
 
@@ -163,10 +164,25 @@ namespace ValheimVRMod.VRCore.UI
             {
                 if (shouldLockDynamicGuiPosition())
                 {
+                    // Restore the locked position and rotation of GUI's relative to the VR camera rig.
+                    _uiPanel.transform.SetPositionAndRotation(_uiPanelTransformLocker.transform.position, _uiPanelTransformLocker.transform.rotation);
                     isRecentering = false;
                     return;
                 }
+                // Record the GUI's transform in case it will be locked in that position and rotation.
+                _uiPanelTransformLocker.transform.SetPositionAndRotation(_uiPanel.transform.position, _uiPanel.transform.rotation);
+
                 var playerInstance = Player.m_localPlayer;
+
+                if (playerInstance.IsAttachedToShip())
+                {
+                    // Always lock the UI to the forward direction of ship when sailing.
+                    Vector3 forwardDirection = Vector3.ProjectOnPlane(Player.m_localPlayer.m_attachPoint.forward, Vector3.up).normalized;
+                    _uiPanel.transform.rotation = Quaternion.LookRotation(forwardDirection, VRPlayer.instance.transform.up);
+                    _uiPanel.transform.position = playerInstance.transform.position + _uiPanel.transform.rotation * offsetPosition;
+                    return;
+                }
+
                 var currentDirection = getCurrentGuiDirection();
                 if (isRecentering)
                 {
@@ -189,7 +205,7 @@ namespace ValheimVRMod.VRCore.UI
                     var newRotation = Quaternion.LookRotation(currentDirection, VRPlayer.instance.transform.up);
                     newRotation *= Quaternion.AngleAxis(rotationDelta, Vector3.up);
                     _uiPanel.transform.rotation = newRotation;
-                    _uiPanel.transform.position = playerInstance.transform.position +  newRotation * offsetPosition;
+                    _uiPanel.transform.position = playerInstance.transform.position + newRotation * offsetPosition;
                 }
             }
             else
@@ -204,36 +220,49 @@ namespace ValheimVRMod.VRCore.UI
 
         private bool shouldLockDynamicGuiPosition()
         {
-            return VHVRConfig.LockGuiWhileMenuOpen() && menuIsOpen();
+            return VHVRConfig.LockGuiWhileMenuOpen() && menuIsOpen() && !Player.m_localPlayer.IsAttachedToShip();
         }
 
         private bool menuIsOpen()
         {
-            bool menuIsOpen = StoreGui.IsVisible() || InventoryGui.IsVisible() || Menu.IsVisible() || (TextViewer.instance && TextViewer.instance.IsVisible()) || Minimap.IsOpen();
-            bool needsRecentering = Player.m_localPlayer.IsRunning() || Player.m_localPlayer.IsAttachedToShip() || Player.m_localPlayer.GetStandingOnShip() != null || Vector3.SqrMagnitude(VRPlayer.instance.transform.position - _uiPanel.transform.position) > 100;
-            return menuIsOpen && !needsRecentering;
+            return StoreGui.IsVisible() || InventoryGui.IsVisible() || Menu.IsVisible() || (TextViewer.instance && TextViewer.instance.IsVisible()) || Minimap.IsOpen();
         }
 
         private bool ensureUIPanel()
         {
-            if (_uiPanel != null)
+            if (_uiPanel != null && _uiPanelTransformLocker != null)
             {
                 return true;
             }
-            if (VRPlayer.instance == null || _guiTexture == null)
-            {   
+            var vrCam = CameraUtils.getCamera(CameraUtils.VR_CAMERA);
+            if (VRPlayer.instance == null || _guiTexture == null 
+                || vrCam == null || vrCam.gameObject == null || vrCam.transform.parent == null)
+            {
                 return false;
             }
+
             createUiPanelCamera();
-            _uiPanel = GameObject.CreatePrimitive(PrimitiveType.Quad);
-            _uiPanel.name = UI_PANEL_NAME;
-            _uiPanel.layer = LayerUtils.getUiPanelLayer();
-            Material mat = VRAssetManager.GetAsset<Material>("vr_panel_unlit");
-            _uiPanel.GetComponent<Renderer>().material = mat;
-            _uiPanel.GetComponent<Renderer>().material.mainTexture = _guiTexture;
-            _uiPanel.GetComponent<MeshCollider>().convex = true;
-            _uiPanel.GetComponent<MeshCollider>().isTrigger = true;
-            return (_uiPanel != null);
+
+            if (_uiPanel == null)
+            {
+                _uiPanel = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                _uiPanel.name = UI_PANEL_NAME;
+                _uiPanel.layer = LayerUtils.getUiPanelLayer();
+                Material mat = VRAssetManager.GetAsset<Material>("vr_panel_unlit");
+                _uiPanel.GetComponent<Renderer>().material = mat;
+                _uiPanel.GetComponent<Renderer>().material.mainTexture = _guiTexture;
+                _uiPanel.GetComponent<MeshCollider>().convex = true;
+                _uiPanel.GetComponent<MeshCollider>().isTrigger = true;
+            }
+
+            if (_uiPanelTransformLocker == null)
+            {
+                _uiPanelTransformLocker = new GameObject();
+                // The locker should move with the vr camera rig in case we need to use it to lock the UI panel in place.
+                _uiPanelTransformLocker.transform.SetParent(vrCam.transform.parent, false);
+            }
+
+            return _uiPanel != null && _uiPanelTransformLocker != null;
         }
 
         private void maybeInitializePointers()
