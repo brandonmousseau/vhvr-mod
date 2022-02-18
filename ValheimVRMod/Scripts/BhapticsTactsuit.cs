@@ -188,12 +188,10 @@ namespace ValheimVRMod.Scripts
          */
         public static void StartThreadHaptic(string EffectName, float intensity = 1.0f, bool timerNeeded = false, float duration = 1.0f)
         {
-            LogInfo("START HAPTICS");
             int sleep = timerNeeded ? 200 : 1000;
             //checks if timer control needed
             if (timerNeeded && !threadEnabled)
             {
-                LogInfo("TIMER NEEDED NOT ENABLED");
                 return;
             }
             //params
@@ -209,13 +207,11 @@ namespace ValheimVRMod.Scripts
                 ThreadParams[EffectName][1] = sleep;
                 ThreadParams[EffectName][2] = duration;
             }
-            LogInfo("START HAPTICS " + ThreadParams[EffectName]);
             //set thread condition true cause we are in start function
             setThreadsConditions(EffectName, true);
             //checking if thread is created and alive
             if (!ThreadsStatus.ContainsKey(EffectName) || !ThreadsStatus[EffectName])
             {
-                LogInfo("CREATE THREAD ");
                 Thread EffectThread = new Thread(() => ThreadHapticFunc(EffectName));
                 EffectThread.Start();
             }
