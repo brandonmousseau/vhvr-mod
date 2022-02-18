@@ -15,7 +15,7 @@ namespace ValheimVRMod.Scripts
     public class TactsuitVR : MonoBehaviour
     {
         public static bool suitDisabled = true;
-        public static  bool systemInitialized = false;
+        public static bool systemInitialized = false;
         public static bool threadEnabled = false;
         // Event to start and stop the threads
         private static ManualResetEvent bHaptics_mrse = new ManualResetEvent(true);
@@ -95,7 +95,8 @@ namespace ValheimVRMod.Scripts
             if (ThreadsStatus.ContainsKey(name))
             {
                 ThreadsStatus[name] = value;
-            } else
+            }
+            else
             {
                 ThreadsStatus.Add(name, value);
             }

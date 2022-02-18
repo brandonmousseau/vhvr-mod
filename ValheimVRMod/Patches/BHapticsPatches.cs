@@ -133,7 +133,7 @@ namespace ValheimVRMod.Patches
     [HarmonyPatch(typeof(BowManager), "pullString")]
     class BowManager_pullString_Patch
     {
-        public static void Postfix(BowManager __instance, float ___realLifePullPercentage)
+        public static void Postfix(float ___realLifePullPercentage)
         {
             if (TactsuitVR.suitDisabled)
             {
@@ -154,7 +154,7 @@ namespace ValheimVRMod.Patches
     [HarmonyPatch(typeof(BowLocalManager), "OnRenderObject")]
     class BowLocalManager_OnRenderObject_Patch
     {
-        public static void Postfix(BowLocalManager __instance, bool ___isPulling)
+        public static void Postfix(bool ___isPulling)
         {
             if (TactsuitVR.suitDisabled)
             {
@@ -172,7 +172,7 @@ namespace ValheimVRMod.Patches
     [HarmonyPatch(typeof(BowLocalManager), "toggleArrow")]
     class BowLocalManager_toggleArrow_Patch
     {
-        public static void Prefix(BowLocalManager __instance, GameObject ___arrow)
+        public static void Prefix(GameObject ___arrow)
         {
             if (TactsuitVR.suitDisabled)
             {
@@ -208,21 +208,25 @@ namespace ValheimVRMod.Patches
                 return;
             }
             int hlth = Convert.ToInt32(__instance.GetHealth() * 100 / __instance.GetMaxHealth());
-            if (hlth < 20 && hlth > 15)
+            switch (hlth)
             {
-                TactsuitVR.StartThreadHaptic("HeartBeat");
-            }
-            else
-            {
-                TactsuitVR.StopThreadHaptic("HeartBeat");
-            }
-            if (hlth <= 15 && hlth > 0)
-            {
-                TactsuitVR.StartThreadHaptic("HeartBeatFast");
-            }
-            else
-            {
-                TactsuitVR.StopThreadHaptic("HeartBeatFast");
+                case int n when hlth < 20 && hlth > 15:
+                    TactsuitVR.StopThreadHaptic("HeartBeatFast");
+                    TactsuitVR.StartThreadHaptic("HeartBeat");
+                    break;
+                case int n when hlth <= 15 && hlth > 0:
+                    TactsuitVR.StopThreadHaptic("HeartBeat");
+                    TactsuitVR.StartThreadHaptic("HeartBeatFast");
+                    break;
+                case int n when hlth <= 0:
+                    TactsuitVR.StopThreadHaptic("HeartBeat");
+                    TactsuitVR.StopThreadHaptic("HeartBeatFast");
+                    TactsuitVR.PlaybackHaptics("Dying");
+                    break;
+                default:
+                    TactsuitVR.StopThreadHaptic("HeartBeat");
+                    TactsuitVR.StopThreadHaptic("HeartBeatFast");
+                    break;
             }
         }
     }
