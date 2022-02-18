@@ -95,14 +95,14 @@ namespace ValheimVRMod.Patches
     }
 
     /**
-     * When player is using guardian power
+     * When any player is using guardian power
      */
     [HarmonyPatch(typeof(Player), "StartGuardianPower")]
     class Player_GuardianPower_Patch
     {
-        public static void Postfix(Player __instance)
+        public static void Postfix()
         {
-            if (__instance != Player.m_localPlayer || TactsuitVR.suitDisabled)
+            if (TactsuitVR.suitDisabled)
             {
                 return;
             }
@@ -123,7 +123,7 @@ namespace ValheimVRMod.Patches
             }
             if (EquipScript.getLeft() == EquipType.Bow)
             {
-                TactsuitVR.PlaybackHaptics(VHVRConfig.LeftHanded() ? "ArrowThrowLeft" : "ArrowThrowRight");
+                TactsuitVR.PlaybackHaptics(VHVRConfig.LeftHanded() ? "ArrowThrowLeft" : "ArrowThrowRight", 1.5f);
             }
         }
     }
@@ -293,6 +293,40 @@ namespace ValheimVRMod.Patches
                 return;
             }
             TactsuitVR.StartManuelResetEvent();
+        }
+    }
+
+    /**
+     * DoMeleeAttack
+     */
+    /*[HarmonyPatch(typeof(Attack), "DoMeleeAttack")]
+    class Attack_DoMeleeAttack_Patch
+    {
+        public static void Postfix(Attack __instance)
+        {
+
+            if (__instance != Attack.m_localPlayer || TactsuitVR.suitDisabled)
+            {
+                return;
+            }
+            TactsuitVR.StartManuelResetEvent();
+        }
+    }*/
+
+    /**
+     * OnTriggerEnter Attack succeded against any object with any weapon
+     */
+    [HarmonyPatch(typeof(WeaponCollision), "OnTriggerEnter")]
+    class WeaponCollision_OnTriggerEnter_Patch
+    {
+        public static void Postfix(WeaponCollision __instance, bool ___hasAttackedSuccess)
+        {
+
+            if ( !___hasAttackedSuccess || TactsuitVR.suitDisabled)
+            {
+                return;
+            }
+            TactsuitVR.SwordRecoil(!VHVRConfig.LeftHanded());
         }
     }
 }
