@@ -246,6 +246,15 @@ namespace ValheimVRMod.Scripts
         public static void StopThreads()
         {
             bHaptics_mrse.Reset();
+            foreach ( string name in ThreadsConditions.Keys)
+            {
+                ThreadsConditions[name] = false;
+            }
+        }
+
+        public static void StartManuelResetEvent()
+        {
+            bHaptics_mrse.Set();
         }
 
         /**

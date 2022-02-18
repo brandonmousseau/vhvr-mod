@@ -231,6 +231,9 @@ namespace ValheimVRMod.Patches
         }
     }
 
+    /**
+     * On blocking with shield
+     */
     [HarmonyPatch(typeof(Humanoid), "BlockAttack")]
     class Humanoid_BlockAttack_Patch
     {
@@ -247,6 +250,40 @@ namespace ValheimVRMod.Patches
                     "BlockVest_R" : "BlockVest_L");
                 // TODO ARMS TACTOSY
             }
+        }
+    }
+
+    /**
+     * On destroying player, kill all haptics threads just in case
+     */
+    [HarmonyPatch(typeof(Player), "OnDestroy")]
+    class Player_OnDestroy_Patch
+    {
+        public static void Postfix(Player __instance)
+        {
+
+            if (__instance != Player.m_localPlayer || TactsuitVR.suitDisabled)
+            {
+                return;
+            }
+            TactsuitVR.StopThreads();
+        }
+    }
+    
+    /**
+     * On enable, turns manual event on just in case
+     */
+    [HarmonyPatch(typeof(Player), "OnEnable")]
+    class Player_OnEnable_Patch
+    {
+        public static void Postfix(Player __instance)
+        {
+
+            if (__instance != Player.m_localPlayer || TactsuitVR.suitDisabled)
+            {
+                return;
+            }
+            TactsuitVR.StartManuelResetEvent();
         }
     }
 }
