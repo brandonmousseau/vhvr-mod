@@ -216,7 +216,7 @@ namespace ValheimVRMod.Patches
                     break;
                 case int n when hlth <= 15 && hlth > 0:
                     TactsuitVR.StopThreadHaptic("HeartBeat");
-                    TactsuitVR.StartThreadHaptic("HeartBeatFast");
+                    TactsuitVR.StartThreadHaptic("HeartBeatFast", 1.0f, false, 3.0f);
                     break;
                 case int n when hlth <= 0:
                     TactsuitVR.StopThreadHaptic("HeartBeat");
@@ -254,11 +254,20 @@ namespace ValheimVRMod.Patches
     }
 
     /**
-     * On destroying player, kill all haptics threads just in case
+     * OnDeath player, kill all haptics threads just in case
      */
-    [HarmonyPatch(typeof(Player), "OnDestroy")]
-    class Player_OnDestroy_Patch
+    [HarmonyPatch(typeof(Player), "OnDeath")]
+    class Player_OnDeath_Patch
     {
+        public static void Prefix(Player __instance)
+        {
+
+            if (__instance != Player.m_localPlayer || TactsuitVR.suitDisabled)
+            {
+                return;
+            }
+            TactsuitVR.PlaybackHaptics("Death");
+        }
         public static void Postfix(Player __instance)
         {
 
@@ -269,12 +278,12 @@ namespace ValheimVRMod.Patches
             TactsuitVR.StopThreads();
         }
     }
-    
+
     /**
-     * On enable, turns manual event on just in case
+     * OnRespawn, turns manual event on just in case
      */
-    [HarmonyPatch(typeof(Player), "OnEnable")]
-    class Player_OnEnable_Patch
+    [HarmonyPatch(typeof(Player), "OnRespawn")]
+    class Player_OnRespawn_Patch
     {
         public static void Postfix(Player __instance)
         {

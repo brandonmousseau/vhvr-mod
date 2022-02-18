@@ -189,7 +189,7 @@ namespace ValheimVRMod.Scripts
          */
         public static void StartThreadHaptic(string EffectName, float intensity = 1.0f, bool timerNeeded = false, float duration = 1.0f)
         {
-            int sleep = timerNeeded ? 200 : 1000;
+            int sleep = timerNeeded ? 200 : (int)duration * 1000;
             //checks if timer control needed
             if (timerNeeded && !threadEnabled)
             {
@@ -248,7 +248,7 @@ namespace ValheimVRMod.Scripts
             bHaptics_mrse.Reset();
             foreach ( string name in ThreadsConditions.Keys)
             {
-                ThreadsConditions[name] = false;
+                setThreadsConditions(name, false);
             }
         }
 
