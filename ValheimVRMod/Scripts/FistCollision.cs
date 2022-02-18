@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using HarmonyLib;
+using System.Linq;
 using UnityEngine;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
@@ -14,6 +14,13 @@ namespace ValheimVRMod.Scripts {
         private List<Vector3> snapshots = new List<Vector3>();
         private bool isRightHand;
         private HandGesture handGesture;
+        
+        private static readonly int[] ignoreLayers = {
+            LayerUtils.WATERVOLUME_LAYER,
+            LayerUtils.WATER,
+            LayerUtils.UI_PANEL_LAYER,
+            LayerUtils.CHARARCTER_TRIGGER
+        };
 
         private void Awake() {
            colliderParent = new GameObject();
@@ -24,13 +31,6 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            // ignore water and UI panel
-            if (collider.gameObject.layer == LayerUtils.WATERVOLUME_LAYER 
-                || collider.gameObject.layer == LayerUtils.WATER
-                || collider.gameObject.layer == LayerUtils.UI_PANEL_LAYER) {
-                return;
-            }
-            
             var maybePlayer = collider.GetComponentInParent<Player>();
 
             if (maybePlayer != null && maybePlayer == Player.m_localPlayer) {
@@ -62,10 +62,8 @@ namespace ValheimVRMod.Scripts {
         
         private bool tryHitTarget(GameObject target) {
 
-            // ignore water and UI panel
-            if (target.layer == LayerUtils.WATERVOLUME_LAYER 
-                || target.layer == LayerUtils.WATER
-                || target.layer == LayerUtils.UI_PANEL_LAYER) {
+            // ignore certain Layers
+            if (ignoreLayers.Contains(target.layer)) {
                 return false;
             }
             
