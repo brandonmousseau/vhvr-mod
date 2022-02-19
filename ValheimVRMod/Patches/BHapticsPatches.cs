@@ -306,23 +306,6 @@ namespace ValheimVRMod.Patches
         }
     }
 
-    /**
-     * DoMeleeAttack
-     */
-    /*[HarmonyPatch(typeof(Attack), "DoMeleeAttack")]
-    class Attack_DoMeleeAttack_Patch
-    {
-        public static void Postfix(Attack __instance)
-        {
-
-            if (__instance != Attack.m_localPlayer || TactsuitVR.suitDisabled)
-            {
-                return;
-            }
-            TactsuitVR.StartManuelResetEvent();
-        }
-    }*/
-    
     [HarmonyPatch(typeof(Character), "ApplyDamage")]
     class Character_ApplyDamage_Patch
     {
@@ -333,7 +316,7 @@ namespace ValheimVRMod.Patches
             {
                 return;
             }
-            var coords = TactsuitVR.getAngleAndShift(hit.m_point, hit.m_dir);
+            var coords = TactsuitVR.getAngleAndShift(Player.m_localPlayer, hit.m_point);
             TactsuitVR.PlayBackHit("Impact", coords.Key, coords.Value);
         }
     }

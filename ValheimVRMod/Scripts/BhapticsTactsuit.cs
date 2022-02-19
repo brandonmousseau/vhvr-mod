@@ -151,15 +151,40 @@ namespace ValheimVRMod.Scripts
             }
         }
 
-        public static KeyValuePair<float, float> getAngleAndShift(Vector3 position, Vector3 dir)
+        public static KeyValuePair<float, float> getAngleAndShift(Player player, Vector3 hit)
         {
             // bhaptics starts in the front, then rotates to the left. 0° is front, 90° is left, 270° is right.
             // y is "up", z is "forward" in local coordinates
             Vector3 patternOrigin = new Vector3(0f, 0f, 1f);
-            float xzAngle = Vector3.Angle(dir, patternOrigin);
-            LogInfo("xzAngle " + xzAngle.ToString());
+            Vector3 hitPosition = hit - player.transform.position;
+            Quaternion PlayerRotation = player.transform.rotation;
+            Vector3 playerDir = PlayerRotation.eulerAngles;
+            // get rid of the up/down component to analyze xz-rotation
+            Vector3 flattenedHit = new Vector3(hitPosition.x, 0f, hitPosition.z);
 
-            return new KeyValuePair<float, float>(xzAngle, 0);
+            // get angle. .Net < 4.0 does not have a "SignedAngle" function...
+            float earlyhitAngle = Vector3.Angle(flattenedHit, patternOrigin);
+            // check if cross product points up or down, to make signed angle myself
+            Vector3 earlycrossProduct = Vector3.Cross(flattenedHit, patternOrigin);
+            if (earlycrossProduct.y > 0f) { earlyhitAngle *= -1f; }
+            // relative to player direction
+            float myRotation = earlyhitAngle - playerDir.y;
+            // switch directions (bhaptics angles are in mathematically negative direction)
+            myRotation *= -1f;
+            // convert signed angle into [0, 360] rotation
+            if (myRotation < 0f) { myRotation = 360f + myRotation; }
+
+            // up/down shift is in y-direction
+            float hitShift = hitPosition.y;
+            //torso/player range in valheim
+            float upperBound = 1.0f;
+            float lowerBound = 0.0f;
+            if (hitShift > upperBound) { hitShift = 0.5f; }
+            else if (hitShift < lowerBound) { hitShift = -0.5f; }
+            // ...and then spread/shift it to [-0.5, 0.5]
+            else { hitShift = (hitShift - lowerBound) / (upperBound - lowerBound) - 0.5f; }
+            // No tuple returns available in .NET < 4.0, so this is the easiest quickfix
+            return new KeyValuePair<float, float>(myRotation, hitShift);
         }
 
         public static void PlayBackHit(string key, float xzAngle, float yShift)
@@ -172,7 +197,6 @@ namespace ValheimVRMod.Scripts
             {
                 ScaleOption scaleOption = new ScaleOption(1f, 1f);
                 RotationOption rotationOption = new RotationOption(xzAngle, yShift);
-                LogInfo("PLAYBACKHIT " + rotationOption.ToJsonObject().ToString());
                 hapticPlayer.SubmitRegisteredVestRotation(key, key, rotationOption, scaleOption);
             }
             else
