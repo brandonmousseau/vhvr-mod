@@ -5,6 +5,7 @@ using ValheimVRMod.Scripts;
 using UnityEngine;
 
 using static ValheimVRMod.Utilities.LogUtils;
+using System.Collections.Generic;
 
 namespace ValheimVRMod.Patches
 {
@@ -97,16 +98,25 @@ namespace ValheimVRMod.Patches
     /**
      * When any player is using guardian power
      */
-    [HarmonyPatch(typeof(Player), "StartGuardianPower")]
+    [HarmonyPatch(typeof(Player), "ActivateGuardianPower")]
     class Player_GuardianPower_Patch
     {
-        public static void Postfix()
+        public static void Postfix(Player __instance)
         {
             if (TactsuitVR.suitDisabled)
             {
                 return;
             }
-            TactsuitVR.PlaybackHaptics("SuperPower");
+
+            List<Player> list = new List<Player>();
+            Player.GetPlayersInRange( __instance.transform.position, 10f, list);
+            foreach (Player item in list)
+            {
+                if (item == Player.m_localPlayer)
+                {
+                    TactsuitVR.PlaybackHaptics("SuperPower");
+                }
+            }
         }
     }
     /**
