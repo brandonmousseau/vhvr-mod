@@ -151,15 +151,34 @@ namespace ValheimVRMod.Scripts
             }
         }
 
+        public static KeyValuePair<float, float> getAngleAndShift(Vector3 position, Vector3 dir)
+        {
+            // bhaptics starts in the front, then rotates to the left. 0° is front, 90° is left, 270° is right.
+            // y is "up", z is "forward" in local coordinates
+            Vector3 patternOrigin = new Vector3(0f, 0f, 1f);
+            float xzAngle = Vector3.Angle(dir, patternOrigin);
+            LogInfo("xzAngle " + xzAngle.ToString());
+
+            return new KeyValuePair<float, float>(xzAngle, 0);
+        }
+
         public static void PlayBackHit(string key, float xzAngle, float yShift)
         {
             // two parameters can be given to the pattern to move it on the vest:
             // 1. An angle in degrees [0, 360] to turn the pattern to the left
             // 2. A shift [-0.5, 0.5] in y-direction (up and down) to move it up or down
             if (suitDisabled) { return; }
-            ScaleOption scaleOption = new ScaleOption(1f, 1f);
-            RotationOption rotationOption = new RotationOption(xzAngle, yShift);
-            hapticPlayer.SubmitRegisteredVestRotation(key, key, rotationOption, scaleOption);
+            if (FeedbackMap.ContainsKey(key))
+            {
+                ScaleOption scaleOption = new ScaleOption(1f, 1f);
+                RotationOption rotationOption = new RotationOption(xzAngle, yShift);
+                LogInfo("PLAYBACKHIT " + rotationOption.ToJsonObject().ToString());
+                hapticPlayer.SubmitRegisteredVestRotation(key, key, rotationOption, scaleOption);
+            }
+            else
+            {
+                LogInfo("Feedback not registered: " + key);
+            }
         }
 
         /**

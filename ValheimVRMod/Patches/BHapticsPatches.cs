@@ -322,6 +322,21 @@ namespace ValheimVRMod.Patches
             TactsuitVR.StartManuelResetEvent();
         }
     }*/
+    
+    [HarmonyPatch(typeof(Character), "ApplyDamage")]
+    class Character_ApplyDamage_Patch
+    {
+        public static void Postfix(Character __instance, HitData hit)
+        {
+
+            if (__instance != Player.m_localPlayer || TactsuitVR.suitDisabled)
+            {
+                return;
+            }
+            var coords = TactsuitVR.getAngleAndShift(hit.m_point, hit.m_dir);
+            TactsuitVR.PlayBackHit("Impact", coords.Key, coords.Value);
+        }
+    }
 
     /**
      * OnTriggerEnter Attack succeded against any object with any weapon
