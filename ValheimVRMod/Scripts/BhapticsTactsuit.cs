@@ -26,6 +26,8 @@ namespace ValheimVRMod.Scripts
         public static volatile Dictionary<string, bool> ThreadsStatus = new Dictionary<string, bool>();
         //association effect name => params (intensity, sleep)
         public static Dictionary<string, float[]> ThreadParams = new Dictionary<string, float[]>();
+        //association effect name => effect
+        public static Dictionary<string, string> ThreadCallbacks = new Dictionary<string, string>();
         // dictionary of all feedback patterns found in the bHaptics directory
         public static Dictionary<string, FileInfo> FeedbackMap = new Dictionary<string, FileInfo>();
 
@@ -88,33 +90,50 @@ namespace ValheimVRMod.Scripts
             }
             systemInitialized = true;
         }
+        public static void setThreadCallbacks(string name, string effect)
+        {
+            lock (ThreadsStatus) 
+            {
 
+                //_threadAllowed.WaitOne();
+                if (ThreadCallbacks.ContainsKey(name))
+                {
+                    ThreadCallbacks[name] = effect;
+                }
+                else
+                {
+                    ThreadCallbacks.Add(name, effect);
+                }
+            }
+        }
         public static void setThreadsStatus(string name, bool value)
         {
-            //_threadAllowed.WaitOne();
-            if (ThreadsStatus.ContainsKey(name))
+            lock (ThreadsStatus)
             {
-                ThreadsStatus[name] = value;
+                if (ThreadsStatus.ContainsKey(name))
+                {
+                    ThreadsStatus[name] = value;
+                }
+                else
+                {
+                    ThreadsStatus.Add(name, value);
+                }
             }
-            else
-            {
-                ThreadsStatus.Add(name, value);
-            }
-            //_threadAllowed.Release();
         }
 
         public static void setThreadsConditions(string name, bool value)
         {
-            //_threadAllowed.WaitOne();
-            if (ThreadsConditions.ContainsKey(name))
+            lock (ThreadsConditions)
             {
-                ThreadsConditions[name] = value;
+                if (ThreadsConditions.ContainsKey(name))
+                {
+                    ThreadsConditions[name] = value;
+                }
+                else
+                {
+                    ThreadsConditions.Add(name, value);
+                }
             }
-            else
-            {
-                ThreadsConditions.Add(name, value);
-            }
-            //_threadAllowed.Release();
         }
         /**
          * Starts Timer needed for thread creation limiter
@@ -230,9 +249,12 @@ namespace ValheimVRMod.Scripts
          * creates or update thread params
          * Start or restart thread with params/updated params
          */
-        public static void StartThreadHaptic(string EffectName, float intensity = 1.0f, bool timerNeeded = false, float duration = 1.0f)
+        public static void StartThreadHaptic(string EffectName, float intensity = 1.0f, bool timerNeeded = false, int sleep = 1000, float duration = 1.0f)
         {
-            int sleep = timerNeeded ? 200 : (int)duration * 1000;
+            if (timerNeeded)
+            {
+                sleep = 200;
+            }
             //checks if timer control needed
             if (timerNeeded && !threadEnabled)
             {
@@ -267,8 +289,12 @@ namespace ValheimVRMod.Scripts
          * Resets the thread condition to tell the corresponding
          * Thread to stop
          */
-        public static void StopThreadHaptic(string name)
+        public static void StopThreadHaptic(string name, string callback = null)
         {
+            if (callback != null)
+            {
+                setThreadCallbacks(name, callback);
+            }
             setThreadsConditions(name, false);
         }
 
@@ -289,9 +315,12 @@ namespace ValheimVRMod.Scripts
         public static void StopThreads()
         {
             bHaptics_mrse.Reset();
-            foreach ( string name in ThreadsConditions.Keys)
+            lock (ThreadsConditions)
             {
-                setThreadsConditions(name, false);
+                foreach (string name in ThreadsConditions.Keys)
+                {
+                    setThreadsConditions(name, false);
+                }
             }
         }
 
@@ -322,6 +351,12 @@ namespace ValheimVRMod.Scripts
             {
                 //thread is dead
                 setThreadsStatus(name, false);
+                //if callback exists
+                if (ThreadCallbacks.ContainsKey(name))
+                {
+                    PlaybackHaptics(ThreadCallbacks[name]);
+                    ThreadCallbacks.Remove(name);
+                }
             }
         }
         #endregion

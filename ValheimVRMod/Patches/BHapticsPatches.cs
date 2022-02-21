@@ -3,9 +3,10 @@ using HarmonyLib;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.Scripts;
 using UnityEngine;
+using System.Threading;
+using System.Collections.Generic;
 
 using static ValheimVRMod.Utilities.LogUtils;
-using System.Collections.Generic;
 
 namespace ValheimVRMod.Patches
 {
@@ -133,7 +134,9 @@ namespace ValheimVRMod.Patches
             }
             if (EquipScript.getLeft() == EquipType.Bow)
             {
-                TactsuitVR.PlaybackHaptics(VHVRConfig.LeftHanded() ? "ArrowThrowLeft" : "ArrowThrowRight", 1.5f);
+                TactsuitVR.PlaybackHaptics(VHVRConfig.LeftHanded() ? "ArrowThrowLeft" : "ArrowThrowRight", 1.5f); 
+                // arms tactosy
+                TactsuitVR.PlaybackHaptics(VHVRConfig.LeftHanded() ? "Recoil_L" : "Recoil_R", 1.5f);
             }
         }
     }
@@ -155,7 +158,9 @@ namespace ValheimVRMod.Patches
             }
             TactsuitVR.StartThreadHaptic(VHVRConfig.LeftHanded() ? "BowStringLeft" : "BowStringRight",
                 ___realLifePullPercentage * 1.5f, true);
-            // TODO ARMS TACTOSY
+            // ARMS TACTOSY
+            TactsuitVR.StartThreadHaptic(VHVRConfig.LeftHanded() ? "Recoil_L" : "Recoil_R",
+                ___realLifePullPercentage * 1.5f, true);
         }
     }
     /**
@@ -226,12 +231,12 @@ namespace ValheimVRMod.Patches
                     break;
                 case int n when hlth <= 15 && hlth > 0:
                     TactsuitVR.StopThreadHaptic("HeartBeat");
-                    TactsuitVR.StartThreadHaptic("HeartBeatFast", 1.0f, false, 3.0f);
+                    TactsuitVR.StartThreadHaptic("HeartBeatFast", 1.0f, false, 3000);
                     break;
                 case int n when hlth <= 0:
                     TactsuitVR.StopThreadHaptic("HeartBeat");
                     TactsuitVR.StopThreadHaptic("HeartBeatFast");
-                    TactsuitVR.PlaybackHaptics("Dying");
+                    TactsuitVR.PlaybackHaptics("Death");
                     break;
                 default:
                     TactsuitVR.StopThreadHaptic("HeartBeat");
@@ -258,7 +263,9 @@ namespace ValheimVRMod.Patches
             {
                 TactsuitVR.PlaybackHaptics(VHVRConfig.LeftHanded() ?
                     "BlockVest_R" : "BlockVest_L");
-                // TODO ARMS TACTOSY
+                // arms tactosy
+                TactsuitVR.PlaybackHaptics(VHVRConfig.LeftHanded() ?
+                    "Block_R" : "Block_L");
             }
         }
     }
@@ -306,6 +313,9 @@ namespace ValheimVRMod.Patches
         }
     }
 
+    /**
+     * When damage applied to player
+     */
     [HarmonyPatch(typeof(Character), "ApplyDamage")]
     class Character_ApplyDamage_Patch
     {
@@ -327,7 +337,7 @@ namespace ValheimVRMod.Patches
     [HarmonyPatch(typeof(WeaponCollision), "OnTriggerEnter")]
     class WeaponCollision_OnTriggerEnter_Patch
     {
-        public static void Postfix(WeaponCollision __instance, bool ___hasAttackedSuccess)
+        public static void Postfix( bool ___hasAttackedSuccess)
         {
 
             if ( !___hasAttackedSuccess || TactsuitVR.suitDisabled)
@@ -335,6 +345,55 @@ namespace ValheimVRMod.Patches
                 return;
             }
             TactsuitVR.SwordRecoil(!VHVRConfig.LeftHanded());
+        }
+    }
+
+    /**
+     * On starting teleporting
+     */
+    [HarmonyPatch(typeof(Player), "TeleportTo")]
+    class Player_TeleportTo_Patch
+    {
+        public static void Postfix(Player __instance, bool __result)
+        {
+            if (__instance != Player.m_localPlayer || TactsuitVR.suitDisabled || !__result)
+            {
+                return;
+            }
+            if (__instance.m_teleporting)
+            {
+                TactsuitVR.PlaybackHaptics("PassPortal");
+                //trying to wait for this effect to finish before starting teleport effect
+                Thread.Sleep(2000);
+                TactsuitVR.StartThreadHaptic("Teleporting", 1.0f, false, 5000);
+            }
+        }
+    }/**
+     * On ending teleporting
+     */
+    [HarmonyPatch(typeof(Player), "UpdateTeleport")]
+    class Player_UpdateTeleport_Patch
+    {
+        public static void Prefix(Player __instance, out bool __state)
+        {
+            __state = false;
+            if (__instance != Player.m_localPlayer || TactsuitVR.suitDisabled)
+            {
+                return;
+            }
+            __state = __instance.m_teleporting;
+        }
+        public static void Postfix(Player __instance, bool __state)
+        {
+            if (__instance != Player.m_localPlayer || TactsuitVR.suitDisabled)
+            {
+                return;
+            }
+            if (__state && !__instance.m_teleporting)
+            {
+                //makes sure not other thread cycle of Teleporting restarts
+                TactsuitVR.StopThreadHaptic("Teleporting", "PassPortal");
+            }
         }
     }
 }
