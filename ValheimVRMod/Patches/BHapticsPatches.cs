@@ -368,7 +368,8 @@ namespace ValheimVRMod.Patches
                 TactsuitVR.StartThreadHaptic("Teleporting", 1.0f, false, 5000);
             }
         }
-    }/**
+    }
+    /**
      * On ending teleporting
      */
     [HarmonyPatch(typeof(Player), "UpdateTeleport")]
@@ -391,8 +392,35 @@ namespace ValheimVRMod.Patches
             }
             if (__state && !__instance.m_teleporting)
             {
-                //makes sure not other thread cycle of Teleporting restarts
                 TactsuitVR.StopThreadHaptic("Teleporting", "PassPortal");
+            }
+        }
+    }
+    /**
+     * On getting close to portal
+     */
+    [HarmonyPatch(typeof(TeleportWorld), "UpdatePortal")]
+    class TeleportWorld_UpdatePortal_Patch
+    {
+        private static bool closeTo = false;
+        public static void Postfix(TeleportWorld __instance)
+        {
+            if (TactsuitVR.suitDisabled)
+            {
+                return;
+            }
+            // am I in range of any portal, not necessarely the closest
+            if (Player.m_localPlayer && __instance.m_proximityRoot)
+            {
+                float myDistance = Vector3.Distance(Player.m_localPlayer.transform.position, __instance.m_proximityRoot.position);
+                closeTo = myDistance < (double)__instance.m_activationRange;
+            }
+            if (closeTo && !Player.m_localPlayer.IsTeleporting())
+            {
+                TactsuitVR.StartThreadHaptic("ApproachPortal");
+            } else
+            {
+                TactsuitVR.StopThreadHaptic("ApproachPortal");
             }
         }
     }
