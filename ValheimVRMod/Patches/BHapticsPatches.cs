@@ -134,9 +134,9 @@ namespace ValheimVRMod.Patches
             }
             if (EquipScript.getLeft() == EquipType.Bow)
             {
-                TactsuitVR.PlaybackHaptics(VHVRConfig.LeftHanded() ? "ArrowThrowLeft" : "ArrowThrowRight", 1.5f); 
+                TactsuitVR.PlaybackHaptics(VHVRConfig.LeftHanded() ? "ArrowThrowLeft" : "ArrowThrowRight", 2.0f); 
                 // arms tactosy
-                TactsuitVR.PlaybackHaptics(VHVRConfig.LeftHanded() ? "Recoil_L" : "Recoil_R", 1.5f);
+                TactsuitVR.PlaybackHaptics(VHVRConfig.LeftHanded() ? "Recoil_L" : "Recoil_R", 2.0f);
             }
         }
     }
@@ -297,23 +297,6 @@ namespace ValheimVRMod.Patches
     }
 
     /**
-     * OnRespawn, turns manual event on just in case
-     */
-    [HarmonyPatch(typeof(Player), "OnRespawn")]
-    class Player_OnRespawn_Patch
-    {
-        public static void Postfix(Player __instance)
-        {
-
-            if (__instance != Player.m_localPlayer || TactsuitVR.suitDisabled)
-            {
-                return;
-            }
-            TactsuitVR.StartManuelResetEvent();
-        }
-    }
-
-    /**
      * When damage applied to player
      */
     [HarmonyPatch(typeof(Character), "ApplyDamage")]
@@ -362,7 +345,7 @@ namespace ValheimVRMod.Patches
             }
             if (__instance.m_teleporting)
             {
-                TactsuitVR.PlaybackHaptics("PassPortal");
+                TactsuitVR.PlaybackHaptics("PassPortalFront");
                 //trying to wait for this effect to finish before starting teleport effect
                 Thread.Sleep(2000);
                 TactsuitVR.StartThreadHaptic("Teleporting", 1.0f, false, 5000);
@@ -392,7 +375,7 @@ namespace ValheimVRMod.Patches
             }
             if (__state && !__instance.m_teleporting)
             {
-                TactsuitVR.StopThreadHaptic("Teleporting", "PassPortal");
+                TactsuitVR.StopThreadHaptic("Teleporting", "PassPortalBack");
             }
         }
     }
@@ -409,11 +392,11 @@ namespace ValheimVRMod.Patches
             {
                 return;
             }
-            // am I in range of any portal, not necessarely the closest
+            // am I in range of any active portal, not necessarely the closest
             if (Player.m_localPlayer && __instance.m_proximityRoot)
             {
                 float myDistance = Vector3.Distance(Player.m_localPlayer.transform.position, __instance.m_proximityRoot.position);
-                closeTo = myDistance < (double)__instance.m_activationRange;
+                closeTo = (myDistance < (double)__instance.m_activationRange) && __instance.m_target_found.m_active;
             }
             if (closeTo && !Player.m_localPlayer.IsTeleporting())
             {
