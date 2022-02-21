@@ -407,4 +407,39 @@ namespace ValheimVRMod.Patches
             }
         }
     }
+    /**
+     * When thunder storms
+     */
+    [HarmonyPatch(typeof(Thunder), "DoThunder")]
+    class Thunder_DoThunder_Patch
+    {
+        public static void Postfix()
+        {
+            if (TactsuitVR.suitDisabled)
+            {
+                return;
+            }
+            TactsuitVR.PlaybackHaptics("Thunder");
+        }
+    }
+    /**
+     * When petting tamed character
+     */
+    [HarmonyPatch(typeof(Tameable), "Interact")]
+    class Tameable_Interact_Patch
+    {
+        public static void Postfix(bool __result, bool alt)
+        {
+            if (TactsuitVR.suitDisabled)
+            {
+                return;
+            }
+            if (__result && !alt)
+            {
+                TactsuitVR.PlaybackHaptics("Petting");
+                //tactosy
+                TactsuitVR.PlaybackHaptics(VHVRConfig.LeftHanded() ? "Petting_L" : "Petting_R");
+            }
+        }
+    }
 }
