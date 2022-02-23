@@ -289,6 +289,7 @@ namespace ValheimVRMod.Scripts
          */
         public static void StopThreadHaptic(string name, string callback = null)
         {
+            StopHapticFeedback(name);
             if (callback != null)
             {
                 setThreadCallbacks(name, callback);
@@ -298,19 +299,13 @@ namespace ValheimVRMod.Scripts
 
         public static void StopHapticFeedback(string effect)
         {
-            hapticPlayer.TurnOff(effect);
-        }
-
-        public static void StopAllHapticFeedback()
-        {
-            StopThreads();
-            foreach (string key in FeedbackMap.Keys)
+            lock (hapticPlayer)
             {
-                hapticPlayer.TurnOff(key);
+                hapticPlayer.TurnOff(effect);
             }
         }
 
-        public static void StopThreads()
+        public static void StopAllHapticFeedback()
         {
             lock (ThreadsConditions)
             {
@@ -318,6 +313,10 @@ namespace ValheimVRMod.Scripts
                 {
                     setThreadsConditions(name, false);
                 }
+            }
+            foreach (string key in FeedbackMap.Keys)
+            {
+                StopHapticFeedback(key);
             }
         }
 

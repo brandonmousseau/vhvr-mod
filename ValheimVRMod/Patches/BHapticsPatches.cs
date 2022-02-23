@@ -292,7 +292,7 @@ namespace ValheimVRMod.Patches
             {
                 return;
             }
-            TactsuitVR.StopThreads();
+            TactsuitVR.StopAllHapticFeedback();
         }
     }
 
@@ -400,9 +400,11 @@ namespace ValheimVRMod.Patches
             }
             if (closeTo && !Player.m_localPlayer.IsTeleporting())
             {
+                LogInfo("PORTAL START");
                 TactsuitVR.StartThreadHaptic("ApproachPortal");
             } else
             {
+                LogInfo("PORTAL STOP");
                 TactsuitVR.StopThreadHaptic("ApproachPortal");
             }
         }
@@ -439,6 +441,82 @@ namespace ValheimVRMod.Patches
                 TactsuitVR.PlaybackHaptics("Petting");
                 //tactosy
                 TactsuitVR.PlaybackHaptics(VHVRConfig.LeftHanded() ? "Petting_L" : "Petting_R");
+            }
+        }
+    }
+
+    public class Riding
+    {
+        public static void speedActive(Sadle.Speed speed, bool swimming = false)
+        {
+            switch (speed)
+            {
+                case Sadle.Speed.Stop:
+                    TactsuitVR.StopThreadHaptic("RideHorse");
+                    TactsuitVR.StopThreadHaptic("RideHorseSlow");
+                    break;
+                case Sadle.Speed.Walk:
+                    TactsuitVR.StartThreadHaptic("RideHorseSlow", (swimming) ? 0.4f : 1.0f, false, 3500);
+                    TactsuitVR.StopThreadHaptic("RideHorse");
+                    break;
+                case Sadle.Speed.Turn:
+                    TactsuitVR.StartThreadHaptic("RideHorseSlow", (swimming) ? 0.4f : 1.0f, false, 3500);
+                    TactsuitVR.StopThreadHaptic("RideHorse");
+                    break;
+                case Sadle.Speed.Run:
+                    TactsuitVR.StartThreadHaptic("RideHorse", (swimming) ? 0.4f : 1.0f, false, 3500);
+                    TactsuitVR.StopThreadHaptic("RideHorseSlow");
+                    break;
+                case Sadle.Speed.NoChange:
+                    break;
+                default:
+                    TactsuitVR.StopThreadHaptic("RideHorse");
+                    TactsuitVR.StopThreadHaptic("RideHorseSlow");
+                    break;
+            }
+        }
+        /*
+         * When riding using controls
+         */
+        [HarmonyPatch(typeof(Sadle), "FixedUpdate")]
+        class Sadle_FixedUpdate_Patch
+        {
+            public static void Postfix(Sadle __instance)
+            {
+                if (!__instance.IsLocalUser() || TactsuitVR.suitDisabled)
+                {
+                    return;
+                }
+                if (__instance.m_tambable.HaveRider())
+                {
+                    Sadle.Speed speed = Sadle.Speed.NoChange;
+                    if (__instance.m_speed == Sadle.Speed.Stop) {
+                        if (__instance.m_character.IsRunning())
+                        {
+                            speed = Sadle.Speed.Run;
+                        } else if (__instance.m_character.IsWalking())
+                        {
+                            speed = Sadle.Speed.Walk;
+                        }
+                    }
+                    speedActive((speed == Sadle.Speed.NoChange) ? __instance.m_speed : speed,
+                        __instance.m_character.IsSwiming());
+                }
+            }
+        }
+        /**
+         * When releasing sadle controls
+         */
+        [HarmonyPatch(typeof(Sadle), "OnUseStop")]
+        class Sadle_OnUseStop_Patch
+        {
+            public static void Postfix(Sadle __instance, Player player)
+            {
+                if (player != Player.m_localPlayer || TactsuitVR.suitDisabled)
+                {
+                    return;
+                }
+                speedActive(Sadle.Speed.Stop);
             }
         }
     }
