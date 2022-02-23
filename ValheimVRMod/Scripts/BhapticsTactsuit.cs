@@ -36,7 +36,7 @@ namespace ValheimVRMod.Scripts
         public static RotationOption defaultRotationOption = new RotationOption(0.0f, 0.0f);
         private static System.Timers.Timer aTimer;
 
-        #region InitializersAndSetters
+        #region Initializers
 
         public void Awake()
         {
@@ -87,51 +87,6 @@ namespace ValheimVRMod.Scripts
                 FeedbackMap.Add(prefix, Files[i]);
             }
             systemInitialized = true;
-        }
-        public static void setThreadCallbacks(string name, string effect)
-        {
-            lock (ThreadsStatus) 
-            {
-
-                //_threadAllowed.WaitOne();
-                if (ThreadCallbacks.ContainsKey(name))
-                {
-                    ThreadCallbacks[name] = effect;
-                }
-                else
-                {
-                    ThreadCallbacks.Add(name, effect);
-                }
-            }
-        }
-        public static void setThreadsStatus(string name, bool value)
-        {
-            lock (ThreadsStatus)
-            {
-                if (ThreadsStatus.ContainsKey(name))
-                {
-                    ThreadsStatus[name] = value;
-                }
-                else
-                {
-                    ThreadsStatus.Add(name, value);
-                }
-            }
-        }
-
-        public static void setThreadsConditions(string name, bool value)
-        {
-            lock (ThreadsConditions)
-            {
-                if (ThreadsConditions.ContainsKey(name))
-                {
-                    ThreadsConditions[name] = value;
-                }
-                else
-                {
-                    ThreadsConditions.Add(name, value);
-                }
-            }
         }
         /**
          * Starts Timer needed for thread creation limiter
@@ -249,6 +204,7 @@ namespace ValheimVRMod.Scripts
          */
         public static void StartThreadHaptic(string EffectName, float intensity = 1.0f, bool timerNeeded = false, int sleep = 1000, float duration = 1.0f)
         {
+            //LogInfo("ENTER START HAPTICS"+ EffectName);
             if (timerNeeded)
             {
                 sleep = 200;
@@ -281,6 +237,7 @@ namespace ValheimVRMod.Scripts
             }
             //we still turn threadEnabled to false for other timerNeeded processes
             threadEnabled = false;
+            //LogInfo("EXIT START HAPTICS"+ EffectName);
         }
 
         /**
@@ -289,24 +246,29 @@ namespace ValheimVRMod.Scripts
          */
         public static void StopThreadHaptic(string name, string callback = null)
         {
+            //LogInfo("ENTER STOP THREADS" +name);
             StopHapticFeedback(name);
             if (callback != null)
             {
                 setThreadCallbacks(name, callback);
             }
             setThreadsConditions(name, false);
+            //LogInfo("EXIT STOP THREADS "+name);
         }
 
         public static void StopHapticFeedback(string effect)
         {
+            //LogInfo("ENTER STOPHAPTICS "+name);
             lock (hapticPlayer)
             {
                 hapticPlayer.TurnOff(effect);
             }
+            //LogInfo("EXIT STOPHAPTICS "+name);
         }
 
         public static void StopAllHapticFeedback()
         {
+            //LogInfo("ENTER STOPALLHAPTICS "+name);
             lock (ThreadsConditions)
             {
                 foreach (string name in ThreadsConditions.Keys)
@@ -314,10 +276,14 @@ namespace ValheimVRMod.Scripts
                     setThreadsConditions(name, false);
                 }
             }
-            foreach (string key in FeedbackMap.Keys)
+            lock (FeedbackMap)
             {
-                StopHapticFeedback(key);
+                foreach (string key in FeedbackMap.Keys)
+                {
+                    StopHapticFeedback(key);
+                }
             }
+            //LogInfo("EXIT STOPALLHAPTICS "+name);
         }
 
         /**
@@ -346,9 +312,73 @@ namespace ValheimVRMod.Scripts
                 if (ThreadCallbacks.ContainsKey(name))
                 {
                     PlaybackHaptics(ThreadCallbacks[name]);
-                    ThreadCallbacks.Remove(name);
+                    removeThreadCallbacks(name);
                 }
             }
+        }
+        #endregion
+
+        #region Setters
+        public static void setThreadCallbacks(string name, string effect)
+        {
+            //LogInfo("ENTER SETTER THREADCALLBACKS "+name);
+            lock (ThreadCallbacks)
+            {
+
+                //_threadAllowed.WaitOne();
+                if (ThreadCallbacks.ContainsKey(name))
+                {
+                    ThreadCallbacks[name] = effect;
+                }
+                else
+                {
+                    ThreadCallbacks.Add(name, effect);
+                }
+            }
+            //LogInfo("EXIT SETTER THREADCALLBACKS "+name);
+        }
+        public static void setThreadsStatus(string name, bool value)
+        {
+            //LogInfo("ENTER SETTER THREADSTATUS "+name);
+            lock (ThreadsStatus)
+            {
+                if (ThreadsStatus.ContainsKey(name))
+                {
+                    ThreadsStatus[name] = value;
+                }
+                else
+                {
+                    ThreadsStatus.Add(name, value);
+                }
+            }
+            //LogInfo("EXIT SETTER THREADSTATUS "+name);
+        }
+
+        public static void setThreadsConditions(string name, bool value)
+        {
+            //LogInfo("ENTER SETTER THREADSCONDITION "+name);
+            lock (ThreadsConditions)
+            {
+                if (ThreadsConditions.ContainsKey(name))
+                {
+                    ThreadsConditions[name] = value;
+                }
+                else
+                {
+                    ThreadsConditions.Add(name, value);
+                }
+            }
+            //LogInfo("EXIT SETTER THREADCONDITION "+name);
+        }
+
+        public static void removeThreadCallbacks(string name)
+        {
+            //LogInfo("ENTER REMOVE THREADCALLBACK "+name);
+            lock (ThreadCallbacks)
+            {
+                ThreadCallbacks.Remove(name);
+            }
+            //LogInfo("EXIT REMOVE THREADCALLBACK "+name);
         }
         #endregion
     }

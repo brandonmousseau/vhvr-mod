@@ -386,6 +386,7 @@ namespace ValheimVRMod.Patches
     class TeleportWorld_UpdatePortal_Patch
     {
         private static bool closeTo = false;
+        private static TeleportWorld myPortal;
         public static void Postfix(TeleportWorld __instance)
         {
             if (TactsuitVR.suitDisabled)
@@ -393,19 +394,27 @@ namespace ValheimVRMod.Patches
                 return;
             }
             // am I in range of any active portal, not necessarely the closest
-            if (Player.m_localPlayer && __instance.m_proximityRoot)
+            if (!Player.m_localPlayer.IsTeleporting() && __instance.m_proximityRoot)
             {
                 float myDistance = Vector3.Distance(Player.m_localPlayer.transform.position, __instance.m_proximityRoot.position);
                 closeTo = (myDistance < (double)__instance.m_activationRange) && __instance.m_target_found.m_active;
-            }
-            if (closeTo && !Player.m_localPlayer.IsTeleporting())
-            {
-                LogInfo("PORTAL START");
-                TactsuitVR.StartThreadHaptic("ApproachPortal");
+                if(closeTo)
+                {
+                    myPortal = __instance;
+                }
+                if (closeTo && !Player.m_localPlayer.IsTeleporting())
+                {
+                    TactsuitVR.StartThreadHaptic("ApproachPortal");
+                }
+                if (!closeTo && myPortal && myPortal == __instance)
+                {
+                    TactsuitVR.StopThreadHaptic("ApproachPortal");
+                    myPortal = null;
+                }
             } else
             {
-                LogInfo("PORTAL STOP");
                 TactsuitVR.StopThreadHaptic("ApproachPortal");
+                myPortal = null;
             }
         }
     }
@@ -481,6 +490,7 @@ namespace ValheimVRMod.Patches
         [HarmonyPatch(typeof(Sadle), "FixedUpdate")]
         class Sadle_FixedUpdate_Patch
         {
+            private static bool attackStarted = false;
             public static void Postfix(Sadle __instance)
             {
                 if (!__instance.IsLocalUser() || TactsuitVR.suitDisabled)
@@ -489,6 +499,7 @@ namespace ValheimVRMod.Patches
                 }
                 if (__instance.m_tambable.HaveRider())
                 {
+                    // moving
                     Sadle.Speed speed = Sadle.Speed.NoChange;
                     if (__instance.m_speed == Sadle.Speed.Stop) {
                         if (__instance.m_character.IsRunning())
@@ -501,7 +512,30 @@ namespace ValheimVRMod.Patches
                     }
                     speedActive((speed == Sadle.Speed.NoChange) ? __instance.m_speed : speed,
                         __instance.m_character.IsSwiming());
+
+                    //attacking
+                    if (__instance.m_character.InAttack())
+                    {
+                        Humanoid hum = __instance.m_character as Humanoid;
+                        if ( !attackStarted && hum.m_currentAttack.m_wasInAttack )
+                        {
+                            attackStarted = true;
+                            if (hum.m_currentAttack.m_attackType == Attack.AttackType.Area)
+                            {
+                                TactsuitVR.PlaybackHaptics("LoxGroundAttackTactosy");
+                                TactsuitVR.PlaybackHaptics("LoxGroundAttack");
+                            } else
+                            {
+                                TactsuitVR.PlaybackHaptics("LoxAttackTactosy");
+                                TactsuitVR.PlaybackHaptics("LoxAttack");
+                            }
+                        }
+                    } else
+                    {
+                        attackStarted = false;
+                    }
                 }
+
             }
         }
         /**
