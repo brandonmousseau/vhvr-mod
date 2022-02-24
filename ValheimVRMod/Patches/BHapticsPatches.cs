@@ -555,24 +555,68 @@ namespace ValheimVRMod.Patches
                 speedActive(Sadle.Speed.Stop);
             }
         }
-        /**
-         * When ship gets damaged
-         */
-        [HarmonyPatch(typeof(WearNTear), "Damage")]
-        class WearNTear_Damage_Patch
+    }
+
+    /**
+     * When ship gets damaged
+     */
+    [HarmonyPatch(typeof(WearNTear), "Damage")]
+    class WearNTear_Damage_Patch
+    {
+        public static void Postfix(WearNTear __instance)
         {
-            public static void Postfix(WearNTear __instance)
+            if (TactsuitVR.suitDisabled)
             {
-                if (TactsuitVR.suitDisabled)
-                {
-                    return;
-                }
-                // only if it is a ship and the player is onboard
-                Ship component = __instance.GetComponent<Ship>();
-                if (component != null && component.IsPlayerInBoat(Player.m_localPlayer))
-                {
-                    TactsuitVR.PlaybackHaptics("ShipDamage");
-                }
+                return;
+            }
+            // only if it is a ship and the player is onboard
+            Ship component = __instance.GetComponent<Ship>();
+            if (component != null && component.IsPlayerInBoat(Player.m_localPlayer))
+            {
+                TactsuitVR.PlaybackHaptics("ShipDamage");
+            }
+        }
+    }
+
+    /**
+     * When repairing stuff
+     */
+    [HarmonyPatch(typeof(WearNTear), "Repair")]
+    class WearNTear_Repair_Patch
+    {
+        public static void Postfix(WearNTear __instance)
+        {
+            if (TactsuitVR.suitDisabled)
+            {
+                return;
+            }
+            // only if it is local player
+            Piece component = __instance.GetComponent<Piece>();
+            if (component != null && component.IsCreator())
+            {
+                TactsuitVR.PlaybackHaptics((VHVRConfig.LeftHanded()) ? "Hammer_L" : "Hammer_R");
+                TactsuitVR.PlaybackHaptics((VHVRConfig.LeftHanded()) ? "HammerTactosy_L" : "HammerTactosy_R");
+            }
+        }
+    }
+    /**
+     * When placing object with hammer
+     */
+    [HarmonyPatch(typeof(WearNTear), "OnPlaced")]
+    class WearNTear_OnPlaced_Patch
+    {
+        public static void Postfix(WearNTear __instance)
+        {
+            if (TactsuitVR.suitDisabled)
+            {
+                return;
+            }
+            // only if it is local player
+            Piece component = __instance.GetComponent<Piece>();
+            if (component != null && component.IsCreator())
+            {
+                TactsuitVR.PlaybackHaptics((VHVRConfig.LeftHanded()) ? "Hammer_L" : "Hammer_R");
+                TactsuitVR.PlaybackHaptics((VHVRConfig.LeftHanded()) ? "HammerTactosy_L" : "HammerTactosy_R");
             }
         }
     }
