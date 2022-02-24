@@ -555,5 +555,25 @@ namespace ValheimVRMod.Patches
                 speedActive(Sadle.Speed.Stop);
             }
         }
+        /**
+         * When ship gets damaged
+         */
+        [HarmonyPatch(typeof(WearNTear), "Damage")]
+        class WearNTear_Damage_Patch
+        {
+            public static void Postfix(WearNTear __instance)
+            {
+                if (TactsuitVR.suitDisabled)
+                {
+                    return;
+                }
+                // only if it is a ship and the player is onboard
+                Ship component = __instance.GetComponent<Ship>();
+                if (component != null && component.IsPlayerInBoat(Player.m_localPlayer))
+                {
+                    TactsuitVR.PlaybackHaptics("ShipDamage");
+                }
+            }
+        }
     }
 }
