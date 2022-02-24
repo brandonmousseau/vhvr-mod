@@ -346,6 +346,7 @@ namespace ValheimVRMod.Patches
             if (__instance.m_teleporting)
             {
                 TactsuitVR.PlaybackHaptics("PassPortalFront");
+                TactsuitVR.PlaybackHaptics("PassPortalTactosy");
                 //trying to wait for this effect to finish before starting teleport effect
                 Thread.Sleep(2000);
                 TactsuitVR.StartThreadHaptic("Teleporting", 1.0f, false, 5000);
@@ -375,12 +376,12 @@ namespace ValheimVRMod.Patches
             }
             if (__state && !__instance.m_teleporting)
             {
-                TactsuitVR.StopThreadHaptic("Teleporting", "PassPortalBack");
+                TactsuitVR.StopThreadHaptic("Teleporting", new string[] {"PassPortalBack", "PassPortalTactosy"});
             }
         }
     }
     /**
-     * On getting close to portal
+     * On getting close to any portal
      */
     [HarmonyPatch(typeof(TeleportWorld), "UpdatePortal")]
     class TeleportWorld_UpdatePortal_Patch
@@ -394,7 +395,8 @@ namespace ValheimVRMod.Patches
                 return;
             }
             // am I in range of any active portal, not necessarely the closest
-            if (!Player.m_localPlayer.IsTeleporting() && __instance.m_proximityRoot)
+            if (__instance && Player.m_localPlayer 
+                && !Player.m_localPlayer.IsTeleporting() && __instance.m_proximityRoot)
             {
                 float myDistance = Vector3.Distance(Player.m_localPlayer.transform.position, __instance.m_proximityRoot.position);
                 closeTo = (myDistance < (double)__instance.m_activationRange) && __instance.m_target_found.m_active;

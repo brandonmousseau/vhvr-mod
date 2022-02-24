@@ -25,7 +25,7 @@ namespace ValheimVRMod.Scripts
         //association effect name => params (intensity, sleep)
         public static Dictionary<string, float[]> ThreadParams = new Dictionary<string, float[]>();
         //association effect name => effect
-        public static Dictionary<string, string> ThreadCallbacks = new Dictionary<string, string>();
+        public static Dictionary<string, string[]> ThreadCallbacks = new Dictionary<string, string[]>();
         // dictionary of all feedback patterns found in the bHaptics directory
         public static Dictionary<string, FileInfo> FeedbackMap = new Dictionary<string, FileInfo>();
 
@@ -204,7 +204,6 @@ namespace ValheimVRMod.Scripts
          */
         public static void StartThreadHaptic(string EffectName, float intensity = 1.0f, bool timerNeeded = false, int sleep = 1000, float duration = 1.0f)
         {
-            //LogInfo("ENTER START HAPTICS"+ EffectName);
             if (timerNeeded)
             {
                 sleep = 200;
@@ -237,38 +236,35 @@ namespace ValheimVRMod.Scripts
             }
             //we still turn threadEnabled to false for other timerNeeded processes
             threadEnabled = false;
-            //LogInfo("EXIT START HAPTICS"+ EffectName);
         }
 
         /**
          * Resets the thread condition to tell the corresponding
          * Thread to stop
          */
-        public static void StopThreadHaptic(string name, string callback = null)
+        public static void StopThreadHaptic(string name, string[] callback = null)
         {
-            //LogInfo("ENTER STOP THREADS" +name);
-            StopHapticFeedback(name);
+            if (hapticPlayer.IsPlaying(name))
+            {
+                StopHapticFeedback(name);
+            }
             if (callback != null)
             {
                 setThreadCallbacks(name, callback);
             }
             setThreadsConditions(name, false);
-            //LogInfo("EXIT STOP THREADS "+name);
         }
 
         public static void StopHapticFeedback(string effect)
         {
-            //LogInfo("ENTER STOPHAPTICS "+name);
             lock (hapticPlayer)
             {
                 hapticPlayer.TurnOff(effect);
             }
-            //LogInfo("EXIT STOPHAPTICS "+name);
         }
 
         public static void StopAllHapticFeedback()
         {
-            //LogInfo("ENTER STOPALLHAPTICS "+name);
             lock (ThreadsConditions)
             {
                 foreach (string name in ThreadsConditions.Keys)
@@ -283,7 +279,6 @@ namespace ValheimVRMod.Scripts
                     StopHapticFeedback(key);
                 }
             }
-            //LogInfo("EXIT STOPALLHAPTICS "+name);
         }
 
         /**
@@ -311,7 +306,10 @@ namespace ValheimVRMod.Scripts
                 //if callback exists
                 if (ThreadCallbacks.ContainsKey(name))
                 {
-                    PlaybackHaptics(ThreadCallbacks[name]);
+                    foreach ( string eff in ThreadCallbacks[name])
+                    {
+                        PlaybackHaptics(eff);
+                    }
                     removeThreadCallbacks(name);
                 }
             }
@@ -319,13 +317,10 @@ namespace ValheimVRMod.Scripts
         #endregion
 
         #region Setters
-        public static void setThreadCallbacks(string name, string effect)
+        public static void setThreadCallbacks(string name, string[] effect)
         {
-            //LogInfo("ENTER SETTER THREADCALLBACKS "+name);
             lock (ThreadCallbacks)
             {
-
-                //_threadAllowed.WaitOne();
                 if (ThreadCallbacks.ContainsKey(name))
                 {
                     ThreadCallbacks[name] = effect;
@@ -335,11 +330,9 @@ namespace ValheimVRMod.Scripts
                     ThreadCallbacks.Add(name, effect);
                 }
             }
-            //LogInfo("EXIT SETTER THREADCALLBACKS "+name);
         }
         public static void setThreadsStatus(string name, bool value)
         {
-            //LogInfo("ENTER SETTER THREADSTATUS "+name);
             lock (ThreadsStatus)
             {
                 if (ThreadsStatus.ContainsKey(name))
@@ -351,12 +344,10 @@ namespace ValheimVRMod.Scripts
                     ThreadsStatus.Add(name, value);
                 }
             }
-            //LogInfo("EXIT SETTER THREADSTATUS "+name);
         }
 
         public static void setThreadsConditions(string name, bool value)
         {
-            //LogInfo("ENTER SETTER THREADSCONDITION "+name);
             lock (ThreadsConditions)
             {
                 if (ThreadsConditions.ContainsKey(name))
@@ -368,17 +359,14 @@ namespace ValheimVRMod.Scripts
                     ThreadsConditions.Add(name, value);
                 }
             }
-            //LogInfo("EXIT SETTER THREADCONDITION "+name);
         }
 
         public static void removeThreadCallbacks(string name)
         {
-            //LogInfo("ENTER REMOVE THREADCALLBACK "+name);
             lock (ThreadCallbacks)
             {
                 ThreadCallbacks.Remove(name);
             }
-            //LogInfo("EXIT REMOVE THREADCALLBACK "+name);
         }
         #endregion
     }
