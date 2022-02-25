@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using HarmonyLib;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.Scripts;
@@ -617,6 +618,30 @@ namespace ValheimVRMod.Patches
             {
                 TactsuitVR.PlaybackHaptics((VHVRConfig.LeftHanded()) ? "Hammer_L" : "Hammer_R");
                 TactsuitVR.PlaybackHaptics((VHVRConfig.LeftHanded()) ? "HammerTactosy_L" : "HammerTactosy_R");
+            }
+        }
+    }
+    
+    /**
+     * When placing object with hammer
+     */
+    [HarmonyPatch(typeof(EnvMan), "SetEnv")]
+    class EnvMan_SetEnv_Patch
+    {
+        private static readonly string[] rain = { "ThunderStorm", "Rain" };
+        public static void Postfix(EnvSetup ___m_currentEnv)
+        {
+            if (TactsuitVR.suitDisabled)
+            {
+                return;
+            }
+            // is it raining ?
+            if (rain.Contains(___m_currentEnv.m_name))
+            {
+                TactsuitVR.StartThreadHaptic("Raining", 1.0f, false, 3000, 1.0f, 12000, 12000);
+            } else
+            {
+                TactsuitVR.StopThreadHaptic("Raining", null, false);
             }
         }
     }

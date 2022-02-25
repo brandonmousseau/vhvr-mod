@@ -202,7 +202,15 @@ namespace ValheimVRMod.Scripts
          * creates or update thread params
          * Start or restart thread with params/updated params
          */
-        public static void StartThreadHaptic(string EffectName, float intensity = 1.0f, bool timerNeeded = false, int sleep = 1000, float duration = 1.0f)
+        public static void StartThreadHaptic(
+            string EffectName,
+            float intensity = 1.0f,
+            bool timerNeeded = false,
+            int sleep = 1000,
+            float duration = 1.0f,
+            int delayedStart = 0,
+            int delayedEnding = 0
+            )
         {
             if (timerNeeded)
             {
@@ -231,7 +239,7 @@ namespace ValheimVRMod.Scripts
             //checking if thread is created and alive
             if (!ThreadsStatus.ContainsKey(EffectName) || !ThreadsStatus[EffectName])
             {
-                Thread EffectThread = new Thread(() => ThreadHapticFunc(EffectName));
+                Thread EffectThread = new Thread(() => ThreadHapticFunc(EffectName, delayedStart, delayedEnding));
                 EffectThread.Start();
             }
             //we still turn threadEnabled to false for other timerNeeded processes
@@ -242,9 +250,9 @@ namespace ValheimVRMod.Scripts
          * Resets the thread condition to tell the corresponding
          * Thread to stop
          */
-        public static void StopThreadHaptic(string name, string[] callback = null)
+        public static void StopThreadHaptic(string name, string[] callback = null, bool kill = true)
         {
-            if (hapticPlayer.IsPlaying(name))
+            if (kill && hapticPlayer.IsPlaying(name))
             {
                 StopHapticFeedback(name);
             }
@@ -285,18 +293,26 @@ namespace ValheimVRMod.Scripts
          * Thread function executing haptic effect every sleep value
          * while corresponding name condition is not false
          */
-        public static void ThreadHapticFunc(string name)
+        public static void ThreadHapticFunc(string name, int delayedStart = 0, int delayedEnding = 0)
         {
             try
             {
                 //thread is alive
                 setThreadsStatus(name, true);
+                if (delayedStart != 0)
+                {
+                    Thread.Sleep(delayedStart);
+                }
                 //if false, stops the thread by making it finish
                 while (ThreadsConditions[name])
                 {
                     PlaybackHaptics(name, ThreadParams[name][0], ThreadParams[name][2]);
                     int sleep = (int)ThreadParams[name][1];
                     Thread.Sleep(sleep == 0 ? 1000 : sleep);
+                }
+                if (delayedEnding != 0)
+                {
+                    Thread.Sleep(delayedEnding);
                 }
             }
             finally
