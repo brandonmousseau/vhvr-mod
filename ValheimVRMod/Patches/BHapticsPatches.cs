@@ -629,19 +629,48 @@ namespace ValheimVRMod.Patches
     class EnvMan_SetEnv_Patch
     {
         private static readonly string[] rain = { "ThunderStorm", "Rain" };
+        private static string currentEnv = "";
+        private static int envStarted = 0;
+        private static int envDelay = 12000;
         public static void Postfix(EnvSetup ___m_currentEnv)
         {
-            if (TactsuitVR.suitDisabled)
+            if (TactsuitVR.suitDisabled || !Player.m_localPlayer)
             {
                 return;
             }
             // is it raining ?
-            if (rain.Contains(___m_currentEnv.m_name))
+            //Env just been changed
+            if (currentEnv != ___m_currentEnv.m_name)
             {
-                TactsuitVR.StartThreadHaptic("Raining", 1.0f, false, 3000, 1.0f, 12000, 12000);
-            } else
+                currentEnv = ___m_currentEnv.m_name;
+                envStarted = (int) new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds();
+                if (rain.Contains(currentEnv))
+                {
+                    TactsuitVR.StartThreadHaptic("Raining", 0.7f, false, 3000, 1.0f, 12000);
+                }
+                else
+                {
+                    TactsuitVR.StopThreadHapticDelayed("Raining", 12000);
+                }
+
+            }
+            //are we in shelter
+            if (Player.m_localPlayer.InShelter())
             {
-                TactsuitVR.StopThreadHaptic("Raining", null, false);
+                TactsuitVR.StopThreadHaptic("Raining");
+            }
+            else
+            {
+                //are we in env rain starting delay ?
+                int startDelay = (int)new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds() - envStarted;
+                if (startDelay > envDelay)
+                {
+                    TactsuitVR.StartThreadHaptic("Raining");
+                }
+                else
+                {
+                    TactsuitVR.StartThreadHaptic("Raining", 0.7f, false, 3000, 1.0f, envDelay - startDelay);
+                }
             }
         }
     }

@@ -208,8 +208,7 @@ namespace ValheimVRMod.Scripts
             bool timerNeeded = false,
             int sleep = 1000,
             float duration = 1.0f,
-            int delayedStart = 0,
-            int delayedEnding = 0
+            int delayedStart = 0
             )
         {
             if (timerNeeded)
@@ -239,7 +238,7 @@ namespace ValheimVRMod.Scripts
             //checking if thread is created and alive
             if (!ThreadsStatus.ContainsKey(EffectName) || !ThreadsStatus[EffectName])
             {
-                Thread EffectThread = new Thread(() => ThreadHapticFunc(EffectName, delayedStart, delayedEnding));
+                Thread EffectThread = new Thread(() => ThreadHapticFunc(EffectName, delayedStart));
                 EffectThread.Start();
             }
             //we still turn threadEnabled to false for other timerNeeded processes
@@ -250,17 +249,39 @@ namespace ValheimVRMod.Scripts
          * Resets the thread condition to tell the corresponding
          * Thread to stop
          */
-        public static void StopThreadHaptic(string name, string[] callback = null, bool kill = true)
+        public static void StopThreadHaptic(string name, string[] callback = null)
         {
-            if (kill && hapticPlayer.IsPlaying(name))
+            if (ThreadsStatus.ContainsKey(name) && ThreadsStatus[name])
             {
                 StopHapticFeedback(name);
+                if (callback != null)
+                {
+                    setThreadCallbacks(name, callback);
+                }
+                setThreadsConditions(name, false);
             }
-            if (callback != null)
+        }
+
+        /**
+         * Stop a thread but with delay
+         */
+        public static void StopThreadHapticDelayed(string name, int delay)
+        {
+            if (ThreadsStatus.ContainsKey(name + "StopDelayed")
+                && ThreadsStatus.ContainsKey(name) && ThreadsStatus[name])
             {
-                setThreadCallbacks(name, callback);
+                LogInfo("CREATE THREAD");
+                setThreadsStatus(name + "StopDelayed", true);
+                Thread EffectThread = new Thread(() =>
+                {
+                    Thread.Sleep(delay);
+                    StopHapticFeedback(name);
+                    setThreadsConditions(name, false);
+                    setThreadsStatus(name + "StopDelayed", false);
+
+                });
+                EffectThread.Start();
             }
-            setThreadsConditions(name, false);
         }
 
         public static void StopHapticFeedback(string effect)
@@ -293,7 +314,7 @@ namespace ValheimVRMod.Scripts
          * Thread function executing haptic effect every sleep value
          * while corresponding name condition is not false
          */
-        public static void ThreadHapticFunc(string name, int delayedStart = 0, int delayedEnding = 0)
+        public static void ThreadHapticFunc(string name, int delayedStart = 0)
         {
             try
             {
@@ -309,10 +330,6 @@ namespace ValheimVRMod.Scripts
                     PlaybackHaptics(name, ThreadParams[name][0], ThreadParams[name][2]);
                     int sleep = (int)ThreadParams[name][1];
                     Thread.Sleep(sleep == 0 ? 1000 : sleep);
-                }
-                if (delayedEnding != 0)
-                {
-                    Thread.Sleep(delayedEnding);
                 }
             }
             finally
