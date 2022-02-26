@@ -623,7 +623,8 @@ namespace ValheimVRMod.Patches
     }
     
     /**
-     * When placing object with hammer
+     * When it is raining and not in shelter
+     * Delayed when starting
      */
     [HarmonyPatch(typeof(EnvMan), "SetEnv")]
     class EnvMan_SetEnv_Patch
@@ -673,6 +674,34 @@ namespace ValheimVRMod.Patches
                         TactsuitVR.StartThreadHaptic("Raining", 0.7f, false, 3000, envDelay - startDelay);
                     }
                 }
+            }
+        }
+    }
+    /**
+     * When summoning boss phase 
+     */
+    [HarmonyPatch(typeof(OfferingBowl), "SpawnBoss")]
+    class OfferingBowl_SpawnBoss_Patch
+    {
+        public static void Postfix(OfferingBowl __instance)
+        {
+            if (TactsuitVR.suitDisabled)
+            {
+                return;
+            }
+            // is Local Player near ?
+            bool closeTo = (Vector3.Distance(Player.m_localPlayer.transform.position, __instance.transform.position) < (double)20f);
+            if (closeTo)
+            {
+                Thread EffectThread = new Thread(() =>
+                {
+                    TactsuitVR.StartThreadHaptic("BossSummon");
+                    Thread.Sleep(5000);
+                    TactsuitVR.StartThreadHaptic("BossSummon", 0.4f);
+                    Thread.Sleep(7000);
+                    TactsuitVR.StopThreadHaptic("BossSummon", new string[] { "BossAppearance" });
+                });
+                EffectThread.Start();
             }
         }
     }
