@@ -433,7 +433,7 @@ namespace ValheimVRMod.Patches
             {
                 return;
             }
-            TactsuitVR.PlaybackHaptics("Thunder");
+            TactsuitVR.PlaybackHaptics("Thunder", 0.8f);
         }
     }
     /**
@@ -702,6 +702,70 @@ namespace ValheimVRMod.Patches
                     TactsuitVR.StopThreadHaptic("BossSummon", new string[] { "BossAppearance" });
                 });
                 EffectThread.Start();
+            }
+        }
+    }
+    
+    /**
+     * When selecting boss power at the altars 
+     */
+    [HarmonyPatch(typeof(BossStone), "DelayedAttachEffects_Step1")]
+    class BossStone_DelayedAttachEffects_Step1_Patch
+    {
+        public static void Postfix(BossStone __instance)
+        {
+            if (TactsuitVR.suitDisabled)
+            {
+                return;
+            }
+            TactsuitVR.PlaybackHaptics("ActivateGuardianPower");
+        }
+    }
+    /**
+     * Boss animations / attacks
+     */
+    [HarmonyPatch(typeof(Attack), "OnAttackTrigger")]
+    class Attack_OnAttackTrigger_Patch
+    {
+        public static Dictionary<string, float> rangeBoss = new Dictionary<string, float>()
+        {
+            {"boss_eikthyr",  20f},
+            {"boss_elder", 20f },
+            {"boss_bonemass",  20f},
+            {"boss_moder",  20f},
+            {"boss_yagluth",  20f},
+        };
+        public static void Postfix(Attack __instance)
+        {
+            if (TactsuitVR.suitDisabled || !__instance.m_character.IsBoss())
+            {
+                return;
+            }
+            LogInfo("BOSS ATTACK " + __instance.m_attackAnimation + " " +
+                __instance.m_character.m_name
+                + " " + __instance.m_character.m_bossEvent);
+            //range limit arbitrary for all bosses, easier...
+            float range = (rangeBoss.ContainsKey(__instance.m_character.m_bossEvent)) ? rangeBoss[__instance.m_character.m_bossEvent] : 20f;
+            bool closeTo = (Vector3.Distance(Player.m_localPlayer.transform.position,
+                __instance.m_character.transform.position) <
+                (double)range);
+            if (!closeTo)
+            {
+                return;
+            }
+            //only for special attacks, all others are managed if you get hit
+            switch(__instance.m_character.m_bossEvent)
+            {
+                case "boss_eikthyr":
+                    if (__instance.m_attackAnimation == "attack2")
+                    {
+                        TactsuitVR.PlaybackHaptics("EikthyrElectric");
+                    }
+                    if (__instance.m_attackAnimation == "attack_stomp")
+                    {
+                        TactsuitVR.PlaybackHaptics("EikthyrElectric");
+                    }
+                    break;
             }
         }
     }
