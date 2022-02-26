@@ -631,7 +631,7 @@ namespace ValheimVRMod.Patches
         private static readonly string[] rain = { "ThunderStorm", "Rain" };
         private static string currentEnv = "";
         private static int envStarted = 0;
-        private static int envDelay = 12000;
+        private static int envDelay = 12;
         public static void Postfix(EnvSetup ___m_currentEnv)
         {
             if (TactsuitVR.suitDisabled || !Player.m_localPlayer)
@@ -643,8 +643,8 @@ namespace ValheimVRMod.Patches
             if (currentEnv != ___m_currentEnv.m_name)
             {
                 currentEnv = ___m_currentEnv.m_name;
-                envStarted = (int) new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds();
-                if (rain.Contains(currentEnv))
+                envStarted = (int)new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds();
+                if (rain.Contains(currentEnv)) 
                 {
                     TactsuitVR.StartThreadHaptic("Raining", 0.7f, false, 3000, 1.0f, 12000);
                 }
@@ -652,24 +652,26 @@ namespace ValheimVRMod.Patches
                 {
                     TactsuitVR.StopThreadHapticDelayed("Raining", 12000);
                 }
-
             }
-            //are we in shelter
-            if (Player.m_localPlayer.InShelter())
+            if (rain.Contains(currentEnv))
             {
-                TactsuitVR.StopThreadHaptic("Raining");
-            }
-            else
-            {
-                //are we in env rain starting delay ?
-                int startDelay = (int)new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds() - envStarted;
-                if (startDelay > envDelay)
+                //are we in shelter
+                if (Player.m_localPlayer.InShelter())
                 {
-                    TactsuitVR.StartThreadHaptic("Raining");
+                    TactsuitVR.StopThreadHaptic("Raining");
                 }
                 else
                 {
-                    TactsuitVR.StartThreadHaptic("Raining", 0.7f, false, 3000, 1.0f, envDelay - startDelay);
+                    //are we in env rain starting delay ?
+                    int startDelay = (int)new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds() - envStarted;
+                    if (startDelay > envDelay)
+                    {
+                        TactsuitVR.StartThreadHaptic("Raining", 0.7f, false, 3000);
+                    }
+                    else
+                    {
+                        TactsuitVR.StartThreadHaptic("Raining", 0.7f, false, 3000, envDelay - startDelay);
+                    }
                 }
             }
         }

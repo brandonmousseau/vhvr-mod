@@ -267,17 +267,15 @@ namespace ValheimVRMod.Scripts
          */
         public static void StopThreadHapticDelayed(string name, int delay)
         {
-            if (ThreadsStatus.ContainsKey(name + "StopDelayed")
-                && ThreadsStatus.ContainsKey(name) && ThreadsStatus[name])
+            if (ThreadsStatus.ContainsKey(name) && ThreadsStatus[name])
             {
-                LogInfo("CREATE THREAD");
-                setThreadsStatus(name + "StopDelayed", true);
+                setThreadsStatus(name, true);
                 Thread EffectThread = new Thread(() =>
                 {
                     Thread.Sleep(delay);
                     StopHapticFeedback(name);
                     setThreadsConditions(name, false);
-                    setThreadsStatus(name + "StopDelayed", false);
+                    setThreadsStatus(name, false);
 
                 });
                 EffectThread.Start();
