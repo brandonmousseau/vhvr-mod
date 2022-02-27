@@ -585,7 +585,7 @@ namespace ValheimVRMod.Patches
     [HarmonyPatch(typeof(WearNTear), "Repair")]
     class WearNTear_Repair_Patch
     {
-        public static void Postfix(WearNTear __instance)
+        public static void Postfix(WearNTear __instance, bool __result)
         {
             if (TactsuitVR.suitDisabled)
             {
@@ -593,7 +593,7 @@ namespace ValheimVRMod.Patches
             }
             // only if it is local player
             Piece component = __instance.GetComponent<Piece>();
-            if (component != null && component.IsCreator())
+            if (__result && component != null && component == Player.m_localPlayer.GetHoveringPiece())
             {
                 TactsuitVR.PlaybackHaptics((VHVRConfig.LeftHanded()) ? "Hammer_L" : "Hammer_R");
                 TactsuitVR.PlaybackHaptics((VHVRConfig.LeftHanded()) ? "HammerTactosy_L" : "HammerTactosy_R");
