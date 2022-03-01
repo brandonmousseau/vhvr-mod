@@ -718,7 +718,7 @@ namespace ValheimVRMod.VRCore
             var vrik = player.gameObject.GetComponent<VRIK>();
             if (vrik != null && vrik != null)
             {
-                return vrik.enabled;
+                return vrik.enabled && !Game.IsPaused();
             }
             return false;
         }

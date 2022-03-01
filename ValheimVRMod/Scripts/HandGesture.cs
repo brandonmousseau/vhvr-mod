@@ -41,7 +41,7 @@ namespace ValheimVRMod.Scripts {
         
         private void Update() {
 
-            if (!isUnequiped()) {
+            if (!isUnequiped() || Game.IsPaused()) {
                 return;
             }
             
