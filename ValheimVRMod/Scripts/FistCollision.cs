@@ -49,9 +49,15 @@ namespace ValheimVRMod.Scripts {
             StaticObjects.lastHitDir = snapshots[snapshots.Count - 1] - snapshots[snapshots.Count - 5];
             StaticObjects.lastHitCollider = collider;
 
+            var item = Player.m_localPlayer.m_unarmedWeapon.m_itemData;
+
+            if (usingClaws()) {
+                item = Player.m_localPlayer.GetRightItem();
+            }
+            
             var attack = Player.m_localPlayer.m_unarmedWeapon.m_itemData.m_shared.m_attack;
             if (attack.Start(Player.m_localPlayer, null, null, Player.m_localPlayer.m_animEvent,
-                null, Player.m_localPlayer.m_unarmedWeapon.m_itemData, null, 0.0f, 0.0f)) {
+                null, item, null, 0.0f, 0.0f)) {
                 if (isRightHand) {
                     VRPlayer.rightHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, SteamVR_Input_Sources.RightHand);    
                 } else {
@@ -104,11 +110,14 @@ namespace ValheimVRMod.Scripts {
                 inputSource = SteamVR_Input_Sources.LeftHand;
             }
 
-           
-            return VRPlayer.inFirstPerson && colliderParent != null && handGesture.isUnequiped() 
-                   && SteamVR_Actions.valheim_Grab.GetState(inputSource)
-                   && (isRightHand && SteamVR_Actions.valheim_Use.GetState(inputSource) 
-                   || !isRightHand && SteamVR_Actions.valheim_UseLeft.GetState(inputSource));
+            var isUnequipedWithFistGesture = 
+                handGesture.isUnequiped()
+                && SteamVR_Actions.valheim_Grab.GetState(inputSource)
+                && (isRightHand && SteamVR_Actions.valheim_Use.GetState(inputSource)
+                || !isRightHand && SteamVR_Actions.valheim_UseLeft.GetState(inputSource));
+
+            return VRPlayer.inFirstPerson && colliderParent != null && 
+                   (usingClaws() || isUnequipedWithFistGesture);
         }
 
         private void FixedUpdate() {
@@ -132,6 +141,10 @@ namespace ValheimVRMod.Scripts {
             }
 
             return false;
+        }
+
+        private bool usingClaws() {
+            return EquipScript.getRight().Equals(EquipType.Claws);
         }
     }
 }
