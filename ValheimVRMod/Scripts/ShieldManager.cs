@@ -86,6 +86,11 @@ namespace ValheimVRMod.Scripts {
 
         public static void setBlocking(Vector3 hitDir) {
             InitShield();
+            if (instance == null)
+            {
+                return;
+            }
+
             var angle = Vector3.Dot(hitDir, instance.getForward());
             if (leftIsShield&&_leftMeshCooldown)
             {
