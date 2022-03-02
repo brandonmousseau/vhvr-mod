@@ -62,6 +62,14 @@ namespace ValheimVRMod.VRCore
                 LogError("Problem Initializing SteamVR_Input");
                 return false;
             }
+
+            ApplicationManifestHelper.UpdateManifest(Path.Combine(Application.streamingAssetsPath, "valheim.vrmanifest"),
+                                                    "steam.app.892970",
+                                                    "https://steamcdn-a.akamaihd.net/steam/apps/892970/header.jpg",
+                                                    "Valheim VR",
+                                                    "VR mod for Valheim",
+                                                    steamBuild: true,
+                                                    steamAppId: 892970);
             return true;
         }
 
