@@ -55,7 +55,7 @@ namespace ValheimVRMod.Patches {
     class PatchIsBlocking {
         static bool Prefix(Humanoid __instance, ref bool __result) {
 
-            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls()) {
+            if (__instance != Player.m_localPlayer || EquipScript.getRight() == EquipType.Fishing || !VHVRConfig.UseVrControls()) {
                 return true;
             }
 
