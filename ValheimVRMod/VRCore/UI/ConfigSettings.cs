@@ -177,9 +177,11 @@ namespace ValheimVRMod.VRCore.UI {
                 switch (child.name) {
                     case "Ok":
                         child.GetComponent<Button>().onClick.AddListener(() => {doSave = true;});
+                        Object.Destroy(child.GetComponent<UIGamePad>());
                         break;
                     case "Back":
                         child.GetComponent<Button>().onClick.AddListener(() => {doSave = false;});
+                        Object.Destroy(child.GetComponent<UIGamePad>());
                         break;
                     default:
                         Object.Destroy(child.gameObject);
