@@ -81,6 +81,8 @@ namespace ValheimVRMod.Scripts {
             {
                 case "Hoe":
                 case "Hammer":
+                case "FishingRod":
+                case "Cultivator":
                     return;
             }
             switch (attack.m_attackAnimation)
@@ -124,7 +126,7 @@ namespace ValheimVRMod.Scripts {
                 if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand) && SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand)) {
                     var mainHand = VRPlayer.rightHand;
                     var offHand = VRPlayer.leftHand;
-                    float handAngleDiff = Vector3.Dot(new Vector3(0, 0.45f, 0.55f), VRPlayer.rightHand.transform.InverseTransformPoint(VRPlayer.leftHand.transform.position).normalized);
+                    float handAngleDiff = Vector3.Dot(GetHandWieldDirection(), VRPlayer.rightHand.transform.InverseTransformPoint(VRPlayer.leftHand.transform.position).normalized);
                     if (_isTwoHanded == isTwoHanded.SingleHanded) {
                         if (handAngleDiff > 0.6f) {
                             _isTwoHanded = isTwoHanded.MainRight;
@@ -169,21 +171,16 @@ namespace ValheimVRMod.Scripts {
                     }
                     var CalculateDistance = (inversePosition.normalized * distMultiplier / Mathf.Max(handDist, distLimit)) - inversePosition.normalized * originMultiplier;
                     ResetOffset();
+                    transform.position = mainHand.transform.position + (CalculateDistance);
+                    transform.LookAt(mainHand.transform.position + inversePosition.normalized * 5, transform.up);
+                    transform.localRotation = transform.localRotation * (rotSave.transform.localRotation) * Quaternion.AngleAxis(180, Vector3.right) * Quaternion.AngleAxis(rotOffset, transform.InverseTransformDirection(inversePosition));
+
+                    //Atgeir Rotation fix
                     if (attack.m_attackAnimation == "atgeir_attack")
                     {
-                        transform.position = rotSave.transform.position + (CalculateDistance);
-                        transform.LookAt(rotSave.transform.position + inversePosition.normalized * 5, transform.up);
-                        transform.localRotation = transform.localRotation * (rotSave.transform.localRotation) * Quaternion.AngleAxis(180, Vector3.right) * Quaternion.AngleAxis(rotOffset, transform.InverseTransformDirection(inversePosition));
-                        
-                        //rotation fix 
                         transform.localRotation = (transform.localRotation * Quaternion.AngleAxis(-20, Vector3.up)) * Quaternion.AngleAxis(-5, Vector3.right);
                     }
-                    else
-                    {
-                        transform.position = mainHand.transform.position + (CalculateDistance);
-                        transform.LookAt(mainHand.transform.position + inversePosition.normalized * 5, transform.up);
-                        transform.localRotation = transform.localRotation * (rotSave.transform.localRotation) * Quaternion.AngleAxis(180, Vector3.right) * Quaternion.AngleAxis(rotOffset, transform.InverseTransformDirection(inversePosition));
-                    }
+
                     weaponForward = transform.forward;
                     return;
                 }
@@ -201,6 +198,17 @@ namespace ValheimVRMod.Scripts {
         {
             transform.position = rotSave.transform.position;
             transform.localRotation = rotSave.transform.localRotation;
+        }
+        private Vector3 GetHandWieldDirection()
+        {
+            if (attack.m_attackAnimation == "spear_poke")
+            {
+                return new Vector3(0, 0.45f, 0.55f);
+            }
+            else
+            {
+                return new Vector3(0, 0, 1);
+            }
         }
 
         public bool isCurrentlyTwoHanded()
@@ -221,5 +229,7 @@ namespace ValheimVRMod.Scripts {
         {
             return weaponForward;
         }
+
+        
     }
 }
