@@ -27,7 +27,7 @@ namespace ValheimVRMod.Scripts {
             var dmgMultiplier = damageMultiplier;
             
             if (damageMultiplier == 1) {
-                damageMultiplier = 0.3333f;
+                damageMultiplier /= 3;
             }
             else {
                 damageMultiplier /= 2;

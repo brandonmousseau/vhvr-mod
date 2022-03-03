@@ -45,7 +45,8 @@ namespace ValheimVRMod.VRCore.UI
     [DefaultExecutionOrder(int.MaxValue)]
     class VRGUI : MonoBehaviour
     {
-        public static readonly string GUI_CANVAS = "GUI";
+        public static readonly string MENU_GUI_CANVAS = "GUI";
+        public static readonly string GAME_GUI_CANVAS = "LoadingGUI";
         private static readonly string OVERLAY_KEY = "VALHEIM_VR_MOD_OVERLAY";
         private static readonly string OVERLAY_NAME = "Valheim VR";
         private static readonly string UI_PANEL_NAME = "VRUIPanel";
@@ -190,7 +191,7 @@ namespace ValheimVRMod.VRCore.UI
                     // and set the GUI position using that rotation. If the new rotation is close enough to
                     // the target rotation, then stop recentering for the next frame.
                     var targetDirection = getTargetGuiDirection();
-                    var stepDirection = Vector3.Slerp(currentDirection, targetDirection, VHVRConfig.GuiRecenterSpeed() * Mathf.Deg2Rad * Time.deltaTime);
+                    var stepDirection = Vector3.Slerp(currentDirection, targetDirection, VHVRConfig.GuiRecenterSpeed() * Mathf.Deg2Rad * Time.unscaledDeltaTime);
                     var stepRotation = Quaternion.LookRotation(stepDirection, VRPlayer.instance.transform.up);
                     _uiPanel.transform.rotation = stepRotation;
                     _uiPanel.transform.position = playerInstance.transform.position + stepRotation * offsetPosition;
@@ -382,7 +383,8 @@ namespace ValheimVRMod.VRCore.UI
             {
                 foreach (var canvas in GameObject.FindObjectsOfType<Canvas>())
                 {
-                    if (canvas.name == GUI_CANVAS)
+                    if (canvas.name == GAME_GUI_CANVAS 
+                        || canvas.name == MENU_GUI_CANVAS)
                     {
                         _guiCanvas = canvas;
                         onGuiCanvasFound();
@@ -447,7 +449,7 @@ namespace ValheimVRMod.VRCore.UI
                     // rotation and reposition the GUI to that rotation. If the new rotation is close
                     // enough to the target, then end recentering for next frame.
                     var targetDirection = getTargetGuiDirection();
-                    var stepDirection = Vector3.Slerp(currentDirection, targetDirection, VHVRConfig.GuiRecenterSpeed() * Mathf.Deg2Rad * Time.deltaTime);
+                    var stepDirection = Vector3.Slerp(currentDirection, targetDirection, VHVRConfig.GuiRecenterSpeed() * Mathf.Deg2Rad * Time.unscaledDeltaTime);
                     var stepRotation = Quaternion.LookRotation(stepDirection, VRPlayer.instance.transform.up);
                     offsetPosition = stepRotation * offsetPosition;
                     offsetRotation = stepRotation;

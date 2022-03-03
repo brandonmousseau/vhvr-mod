@@ -576,7 +576,7 @@ namespace ValheimVRMod.Patches {
 
             private static float calculateSmoothSnapAngle(float mouseX)
             {
-                float dt = Time.deltaTime;
+                float dt = Time.unscaledDeltaTime;
                 currentDt += dt;
                 if (currentDt < SMOOTH_SNAP_INCREMENT_TIME_DELTA)
                 {
