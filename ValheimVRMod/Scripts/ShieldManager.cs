@@ -227,10 +227,7 @@ namespace ValheimVRMod.Scripts {
         }
         public static bool isLeftShield()
         {
-            if (leftIsShield && _leftMeshCooldown)
-                return true;
-            else
-                return false;
+            return leftIsShield && _leftMeshCooldown;
         }
     }
 }
