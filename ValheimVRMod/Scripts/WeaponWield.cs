@@ -205,10 +205,7 @@ namespace ValheimVRMod.Scripts {
             {
                 return new Vector3(0, 0.45f, 0.55f);
             }
-            else
-            {
-                return new Vector3(0, 0, 1);
-            }
+            return new Vector3(0, 0, 1);
         }
 
         public bool isCurrentlyTwoHanded()
