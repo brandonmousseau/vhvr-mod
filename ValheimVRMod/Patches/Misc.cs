@@ -133,4 +133,28 @@ namespace ValheimVRMod.Patches
         }
     }
 
+    // Removes calls to set the targetFrameRate of the game
+    [HarmonyPatch(typeof(Game), nameof(Game.Update))]
+    [HarmonyPatch(typeof(FejdStartup), nameof(FejdStartup.Update))]
+    class Application_FrameRate_Patch
+    {
+        private static void Nop(int ignore) { }
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            if (VHVRConfig.NonVrPlayer()) return instructions;
+
+            var original = new List<CodeInstruction>(instructions);
+            for (int i = 0; i < original.Count; i++)
+            {
+                if (original[i].Calls(AccessTools.Method(typeof(Application), "set_targetFrameRate", new[] { typeof(Int32) })))
+                {
+                    var changed = CodeInstruction.Call(typeof(Application_FrameRate_Patch), nameof(Nop), new[] { typeof(Int32) });
+                    changed.labels = original[i].labels;
+                    original[i] = changed;
+                }
+            }
+            return original;
+        }
+    }
+
 }

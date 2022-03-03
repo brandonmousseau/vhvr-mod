@@ -2,6 +2,8 @@ using HarmonyLib;
 using UnityEngine;
 using ValheimVRMod.VRCore;
 using ValheimVRMod.Utilities;
+using System.Reflection;
+using System.Collections.Generic;
 
 namespace ValheimVRMod.Patches
 {
@@ -19,7 +21,7 @@ namespace ValheimVRMod.Patches
     // would create a positive feedback loop and constantly create a rotation if your
     // head isn't exactly centered.
     //
-    [HarmonyPatch(typeof(Player), "SetMouseLook")]
+    [HarmonyPatch(typeof(Player), nameof(Player.SetMouseLook))]
     class Player_SetMouseLook_Patch
     {
 
@@ -102,7 +104,7 @@ namespace ValheimVRMod.Patches
     // m_lookDir will get the value of the updated player body direction plus of course the
     // side effect of the body rotation being directly controlled by the mouse (or whatever
     // input that will be used).
-    [HarmonyPatch(typeof(Player), "UpdateEyeRotation")]
+    [HarmonyPatch(typeof(Player), nameof(Player.UpdateEyeRotation))]
     class Player_UpdateEyeRotation_Patch
     {
         public static void Postfix(Player __instance, Quaternion ___m_lookYaw)
@@ -130,7 +132,7 @@ namespace ValheimVRMod.Patches
     class Player_Rotation_Patch
     {
 
-        [HarmonyPatch(typeof(Player), "Update")]
+        [HarmonyPatch(typeof(Player), nameof(Player.Update))]
         class Player_Update_RotationPatch
         {
             public static void Postfix(Player __instance)
@@ -143,7 +145,7 @@ namespace ValheimVRMod.Patches
             }
         }
 
-        [HarmonyPatch(typeof(Player), "LateUpdate")]
+        [HarmonyPatch(typeof(Player), nameof(Player.LateUpdate))]
         class Player_LateUpdate_RotationPatch
         {
             public static void Postfix(Player __instance)
@@ -156,7 +158,7 @@ namespace ValheimVRMod.Patches
             }
         }
 
-        [HarmonyPatch(typeof(Player), "FixedUpdate")]
+        [HarmonyPatch(typeof(Player), nameof(Player.FixedUpdate))]
         class Player_FixedUpdate_RotationPatch
         {
             public static void Postfix(Player __instance)
@@ -173,7 +175,7 @@ namespace ValheimVRMod.Patches
         /// <summary>
         /// When interacting with an attachment point orient player in the direction of the attachment point
         /// </summary>
-        [HarmonyPatch(typeof(Player), "AttachStart")]
+        [HarmonyPatch(typeof(Player), nameof(Player.AttachStart))]
         
         class Player_AttachStart_Patch
         {
@@ -204,7 +206,7 @@ namespace ValheimVRMod.Patches
         /// <summary>
         /// Orient the player to the body direction when detaching from objects
         /// </summary>
-        [HarmonyPatch(typeof(Player), "AttachStop")]
+        [HarmonyPatch(typeof(Player), nameof(Player.AttachStop))]
         
         class Player_AttachStop_Patch
         {
@@ -224,6 +226,36 @@ namespace ValheimVRMod.Patches
                 float deltaRotation = __instance.transform.rotation.eulerAngles.y - Valve.VR.InteractionSystem.Player.instance.hmdTransform.rotation.eulerAngles.y;
                 VRPlayer.instance.transform.localRotation *= Quaternion.AngleAxis(deltaRotation, Vector3.up);
                 Player_SetMouseLook_Patch.previousHeadLocalRotation = null;
+            }
+        }
+
+
+        /// <summary>
+        /// Disables the pause menu auto camera rotation
+        /// </summary>
+        [HarmonyPatch(typeof(Game), nameof(Game.UpdatePause))]
+
+        class Game_UpdatePause_Patch
+        {
+            private static MethodInfo MenuIsVisibleCall = AccessTools.Method(typeof(Menu), nameof(Menu.IsVisible));
+            private static bool Nope() => false;
+            static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+            {
+                var original = new List<CodeInstruction>(instructions);
+                var patched = new List<CodeInstruction>();
+                if (VHVRConfig.NonVrPlayer())
+                {
+                    return original;
+                }
+
+                foreach (var instruction in original)
+                {
+                    if (instruction.Calls(MenuIsVisibleCall))
+                        patched.Add(CodeInstruction.Call(typeof(Game_UpdatePause_Patch), nameof(Game_UpdatePause_Patch.Nope)));
+                    else
+                        patched.Add(instruction);
+                }
+                return patched;
             }
         }
 
