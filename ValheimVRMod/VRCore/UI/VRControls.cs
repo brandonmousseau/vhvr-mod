@@ -96,7 +96,7 @@ namespace ValheimVRMod.VRCore.UI
             updateLasersActionSetState();
             if (mainActionSet.IsActive())
             {
-                checkRecenterPose(Time.deltaTime);
+                checkRecenterPose(Time.unscaledDeltaTime);
             }
 
             checkQuickItems<QuickSwitch>(StaticObjects.quickSwitch, 
@@ -120,7 +120,7 @@ namespace ValheimVRMod.VRCore.UI
 
         private void updateAltPieceRotationTimer()
         {
-            altPieceRotationElapsedTime += Time.deltaTime;
+            altPieceRotationElapsedTime += Time.unscaledDeltaTime;
             if (altPieceRotationElapsedTime >= ALT_PIECE_ROTATION_TIME_DELAY * VHVRConfig.AltPieceRotationDelay())
             {
                 altPieceTriggered = true;
@@ -130,7 +130,7 @@ namespace ValheimVRMod.VRCore.UI
 
         private void updateAltMapZoomTimer()
         {
-            altMapZoomElapsedTime += Time.deltaTime;
+            altMapZoomElapsedTime += Time.unscaledDeltaTime;
             if (altMapZoomElapsedTime >= ALT_MAP_ZOOM_TIME_DELAY)
             {
                 altMapZoomTriggered = true;

@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using HarmonyLib;
+using System.Linq;
 using UnityEngine;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
@@ -14,6 +14,13 @@ namespace ValheimVRMod.Scripts {
         private List<Vector3> snapshots = new List<Vector3>();
         private bool isRightHand;
         private HandGesture handGesture;
+        
+        private static readonly int[] ignoreLayers = {
+            LayerUtils.WATERVOLUME_LAYER,
+            LayerUtils.WATER,
+            LayerUtils.UI_PANEL_LAYER,
+            LayerUtils.CHARARCTER_TRIGGER
+        };
 
         private void Awake() {
            colliderParent = new GameObject();
@@ -24,13 +31,6 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            // ignore water and UI panel
-            if (collider.gameObject.layer == LayerUtils.WATERVOLUME_LAYER 
-                || collider.gameObject.layer == LayerUtils.WATER
-                || collider.gameObject.layer == LayerUtils.UI_PANEL_LAYER) {
-                return;
-            }
-            
             var maybePlayer = collider.GetComponentInParent<Player>();
 
             if (maybePlayer != null && maybePlayer == Player.m_localPlayer) {
@@ -49,9 +49,15 @@ namespace ValheimVRMod.Scripts {
             StaticObjects.lastHitDir = snapshots[snapshots.Count - 1] - snapshots[snapshots.Count - 5];
             StaticObjects.lastHitCollider = collider;
 
+            var item = Player.m_localPlayer.m_unarmedWeapon.m_itemData;
+
+            if (usingClaws()) {
+                item = Player.m_localPlayer.GetRightItem();
+            }
+            
             var attack = Player.m_localPlayer.m_unarmedWeapon.m_itemData.m_shared.m_attack;
             if (attack.Start(Player.m_localPlayer, null, null, Player.m_localPlayer.m_animEvent,
-                null, Player.m_localPlayer.m_unarmedWeapon.m_itemData, null, 0.0f, 0.0f)) {
+                null, item, null, 0.0f, 0.0f)) {
                 if (isRightHand) {
                     VRPlayer.rightHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, SteamVR_Input_Sources.RightHand);    
                 } else {
@@ -62,10 +68,8 @@ namespace ValheimVRMod.Scripts {
         
         private bool tryHitTarget(GameObject target) {
 
-            // ignore water and UI panel
-            if (target.layer == LayerUtils.WATERVOLUME_LAYER 
-                || target.layer == LayerUtils.WATER
-                || target.layer == LayerUtils.UI_PANEL_LAYER) {
+            // ignore certain Layers
+            if (ignoreLayers.Contains(target.layer)) {
                 return false;
             }
             
@@ -106,11 +110,14 @@ namespace ValheimVRMod.Scripts {
                 inputSource = SteamVR_Input_Sources.LeftHand;
             }
 
-           
-            return VRPlayer.inFirstPerson && colliderParent != null && handGesture.isUnequiped() 
-                   && SteamVR_Actions.valheim_Grab.GetState(inputSource)
-                   && (isRightHand && SteamVR_Actions.valheim_Use.GetState(inputSource) 
-                   || !isRightHand && SteamVR_Actions.valheim_UseLeft.GetState(inputSource));
+            var isUnequipedWithFistGesture = 
+                handGesture.isUnequiped()
+                && SteamVR_Actions.valheim_Grab.GetState(inputSource)
+                && (isRightHand && SteamVR_Actions.valheim_Use.GetState(inputSource)
+                || !isRightHand && SteamVR_Actions.valheim_UseLeft.GetState(inputSource));
+
+            return VRPlayer.inFirstPerson && colliderParent != null && 
+                   (usingClaws() || isUnequipedWithFistGesture);
         }
 
         private void FixedUpdate() {
@@ -134,6 +141,10 @@ namespace ValheimVRMod.Scripts {
             }
 
             return false;
+        }
+
+        private bool usingClaws() {
+            return EquipScript.getRight().Equals(EquipType.Claws);
         }
     }
 }
