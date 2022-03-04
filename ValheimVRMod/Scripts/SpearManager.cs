@@ -31,33 +31,21 @@ namespace ValheimVRMod.Scripts {
         private float totalCooldown = 2;
         private readonly Vector3 handAimOffset = new Vector3(0, -0.45f, -0.55f);
 
-        private static isTwoHanded _isTwoHanded;
-
         private Transform mainHandTransform;
         private Transform offHandTransform;
         private SteamVR_Input_Sources mainHandInputSource;
-        private SteamVR_Input_Sources offHandInputSource;
         private SteamVR_Action_Boolean useAction;
-
-        private enum isTwoHanded
-        {
-            SingleHanded,
-            MainRight,
-            MainLeft
-        }
 
         private void Awake() {
             
             if (VHVRConfig.LeftHanded()) {
                 mainHandInputSource = SteamVR_Input_Sources.LeftHand;
-                offHandInputSource = SteamVR_Input_Sources.RightHand;
                 mainHandTransform = VRPlayer.leftHand.transform;
                 offHandTransform = VRPlayer.rightHand.transform;
                 useAction = SteamVR_Actions.valheim_UseLeft;
             }
             else {
                 mainHandInputSource = SteamVR_Input_Sources.RightHand;
-                offHandInputSource = SteamVR_Input_Sources.LeftHand;
                 mainHandTransform = VRPlayer.rightHand.transform;
                 offHandTransform = VRPlayer.leftHand.transform;
                 useAction = SteamVR_Actions.valheim_Use;
@@ -78,8 +66,6 @@ namespace ValheimVRMod.Scripts {
             directionLine.shadowCastingMode = ShadowCastingMode.Off;
             directionLine.lightProbeUsage = LightProbeUsage.Off;
             directionLine.reflectionProbeUsage = ReflectionProbeUsage.Off;
-
-            _isTwoHanded = isTwoHanded.SingleHanded;
         }
 
         private void OnDestroy() {

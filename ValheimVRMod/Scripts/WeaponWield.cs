@@ -20,9 +20,6 @@ namespace ValheimVRMod.Scripts {
         private GameObject rotSave;
         private static isTwoHanded _isTwoHanded;
         private SteamVR_Input_Sources mainHandInputSource;
-        private SteamVR_Input_Sources offHandInputSource;
-        private SteamVR_Action_Boolean useAction;
-        
 
         private enum isTwoHanded
         {
@@ -46,14 +43,10 @@ namespace ValheimVRMod.Scripts {
             if (VHVRConfig.LeftHanded())
             {
                 mainHandInputSource = SteamVR_Input_Sources.LeftHand;
-                offHandInputSource = SteamVR_Input_Sources.RightHand;
-                useAction = SteamVR_Actions.valheim_UseLeft;
             }
             else
             {
                 mainHandInputSource = SteamVR_Input_Sources.RightHand;
-                offHandInputSource = SteamVR_Input_Sources.LeftHand;
-                useAction = SteamVR_Actions.valheim_Use;
             }
         }
         private void OnDestroy()
@@ -65,15 +58,6 @@ namespace ValheimVRMod.Scripts {
             WieldHandle();
             
         }
-
-        private void Update() {
-
-        }
-        
-        private void FixedUpdate() {
-
-        }
-
 
         private void WieldHandle()
         {
@@ -90,13 +74,6 @@ namespace ValheimVRMod.Scripts {
                 case "knife_stab":
                     KnifeWield();
                     break;
-                //case "spear_poke":
-                //case "atgeir_attack":
-                //case "battleaxe_attack":
-                //case "swing_sledge":
-                //case "swing_pickaxe":
-                    
-                //    break;
                 default:
                     UpdateTwoHandedWield();
                     break;
@@ -162,11 +139,6 @@ namespace ValheimVRMod.Scripts {
                             distMultiplier = 0.1f;
                             distLimit = 0.1f;
                             originMultiplier = 0.2f;
-                            break;
-                        case "atgeir_attack":
-                            //distMultiplier = 0.1f;
-                            //distLimit = 0.1f;
-                            //originMultiplier = 0.2f;
                             break;
                     }
                     var CalculateDistance = (inversePosition.normalized * distMultiplier / Mathf.Max(handDist, distLimit)) - inversePosition.normalized * originMultiplier;
