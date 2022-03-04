@@ -131,7 +131,7 @@ namespace ValheimVRMod.Scripts {
         private Vector3 getForward() {
             if (leftIsShield && _leftMeshCooldown)
             {
-                switch (_rightItemName)
+                switch (_leftItemName)
                 {
                     case "ShieldWood":
                     case "ShieldBanded":
