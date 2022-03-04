@@ -15,7 +15,6 @@ namespace ValheimVRMod.Scripts {
         private Vector3 weaponForward;
 
         public string _name;
-        private Transform selectedWeapon;
         private ItemDrop.ItemData item;
         private GameObject rotSave;
         private static isTwoHanded _isTwoHanded;
