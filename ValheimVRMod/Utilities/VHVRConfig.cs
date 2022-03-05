@@ -100,7 +100,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<string> spearThrowingType;
         private static ConfigEntry<bool> useSpearDirectionGraphic;
         private static ConfigEntry<bool> spearThrowSpeedDynamic;
-        private static ConfigEntry<bool> spearTwoHanded;
+        private static ConfigEntry<bool> twoHandedWield;
         private static ConfigEntry<float> arrowRestElevation;
         private static ConfigEntry<string> arrowRestSide;
         private static ConfigEntry<bool> restrictBowDrawSpeed;
@@ -535,10 +535,10 @@ namespace ValheimVRMod.Utilities
                                                     "UseSpearDirectionGraphic",
                                                     true,
                                                     "Use this to toggle the direction line of throwing when using the spear with VR controls.");
-            spearTwoHanded = config.Bind("Motion Control",
-                                                    "TwoHandedSpear",
-                                                    false,
-                                                    "Use this to toggle controls of two handed spear (left hand grab while having spear) (experimental)");
+            twoHandedWield = config.Bind("Motion Control",
+                                                    "TwoHandedWield",
+                                                    true,
+                                                    "Use this to toggle controls of two handed weapon (left & right hand grab on weapon) (experimental), allow blocking and better weapon usage");
             arrowRestElevation = config.Bind("Motion Control",
                 "ArrowRestElevation",
                 0.15f,
@@ -944,9 +944,9 @@ namespace ValheimVRMod.Utilities
         {
             return spearThrowingType.Value;
         }
-        public static bool SpearTwoHanded()
+        public static bool TwoHandedWield()
         {
-            return spearTwoHanded.Value;
+            return twoHandedWield.Value;
         }
         public static bool UseSpearDirectionGraphic()
         {

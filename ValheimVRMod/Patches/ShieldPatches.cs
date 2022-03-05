@@ -14,7 +14,7 @@ namespace ValheimVRMod.Patches {
         
         static void Prefix(Humanoid __instance, ref HitData hit, ref float ___m_blockTimer) {
 
-            if (__instance != Player.m_localPlayer || EquipScript.getLeft() != EquipType.Shield || !VHVRConfig.UseVrControls()) {
+            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls()) {
                 return;
             }
             ___m_blockTimer = ShieldManager.blockTimer;
@@ -27,17 +27,24 @@ namespace ValheimVRMod.Patches {
         
         static void Postfix(Humanoid __instance, bool __result, ref float ___m_blockTimer) {
 
-            if (__instance != Player.m_localPlayer || EquipScript.getLeft() != EquipType.Shield || !VHVRConfig.UseVrControls()) {
+            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls()) {
                 return;
             }
 
             if (__result) {
+                var hand = VRPlayer.rightHand;
+                var handSource = SteamVR_Input_Sources.RightHand;
+                if (ShieldManager.isLeftShield())
+                {
+                    hand = VRPlayer.leftHand;
+                    handSource = SteamVR_Input_Sources.LeftHand;
+                }
                 if (___m_blockTimer < ShieldManager.blockTimerTolerance) {
-                    VRPlayer.leftHand.hapticAction.Execute(0, 0.4f, 100, 0.5f, SteamVR_Input_Sources.LeftHand);
-                    VRPlayer.leftHand.hapticAction.Execute(0.4f, 0.7f, 100, 0.2f, SteamVR_Input_Sources.LeftHand);
+                    hand.hapticAction.Execute(0, 0.4f, 100, 0.5f, handSource);
+                    hand.hapticAction.Execute(0.4f, 0.7f, 100, 0.2f, handSource);
                 }
                 else {
-                    VRPlayer.leftHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, SteamVR_Input_Sources.LeftHand);
+                    hand.hapticAction.Execute(0, 0.2f, 100, 0.5f, handSource);
                 }
                 ShieldManager.block();
             }
@@ -48,7 +55,7 @@ namespace ValheimVRMod.Patches {
     class PatchIsBlocking {
         static bool Prefix(Humanoid __instance, ref bool __result) {
 
-            if (__instance != Player.m_localPlayer || EquipScript.getLeft() != EquipType.Shield || !VHVRConfig.UseVrControls()) {
+            if (__instance != Player.m_localPlayer || EquipScript.getRight() == EquipType.Fishing || !VHVRConfig.UseVrControls()) {
                 return true;
             }
 
@@ -62,7 +69,7 @@ namespace ValheimVRMod.Patches {
     class PatchRPCDamager {
         static void Prefix(Character __instance, HitData hit) {
 
-            if (__instance != Player.m_localPlayer || EquipScript.getLeft() != EquipType.Shield || !VHVRConfig.UseVrControls()) {
+            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls()) {
                 return;
             }
             
@@ -72,7 +79,7 @@ namespace ValheimVRMod.Patches {
         
         static void Postfix(Character __instance) {
 
-            if (__instance != Player.m_localPlayer || EquipScript.getLeft() != EquipType.Shield || !VHVRConfig.UseVrControls()) {
+            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls()) {
                 return;
             }
 
