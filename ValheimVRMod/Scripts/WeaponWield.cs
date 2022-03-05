@@ -1,6 +1,3 @@
-using System.Collections.Generic;
-using System.ComponentModel;
-using HarmonyLib;
 using UnityEngine;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
@@ -12,9 +9,7 @@ namespace ValheimVRMod.Scripts {
         public bool itemIsTool;
         private bool weaponSubPos ;
 
-        private Vector3 weaponForward;
-
-        public string _name;
+        public string itemName;
         private ItemDrop.ItemData item;
         private GameObject rotSave;
         private static isTwoHanded _isTwoHanded;
@@ -60,7 +55,7 @@ namespace ValheimVRMod.Scripts {
 
         private void WieldHandle()
         {
-            switch (_name)
+            switch (itemName)
             {
                 case "Hoe":
                 case "Hammer":
@@ -88,8 +83,7 @@ namespace ValheimVRMod.Scripts {
             if (SteamVR_Actions.valheim_Grab.GetState(mainHandInputSource))
             {
                 ResetOffset();
-                transform.localRotation = transform.localRotation * Quaternion.AngleAxis(180, Vector3.right);
-                weaponForward = transform.forward;
+                transform.localRotation *= Quaternion.AngleAxis(180, Vector3.right);
                 weaponSubPos = true;
             }
             else if (weaponSubPos)
@@ -166,9 +160,6 @@ namespace ValheimVRMod.Scripts {
                 {
                     transform.localRotation = (transform.localRotation * Quaternion.AngleAxis(-20, Vector3.up)) * Quaternion.AngleAxis(-5, Vector3.right);
                 }
-
-                weaponForward = transform.forward;
-                return;
             }
             else if (SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.LeftHand) || SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.RightHand))
             {
@@ -208,11 +199,5 @@ namespace ValheimVRMod.Scripts {
                     return isCurrentlyTwoHanded();
             }
         }
-        public Vector3 getWeaponForward()
-        {
-            return weaponForward;
-        }
-
-        
     }
 }
