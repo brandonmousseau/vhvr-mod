@@ -3,6 +3,7 @@ using UnityEngine;
 using Valve.VR;
 using ValheimVRMod.VRCore;
 using UnityEngine.Rendering;
+using ValheimVRMod.Scripts.Block;
 using ValheimVRMod.Utilities;
 
 namespace ValheimVRMod.Scripts {
@@ -137,7 +138,7 @@ namespace ValheimVRMod.Scripts {
                 }
                 isThrowingStance = true;
             }
-            ShieldManager.ScaleShieldSize(0.4f);
+            ShieldBlock.instance?.ScaleShieldSize(0.4f);
             if (isThrowingStance) {
                 UpdateSpearThrowModel(direction.normalized);
                 UpdateDirectionLine(
@@ -287,7 +288,7 @@ namespace ValheimVRMod.Scripts {
             transform.position = rotSave.transform.position;
             transform.localRotation = rotSave.transform.localRotation;
             isThrowingStance = false;
-            ShieldManager.ScaleShieldSize(1f);
+            ShieldBlock.instance?.ScaleShieldSize(1f);
         }
         private void UpdateDirectionLine(Vector3 pos1 ,Vector3 pos2)
         {

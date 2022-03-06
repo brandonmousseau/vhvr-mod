@@ -2,6 +2,7 @@ using HarmonyLib;
 using UnityEngine;
 using UnityEngine.Rendering;
 using ValheimVRMod.Scripts;
+using ValheimVRMod.Scripts.Block;
 using ValheimVRMod.Utilities;
 
 namespace ValheimVRMod.Patches {
@@ -49,10 +50,6 @@ namespace ValheimVRMod.Patches {
                 StaticObjects.quickActions.GetComponent<QuickActions>().refreshItems();
             }
 
-            var shield = player.gameObject.GetComponent<ShieldManager>();
-            if (!shield)
-                shield = player.gameObject.AddComponent<ShieldManager>();
-
             switch (EquipScript.getRight()) {
                 case EquipType.Fishing:
                     meshFilter.gameObject.AddComponent<FishingManager>();
@@ -66,11 +63,10 @@ namespace ValheimVRMod.Patches {
             }
             
             StaticObjects.rightWeaponCollider().GetComponent<WeaponCollision>().setColliderParent(meshFilter.transform, ___m_rightItem, true);
-            var wield = ___m_rightItemInstance.AddComponent<WeaponWield>();
-            wield._name = ___m_rightItem;
+            var weaponWield = ___m_rightItemInstance.AddComponent<WeaponWield>();
+            weaponWield.itemName = ___m_rightItem;
+            meshFilter.gameObject.AddComponent<WeaponBlock>().weaponWield = weaponWield; 
 
-            shield.SetRight(___m_rightItem,meshFilter.gameObject, wield);
-            
             ParticleFix.maybeFix(___m_rightItemInstance);
         }
     }
@@ -116,11 +112,6 @@ namespace ValheimVRMod.Patches {
                 StaticObjects.quickActions.GetComponent<QuickActions>().refreshItems();
             }
 
-            var shield = player.gameObject.GetComponent<ShieldManager>();
-            if (!shield)
-                shield = player.gameObject.AddComponent<ShieldManager>();
-
-            shield.ClearLeft();
             switch (EquipScript.getLeft()) {
                 
                 case EquipType.Bow:
@@ -128,7 +119,7 @@ namespace ValheimVRMod.Patches {
                     return;
                 
                 case EquipType.Shield:
-                    shield.SetLeft(___m_leftItem, meshFilter.gameObject);
+                    meshFilter.gameObject.AddComponent<ShieldBlock>().itemName = ___m_leftItem;
                     return;
             }
 
