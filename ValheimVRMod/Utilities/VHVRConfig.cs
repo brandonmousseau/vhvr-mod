@@ -102,7 +102,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> spearThrowSpeedDynamic;
         private static ConfigEntry<bool> twoHandedWield;
         private static ConfigEntry<float> arrowRestElevation;
-        private static ConfigEntry<float> arrowRestHorizontalOffset;
+        private static ConfigEntry<string> arrowRestSide;
         private static ConfigEntry<bool> restrictBowDrawSpeed;
 
 #if DEBUG
@@ -117,6 +117,10 @@ namespace ValheimVRMod.Utilities
 
         // Common values
         private static readonly string[] k_HudAlignmentValues = { "LeftWrist", "RightWrist", "CameraLocked", "Legacy" };
+
+        private const string k_arrowRestCenter = "Center";
+        private const string k_arrowRestAsiatic = "Asiatic";
+        private const string k_arrowRestMediterranean = "Mediterranean";
 
         public static void InitializeConfiguration(ConfigFile mConfig) {
             
@@ -540,11 +544,11 @@ namespace ValheimVRMod.Utilities
                 0.15f,
                 new ConfigDescription("The amount by which the arrow rest is higher than the center of the bow handle",
                     new AcceptableValueRange<float>(0, 0.25f)));
-            arrowRestHorizontalOffset = config.Bind("Motion Control",
-                "ArrowRestHorizontalOffset",
-                0f,
-                new ConfigDescription("The amount by which the arrow rest is to the left and right of the bow center",
-                    new AcceptableValueRange<float>(-0.03f, 0.03f)));
+            arrowRestSide = config.Bind("Motion Control",
+                "ArrowRestSide",
+                k_arrowRestCenter,
+                new ConfigDescription("Whether the arrow should rest on the side of the bow farther from the eyes (Asiatic), the side closer to the eyes (Mediterranean), or the center.",
+                new AcceptableValueList<string>(new string[] { k_arrowRestCenter, k_arrowRestAsiatic, k_arrowRestMediterranean })));
             restrictBowDrawSpeed = config.Bind("Motion Control",
                 "RestrictBowDrawSpeed",
                 false,
@@ -809,9 +813,16 @@ namespace ValheimVRMod.Utilities
             return arrowRestElevation.Value;
         }
 
-        public static float ArrowRestHorizontalOffset()
+        public static float ArrowRestHorizontalOffsetMultiplier()
         {
-            return arrowRestHorizontalOffset.Value;
+            switch (arrowRestSide.Value) {
+                case k_arrowRestAsiatic:
+                    return LeftHanded() ? -1 : 1;
+                case k_arrowRestMediterranean:
+                    return LeftHanded() ? 1 : -1;
+                default:
+                    return 0;
+            }
         }
 
         public static bool RestrictBowDrawSpeed()

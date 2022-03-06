@@ -14,6 +14,7 @@ namespace ValheimVRMod.Scripts {
         private Transform lowerLimbBone;
         private Transform stringTop;
         private Transform stringBottom;
+        private float gripLocalHalfWidth = 0;
 
         public static float realLifePullPercentage;
 
@@ -59,6 +60,10 @@ namespace ValheimVRMod.Scripts {
             Destroy(pushObj);
         }
 
+        protected Vector3 getArrowRestPosition() {
+            return transform.TransformPoint(new Vector3(gripLocalHalfWidth * VHVRConfig.ArrowRestHorizontalOffsetMultiplier(), -VHVRConfig.ArrowRestElevation(), 0));
+        }
+
         private void initializeRenderersAsync(Mesh mesh) {
 
             // Removing the old bow string, which is part of the bow mesh to later replace it with a linerenderer.
@@ -93,7 +98,7 @@ namespace ValheimVRMod.Scripts {
                 }
             }
 
-            // Calculate vertex bone weights and find the local z coordinates of the top and bottom of the bow handle.
+            // Calculate vertex bone weights, find the local z coordinates of the top and bottom of the bow handle, and calculate the grip width.
             const float handleHeight = 0.52f;
             Vector3 handleTop = new Vector3(0, 0, 0);
             Vector3 handleBottom = new Vector3(0, 0, 0);
@@ -101,7 +106,7 @@ namespace ValheimVRMod.Scripts {
             for (int i = 0; i < verts.Length; i++) {
                 Vector3 v = verts[i];
                 if (v.y > handleHeight / 2f) {
-                    // The vertex is in the uppler limb.
+                    // The vertex is in the upper limb.
                     boneWeights[i].boneIndex0 = 0;
                 } else if (v.y >= -handleHeight / 2f) {
                     // The vertex is in the handle.
@@ -115,6 +120,9 @@ namespace ValheimVRMod.Scripts {
                 } else {
                     // The vertex is in the lower limb.
                     boneWeights[i].boneIndex0 = 2;
+                }
+                if (0 <= v.y && v.y < VHVRConfig.ArrowRestElevation()) {
+                    gripLocalHalfWidth = Math.Max(Math.Abs(v.x), gripLocalHalfWidth);
                 }
                 boneWeights[i].weight0 = 1;
             }
@@ -221,7 +229,7 @@ namespace ValheimVRMod.Scripts {
         }
 
         private void rotateBowOnPulling() {
-            float realLifeHandDistance = (mainHand.position - transform.position).magnitude;
+            float realLifeHandDistance = transform.InverseTransformPoint(mainHand.position).magnitude;
 
             // The angle between the push direction and the arrow direction.
             double pushOffsetAngle = Math.Asin(VHVRConfig.ArrowRestElevation() / realLifeHandDistance);
