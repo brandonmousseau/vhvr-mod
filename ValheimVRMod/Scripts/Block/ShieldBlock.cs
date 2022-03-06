@@ -14,7 +14,7 @@ namespace ValheimVRMod.Scripts.Block {
         
         public static ShieldBlock instance;
 
-        private void OnDestroy() {
+        private void OnDisable() {
             instance = null;
         }
         

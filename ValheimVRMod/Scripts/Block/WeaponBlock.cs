@@ -8,7 +8,7 @@ namespace ValheimVRMod.Scripts.Block {
         public WeaponWield weaponWield;
         public static WeaponBlock instance;
 
-        private void OnDestroy() {
+        private void OnDisable() {
             instance = null;
         }
         
