@@ -21,7 +21,7 @@ namespace ValheimVRMod.Patches {
             if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls()) {
                 return;
             }
-            ___m_blockTimer = ShieldBlock.instance?.blockTimer ?? Block.blockTimerNonParry;
+            ___m_blockTimer = ShieldBlock.instance?.blockTimer ?? WeaponBlock.instance?.blockTimer ?? Block.blockTimerNonParry;
             hit.m_dir = -__instance.transform.forward;
             if (ShieldBlock.instance?.isBlocking() ?? false) { 
                 hand = VRPlayer.leftHand;
@@ -59,7 +59,7 @@ namespace ValheimVRMod.Patches {
     class PatchIsBlocking {
         static bool Prefix(Humanoid __instance, ref bool __result) {
 
-            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls()) {
+            if (__instance != Player.m_localPlayer || EquipScript.getRight() == EquipType.Fishing || !VHVRConfig.UseVrControls()) {
                 return true;
             }
 
