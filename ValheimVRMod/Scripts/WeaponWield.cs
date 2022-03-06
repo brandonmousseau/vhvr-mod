@@ -6,9 +6,9 @@ using Valve.VR;
 namespace ValheimVRMod.Scripts {
     public class WeaponWield : MonoBehaviour {
         private Attack attack;
-        public bool itemIsTool;
         private bool weaponSubPos ;
 
+        public Vector3 weaponForward;
         public string itemName;
         private ItemDrop.ItemData item;
         private GameObject rotSave;
@@ -84,6 +84,7 @@ namespace ValheimVRMod.Scripts {
             {
                 ResetOffset();
                 transform.localRotation *= Quaternion.AngleAxis(180, Vector3.right);
+                weaponForward = transform.forward;
                 weaponSubPos = true;
             }
             else if (weaponSubPos)
@@ -160,6 +161,7 @@ namespace ValheimVRMod.Scripts {
                 {
                     transform.localRotation = (transform.localRotation * Quaternion.AngleAxis(-20, Vector3.up)) * Quaternion.AngleAxis(-5, Vector3.right);
                 }
+                weaponForward = transform.forward;
             }
             else if (SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.LeftHand) || SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.RightHand))
             {
