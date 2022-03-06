@@ -11,7 +11,13 @@ namespace ValheimVRMod.Scripts.Block {
         private float scaling = 1f;
         private Vector3 posRef;
         private Vector3 scaleRef;
+        
+        public static ShieldBlock instance;
 
+        private void OnDestroy() {
+            instance = null;
+        }
+        
         private void Awake() {
             _meshCooldown = gameObject.AddComponent<MeshCooldown>();
             instance = this;

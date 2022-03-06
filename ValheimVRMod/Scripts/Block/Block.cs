@@ -19,13 +19,6 @@ namespace ValheimVRMod.Scripts.Block {
         protected Transform hand;
         protected MeshCooldown _meshCooldown;
         public float blockTimer = blockTimerNonParry;
-        
-        // INSTANCE
-        public static Block instance;
-
-        private void OnDestroy() {
-            instance = null;
-        }
 
         private void FixedUpdate() {
             tickCounter++;

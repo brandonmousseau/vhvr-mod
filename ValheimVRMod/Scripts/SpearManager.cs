@@ -138,7 +138,7 @@ namespace ValheimVRMod.Scripts {
                 }
                 isThrowingStance = true;
             }
-            ((ShieldBlock) ShieldBlock.instance)?.ScaleShieldSize(0.4f);
+            ShieldBlock.instance?.ScaleShieldSize(0.4f);
             if (isThrowingStance) {
                 UpdateSpearThrowModel(direction.normalized);
                 UpdateDirectionLine(
@@ -288,7 +288,7 @@ namespace ValheimVRMod.Scripts {
             transform.position = rotSave.transform.position;
             transform.localRotation = rotSave.transform.localRotation;
             isThrowingStance = false;
-            ((ShieldBlock)ShieldBlock.instance)?.ScaleShieldSize(1f);
+            ShieldBlock.instance?.ScaleShieldSize(1f);
         }
         private void UpdateDirectionLine(Vector3 pos1 ,Vector3 pos2)
         {

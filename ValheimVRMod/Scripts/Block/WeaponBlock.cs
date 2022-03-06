@@ -6,7 +6,12 @@ namespace ValheimVRMod.Scripts.Block {
     public class WeaponBlock : Block {
         
         public WeaponWield weaponWield;
+        public static WeaponBlock instance;
 
+        private void OnDestroy() {
+            instance = null;
+        }
+        
         private void Awake() {
             _meshCooldown = gameObject.AddComponent<MeshCooldown>();
             instance = this;
