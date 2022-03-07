@@ -12,10 +12,10 @@ namespace ValheimVRMod.Scripts {
         public string itemName;
         private ItemDrop.ItemData item;
         private GameObject rotSave;
-        private static isTwoHanded _isTwoHanded;
+        public static isTwoHanded _isTwoHanded;
         private SteamVR_Input_Sources mainHandInputSource;
 
-        private enum isTwoHanded
+        public enum isTwoHanded
         {
             SingleHanded,
             MainRight,
@@ -161,17 +161,23 @@ namespace ValheimVRMod.Scripts {
                         originMultiplier = 0.2f;
                         break;
                 }
-                var CalculateDistance = (inversePosition.normalized * distMultiplier / Mathf.Max(handDist, distLimit)) - inversePosition.normalized * originMultiplier;
+                var CalculateDistance = inversePosition.normalized * distMultiplier / Mathf.Max(handDist, distLimit) - inversePosition.normalized * originMultiplier;
                 ResetOffset();
-                transform.position = mainHand.transform.position + (CalculateDistance);
-                transform.LookAt(mainHand.transform.position + inversePosition.normalized * 5, transform.up);
-                transform.localRotation = transform.localRotation * (rotSave.transform.localRotation) * Quaternion.AngleAxis(180, Vector3.right) * Quaternion.AngleAxis(rotOffset, transform.InverseTransformDirection(inversePosition));
+                
+                VrikCreator.mainHandConnector.LookAt(VrikCreator.offHandConnector, VRPlayer.rightHand.transform.up);
+                VrikCreator.mainHandConnector.Rotate(Vector3.right, VHVRConfig.Debug1());
+                VrikCreator.mainHandConnector.Rotate(Vector3.up, VHVRConfig.Debug2());
+                VrikCreator.mainHandConnector.Rotate(Vector3.forward, VHVRConfig.Debug3());
+
+                //transform.position = mainHand.transform.position + CalculateDistance;
+                //transform.LookAt(mainHand.transform.position + inversePosition.normalized * 5, transform.up);
+                //transform.localRotation = transform.localRotation * (rotSave.transform.localRotation) * Quaternion.AngleAxis(180, Vector3.right) * Quaternion.AngleAxis(rotOffset, transform.InverseTransformDirection(inversePosition));
 
                 //Atgeir Rotation fix
-                if (attack.m_attackAnimation == "atgeir_attack")
-                {
-                    transform.localRotation = (transform.localRotation * Quaternion.AngleAxis(-20, Vector3.up)) * Quaternion.AngleAxis(-5, Vector3.right);
-                }
+                //if (attack.m_attackAni+mation == "atgeir_attack")
+                //{
+                //    transform.localRotation = transform.localRotation * Quaternion.AngleAxis(-20, Vector3.up) * Quaternion.AngleAxis(-5, Vector3.right);
+                //}
                 weaponForward = transform.forward;
                 weaponSubPos = true;
             }
@@ -188,8 +194,9 @@ namespace ValheimVRMod.Scripts {
         }
         private void ResetOffset()
         {
-            transform.position = rotSave.transform.position;
-            transform.localRotation = rotSave.transform.localRotation;
+            VrikCreator.mainHandConnector.localRotation = Quaternion.identity;
+            //transform.position = rotSave.transform.position;
+            //transform.localRotation = rotSave.transform.localRotation;
         }
         private Vector3 GetHandWieldDirection()
         {

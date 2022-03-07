@@ -105,6 +105,10 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> arrowRestElevation;
         private static ConfigEntry<string> arrowRestSide;
         private static ConfigEntry<bool> restrictBowDrawSpeed;
+        
+        private static ConfigEntry<int> debug1;
+        private static ConfigEntry<int> debug2;
+        private static ConfigEntry<int> debug3;
 
 #if DEBUG
         private static ConfigEntry<float> DebugPosX;
@@ -557,7 +561,14 @@ namespace ValheimVRMod.Utilities
             restrictBowDrawSpeed = config.Bind("Motion Control",
                 "RestrictBowDrawSpeed",
                 false,
-                "Whether to apply vanilla-style restriction on bow drawing speed and make premature releases inaccurate. If unchecked, extra bow stamina drain is applied for game balance.");
+                "Whether to apply vanilla-style restriction on bow drawing speed and make premature releases inaccurate. If unchecked, extra bow stamina drain is applied for game balance."); 
+            
+            debug1 = config.Bind("Motion Control","DebugFloat1",0, 
+                new ConfigDescription("debug float 1",new AcceptableValueRange<int>(-15, 15)));
+            debug2 = config.Bind("Motion Control","DebugFloat2",0,
+                new ConfigDescription("debug float 1",new AcceptableValueRange<int>(-15, 15)));
+            debug3 = config.Bind("Motion Control","DebugFloat3",0,
+                new ConfigDescription("debug float 1",new AcceptableValueRange<int>(-15, 15)));
 
 // #if DEBUG
 //             DebugPosX = config.Bind("Motion Control",
@@ -833,6 +844,19 @@ namespace ValheimVRMod.Utilities
         public static bool RestrictBowDrawSpeed()
         {
             return restrictBowDrawSpeed.Value;
+        }
+        
+        public static float Debug1()
+        {
+            return debug1.Value;
+        }
+        public static float Debug2()
+        {
+            return debug2.Value;
+        }
+        public static float Debug3()
+        {
+            return debug3.Value;
         }
 
         public static bool NonVrPlayer()
