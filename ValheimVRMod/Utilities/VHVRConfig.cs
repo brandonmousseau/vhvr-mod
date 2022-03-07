@@ -101,6 +101,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> useSpearDirectionGraphic;
         private static ConfigEntry<bool> spearThrowSpeedDynamic;
         private static ConfigEntry<bool> twoHandedWield;
+        private static ConfigEntry<bool> twoHandedWithShield;
         private static ConfigEntry<float> arrowRestElevation;
         private static ConfigEntry<string> arrowRestSide;
         private static ConfigEntry<bool> restrictBowDrawSpeed;
@@ -538,7 +539,11 @@ namespace ValheimVRMod.Utilities
             twoHandedWield = config.Bind("Motion Control",
                                                     "TwoHandedWield",
                                                     true,
-                                                    "Use this to toggle controls of two handed weapon (left & right hand grab on weapon) (experimental), allow blocking and better weapon usage");
+                                                    "Use this to toggle controls of two handed weapon (left & right hand grab on weapon), allow blocking and better weapon handling");
+            twoHandedWithShield = config.Bind("Motion Control",
+                                                    "TwoHandedWithShield",
+                                                    false,
+                                                    "Allows Two Handed Wield while using shield");
             arrowRestElevation = config.Bind("Motion Control",
                 "ArrowRestElevation",
                 0.15f,
@@ -947,6 +952,10 @@ namespace ValheimVRMod.Utilities
         public static bool TwoHandedWield()
         {
             return twoHandedWield.Value;
+        }
+        public static bool TwoHandedWithShield()
+        {
+            return twoHandedWithShield.Value;
         }
         public static bool UseSpearDirectionGraphic()
         {

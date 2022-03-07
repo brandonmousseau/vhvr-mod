@@ -100,6 +100,17 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
+            if (!VHVRConfig.TwoHandedWithShield() && EquipScript.getLeft() == EquipType.Shield)
+            {
+                if (weaponSubPos)
+                {
+                    _isTwoHanded = isTwoHanded.SingleHanded;
+                    weaponSubPos = false;
+                    ResetOffset();
+                }
+                return;
+            }
+
             if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand) && SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand))
             {
                 var mainHand = VRPlayer.rightHand;
@@ -162,10 +173,12 @@ namespace ValheimVRMod.Scripts {
                     transform.localRotation = (transform.localRotation * Quaternion.AngleAxis(-20, Vector3.up)) * Quaternion.AngleAxis(-5, Vector3.right);
                 }
                 weaponForward = transform.forward;
+                weaponSubPos = true;
             }
             else if (SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.LeftHand) || SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.RightHand))
             {
                 _isTwoHanded = isTwoHanded.SingleHanded;
+                weaponSubPos = false;
                 ResetOffset();
             }
         }
