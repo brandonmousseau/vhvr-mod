@@ -105,7 +105,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> arrowRestElevation;
         private static ConfigEntry<string> arrowRestSide;
         private static ConfigEntry<bool> restrictBowDrawSpeed;
-
+        
 #if DEBUG
         private static ConfigEntry<float> DebugPosX;
         private static ConfigEntry<float> DebugPosY;

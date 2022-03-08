@@ -32,7 +32,7 @@ namespace ValheimVRMod.Scripts {
                 return false;
             }
             
-            if (!isMainHand && Player.m_localPlayer.GetLeftItem() != null) {
+            if (!isMainHand && (Player.m_localPlayer.GetLeftItem() != null || WeaponWield._isTwoHanded != WeaponWield.isTwoHanded.SingleHanded)) {
                 return false;
             }
 
