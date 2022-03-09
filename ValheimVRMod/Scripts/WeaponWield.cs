@@ -254,7 +254,7 @@ namespace ValheimVRMod.Scripts
             return Vector3.Dot(GetHandWieldDirection(), mainHand.InverseTransformPoint(refHand.position).normalized);
         }
 
-        public bool isCurrentlyTwoHanded()
+        public static bool isCurrentlyTwoHanded()
         {
             return _isTwoHanded != isTwoHanded.SingleHanded;
         }
