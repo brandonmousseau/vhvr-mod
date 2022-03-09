@@ -47,6 +47,7 @@ namespace ValheimVRMod.Scripts
         }
         private void OnDestroy()
         {
+            ResetOffset();
             Destroy(rotSave);
         }
 
@@ -114,7 +115,9 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand) && SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand))
+            if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand) && 
+                SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand) &&
+                !(isSpear() && SpearManager.IsAiming()) )
             {
                 var mainHand = VRPlayer.rightHand;
                 var offHand = VRPlayer.leftHand;
@@ -217,7 +220,9 @@ namespace ValheimVRMod.Scripts
                 weaponForward = transform.forward;
                 weaponSubPos = true;
             }
-            else if (SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.LeftHand) || SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.RightHand))
+            else if (SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.LeftHand) || 
+                     SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.RightHand)||
+                     (isSpear() && (SpearManager.IsAiming() || SpearManager.isThrowing)))
             {
                 _isTwoHanded = isTwoHanded.SingleHanded;
                 weaponSubPos = false;

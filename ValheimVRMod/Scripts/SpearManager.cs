@@ -70,6 +70,7 @@ namespace ValheimVRMod.Scripts {
         }
 
         private void OnDestroy() {
+            ResetSpearOffset();
             Destroy(fixedSpear);
             Destroy(rotSave);
             Destroy(directionLine,directionCooldown);
@@ -343,6 +344,10 @@ namespace ValheimVRMod.Scripts {
                 throwSpeed = Vector3.Distance(posEnd, posStart) * speedModifier;
             }
             return new ThrowCalculate(posStart, posEnd, throwSpeed);
+        }
+        public static bool IsAiming()
+        {
+            return isThrowingStance;
         }
     }
 }
