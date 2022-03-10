@@ -13,7 +13,7 @@
     <Deterministic>true</Deterministic>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <CommonDir>C:\Program Files (x86)\Steam\steamapps\common\</CommonDir>
+    <CommonDir>D:\SteamLibrary\steamapps\common\</CommonDir>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
