@@ -79,7 +79,7 @@ namespace ValheimVRMod.Scripts {
             }
             
             if (player.GetComponent<VRPlayerSync>()?.currentLeftWeapon != null) {
-                if (VHVRConfig.LeftHanded() && player.GetComponent<VRPlayerSync>().currentLeftWeapon.name.StartsWith("Spear")) {
+                if (VHVRConfig.LeftHanded() && player.GetComponent<VRPlayerSync>().currentLeftWeapon.name.StartsWith("Spear") && !VHVRConfig.SpearInverseWield()) {
                     vrik.solver.leftArm.target.localPosition = leftspearPosition;
                     vrik.solver.leftArm.target.localRotation = leftSpearRotation;
                     vrik.solver.leftArm.palmToThumbAxis = leftSpearEllbow;
@@ -96,7 +96,7 @@ namespace ValheimVRMod.Scripts {
             }
             
             if (player.GetComponent<VRPlayerSync>()?.currentRightWeapon != null) {
-                if (! VHVRConfig.LeftHanded() && player.GetComponent<VRPlayerSync>().currentRightWeapon.name.StartsWith("Spear")) {
+                if (! VHVRConfig.LeftHanded() && player.GetComponent<VRPlayerSync>().currentRightWeapon.name.StartsWith("Spear") && !VHVRConfig.SpearInverseWield()) {
                     vrik.solver.rightArm.target.localPosition = rightspearPosition;
                     vrik.solver.rightArm.target.localRotation = rightSpearRotation;
                     vrik.solver.rightArm.palmToThumbAxis = rightSpearEllbow;

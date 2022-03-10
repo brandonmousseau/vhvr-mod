@@ -31,6 +31,7 @@ namespace ValheimVRMod.Scripts {
         private float directionCooldown;
         private float totalCooldown = 2;
         private readonly Vector3 handAimOffset = new Vector3(0, -0.45f, -0.55f);
+        private readonly Vector3 handAimOffsetInverse = new Vector3(0, -0.15f, -0.85f);
 
         private Transform mainHandTransform;
         private Transform offHandTransform;
@@ -181,14 +182,16 @@ namespace ValheimVRMod.Scripts {
                 ResetSpearOffset();
                 return;
             }
+            var aimOffset = VHVRConfig.SpearInverseWield() ? handAimOffsetInverse : handAimOffset;
+
             if (!isThrowingStance&&!isThrowing) {
                 UpdateDirectionLine(
                     mainHandTransform.position,
-                    mainHandTransform.position + (mainHandTransform.TransformDirection(handAimOffset).normalized * 50));
+                    mainHandTransform.position + (mainHandTransform.TransformDirection(aimOffset).normalized * 50));
             }
             if (useAction.GetStateDown(mainHandInputSource)) {
                 if (startAim == Vector3.zero) {
-                    startAim = mainHandTransform.TransformDirection(handAimOffset).normalized;
+                    startAim = mainHandTransform.TransformDirection(aimOffset).normalized;
                 }
                 isThrowingStance = true;
             }
@@ -282,7 +285,11 @@ namespace ValheimVRMod.Scripts {
             var offsetPos = Vector3.Distance(mainHandTransform.position, rotSave.transform.position);
             transform.position = mainHandTransform.position - Vector3.ClampMagnitude(inversePosition, offsetPos);
             transform.LookAt(mainHandTransform.position + inversePosition);
-            transform.localRotation = transform.localRotation * (rotSave.transform.localRotation) * Quaternion.AngleAxis(180, Vector3.right);
+            if (!VHVRConfig.SpearInverseWield())
+            {
+                transform.localRotation = transform.localRotation * (rotSave.transform.localRotation) * Quaternion.AngleAxis(180, Vector3.right);
+            }
+            
         }
         private void ResetSpearOffset()
         {
