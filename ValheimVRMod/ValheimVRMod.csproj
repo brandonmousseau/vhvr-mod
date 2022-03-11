@@ -61,7 +61,7 @@
     <PackageReference Include="BepInEx.Core" Version="5.4.17" />
     <PackageReference Include="Bhaptics.Tac" Version="1.4.16" />
     <PackageReference Include="UnityEngine.Modules" Version="2019.4.31" />
-    <PackageReference Include="ValheimGameLibs" Version="0.206.5-r1" />
+    <PackageReference Include="ValheimGameLibs" Version="0.207.20-r0" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -100,6 +100,10 @@
     <Reference Include="SteamVR, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\Unity\build\ValheimVR_Data\Managed\SteamVR.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\Unity\build\ValheimVR_Data\Managed\Valve.Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="SteamVR_Actions, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>

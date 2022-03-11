@@ -196,9 +196,6 @@ namespace ValheimVRMod.Patches
     {
 
         private static MethodInfo GameCamera_get_instance = AccessTools.Method(typeof(GameCamera), "get_instance", new Type[] { });
-        private static MethodInfo Component_get_transform = AccessTools.Method(typeof(Component), "get_transform", new Type[] { typeof(Component) });
-        private static MethodInfo Transform_get_position = AccessTools.Method(typeof(Transform), "get_position", new Type[] { typeof(Transform) });
-        private static MethodInfo Transform_get_forward = AccessTools.Method(typeof(Transform), "get_forward", new Type[] { typeof(Transform) });
 
         private static Camera vrCam = null;
 

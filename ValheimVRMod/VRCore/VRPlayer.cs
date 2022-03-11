@@ -459,12 +459,17 @@ namespace ValheimVRMod.VRCore
             };
         }
 
+        // Create a camera and assign its culling mask
+        // to the unused layer. Assign depth to be higher
+        // than the UI panel depth to ensure they are drawn
+        // on top of the GUI.
         private void enableHandsCamera()
         {
-            // Create a camera and assign its culling mask
-            // to the unused layer. Assign depth to be higher
-            // than the UI panel depth to ensure they are drawn
-            // on top of the GUI.
+            Camera vrCam = CameraUtils.getCamera(CameraUtils.VR_CAMERA);
+            if (vrCam == null || vrCam.gameObject == null)
+            {
+                return;
+            }
             LogDebug("Enabling Hands Camera");
             GameObject handsCameraObject = new GameObject(CameraUtils.HANDS_CAMERA);
             Camera handsCamera = handsCameraObject.AddComponent<Camera>();
@@ -472,8 +477,7 @@ namespace ValheimVRMod.VRCore
             handsCamera.depth = 4;
             handsCamera.clearFlags = CameraClearFlags.Depth;
             handsCamera.cullingMask = LayerUtils.HANDS_LAYER_MASK;
-            handsCamera.transform.parent =
-                CameraUtils.getCamera(CameraUtils.VR_CAMERA).gameObject.transform;
+            handsCamera.transform.SetParent(vrCam.transform);
             handsCamera.enabled = true;
             _handsCam = handsCamera;
         }
@@ -483,7 +487,12 @@ namespace ValheimVRMod.VRCore
         private void enableSkyboxCamera()
         {
             Camera originalSkyboxCamera = CameraUtils.getCamera(CameraUtils.SKYBOX_CAMERA);
-            if (originalSkyboxCamera == null)
+            if (originalSkyboxCamera == null || originalSkyboxCamera.gameObject == null)
+            {
+                return;
+            }
+            Camera vrCam = CameraUtils.getCamera(CameraUtils.VR_CAMERA);
+            if(vrCam == null || vrCam.gameObject == null)
             {
                 return;
             }
@@ -491,8 +500,7 @@ namespace ValheimVRMod.VRCore
             Camera vrSkyboxCam = vrSkyboxCamObj.AddComponent<Camera>();
             vrSkyboxCam.CopyFrom(originalSkyboxCamera);
             vrSkyboxCam.depth = -2;
-            vrSkyboxCam.transform.parent =
-                 CameraUtils.getCamera(CameraUtils.VR_CAMERA).gameObject.transform;
+            vrSkyboxCam.transform.SetParent(vrCam.transform);
             originalSkyboxCamera.enabled = false;
             vrSkyboxCam.enabled = true;
             _skyboxCam = vrSkyboxCam;
@@ -710,7 +718,7 @@ namespace ValheimVRMod.VRCore
             var vrik = player.gameObject.GetComponent<VRIK>();
             if (vrik != null && vrik != null)
             {
-                return vrik.enabled;
+                return vrik.enabled && !Game.IsPaused();
             }
             return false;
         }
@@ -928,7 +936,8 @@ namespace ValheimVRMod.VRCore
         void DoRoomScaleMovement()
         {
             var player = getPlayerCharacter();
-            if (!player || player.IsAttached()) {
+            if (_vrCam == null || player == null || player.gameObject == null || player.IsAttached()) 
+            {
               return;
             }
             Vector3 deltaPosition = _vrCam.transform.localPosition - _lastCamPosition;

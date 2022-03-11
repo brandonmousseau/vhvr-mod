@@ -39,12 +39,12 @@ namespace ValheimVRMod.Scripts {
             vrik.references.rightToes = null;
 
             vrik.solver.leftArm.target = new GameObject().transform;
-            vrik.solver.leftArm.target.parent = leftController;
+            vrik.solver.leftArm.target.SetParent(leftController);
             vrik.solver.rightArm.target = new GameObject().transform;
-            vrik.solver.rightArm.target.parent = rightController;
+            vrik.solver.rightArm.target.SetParent(rightController);
 
             Transform head = new GameObject().transform;
-            head.parent = camera;
+            head.SetParent(camera);
             head.localPosition = new Vector3(0, -0.165f, -0.09f);
             head.localRotation = Quaternion.Euler(0, 90, 0);
             vrik.solver.spine.headTarget = head;

@@ -61,7 +61,7 @@ namespace ValheimVRMod.Scripts {
 
         private void FixedUpdate()
         {
-            float dt = Time.deltaTime;
+            float dt = Time.unscaledDeltaTime;
             if (isOwner())
             {
                 calculateOwnerVelocities(dt);
