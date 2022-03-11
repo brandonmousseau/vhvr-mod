@@ -8,6 +8,7 @@ using System.Threading;
 using System.Collections.Generic;
 
 using static ValheimVRMod.Utilities.LogUtils;
+using System.Threading.Tasks;
 
 namespace ValheimVRMod.Patches
 {
@@ -709,12 +710,13 @@ namespace ValheimVRMod.Patches
     /**
      * When selecting boss power at the altars 
      */
-    [HarmonyPatch(typeof(BossStone), "DelayedAttachEffects_Step1")]
-    class BossStone_DelayedAttachEffects_Step1_Patch
+    [HarmonyPatch(typeof(Player), "SetGuardianPower")]
+    class Player_SetGuardianPower_Patch
     {
-        public static void Postfix(BossStone __instance)
+        public static void Postfix(Player __instance)
         {
-            if (TactsuitVR.suitDisabled)
+            if (TactsuitVR.suitDisabled || 
+                Player.m_localPlayer != __instance || Player.m_localPlayer.m_isLoading)
             {
                 return;
             }
