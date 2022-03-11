@@ -744,7 +744,7 @@ namespace ValheimVRMod.Patches
             LogInfo("BOSS ATTACK " + __instance.m_attackAnimation + " " +
                 __instance.m_character.m_name
                 + " " + __instance.m_character.m_bossEvent);
-            //range limit arbitrary for all bosses, easier...
+            //range limit
             float range = (rangeBoss.ContainsKey(__instance.m_character.m_bossEvent)) ? rangeBoss[__instance.m_character.m_bossEvent] : 20f;
             bool closeTo = (Vector3.Distance(Player.m_localPlayer.transform.position,
                 __instance.m_character.transform.position) <
