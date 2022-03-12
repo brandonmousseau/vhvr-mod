@@ -35,7 +35,7 @@ namespace ValheimVRMod.Patches {
 
         static void Postfix(string name, ref bool __result) {
             if (VRControls.mainControlsActive) {
-                __result = __result || VRControls.instance.GetButtonDown(name) || VRControls.instance.GetButtonUpActivate(name);
+                __result = __result || VRControls.instance.GetButtonDown(name);
             }
         }
     }
@@ -172,6 +172,49 @@ namespace ValheimVRMod.Patches {
                 }
             }
         
+            return patched;
+        }
+    }
+
+    // This patch allows for optional use of releasing the trigger to build things
+    [HarmonyPatch(typeof(Player), nameof(Player.UpdatePlacement))]
+    class Player_UpdatePlacement_BuildInputPatch
+    {
+        private static MethodInfo getButtonDownMethod =
+            AccessTools.Method(typeof(ZInput), nameof(ZInput.GetButtonDown), new[] { typeof(string) });
+
+        private static readonly string placementInput = "JoyPlace";
+
+        private static bool ShouldTriggerBuildPlacement(string inputName)
+        {
+            if (VHVRConfig.BuildOnRelease())
+            {
+                return ZInput.GetButtonUp(inputName);
+            } else
+            {
+                return ZInput.GetButtonDown(inputName);
+            }
+        }
+
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            var original = new List<CodeInstruction>(instructions);
+            var patched = new List<CodeInstruction>();
+            if (!VHVRConfig.UseVrControls())
+            {
+                return original;
+            }
+            for (int i = 0; i < original.Count; i++)
+            {
+                var instruction = original[i];
+                patched.Add(instruction);
+                if (instruction.opcode == OpCodes.Ldstr && placementInput.Equals(instruction.operand) && original[i + 1].Calls(getButtonDownMethod))
+                {
+                    i++; // skip the next instruction cause we are replacing it
+                    patched.Add(CodeInstruction.Call(typeof(Player_UpdatePlacement_BuildInputPatch),
+                        nameof(Player_UpdatePlacement_BuildInputPatch.ShouldTriggerBuildPlacement)));
+                }
+            }
             return patched;
         }
     }

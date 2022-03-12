@@ -88,6 +88,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> runIsToggled;
         private static ConfigEntry<bool> leftHanded;
         private static ConfigEntry<bool> viewTurnWithMountedAnimal;
+        private static ConfigEntry<bool> buildOnRelease;
 
         // Graphics Settings
         private static ConfigEntry<bool> useAmplifyOcclusion;
@@ -451,6 +452,10 @@ namespace ValheimVRMod.Utilities
                                        "ViewTurnWithMountedAnimal",
                                        false,
                                        "Whether the view turns automatically together with the mounted animal when the animal turns.");
+            buildOnRelease = config.Bind("Controls",
+                                         "BuildOnRelease",
+                                         true,
+                                         "If true, when building, objects will be placed when releasing the trigger isntead of on pressing it down.");
             InitializeConfigurableKeyBindings(config);
         }
 
@@ -1063,6 +1068,11 @@ namespace ValheimVRMod.Utilities
         public static bool DisableRecenterPose()
         {
             return disableRecenterPose.Value;
+        }
+
+        public static bool BuildOnRelease()
+        {
+            return buildOnRelease.Value;
         }
     }
 }
