@@ -231,7 +231,7 @@ namespace ValheimVRMod.Scripts
         }
         private bool isSpear()
         {
-            return EquipScript.getRight() == EquipType.Spear;
+            return EquipScript.getRight() == EquipType.Spear || EquipScript.getRight() == EquipType.SpearChitin;
         }
         private void ResetOffset()
         {

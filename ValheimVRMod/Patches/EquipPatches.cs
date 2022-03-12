@@ -54,9 +54,12 @@ namespace ValheimVRMod.Patches {
                 case EquipType.Fishing:
                     meshFilter.gameObject.AddComponent<FishingManager>();
                     return;
-                    
-                case EquipType.Spear:
+
                 case EquipType.SpearChitin:
+                    meshFilter.gameObject.AddComponent<SpearManager>();
+                    break;
+                case EquipType.Spear:
+                
                     if (VHVRConfig.SpearInverseWield())
                     {
                         meshFilter.gameObject.transform.localRotation *= Quaternion.AngleAxis(180, Vector3.right);
