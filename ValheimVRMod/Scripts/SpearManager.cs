@@ -285,7 +285,7 @@ namespace ValheimVRMod.Scripts {
             var offsetPos = Vector3.Distance(mainHandTransform.position, rotSave.transform.position);
             transform.position = mainHandTransform.position - Vector3.ClampMagnitude(inversePosition, offsetPos);
             transform.LookAt(mainHandTransform.position + inversePosition);
-            if (!VHVRConfig.SpearInverseWield())
+            if (!VHVRConfig.SpearInverseWield() || EquipScript.getRight() == EquipType.SpearChitin)
             {
                 transform.localRotation = transform.localRotation * (rotSave.transform.localRotation) * Quaternion.AngleAxis(180, Vector3.right);
             }
