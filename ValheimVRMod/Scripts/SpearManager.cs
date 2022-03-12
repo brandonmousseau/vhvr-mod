@@ -289,7 +289,10 @@ namespace ValheimVRMod.Scripts {
             {
                 transform.localRotation = transform.localRotation * (rotSave.transform.localRotation) * Quaternion.AngleAxis(180, Vector3.right);
             }
-            
+            else
+            {
+                transform.localRotation = transform.localRotation * (rotSave.transform.localRotation);
+            }
         }
         private void ResetSpearOffset()
         {

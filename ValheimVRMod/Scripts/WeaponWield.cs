@@ -196,7 +196,7 @@ namespace ValheimVRMod.Scripts
                 VrikCreator.mainHandConnector.Rotate(Vector3.right, 10);
 
                 //weapon pos&rotation
-                if (isSpear()&& !VHVRConfig.SpearInverseWield())
+                if (isSpear() && !VHVRConfig.SpearInverseWield())
                 {
                     transform.position = mainHand.transform.position + CalculateDistance;
                     transform.LookAt(offHand.transform.position + inversePosition.normalized * 5, transform.up);
@@ -231,7 +231,7 @@ namespace ValheimVRMod.Scripts
         }
         private bool isSpear()
         {
-            return EquipScript.getRight() == EquipType.Spear;
+            return EquipScript.getRight() == EquipType.Spear || EquipScript.getRight() == EquipType.SpearChitin;
         }
         private void ResetOffset()
         {
