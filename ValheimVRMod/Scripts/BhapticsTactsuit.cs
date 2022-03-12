@@ -49,7 +49,10 @@ namespace ValheimVRMod.Scripts
 #pragma warning restore CS0618
                 suitDisabled = false;
             }
-            catch { LogInfo("Suit initialization failed!"); }
+            catch { 
+                LogInfo("Suit initialization failed!");
+                return;
+            }
             RegisterAllTactFiles();
             LogInfo("Starting HeartBeat thread...");
             PlaybackHaptics("HeartBeat");

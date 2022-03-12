@@ -684,9 +684,9 @@ namespace ValheimVRMod.Patches
     [HarmonyPatch(typeof(OfferingBowl), "SpawnBoss")]
     class OfferingBowl_SpawnBoss_Patch
     {
-        public static void Postfix(OfferingBowl __instance)
+        public static void Postfix(OfferingBowl __instance, bool __result)
         {
-            if (TactsuitVR.suitDisabled)
+            if (TactsuitVR.suitDisabled || !__result)
             {
                 return;
             }
@@ -716,7 +716,7 @@ namespace ValheimVRMod.Patches
         public static void Postfix(Player __instance)
         {
             if (TactsuitVR.suitDisabled || 
-                Player.m_localPlayer != __instance || Player.m_localPlayer.m_isLoading)
+                Player.m_localPlayer != __instance || __instance.m_isLoading)
             {
                 return;
             }
