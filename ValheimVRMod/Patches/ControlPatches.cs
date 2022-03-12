@@ -7,6 +7,7 @@ using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
 using System.Reflection.Emit;
 using UnityEngine;
+using ValheimVRMod.Scripts.Block;
 
 namespace ValheimVRMod.Patches {
     // These patches are used to inject the VR inputs into the game's control system
@@ -340,7 +341,7 @@ namespace ValheimVRMod.Patches {
             }
 
             if (EquipScript.getLeft() == EquipType.Shield) {
-                blockHold = ShieldManager.isBlocking();
+                blockHold = ShieldBlock.instance?.isBlocking() ?? false;
             }
 
             switch (EquipScript.getRight()) {

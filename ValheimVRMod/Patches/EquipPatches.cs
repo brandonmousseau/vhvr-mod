@@ -2,6 +2,7 @@ using HarmonyLib;
 using UnityEngine;
 using UnityEngine.Rendering;
 using ValheimVRMod.Scripts;
+using ValheimVRMod.Scripts.Block;
 using ValheimVRMod.Utilities;
 
 namespace ValheimVRMod.Patches {
@@ -56,12 +57,20 @@ namespace ValheimVRMod.Patches {
                     
                 case EquipType.Spear:
                 case EquipType.SpearChitin:
+                    if (VHVRConfig.SpearInverseWield())
+                    {
+                        meshFilter.gameObject.transform.localRotation *= Quaternion.AngleAxis(180, Vector3.right);
+                    }
                     meshFilter.gameObject.AddComponent<SpearManager>();
                     // (no return, we want collider for spear also)
                     break;
             }
             
             StaticObjects.rightWeaponCollider().GetComponent<WeaponCollision>().setColliderParent(meshFilter.transform, ___m_rightItem, true);
+            var weaponWield = ___m_rightItemInstance.AddComponent<WeaponWield>();
+            weaponWield.itemName = ___m_rightItem;
+            meshFilter.gameObject.AddComponent<WeaponBlock>().weaponWield = weaponWield; 
+
             ParticleFix.maybeFix(___m_rightItemInstance);
         }
     }
@@ -114,10 +123,10 @@ namespace ValheimVRMod.Patches {
                     return;
                 
                 case EquipType.Shield:
-                    meshFilter.gameObject.AddComponent<ShieldManager>()._name = ___m_leftItem;
+                    meshFilter.gameObject.AddComponent<ShieldBlock>().itemName = ___m_leftItem;
                     return;
             }
-            
+
             StaticObjects.leftWeaponCollider().GetComponent<WeaponCollision>().setColliderParent(meshFilter.transform, ___m_leftItem, false);
             ParticleFix.maybeFix(___m_leftItemInstance);
         }

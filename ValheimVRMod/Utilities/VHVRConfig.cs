@@ -100,11 +100,13 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<string> spearThrowingType;
         private static ConfigEntry<bool> useSpearDirectionGraphic;
         private static ConfigEntry<bool> spearThrowSpeedDynamic;
-        private static ConfigEntry<bool> spearTwoHanded;
+        private static ConfigEntry<bool> spearInverseWield;
+        private static ConfigEntry<bool> twoHandedWield;
+        private static ConfigEntry<bool> twoHandedWithShield;
         private static ConfigEntry<float> arrowRestElevation;
         private static ConfigEntry<string> arrowRestSide;
         private static ConfigEntry<bool> restrictBowDrawSpeed;
-
+        
 #if DEBUG
         private static ConfigEntry<float> DebugPosX;
         private static ConfigEntry<float> DebugPosY;
@@ -531,14 +533,22 @@ namespace ValheimVRMod.Utilities
                                                 "SpearThrowSpeedDynamic",
                                                 true,
                                                 "Determine whether or not your throw power depends on swing speed, setting to false make the throw always on fixed speed.");
+            spearInverseWield = config.Bind("Motion Control",
+                                                "SpearInverseWield",
+                                                true,
+                                                "Use this to flip the spear tip, so you can stab forward instead of needing to do downward stabbing");
             useSpearDirectionGraphic = config.Bind("Motion Control",
                                                     "UseSpearDirectionGraphic",
                                                     true,
                                                     "Use this to toggle the direction line of throwing when using the spear with VR controls.");
-            spearTwoHanded = config.Bind("Motion Control",
-                                                    "TwoHandedSpear",
+            twoHandedWield = config.Bind("Motion Control",
+                                                    "TwoHandedWield",
+                                                    true,
+                                                    "Use this to toggle controls of two handed weapon (left & right hand grab on weapon), allow blocking and better weapon handling");
+            twoHandedWithShield = config.Bind("Motion Control",
+                                                    "TwoHandedWithShield",
                                                     false,
-                                                    "Use this to toggle controls of two handed spear (left hand grab while having spear) (experimental)");
+                                                    "Allows Two Handed Wield while using shield");
             arrowRestElevation = config.Bind("Motion Control",
                 "ArrowRestElevation",
                 0.15f,
@@ -939,14 +949,21 @@ namespace ValheimVRMod.Utilities
         {
             return spearThrowSpeedDynamic.Value;
         }
-
+        public static bool SpearInverseWield()
+        {
+            return spearInverseWield.Value;
+        }
         public static string SpearThrowType()
         {
             return spearThrowingType.Value;
         }
-        public static bool SpearTwoHanded()
+        public static bool TwoHandedWield()
         {
-            return spearTwoHanded.Value;
+            return twoHandedWield.Value;
+        }
+        public static bool TwoHandedWithShield()
+        {
+            return twoHandedWithShield.Value;
         }
         public static bool UseSpearDirectionGraphic()
         {
