@@ -43,6 +43,7 @@ namespace ValheimVRMod.VRCore.UI
         private SteamVR_Action_Vector2 walk;
         private SteamVR_Action_Vector2 pitchAndYaw;
         private SteamVR_Action_Vector2 buildPitchAndYaw; //for the same logic as zInputToBooleanAction, this is needed for controllers that have multiple actionsets using the trackpad
+        private bool wasActivated;
         private float combinedPitchAndYawX => buildPitchAndYaw.active ? buildPitchAndYaw.axis.x : pitchAndYaw.axis.x;
 
         private SteamVR_Action_Vector2 contextScroll;
@@ -231,6 +232,10 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return false;
             }
+            if (zinput == "JoyPlace")
+            {
+                return false;
+            }
             if (zinput == "Jump" && shouldEnableRemove())
             {
                 return false;
@@ -309,6 +314,10 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return false;
             }
+            if (zinput == "JoyPlace")
+            {
+                return false;
+            }
             if (zinput == "Jump" && shouldEnableRemove())
             {
                 return false;
@@ -368,6 +377,15 @@ namespace ValheimVRMod.VRCore.UI
                 return false;
             }
             return action.Any(x => x.GetStateUp(SteamVR_Input_Sources.Any));
+        }
+        
+        public bool GetButtonUpActivate(string zinput)
+        {
+            if (zinput == "JoyPlace" && shouldEnablePlace())
+            {
+                return true;
+            }
+            return false;
         }
 
         public float GetJoyLeftStickX()
@@ -534,6 +552,10 @@ namespace ValheimVRMod.VRCore.UI
         private bool shouldEnableRemove()
         {
             return inPlaceMode() && SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand);
+        }
+        private bool shouldEnablePlace()
+        {
+            return SteamVR_Actions.laserPointers_LeftClick.GetStateUp(SteamVR_Input_Sources.RightHand);
         }
         private void init()
         {

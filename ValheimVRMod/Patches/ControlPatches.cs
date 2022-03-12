@@ -35,7 +35,7 @@ namespace ValheimVRMod.Patches {
 
         static void Postfix(string name, ref bool __result) {
             if (VRControls.mainControlsActive) {
-                __result = __result || VRControls.instance.GetButtonDown(name);
+                __result = __result || VRControls.instance.GetButtonDown(name) || VRControls.instance.GetButtonUpActivate(name);
             }
         }
     }
