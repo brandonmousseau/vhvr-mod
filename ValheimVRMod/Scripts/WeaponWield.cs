@@ -196,7 +196,7 @@ namespace ValheimVRMod.Scripts
                 VrikCreator.mainHandConnector.Rotate(Vector3.right, 10);
 
                 //weapon pos&rotation
-                if ((isSpear() && !VHVRConfig.SpearInverseWield()) || EquipScript.getRight() == EquipType.SpearChitin)
+                if ((isSpear() && !VHVRConfig.SpearInverseWield()))
                 {
                     transform.position = mainHand.transform.position + CalculateDistance;
                     transform.LookAt(offHand.transform.position + inversePosition.normalized * 5, transform.up);
