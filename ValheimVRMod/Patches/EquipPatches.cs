@@ -59,10 +59,16 @@ namespace ValheimVRMod.Patches {
                     meshFilter.gameObject.AddComponent<SpearManager>();
                     break;
                 case EquipType.Spear:
-                
                     if (VHVRConfig.SpearInverseWield())
                     {
                         meshFilter.gameObject.transform.localRotation *= Quaternion.AngleAxis(180, Vector3.right);
+                        switch (___m_rightItem)
+                        {
+                            case "SpearElderbark":
+                            case "SpearBronze":
+                                meshFilter.gameObject.transform.localPosition = new Vector3(0, 0, -1.15f);
+                                break;
+                        }
                     }
                     meshFilter.gameObject.AddComponent<SpearManager>();
                     // (no return, we want collider for spear also)
