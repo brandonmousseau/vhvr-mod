@@ -219,10 +219,6 @@ namespace ValheimVRMod.Patches {
                         return false;
                     } else
                     {
-                        if (inputReceived)
-                        {
-                            LogUtils.LogDebug("Returning base input as true");
-                        }
                         return inputReceived;
                     }
                 }
