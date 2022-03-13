@@ -15,6 +15,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> nonVrPlayer;
         private static ConfigEntry<bool> useVrControls;
         private static ConfigEntry<bool> useOverlayGui;
+        private static ConfigEntry<string> pluginVersion;
         
         // General Settings
         private static ConfigEntry<string> mirrorMode;
@@ -134,6 +135,39 @@ namespace ValheimVRMod.Utilities
             InitializeControlsSettings();
             InitializeGraphicsSettings();
             InitializeMotionControlSettings();
+            DoVersionInit();
+        }
+
+        // Using this method to create a marker in the config file so we can
+        // detect when the mod is being upgraded from an older version
+        // and doing any one time initialization. E.g., since prior to 0.9.0, the VR
+        // HUD canvases were parented on a different transform, for anyone who upgrades
+        // to 0.9.0, the first time they start the mod their VR HUD settings will be reset
+        // so that it isn't completely broken.
+        private static void DoVersionInit()
+        {
+            LogUtils.LogInfo("Perform pre-initialization...");
+            var version = ValheimVRMod.PLUGIN_VERSION;
+            System.Version parsedVersion = null;
+            string configVersion = pluginVersion.Value;
+            System.Version.TryParse(configVersion, out parsedVersion);
+            if (parsedVersion == null || parsedVersion.CompareTo(System.Version.Parse("0.9.0")) < 0)
+            {
+                // If the parsed version was not set or is less than 0.9.0, which
+                // is the first version with updated HUD transforms, we will automatically
+                // set the positions back to default for their first time setup.
+                ResetVrHudPositions();
+            }
+            pluginVersion.Value = version.ToString();
+        }
+
+        private static void ResetVrHudPositions()
+        {
+            LogUtils.LogDebug("Resetting HUD Positions for new version.");
+            leftWristPos.Value = (Vector3) leftWristPos.DefaultValue;
+            leftWristRot.Value = (Quaternion) leftWristRot.DefaultValue;
+            rightWristPos.Value = (Vector3) rightWristPos.DefaultValue;
+            rightWristRot.Value = (Quaternion)rightWristRot.DefaultValue;
         }
 
         private static void InitializeImmutableSettings() 
@@ -156,6 +190,10 @@ namespace ValheimVRMod.Utilities
                 true,
                 "Whether or not to use OpenVR overlay for the GUI. This produces a" +
                 " cleaner GUI but will only be compatible with M&K or Gamepad controls.");
+            pluginVersion = config.Bind("Immutable",
+                "PluginVersion",
+                "",
+                "For internal use only. Do not edit.");
         }
         
         private static void InitializeGeneralSettings()
