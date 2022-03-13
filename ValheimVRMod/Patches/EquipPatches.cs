@@ -204,8 +204,9 @@ namespace ValheimVRMod.Patches {
         /// For Left Handed mode we need to mirror models of shields and tankard 
         /// </summary>
         static void Postfix(GameObject __result) {
-            
+
             if (Player.m_localPlayer == null 
+                || __result == null
                 || __result.GetComponentInParent<Player>() != Player.m_localPlayer
                 || !VHVRConfig.UseVrControls() 
                 || !VHVRConfig.LeftHanded()
