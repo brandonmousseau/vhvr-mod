@@ -467,6 +467,22 @@ namespace ValheimVRMod.VRCore.UI
             }
         }
 
+        public int getPieceRefModifier()
+        {
+            float yAxis = GetJoyRightStickY();
+            if(yAxis > 0.5f)
+            {
+                return -1;
+            } else if (yAxis < -0.5f)
+            {
+                return 1;
+            }
+            else
+            {
+                return 0;
+            }
+        }
+
         private int getAltMapZoom()
         {
             if (!altMapZoomTriggered)

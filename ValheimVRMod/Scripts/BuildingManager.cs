@@ -1,14 +1,17 @@
 ﻿using UnityEngine;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
+using ValheimVRMod.VRCore.UI;
 using Valve.VR;
 
 namespace ValheimVRMod.Scripts
 {
     class BuildingManager : MonoBehaviour
     {
+        private readonly Vector3 handpoint = new Vector3(0, -0.45f, 0.55f);
         private float stickyTimer;
         private bool isReferenced;
+        private RaycastHit lastRefCast;
         private GameObject buildRefBox;
         private GameObject buildRefPointer;
         private GameObject buildRefPointer2;
@@ -36,7 +39,7 @@ namespace ValheimVRMod.Scripts
         {
             buildRefBox = GameObject.CreatePrimitive(PrimitiveType.Cube);
             buildRefBox.transform.localScale = new Vector3(2, 0.0001f, 2);
-            buildRefBox.transform.localScale *= 8f;
+            buildRefBox.transform.localScale *= 16f;
             buildRefBox.layer = 16;
             Destroy(buildRefBox.GetComponent<MeshRenderer>());
         }
@@ -80,38 +83,34 @@ namespace ValheimVRMod.Scripts
         private void BuildReferencePoint()
         {
             RaycastHit pieceRaycast;
-            var handpoint = new Vector3(0, -0.45f, 0.55f);
-            if (Physics.Raycast(VRPlayer.leftHand.transform.position, VRPlayer.leftHand.transform.TransformDirection(handpoint), out pieceRaycast, 50f, piecelayer2) && SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand))
+            if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand))
             {
-                buildRefBox.SetActive(true);
-                buildRefPointer.SetActive(true);
-                buildRefPointer2.SetActive(true);
-                buildRefBox.transform.position = pieceRaycast.point + (VRPlayer.leftHand.transform.TransformDirection(handpoint) * 0.3f);
-                buildRefPointer.transform.position = pieceRaycast.point;
-                buildRefPointer2.transform.position = pieceRaycast.point;
-                buildRefBox.transform.rotation = Quaternion.FromToRotation(buildRefBox.transform.up, pieceRaycast.normal) * buildRefBox.transform.rotation;
-                buildRefPointer.transform.rotation = Quaternion.FromToRotation(buildRefPointer.transform.up, pieceRaycast.normal) * buildRefPointer.transform.rotation;
-                buildRefPointer2.transform.rotation = Quaternion.FromToRotation(buildRefPointer2.transform.up, pieceRaycast.normal) * buildRefPointer2.transform.rotation;
+                if (!Physics.Raycast(VRPlayer.leftHand.transform.position, VRPlayer.leftHand.transform.TransformDirection(handpoint), out pieceRaycast, 50f, piecelayer2))
+                {
+                    return;
+                }
+                EnableRefPoint(true);
+                UpdateRefPosition(pieceRaycast, VRPlayer.leftHand.transform.TransformDirection(handpoint));
+                UpdateRefRotation(GetRefDirection(VRPlayer.leftHand.transform.TransformDirection(handpoint)));
+                lastRefCast = pieceRaycast;
                 isReferenced = true;
             }
-            else if (Physics.Raycast(VRPlayer.rightHand.transform.position, VRPlayer.rightHand.transform.TransformDirection(handpoint), out pieceRaycast, 50f, piecelayer) && SteamVR_Actions.laserPointers_LeftClick.GetState(SteamVR_Input_Sources.RightHand))
+            else if (SteamVR_Actions.laserPointers_LeftClick.GetState(SteamVR_Input_Sources.RightHand))
             {
+                if (!Physics.Raycast(VRPlayer.rightHand.transform.position, VRPlayer.rightHand.transform.TransformDirection(handpoint), out pieceRaycast, 50f, piecelayer))
+                {
+                    return;
+                }
                 if (stickyTimer >= 2)
                 {
-                    buildRefBox.SetActive(true);
-                    buildRefPointer.SetActive(true);
-                    buildRefPointer2.SetActive(true);
+                    EnableRefPoint(true);
                     if (!isReferenced)
                     {
-                        buildRefBox.transform.position = pieceRaycast.point + (VRPlayer.rightHand.transform.TransformDirection(handpoint) * 0.3f);
-                        buildRefPointer.transform.position = pieceRaycast.point ;
-                        buildRefPointer2.transform.position = pieceRaycast.point ;
-                        buildRefBox.transform.rotation = Quaternion.FromToRotation(buildRefBox.transform.up, pieceRaycast.normal) * buildRefBox.transform.rotation;
-                        buildRefPointer.transform.rotation = Quaternion.FromToRotation(buildRefPointer.transform.up, pieceRaycast.normal) * buildRefPointer.transform.rotation;
-                        buildRefPointer2.transform.rotation = Quaternion.FromToRotation(buildRefPointer2.transform.up, pieceRaycast.normal) * buildRefPointer2.transform.rotation;
+                        lastRefCast = pieceRaycast;
                         isReferenced = true;
                     }
-
+                    UpdateRefPosition(lastRefCast, VRPlayer.rightHand.transform.TransformDirection(handpoint));
+                    UpdateRefRotation(GetRefDirection(VRPlayer.rightHand.transform.TransformDirection(handpoint)));
                 }
                 else
                 {
@@ -123,13 +122,49 @@ namespace ValheimVRMod.Scripts
                 stickyTimer += Time.unscaledDeltaTime;
                 if (stickyTimer <= 2 || stickyTimer >= 3)
                 {
-                    buildRefBox.SetActive(false);
-                    buildRefPointer.SetActive(false);
-                    buildRefPointer2.SetActive(false);
+                    EnableRefPoint(false);
                     stickyTimer = 0;
                     isReferenced = false;
                 }
             }
+        }
+
+        private Vector3 GetRefDirection(Vector3 refHandDir)
+        {
+            var refDirection = lastRefCast.normal;
+            switch (VRControls.instance.getPieceRefModifier())
+            {
+                case -1:
+                    return new Vector3(0, 1, 0);
+                case 1:
+                    refDirection = new Vector3(lastRefCast.normal.x, 0, lastRefCast.normal.z).normalized;
+                    if (refDirection == Vector3.zero)
+                    {
+                        refDirection = new Vector3(refHandDir.x, 0, refHandDir.z).normalized;
+                    }
+                    return refDirection;
+            }
+            return refDirection;
+        }
+
+        private void EnableRefPoint(bool enabled)
+        {
+            buildRefBox.SetActive(enabled);
+            buildRefPointer.SetActive(enabled);
+            buildRefPointer2.SetActive(enabled);
+        }
+        private void UpdateRefPosition(RaycastHit pieceRaycast, Vector3 direction)
+        {
+            buildRefBox.transform.position = pieceRaycast.point + (VRPlayer.leftHand.transform.TransformDirection(handpoint) * 0.3f);
+            buildRefPointer.transform.position = pieceRaycast.point;
+            buildRefPointer2.transform.position = pieceRaycast.point;
+        }
+
+        private void UpdateRefRotation(Vector3 refDirection)
+        {
+            buildRefBox.transform.rotation = Quaternion.FromToRotation(buildRefBox.transform.up, refDirection) * buildRefBox.transform.rotation;
+            buildRefPointer.transform.rotation = Quaternion.FromToRotation(buildRefPointer.transform.up, refDirection) * buildRefPointer.transform.rotation;
+            buildRefPointer2.transform.rotation = Quaternion.FromToRotation(buildRefPointer2.transform.up, refDirection) * buildRefPointer2.transform.rotation;
         }
     }
 }
