@@ -523,7 +523,7 @@ namespace ValheimVRMod.Utilities
                     new AcceptableValueRange<float>(0, 1)));
             spearThrowingType = config.Bind("Motion Control",
                                             "SpearThrowingMode",
-                                            "DartType",
+                                            "TwoStagedThrowing",
                                             new ConfigDescription("Change the throwing mode." +
                                             "DartType - Throw by holding grab and trigger and then releasing trigger, Throw aim is based on first trigger pressed to release in a straight line, and throwing power is based on how fast you swing. " +
                                             "TwoStagedThrowing - Throw aim is based on first grab and then aim is locked after pressing trigger, throw by releasing trigger while swinging, throw speed based on how fast you swing. " +

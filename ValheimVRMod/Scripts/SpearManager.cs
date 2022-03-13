@@ -135,30 +135,27 @@ namespace ValheimVRMod.Scripts {
             
             ShieldBlock.instance?.ScaleShieldSize(0.4f);
             var direction = offHandTransform.position - CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform.position;
-            var meshDirection = direction;
             var lineDirection = direction;
-            var pStartAim = meshDirection.normalized;
-            UpdateThrowCalculation(direction, meshDirection, lineDirection, pStartAim);
+            var pStartAim = direction.normalized;
+            UpdateThrowCalculation(direction, lineDirection, pStartAim);
         }
         
         private void UpdateTwoStagedThrowCalculation() {
             
             var direction = startAim;
-            var meshDirection = direction;
             var lineDirection = mainHandTransform.TransformDirection(VHVRConfig.SpearInverseWield() ? handAimOffsetInverse : handAimOffset);
             var pStartAim = lineDirection.normalized;
-            UpdateThrowCalculation(direction, meshDirection, lineDirection, pStartAim);
+            UpdateThrowCalculation(direction, lineDirection, pStartAim);
         }
         private void UpdateDartSpearThrowCalculation() {
             
             var direction = Player.m_localPlayer.transform.TransformDirection(Player.m_localPlayer.transform.InverseTransformPoint(mainHandTransform.position) - startAim);
-            var meshDirection = direction;
             var lineDirection = direction;
             var pStartAim = Player.m_localPlayer.transform.InverseTransformPoint(mainHandTransform.position);
-            UpdateThrowCalculation(direction, meshDirection, lineDirection, pStartAim);
+            UpdateThrowCalculation(direction, lineDirection, pStartAim);
         }
         
-        private void UpdateThrowCalculation(Vector3 direction, Vector3 meshDirection, Vector3 lineDirection, Vector3 pStartAim) {
+        private void UpdateThrowCalculation(Vector3 direction, Vector3 lineDirection, Vector3 pStartAim) {
             if (!isThrowingStance && !isThrowing) {
                 UpdateDirectionLine(
                     mainHandTransform.position,
@@ -174,7 +171,7 @@ namespace ValheimVRMod.Scripts {
             }
 
             if (isThrowingStance) {
-                UpdateSpearThrowModel(meshDirection.normalized);
+                UpdateSpearThrowModel(direction.normalized);
                 UpdateDirectionLine(
                     mainHandTransform.position - direction.normalized,
                     mainHandTransform.position + direction.normalized * 50);
