@@ -177,45 +177,82 @@ namespace ValheimVRMod.Patches {
     }
 
     // This patch allows for optional use of releasing the trigger to build things
-    [HarmonyPatch(typeof(Player), nameof(Player.UpdatePlacement))]
-    class Player_UpdatePlacement_BuildInputPatch
+    class BuildOnReleasePatches
     {
-        private static MethodInfo getButtonDownMethod =
-            AccessTools.Method(typeof(ZInput), nameof(ZInput.GetButtonDown), new[] { typeof(string) });
 
-        private static readonly string placementInput = "JoyPlace";
-
-        private static bool ShouldTriggerBuildPlacement(string inputName)
+        // We need to track when the piece selection menu was just hidden
+        // as a result of the user clicking on it so that we don't
+        // cause a placement right after the menu is closed and the
+        // trigger is released.
+        [HarmonyPatch(typeof(Hud), nameof(Hud.HidePieceSelection))]
+        class BuildHudTracker
         {
-            if (VHVRConfig.BuildOnRelease())
+
+            public static bool buildHudJustToggledOff = false;
+
+            static void Postfix()
             {
-                return ZInput.GetButtonUp(inputName);
-            } else
-            {
-                return ZInput.GetButtonDown(inputName);
+                buildHudJustToggledOff = true;
             }
+
         }
 
-        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        [HarmonyPatch(typeof(Player), nameof(Player.UpdatePlacement))]
+        class Player_UpdatePlacement_BuildInputPatch
         {
-            var original = new List<CodeInstruction>(instructions);
-            var patched = new List<CodeInstruction>();
-            if (!VHVRConfig.UseVrControls())
+            private static MethodInfo getButtonDownMethod =
+                AccessTools.Method(typeof(ZInput), nameof(ZInput.GetButtonDown), new[] { typeof(string) });
+
+            private static readonly string placementInput = "JoyPlace";
+
+            private static bool ShouldTriggerBuildPlacement(string inputName)
             {
-                return original;
-            }
-            for (int i = 0; i < original.Count; i++)
-            {
-                var instruction = original[i];
-                patched.Add(instruction);
-                if (instruction.opcode == OpCodes.Ldstr && placementInput.Equals(instruction.operand) && original[i + 1].Calls(getButtonDownMethod))
+                if (VHVRConfig.BuildOnRelease())
                 {
-                    i++; // skip the next instruction cause we are replacing it
-                    patched.Add(CodeInstruction.Call(typeof(Player_UpdatePlacement_BuildInputPatch),
-                        nameof(Player_UpdatePlacement_BuildInputPatch.ShouldTriggerBuildPlacement)));
+                    bool inputReceived = ZInput.GetButtonUp(inputName);
+                    if (BuildHudTracker.buildHudJustToggledOff && inputReceived)
+                    {
+                        // Since the build hud was just toggled off and the input was receieved,
+                        // we won't trigger the placement. Instead just reset the "buildHudJustToggledOff" flag
+                        LogUtils.LogDebug("Resetting buildHudToggledFlag");
+                        BuildHudTracker.buildHudJustToggledOff = false;
+                        return false;
+                    } else
+                    {
+                        if (inputReceived)
+                        {
+                            LogUtils.LogDebug("Returning base input as true");
+                        }
+                        return inputReceived;
+                    }
+                }
+                else
+                {
+                    return ZInput.GetButtonDown(inputName);
                 }
             }
-            return patched;
+
+            static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+            {
+                var original = new List<CodeInstruction>(instructions);
+                var patched = new List<CodeInstruction>();
+                if (!VHVRConfig.UseVrControls())
+                {
+                    return original;
+                }
+                for (int i = 0; i < original.Count; i++)
+                {
+                    var instruction = original[i];
+                    patched.Add(instruction);
+                    if (instruction.opcode == OpCodes.Ldstr && placementInput.Equals(instruction.operand) && original[i + 1].Calls(getButtonDownMethod))
+                    {
+                        i++; // skip the next instruction cause we are replacing it
+                        patched.Add(CodeInstruction.Call(typeof(Player_UpdatePlacement_BuildInputPatch),
+                            nameof(Player_UpdatePlacement_BuildInputPatch.ShouldTriggerBuildPlacement)));
+                    }
+                }
+                return patched;
+            }
         }
     }
 
