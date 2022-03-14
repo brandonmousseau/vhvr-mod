@@ -15,6 +15,8 @@ namespace ValheimVRMod.Scripts
         private GameObject buildRefBox;
         private GameObject buildRefPointer;
         private GameObject buildRefPointer2;
+        private int currRefType;
+        private bool refWasChanged;
         private LayerMask piecelayer = LayerMask.GetMask(new string[]
         {
             "Default",
@@ -90,6 +92,7 @@ namespace ValheimVRMod.Scripts
                     return;
                 }
                 EnableRefPoint(true);
+                UpdateRefType();
                 UpdateRefPosition(pieceRaycast, VRPlayer.leftHand.transform.TransformDirection(handpoint));
                 UpdateRefRotation(GetRefDirection(VRPlayer.leftHand.transform.TransformDirection(handpoint)));
                 lastRefCast = pieceRaycast;
@@ -104,6 +107,7 @@ namespace ValheimVRMod.Scripts
                 if (stickyTimer >= 2)
                 {
                     EnableRefPoint(true);
+                    UpdateRefType();
                     if (!isReferenced)
                     {
                         lastRefCast = pieceRaycast;
@@ -123,16 +127,36 @@ namespace ValheimVRMod.Scripts
                 if (stickyTimer <= 2 || stickyTimer >= 3)
                 {
                     EnableRefPoint(false);
+                    currRefType = 0;
                     stickyTimer = 0;
                     isReferenced = false;
                 }
             }
         }
 
+        private void UpdateRefType()
+        {
+            switch (VRControls.instance.getPieceRefModifier())
+            {
+                case -1:
+                    if (!refWasChanged && currRefType > -1)
+                        currRefType -= 1;
+                    refWasChanged = true;
+                    break;
+                case 0:
+                    refWasChanged = false;
+                    break;
+                case 1:
+                    if (!refWasChanged && currRefType < 1)
+                        currRefType += 1;
+                    refWasChanged = true;
+                    break;
+            }
+        }
         private Vector3 GetRefDirection(Vector3 refHandDir)
         {
             var refDirection = lastRefCast.normal;
-            switch (VRControls.instance.getPieceRefModifier())
+            switch (currRefType)
             {
                 case -1:
                     return new Vector3(0, 1, 0);
