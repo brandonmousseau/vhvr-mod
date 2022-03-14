@@ -409,6 +409,22 @@ namespace ValheimVRMod.VRCore.UI
             }
             return -pitchAndYaw.axis.y;
         }
+        public int getDirectPieceRotation()
+        {
+            if (!altPieceRotationControlsActive())
+            {
+                return 999;
+            }
+            if (-pitchAndYaw.axis.y>0.5f)
+            {
+                return BuildingManager.TranslateRotation() + 8;
+            }
+            else if (-pitchAndYaw.axis.y < -0.5f)
+            {
+                return BuildingManager.TranslateRotation();
+            }
+            return 999;
+        }
 
         public int getPieceRotation()
         {

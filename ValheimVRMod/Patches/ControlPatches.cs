@@ -125,6 +125,11 @@ namespace ValheimVRMod.Patches {
             }
 
             ___m_placeRotation += VRControls.instance.getPieceRotation();
+            var directRotate = VRControls.instance.getDirectPieceRotation();
+            if (directRotate != 999)
+            {
+                ___m_placeRotation = directRotate;
+            }
         }
     }
 

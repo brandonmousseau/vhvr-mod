@@ -8,7 +8,7 @@ namespace ValheimVRMod.Scripts
 {
     class BuildingManager : MonoBehaviour
     {
-        private readonly Vector3 handpoint = new Vector3(0, -0.45f, 0.55f);
+        private static Vector3 handpoint = new Vector3(0, -0.45f, 0.55f);
         private float stickyTimer;
         private bool isReferenced;
         private RaycastHit lastRefCast;
@@ -189,6 +189,15 @@ namespace ValheimVRMod.Scripts
             buildRefBox.transform.rotation = Quaternion.FromToRotation(buildRefBox.transform.up, refDirection) * buildRefBox.transform.rotation;
             buildRefPointer.transform.rotation = Quaternion.FromToRotation(buildRefPointer.transform.up, refDirection) * buildRefPointer.transform.rotation;
             buildRefPointer2.transform.rotation = Quaternion.FromToRotation(buildRefPointer2.transform.up, refDirection) * buildRefPointer2.transform.rotation;
+        }
+
+        public static int TranslateRotation()
+        {
+            var dir = VRPlayer.rightHand.transform.TransformDirection(handpoint);
+            var angle = Vector3.SignedAngle(Vector3.forward, new Vector3(dir.x,0,dir.z).normalized, Vector3.up);
+            angle = angle < 0 ? angle + 360 : angle;
+            var snapAngle = Mathf.RoundToInt(angle * 16 / 360);
+            return snapAngle;
         }
     }
 }
