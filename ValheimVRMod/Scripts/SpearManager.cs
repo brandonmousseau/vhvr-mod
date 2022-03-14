@@ -156,7 +156,7 @@ namespace ValheimVRMod.Scripts {
         }
         
         private void UpdateThrowCalculation(Vector3 direction, Vector3 lineDirection, Vector3 pStartAim) {
-            if (!isThrowingStance && !isThrowing) {
+            if (!isThrowingStance && !isThrowing && VHVRConfig.SpearThrowType() != "DartType") {
                 UpdateDirectionLine(
                     mainHandTransform.position,
                     mainHandTransform.position + lineDirection.normalized * 50);
