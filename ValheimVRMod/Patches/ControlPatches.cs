@@ -133,6 +133,22 @@ namespace ValheimVRMod.Patches {
         }
     }
 
+    //Force position nearby snap points
+    [HarmonyPatch(typeof(Player), "UpdatePlacementGhost")]
+    class PlacementSnapPoint
+    {
+        private static void Postfix(Player __instance, GameObject ___m_placementGhost)
+        {
+            if (!VRControls.mainControlsActive || __instance != Player.m_localPlayer || !___m_placementGhost || !___m_placementGhost.transform ||
+                !__instance.InPlaceMode() || !BuildingManager.instance)
+            {
+                return;
+            }
+            
+            ___m_placementGhost.transform.position = BuildingManager.instance.UpdateSelectedSnapPoints(___m_placementGhost);
+        }
+    }
+
     // If using VR controls, disable the joystick for the purposes
     // of moving the map around since that will be done with
     // simulated mouse cursor click and drag via laser pointer.

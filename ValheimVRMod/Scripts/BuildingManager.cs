@@ -3,6 +3,7 @@ using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using ValheimVRMod.VRCore.UI;
 using Valve.VR;
+using System.Collections.Generic;
 
 namespace ValheimVRMod.Scripts
 {
@@ -17,6 +18,17 @@ namespace ValheimVRMod.Scripts
         private GameObject buildRefPointer2;
         private int currRefType;
         private bool refWasChanged;
+        public static BuildingManager instance ;
+
+        //Snapping stuff
+        private static bool isSnapping = false;
+        private static Transform lastSnapCast;
+        private static GameObject pieceOnHand;
+        private static int totalSnapPointsCount;
+        private static List<GameObject> snapPointsCollider;
+        private static GameObject snapPointer;
+        private static float snapTimer;
+
         private LayerMask piecelayer = LayerMask.GetMask(new string[]
         {
             "Default",
@@ -27,7 +39,7 @@ namespace ValheimVRMod.Scripts
             "terrain",
             "vehicle"
         });
-        private LayerMask piecelayer2 = LayerMask.GetMask(new string[]
+        private static LayerMask piecelayer2 = LayerMask.GetMask(new string[]
         {
             "Default",
             "static_solid",
@@ -65,21 +77,41 @@ namespace ValheimVRMod.Scripts
             Destroy(buildRefPointer2.GetComponent<Collider>());
             //Destroy(sphere.GetComponent<MeshRenderer>()); 
         }
+        private void createSnapPointer()
+        {
+            snapPointer = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            snapPointer.transform.localScale = new Vector3(1, 2, 1);
+            snapPointer.transform.localScale *= 0.2f;
+            snapPointer.layer = 16;
+            snapPointer.GetComponent<MeshRenderer>().material.color = Color.yellow;
+            Destroy(snapPointer.GetComponent<Collider>());
+            //Destroy(sphere.GetComponent<MeshRenderer>()); 
+        }
         private void Awake()
         {
             createRefBox();
             createRefPointer();
             createRefPointer2();
+            createSnapPointer();
+            snapPointsCollider = new List<GameObject>();
+            instance = this;
         }
         private void OnDestroy()
         {
             Destroy(buildRefBox);
             Destroy(buildRefPointer);
             Destroy(buildRefPointer2);
+            Destroy(snapPointer);
+            foreach(GameObject collider in snapPointsCollider)
+            {
+                Destroy(collider);
+            }
+            snapPointsCollider = null;
         }
         private void OnRenderObject()
         {
             BuildReferencePoint();
+            BuildSnapPoint();
         }
 
         private void BuildReferencePoint()
@@ -100,26 +132,26 @@ namespace ValheimVRMod.Scripts
             }
             else if (SteamVR_Actions.laserPointers_LeftClick.GetState(SteamVR_Input_Sources.RightHand))
             {
-                if (!Physics.Raycast(VRPlayer.rightHand.transform.position, VRPlayer.rightHand.transform.TransformDirection(handpoint), out pieceRaycast, 50f, piecelayer))
-                {
-                    return;
-                }
-                if (stickyTimer >= 2)
-                {
-                    EnableRefPoint(true);
-                    UpdateRefType();
-                    if (!isReferenced)
-                    {
-                        lastRefCast = pieceRaycast;
-                        isReferenced = true;
-                    }
-                    UpdateRefPosition(lastRefCast, VRPlayer.rightHand.transform.TransformDirection(handpoint));
-                    UpdateRefRotation(GetRefDirection(VRPlayer.rightHand.transform.TransformDirection(handpoint)));
-                }
-                else
-                {
-                    stickyTimer += Time.unscaledDeltaTime;
-                }
+                //if (!Physics.Raycast(VRPlayer.rightHand.transform.position, VRPlayer.rightHand.transform.TransformDirection(handpoint), out pieceRaycast, 50f, piecelayer))
+                //{
+                //    return;
+                //}
+                //if (stickyTimer >= 2)
+                //{
+                //    EnableRefPoint(true);
+                //    UpdateRefType();
+                //    if (!isReferenced)
+                //    {
+                //        lastRefCast = pieceRaycast;
+                //        isReferenced = true;
+                //    }
+                //    //UpdateRefPosition(lastRefCast, VRPlayer.rightHand.transform.TransformDirection(handpoint));
+                //    //UpdateRefRotation(GetRefDirection(VRPlayer.rightHand.transform.TransformDirection(handpoint)));
+                //}
+                //else
+                //{
+                //    stickyTimer += Time.unscaledDeltaTime;
+                //}
             }
             else
             {
@@ -130,6 +162,41 @@ namespace ValheimVRMod.Scripts
                     currRefType = 0;
                     stickyTimer = 0;
                     isReferenced = false;
+                }
+            }
+        }
+        private void BuildSnapPoint()
+        {
+            RaycastHit pieceRaycast;
+            if (SteamVR_Actions.laserPointers_LeftClick.GetState(SteamVR_Input_Sources.RightHand))
+            {
+                if (!Physics.Raycast(VRPlayer.rightHand.transform.position, VRPlayer.rightHand.transform.TransformDirection(handpoint), out pieceRaycast, 50f, piecelayer2))
+                {
+                    return;
+                }
+                if (snapTimer >= 2)
+                {
+                    //EnableRefPoint(true);
+                    if (!isSnapping)
+                    {
+                        lastSnapCast = pieceRaycast.transform;
+                        isSnapping = true;
+                    }
+                    UpdateSnapPointColliders(pieceOnHand, lastSnapCast);
+                }
+                else
+                {
+                    snapTimer += Time.unscaledDeltaTime;
+                }
+            }
+            else
+            {
+                snapTimer += Time.unscaledDeltaTime;
+                if (snapTimer <= 2 || snapTimer >= 3)
+                {
+                    EnableAllSnapPoints(false);
+                    snapTimer = 0;
+                    isSnapping = false;
                 }
             }
         }
@@ -179,6 +246,14 @@ namespace ValheimVRMod.Scripts
         }
         private void UpdateRefPosition(RaycastHit pieceRaycast, Vector3 direction)
         {
+            if (pieceRaycast.transform && buildRefBox.transform.parent != pieceRaycast.transform)
+            {
+                buildRefBox.transform.SetParent(pieceRaycast.transform);
+            }
+            else if (buildRefBox.transform.parent != null)
+            {
+                buildRefBox.transform.SetParent(null);
+            }
             buildRefBox.transform.position = pieceRaycast.point + (VRPlayer.leftHand.transform.TransformDirection(handpoint) * 0.3f);
             buildRefPointer.transform.position = pieceRaycast.point;
             buildRefPointer2.transform.position = pieceRaycast.point;
@@ -198,6 +273,110 @@ namespace ValheimVRMod.Scripts
             angle = angle < 0 ? angle + 360 : angle;
             var snapAngle = Mathf.RoundToInt(angle * 16 / 360);
             return snapAngle;
+        }
+
+
+        //snap Stuff
+        public Vector3 UpdateSelectedSnapPoints(GameObject onHand)
+        {
+            pieceOnHand = onHand;
+            RaycastHit raySnap;
+            if (Physics.Raycast(VRPlayer.rightHand.transform.position, VRPlayer.rightHand.transform.TransformDirection(handpoint), out raySnap, 20f, LayerMask.GetMask("piece_nonsolid")))
+            {
+                return raySnap.transform.position;
+            }
+            return onHand.transform.position;
+        }
+
+        private static List<Transform> GetSelectedSnapPoints(Transform piece)
+        {
+
+            List<Transform> snapPoints = new List<Transform>();
+            if (!piece)
+            {
+                return snapPoints;
+            }
+            foreach (Transform child in piece)
+            {
+                if (child.CompareTag("snappoint"))
+                {
+                    snapPoints.Add(child);
+                }
+            }
+            return snapPoints;
+        }
+        private static GameObject CreateSnapPointCollider()
+        {
+            var newCollider = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            newCollider.transform.localScale *= 0.8f;
+            newCollider.layer = 16;
+            newCollider.GetComponent<MeshRenderer>().material.color = Color.blue;
+            //Destroy(buildRefBox.GetComponent<MeshRenderer>());
+            return newCollider;
+        }
+        
+        private static void EnableAllSnapPoints(bool enabled)
+        {
+            for(var i = 0; i< snapPointsCollider.Count; i++)
+            {
+                if (snapPointsCollider[i] && snapPointsCollider[i].activeSelf != enabled)
+                {
+                    snapPointsCollider[i].SetActive(enabled);
+                }
+            }
+        }
+        private void UpdateSnapPointColliders(GameObject onHand, Transform pieceRaycast)
+        {
+            var onHandPoints = onHand.transform;
+            if (!onHandPoints)
+            {
+                return;
+            }
+            if (!pieceRaycast.transform)
+            {
+                return;
+            }
+            var aimedPoints = pieceRaycast.parent.transform ? pieceRaycast.parent.transform : pieceRaycast;
+            if (!aimedPoints)
+            {
+                return;
+            }
+            if (!aimedPoints.GetComponent<Piece>())
+            {
+                return;
+            }
+            var onHandSnapPoints = GetSelectedSnapPoints(onHandPoints);
+            if (onHandSnapPoints.Count == 0)
+            {
+                return;
+            }
+            var aimedSnapPoints = GetSelectedSnapPoints(aimedPoints);
+            if (aimedSnapPoints.Count == 0)
+            {
+                return;
+            }
+            totalSnapPointsCount = onHandSnapPoints.Count * aimedSnapPoints.Count;
+            var snapcount = 0;
+
+            snapPointer.transform.position = aimedPoints.transform.position;
+            EnableAllSnapPoints(false);
+            for (var i = 0; i < aimedSnapPoints.Count; i++)
+            {
+                for (var j = 0; j < onHandSnapPoints.Count; j++)
+                {
+                    if (snapPointsCollider.Count > snapcount)
+                    {
+                        snapPointsCollider[snapcount].transform.position = aimedSnapPoints[i].position - (onHandSnapPoints[j].position - onHand.transform.position);
+                    }
+                    else
+                    {
+                        snapPointsCollider.Add(CreateSnapPointCollider());
+                        snapPointsCollider[snapcount].transform.position = aimedSnapPoints[i].position - (onHandSnapPoints[j].position - onHand.transform.position);
+                    }
+                    snapPointsCollider[snapcount].SetActive(true);
+                    snapcount++;
+                }
+            }
         }
     }
 }
