@@ -11,7 +11,7 @@ namespace ValheimVRMod.Scripts
     {
         private static Vector3 handpoint = new Vector3(0, -0.45f, 0.55f);
         private float stickyTimer;
-        private bool isReferenced;
+        private bool isReferenceActive;
         private RaycastHit lastRefCast;
         private GameObject buildRefBox;
         private GameObject buildRefPointer;
@@ -128,31 +128,31 @@ namespace ValheimVRMod.Scripts
                 UpdateRefPosition(pieceRaycast, VRPlayer.leftHand.transform.TransformDirection(handpoint));
                 UpdateRefRotation(GetRefDirection(VRPlayer.leftHand.transform.TransformDirection(handpoint)));
                 lastRefCast = pieceRaycast;
-                isReferenced = true;
+                isReferenceActive = true;
             }
-            else if (SteamVR_Actions.laserPointers_LeftClick.GetState(SteamVR_Input_Sources.RightHand))
-            {
-                //if (!Physics.Raycast(VRPlayer.rightHand.transform.position, VRPlayer.rightHand.transform.TransformDirection(handpoint), out pieceRaycast, 50f, piecelayer))
-                //{
-                //    return;
-                //}
-                //if (stickyTimer >= 2)
-                //{
-                //    EnableRefPoint(true);
-                //    UpdateRefType();
-                //    if (!isReferenced)
-                //    {
-                //        lastRefCast = pieceRaycast;
-                //        isReferenced = true;
-                //    }
-                //    //UpdateRefPosition(lastRefCast, VRPlayer.rightHand.transform.TransformDirection(handpoint));
-                //    //UpdateRefRotation(GetRefDirection(VRPlayer.rightHand.transform.TransformDirection(handpoint)));
-                //}
-                //else
-                //{
-                //    stickyTimer += Time.unscaledDeltaTime;
-                //}
-            }
+            //else if (SteamVR_Actions.laserPointers_LeftClick.GetState(SteamVR_Input_Sources.RightHand))
+            //{
+            //    if (!Physics.Raycast(VRPlayer.rightHand.transform.position, VRPlayer.rightHand.transform.TransformDirection(handpoint), out pieceRaycast, 50f, piecelayer))
+            //    {
+            //        return;
+            //    }
+            //    if (stickyTimer >= 2)
+            //    {
+            //        EnableRefPoint(true);
+            //        UpdateRefType();
+            //        if (!isReferenced)
+            //        {
+            //            lastRefCast = pieceRaycast;
+            //            isReferenced = true;
+            //        }
+            //        UpdateRefPosition(lastRefCast, VRPlayer.rightHand.transform.TransformDirection(handpoint));
+            //        UpdateRefRotation(GetRefDirection(VRPlayer.rightHand.transform.TransformDirection(handpoint)));
+            //    }
+            //    else
+            //    {
+            //        stickyTimer += Time.unscaledDeltaTime;
+            //    }
+            //}
             else
             {
                 stickyTimer += Time.unscaledDeltaTime;
@@ -161,14 +161,14 @@ namespace ValheimVRMod.Scripts
                     EnableRefPoint(false);
                     currRefType = 0;
                     stickyTimer = 0;
-                    isReferenced = false;
+                    isReferenceActive = false;
                 }
             }
         }
         private void BuildSnapPoint()
         {
             RaycastHit pieceRaycast;
-            if (SteamVR_Actions.laserPointers_LeftClick.GetState(SteamVR_Input_Sources.RightHand))
+            if (SteamVR_Actions.laserPointers_LeftClick.GetState(SteamVR_Input_Sources.RightHand)&&!isReferenceActive)
             {
                 if (!Physics.Raycast(VRPlayer.rightHand.transform.position, VRPlayer.rightHand.transform.TransformDirection(handpoint), out pieceRaycast, 50f, piecelayer2))
                 {
@@ -177,12 +177,16 @@ namespace ValheimVRMod.Scripts
                 if (snapTimer >= 2)
                 {
                     //EnableRefPoint(true);
-                    if (!isSnapping)
+                    if (!isSnapping || !lastSnapCast)
                     {
                         lastSnapCast = pieceRaycast.transform;
                         isSnapping = true;
                     }
-                    UpdateSnapPointColliders(pieceOnHand, lastSnapCast);
+
+                    if (lastSnapCast && pieceOnHand)
+                    {
+                        UpdateSnapPointCollider(pieceOnHand, lastSnapCast);
+                    }
                 }
                 else
                 {
@@ -279,6 +283,10 @@ namespace ValheimVRMod.Scripts
         //snap Stuff
         public Vector3 UpdateSelectedSnapPoints(GameObject onHand)
         {
+            if (isReferenceActive)
+            {
+                return onHand.transform.position;
+            }
             pieceOnHand = onHand;
             RaycastHit raySnap;
             if (Physics.Raycast(VRPlayer.rightHand.transform.position, VRPlayer.rightHand.transform.TransformDirection(handpoint), out raySnap, 20f, LayerMask.GetMask("piece_nonsolid")))
@@ -325,7 +333,7 @@ namespace ValheimVRMod.Scripts
                 }
             }
         }
-        private void UpdateSnapPointColliders(GameObject onHand, Transform pieceRaycast)
+        private void UpdateSnapPointCollider(GameObject onHand, Transform pieceRaycast)
         {
             var onHandPoints = onHand.transform;
             if (!onHandPoints)
