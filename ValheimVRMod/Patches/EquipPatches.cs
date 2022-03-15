@@ -54,6 +54,9 @@ namespace ValheimVRMod.Patches {
                 case EquipType.Fishing:
                     meshFilter.gameObject.AddComponent<FishingManager>();
                     return;
+                case EquipType.ThrowObject:
+                    meshFilter.gameObject.AddComponent<SpearManager>();
+                    break;
                 case EquipType.Spear:
                 case EquipType.SpearChitin:
                     if (VHVRConfig.SpearInverseWield())
@@ -72,7 +75,6 @@ namespace ValheimVRMod.Patches {
                         }
                     }
                     meshFilter.gameObject.AddComponent<SpearManager>();
-                    // (no return, we want collider for spear also)
                     break;
             }
             

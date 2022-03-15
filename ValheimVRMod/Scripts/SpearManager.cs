@@ -207,6 +207,10 @@ namespace ValheimVRMod.Scripts {
 
         private void UpdateSpearThrowModel(Vector3 inversePosition)
         {
+            if (!isSpear()) {
+                return;
+            }
+            
             var offsetPos = Vector3.Distance(mainHandTransform.position, rotSave.transform.position);
             transform.position = mainHandTransform.position - Vector3.ClampMagnitude(inversePosition, offsetPos);
             transform.LookAt(mainHandTransform.position + inversePosition);
@@ -219,10 +223,15 @@ namespace ValheimVRMod.Scripts {
         }
         private void ResetSpearOffset()
         {
-            transform.position = rotSave.transform.position;
-            transform.localRotation = rotSave.transform.localRotation;
             isThrowingStance = false;
             ShieldBlock.instance?.ScaleShieldSize(1f);
+
+            if (!isSpear()) {
+                return;
+            }
+            
+            transform.position = rotSave.transform.position;
+            transform.localRotation = rotSave.transform.localRotation;
         }
         private void UpdateDirectionLine(Vector3 pos1 ,Vector3 pos2)
         {
@@ -281,6 +290,10 @@ namespace ValheimVRMod.Scripts {
         public static bool IsAiming()
         {
             return isThrowingStance;
+        }
+
+        private bool isSpear() {
+            return EquipScript.getRight() != EquipType.ThrowObject;
         }
     }
 }
