@@ -250,14 +250,6 @@ namespace ValheimVRMod.Scripts
         }
         private void UpdateRefPosition(RaycastHit pieceRaycast, Vector3 direction)
         {
-            if (pieceRaycast.transform && buildRefBox.transform.parent != pieceRaycast.transform)
-            {
-                buildRefBox.transform.SetParent(pieceRaycast.transform);
-            }
-            else if (buildRefBox.transform.parent != null)
-            {
-                buildRefBox.transform.SetParent(null);
-            }
             buildRefBox.transform.position = pieceRaycast.point + (VRPlayer.leftHand.transform.TransformDirection(handpoint) * 0.3f);
             buildRefPointer.transform.position = pieceRaycast.point;
             buildRefPointer2.transform.position = pieceRaycast.point;
@@ -340,14 +332,18 @@ namespace ValheimVRMod.Scripts
             {
                 return;
             }
-            if (!pieceRaycast.transform)
+            if (!pieceRaycast || !pieceRaycast.transform)
             {
                 return;
             }
-            var aimedPoints = pieceRaycast.parent.transform ? pieceRaycast.parent.transform : pieceRaycast;
+            var aimedPoints = pieceRaycast;
             if (!aimedPoints)
             {
                 return;
+            }
+            if (!aimedPoints.GetComponent<Piece>())
+            {
+                aimedPoints = pieceRaycast.parent.transform;
             }
             if (!aimedPoints.GetComponent<Piece>())
             {
