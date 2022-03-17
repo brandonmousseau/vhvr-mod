@@ -26,7 +26,6 @@ namespace ValheimVRMod.Scripts {
         private Outline outline;
         private float hitTime;
         private bool hasDrunk;
-        private bool hasAttackedSuccess;
 
         public bool itemIsTool;
         public static bool isDrinking;
@@ -60,7 +59,6 @@ namespace ValheimVRMod.Scripts {
         }
 
         private void OnTriggerEnter(Collider collider) {
-            hasAttackedSuccess = false;
             if (!isCollisionAllowed()) {
                 return;
             }
@@ -94,7 +92,6 @@ namespace ValheimVRMod.Scripts {
             if (attack.Start(Player.m_localPlayer, null, null,
                 Player.m_localPlayer.m_animEvent,
                 null, item, null, 0.0f, 0.0f)) {
-                hasAttackedSuccess = true;
                 if (isRightHand) {
                     VRPlayer.rightHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, SteamVR_Input_Sources.RightHand);
                 }

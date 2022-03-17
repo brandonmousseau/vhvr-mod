@@ -77,9 +77,12 @@ namespace ValheimVRMod
                 {
                     VRManager.tryRecenter();
                 }
-                tactSuitVR = new GameObject("TactsuitVR");
-                DontDestroyOnLoad(tactSuitVR);
-                tactSuitVR.AddComponent<TactsuitVR>();
+                if (VHVRConfig.BhapticsEnabled())
+                {
+                    tactSuitVR = new GameObject("TactsuitVR");
+                    DontDestroyOnLoad(tactSuitVR);
+                    tactSuitVR.AddComponent<TactsuitVR>();
+                }
             }
             else
             {

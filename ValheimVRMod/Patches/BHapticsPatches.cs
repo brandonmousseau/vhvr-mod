@@ -321,10 +321,11 @@ namespace ValheimVRMod.Patches
     [HarmonyPatch(typeof(WeaponCollision), "OnTriggerEnter")]
     class WeaponCollision_OnTriggerEnter_Patch
     {
-        public static void Postfix( bool ___hasAttackedSuccess)
+        public static void Postfix(Attack ___attack, ItemDrop.ItemData ___item)
         {
-
-            if ( !___hasAttackedSuccess || TactsuitVR.suitDisabled)
+            if ( !___attack.Start(Player.m_localPlayer, null, null,
+                Player.m_localPlayer.m_animEvent,
+                null, ___item, null, 0.0f, 0.0f) || TactsuitVR.suitDisabled)
             {
                 return;
             }

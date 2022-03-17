@@ -16,7 +16,8 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> useVrControls;
         private static ConfigEntry<bool> useOverlayGui;
         private static ConfigEntry<string> pluginVersion;
-        
+        private static ConfigEntry<bool> bhapticsEnabled;
+
         // General Settings
         private static ConfigEntry<string> mirrorMode;
         private static ConfigEntry<float> headOffsetX;
@@ -194,8 +195,12 @@ namespace ValheimVRMod.Utilities
                 "PluginVersion",
                 "",
                 "For internal use only. Do not edit.");
+            bhapticsEnabled = config.Bind("Immutable",
+                "bhapticsEnabled",
+                false,
+                "Enables bhaptics feedback. Only usable if ModEnbaled true.");
         }
-        
+
         private static void InitializeGeneralSettings()
         {
             recenterOnStart = config.Bind("General",
@@ -1101,6 +1106,11 @@ namespace ValheimVRMod.Utilities
         public static bool DisableRecenterPose()
         {
             return disableRecenterPose.Value;
+        }
+
+        public static bool BhapticsEnabled()
+        {
+            return bhapticsEnabled.Value;
         }
     }
 }
