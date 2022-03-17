@@ -6,7 +6,6 @@ using System.Reflection;
 using System.Threading;
 using Bhaptics.Tact;
 using UnityEngine;
-using ValheimVRMod.Utilities;
 
 using static ValheimVRMod.Utilities.LogUtils;
 
@@ -48,26 +47,22 @@ namespace ValheimVRMod.Scripts
         public void Awake()
         {            
             LogInfo("Initializing suit");
-            suitDisabled = !VHVRConfig.BhapticsEnabled();
-            if (!suitDisabled)
+            try
             {
-                try
-                {
 #pragma warning disable CS0618 // remove warning that the C# library is deprecated
-                    hapticPlayer = new HapticPlayer("Valheim_bhaptics", "Valheim_bhaptics");
+                hapticPlayer = new HapticPlayer("Valheim_bhaptics", "Valheim_bhaptics");
 #pragma warning restore CS0618
-                    suitDisabled = false;
-                }
-                catch
-                {
-                    LogInfo("Suit initialization failed!");
-                    return;
-                }
-                RegisterAllTactFiles();
-                LogInfo("Starting HeartBeat thread...");
-                PlaybackHaptics("HeartBeat");
-                SetTimer();
+                suitDisabled = false;
             }
+            catch
+            {
+                LogInfo("Suit initialization failed!");
+                return;
+            }
+            RegisterAllTactFiles();
+            LogInfo("Starting HeartBeat thread...");
+            PlaybackHaptics("HeartBeat");
+            SetTimer();
         }
 
         /**
