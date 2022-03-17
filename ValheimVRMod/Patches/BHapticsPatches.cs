@@ -8,7 +8,6 @@ using System.Threading;
 using System.Collections.Generic;
 
 using static ValheimVRMod.Utilities.LogUtils;
-using System.Threading.Tasks;
 
 namespace ValheimVRMod.Patches
 {
@@ -695,7 +694,6 @@ namespace ValheimVRMod.Patches
             }
             foreach (GameObject obj in __result)
             {
-                LogInfo("EFFECT LIST VARIANT " + obj.name);
                 switch (obj.name)
                 {
                     case "vfx_prespawn(Clone)":
@@ -744,10 +742,10 @@ namespace ValheimVRMod.Patches
         public static Dictionary<string, float> rangeBoss = new Dictionary<string, float>()
         {
             {"boss_eikthyr",  20f},
-            {"boss_gdking", 20f },
+            {"boss_gdking", 40f },
             {"boss_bonemass",  20f},
-            {"boss_moder",  20f},
-            {"boss_goblinking",  20f},
+            {"boss_moder",  40f},
+            {"boss_goblinking",  60f},
         };
         public static void Postfix(Attack __instance)
         {
@@ -780,45 +778,45 @@ namespace ValheimVRMod.Patches
                 case "boss_gdking":
                     if (__instance.m_attackAnimation == "spawn")
                     {
-                        TactsuitVR.PlaybackHaptics("EikthyrElectric");
+                        TactsuitVR.PlaybackHaptics("ElderSpawn");
                     }
                     if (__instance.m_attackAnimation == "stomp")
                     {
-                        TactsuitVR.PlaybackHaptics("EikthyrElectric");
+                        TactsuitVR.PlaybackHaptics("ElderStomp");
                     }
                     if (__instance.m_attackAnimation == "shoot")
                     {
-                        TactsuitVR.PlaybackHaptics("EikthyrElectric");
+                        TactsuitVR.PlaybackHaptics("ElderShoot");
                     }
                     break;
                 case "boss_bonemass":
                     if (__instance.m_attackAnimation == "aoe")
                     {
-                        TactsuitVR.PlaybackHaptics("EikthyrElectric");
+                        TactsuitVR.PlaybackHaptics("Bonemass1");
                     }
                     break;
                 case "boss_moder":
                     if (__instance.m_attackAnimation == "attack_iceball")
                     {
-                        TactsuitVR.PlaybackHaptics("EikthyrElectric");
+                        TactsuitVR.PlaybackHaptics("ModerIceBalls");
                     }
                     if (__instance.m_attackAnimation == "attack_breath")
                     {
-                        TactsuitVR.PlaybackHaptics("EikthyrElectric");
+                        TactsuitVR.PlaybackHaptics("ModerBeam");
                     }
                     break;
                 case "boss_goblinking":
                     if (__instance.m_attackAnimation == "beam")
                     {
-                        TactsuitVR.PlaybackHaptics("EikthyrElectric");
+                        TactsuitVR.PlaybackHaptics("YagluthBeam");
                     }
                     if (__instance.m_attackAnimation == "nova")
                     {
-                        TactsuitVR.PlaybackHaptics("EikthyrElectric");
+                        TactsuitVR.PlaybackHaptics("YagluthNova");
                     }
                     if (__instance.m_attackAnimation == "cast1")
                     {
-                        TactsuitVR.PlaybackHaptics("EikthyrElectric");
+                        TactsuitVR.PlaybackHaptics("YagluthMeteor");
                     }
                     break;
             }
