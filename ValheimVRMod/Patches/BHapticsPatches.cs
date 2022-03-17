@@ -678,31 +678,43 @@ namespace ValheimVRMod.Patches
             }
         }
     }
-    /**
-     * When summoning boss phase 
+    
+    /*
+     * Looking for a specific effect to cover local and remote
+     * effects triggered by players
+     * Based on visual effect triggered not code logic prior to it
      */
-    [HarmonyPatch(typeof(OfferingBowl), "SpawnBoss")]
+   [HarmonyPatch(typeof(EffectList), "Create")]
     class OfferingBowl_SpawnBoss_Patch
     {
-        public static void Postfix(OfferingBowl __instance, bool __result)
+        public static void Postfix(Array __result)
         {
-            if (TactsuitVR.suitDisabled || !__result)
+            if (TactsuitVR.suitDisabled || __result == null || __result.Length == 0)
             {
                 return;
             }
-            // is Local Player near ?
-            bool closeTo = (Vector3.Distance(Player.m_localPlayer.transform.position, __instance.transform.position) < (double)20f);
-            if (closeTo)
+            foreach (GameObject obj in __result)
             {
-                Thread EffectThread = new Thread(() =>
+                LogInfo("EFFECT LIST VARIANT " + obj.name);
+                switch (obj.name)
                 {
-                    TactsuitVR.StartThreadHaptic("BossSummon");
-                    Thread.Sleep(5000);
-                    TactsuitVR.StartThreadHaptic("BossSummon", 0.4f);
-                    Thread.Sleep(7000);
-                    TactsuitVR.StopThreadHaptic("BossSummon", new string[] { "BossAppearance" });
-                });
-                EffectThread.Start();
+                    case "vfx_prespawn(Clone)":
+                        Thread EffectThread = new Thread(() =>
+                        {
+                            TactsuitVR.StartThreadHaptic("BossSummon");
+                            Thread.Sleep(5000);
+                            TactsuitVR.StartThreadHaptic("BossSummon", 0.4f);
+                            Thread.Sleep(7000);
+                            TactsuitVR.StopThreadHaptic("BossSummon", new string[] { "BossAppearance" });
+                        });
+                        EffectThread.Start();
+                        break;
+                    case "vfx_corpse_destruction_medium(Clone)":
+                        bool closeTo = (Vector3.Distance(Player.m_localPlayer.transform.position, obj.transform.position) < (double)20f);
+                        if (closeTo)
+                            TactsuitVR.PlaybackHaptics("Explosion");
+                        break;
+                }
             }
         }
     }
@@ -732,10 +744,10 @@ namespace ValheimVRMod.Patches
         public static Dictionary<string, float> rangeBoss = new Dictionary<string, float>()
         {
             {"boss_eikthyr",  20f},
-            {"boss_elder", 20f },
+            {"boss_gdking", 20f },
             {"boss_bonemass",  20f},
             {"boss_moder",  20f},
-            {"boss_yagluth",  20f},
+            {"boss_goblinking",  20f},
         };
         public static void Postfix(Attack __instance)
         {
@@ -743,9 +755,6 @@ namespace ValheimVRMod.Patches
             {
                 return;
             }
-            LogInfo("BOSS ATTACK " + __instance.m_attackAnimation + " " +
-                __instance.m_character.m_name
-                + " " + __instance.m_character.m_bossEvent);
             //range limit
             float range = (rangeBoss.ContainsKey(__instance.m_character.m_bossEvent)) ? rangeBoss[__instance.m_character.m_bossEvent] : 20f;
             bool closeTo = (Vector3.Distance(Player.m_localPlayer.transform.position,
@@ -764,6 +773,50 @@ namespace ValheimVRMod.Patches
                         TactsuitVR.PlaybackHaptics("EikthyrElectric");
                     }
                     if (__instance.m_attackAnimation == "attack_stomp")
+                    {
+                        TactsuitVR.PlaybackHaptics("EikthyrElectric");
+                    }
+                    break;
+                case "boss_gdking":
+                    if (__instance.m_attackAnimation == "spawn")
+                    {
+                        TactsuitVR.PlaybackHaptics("EikthyrElectric");
+                    }
+                    if (__instance.m_attackAnimation == "stomp")
+                    {
+                        TactsuitVR.PlaybackHaptics("EikthyrElectric");
+                    }
+                    if (__instance.m_attackAnimation == "shoot")
+                    {
+                        TactsuitVR.PlaybackHaptics("EikthyrElectric");
+                    }
+                    break;
+                case "boss_bonemass":
+                    if (__instance.m_attackAnimation == "aoe")
+                    {
+                        TactsuitVR.PlaybackHaptics("EikthyrElectric");
+                    }
+                    break;
+                case "boss_moder":
+                    if (__instance.m_attackAnimation == "attack_iceball")
+                    {
+                        TactsuitVR.PlaybackHaptics("EikthyrElectric");
+                    }
+                    if (__instance.m_attackAnimation == "attack_breath")
+                    {
+                        TactsuitVR.PlaybackHaptics("EikthyrElectric");
+                    }
+                    break;
+                case "boss_goblinking":
+                    if (__instance.m_attackAnimation == "beam")
+                    {
+                        TactsuitVR.PlaybackHaptics("EikthyrElectric");
+                    }
+                    if (__instance.m_attackAnimation == "nova")
+                    {
+                        TactsuitVR.PlaybackHaptics("EikthyrElectric");
+                    }
+                    if (__instance.m_attackAnimation == "cast1")
                     {
                         TactsuitVR.PlaybackHaptics("EikthyrElectric");
                     }

@@ -57,6 +57,9 @@ namespace ValheimVRMod
             
             if (VHVRConfig.NonVrPlayer()) {
                 LogDebug("Non VR Mode Patching Complete.");
+                tactSuitVR = new GameObject("TactsuitVR");
+                DontDestroyOnLoad(tactSuitVR);
+                tactSuitVR.AddComponent<TactsuitVR>();
                 return;
             }
             
