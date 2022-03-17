@@ -14,7 +14,6 @@ namespace ValheimVRMod.Scripts {
 
         private GameObject arrow;
         private GameObject chargeIndicator;
-        private GameObject vrikHandConnector;
         private LineRenderer predictionLine;
         private float projectileVel;
         private float projectileVelMin;
@@ -50,9 +49,6 @@ namespace ValheimVRMod.Scripts {
 
             arrowAttach.transform.SetParent(mainHand, false);
 
-            vrikHandConnector = new GameObject();
-            vrikHandConnector.transform.SetParent(mainHand, false);
-
             item = Player.m_localPlayer.GetLeftItem();
             if (item != null) {
                 attack = item.m_shared.m_attack.Clone();
@@ -66,7 +62,6 @@ namespace ValheimVRMod.Scripts {
             Destroy(predictionLine);
             Destroy(arrowAttach);
             Destroy(chargeIndicator);
-            Destroy(vrikHandConnector);
         }
 
         private void destroyArrow() {
@@ -174,7 +169,7 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            vrikHandConnector.transform.position = pullObj.transform.position;
+            (VHVRConfig.LeftHanded() ? VrikCreator.offHandConnector : VrikCreator.mainHandConnector).position = pullObj.transform.position;
             arrowAttach.transform.rotation = pullObj.transform.rotation;
             arrowAttach.transform.position = pullObj.transform.position;
             spawnPoint = getArrowRestPosition();
@@ -196,7 +191,7 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            (VHVRConfig.LeftHanded() ? VRPlayer.vrikRef.solver.leftArm : VRPlayer.vrikRef.solver.rightArm).target.SetParent(mainHand, false);
+            (VHVRConfig.LeftHanded() ? VrikCreator.offHandConnector : VrikCreator.mainHandConnector).localPosition = Vector3.zero;
 
             predictionLine.enabled = false;
             pulling = isPulling = false;
@@ -240,8 +235,6 @@ namespace ValheimVRMod.Scripts {
                 predictionLine.enabled = VHVRConfig.UseArrowPredictionGraphic();
                 attackDrawPercentage = 0;
             }
-
-            (VHVRConfig.LeftHanded() ? VRPlayer.vrikRef.solver.leftArm : VRPlayer.vrikRef.solver.rightArm).target.SetParent(vrikHandConnector.transform, false);
 
             return pulling = true;
         }

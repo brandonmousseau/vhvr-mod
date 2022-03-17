@@ -1,8 +1,9 @@
 using HarmonyLib;
-using ValheimVRMod.Scripts;
+using ValheimVRMod.Scripts.Block;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using Valve.VR;
+using Valve.VR.InteractionSystem;
 
 namespace ValheimVRMod.Patches {
     
@@ -12,35 +13,45 @@ namespace ValheimVRMod.Patches {
     [HarmonyPatch(typeof(Humanoid), "BlockAttack")]
     class PatchBlockAttack {
         
+        private static Hand hand;
+        private static SteamVR_Input_Sources handSource;
+        
         static void Prefix(Humanoid __instance, ref HitData hit, ref float ___m_blockTimer) {
 
-            if (__instance != Player.m_localPlayer || EquipScript.getLeft() != EquipType.Shield || !VHVRConfig.UseVrControls()) {
+            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls()) {
                 return;
             }
-            ___m_blockTimer = ShieldManager.blockTimer;
-            if (ShieldManager.isBlocking()) {
-                hit.m_dir = -__instance.transform.forward;   
-            } else {
+            ___m_blockTimer = ShieldBlock.instance?.blockTimer ?? WeaponBlock.instance?.blockTimer ?? Block.blockTimerNonParry;
+            hit.m_dir = -__instance.transform.forward;
+            if (ShieldBlock.instance?.isBlocking() ?? false) { 
+                hand = VRPlayer.leftHand;
+                handSource = SteamVR_Input_Sources.LeftHand;
+            } 
+            else if (WeaponBlock.instance?.isBlocking() ?? false) {
+                hand = VRPlayer.rightHand;
+                handSource = SteamVR_Input_Sources.RightHand;
+            }
+            else {
                 hit.m_dir = __instance.transform.forward;
             }
         }
         
         static void Postfix(Humanoid __instance, bool __result, ref float ___m_blockTimer) {
 
-            if (__instance != Player.m_localPlayer || EquipScript.getLeft() != EquipType.Shield || !VHVRConfig.UseVrControls()) {
+            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls() || !__result) {
                 return;
             }
-
-            if (__result) {
-                if (___m_blockTimer < ShieldManager.blockTimerTolerance) {
-                    VRPlayer.leftHand.hapticAction.Execute(0, 0.4f, 100, 0.5f, SteamVR_Input_Sources.LeftHand);
-                    VRPlayer.leftHand.hapticAction.Execute(0.4f, 0.7f, 100, 0.2f, SteamVR_Input_Sources.LeftHand);
-                }
-                else {
-                    VRPlayer.leftHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, SteamVR_Input_Sources.LeftHand);
-                }
-                ShieldManager.block();
+            
+            if (___m_blockTimer < ShieldBlock.blockTimerTolerance) {
+                hand.hapticAction.Execute(0, 0.4f, 100, 0.5f, handSource);
+                hand.hapticAction.Execute(0.4f, 0.7f, 100, 0.2f, handSource);
             }
+            else {
+                hand.hapticAction.Execute(0, 0.2f, 100, 0.5f, handSource);
+            }
+            
+            ShieldBlock.instance?.block();
+            WeaponBlock.instance?.block();
         }
     }
     
@@ -48,11 +59,13 @@ namespace ValheimVRMod.Patches {
     class PatchIsBlocking {
         static bool Prefix(Humanoid __instance, ref bool __result) {
 
-            if (__instance != Player.m_localPlayer || EquipScript.getLeft() != EquipType.Shield || !VHVRConfig.UseVrControls()) {
+            if (__instance != Player.m_localPlayer || EquipScript.getRight() == EquipType.Fishing || !VHVRConfig.UseVrControls()) {
                 return true;
             }
 
-            __result = ShieldManager.isBlocking();
+            __result = 
+                (ShieldBlock.instance?.isBlocking() ?? false) || 
+                (WeaponBlock.instance?.isBlocking() ?? false);
             
             return false;
         }
@@ -62,21 +75,23 @@ namespace ValheimVRMod.Patches {
     class PatchRPCDamager {
         static void Prefix(Character __instance, HitData hit) {
 
-            if (__instance != Player.m_localPlayer || EquipScript.getLeft() != EquipType.Shield || !VHVRConfig.UseVrControls()) {
+            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls()) {
                 return;
             }
             
-            ShieldManager.setBlocking(hit.m_dir);
+            ShieldBlock.instance?.setBlocking(hit.m_dir);
+            WeaponBlock.instance?.setBlocking(hit.m_dir);
 
         }
         
         static void Postfix(Character __instance) {
 
-            if (__instance != Player.m_localPlayer || EquipScript.getLeft() != EquipType.Shield || !VHVRConfig.UseVrControls()) {
+            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls()) {
                 return;
             }
 
-            ShieldManager.resetBlocking();
+            ShieldBlock.instance?.resetBlocking();
+            WeaponBlock.instance?.resetBlocking();
 
         }
     }
