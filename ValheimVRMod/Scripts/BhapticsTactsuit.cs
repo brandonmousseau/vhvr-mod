@@ -39,6 +39,12 @@ namespace ValheimVRMod.Scripts
 
         #region Initializers
 
+        /**
+         * If modVrEnabled harmony will use bhaptics patches
+         * initializing suitdisabled according to config bhapticsEnabled
+         * if disabled, not starting HapticPlayer
+         * Every bhaptics patches return if suitdisabled true so it will be ok
+         */
         public void Awake()
         {            
             LogInfo("Initializing suit");
