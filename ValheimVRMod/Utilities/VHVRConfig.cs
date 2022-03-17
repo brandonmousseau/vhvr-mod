@@ -15,6 +15,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> nonVrPlayer;
         private static ConfigEntry<bool> useVrControls;
         private static ConfigEntry<bool> useOverlayGui;
+        private static ConfigEntry<string> pluginVersion;
         
         // General Settings
         private static ConfigEntry<string> mirrorMode;
@@ -100,11 +101,13 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<string> spearThrowingType;
         private static ConfigEntry<bool> useSpearDirectionGraphic;
         private static ConfigEntry<bool> spearThrowSpeedDynamic;
-        private static ConfigEntry<bool> spearTwoHanded;
+        private static ConfigEntry<bool> spearInverseWield;
+        private static ConfigEntry<bool> twoHandedWield;
+        private static ConfigEntry<bool> twoHandedWithShield;
         private static ConfigEntry<float> arrowRestElevation;
         private static ConfigEntry<string> arrowRestSide;
         private static ConfigEntry<bool> restrictBowDrawSpeed;
-
+        
 #if DEBUG
         private static ConfigEntry<float> DebugPosX;
         private static ConfigEntry<float> DebugPosY;
@@ -132,6 +135,39 @@ namespace ValheimVRMod.Utilities
             InitializeControlsSettings();
             InitializeGraphicsSettings();
             InitializeMotionControlSettings();
+            DoVersionInit();
+        }
+
+        // Using this method to create a marker in the config file so we can
+        // detect when the mod is being upgraded from an older version
+        // and doing any one time initialization. E.g., since prior to 0.9.0, the VR
+        // HUD canvases were parented on a different transform, for anyone who upgrades
+        // to 0.9.0, the first time they start the mod their VR HUD settings will be reset
+        // so that it isn't completely broken.
+        private static void DoVersionInit()
+        {
+            LogUtils.LogInfo("Perform pre-initialization...");
+            var version = ValheimVRMod.PLUGIN_VERSION;
+            System.Version parsedVersion = null;
+            string configVersion = pluginVersion.Value;
+            System.Version.TryParse(configVersion, out parsedVersion);
+            if (parsedVersion == null || parsedVersion.CompareTo(System.Version.Parse("0.9.0")) < 0)
+            {
+                // If the parsed version was not set or is less than 0.9.0, which
+                // is the first version with updated HUD transforms, we will automatically
+                // set the positions back to default for their first time setup.
+                ResetVrHudPositions();
+            }
+            pluginVersion.Value = version.ToString();
+        }
+
+        private static void ResetVrHudPositions()
+        {
+            LogUtils.LogDebug("Resetting HUD Positions for new version.");
+            leftWristPos.Value = (Vector3) leftWristPos.DefaultValue;
+            leftWristRot.Value = (Quaternion) leftWristRot.DefaultValue;
+            rightWristPos.Value = (Vector3) rightWristPos.DefaultValue;
+            rightWristRot.Value = (Quaternion)rightWristRot.DefaultValue;
         }
 
         private static void InitializeImmutableSettings() 
@@ -154,6 +190,10 @@ namespace ValheimVRMod.Utilities
                 true,
                 "Whether or not to use OpenVR overlay for the GUI. This produces a" +
                 " cleaner GUI but will only be compatible with M&K or Gamepad controls.");
+            pluginVersion = config.Bind("Immutable",
+                "PluginVersion",
+                "",
+                "For internal use only. Do not edit.");
         }
         
         private static void InitializeGeneralSettings()
@@ -521,7 +561,7 @@ namespace ValheimVRMod.Utilities
                     new AcceptableValueRange<float>(0, 1)));
             spearThrowingType = config.Bind("Motion Control",
                                             "SpearThrowingMode",
-                                            "DartType",
+                                            "TwoStagedThrowing",
                                             new ConfigDescription("Change the throwing mode." +
                                             "DartType - Throw by holding grab and trigger and then releasing trigger, Throw aim is based on first trigger pressed to release in a straight line, and throwing power is based on how fast you swing. " +
                                             "TwoStagedThrowing - Throw aim is based on first grab and then aim is locked after pressing trigger, throw by releasing trigger while swinging, throw speed based on how fast you swing. " +
@@ -531,14 +571,22 @@ namespace ValheimVRMod.Utilities
                                                 "SpearThrowSpeedDynamic",
                                                 true,
                                                 "Determine whether or not your throw power depends on swing speed, setting to false make the throw always on fixed speed.");
+            spearInverseWield = config.Bind("Motion Control",
+                                                "SpearInverseWield",
+                                                true,
+                                                "Use this to flip the spear tip, so you can stab forward instead of needing to do downward stabbing");
             useSpearDirectionGraphic = config.Bind("Motion Control",
                                                     "UseSpearDirectionGraphic",
                                                     true,
                                                     "Use this to toggle the direction line of throwing when using the spear with VR controls.");
-            spearTwoHanded = config.Bind("Motion Control",
-                                                    "TwoHandedSpear",
+            twoHandedWield = config.Bind("Motion Control",
+                                                    "TwoHandedWield",
+                                                    true,
+                                                    "Use this to toggle controls of two handed weapon (left & right hand grab on weapon), allow blocking and better weapon handling");
+            twoHandedWithShield = config.Bind("Motion Control",
+                                                    "TwoHandedWithShield",
                                                     false,
-                                                    "Use this to toggle controls of two handed spear (left hand grab while having spear) (experimental)");
+                                                    "Allows Two Handed Wield while using shield");
             arrowRestElevation = config.Bind("Motion Control",
                 "ArrowRestElevation",
                 0.15f,
@@ -939,14 +987,21 @@ namespace ValheimVRMod.Utilities
         {
             return spearThrowSpeedDynamic.Value;
         }
-
+        public static bool SpearInverseWield()
+        {
+            return spearInverseWield.Value;
+        }
         public static string SpearThrowType()
         {
             return spearThrowingType.Value;
         }
-        public static bool SpearTwoHanded()
+        public static bool TwoHandedWield()
         {
-            return spearTwoHanded.Value;
+            return twoHandedWield.Value;
+        }
+        public static bool TwoHandedWithShield()
+        {
+            return twoHandedWithShield.Value;
         }
         public static bool UseSpearDirectionGraphic()
         {

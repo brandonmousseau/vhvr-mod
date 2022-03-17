@@ -10,9 +10,11 @@ namespace ValheimVRMod.Scripts {
     public class WeaponCollision : MonoBehaviour {
         private const float MIN_DISTANCE = 0.2f;
         private const float MIN_DISTANCE_STAB = 0.25f;
+        private const float MIN_DISTANCE_STAB_TWOHAND = 0.22f;
         private const int MAX_SNAPSHOTS_BASE = 20;
         private const int MAX_SNAPSHOTS_FACTOR = -5;
         private const float MAX_STAB_ANGLE = 20f;
+        private const float MAX_STAB_ANGLE_TWOHAND = 40f;
 
         private bool scriptActive;
         private GameObject colliderParent = new GameObject();
@@ -24,7 +26,6 @@ namespace ValheimVRMod.Scripts {
         private Outline outline;
         private float hitTime;
         private bool hasDrunk;
-        private bool hasAttackedSuccess;
 
         public bool itemIsTool;
         public static bool isDrinking;
@@ -58,7 +59,6 @@ namespace ValheimVRMod.Scripts {
         }
 
         private void OnTriggerEnter(Collider collider) {
-            hasAttackedSuccess = false;
             if (!isCollisionAllowed()) {
                 return;
             }
@@ -92,7 +92,6 @@ namespace ValheimVRMod.Scripts {
             if (attack.Start(Player.m_localPlayer, null, null,
                 Player.m_localPlayer.m_animEvent,
                 null, item, null, 0.0f, 0.0f)) {
-                hasAttackedSuccess = true;
                 if (isRightHand) {
                     VRPlayer.rightHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, SteamVR_Input_Sources.RightHand);
                 }
@@ -101,7 +100,6 @@ namespace ValheimVRMod.Scripts {
                 }
             }
         }
-
         private bool tryHitTarget(GameObject target) {
 
             // ignore certain Layers
@@ -272,15 +270,31 @@ namespace ValheimVRMod.Scripts {
             if (!VHVRConfig.WeaponNeedsSpeed()) {
                 return true;
             }
-            
+
             foreach (Vector3 snapshot in snapshots) {
                 if (Vector3.Distance(snapshot, transform.localPosition) > MIN_DISTANCE + colliderDistance / 2) {
                     return true;
                 }
             }
-            foreach (Vector3 snapshot in snapshotsC) {
-                if (Vector3.Distance(snapshot, GetHandPosition()) > MIN_DISTANCE_STAB && isStab()) {
-                    return true;
+
+            if (WeaponWield.isCurrentlyTwoHanded())
+            {
+                foreach (Vector3 snapshot in snapshots)
+                {
+                    if (Vector3.Distance(snapshot, transform.localPosition) > MIN_DISTANCE_STAB_TWOHAND && isStab())
+                    {
+                        return true;
+                    }
+                }
+            }
+            else
+            {
+                foreach (Vector3 snapshot in snapshotsC)
+                {
+                    if (Vector3.Distance(snapshot, GetHandPosition()) > MIN_DISTANCE_STAB && isStab())
+                    {
+                        return true;
+                    }
                 }
             }
 
@@ -292,7 +306,7 @@ namespace ValheimVRMod.Scripts {
         }
 
         public bool isStab() {
-            return (SwingAngle() < MAX_STAB_ANGLE);
+            return WeaponWield.isCurrentlyTwoHanded() ? (SwingAngle() < MAX_STAB_ANGLE_TWOHAND) : (SwingAngle() < MAX_STAB_ANGLE);
         }
         private Vector3 GetHandPosition() {
             if (isRightHand) {

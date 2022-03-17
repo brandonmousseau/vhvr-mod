@@ -6,7 +6,7 @@ namespace ValheimVRMod.Utilities {
     public enum EquipType {
         None, 
         Fishing, Cultivator, Hammer, Hoe,
-        Bow,  Spear, SpearChitin,
+        Bow,  Spear, SpearChitin, ThrowObject,
         Shield, Tankard, Claws
     }
     
@@ -33,12 +33,12 @@ namespace ValheimVRMod.Utilities {
                     return EquipType.Spear;
                 case "$item_spear_chitin":
                     return EquipType.SpearChitin;
+                case "$item_oozebomb":
+                    return EquipType.ThrowObject;
                 case "$item_tankard":
                     return EquipType.Tankard;                
                 case "$item_fistweapon_fenris":
                     return EquipType.Claws;
-
-
             }
 
             return EquipType.None;

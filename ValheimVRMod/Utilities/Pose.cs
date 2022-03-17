@@ -78,7 +78,8 @@ namespace ValheimVRMod.Utilities {
         }
         private static bool isHoldingThrowable() {
             return EquipScript.getRight() == EquipType.Spear 
-                   || EquipScript.getRight() == EquipType.SpearChitin 
+                   || EquipScript.getRight() == EquipType.SpearChitin
+                   || EquipScript.getRight() == EquipType.ThrowObject
                    || EquipScript.getRight() == EquipType.Fishing
                    || EquipScript.getRight() == EquipType.Tankard;
         }

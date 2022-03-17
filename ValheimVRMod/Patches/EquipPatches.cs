@@ -2,6 +2,7 @@ using HarmonyLib;
 using UnityEngine;
 using UnityEngine.Rendering;
 using ValheimVRMod.Scripts;
+using ValheimVRMod.Scripts.Block;
 using ValheimVRMod.Utilities;
 
 namespace ValheimVRMod.Patches {
@@ -53,15 +54,35 @@ namespace ValheimVRMod.Patches {
                 case EquipType.Fishing:
                     meshFilter.gameObject.AddComponent<FishingManager>();
                     return;
-                    
+                case EquipType.ThrowObject:
+                    meshFilter.gameObject.AddComponent<SpearManager>();
+                    break;
                 case EquipType.Spear:
                 case EquipType.SpearChitin:
+                    if (VHVRConfig.SpearInverseWield())
+                    {
+                        meshFilter.gameObject.transform.localRotation *= Quaternion.AngleAxis(180, Vector3.right);
+                        switch (___m_rightItem)
+                        {
+                            case "SpearChitin":
+                                meshFilter.gameObject.transform.localPosition = new Vector3(0, 0, -0.2f);
+                                break;
+                            case "SpearElderbark":
+                            case "SpearBronze":
+                                meshFilter.gameObject.transform.localPosition = new Vector3(0, 0, -1.15f);
+                                break;
+
+                        }
+                    }
                     meshFilter.gameObject.AddComponent<SpearManager>();
-                    // (no return, we want collider for spear also)
                     break;
             }
             
             StaticObjects.rightWeaponCollider().GetComponent<WeaponCollision>().setColliderParent(meshFilter.transform, ___m_rightItem, true);
+            var weaponWield = ___m_rightItemInstance.AddComponent<WeaponWield>();
+            weaponWield.itemName = ___m_rightItem;
+            meshFilter.gameObject.AddComponent<WeaponBlock>().weaponWield = weaponWield; 
+
             ParticleFix.maybeFix(___m_rightItemInstance);
         }
     }
@@ -114,10 +135,10 @@ namespace ValheimVRMod.Patches {
                     return;
                 
                 case EquipType.Shield:
-                    meshFilter.gameObject.AddComponent<ShieldManager>()._name = ___m_leftItem;
+                    meshFilter.gameObject.AddComponent<ShieldBlock>().itemName = ___m_leftItem;
                     return;
             }
-            
+
             StaticObjects.leftWeaponCollider().GetComponent<WeaponCollision>().setColliderParent(meshFilter.transform, ___m_leftItem, false);
             ParticleFix.maybeFix(___m_leftItemInstance);
         }
@@ -185,8 +206,9 @@ namespace ValheimVRMod.Patches {
         /// For Left Handed mode we need to mirror models of shields and tankard 
         /// </summary>
         static void Postfix(GameObject __result) {
-            
+
             if (Player.m_localPlayer == null 
+                || __result == null
                 || __result.GetComponentInParent<Player>() != Player.m_localPlayer
                 || !VHVRConfig.UseVrControls() 
                 || !VHVRConfig.LeftHanded()
