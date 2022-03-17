@@ -198,7 +198,7 @@ namespace ValheimVRMod.Utilities
             bhapticsEnabled = config.Bind("Immutable",
                 "bhapticsEnabled",
                 false,
-                "Enables bhaptics feedback. Only usable if ModEnbaled true.");
+                "Enables bhaptics feedback. Only usable if vrModEnabled true.");
         }
 
         private static void InitializeGeneralSettings()
