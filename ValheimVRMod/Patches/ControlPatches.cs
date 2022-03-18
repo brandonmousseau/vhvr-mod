@@ -137,15 +137,27 @@ namespace ValheimVRMod.Patches {
     [HarmonyPatch(typeof(Player), "UpdatePlacementGhost")]
     class PlacementSnapPoint
     {
-        private static void Postfix(Player __instance, GameObject ___m_placementGhost)
+        private static void Postfix(Player __instance, GameObject ___m_placementGhost, GameObject ___m_placementMarkerInstance, Player.PlacementStatus ___m_placementStatus,int ___m_placeRotation)
         {
             if (!VRControls.mainControlsActive || __instance != Player.m_localPlayer || !___m_placementGhost || !___m_placementGhost.transform ||
                 !__instance.InPlaceMode() || !BuildingManager.instance)
             {
                 return;
             }
+            var checkPlacement = BuildingManager.instance.UpdateSelectedSnapPoints(___m_placementGhost);
+
+            if(___m_placementGhost.transform.position != checkPlacement)
+            {
+                //LogUtils.LogDebug("Status : " + ___m_placementStatus);
+                Quaternion rotation = Quaternion.Euler(0f, 22.5f * (float)___m_placeRotation, 0f);
+                //___m_placementStatus = ___m_placementStatus == Player.PlacementStatus.BlockedbyPlayer ? Player.PlacementStatus.Valid : ___m_placementStatus;
+                //__instance.SetPlacementGhostValid(___m_placementStatus == Player.PlacementStatus.Valid);
+                ___m_placementMarkerInstance.transform.position = checkPlacement;
+                ___m_placementMarkerInstance.transform.rotation = Quaternion.LookRotation(Vector3.up, rotation * Vector3.forward);
+                //___m_placementGhost.transform.rotation = rotation;
+                ___m_placementGhost.transform.position = BuildingManager.instance.UpdateSelectedSnapPoints(___m_placementGhost);
+            }
             
-            ___m_placementGhost.transform.position = BuildingManager.instance.UpdateSelectedSnapPoints(___m_placementGhost);
         }
     }
 

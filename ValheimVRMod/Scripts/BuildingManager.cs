@@ -93,7 +93,7 @@ namespace ValheimVRMod.Scripts
         {
             snapLine = new GameObject().AddComponent<LineRenderer>();
             snapLine.gameObject.layer = LayerMask.GetMask("WORLDSPACE_UI_LAYER");
-            snapLine.widthMultiplier = 0.1f;
+            snapLine.widthMultiplier = 0.05f;
             snapLine.positionCount = 2;
             snapLine.material.color = Color.yellow;
             snapLine.enabled = false;
@@ -301,12 +301,16 @@ namespace ValheimVRMod.Scripts
             //    var dir = VRPlayer.rightHand.transform.TransformDirection(handpoint);
             //    var nearestPosRef = nearestTransform.position - VRPlayer.rightHand.transform.position;
             //    var currPosRef = snapPointsCollider[i].transform.position - VRPlayer.rightHand.transform.position;
-            //    if (Vector3.Dot(dir, nearestPosRef) < Vector3.Dot(dir, currPosRef))
+            //    if (Vector3.Dot(dir, currPosRef) > 0.5f)
             //    {
-            //        nearestTransform = snapPointsCollider[i].transform;
+            //        if (Vector3.Dot(dir, nearestPosRef) < Vector3.Dot(dir, currPosRef))
+            //        {
+            //            nearestTransform = snapPointsCollider[i].transform;
+            //        }
             //    }
-            //}
 
+            //}
+            snapLine.SetPosition(0, VRPlayer.rightHand.transform.position);
             snapLine.SetPosition(1, nearestTransform.position);
             snapLine.enabled = true;
             return nearestTransform.position;
@@ -329,7 +333,6 @@ namespace ValheimVRMod.Scripts
                         lastSnapTransform = pieceRaycast.transform;
                         snapPointer.transform.position = pieceRaycast.transform.position;
                         snapPointer.transform.rotation = Quaternion.FromToRotation(snapPointer.transform.up, pieceRaycast.normal) * snapPointer.transform.rotation;
-                        snapLine.SetPosition(0, pieceRaycast.transform.position);
                         isSnapping = true;
                     }
 
@@ -406,23 +409,13 @@ namespace ValheimVRMod.Scripts
             {
                 return;
             }
-            var aimedPoints = pieceRaycast;
-            if (!aimedPoints)
+
+            Piece pieceParent = pieceRaycast.GetComponentInParent(typeof(Piece)) as Piece;
+            if (!pieceParent)
             {
                 return;
             }
-            if (!aimedPoints.GetComponent<Piece>())
-            {
-                aimedPoints = pieceRaycast.parent.transform;
-            }
-            if (!aimedPoints)
-            {
-                return;
-            }
-            if (!aimedPoints.GetComponent<Piece>())
-            {
-                return;
-            }
+            var aimedPoints = pieceParent.transform;
             var onHandSnapPoints = GetSelectedSnapPoints(onHandPoints);
             if (onHandSnapPoints.Count == 0)
             {
