@@ -232,7 +232,7 @@ namespace ValheimVRMod.Patches
                     break;
                 case int n when hlth <= 15 && hlth > 0:
                     TactsuitVR.StopThreadHaptic("HeartBeat");
-                    TactsuitVR.StartThreadHaptic("HeartBeatFast", 1.0f, false, 3000);
+                    TactsuitVR.StartThreadHaptic("HeartBeatFast", 1.0f, false, 0);
                     break;
                 case int n when hlth <= 0:
                     TactsuitVR.StopThreadHaptic("HeartBeat");
