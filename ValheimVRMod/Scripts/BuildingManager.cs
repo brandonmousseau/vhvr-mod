@@ -153,7 +153,7 @@ namespace ValheimVRMod.Scripts
             }
             //else if (SteamVR_Actions.laserPointers_LeftClick.GetState(SteamVR_Input_Sources.RightHand))
             //{
-            //    if (!Physics.Raycast(VRPlayer.rightHand.transform.position, VRPlayer.rightHand.transform.TransformDirection(handpoint), out pieceRaycast, 50f, piecelayer))
+            //    if (!Physics.Raycast(PlaceModeRayVectorProvider.startingPosition, PlaceModeRayVectorProvider.rayDirection, out pieceRaycast, 50f, piecelayer))
             //    {
             //        return;
             //    }
@@ -166,8 +166,8 @@ namespace ValheimVRMod.Scripts
             //            lastRefCast = pieceRaycast;
             //            isReferenced = true;
             //        }
-            //        UpdateRefPosition(lastRefCast, VRPlayer.rightHand.transform.TransformDirection(handpoint));
-            //        UpdateRefRotation(GetRefDirection(VRPlayer.rightHand.transform.TransformDirection(handpoint)));
+            //        UpdateRefPosition(lastRefCast, PlaceModeRayVectorProvider.rayDirection);
+            //        UpdateRefRotation(GetRefDirection(PlaceModeRayVectorProvider.rayDirection));
             //    }
             //    else
             //    {
@@ -246,7 +246,7 @@ namespace ValheimVRMod.Scripts
 
         public static int TranslateRotation()
         {
-            var dir = VRPlayer.rightHand.transform.TransformDirection(handpoint);
+            var dir = PlaceModeRayVectorProvider.rayDirection;
             var angle = Vector3.SignedAngle(Vector3.forward, new Vector3(dir.x,0,dir.z).normalized, Vector3.up);
             angle = angle < 0 ? angle + 360 : angle;
             var snapAngle = Mathf.RoundToInt(angle * 16 / 360);
@@ -265,7 +265,7 @@ namespace ValheimVRMod.Scripts
             }
             pieceOnHand = onHand;
             //RaycastHit raySnap;
-            //if (Physics.Raycast(VRPlayer.rightHand.transform.position, VRPlayer.rightHand.transform.TransformDirection(handpoint), out raySnap, 20f, LayerMask.GetMask("piece_nonsolid")))
+            //if (Physics.Raycast(PlaceModeRayVectorProvider.startingPosition, PlaceModeRayVectorProvider.rayDirection, out raySnap, 20f, LayerMask.GetMask("piece_nonsolid")))
             //{
             //    snapPointer.SetActive(true);
             //    return raySnap.transform.position;
@@ -273,7 +273,7 @@ namespace ValheimVRMod.Scripts
 
             //Multiple Raycast Test
             RaycastHit[] snapPointsCast = new RaycastHit[10];
-            int hits = Physics.RaycastNonAlloc(VRPlayer.rightHand.transform.position, VRPlayer.rightHand.transform.TransformDirection(handpoint), snapPointsCast, 20f, LayerMask.GetMask("piece_nonsolid"));
+            int hits = Physics.RaycastNonAlloc(PlaceModeRayVectorProvider.startingPosition, PlaceModeRayVectorProvider.rayDirection, snapPointsCast, 20f, LayerMask.GetMask("piece_nonsolid"));
             if (hits == 0)
             {
                 snapLine.enabled = false;
@@ -284,9 +284,9 @@ namespace ValheimVRMod.Scripts
 
             for (int i = 1; i < hits; i++)
             {
-                var dir = VRPlayer.rightHand.transform.TransformDirection(handpoint);
-                var nearestPosRef = nearestTransform.position - VRPlayer.rightHand.transform.position;
-                var currPosRef = snapPointsCast[i].transform.position - VRPlayer.rightHand.transform.position;
+                var dir = PlaceModeRayVectorProvider.rayDirection;
+                var nearestPosRef = nearestTransform.position - PlaceModeRayVectorProvider.startingPosition;
+                var currPosRef = snapPointsCast[i].transform.position - PlaceModeRayVectorProvider.startingPosition;
                 if (Vector3.Dot(dir, nearestPosRef) < Vector3.Dot(dir, currPosRef))
                 {
                     nearestTransform = snapPointsCast[i].transform;
@@ -298,9 +298,9 @@ namespace ValheimVRMod.Scripts
 
             //for (int i = 1; i < snapPointsCollider.Count; i++)
             //{
-            //    var dir = VRPlayer.rightHand.transform.TransformDirection(handpoint);
-            //    var nearestPosRef = nearestTransform.position - VRPlayer.rightHand.transform.position;
-            //    var currPosRef = snapPointsCollider[i].transform.position - VRPlayer.rightHand.transform.position;
+            //    var dir = PlaceModeRayVectorProvider.rayDirection;
+            //    var nearestPosRef = nearestTransform.position - PlaceModeRayVectorProvider.startingPosition;
+            //    var currPosRef = snapPointsCollider[i].transform.position - PlaceModeRayVectorProvider.startingPosition;
             //    if (Vector3.Dot(dir, currPosRef) > 0.5f)
             //    {
             //        if (Vector3.Dot(dir, nearestPosRef) < Vector3.Dot(dir, currPosRef))
@@ -310,7 +310,7 @@ namespace ValheimVRMod.Scripts
             //    }
 
             //}
-            snapLine.SetPosition(0, VRPlayer.rightHand.transform.position);
+            snapLine.SetPosition(0, PlaceModeRayVectorProvider.startingPosition);
             snapLine.SetPosition(1, nearestTransform.position);
             snapLine.enabled = true;
             return nearestTransform.position;
@@ -321,7 +321,7 @@ namespace ValheimVRMod.Scripts
             RaycastHit pieceRaycast;
             if (SteamVR_Actions.laserPointers_LeftClick.GetState(SteamVR_Input_Sources.RightHand) && !isReferenceActive)
             {
-                if (!Physics.Raycast(VRPlayer.rightHand.transform.position, VRPlayer.rightHand.transform.TransformDirection(handpoint), out pieceRaycast, 50f, LayerMask.GetMask("piece")))
+                if (!Physics.Raycast(PlaceModeRayVectorProvider.startingPosition, PlaceModeRayVectorProvider.rayDirection, out pieceRaycast, 50f, LayerMask.GetMask("piece")))
                 {
                     return;
                 }
