@@ -140,14 +140,14 @@ namespace ValheimVRMod.Scripts
             RaycastHit pieceRaycast;
             if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand))
             {
-                if (!Physics.Raycast(VRPlayer.leftHand.transform.position, VRPlayer.leftHand.transform.TransformDirection(handpoint), out pieceRaycast, 50f, piecelayer2))
+                if (!Physics.Raycast(PlaceModeRayVectorProvider.startingPositionLeft, PlaceModeRayVectorProvider.rayDirectionLeft, out pieceRaycast, 50f, piecelayer2))
                 {
                     return;
                 }
                 EnableRefPoint(true);
                 UpdateRefType();
-                UpdateRefPosition(pieceRaycast, VRPlayer.leftHand.transform.TransformDirection(handpoint));
-                UpdateRefRotation(GetRefDirection(VRPlayer.leftHand.transform.TransformDirection(handpoint)));
+                UpdateRefPosition(pieceRaycast, PlaceModeRayVectorProvider.rayDirectionLeft);
+                UpdateRefRotation(GetRefDirection(PlaceModeRayVectorProvider.rayDirectionLeft));
                 lastRefCast = pieceRaycast;
                 isReferenceActive = true;
             }
@@ -232,7 +232,7 @@ namespace ValheimVRMod.Scripts
         }
         private void UpdateRefPosition(RaycastHit pieceRaycast, Vector3 direction)
         {
-            buildRefBox.transform.position = pieceRaycast.point + (VRPlayer.leftHand.transform.TransformDirection(handpoint) * 0.3f);
+            buildRefBox.transform.position = pieceRaycast.point - (pieceRaycast.normal * 0.3f);
             buildRefPointer.transform.position = pieceRaycast.point;
             buildRefPointer2.transform.position = pieceRaycast.point;
         }
