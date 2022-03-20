@@ -144,20 +144,22 @@ namespace ValheimVRMod.Patches {
             {
                 return;
             }
-            var checkPlacement = BuildingManager.instance.UpdateSelectedSnapPoints(___m_placementGhost);
-
-            if(___m_placementGhost.transform.position != checkPlacement)
+            if (!BuildingManager.isSnapMode())
             {
-                //LogUtils.LogDebug("Status : " + ___m_placementStatus);
-                Quaternion rotation = Quaternion.Euler(0f, 22.5f * (float)___m_placeRotation, 0f);
-                //___m_placementStatus = ___m_placementStatus == Player.PlacementStatus.BlockedbyPlayer ? Player.PlacementStatus.Valid : ___m_placementStatus;
-                //__instance.SetPlacementGhostValid(___m_placementStatus == Player.PlacementStatus.Valid);
-                ___m_placementMarkerInstance.transform.position = checkPlacement;
-                ___m_placementMarkerInstance.transform.rotation = Quaternion.LookRotation(Vector3.up, rotation * Vector3.forward);
-                //___m_placementGhost.transform.rotation = rotation;
-                ___m_placementGhost.transform.position = BuildingManager.instance.UpdateSelectedSnapPoints(___m_placementGhost);
+                return;
             }
+
+            var checkPlacement = BuildingManager.instance.UpdateSelectedSnapPoints(___m_placementGhost);
+            Quaternion rotation = Quaternion.Euler(0f, 22.5f * (float)___m_placeRotation, 0f);
             
+            //___m_placementMarkerInstance.transform.position = checkPlacement;
+            //___m_placementMarkerInstance.transform.rotation = Quaternion.LookRotation(Vector3.up, rotation * Vector3.forward);
+            ___m_placementGhost.transform.position = checkPlacement;
+            ___m_placementGhost.transform.rotation = rotation;
+
+            //___m_placementStatus = ___m_placementStatus == Player.PlacementStatus.BlockedbyPlayer ? Player.PlacementStatus.Valid : ___m_placementStatus;
+            //__instance.SetPlacementGhostValid(___m_placementStatus == Player.PlacementStatus.Valid);
+
         }
     }
 

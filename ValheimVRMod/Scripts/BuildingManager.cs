@@ -12,7 +12,7 @@ namespace ValheimVRMod.Scripts
     {
         private static Vector3 handpoint = new Vector3(0, -0.45f, 0.55f);
         private float stickyTimer;
-        private bool isReferenceActive;
+        private static bool isReferenceActive;
         private RaycastHit lastRefCast;
         private GameObject buildRefBox;
         private GameObject buildRefPointer;
@@ -24,6 +24,8 @@ namespace ValheimVRMod.Scripts
         //Snapping stuff
         private static bool isSnapping = false;
         private static Transform lastSnapTransform;
+        private static Vector3 lastSnapDirection;
+        private static Transform lastNearestTransform;
         private static GameObject pieceOnHand;
         private static int totalSnapPointsCount;
         private static List<GameObject> snapPointsCollider;
@@ -255,21 +257,25 @@ namespace ValheimVRMod.Scripts
 
 
         //snap Stuff
-        public Vector3 UpdateSelectedSnapPoints(GameObject onHand)
+
+        public static bool isSnapMode()
         {
             if (isReferenceActive || !isSnapping)
             {
                 snapLine.enabled = false;
                 snapPointer.SetActive(false);
-                return onHand.transform.position;
             }
+            return !isReferenceActive && isSnapping;
+        }
+        public Vector3 UpdateSelectedSnapPoints(GameObject onHand)
+        {
             pieceOnHand = onHand;
-            //RaycastHit raySnap;
-            //if (Physics.Raycast(PlaceModeRayVectorProvider.startingPosition, PlaceModeRayVectorProvider.rayDirection, out raySnap, 20f, LayerMask.GetMask("piece_nonsolid")))
-            //{
-            //    snapPointer.SetActive(true);
-            //    return raySnap.transform.position;
-            //}
+            if (lastSnapTransform && pieceOnHand && lastSnapDirection!= pieceOnHand.transform.forward )
+            {
+                snapPointer.SetActive(true);
+                lastSnapDirection = pieceOnHand.transform.forward;
+                UpdateSnapPointCollider(pieceOnHand, lastSnapTransform);
+            }
 
             //Multiple Raycast Test
             RaycastHit[] snapPointsCast = new RaycastHit[10];
@@ -277,6 +283,10 @@ namespace ValheimVRMod.Scripts
             if (hits == 0)
             {
                 snapLine.enabled = false;
+                if (lastNearestTransform)
+                {
+                    return lastNearestTransform.transform.position;
+                }
                 return onHand.transform.position;
             }
 
@@ -313,6 +323,7 @@ namespace ValheimVRMod.Scripts
             snapLine.SetPosition(0, PlaceModeRayVectorProvider.startingPosition);
             snapLine.SetPosition(1, nearestTransform.position);
             snapLine.enabled = true;
+            lastNearestTransform = nearestTransform;
             return nearestTransform.position;
         }
 
@@ -335,12 +346,6 @@ namespace ValheimVRMod.Scripts
                         snapPointer.transform.rotation = Quaternion.FromToRotation(snapPointer.transform.up, pieceRaycast.normal) * snapPointer.transform.rotation;
                         isSnapping = true;
                     }
-
-                    if (lastSnapTransform && pieceOnHand)
-                    {
-                        snapPointer.SetActive(true);
-                        UpdateSnapPointCollider(pieceOnHand, lastSnapTransform);
-                    }
                 }
                 else
                 {
@@ -354,6 +359,9 @@ namespace ValheimVRMod.Scripts
                 {
                     snapPointer.SetActive(false);
                     EnableAllSnapPoints(false);
+                    lastSnapTransform = null;
+                    pieceOnHand = null;
+                    lastSnapDirection = Vector3.zero;
                     snapTimer = 0;
                     isSnapping = false;
                 }
@@ -443,7 +451,15 @@ namespace ValheimVRMod.Scripts
                         snapPointsCollider.Add(CreateSnapPointCollider());
                         snapPointsCollider[snapcount].transform.position = aimedSnapPoints[i].position - (onHandSnapPoints[j].position - onHand.transform.position);
                     }
-                    snapPointsCollider[snapcount].SetActive(true);
+                    
+                    if(snapPointsCollider[snapcount].transform.position == aimedPoints.transform.position)
+                    {
+                        snapPointsCollider[snapcount].SetActive(false);
+                    }
+                    else
+                    {
+                        snapPointsCollider[snapcount].SetActive(true);
+                    }
                     snapcount++;
                 }
             }
