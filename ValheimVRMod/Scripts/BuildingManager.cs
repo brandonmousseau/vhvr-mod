@@ -19,7 +19,7 @@ namespace ValheimVRMod.Scripts
         private GameObject buildRefPointer2;
         private int currRefType;
         private bool refWasChanged;
-        public static BuildingManager instance ;
+        public static BuildingManager instance;
 
         //Snapping stuff
         private static bool isSnapping = false;
@@ -234,7 +234,16 @@ namespace ValheimVRMod.Scripts
         }
         private void UpdateRefPosition(RaycastHit pieceRaycast, Vector3 direction)
         {
-            buildRefBox.transform.position = pieceRaycast.point - (pieceRaycast.normal * 0.3f);
+            
+            if (currRefType == 0)
+            {
+                buildRefBox.transform.position = pieceRaycast.point - (pieceRaycast.normal * 0.2f) + Vector3.Project(pieceRaycast.transform.position - pieceRaycast.point, -pieceRaycast.normal);
+            }
+            else
+            {
+                buildRefBox.transform.position = pieceRaycast.point - (pieceRaycast.normal * 0.25f);
+            }
+            
             buildRefPointer.transform.position = pieceRaycast.point;
             buildRefPointer2.transform.position = pieceRaycast.point;
         }
@@ -255,6 +264,10 @@ namespace ValheimVRMod.Scripts
             return snapAngle;
         }
 
+        public static bool IsReferenceMode()
+        {
+            return isReferenceActive;
+        }
 
         //snap Stuff
 
@@ -277,16 +290,16 @@ namespace ValheimVRMod.Scripts
                 UpdateSnapPointCollider(pieceOnHand, lastSnapTransform);
             }
 
-            //Multiple Raycast Test
+            //Multiple Raycast 
             RaycastHit[] snapPointsCast = new RaycastHit[10];
             int hits = Physics.RaycastNonAlloc(PlaceModeRayVectorProvider.startingPosition, PlaceModeRayVectorProvider.rayDirection, snapPointsCast, 20f, LayerMask.GetMask("piece_nonsolid"));
             if (hits == 0)
             {
                 snapLine.enabled = false;
-                if (lastNearestTransform)
-                {
-                    return lastNearestTransform.transform.position;
-                }
+                //if (lastNearestTransform)
+                //{
+                //    return lastNearestTransform.transform.position;
+                //}
                 return onHand.transform.position;
             }
 
@@ -393,18 +406,14 @@ namespace ValheimVRMod.Scripts
             newCollider.layer = 16;
             //newCollider.GetComponent<MeshRenderer>().material.color = Color.blue;
             Destroy(newCollider.GetComponent<MeshRenderer>());
+
+            var newIndicator = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            newIndicator.GetComponent<MeshRenderer>().material.color = Color.yellow;
+            newIndicator.transform.localScale *= 0.2f;
+            Destroy(newIndicator.GetComponent<Collider>());
+            newIndicator.transform.SetParent(newCollider.transform);
+
             return newCollider;
-        }
-        
-        private static void EnableAllSnapPoints(bool enabled)
-        {
-            for(var i = 0; i< snapPointsCollider.Count; i++)
-            {
-                if (snapPointsCollider[i] && snapPointsCollider[i].activeSelf != enabled)
-                {
-                    snapPointsCollider[i].SetActive(enabled);
-                }
-            }
         }
         private void UpdateSnapPointCollider(GameObject onHand, Transform pieceRaycast)
         {
@@ -417,7 +426,7 @@ namespace ValheimVRMod.Scripts
             {
                 return;
             }
-
+            Piece onHandPiece = onHand.GetComponent<Piece>();
             Piece pieceParent = pieceRaycast.GetComponentInParent(typeof(Piece)) as Piece;
             if (!pieceParent)
             {
@@ -438,30 +447,80 @@ namespace ValheimVRMod.Scripts
             var snapcount = 0;
 
             EnableAllSnapPoints(false);
+            ResetAllSnapPoints();
             for (var i = 0; i < aimedSnapPoints.Count; i++)
             {
                 for (var j = 0; j < onHandSnapPoints.Count; j++)
                 {
-                    if (snapPointsCollider.Count > snapcount)
+                    var currPos = aimedSnapPoints[i].position - (onHandSnapPoints[j].position - onHand.transform.position);
+
+                    //Snap point check 
+                    //check if its the same position as its reference
+                    if (currPos == aimedPoints.transform.position)
                     {
-                        snapPointsCollider[snapcount].transform.position = aimedSnapPoints[i].position - (onHandSnapPoints[j].position - onHand.transform.position);
+                        continue;
                     }
-                    else
+                    //check if there's already same piece on that snapping point 
+                    if (CheckSamePieceSamePlace(currPos, onHand, onHandPiece))
+                    {
+                        continue;
+                    }
+                    //check if its a duplicate of exsisting point
+                    foreach (var points in snapPointsCollider)
+                    {
+                        if (points.transform.position == currPos)
+                        {
+                            continue;
+                        }
+                    }
+
+                    //actually make snapping point
+                    if (snapPointsCollider.Count < snapcount + 1)
                     {
                         snapPointsCollider.Add(CreateSnapPointCollider());
-                        snapPointsCollider[snapcount].transform.position = aimedSnapPoints[i].position - (onHandSnapPoints[j].position - onHand.transform.position);
                     }
-                    
-                    if(snapPointsCollider[snapcount].transform.position == aimedPoints.transform.position)
-                    {
-                        snapPointsCollider[snapcount].SetActive(false);
-                    }
-                    else
-                    {
-                        snapPointsCollider[snapcount].SetActive(true);
-                    }
+                    snapPointsCollider[snapcount].transform.position = currPos;
+                    snapPointsCollider[snapcount].transform.rotation = onHandPoints.rotation;
+                    snapPointsCollider[snapcount].SetActive(true);
                     snapcount++;
                 }
+            }
+        }
+        private static bool CheckSamePieceSamePlace(Vector3 pos,GameObject ghost, Piece onHandPiece)
+        {
+            Collider[] piecesInPlace = Physics.OverlapSphere(pos, 1f, LayerMask.GetMask("piece"));
+            var name = ghost.name;
+            var rotation = ghost.transform.rotation;
+            var allowRotatedOverlap = onHandPiece.m_allowRotatedOverlap;
+            foreach(var piece in piecesInPlace)
+            {
+                Piece pieceParent = piece.GetComponentInParent(typeof(Piece)) as Piece;
+
+                //same function as IsOverlapingOtherPiece
+                if (Vector3.Distance(pos, pieceParent.transform.position) < 0.05f && 
+                    (!allowRotatedOverlap || Quaternion.Angle(piece.transform.rotation, rotation) <= 10f) && 
+                    pieceParent.gameObject.name.StartsWith(name))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+        private static void EnableAllSnapPoints(bool enabled)
+        {
+            for (var i = 0; i < snapPointsCollider.Count; i++)
+            {
+                if (snapPointsCollider[i] && snapPointsCollider[i].activeSelf != enabled)
+                {
+                    snapPointsCollider[i].SetActive(enabled);
+                }
+            }
+        }
+        private static void ResetAllSnapPoints()
+        {
+            foreach(var points in snapPointsCollider)
+            {
+                points.transform.position = Vector3.zero;
             }
         }
     }

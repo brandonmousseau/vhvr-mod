@@ -137,7 +137,7 @@ namespace ValheimVRMod.Patches {
     [HarmonyPatch(typeof(Player), "UpdatePlacementGhost")]
     class PlacementSnapPoint
     {
-        private static void Postfix(Player __instance, GameObject ___m_placementGhost, GameObject ___m_placementMarkerInstance, Player.PlacementStatus ___m_placementStatus,int ___m_placeRotation)
+        private static void Postfix(Player __instance, GameObject ___m_placementGhost, GameObject ___m_placementMarkerInstance, Player.PlacementStatus ___m_placementStatus, int ___m_placeRotation)
         {
             if (!VRControls.mainControlsActive || __instance != Player.m_localPlayer || !___m_placementGhost || !___m_placementGhost.transform ||
                 !__instance.InPlaceMode() || !BuildingManager.instance)
@@ -151,15 +151,36 @@ namespace ValheimVRMod.Patches {
 
             var checkPlacement = BuildingManager.instance.UpdateSelectedSnapPoints(___m_placementGhost);
             Quaternion rotation = Quaternion.Euler(0f, 22.5f * (float)___m_placeRotation, 0f);
-            
-            //___m_placementMarkerInstance.transform.position = checkPlacement;
-            //___m_placementMarkerInstance.transform.rotation = Quaternion.LookRotation(Vector3.up, rotation * Vector3.forward);
+
+            ___m_placementMarkerInstance.transform.position = checkPlacement;
+            ___m_placementMarkerInstance.transform.rotation = Quaternion.LookRotation(Vector3.up, rotation * Vector3.forward);
             ___m_placementGhost.transform.position = checkPlacement;
             ___m_placementGhost.transform.rotation = rotation;
 
-            //___m_placementStatus = ___m_placementStatus == Player.PlacementStatus.BlockedbyPlayer ? Player.PlacementStatus.Valid : ___m_placementStatus;
+            //if (___m_placementStatus == Player.PlacementStatus.BlockedbyPlayer)
+            //{
+            //    ___m_placementStatus = __instance.CheckPlacementGhostVSPlayers() ? Player.PlacementStatus.BlockedbyPlayer : Player.PlacementStatus.Valid;
+            //}
             //__instance.SetPlacementGhostValid(___m_placementStatus == Player.PlacementStatus.Valid);
 
+        }
+    }
+
+    [HarmonyPatch(typeof(Player), "FindClosestSnappoint")]
+    class ChangeSnapPointMaxDistance
+    {
+        private static void Prefix(Player __instance, ref float maxDistance)
+        {
+            if (!VRControls.mainControlsActive || __instance != Player.m_localPlayer ||
+                !__instance.InPlaceMode() || !BuildingManager.instance)
+            {
+                return;
+            }
+
+            if (BuildingManager.IsReferenceMode())
+            {
+                maxDistance = 10f;
+            }
         }
     }
 
