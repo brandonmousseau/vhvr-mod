@@ -25,9 +25,7 @@ namespace ValheimVRMod.Scripts
         private static bool isSnapping = false;
         private static Transform lastSnapTransform;
         private static Vector3 lastSnapDirection;
-        private static Transform lastNearestTransform;
         private static GameObject pieceOnHand;
-        private static int totalSnapPointsCount;
         private static List<GameObject> snapPointsCollider;
         private static GameObject snapPointer;
         private static LineRenderer snapLine;
@@ -296,10 +294,6 @@ namespace ValheimVRMod.Scripts
             if (hits == 0)
             {
                 snapLine.enabled = false;
-                //if (lastNearestTransform)
-                //{
-                //    return lastNearestTransform.transform.position;
-                //}
                 return onHand.transform.position;
             }
 
@@ -336,7 +330,6 @@ namespace ValheimVRMod.Scripts
             snapLine.SetPosition(0, PlaceModeRayVectorProvider.startingPosition);
             snapLine.SetPosition(1, nearestTransform.position);
             snapLine.enabled = true;
-            lastNearestTransform = nearestTransform;
             return nearestTransform.position;
         }
 
@@ -443,7 +436,6 @@ namespace ValheimVRMod.Scripts
             {
                 return;
             }
-            totalSnapPointsCount = onHandSnapPoints.Count * aimedSnapPoints.Count;
             var snapcount = 0;
 
             EnableAllSnapPoints(false);
