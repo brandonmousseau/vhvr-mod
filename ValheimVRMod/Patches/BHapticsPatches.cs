@@ -7,8 +7,6 @@ using UnityEngine;
 using System.Threading;
 using System.Collections.Generic;
 
-using static ValheimVRMod.Utilities.LogUtils;
-
 namespace ValheimVRMod.Patches
 {
     /**
