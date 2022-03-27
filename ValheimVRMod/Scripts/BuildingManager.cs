@@ -31,6 +31,23 @@ namespace ValheimVRMod.Scripts
         private static LineRenderer snapLine;
         private static float snapTimer;
 
+        //Precision Mode
+        private static bool isPrecise = false;
+        private static Vector3 handTriggerPoint = new Vector3(0, 0.1f, 0.1f);
+        private static Vector3 handCenter = new Vector3(0, 0f, -0.1f);
+        private static GameObject precisionStatus;
+        private static float preciseTimer;
+        private static bool justChangedPreciseMode;
+        private static bool inPreciseArea;
+        private static bool isExitPrecise;
+        private static Vector3 lastPos;
+        private static Quaternion lastRot;
+        private static Vector3 lastAvgPos;
+        private static Quaternion lastAvgRot;
+        private static bool isMoving;
+        private static GameObject checkDir;
+        private static GameObject precisionPosRef;
+
         private LayerMask piecelayer = LayerMask.GetMask(new string[]
         {
             "Default",
@@ -109,6 +126,8 @@ namespace ValheimVRMod.Scripts
             createRefPointer2();
             createSnapPointer();
             createSnapLine();
+            createPrecisionBall();
+            createCheckDir();
             snapPointsCollider = new List<GameObject>();
             for(var i = 0; i <= 20; i++)
             {
@@ -123,6 +142,10 @@ namespace ValheimVRMod.Scripts
             Destroy(buildRefPointer2);
             Destroy(snapPointer);
             Destroy(snapLine);
+            Destroy(precisionStatus);
+            Destroy(checkDir);
+            Destroy(precisionPosRef);
+            isPrecise = false;
             foreach (GameObject collider in snapPointsCollider)
             {
                 Destroy(collider);
@@ -133,11 +156,20 @@ namespace ValheimVRMod.Scripts
         {
             BuildReferencePoint();
             BuildSnapPoint();
+            PrecisionMode();
         }
 
         private void BuildReferencePoint()
         {
             RaycastHit pieceRaycast;
+            if (inPreciseArea || isPrecise)
+            {
+                EnableRefPoint(false);
+                currRefType = 0;
+                stickyTimer = 0;
+                isReferenceActive = false;
+                return;
+            }
             if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand))
             {
                 if (!Physics.Raycast(PlaceModeRayVectorProvider.startingPositionLeft, PlaceModeRayVectorProvider.rayDirectionLeft, out pieceRaycast, 50f, piecelayer2))
@@ -271,7 +303,7 @@ namespace ValheimVRMod.Scripts
 
         public static bool isSnapMode()
         {
-            if (isReferenceActive || !isSnapping)
+            if (isReferenceActive || !isSnapping || !isPrecise)
             {
                 snapLine.enabled = false;
                 snapPointer.SetActive(false);
@@ -336,7 +368,7 @@ namespace ValheimVRMod.Scripts
         private void BuildSnapPoint()
         {
             RaycastHit pieceRaycast;
-            if (SteamVR_Actions.laserPointers_LeftClick.GetState(SteamVR_Input_Sources.RightHand) && !isReferenceActive)
+            if (SteamVR_Actions.laserPointers_LeftClick.GetState(SteamVR_Input_Sources.RightHand) && !isReferenceActive && !isPrecise)
             {
                 if (!Physics.Raycast(PlaceModeRayVectorProvider.startingPosition, PlaceModeRayVectorProvider.rayDirection, out pieceRaycast, 50f, LayerMask.GetMask("piece")))
                 {
@@ -513,6 +545,132 @@ namespace ValheimVRMod.Scripts
             foreach(var points in snapPointsCollider)
             {
                 points.transform.position = Vector3.zero;
+            }
+        }
+
+
+        // Precision stuff
+        private void createPrecisionBall()
+        {
+            precisionStatus = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            precisionStatus.transform.localScale *= 0.05f;
+            precisionStatus.layer = 16;
+            precisionStatus.GetComponent<MeshRenderer>().material.color = Color.blue;
+            Destroy(precisionStatus.GetComponent<Collider>());
+        }
+
+        private void createCheckDir()
+        {
+            checkDir = new GameObject();
+            precisionPosRef = new GameObject();
+            precisionPosRef.transform.SetParent(checkDir.transform);
+        }
+        private static void PrecisionMode()
+        {
+            var triggerPoint = VRPlayer.rightHand.transform.TransformPoint(handTriggerPoint);
+            var leftHandCenter = VRPlayer.leftHand.transform.TransformPoint(handCenter);
+            var dist = Vector3.Distance(leftHandCenter, triggerPoint);
+            //LogUtils.LogDebug("Distance : " + Vector3.Distance(leftHandCenter, triggerPoint));
+            precisionStatus.transform.position = triggerPoint;
+            if (isExitPrecise)
+            {
+                preciseTimer -= Time.deltaTime;
+                if (preciseTimer < 0)
+                {
+                    isExitPrecise = false;
+                    isPrecise = false;
+                    preciseTimer = 0;
+                    return;
+                }
+                return;
+            }
+            if (isPrecise)
+            {
+                precisionStatus.GetComponent<MeshRenderer>().material.color = Color.green;
+            }
+            else
+            {
+                precisionStatus.GetComponent<MeshRenderer>().material.color = Color.blue;
+            }
+            if (!justChangedPreciseMode)
+            {
+                if (dist < 0.08f)
+                {
+                    inPreciseArea = true;
+                    if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand))
+                    {
+                        preciseTimer += Time.deltaTime;
+                        if (preciseTimer > 5)
+                        {
+                            isPrecise = !isPrecise;
+                            justChangedPreciseMode = true;
+                        }
+                    }
+                    else
+                    {
+                        preciseTimer = 0;
+                    }
+                }
+                else
+                {
+                    inPreciseArea = false;
+                    preciseTimer = 0;
+                }
+            }
+            else
+            {
+                if (SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.LeftHand))
+                {
+                    justChangedPreciseMode = false;
+                }
+            }
+        }
+        public static bool isCurrentlyPreciseMode()
+        {
+            return isPrecise;
+        }
+        public static void ExitPreciseMode()
+        {
+            isExitPrecise = true;
+            preciseTimer = 1;
+        }
+
+        public static void PrecisionUpdate(GameObject ghost)
+        {
+            if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand)&& 
+                SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand))
+            {
+                var leftHandCenter = VRPlayer.leftHand.transform.TransformPoint(handCenter);
+                var rightHandCenter = VRPlayer.rightHand.transform.TransformPoint(handCenter);
+                var avgPos = (leftHandCenter + rightHandCenter) / 2;
+
+                var forwardAvg = (PlaceModeRayVectorProvider.rayDirection + PlaceModeRayVectorProvider.rayDirectionLeft) / 2;
+                var cross = Vector3.Cross(forwardAvg, (rightHandCenter - avgPos).normalized);
+                var avgRot = Quaternion.identity;
+                avgRot.SetLookRotation(forwardAvg, cross);
+
+                checkDir.transform.position = avgPos;
+                checkDir.transform.rotation = avgRot;
+
+                if (!isMoving)
+                {
+                    lastPos = ghost.transform.position;
+                    lastRot = ghost.transform.rotation;
+                    lastAvgPos = avgPos;
+                    lastAvgRot = avgRot;
+                    isMoving = true;
+                    precisionPosRef.transform.position = lastPos;
+                }
+                //ghost.transform.position = lastPos + (avgPos - lastAvgPos);
+                //ghost.transform.rotation = avgRot * (Quaternion.Inverse(lastAvgRot) * lastRot);
+               
+                ghost.transform.position = precisionPosRef.transform.position; 
+                ghost.transform.rotation = avgRot * (Quaternion.Inverse(lastAvgRot) * lastRot);
+
+            }
+            else
+            {
+                isMoving = false;
             }
         }
     }

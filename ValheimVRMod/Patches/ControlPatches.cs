@@ -137,6 +137,24 @@ namespace ValheimVRMod.Patches {
     [HarmonyPatch(typeof(Player), "UpdatePlacementGhost")]
     class PlacementSnapPoint
     {
+        private static bool Prefix(Player __instance, GameObject ___m_placementGhost, GameObject ___m_placementMarkerInstance, Player.PlacementStatus ___m_placementStatus, int ___m_placeRotation)
+        {
+            if (!VRControls.mainControlsActive || __instance != Player.m_localPlayer || !___m_placementGhost || !___m_placementGhost.transform ||
+               !__instance.InPlaceMode() || !BuildingManager.instance)
+            {
+                return true;
+            }
+
+            if (BuildingManager.isCurrentlyPreciseMode())
+            {
+                BuildingManager.PrecisionUpdate(___m_placementGhost);
+                ___m_placementMarkerInstance.transform.position = ___m_placementGhost.transform.position ;
+                ___m_placementMarkerInstance.transform.rotation = ___m_placementGhost.transform.rotation ;
+                return false;
+            }
+
+            return true;
+        }
         private static void Postfix(Player __instance, GameObject ___m_placementGhost, GameObject ___m_placementMarkerInstance, Player.PlacementStatus ___m_placementStatus, int ___m_placeRotation)
         {
             if (!VRControls.mainControlsActive || __instance != Player.m_localPlayer || !___m_placementGhost || !___m_placementGhost.transform ||
@@ -275,11 +293,19 @@ namespace ValheimVRMod.Patches {
                         return false;
                     } else
                     {
+                        if (inputReceived)
+                        {
+                            BuildingManager.ExitPreciseMode();
+                        }
                         return inputReceived;
                     }
                 }
                 else
                 {
+                    if (ZInput.GetButtonDown(inputName))
+                    {
+                        BuildingManager.ExitPreciseMode();
+                    }
                     return ZInput.GetButtonDown(inputName);
                 }
             }
