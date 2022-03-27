@@ -40,10 +40,6 @@ namespace ValheimVRMod.Scripts
         private static bool justChangedPreciseMode;
         private static bool inPreciseArea;
         private static bool isExitPrecise;
-        private static Vector3 lastPos;
-        private static Quaternion lastRot;
-        private static Vector3 lastAvgPos;
-        private static Quaternion lastAvgRot;
         private static bool isMoving;
         private static GameObject checkDir;
         private static GameObject precisionPosRef;
@@ -303,12 +299,12 @@ namespace ValheimVRMod.Scripts
 
         public static bool isSnapMode()
         {
-            if (isReferenceActive || !isSnapping || !isPrecise)
+            if (isReferenceActive || !isSnapping || isPrecise)
             {
                 snapLine.enabled = false;
                 snapPointer.SetActive(false);
             }
-            return !isReferenceActive && isSnapping;
+            return !isReferenceActive && isSnapping && !isPrecise;
         }
         public Vector3 UpdateSelectedSnapPoints(GameObject onHand)
         {
@@ -629,6 +625,10 @@ namespace ValheimVRMod.Scripts
         {
             return isPrecise;
         }
+        public static bool isCurrentlyMoving()
+        {
+            return isMoving;
+        }
         public static void ExitPreciseMode()
         {
             isExitPrecise = true;
@@ -637,6 +637,7 @@ namespace ValheimVRMod.Scripts
 
         public static void PrecisionUpdate(GameObject ghost)
         {
+            LogUtils.LogDebug("Pos : " + VRControls.instance.getDirectRightYAxis());
             if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand)&& 
                 SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand))
             {
@@ -654,19 +655,19 @@ namespace ValheimVRMod.Scripts
 
                 if (!isMoving)
                 {
-                    lastPos = ghost.transform.position;
-                    lastRot = ghost.transform.rotation;
-                    lastAvgPos = avgPos;
-                    lastAvgRot = avgRot;
                     isMoving = true;
-                    precisionPosRef.transform.position = lastPos;
+                    precisionPosRef.transform.position = ghost.transform.position;
+                    precisionPosRef.transform.rotation = ghost.transform.rotation;
                 }
                 //ghost.transform.position = lastPos + (avgPos - lastAvgPos);
                 //ghost.transform.rotation = avgRot * (Quaternion.Inverse(lastAvgRot) * lastRot);
-               
-                ghost.transform.position = precisionPosRef.transform.position; 
-                ghost.transform.rotation = avgRot * (Quaternion.Inverse(lastAvgRot) * lastRot);
 
+                precisionPosRef.transform.position += (checkDir.transform.forward * 1.2f * Time.unscaledDeltaTime * VRControls.instance.getDirectRightYAxis());
+                precisionPosRef.transform.RotateAround(precisionPosRef.transform.position, checkDir.transform.up, -VRControls.instance.getDirectRightXAxis()*2);
+                
+                ghost.transform.position = precisionPosRef.transform.position ;
+                ghost.transform.rotation = precisionPosRef.transform.rotation ;
+                //ghost.transform.rotation = avgRot * (Quaternion.Inverse(lastAvgRot) * lastRot);
             }
             else
             {

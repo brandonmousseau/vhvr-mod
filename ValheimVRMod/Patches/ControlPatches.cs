@@ -293,7 +293,7 @@ namespace ValheimVRMod.Patches {
                         return false;
                     } else
                     {
-                        if (inputReceived)
+                        if (inputReceived && !BuildingManager.isCurrentlyMoving())
                         {
                             BuildingManager.ExitPreciseMode();
                         }
@@ -302,7 +302,7 @@ namespace ValheimVRMod.Patches {
                 }
                 else
                 {
-                    if (ZInput.GetButtonDown(inputName))
+                    if (ZInput.GetButtonDown(inputName) && !BuildingManager.isCurrentlyMoving())
                     {
                         BuildingManager.ExitPreciseMode();
                     }

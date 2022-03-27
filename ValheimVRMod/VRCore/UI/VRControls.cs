@@ -426,6 +426,39 @@ namespace ValheimVRMod.VRCore.UI
             return 999;
         }
 
+        public int getDirectRightYAxis()
+        {
+            float yAxis = -pitchAndYaw.axis.y;
+            if (yAxis > 0.5f)
+            {
+                return -1;
+            }
+            else if (yAxis < -0.5f)
+            {
+                return 1;
+            }
+            else
+            {
+                return 0;
+            }
+        }
+        public int getDirectRightXAxis()
+        {
+            float yAxis = -pitchAndYaw.axis.x;
+            if (yAxis > 0.5f)
+            {
+                return -1;
+            }
+            else if (yAxis < -0.5f)
+            {
+                return 1;
+            }
+            else
+            {
+                return 0;
+            }
+        }
+
         public int getPieceRotation()
         {
             if (!contextScroll.activeBinding)
