@@ -3,6 +3,7 @@ using UnityEngine;
 using ValheimVRMod.VRCore;
 using ValheimVRMod.VRCore.UI;
 using ValheimVRMod.Utilities;
+using ValheimVRMod.Scripts;
 using ValheimVRMod.Patches;
 
 using static ValheimVRMod.Utilities.LogUtils;
@@ -18,7 +19,8 @@ namespace ValheimVRMod
 
         private GameObject vrPlayer;
         private GameObject vrGui;
-        
+        private GameObject BhapticsTactsuit;
+
         void Awake() {
             _version = Info.Metadata.Version;
             VHVRConfig.InitializeConfiguration(Config);
@@ -74,6 +76,12 @@ namespace ValheimVRMod
                 if (VHVRConfig.RecenterOnStart())
                 {
                     VRManager.tryRecenter();
+                }
+                if (VHVRConfig.BhapticsEnabled())
+                {
+                    BhapticsTactsuit = new GameObject("BhapticsTactsuit");
+                    DontDestroyOnLoad(BhapticsTactsuit);
+                    BhapticsTactsuit.AddComponent<BhapticsTactsuit>();
                 }
             }
             else
