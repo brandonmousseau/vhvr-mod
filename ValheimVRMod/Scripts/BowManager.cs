@@ -274,6 +274,16 @@ namespace ValheimVRMod.Scripts {
             if (pullPos.z < pullStart.z) {
                 pullObj.transform.localPosition = new Vector3(pullPos.x, pullPos.y, pullStart.z);
             }
+
+            //bHaptics
+            if (!TactsuitVR.suitDisabled && realLifePullPercentage != 0)
+            {
+                TactsuitVR.StartThreadHaptic(VHVRConfig.LeftHanded() ? "BowStringLeft" : "BowStringRight",
+                    realLifePullPercentage * 1.5f, true);
+                // ARMS TACTOSY
+                TactsuitVR.StartThreadHaptic(VHVRConfig.LeftHanded() ? "Recoil_L" : "Recoil_R",
+                    realLifePullPercentage * 1.5f, true);
+            }
         }
     }
 }

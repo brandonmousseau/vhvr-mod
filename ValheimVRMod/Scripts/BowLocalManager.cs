@@ -102,6 +102,12 @@ namespace ValheimVRMod.Scripts {
 
             updateOutline();
             updateChargeIndicator();
+
+            //bHaptics
+            if (!TactsuitVR.suitDisabled && !isPulling)
+            {
+                TactsuitVR.StopThreadHaptic(VHVRConfig.LeftHanded() ? "BowStringLeft" : "BowStringRight");
+            }
         }
 
         private void updateOutline() {
@@ -242,6 +248,12 @@ namespace ValheimVRMod.Scripts {
         public void toggleArrow() {
             if (arrow != null) {
                 destroyArrow();
+                //bHaptics
+                if (!TactsuitVR.suitDisabled)
+                {
+                    TactsuitVR.PlaybackHaptics(VHVRConfig.LeftHanded() ?
+                         "HolsterArrowLeftShoulder" : "HolsterArrowRightShoulder");
+                }
                 return;
             }
             
@@ -256,6 +268,13 @@ namespace ValheimVRMod.Scripts {
                 arrow = Instantiate(ammoItem.m_shared.m_attack.m_attackProjectile, arrowAttach.transform);
             } catch {
                 return;
+            }
+
+            //bHaptics
+            if (!TactsuitVR.suitDisabled)
+            {
+                TactsuitVR.PlaybackHaptics(VHVRConfig.LeftHanded() ?
+                    "UnholsterArrowLeftShoulder" : "UnholsterArrowRightShoulder");
             }
 
             // we need to disable the Projectile Component, else the arrow will shoot out of the hands like a New Year rocket

@@ -139,75 +139,18 @@ namespace ValheimVRMod.Patches
             }
         }
     }
+
     /**
-    * on bow string pull
+    * on bow string pull => BowManager.cs l.278 
     */
-    [HarmonyPatch(typeof(BowManager), "pullString")]
-    class BowManager_pullString_Patch
-    {
-        public static void Postfix(float ___realLifePullPercentage)
-        {
-            if (TactsuitVR.suitDisabled)
-            {
-                return;
-            }
-            if (___realLifePullPercentage == 0)
-            {
-                return;
-            }
-            TactsuitVR.StartThreadHaptic(VHVRConfig.LeftHanded() ? "BowStringLeft" : "BowStringRight",
-                ___realLifePullPercentage * 1.5f, true);
-            // ARMS TACTOSY
-            TactsuitVR.StartThreadHaptic(VHVRConfig.LeftHanded() ? "Recoil_L" : "Recoil_R",
-                ___realLifePullPercentage * 1.5f, true);
-        }
-    }
+
     /**
-    * on bow string stop
+    * on bow string stop => BowLocalManager.cs l.106
     */
-    [HarmonyPatch(typeof(BowLocalManager), "OnRenderObject")]
-    class BowLocalManager_OnRenderObject_Patch
-    {
-        public static void Postfix(bool ___isPulling)
-        {
-            if (TactsuitVR.suitDisabled)
-            {
-                return;
-            }
-            if (!___isPulling)
-            {
-                TactsuitVR.StopThreadHaptic(VHVRConfig.LeftHanded() ? "BowStringLeft" : "BowStringRight");
-            }
-        }
-    }
+
     /**
-    * on getting arrow from your back
+    * on getting arrow from your back => BowLocalManager.cs l.248
     */
-    [HarmonyPatch(typeof(BowLocalManager), "toggleArrow")]
-    class BowLocalManager_toggleArrow_Patch
-    {
-        public static void Prefix(GameObject ___arrow)
-        {
-            if (TactsuitVR.suitDisabled)
-            {
-                return;
-            }
-            if (___arrow != null)
-            {
-                TactsuitVR.PlaybackHaptics(VHVRConfig.LeftHanded() ?
-                    "HolsterArrowLeftShoulder" : "HolsterArrowRightShoulder");
-                return;
-            }
-            var ammoItem = Player.m_localPlayer.GetAmmoItem();
-            if (ammoItem == null || ammoItem.m_shared.m_itemType != ItemDrop.ItemData.ItemType.Ammo)
-            {
-                // out of ammo
-                return;
-            }
-            TactsuitVR.PlaybackHaptics(VHVRConfig.LeftHanded() ?
-               "UnholsterArrowLeftShoulder" : "UnholsterArrowRightShoulder");
-        }
-    }
 
     /**
      * Player low Health
@@ -315,19 +258,8 @@ namespace ValheimVRMod.Patches
 
     /**
      * OnTriggerEnter Attack succeded against any object with any weapon
+     * WeaponCollision.cs l.103
      */
-    [HarmonyPatch(typeof(WeaponCollision), "OnTriggerEnter")]
-    class WeaponCollision_OnTriggerEnter_Patch
-    {
-        public static void Postfix(bool ___hasAttackedSuccess)
-        {
-            if ( !___hasAttackedSuccess || TactsuitVR.suitDisabled)
-            {
-                return;
-            }
-            TactsuitVR.SwordRecoil(!VHVRConfig.LeftHanded());
-        }
-    }
 
     /**
      * On starting teleporting
