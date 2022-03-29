@@ -43,6 +43,9 @@ namespace ValheimVRMod.Scripts
         private static bool isMoving;
         private static GameObject checkDir;
         private static GameObject precisionPosRef;
+        private static Transform precisionSnapSave1;
+        private static Transform precisionSnapSave2;
+
 
         private LayerMask piecelayer = LayerMask.GetMask(new string[]
         {
@@ -106,8 +109,8 @@ namespace ValheimVRMod.Scripts
         {
             snapLine = new GameObject().AddComponent<LineRenderer>();
             snapLine.gameObject.layer = LayerMask.GetMask("WORLDSPACE_UI_LAYER");
-            snapLine.widthMultiplier = 0.05f;
-            snapLine.positionCount = 2;
+            snapLine.widthMultiplier = 0.03f;
+            snapLine.positionCount = 3;
             snapLine.material.color = Color.yellow;
             snapLine.enabled = false;
             snapLine.receiveShadows = false;
@@ -153,8 +156,67 @@ namespace ValheimVRMod.Scripts
             BuildReferencePoint();
             BuildSnapPoint();
             PrecisionMode();
+            UpdateLine();
         }
 
+        private void UpdateLine()
+        {
+            var doLine = false;
+            if (isReferenceActive)
+            {
+                snapLine.material.color = Color.green;
+                doLine = true;
+            }
+            else if (isSnapping)
+            {
+                snapLine.positionCount = 2;
+                snapLine.material.color = Color.yellow;
+            }else if (isPrecise)
+            {
+                doLine = false;
+                if (precisionSnapSave1)
+                {
+                    snapLine.material.color = Color.blue;
+                }
+                else if (isMoving)
+                {
+                    snapLine.material.color = Color.green;
+                }
+                else
+                {
+                    snapLine.material.color = Color.yellow;
+                }
+                snapLine.positionCount = 3;
+                snapLine.SetPosition(0, checkDir.transform.position + (checkDir.transform.right * -0.2f));
+                snapLine.SetPosition(1, checkDir.transform.position + (checkDir.transform.forward * 0.2f));
+                snapLine.SetPosition(2, checkDir.transform.position + (checkDir.transform.right * 0.2f));
+                snapLine.enabled = true;
+            }
+            else
+            {
+                snapLine.material.color = Color.red;
+                doLine = true;
+            }
+
+            if (doLine)
+            {
+                RaycastHit pieceRaycast;
+                if (Physics.Raycast(PlaceModeRayVectorProvider.startingPosition, PlaceModeRayVectorProvider.rayDirection, out pieceRaycast, 50f, piecelayer))
+                {
+                    snapLine.enabled = true;
+                    snapLine.positionCount = 2;
+                    snapLine.SetPosition(0, PlaceModeRayVectorProvider.startingPosition);
+                    snapLine.SetPosition(1, pieceRaycast.point);
+                }
+                else
+                {
+                    snapLine.enabled = true;
+                    snapLine.positionCount = 2;
+                    snapLine.SetPosition(0, PlaceModeRayVectorProvider.startingPosition);
+                    snapLine.SetPosition(1, PlaceModeRayVectorProvider.startingPosition + (PlaceModeRayVectorProvider.rayDirection * 50));
+                }
+            }
+        }
         private void BuildReferencePoint()
         {
             RaycastHit pieceRaycast;
@@ -637,21 +699,20 @@ namespace ValheimVRMod.Scripts
 
         public static void PrecisionUpdate(GameObject ghost)
         {
-            LogUtils.LogDebug("Pos : " + VRControls.instance.getDirectRightYAxis());
+            var leftHandCenter = VRPlayer.leftHand.transform.TransformPoint(handCenter);
+            var rightHandCenter = VRPlayer.rightHand.transform.TransformPoint(handCenter);
+            var avgPos = (leftHandCenter + rightHandCenter) / 2;
+            var distanceHand = Vector3.Distance(leftHandCenter, rightHandCenter);
+            var forwardAvg = (PlaceModeRayVectorProvider.rayDirection + PlaceModeRayVectorProvider.rayDirectionLeft) / 2;
+            var cross = Vector3.Cross(forwardAvg, (rightHandCenter - avgPos).normalized);
+            var avgRot = Quaternion.identity;
+            avgRot.SetLookRotation(forwardAvg, cross);
+            checkDir.transform.position = avgPos;
+            checkDir.transform.rotation = avgRot;
+
             if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand)&& 
                 SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand))
             {
-                var leftHandCenter = VRPlayer.leftHand.transform.TransformPoint(handCenter);
-                var rightHandCenter = VRPlayer.rightHand.transform.TransformPoint(handCenter);
-                var avgPos = (leftHandCenter + rightHandCenter) / 2;
-
-                var forwardAvg = (PlaceModeRayVectorProvider.rayDirection + PlaceModeRayVectorProvider.rayDirectionLeft) / 2;
-                var cross = Vector3.Cross(forwardAvg, (rightHandCenter - avgPos).normalized);
-                var avgRot = Quaternion.identity;
-                avgRot.SetLookRotation(forwardAvg, cross);
-
-                checkDir.transform.position = avgPos;
-                checkDir.transform.rotation = avgRot;
 
                 if (!isMoving)
                 {
@@ -667,6 +728,25 @@ namespace ValheimVRMod.Scripts
                 
                 ghost.transform.position = precisionPosRef.transform.position ;
                 ghost.transform.rotation = precisionPosRef.transform.rotation ;
+
+                if (SteamVR_Actions.valheim_Jump.GetState(SteamVR_Input_Sources.Any))
+                {
+                    if (precisionSnapSave1)
+                    {
+                        Vector3 vector3 = precisionSnapSave2.position - (precisionSnapSave1.position - precisionPosRef.transform.position);
+                        precisionPosRef.transform.position = vector3;
+                        ghost.transform.position = precisionPosRef.transform.position;
+                    }
+                    else
+                    {
+                        Player.m_localPlayer.FindClosestSnapPoints(ghost.transform, 0.5f, out precisionSnapSave1, out precisionSnapSave2, new List<Piece>());
+                    }
+                }
+                else
+                {
+                    precisionSnapSave1 = null;
+                    precisionSnapSave2 = null;
+                }
                 //ghost.transform.rotation = avgRot * (Quaternion.Inverse(lastAvgRot) * lastRot);
             }
             else

@@ -231,11 +231,11 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return false;
             }
-            if (zinput == "Jump" && shouldEnableRemove())
+            if (zinput == "Jump" && (shouldEnableRemove() || shouldDisableJumpRemove()))
             {
                 return false;
             }
-            if (zinput == "Remove" && !shouldEnableRemove())
+            if (zinput == "Remove" && (!shouldEnableRemove() || shouldDisableJumpRemove()))
             {
                 return false;
             }
@@ -309,11 +309,11 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return false;
             }
-            if (zinput == "Jump" && shouldEnableRemove())
+            if (zinput == "Jump" && (shouldEnableRemove() || shouldDisableJumpRemove()))
             {
                 return false;
             }
-            if (zinput == "Remove" && !shouldEnableRemove())
+            if (zinput == "Remove" && (!shouldEnableRemove() || shouldDisableJumpRemove()))
             {
                 return false;
             }
@@ -348,11 +348,11 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return false;
             }
-            if (zinput == "Jump" && shouldEnableRemove())
+            if (zinput == "Jump" && (shouldEnableRemove() || shouldDisableJumpRemove()))
             {
                 return false;
             }
-            if (zinput == "Remove" && !shouldEnableRemove())
+            if (zinput == "Remove" && (!shouldEnableRemove() || shouldDisableJumpRemove()))
             {
                 return false;
             }
@@ -599,6 +599,11 @@ namespace ValheimVRMod.VRCore.UI
         private bool shouldEnableRemove()
         {
             return inPlaceMode() && SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand);
+        }
+
+        private bool shouldDisableJumpRemove()
+        {
+            return BuildingManager.instance && BuildingManager.isCurrentlyMoving();
         }
 
         private void init()

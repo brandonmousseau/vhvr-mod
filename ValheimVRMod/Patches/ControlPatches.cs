@@ -148,8 +148,10 @@ namespace ValheimVRMod.Patches {
             if (BuildingManager.isCurrentlyPreciseMode())
             {
                 BuildingManager.PrecisionUpdate(___m_placementGhost);
-                ___m_placementMarkerInstance.transform.position = ___m_placementGhost.transform.position ;
-                ___m_placementMarkerInstance.transform.rotation = ___m_placementGhost.transform.rotation ;
+                if (___m_placementMarkerInstance)
+                {
+                    ___m_placementMarkerInstance.SetActive(false);
+                }
                 return false;
             }
 
