@@ -67,6 +67,10 @@ namespace ValheimVRMod.Scripts {
             if (isRightHand && EquipScript.getRight() == EquipType.Tankard) {
                 if (collider.name == "MouthCollider" && hasDrunk) {
                     hasDrunk = false;
+                    if (!TactsuitVR.suitDisabled)
+                    {
+                        TactsuitVR.PlaybackHaptics("Drinking");
+                    }
                 }
                 
                 return;
