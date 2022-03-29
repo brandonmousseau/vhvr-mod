@@ -239,7 +239,7 @@ namespace ValheimVRMod.Patches
                 return;
             }
             var coords = BhapticsTactsuit.getAngleAndShift(Player.m_localPlayer, hit.m_point);
-            BhapticsTactsuit.PlayBackHit("Impact", coords.Key, coords.Value);
+            BhapticsTactsuit.PlayBackHit("Impact", coords.angle, coords.shift);
         }
     }
 
