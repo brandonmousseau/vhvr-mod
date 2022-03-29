@@ -132,7 +132,7 @@ namespace ValheimVRMod.Scripts
             }
         }
 
-        public static KeyValuePair<float, float> getAngleAndShift(Player player, Vector3 hit)
+        public static (float, float) getAngleAndShift(Player player, Vector3 hit)
         {
             // bhaptics starts in the front, then rotates to the left. 0° is front, 90° is left, 270° is right.
             // y is "up", z is "forward" in local coordinates
@@ -165,7 +165,7 @@ namespace ValheimVRMod.Scripts
             // ...and then spread/shift it to [-0.5, 0.5]
             else { hitShift = (hitShift - lowerBound) / (upperBound - lowerBound) - 0.5f; }
             // No tuple returns available in .NET < 4.0, so this is the easiest quickfix
-            return new KeyValuePair<float, float>(myRotation, hitShift);
+            return (myRotation, hitShift);
         }
 
         public static void PlayBackHit(string key, float xzAngle, float yShift)
