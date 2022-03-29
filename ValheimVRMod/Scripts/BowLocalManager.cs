@@ -104,9 +104,9 @@ namespace ValheimVRMod.Scripts {
             updateChargeIndicator();
 
             //bHaptics
-            if (!TactsuitVR.suitDisabled && !isPulling)
+            if (!BhapticsTactsuit.suitDisabled && !isPulling)
             {
-                TactsuitVR.StopThreadHaptic(VHVRConfig.LeftHanded() ? "BowStringLeft" : "BowStringRight");
+                BhapticsTactsuit.StopThreadHaptic(VHVRConfig.LeftHanded() ? "BowStringLeft" : "BowStringRight");
             }
         }
 
@@ -249,9 +249,9 @@ namespace ValheimVRMod.Scripts {
             if (arrow != null) {
                 destroyArrow();
                 //bHaptics
-                if (!TactsuitVR.suitDisabled)
+                if (!BhapticsTactsuit.suitDisabled)
                 {
-                    TactsuitVR.PlaybackHaptics(VHVRConfig.LeftHanded() ?
+                    BhapticsTactsuit.PlaybackHaptics(VHVRConfig.LeftHanded() ?
                          "HolsterArrowLeftShoulder" : "HolsterArrowRightShoulder");
                 }
                 return;
@@ -271,9 +271,9 @@ namespace ValheimVRMod.Scripts {
             }
 
             //bHaptics
-            if (!TactsuitVR.suitDisabled)
+            if (!BhapticsTactsuit.suitDisabled)
             {
-                TactsuitVR.PlaybackHaptics(VHVRConfig.LeftHanded() ?
+                BhapticsTactsuit.PlaybackHaptics(VHVRConfig.LeftHanded() ?
                     "UnholsterArrowLeftShoulder" : "UnholsterArrowRightShoulder");
             }
 

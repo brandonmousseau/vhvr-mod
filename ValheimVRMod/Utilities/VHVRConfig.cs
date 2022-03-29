@@ -1110,7 +1110,7 @@ namespace ValheimVRMod.Utilities
 
         public static bool BhapticsEnabled()
         {
-            return bhapticsEnabled.Value;
+            return bhapticsEnabled.Value && !NonVrPlayer();
         }
     }
 }

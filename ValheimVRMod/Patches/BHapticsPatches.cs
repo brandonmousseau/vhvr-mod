@@ -17,11 +17,11 @@ namespace ValheimVRMod.Patches
     {
         public static void Postfix(Player __instance)
         {
-            if (__instance != Player.m_localPlayer || TactsuitVR.suitDisabled)
+            if (__instance != Player.m_localPlayer || BhapticsTactsuit.suitDisabled)
             {
                 return;
             }
-            TactsuitVR.PlaybackHaptics("Eating");
+            BhapticsTactsuit.PlaybackHaptics("Eating");
         }
     }
 
@@ -33,7 +33,7 @@ namespace ValheimVRMod.Patches
     {
         public static void Postfix(StatusEffect __instance)
         {
-            if (TactsuitVR.suitDisabled || __instance.m_character != Player.m_localPlayer)
+            if (BhapticsTactsuit.suitDisabled || __instance.m_character != Player.m_localPlayer)
             {
                 return;
             }
@@ -55,7 +55,7 @@ namespace ValheimVRMod.Patches
             }
             if (EffectName != "")
             {
-                TactsuitVR.StartThreadHaptic(EffectName);
+                BhapticsTactsuit.StartThreadHaptic(EffectName);
             }
         }
     }
@@ -68,7 +68,7 @@ namespace ValheimVRMod.Patches
     {
         public static void Postfix(StatusEffect __instance)
         {
-            if (TactsuitVR.suitDisabled || __instance.m_character != Player.m_localPlayer)
+            if (BhapticsTactsuit.suitDisabled || __instance.m_character != Player.m_localPlayer)
             {
                 return;
             }
@@ -90,7 +90,7 @@ namespace ValheimVRMod.Patches
             }
             if (name != "")
             {
-                TactsuitVR.StopThreadHaptic(name);
+                BhapticsTactsuit.StopThreadHaptic(name);
             }
         }
     }
@@ -103,7 +103,7 @@ namespace ValheimVRMod.Patches
     {
         public static void Postfix(Player __instance)
         {
-            if (TactsuitVR.suitDisabled)
+            if (BhapticsTactsuit.suitDisabled)
             {
                 return;
             }
@@ -114,7 +114,7 @@ namespace ValheimVRMod.Patches
             {
                 if (item == Player.m_localPlayer)
                 {
-                    TactsuitVR.PlaybackHaptics("SuperPower");
+                    BhapticsTactsuit.PlaybackHaptics("SuperPower");
                 }
             }
         }
@@ -127,15 +127,15 @@ namespace ValheimVRMod.Patches
     {
         public static void Postfix(Attack __instance)
         {
-            if (__instance.m_character != Player.m_localPlayer || TactsuitVR.suitDisabled)
+            if (__instance.m_character != Player.m_localPlayer || BhapticsTactsuit.suitDisabled)
             {
                 return;
             }
             if (EquipScript.getLeft() == EquipType.Bow)
             {
-                TactsuitVR.PlaybackHaptics(VHVRConfig.LeftHanded() ? "ArrowThrowLeft" : "ArrowThrowRight", 2.0f); 
+                BhapticsTactsuit.PlaybackHaptics(VHVRConfig.LeftHanded() ? "ArrowThrowLeft" : "ArrowThrowRight", 2.0f); 
                 // arms tactosy
-                TactsuitVR.PlaybackHaptics(VHVRConfig.LeftHanded() ? "Recoil_L" : "Recoil_R", 2.0f);
+                BhapticsTactsuit.PlaybackHaptics(VHVRConfig.LeftHanded() ? "Recoil_L" : "Recoil_R", 2.0f);
             }
         }
     }
@@ -160,30 +160,30 @@ namespace ValheimVRMod.Patches
     {
         public static void Postfix(Character __instance)
         {
-            if (__instance != Player.m_localPlayer || TactsuitVR.suitDisabled)
+            if (__instance != Player.m_localPlayer || BhapticsTactsuit.suitDisabled)
             {
                 return;
             }
             int hlth = Convert.ToInt32(__instance.GetHealth() * 100 / __instance.GetMaxHealth());
-            switch (hlth)
+            if (hlth < 20 && hlth > 15)
             {
-                case int n when hlth < 20 && hlth > 15:
-                    TactsuitVR.StopThreadHaptic("HeartBeatFast");
-                    TactsuitVR.StartThreadHaptic("HeartBeat");
-                    break;
-                case int n when hlth <= 15 && hlth > 0:
-                    TactsuitVR.StopThreadHaptic("HeartBeat");
-                    TactsuitVR.StartThreadHaptic("HeartBeatFast", 1.0f, false, 0);
-                    break;
-                case int n when hlth <= 0:
-                    TactsuitVR.StopThreadHaptic("HeartBeat");
-                    TactsuitVR.StopThreadHaptic("HeartBeatFast");
-                    TactsuitVR.PlaybackHaptics("Death");
-                    break;
-                default:
-                    TactsuitVR.StopThreadHaptic("HeartBeat");
-                    TactsuitVR.StopThreadHaptic("HeartBeatFast");
-                    break;
+                BhapticsTactsuit.StopThreadHaptic("HeartBeatFast");
+                BhapticsTactsuit.StartThreadHaptic("HeartBeat");
+            }
+            else if (hlth <= 15 && hlth > 0)
+            {
+                BhapticsTactsuit.StopThreadHaptic("HeartBeat");
+                BhapticsTactsuit.StartThreadHaptic("HeartBeatFast", 1.0f, false, 0);
+            }
+            else if (hlth <= 0)
+            {
+                BhapticsTactsuit.StopThreadHaptic("HeartBeat");
+                BhapticsTactsuit.StopThreadHaptic("HeartBeatFast");
+            }
+            else
+            {
+                BhapticsTactsuit.StopThreadHaptic("HeartBeat");
+                BhapticsTactsuit.StopThreadHaptic("HeartBeatFast");
             }
         }
     }
@@ -197,16 +197,16 @@ namespace ValheimVRMod.Patches
         public static void Postfix(Humanoid __instance, bool __result)
         {
 
-            if (__instance != Player.m_localPlayer || EquipScript.getLeft() != EquipType.Shield || !VHVRConfig.UseVrControls())
+            if (BhapticsTactsuit.suitDisabled || __instance != Player.m_localPlayer || EquipScript.getLeft() != EquipType.Shield || !VHVRConfig.UseVrControls())
             {
                 return;
             }
             if (__result)
             {
-                TactsuitVR.PlaybackHaptics(VHVRConfig.LeftHanded() ?
+                BhapticsTactsuit.PlaybackHaptics(VHVRConfig.LeftHanded() ?
                     "BlockVest_R" : "BlockVest_L");
                 // arms tactosy
-                TactsuitVR.PlaybackHaptics(VHVRConfig.LeftHanded() ?
+                BhapticsTactsuit.PlaybackHaptics(VHVRConfig.LeftHanded() ?
                     "Block_R" : "Block_L");
             }
         }
@@ -221,20 +221,20 @@ namespace ValheimVRMod.Patches
         public static void Prefix(Player __instance)
         {
 
-            if (__instance != Player.m_localPlayer || TactsuitVR.suitDisabled)
+            if (__instance != Player.m_localPlayer || BhapticsTactsuit.suitDisabled)
             {
                 return;
             }
-            TactsuitVR.PlaybackHaptics("Death");
+            BhapticsTactsuit.PlaybackHaptics("Death");
         }
         public static void Postfix(Player __instance)
         {
 
-            if (__instance != Player.m_localPlayer || TactsuitVR.suitDisabled)
+            if (__instance != Player.m_localPlayer || BhapticsTactsuit.suitDisabled)
             {
                 return;
             }
-            TactsuitVR.StopAllHapticFeedback();
+            BhapticsTactsuit.StopAllHapticFeedback();
         }
     }
 
@@ -247,12 +247,12 @@ namespace ValheimVRMod.Patches
         public static void Postfix(Character __instance, HitData hit)
         {
 
-            if (__instance != Player.m_localPlayer || TactsuitVR.suitDisabled)
+            if (__instance != Player.m_localPlayer || BhapticsTactsuit.suitDisabled)
             {
                 return;
             }
-            var coords = TactsuitVR.getAngleAndShift(Player.m_localPlayer, hit.m_point);
-            TactsuitVR.PlayBackHit("Impact", coords.Key, coords.Value);
+            var coords = BhapticsTactsuit.getAngleAndShift(Player.m_localPlayer, hit.m_point);
+            BhapticsTactsuit.PlayBackHit("Impact", coords.Key, coords.Value);
         }
     }
 
@@ -269,17 +269,16 @@ namespace ValheimVRMod.Patches
     {
         public static void Postfix(Player __instance, bool __result)
         {
-            if (__instance != Player.m_localPlayer || TactsuitVR.suitDisabled || !__result)
+            if (__instance != Player.m_localPlayer || BhapticsTactsuit.suitDisabled || !__result)
             {
                 return;
             }
             if (__instance.m_teleporting)
             {
-                TactsuitVR.PlaybackHaptics("PassPortalFront");
-                TactsuitVR.PlaybackHaptics("PassPortalTactosy");
-                //trying to wait for this effect to finish before starting teleport effect
-                Thread.Sleep(2000);
-                TactsuitVR.StartThreadHaptic("Teleporting", 1.0f, false, 5000);
+                BhapticsTactsuit.PlaybackHaptics("PassPortalFront");
+                BhapticsTactsuit.PlaybackHaptics("PassPortalTactosy");
+                //wait for this effect to finish before starting teleport effect, last param of this method
+                BhapticsTactsuit.StartThreadHaptic("Teleporting", 1.0f, false, 5000, 1.0f, 1000);
             }
         }
     }
@@ -289,24 +288,15 @@ namespace ValheimVRMod.Patches
     [HarmonyPatch(typeof(Player), "UpdateTeleport")]
     class Player_UpdateTeleport_Patch
     {
-        public static void Prefix(Player __instance, out bool __state)
-        {
-            __state = false;
-            if (__instance != Player.m_localPlayer || TactsuitVR.suitDisabled)
-            {
-                return;
-            }
-            __state = __instance.m_teleporting;
-        }
         public static void Postfix(Player __instance, bool __state)
         {
-            if (__instance != Player.m_localPlayer || TactsuitVR.suitDisabled)
+            if (__instance != Player.m_localPlayer || BhapticsTactsuit.suitDisabled)
             {
                 return;
             }
-            if (__state && !__instance.m_teleporting)
+            if (!__instance.m_teleporting)
             {
-                TactsuitVR.StopThreadHaptic("Teleporting", new string[] {"PassPortalBack", "PassPortalTactosy"});
+                BhapticsTactsuit.StopThreadHaptic("Teleporting", new string[] {"PassPortalBack", "PassPortalTactosy"});
             }
         }
     }
@@ -320,7 +310,7 @@ namespace ValheimVRMod.Patches
         private static TeleportWorld myPortal;
         public static void Postfix(TeleportWorld __instance)
         {
-            if (TactsuitVR.suitDisabled)
+            if (BhapticsTactsuit.suitDisabled)
             {
                 return;
             }
@@ -336,16 +326,16 @@ namespace ValheimVRMod.Patches
                 }
                 if (closeTo && !Player.m_localPlayer.IsTeleporting())
                 {
-                    TactsuitVR.StartThreadHaptic("ApproachPortal");
+                    BhapticsTactsuit.StartThreadHaptic("ApproachPortal");
                 }
                 if (!closeTo && myPortal && myPortal == __instance)
                 {
-                    TactsuitVR.StopThreadHaptic("ApproachPortal");
+                    BhapticsTactsuit.StopThreadHaptic("ApproachPortal");
                     myPortal = null;
                 }
             } else
             {
-                TactsuitVR.StopThreadHaptic("ApproachPortal");
+                BhapticsTactsuit.StopThreadHaptic("ApproachPortal");
                 myPortal = null;
             }
         }
@@ -358,11 +348,11 @@ namespace ValheimVRMod.Patches
     {
         public static void Postfix()
         {
-            if (TactsuitVR.suitDisabled)
+            if (BhapticsTactsuit.suitDisabled)
             {
                 return;
             }
-            TactsuitVR.PlaybackHaptics("Thunder", 0.8f);
+            BhapticsTactsuit.PlaybackHaptics("Thunder", 0.8f);
         }
     }
     /**
@@ -373,15 +363,15 @@ namespace ValheimVRMod.Patches
     {
         public static void Postfix(bool __result, bool alt)
         {
-            if (TactsuitVR.suitDisabled)
+            if (BhapticsTactsuit.suitDisabled)
             {
                 return;
             }
             if (__result && !alt)
             {
-                TactsuitVR.PlaybackHaptics("Petting");
+                BhapticsTactsuit.PlaybackHaptics("Petting");
                 //tactosy
-                TactsuitVR.PlaybackHaptics(VHVRConfig.LeftHanded() ? "Petting_L" : "Petting_R");
+                BhapticsTactsuit.PlaybackHaptics(VHVRConfig.LeftHanded() ? "Petting_L" : "Petting_R");
             }
         }
     }
@@ -393,26 +383,26 @@ namespace ValheimVRMod.Patches
             switch (speed)
             {
                 case Sadle.Speed.Stop:
-                    TactsuitVR.StopThreadHaptic("RideHorse");
-                    TactsuitVR.StopThreadHaptic("RideHorseSlow");
+                    BhapticsTactsuit.StopThreadHaptic("RideHorse");
+                    BhapticsTactsuit.StopThreadHaptic("RideHorseSlow");
                     break;
                 case Sadle.Speed.Walk:
-                    TactsuitVR.StartThreadHaptic("RideHorseSlow", (swimming) ? 0.4f : 1.0f, false, 3500);
-                    TactsuitVR.StopThreadHaptic("RideHorse");
+                    BhapticsTactsuit.StartThreadHaptic("RideHorseSlow", (swimming) ? 0.4f : 1.0f, false, 3500);
+                    BhapticsTactsuit.StopThreadHaptic("RideHorse");
                     break;
                 case Sadle.Speed.Turn:
-                    TactsuitVR.StartThreadHaptic("RideHorseSlow", (swimming) ? 0.4f : 1.0f, false, 3500);
-                    TactsuitVR.StopThreadHaptic("RideHorse");
+                    BhapticsTactsuit.StartThreadHaptic("RideHorseSlow", (swimming) ? 0.4f : 1.0f, false, 3500);
+                    BhapticsTactsuit.StopThreadHaptic("RideHorse");
                     break;
                 case Sadle.Speed.Run:
-                    TactsuitVR.StartThreadHaptic("RideHorse", (swimming) ? 0.4f : 1.0f, false, 3500);
-                    TactsuitVR.StopThreadHaptic("RideHorseSlow");
+                    BhapticsTactsuit.StartThreadHaptic("RideHorse", (swimming) ? 0.4f : 1.0f, false, 3500);
+                    BhapticsTactsuit.StopThreadHaptic("RideHorseSlow");
                     break;
                 case Sadle.Speed.NoChange:
                     break;
                 default:
-                    TactsuitVR.StopThreadHaptic("RideHorse");
-                    TactsuitVR.StopThreadHaptic("RideHorseSlow");
+                    BhapticsTactsuit.StopThreadHaptic("RideHorse");
+                    BhapticsTactsuit.StopThreadHaptic("RideHorseSlow");
                     break;
             }
         }
@@ -425,7 +415,7 @@ namespace ValheimVRMod.Patches
             private static bool attackStarted = false;
             public static void Postfix(Sadle __instance)
             {
-                if (!__instance.IsLocalUser() || TactsuitVR.suitDisabled)
+                if (!__instance.IsLocalUser() || BhapticsTactsuit.suitDisabled)
                 {
                     return;
                 }
@@ -454,12 +444,12 @@ namespace ValheimVRMod.Patches
                             attackStarted = true;
                             if (hum.m_currentAttack.m_attackType == Attack.AttackType.Area)
                             {
-                                TactsuitVR.PlaybackHaptics("LoxGroundAttackTactosy");
-                                TactsuitVR.PlaybackHaptics("LoxGroundAttack");
+                                BhapticsTactsuit.PlaybackHaptics("LoxGroundAttackTactosy");
+                                BhapticsTactsuit.PlaybackHaptics("LoxGroundAttack");
                             } else
                             {
-                                TactsuitVR.PlaybackHaptics("LoxAttackTactosy");
-                                TactsuitVR.PlaybackHaptics("LoxAttack");
+                                BhapticsTactsuit.PlaybackHaptics("LoxAttackTactosy");
+                                BhapticsTactsuit.PlaybackHaptics("LoxAttack");
                             }
                         }
                     } else
@@ -478,7 +468,7 @@ namespace ValheimVRMod.Patches
         {
             public static void Postfix(Sadle __instance, Player player)
             {
-                if (player != Player.m_localPlayer || TactsuitVR.suitDisabled)
+                if (player != Player.m_localPlayer || BhapticsTactsuit.suitDisabled)
                 {
                     return;
                 }
@@ -495,7 +485,7 @@ namespace ValheimVRMod.Patches
     {
         public static void Postfix(WearNTear __instance)
         {
-            if (TactsuitVR.suitDisabled)
+            if (BhapticsTactsuit.suitDisabled)
             {
                 return;
             }
@@ -503,7 +493,7 @@ namespace ValheimVRMod.Patches
             Ship component = __instance.GetComponent<Ship>();
             if (component != null && component.IsPlayerInBoat(Player.m_localPlayer))
             {
-                TactsuitVR.PlaybackHaptics("ShipDamage");
+                BhapticsTactsuit.PlaybackHaptics("ShipDamage");
             }
         }
     }
@@ -516,7 +506,7 @@ namespace ValheimVRMod.Patches
     {
         public static void Postfix(WearNTear __instance, bool __result)
         {
-            if (TactsuitVR.suitDisabled)
+            if (BhapticsTactsuit.suitDisabled)
             {
                 return;
             }
@@ -524,8 +514,8 @@ namespace ValheimVRMod.Patches
             Piece component = __instance.GetComponent<Piece>();
             if (__result && component != null && component == Player.m_localPlayer.GetHoveringPiece())
             {
-                TactsuitVR.PlaybackHaptics((VHVRConfig.LeftHanded()) ? "Hammer_L" : "Hammer_R");
-                TactsuitVR.PlaybackHaptics((VHVRConfig.LeftHanded()) ? "HammerTactosy_L" : "HammerTactosy_R");
+                BhapticsTactsuit.PlaybackHaptics((VHVRConfig.LeftHanded()) ? "Hammer_L" : "Hammer_R");
+                BhapticsTactsuit.PlaybackHaptics((VHVRConfig.LeftHanded()) ? "HammerTactosy_L" : "HammerTactosy_R");
             }
         }
     }
@@ -537,7 +527,7 @@ namespace ValheimVRMod.Patches
     {
         public static void Postfix(WearNTear __instance)
         {
-            if (TactsuitVR.suitDisabled)
+            if (BhapticsTactsuit.suitDisabled)
             {
                 return;
             }
@@ -545,8 +535,8 @@ namespace ValheimVRMod.Patches
             Piece component = __instance.GetComponent<Piece>();
             if (component != null && component.IsCreator())
             {
-                TactsuitVR.PlaybackHaptics((VHVRConfig.LeftHanded()) ? "Hammer_L" : "Hammer_R");
-                TactsuitVR.PlaybackHaptics((VHVRConfig.LeftHanded()) ? "HammerTactosy_L" : "HammerTactosy_R");
+                BhapticsTactsuit.PlaybackHaptics((VHVRConfig.LeftHanded()) ? "Hammer_L" : "Hammer_R");
+                BhapticsTactsuit.PlaybackHaptics((VHVRConfig.LeftHanded()) ? "HammerTactosy_L" : "HammerTactosy_R");
             }
         }
     }
@@ -561,10 +551,12 @@ namespace ValheimVRMod.Patches
         private static readonly string[] rain = { "ThunderStorm", "Rain" };
         private static string currentEnv = "";
         private static int envStarted = 0;
+        //when env is changing, there is a delay between effective change of env in the code,
+        //and rain actually showing on screen
         private static int envDelay = 12;
         public static void Postfix(EnvSetup ___m_currentEnv)
         {
-            if (TactsuitVR.suitDisabled || !Player.m_localPlayer)
+            if (BhapticsTactsuit.suitDisabled || !Player.m_localPlayer)
             {
                 return;
             }
@@ -576,11 +568,11 @@ namespace ValheimVRMod.Patches
                 envStarted = (int)new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds();
                 if (rain.Contains(currentEnv)) 
                 {
-                    TactsuitVR.StartThreadHaptic("Raining", 0.7f, false, 3000, 1.0f, 12000);
+                    BhapticsTactsuit.StartThreadHaptic("Raining", 0.7f, false, 3000, 1.0f, 12000);
                 }
                 else
                 {
-                    TactsuitVR.StopThreadHapticDelayed("Raining", 12000);
+                    BhapticsTactsuit.StopThreadHapticDelayed("Raining", 12000);
                 }
             }
             if (rain.Contains(currentEnv))
@@ -588,7 +580,7 @@ namespace ValheimVRMod.Patches
                 //are we in shelter
                 if (Player.m_localPlayer.InShelter())
                 {
-                    TactsuitVR.StopThreadHaptic("Raining");
+                    BhapticsTactsuit.StopThreadHaptic("Raining");
                 }
                 else
                 {
@@ -596,11 +588,11 @@ namespace ValheimVRMod.Patches
                     int startDelay = (int)new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds() - envStarted;
                     if (startDelay > envDelay)
                     {
-                        TactsuitVR.StartThreadHaptic("Raining", 0.7f, false, 3000);
+                        BhapticsTactsuit.StartThreadHaptic("Raining", 0.7f, false, 3000);
                     }
                     else
                     {
-                        TactsuitVR.StartThreadHaptic("Raining", 0.7f, false, 3000, envDelay - startDelay);
+                        BhapticsTactsuit.StartThreadHaptic("Raining", 0.7f, false, 3000, envDelay - startDelay);
                     }
                 }
             }
@@ -617,7 +609,7 @@ namespace ValheimVRMod.Patches
     {
         public static void Postfix(Array __result)
         {
-            if (TactsuitVR.suitDisabled || __result == null || __result.Length == 0)
+            if (BhapticsTactsuit.suitDisabled || __result == null || __result.Length == 0)
             {
                 return;
             }
@@ -628,18 +620,18 @@ namespace ValheimVRMod.Patches
                     case "vfx_prespawn(Clone)":
                         Thread EffectThread = new Thread(() =>
                         {
-                            TactsuitVR.StartThreadHaptic("BossSummon");
+                            BhapticsTactsuit.StartThreadHaptic("BossSummon");
                             Thread.Sleep(5000);
-                            TactsuitVR.StartThreadHaptic("BossSummon", 0.4f);
+                            BhapticsTactsuit.StartThreadHaptic("BossSummon", 0.4f);
                             Thread.Sleep(7000);
-                            TactsuitVR.StopThreadHaptic("BossSummon", new string[] { "BossAppearance" });
+                            BhapticsTactsuit.StopThreadHaptic("BossSummon", new string[] { "BossAppearance" });
                         });
                         EffectThread.Start();
                         break;
                     case "vfx_corpse_destruction_medium(Clone)":
                         bool closeTo = (Vector3.Distance(Player.m_localPlayer.transform.position, obj.transform.position) < (double)20f);
                         if (closeTo)
-                            TactsuitVR.PlaybackHaptics("Explosion");
+                            BhapticsTactsuit.PlaybackHaptics("Explosion");
                         break;
                 }
             }
@@ -654,12 +646,12 @@ namespace ValheimVRMod.Patches
     {
         public static void Postfix(Player __instance)
         {
-            if (TactsuitVR.suitDisabled || 
+            if (BhapticsTactsuit.suitDisabled || 
                 Player.m_localPlayer != __instance || __instance.m_isLoading)
             {
                 return;
             }
-            TactsuitVR.PlaybackHaptics("ActivateGuardianPower");
+            BhapticsTactsuit.PlaybackHaptics("ActivateGuardianPower");
         }
     }
     /**
@@ -678,7 +670,7 @@ namespace ValheimVRMod.Patches
         };
         public static void Postfix(Attack __instance)
         {
-            if (TactsuitVR.suitDisabled || !__instance.m_character.IsBoss())
+            if (BhapticsTactsuit.suitDisabled || !__instance.m_character.IsBoss())
             {
                 return;
             }
@@ -697,55 +689,55 @@ namespace ValheimVRMod.Patches
                 case "boss_eikthyr":
                     if (__instance.m_attackAnimation == "attack2")
                     {
-                        TactsuitVR.PlaybackHaptics("EikthyrElectric");
+                        BhapticsTactsuit.PlaybackHaptics("EikthyrElectric");
                     }
                     if (__instance.m_attackAnimation == "attack_stomp")
                     {
-                        TactsuitVR.PlaybackHaptics("EikthyrElectric");
+                        BhapticsTactsuit.PlaybackHaptics("EikthyrElectric");
                     }
                     break;
                 case "boss_gdking":
                     if (__instance.m_attackAnimation == "spawn")
                     {
-                        TactsuitVR.PlaybackHaptics("ElderSpawn");
+                        BhapticsTactsuit.PlaybackHaptics("ElderSpawn");
                     }
                     if (__instance.m_attackAnimation == "stomp")
                     {
-                        TactsuitVR.PlaybackHaptics("ElderStomp");
+                        BhapticsTactsuit.PlaybackHaptics("ElderStomp");
                     }
                     if (__instance.m_attackAnimation == "shoot")
                     {
-                        TactsuitVR.PlaybackHaptics("ElderShoot");
+                        BhapticsTactsuit.PlaybackHaptics("ElderShoot");
                     }
                     break;
                 case "boss_bonemass":
                     if (__instance.m_attackAnimation == "aoe")
                     {
-                        TactsuitVR.PlaybackHaptics("Bonemass1");
+                        BhapticsTactsuit.PlaybackHaptics("Bonemass1");
                     }
                     break;
                 case "boss_moder":
                     if (__instance.m_attackAnimation == "attack_iceball")
                     {
-                        TactsuitVR.PlaybackHaptics("ModerIceBalls");
+                        BhapticsTactsuit.PlaybackHaptics("ModerIceBalls");
                     }
                     if (__instance.m_attackAnimation == "attack_breath")
                     {
-                        TactsuitVR.PlaybackHaptics("ModerBeam");
+                        BhapticsTactsuit.PlaybackHaptics("ModerBeam");
                     }
                     break;
                 case "boss_goblinking":
                     if (__instance.m_attackAnimation == "beam")
                     {
-                        TactsuitVR.PlaybackHaptics("YagluthBeam");
+                        BhapticsTactsuit.PlaybackHaptics("YagluthBeam");
                     }
                     if (__instance.m_attackAnimation == "nova")
                     {
-                        TactsuitVR.PlaybackHaptics("YagluthNova");
+                        BhapticsTactsuit.PlaybackHaptics("YagluthNova");
                     }
                     if (__instance.m_attackAnimation == "cast1")
                     {
-                        TactsuitVR.PlaybackHaptics("YagluthMeteor");
+                        BhapticsTactsuit.PlaybackHaptics("YagluthMeteor");
                     }
                     break;
             }

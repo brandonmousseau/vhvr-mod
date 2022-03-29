@@ -276,12 +276,12 @@ namespace ValheimVRMod.Scripts {
             }
 
             //bHaptics
-            if (!TactsuitVR.suitDisabled && realLifePullPercentage != 0)
+            if (!BhapticsTactsuit.suitDisabled && realLifePullPercentage != 0)
             {
-                TactsuitVR.StartThreadHaptic(VHVRConfig.LeftHanded() ? "BowStringLeft" : "BowStringRight",
+                BhapticsTactsuit.StartThreadHaptic(VHVRConfig.LeftHanded() ? "BowStringLeft" : "BowStringRight",
                     realLifePullPercentage * 1.5f, true);
                 // ARMS TACTOSY
-                TactsuitVR.StartThreadHaptic(VHVRConfig.LeftHanded() ? "Recoil_L" : "Recoil_R",
+                BhapticsTactsuit.StartThreadHaptic(VHVRConfig.LeftHanded() ? "Recoil_L" : "Recoil_R",
                     realLifePullPercentage * 1.5f, true);
             }
         }

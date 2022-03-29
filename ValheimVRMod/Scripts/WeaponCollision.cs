@@ -57,9 +57,9 @@ namespace ValheimVRMod.Scripts {
                 && mainHand.transform.rotation.eulerAngles.x < 90;
 
             //bHaptics
-            if (isDrinking && !TactsuitVR.suitDisabled)
+            if (isDrinking && !BhapticsTactsuit.suitDisabled)
             {
-                TactsuitVR.PlaybackHaptics("Drinking");
+                BhapticsTactsuit.PlaybackHaptics("Drinking");
             }
 
         }
@@ -107,9 +107,9 @@ namespace ValheimVRMod.Scripts {
                     VRPlayer.leftHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, SteamVR_Input_Sources.LeftHand);
                 }
                 //bHaptics
-                if (!TactsuitVR.suitDisabled)
+                if (!BhapticsTactsuit.suitDisabled)
                 {
-                    TactsuitVR.SwordRecoil(!VHVRConfig.LeftHanded());
+                    BhapticsTactsuit.SwordRecoil(!VHVRConfig.LeftHanded());
                 }
             }
         }

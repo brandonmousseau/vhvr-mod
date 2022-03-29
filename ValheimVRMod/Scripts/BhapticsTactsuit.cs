@@ -12,7 +12,7 @@ using static ValheimVRMod.Utilities.LogUtils;
 namespace ValheimVRMod.Scripts
 {
 
-    public class TactsuitVR : MonoBehaviour
+    public class BhapticsTactsuit : MonoBehaviour
     {
         public static bool suitDisabled = true;
         public static bool systemInitialized = false;

@@ -19,7 +19,7 @@ namespace ValheimVRMod
 
         private GameObject vrPlayer;
         private GameObject vrGui;
-        private GameObject tactSuitVR;
+        private GameObject BhapticsTactsuit;
 
         void Awake() {
             _version = Info.Metadata.Version;
@@ -79,9 +79,9 @@ namespace ValheimVRMod
                 }
                 if (VHVRConfig.BhapticsEnabled())
                 {
-                    tactSuitVR = new GameObject("TactsuitVR");
-                    DontDestroyOnLoad(tactSuitVR);
-                    tactSuitVR.AddComponent<TactsuitVR>();
+                    BhapticsTactsuit = new GameObject("BhapticsTactsuit");
+                    DontDestroyOnLoad(BhapticsTactsuit);
+                    BhapticsTactsuit.AddComponent<BhapticsTactsuit>();
                 }
             }
             else
