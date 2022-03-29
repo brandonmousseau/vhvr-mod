@@ -213,15 +213,6 @@ namespace ValheimVRMod.Patches
     [HarmonyPatch(typeof(Player), "OnDeath")]
     class Player_OnDeath_Patch
     {
-        public static void Prefix(Player __instance)
-        {
-
-            if (__instance != Player.m_localPlayer || BhapticsTactsuit.suitDisabled)
-            {
-                return;
-            }
-            BhapticsTactsuit.PlaybackHaptics("Death");
-        }
         public static void Postfix(Player __instance)
         {
 
@@ -229,7 +220,8 @@ namespace ValheimVRMod.Patches
             {
                 return;
             }
-            BhapticsTactsuit.StopAllHapticFeedback();
+            BhapticsTactsuit.PlaybackHaptics("Death");
+            BhapticsTactsuit.StopAllHapticFeedback(new string[] {"Death"});
         }
     }
 

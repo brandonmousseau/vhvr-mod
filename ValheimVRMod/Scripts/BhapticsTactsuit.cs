@@ -8,6 +8,7 @@ using Bhaptics.Tact;
 using UnityEngine;
 
 using static ValheimVRMod.Utilities.LogUtils;
+using System.Linq;
 
 namespace ValheimVRMod.Scripts
 {
@@ -299,7 +300,7 @@ namespace ValheimVRMod.Scripts
             }
         }
 
-        public static void StopAllHapticFeedback()
+        public static void StopAllHapticFeedback(string[] exceptions = null)
         {
             lock (ThreadsConditions)
             {
@@ -312,7 +313,10 @@ namespace ValheimVRMod.Scripts
             {
                 foreach (string key in FeedbackMap.Keys)
                 {
-                    StopHapticFeedback(key);
+                    if (exceptions == null || !exceptions.Contains(key))
+                    {
+                        StopHapticFeedback(key);
+                    }
                 }
             }
         }
