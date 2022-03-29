@@ -56,6 +56,12 @@ namespace ValheimVRMod.Scripts {
                 mainHand.transform.rotation.eulerAngles.x > 0 
                 && mainHand.transform.rotation.eulerAngles.x < 90;
 
+            //bHaptics
+            if (isDrinking && !TactsuitVR.suitDisabled)
+            {
+                TactsuitVR.PlaybackHaptics("Drinking");
+            }
+
         }
 
         private void OnTriggerEnter(Collider collider)
@@ -67,10 +73,6 @@ namespace ValheimVRMod.Scripts {
             if (isRightHand && EquipScript.getRight() == EquipType.Tankard) {
                 if (collider.name == "MouthCollider" && hasDrunk) {
                     hasDrunk = false;
-                    if (!TactsuitVR.suitDisabled)
-                    {
-                        TactsuitVR.PlaybackHaptics("Drinking");
-                    }
                 }
                 
                 return;
