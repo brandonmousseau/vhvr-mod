@@ -108,14 +108,9 @@ namespace ValheimVRMod.Patches
                 return;
             }
 
-            List<Player> list = new List<Player>();
-            Player.GetPlayersInRange( __instance.transform.position, 10f, list);
-            foreach (Player item in list)
+            if (Player.IsPlayerInRange(__instance.transform.position, 10f, Player.m_localPlayer.GetPlayerID()))
             {
-                if (item == Player.m_localPlayer)
-                {
-                    BhapticsTactsuit.PlaybackHaptics("SuperPower");
-                }
+                BhapticsTactsuit.PlaybackHaptics("SuperPower");
             }
         }
     }
