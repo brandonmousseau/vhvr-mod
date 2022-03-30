@@ -152,6 +152,7 @@ namespace ValheimVRMod.Patches {
                 {
                     ___m_placementMarkerInstance.SetActive(false);
                 }
+                BuildingManager.ValidateBuildingPiece(___m_placementGhost);
                 return false;
             }
 
@@ -176,13 +177,7 @@ namespace ValheimVRMod.Patches {
             ___m_placementMarkerInstance.transform.rotation = Quaternion.LookRotation(Vector3.up, rotation * Vector3.forward);
             ___m_placementGhost.transform.position = checkPlacement;
             ___m_placementGhost.transform.rotation = rotation;
-
-            //if (___m_placementStatus == Player.PlacementStatus.BlockedbyPlayer)
-            //{
-            //    ___m_placementStatus = __instance.CheckPlacementGhostVSPlayers() ? Player.PlacementStatus.BlockedbyPlayer : Player.PlacementStatus.Valid;
-            //}
-            //__instance.SetPlacementGhostValid(___m_placementStatus == Player.PlacementStatus.Valid);
-
+            BuildingManager.ValidateBuildingPiece(___m_placementGhost);
         }
     }
 

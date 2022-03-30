@@ -45,7 +45,14 @@ namespace ValheimVRMod.Scripts
         private static GameObject precisionPosRef;
         private static Transform precisionSnapSave1;
         private static Transform precisionSnapSave2;
-
+        //gizmos 
+        private static GameObject translateAxisParent;
+        private static GameObject translateAxisX;
+        private static GameObject translateAxisY;
+        private static GameObject translateAxisZ;
+        private static GameObject grabbedAxis1;
+        private static GameObject translatePos;
+        private static bool isPrecisionMoving;
 
         private LayerMask piecelayer = LayerMask.GetMask(new string[]
         {
@@ -67,6 +74,183 @@ namespace ValheimVRMod.Scripts
             "vehicle"
         });
 
+        private void createSnapLine()
+        {
+            snapLine = new GameObject().AddComponent<LineRenderer>();
+            snapLine.gameObject.layer = LayerMask.GetMask("WORLDSPACE_UI_LAYER");
+            snapLine.widthMultiplier = 0.005f;
+            snapLine.positionCount = 3;
+            Material newMaterial = new Material(Shader.Find("Unlit/Color"));
+            snapLine.material = newMaterial;
+            snapLine.enabled = false;
+            snapLine.receiveShadows = false;
+            snapLine.shadowCastingMode = ShadowCastingMode.Off;
+            snapLine.lightProbeUsage = LightProbeUsage.Off;
+            snapLine.reflectionProbeUsage = ReflectionProbeUsage.Off;
+        }
+        private void Awake()
+        {
+            createRefBox();
+            createRefPointer();
+            createRefPointer2();
+            createSnapPointer();
+            createSnapLine();
+            createPrecisionBall();
+            createCheckDir();
+            createPrecisionAxis();
+            snapPointsCollider = new List<GameObject>();
+            for(var i = 0; i <= 20; i++)
+            {
+                snapPointsCollider.Add(CreateSnapPointCollider());
+            }
+            instance = this;
+        }
+        private void OnDestroy()
+        {
+            Destroy(buildRefBox);
+            Destroy(buildRefPointer);
+            Destroy(buildRefPointer2);
+            Destroy(snapPointer);
+            Destroy(snapLine);
+            Destroy(precisionStatus);
+            Destroy(checkDir);
+            Destroy(precisionPosRef);
+            Destroy(translateAxisParent);
+            Destroy(translatePos);
+            isPrecise = false;
+            foreach (GameObject collider in snapPointsCollider)
+            {
+                Destroy(collider);
+            }
+            snapPointsCollider = null;
+        }
+        private void OnRenderObject()
+        {
+            BuildReferencePoint();
+            BuildSnapPoint();
+            PrecisionMode();
+            UpdateLine();
+        }
+
+        private void UpdateLine()
+        {
+            var doLine = false;
+            if (isReferenceActive)
+            {
+                snapLine.material.color = new Color(0,0.4f,0);
+                doLine = true;
+            }
+            else if (isSnapping)
+            {
+                snapLine.positionCount = 2;
+                snapLine.material.color = new Color(0.5f, 0.4f, 0.005f);
+            }
+            else if (isPrecise)
+            {
+                doLine = false;
+                //if (precisionSnapSave1)
+                //{
+                //    snapLine.material.color = new Color(0f, 0.2f, 0.5f);
+                //}
+                //else if (isMoving)
+                //{
+                //    snapLine.material.color = new Color(0, 0.4f, 0);
+                //}
+                //else
+                //{
+                //    snapLine.material.color = new Color(0.5f, 0.4f, 0.005f);
+                //}
+                //snapLine.positionCount = 3;
+                //snapLine.SetPosition(0, checkDir.transform.position + (checkDir.transform.right * -0.2f));
+                //snapLine.SetPosition(1, checkDir.transform.position + (checkDir.transform.forward * 0.2f));
+                //snapLine.SetPosition(2, checkDir.transform.position + (checkDir.transform.right * 0.2f));
+
+                //var handUp = VRPlayer.leftHand.transform.TransformDirection(0, -0.3f, -0.7f);
+                //var lefthandcenter = VRPlayer.leftHand.transform.TransformPoint(handCenter);
+                //snapLine.SetPosition(0, lefthandcenter + PlaceModeRayVectorProvider.rayDirectionLeft*4);
+                //snapLine.SetPosition(1, lefthandcenter);
+                //snapLine.SetPosition(2, lefthandcenter + handUp);
+                snapLine.enabled = false;
+            }
+            else
+            {
+                snapLine.material.color = new Color(0.8f, 0f, 0f);
+                doLine = true;
+            }
+
+            if (doLine)
+            {
+                RaycastHit pieceRaycast;
+                if (Physics.Raycast(PlaceModeRayVectorProvider.startingPosition, PlaceModeRayVectorProvider.rayDirection, out pieceRaycast, 50f, piecelayer))
+                {
+                    snapLine.enabled = true;
+                    snapLine.positionCount = 2;
+                    snapLine.SetPosition(0, PlaceModeRayVectorProvider.startingPosition);
+                    snapLine.SetPosition(1, pieceRaycast.point);
+                }
+                else
+                {
+                    snapLine.enabled = true;
+                    snapLine.positionCount = 2;
+                    snapLine.SetPosition(0, PlaceModeRayVectorProvider.startingPosition);
+                    snapLine.SetPosition(1, PlaceModeRayVectorProvider.startingPosition + (PlaceModeRayVectorProvider.rayDirection * 50));
+                }
+            }
+        }
+
+        //Validate Building piece
+        public static void ValidateBuildingPiece(GameObject piece)
+        {
+            Player.m_localPlayer.m_placementStatus = Player.PlacementStatus.Valid;
+            Piece component = piece.GetComponent<Piece>();
+            
+            StationExtension component2 = component.GetComponent<StationExtension>();
+            if (!piece.activeSelf)
+            {
+                Player.m_localPlayer.m_placementStatus = Player.PlacementStatus.Invalid;
+            }
+            if (component2 != null)
+            {
+                CraftingStation craftingStation = component2.FindClosestStationInRange(component.transform.position);
+                if (craftingStation)
+                {
+                    component2.StartConnectionEffect(craftingStation);
+                }
+                else
+                {
+                    component2.StopConnectionEffect();
+                    Player.m_localPlayer.m_placementStatus = Player.PlacementStatus.ExtensionMissingStation;
+                }
+                if (component2.OtherExtensionInRange(component.m_spaceRequirement))
+                {
+                    Player.m_localPlayer.m_placementStatus = Player.PlacementStatus.MoreSpace;
+                }
+            }
+            if (component.m_onlyInTeleportArea && !EffectArea.IsPointInsideArea(component.transform.position, EffectArea.Type.Teleport, 0f))
+            {
+                Player.m_localPlayer.m_placementStatus = Player.PlacementStatus.NoTeleportArea;
+            }
+            if (!component.m_allowedInDungeons && component.transform.position.y > 3000f && !EnvMan.instance.CheckInteriorBuildingOverride())
+            {
+                Player.m_localPlayer.m_placementStatus = Player.PlacementStatus.NotInDungeon;
+            }
+
+            if (Location.IsInsideNoBuildLocation(component.transform.position))
+            {
+                Player.m_localPlayer.m_placementStatus = Player.PlacementStatus.NoBuildZone;
+            }
+
+            PrivateArea component5 = component.GetComponent<PrivateArea>();
+            float radius = component5 ? component5.m_radius : 0f;
+            if (!PrivateArea.CheckAccess(component.transform.position, radius))
+            {
+                Player.m_localPlayer.m_placementStatus = Player.PlacementStatus.PrivateZone;
+            }
+
+            component.SetInvalidPlacementHeightlight(Player.m_localPlayer.m_placementStatus != Player.PlacementStatus.Valid);
+        }
+
+        //Reference mode 
         private void createRefBox()
         {
             buildRefBox = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -94,128 +278,6 @@ namespace ValheimVRMod.Scripts
             buildRefPointer2.GetComponent<MeshRenderer>().material.color = Color.green;
             Destroy(buildRefPointer2.GetComponent<Collider>());
             //Destroy(sphere.GetComponent<MeshRenderer>()); 
-        }
-        private void createSnapPointer()
-        {
-            snapPointer = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            snapPointer.transform.localScale = new Vector3(1, 3, 1);
-            snapPointer.transform.localScale *= 0.2f;
-            snapPointer.layer = 16;
-            snapPointer.GetComponent<MeshRenderer>().material.color = Color.yellow;
-            Destroy(snapPointer.GetComponent<Collider>());
-            //Destroy(sphere.GetComponent<MeshRenderer>()); 
-        }
-        private void createSnapLine()
-        {
-            snapLine = new GameObject().AddComponent<LineRenderer>();
-            snapLine.gameObject.layer = LayerMask.GetMask("WORLDSPACE_UI_LAYER");
-            snapLine.widthMultiplier = 0.03f;
-            snapLine.positionCount = 3;
-            snapLine.material.color = Color.yellow;
-            snapLine.enabled = false;
-            snapLine.receiveShadows = false;
-            snapLine.shadowCastingMode = ShadowCastingMode.Off;
-            snapLine.lightProbeUsage = LightProbeUsage.Off;
-            snapLine.reflectionProbeUsage = ReflectionProbeUsage.Off;
-        }
-        private void Awake()
-        {
-            createRefBox();
-            createRefPointer();
-            createRefPointer2();
-            createSnapPointer();
-            createSnapLine();
-            createPrecisionBall();
-            createCheckDir();
-            snapPointsCollider = new List<GameObject>();
-            for(var i = 0; i <= 20; i++)
-            {
-                snapPointsCollider.Add(CreateSnapPointCollider());
-            }
-            instance = this;
-        }
-        private void OnDestroy()
-        {
-            Destroy(buildRefBox);
-            Destroy(buildRefPointer);
-            Destroy(buildRefPointer2);
-            Destroy(snapPointer);
-            Destroy(snapLine);
-            Destroy(precisionStatus);
-            Destroy(checkDir);
-            Destroy(precisionPosRef);
-            isPrecise = false;
-            foreach (GameObject collider in snapPointsCollider)
-            {
-                Destroy(collider);
-            }
-            snapPointsCollider = null;
-        }
-        private void OnRenderObject()
-        {
-            BuildReferencePoint();
-            BuildSnapPoint();
-            PrecisionMode();
-            UpdateLine();
-        }
-
-        private void UpdateLine()
-        {
-            var doLine = false;
-            if (isReferenceActive)
-            {
-                snapLine.material.color = Color.green;
-                doLine = true;
-            }
-            else if (isSnapping)
-            {
-                snapLine.positionCount = 2;
-                snapLine.material.color = Color.yellow;
-            }else if (isPrecise)
-            {
-                doLine = false;
-                if (precisionSnapSave1)
-                {
-                    snapLine.material.color = Color.blue;
-                }
-                else if (isMoving)
-                {
-                    snapLine.material.color = Color.green;
-                }
-                else
-                {
-                    snapLine.material.color = Color.yellow;
-                }
-                snapLine.positionCount = 3;
-                snapLine.SetPosition(0, checkDir.transform.position + (checkDir.transform.right * -0.2f));
-                snapLine.SetPosition(1, checkDir.transform.position + (checkDir.transform.forward * 0.2f));
-                snapLine.SetPosition(2, checkDir.transform.position + (checkDir.transform.right * 0.2f));
-                snapLine.enabled = true;
-            }
-            else
-            {
-                snapLine.material.color = Color.red;
-                doLine = true;
-            }
-
-            if (doLine)
-            {
-                RaycastHit pieceRaycast;
-                if (Physics.Raycast(PlaceModeRayVectorProvider.startingPosition, PlaceModeRayVectorProvider.rayDirection, out pieceRaycast, 50f, piecelayer))
-                {
-                    snapLine.enabled = true;
-                    snapLine.positionCount = 2;
-                    snapLine.SetPosition(0, PlaceModeRayVectorProvider.startingPosition);
-                    snapLine.SetPosition(1, pieceRaycast.point);
-                }
-                else
-                {
-                    snapLine.enabled = true;
-                    snapLine.positionCount = 2;
-                    snapLine.SetPosition(0, PlaceModeRayVectorProvider.startingPosition);
-                    snapLine.SetPosition(1, PlaceModeRayVectorProvider.startingPosition + (PlaceModeRayVectorProvider.rayDirection * 50));
-                }
-            }
         }
         private void BuildReferencePoint()
         {
@@ -358,7 +420,16 @@ namespace ValheimVRMod.Scripts
         }
 
         //snap Stuff
-
+        private void createSnapPointer()
+        {
+            snapPointer = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            snapPointer.transform.localScale = new Vector3(1, 3, 1);
+            snapPointer.transform.localScale *= 0.2f;
+            snapPointer.layer = 16;
+            snapPointer.GetComponent<MeshRenderer>().material.color = Color.yellow;
+            Destroy(snapPointer.GetComponent<Collider>());
+            //Destroy(sphere.GetComponent<MeshRenderer>()); 
+        }
         public static bool isSnapMode()
         {
             if (isReferenceActive || !isSnapping || isPrecise)
@@ -608,6 +679,33 @@ namespace ValheimVRMod.Scripts
 
 
         // Precision stuff
+
+        private void createPrecisionAxis()
+        {
+            translateAxisParent = new GameObject();
+
+            translateAxisX = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            translateAxisX.transform.localScale = new Vector3(0.02f, 0.1f, 0.02f);
+            translateAxisX.GetComponent<MeshRenderer>().material.color = Color.red;
+            Destroy(translateAxisX.GetComponent<Collider>());
+            translateAxisX.transform.SetParent(translateAxisParent.transform);
+            translateAxisX.transform.Rotate(0, 0, 90);
+
+            translateAxisY = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            translateAxisY.transform.localScale = new Vector3(0.02f, 0.1f, 0.02f);
+            translateAxisY.GetComponent<MeshRenderer>().material.color = Color.green;
+            Destroy(translateAxisY.GetComponent<Collider>());
+            translateAxisY.transform.SetParent(translateAxisParent.transform);
+            
+            translateAxisZ = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            translateAxisZ.transform.localScale = new Vector3(0.02f, 0.1f, 0.02f);
+            translateAxisZ.GetComponent<MeshRenderer>().material.color = Color.blue;
+            Destroy(translateAxisZ.GetComponent<Collider>());
+            translateAxisZ.transform.SetParent(translateAxisParent.transform);
+            translateAxisZ.transform.Rotate(90, 0, 0);
+
+            translatePos = new GameObject();
+        }
         private void createPrecisionBall()
         {
             precisionStatus = GameObject.CreatePrimitive(PrimitiveType.Sphere);
@@ -645,10 +743,12 @@ namespace ValheimVRMod.Scripts
             if (isPrecise)
             {
                 precisionStatus.GetComponent<MeshRenderer>().material.color = Color.green;
+                translateAxisParent.SetActive(true);
             }
             else
             {
                 precisionStatus.GetComponent<MeshRenderer>().material.color = Color.blue;
+                translateAxisParent.SetActive(false);
             }
             if (!justChangedPreciseMode)
             {
@@ -753,6 +853,73 @@ namespace ValheimVRMod.Scripts
             {
                 isMoving = false;
             }
+
+            //gizmo stuff
+            //var rotPlacement = (ghost.transform.position - Player.m_localPlayer.transform.position) * 10;
+            //rotPlacement = new Vector3(rotPlacement.x, 0, rotPlacement.z).normalized / 4f;
+            //var height = Vector3.up * 1.4f;
+            //var rotationOffset = ghost.transform.forward * 10;
+            //rotationOffset = new Vector3(rotationOffset.x, 0, rotationOffset.z).normalized;
+
+            //if (grabbedAxis1)
+            //{
+            //    if (!isPrecisionMoving)
+            //    {
+            //        isPrecisionMoving = true;
+            //        translatePos.transform.position = ghost.transform.position;
+            //        translatePos.transform.rotation = ghost.transform.rotation;
+            //    }
+            //    ghost.transform.position = translatePos.transform.position;
+            //    if (grabbedAxis1 == translateAxisX)
+            //    {
+            //        grabbedAxis1.transform.localPosition = Vector3.Project(translateAxisParent.transform.InverseTransformPoint(leftHandCenter), Vector3.right);
+            //        ghost.transform.position += grabbedAxis1.transform.position - translateAxisParent.transform.position;
+            //    }
+            //    else if (grabbedAxis1 == translateAxisY)
+            //    {
+            //        grabbedAxis1.transform.localPosition = Vector3.Project(translateAxisParent.transform.InverseTransformPoint(leftHandCenter), Vector3.up);
+            //        ghost.transform.position += grabbedAxis1.transform.position - translateAxisParent.transform.position;
+            //    }
+            //    else if (grabbedAxis1 == translateAxisZ)
+            //    {
+            //        grabbedAxis1.transform.localPosition = Vector3.Project(translateAxisParent.transform.InverseTransformPoint(leftHandCenter), Vector3.forward);
+            //        ghost.transform.position += grabbedAxis1.transform.position - translateAxisParent.transform.position;
+            //    }
+            //    if (!SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand))
+            //    {
+            //        translatePos.transform.position += grabbedAxis1.transform.position - translateAxisParent.transform.position;
+            //        ghost.transform.position = translatePos.transform.position;
+            //        grabbedAxis1 = null;
+            //        translateAxisX.transform.localPosition = Vector3.zero;
+            //        translateAxisY.transform.localPosition = Vector3.zero;
+            //        translateAxisZ.transform.localPosition = Vector3.zero;
+            //        isPrecisionMoving = false;
+            //    }
+            //}
+            //else
+            //{
+            //    if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand))
+            //    {
+            //        if (Vector3.Distance(leftHandCenter, translateAxisParent.transform.position) < 0.1f)
+            //        {
+            //            var handUp = VRPlayer.leftHand.transform.TransformDirection(0, -0.3f, -0.7f);
+            //            if (Mathf.Abs(Vector3.Dot(handUp, translateAxisParent.transform.right)) > 0.6f)
+            //            {
+            //                grabbedAxis1 = translateAxisX;
+            //            }
+            //            else if (Mathf.Abs(Vector3.Dot(handUp, translateAxisParent.transform.up)) > 0.6f)
+            //            {
+            //                grabbedAxis1 = translateAxisY;
+            //            }
+            //            else if (Mathf.Abs(Vector3.Dot(handUp, translateAxisParent.transform.forward)) > 0.6f)
+            //            {
+            //                grabbedAxis1 = translateAxisZ;
+            //            }
+            //        }
+            //    }
+            //    translateAxisParent.transform.position = Player.m_localPlayer.transform.position + rotPlacement + height;
+            //    translateAxisParent.transform.rotation = Quaternion.LookRotation(rotationOffset);
+            //}
         }
     }
 }
