@@ -50,7 +50,7 @@ namespace ValheimVRMod.VRCore.UI.HudElements
      */
     class BuildSelectedInfoElement : IVRHudElement
     {
-        public string Placement => "RightWrist";
+        public string Placement => "Build";
         public HudOrientation Orientation => HudOrientation.Horizontal;
         private class BuildSelectedInfoComponents : IVRPanelComponent
         {
