@@ -205,7 +205,12 @@ namespace ValheimVRMod.Scripts
                 }
                 else
                 {
+                    bool mainHandIsDominant = (VHVRConfig.LeftHanded() == (_isTwoHanded == isTwoHanded.MainLeft));
                     transform.position = mainHand.transform.position + CalculateDistance;
+                    if (!mainHandIsDominant) {
+                        // Anchor the weapon on the dominant hand.
+                        transform.position = transform.position - inversePosition;
+                    }
                     transform.LookAt(mainHand.transform.position + inversePosition.normalized * 5, transform.up);
                     transform.localRotation = transform.localRotation * (rotSave.transform.localRotation) * Quaternion.AngleAxis(180, Vector3.right) * Quaternion.AngleAxis(rotOffset, transform.InverseTransformDirection(inversePosition));
                 }
