@@ -97,6 +97,11 @@ namespace ValheimVRMod.Patches {
             if (__instance.m_attackType == Attack.AttackType.Area) {
                 __instance.OnAttackTrigger();
             }
+
+            if (col == null || pos == null || dir == null)
+            {
+                return false;
+            }
             
             doMeleeAttack(___m_character, ___m_weapon, __instance, ___m_hitEffect, ___m_specialHitSkill, ___m_specialHitType, ___m_lowerDamagePerHit, ___m_forceMultiplier, ___m_staggerMultiplier, ___m_damageMultiplier, ___m_attackChainLevels, ___m_currentAttackCainLevel, ___m_resetChainIfHit, ref ___m_nextAttackChainLevel, ___m_hitTerrainEffect, ___m_attackHitNoise, pos, col, dir, ___m_spawnOnTrigger);
             return false;
