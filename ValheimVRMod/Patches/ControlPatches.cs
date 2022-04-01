@@ -165,18 +165,18 @@ namespace ValheimVRMod.Patches {
             {
                 return;
             }
-            if (!BuildingManager.isSnapMode())
+            if (BuildingManager.isSnapMode())
             {
-                return;
+                var checkPlacement = BuildingManager.instance.UpdateSelectedSnapPoints(___m_placementGhost);
+                Quaternion rotation = Quaternion.Euler(0f, 22.5f * (float)___m_placeRotation, 0f);
+
+                ___m_placementMarkerInstance.transform.position = checkPlacement;
+                ___m_placementMarkerInstance.transform.rotation = Quaternion.LookRotation(Vector3.up, rotation * Vector3.forward);
+                ___m_placementGhost.transform.position = checkPlacement;
+                ___m_placementGhost.transform.rotation = rotation;
             }
 
-            var checkPlacement = BuildingManager.instance.UpdateSelectedSnapPoints(___m_placementGhost);
-            Quaternion rotation = Quaternion.Euler(0f, 22.5f * (float)___m_placeRotation, 0f);
-
-            ___m_placementMarkerInstance.transform.position = checkPlacement;
-            ___m_placementMarkerInstance.transform.rotation = Quaternion.LookRotation(Vector3.up, rotation * Vector3.forward);
-            ___m_placementGhost.transform.position = checkPlacement;
-            ___m_placementGhost.transform.rotation = rotation;
+            BuildingManager.UpdateRotationAdvanced(___m_placementGhost);
             BuildingManager.ValidateBuildingPiece(___m_placementGhost);
         }
     }

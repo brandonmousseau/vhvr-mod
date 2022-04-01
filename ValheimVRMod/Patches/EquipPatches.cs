@@ -53,7 +53,7 @@ namespace ValheimVRMod.Patches {
             switch (EquipScript.getRight()) {
                 case EquipType.Hammer:
                     ___m_rightItemInstance.AddComponent<BuildingManager>();
-                    break;
+                    return;
                 case EquipType.Fishing:
                     meshFilter.gameObject.AddComponent<FishingManager>();
                     return;
