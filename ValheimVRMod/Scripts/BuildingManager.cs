@@ -71,6 +71,7 @@ namespace ValheimVRMod.Scripts
         private static int lastAdvRot;
         private static float copyRotationTimer;
 
+        public static Piece currentComponent;
         public static Transform originalRayTraceTransform;
         public static Vector3 originalRayTracePos;
         public static Vector3 originalRayTraceDir;
@@ -83,6 +84,17 @@ namespace ValheimVRMod.Scripts
             "piece",
             "piece_nonsolid",
             "terrain",
+            "vehicle"
+        });
+        private LayerMask waterpiecelayer = LayerMask.GetMask(new string[]
+        {
+            "Default",
+            "static_solid",
+            "Default_small",
+            "piece",
+            "piece_nonsolid",
+            "terrain",
+            "Water",
             "vehicle"
         });
         private static LayerMask piecelayer2 = LayerMask.GetMask(new string[]
@@ -222,7 +234,14 @@ namespace ValheimVRMod.Scripts
             if (doLine)
             {
                 RaycastHit pieceRaycast;
-                if (Physics.Raycast(PlaceModeRayVectorProvider.startingPosition, PlaceModeRayVectorProvider.rayDirection, out pieceRaycast, 50f, piecelayer))
+
+                var layerCheck = piecelayer;
+                if (currentComponent)
+                {
+                    if (currentComponent.m_waterPiece || currentComponent.m_noInWater)
+                        layerCheck = waterpiecelayer;
+                }
+                if (Physics.Raycast(PlaceModeRayVectorProvider.startingPosition, PlaceModeRayVectorProvider.rayDirection, out pieceRaycast, 50f, layerCheck))
                 {
                     snapLine.enabled = true;
                     snapLine.positionCount = 2;
@@ -335,8 +354,7 @@ namespace ValheimVRMod.Scripts
                 isReferenceActive = false;
                 return;
             }
-            var farfromRotAdv = Vector3.Distance(VRPlayer.leftHand.transform.TransformPoint(handCenter), rotationAxisParent.transform.position) > 0.1f;
-            if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand)&& farfromRotAdv && !isRotatingAdv)
+            if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand) && !isRotatingAdv)
             {
                 if (!Physics.Raycast(PlaceModeRayVectorProvider.startingPositionLeft, PlaceModeRayVectorProvider.rayDirectionLeft, out pieceRaycast, 50f, piecelayer2))
                 {
@@ -529,7 +547,7 @@ namespace ValheimVRMod.Scripts
         private void BuildSnapPoint()
         {
             RaycastHit pieceRaycast;
-            if (SteamVR_Actions.laserPointers_LeftClick.GetState(SteamVR_Input_Sources.RightHand) && !isReferenceActive && !isFreeMode)
+            if (SteamVR_Actions.laserPointers_LeftClick.GetState(SteamVR_Input_Sources.RightHand) && !isReferenceActive && !isFreeMode && !CheckMenuIsOpen())
             {
                 if (Physics.Raycast(PlaceModeRayVectorProvider.startingPosition, PlaceModeRayVectorProvider.rayDirection, out pieceRaycast, 50f, LayerMask.GetMask("piece")))
                 {
@@ -581,6 +599,10 @@ namespace ValheimVRMod.Scripts
                     isSnapping = false;
                 }
             }
+        }
+        private static bool CheckMenuIsOpen()
+        {
+            return Hud.IsPieceSelectionVisible() || StoreGui.IsVisible() || InventoryGui.IsVisible() || Menu.IsVisible() || (TextViewer.instance && TextViewer.instance.IsVisible()) || Minimap.IsOpen();
         }
 
         private static List<Transform> GetSelectedSnapPoints(Transform piece)
@@ -763,6 +785,10 @@ namespace ValheimVRMod.Scripts
             freeModeAxis.transform.SetParent(this.gameObject.transform);
             freeModeAxis.transform.localPosition = Vector3.up * 0.45f;
             freeModeAxis.transform.rotation = this.gameObject.transform.rotation;
+            if (!VHVRConfig.AdvancedBuildingMode())
+            {
+                freeModeAxis.SetActive(false);
+            }
             Destroy(freeModeAxis.GetComponent<Collider>());
         }
 
@@ -790,16 +816,7 @@ namespace ValheimVRMod.Scripts
                 }
                 return;
             }
-            if (isFreeMode)
-            {
-                freeModeAxis.GetComponent<MeshRenderer>().material.color = Color.green;
-                translateAxisParent.SetActive(true);
-            }
-            else
-            {
-                freeModeAxis.GetComponent<MeshRenderer>().material.color = Color.blue;
-                translateAxisParent.SetActive(false);
-            }
+            
             if (!justChangedFreeMode)
             {
                 if (dist < 0.08f)
@@ -812,6 +829,16 @@ namespace ValheimVRMod.Scripts
                         {
                             isFreeMode = !isFreeMode;
                             justChangedFreeMode = true;
+                            if (isFreeMode)
+                            {
+                                translateAxisParent.SetActive(true);
+                                freeModeAxis.GetComponent<MeshRenderer>().material.color = Color.green;
+                            }
+                            else
+                            {
+                                translateAxisParent.SetActive(false);
+                                freeModeAxis.GetComponent<MeshRenderer>().material.color = Color.blue;
+                            }
                         }
                     }
                     else
@@ -879,6 +906,8 @@ namespace ValheimVRMod.Scripts
                     isMoving = true;
                     freeModePosRef.transform.position = ghost.transform.position;
                     freeModePosRef.transform.rotation = ghost.transform.rotation;
+                    translateAxisParent.SetActive(false);
+                    rotationAxisParent.SetActive(false);
                 }
                 //ghost.transform.position = lastPos + (avgPos - lastAvgPos);
                 //ghost.transform.rotation = avgRot * (Quaternion.Inverse(lastAvgRot) * lastRot);
@@ -912,6 +941,11 @@ namespace ValheimVRMod.Scripts
             }
             else
             {
+                if (isMoving)
+                {
+                    translateAxisParent.SetActive(true);
+                    rotationAxisParent.SetActive(true);
+                }
                 isMoving = false;
             }
 
@@ -957,7 +991,7 @@ namespace ValheimVRMod.Scripts
             }
             else
             {
-                if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand))
+                if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand) && !isMoving)
                 {
                     if (Vector3.Distance(rightHandCenter, translateAxisParent.transform.position) < 0.1f)
                     {
@@ -1157,7 +1191,7 @@ namespace ValheimVRMod.Scripts
             }
             else
             {
-                if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand))
+                if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand) && !(isMoving || isReferenceActive)) 
                 {
                     if (Vector3.Distance(leftHandCenter, rotationAxisParent.transform.position) < 0.1f)
                     {
@@ -1180,14 +1214,18 @@ namespace ValheimVRMod.Scripts
                 rotationAxisParent.transform.rotation = ghost.transform.rotation;
             }
 
-
+            var marker = Player.m_localPlayer.m_placementMarkerInstance;
+            if (marker)
+            {
+                marker.transform.LookAt(marker.transform.position + originalRayTraceDir,  ghost.transform.forward);
+            }
             //update position after changing
             if (isSnapping || isFreeMode)
             {
                 return;
             }
             Collider[] componentsInChildren = ghost.GetComponentsInChildren<Collider>();
-            Piece component = ghost.GetComponent<Piece>();
+            currentComponent = ghost.GetComponent<Piece>();
             if (componentsInChildren.Length != 0)
             {
                 ghost.transform.position = originalRayTracePos + originalRayTraceDir * 50f;
@@ -1212,7 +1250,7 @@ namespace ValheimVRMod.Scripts
                     }
                 }
                 Vector3 b2 = ghost.transform.position - b;
-                if (component.m_waterPiece)
+                if (currentComponent.m_waterPiece)
                 {
                     b2.y = 3f;
                 }
@@ -1223,10 +1261,10 @@ namespace ValheimVRMod.Scripts
             Transform transform;
             Transform transform2;
             var flag = ZInput.GetButton("AltPlace") || ZInput.GetButton("JoyAltPlace");
-            if (Player.m_localPlayer.FindClosestSnapPoints(ghost.transform, 1f, out transform, out transform2, new List<Piece>()) && !flag ) 
+            if (Player.m_localPlayer.FindClosestSnapPoints(ghost.transform, 0.5f, out transform, out transform2, new List<Piece>()) && !flag ) 
             {
                 Vector3 vector3 = transform2.position - (transform.position - ghost.transform.position);
-                if(!CheckSamePieceSamePlace(vector3, ghost, component))
+                if(!CheckSamePieceSamePlace(vector3, ghost, currentComponent))
                 {
                     ghost.transform.position = vector3;
                 }
