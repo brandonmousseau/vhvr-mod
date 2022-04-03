@@ -145,7 +145,7 @@ namespace ValheimVRMod.Patches {
                 return true;
             }
 
-            if (BuildingManager.isCurrentlyPreciseMode())
+            if (BuildingManager.isCurrentlyFreeMode())
             {
                 BuildingManager.PrecisionUpdate(___m_placementGhost);
                 if (___m_placementMarkerInstance)
@@ -290,7 +290,7 @@ namespace ValheimVRMod.Patches {
                         return false;
                     } else
                     {
-                        if (inputReceived && !BuildingManager.isCurrentlyMoving())
+                        if (inputReceived && !BuildingManager.isCurrentlyMoving() && VHVRConfig.FreePlaceAutoReturn())
                         {
                             BuildingManager.ExitPreciseMode();
                         }
@@ -299,7 +299,7 @@ namespace ValheimVRMod.Patches {
                 }
                 else
                 {
-                    if (ZInput.GetButtonDown(inputName) && !BuildingManager.isCurrentlyMoving())
+                    if (ZInput.GetButtonDown(inputName) && !BuildingManager.isCurrentlyMoving() && VHVRConfig.FreePlaceAutoReturn())
                     {
                         BuildingManager.ExitPreciseMode();
                     }

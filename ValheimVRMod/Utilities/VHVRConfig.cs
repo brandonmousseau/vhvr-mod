@@ -109,6 +109,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<string> arrowRestSide;
         private static ConfigEntry<bool> restrictBowDrawSpeed;
         private static ConfigEntry<bool> advancedBuildMode;
+        private static ConfigEntry<bool> freePlaceAutoReturn;
 
 #if DEBUG
         private static ConfigEntry<float> DebugPosX;
@@ -578,7 +579,10 @@ namespace ValheimVRMod.Utilities
                                                     "AdvancedBuildMode",
                                                     false,
                                                     "Enable Advanced Building mode (Free place, Advanced Rotation)");
-
+            freePlaceAutoReturn = config.Bind("Motion Control",
+                                                    "FreePlaceAutoReturn",
+                                                    false,
+                                                    "Automatically return to normal building mode after building a piece in Free place mode");
             // #if DEBUG
             //             DebugPosX = config.Bind("Motion Control",
             //                 "DebugPosX",
@@ -983,6 +987,10 @@ namespace ValheimVRMod.Utilities
         public static bool AdvancedBuildingMode()
         {
             return advancedBuildMode.Value;
+        }
+        public static bool FreePlaceAutoReturn()
+        {
+            return freePlaceAutoReturn.Value;
         }
         public static bool UseSpearDirectionGraphic()
         {
