@@ -310,7 +310,10 @@ namespace ValheimVRMod.Scripts
             {
                 Player.m_localPlayer.m_placementStatus = Player.PlacementStatus.PrivateZone;
             }
-
+            if (component.m_noClipping && Player.m_localPlayer.TestGhostClipping(piece, 0.2f))
+            {
+                Player.m_localPlayer.m_placementStatus = Player.PlacementStatus.Invalid;
+            }
             component.SetInvalidPlacementHeightlight(Player.m_localPlayer.m_placementStatus != Player.PlacementStatus.Valid);
         }
 
