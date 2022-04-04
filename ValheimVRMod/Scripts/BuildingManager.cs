@@ -10,9 +10,9 @@ namespace ValheimVRMod.Scripts
 {
     class BuildingManager : MonoBehaviour
     {
-        private static Vector3 handpoint = new Vector3(0, -0.45f, 0.55f);
+        private Vector3 handpoint = new Vector3(0, -0.45f, 0.55f);
         private float stickyTimer;
-        private static bool isReferenceActive;
+        private bool isReferenceActive;
         private RaycastHit lastRefCast;
         private GameObject buildRefBox;
         private GameObject buildRefPointer;
@@ -22,61 +22,61 @@ namespace ValheimVRMod.Scripts
         public static BuildingManager instance;
 
         //Snapping stuff
-        private static bool isSnapping = false;
-        private static Transform firstSnapTransform;
-        private static Vector3 firstNormal;
-        private static Vector3 firstPoint;
-        private static Transform lastSnapTransform;
-        private static Quaternion lastSnapDirection;
-        private static GameObject pieceOnHand;
-        private static List<GameObject> snapPointsCollider;
-        private static GameObject snapPointer;
-        private static LineRenderer snapLine;
-        private static float snapTimer;
+        private bool isSnapping = false;
+        private Transform firstSnapTransform;
+        private Vector3 firstNormal;
+        private Vector3 firstPoint;
+        private Transform lastSnapTransform;
+        private Quaternion lastSnapDirection;
+        private GameObject pieceOnHand;
+        private List<GameObject> snapPointsCollider;
+        private GameObject snapPointer;
+        private LineRenderer snapLine;
+        private float snapTimer;
 
         //Precision Mode
-        private static bool isFreeMode = false;
-        private static Vector3 handTriggerPoint = new Vector3(0, -0.1f, -0.1f);
-        private static Vector3 handCenter = new Vector3(0, 0f, -0.1f);
-        private static GameObject freeModeAxisParent;
-        private static GameObject freeModeAxis;
-        private static float freeModeTimer;
-        private static bool justChangedFreeMode;
-        private static bool inFreeModeTriggerArea;
-        private static bool isExitFreeMode;
-        private static bool isMoving;
-        private static GameObject checkDir;
-        private static GameObject freeModePosRef;
-        private static Transform freeModeSnapSave1;
-        private static Transform freeModeSnapSave2;
+        private bool isFreeMode = false;
+        private Vector3 handTriggerPoint = new Vector3(0, -0.1f, -0.1f);
+        private Vector3 handCenter = new Vector3(0, 0f, -0.1f);
+        private GameObject freeModeAxisParent;
+        private GameObject freeModeAxis;
+        private float freeModeTimer;
+        private bool justChangedFreeMode;
+        private bool inFreeModeTriggerArea;
+        private bool isExitFreeMode;
+        private bool isMoving;
+        private GameObject checkDir;
+        private GameObject freeModePosRef;
+        private Transform freeModeSnapSave1;
+        private Transform freeModeSnapSave2;
         //gizmos 
-        private static GameObject translateAxisParent;
-        private static GameObject translateAxisX;
-        private static GameObject translateAxisY;
-        private static GameObject translateAxisZ;
-        private static GameObject grabbedAxis1;
-        private static GameObject translatePos;
-        private static bool isPrecisionMoving;
+        private GameObject translateAxisParent;
+        private GameObject translateAxisX;
+        private GameObject translateAxisY;
+        private GameObject translateAxisZ;
+        private GameObject grabbedAxis1;
+        private GameObject translatePos;
+        private bool isPrecisionMoving;
 
         //gizmos rotation
-        private static GameObject rotationAxisParent;
-        private static GameObject rotationAxisX;
-        private static GameObject rotationAxisY;
-        private static GameObject rotationAxisZ;
-        private static GameObject grabbedAxis2;
-        private static GameObject rotateReference;
-        private static bool isRotatingAdv;
-        private static LineRenderer rotationLine;
-        private static int lastRotationDist;
-        private static Vector3 startRotation;
-        private static Quaternion advRotationGhost;
-        private static int lastAdvRot;
-        private static float copyRotationTimer;
+        private GameObject rotationAxisParent;
+        private GameObject rotationAxisX;
+        private GameObject rotationAxisY;
+        private GameObject rotationAxisZ;
+        private GameObject grabbedAxis2;
+        private GameObject rotateReference;
+        private bool isRotatingAdv;
+        private LineRenderer rotationLine;
+        private int lastRotationDist;
+        private Vector3 startRotation;
+        private Quaternion advRotationGhost;
+        private int lastAdvRot;
+        private float copyRotationTimer;
 
-        public static Piece currentComponent;
-        public static Transform originalRayTraceTransform;
-        public static Vector3 originalRayTracePos;
-        public static Vector3 originalRayTraceDir;
+        public Piece currentComponent;
+        public Transform originalRayTraceTransform;
+        public Vector3 originalRayTracePos;
+        public Vector3 originalRayTraceDir;
 
         private LayerMask piecelayer = LayerMask.GetMask(new string[]
         {
@@ -99,7 +99,7 @@ namespace ValheimVRMod.Scripts
             "Water",
             "vehicle"
         });
-        private static LayerMask piecelayer2 = LayerMask.GetMask(new string[]
+        private LayerMask piecelayer2 = LayerMask.GetMask(new string[]
         {
             "Default",
             "static_solid",
@@ -233,7 +233,7 @@ namespace ValheimVRMod.Scripts
         }
 
         //Validate Building piece
-        public static void ValidateBuildingPiece(GameObject piece)
+        public void ValidateBuildingPiece(GameObject piece)
         {
             Player.m_localPlayer.m_placementStatus = Player.PlacementStatus.Valid;
             Piece component = piece.GetComponent<Piece>();
@@ -428,7 +428,7 @@ namespace ValheimVRMod.Scripts
             buildRefPointer2.transform.rotation = Quaternion.FromToRotation(buildRefPointer2.transform.up, refDirection) * buildRefPointer2.transform.rotation;
         }
 
-        public static int TranslateRotation()
+        public int TranslateRotation()
         {
             var dir = PlaceModeRayVectorProvider.rayDirection;
             var angle = Vector3.SignedAngle(Vector3.forward, new Vector3(dir.x,0,dir.z).normalized, Vector3.up);
@@ -437,7 +437,7 @@ namespace ValheimVRMod.Scripts
             return snapAngle;
         }
 
-        public static bool IsReferenceMode()
+        public bool IsReferenceMode()
         {
             return isReferenceActive;
         }
@@ -457,7 +457,7 @@ namespace ValheimVRMod.Scripts
             lightbox.transform.localPosition = Vector3.up * 0.6f;
             Destroy(lightbox.GetComponent<Collider>());
         }
-        public static bool isSnapMode()
+        public bool isSnapMode()
         {
             if (isReferenceActive || !isSnapping || isFreeMode)
             {
@@ -579,12 +579,12 @@ namespace ValheimVRMod.Scripts
                 }
             }
         }
-        public static bool CheckMenuIsOpen()
+        public bool CheckMenuIsOpen()
         {
             return Hud.IsPieceSelectionVisible() || StoreGui.IsVisible() || InventoryGui.IsVisible() || Menu.IsVisible() || (TextViewer.instance && TextViewer.instance.IsVisible()) || Minimap.IsOpen();
         }
 
-        private static List<Transform> GetSelectedSnapPoints(Transform piece)
+        private List<Transform> GetSelectedSnapPoints(Transform piece)
         {
 
             List<Transform> snapPoints = new List<Transform>();
@@ -601,7 +601,7 @@ namespace ValheimVRMod.Scripts
             }
             return snapPoints;
         }
-        private static GameObject CreateSnapPointCollider()
+        private GameObject CreateSnapPointCollider()
         {
             var newCollider = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             newCollider.SetActive(false);
@@ -688,7 +688,7 @@ namespace ValheimVRMod.Scripts
                 }
             }
         }
-        private static bool CheckSamePieceSamePlace(Vector3 pos,GameObject ghost, Piece onHandPiece)
+        private bool CheckSamePieceSamePlace(Vector3 pos,GameObject ghost, Piece onHandPiece)
         {
             Collider[] piecesInPlace = Physics.OverlapSphere(pos, 1f, LayerMask.GetMask("piece"));
             var name = ghost.name;
@@ -708,7 +708,7 @@ namespace ValheimVRMod.Scripts
             }
             return false;
         }
-        private static void EnableAllSnapPoints(bool enabled)
+        private void EnableAllSnapPoints(bool enabled)
         {
             for (var i = 0; i < snapPointsCollider.Count; i++)
             {
@@ -718,7 +718,7 @@ namespace ValheimVRMod.Scripts
                 }
             }
         }
-        private static void ResetAllSnapPoints()
+        private void ResetAllSnapPoints()
         {
             foreach(var points in snapPointsCollider)
             {
@@ -786,7 +786,7 @@ namespace ValheimVRMod.Scripts
             freeModePosRef = new GameObject();
             freeModePosRef.transform.SetParent(checkDir.transform);
         }
-        private static void FreeMode()
+        private void FreeMode()
         {
             //var triggerPoint = VRPlayer.rightHand.transform.TransformPoint(handTriggerPoint);
             var leftHandCenter = VRPlayer.leftHand.transform.TransformPoint(handCenter);
@@ -848,31 +848,31 @@ namespace ValheimVRMod.Scripts
                 }
             }
         }
-        public static bool isCurrentlyFreeMode()
+        public bool isCurrentlyFreeMode()
         {
             if (!VHVRConfig.AdvancedBuildingMode())
                 return false;
 
             return isFreeMode;
         }
-        public static bool isCurrentlyPreciseMoving()
+        public bool isCurrentlyPreciseMoving()
         {
             if (!VHVRConfig.AdvancedBuildingMode())
                 return false;
 
             return isPrecisionMoving;
         }
-        public static bool isCurrentlyMoving()
+        public bool isCurrentlyMoving()
         {
             return isMoving;
         }
-        public static void ExitPreciseMode()
+        public void ExitPreciseMode()
         {
             isExitFreeMode = true;
             freeModeTimer = 1;
         }
 
-        public static void PrecisionUpdate(GameObject ghost)
+        public void PrecisionUpdate(GameObject ghost)
         {
             var leftHandCenter = VRPlayer.leftHand.transform.TransformPoint(handCenter);
             var rightHandCenter = VRPlayer.rightHand.transform.TransformPoint(handCenter);
@@ -1067,7 +1067,7 @@ namespace ValheimVRMod.Scripts
             rotationLine.reflectionProbeUsage = ReflectionProbeUsage.Off;
         }
 
-        public static void UpdateRotateAnalog()
+        public void UpdateRotateAnalog()
         {
             if (VRControls.instance.getDirectRightXAxis() != 0 && SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand))
             {
@@ -1105,7 +1105,7 @@ namespace ValheimVRMod.Scripts
                 copyRotationTimer = 0;
             }
         }
-        public static void UpdateRotationAdvanced(GameObject ghost)
+        public void UpdateRotationAdvanced(GameObject ghost)
         {
             if (!VHVRConfig.AdvancedBuildingMode())
             {

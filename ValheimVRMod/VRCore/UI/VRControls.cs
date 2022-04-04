@@ -429,11 +429,11 @@ namespace ValheimVRMod.VRCore.UI
             }
             if (-pitchAndYaw.axis.y>0.5f)
             {
-                return BuildingManager.TranslateRotation() + 8;
+                return BuildingManager.instance.TranslateRotation() + 8;
             }
             else if (-pitchAndYaw.axis.y < -0.5f)
             {
-                return BuildingManager.TranslateRotation();
+                return BuildingManager.instance.TranslateRotation();
             }
             return 999;
         }
@@ -615,7 +615,7 @@ namespace ValheimVRMod.VRCore.UI
 
         private bool shouldDisableJumpRemove()
         {
-            return BuildingManager.instance && (BuildingManager.isCurrentlyMoving() || BuildingManager.isCurrentlyPreciseMoving());
+            return BuildingManager.instance && (BuildingManager.instance.isCurrentlyMoving() || BuildingManager.instance.isCurrentlyPreciseMoving());
         }
 
         private void init()

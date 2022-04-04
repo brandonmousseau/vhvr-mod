@@ -145,14 +145,14 @@ namespace ValheimVRMod.Patches {
                 return true;
             }
 
-            if (BuildingManager.isCurrentlyFreeMode())
+            if (BuildingManager.instance.isCurrentlyFreeMode())
             {
-                BuildingManager.PrecisionUpdate(___m_placementGhost);
+                BuildingManager.instance.PrecisionUpdate(___m_placementGhost);
                 if (___m_placementMarkerInstance)
                 {
                     ___m_placementMarkerInstance.SetActive(false);
                 }
-                BuildingManager.ValidateBuildingPiece(___m_placementGhost);
+                BuildingManager.instance.ValidateBuildingPiece(___m_placementGhost);
                 return false;
             }
 
@@ -165,7 +165,7 @@ namespace ValheimVRMod.Patches {
             {
                 return;
             }
-            if (BuildingManager.isSnapMode() && !BuildingManager.CheckMenuIsOpen())
+            if (BuildingManager.instance.isSnapMode() && !BuildingManager.instance.CheckMenuIsOpen())
             {
                 var checkPlacement = BuildingManager.instance.UpdateSelectedSnapPoints(___m_placementGhost);
                 Quaternion rotation = Quaternion.Euler(0f, 22.5f * (float)___m_placeRotation, 0f);
@@ -176,8 +176,8 @@ namespace ValheimVRMod.Patches {
                 ___m_placementGhost.transform.rotation = rotation;
             }
 
-            BuildingManager.UpdateRotationAdvanced(___m_placementGhost);
-            BuildingManager.ValidateBuildingPiece(___m_placementGhost);
+            BuildingManager.instance.UpdateRotationAdvanced(___m_placementGhost);
+            BuildingManager.instance.ValidateBuildingPiece(___m_placementGhost);
         }
     }
 
@@ -192,7 +192,7 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
-            if (BuildingManager.IsReferenceMode())
+            if (BuildingManager.instance.IsReferenceMode())
             {
                 maxDistance = 10f;
             }
@@ -290,18 +290,18 @@ namespace ValheimVRMod.Patches {
                         return false;
                     } else
                     {
-                        if (inputReceived && !BuildingManager.isCurrentlyMoving() && VHVRConfig.FreePlaceAutoReturn())
+                        if (inputReceived && !BuildingManager.instance.isCurrentlyMoving() && VHVRConfig.FreePlaceAutoReturn())
                         {
-                            BuildingManager.ExitPreciseMode();
+                            BuildingManager.instance.ExitPreciseMode();
                         }
                         return inputReceived;
                     }
                 }
                 else
                 {
-                    if (ZInput.GetButtonDown(inputName) && !BuildingManager.isCurrentlyMoving() && VHVRConfig.FreePlaceAutoReturn())
+                    if (ZInput.GetButtonDown(inputName) && !BuildingManager.instance.isCurrentlyMoving() && VHVRConfig.FreePlaceAutoReturn())
                     {
-                        BuildingManager.ExitPreciseMode();
+                        BuildingManager.instance.ExitPreciseMode();
                     }
                     return ZInput.GetButtonDown(inputName);
                 }
