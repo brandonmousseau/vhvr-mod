@@ -165,7 +165,7 @@ namespace ValheimVRMod.Patches {
             {
                 return;
             }
-            if (BuildingManager.isSnapMode())
+            if (BuildingManager.isSnapMode() && !BuildingManager.CheckMenuIsOpen())
             {
                 var checkPlacement = BuildingManager.instance.UpdateSelectedSnapPoints(___m_placementGhost);
                 Quaternion rotation = Quaternion.Euler(0f, 22.5f * (float)___m_placeRotation, 0f);

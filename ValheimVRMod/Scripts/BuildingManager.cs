@@ -25,6 +25,7 @@ namespace ValheimVRMod.Scripts
         private static bool isSnapping = false;
         private static Transform firstSnapTransform;
         private static Vector3 firstNormal;
+        private static Vector3 firstPoint;
         private static Transform lastSnapTransform;
         private static Quaternion lastSnapDirection;
         private static GameObject pieceOnHand;
@@ -37,6 +38,7 @@ namespace ValheimVRMod.Scripts
         private static bool isFreeMode = false;
         private static Vector3 handTriggerPoint = new Vector3(0, -0.1f, -0.1f);
         private static Vector3 handCenter = new Vector3(0, 0f, -0.1f);
+        private static GameObject freeModeAxisParent;
         private static GameObject freeModeAxis;
         private static float freeModeTimer;
         private static bool justChangedFreeMode;
@@ -128,12 +130,12 @@ namespace ValheimVRMod.Scripts
             createRefPointer2();
             createSnapPointer();
             createSnapLine();
-            createFreeModeBall();
+            createFreeModeRing();
             createCheckDir();
             createPrecisionModeAxis();
             createRotationAxis();
             snapPointsCollider = new List<GameObject>();
-            lastAdvRot = Player.m_localPlayer.m_placeRotation;
+            lastAdvRot = Player.m_localPlayer.m_placeRotation+1;
             for (var i = 0; i <= 20; i++)
             {
                 snapPointsCollider.Add(CreateSnapPointCollider());
@@ -147,7 +149,7 @@ namespace ValheimVRMod.Scripts
             Destroy(buildRefPointer2);
             Destroy(snapPointer);
             Destroy(snapLine);
-            Destroy(freeModeAxis);
+            Destroy(freeModeAxisParent);
             Destroy(checkDir);
             Destroy(freeModePosRef);
             Destroy(translateAxisParent);
@@ -175,22 +177,12 @@ namespace ValheimVRMod.Scripts
             UpdateLine();
         }
 
-
-        private void OnDrawGizmosSelected()
-        {
-            if (VHVRConfig.AdvancedBuildingMode())
-            {
-                //Gizmos.matrix = rotationAxisParent.transform.localToWorldMatrix;
-                Gizmos.DrawWireSphere(rotationAxisParent.transform.position, 0.5f);
-            }
-        }
-
         private void UpdateLine()
         {
             var doLine = false;
             if (isReferenceActive)
             {
-                snapLine.material.color = new Color(0,0.4f,0);
+                snapLine.material.color = Color.green * 0.4f;
                 doLine = true;
             }
             else if (isSnapping)
@@ -201,33 +193,11 @@ namespace ValheimVRMod.Scripts
             else if (isFreeMode)
             {
                 doLine = false;
-                //if (precisionSnapSave1)
-                //{
-                //    snapLine.material.color = new Color(0f, 0.2f, 0.5f);
-                //}
-                //else if (isMoving)
-                //{
-                //    snapLine.material.color = new Color(0, 0.4f, 0);
-                //}
-                //else
-                //{
-                //    snapLine.material.color = new Color(0.5f, 0.4f, 0.005f);
-                //}
-                //snapLine.positionCount = 3;
-                //snapLine.SetPosition(0, checkDir.transform.position + (checkDir.transform.right * -0.2f));
-                //snapLine.SetPosition(1, checkDir.transform.position + (checkDir.transform.forward * 0.2f));
-                //snapLine.SetPosition(2, checkDir.transform.position + (checkDir.transform.right * 0.2f));
-
-                //var handUp = VRPlayer.leftHand.transform.TransformDirection(0, -0.3f, -0.7f);
-                //var lefthandcenter = VRPlayer.leftHand.transform.TransformPoint(handCenter);
-                //snapLine.SetPosition(0, lefthandcenter + PlaceModeRayVectorProvider.rayDirectionLeft*4);
-                //snapLine.SetPosition(1, lefthandcenter);
-                //snapLine.SetPosition(2, lefthandcenter + handUp);
                 snapLine.enabled = false;
             }
             else
             {
-                snapLine.material.color = new Color(0.8f, 0f, 0f);
+                snapLine.material.color = Color.red * 0.8f;
                 doLine = true;
             }
 
@@ -314,6 +284,10 @@ namespace ValheimVRMod.Scripts
             {
                 Player.m_localPlayer.m_placementStatus = Player.PlacementStatus.Invalid;
             }
+            if (!piece.activeSelf)
+            {
+                Player.m_localPlayer.m_placementStatus = Player.PlacementStatus.Invalid;
+            }
             component.SetInvalidPlacementHeightlight(Player.m_localPlayer.m_placementStatus != Player.PlacementStatus.Valid);
         }
 
@@ -328,23 +302,26 @@ namespace ValheimVRMod.Scripts
         }
         private void createRefPointer()
         {
-            buildRefPointer = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            buildRefPointer.transform.localScale = new Vector3(1, 2, 1);
-            buildRefPointer.transform.localScale *= 0.2f;
+            buildRefPointer = Instantiate(VRAssetManager.GetAsset<GameObject>("RuneStakeCy"));
             buildRefPointer.layer = 16;
-            buildRefPointer.GetComponent<MeshRenderer>().material.color = Color.green;
-            Destroy(buildRefPointer.GetComponent<Collider>());
-            //Destroy(sphere.GetComponent<MeshRenderer>()); 
+
+            var lightbox = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            lightbox.transform.localScale = new Vector3(0.12f, 0.13f, 0.12f);
+            lightbox.transform.SetParent(buildRefPointer.transform);
+            Material newMaterial = new Material(Shader.Find("Unlit/Color"));
+            lightbox.GetComponent<MeshRenderer>().material = newMaterial;
+            lightbox.GetComponent<MeshRenderer>().material.color = Color.green * 0.6f;
+            lightbox.transform.localPosition = Vector3.up * 0.6f;
+            Destroy(lightbox.GetComponent<Collider>());
         }
         private void createRefPointer2()
         {
-            buildRefPointer2 = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            buildRefPointer2.transform.localScale = new Vector3(3, 0.5f, 3);
-            buildRefPointer2.transform.localScale *= 0.2f;
-            buildRefPointer2.layer = 16;
-            buildRefPointer2.GetComponent<MeshRenderer>().material.color = Color.green;
-            Destroy(buildRefPointer2.GetComponent<Collider>());
-            //Destroy(sphere.GetComponent<MeshRenderer>()); 
+            buildRefPointer2 = Instantiate(VRAssetManager.GetAsset<GameObject>("GizmoRing"));
+            var child = buildRefPointer2.transform.GetChild(0);
+            child.GetComponent<MeshRenderer>().material = new Material(Shader.Find("Unlit/Color"));
+            child.GetComponent<MeshRenderer>().material.color = Color.green * 0.6f;
+            buildRefPointer2.transform.SetParent(buildRefPointer.transform);
+            buildRefPointer2.transform.localPosition = Vector3.up * 0.6f;
         }
         private void BuildReferencePoint()
         {
@@ -367,32 +344,10 @@ namespace ValheimVRMod.Scripts
                 UpdateRefType();
                 UpdateRefPosition(pieceRaycast, PlaceModeRayVectorProvider.rayDirectionLeft);
                 UpdateRefRotation(GetRefDirection(PlaceModeRayVectorProvider.rayDirectionLeft));
+                buildRefPointer.transform.rotation = Quaternion.FromToRotation(buildRefPointer.transform.up, pieceRaycast.normal) * buildRefPointer.transform.rotation;
                 lastRefCast = pieceRaycast;
                 isReferenceActive = true;
             }
-            //else if (SteamVR_Actions.laserPointers_LeftClick.GetState(SteamVR_Input_Sources.RightHand))
-            //{
-            //    if (!Physics.Raycast(PlaceModeRayVectorProvider.startingPosition, PlaceModeRayVectorProvider.rayDirection, out pieceRaycast, 50f, piecelayer))
-            //    {
-            //        return;
-            //    }
-            //    if (stickyTimer >= 2)
-            //    {
-            //        EnableRefPoint(true);
-            //        UpdateRefType();
-            //        if (!isReferenced)
-            //        {
-            //            lastRefCast = pieceRaycast;
-            //            isReferenced = true;
-            //        }
-            //        UpdateRefPosition(lastRefCast, PlaceModeRayVectorProvider.rayDirection);
-            //        UpdateRefRotation(GetRefDirection(PlaceModeRayVectorProvider.rayDirection));
-            //    }
-            //    else
-            //    {
-            //        stickyTimer += Time.unscaledDeltaTime;
-            //    }
-            //}
             else
             {
                 stickyTimer += Time.unscaledDeltaTime;
@@ -455,20 +410,21 @@ namespace ValheimVRMod.Scripts
             if (currRefType == 0)
             {
                 buildRefBox.transform.position = pieceRaycast.point - (pieceRaycast.normal * 0.2f) + Vector3.Project(pieceRaycast.transform.position - pieceRaycast.point, -pieceRaycast.normal);
+                buildRefPointer2.SetActive(false);
             }
             else
             {
                 buildRefBox.transform.position = pieceRaycast.point - (pieceRaycast.normal * 0.25f);
+                buildRefPointer2.SetActive(true);
             }
             
             buildRefPointer.transform.position = pieceRaycast.point;
-            buildRefPointer2.transform.position = pieceRaycast.point;
+            //buildRefPointer2.transform.position = pieceRaycast.point;
         }
 
         private void UpdateRefRotation(Vector3 refDirection)
         {
             buildRefBox.transform.rotation = Quaternion.FromToRotation(buildRefBox.transform.up, refDirection) * buildRefBox.transform.rotation;
-            buildRefPointer.transform.rotation = Quaternion.FromToRotation(buildRefPointer.transform.up, refDirection) * buildRefPointer.transform.rotation;
             buildRefPointer2.transform.rotation = Quaternion.FromToRotation(buildRefPointer2.transform.up, refDirection) * buildRefPointer2.transform.rotation;
         }
 
@@ -489,13 +445,17 @@ namespace ValheimVRMod.Scripts
         //snap Stuff
         private void createSnapPointer()
         {
-            snapPointer = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            snapPointer.transform.localScale = new Vector3(1, 3, 1);
-            snapPointer.transform.localScale *= 0.2f;
+            snapPointer = Instantiate(VRAssetManager.GetAsset<GameObject>("RuneStakeCy"));
             snapPointer.layer = 16;
-            snapPointer.GetComponent<MeshRenderer>().material.color = Color.yellow;
-            Destroy(snapPointer.GetComponent<Collider>());
-            //Destroy(sphere.GetComponent<MeshRenderer>()); 
+
+            var lightbox = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            lightbox.transform.localScale = new Vector3(0.12f, 0.13f, 0.12f);
+            lightbox.transform.SetParent(snapPointer.transform);
+            Material newMaterial = new Material(Shader.Find("Unlit/Color"));
+            lightbox.GetComponent<MeshRenderer>().material = newMaterial;
+            lightbox.GetComponent<MeshRenderer>().material.color = Color.yellow * 0.6f;
+            lightbox.transform.localPosition = Vector3.up * 0.6f;
+            Destroy(lightbox.GetComponent<Collider>());
         }
         public static bool isSnapMode()
         {
@@ -550,6 +510,20 @@ namespace ValheimVRMod.Scripts
         private void BuildSnapPoint()
         {
             RaycastHit pieceRaycast;
+            if(isSnapping && !lastSnapTransform)
+            {
+                snapPointer.SetActive(false);
+                EnableAllSnapPoints(false);
+                firstSnapTransform = null;
+                firstNormal = Vector3.zero;
+                firstPoint = Vector3.zero;
+                lastSnapTransform = null;
+                if (pieceOnHand)
+                    lastSnapDirection = pieceOnHand.transform.rotation * Quaternion.Euler(0, 90, 0);
+                pieceOnHand = null;
+                snapTimer = 0;
+                isSnapping = false;
+            }
             if (SteamVR_Actions.laserPointers_LeftClick.GetState(SteamVR_Input_Sources.RightHand) && !isReferenceActive && !isFreeMode && !CheckMenuIsOpen())
             {
                 if (Physics.Raycast(PlaceModeRayVectorProvider.startingPosition, PlaceModeRayVectorProvider.rayDirection, out pieceRaycast, 50f, LayerMask.GetMask("piece")))
@@ -558,19 +532,20 @@ namespace ValheimVRMod.Scripts
                     {
                         firstSnapTransform = pieceRaycast.transform;
                         firstNormal = pieceRaycast.normal;
+                        firstPoint = pieceRaycast.point;
                     }
                 }
                 if (!firstSnapTransform)
                 {
                     return;
                 }
-                if (snapTimer >= 2)
+                if (snapTimer >= 3)
                 {
                     //EnableRefPoint(true);
                     if (!isSnapping || !lastSnapTransform)
                     {
                         lastSnapTransform = firstSnapTransform;
-                        snapPointer.transform.position = firstSnapTransform.transform.position;
+                        snapPointer.transform.position = firstPoint;
                         snapPointer.transform.rotation = Quaternion.FromToRotation(snapPointer.transform.up, firstNormal) * snapPointer.transform.rotation;
                         isSnapping = true;
                         if (pieceOnHand)
@@ -588,12 +563,13 @@ namespace ValheimVRMod.Scripts
                 {
                     snapTimer += Time.unscaledDeltaTime;
                 }
-                if (snapTimer <= 2 || snapTimer >= 3)
+                if (snapTimer <= 3 || snapTimer >= 4)
                 {
                     snapPointer.SetActive(false);
                     EnableAllSnapPoints(false);
                     firstSnapTransform = null;
                     firstNormal = Vector3.zero;
+                    firstPoint = Vector3.zero;
                     lastSnapTransform = null;
                     if (pieceOnHand)
                         lastSnapDirection = pieceOnHand.transform.rotation * Quaternion.Euler(0, 90, 0);
@@ -603,7 +579,7 @@ namespace ValheimVRMod.Scripts
                 }
             }
         }
-        private static bool CheckMenuIsOpen()
+        public static bool CheckMenuIsOpen()
         {
             return Hud.IsPieceSelectionVisible() || StoreGui.IsVisible() || InventoryGui.IsVisible() || Menu.IsVisible() || (TextViewer.instance && TextViewer.instance.IsVisible()) || Minimap.IsOpen();
         }
@@ -757,21 +733,21 @@ namespace ValheimVRMod.Scripts
         {
             translateAxisParent = new GameObject();
 
-            translateAxisX = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            translateAxisX.transform.localScale = new Vector3(0.01f, 0.05f, 0.01f);
+            translateAxisX = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            translateAxisX.transform.localScale = new Vector3(0.005f, 0.1f, 0.005f);
             translateAxisX.GetComponent<MeshRenderer>().material.color = Color.red;
             Destroy(translateAxisX.GetComponent<Collider>());
             translateAxisX.transform.SetParent(translateAxisParent.transform);
             translateAxisX.transform.Rotate(0, 0, 90);
 
-            translateAxisY = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            translateAxisY.transform.localScale = new Vector3(0.01f, 0.05f, 0.01f);
+            translateAxisY = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            translateAxisY.transform.localScale = new Vector3(0.005f, 0.1f, 0.005f);
             translateAxisY.GetComponent<MeshRenderer>().material.color = Color.green;
             Destroy(translateAxisY.GetComponent<Collider>());
             translateAxisY.transform.SetParent(translateAxisParent.transform);
             
-            translateAxisZ = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            translateAxisZ.transform.localScale = new Vector3(0.01f, 0.05f, 0.01f);
+            translateAxisZ = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            translateAxisZ.transform.localScale = new Vector3(0.005f, 0.1f, 0.005f);
             translateAxisZ.GetComponent<MeshRenderer>().material.color = Color.blue;
             Destroy(translateAxisZ.GetComponent<Collider>());
             translateAxisZ.transform.SetParent(translateAxisParent.transform);
@@ -779,20 +755,29 @@ namespace ValheimVRMod.Scripts
 
             translatePos = new GameObject();
         }
-        private void createFreeModeBall()
+        private void createFreeModeRing()
         {
-            freeModeAxis = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            freeModeAxis.transform.localScale = new Vector3(0.055f, 0.01f, 0.055f);
-            freeModeAxis.layer = 16;
+            freeModeAxisParent = Instantiate(VRAssetManager.GetAsset<GameObject>("GizmoRing"));
+            //freeModeAxisParent.transform.SetParent(rotationAxisParent.transform);
+            //freeModeAxisParent.transform.localPosition = Vector3.zero;
+            freeModeAxis = freeModeAxisParent.transform.GetChild(0).gameObject;
+            freeModeAxis.GetComponent<MeshRenderer>().material = new Material(Shader.Find("Standard"));
             freeModeAxis.GetComponent<MeshRenderer>().material.color = Color.blue;
-            freeModeAxis.transform.SetParent(this.gameObject.transform);
-            freeModeAxis.transform.localPosition = Vector3.up * 0.45f;
-            freeModeAxis.transform.rotation = this.gameObject.transform.rotation;
+            freeModeAxis.transform.localScale = new Vector3(1, 5, 1);
+            freeModeAxis.transform.localScale *= 0.1f;
+
+            //freeModeAxis = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            //freeModeAxis.transform.localScale = new Vector3(0.055f, 0.01f, 0.055f);
+            //freeModeAxis.layer = 16;
+            //freeModeAxis.GetComponent<MeshRenderer>().material.color = Color.blue;
+            freeModeAxisParent.transform.SetParent(this.gameObject.transform);
+            freeModeAxisParent.transform.localPosition = Vector3.up * 0.45f;
+            freeModeAxisParent.transform.rotation = this.gameObject.transform.rotation;
             if (!VHVRConfig.AdvancedBuildingMode())
             {
-                freeModeAxis.SetActive(false);
+                freeModeAxisParent.SetActive(false);
             }
-            Destroy(freeModeAxis.GetComponent<Collider>());
+            //Destroy(freeModeAxis.GetComponent<Collider>());
         }
 
         private void createCheckDir()
@@ -806,7 +791,7 @@ namespace ValheimVRMod.Scripts
             //var triggerPoint = VRPlayer.rightHand.transform.TransformPoint(handTriggerPoint);
             var leftHandCenter = VRPlayer.leftHand.transform.TransformPoint(handCenter);
             //freeModeAxis.transform.position = triggerPoint;
-            var dist = Vector3.Distance(leftHandCenter, freeModeAxis.transform.position);
+            var dist = Vector3.Distance(leftHandCenter, freeModeAxisParent.transform.position);
             if (isExitFreeMode)
             {
                 freeModeTimer -= Time.deltaTime;
@@ -900,8 +885,9 @@ namespace ValheimVRMod.Scripts
             checkDir.transform.position = avgPos;
             checkDir.transform.rotation = avgRot;
 
-            if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand)&& 
-                SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand))
+            if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand) &&
+                SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand) &&
+                !(grabbedAxis2 || grabbedAxis1)) 
             {
 
                 if (!isMoving)
@@ -1024,21 +1010,44 @@ namespace ValheimVRMod.Scripts
         {
             rotationAxisParent = new GameObject();
 
-            rotationAxisX = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            rotationAxisX.transform.localScale = new Vector3(0.01f, 0.05f, 0.01f);
+            var axisX = Instantiate(VRAssetManager.GetAsset<GameObject>("GizmoRing"));
+            axisX.transform.SetParent(rotationAxisParent.transform);
+            axisX.transform.localPosition = Vector3.zero;
+            var childX = axisX.transform.GetChild(0);
+            childX.GetComponent<MeshRenderer>().material = new Material(Shader.Find("Standard"));
+            childX.GetComponent<MeshRenderer>().material.color = Color.red;
+            childX.transform.localScale *= 0.196f;
+            axisX.transform.Rotate(0, 0, 90);
+            rotationAxisX = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            rotationAxisX.transform.localScale = new Vector3(0.005f, 0.1f, 0.005f);
             rotationAxisX.GetComponent<MeshRenderer>().material.color = Color.red;
             Destroy(rotationAxisX.GetComponent<Collider>());
             rotationAxisX.transform.SetParent(rotationAxisParent.transform);
             rotationAxisX.transform.Rotate(0, 0, 90);
 
-            rotationAxisY = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            rotationAxisY.transform.localScale = new Vector3(0.01f, 0.05f, 0.01f);
+            var axisY = Instantiate(VRAssetManager.GetAsset<GameObject>("GizmoRing"));
+            axisY.transform.SetParent(rotationAxisParent.transform);
+            axisY.transform.localPosition = Vector3.zero;
+            var childY = axisY.transform.GetChild(0);
+            childY.GetComponent<MeshRenderer>().material = new Material(Shader.Find("Standard"));
+            childY.GetComponent<MeshRenderer>().material.color = Color.green;
+            childY.transform.localScale *= 0.20f;
+            rotationAxisY = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            rotationAxisY.transform.localScale = new Vector3(0.005f, 0.1f, 0.005f);
             rotationAxisY.GetComponent<MeshRenderer>().material.color = Color.green;
             Destroy(rotationAxisY.GetComponent<Collider>());
             rotationAxisY.transform.SetParent(rotationAxisParent.transform);
 
-            rotationAxisZ = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            rotationAxisZ.transform.localScale = new Vector3(0.01f, 0.05f, 0.01f);
+            var axisZ = Instantiate(VRAssetManager.GetAsset<GameObject>("GizmoRing"));
+            axisZ.transform.SetParent(rotationAxisParent.transform);
+            axisZ.transform.localPosition = Vector3.zero;
+            var childZ = axisZ.transform.GetChild(0);
+            childZ.GetComponent<MeshRenderer>().material = new Material(Shader.Find("Standard"));
+            childZ.GetComponent<MeshRenderer>().material.color = Color.blue;
+            childZ.transform.localScale *= 0.198f;
+            axisZ.transform.Rotate(90, 0, 0);
+            rotationAxisZ = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            rotationAxisZ.transform.localScale = new Vector3(0.005f, 0.1f, 0.005f);
             rotationAxisZ.GetComponent<MeshRenderer>().material.color = Color.blue;
             Destroy(rotationAxisZ.GetComponent<Collider>());
             rotationAxisZ.transform.SetParent(rotationAxisParent.transform);
@@ -1177,8 +1186,8 @@ namespace ValheimVRMod.Scripts
                     VRPlayer.leftHand.hapticAction.Execute(0, 0.01f, 10, 0.01f, SteamVR_Input_Sources.LeftHand);
                     advRotationGhost = ghost.transform.rotation;
                 }
-                
 
+                rotationLine.SetPosition(0, rotationAxisParent.transform.position + ((grabbedAxis2.transform.position - rotationAxisParent.transform.position)*10).normalized * 0.05f);
                 rotationLine.SetPosition(1, grabbedAxis2.transform.position);
                 if (!SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand))
                 {

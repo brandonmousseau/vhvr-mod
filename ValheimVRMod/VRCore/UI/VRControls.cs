@@ -27,6 +27,7 @@ namespace ValheimVRMod.VRCore.UI
         private bool altPieceTriggered = false;
         private float altMapZoomElapsedTime = 0f;
         private bool altMapZoomTriggered = false;
+        private float buildQuickActionTimer;
 
         private HashSet<string> ignoredZInputs = new HashSet<string>();
         private HashSet<string> quickActionEnabled = new HashSet<string>(); // never ignore these
@@ -152,16 +153,27 @@ namespace ValheimVRMod.VRCore.UI
             bool rightClickUp = false;
             if (useRightClick && laserControlsActive && inPlaceMode())
             {
-                rightClickDown = SteamVR_Actions.laserPointers_RightClick.GetStateDown(SteamVR_Input_Sources.Any);
+                rightClickDown = SteamVR_Actions.laserPointers_RightClick.GetState(SteamVR_Input_Sources.Any);
                 rightClickUp = SteamVR_Actions.laserPointers_RightClick.GetStateUp(SteamVR_Input_Sources.Any);
+                if(rightClickDown)
+                    buildQuickActionTimer += Time.unscaledDeltaTime;
             }
             
             if (action.GetStateDown(SteamVR_Input_Sources.Any) || rightClickDown) {
-                obj.SetActive(true);
+                if (inPlaceMode() && (buildQuickActionTimer >= 0.3f || !useRightClick)) 
+                    obj.SetActive(true);
+                else if (!inPlaceMode())
+                    obj.SetActive(true);
             }
 
             if (action.GetStateUp(SteamVR_Input_Sources.Any) || rightClickUp) {
-                obj.GetComponent<T>().selectHoveredItem();
+                if (inPlaceMode() && (buildQuickActionTimer >= 0.3f || !useRightClick))
+                    obj.GetComponent<T>().selectHoveredItem();
+                else if(!inPlaceMode())
+                    obj.GetComponent<T>().selectHoveredItem();
+
+                if (useRightClick)
+                    buildQuickActionTimer = 0;
                 obj.SetActive(false);
             }
         }
