@@ -948,6 +948,11 @@ namespace ValheimVRMod.Scripts
             var rotPlacement = VRPlayer.leftHand.transform.TransformPoint(handCenter) - (VRPlayer.leftHand.transform.right * -0.2f) + (PlaceModeRayVectorProvider.rayDirectionLeft * 0.1f);
             var rotationOffset = ghost.transform.forward * 10;
             rotationOffset = new Vector3(rotationOffset.x, 0, rotationOffset.z).normalized;
+            if (rotationOffset == Vector3.zero)
+            {
+                var dirCheckRight = new Vector3(ghost.transform.right.x, 0, ghost.transform.right.z);
+                rotationOffset = Vector3.Cross(dirCheckRight, Vector3.up);
+            }
 
             if (grabbedAxis1)
             {
@@ -1256,13 +1261,9 @@ namespace ValheimVRMod.Scripts
 
                 if (isRotationWorldAxis)
                 {
-                    var ghostRight = ghost.transform.right;
-                    ghostRight.y = 0;
-                    var ghostForward = ghost.transform.forward;
-                    ghostForward.y = 0;
-                    ghost.transform.RotateAround(ghost.transform.position, ghostRight, rotationHelper.x);
+                    ghost.transform.RotateAround(ghost.transform.position, rotationAxisParent.transform.right, rotationHelper.x);
                     ghost.transform.RotateAround(ghost.transform.position, Vector3.up, rotationHelper.y);
-                    ghost.transform.RotateAround(ghost.transform.position, ghostForward, rotationHelper.z);
+                    ghost.transform.RotateAround(ghost.transform.position, rotationAxisParent.transform.forward, rotationHelper.z);
                 }
                 else
                 {
@@ -1314,7 +1315,13 @@ namespace ValheimVRMod.Scripts
                 rotationAxisParent.transform.position = rotPlacement;
                 if (isRotationWorldAxis)
                 {
-                    rotationAxisParent.transform.rotation = Quaternion.LookRotation(new Vector3(ghost.transform.forward.x, 0, ghost.transform.forward.z), Vector3.up);
+                    var dirCheckUp = new Vector3(ghost.transform.forward.x, 0, ghost.transform.forward.z);
+                    if(dirCheckUp == Vector3.zero)
+                    {
+                        var dirCheckRight = new Vector3(ghost.transform.right.x, 0, ghost.transform.right.z);
+                        dirCheckUp = Vector3.Cross(dirCheckRight, Vector3.up);
+                    }
+                    rotationAxisParent.transform.rotation = Quaternion.LookRotation(dirCheckUp, Vector3.up);
                 }
                 else
                 {
