@@ -110,6 +110,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> restrictBowDrawSpeed;
         private static ConfigEntry<bool> advancedBuildMode;
         private static ConfigEntry<bool> freePlaceAutoReturn;
+        private static ConfigEntry<bool> advancedRotationUpWorld;
 
 #if DEBUG
         private static ConfigEntry<float> DebugPosX;
@@ -583,6 +584,10 @@ namespace ValheimVRMod.Utilities
                                                     "FreePlaceAutoReturn",
                                                     false,
                                                     "Automatically return to normal building mode after building a piece in Free place mode");
+            advancedRotationUpWorld = config.Bind("Motion Control",
+                                                    "AdvanceRotationUpWorld",
+                                                    true,
+                                                    "Always use rotate vertically up when using analog rotation while in advanced build mode");
             // #if DEBUG
             //             DebugPosX = config.Bind("Motion Control",
             //                 "DebugPosX",
@@ -991,6 +996,10 @@ namespace ValheimVRMod.Utilities
         public static bool FreePlaceAutoReturn()
         {
             return freePlaceAutoReturn.Value;
+        }
+        public static bool AdvancedRotationUpWorld()
+        {
+            return advancedRotationUpWorld.Value;
         }
         public static bool UseSpearDirectionGraphic()
         {
