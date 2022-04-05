@@ -77,6 +77,7 @@ namespace ValheimVRMod.Scripts
         public Transform originalRayTraceTransform;
         public Vector3 originalRayTracePos;
         public Vector3 originalRayTraceDir;
+        public Heightmap originalHeightMap;
 
         private LayerMask piecelayer = LayerMask.GetMask(new string[]
         {
@@ -220,6 +221,7 @@ namespace ValheimVRMod.Scripts
                     originalRayTraceTransform = pieceRaycast.transform;
                     originalRayTracePos = pieceRaycast.point;
                     originalRayTraceDir = pieceRaycast.normal;
+                    originalHeightMap = pieceRaycast.collider.GetComponent<Heightmap>();
                 }
                 else
                 {
@@ -1236,8 +1238,8 @@ namespace ValheimVRMod.Scripts
             {
                 return;
             }
-            Collider[] componentsInChildren = ghost.GetComponentsInChildren<Collider>();
             currentComponent = ghost.GetComponent<Piece>();
+            Collider[] componentsInChildren = ghost.GetComponentsInChildren<Collider>();
             if (componentsInChildren.Length != 0)
             {
                 ghost.transform.position = originalRayTracePos + originalRayTraceDir * 50f;
@@ -1268,6 +1270,10 @@ namespace ValheimVRMod.Scripts
                 }
                 ghost.transform.position = originalRayTracePos + b2;
                 ghost.transform.rotation = advRotationGhost;
+            }
+            if (originalHeightMap)
+            {
+                ghost.transform.position = new Vector3(originalRayTracePos.x, ghost.transform.position.y, originalRayTracePos.z);
             }
 
             Transform transform;
