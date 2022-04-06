@@ -294,6 +294,8 @@ namespace ValheimVRMod.Patches {
                         {
                             BuildingManager.instance.ExitPreciseMode();
                         }
+                        if (BuildingManager.instance.isHoldingJump())
+                            return false;
                         return inputReceived;
                     }
                 }

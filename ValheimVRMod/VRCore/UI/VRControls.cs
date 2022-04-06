@@ -615,7 +615,7 @@ namespace ValheimVRMod.VRCore.UI
 
         private bool shouldDisableJumpRemove()
         {
-            return BuildingManager.instance && (BuildingManager.instance.isCurrentlyMoving() || BuildingManager.instance.isCurrentlyPreciseMoving());
+            return BuildingManager.instance && (BuildingManager.instance.isCurrentlyMoving() || BuildingManager.instance.isCurrentlyPreciseMoving() || BuildingManager.instance.isHoldingPlace());
         }
 
         private void init()

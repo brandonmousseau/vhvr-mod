@@ -20,6 +20,7 @@ namespace ValheimVRMod.Scripts
         private int currRefType;
         private bool refWasChanged;
         public static BuildingManager instance;
+        private bool holdPlacePressed;
 
         //Snapping stuff
         private bool isSnapping = false;
@@ -77,6 +78,7 @@ namespace ValheimVRMod.Scripts
         private GameObject rotationChangeAxisColor;
         private bool isRotationWorldAxis;
         private bool justChangedRotationMode;
+        private bool justRotatedAnalogLongPress;
 
         public Piece currentComponent;
         public Transform originalRayTraceTransform;
@@ -199,7 +201,8 @@ namespace ValheimVRMod.Scripts
             }
             else if (isFreeMode)
             {
-                doLine = false;
+                if(copyRotationTimer>0)
+                    doLine = true;
                 snapLine.enabled = false;
             }
             else
@@ -872,6 +875,22 @@ namespace ValheimVRMod.Scripts
         {
             return isMoving;
         }
+        public bool isHoldingPlace()
+        {
+            if (!VHVRConfig.BuildOnRelease())
+                return false;
+
+            if (!SteamVR_Actions.laserPointers_LeftClick.GetState(SteamVR_Input_Sources.RightHand) && !SteamVR_Actions.valheim_Jump.GetState(SteamVR_Input_Sources.Any)) 
+                holdPlacePressed = false;
+            else if (SteamVR_Actions.laserPointers_LeftClick.GetState(SteamVR_Input_Sources.RightHand))
+                holdPlacePressed = true;
+
+            return holdPlacePressed && !freeModeSnapSave1;
+        }
+        public bool isHoldingJump()
+        {
+            return SteamVR_Actions.valheim_Jump.GetState(SteamVR_Input_Sources.Any) && !freeModeSnapSave1;
+        }
         public void ExitPreciseMode()
         {
             isExitFreeMode = true;
@@ -1169,16 +1188,28 @@ namespace ValheimVRMod.Scripts
                 }
                 else
                 {
-                    if (originalRayTraceTransform)
+                    if (originalRayTraceTransform && !justRotatedAnalogLongPress) 
                     {
+                        Piece pieceParent = originalRayTraceTransform.GetComponentInParent(typeof(Piece)) as Piece;
+                        var transformCopy = pieceParent ? pieceParent.transform : originalRayTraceTransform;
                         switch (VRControls.instance.getDirectRightYAxis())
                         {
                             case 1:
-                                advRotationGhost = originalRayTraceTransform.rotation * Quaternion.Euler(0, 180, 0);
+                                advRotationGhost = transformCopy.rotation * Quaternion.Euler(0, 180, 0);
                                 break;
                             case -1:
-                                advRotationGhost = originalRayTraceTransform.rotation;
+                                advRotationGhost = transformCopy.rotation;
                                 break;
+                        }
+
+                        if (isFreeMode && copyRotationTimer >= 8) 
+                        {
+                            Player.m_localPlayer.m_placementGhost.transform.position = transformCopy.position;
+                            justRotatedAnalogLongPress = true;
+                        }
+                        else if (!isFreeMode)
+                        {
+                            justRotatedAnalogLongPress = true;
                         }
                     }
                 }
@@ -1186,6 +1217,7 @@ namespace ValheimVRMod.Scripts
             }
             else
             {
+                justRotatedAnalogLongPress = false;
                 copyRotationTimer = 0;
             }
         }
