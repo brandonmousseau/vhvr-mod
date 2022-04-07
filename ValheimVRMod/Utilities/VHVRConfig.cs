@@ -102,6 +102,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<string> spearThrowingType;
         private static ConfigEntry<bool> useSpearDirectionGraphic;
         private static ConfigEntry<bool> spearThrowSpeedDynamic;
+        private static ConfigEntry<bool> spearThrowUseGrab;
         private static ConfigEntry<bool> spearInverseWield;
         private static ConfigEntry<bool> twoHandedWield;
         private static ConfigEntry<bool> twoHandedWithShield;
@@ -576,6 +577,10 @@ namespace ValheimVRMod.Utilities
                                                 "SpearThrowSpeedDynamic",
                                                 true,
                                                 "Determine whether or not your throw power depends on swing speed, setting to false make the throw always on fixed speed.");
+            spearThrowUseGrab = config.Bind("Motion Control",
+                                                "SpearThrowUseGrab",
+                                                true,
+                                                "Make spear also need to hold grab to throw, allowing to cancel throw by releasing grab button before releasing trigger button");
             spearInverseWield = config.Bind("Motion Control",
                                                 "SpearInverseWield",
                                                 true,
@@ -991,6 +996,10 @@ namespace ValheimVRMod.Utilities
         public static bool SpearThrowSpeedDynamic()
         {
             return spearThrowSpeedDynamic.Value;
+        }
+        public static bool SpearThrowUseGrab()
+        {
+            return spearThrowUseGrab.Value;
         }
         public static bool SpearInverseWield()
         {
