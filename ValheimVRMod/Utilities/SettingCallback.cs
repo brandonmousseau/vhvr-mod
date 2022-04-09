@@ -8,8 +8,8 @@ using Valve.VR;
 namespace ValheimVRMod.Utilities {
     public class SettingCallback : MonoBehaviour {
 
-        private static SteamVR_Input_Sources inputHand = SteamVR_Input_Sources.RightHand;
-        private static SteamVR_Action_Boolean inputAction = SteamVR_Actions.valheim_Use;
+        private static SteamVR_Input_Sources inputHand;
+        private static SteamVR_Action_Boolean inputAction;
         private static UnityAction<Vector3, Quaternion> action;
         private static Transform target;
         private static Transform sourceHand;
