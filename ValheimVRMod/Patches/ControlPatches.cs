@@ -278,6 +278,10 @@ namespace ValheimVRMod.Patches {
 
             private static bool ShouldTriggerBuildPlacement(string inputName)
             {
+                if (!BuildingManager.instance)
+                {
+                    return ZInput.GetButtonDown(inputName);
+                }
                 if (VHVRConfig.BuildOnRelease())
                 {
                     bool inputReceived = ZInput.GetButtonUp(inputName);
