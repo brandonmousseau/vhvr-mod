@@ -62,7 +62,6 @@ namespace ValheimVRMod.Scripts
             {
                 case "Hoe":
                 case "Hammer":
-                case "FishingRod":
                 case "Cultivator":
                     return;
             }

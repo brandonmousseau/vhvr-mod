@@ -1,5 +1,6 @@
 using HarmonyLib;
 using ValheimVRMod.Scripts.Block;
+using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using Valve.VR;
@@ -59,7 +60,7 @@ namespace ValheimVRMod.Patches {
     class PatchIsBlocking {
         static bool Prefix(Humanoid __instance, ref bool __result) {
 
-            if (__instance != Player.m_localPlayer || EquipScript.getRight() == EquipType.Fishing || !VHVRConfig.UseVrControls()) {
+            if (__instance != Player.m_localPlayer || (EquipScript.getRight() == EquipType.Fishing && FishingManager.instance && FishingManager.isFishing) || !VHVRConfig.UseVrControls()) {
                 return true;
             }
 

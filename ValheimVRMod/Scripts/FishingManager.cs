@@ -25,9 +25,12 @@ namespace ValheimVRMod.Scripts {
         public static bool isPulling;
         public static GameObject fixedRodTop;
 
+        public static FishingManager instance;
+
         private void Awake() {
             rodTop = transform.parent.Find("_RodTop");
             fixedRodTop = new GameObject();
+            instance = this;
         }
 
         private void OnDestroy() {
@@ -51,14 +54,17 @@ namespace ValheimVRMod.Scripts {
             var inputSource = VHVRConfig.LeftHanded()
                 ? SteamVR_Input_Sources.LeftHand
                 : SteamVR_Input_Sources.RightHand;
-            
+            var inputAction = VHVRConfig.LeftHanded()
+                ? SteamVR_Actions.valheim_UseLeft
+                : SteamVR_Actions.valheim_Use;
+
             fixedRodTop.transform.position = rodTop.position;
-            isPulling = isFishing && SteamVR_Actions.valheim_Grab.GetState(inputSource);
-            if (!isFishing && SteamVR_Actions.valheim_Grab.GetStateDown(inputSource)) {
+            isPulling = isFishing && inputAction.GetState(inputSource);
+            if (!isFishing && inputAction.GetStateDown(inputSource)) {
                 preparingThrow = true;
             }
 
-            if (!SteamVR_Actions.valheim_Grab.GetStateUp(inputSource)) {
+            if (!inputAction.GetStateUp(inputSource)) {
                 return;
             }
 
@@ -99,13 +105,8 @@ namespace ValheimVRMod.Scripts {
             if (tickCounter < 5) {
                 return;
             }
-            if (Pose.justUnsheathed) {
-                snapshots.Clear();
-            }
-            else {
-                snapshots.Add(fixedRodTop.transform.position);
-            }
-            
+            snapshots.Add(fixedRodTop.transform.position);
+
 
             if (snapshots.Count > MAX_SNAPSHOTS) {
                 snapshots.RemoveAt(0);
@@ -116,10 +117,27 @@ namespace ValheimVRMod.Scripts {
             var inputSource = VHVRConfig.LeftHanded()
                 ? SteamVR_Input_Sources.LeftHand
                 : SteamVR_Input_Sources.RightHand;
-            
+
+            var inputHand = VHVRConfig.LeftHanded()
+                ? VRPlayer.leftHand
+                : VRPlayer.rightHand;
+
             if (isFishing && fishingFloat.GetCatch()  && (int) (Time.fixedTime * 10) % 2 >= 1) {
-                VRPlayer.rightHand.hapticAction.Execute(0, 0.001f, 150, 0.7f, inputSource);
+                inputHand.hapticAction.Execute(0, 0.001f, 150, 0.7f, inputSource);
             }
+        }
+
+        public void TriggerVibrateFish()
+        {
+            var inputSource = VHVRConfig.LeftHanded()
+               ? SteamVR_Input_Sources.LeftHand
+               : SteamVR_Input_Sources.RightHand;
+
+            var inputHand = VHVRConfig.LeftHanded()
+                ? VRPlayer.leftHand
+                : VRPlayer.rightHand;
+
+            inputHand.hapticAction.Execute(0.4f, 0.7f, 100, 0.2f, inputSource);
         }
     }
 }
