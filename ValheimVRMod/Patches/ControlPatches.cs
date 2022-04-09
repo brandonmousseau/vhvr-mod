@@ -521,10 +521,11 @@ namespace ValheimVRMod.Patches {
                         secondaryAttack = true;
                         SpearManager.isThrowing = false;
                     }
-
+                    
                     break;
-                // no one knows why all spears throw with right click, only spear-chitin throws with left click: 
+                
                 case EquipType.SpearChitin:
+                case EquipType.ThrowObject:
                     if (SpearManager.isThrowing) {
                         attack = true;
                         SpearManager.isThrowing = false;

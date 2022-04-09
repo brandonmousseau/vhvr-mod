@@ -73,6 +73,7 @@ namespace ValheimVRMod.Patches {
                     return false;
                 case EquipType.Spear:
                 case EquipType.SpearChitin:
+                case EquipType.ThrowObject:
                     spawnPoint = SpearManager.spawnPoint;
                     aimDir = SpearManager.aimDir;
                     return false;
