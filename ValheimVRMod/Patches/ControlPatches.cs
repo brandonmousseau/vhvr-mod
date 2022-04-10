@@ -620,7 +620,7 @@ namespace ValheimVRMod.Patches {
             {
                 return ;
             }
-            FishingManager.instance.TriggerVibrateFish();
+            FishingManager.instance.TriggerVibrateFish(__instance);
         }
     }
 }

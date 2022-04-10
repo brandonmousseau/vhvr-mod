@@ -3,7 +3,7 @@ using UnityEngine;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using Valve.VR;
-using Pose = ValheimVRMod.Utilities.Pose;
+using UnityEngine.UI;
 
 namespace ValheimVRMod.Scripts {
     public class FishingManager : MonoBehaviour {
@@ -16,6 +16,19 @@ namespace ValheimVRMod.Scripts {
         private List<Vector3> snapshots = new List<Vector3>();
         private bool preparingThrow;
         private FishingFloat fishingFloat;
+        private GameObject reelParent;
+        private GameObject reelWheel;
+        private GameObject reelCrank;
+        private bool reelGrabbed;
+        private Vector3 handCenter = new Vector3(0, 0, -0.1f);
+        private Vector3 reelStart;
+        private float reeltimer;
+        private float reelTolerance;
+        private float savedRotation;
+        private float totalRotation;
+
+        private GameObject fishingTextParent;
+        private Text fishingText;
 
         public static float attackDrawPercentage;
         public static Vector3 spawnPoint;
@@ -31,10 +44,66 @@ namespace ValheimVRMod.Scripts {
             rodTop = transform.parent.Find("_RodTop");
             fixedRodTop = new GameObject();
             instance = this;
+            CreateReel();
+            CreateText();
         }
 
+        private void CreateReel()
+        {
+            reelParent = new GameObject();
+            reelParent.transform.SetParent(transform);
+            reelParent.transform.rotation = transform.rotation;
+            reelParent.transform.Rotate(0, 0, 90);
+            reelParent.transform.localPosition = new Vector3(0, 0.6f, -0.07f);
+
+            reelWheel = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            reelWheel.transform.localScale = new Vector3(0.1f, 0.035f, 0.1f);
+            reelWheel.GetComponent<MeshRenderer>().material.color = Color.gray;
+            Destroy(reelWheel.GetComponent<Collider>());
+            reelWheel.transform.SetParent(reelParent.transform);
+            reelWheel.transform.localRotation = Quaternion.identity;
+            reelWheel.transform.localPosition = new Vector3(0, 0, 0);
+
+            reelCrank = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            reelCrank.transform.localScale = new Vector3(0.01f, 0.07f, 0.01f);
+            reelCrank.GetComponent<MeshRenderer>().material.color = Color.red;
+            Destroy(reelCrank.GetComponent<Collider>());
+            reelCrank.transform.SetParent(reelParent.transform);
+            reelCrank.transform.localRotation = Quaternion.identity;
+            var offset = VHVRConfig.LeftHanded()
+                ? 0.06f
+                : -0.06f;
+            reelCrank.transform.localPosition = new Vector3(0, offset, 0.04f);
+        }
+
+        private void CreateText()
+        {
+            fishingTextParent = new GameObject();
+            var fishingSubparent = new GameObject();
+            fishingSubparent.transform.SetParent(fishingTextParent.transform);
+            fishingSubparent.transform.Rotate(0, 180, 0);
+            var canvasText = fishingSubparent.AddComponent<Canvas>();
+            canvasText.renderMode = RenderMode.WorldSpace;
+            fishingText = fishingSubparent.AddComponent<Text>();
+            fishingText.fontSize = 40;
+            Font ArialFont = (Font)Resources.GetBuiltinResource(typeof(Font), "Arial.ttf");
+            fishingText.font = ArialFont;
+            fishingText.horizontalOverflow = HorizontalWrapMode.Overflow;
+            fishingText.verticalOverflow = VerticalWrapMode.Overflow;
+            fishingText.alignment = TextAnchor.MiddleCenter;
+            fishingText.enabled = true;
+            fishingText.color = Color.yellow * 0.8f;
+            var rectTrans = fishingText.GetComponent<RectTransform>();
+            rectTrans.localPosition = Vector3.up*-2;
+            rectTrans.sizeDelta = new Vector2(400, 100);
+            fishingTextParent.transform.localScale *= 0.005f;
+        }
         private void OnDestroy() {
+            Destroy(reelCrank);
+            Destroy(reelWheel);
+            Destroy(reelParent);
             Destroy(fixedRodTop);
+            Destroy(fishingTextParent);
         }
 
         private void Update() {
@@ -48,9 +117,7 @@ namespace ValheimVRMod.Scripts {
 
             isFishing = false;
         }
-
         private void OnRenderObject() {
-
             var inputSource = VHVRConfig.LeftHanded()
                 ? SteamVR_Input_Sources.LeftHand
                 : SteamVR_Input_Sources.RightHand;
@@ -59,7 +126,27 @@ namespace ValheimVRMod.Scripts {
                 : SteamVR_Actions.valheim_Use;
 
             fixedRodTop.transform.position = rodTop.position;
-            isPulling = isFishing && inputAction.GetState(inputSource);
+
+            if (!reelGrabbed)
+            {
+                if (fishingFloat)
+                fishingFloat.m_pullLineSpeed = 1;
+                isPulling = isFishing && inputAction.GetState(inputSource);
+            }
+
+            if (fishingFloat)
+            {
+                fishingText.text = (Mathf.Round(fishingFloat.m_lineLength*10)/10) + "m" ;
+                var posMod = new Vector3(fishingFloat.transform.position.x, Mathf.Max(fishingFloat.m_floating.m_waterLevel, fishingFloat.transform.position.y) + 0.5f, fishingFloat.transform.position.z);
+                fishingTextParent.transform.position = posMod;
+                fishingTextParent.transform.LookAt(CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform.position);
+                fishingTextParent.SetActive(true);
+            }
+            else
+            {
+                fishingTextParent.SetActive(false);
+            }
+            UpdateReel();
             if (!isFishing && inputAction.GetStateDown(inputSource)) {
                 preparingThrow = true;
             }
@@ -94,7 +181,7 @@ namespace ValheimVRMod.Scripts {
             attackDrawPercentage = Vector3.Distance(snapshots[snapshots.Count - 1], snapshots[snapshots.Count - 2]) /
                                    maxDist;
 
-            if (Vector3.Distance(posEnd, posStart)> MIN_DISTANCE) {
+            if (Vector3.Distance(posEnd, posStart) > MIN_DISTANCE) {
                 isThrowing = true;
                 preparingThrow = false;
             }
@@ -122,13 +209,110 @@ namespace ValheimVRMod.Scripts {
                 ? VRPlayer.leftHand
                 : VRPlayer.rightHand;
 
-            if (isFishing && fishingFloat.GetCatch()  && (int) (Time.fixedTime * 10) % 2 >= 1) {
+            if (isFishing && fishingFloat.GetCatch() && (int)(Time.fixedTime * 10) % 2 >= 1) {
                 inputHand.hapticAction.Execute(0, 0.001f, 150, 0.7f, inputSource);
             }
         }
 
-        public void TriggerVibrateFish()
+        private void UpdateReel()
         {
+            var inputCenter = VHVRConfig.LeftHanded()
+                ? VRPlayer.rightHand.transform.TransformPoint(handCenter)
+                : VRPlayer.leftHand.transform.TransformPoint(handCenter);
+            var inputSource = VHVRConfig.LeftHanded()
+                ? SteamVR_Input_Sources.RightHand
+                : SteamVR_Input_Sources.LeftHand;
+            var inputHand = VHVRConfig.LeftHanded()
+                ? VRPlayer.rightHand
+                : VRPlayer.leftHand;
+            var offset = VHVRConfig.LeftHanded()
+                ? 0.06f
+                : -0.06f;
+
+
+            if (reelGrabbed)
+            {
+                var localHandPos = reelParent.transform.InverseTransformPoint(inputCenter);
+                reelCrank.transform.localPosition = (new Vector3(localHandPos.x, 0, localHandPos.z).normalized * 0.04f) + (Vector3.up * offset);
+                if (reelStart == Vector3.zero)
+                {
+                    reelStart = reelCrank.transform.localPosition;
+                }
+
+                var angle = Vector3.SignedAngle(new Vector3(reelStart.x, 0, reelStart.z), new Vector3(reelCrank.transform.localPosition.x, 0, reelCrank.transform.localPosition.z),reelParent.transform.up);
+                reeltimer += Time.deltaTime;
+
+                if(Mathf.Abs(angle) + Mathf.Abs(savedRotation) >= 10)
+                {
+                    reelTolerance = 1;
+                    
+                }
+                else
+                {
+                    if(reelTolerance>=0)
+                        reelTolerance -= Time.deltaTime;
+                }
+
+                isPulling = isFishing && reelTolerance > 0;
+
+                if (reeltimer>=1)
+                {
+                    reeltimer = 0;
+                    var rpm = ((angle + savedRotation)/60);
+                    if (fishingFloat)
+                    {
+                        fishingFloat.m_pullLineSpeed = Mathf.Max(0, Mathf.Min(2.5f, Mathf.Abs(rpm*1.2f)));
+                    }
+                    reelStart = reelCrank.transform.localPosition;
+                    savedRotation = 0;
+                }
+                else
+                {
+                    if (reelCrank.transform.localPosition != reelStart)
+                    {
+                        savedRotation += angle;
+                        totalRotation += angle;
+                        reelStart = reelCrank.transform.localPosition;
+                    }
+                }
+
+                if (Mathf.RoundToInt(Mathf.Abs(totalRotation)) > 45)
+                {
+                    totalRotation = 0;
+                    inputHand.hapticAction.Execute(0, 0.002f, 150, 0.1f, inputSource);
+                }
+
+                if (!SteamVR_Actions.valheim_Grab.GetState(inputSource))
+                {
+                    reeltimer = 0;
+                    reelStart = Vector3.zero;
+                    reelGrabbed = false;
+                    isPulling = false;
+                    totalRotation = 0;
+                }
+            }
+            else
+            {
+                if (SteamVR_Actions.valheim_Grab.GetState(inputSource))
+                {
+                    if (Vector3.Distance(inputCenter, reelParent.transform.position) < 0.2f)
+                    {
+                        var handUp = inputHand.transform.TransformDirection(0, -0.3f, -0.7f);
+                        if (Mathf.Abs(Vector3.Dot(handUp, reelParent.transform.up)) > 0.6f)
+                        {
+                            reelGrabbed = true;
+                        }
+                    }
+                }
+            }
+        }
+
+        public void TriggerVibrateFish(FishingFloat fishFloat)
+        {
+            if(fishingFloat != fishFloat)
+            {
+                return;
+            }
             var inputSource = VHVRConfig.LeftHanded()
                ? SteamVR_Input_Sources.LeftHand
                : SteamVR_Input_Sources.RightHand;
