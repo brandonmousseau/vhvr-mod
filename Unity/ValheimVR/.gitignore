@@ -14,6 +14,9 @@
 # They also could contain extremely sensitive data
 /[Mm]emoryCaptures/
 
+# Asset meta data should only be ignored when the corresponding asset is also ignored
+!/[Aa]ssets/**/*.meta
+
 # Uncomment this line if you wish to ignore the asset store tools plugin
 # /[Aa]ssets/AssetStoreTools*
 
@@ -43,9 +46,6 @@ ExportedObj/
 *.mdb
 *.opendb
 *.VC.db
-
-# Unity3D generated meta files
-*.meta
 
 # Unity3D generated file on crash reports
 sysinfo.txt
