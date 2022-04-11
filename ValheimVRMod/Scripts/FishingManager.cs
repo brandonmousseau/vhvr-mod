@@ -47,33 +47,25 @@ namespace ValheimVRMod.Scripts {
             CreateReel();
             CreateText();
         }
-
         private void CreateReel()
         {
             reelParent = new GameObject();
             reelParent.transform.SetParent(transform);
             reelParent.transform.rotation = transform.rotation;
-            reelParent.transform.Rotate(0, 0, 90);
             reelParent.transform.localPosition = new Vector3(0, 0.6f, -0.07f);
 
-            reelWheel = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            reelWheel.transform.localScale = new Vector3(0.1f, 0.035f, 0.1f);
-            reelWheel.GetComponent<MeshRenderer>().material.color = Color.gray;
-            Destroy(reelWheel.GetComponent<Collider>());
+            reelWheel = Instantiate(VRAssetManager.GetAsset<GameObject>("Reel"));
             reelWheel.transform.SetParent(reelParent.transform);
             reelWheel.transform.localRotation = Quaternion.identity;
             reelWheel.transform.localPosition = new Vector3(0, 0, 0);
 
-            reelCrank = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            reelCrank.transform.localScale = new Vector3(0.01f, 0.07f, 0.01f);
-            reelCrank.GetComponent<MeshRenderer>().material.color = Color.red;
-            Destroy(reelCrank.GetComponent<Collider>());
+            reelCrank = Instantiate(VRAssetManager.GetAsset<GameObject>("Crank"));
             reelCrank.transform.SetParent(reelParent.transform);
             reelCrank.transform.localRotation = Quaternion.identity;
             var offset = VHVRConfig.LeftHanded()
-                ? 0.06f
-                : -0.06f;
-            reelCrank.transform.localPosition = new Vector3(0, offset, 0.04f);
+                ? -0.08f
+                : 0.08f;
+            reelCrank.transform.localPosition = new Vector3(offset, 0.04f, 0);
         }
 
         private void CreateText()
@@ -226,20 +218,20 @@ namespace ValheimVRMod.Scripts {
                 ? VRPlayer.rightHand
                 : VRPlayer.leftHand;
             var offset = VHVRConfig.LeftHanded()
-                ? 0.06f
-                : -0.06f;
+                ? -0.08f
+                : 0.08f;
 
 
             if (reelGrabbed)
             {
                 var localHandPos = reelParent.transform.InverseTransformPoint(inputCenter);
-                reelCrank.transform.localPosition = (new Vector3(localHandPos.x, 0, localHandPos.z).normalized * 0.04f) + (Vector3.up * offset);
+                reelCrank.transform.localPosition = (new Vector3(0, localHandPos.y, localHandPos.z).normalized * 0.04f) + (Vector3.right * offset);
                 if (reelStart == Vector3.zero)
                 {
                     reelStart = reelCrank.transform.localPosition;
                 }
 
-                var angle = Vector3.SignedAngle(new Vector3(reelStart.x, 0, reelStart.z), new Vector3(reelCrank.transform.localPosition.x, 0, reelCrank.transform.localPosition.z),reelParent.transform.up);
+                var angle = Vector3.SignedAngle(new Vector3(0, reelStart.y, reelStart.z), new Vector3(0, reelCrank.transform.localPosition.y, reelCrank.transform.localPosition.z),reelParent.transform.right);
                 reeltimer += Time.deltaTime;
 
                 if(Mathf.Abs(angle) + Mathf.Abs(savedRotation) >= 10)
@@ -298,7 +290,7 @@ namespace ValheimVRMod.Scripts {
                     if (Vector3.Distance(inputCenter, reelParent.transform.position) < 0.2f)
                     {
                         var handUp = inputHand.transform.TransformDirection(0, -0.3f, -0.7f);
-                        if (Mathf.Abs(Vector3.Dot(handUp, reelParent.transform.up)) > 0.6f)
+                        if (Mathf.Abs(Vector3.Dot(handUp, reelParent.transform.right)) > 0.6f)
                         {
                             reelGrabbed = true;
                         }
