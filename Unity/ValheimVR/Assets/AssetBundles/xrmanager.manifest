@@ -1,9 +1,9 @@
 ManifestFileVersion: 0
-CRC: 2077918286
+CRC: 1505013561
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: db4e4b3a2f29ca9968f0f86fd4312caf
+    Hash: 5489aee308f25cf8d17e2be8669911ab
   TypeTreeHash:
     serializedVersion: 2
     Hash: a5e45409fc24814b132efcd5d7204e1e
@@ -23,8 +23,8 @@ ClassTypes:
   Script: {instanceID: 0}
 SerializeReferenceClassIdentifiers: []
 Assets:
+- Assets/XR/Loaders/Oculus Loader.asset
 - Assets/XR/Settings/Open VR Settings.asset
 - Assets/XR/Loaders/Open VR Loader.asset
-- Assets/XR/Loaders/Oculus Loader.asset
 - Assets/XR/XRGeneralSettings.asset
 Dependencies: []

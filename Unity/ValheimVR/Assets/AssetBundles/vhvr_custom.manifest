@@ -1,12 +1,12 @@
 ManifestFileVersion: 0
-CRC: 1593173894
+CRC: 4292858890
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: ccd3eb2733055eaa0bcb4112b3d3278b
+    Hash: 67113b918328594419f2cc2ea9f1ec69
   TypeTreeHash:
     serializedVersion: 2
-    Hash: 07353491aca6e6a29636b555171f2e48
+    Hash: 1fe3abd029edb3522ae5dbbc711d0a74
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -25,19 +25,19 @@ ClassTypes:
   Script: {instanceID: 0}
 - Class: 48
   Script: {instanceID: 0}
+- Class: 213
+  Script: {instanceID: 0}
 SerializeReferenceClassIdentifiers: []
 Assets:
-- Assets/QuickOutline/Resources/Materials/OutlineMask.mat
-- Assets/CustomResources/Materials/OutlineMaterial.mat
-- Assets/CustomResources/Textures/map.png
-- Assets/CustomResources/RuneStakeCyTexture.png
-- Assets/CustomResources/Materials/vr_panel_unlit.mat
-- Assets/CustomResources/Textures/sit.png
-- Assets/CustomResources/GizmoRing.prefab
 - Assets/CustomResources/RuneStakeCy.prefab
-- Assets/QuickOutline/Resources/Shaders/OutlineMask.shader
-- Assets/CustomResources/RuneStakeCy.obj
-- Assets/QuickOutline/Resources/Materials/OutlineFill.mat
-- Assets/CustomResources/Textures/black_screen.png
 - Assets/QuickOutline/Resources/Shaders/OutlineFill.shader
+- Assets/QuickOutline/Resources/Materials/OutlineMask.mat
+- Assets/CustomResources/Textures/sit.png
+- Assets/CustomResources/Materials/OutlineMaterial.mat
+- Assets/QuickOutline/Resources/Shaders/OutlineMask.shader
+- Assets/CustomResources/Textures/black_screen.png
+- Assets/CustomResources/Materials/vr_panel_unlit.mat
+- Assets/CustomResources/GizmoRing.prefab
+- Assets/CustomResources/Textures/map.png
+- Assets/QuickOutline/Resources/Materials/OutlineFill.mat
 Dependencies: []

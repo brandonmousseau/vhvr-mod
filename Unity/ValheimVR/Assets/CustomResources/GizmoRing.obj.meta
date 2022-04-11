@@ -1,14 +1,9 @@
 fileFormatVersion: 2
-guid: 2b59cbe5125109541983aac20e64fc91
+guid: be8fbe9ed3b3f97458a3b3c87ab8cf3b
 ModelImporter:
   serializedVersion: 19301
   internalIDToNameTable: []
-  externalObjects:
-  - first:
-      type: UnityEngine:Material
-      assembly: UnityEngine.CoreModule
-      name: defaultMat
-    second: {fileID: 2100000, guid: 9ee8ef9c13fcbb247add6e44bb27e234, type: 2}
+  externalObjects: {}
   materials:
     materialImportMode: 1
     materialName: 0
@@ -98,5 +93,5 @@ ModelImporter:
   avatarSetup: 0
   additionalBone: 0
   userData: 
-  assetBundleName: vhvr_custom
+  assetBundleName: 
   assetBundleVariant: 
