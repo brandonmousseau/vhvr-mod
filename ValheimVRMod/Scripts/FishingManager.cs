@@ -30,6 +30,9 @@ namespace ValheimVRMod.Scripts {
         private GameObject fishingTextParent;
         private Text fishingText;
 
+        private GameObject baitTextParent;
+        private Text baitText;
+
         public static float attackDrawPercentage;
         public static Vector3 spawnPoint;
         public static Vector3 aimDir;
@@ -46,6 +49,7 @@ namespace ValheimVRMod.Scripts {
             instance = this;
             CreateReel();
             CreateText();
+            UpdateBaitText();
         }
         private void CreateReel()
         {
@@ -89,6 +93,29 @@ namespace ValheimVRMod.Scripts {
             rectTrans.localPosition = Vector3.up*-2;
             rectTrans.sizeDelta = new Vector2(400, 100);
             fishingTextParent.transform.localScale *= 0.005f;
+
+            baitTextParent = new GameObject();
+            var baitSubParent = new GameObject();
+            baitSubParent.transform.SetParent(baitTextParent.transform);
+            baitSubParent.transform.Rotate(0, 180, 0);
+            var canvasText2 = baitSubParent.AddComponent<Canvas>();
+            canvasText2.renderMode = RenderMode.WorldSpace;
+            baitText = baitSubParent.AddComponent<Text>();
+            baitText.fontSize = 40;
+            baitText.font = ArialFont;
+            baitText.horizontalOverflow = HorizontalWrapMode.Overflow;
+            baitText.verticalOverflow = VerticalWrapMode.Overflow;
+            baitText.alignment = TextAnchor.MiddleCenter;
+            baitText.enabled = true;
+            baitText.color = Color.white * 0.8f;
+            var rectTrans2 = fishingText.GetComponent<RectTransform>();
+            rectTrans2.localPosition = Vector3.up * -2;
+            rectTrans2.sizeDelta = new Vector2(400, 100);
+            baitTextParent.transform.localScale *= 0.001f;
+
+            baitTextParent.transform.SetParent(transform);
+            baitTextParent.transform.localPosition = new Vector3(0, 0.65f, 0.03f);
+            baitTextParent.transform.rotation = transform.rotation;
         }
         private void OnDestroy() {
             Destroy(reelCrank);
@@ -96,6 +123,7 @@ namespace ValheimVRMod.Scripts {
             Destroy(reelParent);
             Destroy(fixedRodTop);
             Destroy(fishingTextParent);
+            Destroy(baitTextParent);
         }
 
         private void Update() {
@@ -106,7 +134,6 @@ namespace ValheimVRMod.Scripts {
                     return;
                 }
             }
-
             isFishing = false;
         }
         private void OnRenderObject() {
@@ -118,7 +145,7 @@ namespace ValheimVRMod.Scripts {
                 : SteamVR_Actions.valheim_Use;
 
             fixedRodTop.transform.position = rodTop.position;
-
+            UpdateBaitText();
             if (!reelGrabbed)
             {
                 if (fishingFloat)
@@ -146,11 +173,9 @@ namespace ValheimVRMod.Scripts {
             if (!inputAction.GetStateUp(inputSource)) {
                 return;
             }
-
             if (isFishing || isThrowing || !preparingThrow) {
                 return;
             }
-
             if (snapshots.Count < MIN_SNAPSHOTSCHECK) {
                 return;
             }
@@ -175,7 +200,7 @@ namespace ValheimVRMod.Scripts {
 
             if (Vector3.Distance(posEnd, posStart) > MIN_DISTANCE) {
                 isThrowing = true;
-                preparingThrow = false;
+                preparingThrow = false; 
             }
         }
 
@@ -314,6 +339,11 @@ namespace ValheimVRMod.Scripts {
                 : VRPlayer.rightHand;
 
             inputHand.hapticAction.Execute(0.4f, 0.7f, 100, 0.2f, inputSource);
+        }
+
+        private void UpdateBaitText()
+        {
+            baitText.text = Player.m_localPlayer.m_inventory.CountItems("$item_fishingbait").ToString();
         }
     }
 }
