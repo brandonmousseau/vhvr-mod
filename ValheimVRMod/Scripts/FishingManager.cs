@@ -19,7 +19,7 @@ namespace ValheimVRMod.Scripts {
         private GameObject reelParent;
         private GameObject reelWheel;
         private GameObject reelCrank;
-        private bool reelGrabbed;
+        public bool reelGrabbed;
         private Vector3 handCenter = new Vector3(0, 0, -0.1f);
         private Vector3 reelStart;
         private float reeltimer;
@@ -285,7 +285,7 @@ namespace ValheimVRMod.Scripts {
             }
             else
             {
-                if (SteamVR_Actions.valheim_Grab.GetState(inputSource))
+                if (SteamVR_Actions.valheim_Grab.GetState(inputSource) && !WeaponWield.isCurrentlyTwoHanded()) 
                 {
                     if (Vector3.Distance(inputCenter, reelParent.transform.position) < 0.2f)
                     {
