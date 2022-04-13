@@ -54,6 +54,9 @@ namespace ValheimVRMod.Patches {
                 case EquipType.Fishing:
                     meshFilter.gameObject.AddComponent<FishingManager>();
                     return;
+                case EquipType.ThrowObject:
+                    meshFilter.gameObject.AddComponent<SpearManager>();
+                    break;
                 case EquipType.Spear:
                 case EquipType.SpearChitin:
                     if (VHVRConfig.SpearInverseWield())
@@ -72,7 +75,6 @@ namespace ValheimVRMod.Patches {
                         }
                     }
                     meshFilter.gameObject.AddComponent<SpearManager>();
-                    // (no return, we want collider for spear also)
                     break;
             }
             
@@ -204,8 +206,9 @@ namespace ValheimVRMod.Patches {
         /// For Left Handed mode we need to mirror models of shields and tankard 
         /// </summary>
         static void Postfix(GameObject __result) {
-            
+
             if (Player.m_localPlayer == null 
+                || __result == null
                 || __result.GetComponentInParent<Player>() != Player.m_localPlayer
                 || !VHVRConfig.UseVrControls() 
                 || !VHVRConfig.LeftHanded()

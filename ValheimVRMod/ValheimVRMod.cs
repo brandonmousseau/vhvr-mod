@@ -3,20 +3,26 @@ using UnityEngine;
 using ValheimVRMod.VRCore;
 using ValheimVRMod.VRCore.UI;
 using ValheimVRMod.Utilities;
+using ValheimVRMod.Scripts;
 using ValheimVRMod.Patches;
 
 using static ValheimVRMod.Utilities.LogUtils;
 
 namespace ValheimVRMod
 {
-    [BepInPlugin("org.bepinex.plugins.valheimvrmod", "ValheimVR Mod", "0.8.1")]
+    [BepInPlugin("org.bepinex.plugins.valheimvrmod", "ValheimVR Mod", "0.9.1")]
     public class ValheimVRMod : BaseUnityPlugin
     {
 
+        public static System.Version PLUGIN_VERSION { get { return _version; } }
+        private static System.Version _version = null;
+
         private GameObject vrPlayer;
         private GameObject vrGui;
-        
+        private GameObject BhapticsTactsuit;
+
         void Awake() {
+            _version = Info.Metadata.Version;
             VHVRConfig.InitializeConfiguration(Config);
             if (!VHVRConfig.ModEnabled())
             {
@@ -70,6 +76,12 @@ namespace ValheimVRMod
                 if (VHVRConfig.RecenterOnStart())
                 {
                     VRManager.tryRecenter();
+                }
+                if (VHVRConfig.BhapticsEnabled())
+                {
+                    BhapticsTactsuit = new GameObject("BhapticsTactsuit");
+                    DontDestroyOnLoad(BhapticsTactsuit);
+                    BhapticsTactsuit.AddComponent<BhapticsTactsuit>();
                 }
             }
             else
