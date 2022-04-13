@@ -182,6 +182,21 @@ namespace ValheimVRMod.Scripts {
                 fishingTextParent.transform.position = posMod;
                 fishingTextParent.transform.LookAt(CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform.position);
                 fishingTextParent.SetActive(true);
+
+                //Set color of the rodline according to stamina
+                var stamina = Player.m_localPlayer.GetStamina();
+                if (stamina <= 30)
+                {
+                    fishingFloat.m_rodLine.m_lineRenderer.material.color = Color.Lerp(Color.red, Color.yellow, stamina/30);
+                }
+                else if (stamina <= 50)
+                {
+                    fishingFloat.m_rodLine.m_lineRenderer.material.color = Color.Lerp(Color.yellow, Color.white, (stamina - 30)/20);
+                }
+                else
+                {
+                    fishingFloat.m_rodLine.m_lineRenderer.material.color = Color.white;
+                }
             }
             else
             {
