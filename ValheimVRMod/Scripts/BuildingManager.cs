@@ -1404,7 +1404,7 @@ namespace ValheimVRMod.Scripts
                 ghost.transform.position = originalRayTracePos + b2;
                 ghost.transform.rotation = advRotationGhost;
             }
-            var getPiece = originalRayTraceTransform ? originalRayTraceTransform.GetComponent<Piece>() : null;
+            var getPiece = originalRayTraceTransform ? originalRayTraceTransform.GetComponentInParent(typeof(Piece)) as Piece : null;
             if (originalHeightMap||!getPiece)
             {
                 ghost.transform.position = new Vector3(originalRayTracePos.x, ghost.transform.position.y, originalRayTracePos.z);
