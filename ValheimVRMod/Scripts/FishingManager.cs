@@ -75,6 +75,7 @@ namespace ValheimVRMod.Scripts {
                 : 0.08f;
 
             rodTop = transform.parent.Find("_RodTop");
+            rodTop.transform.localPosition = new Vector3(0, -0.01f, 3.3f);
             fixedRodTop = new GameObject();
             instance = this;
             CreateReel();
