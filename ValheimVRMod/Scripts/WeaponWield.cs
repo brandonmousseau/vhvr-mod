@@ -148,20 +148,24 @@ namespace ValheimVRMod.Scripts
                 var distMultiplier = 0f;
                 var originMultiplier = -0.1f;
                 var rotOffset = 180;
-                bool isPoleArmOrSpear = false;
+                bool rearHandIsDominant = (VHVRConfig.LeftHanded() == (_isTwoHanded == isTwoHanded.MainLeft));
                 switch (attack.m_attackAnimation)
                 {
                     case "spear_poke":
                         distMultiplier = -0.09f;
                         distLimit = 0.09f;
                         originMultiplier = 0.2f;
-                        isPoleArmOrSpear = true;
                         break;
                     case "atgeir_attack":
                         distMultiplier = -0.18f;
                         distLimit = 0.18f;
                         originMultiplier = -0.7f;
-                        isPoleArmOrSpear = true;
+                        break;
+                    default:
+                        if (!rearHandIsDominant && !isSpear()) {
+                            // Anchor the weapon on the dominant hand.
+                            originMultiplier = Mathf.Min(handDist, 0.15f) - 0.1f;
+                        }
                         break;
                 }
                 var CalculateDistance = inversePosition.normalized * distMultiplier / Mathf.Max(handDist, distLimit) - inversePosition.normalized * originMultiplier;
@@ -208,12 +212,7 @@ namespace ValheimVRMod.Scripts
                 }
                 else
                 {
-                    bool mainHandIsDominant = (VHVRConfig.LeftHanded() == (_isTwoHanded == isTwoHanded.MainLeft));
                     transform.position = mainHand.transform.position + CalculateDistance;
-                    if (!mainHandIsDominant && !isPoleArmOrSpear) {
-                        // Anchor the weapon on the dominant hand.
-                        transform.position = transform.position - inversePosition.normalized * Mathf.Min(handDist, 0.15f);
-                    }
                     transform.LookAt(mainHand.transform.position + inversePosition.normalized * 5, transform.up);
                     transform.localRotation = transform.localRotation * (rotSave.transform.localRotation) * Quaternion.AngleAxis(180, Vector3.right) * Quaternion.AngleAxis(rotOffset, transform.InverseTransformDirection(inversePosition));
                 }
