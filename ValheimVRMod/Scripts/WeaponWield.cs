@@ -184,7 +184,7 @@ namespace ValheimVRMod.Scripts
                 rearHandConnector.Rotate(Vector3.right, 10);
 
                 //weapon pos&rotation
-                transform.position = rearHand.tranform.position + weaponOffset;
+                transform.position = rearHand.transform.position + weaponOffset;
                 if (isSpear() && !VHVRConfig.SpearInverseWield())
                 {
                     transform.LookAt(frontHand.transform.position - weaponHoldVector.normalized * 5, transform.up);
