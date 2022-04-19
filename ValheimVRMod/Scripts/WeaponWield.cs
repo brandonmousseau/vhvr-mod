@@ -164,6 +164,7 @@ namespace ValheimVRMod.Scripts
                         break;
                     default:
                         if (!rearHandIsDominant && !isSpear()) {
+                            // Anchor the weapon on the dominant hand.
                             originMultiplier = Mathf.Min(handDist, 0.15f) - 0.1f;
                         }
                         break;
