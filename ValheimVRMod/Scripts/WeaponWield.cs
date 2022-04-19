@@ -20,8 +20,8 @@ namespace ValheimVRMod.Scripts
         public enum isTwoHanded
         {
             SingleHanded,
-            MainRight,
-            MainLeft
+            RightHandBehind,
+            LeftHandBehind
         }
 
         private void Awake()
@@ -119,103 +119,82 @@ namespace ValheimVRMod.Scripts
                 SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand) &&
                 !(isSpear() && SpearManager.IsAiming()) )
             {
-                var mainHand = VRPlayer.rightHand;
-                var offHand = VRPlayer.leftHand;
-                float handAngleDiff = Vector3.Dot(GetHandWieldDirection(), VRPlayer.rightHand.transform.InverseTransformPoint(VRPlayer.leftHand.transform.position).normalized);
+                float handAngleDiff = GetHandAngleDiff(VRPlayer.rightHand.transform, VRPlayer.leftHand.transform);
                 if (_isTwoHanded == isTwoHanded.SingleHanded)
                 {
                     if (handAngleDiff > 0.6f)
                     {
-                        _isTwoHanded = isTwoHanded.MainRight;
+                        _isTwoHanded = isTwoHanded.RightHandBehind;
                     }
                     else if (handAngleDiff < -0.6f)
                     {
-                        _isTwoHanded = isTwoHanded.MainLeft;
+                        _isTwoHanded = isTwoHanded.LeftHandBehind;
                     }
                     else
                     {
                         return;
                     }
                 }
-                if (_isTwoHanded == isTwoHanded.MainLeft)
-                {
-                    mainHand = VRPlayer.leftHand;
-                    offHand = VRPlayer.rightHand;
-                }
-                var handDist = Vector3.Distance(mainHand.transform.position, offHand.transform.position);
-                var inversePosition = mainHand.transform.position - offHand.transform.position;
+
+                var rearHand = _isTwoHanded == isTwoHanded.LeftHandBehind ? VRPlayer.leftHand : VRPlayer.rightHand;
+                var frontHand = rearHand.otherHand;
+
+                var handDist = Vector3.Distance(frontHand.transform.position, rearHand.transform.position);
+                var weaponHoldVector = frontHand.transform.position - rearHand.transform.position;
                 var distLimit = 0f;
                 var distMultiplier = 0f;
                 var originMultiplier = -0.1f;
                 var rotOffset = 180;
-                bool isPoleArmOrSpear = false;
+                bool rearHandIsDominant = (VHVRConfig.LeftHanded() == (_isTwoHanded == isTwoHanded.LeftHandBehind));
                 switch (attack.m_attackAnimation)
                 {
                     case "spear_poke":
                         distMultiplier = -0.09f;
                         distLimit = 0.09f;
                         originMultiplier = 0.2f;
-                        isPoleArmOrSpear = true;
                         break;
                     case "atgeir_attack":
                         distMultiplier = -0.18f;
                         distLimit = 0.18f;
                         originMultiplier = -0.7f;
-                        isPoleArmOrSpear = true;
+                        break;
+                    default:
+                        if (!rearHandIsDominant && !isSpear()) {
+                            // Anchor the weapon on the dominant hand.
+                            originMultiplier = Mathf.Min(handDist, 0.15f) - 0.1f;
+                        }
                         break;
                 }
-                var CalculateDistance = inversePosition.normalized * distMultiplier / Mathf.Max(handDist, distLimit) - inversePosition.normalized * originMultiplier;
+                var weaponOffset = weaponHoldVector.normalized * (originMultiplier - distMultiplier / Mathf.Max(handDist, distLimit));
                 ResetOffset();
 
                 //VRIK Hand rotation
-                if (_isTwoHanded == isTwoHanded.MainLeft)
+                var frontHandConnector = _isTwoHanded == isTwoHanded.LeftHandBehind ? VrikCreator.rightHandConnector : VrikCreator.leftHandConnector;
+                var rearHandConnector = _isTwoHanded == isTwoHanded.LeftHandBehind ? VrikCreator.leftHandConnector : VrikCreator.rightHandConnector;
+                frontHandConnector.LookAt(frontHandConnector.position - weaponHoldVector, frontHand.transform.up);
+                rearHandConnector.LookAt(rearHandConnector.position + weaponHoldVector, rearHand.transform.up);
+                if (GetHandAngleDiff(frontHand.transform, rearHand.transform) <= 0)
                 {
-                    VrikCreator.mainHandConnector.LookAt(VrikCreator.offHandConnector, offHand.transform.up);
-                    VrikCreator.offHandConnector.LookAt(VrikCreator.mainHandConnector, mainHand.transform.up);
-                    VrikCreator.mainHandConnector.Rotate(Vector3.up, 180);
-                    if (GetHandAngleDiff(offHand.transform, mainHand.transform) > 0)
-                    {
-                        VrikCreator.mainHandConnector.Rotate(Vector3.up, 180);
-                    }
-                    if (GetHandAngleDiff(mainHand.transform, offHand.transform) < 0)
-                    {
-                        VrikCreator.offHandConnector.Rotate(Vector3.up, 180);
-                    }
+                    frontHandConnector.Rotate(Vector3.up, 180);
                 }
-                else
+                if (GetHandAngleDiff(rearHand.transform, frontHand.transform) < 0)
                 {
-                    VrikCreator.mainHandConnector.LookAt(VrikCreator.offHandConnector, mainHand.transform.up);
-                    VrikCreator.offHandConnector.LookAt(VrikCreator.mainHandConnector, offHand.transform.up);
-                    VrikCreator.offHandConnector.Rotate(Vector3.up, 180);
-                    if (GetHandAngleDiff(offHand.transform, mainHand.transform) > 0)
-                    {
-                        VrikCreator.offHandConnector.Rotate(Vector3.up, 180);
-                    }
-                    if (GetHandAngleDiff(mainHand.transform, offHand.transform) < 0)
-                    {
-                        VrikCreator.mainHandConnector.Rotate(Vector3.up, 180);
-                    }
+                    rearHandConnector.Rotate(Vector3.up, 180);
                 }
-                VrikCreator.mainHandConnector.Rotate(Vector3.right, 10);
+                rearHandConnector.Rotate(Vector3.right, 10);
 
                 //weapon pos&rotation
+                transform.position = rearHand.transform.position + weaponOffset;
                 if (isSpear() && !VHVRConfig.SpearInverseWield())
                 {
-                    transform.position = mainHand.transform.position + CalculateDistance;
-                    transform.LookAt(offHand.transform.position + inversePosition.normalized * 5, transform.up);
-                    transform.localRotation = transform.localRotation * (rotSave.transform.localRotation) * Quaternion.AngleAxis(180, Vector3.right) * Quaternion.AngleAxis(rotOffset, transform.InverseTransformDirection(inversePosition));
+                    transform.LookAt(frontHand.transform.position - weaponHoldVector.normalized * 5, transform.up);
+                    transform.localRotation = transform.localRotation * (rotSave.transform.localRotation) * Quaternion.AngleAxis(180, Vector3.right) * Quaternion.AngleAxis(rotOffset, transform.InverseTransformDirection(-weaponHoldVector));
                     transform.localRotation = transform.localRotation * (rotSave.transform.localRotation) * Quaternion.AngleAxis(180, Vector3.right);
                 }
                 else
                 {
-                    bool mainHandIsDominant = (VHVRConfig.LeftHanded() == (_isTwoHanded == isTwoHanded.MainLeft));
-                    transform.position = mainHand.transform.position + CalculateDistance;
-                    if (!mainHandIsDominant && !isPoleArmOrSpear) {
-                        // Anchor the weapon on the dominant hand.
-                        transform.position = transform.position - inversePosition.normalized * Mathf.Min(handDist, 0.15f);
-                    }
-                    transform.LookAt(mainHand.transform.position + inversePosition.normalized * 5, transform.up);
-                    transform.localRotation = transform.localRotation * (rotSave.transform.localRotation) * Quaternion.AngleAxis(180, Vector3.right) * Quaternion.AngleAxis(rotOffset, transform.InverseTransformDirection(inversePosition));
+                    transform.LookAt(rearHand.transform.position - weaponHoldVector.normalized * 5, transform.up);
+                    transform.localRotation = transform.localRotation * (rotSave.transform.localRotation) * Quaternion.AngleAxis(180, Vector3.right) * Quaternion.AngleAxis(rotOffset, transform.InverseTransformDirection(-weaponHoldVector));
                 }
 
                 //Atgeir Rotation fix
@@ -243,23 +222,16 @@ namespace ValheimVRMod.Scripts
         }
         private void ResetOffset()
         {
-            VrikCreator.mainHandConnector.localRotation = Quaternion.identity;
-            VrikCreator.offHandConnector.localRotation = Quaternion.identity;
+            VrikCreator.rightHandConnector.localRotation = Quaternion.identity;
+            VrikCreator.leftHandConnector.localRotation = Quaternion.identity;
             transform.position = rotSave.transform.position;
             transform.localRotation = rotSave.transform.localRotation;
-        }
-        private Vector3 GetHandWieldDirection()
-        {
-            if (attack.m_attackAnimation == "spear_poke")
-            {
-                return new Vector3(0, 0.45f, 0.55f);
-            }
-            return new Vector3(0, 0, 1);
         }
 
         private float GetHandAngleDiff(Transform mainHand, Transform refHand)
         {
-            return Vector3.Dot(GetHandWieldDirection(), mainHand.InverseTransformPoint(refHand.position).normalized);
+            Vector3 localHandWieldDirection = (attack.m_attackAnimation == "spear_poke") ? new Vector3(0, 0.45f, 0.55f) : Vector3.forward;
+            return Vector3.Dot(localHandWieldDirection, mainHand.InverseTransformPoint(refHand.position).normalized);
         }
 
         public static bool isCurrentlyTwoHanded()
