@@ -230,7 +230,7 @@ namespace ValheimVRMod.Scripts
 
         private float GetHandAngleDiff(Transform mainHand, Transform refHand)
         {
-            localHandWieldDirection = (attack.m_attackAnimation == "spear_poke") ? new Vector3(0, 0.45f, 0.55f) : Vector3.forward;
+            Vector3 localHandWieldDirection = (attack.m_attackAnimation == "spear_poke") ? new Vector3(0, 0.45f, 0.55f) : Vector3.forward;
             return Vector3.Dot(localHandWieldDirection, mainHand.InverseTransformPoint(refHand.position).normalized);
         }
 
