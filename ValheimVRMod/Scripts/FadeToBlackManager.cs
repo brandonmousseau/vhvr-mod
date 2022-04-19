@@ -34,7 +34,7 @@ namespace ValheimVRMod.Scripts
             {
                 bLogout = true;
                 SteamVRFade(true);
-                VRCore.UI.SoftwareCursor.instance.SetActive(false);
+                SoftwareCursor.instance.SetActive(false);
             }
         
             //When Loading Screens Are Visible(Fixes an issue with loading screens not always fading
