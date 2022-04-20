@@ -235,7 +235,7 @@ namespace ValheimVRMod.Scripts {
             double pushOffsetAngle = Math.Asin(VHVRConfig.ArrowRestElevation() / realLifeHandDistance);
 
             // Align the z-axis of the pushObj with the direction of the draw force and determine its y-axis using the orientation of the bow hand.
-            pushObj.transform.LookAt(mainHand, worldUp: -transform.parent.forward);
+            pushObj.transform.LookAt(mainHand, worldUp: -VrikCreator.GetNonDominantHandConnector().parent.forward);
 
             // Assuming that the bow is perpendicular to the arrow, the angle between the y-axis of the bow and the y-axis of the pushObj should also be pushOffsetAngle.
             transform.rotation = pushObj.transform.rotation * Quaternion.AngleAxis((float) (-pushOffsetAngle * (180.0 / Math.PI)), Vector3.right);
