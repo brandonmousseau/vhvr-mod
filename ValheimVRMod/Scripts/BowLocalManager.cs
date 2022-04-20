@@ -20,6 +20,7 @@ namespace ValheimVRMod.Scripts {
         private ItemDrop.ItemData item;
         private Attack attack;
         private float attackDrawPercentage;
+        private Transform bowHandIdealTransform = new GameObject().transform;
 
         public static BowLocalManager instance;
         public static Vector3 spawnPoint;
@@ -44,6 +45,7 @@ namespace ValheimVRMod.Scripts {
             predictionLine.shadowCastingMode = ShadowCastingMode.Off;
             predictionLine.lightProbeUsage = LightProbeUsage.Off;
             predictionLine.reflectionProbeUsage = ReflectionProbeUsage.Off;
+            bowHandIdealTransform.parent = this.transform;
 
             createChargeIndicator();
 
@@ -176,6 +178,7 @@ namespace ValheimVRMod.Scripts {
             }
 
             VrikCreator.GetDominantHandConnector().position = pullObj.transform.position;
+            VrikCreator.GetNonDominantHandConnector().rotation = bowHandIdealTransform.rotation;
             arrowAttach.transform.rotation = pullObj.transform.rotation;
             arrowAttach.transform.position = pullObj.transform.position;
             spawnPoint = getArrowRestPosition();
@@ -240,6 +243,8 @@ namespace ValheimVRMod.Scripts {
                 isPulling = true;
                 predictionLine.enabled = VHVRConfig.UseArrowPredictionGraphic();
                 attackDrawPercentage = 0;
+                // Remebmer the rotation of the bow hand relative to the bow so it can be restored during pulling.
+                bowHandIdealTransform.rotation = VrikCreator.GetNonDominantHandConnector().transform.rotation;
             }
 
             return pulling = true;
