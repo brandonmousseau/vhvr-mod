@@ -111,5 +111,22 @@ namespace ValheimVRMod.Scripts {
             vrik.solver.rightArm.target.localRotation = rightUnequippedRotation;
             vrik.solver.rightArm.palmToThumbAxis = rightUnequippedEllbow;
         }
+        public static Transform GetDominantHandConnector()
+        {
+            return VHVRConfig.LeftHanded() ? VrikCreator.leftHandConnector : VrikCreator.rightHandConnector;
+        }
+
+        public static Transform GetNonDominantHandConnector()
+        {
+            return VHVRConfig.LeftHanded() ? VrikCreator.rightHandConnector : VrikCreator.leftHandConnector;
+        }
+
+        public static void ResetHandConnectors()
+        {
+            leftHandConnector.localPosition = Vector3.zero;
+            leftHandConnector.localRotation = Quaternion.identity;
+            rightHandConnector.localPosition = Vector3.zero;
+            rightHandConnector.localRotation = Quaternion.identity;
+        }
     }
 }
