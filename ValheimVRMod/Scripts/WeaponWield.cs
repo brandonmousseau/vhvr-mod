@@ -7,7 +7,7 @@ namespace ValheimVRMod.Scripts
 {
     public class WeaponWield : MonoBehaviour
     {
-        private const float HAND_CENTER_OFFSET = 0.125f;
+        private const float HAND_CENTER_OFFSET = 0.08f;
 
         private Attack attack;
         private bool weaponSubPos;
@@ -141,8 +141,8 @@ namespace ValheimVRMod.Scripts
                 var rearHand = _isTwoHanded == isTwoHanded.LeftHandBehind ? VRPlayer.leftHand : VRPlayer.rightHand;
                 var frontHand = rearHand.otherHand;
 
-                Vector3 frontHandCenter = frontHand.transform.position - frontHand.transform.forward * HAND_CENTER_OFFSET;
-                Vector3 rearHandCenter = rearHand.transform.position - rearHand.transform.forward * HAND_CENTER_OFFSET;
+                Vector3 frontHandCenter = getHandCenter(frontHand.transform);
+                Vector3 rearHandCenter = getHandCenter(rearHand.transform);
                 var handDist = Vector3.Distance(frontHandCenter, rearHandCenter);
                 var weaponHoldVector = frontHandCenter - rearHandCenter;
                 var distLimit = 0f;
@@ -186,8 +186,8 @@ namespace ValheimVRMod.Scripts
                     rearHandConnector.Rotate(Vector3.up, 180);
                 }
                 rearHandConnector.Rotate(Vector3.right, 10);
-                frontHandConnector.position = frontHandConnector.parent.position + (frontHandConnector.forward - frontHand.transform.forward) * HAND_CENTER_OFFSET;
-                rearHandConnector.position = rearHandConnector.parent.position + (rearHandConnector.forward - rearHand.transform.forward) * HAND_CENTER_OFFSET;
+                frontHandConnector.position = frontHandConnector.parent.position + frontHandConnector.forward * HAND_CENTER_OFFSET + (frontHandCenter - frontHand.transform.position);
+                rearHandConnector.position = rearHandConnector.parent.position + rearHandConnector.forward * HAND_CENTER_OFFSET + (rearHandCenter - rearHand.transform.position);
 
                 //weapon pos&rotation
                 transform.position = rearHandCenter + weaponOffset;
@@ -228,20 +228,19 @@ namespace ValheimVRMod.Scripts
         }
         private void ResetOffset()
         {
-            VrikCreator.rightHandConnector.localRotation = Quaternion.identity;
-            VrikCreator.leftHandConnector.localRotation = Quaternion.identity;
-            VrikCreator.rightHandConnector.localPosition = Vector3.zero;
-            VrikCreator.leftHandConnector.localPosition = Vector3.zero;
+            VrikCreator.ResetHandConnectors();
             transform.position = rotSave.transform.position;
             transform.localRotation = rotSave.transform.localRotation;
         }
 
         private float GetHandAngleDiff(Transform mainHand, Transform refHand)
         {
-            Vector3 localHandWieldDirection = (attack.m_attackAnimation == "spear_poke") ? new Vector3(0, 0.45f, 0.55f) : Vector3.forward;
-            Vector3 mainHandCenter = mainHand.transform.position - mainHand.transform.forward * HAND_CENTER_OFFSET;
-            Vector3 refHandCenter = refHand.transform.position - refHand.transform.forward * HAND_CENTER_OFFSET;
-            return Vector3.Dot(localHandWieldDirection, mainHand.InverseTransformVector(refHandCenter - mainHandCenter).normalized);
+            Vector3 localHandWieldDirection = attack.m_attackAnimation == "spear_poke" ? new Vector3(0, 0.45f, 0.55f) : new Vector3(0, 0, 1);
+            return Vector3.Dot(localHandWieldDirection, mainHand.InverseTransformVector(getHandCenter(refHand) - getHandCenter(mainHand)).normalized);
+        }
+
+        private static Vector3 getHandCenter(Transform hand) {
+            return hand.transform.position - hand.transform.forward * HAND_CENTER_OFFSET;
         }
 
         public static bool isCurrentlyTwoHanded()
