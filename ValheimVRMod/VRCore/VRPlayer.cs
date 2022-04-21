@@ -267,13 +267,13 @@ namespace ValheimVRMod.VRCore
             tryInitializeHands();
             if (_leftHand != null)
             {
-                _leftHand.enabled = VHVRConfig.UseVrControls();
-                _leftHand.SetVisibility(_leftHand.enabled && !vrikEnabled());
+                _leftHand.enabled = VHVRConfig.UseVrControls() && !_fadeManager.IsFadingToBlack;
+                _leftHand.SetVisibility(_leftHand.enabled && !vrikEnabled() && !_fadeManager.IsFadingToBlack);
             }
             if (_rightHand != null)
             {
-                _rightHand.enabled = VHVRConfig.UseVrControls();
-                _rightHand.SetVisibility(_rightHand.enabled && !vrikEnabled());
+                _rightHand.enabled = VHVRConfig.UseVrControls() && !_fadeManager.IsFadingToBlack;
+                _rightHand.SetVisibility(_rightHand.enabled && !vrikEnabled() && !_fadeManager.IsFadingToBlack);
             }
             // Next check whether the hands are active, and enable the appropriate pointer based
             // on what is available and what the options set as preferred. Disable the inactive pointer(s).

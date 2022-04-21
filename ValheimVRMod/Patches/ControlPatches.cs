@@ -393,45 +393,19 @@ namespace ValheimVRMod.Patches {
         }
     }
 
-    // Used to enable stack splitting in inventory
-    [HarmonyPatch(typeof(InventoryGrid), "OnLeftClick")]
-    class InventoryGrid_OnLeftClick_Patch {
-
-        static bool getClickModifier()
+    // Used to enable split and move buttons in inventory
+    [HarmonyPatch(typeof(InventoryGui), "OnSelectedItem")]
+    class InventoryGui_OnSelectedItem_Patch
+    {
+        static void Prefix(InventoryGui __instance, ref InventoryGrid.Modifier mod)
         {
-            return VRControls.laserControlsActive && VRControls.instance.getClickModifier();
-        }
-
-        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
-        {
-            var original = new List<CodeInstruction>(instructions);
-            var patched = new List<CodeInstruction>();
             if (!VHVRConfig.UseVrControls())
-            {
-                return original;
-            }
-            bool addedInstruction = false;
-            for (int i = 0; i < original.Count; i++)
-            {
-                var instruction = original[i];
-                if (!addedInstruction && instruction.opcode == OpCodes.Ldc_I4)
-                {
-                    int operand = (int)instruction.operand;
-                    if (operand == (int)KeyCode.LeftShift)
-                    {
-                        // Add our custom check
-                        patched.Add(CodeInstruction.Call(typeof(InventoryGrid_OnLeftClick_Patch), nameof(getClickModifier)));
-                        addedInstruction = true;
-                        // Skip over the next instruction too since it will be the keycode comparison
-                        i++;
-                    }
-                }
-                else
-                {
-                    patched.Add(instruction);
-                }
-            }
-            return patched;
+                return;
+
+            if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand))
+                mod = InventoryGrid.Modifier.Split;
+            else if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand))
+                mod = InventoryGrid.Modifier.Move;
         }
     }
 
