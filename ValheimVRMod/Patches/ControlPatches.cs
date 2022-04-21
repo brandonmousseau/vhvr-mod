@@ -173,11 +173,31 @@ namespace ValheimVRMod.Patches {
                 ___m_placementMarkerInstance.transform.position = checkPlacement;
                 ___m_placementMarkerInstance.transform.rotation = Quaternion.LookRotation(Vector3.up, rotation * Vector3.forward);
                 ___m_placementGhost.transform.position = checkPlacement;
-                ___m_placementGhost.transform.rotation = rotation;
+                if (BuildingManager.instance.isSnapRotatePiece())
+                {
+                    ___m_placementGhost.transform.rotation = rotation;
+                }
             }
 
             BuildingManager.instance.UpdateRotationAdvanced(___m_placementGhost);
             BuildingManager.instance.ValidateBuildingPiece(___m_placementGhost);
+        }
+    }
+    [HarmonyPatch(typeof(Player), "PieceRayTest")]
+    class Player_PieceRayTest
+    {
+        static void Postfix(Player __instance, Piece piece)
+        {
+            if (!VRControls.mainControlsActive || __instance != Player.m_localPlayer ||
+               !__instance.InPlaceMode() || !BuildingManager.instance)
+            {
+                return;
+            }
+
+            if (piece)
+            {
+                BuildingManager.instance.rayTracedPiece = piece;
+            }
         }
     }
 

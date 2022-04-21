@@ -4,6 +4,7 @@ using ValheimVRMod.VRCore;
 using ValheimVRMod.VRCore.UI;
 using Valve.VR;
 using System.Collections.Generic;
+using System;
 using UnityEngine.Rendering;
 
 namespace ValheimVRMod.Scripts
@@ -71,7 +72,7 @@ namespace ValheimVRMod.Scripts
         private LineRenderer rotationLine;
         private int lastRotationDist;
         private Vector3 startRotation;
-        private Quaternion advRotationGhost;
+        private GameObject advRotationGhostObject;
         private int lastAdvRot;
         private float copyRotationTimer;
         private GameObject rotationChangeAxisIndicator;
@@ -85,6 +86,16 @@ namespace ValheimVRMod.Scripts
         public Vector3 originalRayTracePos;
         public Vector3 originalRayTraceDir;
         public Heightmap originalHeightMap;
+
+        public Piece rayTracedPiece;
+
+        private bool modSupport = true;
+        private Transform lastSnapMod;
+        private Transform originalRayTraceMod;
+        private bool parentRotation;
+        private bool advanceRotationMod;
+        private bool advancePositionMod;
+        private Vector3 advanceRotationPosSave;
 
         private LayerMask piecelayer = LayerMask.GetMask(new string[]
         {
@@ -164,6 +175,7 @@ namespace ValheimVRMod.Scripts
             Destroy(translatePos);
             Destroy(rotationAxisParent);
             Destroy(rotateReference);
+            Destroy(advRotationGhostObject);
             isFreeMode = false;
             foreach (GameObject collider in snapPointsCollider)
             {
@@ -228,6 +240,18 @@ namespace ValheimVRMod.Scripts
                     snapLine.SetPosition(0, PlaceModeRayVectorProvider.startingPosition);
                     snapLine.SetPosition(1, pieceRaycast.point);
                     originalRayTraceTransform = pieceRaycast.transform;
+                    if (modSupport)
+                    {
+                        if (pieceRaycast.transform.name == "MoveableBase")
+                        {
+                            originalRayTraceMod = pieceRaycast.transform;
+                            originalRayTraceTransform = pieceRaycast.collider.transform;
+                        }
+                        else if(pieceRaycast.transform)
+                        {
+                            originalRayTraceMod = null;
+                        }
+                    }                    
                     originalRayTracePos = pieceRaycast.point;
                     originalRayTraceDir = pieceRaycast.normal;
                     originalHeightMap = pieceRaycast.collider.GetComponent<Heightmap>();
@@ -237,6 +261,10 @@ namespace ValheimVRMod.Scripts
                     snapLine.enabled = true;
                     snapLine.positionCount = 2;
                     originalRayTraceTransform = null;
+                    if(!(Player.m_localPlayer.transform.parent && Player.m_localPlayer.transform.parent.name == "MoveableBase"))
+                    {
+                        originalRayTraceMod = null;
+                    }
                     snapLine.SetPosition(0, PlaceModeRayVectorProvider.startingPosition);
                     snapLine.SetPosition(1, PlaceModeRayVectorProvider.startingPosition + (PlaceModeRayVectorProvider.rayDirection * 50));
                 }
@@ -248,7 +276,15 @@ namespace ValheimVRMod.Scripts
         {
             Player.m_localPlayer.m_placementStatus = Player.PlacementStatus.Valid;
             Piece component = piece.GetComponent<Piece>();
-            
+            if (VHVRConfig.BuildOnRelease() && 
+                SteamVR_Actions.laserPointers_LeftClick.GetState(SteamVR_Input_Sources.RightHand) && 
+                SteamVR_Actions.valheim_Jump.GetState(SteamVR_Input_Sources.Any))
+            {
+                Player.m_localPlayer.m_placementStatus = Player.PlacementStatus.Invalid;
+                component.SetInvalidPlacementHeightlight(true);
+                return;
+            }
+
             StationExtension component2 = component.GetComponent<StationExtension>();
             if (!piece.activeSelf)
             {
@@ -309,13 +345,13 @@ namespace ValheimVRMod.Scripts
             buildRefBox.transform.localScale = new Vector3(2, 0.0001f, 2);
             buildRefBox.transform.localScale *= 16f;
             buildRefBox.layer = 16;
+            buildRefBox.AddComponent<Piece>();
             Destroy(buildRefBox.GetComponent<MeshRenderer>());
         }
         private void createRefPointer()
         {
             buildRefPointer = Instantiate(VRAssetManager.GetAsset<GameObject>("RuneStakeCy"));
             buildRefPointer.layer = 16;
-
             var lightbox = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             lightbox.transform.localScale = new Vector3(0.12f, 0.13f, 0.12f);
             lightbox.transform.SetParent(buildRefPointer.transform);
@@ -368,6 +404,11 @@ namespace ValheimVRMod.Scripts
                     currRefType = 0;
                     stickyTimer = 0;
                     isReferenceActive = false;
+                    if (modSupport)
+                    {
+                        if(buildRefPointer.transform.parent)
+                            buildRefPointer.transform.SetParent(null);
+                    }
                 }
             }
         }
@@ -417,10 +458,26 @@ namespace ValheimVRMod.Scripts
         }
         private void UpdateRefPosition(RaycastHit pieceRaycast, Vector3 direction)
         {
-            
-            if (currRefType == 0)
+            var ignoreHeightCheck = false;
+            if (modSupport)
             {
-                buildRefBox.transform.position = pieceRaycast.point - (pieceRaycast.normal * 0.2f) + Vector3.Project(pieceRaycast.transform.position - pieceRaycast.point, -pieceRaycast.normal);
+                var raft = pieceRaycast.transform;
+                if (raft.name == "MoveableBase")
+                {
+                    ignoreHeightCheck = true;
+                    buildRefBox.transform.SetParent(raft);
+                }
+                else
+                {
+                    buildRefBox.transform.SetParent(null);
+                }
+            }
+
+            if (currRefType == 0 )
+            {
+                buildRefBox.transform.position = pieceRaycast.point - (pieceRaycast.normal * 0.2f) ;
+                if(!ignoreHeightCheck)
+                    buildRefBox.transform.position += Vector3.Project(pieceRaycast.transform.position - pieceRaycast.point, -pieceRaycast.normal);
                 buildRefPointer2.SetActive(false);
             }
             else
@@ -429,7 +486,9 @@ namespace ValheimVRMod.Scripts
                 buildRefPointer2.SetActive(true);
             }
             
+            
             buildRefPointer.transform.position = pieceRaycast.point;
+
             //buildRefPointer2.transform.position = pieceRaycast.point;
         }
 
@@ -442,7 +501,15 @@ namespace ValheimVRMod.Scripts
         public int TranslateRotation()
         {
             var dir = PlaceModeRayVectorProvider.rayDirection;
-            var angle = Vector3.SignedAngle(Vector3.forward, new Vector3(dir.x,0,dir.z).normalized, Vector3.up);
+            var forward = Vector3.forward;
+            if (modSupport)
+            {
+                if(rayTracedPiece && rayTracedPiece.transform.parent && rayTracedPiece.transform.parent.name == "MoveableBase")
+                {
+                    forward = rayTracedPiece.transform.parent.forward;
+                }
+            }
+            var angle = Vector3.SignedAngle(forward, new Vector3(dir.x,0,dir.z).normalized, Vector3.up);
             angle = angle < 0 ? angle + 360 : angle;
             var snapAngle = Mathf.RoundToInt(angle * 16 / 360);
             return snapAngle;
@@ -481,11 +548,11 @@ namespace ValheimVRMod.Scripts
         {
             pieceOnHand = onHand;
             if(VHVRConfig.AdvancedBuildingMode())
-                onHand.transform.rotation = advRotationGhost;
-            if (lastSnapTransform && pieceOnHand && lastSnapDirection!= pieceOnHand.transform.rotation )
+                onHand.transform.rotation = advRotationGhostObject.transform.rotation;
+            if (lastSnapTransform && pieceOnHand && lastSnapDirection!= pieceOnHand.transform.localRotation )
             {
                 snapPointer.SetActive(true);
-                lastSnapDirection = pieceOnHand.transform.rotation;
+                lastSnapDirection = pieceOnHand.transform.localRotation;
                 UpdateSnapPointCollider(pieceOnHand, lastSnapTransform);
             }
 
@@ -498,7 +565,7 @@ namespace ValheimVRMod.Scripts
                 return onHand.transform.position;
             }
 
-            Transform nearestTransform = snapPointsCast[0].transform;
+            Transform nearestTransform = snapPointsCast[0].collider.transform;
 
             for (int i = 1; i < hits; i++)
             {
@@ -507,7 +574,7 @@ namespace ValheimVRMod.Scripts
                 var currPosRef = snapPointsCast[i].transform.position - PlaceModeRayVectorProvider.startingPosition;
                 if (Vector3.Dot(dir, nearestPosRef) < Vector3.Dot(dir, currPosRef))
                 {
-                    nearestTransform = snapPointsCast[i].transform;
+                    nearestTransform = snapPointsCast[i].collider.transform;
                 }
             }
 
@@ -542,6 +609,18 @@ namespace ValheimVRMod.Scripts
                     if (!firstSnapTransform)
                     {
                         firstSnapTransform = pieceRaycast.transform;
+                        if (modSupport)
+                        {
+                            if(firstSnapTransform.transform.name == "MoveableBase")
+                            {
+                                lastSnapMod = pieceRaycast.transform;
+                                firstSnapTransform = pieceRaycast.collider.transform;
+                            }
+                            else
+                            {
+                                lastSnapMod = null;
+                            }
+                        }
                         firstNormal = pieceRaycast.normal;
                         firstPoint = pieceRaycast.point;
                     }
@@ -556,6 +635,17 @@ namespace ValheimVRMod.Scripts
                     if (!isSnapping || !lastSnapTransform)
                     {
                         lastSnapTransform = firstSnapTransform;
+                        if (modSupport && lastSnapMod)
+                        {
+                            if (lastSnapMod)
+                            {
+                                snapPointer.transform.SetParent(lastSnapMod);
+                            }
+                            else if(snapPointer.transform.parent)
+                            {
+                                snapPointer.transform.SetParent(null);
+                            }
+                        }
                         snapPointer.transform.position = firstPoint;
                         snapPointer.transform.rotation = Quaternion.FromToRotation(snapPointer.transform.up, firstNormal) * snapPointer.transform.rotation;
                         isSnapping = true;
@@ -582,6 +672,8 @@ namespace ValheimVRMod.Scripts
                     firstNormal = Vector3.zero;
                     firstPoint = Vector3.zero;
                     lastSnapTransform = null;
+                    if (snapPointer.transform.parent)
+                        snapPointer.transform.SetParent(null);
                     if (pieceOnHand)
                         lastSnapDirection = pieceOnHand.transform.rotation * Quaternion.Euler(0, 90, 0);
                     pieceOnHand = null;
@@ -619,6 +711,7 @@ namespace ValheimVRMod.Scripts
             newCollider.transform.localScale *= 1.5f;
             newCollider.layer = 16;
             //newCollider.GetComponent<MeshRenderer>().material.color = Color.blue;
+            newCollider.AddComponent<Piece>();
             Destroy(newCollider.GetComponent<MeshRenderer>());
 
             var newIndicator = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -692,6 +785,10 @@ namespace ValheimVRMod.Scripts
                     {
                         snapPointsCollider.Add(CreateSnapPointCollider());
                     }
+                    if (lastSnapMod)
+                    {
+                        snapPointsCollider[snapcount].transform.SetParent(lastSnapMod);
+                    }
                     snapPointsCollider[snapcount].transform.position = currPos;
                     snapPointsCollider[snapcount].transform.rotation = onHandPoints.rotation;
                     snapPointsCollider[snapcount].SetActive(true);
@@ -733,11 +830,17 @@ namespace ValheimVRMod.Scripts
         {
             foreach(var points in snapPointsCollider)
             {
+                if (!lastSnapMod)
+                {
+                    points.transform.SetParent(null);
+                }
                 points.transform.position = Vector3.zero;
             }
         }
-
-
+        public bool isSnapRotatePiece()
+        {
+            return !(modSupport && lastSnapMod);
+        }
         ////// Advanced stuff
         // Precision stuff
         private void createPrecisionModeAxis()
@@ -834,6 +937,10 @@ namespace ValheimVRMod.Scripts
                             else
                             {
                                 translateAxisParent.SetActive(false);
+                                if (modSupport)
+                                {
+                                    Player.m_localPlayer.m_placementGhost.transform.SetParent(null);
+                                }
                                 freeModeAxis.GetComponent<MeshRenderer>().material.color = Color.blue;
                             }
                         }
@@ -861,7 +968,7 @@ namespace ValheimVRMod.Scripts
         {
             if (!VHVRConfig.AdvancedBuildingMode())
                 return false;
-
+            
             return isFreeMode;
         }
         public bool isCurrentlyPreciseMoving()
@@ -906,9 +1013,19 @@ namespace ValheimVRMod.Scripts
             var forwardAvg = (PlaceModeRayVectorProvider.rayDirection + PlaceModeRayVectorProvider.rayDirectionLeft) / 2;
             var cross = Vector3.Cross(forwardAvg, (rightHandCenter - avgPos).normalized);
             var avgRot = Quaternion.identity;
+            var vecUp = Vector3.up;
             avgRot.SetLookRotation(forwardAvg, cross);
             checkDir.transform.position = avgPos;
             checkDir.transform.rotation = avgRot;
+
+            if (modSupport)
+            {
+                if (originalRayTraceMod)
+                {
+                    ghost.transform.SetParent(originalRayTraceMod);
+                    vecUp = originalRayTraceMod.up;
+                }
+            }
 
             if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand) &&
                 SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand) &&
@@ -931,7 +1048,7 @@ namespace ValheimVRMod.Scripts
                 
                 ghost.transform.position = freeModePosRef.transform.position ;
                 ghost.transform.rotation = freeModePosRef.transform.rotation ;
-                advRotationGhost = freeModePosRef.transform.rotation;
+                advRotationGhostObject.transform.rotation = freeModePosRef.transform.rotation;
 
                 if (SteamVR_Actions.valheim_Jump.GetState(SteamVR_Input_Sources.Any))
                 {
@@ -970,11 +1087,20 @@ namespace ValheimVRMod.Scripts
             if (rotationOffset == Vector3.zero)
             {
                 var dirCheckRight = new Vector3(ghost.transform.right.x, 0, ghost.transform.right.z);
-                rotationOffset = Vector3.Cross(dirCheckRight, Vector3.up);
+                rotationOffset = Vector3.Cross(dirCheckRight, vecUp);
             }
 
             if (grabbedAxis1)
             {
+                if (modSupport)
+                {
+                    if (!advancePositionMod)
+                    {
+                        translateAxisParent.transform.SetParent(originalRayTraceMod);
+                        translatePos.transform.SetParent(originalRayTraceMod);
+                        advancePositionMod = true;
+                    }
+                }
                 if (!isPrecisionMoving)
                 {
                     isPrecisionMoving = true;
@@ -1001,6 +1127,12 @@ namespace ValheimVRMod.Scripts
                 {
                     translatePos.transform.position += grabbedAxis1.transform.position - translateAxisParent.transform.position;
                     ghost.transform.position = translatePos.transform.position;
+                    if (modSupport)
+                    {
+                        translateAxisParent.transform.SetParent(null);
+                        translatePos.transform.SetParent(null);
+                        advancePositionMod = false;
+                    }
                     grabbedAxis1 = null;
                     translateAxisX.transform.localPosition = Vector3.zero;
                     translateAxisY.transform.localPosition = Vector3.zero;
@@ -1030,7 +1162,7 @@ namespace ValheimVRMod.Scripts
                     }
                 }
                 translateAxisParent.transform.position = rotPlacement ;
-                translateAxisParent.transform.rotation = Quaternion.LookRotation(rotationOffset);
+                translateAxisParent.transform.rotation = Quaternion.LookRotation(rotationOffset,vecUp);
             }
         }
 
@@ -1084,6 +1216,7 @@ namespace ValheimVRMod.Scripts
             rotationAxisZ.transform.Rotate(90, 0, 0);
 
             rotateReference = new GameObject();
+            advRotationGhostObject = new GameObject();
 
             rotationLine = new GameObject().AddComponent<LineRenderer>();
             rotationLine.widthMultiplier = 0.005f;
@@ -1161,6 +1294,14 @@ namespace ValheimVRMod.Scripts
 
         public void UpdateRotateAnalog()
         {
+            var rotUp = Vector3.up;
+            if (modSupport)
+            {
+                if (originalRayTraceMod)
+                {
+                    rotUp = originalRayTraceMod.up;
+                }
+            }
             if (VRControls.instance.getDirectRightXAxis() != 0 && SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand))
             {
                 if(lastAdvRot!= Player.m_localPlayer.m_placeRotation)
@@ -1168,13 +1309,13 @@ namespace ValheimVRMod.Scripts
                     if (isRotationWorldAxis||VHVRConfig.AdvancedRotationUpWorld())
                     {
                         var ghost = Player.m_localPlayer.m_placementGhost;
-                        ghost.transform.rotation = advRotationGhost;
-                        ghost.transform.RotateAround(ghost.transform.position, Vector3.up, 22.5f * -VRControls.instance.getDirectRightXAxis());
-                        advRotationGhost = ghost.transform.rotation;
+                        ghost.transform.rotation = advRotationGhostObject.transform.rotation;
+                        ghost.transform.RotateAround(ghost.transform.position, rotUp, 22.5f * -VRControls.instance.getDirectRightXAxis());
+                        advRotationGhostObject.transform.rotation = ghost.transform.rotation;
                     }
                     else
                     {
-                        advRotationGhost *= Quaternion.Euler(0, 22.5f * -VRControls.instance.getDirectRightXAxis(), 0);
+                        advRotationGhostObject.transform.rotation *= Quaternion.Euler(0, 22.5f * -VRControls.instance.getDirectRightXAxis(), 0);
                     }
                     
                     lastAdvRot = Player.m_localPlayer.m_placeRotation;
@@ -1184,7 +1325,14 @@ namespace ValheimVRMod.Scripts
             {
                 if (copyRotationTimer <= 4)
                 {
-                    advRotationGhost = Quaternion.Euler(0f, 22.5f * (float)Player.m_localPlayer.m_placeRotation, 0f);
+                    advRotationGhostObject.transform.rotation = Quaternion.Euler(0f, 22.5f * (float)Player.m_localPlayer.m_placeRotation, 0f);
+                    if (modSupport)
+                    {
+                        if (originalRayTraceMod)
+                        {
+                            advRotationGhostObject.transform.rotation = originalRayTraceMod.rotation * advRotationGhostObject.transform.rotation; 
+                        }
+                    }
                 }
                 else
                 {
@@ -1195,10 +1343,10 @@ namespace ValheimVRMod.Scripts
                         switch (VRControls.instance.getDirectRightYAxis())
                         {
                             case 1:
-                                advRotationGhost = transformCopy.rotation * Quaternion.Euler(0, 180, 0);
+                                advRotationGhostObject.transform.rotation = transformCopy.rotation * Quaternion.Euler(0, 180, 0);
                                 break;
                             case -1:
-                                advRotationGhost = transformCopy.rotation;
+                                advRotationGhostObject.transform.rotation = transformCopy.rotation;
                                 break;
                         }
 
@@ -1231,7 +1379,22 @@ namespace ValheimVRMod.Scripts
             var leftHandCenter = VRPlayer.leftHand.transform.TransformPoint(handCenter);
             var rightHandCenter = VRPlayer.rightHand.transform.TransformPoint(handCenter);
             var rotPlacement = VRPlayer.rightHand.transform.TransformPoint(handCenter) - (VRPlayer.rightHand.transform.right * 0.2f) + (PlaceModeRayVectorProvider.rayDirection * 0.1f);
-            ghost.transform.rotation = advRotationGhost;
+            var vecUp = Vector3.up;
+            if (modSupport)
+            {
+                if (originalRayTraceMod)
+                {
+                    vecUp = originalRayTraceMod.up;
+                    if (!parentRotation)
+                    {
+                        advRotationGhostObject.transform.SetParent(originalRayTraceMod);
+                        ghost.transform.SetParent(originalRayTraceMod);
+                        parentRotation = true;
+                    }
+                }
+            }
+            advRotationGhostObject.transform.position = ghost.transform.position;
+            ghost.transform.rotation = advRotationGhostObject.transform.rotation;
             if (grabbedAxis2)
             {
                 if (!isRotatingAdv)
@@ -1240,7 +1403,7 @@ namespace ValheimVRMod.Scripts
                     rotationLine.enabled = true;
                     rotateReference.transform.position = ghost.transform.position;
                     rotateReference.transform.rotation = ghost.transform.rotation;
-                    advRotationGhost = ghost.transform.rotation;
+                    advRotationGhostObject.transform.rotation = ghost.transform.rotation;
                     rotationLine.SetPosition(0, rotationAxisParent.transform.position);
                 }
                 ghost.transform.rotation = rotateReference.transform.rotation;
@@ -1249,6 +1412,26 @@ namespace ValheimVRMod.Scripts
                 var distance = Vector3.Distance(rotationAxisParent.transform.position, grabbedAxis2.transform.position);
                 var rotate = false;
                 var snapAngleMultiplier = 22.5f ;
+                if (modSupport)
+                {
+                    if (!advanceRotationMod)
+                    {
+                        if (originalRayTraceMod)
+                        {
+                            advanceRotationPosSave = Player.m_localPlayer.transform.InverseTransformPoint(rotationAxisParent.transform.position);
+                            rotationAxisParent.transform.SetParent(originalRayTraceMod);
+                            rotateReference.transform.SetParent(originalRayTraceMod);
+                        }
+                        advanceRotationMod = true;
+                    }
+                    else
+                    {
+                        if (originalRayTraceMod)
+                        {
+                            rotationAxisParent.transform.position = Player.m_localPlayer.transform.TransformPoint(advanceRotationPosSave);
+                        }
+                    }
+                }
                 if (distance > 0.05f)
                 {
                     if (lastRotationDist == 0)
@@ -1261,7 +1444,7 @@ namespace ValheimVRMod.Scripts
                 }else 
                 {
                     lastRotationDist = 0;
-                    ghost.transform.rotation = advRotationGhost;
+                    ghost.transform.rotation = advRotationGhostObject.transform.rotation;
                 }
                 float rotateAngle = 0 ;
                 Quaternion rotationTotal;
@@ -1294,7 +1477,7 @@ namespace ValheimVRMod.Scripts
                 if (isRotationWorldAxis)
                 {
                     ghost.transform.RotateAround(ghost.transform.position, rotationAxisParent.transform.right, rotationHelper.x);
-                    ghost.transform.RotateAround(ghost.transform.position, Vector3.up, rotationHelper.y);
+                    ghost.transform.RotateAround(ghost.transform.position, vecUp, rotationHelper.y);
                     ghost.transform.RotateAround(ghost.transform.position, rotationAxisParent.transform.forward, rotationHelper.z);
                 }
                 else
@@ -1303,10 +1486,10 @@ namespace ValheimVRMod.Scripts
                     ghost.transform.rotation = rotationTotal;
                 }
 
-                if (rotate && ghost.transform.rotation != advRotationGhost)
+                if (rotate && ghost.transform.rotation != advRotationGhostObject.transform.rotation)
                 {
                     VRPlayer.leftHand.hapticAction.Execute(0, 0.01f, 10, 0.01f, SteamVR_Input_Sources.LeftHand);
-                    advRotationGhost = ghost.transform.rotation;
+                    advRotationGhostObject.transform.rotation = ghost.transform.rotation;
                 }
 
                 rotationLine.SetPosition(0, rotationAxisParent.transform.position + ((grabbedAxis2.transform.position - rotationAxisParent.transform.position)*10).normalized * 0.05f);
@@ -1315,12 +1498,19 @@ namespace ValheimVRMod.Scripts
                 {
                     grabbedAxis2 = null;
                     lastRotationDist = 0;
+                    if (modSupport)
+                    {
+                        advanceRotationMod = false;
+                        rotationAxisParent.transform.SetParent(null);
+                        rotateReference.transform.SetParent(null);
+                        advanceRotationPosSave = Vector3.zero;
+                    }
                     rotationAxisX.transform.localPosition = Vector3.zero;
                     rotationAxisY.transform.localPosition = Vector3.zero;
                     rotationAxisZ.transform.localPosition = Vector3.zero;
                     isRotatingAdv = false;
                     rotationLine.enabled = false;
-                    advRotationGhost = ghost.transform.rotation;
+                    advRotationGhostObject.transform.rotation = ghost.transform.rotation;
                 }
             }
             else
@@ -1351,9 +1541,9 @@ namespace ValheimVRMod.Scripts
                     if(dirCheckUp == Vector3.zero)
                     {
                         var dirCheckRight = new Vector3(ghost.transform.right.x, 0, ghost.transform.right.z);
-                        dirCheckUp = Vector3.Cross(dirCheckRight, Vector3.up);
+                        dirCheckUp = Vector3.Cross(dirCheckRight, vecUp);
                     }
-                    rotationAxisParent.transform.rotation = Quaternion.LookRotation(dirCheckUp, Vector3.up);
+                    rotationAxisParent.transform.rotation = Quaternion.LookRotation(dirCheckUp, vecUp);
                 }
                 else
                 {
@@ -1364,19 +1554,22 @@ namespace ValheimVRMod.Scripts
             var marker = Player.m_localPlayer.m_placementMarkerInstance;
             if (marker)
             {
+                marker.transform.position = originalRayTracePos;
                 marker.transform.LookAt(marker.transform.position + originalRayTraceDir,  ghost.transform.forward);
             }
+            
             //update position after changing
             if (isSnapping || isFreeMode)
             {
                 return;
             }
+            RelativeEulerModRotate(ghost);
             currentComponent = ghost.GetComponent<Piece>();
             Collider[] componentsInChildren = ghost.GetComponentsInChildren<Collider>();
             if (componentsInChildren.Length != 0)
             {
                 ghost.transform.position = originalRayTracePos + originalRayTraceDir * 50f;
-                ghost.transform.rotation = advRotationGhost;
+                ghost.transform.rotation = advRotationGhostObject.transform.rotation;
                 Vector3 b = Vector3.zero;
                 float num = 999999f;
                 foreach (Collider collider in componentsInChildren)
@@ -1402,7 +1595,7 @@ namespace ValheimVRMod.Scripts
                     b2.y = 3f;
                 }
                 ghost.transform.position = originalRayTracePos + b2;
-                ghost.transform.rotation = advRotationGhost;
+                ghost.transform.rotation = advRotationGhostObject.transform.rotation;
             }
             var getPiece = originalRayTraceTransform ? originalRayTraceTransform.GetComponentInParent(typeof(Piece)) as Piece : null;
             if (originalHeightMap||!getPiece)
@@ -1420,6 +1613,28 @@ namespace ValheimVRMod.Scripts
                 {
                     ghost.transform.position = vector3;
                 }
+            }
+        }
+
+        public void RelativeEulerModRotate(GameObject ghost)
+        {
+            if (!modSupport)
+            {
+                return;
+            }
+
+            if (originalRayTraceMod)
+            {
+                ghost.transform.rotation = originalRayTraceMod.rotation * ghost.transform.rotation;
+            }
+            else
+            {
+                if (!isFreeMode)
+                {
+                    ghost.transform.SetParent(null);
+                    advRotationGhostObject.transform.SetParent(null);
+                }
+                parentRotation = false;
             }
         }
     }
