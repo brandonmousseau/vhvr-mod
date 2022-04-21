@@ -49,6 +49,8 @@ namespace ValheimVRMod.Scripts {
         public static bool isPulling;
         public static GameObject fixedRodTop;
 
+        private bool wasHooked;
+
         public static FishingManager instance;
 
         private void Awake() {
@@ -198,10 +200,21 @@ namespace ValheimVRMod.Scripts {
                 {
                     fishingFloat.m_rodLine.m_lineRenderer.material.color = Color.white;
                 }
+                var fish = fishingFloat.GetCatch();
+                if (wasHooked&&!fish)
+                {
+                    fishingFloat.m_nview.Destroy();
+                    wasHooked = false;
+                    return;
+                }else if(!wasHooked && fish)
+                {
+                    wasHooked = true;
+                }
             }
             else
             {
                 fishingTextParent.SetActive(false);
+                wasHooked = false;
             }
             UpdateReel();
             if (!isFishing && inputAction.GetStateDown(inputSource)) {
@@ -289,9 +302,11 @@ namespace ValheimVRMod.Scripts {
                     reeltimer = 0;
                     var rpm = ((angle + savedRotation)/60);
                     var speed = Mathf.Max(0, Mathf.Min(2.5f, Mathf.Abs(rpm * 1.2f)));
+                    var force = Mathf.Max(0.1f, Mathf.Min(0.5f, Mathf.Abs(rpm * 0.5f)));
                     if (fishingFloat)
                     {
                         fishingFloat.m_pullLineSpeed = speed;
+                        Utils.Pull(fishingFloat.m_body, rodTop.transform.position, fishingFloat.m_lineLength, fishingFloat.m_moveForce * force, 0.5f, 0.3f, false, false, 1f);
                     }
                     reelStart = reelCrank.transform.localPosition;
                     savedRotation = 0;
@@ -328,10 +343,7 @@ namespace ValheimVRMod.Scripts {
                     if (Vector3.Distance(offHandCenter, reelParent.transform.position) < 0.2f)
                     {
                         var handUp = offHand.transform.TransformDirection(0, -0.3f, -0.7f);
-                        if (Mathf.Abs(Vector3.Dot(handUp, reelParent.transform.right)) > 0.6f)
-                        {
-                            reelGrabbed = true;
-                        }
+                        reelGrabbed = true;
                     }
                 }
             }
