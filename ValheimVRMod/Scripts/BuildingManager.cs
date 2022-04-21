@@ -571,8 +571,8 @@ namespace ValheimVRMod.Scripts
             {
                 var dir = PlaceModeRayVectorProvider.rayDirection;
                 var nearestPosRef = nearestTransform.position - PlaceModeRayVectorProvider.startingPosition;
-                var currPosRef = snapPointsCast[i].transform.position - PlaceModeRayVectorProvider.startingPosition;
-                if (Vector3.Dot(dir, nearestPosRef) < Vector3.Dot(dir, currPosRef))
+                var currPosRef = snapPointsCast[i].collider.transform.position - PlaceModeRayVectorProvider.startingPosition;
+                if (Vector3.Dot(dir, nearestPosRef.normalized) < Vector3.Dot(dir, currPosRef.normalized))
                 {
                     nearestTransform = snapPointsCast[i].collider.transform;
                 }
