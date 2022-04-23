@@ -175,7 +175,7 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            (VHVRConfig.LeftHanded() ? VrikCreator.offHandConnector : VrikCreator.mainHandConnector).position = pullObj.transform.position;
+            VrikCreator.GetDominantHandConnector().position = pullObj.transform.position;
             arrowAttach.transform.rotation = pullObj.transform.rotation;
             arrowAttach.transform.position = pullObj.transform.position;
             spawnPoint = getArrowRestPosition();
@@ -197,7 +197,7 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            (VHVRConfig.LeftHanded() ? VrikCreator.offHandConnector : VrikCreator.mainHandConnector).localPosition = Vector3.zero;
+            VrikCreator.ResetHandConnectors();
 
             predictionLine.enabled = false;
             pulling = isPulling = false;
