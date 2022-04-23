@@ -190,7 +190,7 @@ namespace ValheimVRMod.Patches
                             hoverReference = raycastHit.collider.gameObject;
                             return;
                         }
-                        if (raycastHit.collider.GetComponent<Hoverable>() != null)
+                        if (raycastHit.collider.attachedRigidbody && raycastHit.collider.attachedRigidbody.name == "MoveableBase")
                         {
                             hoverReference = raycastHit.collider.gameObject;
                             return;
