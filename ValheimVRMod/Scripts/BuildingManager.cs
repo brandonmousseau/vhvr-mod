@@ -6,6 +6,7 @@ using Valve.VR;
 using System.Collections.Generic;
 using System;
 using UnityEngine.Rendering;
+using UnityEngine.UI;
 
 namespace ValheimVRMod.Scripts
 {
@@ -80,6 +81,10 @@ namespace ValheimVRMod.Scripts
         private bool isRotationWorldAxis;
         private bool justChangedRotationMode;
         private bool justRotatedAnalogLongPress;
+        private GameObject rotationTextParent;
+        private Text rotationText;
+        private LineRenderer rotationBorder1;
+        private LineRenderer rotationBorder2;
 
         public Piece currentComponent;
         public Transform originalRayTraceTransform;
@@ -176,6 +181,8 @@ namespace ValheimVRMod.Scripts
             Destroy(rotationAxisParent);
             Destroy(rotateReference);
             Destroy(advRotationGhostObject);
+            Destroy(rotationBorder1);
+            Destroy(rotationBorder2);
             isFreeMode = false;
             foreach (GameObject collider in snapPointsCollider)
             {
@@ -247,7 +254,7 @@ namespace ValheimVRMod.Scripts
                             originalRayTraceMod = pieceRaycast.transform;
                             originalRayTraceTransform = pieceRaycast.collider.transform;
                         }
-                        else if(pieceRaycast.transform)
+                        else if(pieceRaycast.transform && (SteamVR_Actions.laserPointers_LeftClick.GetStateDown(SteamVR_Input_Sources.RightHand) || !(Player.m_localPlayer.transform.parent && Player.m_localPlayer.transform.parent.name == "MoveableBase")))
                         {
                             originalRayTraceMod = null;
                         }
@@ -1229,6 +1236,20 @@ namespace ValheimVRMod.Scripts
             rotationLine.lightProbeUsage = LightProbeUsage.Off;
             rotationLine.reflectionProbeUsage = ReflectionProbeUsage.Off;
 
+            rotationBorder1 = Instantiate(rotationLine);
+            rotationBorder1.useWorldSpace = false;
+            rotationBorder1.widthMultiplier = 0.002f;
+            rotationBorder1.positionCount = 16;
+            rotationBorder1.material.color = Color.gray;
+            rotationBorder1.transform.SetParent(rotationAxisParent.transform);
+            rotationBorder1.transform.localPosition = Vector3.zero;
+            rotationBorder2 = Instantiate(rotationBorder1);
+            rotationBorder2.useWorldSpace = false;
+            rotationBorder2.widthMultiplier = 0.002f;
+            rotationBorder2.positionCount = 16;
+            rotationBorder2.transform.SetParent(rotationAxisParent.transform);
+            rotationBorder2.transform.localPosition = Vector3.zero;
+
             rotationChangeAxisIndicator = Instantiate(VRAssetManager.GetAsset<GameObject>("GizmoRing"));
             rotationChangeAxisColor = rotationChangeAxisIndicator.transform.GetChild(0).gameObject;
             rotationChangeAxisColor.GetComponent<MeshRenderer>().material = new Material(Shader.Find("Standard"));
@@ -1239,10 +1260,34 @@ namespace ValheimVRMod.Scripts
             rotationChangeAxisIndicator.transform.SetParent(this.gameObject.transform);
             rotationChangeAxisIndicator.transform.localPosition = Vector3.up * -0.3f;
             rotationChangeAxisIndicator.transform.rotation = this.gameObject.transform.rotation;
+
+            //text 
+            rotationTextParent = new GameObject();
+            var rotTextSub = new GameObject();
+            rotTextSub.transform.SetParent(rotationTextParent.transform);
+            rotTextSub.transform.Rotate(0, 180, 0);
+            var canvasText2 = rotTextSub.AddComponent<Canvas>();
+            canvasText2.renderMode = RenderMode.WorldSpace;
+            rotationText = rotTextSub.AddComponent<Text>();
+            rotationText.fontSize = 40;
+            Font ArialFont = (Font)Resources.GetBuiltinResource(typeof(Font), "Arial.ttf");
+            rotationText.font = ArialFont;
+            rotationText.horizontalOverflow = HorizontalWrapMode.Overflow;
+            rotationText.verticalOverflow = VerticalWrapMode.Overflow;
+            rotationText.alignment = TextAnchor.MiddleCenter;
+            rotationText.enabled = true;
+            rotationText.color = Color.yellow * 0.8f;
+            rotationTextParent.transform.localScale *= 0.001f;
+
+            //rotationTextParent.transform.SetParent(rotationAxisParent.transform);
+            rotationTextParent.transform.rotation = rotationAxisParent.transform.rotation;
+
             if (!VHVRConfig.AdvancedBuildingMode())
             {
                 rotationChangeAxisIndicator.SetActive(false);
             }
+
+            
         }
 
         private void RotationModeChange()
@@ -1411,7 +1456,9 @@ namespace ValheimVRMod.Scripts
                 var localPosDir = ((grabbedAxis2.transform.position - rotationAxisParent.transform.position) * 10).normalized;
                 var distance = Vector3.Distance(rotationAxisParent.transform.position, grabbedAxis2.transform.position);
                 var rotate = false;
-                var snapAngleMultiplier = 22.5f ;
+                var dir = "x";
+                float step = 1;
+                float snapAngleMultiplier = 22.5f ;
                 if (modSupport)
                 {
                     if (!advanceRotationMod)
@@ -1439,10 +1486,21 @@ namespace ValheimVRMod.Scripts
                         startRotation = grabbedAxis2.transform.localPosition;
                         lastRotationDist = 1;
                     }
-                    snapAngleMultiplier = 22.5f / Mathf.Max(1,Mathf.Floor(distance * 10));
+                    step = Mathf.Max(1, Mathf.Floor(distance * 16));
+                    snapAngleMultiplier = 22.5f / step;
+                    rotationBorder1.enabled = true;
+                    rotationBorder2.enabled = true;
+                    rotationBorder1.transform.localPosition = Vector3.zero;
+                    rotationBorder2.transform.localPosition = Vector3.zero;
+                    var camerapos = CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform.position;
+                    var range = Mathf.Min(Vector3.Distance(ghost.transform.position, camerapos)/2,1.5f);
+                    rotationTextParent.transform.position = camerapos + (ghost.transform.position - camerapos).normalized * range - Vector3.up * 0.2f;
+                    rotationTextParent.transform.LookAt(camerapos, Vector3.up);
                     rotate = true;
                 }else 
                 {
+                    rotationBorder1.enabled = false;
+                    rotationBorder2.enabled = false;
                     lastRotationDist = 0;
                     ghost.transform.rotation = advRotationGhostObject.transform.rotation;
                 }
@@ -1456,6 +1514,7 @@ namespace ValheimVRMod.Scripts
                     rotateAngle = Vector3.SignedAngle(grabbedAxis2.transform.localPosition, startRotation, -Vector3.right);
                     rotateAngle = Mathf.Round(rotateAngle / snapAngleMultiplier) * snapAngleMultiplier;
                     rotationHelper.x = rotateAngle;
+                    dir = "x";
                 }
                 else if (grabbedAxis2 == rotationAxisY)
                 {
@@ -1464,6 +1523,7 @@ namespace ValheimVRMod.Scripts
                     rotateAngle = Vector3.SignedAngle(grabbedAxis2.transform.localPosition, startRotation, -Vector3.up);
                     rotateAngle = Mathf.Round(rotateAngle / snapAngleMultiplier) * snapAngleMultiplier;
                     rotationHelper.y = rotateAngle;
+                    dir = "y";
                 }
                 else if (grabbedAxis2 == rotationAxisZ)
                 {
@@ -1472,8 +1532,11 @@ namespace ValheimVRMod.Scripts
                     rotateAngle = Vector3.SignedAngle(grabbedAxis2.transform.localPosition, startRotation, -Vector3.forward);
                     rotateAngle = Mathf.Round(rotateAngle / snapAngleMultiplier) * snapAngleMultiplier;
                     rotationHelper.z = rotateAngle;
+                    dir = "z";
                 }
-
+                rotationText.text = dir.ToUpper() + " " +rotateAngle + "\n Snap Angle : " + snapAngleMultiplier;
+                CreateCircle(rotationBorder1, ((step) * 0.0625f), dir);
+                CreateCircle(rotationBorder2, ((step + 1) * 0.0625f), dir);
                 if (isRotationWorldAxis)
                 {
                     ghost.transform.RotateAround(ghost.transform.position, rotationAxisParent.transform.right, rotationHelper.x);
@@ -1508,6 +1571,11 @@ namespace ValheimVRMod.Scripts
                     rotationAxisX.transform.localPosition = Vector3.zero;
                     rotationAxisY.transform.localPosition = Vector3.zero;
                     rotationAxisZ.transform.localPosition = Vector3.zero;
+                    rotationBorder1.enabled = false;
+                    rotationBorder2.enabled = false;
+                    rotationBorder1.transform.rotation = rotationAxisParent.transform.rotation;
+                    rotationBorder2.transform.rotation = rotationAxisParent.transform.rotation;
+                    rotationText.text = "";
                     isRotatingAdv = false;
                     rotationLine.enabled = false;
                     advRotationGhostObject.transform.rotation = ghost.transform.rotation;
@@ -1615,7 +1683,28 @@ namespace ValheimVRMod.Scripts
                 }
             }
         }
-
+        private void CreateCircle(LineRenderer line,float size, string dir)
+        {
+            float degree = 360 / (line.positionCount - 1);
+            for (int i = 0; i < line.positionCount; i++)
+            {
+                float x = Mathf.Cos((degree * i) / Mathf.Rad2Deg) * size;
+                float y = Mathf.Sin((degree * i) / Mathf.Rad2Deg) * size;
+                switch (dir)
+                {
+                    case "x":
+                        line.SetPosition(i, new Vector3(0, x, y));
+                        break;
+                    case "y":
+                        line.SetPosition(i, new Vector3(x, 0, y));
+                        break;
+                    case "z":
+                        line.SetPosition(i, new Vector3(x, y, 0));
+                        break;
+                }
+                
+            }
+        }
         public void RelativeEulerModRotate(GameObject ghost)
         {
             if (!modSupport)
