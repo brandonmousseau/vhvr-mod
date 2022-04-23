@@ -190,6 +190,7 @@ namespace ValheimVRMod.Patches
                             hoverReference = raycastHit.collider.gameObject;
                             return;
                         }
+                        //MoveableBase is the gameobject name for Valheim Raft Mod object
                         if (raycastHit.collider.attachedRigidbody && raycastHit.collider.attachedRigidbody.name == "MoveableBase")
                         {
                             hoverReference = raycastHit.collider.gameObject;
