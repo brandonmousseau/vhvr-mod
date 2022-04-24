@@ -1492,10 +1492,6 @@ namespace ValheimVRMod.Scripts
                     rotationBorder2.enabled = true;
                     rotationBorder1.transform.localPosition = Vector3.zero;
                     rotationBorder2.transform.localPosition = Vector3.zero;
-                    var camerapos = CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform.position;
-                    var range = Mathf.Min(Vector3.Distance(ghost.transform.position, camerapos)/2,1.5f);
-                    rotationTextParent.transform.position = camerapos + (ghost.transform.position - camerapos).normalized * range - Vector3.up * 0.2f;
-                    rotationTextParent.transform.LookAt(camerapos, Vector3.up);
                     rotate = true;
                 }else 
                 {
@@ -1682,6 +1678,7 @@ namespace ValheimVRMod.Scripts
                     ghost.transform.position = vector3;
                 }
             }
+            UpdateRotationText();
         }
         private void CreateCircle(LineRenderer line,float size, string dir)
         {
@@ -1704,6 +1701,14 @@ namespace ValheimVRMod.Scripts
                 }
                 
             }
+        }
+        private void UpdateRotationText()
+        {
+            var ghost = Player.m_localPlayer.m_placementGhost;
+            var camerapos = CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform.position;
+            var range = Mathf.Min(Vector3.Distance(ghost.transform.position, camerapos) / 2, 1.5f);
+            rotationTextParent.transform.position = (camerapos + ((ghost.transform.position - camerapos).normalized * range)) - (Vector3.up * 0.2f);
+            rotationTextParent.transform.LookAt(camerapos, Vector3.up);
         }
         public void RelativeEulerModRotate(GameObject ghost)
         {
