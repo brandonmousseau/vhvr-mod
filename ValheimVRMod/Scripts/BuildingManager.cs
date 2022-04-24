@@ -94,7 +94,7 @@ namespace ValheimVRMod.Scripts
 
         public Piece rayTracedPiece;
 
-        private bool modSupport = true;
+        private bool modSupport = true; //check for Valheim Raft Support
         private Transform lastSnapMod;
         private Transform originalRayTraceMod;
         private bool parentRotation;
@@ -133,20 +133,7 @@ namespace ValheimVRMod.Scripts
             "vehicle"
         });
 
-        private void createSnapLine()
-        {
-            snapLine = new GameObject().AddComponent<LineRenderer>();
-            snapLine.gameObject.layer = LayerMask.GetMask("WORLDSPACE_UI_LAYER");
-            snapLine.widthMultiplier = 0.005f;
-            snapLine.positionCount = 3;
-            Material newMaterial = new Material(Shader.Find("Unlit/Color"));
-            snapLine.material = newMaterial;
-            snapLine.enabled = false;
-            snapLine.receiveShadows = false;
-            snapLine.shadowCastingMode = ShadowCastingMode.Off;
-            snapLine.lightProbeUsage = LightProbeUsage.Off;
-            snapLine.reflectionProbeUsage = ReflectionProbeUsage.Off;
-        }
+
         private void Awake()
         {
             createRefBox();
@@ -159,7 +146,7 @@ namespace ValheimVRMod.Scripts
             createPrecisionModeAxis();
             createRotationAxis();
             snapPointsCollider = new List<GameObject>();
-            lastAdvRot = Player.m_localPlayer.m_placeRotation+1;
+            lastAdvRot = Player.m_localPlayer.m_placeRotation + 1;
             for (var i = 0; i <= 20; i++)
             {
                 snapPointsCollider.Add(CreateSnapPointCollider());
@@ -205,6 +192,217 @@ namespace ValheimVRMod.Scripts
             UpdateLine();
         }
 
+        ////Object Creation
+        // Snap Line
+        private void createSnapLine()
+        {
+            snapLine = new GameObject().AddComponent<LineRenderer>();
+            snapLine.gameObject.layer = LayerMask.GetMask("WORLDSPACE_UI_LAYER");
+            snapLine.widthMultiplier = 0.005f;
+            snapLine.positionCount = 3;
+            snapLine.material = new Material(Shader.Find("Unlit/Color"));
+            snapLine.enabled = false;
+            snapLine.receiveShadows = false;
+            snapLine.shadowCastingMode = ShadowCastingMode.Off;
+            snapLine.lightProbeUsage = LightProbeUsage.Off;
+            snapLine.reflectionProbeUsage = ReflectionProbeUsage.Off;
+        }
+
+        //Reference
+        private void createRefBox()
+        {
+            buildRefBox = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            buildRefBox.transform.localScale = new Vector3(2, 0.0001f, 2);
+            buildRefBox.transform.localScale *= 16f;
+            buildRefBox.layer = 16;
+            buildRefBox.AddComponent<Piece>();
+            Destroy(buildRefBox.GetComponent<MeshRenderer>());
+        }
+        private void createRefPointer()
+        {
+            buildRefPointer = Instantiate(VRAssetManager.GetAsset<GameObject>("RuneStakeCy"));
+            buildRefPointer.layer = 16;
+            var lightbox = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            lightbox.transform.localScale = new Vector3(0.12f, 0.13f, 0.12f);
+            lightbox.transform.SetParent(buildRefPointer.transform);
+            lightbox.GetComponent<MeshRenderer>().material = new Material(Shader.Find("Unlit/Color"));
+            lightbox.GetComponent<MeshRenderer>().material.color = Color.green * 0.6f;
+            lightbox.transform.localPosition = Vector3.up * 0.6f;
+            Destroy(lightbox.GetComponent<Collider>());
+        }
+        private void createRefPointer2()
+        {
+            buildRefPointer2 = Instantiate(VRAssetManager.GetAsset<GameObject>("GizmoRing"));
+            var child = buildRefPointer2.transform.GetChild(0);
+            child.GetComponent<MeshRenderer>().material = new Material(Shader.Find("Unlit/Color"));
+            child.GetComponent<MeshRenderer>().material.color = Color.green * 0.6f;
+            buildRefPointer2.transform.SetParent(buildRefPointer.transform);
+            buildRefPointer2.transform.localPosition = Vector3.up * 0.6f;
+        }
+        //Snap Pointer
+        private void createSnapPointer()
+        {
+            snapPointer = Instantiate(VRAssetManager.GetAsset<GameObject>("RuneStakeCy"));
+            snapPointer.layer = 16;
+
+            var lightbox = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            lightbox.transform.localScale = new Vector3(0.12f, 0.13f, 0.12f);
+            lightbox.transform.SetParent(snapPointer.transform);
+            Material newMaterial = new Material(Shader.Find("Unlit/Color"));
+            lightbox.GetComponent<MeshRenderer>().material = newMaterial;
+            lightbox.GetComponent<MeshRenderer>().material.color = Color.yellow * 0.6f;
+            lightbox.transform.localPosition = Vector3.up * 0.6f;
+            Destroy(lightbox.GetComponent<Collider>());
+        }
+        //Precision And freemove object
+        private void createPrecisionModeAxis()
+        {
+            translateAxisParent = new GameObject();
+
+            translateAxisX = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            translateAxisX.transform.localScale = new Vector3(0.005f, 0.1f, 0.005f);
+            translateAxisX.transform.SetParent(translateAxisParent.transform);
+            translateAxisY = Instantiate(translateAxisX, translateAxisParent.transform, false);
+            translateAxisZ = Instantiate(translateAxisX, translateAxisParent.transform, false);
+
+            translateAxisX.GetComponent<MeshRenderer>().material.color = Color.red;
+            translateAxisX.transform.Rotate(0, 0, 90);
+            Destroy(translateAxisX.GetComponent<Collider>());
+
+            translateAxisY.GetComponent<MeshRenderer>().material.color = Color.green;
+            Destroy(translateAxisY.GetComponent<Collider>());
+
+            translateAxisZ.GetComponent<MeshRenderer>().material.color = Color.blue;
+            translateAxisZ.transform.Rotate(90, 0, 0);
+            Destroy(translateAxisZ.GetComponent<Collider>());
+
+            translatePos = new GameObject();
+        }
+        private void createFreeModeRing()
+        {
+            freeModeAxisParent = Instantiate(VRAssetManager.GetAsset<GameObject>("GizmoRing"), this.gameObject.transform);
+            freeModeAxisParent.transform.localPosition = Vector3.up * 0.45f;
+            freeModeAxisParent.transform.rotation = this.gameObject.transform.rotation;
+            freeModeAxis = freeModeAxisParent.transform.GetChild(0).gameObject;
+            freeModeAxis.GetComponent<MeshRenderer>().material = new Material(Shader.Find("Standard"));
+            freeModeAxis.GetComponent<MeshRenderer>().material.color = Color.blue;
+            freeModeAxis.transform.localScale = new Vector3(1, 5, 1);
+            freeModeAxis.transform.localScale *= 0.3f;
+
+
+            if (!VHVRConfig.AdvancedBuildingMode())
+            {
+                freeModeAxisParent.SetActive(false);
+            }
+        }
+
+        private void createCheckDir()
+        {
+            checkDir = new GameObject();
+            freeModePosRef = new GameObject();
+            freeModePosRef.transform.SetParent(checkDir.transform);
+        }
+
+        //Advanced rotation objects
+        private void createRotationAxis()
+        {
+            rotationAxisParent = new GameObject();
+
+            rotationAxisX = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            rotationAxisX.transform.localScale = new Vector3(0.005f, 0.1f, 0.005f);
+            rotationAxisX.transform.SetParent(rotationAxisParent.transform);
+            rotationAxisY = Instantiate(rotationAxisX, rotationAxisParent.transform);
+            rotationAxisZ = Instantiate(rotationAxisX, rotationAxisParent.transform);
+
+            rotationAxisX.GetComponent<MeshRenderer>().material.color = Color.red;
+            rotationAxisY.GetComponent<MeshRenderer>().material.color = Color.green;
+            rotationAxisZ.GetComponent<MeshRenderer>().material.color = Color.blue;
+            Destroy(rotationAxisX.GetComponent<Collider>());
+            Destroy(rotationAxisY.GetComponent<Collider>());
+            Destroy(rotationAxisZ.GetComponent<Collider>());
+            rotationAxisX.transform.Rotate(0, 0, 90);
+            rotationAxisZ.transform.Rotate(90, 0, 0);
+
+            var axisX = Instantiate(VRAssetManager.GetAsset<GameObject>("GizmoRing"), rotationAxisParent.transform);
+            axisX.transform.localPosition = Vector3.zero;
+            var childX = axisX.transform.GetChild(0);
+            childX.GetComponent<MeshRenderer>().material = new Material(Shader.Find("Standard"));
+            childX.GetComponent<MeshRenderer>().material.color = Color.red;
+            childX.transform.localScale *= 0.196f;
+            axisX.transform.Rotate(0, 0, 90);
+
+            var axisY = Instantiate(VRAssetManager.GetAsset<GameObject>("GizmoRing"), rotationAxisParent.transform);
+            axisY.transform.localPosition = Vector3.zero;
+            var childY = axisY.transform.GetChild(0);
+            childY.GetComponent<MeshRenderer>().material = new Material(Shader.Find("Standard"));
+            childY.GetComponent<MeshRenderer>().material.color = Color.green;
+            childY.transform.localScale *= 0.20f;
+
+            var axisZ = Instantiate(VRAssetManager.GetAsset<GameObject>("GizmoRing"), rotationAxisParent.transform);
+            axisZ.transform.localPosition = Vector3.zero;
+            var childZ = axisZ.transform.GetChild(0);
+            childZ.GetComponent<MeshRenderer>().material = new Material(Shader.Find("Standard"));
+            childZ.GetComponent<MeshRenderer>().material.color = Color.blue;
+            childZ.transform.localScale *= 0.198f;
+            axisZ.transform.Rotate(90, 0, 0);
+
+            rotateReference = new GameObject();
+            advRotationGhostObject = new GameObject();
+
+            rotationLine = new GameObject().AddComponent<LineRenderer>();
+            rotationLine.widthMultiplier = 0.005f;
+            rotationLine.positionCount = 2;
+            rotationLine.material = new Material(Shader.Find("Unlit/Color"));
+            rotationLine.enabled = false;
+            rotationLine.receiveShadows = false;
+            rotationLine.shadowCastingMode = ShadowCastingMode.Off;
+            rotationLine.lightProbeUsage = LightProbeUsage.Off;
+            rotationLine.reflectionProbeUsage = ReflectionProbeUsage.Off;
+
+            rotationBorder1 = Instantiate(rotationLine, rotationAxisParent.transform);
+            rotationBorder1.useWorldSpace = false;
+            rotationBorder1.widthMultiplier = 0.002f;
+            rotationBorder1.positionCount = 16;
+            rotationBorder1.material.color = Color.gray;
+            rotationBorder1.transform.localPosition = Vector3.zero;
+            rotationBorder2 = Instantiate(rotationBorder1, rotationAxisParent.transform);
+            rotationBorder2.transform.localPosition = Vector3.zero;
+
+            rotationChangeAxisIndicator = Instantiate(VRAssetManager.GetAsset<GameObject>("GizmoRing"), this.gameObject.transform);
+            rotationChangeAxisIndicator.transform.localPosition = Vector3.up * -0.3f;
+            rotationChangeAxisIndicator.transform.rotation = this.gameObject.transform.rotation;
+            rotationChangeAxisColor = rotationChangeAxisIndicator.transform.GetChild(0).gameObject;
+            rotationChangeAxisColor.GetComponent<MeshRenderer>().material = new Material(Shader.Find("Standard"));
+            rotationChangeAxisColor.GetComponent<MeshRenderer>().material.color = Color.yellow;
+            rotationChangeAxisColor.transform.localScale = new Vector3(1.2f, 5, 1.2f);
+            rotationChangeAxisColor.transform.localScale *= 0.3f;
+
+            //text 
+            rotationTextParent = new GameObject();
+            var rotTextSub = new GameObject();
+            rotTextSub.transform.SetParent(rotationTextParent.transform);
+            rotTextSub.transform.Rotate(0, 180, 0);
+            var canvasText2 = rotTextSub.AddComponent<Canvas>();
+            canvasText2.renderMode = RenderMode.WorldSpace;
+            rotationText = rotTextSub.AddComponent<Text>();
+            rotationText.fontSize = 40;
+            Font ArialFont = (Font)Resources.GetBuiltinResource(typeof(Font), "Arial.ttf");
+            rotationText.font = ArialFont;
+            rotationText.horizontalOverflow = HorizontalWrapMode.Overflow;
+            rotationText.verticalOverflow = VerticalWrapMode.Overflow;
+            rotationText.alignment = TextAnchor.MiddleCenter;
+            rotationText.enabled = true;
+            rotationText.color = Color.yellow * 0.8f;
+            rotationTextParent.transform.localScale *= 0.001f;
+            rotationTextParent.transform.rotation = rotationAxisParent.transform.rotation;
+
+            if (!VHVRConfig.AdvancedBuildingMode())
+            {
+                rotationChangeAxisIndicator.SetActive(false);
+            }
+        }
+
+        //// Update raytrace line
         private void UpdateLine()
         {
             var doLine = false;
@@ -345,37 +543,10 @@ namespace ValheimVRMod.Scripts
             component.SetInvalidPlacementHeightlight(Player.m_localPlayer.m_placementStatus != Player.PlacementStatus.Valid);
         }
 
-        //Reference mode 
-        private void createRefBox()
+        ////Reference Plane Stuff 
+        public bool IsReferenceMode()
         {
-            buildRefBox = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            buildRefBox.transform.localScale = new Vector3(2, 0.0001f, 2);
-            buildRefBox.transform.localScale *= 16f;
-            buildRefBox.layer = 16;
-            buildRefBox.AddComponent<Piece>();
-            Destroy(buildRefBox.GetComponent<MeshRenderer>());
-        }
-        private void createRefPointer()
-        {
-            buildRefPointer = Instantiate(VRAssetManager.GetAsset<GameObject>("RuneStakeCy"));
-            buildRefPointer.layer = 16;
-            var lightbox = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            lightbox.transform.localScale = new Vector3(0.12f, 0.13f, 0.12f);
-            lightbox.transform.SetParent(buildRefPointer.transform);
-            Material newMaterial = new Material(Shader.Find("Unlit/Color"));
-            lightbox.GetComponent<MeshRenderer>().material = newMaterial;
-            lightbox.GetComponent<MeshRenderer>().material.color = Color.green * 0.6f;
-            lightbox.transform.localPosition = Vector3.up * 0.6f;
-            Destroy(lightbox.GetComponent<Collider>());
-        }
-        private void createRefPointer2()
-        {
-            buildRefPointer2 = Instantiate(VRAssetManager.GetAsset<GameObject>("GizmoRing"));
-            var child = buildRefPointer2.transform.GetChild(0);
-            child.GetComponent<MeshRenderer>().material = new Material(Shader.Find("Unlit/Color"));
-            child.GetComponent<MeshRenderer>().material.color = Color.green * 0.6f;
-            buildRefPointer2.transform.SetParent(buildRefPointer.transform);
-            buildRefPointer2.transform.localPosition = Vector3.up * 0.6f;
+            return isReferenceActive;
         }
         private void BuildReferencePoint()
         {
@@ -465,13 +636,11 @@ namespace ValheimVRMod.Scripts
         }
         private void UpdateRefPosition(RaycastHit pieceRaycast, Vector3 direction)
         {
-            var ignoreHeightCheck = false;
             if (modSupport)
             {
                 var raft = pieceRaycast.transform;
                 if (raft.name == "MoveableBase")
                 {
-                    ignoreHeightCheck = true;
                     buildRefBox.transform.SetParent(raft);
                 }
                 else
@@ -483,8 +652,7 @@ namespace ValheimVRMod.Scripts
             if (currRefType == 0 )
             {
                 buildRefBox.transform.position = pieceRaycast.point - (pieceRaycast.normal * 0.2f) ;
-                if(!ignoreHeightCheck)
-                    buildRefBox.transform.position += Vector3.Project(pieceRaycast.transform.position - pieceRaycast.point, -pieceRaycast.normal);
+                buildRefBox.transform.position += Vector3.Project(pieceRaycast.collider.transform.position - pieceRaycast.point, -pieceRaycast.normal);
                 buildRefPointer2.SetActive(false);
             }
             else
@@ -493,10 +661,7 @@ namespace ValheimVRMod.Scripts
                 buildRefPointer2.SetActive(true);
             }
             
-            
             buildRefPointer.transform.position = pieceRaycast.point;
-
-            //buildRefPointer2.transform.position = pieceRaycast.point;
         }
 
         private void UpdateRefRotation(Vector3 refDirection)
@@ -522,26 +687,7 @@ namespace ValheimVRMod.Scripts
             return snapAngle;
         }
 
-        public bool IsReferenceMode()
-        {
-            return isReferenceActive;
-        }
-
-        //snap Stuff
-        private void createSnapPointer()
-        {
-            snapPointer = Instantiate(VRAssetManager.GetAsset<GameObject>("RuneStakeCy"));
-            snapPointer.layer = 16;
-
-            var lightbox = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            lightbox.transform.localScale = new Vector3(0.12f, 0.13f, 0.12f);
-            lightbox.transform.SetParent(snapPointer.transform);
-            Material newMaterial = new Material(Shader.Find("Unlit/Color"));
-            lightbox.GetComponent<MeshRenderer>().material = newMaterial;
-            lightbox.GetComponent<MeshRenderer>().material.color = Color.yellow * 0.6f;
-            lightbox.transform.localPosition = Vector3.up * 0.6f;
-            Destroy(lightbox.GetComponent<Collider>());
-        }
+        //// Snap Point Stuff
         public bool isSnapMode()
         {
             if (isReferenceActive || !isSnapping || isFreeMode)
@@ -689,10 +835,6 @@ namespace ValheimVRMod.Scripts
                 }
             }
         }
-        public bool CheckMenuIsOpen()
-        {
-            return Hud.IsPieceSelectionVisible() || StoreGui.IsVisible() || InventoryGui.IsVisible() || Menu.IsVisible() || (TextViewer.instance && TextViewer.instance.IsVisible()) || Minimap.IsOpen();
-        }
 
         private List<Transform> GetSelectedSnapPoints(Transform piece)
         {
@@ -717,7 +859,6 @@ namespace ValheimVRMod.Scripts
             newCollider.SetActive(false);
             newCollider.transform.localScale *= 1.5f;
             newCollider.layer = 16;
-            //newCollider.GetComponent<MeshRenderer>().material.color = Color.blue;
             newCollider.AddComponent<Piece>();
             Destroy(newCollider.GetComponent<MeshRenderer>());
 
@@ -761,8 +902,10 @@ namespace ValheimVRMod.Scripts
 
             EnableAllSnapPoints(false);
             ResetAllSnapPoints();
+            //Checks the snappoints of raytraced object
             for (var i = 0; i < aimedSnapPoints.Count; i++)
             {
+                //Checks the snappoints of object that gonna be placed
                 for (var j = 0; j < onHandSnapPoints.Count; j++)
                 {
                     var currPos = aimedSnapPoints[i].position - (onHandSnapPoints[j].position - onHand.transform.position);
@@ -803,26 +946,6 @@ namespace ValheimVRMod.Scripts
                 }
             }
         }
-        private bool CheckSamePieceSamePlace(Vector3 pos,GameObject ghost, Piece onHandPiece)
-        {
-            Collider[] piecesInPlace = Physics.OverlapSphere(pos, 1f, LayerMask.GetMask("piece"));
-            var name = ghost.name;
-            var rotation = ghost.transform.rotation;
-            var allowRotatedOverlap = onHandPiece.m_allowRotatedOverlap;
-            foreach(var piece in piecesInPlace)
-            {
-                Piece pieceParent = piece.GetComponentInParent(typeof(Piece)) as Piece;
-
-                //same function as IsOverlapingOtherPiece
-                if (Vector3.Distance(pos, pieceParent.transform.position) < 0.05f && 
-                    (!allowRotatedOverlap || Quaternion.Angle(piece.transform.rotation, rotation) <= 10f) && 
-                    pieceParent.gameObject.name.StartsWith(name))
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
         private void EnableAllSnapPoints(bool enabled)
         {
             for (var i = 0; i < snapPointsCollider.Count; i++)
@@ -844,69 +967,10 @@ namespace ValheimVRMod.Scripts
                 points.transform.position = Vector3.zero;
             }
         }
-        public bool isSnapRotatePiece()
-        {
-            return !(modSupport && lastSnapMod);
-        }
+
+
         ////// Advanced stuff
         // Precision stuff
-        private void createPrecisionModeAxis()
-        {
-            translateAxisParent = new GameObject();
-
-            translateAxisX = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            translateAxisX.transform.localScale = new Vector3(0.005f, 0.1f, 0.005f);
-            translateAxisX.GetComponent<MeshRenderer>().material.color = Color.red;
-            Destroy(translateAxisX.GetComponent<Collider>());
-            translateAxisX.transform.SetParent(translateAxisParent.transform);
-            translateAxisX.transform.Rotate(0, 0, 90);
-
-            translateAxisY = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            translateAxisY.transform.localScale = new Vector3(0.005f, 0.1f, 0.005f);
-            translateAxisY.GetComponent<MeshRenderer>().material.color = Color.green;
-            Destroy(translateAxisY.GetComponent<Collider>());
-            translateAxisY.transform.SetParent(translateAxisParent.transform);
-            
-            translateAxisZ = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            translateAxisZ.transform.localScale = new Vector3(0.005f, 0.1f, 0.005f);
-            translateAxisZ.GetComponent<MeshRenderer>().material.color = Color.blue;
-            Destroy(translateAxisZ.GetComponent<Collider>());
-            translateAxisZ.transform.SetParent(translateAxisParent.transform);
-            translateAxisZ.transform.Rotate(90, 0, 0);
-
-            translatePos = new GameObject();
-        }
-        private void createFreeModeRing()
-        {
-            freeModeAxisParent = Instantiate(VRAssetManager.GetAsset<GameObject>("GizmoRing"));
-            //freeModeAxisParent.transform.SetParent(rotationAxisParent.transform);
-            //freeModeAxisParent.transform.localPosition = Vector3.zero;
-            freeModeAxis = freeModeAxisParent.transform.GetChild(0).gameObject;
-            freeModeAxis.GetComponent<MeshRenderer>().material = new Material(Shader.Find("Standard"));
-            freeModeAxis.GetComponent<MeshRenderer>().material.color = Color.blue;
-            freeModeAxis.transform.localScale = new Vector3(1, 5, 1);
-            freeModeAxis.transform.localScale *= 0.1f;
-
-            //freeModeAxis = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            //freeModeAxis.transform.localScale = new Vector3(0.055f, 0.01f, 0.055f);
-            //freeModeAxis.layer = 16;
-            //freeModeAxis.GetComponent<MeshRenderer>().material.color = Color.blue;
-            freeModeAxisParent.transform.SetParent(this.gameObject.transform);
-            freeModeAxisParent.transform.localPosition = Vector3.up * 0.45f;
-            freeModeAxisParent.transform.rotation = this.gameObject.transform.rotation;
-            if (!VHVRConfig.AdvancedBuildingMode())
-            {
-                freeModeAxisParent.SetActive(false);
-            }
-            //Destroy(freeModeAxis.GetComponent<Collider>());
-        }
-
-        private void createCheckDir()
-        {
-            checkDir = new GameObject();
-            freeModePosRef = new GameObject();
-            freeModePosRef.transform.SetParent(checkDir.transform);
-        }
         private void FreeMode()
         {
             var leftHandCenter = VRPlayer.leftHand.transform.TransformPoint(handCenter);
@@ -971,40 +1035,6 @@ namespace ValheimVRMod.Scripts
                 }
             }
         }
-        public bool isCurrentlyFreeMode()
-        {
-            if (!VHVRConfig.AdvancedBuildingMode())
-                return false;
-            
-            return isFreeMode;
-        }
-        public bool isCurrentlyPreciseMoving()
-        {
-            if (!VHVRConfig.AdvancedBuildingMode())
-                return false;
-
-            return isPrecisionMoving;
-        }
-        public bool isCurrentlyMoving()
-        {
-            return isMoving;
-        }
-        public bool isHoldingPlace()
-        {
-            if (!VHVRConfig.BuildOnRelease())
-                return false;
-
-            if (!SteamVR_Actions.laserPointers_LeftClick.GetState(SteamVR_Input_Sources.RightHand) && !SteamVR_Actions.valheim_Jump.GetState(SteamVR_Input_Sources.Any)) 
-                holdPlacePressed = false;
-            else if (SteamVR_Actions.laserPointers_LeftClick.GetState(SteamVR_Input_Sources.RightHand))
-                holdPlacePressed = true;
-
-            return holdPlacePressed && !freeModeSnapSave1;
-        }
-        public bool isHoldingJump()
-        {
-            return SteamVR_Actions.valheim_Jump.GetState(SteamVR_Input_Sources.Any) && !freeModeSnapSave1;
-        }
         public void ExitPreciseMode()
         {
             isExitFreeMode = true;
@@ -1047,8 +1077,6 @@ namespace ValheimVRMod.Scripts
                     translateAxisParent.SetActive(false);
                     rotationAxisParent.SetActive(false);
                 }
-                //ghost.transform.position = lastPos + (avgPos - lastAvgPos);
-                //ghost.transform.rotation = avgRot * (Quaternion.Inverse(lastAvgRot) * lastRot);
 
                 freeModePosRef.transform.position += (checkDir.transform.forward * 1.2f * Time.unscaledDeltaTime * VRControls.instance.getDirectRightYAxis());
                 freeModePosRef.transform.RotateAround(freeModePosRef.transform.position, checkDir.transform.up, -VRControls.instance.getDirectRightXAxis()*2);
@@ -1075,7 +1103,6 @@ namespace ValheimVRMod.Scripts
                     freeModeSnapSave1 = null;
                     freeModeSnapSave2 = null;
                 }
-                //ghost.transform.rotation = avgRot * (Quaternion.Inverse(lastAvgRot) * lastRot);
             }
             else
             {
@@ -1173,123 +1200,7 @@ namespace ValheimVRMod.Scripts
             }
         }
 
-
         //Advanced Rotation
-        private void createRotationAxis()
-        {
-            rotationAxisParent = new GameObject();
-
-            var axisX = Instantiate(VRAssetManager.GetAsset<GameObject>("GizmoRing"));
-            axisX.transform.SetParent(rotationAxisParent.transform);
-            axisX.transform.localPosition = Vector3.zero;
-            var childX = axisX.transform.GetChild(0);
-            childX.GetComponent<MeshRenderer>().material = new Material(Shader.Find("Standard"));
-            childX.GetComponent<MeshRenderer>().material.color = Color.red;
-            childX.transform.localScale *= 0.196f;
-            axisX.transform.Rotate(0, 0, 90);
-            rotationAxisX = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            rotationAxisX.transform.localScale = new Vector3(0.005f, 0.1f, 0.005f);
-            rotationAxisX.GetComponent<MeshRenderer>().material.color = Color.red;
-            Destroy(rotationAxisX.GetComponent<Collider>());
-            rotationAxisX.transform.SetParent(rotationAxisParent.transform);
-            rotationAxisX.transform.Rotate(0, 0, 90);
-
-            var axisY = Instantiate(VRAssetManager.GetAsset<GameObject>("GizmoRing"));
-            axisY.transform.SetParent(rotationAxisParent.transform);
-            axisY.transform.localPosition = Vector3.zero;
-            var childY = axisY.transform.GetChild(0);
-            childY.GetComponent<MeshRenderer>().material = new Material(Shader.Find("Standard"));
-            childY.GetComponent<MeshRenderer>().material.color = Color.green;
-            childY.transform.localScale *= 0.20f;
-            rotationAxisY = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            rotationAxisY.transform.localScale = new Vector3(0.005f, 0.1f, 0.005f);
-            rotationAxisY.GetComponent<MeshRenderer>().material.color = Color.green;
-            Destroy(rotationAxisY.GetComponent<Collider>());
-            rotationAxisY.transform.SetParent(rotationAxisParent.transform);
-
-            var axisZ = Instantiate(VRAssetManager.GetAsset<GameObject>("GizmoRing"));
-            axisZ.transform.SetParent(rotationAxisParent.transform);
-            axisZ.transform.localPosition = Vector3.zero;
-            var childZ = axisZ.transform.GetChild(0);
-            childZ.GetComponent<MeshRenderer>().material = new Material(Shader.Find("Standard"));
-            childZ.GetComponent<MeshRenderer>().material.color = Color.blue;
-            childZ.transform.localScale *= 0.198f;
-            axisZ.transform.Rotate(90, 0, 0);
-            rotationAxisZ = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            rotationAxisZ.transform.localScale = new Vector3(0.005f, 0.1f, 0.005f);
-            rotationAxisZ.GetComponent<MeshRenderer>().material.color = Color.blue;
-            Destroy(rotationAxisZ.GetComponent<Collider>());
-            rotationAxisZ.transform.SetParent(rotationAxisParent.transform);
-            rotationAxisZ.transform.Rotate(90, 0, 0);
-
-            rotateReference = new GameObject();
-            advRotationGhostObject = new GameObject();
-
-            rotationLine = new GameObject().AddComponent<LineRenderer>();
-            rotationLine.widthMultiplier = 0.005f;
-            rotationLine.positionCount = 2;
-            Material newMaterial = new Material(Shader.Find("Unlit/Color"));
-            rotationLine.material = newMaterial;
-            rotationLine.enabled = false;
-            rotationLine.receiveShadows = false;
-            rotationLine.shadowCastingMode = ShadowCastingMode.Off;
-            rotationLine.lightProbeUsage = LightProbeUsage.Off;
-            rotationLine.reflectionProbeUsage = ReflectionProbeUsage.Off;
-
-            rotationBorder1 = Instantiate(rotationLine);
-            rotationBorder1.useWorldSpace = false;
-            rotationBorder1.widthMultiplier = 0.002f;
-            rotationBorder1.positionCount = 16;
-            rotationBorder1.material.color = Color.gray;
-            rotationBorder1.transform.SetParent(rotationAxisParent.transform);
-            rotationBorder1.transform.localPosition = Vector3.zero;
-            rotationBorder2 = Instantiate(rotationBorder1);
-            rotationBorder2.useWorldSpace = false;
-            rotationBorder2.widthMultiplier = 0.002f;
-            rotationBorder2.positionCount = 16;
-            rotationBorder2.transform.SetParent(rotationAxisParent.transform);
-            rotationBorder2.transform.localPosition = Vector3.zero;
-
-            rotationChangeAxisIndicator = Instantiate(VRAssetManager.GetAsset<GameObject>("GizmoRing"));
-            rotationChangeAxisColor = rotationChangeAxisIndicator.transform.GetChild(0).gameObject;
-            rotationChangeAxisColor.GetComponent<MeshRenderer>().material = new Material(Shader.Find("Standard"));
-            rotationChangeAxisColor.GetComponent<MeshRenderer>().material.color = Color.yellow;
-            rotationChangeAxisColor.transform.localScale = new Vector3(1.2f, 5, 1.2f);
-            rotationChangeAxisColor.transform.localScale *= 0.1f;
-
-            rotationChangeAxisIndicator.transform.SetParent(this.gameObject.transform);
-            rotationChangeAxisIndicator.transform.localPosition = Vector3.up * -0.3f;
-            rotationChangeAxisIndicator.transform.rotation = this.gameObject.transform.rotation;
-
-            //text 
-            rotationTextParent = new GameObject();
-            var rotTextSub = new GameObject();
-            rotTextSub.transform.SetParent(rotationTextParent.transform);
-            rotTextSub.transform.Rotate(0, 180, 0);
-            var canvasText2 = rotTextSub.AddComponent<Canvas>();
-            canvasText2.renderMode = RenderMode.WorldSpace;
-            rotationText = rotTextSub.AddComponent<Text>();
-            rotationText.fontSize = 40;
-            Font ArialFont = (Font)Resources.GetBuiltinResource(typeof(Font), "Arial.ttf");
-            rotationText.font = ArialFont;
-            rotationText.horizontalOverflow = HorizontalWrapMode.Overflow;
-            rotationText.verticalOverflow = VerticalWrapMode.Overflow;
-            rotationText.alignment = TextAnchor.MiddleCenter;
-            rotationText.enabled = true;
-            rotationText.color = Color.yellow * 0.8f;
-            rotationTextParent.transform.localScale *= 0.001f;
-
-            //rotationTextParent.transform.SetParent(rotationAxisParent.transform);
-            rotationTextParent.transform.rotation = rotationAxisParent.transform.rotation;
-
-            if (!VHVRConfig.AdvancedBuildingMode())
-            {
-                rotationChangeAxisIndicator.SetActive(false);
-            }
-
-            
-        }
-
         private void RotationModeChange()
         {
             var leftHandCenter = VRPlayer.leftHand.transform.TransformPoint(handCenter);
@@ -1622,7 +1533,7 @@ namespace ValheimVRMod.Scripts
                 marker.transform.LookAt(marker.transform.position + originalRayTraceDir,  ghost.transform.forward);
             }
             
-            //update position after changing
+            //update position after changing rotation
             if (isSnapping || isFreeMode)
             {
                 return;
@@ -1680,6 +1591,50 @@ namespace ValheimVRMod.Scripts
             }
             UpdateRotationText();
         }
+
+        //Utilities 
+        public bool CheckMenuIsOpen()
+        {
+            return Hud.IsPieceSelectionVisible() || StoreGui.IsVisible() || InventoryGui.IsVisible() || Menu.IsVisible() || (TextViewer.instance && TextViewer.instance.IsVisible()) || Minimap.IsOpen();
+        }
+        public bool isSnapRotatePiece()
+        {
+            return !(modSupport && lastSnapMod);
+        }
+        public bool isCurrentlyFreeMode()
+        {
+            if (!VHVRConfig.AdvancedBuildingMode())
+                return false;
+
+            return isFreeMode;
+        }
+        public bool isCurrentlyPreciseMoving()
+        {
+            if (!VHVRConfig.AdvancedBuildingMode())
+                return false;
+
+            return isPrecisionMoving;
+        }
+        public bool isCurrentlyMoving()
+        {
+            return isMoving;
+        }
+        public bool isHoldingPlace()
+        {
+            if (!VHVRConfig.BuildOnRelease())
+                return false;
+
+            if (!SteamVR_Actions.laserPointers_LeftClick.GetState(SteamVR_Input_Sources.RightHand) && !SteamVR_Actions.valheim_Jump.GetState(SteamVR_Input_Sources.Any))
+                holdPlacePressed = false;
+            else if (SteamVR_Actions.laserPointers_LeftClick.GetState(SteamVR_Input_Sources.RightHand))
+                holdPlacePressed = true;
+
+            return holdPlacePressed && !freeModeSnapSave1;
+        }
+        public bool isHoldingJump()
+        {
+            return SteamVR_Actions.valheim_Jump.GetState(SteamVR_Input_Sources.Any) && !freeModeSnapSave1;
+        }
         private void CreateCircle(LineRenderer line,float size, string dir)
         {
             float degree = 360 / (line.positionCount - 1);
@@ -1701,6 +1656,26 @@ namespace ValheimVRMod.Scripts
                 }
                 
             }
+        }
+        private bool CheckSamePieceSamePlace(Vector3 pos, GameObject ghost, Piece onHandPiece)
+        {
+            Collider[] piecesInPlace = Physics.OverlapSphere(pos, 1f, LayerMask.GetMask("piece"));
+            var name = ghost.name;
+            var rotation = ghost.transform.rotation;
+            var allowRotatedOverlap = onHandPiece.m_allowRotatedOverlap;
+            foreach (var piece in piecesInPlace)
+            {
+                Piece pieceParent = piece.GetComponentInParent(typeof(Piece)) as Piece;
+
+                //same function as IsOverlapingOtherPiece
+                if (Vector3.Distance(pos, pieceParent.transform.position) < 0.05f &&
+                    (!allowRotatedOverlap || Quaternion.Angle(piece.transform.rotation, rotation) <= 10f) &&
+                    pieceParent.gameObject.name.StartsWith(name))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
         private void UpdateRotationText()
         {
