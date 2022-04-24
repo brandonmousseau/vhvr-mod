@@ -177,6 +177,7 @@ namespace ValheimVRMod.Patches {
                 {
                     ___m_placementGhost.transform.rotation = rotation;
                 }
+                BuildingManager.instance.UpdateRotationText();
             }
 
             BuildingManager.instance.UpdateRotationAdvanced(___m_placementGhost);
