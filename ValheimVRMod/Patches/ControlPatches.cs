@@ -137,7 +137,7 @@ namespace ValheimVRMod.Patches {
     [HarmonyPatch(typeof(Player), "UpdatePlacementGhost")]
     class PlacementSnapPoint
     {
-        private static bool Prefix(Player __instance, GameObject ___m_placementGhost, GameObject ___m_placementMarkerInstance, Player.PlacementStatus ___m_placementStatus, int ___m_placeRotation)
+        private static bool Prefix(Player __instance, GameObject ___m_placementGhost, GameObject ___m_placementMarkerInstance)
         {
             if (!VRControls.mainControlsActive || __instance != Player.m_localPlayer || !___m_placementGhost || !___m_placementGhost.transform ||
                !__instance.InPlaceMode() || !BuildingManager.instance)
@@ -155,32 +155,28 @@ namespace ValheimVRMod.Patches {
                 BuildingManager.instance.ValidateBuildingPiece(___m_placementGhost);
                 return false;
             }
-
             return true;
         }
-        private static void Postfix(Player __instance, GameObject ___m_placementGhost, GameObject ___m_placementMarkerInstance, Player.PlacementStatus ___m_placementStatus, int ___m_placeRotation)
+        private static void Postfix(Player __instance, GameObject ___m_placementGhost)
         {
             if (!VRControls.mainControlsActive || __instance != Player.m_localPlayer || !___m_placementGhost || !___m_placementGhost.transform ||
                 !__instance.InPlaceMode() || !BuildingManager.instance)
             {
                 return;
             }
+
             if (BuildingManager.instance.isSnapMode() && !BuildingManager.instance.CheckMenuIsOpen())
             {
-                var checkPlacement = BuildingManager.instance.UpdateSelectedSnapPoints(___m_placementGhost);
-                Quaternion rotation = Quaternion.Euler(0f, 22.5f * (float)___m_placeRotation, 0f);
-
-                ___m_placementMarkerInstance.transform.position = checkPlacement;
-                ___m_placementMarkerInstance.transform.rotation = Quaternion.LookRotation(Vector3.up, rotation * Vector3.forward);
-                ___m_placementGhost.transform.position = checkPlacement;
-                if (BuildingManager.instance.isSnapRotatePiece())
-                {
-                    ___m_placementGhost.transform.rotation = rotation;
-                }
-                BuildingManager.instance.UpdateRotationText();
+                BuildingManager.instance.UpdateSelectedSnapPoints(___m_placementGhost);
             }
 
             BuildingManager.instance.UpdateRotationAdvanced(___m_placementGhost);
+
+            if (BuildingManager.instance.isSnapMode())
+            {
+                return;
+            }
+
             BuildingManager.instance.ValidateBuildingPiece(___m_placementGhost);
         }
     }

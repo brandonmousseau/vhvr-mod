@@ -476,13 +476,13 @@ namespace ValheimVRMod.Scripts
         }
 
         //Validate Building piece
-        public void ValidateBuildingPiece(GameObject piece)
+        public void ValidateBuildingPiece(GameObject piece, bool isForcedDisable = false)
         {
             Player.m_localPlayer.m_placementStatus = Player.PlacementStatus.Valid;
             Piece component = piece.GetComponent<Piece>();
-            if (VHVRConfig.BuildOnRelease() &&
+            if ((VHVRConfig.BuildOnRelease() &&
                 SteamVR_Actions.laserPointers_LeftClick.GetState(SteamVR_Input_Sources.RightHand) &&
-                SteamVR_Actions.valheim_Jump.GetState(SteamVR_Input_Sources.Any))
+                SteamVR_Actions.valheim_Jump.GetState(SteamVR_Input_Sources.Any)) || isForcedDisable)
             {
                 Player.m_localPlayer.m_placementStatus = Player.PlacementStatus.Invalid;
                 component.SetInvalidPlacementHeightlight(true);
@@ -696,7 +696,26 @@ namespace ValheimVRMod.Scripts
             }
             return !isReferenceActive && isSnapping && !isFreeMode;
         }
-        public Vector3 UpdateSelectedSnapPoints(GameObject onHand)
+        public void UpdateSelectedSnapPoints(GameObject onHand)
+        {
+            var cancelled = false;
+            var updatedPos = RaytraceSnapPoints(onHand, ref cancelled);
+            var player = Player.m_localPlayer;
+            Quaternion rotation = Quaternion.Euler(0f, 22.5f * (float)player.m_placeRotation, 0f);
+
+            player.m_placementMarkerInstance.transform.position = updatedPos;
+            player.m_placementMarkerInstance.transform.rotation = Quaternion.LookRotation(Vector3.up, onHand.transform.forward);
+            onHand.transform.position = updatedPos;
+            if (isSnapRotatePiece())
+            {
+                onHand.transform.rotation = rotation;
+            }
+            onHand.SetActive(!cancelled);
+            player.m_placementMarkerInstance.SetActive(!cancelled);
+            UpdateRotationText();
+            ValidateBuildingPiece(onHand, cancelled);
+        }
+        private Vector3 RaytraceSnapPoints(GameObject onHand, ref bool isCancelled)
         {
             pieceOnHand = onHand;
             if (VHVRConfig.AdvancedBuildingMode())
@@ -707,13 +726,13 @@ namespace ValheimVRMod.Scripts
                 lastSnapDirection = pieceOnHand.transform.localRotation;
                 UpdateSnapPointCollider(pieceOnHand, lastSnapTransform);
             }
-
             //Multiple Raycast 
             RaycastHit[] snapPointsCast = new RaycastHit[10];
             int hits = Physics.RaycastNonAlloc(PlaceModeRayVectorProvider.startingPosition, PlaceModeRayVectorProvider.rayDirection, snapPointsCast, 12f, LayerMask.GetMask("piece_nonsolid"));
             if (hits == 0)
             {
                 snapLine.enabled = false;
+                isCancelled = true;
                 return onHand.transform.position;
             }
 
@@ -802,7 +821,10 @@ namespace ValheimVRMod.Scripts
                         snapPointer.transform.rotation = Quaternion.FromToRotation(snapPointer.transform.up, firstNormal) * snapPointer.transform.rotation;
                         isSnapping = true;
                         if (pieceOnHand)
+                        {
                             lastSnapDirection = pieceOnHand.transform.rotation * Quaternion.Euler(0, 90, 0);
+                        }
+
                     }
                 }
                 else
@@ -856,7 +878,7 @@ namespace ValheimVRMod.Scripts
         {
             var newCollider = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             newCollider.SetActive(false);
-            newCollider.transform.localScale *= 1.5f;
+            newCollider.transform.localScale *= 3f;
             newCollider.layer = 16;
             newCollider.AddComponent<Piece>();
             Destroy(newCollider.GetComponent<MeshRenderer>());
@@ -1527,17 +1549,16 @@ namespace ValheimVRMod.Scripts
                 }
             }
 
+            //update position after changing rotation
+            if (isSnapping || isFreeMode)
+            {
+                return;
+            }
             var marker = Player.m_localPlayer.m_placementMarkerInstance;
             if (marker)
             {
                 marker.transform.position = originalRayTracePos;
                 marker.transform.LookAt(marker.transform.position + originalRayTraceDir, ghost.transform.forward);
-            }
-
-            //update position after changing rotation
-            if (isSnapping || isFreeMode)
-            {
-                return;
             }
             RelativeEulerModRotate(ghost);
             currentComponent = ghost.GetComponent<Piece>();
