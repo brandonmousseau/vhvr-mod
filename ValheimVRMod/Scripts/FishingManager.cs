@@ -1,13 +1,15 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using Valve.VR;
 using Valve.VR.InteractionSystem;
-using UnityEngine.UI;
 
-namespace ValheimVRMod.Scripts {
-    public class FishingManager : MonoBehaviour {
+namespace ValheimVRMod.Scripts
+{
+    public class FishingManager : MonoBehaviour
+    {
         private const int MAX_SNAPSHOTS = 7;
         private const int MIN_SNAPSHOTSCHECK = 3;
         private const float MIN_DISTANCE = 0.2f;
@@ -53,7 +55,8 @@ namespace ValheimVRMod.Scripts {
 
         public static FishingManager instance;
 
-        private void Awake() {
+        private void Awake()
+        {
 
             inputSource = VHVRConfig.LeftHanded()
                 ? SteamVR_Input_Sources.LeftHand
@@ -120,9 +123,6 @@ namespace ValheimVRMod.Scripts {
             fishingText.alignment = TextAnchor.MiddleCenter;
             fishingText.enabled = true;
             fishingText.color = Color.yellow * 0.8f;
-            var rectTrans = fishingText.GetComponent<RectTransform>();
-            rectTrans.localPosition = Vector3.up*-2;
-            rectTrans.sizeDelta = new Vector2(400, 100);
             fishingTextParent.transform.localScale *= 0.005f;
 
             baitTextParent = new GameObject();
@@ -139,16 +139,14 @@ namespace ValheimVRMod.Scripts {
             baitText.alignment = TextAnchor.MiddleCenter;
             baitText.enabled = true;
             baitText.color = Color.white * 0.8f;
-            var rectTrans2 = fishingText.GetComponent<RectTransform>();
-            rectTrans2.localPosition = Vector3.up * -2;
-            rectTrans2.sizeDelta = new Vector2(400, 100);
             baitTextParent.transform.localScale *= 0.001f;
 
             baitTextParent.transform.SetParent(transform);
             baitTextParent.transform.localPosition = new Vector3(0, 0.65f, 0.03f);
             baitTextParent.transform.rotation = transform.rotation;
         }
-        private void OnDestroy() {
+        private void OnDestroy()
+        {
             Destroy(reelCrank);
             Destroy(reelWheel);
             Destroy(reelParent);
@@ -157,9 +155,12 @@ namespace ValheimVRMod.Scripts {
             Destroy(baitTextParent);
         }
 
-        private void Update() {
-            foreach (FishingFloat instance in FishingFloat.GetAllInstances()) {
-                if (instance.GetOwner() == Player.m_localPlayer) {
+        private void Update()
+        {
+            foreach (FishingFloat instance in FishingFloat.GetAllInstances())
+            {
+                if (instance.GetOwner() == Player.m_localPlayer)
+                {
                     fishingFloat = instance;
                     isFishing = true;
                     return;
@@ -167,20 +168,21 @@ namespace ValheimVRMod.Scripts {
             }
             isFishing = false;
         }
-        private void OnRenderObject() {
+        private void OnRenderObject()
+        {
 
             fixedRodTop.transform.position = rodTop.position;
             UpdateBaitText();
             if (!reelGrabbed)
             {
                 if (fishingFloat)
-                fishingFloat.m_pullLineSpeed = 1;
+                    fishingFloat.m_pullLineSpeed = 1;
                 isPulling = isFishing && inputAction.GetState(inputSource);
             }
 
             if (fishingFloat)
             {
-                fishingText.text = (Mathf.Round(fishingFloat.m_lineLength*10)/10) + "m" ;
+                fishingText.text = (Mathf.Round(fishingFloat.m_lineLength * 10) / 10) + "m";
                 var posMod = new Vector3(fishingFloat.transform.position.x, Mathf.Max(fishingFloat.m_floating.m_waterLevel, fishingFloat.transform.position.y) + 0.5f, fishingFloat.transform.position.z);
                 fishingTextParent.transform.position = posMod;
                 fishingTextParent.transform.LookAt(CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform.position);
@@ -190,23 +192,24 @@ namespace ValheimVRMod.Scripts {
                 var stamina = Player.m_localPlayer.GetStamina();
                 if (stamina <= 30)
                 {
-                    fishingFloat.m_rodLine.m_lineRenderer.material.color = Color.Lerp(Color.red, Color.yellow, stamina/30);
+                    fishingFloat.m_rodLine.m_lineRenderer.material.color = Color.Lerp(Color.red, Color.yellow, stamina / 30);
                 }
                 else if (stamina <= 50)
                 {
-                    fishingFloat.m_rodLine.m_lineRenderer.material.color = Color.Lerp(Color.yellow, Color.white, (stamina - 30)/20);
+                    fishingFloat.m_rodLine.m_lineRenderer.material.color = Color.Lerp(Color.yellow, Color.white, (stamina - 30) / 20);
                 }
                 else
                 {
                     fishingFloat.m_rodLine.m_lineRenderer.material.color = Color.white;
                 }
                 var fish = fishingFloat.GetCatch();
-                if (wasHooked&&!fish)
+                if (wasHooked && !fish)
                 {
                     fishingFloat.m_nview.Destroy();
                     wasHooked = false;
                     return;
-                }else if(!wasHooked && fish)
+                }
+                else if (!wasHooked && fish)
                 {
                     wasHooked = true;
                 }
@@ -217,17 +220,21 @@ namespace ValheimVRMod.Scripts {
                 wasHooked = false;
             }
             UpdateReel();
-            if (!isFishing && inputAction.GetStateDown(inputSource)) {
+            if (!isFishing && inputAction.GetStateDown(inputSource))
+            {
                 preparingThrow = true;
             }
 
-            if (!inputAction.GetStateUp(inputSource)) {
+            if (!inputAction.GetStateUp(inputSource))
+            {
                 return;
             }
-            if (isFishing || isThrowing || !preparingThrow) {
+            if (isFishing || isThrowing || !preparingThrow)
+            {
                 return;
             }
-            if (snapshots.Count < MIN_SNAPSHOTSCHECK) {
+            if (snapshots.Count < MIN_SNAPSHOTSCHECK)
+            {
                 return;
             }
 
@@ -236,9 +243,11 @@ namespace ValheimVRMod.Scripts {
             Vector3 posEnd = fixedRodTop.transform.position;
             Vector3 posStart = fixedRodTop.transform.position;
 
-            foreach (Vector3 snapshot in snapshots) {
+            foreach (Vector3 snapshot in snapshots)
+            {
                 var curDist = Vector3.Distance(snapshot, posEnd);
-                if (curDist > dist) {
+                if (curDist > dist)
+                {
                     dist = curDist;
                     posStart = snapshot;
                 }
@@ -248,23 +257,28 @@ namespace ValheimVRMod.Scripts {
             aimDir = Quaternion.AngleAxis(-30, Vector3.Cross(Vector3.up, aimDir)) * aimDir;
             attackDrawPercentage = Vector3.Distance(snapshots[snapshots.Count - 1], snapshots[snapshots.Count - 2]) / maxDist;
 
-            if (Vector3.Distance(posEnd, posStart) > MIN_DISTANCE) {
+            if (Vector3.Distance(posEnd, posStart) > MIN_DISTANCE)
+            {
                 isThrowing = true;
-                preparingThrow = false; 
+                preparingThrow = false;
             }
         }
 
-        private void FixedUpdate() {
+        private void FixedUpdate()
+        {
             tickCounter++;
-            if (tickCounter < 5) {
+            if (tickCounter < 5)
+            {
                 return;
             }
             snapshots.Add(fixedRodTop.transform.position);
-            if (snapshots.Count > MAX_SNAPSHOTS) {
+            if (snapshots.Count > MAX_SNAPSHOTS)
+            {
                 snapshots.RemoveAt(0);
             }
             tickCounter = 0;
-            if (isFishing && fishingFloat.GetCatch() && (int)(Time.fixedTime * 10) % 2 >= 1) {
+            if (isFishing && fishingFloat.GetCatch() && (int)(Time.fixedTime * 10) % 2 >= 1)
+            {
                 inputHand.hapticAction.Execute(0, 0.001f, 150, 0.7f, inputSource);
             }
         }
@@ -282,25 +296,25 @@ namespace ValheimVRMod.Scripts {
                     reelStart = reelCrank.transform.localPosition;
                 }
 
-                var angle = Vector3.SignedAngle(new Vector3(0, reelStart.y, reelStart.z), new Vector3(0, reelCrank.transform.localPosition.y, reelCrank.transform.localPosition.z),reelParent.transform.right);
+                var angle = Vector3.SignedAngle(new Vector3(0, reelStart.y, reelStart.z), new Vector3(0, reelCrank.transform.localPosition.y, reelCrank.transform.localPosition.z), reelParent.transform.right);
                 reeltimer += Time.deltaTime;
 
-                if(Mathf.Abs(angle) + Mathf.Abs(savedRotation) >= 10)
+                if (Mathf.Abs(angle) + Mathf.Abs(savedRotation) >= 10)
                 {
                     reelTolerance = 1;
                 }
                 else
                 {
-                    if(reelTolerance>=0)
+                    if (reelTolerance >= 0)
                         reelTolerance -= Time.deltaTime;
                 }
 
                 isPulling = isFishing && reelTolerance > 0;
 
-                if (reeltimer>=1)
+                if (reeltimer >= 1)
                 {
                     reeltimer = 0;
-                    var rpm = ((angle + savedRotation)/60);
+                    var rpm = ((angle + savedRotation) / 60);
                     var speed = Mathf.Max(0, Mathf.Min(2.5f, Mathf.Abs(rpm * 1.2f)));
                     var force = Mathf.Max(0.1f, Mathf.Min(0.5f, Mathf.Abs(rpm * 0.5f)));
                     if (fishingFloat)
@@ -338,7 +352,7 @@ namespace ValheimVRMod.Scripts {
             }
             else
             {
-                if (SteamVR_Actions.valheim_Grab.GetState(offHandSource) && !WeaponWield.isCurrentlyTwoHanded()) 
+                if (SteamVR_Actions.valheim_Grab.GetState(offHandSource) && !WeaponWield.isCurrentlyTwoHanded())
                 {
                     if (Vector3.Distance(offHandCenter, reelParent.transform.position) < 0.2f)
                     {
@@ -351,7 +365,7 @@ namespace ValheimVRMod.Scripts {
 
         public void TriggerVibrateFish(FishingFloat fishFloat)
         {
-            if(fishingFloat != fishFloat)
+            if (fishingFloat != fishFloat)
             {
                 return;
             }
