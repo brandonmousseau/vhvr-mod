@@ -1,4 +1,4 @@
-﻿using RootMotion.FinalIK;
+using RootMotion.FinalIK;
 using UnityEngine;
 using ValheimVRMod.Utilities;
 
@@ -26,8 +26,8 @@ namespace ValheimVRMod.Scripts {
         private static readonly Quaternion rightSpearRotation = Quaternion.Euler(0, -90, -140);
         private static readonly Vector3 rightSpearEllbow = new Vector3(-1, -3f, 0);
         
-        public static Transform mainHandConnector;
-        public static Transform offHandConnector;
+        public static Transform rightHandConnector;
+        public static Transform leftHandConnector;
 
 
         public static VRIK initialize(GameObject target, Transform leftController, Transform rightController, Transform camera) {
@@ -43,14 +43,14 @@ namespace ValheimVRMod.Scripts {
             vrik.references.rightToes = null;
 
             vrik.solver.leftArm.target = new GameObject().transform;
-            offHandConnector = new GameObject().transform;
-            offHandConnector.SetParent(leftController, false);
-            vrik.solver.leftArm.target.SetParent(offHandConnector, false);
+            leftHandConnector = new GameObject().transform;
+            leftHandConnector.SetParent(leftController, false);
+            vrik.solver.leftArm.target.SetParent(leftHandConnector, false);
             
             vrik.solver.rightArm.target = new GameObject().transform;
-            mainHandConnector = new GameObject().transform;
-            mainHandConnector.SetParent(rightController, false);
-            vrik.solver.rightArm.target.SetParent(mainHandConnector, false);
+            rightHandConnector = new GameObject().transform;
+            rightHandConnector.SetParent(rightController, false);
+            vrik.solver.rightArm.target.SetParent(rightHandConnector, false);
 
             Transform head = new GameObject().transform;
             head.SetParent(camera);
@@ -110,6 +110,24 @@ namespace ValheimVRMod.Scripts {
             vrik.solver.rightArm.target.localPosition = rightUnequippedPosition;
             vrik.solver.rightArm.target.localRotation = rightUnequippedRotation;
             vrik.solver.rightArm.palmToThumbAxis = rightUnequippedEllbow;
+        }
+
+        public static Transform GetDominantHandConnector()
+        {
+            return VHVRConfig.LeftHanded() ? VrikCreator.leftHandConnector : VrikCreator.rightHandConnector;
+        }
+
+        public static Transform GetNonDominantHandConnector()
+        {
+            return VHVRConfig.LeftHanded() ? VrikCreator.rightHandConnector : VrikCreator.leftHandConnector;
+        }
+
+        public static void ResetHandConnectors()
+        {
+            leftHandConnector.localPosition = Vector3.zero;
+            leftHandConnector.localRotation = Quaternion.identity;
+            rightHandConnector.localPosition = Vector3.zero;
+            rightHandConnector.localRotation = Quaternion.identity;
         }
     }
 }
