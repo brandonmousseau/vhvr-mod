@@ -399,7 +399,7 @@ namespace ValheimVRMod.Patches {
     {
         static void Prefix(InventoryGui __instance, ref InventoryGrid.Modifier mod)
         {
-            if (VHVRConfig.NonVrPlayer())
+            if (!VHVRConfig.UseVrControls())
                 return;
 
             if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand))
