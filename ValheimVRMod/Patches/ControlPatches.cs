@@ -611,6 +611,7 @@ namespace ValheimVRMod.Patches {
         }
     }
 
+    //Add vibration to the controller when fish is biting the bait
     [HarmonyPatch(typeof(FishingFloat), "RPC_Nibble")]
     class FishGetCatch
     {

@@ -813,6 +813,7 @@ namespace ValheimVRMod.Patches
         }
     }
 
+    //Make the message ignore the fishing distance meter when the fishing float is being reeled
     [HarmonyPatch(typeof(FishingFloat), "Message")]
     class PatchFishingText
     {
@@ -832,6 +833,7 @@ namespace ValheimVRMod.Patches
             return true;
         }
     }
+    //Make the message ignore the fishing distance meter when the fishing float is just got into water
     [HarmonyPatch(typeof(Player), "Message")]
     class PatchFishingTextPlayer
     {
