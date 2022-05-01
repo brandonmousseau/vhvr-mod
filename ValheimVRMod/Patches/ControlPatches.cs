@@ -8,6 +8,7 @@ using ValheimVRMod.Utilities;
 using System.Reflection.Emit;
 using UnityEngine;
 using ValheimVRMod.Scripts.Block;
+using Valve.VR;
 
 namespace ValheimVRMod.Patches {
     // These patches are used to inject the VR inputs into the game's control system
