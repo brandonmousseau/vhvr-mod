@@ -5,10 +5,12 @@ using System;
 using System.Collections.Generic;
 using System.Reflection.Emit;
 using System.Reflection;
+using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
 
 using static ValheimVRMod.Utilities.LogUtils;
 using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 
 namespace ValheimVRMod.Patches
 {
@@ -808,6 +810,47 @@ namespace ValheimVRMod.Patches
                 UnityEngine.Object.Destroy(element.m_go);
             }
             hotkeyBar.m_elements.Clear();
+        }
+    }
+
+    //Make the message ignore the fishing distance meter when the fishing float is being reeled
+    [HarmonyPatch(typeof(FishingFloat), "Message")]
+    class PatchFishingText
+    {
+        public static bool Prefix(FishingFloat __instance,string msg)
+        {
+            if (VHVRConfig.NonVrPlayer()||!__instance||!FishingManager.instance)
+            {
+                return true;
+            }
+
+            var regex = "[0-9]+[mM]";
+            if (Regex.IsMatch(msg, regex))
+            {
+                return false;
+            }
+
+            return true;
+        }
+    }
+    //Make the message ignore the fishing distance meter when the fishing float is just got into water
+    [HarmonyPatch(typeof(Player), "Message")]
+    class PatchFishingTextPlayer
+    {
+        public static bool Prefix(Player __instance, string msg)
+        {
+            if (VHVRConfig.NonVrPlayer() || !__instance || __instance != Player.m_localPlayer || !FishingManager.instance) 
+            {
+                return true;
+            }
+
+            var regex = "[0-9]+[mM]";
+            if (Regex.IsMatch(msg, regex))
+            {
+                return false;
+            }
+
+            return true;
         }
     }
 }

@@ -1,17 +1,27 @@
 ManifestFileVersion: 0
-CRC: 1350832537
+CRC: 1499647846
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: bc2f73482fb3c503df3c1ad9c02a2ab5
+    Hash: cc2cceabea04a5a365ee3a40cca737e9
   TypeTreeHash:
     serializedVersion: 2
-    Hash: 700cce780156dfdd5fdd2ee7678caad4
+    Hash: 1fe3abd029edb3522ae5dbbc711d0a74
 HashAppended: 0
 ClassTypes:
+- Class: 1
+  Script: {instanceID: 0}
+- Class: 4
+  Script: {instanceID: 0}
 - Class: 21
   Script: {instanceID: 0}
+- Class: 23
+  Script: {instanceID: 0}
 - Class: 28
+  Script: {instanceID: 0}
+- Class: 33
+  Script: {instanceID: 0}
+- Class: 43
   Script: {instanceID: 0}
 - Class: 48
   Script: {instanceID: 0}
@@ -21,11 +31,13 @@ SerializeReferenceClassIdentifiers: []
 Assets:
 - Assets/QuickOutline/Resources/Shaders/OutlineFill.shader
 - Assets/QuickOutline/Resources/Materials/OutlineMask.mat
+- Assets/CustomResources/CustomObject/Reel/Reel.prefab
 - Assets/CustomResources/Textures/sit.png
 - Assets/CustomResources/Materials/OutlineMaterial.mat
 - Assets/QuickOutline/Resources/Shaders/OutlineMask.shader
 - Assets/CustomResources/Textures/black_screen.png
 - Assets/CustomResources/Materials/vr_panel_unlit.mat
 - Assets/CustomResources/Textures/map.png
+- Assets/CustomResources/CustomObject/Reel/Crank.prefab
 - Assets/QuickOutline/Resources/Materials/OutlineFill.mat
 Dependencies: []

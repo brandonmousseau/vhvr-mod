@@ -52,8 +52,9 @@ namespace ValheimVRMod.Patches {
 
             switch (EquipScript.getRight()) {
                 case EquipType.Fishing:
+                    meshFilter.gameObject.transform.localPosition = new Vector3(0, 0, -0.4f);
                     meshFilter.gameObject.AddComponent<FishingManager>();
-                    return;
+                    break;
                 case EquipType.ThrowObject:
                     meshFilter.gameObject.AddComponent<SpearManager>();
                     break;
