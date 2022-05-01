@@ -1,9 +1,9 @@
 ManifestFileVersion: 0
-CRC: 4292858890
+CRC: 3347021369
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 67113b918328594419f2cc2ea9f1ec69
+    Hash: 5b9548f26801ed524fdbe4f7c5b4baeb
   TypeTreeHash:
     serializedVersion: 2
     Hash: 1fe3abd029edb3522ae5dbbc711d0a74
@@ -32,6 +32,7 @@ Assets:
 - Assets/CustomResources/RuneStakeCy.prefab
 - Assets/QuickOutline/Resources/Shaders/OutlineFill.shader
 - Assets/QuickOutline/Resources/Materials/OutlineMask.mat
+- Assets/CustomResources/CustomObject/Reel/Reel.prefab
 - Assets/CustomResources/Textures/sit.png
 - Assets/CustomResources/Materials/OutlineMaterial.mat
 - Assets/QuickOutline/Resources/Shaders/OutlineMask.shader
@@ -39,5 +40,6 @@ Assets:
 - Assets/CustomResources/Materials/vr_panel_unlit.mat
 - Assets/CustomResources/GizmoRing.prefab
 - Assets/CustomResources/Textures/map.png
+- Assets/CustomResources/CustomObject/Reel/Crank.prefab
 - Assets/QuickOutline/Resources/Materials/OutlineFill.mat
 Dependencies: []
