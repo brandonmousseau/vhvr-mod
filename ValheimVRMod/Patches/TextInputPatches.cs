@@ -124,12 +124,9 @@ namespace ValheimVRMod.Patches {
                     }
                     else //SEND CHAT INPUT
                     {
-                        if (_inputField.text != "")
-                        {
-                            Chat.instance.m_input.text = _inputField.text;
-                            Chat.instance.InputText();
-                            Chat.instance.m_input.text = "";
-                        }
+                        Chat.instance.m_input.text = _inputField.text;
+                        Chat.instance.InputText();
+                        Chat.instance.m_input.text = "";
                     }
                 }
             }
