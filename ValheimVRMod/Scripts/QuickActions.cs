@@ -12,12 +12,14 @@ namespace ValheimVRMod.Scripts {
         private bool hasGPower;
         private Texture2D sitTexture; 
         private Texture2D mapTexture;
-
+        private Texture2D chatTexture;
         public static bool toggleMap;
+        public static bool bIsChatTrigger;
         
         QuickActions() {
             sitTexture = VRAssetManager.GetAsset<Texture2D>("sit");    
             mapTexture = VRAssetManager.GetAsset<Texture2D>("map");    
+            chatTexture = VRAssetManager.GetAsset<Texture2D>("black_screen");
         }
 
         protected override int getElementCount() {
@@ -77,6 +79,11 @@ namespace ValheimVRMod.Scripts {
                 new Vector2(0.5f, 0.5f), 500);
             elementCount++;
             
+            elements[elementCount].transform.GetChild(2).GetComponent<SpriteRenderer>().sprite =  Sprite.Create(chatTexture,
+                new Rect(0.0f, 0.0f, chatTexture.width, chatTexture.height),
+                new Vector2(0.5f, 0.5f), 500);
+            elementCount++;
+        
             elements[elementCount].transform.GetChild(2).GetComponent<SpriteRenderer>().sprite =  Sprite.Create(mapTexture,
                 new Rect(0.0f, 0.0f, mapTexture.width, mapTexture.height),
                 new Vector2(0.5f, 0.5f), 500);
@@ -97,7 +104,16 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            if (hoveredIndex == elementCount - 2) {
+            if (hoveredIndex == elementCount - 2)
+            {
+                bIsChatTrigger = true;
+                TextInput.m_instance.Show("", "", 256);
+                TextInput.m_instance.m_panel.gameObject.transform.localScale = new Vector3(0, 0, 0);
+
+                return;
+            }
+            
+            if (hoveredIndex == elementCount - 3) {
                 if (Player.m_localPlayer.InEmote() && Player.m_localPlayer.IsSitting())
                     stopEmote.Invoke(Player.m_localPlayer, null);
                 else
@@ -105,7 +121,7 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            if (hasGPower && hoveredIndex == elementCount - 3) {
+            if (hasGPower && hoveredIndex == elementCount - 4) {
                 Player.m_localPlayer.StartGuardianPower();
                 return;
             }
