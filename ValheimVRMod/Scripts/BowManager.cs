@@ -231,7 +231,6 @@ namespace ValheimVRMod.Scripts {
 
         private void rotateBowOnPulling() {
             if (oneHandedAiming) {
-                transform.localRotation = originalRotation;
                 return;
             }
 
