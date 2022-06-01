@@ -266,23 +266,24 @@ namespace ValheimVRMod.Scripts {
         private void pullString() {
 
             Vector3 pullPos = transform.InverseTransformPoint(mainHand.position);
-            if (oneHandedAiming) {
-                pullPos.x = 0f;
-                pullPos.y = -VHVRConfig.ArrowRestElevation();
-            }   
 
             realLifePullPercentage = Mathf.Pow(Math.Min(Math.Max(pullPos.z - pullStart.z, 0) / (maxPullLength - pullStart.z), 1), 2);
 
             // If RestrictBowDrawSpeed is enabled, limit the vr pull length by the square root of the current attack draw percentage to simulate the resistance.
             float pullLengthRestriction = VHVRConfig.RestrictBowDrawSpeed() ? Mathf.Lerp(pullStart.z, maxPullLength, Math.Max(Mathf.Sqrt(Player.m_localPlayer.GetAttackDrawPercentage()), 0.01f)) : maxPullLength;
 
-            if (pullPos.z > pullLengthRestriction) {
-                pullObj.transform.localPosition = new Vector3(pullPos.x, pullPos.y, pullLengthRestriction);
-            } else if (pullPos.z < pullStart.z) {
-                pullObj.transform.localPosition = new Vector3(pullPos.x, pullPos.y, pullStart.z);
-            } else {
-                pullObj.transform.localPosition = pullPos;
+            if (oneHandedAiming) {
+                pullPos.x = 0f;
+                pullPos.y = -VHVRConfig.ArrowRestElevation();
             }
+            if (pullPos.z > pullLengthRestriction) {
+                pullPos.z = pullLengthRestriction;
+            }
+            if (pullPos.z < pullStart.z) {
+                pullPos.z = pullStart.z;
+            }
+
+            pullObj.transform.localPosition = pullPos;
 
             //bHaptics
             if (!BhapticsTactsuit.suitDisabled && realLifePullPercentage != 0)
