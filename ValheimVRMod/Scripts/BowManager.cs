@@ -276,12 +276,7 @@ namespace ValheimVRMod.Scripts {
                 pullPos.x = 0f;
                 pullPos.y = -VHVRConfig.ArrowRestElevation();
             }
-            if (pullPos.z > pullLengthRestriction) {
-                pullPos.z = pullLengthRestriction;
-            }
-            if (pullPos.z < pullStart.z) {
-                pullPos.z = pullStart.z;
-            }
+            pullPos.z = Mathf.Clamp(pullPos.z, pullStart.z, pullLengthRestriction);
 
             pullObj.transform.localPosition = pullPos;
 
