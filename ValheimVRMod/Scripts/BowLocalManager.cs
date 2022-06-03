@@ -89,8 +89,8 @@ namespace ValheimVRMod.Scripts {
             var arrowHand = VHVRConfig.LeftHanded() ? SteamVR_Input_Sources.LeftHand : SteamVR_Input_Sources.RightHand;
             var bowHand = VHVRConfig.LeftHanded() ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand;
 
-            // Enable using the bow hand orientation alone for aiming if the bow hand is gripping.
-            oneHandedAiming = SteamVR_Actions.valheim_Grab.GetState(bowHand);
+            // Enable using the bow hand orientation alone for aiming if the bow hand is holding down both the grip and the trigger.
+            oneHandedAiming = SteamVR_Actions.valheim_Grab.GetState(bowHand) && (SteamVR_Actions.valheim_Use.GetState(bowHand) || SteamVR_Actions.valheim_UseLeft.GetState(bowHand));
 
             if (SteamVR_Actions.valheim_Grab.GetState(arrowHand)) {
                 handlePulling();
