@@ -26,6 +26,7 @@ namespace ValheimVRMod.Scripts {
         protected bool initialized;
         protected bool wasInitialized;
         protected Outline outline;
+        protected bool oneHandedAiming = false;
 
         public bool pulling;
         public Transform mainHand;
@@ -229,6 +230,10 @@ namespace ValheimVRMod.Scripts {
         }
 
         private void rotateBowOnPulling() {
+            if (oneHandedAiming) {
+                return;
+            }
+
             float realLifeHandDistance = transform.InverseTransformPoint(mainHand.position).magnitude;
 
             // The angle between the push direction and the arrow direction.
@@ -260,20 +265,20 @@ namespace ValheimVRMod.Scripts {
 
         private void pullString() {
 
-            pullObj.transform.position = mainHand.position;
-            var pullPos = pullObj.transform.localPosition;
+            Vector3 pullPos = transform.InverseTransformPoint(mainHand.position);
+
             realLifePullPercentage = Mathf.Pow(Math.Min(Math.Max(pullPos.z - pullStart.z, 0) / (maxPullLength - pullStart.z), 1), 2);
 
             // If RestrictBowDrawSpeed is enabled, limit the vr pull length by the square root of the current attack draw percentage to simulate the resistance.
             float pullLengthRestriction = VHVRConfig.RestrictBowDrawSpeed() ? Mathf.Lerp(pullStart.z, maxPullLength, Math.Max(Mathf.Sqrt(Player.m_localPlayer.GetAttackDrawPercentage()), 0.01f)) : maxPullLength;
 
-            if (pullPos.z > pullLengthRestriction) {
-                pullObj.transform.localPosition = new Vector3(pullPos.x, pullPos.y, pullLengthRestriction);
+            if (oneHandedAiming) {
+                pullPos.x = 0f;
+                pullPos.y = -VHVRConfig.ArrowRestElevation();
             }
+            pullPos.z = Mathf.Clamp(pullPos.z, pullStart.z, pullLengthRestriction);
 
-            if (pullPos.z < pullStart.z) {
-                pullObj.transform.localPosition = new Vector3(pullPos.x, pullPos.y, pullStart.z);
-            }
+            pullObj.transform.localPosition = pullPos;
 
             //bHaptics
             if (!BhapticsTactsuit.suitDisabled && realLifePullPercentage != 0)
