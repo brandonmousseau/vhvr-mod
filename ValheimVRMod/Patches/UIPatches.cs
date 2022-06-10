@@ -817,7 +817,7 @@ namespace ValheimVRMod.Patches
     {
         private static void Postfix(RectTransform ___m_staminaBar2Root, float ___m_staminaHideTimer, Animator ___m_staminaAnimator)
         {
-            if (VHVRConfig.NonVrPlayer())
+            if (!VHVRConfig.UseVrControls())
             {
                 return;
             }

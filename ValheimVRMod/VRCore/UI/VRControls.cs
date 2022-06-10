@@ -456,12 +456,12 @@ namespace ValheimVRMod.VRCore.UI
         }
         public int getDirectRightXAxis()
         {
-            float yAxis = -pitchAndYaw.axis.x;
-            if (yAxis > 0.5f)
+            float xAxis = -pitchAndYaw.axis.x;
+            if (xAxis > 0.5f)
             {
                 return -1;
             }
-            else if (yAxis < -0.5f)
+            else if (xAxis < -0.5f)
             {
                 return 1;
             }
