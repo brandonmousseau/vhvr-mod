@@ -36,6 +36,7 @@ namespace ValheimVRMod.Utilities {
                 case "$item_oozebomb":
                     return EquipType.ThrowObject;
                 case "$item_tankard":
+                case "$item_tankard_anniversary":
                     return EquipType.Tankard;                
                 case "$item_fistweapon_fenris":
                     return EquipType.Claws;
