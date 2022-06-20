@@ -163,16 +163,32 @@ namespace ValheimVRMod.Scripts {
             }
 
             SkinnedMeshRenderer skinnedMeshRenderer = gameObject.AddComponent<SkinnedMeshRenderer>();
+            MeshRenderer vanillaMeshRenderer = getVanillaBowstringMeshRenderer();
             Mesh mesh = GetComponent<MeshFilter>().mesh;
             mesh.boneWeights = boneWeights;
             mesh.bindposes = bindPoses;
             skinnedMeshRenderer.bones = bones;
             skinnedMeshRenderer.sharedMesh = mesh;
-            skinnedMeshRenderer.material = GetComponent<MeshRenderer>().material;
+            skinnedMeshRenderer.material = vanillaMeshRenderer.material;
             skinnedMeshRenderer.forceMatrixRecalculationPerRender = true;
 
             // Destroy the original renderer since we will be using SkinnedMeshRenderer only.
-            Destroy(GetComponent<MeshRenderer>());
+            Destroy(vanillaMeshRenderer);
+        }
+
+        private MeshRenderer getVanillaBowstringMeshRenderer()
+        {
+            Transform cylinder = transform.Find("Cylinder");
+            if (!cylinder)
+            {
+                LogUtils.LogError("Null Cylinder while getting Bow String MeshRenderer!");
+            }
+            MeshRenderer meshRenderer = cylinder.GetComponent<MeshRenderer>();
+            if (!meshRenderer)
+            {
+                LogUtils.LogError("Null MeshRenderer for Bow String!");
+            }
+            return meshRenderer;
         }
 
         /**
