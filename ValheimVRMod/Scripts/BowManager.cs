@@ -162,17 +162,19 @@ namespace ValheimVRMod.Scripts {
                 bindPoses[i] = bones[i].worldToLocalMatrix * transform.localToWorldMatrix;
             }
 
+            MeshRenderer vanillaMeshRenderer = gameObject.GetComponent<MeshRenderer>();
+            Material bowMaterial = vanillaMeshRenderer.material;
             SkinnedMeshRenderer skinnedMeshRenderer = gameObject.AddComponent<SkinnedMeshRenderer>();
-            Mesh mesh = GetComponent<MeshFilter>().mesh;
+            Mesh mesh = gameObject.GetComponent<MeshFilter>().mesh;
             mesh.boneWeights = boneWeights;
             mesh.bindposes = bindPoses;
             skinnedMeshRenderer.bones = bones;
             skinnedMeshRenderer.sharedMesh = mesh;
-            skinnedMeshRenderer.material = GetComponent<MeshRenderer>().material;
+            skinnedMeshRenderer.material = bowMaterial;
             skinnedMeshRenderer.forceMatrixRecalculationPerRender = true;
 
             // Destroy the original renderer since we will be using SkinnedMeshRenderer only.
-            Destroy(GetComponent<MeshRenderer>());
+            Destroy(vanillaMeshRenderer);
         }
 
         /**
