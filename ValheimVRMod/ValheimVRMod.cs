@@ -34,6 +34,10 @@ namespace ValheimVRMod
 #if NONVRMODE
             LogInfo("Running non-VR mode companion mod!");
 #endif
+        }
+
+        void Start()
+        {
             StartValheimVR();
         }
 
