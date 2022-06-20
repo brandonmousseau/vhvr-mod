@@ -163,7 +163,7 @@ namespace ValheimVRMod.Scripts {
             }
 
             SkinnedMeshRenderer skinnedMeshRenderer = gameObject.AddComponent<SkinnedMeshRenderer>();
-            MeshRenderer vanillaMeshRenderer = getVanillaBowstringMeshRenderer();
+            MeshRenderer vanillaMeshRenderer = getVanillaBowMeshRenderer();
             Mesh mesh = GetComponent<MeshFilter>().mesh;
             mesh.boneWeights = boneWeights;
             mesh.bindposes = bindPoses;
@@ -176,7 +176,7 @@ namespace ValheimVRMod.Scripts {
             Destroy(vanillaMeshRenderer);
         }
 
-        private MeshRenderer getVanillaBowstringMeshRenderer()
+        private MeshRenderer getVanillaBowMeshRenderer()
         {
             Transform cylinder = transform.Find("Cylinder");
             if (!cylinder)
