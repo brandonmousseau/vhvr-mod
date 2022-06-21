@@ -10,7 +10,7 @@ using static ValheimVRMod.Utilities.LogUtils;
 
 namespace ValheimVRMod
 {
-    [BepInPlugin("org.bepinex.plugins.valheimvrmod", "ValheimVR Mod", "0.9.1")]
+    [BepInPlugin("org.bepinex.plugins.valheimvrmod", "ValheimVR Mod", "0.9.2")]
     public class ValheimVRMod : BaseUnityPlugin
     {
 
@@ -34,6 +34,10 @@ namespace ValheimVRMod
 #if NONVRMODE
             LogInfo("Running non-VR mode companion mod!");
 #endif
+        }
+
+        void Start()
+        {
             StartValheimVR();
         }
 

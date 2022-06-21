@@ -216,6 +216,11 @@ namespace ValheimVRMod.Utilities
                     0,  0.28f, 0,
                     0, 0, 0,
                     0.18f,  0.03f, 0.18f
+                )}, {
+                "TankardAnniversary", WeaponColData.create(
+                    0,  0.48f, 0,
+                    0, 0, 0,
+                    0.18f,  0.03f, 0.18f
                 )}
         };
 
