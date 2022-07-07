@@ -27,6 +27,7 @@ namespace ValheimVRMod.VRCore.UI
         private bool altPieceTriggered = false;
         private float altMapZoomElapsedTime = 0f;
         private bool altMapZoomTriggered = false;
+        private float buildQuickActionTimer;
 
         private HashSet<string> ignoredZInputs = new HashSet<string>();
         private HashSet<string> quickActionEnabled = new HashSet<string>(); // never ignore these
@@ -152,16 +153,27 @@ namespace ValheimVRMod.VRCore.UI
             bool rightClickUp = false;
             if (useRightClick && laserControlsActive && inPlaceMode())
             {
-                rightClickDown = SteamVR_Actions.laserPointers_RightClick.GetStateDown(SteamVR_Input_Sources.Any);
+                rightClickDown = SteamVR_Actions.laserPointers_RightClick.GetState(SteamVR_Input_Sources.Any);
                 rightClickUp = SteamVR_Actions.laserPointers_RightClick.GetStateUp(SteamVR_Input_Sources.Any);
+                if(rightClickDown)
+                    buildQuickActionTimer += Time.unscaledDeltaTime;
             }
             
             if (action.GetStateDown(SteamVR_Input_Sources.Any) || rightClickDown) {
-                obj.SetActive(true);
+                if (inPlaceMode() && (buildQuickActionTimer >= 0.3f || !useRightClick)) 
+                    obj.SetActive(true);
+                else if (!inPlaceMode())
+                    obj.SetActive(true);
             }
 
             if (action.GetStateUp(SteamVR_Input_Sources.Any) || rightClickUp) {
-                obj.GetComponent<T>().selectHoveredItem();
+                if (inPlaceMode() && (buildQuickActionTimer >= 0.3f || !useRightClick))
+                    obj.GetComponent<T>().selectHoveredItem();
+                else if(!inPlaceMode())
+                    obj.GetComponent<T>().selectHoveredItem();
+
+                if (useRightClick)
+                    buildQuickActionTimer = 0;
                 obj.SetActive(false);
             }
         }
@@ -231,11 +243,11 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return false;
             }
-            if (zinput == "Jump" && shouldEnableRemove())
+            if (zinput == "Jump" && (shouldEnableRemove() || shouldDisableJumpRemove()))
             {
                 return false;
             }
-            if (zinput == "Remove" && !shouldEnableRemove())
+            if (zinput == "Remove" && (!shouldEnableRemove() || shouldDisableJumpRemove()))
             {
                 return false;
             }
@@ -309,11 +321,11 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return false;
             }
-            if (zinput == "Jump" && shouldEnableRemove())
+            if (zinput == "Jump" && (shouldEnableRemove() || shouldDisableJumpRemove()))
             {
                 return false;
             }
-            if (zinput == "Remove" && !shouldEnableRemove())
+            if (zinput == "Remove" && (!shouldEnableRemove() || shouldDisableJumpRemove()))
             {
                 return false;
             }
@@ -348,11 +360,11 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return false;
             }
-            if (zinput == "Jump" && shouldEnableRemove())
+            if (zinput == "Jump" && (shouldEnableRemove() || shouldDisableJumpRemove()))
             {
                 return false;
             }
-            if (zinput == "Remove" && !shouldEnableRemove())
+            if (zinput == "Remove" && (!shouldEnableRemove() || shouldDisableJumpRemove()))
             {
                 return false;
             }
@@ -369,7 +381,7 @@ namespace ValheimVRMod.VRCore.UI
             }
             return action.Any(x => x.GetStateUp(SteamVR_Input_Sources.Any));
         }
-
+        
         public float GetJoyLeftStickX()
         {
             if (!mainActionSet.IsActive())
@@ -408,6 +420,55 @@ namespace ValheimVRMod.VRCore.UI
                 return 0.0f;
             }
             return -pitchAndYaw.axis.y;
+        }
+        public int getDirectPieceRotation()
+        {
+            if (!altPieceRotationControlsActive())
+            {
+                return 999;
+            }
+            if (-pitchAndYaw.axis.y>0.5f)
+            {
+                return BuildingManager.instance.TranslateRotation() + 8;
+            }
+            else if (-pitchAndYaw.axis.y < -0.5f)
+            {
+                return BuildingManager.instance.TranslateRotation();
+            }
+            return 999;
+        }
+
+        public int getDirectRightYAxis()
+        {
+            float yAxis = -pitchAndYaw.axis.y;
+            if (yAxis > 0.5f)
+            {
+                return -1;
+            }
+            else if (yAxis < -0.5f)
+            {
+                return 1;
+            }
+            else
+            {
+                return 0;
+            }
+        }
+        public int getDirectRightXAxis()
+        {
+            float xAxis = -pitchAndYaw.axis.x;
+            if (xAxis > 0.5f)
+            {
+                return -1;
+            }
+            else if (xAxis < -0.5f)
+            {
+                return 1;
+            }
+            else
+            {
+                return 0;
+            }
         }
 
         public int getPieceRotation()
@@ -458,6 +519,22 @@ namespace ValheimVRMod.VRCore.UI
                 return -1;
             }
             else if (rightStickXAxis < -0.1f)
+            {
+                return 1;
+            }
+            else
+            {
+                return 0;
+            }
+        }
+
+        public int getPieceRefModifier()
+        {
+            float yAxis = GetJoyRightStickY();
+            if(yAxis > 0.5f)
+            {
+                return -1;
+            } else if (yAxis < -0.5f)
             {
                 return 1;
             }
@@ -535,6 +612,12 @@ namespace ValheimVRMod.VRCore.UI
         {
             return inPlaceMode() && SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand);
         }
+
+        private bool shouldDisableJumpRemove()
+        {
+            return BuildingManager.instance && (BuildingManager.instance.isCurrentlyMoving() || BuildingManager.instance.isCurrentlyPreciseMoving() || BuildingManager.instance.isHoldingPlace());
+        }
+
         private void init()
         {
             zInputToBooleanAction.Add("JoyMenu", new[] { SteamVR_Actions.valheim_ToggleMenu });

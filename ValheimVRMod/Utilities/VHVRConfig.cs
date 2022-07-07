@@ -67,6 +67,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<string> minimapPanelPlacement;
         private static ConfigEntry<bool> allowHudFade;
         private static ConfigEntry<bool> hideHotbar;
+        private static ConfigEntry<bool> alwaysShowStamina;
 
         // Controls Settings
         private static ConfigEntry<bool> useLookLocomotion;
@@ -90,6 +91,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> runIsToggled;
         private static ConfigEntry<bool> leftHanded;
         private static ConfigEntry<bool> viewTurnWithMountedAnimal;
+        private static ConfigEntry<bool> buildOnRelease;
 
         // Graphics Settings
         private static ConfigEntry<bool> useAmplifyOcclusion;
@@ -108,7 +110,10 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> arrowRestElevation;
         private static ConfigEntry<string> arrowRestSide;
         private static ConfigEntry<bool> restrictBowDrawSpeed;
-        
+        private static ConfigEntry<bool> advancedBuildMode;
+        private static ConfigEntry<bool> freePlaceAutoReturn;
+        private static ConfigEntry<bool> advancedRotationUpWorld;
+
 #if DEBUG
         private static ConfigEntry<float> DebugPosX;
         private static ConfigEntry<float> DebugPosY;
@@ -425,6 +430,10 @@ namespace ValheimVRMod.Utilities
                                         "HideHotbar",
                                         true,
                                         "Hide the hotbar, as it is generally unused when playing in VR. Ignored if not playing with VR controls.");
+            alwaysShowStamina = config.Bind("VRHUD",
+                                        "AlwaysShowStamina",
+                                        true,
+                                        "Always show the stamina bar even if its full");
         }
 
         private static void InitializeControlsSettings()
@@ -494,6 +503,10 @@ namespace ValheimVRMod.Utilities
                                        "ViewTurnWithMountedAnimal",
                                        false,
                                        "Whether the view turns automatically together with the mounted animal when the animal turns.");
+            buildOnRelease = config.Bind("Controls",
+                                         "BuildOnRelease",
+                                         true,
+                                         "If true, when building, objects will be placed when releasing the trigger isntead of on pressing it down.");
             InitializeConfigurableKeyBindings(config);
         }
 
@@ -606,37 +619,48 @@ namespace ValheimVRMod.Utilities
                 "RestrictBowDrawSpeed",
                 false,
                 "Whether to apply vanilla-style restriction on bow drawing speed and make premature releases inaccurate. If unchecked, extra bow stamina drain is applied for game balance.");
-
-// #if DEBUG
-//             DebugPosX = config.Bind("Motion Control",
-//                 "DebugPosX",
-//                 0.0f,
-//                 "DebugPosX");
-//             DebugPosY = config.Bind("Motion Control",
-//                 "DebugPosY",
-//                 0.0f,
-//                 "DebugPosY");
-//             DebugPosZ = config.Bind("Motion Control",
-//                 "DebugPosZ",
-//                 0.0f,
-//                 "DebugPosZ");
-//             DebugRotX = config.Bind("Motion Control",
-//                 "DebugRotX",
-//                 0.0f,
-//                 "DebugRotX");
-//             DebugRotY = config.Bind("Motion Control",
-//                 "DebugRotY",
-//                 0.0f,
-//                 "DebugRotY");
-//             DebugRotZ = config.Bind("Motion Control",
-//                 "DebugRotZ",
-//                 0.0f,
-//                 "DebugRotZ");
-//             DebugScale = config.Bind("Motion Control",
-//                 "DebugScale",
-//                 1.0f,
-//                 "DebugScale");
-// #endif
+            advancedBuildMode = config.Bind("Motion Control",
+                                                    "AdvancedBuildMode",
+                                                    false,
+                                                    "Enable Advanced Building mode (Free place, Advanced Rotation)");
+            freePlaceAutoReturn = config.Bind("Motion Control",
+                                                    "FreePlaceAutoReturn",
+                                                    false,
+                                                    "Automatically return to normal building mode after building a piece in Free place mode");
+            advancedRotationUpWorld = config.Bind("Motion Control",
+                                                    "AdvanceRotationUpWorld",
+                                                    true,
+                                                    "Always use rotate vertically up when using analog rotation while in advanced build mode");
+            // #if DEBUG
+            //             DebugPosX = config.Bind("Motion Control",
+            //                 "DebugPosX",
+            //                 0.0f,
+            //                 "DebugPosX");
+            //             DebugPosY = config.Bind("Motion Control",
+            //                 "DebugPosY",
+            //                 0.0f,
+            //                 "DebugPosY");
+            //             DebugPosZ = config.Bind("Motion Control",
+            //                 "DebugPosZ",
+            //                 0.0f,
+            //                 "DebugPosZ");
+            //             DebugRotX = config.Bind("Motion Control",
+            //                 "DebugRotX",
+            //                 0.0f,
+            //                 "DebugRotX");
+            //             DebugRotY = config.Bind("Motion Control",
+            //                 "DebugRotY",
+            //                 0.0f,
+            //                 "DebugRotY");
+            //             DebugRotZ = config.Bind("Motion Control",
+            //                 "DebugRotZ",
+            //                 0.0f,
+            //                 "DebugRotZ");
+            //             DebugScale = config.Bind("Motion Control",
+            //                 "DebugScale",
+            //                 1.0f,
+            //                 "DebugScale");
+            // #endif
         }
 
         public static bool ModEnabled()
@@ -1008,6 +1032,18 @@ namespace ValheimVRMod.Utilities
         {
             return twoHandedWithShield.Value;
         }
+        public static bool AdvancedBuildingMode()
+        {
+            return advancedBuildMode.Value;
+        }
+        public static bool FreePlaceAutoReturn()
+        {
+            return freePlaceAutoReturn.Value;
+        }
+        public static bool AdvancedRotationUpWorld()
+        {
+            return advancedRotationUpWorld.Value;
+        }
         public static bool UseSpearDirectionGraphic()
         {
             return useSpearDirectionGraphic.Value;
@@ -1097,7 +1133,11 @@ namespace ValheimVRMod.Utilities
         {
             return hideHotbar.Value && UseVrControls();
         }
-        
+        public static bool AlwaysShowStamina()
+        {
+            return alwaysShowStamina.Value;
+        }
+
         public static bool LockGuiWhileMenuOpen()
         {
             return lockGuiWhileInventoryOpen.Value;
@@ -1108,6 +1148,11 @@ namespace ValheimVRMod.Utilities
             return disableRecenterPose.Value;
         }
 
+        public static bool BuildOnRelease()
+        {
+            return buildOnRelease.Value;
+        }
+      
         public static bool BhapticsEnabled()
         {
             return bhapticsEnabled.Value && !NonVrPlayer();

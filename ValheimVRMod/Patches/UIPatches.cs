@@ -812,7 +812,27 @@ namespace ValheimVRMod.Patches
             hotkeyBar.m_elements.Clear();
         }
     }
-
+    [HarmonyPatch(typeof(Hud),nameof(Hud.UpdateStamina))]
+    class StaminaPatch
+    {
+        private static void Postfix(RectTransform ___m_staminaBar2Root, float ___m_staminaHideTimer, Animator ___m_staminaAnimator)
+        {
+            if (!VHVRConfig.UseVrControls())
+            {
+                return;
+            }
+            if (VHVRConfig.AlwaysShowStamina() || SettingCallback.configRunning)
+            {
+                ___m_staminaAnimator.SetBool("Visible", true);
+            }
+            if (VHVRConfig.StaminaPanelPlacement() == "Legacy" || VHVRConfig.UseLegacyHud()) 
+            {
+                return;
+            }
+            RectTransform rectTransform = ___m_staminaBar2Root.transform as RectTransform;
+            rectTransform.anchoredPosition = new Vector2(0f, 130f);
+        }
+    }
     //Make the message ignore the fishing distance meter when the fishing float is being reeled
     [HarmonyPatch(typeof(FishingFloat), "Message")]
     class PatchFishingText
