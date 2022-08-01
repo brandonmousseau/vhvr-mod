@@ -1,4 +1,6 @@
+using System;
 using BepInEx.Configuration;
+using NDesk.Options;
 using Unity.XR.OpenVR;
 using ValheimVRMod.VRCore;
 using UnityEngine;
@@ -173,32 +175,59 @@ namespace ValheimVRMod.Utilities
 
         private static void InitializeImmutableSettings() 
         {
-            vrModEnabled = config.Bind("Immutable",
+            vrModEnabled = createImmutableSetting("Immutable",
                 "ModEnabled",
                 true,
                 "Used to toggle the mod on and off.");
-            nonVrPlayer = config.Bind("Immutable",
+            nonVrPlayer = createImmutableSetting("Immutable",
                 "nonVrPlayer",
                 false,
                 "Disables VR completely. This is for Non-Vr Players that want to see their Multiplayer companions in VR Bodys");
-            useVrControls = config.Bind("Immutable",
+            useVrControls = createImmutableSetting("Immutable",
                 "UseVRControls",
                 true,
                 "This setting enables the use of the VR motion controllers as input (Only Oculus Touch and Valve Index supported)." +
                 "This setting, if true, will also force UseOverlayGui to be false as this setting Overlay GUI is not compatible with VR laser pointer inputs.");
-            useOverlayGui = config.Bind("Immutable",
+            useOverlayGui = createImmutableSetting("Immutable",
                 "UseOverlayGui",
                 true,
                 "Whether or not to use OpenVR overlay for the GUI. This produces a" +
                 " cleaner GUI but will only be compatible with M&K or Gamepad controls.");
-            pluginVersion = config.Bind("Immutable",
+            pluginVersion = createImmutableSetting("Immutable",
                 "PluginVersion",
                 "",
                 "For internal use only. Do not edit.");
-            bhapticsEnabled = config.Bind("Immutable",
+            bhapticsEnabled = createImmutableSetting("Immutable",
                 "bhapticsEnabled",
                 false,
                 "Enables bhaptics feedback. Only usable if vrModEnabled true AND nonVrPlayer false.");
+        }
+
+        private static ConfigEntry<T> createImmutableSetting<T>(
+            string section,
+            string key,
+            T defaultValue,
+            string description)
+        {
+            
+            ConfigEntry<T> immutableSetting = config.Bind(section, key, defaultValue, description);
+            
+            // now trying to find same setting in start options and override on match
+            
+            var p = new OptionSet {
+                { key + "=", 
+                    "the immutable " + key + " to get the value of",
+                    (T v) => immutableSetting.Value = v }
+            };
+
+            try {
+                p.Parse(Environment.GetCommandLineArgs());
+            }
+            catch (Exception e) {
+                Debug.LogError("Error parsing Start Option [" + key + "]: " + e.Message);
+            }
+
+            return immutableSetting;
         }
 
         private static void InitializeGeneralSettings()

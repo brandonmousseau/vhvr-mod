@@ -16,6 +16,7 @@ copy "%SOLUTION_DIR%Unity\build\ValheimVR_Data\Managed\root_motion_demo_assets.d
 copy "%SOLUTION_DIR%Unity\build\ValheimVR_Data\Managed\root_motion_shared.dll" "%COMMON_DIR%Valheim\Valheim_Data\Managed"
 copy "%SOLUTION_DIR%Unity\build\ValheimVR_Data\Managed\Valve.Newtonsoft.Json.dll" "%COMMON_DIR%Valheim\Valheim_Data\Managed"
 copy "%TARGET_DIR%Bhaptics.Tact.dll" "%COMMON_DIR%Valheim\Valheim_Data\Managed" 
+copy "%TARGET_DIR%NDesk.Options.dll" "%COMMON_DIR%Valheim\Valheim_Data\Managed" 
 
 if not exist "%COMMON_DIR%Valheim\Valheim_Data\Plugins\x86_64" mkdir "%COMMON_DIR%Valheim\Valheim_Data\Plugins\x86_64"
 copy "%SOLUTION_DIR%Unity\build\ValheimVR_Data\Plugins\x86_64\XRSDKOpenVR.dll" "%COMMON_DIR%Valheim\Valheim_Data\Plugins\x86_64"
@@ -65,6 +66,7 @@ copy "%SOLUTION_DIR%Unity\build\ValheimVR_Data\Managed\root_motion_demo_assets.d
 copy "%SOLUTION_DIR%Unity\build\ValheimVR_Data\Managed\root_motion_shared.dll" "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\Managed"
 copy "%SOLUTION_DIR%Unity\build\ValheimVR_Data\Managed\Valve.Newtonsoft.Json.dll" "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\Managed"
 copy "%TARGET_DIR%Bhaptics.Tact.dll" "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\Managed"
+copy "%TARGET_DIR%NDesk.Options.dll" "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\Managed"
 
 if not exist "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\Plugins" mkdir if not exist "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\Plugins"
 if not exist "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\Plugins\x86_64" mkdir "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\Plugins\x86_64"
