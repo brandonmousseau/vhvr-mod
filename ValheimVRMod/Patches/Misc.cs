@@ -157,4 +157,45 @@ namespace ValheimVRMod.Patches
         }
     }
 
+    // Prevents the character from spinning while paused
+    [HarmonyPatch(typeof(Game), nameof(Game.UpdatePause))]
+    class Prevent_Pause_Character_Spin_Patch
+    {
+
+        private static MethodInfo rotateMethod = AccessTools.Method(typeof(Transform), nameof(Transform.Rotate), new Type[] { typeof(Vector3), typeof(float) });
+        private static MethodInfo setLookDirMethod = AccessTools.Method(typeof(Character), nameof(Player.SetLookDir));
+
+        private static void FakeRotate(Transform t, Vector3 axis, float angle) {}
+
+        private static void FakeSetLookDir(Character c, Vector3 v, float f) {}
+
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            var original = new List<CodeInstruction>(instructions);
+            var patched = new List<CodeInstruction>();
+            for (int i = 0; i < original.Count; i++)
+            {
+                var instruction = original[i];
+                if (i == 0)
+                {
+                    patched.Add(instruction);
+                    continue;
+                }
+                if (instruction.Calls(rotateMethod) && original[i - 1].opcode == OpCodes.Mul)
+                {
+                    patched.Add(CodeInstruction.Call(typeof(Prevent_Pause_Character_Spin_Patch), nameof(Prevent_Pause_Character_Spin_Patch.FakeRotate)));
+                }
+                else if (instruction.Calls(setLookDirMethod))
+                {
+                    patched.Add(CodeInstruction.Call(typeof(Prevent_Pause_Character_Spin_Patch), nameof(Prevent_Pause_Character_Spin_Patch.FakeSetLookDir)));
+                }
+                else
+                {
+                    patched.Add(instruction);
+                }
+            }
+            return patched;
+        }
+    }
+
 }
