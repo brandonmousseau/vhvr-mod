@@ -25,6 +25,7 @@ namespace ValheimVRMod.VRCore.UI
 
         private float altPieceRotationElapsedTime = 0f;
         private bool altPieceTriggered = false;
+        private bool wasAltPieceTriggered = false;
         private float altMapZoomElapsedTime = 0f;
         private bool altMapZoomTriggered = false;
         private float buildQuickActionTimer;
@@ -122,10 +123,19 @@ namespace ValheimVRMod.VRCore.UI
         private void updateAltPieceRotationTimer()
         {
             altPieceRotationElapsedTime += Time.unscaledDeltaTime;
-            if (altPieceRotationElapsedTime >= ALT_PIECE_ROTATION_TIME_DELAY * VHVRConfig.AltPieceRotationDelay())
+            if (altPieceRotationElapsedTime >= ALT_PIECE_ROTATION_TIME_DELAY * VHVRConfig.AltPieceRotationDelay() || (combinedPitchAndYawX != 0 && !wasAltPieceTriggered))
             {
                 altPieceTriggered = true;
                 altPieceRotationElapsedTime = 0f;
+            }
+            if (combinedPitchAndYawX != 0)
+            {
+                wasAltPieceTriggered = true;
+            }
+            else
+            {
+                altPieceRotationElapsedTime = 0f;
+                wasAltPieceTriggered = false;
             }
         }
 
@@ -473,32 +483,38 @@ namespace ValheimVRMod.VRCore.UI
 
         public int getPieceRotation()
         {
-            if (!contextScroll.activeBinding)
+            if (altPieceRotationControlsActive())
             {
-                // Since we don't have a context scroll bound (becaus of limited input
-                // options), we need to control rotation using the right joystick
-                // when a special button is held - we are using the Map button for this purpose.
-                // As a result, when in "build mode", the map button is disabled for the purpose
-                // of bringing up the map and when the player is holding down the map button,
-                // then they cannot rotate their character.
-                if (altPieceRotationControlsActive())
-                {
-                    return getAltPieceRotation();
-                } else
-                {
-                    return 0;
-                }
+                return getAltPieceRotation();
             }
-            if (contextScroll.axis.y > 0)
-            {
-                return 1;
-            } else if (contextScroll.axis.y < 0)
-            {
-                return -1;
-            } else
-            {
-                return 0;
-            }
+            return 0;
+            //context scrolling backup in case needed
+            //if (!contextScroll.activeBinding)
+            //{
+            //    // Since we don't have a context scroll bound (becaus of limited input
+            //    // options), we need to control rotation using the right joystick
+            //    // when a special button is held - we are using the Map button for this purpose.
+            //    // As a result, when in "build mode", the map button is disabled for the purpose
+            //    // of bringing up the map and when the player is holding down the map button,
+            //    // then they cannot rotate their character.
+            //    if (altPieceRotationControlsActive())
+            //    {
+            //        return getAltPieceRotation();
+            //    } else
+            //    {
+            //        return 0;
+            //    }
+            //}
+            //if (contextScroll.axis.y > 0)
+            //{
+            //    return 1;
+            //} else if (contextScroll.axis.y < 0)
+            //{
+            //    return -1;
+            //} else
+            //{
+            //    return 0;
+            //}
         }
 
         public bool getClickModifier()
@@ -596,9 +612,10 @@ namespace ValheimVRMod.VRCore.UI
         // Used to determine when the player is in a mode where the right joystick should
         // be used for rotation of an object while building rather than rotating the
         // player character
+        // disable context scrolling for now 
         private bool altPieceRotationControlsActive()
         {
-            return (!contextScroll.activeBinding) &&
+            return      //(!contextScroll.activeBinding) &&
                         inPlaceMode() &&
                         hasPlacementGhost() &&
                         !Hud.IsPieceSelectionVisible() &&
