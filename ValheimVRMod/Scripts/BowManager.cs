@@ -31,6 +31,12 @@ namespace ValheimVRMod.Scripts {
         public bool pulling;
         public Transform mainHand;
 
+        private Vector3 localStringTopPos = new Vector3(0, 0, 0);
+        private Vector3 localStringBottomPos = new Vector3(0, 0, 0);
+        private Vector3 handleTop = new Vector3(0, 0, 0);
+        private Vector3 handleBottom = new Vector3(0, 0, 0);
+        private const float handleHeight = 0.52f;
+
         void Awake() {
             
             originalRotation = transform.localRotation;
@@ -72,8 +78,8 @@ namespace ValheimVRMod.Scripts {
             // so we simply iterate all triangles and compare their vertex distances to a certain minimum size
             // for the new triangle array, we just skip those with bigger vertex distance
             // but we save the top and bottom points of the deleted vertices so we can use them for our new string.
-            Vector3 localStringTopPos = new Vector3(0, 0, 0);
-            Vector3 localStringBottomPos = new Vector3(0, 0, 0);
+            localStringTopPos = new Vector3(0, 0, 0);
+            localStringBottomPos = new Vector3(0, 0, 0);
             for (int i = 0; i < mesh.triangles.Length / 3; i++) {
                 Vector3 v1 = verts[mesh.triangles[i * 3]];
                 Vector3 v2 = verts[mesh.triangles[i * 3 + 1]];
@@ -100,9 +106,8 @@ namespace ValheimVRMod.Scripts {
             }
 
             // Calculate vertex bone weights, find the local z coordinates of the top and bottom of the bow handle, and calculate the grip width.
-            const float handleHeight = 0.52f;
-            Vector3 handleTop = new Vector3(0, 0, 0);
-            Vector3 handleBottom = new Vector3(0, 0, 0);
+            handleTop = new Vector3(0, 0, 0);
+            handleBottom = new Vector3(0, 0, 0);
             boneWeights = new BoneWeight[verts.Length];
             for (int i = 0; i < verts.Length; i++) {
                 Vector3 v = verts[i];
@@ -128,6 +133,11 @@ namespace ValheimVRMod.Scripts {
                 boneWeights[i].weight0 = 1;
             }
 
+            initialized = true;
+        }
+
+        private void createLimbBones()
+        {
             // Create the bones for the limbs.
             upperLimbBone = new GameObject("BowUpperLimbBone").transform;
             lowerLimbBone = new GameObject("BowLowerLimbBone").transform;
@@ -136,7 +146,10 @@ namespace ValheimVRMod.Scripts {
             lowerLimbBone.localPosition = new Vector3(0, -handleHeight / 2, handleBottom.z);
             upperLimbBone.localRotation = Quaternion.identity;
             lowerLimbBone.localRotation = Quaternion.identity;
+        }
 
+        private void initializeStringPosition()
+        {
             // Initialize string position
             stringTop = new GameObject().transform;
             stringBottom = new GameObject().transform;
@@ -145,8 +158,6 @@ namespace ValheimVRMod.Scripts {
             stringTop.position = transform.TransformPoint(localStringTopPos);
             stringBottom.position = transform.TransformPoint(localStringBottomPos);
             pullStart = Vector3.Lerp(localStringTopPos, localStringBottomPos, 0.5f);
-
-            initialized = true;
         }
 
         private void skinBones() {
@@ -209,6 +220,8 @@ namespace ValheimVRMod.Scripts {
             }
 
             if (!wasInitialized) {
+                createLimbBones();
+                initializeStringPosition();
                 GetComponent<MeshFilter>().mesh.vertices = verts;
                 skinBones();
                 createNewString();
