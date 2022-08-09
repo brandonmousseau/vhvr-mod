@@ -12,22 +12,45 @@ namespace ValheimVRMod.VRCore.UI
     class PlaceModeRayVectorProvider : MonoBehaviour
     {
 
-        public static PlaceModeRayVectorProvider instance { get
+        public static PlaceModeRayVectorProvider instance {
+            get
             {
                 ensureInstance();
                 return _instance.GetComponent<PlaceModeRayVectorProvider>();
             }
         }
 
-        public static Vector3 startingPosition { get {
+        public static Vector3 startingPosition {
+            get
+            {
                 ensureInstance();
                 return _startingPosition;
             } 
         }
 
-        public static Vector3 rayDirection { get {
+        public static Vector3 rayDirection {
+            get
+            {
                 ensureInstance();
                 return _rayDirection * Vector3.forward;
+            }
+        }
+
+        public static Vector3 startingPositionLeft
+        {
+            get
+            {
+                ensureInstance();
+                return _startingPositionLeft;
+            }
+        }
+
+        public static Vector3 rayDirectionLeft
+        {
+            get
+            {
+                ensureInstance();
+                return _rayDirectionLeft * Vector3.forward;
             }
         }
 
@@ -37,6 +60,8 @@ namespace ValheimVRMod.VRCore.UI
         private static Quaternion _yaw = Quaternion.identity;
         private static Quaternion _rayDirection = Quaternion.identity;
         private static Vector3 _startingPosition = Vector3.zero;
+        private static Quaternion _rayDirectionLeft = Quaternion.identity;
+        private static Vector3 _startingPositionLeft = Vector3.zero;
         private static GameObject _vrCamObj;
 
         private bool inPlaceMode = false;
@@ -92,6 +117,14 @@ namespace ValheimVRMod.VRCore.UI
             {
                 _rayDirection = Quaternion.Euler(_pitch, _yaw.eulerAngles.y, 0f);
             }
+            if (VHVRConfig.UseVrControls() && VRPlayer.leftPointer != null)
+            {
+                _rayDirectionLeft = VRPlayer.leftPointer.rayDirection;
+            }
+            else
+            {
+                _rayDirectionLeft = Quaternion.identity;
+            }
         }
 
         private void setRayStartingPosition()
@@ -114,6 +147,13 @@ namespace ValheimVRMod.VRCore.UI
                 {
                     _startingPosition = Vector3.zero;
                 }
+            }
+            if (VHVRConfig.UseVrControls() && VRPlayer.leftPointer != null)
+            {
+                _startingPositionLeft = VRPlayer.leftPointer.rayStartingPosition;
+            } else
+            {
+                _startingPositionLeft = Vector3.zero;
             }
         }
 

@@ -19,7 +19,7 @@ namespace ValheimVRMod.Utilities
 
         private static Camera _worldSpaceUiCamera;
         private static Dictionary<string, Camera> _cameraCache = new Dictionary<string, Camera>();
-        private static int worldSpaceUiDepth = 1;
+        private static int worldSpaceUiDepth = 2;
 
         public static void copyCamera(Camera from, Camera to)
         {

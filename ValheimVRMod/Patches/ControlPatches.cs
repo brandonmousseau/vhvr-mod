@@ -126,6 +126,94 @@ namespace ValheimVRMod.Patches {
             }
 
             ___m_placeRotation += VRControls.instance.getPieceRotation();
+            var directRotate = VRControls.instance.getDirectPieceRotation();
+            if (directRotate != 999)
+            {
+                ___m_placeRotation = directRotate;
+            }
+        }
+    }
+
+    //Force position nearby snap points
+    [HarmonyPatch(typeof(Player), "UpdatePlacementGhost")]
+    class PlacementSnapPoint
+    {
+        private static bool Prefix(Player __instance, GameObject ___m_placementGhost, GameObject ___m_placementMarkerInstance)
+        {
+            if (!VRControls.mainControlsActive || __instance != Player.m_localPlayer || !___m_placementGhost || !___m_placementGhost.transform ||
+               !__instance.InPlaceMode() || !BuildingManager.instance)
+            {
+                return true;
+            }
+
+            if (BuildingManager.instance.isCurrentlyFreeMode())
+            {
+                BuildingManager.instance.PrecisionUpdate(___m_placementGhost);
+                if (___m_placementMarkerInstance)
+                {
+                    ___m_placementMarkerInstance.SetActive(false);
+                }
+                BuildingManager.instance.ValidateBuildingPiece(___m_placementGhost);
+                return false;
+            }
+            return true;
+        }
+        private static void Postfix(Player __instance, GameObject ___m_placementGhost)
+        {
+            if (!VRControls.mainControlsActive || __instance != Player.m_localPlayer || !___m_placementGhost || !___m_placementGhost.transform ||
+                !__instance.InPlaceMode() || !BuildingManager.instance)
+            {
+                return;
+            }
+
+            if (BuildingManager.instance.isSnapMode() && !BuildingManager.instance.CheckMenuIsOpen())
+            {
+                BuildingManager.instance.UpdateSelectedSnapPoints(___m_placementGhost);
+            }
+
+            BuildingManager.instance.UpdateRotationAdvanced(___m_placementGhost);
+
+            if (BuildingManager.instance.isSnapMode())
+            {
+                return;
+            }
+
+            BuildingManager.instance.ValidateBuildingPiece(___m_placementGhost);
+        }
+    }
+    [HarmonyPatch(typeof(Player), "PieceRayTest")]
+    class Player_PieceRayTest
+    {
+        static void Postfix(Player __instance, Piece piece)
+        {
+            if (!VRControls.mainControlsActive || __instance != Player.m_localPlayer ||
+               !__instance.InPlaceMode() || !BuildingManager.instance)
+            {
+                return;
+            }
+
+            if (piece)
+            {
+                BuildingManager.instance.rayTracedPiece = piece;
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(Player), "FindClosestSnappoint")]
+    class ChangeSnapPointMaxDistance
+    {
+        private static void Prefix(Player __instance, ref float maxDistance)
+        {
+            if (!VRControls.mainControlsActive || __instance != Player.m_localPlayer ||
+                !__instance.InPlaceMode() || !BuildingManager.instance)
+            {
+                return;
+            }
+
+            if (BuildingManager.instance.IsReferenceMode())
+            {
+                maxDistance = 10f;
+            }
         }
     }
 
@@ -174,6 +262,96 @@ namespace ValheimVRMod.Patches {
             }
         
             return patched;
+        }
+    }
+
+    // This patch allows for optional use of releasing the trigger to build things
+    class BuildOnReleasePatches
+    {
+
+        // We need to track when the piece selection menu was just hidden
+        // as a result of the user clicking on it so that we don't
+        // cause a placement right after the menu is closed and the
+        // trigger is released.
+        [HarmonyPatch(typeof(Hud), nameof(Hud.HidePieceSelection))]
+        class BuildHudTracker
+        {
+
+            public static bool buildHudJustToggledOff = false;
+
+            static void Postfix()
+            {
+                buildHudJustToggledOff = true;
+            }
+
+        }
+
+        [HarmonyPatch(typeof(Player), nameof(Player.UpdatePlacement))]
+        class Player_UpdatePlacement_BuildInputPatch
+        {
+            private static MethodInfo getButtonDownMethod =
+                AccessTools.Method(typeof(ZInput), nameof(ZInput.GetButtonDown), new[] { typeof(string) });
+
+            private static readonly string placementInput = "JoyPlace";
+
+            private static bool ShouldTriggerBuildPlacement(string inputName)
+            {
+                if (!BuildingManager.instance)
+                {
+                    return ZInput.GetButtonDown(inputName);
+                }
+                if (VHVRConfig.BuildOnRelease())
+                {
+                    bool inputReceived = ZInput.GetButtonUp(inputName);
+                    if (BuildHudTracker.buildHudJustToggledOff && inputReceived)
+                    {
+                        // Since the build hud was just toggled off and the input was receieved,
+                        // we won't trigger the placement. Instead just reset the "buildHudJustToggledOff" flag
+                        LogUtils.LogDebug("Resetting buildHudToggledFlag");
+                        BuildHudTracker.buildHudJustToggledOff = false;
+                        return false;
+                    } else
+                    {
+                        if (inputReceived && !BuildingManager.instance.isCurrentlyMoving() && VHVRConfig.FreePlaceAutoReturn())
+                        {
+                            BuildingManager.instance.ExitPreciseMode();
+                        }
+                        if (BuildingManager.instance.isHoldingJump())
+                            return false;
+                        return inputReceived;
+                    }
+                }
+                else
+                {
+                    if (ZInput.GetButtonDown(inputName) && !BuildingManager.instance.isCurrentlyMoving() && VHVRConfig.FreePlaceAutoReturn())
+                    {
+                        BuildingManager.instance.ExitPreciseMode();
+                    }
+                    return ZInput.GetButtonDown(inputName);
+                }
+            }
+
+            static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+            {
+                var original = new List<CodeInstruction>(instructions);
+                var patched = new List<CodeInstruction>();
+                if (!VHVRConfig.UseVrControls())
+                {
+                    return original;
+                }
+                for (int i = 0; i < original.Count; i++)
+                {
+                    var instruction = original[i];
+                    patched.Add(instruction);
+                    if (instruction.opcode == OpCodes.Ldstr && placementInput.Equals(instruction.operand) && original[i + 1].Calls(getButtonDownMethod))
+                    {
+                        i++; // skip the next instruction cause we are replacing it
+                        patched.Add(CodeInstruction.Call(typeof(Player_UpdatePlacement_BuildInputPatch),
+                            nameof(Player_UpdatePlacement_BuildInputPatch.ShouldTriggerBuildPlacement)));
+                    }
+                }
+                return patched;
+            }
         }
     }
 

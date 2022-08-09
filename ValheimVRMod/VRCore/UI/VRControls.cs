@@ -25,8 +25,10 @@ namespace ValheimVRMod.VRCore.UI
 
         private float altPieceRotationElapsedTime = 0f;
         private bool altPieceTriggered = false;
+        private bool wasAltPieceTriggered = false;
         private float altMapZoomElapsedTime = 0f;
         private bool altMapZoomTriggered = false;
+        private float buildQuickActionTimer;
 
         private HashSet<string> ignoredZInputs = new HashSet<string>();
         private HashSet<string> quickActionEnabled = new HashSet<string>(); // never ignore these
@@ -121,10 +123,19 @@ namespace ValheimVRMod.VRCore.UI
         private void updateAltPieceRotationTimer()
         {
             altPieceRotationElapsedTime += Time.unscaledDeltaTime;
-            if (altPieceRotationElapsedTime >= ALT_PIECE_ROTATION_TIME_DELAY * VHVRConfig.AltPieceRotationDelay())
+            if (altPieceRotationElapsedTime >= ALT_PIECE_ROTATION_TIME_DELAY * VHVRConfig.AltPieceRotationDelay() || (combinedPitchAndYawX != 0 && !wasAltPieceTriggered))
             {
                 altPieceTriggered = true;
                 altPieceRotationElapsedTime = 0f;
+            }
+            if (combinedPitchAndYawX != 0)
+            {
+                wasAltPieceTriggered = true;
+            }
+            else
+            {
+                altPieceRotationElapsedTime = 0f;
+                wasAltPieceTriggered = false;
             }
         }
 
@@ -152,16 +163,27 @@ namespace ValheimVRMod.VRCore.UI
             bool rightClickUp = false;
             if (useRightClick && laserControlsActive && inPlaceMode())
             {
-                rightClickDown = SteamVR_Actions.laserPointers_RightClick.GetStateDown(SteamVR_Input_Sources.Any);
+                rightClickDown = SteamVR_Actions.laserPointers_RightClick.GetState(SteamVR_Input_Sources.Any);
                 rightClickUp = SteamVR_Actions.laserPointers_RightClick.GetStateUp(SteamVR_Input_Sources.Any);
+                if(rightClickDown)
+                    buildQuickActionTimer += Time.unscaledDeltaTime;
             }
             
             if (action.GetStateDown(SteamVR_Input_Sources.Any) || rightClickDown) {
-                obj.SetActive(true);
+                if (inPlaceMode() && (buildQuickActionTimer >= 0.3f || !useRightClick)) 
+                    obj.SetActive(true);
+                else if (!inPlaceMode())
+                    obj.SetActive(true);
             }
 
             if (action.GetStateUp(SteamVR_Input_Sources.Any) || rightClickUp) {
-                obj.GetComponent<T>().selectHoveredItem();
+                if (inPlaceMode() && (buildQuickActionTimer >= 0.3f || !useRightClick))
+                    obj.GetComponent<T>().selectHoveredItem();
+                else if(!inPlaceMode())
+                    obj.GetComponent<T>().selectHoveredItem();
+
+                if (useRightClick)
+                    buildQuickActionTimer = 0;
                 obj.SetActive(false);
             }
         }
@@ -231,11 +253,11 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return false;
             }
-            if (zinput == "Jump" && shouldEnableRemove())
+            if (zinput == "Jump" && (shouldEnableRemove() || shouldDisableJumpRemove()))
             {
                 return false;
             }
-            if (zinput == "Remove" && !shouldEnableRemove())
+            if (zinput == "Remove" && (!shouldEnableRemove() || shouldDisableJumpRemove()))
             {
                 return false;
             }
@@ -309,11 +331,11 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return false;
             }
-            if (zinput == "Jump" && shouldEnableRemove())
+            if (zinput == "Jump" && (shouldEnableRemove() || shouldDisableJumpRemove()))
             {
                 return false;
             }
-            if (zinput == "Remove" && !shouldEnableRemove())
+            if (zinput == "Remove" && (!shouldEnableRemove() || shouldDisableJumpRemove()))
             {
                 return false;
             }
@@ -348,11 +370,11 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return false;
             }
-            if (zinput == "Jump" && shouldEnableRemove())
+            if (zinput == "Jump" && (shouldEnableRemove() || shouldDisableJumpRemove()))
             {
                 return false;
             }
-            if (zinput == "Remove" && !shouldEnableRemove())
+            if (zinput == "Remove" && (!shouldEnableRemove() || shouldDisableJumpRemove()))
             {
                 return false;
             }
@@ -369,7 +391,7 @@ namespace ValheimVRMod.VRCore.UI
             }
             return action.Any(x => x.GetStateUp(SteamVR_Input_Sources.Any));
         }
-
+        
         public float GetJoyLeftStickX()
         {
             if (!mainActionSet.IsActive())
@@ -409,35 +431,90 @@ namespace ValheimVRMod.VRCore.UI
             }
             return -pitchAndYaw.axis.y;
         }
-
-        public int getPieceRotation()
+        public int getDirectPieceRotation()
         {
-            if (!contextScroll.activeBinding)
+            if (!altPieceRotationControlsActive())
             {
-                // Since we don't have a context scroll bound (becaus of limited input
-                // options), we need to control rotation using the right joystick
-                // when a special button is held - we are using the Map button for this purpose.
-                // As a result, when in "build mode", the map button is disabled for the purpose
-                // of bringing up the map and when the player is holding down the map button,
-                // then they cannot rotate their character.
-                if (altPieceRotationControlsActive())
-                {
-                    return getAltPieceRotation();
-                } else
-                {
-                    return 0;
-                }
+                return 999;
             }
-            if (contextScroll.axis.y > 0)
+            if (-pitchAndYaw.axis.y>0.5f)
             {
-                return 1;
-            } else if (contextScroll.axis.y < 0)
+                return BuildingManager.instance.TranslateRotation() + 8;
+            }
+            else if (-pitchAndYaw.axis.y < -0.5f)
+            {
+                return BuildingManager.instance.TranslateRotation();
+            }
+            return 999;
+        }
+
+        public int getDirectRightYAxis()
+        {
+            float yAxis = -pitchAndYaw.axis.y;
+            if (yAxis > 0.5f)
             {
                 return -1;
-            } else
+            }
+            else if (yAxis < -0.5f)
+            {
+                return 1;
+            }
+            else
             {
                 return 0;
             }
+        }
+        public int getDirectRightXAxis()
+        {
+            float xAxis = -pitchAndYaw.axis.x;
+            if (xAxis > 0.5f)
+            {
+                return -1;
+            }
+            else if (xAxis < -0.5f)
+            {
+                return 1;
+            }
+            else
+            {
+                return 0;
+            }
+        }
+
+        public int getPieceRotation()
+        {
+            if (altPieceRotationControlsActive())
+            {
+                return getAltPieceRotation();
+            }
+            return 0;
+            //context scrolling backup in case needed
+            //if (!contextScroll.activeBinding)
+            //{
+            //    // Since we don't have a context scroll bound (becaus of limited input
+            //    // options), we need to control rotation using the right joystick
+            //    // when a special button is held - we are using the Map button for this purpose.
+            //    // As a result, when in "build mode", the map button is disabled for the purpose
+            //    // of bringing up the map and when the player is holding down the map button,
+            //    // then they cannot rotate their character.
+            //    if (altPieceRotationControlsActive())
+            //    {
+            //        return getAltPieceRotation();
+            //    } else
+            //    {
+            //        return 0;
+            //    }
+            //}
+            //if (contextScroll.axis.y > 0)
+            //{
+            //    return 1;
+            //} else if (contextScroll.axis.y < 0)
+            //{
+            //    return -1;
+            //} else
+            //{
+            //    return 0;
+            //}
         }
 
         public bool getClickModifier()
@@ -458,6 +535,22 @@ namespace ValheimVRMod.VRCore.UI
                 return -1;
             }
             else if (rightStickXAxis < -0.1f)
+            {
+                return 1;
+            }
+            else
+            {
+                return 0;
+            }
+        }
+
+        public int getPieceRefModifier()
+        {
+            float yAxis = GetJoyRightStickY();
+            if(yAxis > 0.5f)
+            {
+                return -1;
+            } else if (yAxis < -0.5f)
             {
                 return 1;
             }
@@ -519,9 +612,10 @@ namespace ValheimVRMod.VRCore.UI
         // Used to determine when the player is in a mode where the right joystick should
         // be used for rotation of an object while building rather than rotating the
         // player character
+        // disable context scrolling for now 
         private bool altPieceRotationControlsActive()
         {
-            return (!contextScroll.activeBinding) &&
+            return      //(!contextScroll.activeBinding) &&
                         inPlaceMode() &&
                         hasPlacementGhost() &&
                         !Hud.IsPieceSelectionVisible() &&
@@ -535,6 +629,12 @@ namespace ValheimVRMod.VRCore.UI
         {
             return inPlaceMode() && SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand);
         }
+
+        private bool shouldDisableJumpRemove()
+        {
+            return BuildingManager.instance && (BuildingManager.instance.isCurrentlyMoving() || BuildingManager.instance.isCurrentlyPreciseMoving() || BuildingManager.instance.isHoldingPlace());
+        }
+
         private void init()
         {
             zInputToBooleanAction.Add("JoyMenu", new[] { SteamVR_Actions.valheim_ToggleMenu });
