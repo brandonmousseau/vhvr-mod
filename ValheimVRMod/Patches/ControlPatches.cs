@@ -354,7 +354,7 @@ namespace ValheimVRMod.Patches {
         public static float runTimer = 0;
         public static float timeToRun = 0.2f;
         private static bool lastUpdateRunInput = false;
-        private static bool runToggledOn = false;
+        public static bool runToggledOn = false;
 
         static void Prefix(Player __instance, ref bool run)
         {
