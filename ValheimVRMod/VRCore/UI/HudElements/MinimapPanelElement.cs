@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using ValheimVRMod.Utilities;
 using static ValheimVRMod.VRCore.UI.VRHud;
 using static ValheimVRMod.Utilities.LogUtils;
+using Valve.VR;
 
 namespace ValheimVRMod.VRCore.UI.HudElements
 {
