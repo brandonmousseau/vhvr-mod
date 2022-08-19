@@ -394,7 +394,7 @@ namespace ValheimVRMod.VRCore.UI
         
         public float GetJoyLeftStickX()
         {
-            if (!mainActionSet.IsActive())
+            if (!mainActionSet.IsActive() || (Player.m_localPlayer != null && Player.m_localPlayer.InDodge()))
             {
                 return 0.0f;
             }
@@ -403,7 +403,7 @@ namespace ValheimVRMod.VRCore.UI
 
         public float GetJoyLeftStickY()
         {
-            if (!mainActionSet.IsActive())
+            if (!mainActionSet.IsActive() || (Player.m_localPlayer != null && Player.m_localPlayer.InDodge()))
             {
                 return 0.0f;
             }
@@ -642,7 +642,6 @@ namespace ValheimVRMod.VRCore.UI
             zInputToBooleanAction.Add("Jump", new [] { SteamVR_Actions.valheim_Jump, SteamVR_Actions.laserPointers_Jump });
             zInputToBooleanAction.Add("Use", new[] { SteamVR_Actions.valheim_Use });
             zInputToBooleanAction.Add("Sit", new[] { SteamVR_Actions.valheim_Sit });
-            zInputToBooleanAction.Add(ToggleMiniMap, new[] { SteamVR_Actions.valheim_ToggleMap });
 
             // These placement commands re-use some of the normal game inputs
             zInputToBooleanAction.Add("BuildMenu", new[] { SteamVR_Actions.laserPointers_RightClick });
