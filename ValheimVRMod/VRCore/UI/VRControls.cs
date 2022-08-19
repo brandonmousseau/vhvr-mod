@@ -394,7 +394,7 @@ namespace ValheimVRMod.VRCore.UI
         
         public float GetJoyLeftStickX()
         {
-            if (!mainActionSet.IsActive())
+            if (!mainActionSet.IsActive() || (Player.m_localPlayer != null && Player.m_localPlayer.InDodge()))
             {
                 return 0.0f;
             }
@@ -403,7 +403,7 @@ namespace ValheimVRMod.VRCore.UI
 
         public float GetJoyLeftStickY()
         {
-            if (!mainActionSet.IsActive())
+            if (!mainActionSet.IsActive() || (Player.m_localPlayer != null && Player.m_localPlayer.InDodge()))
             {
                 return 0.0f;
             }
