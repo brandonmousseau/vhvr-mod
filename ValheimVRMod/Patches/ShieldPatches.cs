@@ -22,7 +22,16 @@ namespace ValheimVRMod.Patches {
             if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls()) {
                 return;
             }
-            ___m_blockTimer = ShieldBlock.instance?.blockTimer ?? WeaponBlock.instance?.blockTimer ?? Block.blockTimerNonParry;
+
+            if (WeaponBlock.instance && WeaponBlock.instance.weaponWield.allowBlocking())
+            {
+                ___m_blockTimer = WeaponBlock.instance?.blockTimer ?? Block.blockTimerNonParry;
+            }
+            else
+            {
+                ___m_blockTimer = ShieldBlock.instance?.blockTimer ?? Block.blockTimerNonParry;
+            }
+            
             hit.m_dir = -__instance.transform.forward;
             if (ShieldBlock.instance?.isBlocking() ?? false) { 
                 hand = VRPlayer.leftHand;

@@ -49,6 +49,7 @@ namespace ValheimVRMod.Patches {
                 StaticObjects.quickSwitch.GetComponent<QuickSwitch>().refreshItems();
                 StaticObjects.quickActions.GetComponent<QuickActions>().refreshItems();
             }
+            SpearManager spearManager = null;
 
             switch (EquipScript.getRight()) {
                 case EquipType.Hammer:
@@ -78,14 +79,15 @@ namespace ValheimVRMod.Patches {
 
                         }
                     }
-                    meshFilter.gameObject.AddComponent<SpearManager>();
+                    spearManager = meshFilter.gameObject.AddComponent<SpearManager>();
                     break;
             }
             
             StaticObjects.rightWeaponCollider().GetComponent<WeaponCollision>().setColliderParent(meshFilter.transform, ___m_rightItem, true);
             var weaponWield = ___m_rightItemInstance.AddComponent<WeaponWield>();
             weaponWield.itemName = ___m_rightItem;
-            meshFilter.gameObject.AddComponent<WeaponBlock>().weaponWield = weaponWield; 
+            meshFilter.gameObject.AddComponent<WeaponBlock>().weaponWield = weaponWield;
+            if (spearManager) spearManager.weaponWield = weaponWield;
 
             ParticleFix.maybeFix(___m_rightItemInstance);
         }
