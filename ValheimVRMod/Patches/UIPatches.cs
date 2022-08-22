@@ -873,5 +873,35 @@ namespace ValheimVRMod.Patches
             return true;
         }
     }
+
+    [HarmonyPatch(typeof(Minimap), "ScreenToWorldPoint")]
+    class PatchMapPinMouseFix
+    {
+        public static void Prefix(Minimap __instance, ref Vector3 mousePos)
+        {
+            if (VHVRConfig.NonVrPlayer() || !__instance || __instance.m_selectedType == Minimap.PinType.Death)
+            {
+                return;
+            }
+            mousePos = SoftwareCursor.ScaledMouseVector();
+            return;
+        }
+    }
+
+    [HarmonyPatch(typeof(Minimap), "Awake")]
+    class PatchMapScreenSaver
+    {
+        public static bool Prefix(Minimap __instance)
+        {
+            if (VHVRConfig.NonVrPlayer() || !__instance || __instance.m_selectedType == Minimap.PinType.Death)
+            {
+                return true;
+            }
+            SoftwareCursor.firstRunScreenSize = new Vector3(Screen.width, Screen.height);
+
+            return true;
+        }
+    }
+
 }
 
