@@ -45,7 +45,7 @@ namespace ValheimVRMod.VRCore.UI
     [DefaultExecutionOrder(int.MaxValue)]
     class VRGUI : MonoBehaviour
     {
-        public static readonly Vector2 GUI_DIMENSIONS = new Vector2(1920, 1080);
+        public static Vector2 GUI_DIMENSIONS = new Vector2(1920, 1080);
         public static readonly string MENU_GUI_CANVAS = "GUI";
         public static readonly string GAME_GUI_CANVAS = "LoadingGUI";
         private static readonly string OVERLAY_KEY = "VALHEIM_VR_MOD_OVERLAY";
@@ -80,6 +80,8 @@ namespace ValheimVRMod.VRCore.UI
 
         public void Awake()
         {
+            //Change resolution aspect ratio on UI Start
+            GUI_DIMENSIONS = new Vector2(GUI_DIMENSIONS.x, GUI_DIMENSIONS.x / Screen.width * Screen.height);
             USING_OVERLAY = VHVRConfig.GetUseOverlayGui();
             OVERLAY_CURVATURE = VHVRConfig.GetOverlayCurvature();
             _inputModule = EventSystem.current.gameObject.AddComponent<VRGUI_InputModule>();
@@ -218,7 +220,7 @@ namespace ValheimVRMod.VRCore.UI
                 _uiPanel.transform.rotation = VRPlayer.instance.transform.rotation;
                 _uiPanel.transform.position = VRPlayer.instance.transform.position + VRPlayer.instance.transform.rotation * offsetPosition;
             }
-            float ratio = (float)Screen.width / (float)Screen.height;
+            float ratio = (float)GUI_DIMENSIONS.x / (float)GUI_DIMENSIONS.y;
             _uiPanel.transform.localScale = new Vector3(VHVRConfig.GetUiPanelSize() * ratio,
                                                         VHVRConfig.GetUiPanelSize(), 1f);
         }
