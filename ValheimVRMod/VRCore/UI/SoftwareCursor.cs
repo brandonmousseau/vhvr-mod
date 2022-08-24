@@ -164,8 +164,12 @@ namespace ValheimVRMod.VRCore.UI
         public static Vector3 ScaledMouseVector()
         {
             var mousepos = simulatedMousePosition;
-            float xconv = mousepos.x * firstRunScreenSize.x / VRGUI.GUI_DIMENSIONS.x;
-            float yconv = mousepos.y * firstRunScreenSize.y / VRGUI.GUI_DIMENSIONS.y;
+            float mousefromcenterx = mousepos.x - VRGUI.GUI_DIMENSIONS.x / 2;
+            float mousefromcentery = mousepos.y - VRGUI.GUI_DIMENSIONS.y / 2;
+            float diffx = VRGUI.GUI_DIMENSIONS.x - firstRunScreenSize.x;
+            float diffy = VRGUI.GUI_DIMENSIONS.y - firstRunScreenSize.y;
+            float xconv = (mousepos.x * firstRunScreenSize.x / VRGUI.GUI_DIMENSIONS.x) + (mousefromcenterx * diffx / VRGUI.GUI_DIMENSIONS.x);
+            float yconv = (mousepos.y * firstRunScreenSize.y / VRGUI.GUI_DIMENSIONS.y) + (mousefromcentery * diffy / VRGUI.GUI_DIMENSIONS.y);
             return new Vector3(xconv, yconv, mousepos.z);
         }
     }
