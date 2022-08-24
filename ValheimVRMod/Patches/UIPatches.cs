@@ -1,6 +1,7 @@
 using ValheimVRMod.VRCore.UI;
 using HarmonyLib;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using System;
 using System.Collections.Generic;
 using System.Reflection.Emit;
@@ -874,32 +875,41 @@ namespace ValheimVRMod.Patches
         }
     }
 
-    [HarmonyPatch(typeof(Minimap), "ScreenToWorldPoint")]
-    class PatchMapPinMouseFix
+    [HarmonyPatch(typeof(FejdStartup), "LoadMainScene")]
+    class PatchStartup1
     {
-        public static void Prefix(Minimap __instance, ref Vector3 mousePos)
+        public static void Prefix()
         {
-            if (VHVRConfig.NonVrPlayer() || !__instance || __instance.m_selectedType == Minimap.PinType.Death)
+            if (VHVRConfig.NonVrPlayer())
             {
                 return;
             }
-            mousePos = SoftwareCursor.ScaledMouseVector();
-            return;
+            VRGUI.originalResolution = new Vector2(Screen.width, Screen.height);
+            VRGUI.originalFullScreen = Screen.fullScreen;
+            VRGUI.isResized = true;
+            Screen.SetResolution((int)VHVRConfig.GetUiPanelResolution().x, (int)VHVRConfig.GetUiPanelResolution().y, false);
         }
     }
-
-    [HarmonyPatch(typeof(Minimap), "Awake")]
-    class PatchMapScreenSaver
+    [HarmonyPatch(typeof(Game), "Update")]
+    class PatchStartup2
     {
-        public static bool Prefix(Minimap __instance)
+        public static void Postfix()
         {
-            if (VHVRConfig.NonVrPlayer() || !__instance || __instance.m_selectedType == Minimap.PinType.Death)
+            if (VHVRConfig.NonVrPlayer())
             {
-                return true;
+                return;
             }
-            SoftwareCursor.firstRunScreenSize = new Vector3(Screen.width, Screen.height);
-
-            return true;
+            if (VRGUI.isResized)
+            {
+                if (SceneManager.GetActiveScene().name == "main")
+                {
+                    if (SceneManager.GetActiveScene().isLoaded)
+                    {
+                        Screen.SetResolution((int)VRGUI.originalResolution.x, (int)VRGUI.originalResolution.y, VRGUI.originalFullScreen);
+                        VRGUI.isResized = false;
+                    }
+                }
+            }
         }
     }
 

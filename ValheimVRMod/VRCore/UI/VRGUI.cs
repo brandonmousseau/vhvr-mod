@@ -46,6 +46,9 @@ namespace ValheimVRMod.VRCore.UI
     class VRGUI : MonoBehaviour
     {
         public static Vector2 GUI_DIMENSIONS = VHVRConfig.GetUiPanelResolution();
+        public static Vector2 originalResolution;
+        public static bool originalFullScreen;
+        public static bool isResized;
         public static readonly string MENU_GUI_CANVAS = "GUI";
         public static readonly string GAME_GUI_CANVAS = "LoadingGUI";
         private static readonly string OVERLAY_KEY = "VALHEIM_VR_MOD_OVERLAY";
