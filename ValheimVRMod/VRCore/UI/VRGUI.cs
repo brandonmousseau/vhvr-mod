@@ -45,7 +45,7 @@ namespace ValheimVRMod.VRCore.UI
     [DefaultExecutionOrder(int.MaxValue)]
     class VRGUI : MonoBehaviour
     {
-        public static Vector2 GUI_DIMENSIONS = new Vector2(1920, 1080);
+        public static Vector2 GUI_DIMENSIONS = VHVRConfig.GetUiPanelResolution();
         public static readonly string MENU_GUI_CANVAS = "GUI";
         public static readonly string GAME_GUI_CANVAS = "LoadingGUI";
         private static readonly string OVERLAY_KEY = "VALHEIM_VR_MOD_OVERLAY";
@@ -80,8 +80,8 @@ namespace ValheimVRMod.VRCore.UI
 
         public void Awake()
         {
-            //Change resolution aspect ratio on UI Start
-            GUI_DIMENSIONS = new Vector2(GUI_DIMENSIONS.x, GUI_DIMENSIONS.x / Screen.width * Screen.height);
+            //Automatically Change resolution aspect ratio on UI Start
+            //GUI_DIMENSIONS = new Vector2(GUI_DIMENSIONS.x, GUI_DIMENSIONS.x / Screen.width * Screen.height);
             USING_OVERLAY = VHVRConfig.GetUseOverlayGui();
             OVERLAY_CURVATURE = VHVRConfig.GetOverlayCurvature();
             _inputModule = EventSystem.current.gameObject.AddComponent<VRGUI_InputModule>();
@@ -100,6 +100,7 @@ namespace ValheimVRMod.VRCore.UI
         {
             if (ensureGuiCanvas())
             {
+                GUI_DIMENSIONS = VHVRConfig.GetUiPanelResolution();
                 _guiCanvas.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, GUI_DIMENSIONS.x);
                 _guiCanvas.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, GUI_DIMENSIONS.y);
                 CrosshairManager.instance.maybeReparentCrosshair();
