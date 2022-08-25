@@ -913,5 +913,45 @@ namespace ValheimVRMod.Patches
         }
     }
 
+    [HarmonyPatch(typeof(Utils), "ClampUIToScreen")]
+    class PatchTooltip
+    {
+        public static bool Prefix(RectTransform transform)
+        {
+            if (VHVRConfig.NonVrPlayer())
+            {
+                return true;
+            }
+            Vector3[] array = new Vector3[4];
+            transform.GetWorldCorners(array);
+            if (Utils.GetMainCamera() == null)
+            {
+                return false;
+            }
+            float num = 0f;
+            float num2 = 0f;
+            if (array[2].x > (float)VRGUI.GUI_DIMENSIONS.x)
+            {
+                num -= array[2].x - (float)VRGUI.GUI_DIMENSIONS.x;
+            }
+            if (array[0].x < 0f)
+            {
+                num -= array[0].x;
+            }
+            if (array[2].y > (float)VRGUI.GUI_DIMENSIONS.y)
+            {
+                num2 -= array[2].y - (float)VRGUI.GUI_DIMENSIONS.y;
+            }
+            if (array[0].y < 0f)
+            {
+                num2 -= array[0].y;
+            }
+            Vector3 position = transform.position;
+            position.x += num;
+            position.y += num2;
+            transform.position = position;
+            return false;
+        }
+    }
 }
 
