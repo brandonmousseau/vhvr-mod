@@ -696,8 +696,8 @@ namespace ValheimVRMod.VRCore
                 leftHand.transform, rightHand.transform, cam.transform);
             var vrPlayerSync = player.gameObject.GetComponent<VRPlayerSync>();
             vrPlayerSync.camera = cam.gameObject;
-            vrPlayerSync.leftHand = leftHand.gameObject;
-            vrPlayerSync.rightHand = rightHand.gameObject;
+            vrPlayerSync.leftHand = getLeftHandBoneGameObject();
+            vrPlayerSync.rightHand = getRightHandBoneGameObject();
             VrikCreator.resetVrikHandTransform(player);
             _vrik.references.leftHand.gameObject.AddComponent<HandGesture>().sourceHand = leftHand;
             _vrik.references.rightHand.gameObject.AddComponent<HandGesture>().sourceHand = rightHand;
@@ -808,6 +808,46 @@ namespace ValheimVRMod.VRCore
                 return null;
             }
             return animator.GetBoneTransform(HumanBodyBones.Head);
+        }
+        
+        private GameObject getRightHandBoneGameObject()
+        {
+            var playerCharacter = getPlayerCharacter();
+            if (playerCharacter == null)
+            {
+                return null;
+            }
+            var animator = playerCharacter.GetComponentInChildren<Animator>();
+            if (animator == null)
+            {
+                return null;
+            }
+            var handbone = animator.GetBoneTransform(HumanBodyBones.RightHand);
+            if (handbone == null)
+            {
+                return null;
+            }
+            return handbone.gameObject;
+        }
+
+        private GameObject getLeftHandBoneGameObject()
+        {
+            var playerCharacter = getPlayerCharacter();
+            if (playerCharacter == null)
+            {
+                return null;
+            }
+            var animator = playerCharacter.GetComponentInChildren<Animator>();
+            if (animator == null)
+            {
+                return null;
+            }
+            var handbone = animator.GetBoneTransform(HumanBodyBones.LeftHand);
+            if (handbone == null)
+            {
+                return null;
+            }
+            return handbone.gameObject;
         }
 
         private void maybeAddAmplifyOcclusion(Camera vrCamera)
