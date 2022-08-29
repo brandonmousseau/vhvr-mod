@@ -331,7 +331,7 @@ namespace ValheimVRMod.Utilities
             uiPanelResolution = config.Bind("UI",
                                       "UIPanelResolution",
                                       new Vector2(1920,1080),
-                                      new ConfigDescription("The resolution of the UI Panel display (non-Overlay GUI), need restart to update"));
+                                      new ConfigDescription("The resolution of the UI Panel display (non-Overlay GUI), Use above 1300 width and 940 height for no crop/clipping for vanilla ui, need restart to update"));
             uiPanelDistance = config.Bind("UI",
                                       "UIPanelDistance",
                                       3f,
