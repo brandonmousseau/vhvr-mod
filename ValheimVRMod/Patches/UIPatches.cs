@@ -1,6 +1,7 @@
 using ValheimVRMod.VRCore.UI;
 using HarmonyLib;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using System;
 using System.Collections.Generic;
 using System.Reflection.Emit;
@@ -11,6 +12,7 @@ using ValheimVRMod.Utilities;
 using static ValheimVRMod.Utilities.LogUtils;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
+using UnityEngine.UI;
 
 namespace ValheimVRMod.Patches
 {
@@ -871,6 +873,169 @@ namespace ValheimVRMod.Patches
             }
 
             return true;
+        }
+    }
+
+    [HarmonyPatch(typeof(FejdStartup), "LoadMainScene")]
+    class PatchStartup1
+    {
+        public static void Prefix()
+        {
+            if (VHVRConfig.NonVrPlayer())
+            {
+                return;
+            }
+            SoftwareCursor.firstRunScreenSize = new Vector3(Screen.width, Screen.height);
+            VRGUI.originalResolution = new Vector2(Screen.width, Screen.height);
+            VRGUI.originalFullScreen = Screen.fullScreen;
+            VRGUI.isResized = true;
+            if (VHVRConfig.GetUiPanelResoCompatibility())
+            {
+                Screen.SetResolution((int)VHVRConfig.GetUiPanelResolution().x, (int)VHVRConfig.GetUiPanelResolution().y, false);
+            }
+        }
+    }
+    [HarmonyPatch(typeof(Game), "Update")]
+    class PatchStartup2
+    {
+        public static void Postfix()
+        {
+            if (VHVRConfig.NonVrPlayer())
+            {
+                return;
+            }
+            if (VRGUI.isResized)
+            {
+                if (SceneManager.GetActiveScene().name == "main")
+                {
+                    if (SceneManager.GetActiveScene().isLoaded)
+                    {
+                        if (VHVRConfig.GetUiPanelResoCompatibility())
+                        {
+                            Screen.SetResolution((int)VRGUI.originalResolution.x, (int)VRGUI.originalResolution.y, VRGUI.originalFullScreen);
+                        }
+                        VRGUI.isResized = false;
+                    }
+                }
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(Utils), "ClampUIToScreen")]
+    class PatchTooltip
+    {
+        public static bool Prefix(RectTransform transform)
+        {
+            if (VHVRConfig.NonVrPlayer())
+            {
+                return true;
+            }
+            Vector3[] array = new Vector3[4];
+            transform.GetWorldCorners(array);
+            if (Utils.GetMainCamera() == null)
+            {
+                return false;
+            }
+            float num = 0f;
+            float num2 = 0f;
+            if (array[2].x > (float)VRGUI.GUI_DIMENSIONS.x)
+            {
+                num -= array[2].x - (float)VRGUI.GUI_DIMENSIONS.x;
+            }
+            if (array[0].x < 0f)
+            {
+                num -= array[0].x;
+            }
+            if (array[2].y > (float)VRGUI.GUI_DIMENSIONS.y)
+            {
+                num2 -= array[2].y - (float)VRGUI.GUI_DIMENSIONS.y;
+            }
+            if (array[0].y < 0f)
+            {
+                num2 -= array[0].y;
+            }
+            Vector3 position = transform.position;
+            position.x += num;
+            position.y += num2;
+            transform.position = position;
+            return false;
+        }
+    }
+
+    [HarmonyPatch(typeof(Minimap), "ScreenToWorldPoint")]
+    class PatchMapPinMouseFix
+    {
+        public static void Prefix(Minimap __instance, ref Vector3 mousePos)
+        {
+            if (VHVRConfig.NonVrPlayer() || __instance.m_selectedType == Minimap.PinType.Death || VHVRConfig.GetUiPanelResoCompatibility())
+            {
+                return;
+            }
+            mousePos = SoftwareCursor.ScaledMouseVector();
+            return;
+        }
+    }
+
+    [HarmonyPatch(typeof(InventoryGui), "UpdateItemDrag")]
+    class PatchItemDragMouseFix
+    {
+        public static bool Prefix(InventoryGui __instance, GameObject ___m_dragGo)
+        {
+            if (VHVRConfig.NonVrPlayer() || VHVRConfig.GetUiPanelResoCompatibility())
+            {
+                return true;
+            }
+            if (__instance.m_dragGo)
+            {
+                __instance.m_dragGo.transform.position = SoftwareCursor.ScaledMouseVector() + new Vector3(10,50);
+                Image component = __instance.m_dragGo.transform.Find("icon").GetComponent<Image>();
+                Text component2 = __instance.m_dragGo.transform.Find("name").GetComponent<Text>();
+                Text component3 = __instance.m_dragGo.transform.Find("amount").GetComponent<Text>();
+                component.sprite = __instance.m_dragItem.GetIcon();
+                component2.text = __instance.m_dragItem.m_shared.m_name;
+                component3.text = ((__instance.m_dragAmount > 1) ? __instance.m_dragAmount.ToString() : "");
+                if (Input.GetMouseButton(1))
+                {
+                    __instance.SetupDragItem(null, null, 1);
+                }
+            }
+            return false;
+        }
+    }
+
+    [HarmonyPatch(typeof(UITooltip), "LateUpdate")]
+    class PatchItemTooltipHover
+    {
+        public static bool Prefix(UITooltip __instance)
+        {
+            if (VHVRConfig.NonVrPlayer() || VHVRConfig.GetUiPanelResoCompatibility())
+            {
+                return true;
+            }
+            if (UITooltip.m_current == __instance && !UITooltip.m_tooltip.activeSelf)
+            {
+                __instance.m_showTimer += Time.deltaTime;
+                if (__instance.m_showTimer > 0.5f || (ZInput.IsGamepadActive() && !ZInput.IsMouseActive()))
+                {
+                    UITooltip.m_tooltip.SetActive(true);
+                }
+            }
+            if (UITooltip.m_current == __instance)
+            {
+                if (UITooltip.m_hovered == null)
+                {
+                    UITooltip.HideTooltip();
+                    return false;
+                }
+                if (!RectTransformUtility.RectangleContainsScreenPoint(UITooltip.m_hovered.transform as RectTransform, SoftwareCursor.ScaledMouseVector()))
+                {
+                    UITooltip.HideTooltip();
+                    return false;
+                }
+                UITooltip.m_tooltip.transform.position = SoftwareCursor.ScaledMouseVector();
+                Utils.ClampUIToScreen(UITooltip.m_tooltip.transform.GetChild(0).transform as RectTransform);
+            }
+            return false;
         }
     }
 }
