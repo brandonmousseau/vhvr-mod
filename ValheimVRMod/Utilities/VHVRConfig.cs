@@ -39,6 +39,8 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> overlayVerticalPosition;
         private static ConfigEntry<float> overlayDistance;
         private static ConfigEntry<float> uiPanelSize;
+        private static ConfigEntry<Vector2> uiPanelResolution;
+        private static ConfigEntry<bool> uiPanelResolutionCompat;
         private static ConfigEntry<float> uiPanelVerticalOffset;
         private static ConfigEntry<float> uiPanelDistance;
         private static ConfigEntry<bool> showStaticCrosshair;
@@ -326,6 +328,15 @@ namespace ValheimVRMod.Utilities
                                       3f,
                                       new ConfigDescription("Size for the UI panel display (non-Overlay GUI).",
                                       new AcceptableValueRange<float>(0.5f, 15f)));
+
+            uiPanelResolution = config.Bind("UI",
+                                      "UIPanelResolution",
+                                      new Vector2(1920,1080),
+                                      new ConfigDescription("The resolution of the UI Panel display (non-Overlay GUI), Use above 1300 width and 940 height for no crop/clipping for vanilla ui, need restart to update"));
+            uiPanelResolutionCompat = config.Bind("UI",
+                                      "UIPanelResolutionCompatibility",
+                                      false,
+                                      new ConfigDescription("Set UI resolution panel display compatibility mode, in case some mod have some mouse offset problem, use this setting, set panel resolution below your monitor resolution, need restart to update"));
             uiPanelDistance = config.Bind("UI",
                                       "UIPanelDistance",
                                       3f,
@@ -759,6 +770,16 @@ namespace ValheimVRMod.Utilities
         public static float GetUiPanelSize()
         {
             return uiPanelSize.Value;
+        }
+
+        public static Vector2 GetUiPanelResolution()
+        {
+            return uiPanelResolution.Value;
+        }
+
+        public static bool GetUiPanelResoCompatibility()
+        {
+            return uiPanelResolutionCompat.Value;
         }
 
         public static float GetUiPanelVerticalOffset()
