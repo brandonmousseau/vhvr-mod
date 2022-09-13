@@ -967,7 +967,7 @@ namespace ValheimVRMod.Patches
     {
         public static void Prefix(Minimap __instance, ref Vector3 mousePos)
         {
-            if (VHVRConfig.NonVrPlayer() || __instance.m_selectedType == Minimap.PinType.Death)
+            if (VHVRConfig.NonVrPlayer() || __instance.m_selectedType == Minimap.PinType.Death || VHVRConfig.GetUiPanelResoCompatibility())
             {
                 return;
             }
@@ -981,7 +981,7 @@ namespace ValheimVRMod.Patches
     {
         public static bool Prefix(InventoryGui __instance, GameObject ___m_dragGo)
         {
-            if (VHVRConfig.NonVrPlayer())
+            if (VHVRConfig.NonVrPlayer() || VHVRConfig.GetUiPanelResoCompatibility())
             {
                 return true;
             }
@@ -1003,5 +1003,40 @@ namespace ValheimVRMod.Patches
         }
     }
 
+    [HarmonyPatch(typeof(UITooltip), "LateUpdate")]
+    class PatchItemTooltipHover
+    {
+        public static bool Prefix(UITooltip __instance)
+        {
+            if (VHVRConfig.NonVrPlayer() || VHVRConfig.GetUiPanelResoCompatibility())
+            {
+                return true;
+            }
+            if (UITooltip.m_current == __instance && !UITooltip.m_tooltip.activeSelf)
+            {
+                __instance.m_showTimer += Time.deltaTime;
+                if (__instance.m_showTimer > 0.5f || (ZInput.IsGamepadActive() && !ZInput.IsMouseActive()))
+                {
+                    UITooltip.m_tooltip.SetActive(true);
+                }
+            }
+            if (UITooltip.m_current == __instance)
+            {
+                if (UITooltip.m_hovered == null)
+                {
+                    UITooltip.HideTooltip();
+                    return false;
+                }
+                if (!RectTransformUtility.RectangleContainsScreenPoint(UITooltip.m_hovered.transform as RectTransform, SoftwareCursor.ScaledMouseVector()))
+                {
+                    UITooltip.HideTooltip();
+                    return false;
+                }
+                UITooltip.m_tooltip.transform.position = SoftwareCursor.ScaledMouseVector();
+                Utils.ClampUIToScreen(UITooltip.m_tooltip.transform.GetChild(0).transform as RectTransform);
+            }
+            return false;
+        }
+    }
 }
 
