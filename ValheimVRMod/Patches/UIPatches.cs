@@ -12,6 +12,7 @@ using ValheimVRMod.Utilities;
 using static ValheimVRMod.Utilities.LogUtils;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
+using UnityEngine.UI;
 
 namespace ValheimVRMod.Patches
 {
@@ -884,10 +885,14 @@ namespace ValheimVRMod.Patches
             {
                 return;
             }
+            SoftwareCursor.firstRunScreenSize = new Vector3(Screen.width, Screen.height);
             VRGUI.originalResolution = new Vector2(Screen.width, Screen.height);
             VRGUI.originalFullScreen = Screen.fullScreen;
             VRGUI.isResized = true;
-            Screen.SetResolution((int)VHVRConfig.GetUiPanelResolution().x, (int)VHVRConfig.GetUiPanelResolution().y, false);
+            if (VHVRConfig.GetUiPanelResoCompatibility())
+            {
+                Screen.SetResolution((int)VHVRConfig.GetUiPanelResolution().x, (int)VHVRConfig.GetUiPanelResolution().y, false);
+            }
         }
     }
     [HarmonyPatch(typeof(Game), "Update")]
@@ -905,7 +910,10 @@ namespace ValheimVRMod.Patches
                 {
                     if (SceneManager.GetActiveScene().isLoaded)
                     {
-                        Screen.SetResolution((int)VRGUI.originalResolution.x, (int)VRGUI.originalResolution.y, VRGUI.originalFullScreen);
+                        if (VHVRConfig.GetUiPanelResoCompatibility())
+                        {
+                            Screen.SetResolution((int)VRGUI.originalResolution.x, (int)VRGUI.originalResolution.y, VRGUI.originalFullScreen);
+                        }
                         VRGUI.isResized = false;
                     }
                 }
@@ -953,5 +961,47 @@ namespace ValheimVRMod.Patches
             return false;
         }
     }
+
+    [HarmonyPatch(typeof(Minimap), "ScreenToWorldPoint")]
+    class PatchMapPinMouseFix
+    {
+        public static void Prefix(Minimap __instance, ref Vector3 mousePos)
+        {
+            if (VHVRConfig.NonVrPlayer() || !__instance || __instance.m_selectedType == Minimap.PinType.Death)
+            {
+                return;
+            }
+            mousePos = SoftwareCursor.ScaledMouseVector();
+            return;
+        }
+    }
+
+    [HarmonyPatch(typeof(InventoryGui), "UpdateItemDrag")]
+    class PatchItemDragMouseFix
+    {
+        public static bool Prefix(InventoryGui __instance, GameObject ___m_dragGo)
+        {
+            if (VHVRConfig.NonVrPlayer() || !__instance )
+            {
+                return true;
+            }
+            if (__instance.m_dragGo)
+            {
+                __instance.m_dragGo.transform.position = SoftwareCursor.ScaledMouseVector() + new Vector3(10,50);
+                Image component = __instance.m_dragGo.transform.Find("icon").GetComponent<Image>();
+                Text component2 = __instance.m_dragGo.transform.Find("name").GetComponent<Text>();
+                Text component3 = __instance.m_dragGo.transform.Find("amount").GetComponent<Text>();
+                component.sprite = __instance.m_dragItem.GetIcon();
+                component2.text = __instance.m_dragItem.m_shared.m_name;
+                component3.text = ((__instance.m_dragAmount > 1) ? __instance.m_dragAmount.ToString() : "");
+                if (Input.GetMouseButton(1))
+                {
+                    __instance.SetupDragItem(null, null, 1);
+                }
+            }
+            return false;
+        }
+    }
+
 }
 
