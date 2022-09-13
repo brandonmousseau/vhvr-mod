@@ -87,7 +87,7 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
             
-            if (!SteamVR_Actions.valheim_Grab.GetState(mainHandInputSource)) {
+            if (!SteamVR_Actions.valheim_Grab.GetState(mainHandInputSource) || weaponWield.allowBlocking()) {
                 return;
             }
             

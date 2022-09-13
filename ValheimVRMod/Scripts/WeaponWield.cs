@@ -1,4 +1,5 @@
 using UnityEngine;
+using ValheimVRMod.Scripts.Block;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using Valve.VR;
@@ -19,6 +20,7 @@ namespace ValheimVRMod.Scripts
         private GameObject originalRotSave;
         public static isTwoHanded _isTwoHanded;
         private SteamVR_Input_Sources mainHandInputSource;
+        private float shieldSize = 1f;
 
         public enum isTwoHanded
         {
@@ -91,6 +93,10 @@ namespace ValheimVRMod.Scripts
                     break;
                 default:
                     UpdateTwoHandedWield();
+                    if (!isSpear() && VHVRConfig.TwoHandedWithShield())
+                    {
+                        ShieldBlock.instance?.ScaleShieldSize(shieldSize);
+                    }
                     break;
             }
         }
@@ -229,6 +235,7 @@ namespace ValheimVRMod.Scripts
 
                 weaponForward = transform.forward;
                 weaponSubPos = true;
+                shieldSize = 0.4f;
             }
             else if (SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.LeftHand) || 
                      SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.RightHand)||
@@ -246,6 +253,7 @@ namespace ValheimVRMod.Scripts
         private void ResetOffset()
         {
             VrikCreator.ResetHandConnectors();
+            shieldSize = 1f;
             transform.position = rotSave.transform.position;
             transform.localRotation = rotSave.transform.localRotation;
         }
