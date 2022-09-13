@@ -967,7 +967,7 @@ namespace ValheimVRMod.Patches
     {
         public static void Prefix(Minimap __instance, ref Vector3 mousePos)
         {
-            if (VHVRConfig.NonVrPlayer() || !__instance || __instance.m_selectedType == Minimap.PinType.Death)
+            if (VHVRConfig.NonVrPlayer() || __instance.m_selectedType == Minimap.PinType.Death)
             {
                 return;
             }
@@ -981,7 +981,7 @@ namespace ValheimVRMod.Patches
     {
         public static bool Prefix(InventoryGui __instance, GameObject ___m_dragGo)
         {
-            if (VHVRConfig.NonVrPlayer() || !__instance )
+            if (VHVRConfig.NonVrPlayer())
             {
                 return true;
             }
