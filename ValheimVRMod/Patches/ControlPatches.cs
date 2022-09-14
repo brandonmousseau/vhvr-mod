@@ -76,7 +76,7 @@ namespace ValheimVRMod.Patches {
                 var joystick = VRControls.instance.GetJoyLeftStickY();
 
                 //add deadzone to ship control for forward and backward so its harder to accidentally change speed
-                if (Player.m_localPlayer && Player.m_localPlayer.GetControlledShip())
+                if (Player.m_localPlayer?.GetControlledShip())
                 {
                     if(joystick > -0.9f && joystick < 0.9f)
                     {
