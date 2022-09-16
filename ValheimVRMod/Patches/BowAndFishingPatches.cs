@@ -6,6 +6,7 @@ using HarmonyLib;
 using UnityEngine;
 using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
+using ValheimVRMod.VRCore;
 
 namespace ValheimVRMod.Patches {
 
@@ -76,6 +77,10 @@ namespace ValheimVRMod.Patches {
                 case EquipType.ThrowObject:
                     spawnPoint = SpearManager.spawnPoint;
                     aimDir = SpearManager.aimDir;
+                    return false;
+                case EquipType.RuneSkyheim:
+                    spawnPoint = VRPlayer.rightHand.transform.position;
+                    aimDir = VRPlayer.rightPointer.rayDirection * Vector3.forward;
                     return false;
             }
 

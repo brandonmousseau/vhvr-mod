@@ -509,6 +509,8 @@ namespace ValheimVRMod.Patches {
     [HarmonyPatch(typeof(Player), nameof(Player.SetControls))]
     class Player_SetControls_EquipPatch {
       
+        private static float timer = 0f;
+        private static bool isAttacking = false;
         static void Prefix(Player __instance, ref bool attack, ref bool attackHold, ref bool block, ref bool blockHold,
             ref bool secondaryAttack) {
             if (!VHVRConfig.UseVrControls() || __instance != Player.m_localPlayer) {
@@ -570,7 +572,32 @@ namespace ValheimVRMod.Patches {
                     }
 
                     break;
+
+                case EquipType.RuneSkyheim:
+                    if (SteamVR_Actions.valheim_Use.GetStateDown(SteamVR_Input_Sources.RightHand) && timer<=0 &&!isAttacking)
+                    {
+                        attack = true;
+                        timer = 0.5f;
+                        isAttacking = true;
+                    }
+                    if (isAttacking)
+                    {
+                        if (Player.m_localPlayer.m_animator.GetCurrentAnimatorStateInfo(0).IsName("spear_throw"))
+                        {
+                            timer = Player.m_localPlayer.m_animator.GetCurrentAnimatorStateInfo(0).length * 1000;
+                            if (timer > 0)
+                                isAttacking = false;
+                        }
+                    }
+                    //LogUtils.LogDebug("name : " + Player.m_localPlayer.m_animator.GetCurrentAnimatorStateInfo(0).IsName("spear_throw") + " - speed : " + Player.m_localPlayer.m_animator.speed + " -  time : " + timer);
+                    if (timer>=0)
+                        timer -= Time.deltaTime;
+                    else
+                        isAttacking = false;
+                    break;
             }
+
+            //LogUtils.LogDebug("length : " + (Player.m_localPlayer.m_animator.GetCurrentAnimatorStateInfo(0).length * 1000) + " - speed : " + Player.m_localPlayer.m_animator.speed );
         }
     }
 
