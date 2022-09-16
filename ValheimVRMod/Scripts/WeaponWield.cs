@@ -1,4 +1,5 @@
 using UnityEngine;
+using ValheimVRMod.Scripts.Block;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using Valve.VR;
@@ -16,8 +17,10 @@ namespace ValheimVRMod.Scripts
         public string itemName;
         private ItemDrop.ItemData item;
         private GameObject rotSave;
+        private GameObject originalRotSave;
         public static isTwoHanded _isTwoHanded;
         private SteamVR_Input_Sources mainHandInputSource;
+        private float shieldSize = 1f;
 
         public enum isTwoHanded
         {
@@ -28,13 +31,25 @@ namespace ValheimVRMod.Scripts
 
         private void Awake()
         {
+            item = Player.m_localPlayer.GetRightItem();
+            attack = item.m_shared.m_attack.Clone();
+
             rotSave = new GameObject();
             rotSave.transform.SetParent(transform.parent);
             rotSave.transform.position = transform.position;
+            //atgeir wield rotation fix
+            originalRotSave = new GameObject();
+            originalRotSave.transform.SetParent(transform.parent);
+            originalRotSave.transform.position = transform.position;
+            originalRotSave.transform.localRotation = transform.localRotation;
+            switch (attack.m_attackAnimation)
+            {
+                case "atgeir_attack":
+                    transform.localRotation = transform.localRotation * Quaternion.AngleAxis(-20 , Vector3.up) * Quaternion.AngleAxis(-7 , Vector3.right);
+                    break;
+            }
             rotSave.transform.localRotation = transform.localRotation;
 
-            item = Player.m_localPlayer.GetRightItem();
-            attack = item.m_shared.m_attack.Clone();
             _isTwoHanded = isTwoHanded.SingleHanded;
 
             if (VHVRConfig.LeftHanded())
@@ -78,6 +93,10 @@ namespace ValheimVRMod.Scripts
                     break;
                 default:
                     UpdateTwoHandedWield();
+                    if (!isSpear() && VHVRConfig.TwoHandedWithShield())
+                    {
+                        ShieldBlock.instance?.ScaleShieldSize(shieldSize);
+                    }
                     break;
             }
         }
@@ -200,21 +219,23 @@ namespace ValheimVRMod.Scripts
                     transform.localRotation = transform.localRotation * (rotSave.transform.localRotation) * Quaternion.AngleAxis(180, Vector3.right) * Quaternion.AngleAxis(rotOffset, transform.InverseTransformDirection(-weaponHoldVector));
                     transform.localRotation = transform.localRotation * (rotSave.transform.localRotation) * Quaternion.AngleAxis(180, Vector3.right);
                 }
+                else if(attack.m_attackAnimation == "atgeir_attack")
+                {
+                    transform.LookAt(rearHandCenter - weaponHoldVector.normalized * 5, transform.up);
+                    transform.localRotation = transform.localRotation * (originalRotSave.transform.localRotation) * Quaternion.AngleAxis(180, Vector3.right) * Quaternion.AngleAxis(rotOffset, transform.InverseTransformDirection(-weaponHoldVector));
+                    //var debugRot = VHVRConfig.getDebugRot();
+                    //LogUtils.LogDebug("x: " + debugRot.x + " y: " + debugRot.y + " z: " + debugRot.z);
+                    transform.localRotation = transform.localRotation * Quaternion.AngleAxis(-19.1f, Vector3.up) * Quaternion.AngleAxis(-8, Vector3.right);
+                }
                 else
                 {
                     transform.LookAt(rearHandCenter - weaponHoldVector.normalized * 5, transform.up);
                     transform.localRotation = transform.localRotation * (rotSave.transform.localRotation) * Quaternion.AngleAxis(180, Vector3.right) * Quaternion.AngleAxis(rotOffset, transform.InverseTransformDirection(-weaponHoldVector));
                 }
 
-                //Atgeir Rotation fix
-                switch (attack.m_attackAnimation)
-                {
-                    case "atgeir_attack":
-                        transform.localRotation = transform.localRotation * Quaternion.AngleAxis(-20, Vector3.up) * Quaternion.AngleAxis(-7, Vector3.right);
-                        break;
-                }
                 weaponForward = transform.forward;
                 weaponSubPos = true;
+                shieldSize = 0.4f;
             }
             else if (SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.LeftHand) || 
                      SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.RightHand)||
@@ -232,6 +253,7 @@ namespace ValheimVRMod.Scripts
         private void ResetOffset()
         {
             VrikCreator.ResetHandConnectors();
+            shieldSize = 1f;
             transform.position = rotSave.transform.position;
             transform.localRotation = rotSave.transform.localRotation;
         }

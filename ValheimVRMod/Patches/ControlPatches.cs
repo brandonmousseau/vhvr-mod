@@ -72,7 +72,19 @@ namespace ValheimVRMod.Patches {
     class ZInput_GetJoyLeftStickY_Patch {
         static void Postfix(ref float __result) {
             if (VRControls.mainControlsActive) {
-                __result = __result + VRControls.instance.GetJoyLeftStickY();
+
+                var joystick = VRControls.instance.GetJoyLeftStickY();
+
+                //add deadzone to ship control for forward and backward so its harder to accidentally change speed
+                if (Player.m_localPlayer?.GetControlledShip())
+                {
+                    if(joystick > -0.9f && joystick < 0.9f)
+                    {
+                        __result = 0f;
+                        return;
+                    }
+                }
+                __result = __result + joystick;
             }
         }
     }
@@ -98,8 +110,8 @@ namespace ValheimVRMod.Patches {
     class ZInput_GetJoyRightStickY_Patch {
 
         private const float NON_TOGGLE_RUN_SENSITIVITY = -0.3f;
-        private const float TOGGLE_RUN_SENSITIVITY = -0.8f;
-        private const float CROUCH_SENSITIVITY = 0.7f;
+        private const float TOGGLE_RUN_SENSITIVITY = -0.85f;
+        private const float CROUCH_SENSITIVITY = 0.85f;
 
         public static bool isCrouching;
         public static bool isRunning;

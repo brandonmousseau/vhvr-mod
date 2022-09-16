@@ -13,6 +13,7 @@ namespace ValheimVRMod.Scripts {
         private int tickCounter;
         private List<Vector3> snapshots = new List<Vector3>();
         private GameObject fixedSpear;
+        public WeaponWield weaponWield;
 
         private const float minDist = 0.16f;
         private const float slowThrowModifier = 1.5f;
@@ -86,7 +87,7 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
             
-            if (!SteamVR_Actions.valheim_Grab.GetState(mainHandInputSource)) {
+            if (!SteamVR_Actions.valheim_Grab.GetState(mainHandInputSource) || weaponWield.allowBlocking()) {
                 return;
             }
             
@@ -123,7 +124,7 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            if (directionCooldown <= 0) {
+            if (directionCooldown <= 0 || weaponWield.allowBlocking()) {
                 directionCooldown = 0;
                 directionLine.enabled = false;
             }
@@ -235,7 +236,7 @@ namespace ValheimVRMod.Scripts {
         }
         private void UpdateDirectionLine(Vector3 pos1 ,Vector3 pos2)
         {
-            if (!VHVRConfig.UseSpearDirectionGraphic()) {
+            if (!VHVRConfig.UseSpearDirectionGraphic() || weaponWield.allowBlocking()) {
                 return;
             }
             List<Vector3> pointList = new List<Vector3>();
