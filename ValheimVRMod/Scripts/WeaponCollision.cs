@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using UnityEngine;
+using ValheimVRMod.Scripts.Block;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using Valve.VR;
@@ -29,6 +30,7 @@ namespace ValheimVRMod.Scripts {
 
         public bool itemIsTool;
         public static bool isDrinking;
+        public WeaponWield weaponWield;
         
         private int maxSnapshots;
         private float colliderDistance;
@@ -117,6 +119,11 @@ namespace ValheimVRMod.Scripts {
 
             // ignore certain Layers
             if (ignoreLayers.Contains(target.layer)) {
+                return false;
+            }
+
+            if (Player.m_localPlayer.m_blocking && !weaponWield.allowBlocking())
+            {
                 return false;
             }
 

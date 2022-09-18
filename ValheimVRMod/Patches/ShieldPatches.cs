@@ -5,6 +5,7 @@ using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using Valve.VR;
 using Valve.VR.InteractionSystem;
+using UnityEngine;
 
 namespace ValheimVRMod.Patches {
     
@@ -23,25 +24,31 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
-            if (WeaponBlock.instance && WeaponBlock.instance.weaponWield.allowBlocking())
+
+            if(VHVRConfig.BlockingType() != "GrabButton")
             {
-                ___m_blockTimer = WeaponBlock.instance?.blockTimer ?? Block.blockTimerNonParry;
+                if (WeaponBlock.instance && WeaponBlock.instance.weaponWield.allowBlocking())
+                {
+                    ___m_blockTimer = WeaponBlock.instance?.blockTimer ?? Block.blockTimerNonParry;
+                }
+                else
+                {
+                    ___m_blockTimer = ShieldBlock.instance?.blockTimer ?? Block.blockTimerNonParry;
+                }
             }
-            else
-            {
-                ___m_blockTimer = ShieldBlock.instance?.blockTimer ?? Block.blockTimerNonParry;
-            }
-            
             hit.m_dir = -__instance.transform.forward;
-            if (ShieldBlock.instance?.isBlocking() ?? false) { 
+            if (ShieldBlock.instance?.isBlocking() ?? false)
+            {
                 hand = VRPlayer.leftHand;
                 handSource = SteamVR_Input_Sources.LeftHand;
-            } 
-            else if (WeaponBlock.instance?.isBlocking() ?? false) {
+            }
+            else if (WeaponBlock.instance?.isBlocking() ?? false)
+            {
                 hand = VRPlayer.rightHand;
                 handSource = SteamVR_Input_Sources.RightHand;
             }
-            else {
+            else
+            {
                 hit.m_dir = __instance.transform.forward;
             }
         }
@@ -67,12 +74,23 @@ namespace ValheimVRMod.Patches {
     
     [HarmonyPatch(typeof(Humanoid), "IsBlocking")]
     class PatchIsBlocking {
-        static bool Prefix(Humanoid __instance, ref bool __result) {
+        static bool Prefix(Humanoid __instance, ref float ___m_blockTimer, ref bool __result) {
 
             if (__instance != Player.m_localPlayer || (FishingManager.instance && FishingManager.isFishing) || !VHVRConfig.UseVrControls()) {
                 return true;
             }
-
+            if(VHVRConfig.BlockingType() == "GrabButton")
+            {
+                WeaponBlock.instance?.UpdateGrabParry();
+                ShieldBlock.instance?.UpdateGrabParry();
+                if (WeaponBlock.instance?.wasResetTimer == true|| ShieldBlock.instance?.wasResetTimer == true)
+                {
+                    ___m_blockTimer = 0;
+                    WeaponBlock.instance?.resetTimer();
+                    ShieldBlock.instance?.resetTimer();
+                }
+            }
+                
             __result = 
                 (ShieldBlock.instance?.isBlocking() ?? false) || 
                 (WeaponBlock.instance?.isBlocking() ?? false);
@@ -80,7 +98,7 @@ namespace ValheimVRMod.Patches {
             return false;
         }
     }
-    
+
     [HarmonyPatch(typeof(Character), "RPC_Damage")]
     class PatchRPCDamager {
         static void Prefix(Character __instance, HitData hit) {
@@ -91,7 +109,6 @@ namespace ValheimVRMod.Patches {
             
             ShieldBlock.instance?.setBlocking(hit.m_dir);
             WeaponBlock.instance?.setBlocking(hit.m_dir);
-
         }
         
         static void Postfix(Character __instance) {
@@ -102,7 +119,6 @@ namespace ValheimVRMod.Patches {
 
             ShieldBlock.instance?.resetBlocking();
             WeaponBlock.instance?.resetBlocking();
-
         }
     }
     

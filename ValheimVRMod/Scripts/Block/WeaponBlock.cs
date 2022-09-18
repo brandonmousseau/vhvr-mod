@@ -20,7 +20,15 @@ namespace ValheimVRMod.Scripts.Block {
 
         public override void setBlocking(Vector3 hitDir) {
             var angle = Vector3.Dot(hitDir, weaponWield.weaponForward);
-            _blocking = weaponWield.allowBlocking() && angle > -0.5f && angle < 0.5f ;
+            if (VHVRConfig.BlockingType() == "GrabButton")
+            {
+                bool isShieldorWeaponBlock = (EquipScript.getLeft() != EquipType.Shield) || (EquipScript.getLeft() == EquipType.Shield && weaponWield.allowBlocking());
+                _blocking = isShieldorWeaponBlock && angle > -0.5f && angle < 0.5f;
+            }
+            else
+            {
+                _blocking = weaponWield.allowBlocking() && angle > -0.5f && angle < 0.5f;
+            }
         }
         
         protected override void ParryCheck(Vector3 posStart, Vector3 posEnd) {

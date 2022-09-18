@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
+using ValheimVRMod.Utilities;
+using Valve.VR;
 
 namespace ValheimVRMod.Scripts.Block {
     public abstract class Block : MonoBehaviour {
@@ -19,7 +21,14 @@ namespace ValheimVRMod.Scripts.Block {
         protected Transform hand;
         protected MeshCooldown _meshCooldown;
         public float blockTimer = blockTimerNonParry;
+        protected SteamVR_Input_Sources mainHand = VHVRConfig.LeftHanded() ? SteamVR_Input_Sources.LeftHand : SteamVR_Input_Sources.RightHand;
+        protected SteamVR_Input_Sources offHand = VHVRConfig.LeftHanded() ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand;
+        protected SteamVR_Input_Sources currhand = VHVRConfig.LeftHanded() ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand;
+        protected bool wasParryStart = false;
+        public bool wasResetTimer = false;
 
+        //Currently there's 2 Blocking type 
+        //"MotionControl" and "GrabButton"
         private void FixedUpdate() {
             tickCounter++;
             if (tickCounter < 5) {
@@ -44,24 +53,64 @@ namespace ValheimVRMod.Scripts.Block {
                     posStart = snapshot;
                 }
             }
-            
-            ParryCheck(posStart, posEnd);
+
+            if(VHVRConfig.BlockingType() == "MotionControl")
+                ParryCheck(posStart, posEnd);
         }
-        
         public abstract void setBlocking(Vector3 hitDir);
         protected abstract void ParryCheck(Vector3 posStart, Vector3 posEnd);
 
         public void resetBlocking() {
-            _blocking = false;
-            blockTimer = blockTimerNonParry;
+            if (VHVRConfig.BlockingType() == "GrabButton")
+            {
+                _blocking = true;
+            }
+            else
+            {
+                _blocking = false;
+                blockTimer = blockTimerNonParry;
+            }
         }
 
         public bool isBlocking() {
-            return _blocking && !_meshCooldown.inCoolDown();
+            if (VHVRConfig.BlockingType() == "GrabButton")
+            {
+                return SteamVR_Actions.valheim_Grab.GetState(currhand) && !_meshCooldown.inCoolDown() && _blocking;
+            }
+            else
+            {
+                return _blocking && !_meshCooldown.inCoolDown();
+            }
         }
         
         public void block() {
-            _meshCooldown.tryTrigger(cooldown);
+            if (VHVRConfig.BlockingType() == "MotionControl")
+            {
+                _meshCooldown.tryTrigger(cooldown);
+            }
+        }
+
+        public void UpdateGrabParry()
+        {
+            currhand = offHand;
+            if (EquipScript.getLeft() != EquipType.Shield)
+            {
+                currhand = mainHand;
+            }
+            if (SteamVR_Actions.valheim_Grab.GetState(currhand) && !_meshCooldown.inCoolDown() && !wasParryStart)
+            {
+                wasParryStart = true;
+                wasResetTimer = true;
+            }
+            else if (!SteamVR_Actions.valheim_Grab.GetState(currhand) && wasParryStart)
+            {
+                _meshCooldown.tryTrigger(0.4f);
+                wasParryStart = false;
+            }
+        }
+        public void resetTimer()
+        {
+            wasResetTimer = false;
         }
     }
 }
