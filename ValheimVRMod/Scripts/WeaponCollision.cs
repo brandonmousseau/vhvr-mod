@@ -122,7 +122,7 @@ namespace ValheimVRMod.Scripts {
                 return false;
             }
 
-            if (Player.m_localPlayer.m_blocking && !weaponWield.allowBlocking())
+            if (Player.m_localPlayer.m_blocking && !weaponWield.allowBlocking() && VHVRConfig.BlockingType() == "GrabButton")
             {
                 return false;
             }
