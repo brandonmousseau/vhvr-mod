@@ -24,10 +24,13 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
-
             if(VHVRConfig.BlockingType() != "GrabButton")
             {
-                if (WeaponBlock.instance && WeaponBlock.instance.weaponWield.allowBlocking())
+                if (FistCollision.instance.usingFistWeapon())
+                {
+                    ___m_blockTimer = FistBlock.instance?.blockTimer ?? Block.blockTimerNonParry;
+                }
+                else if (WeaponBlock.instance && WeaponBlock.instance.weaponWield.allowBlocking())
                 {
                     ___m_blockTimer = WeaponBlock.instance?.blockTimer ?? Block.blockTimerNonParry;
                 }
@@ -43,6 +46,11 @@ namespace ValheimVRMod.Patches {
                 handSource = SteamVR_Input_Sources.LeftHand;
             }
             else if (WeaponBlock.instance?.isBlocking() ?? false)
+            {
+                hand = VRPlayer.rightHand;
+                handSource = SteamVR_Input_Sources.RightHand;
+            }
+            else if (FistBlock.instance?.isBlocking() ?? false)
             {
                 hand = VRPlayer.rightHand;
                 handSource = SteamVR_Input_Sources.RightHand;
@@ -69,6 +77,7 @@ namespace ValheimVRMod.Patches {
             
             ShieldBlock.instance?.block();
             WeaponBlock.instance?.block();
+            FistBlock.instance?.block();
         }
     }
     
@@ -83,18 +92,21 @@ namespace ValheimVRMod.Patches {
             {
                 WeaponBlock.instance?.UpdateGrabParry();
                 ShieldBlock.instance?.UpdateGrabParry();
+                FistBlock.instance?.UpdateGrabParry();
                 if (WeaponBlock.instance?.wasResetTimer == true|| ShieldBlock.instance?.wasResetTimer == true)
                 {
                     ___m_blockTimer = 0;
                     WeaponBlock.instance?.resetTimer();
                     ShieldBlock.instance?.resetTimer();
+                    FistBlock.instance?.resetTimer();
                 }
             }
                 
             __result = 
                 (ShieldBlock.instance?.isBlocking() ?? false) || 
-                (WeaponBlock.instance?.isBlocking() ?? false);
-            
+                (WeaponBlock.instance?.isBlocking() ?? false) ||
+                (FistBlock.instance?.isBlocking() ?? false);
+
             return false;
         }
     }
@@ -109,6 +121,7 @@ namespace ValheimVRMod.Patches {
             
             ShieldBlock.instance?.setBlocking(hit.m_dir);
             WeaponBlock.instance?.setBlocking(hit.m_dir);
+            FistBlock.instance?.setBlocking(hit.m_dir);
         }
         
         static void Postfix(Character __instance) {
@@ -119,7 +132,20 @@ namespace ValheimVRMod.Patches {
 
             ShieldBlock.instance?.resetBlocking();
             WeaponBlock.instance?.resetBlocking();
+            FistBlock.instance?.resetBlocking();
         }
     }
     
+    [HarmonyPatch(typeof(Character), "Awake")]
+    class PatchAddFistBlock
+    {
+        static void Postfix(Character __instance)
+        {
+            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls())
+            {
+                return;
+            }
+            
+        }
+    }
 }

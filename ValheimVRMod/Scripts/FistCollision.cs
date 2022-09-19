@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using ValheimVRMod.Scripts.Block;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using Valve.VR;
@@ -14,7 +15,9 @@ namespace ValheimVRMod.Scripts {
         private List<Vector3> snapshots = new List<Vector3>();
         private bool isRightHand;
         private HandGesture handGesture;
-        
+        public static FistCollision instance;
+        private FistBlock fistBlock;
+
         private static readonly int[] ignoreLayers = {
             LayerUtils.WATERVOLUME_LAYER,
             LayerUtils.WATER,
@@ -23,7 +26,8 @@ namespace ValheimVRMod.Scripts {
         };
 
         private void Awake() {
-           colliderParent = new GameObject();
+            colliderParent = new GameObject();
+            instance = this;
         }
 
         private void OnTriggerStay(Collider collider) {
@@ -40,7 +44,7 @@ namespace ValheimVRMod.Scripts {
             if (!hasMomentum()) {
                 return;
             }
-            
+
             if (!tryHitTarget(collider.gameObject)) {
                 return;
             }
@@ -54,30 +58,30 @@ namespace ValheimVRMod.Scripts {
             if (usingClaws()) {
                 item = Player.m_localPlayer.GetRightItem();
             }
-            
+
             var attack = Player.m_localPlayer.m_unarmedWeapon.m_itemData.m_shared.m_attack;
             if (attack.Start(Player.m_localPlayer, null, null, Player.m_localPlayer.m_animEvent,
                 null, item, null, 0.0f, 0.0f)) {
                 if (isRightHand) {
-                    VRPlayer.rightHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, SteamVR_Input_Sources.RightHand);    
+                    VRPlayer.rightHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, SteamVR_Input_Sources.RightHand);
                 } else {
                     VRPlayer.leftHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, SteamVR_Input_Sources.LeftHand);
                 }
             }
         }
-        
+
         private bool tryHitTarget(GameObject target) {
 
             // ignore certain Layers
             if (ignoreLayers.Contains(target.layer)) {
                 return false;
             }
-            
+
             var meshCooldown = target.GetComponent<MeshCooldown>();
             if (meshCooldown == null) {
                 meshCooldown = target.AddComponent<MeshCooldown>();
             }
-            
+
             return meshCooldown.tryTrigger(0.63f);
         }
 
@@ -101,23 +105,7 @@ namespace ValheimVRMod.Scripts {
         }
 
         private bool isCollisionAllowed() {
-
-            SteamVR_Input_Sources inputSource;
-            
-            if (isRightHand) {
-                inputSource = SteamVR_Input_Sources.RightHand;
-            } else {
-                inputSource = SteamVR_Input_Sources.LeftHand;
-            }
-
-            var isUnequipedWithFistGesture = 
-                handGesture.isUnequiped()
-                && SteamVR_Actions.valheim_Grab.GetState(inputSource)
-                && (isRightHand && SteamVR_Actions.valheim_Use.GetState(inputSource)
-                || !isRightHand && SteamVR_Actions.valheim_UseLeft.GetState(inputSource));
-
-            return VRPlayer.inFirstPerson && colliderParent != null && 
-                   (usingClaws() || isUnequipedWithFistGesture);
+            return VRPlayer.inFirstPerson && colliderParent != null && usingFistWeapon();
         }
 
         private void FixedUpdate() {
@@ -126,25 +114,46 @@ namespace ValheimVRMod.Scripts {
                 snapshots.RemoveAt(0);
             }
         }
-        
+
         public bool hasMomentum() {
-            
+
             if (!VHVRConfig.WeaponNeedsSpeed()) {
                 return true;
             }
-            
+
             foreach (Vector3 snapshot in snapshots) {
                 if (Vector3.Distance(snapshot, transform.localPosition) > MIN_DISTANCE
                     && Vector3.Dot((snapshot - transform.localPosition).normalized, Vector3.forward) < 0) {
                     return true;
                 }
             }
-
             return false;
         }
 
         private bool usingClaws() {
             return EquipScript.getRight().Equals(EquipType.Claws);
+        }
+
+        public bool usingFistWeapon()
+        {
+            SteamVR_Input_Sources inputSource;
+
+            if (isRightHand)
+            {
+                inputSource = SteamVR_Input_Sources.RightHand;
+            }
+            else
+            {
+                inputSource = SteamVR_Input_Sources.LeftHand;
+            }
+
+            var isUnequipedWithFistGesture =
+                handGesture.isUnequiped()
+                && SteamVR_Actions.valheim_Grab.GetState(inputSource)
+                && (isRightHand && SteamVR_Actions.valheim_Use.GetState(inputSource)
+                || !isRightHand && SteamVR_Actions.valheim_UseLeft.GetState(inputSource));
+
+            return (usingClaws() || isUnequipedWithFistGesture);
         }
     }
 }
