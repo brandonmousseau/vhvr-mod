@@ -18,11 +18,13 @@ namespace ValheimVRMod.Scripts.Block {
         private int tickCounter;
         protected bool _blocking;
         protected List<Vector3> snapshots = new List<Vector3>();
+        protected List<Vector3> snapshotsLeft = new List<Vector3>();
         protected Transform hand;
+        protected Transform offhand;
         protected MeshCooldown _meshCooldown;
         public float blockTimer = blockTimerNonParry;
-        protected SteamVR_Input_Sources mainHand = VHVRConfig.LeftHanded() ? SteamVR_Input_Sources.LeftHand : SteamVR_Input_Sources.RightHand;
-        protected SteamVR_Input_Sources offHand = VHVRConfig.LeftHanded() ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand;
+        protected SteamVR_Input_Sources mainHandSource = VHVRConfig.LeftHanded() ? SteamVR_Input_Sources.LeftHand : SteamVR_Input_Sources.RightHand;
+        protected SteamVR_Input_Sources offHandSource = VHVRConfig.LeftHanded() ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand;
         protected SteamVR_Input_Sources currhand = VHVRConfig.LeftHanded() ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand;
         protected bool wasParryStart = false;
         public bool wasResetTimer = false;
@@ -38,13 +40,18 @@ namespace ValheimVRMod.Scripts.Block {
             Vector3 posStart = Player.m_localPlayer.transform.InverseTransformPoint(hand.position);
             Vector3 posEnd = posStart;
             snapshots.Add(posStart);
+            Vector3 posStart2 = Player.m_localPlayer.transform.InverseTransformPoint(offhand.position);
+            Vector3 posEnd2 = posStart2;
+            snapshotsLeft.Add(posStart2);
 
             if (snapshots.Count > maxSnapshots) {
                 snapshots.RemoveAt(0);
+                snapshotsLeft.RemoveAt(0);
             }
 
             tickCounter = 0;
             var dist = 0.0f;
+            var dist2 = 0.0f;
 
             foreach (Vector3 snapshot in snapshots) {
                 var curDist = Vector3.Distance(snapshot, posEnd);
@@ -53,12 +60,21 @@ namespace ValheimVRMod.Scripts.Block {
                     posStart = snapshot;
                 }
             }
+            foreach (Vector3 snapshot in snapshotsLeft)
+            {
+                var curDist = Vector3.Distance(snapshot, posEnd2);
+                if (curDist > dist2)
+                {
+                    dist2 = curDist;
+                    posStart2 = snapshot;
+                }
+            }
 
-            if(VHVRConfig.BlockingType() == "MotionControl")
-                ParryCheck(posStart, posEnd);
+            if (VHVRConfig.BlockingType() == "MotionControl")
+                ParryCheck(posStart, posEnd , posStart2, posEnd2);
         }
         public abstract void setBlocking(Vector3 hitDir);
-        protected abstract void ParryCheck(Vector3 posStart, Vector3 posEnd);
+        protected abstract void ParryCheck(Vector3 posStart, Vector3 posEnd, Vector3 posStart2, Vector3 posEnd2);
 
         public void resetBlocking() {
             if (VHVRConfig.BlockingType() == "GrabButton")
@@ -92,10 +108,10 @@ namespace ValheimVRMod.Scripts.Block {
 
         public void UpdateGrabParry()
         {
-            currhand = offHand;
+            currhand = offHandSource;
             if (EquipScript.getLeft() != EquipType.Shield)
             {
-                currhand = mainHand;
+                currhand = mainHandSource;
             }
             if (SteamVR_Actions.valheim_Grab.GetState(currhand) && !_meshCooldown.inCoolDown() && !wasParryStart)
             {

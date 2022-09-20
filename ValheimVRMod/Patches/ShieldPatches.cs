@@ -30,7 +30,7 @@ namespace ValheimVRMod.Patches {
                 {
                     ___m_blockTimer = FistBlock.instance?.blockTimer ?? Block.blockTimerNonParry;
                 }
-                else if (WeaponBlock.instance && WeaponBlock.instance.weaponWield.allowBlocking())
+                else if (WeaponBlock.instance && (WeaponBlock.instance.weaponWield.allowBlocking() || WeaponBlock.instance.weaponWield.isLeftHandWeapon()))
                 {
                     ___m_blockTimer = WeaponBlock.instance?.blockTimer ?? Block.blockTimerNonParry;
                 }
@@ -118,10 +118,10 @@ namespace ValheimVRMod.Patches {
             if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls()) {
                 return;
             }
-            
+
+            FistBlock.instance?.setBlocking(hit.m_dir);
             ShieldBlock.instance?.setBlocking(hit.m_dir);
             WeaponBlock.instance?.setBlocking(hit.m_dir);
-            FistBlock.instance?.setBlocking(hit.m_dir);
         }
         
         static void Postfix(Character __instance) {
@@ -133,19 +133,6 @@ namespace ValheimVRMod.Patches {
             ShieldBlock.instance?.resetBlocking();
             WeaponBlock.instance?.resetBlocking();
             FistBlock.instance?.resetBlocking();
-        }
-    }
-    
-    [HarmonyPatch(typeof(Character), "Awake")]
-    class PatchAddFistBlock
-    {
-        static void Postfix(Character __instance)
-        {
-            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls())
-            {
-                return;
-            }
-            
         }
     }
 }

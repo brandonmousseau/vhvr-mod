@@ -29,6 +29,7 @@ namespace ValheimVRMod.Scripts.Block {
             posRef = _meshCooldown.transform.localPosition;
             scaleRef = _meshCooldown.transform.localScale;
             hand = VHVRConfig.LeftHanded() ? VRPlayer.rightHand.transform : VRPlayer.leftHand.transform;
+            offhand = VHVRConfig.LeftHanded() ? VRPlayer.leftHand.transform : VRPlayer.rightHand.transform;
         }
 
         public override void setBlocking(Vector3 hitDir) {
@@ -49,7 +50,7 @@ namespace ValheimVRMod.Scripts.Block {
             }
             return -StaticObjects.shieldObj().transform.forward;
         }
-        protected override void ParryCheck(Vector3 posStart, Vector3 posEnd) {
+        protected override void ParryCheck(Vector3 posStart, Vector3 posEnd, Vector3 posStart2, Vector3 posEnd2) {
 
             if (Vector3.Distance(posEnd, posStart) > minDist) {
                 
