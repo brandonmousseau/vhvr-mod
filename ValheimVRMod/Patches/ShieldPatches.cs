@@ -17,6 +17,14 @@ namespace ValheimVRMod.Patches {
         
         private static Hand hand;
         private static SteamVR_Input_Sources handSource;
+        private static HandHapticTrigger handHapticTrigger = HandHapticTrigger.None;
+        private enum HandHapticTrigger
+        {
+            LeftHand,
+            RightHand,
+            BothHand,
+            None
+        }
         
         static void Prefix(Humanoid __instance, ref HitData hit, ref float ___m_blockTimer) {
 
@@ -40,23 +48,21 @@ namespace ValheimVRMod.Patches {
                 }
             }
             hit.m_dir = -__instance.transform.forward;
+            handHapticTrigger = HandHapticTrigger.None;
             if (ShieldBlock.instance?.isBlocking() ?? false)
             {
-                hand = VRPlayer.leftHand;
-                handSource = SteamVR_Input_Sources.LeftHand;
+                handHapticTrigger = VHVRConfig.LeftHanded() ? HandHapticTrigger.RightHand : HandHapticTrigger.LeftHand;
             }
             else if (WeaponBlock.instance?.isBlocking() ?? false)
             {
-                hand = VRPlayer.rightHand;
-                handSource = SteamVR_Input_Sources.RightHand;
+                handHapticTrigger = HandHapticTrigger.BothHand;
             }
             else if (FistBlock.instance?.isBlocking() ?? false)
             {
-                hand = VRPlayer.rightHand;
-                handSource = SteamVR_Input_Sources.RightHand;
+                handHapticTrigger = HandHapticTrigger.BothHand;
             }
             else
-            {
+            { 
                 hit.m_dir = __instance.transform.forward;
             }
         }
@@ -66,15 +72,33 @@ namespace ValheimVRMod.Patches {
             if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls() || !__result) {
                 return;
             }
-            
+            float delay = 0f;
+            float duration = 0f;
+            float freq = 100f;
+            float amplitude = 0f;
             if (___m_blockTimer < ShieldBlock.blockTimerTolerance) {
-                hand.hapticAction.Execute(0, 0.4f, 100, 0.5f, handSource);
-                hand.hapticAction.Execute(0.4f, 0.7f, 100, 0.2f, handSource);
+                duration = 0.7f;
+                amplitude = 0.3f;
             }
             else {
-                hand.hapticAction.Execute(0, 0.2f, 100, 0.5f, handSource);
+                duration = 0.2f;
+                amplitude = 0.2f;
             }
-            
+
+            switch (handHapticTrigger)
+            {
+                case HandHapticTrigger.BothHand:
+                    VRPlayer.leftHand.hapticAction.Execute(delay, duration, freq, amplitude, SteamVR_Input_Sources.LeftHand);
+                    VRPlayer.rightHand.hapticAction.Execute(delay, duration, freq, amplitude, SteamVR_Input_Sources.RightHand);
+                    break;
+                case HandHapticTrigger.LeftHand:
+                    VRPlayer.leftHand.hapticAction.Execute(delay, duration, freq, amplitude, SteamVR_Input_Sources.LeftHand);
+                    break;
+                case HandHapticTrigger.RightHand:
+                    VRPlayer.rightHand.hapticAction.Execute(delay, duration, freq, amplitude, SteamVR_Input_Sources.RightHand);
+                    break;
+            }
+
             ShieldBlock.instance?.block();
             WeaponBlock.instance?.block();
             FistBlock.instance?.block();
