@@ -47,17 +47,14 @@ namespace ValheimVRMod.Scripts.Block {
             if (Vector3.Distance(posEnd, posStart) > minDist) 
             {
                 blockTimer = blockTimerParry;
-                LogUtils.LogDebug("right Yes");
             }
             else if (weaponWield.isLeftHandWeapon() && Vector3.Distance(posEnd2, posStart2) > minDist)
             {
                 blockTimer = blockTimerParry;
-                LogUtils.LogDebug("left Yes");
             }
             else 
             {
                 blockTimer = blockTimerNonParry;
-                LogUtils.LogDebug("no");
             }
         }
     }
