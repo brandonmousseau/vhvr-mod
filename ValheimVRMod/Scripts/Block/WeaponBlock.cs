@@ -7,6 +7,7 @@ namespace ValheimVRMod.Scripts.Block {
         
         public WeaponWield weaponWield;
         public static WeaponBlock instance;
+        private readonly Vector3 handUp = new Vector3(0, -0.15f, -0.85f);
 
         private void OnDisable() {
             instance = null;
@@ -23,9 +24,10 @@ namespace ValheimVRMod.Scripts.Block {
             var angle = Vector3.Dot(hitDir, weaponWield.weaponForward);
             if (weaponWield.isLeftHandWeapon())
             {
-                var leftAngle = Vector3.Dot(hitDir, offhand.transform.forward);
+                var leftAngle = Vector3.Dot(hitDir, offhand.TransformDirection(handUp));
+                var rightAngle = Vector3.Dot(hitDir, hand.TransformDirection(handUp));
                 var leftHandBlock = (leftAngle > -0.5f && leftAngle < 0.5f) ;
-                var rightHandBlock = (angle > -0.5f && angle < 0.5f);
+                var rightHandBlock = (rightAngle > -0.5f && rightAngle < 0.5f);
                 _blocking = leftHandBlock && rightHandBlock;
             }
             else
