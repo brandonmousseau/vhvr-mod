@@ -394,7 +394,7 @@ namespace ValheimVRMod.Patches {
         {
             bool runIsTriggered = ZInput_GetJoyRightStickY_Patch.isRunning && !lastUpdateRunInput;
             bool crouchApplied = ZInput_GetJoyRightStickY_Patch.isCrouching;
-            if (crouchApplied || !VRPlayer.isMoving)
+            if (crouchApplied || !VRPlayer.isMoving || Player.m_localPlayer.m_stamina < 1)
             {
                 // If the player presses crouch or stops moving, then always stop running.
                 runToggledOn = false;
