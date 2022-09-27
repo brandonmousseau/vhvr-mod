@@ -3,6 +3,7 @@ using HarmonyLib;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Reflection.Emit;
 using System.Reflection;
@@ -1036,6 +1037,21 @@ namespace ValheimVRMod.Patches
                 Utils.ClampUIToScreen(UITooltip.m_tooltip.transform.GetChild(0).transform as RectTransform);
             }
             return false;
+        }
+    }
+
+    [HarmonyPatch(typeof(DamageText), "AddInworldText")]
+    class PatchDamageText
+    {
+        public static void Postfix(DamageText __instance, Vector3 pos, bool mySelf)
+        {
+            if (VHVRConfig.NonVrPlayer())
+            {
+                return;
+            }
+
+            var lastText = __instance.m_worldTexts.Last();
+            new GameObject().AddComponent<VRDamageTexts>().CreateText(lastText.m_textField.text, pos, lastText.m_textField.color, mySelf, __instance.m_textDuration);
         }
     }
 }
