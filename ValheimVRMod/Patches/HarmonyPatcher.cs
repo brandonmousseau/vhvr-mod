@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using System;
 
 namespace ValheimVRMod.Patches
 {
@@ -8,6 +9,16 @@ namespace ValheimVRMod.Patches
         public static void DoPatching()
         {
             harmony.PatchAll();
+
+            if (AccessTools.TypeByName("SteamManager") != null)
+            {
+                DoSteamPatching();
+            }
+        }
+
+        private static void DoSteamPatching()
+        {
+            harmony.Patch(AccessTools.Method("SteamManager:LoadAPPID"), prefix: new HarmonyMethod(typeof(SteamManager_LoadAppId_Patch), nameof(SteamManager_LoadAppId_Patch.Prefix)));
         }
         
         /** Example of how to patch hidden classes if needed

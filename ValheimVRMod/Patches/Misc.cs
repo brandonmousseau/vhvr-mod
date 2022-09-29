@@ -14,16 +14,16 @@ using static ValheimVRMod.Utilities.LogUtils;
 namespace ValheimVRMod.Patches
 {
 
+    // STEAM ONLY
     // Ensure there are no problems parsing the environment variable. One user had some issue
     // where the environment variable had an invalid format, causing the steam app id to not load
     // properly. Normally without the mod installed, the game uses steam_appid.txt, but SteamVR
     // is setting the environment variable. This patch just does some additional error checking
     // instead and falls back to the steam_appid.txt file if there is a problem with the
     // environment variable.
-    [HarmonyPatch(typeof(SteamManager), "LoadAPPID")]
     class SteamManager_LoadAppId_Patch
     {
-        static bool Prefix(ref uint __result)
+        public static bool Prefix(ref uint __result)
         {
             string environmentVariable = Environment.GetEnvironmentVariable("SteamAppId");
             if (environmentVariable != null)
