@@ -603,7 +603,7 @@ namespace ValheimVRMod.Utilities
                                         .05f,
                                         new ConfigDescription("This can be used to adjust the distance where where anything inside will be clipped out and not rendered. You can try adjusting this if you experience" +
                                                               " problems where you see the nose of the player character for example.",
-                                        new AcceptableValueRange<float>(0, 0.5f)));
+                                        new AcceptableValueRange<float>(0.05f, 0.5f)));
         }
 
         private static void InitializeMotionControlSettings() {
