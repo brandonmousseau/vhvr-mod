@@ -14,10 +14,11 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CommonDir>C:\Program Files (x86)\Steam\steamapps\common\</CommonDir>
+    <UnityDir>C:\Program Files (x86)\Hub\Editor\2019.2.16f1\2020.3.33f1\</UnityDir>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
+    <DebugType>pdbonly</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
     <DefineConstants>TRACE;DEBUG</DefineConstants>
@@ -112,7 +113,13 @@
     </Reference>
   </ItemGroup>
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="make-release.cmd" EnvironmentVariables="SOLUTION_DIR=$(SolutionDir);COMMON_DIR=$(CommonDir);TARGET_PATH=$(TargetPath);TARGET_DIR=$(TargetDir)">
+    <Exec Command="make-release.cmd" EnvironmentVariables="
+    SOLUTION_DIR=$(SolutionDir);
+    GAME_DIR=$(CommonDir)Valheim\;
+    TARGET_PATH=$(TargetPath);
+    TARGET_DIR=$(TargetDir);
+    CONFIGURATION_NAME=$(ConfigurationName);    
+    UNITY_DIR=$(UnityDir);">
       <Output TaskParameter="ConsoleOutput" ItemName="OutputOfExec" />
     </Exec>
   </Target>
