@@ -17,9 +17,9 @@ namespace ValheimVRMod.Scripts {
         private const float MAX_STAB_ANGLE_TWOHAND = 40f;
 
         private bool scriptActive;
-        private GameObject colliderParent = new GameObject();
-        private List<Vector3> snapshots = new List<Vector3>();
-        private List<Vector3> snapshotsC = new List<Vector3>();
+        private GameObject colliderParent;
+        private List<Vector3> snapshots;
+        private List<Vector3> snapshotsC;
         private ItemDrop.ItemData item;
         private Attack attack;
         private bool isRightHand;
@@ -39,6 +39,13 @@ namespace ValheimVRMod.Scripts {
             LayerUtils.UI_PANEL_LAYER,
             LayerUtils.CHARARCTER_TRIGGER
         };
+
+        private void Awake()
+        {
+            colliderParent = new GameObject();
+            snapshots = new List<Vector3>();
+            snapshotsC = new List<Vector3>();
+        }
 
         private void OnTriggerStay(Collider collider) {
 
