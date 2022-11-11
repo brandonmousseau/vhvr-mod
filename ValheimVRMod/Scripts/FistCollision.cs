@@ -112,9 +112,7 @@ namespace ValheimVRMod.Scripts {
 
             var isUnequipedWithFistGesture = 
                 handGesture.isUnequiped()
-                && SteamVR_Actions.valheim_Grab.GetState(inputSource)
-                && (isRightHand && SteamVR_Actions.valheim_Use.GetState(inputSource)
-                || !isRightHand && SteamVR_Actions.valheim_UseLeft.GetState(inputSource));
+                && SteamVR_Actions.valheim_Grab.GetState(inputSource);
 
             return VRPlayer.inFirstPerson && colliderParent != null && 
                    (usingClaws() || isUnequipedWithFistGesture);
