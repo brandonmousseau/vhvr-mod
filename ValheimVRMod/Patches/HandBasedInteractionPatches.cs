@@ -114,7 +114,7 @@ namespace ValheimVRMod.Patches
         {
             static void Postfix(Player __instance, IDoodadController ___m_doodadController)
             {
-                if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls())
+                if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls() || __instance.GetMoveDir() != Vector3.zero)
                 {
                     return;
                 }

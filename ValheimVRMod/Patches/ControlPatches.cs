@@ -394,7 +394,7 @@ namespace ValheimVRMod.Patches {
         {
             bool runIsTriggered = ZInput_GetJoyRightStickY_Patch.isRunning && !lastUpdateRunInput;
             bool crouchApplied = ZInput_GetJoyRightStickY_Patch.isCrouching;
-            if (crouchApplied || !VRPlayer.isMoving)
+            if (crouchApplied || !VRPlayer.isMoving || Player.m_localPlayer.m_stamina < 1)
             {
                 // If the player presses crouch or stops moving, then always stop running.
                 runToggledOn = false;
@@ -786,6 +786,77 @@ namespace ValheimVRMod.Patches {
                 return ;
             }
             FishingManager.instance.TriggerVibrateFish(__instance);
+        }
+    }
+    // ENABLE DODGE
+    [HarmonyPatch(typeof(Player), "Update")]
+    class Player_UpdateDodge_Patch
+    {
+        static void Postfix(Player __instance)
+        {
+            if (VHVRConfig.NonVrPlayer())
+                return;
+
+            Vector3 dir = __instance.GetMoveDir();
+            if (dir == Vector3.zero)
+                return;
+
+            if (SteamVR_Actions.valheim_UseLeft.GetStateDown(SteamVR_Input_Sources.LeftHand))
+            {
+                if (__instance.m_stamina < __instance.m_dodgeStaminaUsage)
+                {
+                    Hud.instance.StaminaBarNoStaminaFlash();
+                    return;
+                }
+                __instance.Dodge(dir);
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(Player), "UpdateDodge")]
+    class UpdateDodgeVr
+    {
+        static float currdodgetimer = 0f;
+        static Vector3 currDodgeDir;
+        static bool Prefix(Player __instance, float dt)
+        {
+            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls())
+            {
+                return true;
+            }
+
+            __instance.m_queuedDodgeTimer -= dt;
+            currdodgetimer -= dt;
+
+            if (__instance.m_queuedDodgeTimer > 0f && __instance.IsOnGround() && !__instance.IsDead() && !__instance.InAttack() && !__instance.IsEncumbered() && !__instance.InDodge() && !__instance.IsStaggering())
+            {
+                float num = __instance.m_dodgeStaminaUsage - __instance.m_dodgeStaminaUsage * __instance.m_equipmentMovementModifier;
+                if (__instance.HaveStamina(num))
+                {
+                    __instance.AbortEquipQueue();
+                    __instance.m_queuedDodgeTimer = 0f;
+                    currdodgetimer = 0.8f;
+                    currDodgeDir = __instance.transform.forward;
+                    __instance.m_dodgeInvincible = true;
+                    __instance.m_zanim.SetTrigger("dodge");
+                    __instance.AddNoise(5f);
+                    __instance.UseStamina(num);
+                    __instance.m_dodgeEffects.Create(__instance.transform.position, Quaternion.identity, __instance.transform, 2f, -1);
+                }
+            }
+
+            AnimatorStateInfo currentAnimatorStateInfo = __instance.m_animator.GetCurrentAnimatorStateInfo(0);
+            AnimatorStateInfo nextAnimatorStateInfo = __instance.m_animator.GetNextAnimatorStateInfo(0);
+            bool flag = __instance.m_animator.IsInTransition(0);
+            bool flag2 = __instance.m_animator.GetBool("dodge") || (currentAnimatorStateInfo.tagHash == Player.m_animatorTagDodge && !flag) || (flag && nextAnimatorStateInfo.tagHash == Player.m_animatorTagDodge);
+            bool value = flag2 && __instance.m_dodgeInvincible;
+            __instance.m_nview.GetZDO().Set("dodgeinv", value);
+            __instance.m_inDodge = flag2;
+            if (currdodgetimer > 0)
+            {
+                __instance.m_rootMotion = (__instance.m_queuedDodgeDir.normalized / 11) - (currDodgeDir / 15);
+            }
+            return false;
         }
     }
 }
