@@ -374,13 +374,13 @@ namespace ValheimVRMod.Utilities
                                                      75f,
                                                      new ConfigDescription("Only used when UseLookLocomotion is true. This is the angle away from the center of the GUI that will trigger the GUI to" +
                                                      " recenter on your current look direction while stationary.",
-                                                     new AcceptableValueRange<float>(25f, 100f)));
+                                                     new AcceptableValueRange<float>(0f, 100f)));
             mobileGuiRecenterAngle = config.Bind("UI",
                                      "MobileGuiRecenterAngle",
                                      50f,
                                      new ConfigDescription("Only used when UseLookLocomotion is true. This is the angle away from the center of the GUI that will trigger the GUI to" +
                                      " recenter on your current look direction while moving.",
-                                     new AcceptableValueRange<float>(25f, 100f)));
+                                     new AcceptableValueRange<float>(0f, 100f)));
             recenterGuiOnMove = config.Bind("UI",
                                             "RecenterGuiOnMove",
                                             true,
