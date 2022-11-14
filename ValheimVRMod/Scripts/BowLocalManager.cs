@@ -29,11 +29,12 @@ namespace ValheimVRMod.Scripts {
         public static bool startedPulling;
         public static bool aborting;
 
-        private readonly GameObject arrowAttach = new GameObject();
+        private GameObject arrowAttach;
 
 
         private void Start() {
             instance = this;
+            arrowAttach = new GameObject();
             mainHand = getMainHand().transform;
             predictionLine = new GameObject().AddComponent<LineRenderer>();
             predictionLine.widthMultiplier = 0.03f;

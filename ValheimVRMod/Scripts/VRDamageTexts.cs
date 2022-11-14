@@ -9,12 +9,18 @@ namespace ValheimVRMod.Scripts
         private GameObject damageTextObject;
         private Canvas canvasText ;
         private Text currText;
-        private Font ArialFont = (Font)Resources.GetBuiltinResource(typeof(Font), "Arial.ttf");
+        private Font ArialFont;
         private float timer = 0f;
         private float textDuration = 1.5f;
         private bool selfText;
 
         private static Camera vrCam;
+
+        private void Awake()
+        {
+            ArialFont = (Font)Resources.GetBuiltinResource(typeof(Font), "Arial.ttf");
+        }
+
         private void OnRenderObject()
         {
             var dt = Time.unscaledDeltaTime;
