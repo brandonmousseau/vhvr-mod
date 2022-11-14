@@ -192,7 +192,7 @@ namespace ValheimVRMod.Scripts {
             var currDrawPercentage = pullPercentage();
             if (arrow != null && currDrawPercentage > attackDrawPercentage && !VHVRConfig.RestrictBowDrawSpeed()) {
                 float additionalStaminaDrain = 15;
-                Player.m_localPlayer.UseStamina((currDrawPercentage - attackDrawPercentage) * additionalStaminaDrain);
+                Player.m_localPlayer.UseStamina((currDrawPercentage - attackDrawPercentage) * additionalStaminaDrain * VHVRConfig.GetBowStaminaScalar());
             }
             attackDrawPercentage = currDrawPercentage;
         }

@@ -117,6 +117,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> advancedBuildMode;
         private static ConfigEntry<bool> freePlaceAutoReturn;
         private static ConfigEntry<bool> advancedRotationUpWorld;
+        private static ConfigEntry<float> bowStaminaAdjust;
 
 #if DEBUG
         private static ConfigEntry<float> DebugPosX;
@@ -671,6 +672,11 @@ namespace ValheimVRMod.Utilities
                                                     "AdvanceRotationUpWorld",
                                                     true,
                                                     "Always use rotate vertically up when using analog rotation while in advanced build mode");
+            bowStaminaAdjust = config.Bind("Motion Control",
+                                            "BowStaminaAdjust",
+                                            1.0f,
+                                            new ConfigDescription("Multiplier for stamina drain on bow. Reduce for less stamina drain.",
+                                                new AcceptableValueRange<float>(0.25f, 1.0f)));
             // #if DEBUG
             //             DebugPosX = config.Bind("Motion Control",
             //                 "DebugPosX",
@@ -1206,6 +1212,11 @@ namespace ValheimVRMod.Utilities
         public static bool BhapticsEnabled()
         {
             return bhapticsEnabled.Value && !NonVrPlayer();
+        }
+
+        public static float GetBowStaminaScalar()
+        {
+            return bowStaminaAdjust.Value;
         }
     }
 }
