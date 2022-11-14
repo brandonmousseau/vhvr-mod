@@ -37,6 +37,8 @@ namespace ValheimVRMod.Scripts {
         private Vector3 handleBottom = new Vector3(0, 0, 0);
         private const float handleHeight = 0.52f;
 
+        private int[] meshTriangles;
+
         void Awake() {
             
             originalRotation = transform.localRotation;
@@ -44,8 +46,12 @@ namespace ValheimVRMod.Scripts {
             Mesh mesh = GetComponent<MeshFilter>().mesh;
             verts = mesh.vertices;
 
+            // Need to save this here on the main thread, as accessing mesh.triangles on the background thread
+            // throws an exception.
+            meshTriangles = mesh.triangles;
+
             // we need to run this method in thread as it takes longer than a frame and freezes game for a moment
-            Thread thread = new Thread(()=>initializeRenderersAsync(mesh));
+            Thread thread = new Thread(()=>initializeRenderersAsync());
             thread.Start();
 
             pullObj = new GameObject();
@@ -71,7 +77,7 @@ namespace ValheimVRMod.Scripts {
             return transform.TransformPoint(new Vector3(gripLocalHalfWidth * VHVRConfig.ArrowRestHorizontalOffsetMultiplier(), -VHVRConfig.ArrowRestElevation(), 0));
         }
 
-        private void initializeRenderersAsync(Mesh mesh) {
+        private void initializeRenderersAsync() {
 
             // Removing the old bow string, which is part of the bow mesh to later replace it with a linerenderer.
             // we are making use of the fact that string triangles are longer then all other triangles
@@ -80,10 +86,10 @@ namespace ValheimVRMod.Scripts {
             // but we save the top and bottom points of the deleted vertices so we can use them for our new string.
             localStringTopPos = new Vector3(0, 0, 0);
             localStringBottomPos = new Vector3(0, 0, 0);
-            for (int i = 0; i < mesh.triangles.Length / 3; i++) {
-                Vector3 v1 = verts[mesh.triangles[i * 3]];
-                Vector3 v2 = verts[mesh.triangles[i * 3 + 1]];
-                Vector3 v3 = verts[mesh.triangles[i * 3 + 2]];
+            for (int i = 0; i < meshTriangles.Length / 3; i++) {
+                Vector3 v1 = verts[meshTriangles[i * 3]];
+                Vector3 v2 = verts[meshTriangles[i * 3 + 1]];
+                Vector3 v3 = verts[meshTriangles[i * 3 + 2]];
 
                 if (Vector3.Distance(v1, v2) < minStringSize &&
                     Vector3.Distance(v2, v3) < minStringSize &&
@@ -91,8 +97,8 @@ namespace ValheimVRMod.Scripts {
                     continue;
                 }
                 
-                verts[mesh.triangles[i * 3 + 1]] = verts[mesh.triangles[i * 3]];
-                verts[mesh.triangles[i * 3 + 2]] = verts[mesh.triangles[i * 3]];
+                verts[meshTriangles[i * 3 + 1]] = verts[meshTriangles[i * 3]];
+                verts[meshTriangles[i * 3 + 2]] = verts[meshTriangles[i * 3]];
 
                 foreach (Vector3 v in new[] {v1, v2, v3}) {
                     if (v.y > localStringTopPos.y) {
