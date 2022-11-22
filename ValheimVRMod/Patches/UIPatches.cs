@@ -381,7 +381,7 @@ namespace ValheimVRMod.Patches
         // This patch is used to add a duplicate of whatever
         // HUD is added to the base class to the EnemyHudManager
         // mirror class.
-        [HarmonyPatch(typeof(EnemyHud), "ShowHud")]
+        [HarmonyPatch(typeof(EnemyHud), nameof(EnemyHud.ShowHud))]
         class EnemyHud_ShowHud_Patch
         {
             public static void Prefix(Character c, bool isMount, GameObject ___m_baseHudPlayer, GameObject ___m_baseHud, GameObject ___m_baseHudMount, GameObject ___m_baseHudBoss)
@@ -400,7 +400,7 @@ namespace ValheimVRMod.Patches
         // method calls to our EnemyHudManager class to update the values
         // at the right points. This requires the use of a transpiler to insert
         // the method calls at the right place in the code.
-        [HarmonyPatch(typeof(EnemyHud), "UpdateHuds")]
+        [HarmonyPatch(typeof(EnemyHud), nameof(EnemyHud.UpdateHuds))]
         class EnemyHud_UpdateHuds_Patch
         {
             private static FieldInfo guiField = AccessTools.Field(typeof(EnemyHud.HudData), nameof(EnemyHud.HudData.m_gui));
@@ -540,15 +540,16 @@ namespace ValheimVRMod.Patches
                 var patched = new List<CodeInstruction>();
                 for (int i = 0; i < original.Count; i++) {
                     patched.Add(original[i]);
-                    MaybeAddDestroyHudInstructions(original, ref patched, i);
-                    MaybeAddUpdateHealthInstructions(original, ref patched, i);
-                    MaybeAddUpdateLevelInstructions(original, ref patched, i);
-                    MaybeAddAIAlertnessUpdateInstructions(original, ref patched, i);
-                    MaybeAddMountUpdateInstructions(original, ref patched, i);
-                    MaybeAddNameplateUpdateInstructions(original, ref patched, i);
-                    MaybeAddSetActiveInstructions(original, ref patched, i);
-                    MaybeAddRemoveEnemyHudInstruction(original, ref patched, i);
-                    MaybeAddUpdateHudLocationInstructions(original, ref patched, i);
+                    // FIXME: Mystlands broke this
+                    //MaybeAddDestroyHudInstructions(original, ref patched, i);
+                    //MaybeAddUpdateHealthInstructions(original, ref patched, i);
+                    //MaybeAddUpdateLevelInstructions(original, ref patched, i);
+                    //MaybeAddAIAlertnessUpdateInstructions(original, ref patched, i);
+                    //MaybeAddMountUpdateInstructions(original, ref patched, i);
+                    //MaybeAddNameplateUpdateInstructions(original, ref patched, i);
+                    //MaybeAddSetActiveInstructions(original, ref patched, i);
+                    //MaybeAddRemoveEnemyHudInstruction(original, ref patched, i);
+                    //MaybeAddUpdateHudLocationInstructions(original, ref patched, i);
                 }
                 return patched;
             }

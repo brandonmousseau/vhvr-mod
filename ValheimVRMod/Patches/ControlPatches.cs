@@ -805,7 +805,8 @@ namespace ValheimVRMod.Patches {
             {
                 if (__instance.m_stamina < __instance.m_dodgeStaminaUsage)
                 {
-                    Hud.instance.StaminaBarNoStaminaFlash();
+                    // FIXME: Mystlands probably changed this from StaminaBarNoStaminaFlash
+                    Hud.instance.StaminaBarEmptyFlash();
                     return;
                 }
                 __instance.Dodge(dir);
@@ -833,7 +834,7 @@ namespace ValheimVRMod.Patches {
                 float num = __instance.m_dodgeStaminaUsage - __instance.m_dodgeStaminaUsage * __instance.m_equipmentMovementModifier;
                 if (__instance.HaveStamina(num))
                 {
-                    __instance.AbortEquipQueue();
+                    __instance.ClearActionQueue();
                     __instance.m_queuedDodgeTimer = 0f;
                     currdodgetimer = 0.8f;
                     currDodgeDir = __instance.transform.forward;

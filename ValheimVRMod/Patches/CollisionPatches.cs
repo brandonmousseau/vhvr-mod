@@ -21,7 +21,7 @@ namespace ValheimVRMod.Patches {
     }
     
     
-    [HarmonyPatch(typeof(Attack), "Start")]
+    [HarmonyPatch(typeof(Attack), nameof(Attack.Start))]
     class PatchAttackStart {
 
         /**
@@ -34,6 +34,7 @@ namespace ValheimVRMod.Patches {
             ref Humanoid ___m_character,
             ref CharacterAnimEvent ___m_animEvent,
             ref ItemDrop.ItemData ___m_weapon,
+            ref ItemDrop.ItemData ___m_ammoItem,
             ref Attack __instance,
             ref EffectList ___m_hitEffect,
             ref Skills.SkillType ___m_specialHitSkill,
@@ -80,8 +81,9 @@ namespace ValheimVRMod.Patches {
             if (!MeshCooldown.staminaDrained) {
                 float staminaUsage = (float) __instance.GetAttackStamina();
                 if (staminaUsage > 0.0f && !character.HaveStamina(staminaUsage + 0.1f)) {
+                    // FIXME: Mystlands probably changed this from StaminaBarNoStaminaFlash
                     if (character.IsPlayer())
-                        Hud.instance.StaminaBarNoStaminaFlash();
+                        Hud.instance.StaminaBarEmptyFlash();
                     __result = false;
                     return false;
                 }
@@ -103,12 +105,12 @@ namespace ValheimVRMod.Patches {
                 return false;
             }
             
-            doMeleeAttack(___m_character, ___m_weapon, __instance, ___m_hitEffect, ___m_specialHitSkill, ___m_specialHitType, ___m_lowerDamagePerHit, ___m_forceMultiplier, ___m_staggerMultiplier, ___m_damageMultiplier, ___m_attackChainLevels, ___m_currentAttackCainLevel, ___m_resetChainIfHit, ref ___m_nextAttackChainLevel, ___m_hitTerrainEffect, ___m_attackHitNoise, pos, col, dir, ___m_spawnOnTrigger);
+            doMeleeAttack(___m_character, ___m_weapon, ___m_ammoItem, __instance, ___m_hitEffect, ___m_specialHitSkill, ___m_specialHitType, ___m_lowerDamagePerHit, ___m_forceMultiplier, ___m_staggerMultiplier, ___m_damageMultiplier, ___m_attackChainLevels, ___m_currentAttackCainLevel, ___m_resetChainIfHit, ref ___m_nextAttackChainLevel, ___m_hitTerrainEffect, ___m_attackHitNoise, pos, col, dir, ___m_spawnOnTrigger);
             return false;
             
         }
 
-        private static void doMeleeAttack(Humanoid ___m_character, ItemDrop.ItemData ___m_weapon, Attack __instance,
+        private static void doMeleeAttack(Humanoid ___m_character, ItemDrop.ItemData ___m_weapon, ItemDrop.ItemData ___m_ammoItem, Attack __instance,
             EffectList ___m_hitEffect, Skills.SkillType ___m_specialHitSkill, DestructibleType ___m_specialHitType,
             bool ___m_lowerDamagePerHit, float ___m_forceMultiplier, float ___m_staggerMultiplier, float ___m_damageMultiplier,
             int ___m_attackChainLevels, int ___m_currentAttackCainLevel, DestructibleType ___m_resetChainIfHit,
@@ -209,18 +211,20 @@ namespace ValheimVRMod.Patches {
                 ___m_weapon.m_durability -= ___m_weapon.m_shared.m_useDurabilityDrain;
             ___m_character.AddNoise(___m_attackHitNoise);
 
+            // FIXME: Setup now takes in input an additional ammo parameter, look into this
             if (___m_weapon.m_shared.m_spawnOnHit)
                 Object.Instantiate(___m_weapon.m_shared.m_spawnOnHit, pos,
                         Quaternion.identity).GetComponent<IProjectile>()
-                    ?.Setup(___m_character, zero, ___m_attackHitNoise, null, ___m_weapon);
+                    ?.Setup(___m_character, zero, ___m_attackHitNoise, null, ___m_weapon, ___m_ammoItem);
             foreach (Skills.SkillType skill in skillTypeSet)
                 ___m_character.RaiseSkill(skill, flag2 ? 1.5f : 1f);
 
             if (!___m_spawnOnTrigger)
                 return;
+            // FIXME: Setup now takes in input an additional ammo parameter, look into this
             Object.Instantiate(___m_spawnOnTrigger, zero,
                 Quaternion.identity).GetComponent<IProjectile>()?.Setup(___m_character,
-                ___m_character.transform.forward, -1f, null, ___m_weapon);
+                ___m_character.transform.forward, -1f, null, ___m_weapon, ___m_ammoItem);
 
             return;
         }
