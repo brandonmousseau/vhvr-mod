@@ -450,10 +450,10 @@ namespace ValheimVRMod.Patches
                 EnemyHudManager.instance.RemoveEnemyHud(c);
             }
 
-            private static float UpdateHealth(float health, Character c)
+            private static float UpdateHealth(float health, Character c, Player p)
             {
                 AssertCharacter(c);
-                EnemyHudManager.instance.UpdateHealth(c, health);
+                EnemyHudManager.instance.UpdateHealth(p, c, health);
                 // Return health so that it gets put back onto the
                 // evaluation stack right after we use it
                 return health;
@@ -541,15 +541,15 @@ namespace ValheimVRMod.Patches
                 for (int i = 0; i < original.Count; i++) {
                     patched.Add(original[i]);
                     // FIXME: Mystlands broke this
-                    //MaybeAddDestroyHudInstructions(original, ref patched, i);
-                    //MaybeAddUpdateHealthInstructions(original, ref patched, i);
-                    //MaybeAddUpdateLevelInstructions(original, ref patched, i);
-                    //MaybeAddAIAlertnessUpdateInstructions(original, ref patched, i);
-                    //MaybeAddMountUpdateInstructions(original, ref patched, i);
-                    //MaybeAddNameplateUpdateInstructions(original, ref patched, i);
-                    //MaybeAddSetActiveInstructions(original, ref patched, i);
-                    //MaybeAddRemoveEnemyHudInstruction(original, ref patched, i);
-                    //MaybeAddUpdateHudLocationInstructions(original, ref patched, i);
+                    MaybeAddDestroyHudInstructions(original, ref patched, i);
+                    MaybeAddUpdateHealthInstructions(original, ref patched, i);
+                    MaybeAddUpdateLevelInstructions(original, ref patched, i);
+                    MaybeAddAIAlertnessUpdateInstructions(original, ref patched, i);
+                    MaybeAddMountUpdateInstructions(original, ref patched, i);
+                    MaybeAddNameplateUpdateInstructions(original, ref patched, i);
+                    MaybeAddSetActiveInstructions(original, ref patched, i);
+                    MaybeAddRemoveEnemyHudInstruction(original, ref patched, i);
+                    MaybeAddUpdateHudLocationInstructions(original, ref patched, i);
                 }
                 return patched;
             }
@@ -601,6 +601,7 @@ namespace ValheimVRMod.Patches
                     // Health percentage method just called, so health percentage is on eval
                     // stack. Load the character field and then call UpdateHealth
                     LoadCharacterField(ref patched);
+                    patched.Add(new CodeInstruction(OpCodes.Ldarg_1));
                     patched.Add(CodeInstruction.Call(typeof(EnemyHud_UpdateHuds_Patch), nameof(UpdateHealth)));
                 }
             }
@@ -635,9 +636,9 @@ namespace ValheimVRMod.Patches
                 var instruction = original[i];
                 if (instruction.Calls(getMaxStaminaMethod))
                 {
-                    // MaxStamina was just called, so it is on the eval stack. "GetStamina" was stored into V_11.
+                    // MaxStamina was just called, so it is on the eval stack. "GetStamina" was stored into V_12.
                     // Before storing the value of GetStamina we detour to UpdateMound
-                    patched.Add(new CodeInstruction(OpCodes.Ldloc_S, 11)); // ldloc.s V_9
+                    patched.Add(new CodeInstruction(OpCodes.Ldloc_S, 12)); // ldloc.s V_12
                     LoadCharacterField(ref patched);
                     patched.Add(CodeInstruction.Call(typeof(EnemyHud_UpdateHuds_Patch), nameof(UpdateMount)));
                 }
