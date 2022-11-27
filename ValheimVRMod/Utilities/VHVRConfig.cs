@@ -68,6 +68,8 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<Quaternion> rightWristRot;
         private static ConfigEntry<string> healthPanelPlacement;
         private static ConfigEntry<string> staminaPanelPlacement;
+        private static ConfigEntry<string> eitrPanelPlacement;
+        private static ConfigEntry<string> staggerPanelPlacement;
         private static ConfigEntry<string> minimapPanelPlacement;
         private static ConfigEntry<bool> allowHudFade;
         private static ConfigEntry<bool> hideHotbar;
@@ -457,6 +459,16 @@ namespace ValheimVRMod.Utilities
                                             "StaminaPanelPlacement",
                                             "CameraLocked",
                                             new ConfigDescription("Where should the stamina panel be placed?",
+                                                new AcceptableValueList<string>(k_HudAlignmentValues)));
+            eitrPanelPlacement = config.Bind("VRHUD",
+                                            "EitrPanelPlacement",
+                                            "CameraLocked",
+                                            new ConfigDescription("Where should the eitr panel be placed?",
+                                                new AcceptableValueList<string>(k_HudAlignmentValues)));
+            staggerPanelPlacement = config.Bind("VRHUD",
+                                            "StaggerPanelPlacement",
+                                            "CameraLocked",
+                                            new ConfigDescription("Where should the stagger panel be placed?",
                                                 new AcceptableValueList<string>(k_HudAlignmentValues)));
             minimapPanelPlacement = config.Bind("VRHUD",
                                             "MinimapPanelPlacement",
@@ -1173,6 +1185,16 @@ namespace ValheimVRMod.Utilities
         public static string StaminaPanelPlacement()
         {
             return staminaPanelPlacement.Value;
+        }
+
+        public static string EitrPanelPlacement()
+        {
+            return eitrPanelPlacement.Value;
+        }
+
+        public static string StaggerPanelPlacement()
+        {
+            return staggerPanelPlacement.Value;
         }
 
         public static string MinimapPanelPlacement()

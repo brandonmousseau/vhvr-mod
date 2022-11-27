@@ -102,6 +102,8 @@ namespace ValheimVRMod.VRCore.UI
             //This also gives the order of precedence
             new HealthPanelElement(), //Vertical START
             new StaminaPanelElement(), //Horizontal START
+            new EitrPanelElement(), //Horizontal START
+            new StaggerPanelElement(), //Horizontal START
             new MinimapPanelElement(),
             new BuildSelectedInfoElement()
         };
