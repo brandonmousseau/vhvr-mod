@@ -222,7 +222,9 @@ namespace ValheimVRMod.Scripts {
                 maxSnapshots = (int) (MAX_SNAPSHOTS_BASE + MAX_SNAPSHOTS_FACTOR * colliderDistance);
                 setScriptActive(true);
             }
-            catch (InvalidEnumArgumentException) {
+            catch (InvalidEnumArgumentException)
+            {
+                LogUtils.LogWarning($"Collider not found for: {name}");
                 setScriptActive(false);
             }
         }
