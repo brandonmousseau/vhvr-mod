@@ -6,6 +6,7 @@ using HarmonyLib;
 using UnityEngine;
 using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
+using ValheimVRMod.VRCore;
 
 namespace ValheimVRMod.Patches {
 
@@ -59,10 +60,16 @@ namespace ValheimVRMod.Patches {
                 return true;
             }
 
-            if (EquipScript.getLeft() == EquipType.Bow) {
-                spawnPoint = BowLocalManager.spawnPoint;
-                aimDir = BowLocalManager.aimDir;
-                return false;
+            switch(EquipScript.getLeft()) { 
+                case EquipType.Bow: 
+                    spawnPoint = BowLocalManager.spawnPoint;
+                    aimDir = BowLocalManager.aimDir;
+                    return false;
+                case EquipType.Magic:
+                    // TODO: Create a proper manager for this
+                    spawnPoint = VRPlayer.leftPointer.rayStartingPosition;
+                    aimDir = VRPlayer.leftPointer.rayDirection * Vector3.forward;
+                    return false;
             }
             
             switch (EquipScript.getRight()) {
@@ -76,6 +83,11 @@ namespace ValheimVRMod.Patches {
                 case EquipType.ThrowObject:
                     spawnPoint = SpearManager.spawnPoint;
                     aimDir = SpearManager.aimDir;
+                    return false;
+                case EquipType.Magic:
+                    // TODO: Create a proper manager for this
+                    spawnPoint = VRPlayer.rightPointer.rayStartingPosition;
+                    aimDir = VRPlayer.rightPointer.rayDirection * Vector3.forward;
                     return false;
             }
 

@@ -535,6 +535,14 @@ namespace ValheimVRMod.Patches {
                 blockHold = ShieldBlock.instance?.isBlocking() ?? false;
             }
 
+
+            if (EquipScript.getLeft() == EquipType.Magic && SteamVR_Actions.valheim_UseLeft.stateDown)
+            {
+                // TODO: Create a proper manager for this
+                attack = true;
+                attackHold = true;
+            }
+
             switch (EquipScript.getRight()) {
                 case EquipType.Fishing:
                     if (FishingManager.isThrowing) {
@@ -569,6 +577,13 @@ namespace ValheimVRMod.Patches {
                         WeaponCollision.isDrinking = false;
                     }
 
+                    break;
+                case EquipType.Magic:
+                    if (SteamVR_Actions.valheim_Use.stateDown)
+                    {
+                        attack = true;
+                        attackHold = true;
+                    }
                     break;
             }
         }

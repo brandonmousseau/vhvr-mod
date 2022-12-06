@@ -7,7 +7,7 @@ using ValheimVRMod.Utilities;
 
 namespace ValheimVRMod.Patches {
     
-    [HarmonyPatch(typeof(Attack), "GetAttackOrigin")]
+    [HarmonyPatch(typeof(Attack), nameof(Attack.GetAttackOrigin))]
     class PatchAreaAttack {
 
         static bool Prefix(ref Transform __result,  ref Humanoid ___m_character) {

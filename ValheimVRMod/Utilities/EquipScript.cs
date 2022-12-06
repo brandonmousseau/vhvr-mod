@@ -7,7 +7,7 @@ namespace ValheimVRMod.Utilities {
         None, 
         Fishing, Cultivator, Hammer, Hoe,
         Bow,  Spear, SpearChitin, ThrowObject,
-        Shield, Tankard, Claws
+        Shield, Tankard, Claws, Magic
     }
     
     public static class EquipScript {
@@ -30,16 +30,23 @@ namespace ValheimVRMod.Utilities {
                 case "$item_spear_bronze":
                 case "$item_spear_ancientbark":
                 case "$item_spear_wolffang":
+                case "$item_spear_carapace":
                     return EquipType.Spear;
                 case "$item_spear_chitin":
                     return EquipType.SpearChitin;
                 case "$item_oozebomb":
+                case "$item_bilebomb":
                     return EquipType.ThrowObject;
                 case "$item_tankard":
                 case "$item_tankard_anniversary":
                     return EquipType.Tankard;                
                 case "$item_fistweapon_fenris":
                     return EquipType.Claws;
+            }
+
+            if (Player.m_localPlayer.GetRightItem()?.m_shared.m_skillType == Skills.SkillType.BloodMagic ||
+                Player.m_localPlayer.GetRightItem()?.m_shared.m_skillType == Skills.SkillType.ElementalMagic) {
+                return EquipType.Magic;
             }
 
             return EquipType.None;
@@ -54,7 +61,13 @@ namespace ValheimVRMod.Utilities {
                 case ItemDrop.ItemData.ItemType.Shield:
                     return EquipType.Shield;
             }
-            
+
+            if (Player.m_localPlayer.GetLeftItem()?.m_shared.m_skillType == Skills.SkillType.BloodMagic ||
+                Player.m_localPlayer.GetLeftItem()?.m_shared.m_skillType == Skills.SkillType.ElementalMagic)
+            {
+                return EquipType.Magic;
+            }
+
             return EquipType.None;
         }
     }

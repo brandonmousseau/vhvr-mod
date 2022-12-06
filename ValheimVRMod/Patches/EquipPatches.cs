@@ -74,6 +74,7 @@ namespace ValheimVRMod.Patches {
                                 break;
                             case "SpearElderbark":
                             case "SpearBronze":
+                            case "SpearCarapace":
                                 meshFilter.gameObject.transform.localPosition = new Vector3(0, 0, -1.15f);
                                 break;
 
