@@ -19,7 +19,7 @@ namespace ValheimVRMod.Scripts.Block {
         }
 
         public override void setBlocking(Vector3 hitDir) {
-            var angle = Vector3.Dot(hitDir, weaponWield.weaponForward);
+            var angle = Vector3.Dot(hitDir, WeaponWield.weaponForward);
             _blocking = weaponWield.allowBlocking() && angle > -0.5f && angle < 0.5f ;
         }
         

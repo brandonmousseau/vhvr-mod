@@ -51,7 +51,7 @@ namespace ValheimVRMod.Patches {
         */
     [HarmonyPatch(typeof(Attack), "GetProjectileSpawnPoint")]
     class PatchGetProjectileSpawnPoint {
-        static bool Prefix(out Vector3 spawnPoint, out Vector3 aimDir, Humanoid ___m_character) {
+        static bool Prefix(Attack __instance, out Vector3 spawnPoint, out Vector3 aimDir, Humanoid ___m_character) {
 
             spawnPoint = Vector3.zero;
             aimDir = Vector3.zero;
@@ -86,8 +86,16 @@ namespace ValheimVRMod.Patches {
                     return false;
                 case EquipType.Magic:
                     // TODO: Create a proper manager for this
-                    spawnPoint = VRPlayer.rightPointer.rayStartingPosition;
-                    aimDir = VRPlayer.rightPointer.rayDirection * Vector3.forward;
+                    spawnPoint = VRPlayer.rightPointer.rayStartingPosition + WeaponWield.weaponForward * Vector3.Distance(Vector3.zero, (Vector3.up * __instance.m_attackHeight + Vector3.forward * __instance.m_attackRange + Vector3.right * __instance.m_attackOffset))*0.6f;
+                    
+                    if (WeaponWield.isCurrentlyTwoHanded())
+                    {
+                        aimDir = WeaponWield.weaponForward;
+                    }
+                    else
+                    {
+                        aimDir = VRPlayer.rightPointer.rayDirection * Vector3.forward;
+                    }
                     return false;
             }
 

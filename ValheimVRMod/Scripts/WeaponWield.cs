@@ -13,7 +13,7 @@ namespace ValheimVRMod.Scripts
         private Attack attack;
         private bool weaponSubPos;
 
-        public Vector3 weaponForward;
+        public static Vector3 weaponForward;
         public string itemName;
         private ItemDrop.ItemData item;
         private GameObject rotSave;
@@ -71,10 +71,10 @@ namespace ValheimVRMod.Scripts
         private void OnRenderObject()
         {
             WieldHandle();
-
         }
         private void WieldHandle()
         {
+            weaponForward = transform.forward;
             switch (itemName)
             {
                 case "Hoe":

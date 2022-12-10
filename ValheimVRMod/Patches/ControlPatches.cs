@@ -536,7 +536,7 @@ namespace ValheimVRMod.Patches {
             }
 
 
-            if (EquipScript.getLeft() == EquipType.Magic && SteamVR_Actions.valheim_UseLeft.stateDown)
+            if (EquipScript.getLeft() == EquipType.Magic && SteamVR_Actions.valheim_UseLeft.state)
             {
                 // TODO: Create a proper manager for this
                 attack = true;
@@ -579,7 +579,7 @@ namespace ValheimVRMod.Patches {
 
                     break;
                 case EquipType.Magic:
-                    if (SteamVR_Actions.valheim_Use.stateDown)
+                    if (SteamVR_Actions.valheim_Use.state)
                     {
                         attack = true;
                         attackHold = true;
