@@ -46,6 +46,7 @@ namespace ValheimVRMod.VRCore
         // the hands won't be rendered by the handsCam.
         private static Vector3 FIRST_PERSON_OFFSET = Vector3.zero;
         private static float SIT_HEIGHT_ADJUST = -0.7f;
+        private static float SIT_ATTACH_HEIGHT_ADJUST = -0.4f;
         private static float CROUCH_HEIGHT_ADJUST = -0.4f;
         private static Vector3 THIRD_PERSON_0_OFFSET = new Vector3(0f, 1.0f, -0.6f);
         private static Vector3 THIRD_PERSON_1_OFFSET = new Vector3(0f, 1.4f, -1.5f);
@@ -652,7 +653,14 @@ namespace ValheimVRMod.VRCore
         {
             if (player.IsSitting())
             {
-                return SIT_HEIGHT_ADJUST;
+                if (player.IsAttached())
+                {
+                    return SIT_ATTACH_HEIGHT_ADJUST;
+                }
+                else
+                {
+                    return SIT_HEIGHT_ADJUST;
+                }
             }
             if (player.IsCrouching() && Player_SetControls_SneakPatch.isJoystickSneaking)
             {

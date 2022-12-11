@@ -223,8 +223,13 @@ namespace ValheimVRMod.Patches
                 }
 
                 //Recenter player on body
+                var attachmentHeading = __instance.transform.forward;
+                attachmentHeading.y = 0;
+                attachmentHeading.Normalize();
+                __instance.m_lookYaw = Quaternion.LookRotation(attachmentHeading, Vector3.up);
                 float deltaRotation = __instance.transform.rotation.eulerAngles.y - Valve.VR.InteractionSystem.Player.instance.hmdTransform.rotation.eulerAngles.y;
                 VRPlayer.instance.transform.localRotation *= Quaternion.AngleAxis(deltaRotation, Vector3.up);
+                VRManager.tryRecenter();
                 Player_SetMouseLook_Patch.previousHeadLocalRotation = null;
             }
         }
