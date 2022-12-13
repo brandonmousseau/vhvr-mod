@@ -132,7 +132,11 @@ namespace ValheimVRMod.Patches {
             if (___m_character != Player.m_localPlayer || !VHVRConfig.UseVrControls()) {
                 return;
             }
-            
+            if (!EquipScript.getLeftAnimSpeedUp() || !EquipScript.getRightAnimSpeedUp())
+            {
+                ___m_animator.speed = 1f;
+                return;
+            }
             ___m_animator.speed = 1000f;
         }
     }  

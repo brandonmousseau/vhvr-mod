@@ -72,5 +72,18 @@ namespace ValheimVRMod.Utilities {
 
             return EquipType.None;
         }
+
+        public static bool getRightAnimSpeedUp()
+        {
+            if (getRight() == EquipType.Magic)
+                return false;
+            return true;
+        }
+        public static bool getLeftAnimSpeedUp()
+        {
+            if (getLeft() == EquipType.Magic || getLeft() == EquipType.Crossbow)
+                return false;
+            return true;
+        }
     }
 }
