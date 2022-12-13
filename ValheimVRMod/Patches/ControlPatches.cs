@@ -543,6 +543,12 @@ namespace ValheimVRMod.Patches {
                 attackHold = true;
             }
 
+            if (EquipScript.getLeft() == EquipType.Crossbow && SteamVR_Actions.valheim_Use.stateDown && WeaponWield.isCurrentlyTwoHanded())
+            {
+                attack = true;
+                attackHold = true;
+            }
+
             switch (EquipScript.getRight()) {
                 case EquipType.Fishing:
                     if (FishingManager.isThrowing) {

@@ -65,6 +65,10 @@ namespace ValheimVRMod.Patches {
                     spawnPoint = BowLocalManager.spawnPoint;
                     aimDir = BowLocalManager.aimDir;
                     return false;
+                case EquipType.Crossbow:
+                    spawnPoint = VRPlayer.rightPointer.rayStartingPosition + WeaponWield.weaponForward * Vector3.Distance(Vector3.zero, (Vector3.up * __instance.m_attackHeight + Vector3.forward * __instance.m_attackRange + Vector3.right * __instance.m_attackOffset)) * 0.4f;
+                    aimDir = WeaponWield.weaponForward;
+                    return false;
                 case EquipType.Magic:
                     // TODO: Create a proper manager for this
                     spawnPoint = VRPlayer.leftPointer.rayStartingPosition;

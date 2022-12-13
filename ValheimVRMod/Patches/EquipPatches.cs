@@ -134,13 +134,18 @@ namespace ValheimVRMod.Patches {
                 StaticObjects.quickSwitch.GetComponent<QuickSwitch>().refreshItems();
                 StaticObjects.quickActions.GetComponent<QuickActions>().refreshItems();
             }
-
+            
             switch (EquipScript.getLeft()) {
                 
                 case EquipType.Bow:
                     meshFilter.gameObject.AddComponent<BowLocalManager>();
                     return;
-                
+                case EquipType.Crossbow:
+                    var weaponWield = ___m_leftItemInstance.AddComponent<WeaponWield>();
+                    weaponWield.itemName = ___m_leftItem;
+                    meshFilter.gameObject.AddComponent<WeaponBlock>().weaponWield = weaponWield;
+                    return;
+
                 case EquipType.Shield:
                     meshFilter.gameObject.AddComponent<ShieldBlock>().itemName = ___m_leftItem;
                     return;

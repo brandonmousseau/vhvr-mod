@@ -7,7 +7,7 @@ namespace ValheimVRMod.Utilities {
         None, 
         Fishing, Cultivator, Hammer, Hoe,
         Bow,  Spear, SpearChitin, ThrowObject,
-        Shield, Tankard, Claws, Magic
+        Shield, Tankard, Claws, Magic, Crossbow
     }
     
     public static class EquipScript {
@@ -53,11 +53,13 @@ namespace ValheimVRMod.Utilities {
         }
 
         public static EquipType getLeft() {
-
             switch (Player.m_localPlayer.GetLeftItem()?.m_shared.m_itemType) {
                 case ItemDrop.ItemData.ItemType.Bow:
-                    return EquipType.Bow;
 
+                    if(Player.m_localPlayer.GetLeftItem()?.m_shared.m_ammoType == "$ammo_bolts") 
+                        return EquipType.Crossbow;
+
+                    return EquipType.Bow;
                 case ItemDrop.ItemData.ItemType.Shield:
                     return EquipType.Shield;
             }
