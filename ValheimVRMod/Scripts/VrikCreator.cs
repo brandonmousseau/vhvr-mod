@@ -55,10 +55,9 @@ namespace ValheimVRMod.Scripts {
             Transform head = new GameObject().transform;
             head.SetParent(camera);
             head.localPosition = new Vector3(0, -0.165f, -0.09f);
-            head.localRotation = Quaternion.Euler(0, 90, 0);
+            head.localRotation = Quaternion.Euler(0, 90, 20);
             vrik.solver.spine.headTarget = head;
             vrik.solver.spine.maxRootAngle = 180;
-            
 
             //Avoid akward movements
             vrik.solver.spine.maintainPelvisPosition = 0f;
@@ -66,7 +65,9 @@ namespace ValheimVRMod.Scripts {
             vrik.solver.spine.pelvisRotationWeight = 0f;
             vrik.solver.spine.bodyPosStiffness = 0f;
             vrik.solver.spine.bodyRotStiffness = 0f;
-            
+            //Force head to allow more vertical headlook
+            vrik.solver.spine.headClampWeight = 0f;
+
             return vrik;
         }
         
