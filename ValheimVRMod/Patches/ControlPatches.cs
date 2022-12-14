@@ -813,6 +813,7 @@ namespace ValheimVRMod.Patches {
     [HarmonyPatch(typeof(Player), "Update")]
     class Player_UpdateDodge_Patch
     {
+        public static bool wasDodging = false;
         static void Postfix(Player __instance)
         {
             if (VHVRConfig.NonVrPlayer())
@@ -831,6 +832,7 @@ namespace ValheimVRMod.Patches {
                     return;
                 }
                 __instance.Dodge(dir);
+                wasDodging = true;
             }
         }
     }
@@ -877,6 +879,10 @@ namespace ValheimVRMod.Patches {
             if (currdodgetimer > 0)
             {
                 __instance.m_rootMotion = (__instance.m_queuedDodgeDir.normalized / 11) - (currDodgeDir / 15);
+            }
+            else
+            {
+                Player_UpdateDodge_Patch.wasDodging = false;
             }
             return false;
         }
