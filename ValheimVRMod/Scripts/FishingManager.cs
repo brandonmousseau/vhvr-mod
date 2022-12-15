@@ -374,7 +374,13 @@ namespace ValheimVRMod.Scripts
 
         private void UpdateBaitText()
         {
-            var baitCount = Player.m_localPlayer.m_inventory.CountItems("$item_fishingbait").ToString();
+            var bait = Player.m_localPlayer.m_ammoItem;
+            if (bait == null)
+            {
+                baitText.text = "-";
+                return;
+            }
+            var baitCount = Player.m_localPlayer.m_inventory.CountItems(bait.m_shared.m_name).ToString();
             baitText.text = baitCount;
         }
     }
