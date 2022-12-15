@@ -266,7 +266,11 @@ namespace ValheimVRMod.Scripts {
             
             if (ammoItem == null || ammoItem.m_shared.m_itemType != ItemDrop.ItemData.ItemType.Ammo) {
                 // out of ammo
-                return;
+                if (!Attack.HaveAmmo(Player.m_localPlayer, item))
+                {
+                    return;
+                }
+                Attack.EquipAmmoItem(Player.m_localPlayer, item);
             }
 
             try {
