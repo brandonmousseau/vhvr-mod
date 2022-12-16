@@ -53,8 +53,8 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> recenterGuiOnMove;
         private static ConfigEntry<int> guiRecenterSpeed;
         private static ConfigEntry<bool> unlockDesktopCursor;
-        private static ConfigEntry<bool> QuickMenuFollowCam;
-        private static ConfigEntry<int> QuickMenuAngle;
+        private static ConfigEntry<string> QuickMenuType;
+        private static ConfigEntry<int> QuickMenuVerticalAngle;
         private static ConfigEntry<bool> lockGuiWhileInventoryOpen;
 
         // VR Hud Settings
@@ -398,14 +398,15 @@ namespace ValheimVRMod.Utilities
                 true,
                 "Normally the desktop cursor is locked to the center of the screen to avoid having the player accidentally lose focus when playing. This option can be used to free the mouse " +
                 "cursor which some users may want, especially if exclusively using motion controls where window focus is not needed.");
-            QuickMenuFollowCam = config.Bind("UI",
-                "QuickMenuFollowCam",
-                true,
-                "If Set to true, the quickmenu will rotate towards your head (ignoring Quickmenu angle option),if set to false, it will rotate towards your hands at start");
-            QuickMenuAngle = config.Bind("UI",
-                "QuickMenuAngle",
-                60,
-                new ConfigDescription("Set the quickmenu vertical angle ",
+            QuickMenuType = config.Bind("UI",
+                "QuickMenuType",
+                "Hand-Player",
+                new ConfigDescription("Quick menu will follow specific orientation, Full Hand - follow hand rotation, Hand-Player - follow hand rotation with up always follow the player orientation, Full Player - follows player orientation, Hand Follow cam - follow hand rotation, but always face player head",
+                new AcceptableValueList<string>(new string[] { "Full Hand", "Hand-Player", "Full Player", "Hand Follow Cam" })));
+            QuickMenuVerticalAngle = config.Bind("UI",
+                "QuickMenuVerticalAngle",
+                180,
+                new ConfigDescription("Set the quickmenu vertical angle, affects all QuickMenu type except Hand Follow Cam ",
                     new AcceptableValueRange<int>(0, 360)));
             lockGuiWhileInventoryOpen = config.Bind("UI",
                 "LockGuiPositionWhenMenuOpen",
@@ -1005,12 +1006,12 @@ namespace ValheimVRMod.Utilities
             return unlockDesktopCursor.Value;
         }
 
-        public static bool getQuickMenuFollowCam() {
-            return QuickMenuFollowCam.Value;
+        public static string getQuickMenuType() {
+            return QuickMenuType.Value;
         }
-        public static int getQuickMenuAngle()
+        public static int getQuickMenuVerticalAngle()
         {
-            return QuickMenuAngle.Value;
+            return QuickMenuVerticalAngle.Value;
         }
 
         public static float GetSnapTurnAngle()

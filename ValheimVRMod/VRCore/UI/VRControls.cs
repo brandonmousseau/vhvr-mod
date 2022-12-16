@@ -159,6 +159,11 @@ namespace ValheimVRMod.VRCore.UI
             // and when the hammer is equipped, the bindings conflict... so we'll share the right click button
             // here to activate quick switch. This is hacky because rebinding things can break the controls, but
             // it works and allows users to use the quick select while the hammer is equipped.
+            if (StaticObjects.quickSwitch != null)
+            {
+                StaticObjects.quickSwitch.GetComponent<QuickSwitch>().refreshItems();
+                StaticObjects.quickActions.GetComponent<QuickActions>().refreshItems();
+            }
             bool rightClickDown = false;
             bool rightClickUp = false;
             if (useRightClick && laserControlsActive && inPlaceMode())

@@ -8,6 +8,7 @@ namespace ValheimVRMod.Scripts {
     public class QuickActions : QuickAbstract {
 
         private int elementCount;
+        private int extraElementCount;
         private MethodInfo stopEmote = AccessTools.Method(typeof(Player), "StopEmote");
         private bool hasGPower;
         private Texture2D sitTexture; 
@@ -23,7 +24,11 @@ namespace ValheimVRMod.Scripts {
         protected override int getElementCount() {
             return elementCount;
         }
-        
+        protected override int getExtraElementCount()
+        {
+            return extraElementCount;
+        }
+
         public override void refreshItems() {
 
             if (Player.m_localPlayer == null) {
@@ -46,7 +51,6 @@ namespace ValheimVRMod.Scripts {
                     case ItemDrop.ItemData.ItemType.Torch:
                     case ItemDrop.ItemData.ItemType.OneHandedWeapon:
                     case ItemDrop.ItemData.ItemType.TwoHandedWeapon:
-                        break;
                     default:
                         
                         elements[elementCount].transform.GetChild(1).gameObject.SetActive(item.m_equiped || item.m_durability == 0);
@@ -58,46 +62,58 @@ namespace ValheimVRMod.Scripts {
                         }
                         elements[elementCount].transform.GetChild(2).GetComponent<SpriteRenderer>().sprite = item.GetIcon();
                         elements[elementCount].name = i.ToString();
+                        ResizeIcon(elements[elementCount]);
                         elementCount++;
                         break;
                 }
             }
 
+            //Extra
             StatusEffect se;
             float cooldown;
+            extraElementCount = 0;
             Player.m_localPlayer.GetGuardianPowerHUD(out se, out cooldown);
-            if (se) {
+            if (se)
+            {
                 hasGPower = true;
-                elements[elementCount].transform.GetChild(2).GetComponent<SpriteRenderer>().sprite = se.m_icon;
-                elementCount++;
+                extraElements[extraElementCount].transform.GetChild(2).GetComponent<SpriteRenderer>().sprite = se.m_icon;
+                ResizeIcon(extraElements[extraElementCount]);
+                extraElementCount++;
             }
-            
-            elements[elementCount].transform.GetChild(2).GetComponent<SpriteRenderer>().sprite =  Sprite.Create(sitTexture,
+
+            extraElements[extraElementCount].transform.GetChild(2).GetComponent<SpriteRenderer>().sprite = Sprite.Create(sitTexture,
                 new Rect(0.0f, 0.0f, sitTexture.width, sitTexture.height),
                 new Vector2(0.5f, 0.5f), 500);
-            elementCount++;
-            
-            elements[elementCount].transform.GetChild(2).GetComponent<SpriteRenderer>().sprite =  Sprite.Create(mapTexture,
+            extraElementCount++;
+
+            extraElements[extraElementCount].transform.GetChild(2).GetComponent<SpriteRenderer>().sprite = Sprite.Create(mapTexture,
                 new Rect(0.0f, 0.0f, mapTexture.width, mapTexture.height),
                 new Vector2(0.5f, 0.5f), 500);
-            elementCount++;
-            
+            extraElementCount++;
+
+            //extraElements[extraElementCount].transform.GetChild(2).GetComponent<SpriteRenderer>().sprite = Sprite.Create(mapTexture,
+            //    new Rect(0.0f, 0.0f, mapTexture.width, mapTexture.height),
+            //    new Vector2(0.5f, 0.5f), 500);
+            //extraElementCount++;
+
             reorderElements();
             
         }
 
         public override void selectHoveredItem() {
-        
-            if (hoveredIndex < 0) {
-                return;
-            }
-            
-            if (hoveredIndex == elementCount - 1) {
-                toggleMap = true;
+
+            var allElementCount = elementCount + extraElementCount;
+            if (hoveredIndex < 0 || hoveredIndex >= allElementCount) {
                 return;
             }
 
-            if (hoveredIndex == elementCount - 2) {
+            if (hasGPower && hoveredIndex == elementCount)
+            {
+                Player.m_localPlayer.StartGuardianPower();
+                return;
+            }
+
+            if (hoveredIndex == elementCount + 1) {
                 if (Player.m_localPlayer.InEmote() && Player.m_localPlayer.IsSitting())
                     stopEmote.Invoke(Player.m_localPlayer, null);
                 else
@@ -105,11 +121,13 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            if (hasGPower && hoveredIndex == elementCount - 3) {
-                Player.m_localPlayer.StartGuardianPower();
+
+            if (hoveredIndex == elementCount + 2)
+            {
+                toggleMap = true;
                 return;
             }
-          
+
             var inventory = Player.m_localPlayer.GetInventory();
             ItemDrop.ItemData item = inventory.GetItemAt(Int32.Parse(elements[hoveredIndex].name), 0);
             Player.m_localPlayer.UseItem(inventory, item, false);
