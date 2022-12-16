@@ -22,6 +22,7 @@ namespace ValheimVRMod.Scripts
         private SteamVR_Input_Sources mainHandInputSource;
         private float shieldSize = 1f;
 
+
         public enum isTwoHanded
         {
             SingleHanded,
@@ -71,7 +72,6 @@ namespace ValheimVRMod.Scripts
         private void OnRenderObject()
         {
             WieldHandle();
-
         }
         private void WieldHandle()
         {
@@ -92,6 +92,10 @@ namespace ValheimVRMod.Scripts
                     KnifeWield();
                     break;
                 default:
+                    if (isLeftHandWeapon())
+                    {
+                        break;
+                    }
                     UpdateTwoHandedWield();
                     if (!isSpear() && VHVRConfig.TwoHandedWithShield())
                     {
@@ -99,6 +103,7 @@ namespace ValheimVRMod.Scripts
                     }
                     break;
             }
+            weaponForward = transform.forward;
         }
         private void KnifeWield()
         {
@@ -111,7 +116,6 @@ namespace ValheimVRMod.Scripts
             {
                 ResetOffset();
                 transform.localRotation *= Quaternion.AngleAxis(180, Vector3.right);
-                weaponForward = transform.forward;
                 weaponSubPos = true;
             }
             else if (weaponSubPos)
@@ -233,7 +237,6 @@ namespace ValheimVRMod.Scripts
                     transform.localRotation = transform.localRotation * (rotSave.transform.localRotation) * Quaternion.AngleAxis(180, Vector3.right) * Quaternion.AngleAxis(rotOffset, transform.InverseTransformDirection(-weaponHoldVector));
                 }
 
-                weaponForward = transform.forward;
                 weaponSubPos = true;
                 shieldSize = 0.4f;
             }
@@ -281,6 +284,14 @@ namespace ValheimVRMod.Scripts
                 default:
                     return isCurrentlyTwoHanded();
             }
+        }
+
+        public bool isLeftHandWeapon()
+        {
+            var player = Player.m_localPlayer;
+            var leftHandItem = player?.m_leftItem?.m_shared.m_itemType;
+
+            return !(leftHandItem is null) && leftHandItem != ItemDrop.ItemData.ItemType.Shield;
         }
     }
 }

@@ -5,6 +5,7 @@ using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using Valve.VR;
 using Valve.VR.InteractionSystem;
+using UnityEngine;
 
 namespace ValheimVRMod.Patches {
     
@@ -16,6 +17,14 @@ namespace ValheimVRMod.Patches {
         
         private static Hand hand;
         private static SteamVR_Input_Sources handSource;
+        private static HandHapticTrigger handHapticTrigger = HandHapticTrigger.None;
+        private enum HandHapticTrigger
+        {
+            LeftHand,
+            RightHand,
+            BothHand,
+            None
+        }
         
         static void Prefix(Humanoid __instance, ref HitData hit, ref float ___m_blockTimer) {
 
@@ -23,25 +32,37 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
-            if (WeaponBlock.instance && WeaponBlock.instance.weaponWield.allowBlocking())
+            if(VHVRConfig.BlockingType() != "GrabButton")
             {
-                ___m_blockTimer = WeaponBlock.instance?.blockTimer ?? Block.blockTimerNonParry;
+                if (FistCollision.instance.usingFistWeapon())
+                {
+                    ___m_blockTimer = FistBlock.instance?.blockTimer ?? Block.blockTimerNonParry;
+                }
+                else if (WeaponBlock.instance && (WeaponBlock.instance.weaponWield.allowBlocking() || WeaponBlock.instance.weaponWield.isLeftHandWeapon()))
+                {
+                    ___m_blockTimer = WeaponBlock.instance?.blockTimer ?? Block.blockTimerNonParry;
+                }
+                else
+                {
+                    ___m_blockTimer = ShieldBlock.instance?.blockTimer ?? Block.blockTimerNonParry;
+                }
+            }
+            hit.m_dir = -__instance.transform.forward;
+            handHapticTrigger = HandHapticTrigger.None;
+            if (ShieldBlock.instance?.isBlocking() ?? false)
+            {
+                handHapticTrigger = VHVRConfig.LeftHanded() ? HandHapticTrigger.RightHand : HandHapticTrigger.LeftHand;
+            }
+            else if (WeaponBlock.instance?.isBlocking() ?? false)
+            {
+                handHapticTrigger = HandHapticTrigger.BothHand;
+            }
+            else if (FistBlock.instance?.isBlocking() ?? false)
+            {
+                handHapticTrigger = HandHapticTrigger.BothHand;
             }
             else
-            {
-                ___m_blockTimer = ShieldBlock.instance?.blockTimer ?? Block.blockTimerNonParry;
-            }
-            
-            hit.m_dir = -__instance.transform.forward;
-            if (ShieldBlock.instance?.isBlocking() ?? false) { 
-                hand = VRPlayer.leftHand;
-                handSource = SteamVR_Input_Sources.LeftHand;
-            } 
-            else if (WeaponBlock.instance?.isBlocking() ?? false) {
-                hand = VRPlayer.rightHand;
-                handSource = SteamVR_Input_Sources.RightHand;
-            }
-            else {
+            { 
                 hit.m_dir = __instance.transform.forward;
             }
         }
@@ -51,36 +72,69 @@ namespace ValheimVRMod.Patches {
             if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls() || !__result) {
                 return;
             }
-            
+            float delay = 0f;
+            float duration = 0f;
+            float freq = 100f;
+            float amplitude = 0f;
             if (___m_blockTimer < ShieldBlock.blockTimerTolerance) {
-                hand.hapticAction.Execute(0, 0.4f, 100, 0.5f, handSource);
-                hand.hapticAction.Execute(0.4f, 0.7f, 100, 0.2f, handSource);
+                duration = 0.7f;
+                amplitude = 0.3f;
             }
             else {
-                hand.hapticAction.Execute(0, 0.2f, 100, 0.5f, handSource);
+                duration = 0.2f;
+                amplitude = 0.2f;
             }
-            
+
+            switch (handHapticTrigger)
+            {
+                case HandHapticTrigger.BothHand:
+                    VRPlayer.leftHand.hapticAction.Execute(delay, duration, freq, amplitude, SteamVR_Input_Sources.LeftHand);
+                    VRPlayer.rightHand.hapticAction.Execute(delay, duration, freq, amplitude, SteamVR_Input_Sources.RightHand);
+                    break;
+                case HandHapticTrigger.LeftHand:
+                    VRPlayer.leftHand.hapticAction.Execute(delay, duration, freq, amplitude, SteamVR_Input_Sources.LeftHand);
+                    break;
+                case HandHapticTrigger.RightHand:
+                    VRPlayer.rightHand.hapticAction.Execute(delay, duration, freq, amplitude, SteamVR_Input_Sources.RightHand);
+                    break;
+            }
+
             ShieldBlock.instance?.block();
             WeaponBlock.instance?.block();
+            FistBlock.instance?.block();
         }
     }
     
     [HarmonyPatch(typeof(Humanoid), "IsBlocking")]
     class PatchIsBlocking {
-        static bool Prefix(Humanoid __instance, ref bool __result) {
+        static bool Prefix(Humanoid __instance, ref float ___m_blockTimer, ref bool __result) {
 
             if (__instance != Player.m_localPlayer || (FishingManager.instance && FishingManager.isFishing) || !VHVRConfig.UseVrControls()) {
                 return true;
             }
-
+            if(VHVRConfig.BlockingType() == "GrabButton")
+            {
+                WeaponBlock.instance?.UpdateGrabParry();
+                ShieldBlock.instance?.UpdateGrabParry();
+                FistBlock.instance?.UpdateGrabParry();
+                if (WeaponBlock.instance?.wasResetTimer == true|| ShieldBlock.instance?.wasResetTimer == true)
+                {
+                    ___m_blockTimer = 0;
+                    WeaponBlock.instance?.resetTimer();
+                    ShieldBlock.instance?.resetTimer();
+                    FistBlock.instance?.resetTimer();
+                }
+            }
+                
             __result = 
                 (ShieldBlock.instance?.isBlocking() ?? false) || 
-                (WeaponBlock.instance?.isBlocking() ?? false);
-            
+                (WeaponBlock.instance?.isBlocking() ?? false) ||
+                (FistBlock.instance?.isBlocking() ?? false);
+
             return false;
         }
     }
-    
+
     [HarmonyPatch(typeof(Character), "RPC_Damage")]
     class PatchRPCDamager {
         static void Prefix(Character __instance, HitData hit) {
@@ -88,10 +142,10 @@ namespace ValheimVRMod.Patches {
             if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls()) {
                 return;
             }
-            
+
+            FistBlock.instance?.setBlocking(hit.m_dir);
             ShieldBlock.instance?.setBlocking(hit.m_dir);
             WeaponBlock.instance?.setBlocking(hit.m_dir);
-
         }
         
         static void Postfix(Character __instance) {
@@ -102,8 +156,7 @@ namespace ValheimVRMod.Patches {
 
             ShieldBlock.instance?.resetBlocking();
             WeaponBlock.instance?.resetBlocking();
-
+            FistBlock.instance?.resetBlocking();
         }
     }
-    
 }
