@@ -29,6 +29,7 @@ namespace ValheimVRMod.Scripts.Block {
             posRef = _meshCooldown.transform.localPosition;
             scaleRef = _meshCooldown.transform.localScale;
             hand = VHVRConfig.LeftHanded() ? VRPlayer.rightHand.transform : VRPlayer.leftHand.transform;
+            offhand = VHVRConfig.LeftHanded() ? VRPlayer.leftHand.transform : VRPlayer.rightHand.transform;
         }
 
         public override void setBlocking(Vector3 hitDir) {
@@ -45,16 +46,17 @@ namespace ValheimVRMod.Scripts.Block {
                     return -StaticObjects.shieldObj().transform.right;
                 case "ShieldBronzeBuckler":
                 case "ShieldIronBuckler":
-                    return -StaticObjects.shieldObj().transform.up;
+                    return VHVRConfig.LeftHanded() ? StaticObjects.shieldObj().transform.up : -StaticObjects.shieldObj().transform.up;
             }
             return -StaticObjects.shieldObj().transform.forward;
         }
-        protected override void ParryCheck(Vector3 posStart, Vector3 posEnd) {
+        protected override void ParryCheck(Vector3 posStart, Vector3 posEnd, Vector3 posStart2, Vector3 posEnd2) {
 
+            var shieldSnapshot = VHVRConfig.LeftHanded() ? snapshotsLeft : snapshots;
             if (Vector3.Distance(posEnd, posStart) > minDist) {
                 
-                Vector3 shieldPos = snapshots[snapshots.Count - 1] + Player.m_localPlayer.transform.InverseTransformDirection(-hand.right) / 2;
-                if (Vector3.Angle(shieldPos - snapshots[0] , snapshots[snapshots.Count - 1] - snapshots[0]) < maxParryAngle) {
+                Vector3 shieldPos = shieldSnapshot[shieldSnapshot.Count - 1] + Player.m_localPlayer.transform.InverseTransformDirection(-hand.right) / 2;
+                if (Vector3.Angle(shieldPos - shieldSnapshot[0] , shieldSnapshot[shieldSnapshot.Count - 1] - shieldSnapshot[0]) < maxParryAngle) {
                     blockTimer = blockTimerParry;
                 }
                 

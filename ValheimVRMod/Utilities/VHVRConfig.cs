@@ -120,6 +120,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> freePlaceAutoReturn;
         private static ConfigEntry<bool> advancedRotationUpWorld;
         private static ConfigEntry<float> bowStaminaAdjust;
+        private static ConfigEntry<string> blockingType;
 
 #if DEBUG
         private static ConfigEntry<float> DebugPosX;
@@ -690,6 +691,13 @@ namespace ValheimVRMod.Utilities
                                             1.0f,
                                             new ConfigDescription("Multiplier for stamina drain on bow. Reduce for less stamina drain.",
                                                 new AcceptableValueRange<float>(0.25f, 1.0f)));
+            blockingType = config.Bind("Motion Control",
+                                        "BlockingType",
+                                        "MotionControl",
+                                        new ConfigDescription("Change the block logic." +
+                                        "Motion Control - Shield by aiming the shield towards enemy, and swing shield while blocking to parry." +
+                                        "Grab button - Shield by aiming and pressing grab button, parry by timing the grab button.",
+                                        new AcceptableValueList<string>(new string[] { "MotionControl", "GrabButton"})));
             // #if DEBUG
             //             DebugPosX = config.Bind("Motion Control",
             //                 "DebugPosX",
@@ -1116,6 +1124,10 @@ namespace ValheimVRMod.Utilities
         public static bool UseSpearDirectionGraphic()
         {
             return useSpearDirectionGraphic.Value;
+        }
+        public static string BlockingType()
+        {
+            return blockingType.Value;
         }
 
         public static bool UseLegacyHud()

@@ -83,10 +83,12 @@ namespace ValheimVRMod.Patches {
                     spearManager = meshFilter.gameObject.AddComponent<SpearManager>();
                     break;
             }
-            
-            StaticObjects.rightWeaponCollider().GetComponent<WeaponCollision>().setColliderParent(meshFilter.transform, ___m_rightItem, true);
             var weaponWield = ___m_rightItemInstance.AddComponent<WeaponWield>();
             weaponWield.itemName = ___m_rightItem;
+            var weaponCol = StaticObjects.rightWeaponCollider().GetComponent<WeaponCollision>();
+            weaponCol.setColliderParent(meshFilter.transform, ___m_rightItem, true);
+            weaponCol.weaponWield = weaponWield;
+            
             meshFilter.gameObject.AddComponent<WeaponBlock>().weaponWield = weaponWield;
             if (spearManager) spearManager.weaponWield = weaponWield;
 

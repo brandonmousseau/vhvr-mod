@@ -15,6 +15,7 @@ using Valve.VR;
 using Valve.VR.Extras;
 using Valve.VR.InteractionSystem;
 using Pose = ValheimVRMod.Utilities.Pose;
+using ValheimVRMod.Scripts.Block;
 
 /**
  * VRPlayer manages instantiating the SteamVR Player
@@ -711,6 +712,7 @@ namespace ValheimVRMod.VRCore
             _vrik.references.rightHand.gameObject.AddComponent<HandGesture>().sourceHand = rightHand;
             StaticObjects.leftFist().setColliderParent(_vrik.references.leftHand, false);
             StaticObjects.rightFist().setColliderParent(_vrik.references.rightHand, true);
+            Player.m_localPlayer.gameObject.AddComponent<FistBlock>();
             StaticObjects.mouthCollider(cam.transform);
             StaticObjects.addQuickActions(VHVRConfig.LeftHanded() ? rightHand.transform : leftHand.transform);
             StaticObjects.addQuickSwitch(VHVRConfig.LeftHanded() ? leftHand.transform : rightHand.transform);
