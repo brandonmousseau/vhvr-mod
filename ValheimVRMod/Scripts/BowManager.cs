@@ -50,7 +50,7 @@ namespace ValheimVRMod.Scripts {
             meshTriangles = mesh.triangles;
 
             // we need to run this method in thread as it takes longer than a frame and freezes game for a moment
-            Thread thread = new Thread(()=>initializeRenderersAsync());
+            Thread thread = new Thread(() => initializeRenderersAsync());
             thread.Start();
 
             pullObj = new GameObject();
