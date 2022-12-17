@@ -101,7 +101,7 @@ namespace ValheimVRMod.Scripts
                     KnifeWield();
                     break;
                 default:
-                    if (isLeftHandWeapon())
+                    if (isLeftHandWeapon() && EquipScript.getLeft() != EquipType.Crossbow)
                     {
                         break;
                     }

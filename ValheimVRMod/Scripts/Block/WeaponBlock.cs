@@ -22,7 +22,7 @@ namespace ValheimVRMod.Scripts.Block {
 
         public override void setBlocking(Vector3 hitDir) {
             var angle = Vector3.Dot(hitDir, WeaponWield.weaponForward);
-            if (weaponWield.isLeftHandWeapon())
+            if (weaponWield.isLeftHandWeapon() && EquipScript.getLeft() != EquipType.Crossbow)
             {
                 var leftAngle = Vector3.Dot(hitDir, offhand.TransformDirection(handUp));
                 var rightAngle = Vector3.Dot(hitDir, hand.TransformDirection(handUp));

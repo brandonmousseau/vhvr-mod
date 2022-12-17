@@ -136,6 +136,7 @@ namespace ValheimVRMod.Patches {
                 StaticObjects.quickSwitch.GetComponent<QuickSwitch>().refreshItems();
                 StaticObjects.quickActions.GetComponent<QuickActions>().refreshItems();
             }
+            LogUtils.LogDebug("Left weapon " + ___m_leftItemInstance.name);
             switch (EquipScript.getLeft()) {
                 
                 case EquipType.Bow:
@@ -151,7 +152,7 @@ namespace ValheimVRMod.Patches {
                 case EquipType.Crossbow:
                     var weaponWield = ___m_leftItemInstance.AddComponent<WeaponWield>();
                     weaponWield.itemName = ___m_leftItem;
-                    meshFilter.gameObject.AddComponent<WeaponBlock>().weaponWield = weaponWield;
+                    weaponWield.gameObject.AddComponent<WeaponBlock>().weaponWield = weaponWield;
                     return;
 
                 case EquipType.Shield:

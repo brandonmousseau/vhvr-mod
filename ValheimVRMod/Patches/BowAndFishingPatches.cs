@@ -21,8 +21,8 @@ namespace ValheimVRMod.Patches {
                 return true;
             }
 
-            if (EquipScript.getLeft() == EquipType.Bow && !VHVRConfig.RestrictBowDrawSpeed()) {
-                __result = BowLocalManager.realLifePullPercentage;
+            if (EquipScript.getLeft() == EquipType.Bow && VHVRConfig.RestrictBowDrawSpeed() == "None") {
+                __result = BowLocalManager.instance.GetAttackPercentage();
                 return false;
             }
 
@@ -39,9 +39,12 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
-            if (EquipScript.getLeft() == EquipType.Bow && VHVRConfig.RestrictBowDrawSpeed()) {
+            if (EquipScript.getLeft() == EquipType.Bow && VHVRConfig.RestrictBowDrawSpeed() != "None") {
                 // Since the attack draw percentage is not patched in the prefix, we need to clamp it here in case the real life pull percentage is smaller than the unpatched attack draw percentage.
-                __result = Math.Min(__result, BowManager.realLifePullPercentage);
+                if (BowLocalManager.instance && !BowLocalManager.instance.pulling)
+                {
+                    __result = Math.Min(__result, BowManager.realLifePullPercentage);
+                }
             }
         }
     }
@@ -156,7 +159,7 @@ namespace ValheimVRMod.Patches {
             __instance.m_useCharacterFacing = false;
             __instance.m_launchAngle = 0;
             
-            if (VHVRConfig.RestrictBowDrawSpeed()) {
+            if (VHVRConfig.RestrictBowDrawSpeed() != "None" ) {
                 return;
             }
 
@@ -214,6 +217,36 @@ namespace ValheimVRMod.Patches {
                 
             }
             return patched;
+        }
+    }
+
+    [HarmonyPatch(typeof(Attack), nameof(Attack.OnAttackTrigger))]
+    class Attack_Crossbow_Pushback
+    {
+        private static float recoilPushback = 0f;
+        public static void Prefix(Attack __instance)
+        {
+            if (__instance.m_character != Player.m_localPlayer)
+            {
+                return;
+            }
+            if (__instance.m_recoilPushback > 0f && EquipScript.getLeft() == EquipType.Crossbow)
+            {
+                recoilPushback = __instance.m_recoilPushback;
+                __instance.m_recoilPushback = 0f;
+            }
+        }
+        public static void Postfix(Attack __instance)
+        {
+            if (__instance.m_character != Player.m_localPlayer)
+            {
+                return;
+            }
+            if (recoilPushback > 0f && EquipScript.getLeft() == EquipType.Crossbow)
+            {
+                __instance.m_character.ApplyPushback(-WeaponWield.weaponForward, recoilPushback);
+                recoilPushback = 0f;
+            }
         }
     }
 }

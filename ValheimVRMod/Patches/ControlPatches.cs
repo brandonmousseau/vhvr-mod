@@ -535,7 +535,6 @@ namespace ValheimVRMod.Patches {
                 blockHold = ShieldBlock.instance?.isBlocking() ?? false;
             }
 
-
             if (EquipScript.getLeft() == EquipType.Magic && SteamVR_Actions.valheim_UseLeft.state)
             {
                 // TODO: Create a proper manager for this
@@ -543,7 +542,7 @@ namespace ValheimVRMod.Patches {
                 attackHold = true;
             }
 
-            if (EquipScript.getLeft() == EquipType.Crossbow && SteamVR_Actions.valheim_Use.stateDown && WeaponWield.isCurrentlyTwoHanded())
+            if (EquipScript.getLeft() == EquipType.Crossbow && WeaponWield.isCurrentlyTwoHanded() && SteamVR_Actions.valheim_Use.stateDown)
             {
                 attack = true;
                 attackHold = true;

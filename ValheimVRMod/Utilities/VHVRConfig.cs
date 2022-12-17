@@ -115,11 +115,12 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> twoHandedWithShield;
         private static ConfigEntry<float> arrowRestElevation;
         private static ConfigEntry<string> arrowRestSide;
-        private static ConfigEntry<bool> restrictBowDrawSpeed;
+        private static ConfigEntry<string> bowDrawRestrictType;
+        private static ConfigEntry<float> bowDrawRange;
+        private static ConfigEntry<float> bowStaminaAdjust;
         private static ConfigEntry<bool> advancedBuildMode;
         private static ConfigEntry<bool> freePlaceAutoReturn;
         private static ConfigEntry<bool> advancedRotationUpWorld;
-        private static ConfigEntry<float> bowStaminaAdjust;
         private static ConfigEntry<string> blockingType;
 
 #if DEBUG
@@ -670,10 +671,27 @@ namespace ValheimVRMod.Utilities
                 k_arrowRestCenter,
                 new ConfigDescription("Whether the arrow should rest on the side of the bow farther from the eyes (Asiatic), the side closer to the eyes (Mediterranean), or the center.",
                 new AcceptableValueList<string>(new string[] { k_arrowRestCenter, k_arrowRestAsiatic, k_arrowRestMediterranean })));
-            restrictBowDrawSpeed = config.Bind("Motion Control",
-                "RestrictBowDrawSpeed",
-                false,
-                "Whether to apply vanilla-style restriction on bow drawing speed and make premature releases inaccurate. If unchecked, extra bow stamina drain is applied for game balance.");
+            bowDrawRestrictType = config.Bind("Motion Control",
+                "BowDrawRestrictType",
+                "Full",
+                new ConfigDescription("Whether to apply vanilla-style restriction on bow drawing speed and make premature releases inaccurate. Full - Use Vanilla charge time, with physical hand drawing restrict. Partial - Use Vanilla charge time, but allow you to fully draw it from start. None - no restriction to draw speed but use extra stamina drain",
+                new AcceptableValueList<string>(new string[] { "Full", "Partial", "None" })));
+
+            bowDrawRange = config.Bind("Motion Control",
+                "BowDrawRange",
+                0.6f,
+                new ConfigDescription("Adjust the range of the max bow draw, lower value make it useful for controller with inside out tracking",
+                new AcceptableValueRange<float>(0.3f, 0.7f)));
+
+            bowStaminaAdjust = config.Bind("Motion Control",
+                "BowStaminaAdjust",
+                1.0f,
+                new ConfigDescription("Multiplier for stamina drain on bow. Reduce for less stamina drain.",
+                new AcceptableValueRange<float>(0.25f, 1.0f)));
+            //restrictBowDrawSpeed = config.Bind("Motion Control",
+            //    "RestrictBowDrawSpeed",
+            //    false,
+            //    "Whether to apply vanilla-style restriction on bow drawing speed and make premature releases inaccurate. If unchecked, extra bow stamina drain is applied for game balance.");
             advancedBuildMode = config.Bind("Motion Control",
                                                     "AdvancedBuildMode",
                                                     false,
@@ -686,11 +704,7 @@ namespace ValheimVRMod.Utilities
                                                     "AdvanceRotationUpWorld",
                                                     true,
                                                     "Always use rotate vertically up when using analog rotation while in advanced build mode");
-            bowStaminaAdjust = config.Bind("Motion Control",
-                                            "BowStaminaAdjust",
-                                            1.0f,
-                                            new ConfigDescription("Multiplier for stamina drain on bow. Reduce for less stamina drain.",
-                                                new AcceptableValueRange<float>(0.25f, 1.0f)));
+            
             blockingType = config.Bind("Motion Control",
                                         "BlockingType",
                                         "MotionControl",
@@ -979,9 +993,9 @@ namespace ValheimVRMod.Utilities
             }
         }
 
-        public static bool RestrictBowDrawSpeed()
+        public static String RestrictBowDrawSpeed()
         {
-            return restrictBowDrawSpeed.Value;
+            return bowDrawRestrictType.Value;
         }
 
         public static bool NonVrPlayer()
@@ -1249,6 +1263,10 @@ namespace ValheimVRMod.Utilities
             return bhapticsEnabled.Value && !NonVrPlayer();
         }
 
+        public static float GetBowMaxDrawRange()
+        {
+            return bowDrawRange.Value;
+        }
         public static float GetBowStaminaScalar()
         {
             return bowStaminaAdjust.Value;

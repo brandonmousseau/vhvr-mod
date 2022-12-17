@@ -20,6 +20,7 @@ namespace ValheimVRMod.Scripts {
         private ItemDrop.ItemData item;
         private Attack attack;
         private float attackDrawPercentage;
+        private float currentMaxDrawPercentage;
 
         public static BowLocalManager instance;
         public static Vector3 spawnPoint;
@@ -127,9 +128,10 @@ namespace ValheimVRMod.Scripts {
         }
 
         private void updateChargeIndicator() {
-            if (VHVRConfig.RestrictBowDrawSpeed() && pulling && attackDrawPercentage < 1 && attackDrawPercentage > 0) {
-                chargeIndicator.transform.localScale = new Vector3(0.05f * (1 - attackDrawPercentage), 0.0001f, 0.05f * (1 - attackDrawPercentage));
-                chargeIndicator.GetComponent<MeshRenderer>().material.color = new Vector4(1, attackDrawPercentage, 0, 1);
+            var drawPercent = Player.m_localPlayer.GetAttackDrawPercentage();
+            if (VHVRConfig.RestrictBowDrawSpeed() != "None" && pulling && drawPercent < 1 && drawPercent > 0) {
+                chargeIndicator.transform.localScale = new Vector3(0.05f * (1 - drawPercent), 0.0001f, 0.05f * (1 - drawPercent));
+                chargeIndicator.GetComponent<MeshRenderer>().material.color = new Vector4(1, drawPercent, 0, 1);
                 chargeIndicator.SetActive(true);
             } else {
                 chargeIndicator.SetActive(false);
@@ -153,7 +155,7 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            Vector3 vel = aimDir * Mathf.Lerp(projectileVelMin, projectileVel, attackDrawPercentage);
+            Vector3 vel = aimDir * Mathf.Lerp(projectileVelMin, projectileVel, pullPercentage());
 
             float stepLength = 0.1f;
             float stepSize = 20;
@@ -190,11 +192,12 @@ namespace ValheimVRMod.Scripts {
                 arrow.transform.rotation = Quaternion.LookRotation(aimDir, -transform.up);
             }
             var currDrawPercentage = pullPercentage();
-            if (arrow != null && currDrawPercentage > attackDrawPercentage && !VHVRConfig.RestrictBowDrawSpeed()) {
+            currentMaxDrawPercentage = Math.Max(currDrawPercentage, currentMaxDrawPercentage);
+            if (arrow != null && currentMaxDrawPercentage > attackDrawPercentage && VHVRConfig.RestrictBowDrawSpeed() == "None") {
                 float additionalStaminaDrain = 15;
-                Player.m_localPlayer.UseStamina((currDrawPercentage - attackDrawPercentage) * additionalStaminaDrain * VHVRConfig.GetBowStaminaScalar());
+                Player.m_localPlayer.UseStamina((currentMaxDrawPercentage - attackDrawPercentage) * additionalStaminaDrain * VHVRConfig.GetBowStaminaScalar());
             }
-            attackDrawPercentage = currDrawPercentage;
+            attackDrawPercentage = currentMaxDrawPercentage;
         }
 
         private void releaseString(bool withoutShoot = false) {
@@ -207,6 +210,7 @@ namespace ValheimVRMod.Scripts {
             predictionLine.enabled = false;
             pulling = isPulling = false;
             attackDrawPercentage = pullPercentage();
+            currentMaxDrawPercentage = 0;
             spawnPoint = getArrowRestPosition();
             aimDir = getAimDir();
 
@@ -231,7 +235,7 @@ namespace ValheimVRMod.Scripts {
         }
 
         private float pullPercentage() {
-            return VHVRConfig.RestrictBowDrawSpeed() ? Math.Min(realLifePullPercentage, Player.m_localPlayer.GetAttackDrawPercentage()) : realLifePullPercentage;
+            return VHVRConfig.RestrictBowDrawSpeed() != "None" ? Math.Min(realLifePullPercentage, Player.m_localPlayer.GetAttackDrawPercentage()) : realLifePullPercentage;
         }
 
         private bool checkHandNearString() {
@@ -339,6 +343,10 @@ namespace ValheimVRMod.Scripts {
 
         public bool isHoldingArrow() {
             return arrow != null;
+        }
+        public float GetAttackPercentage()
+        {
+            return attackDrawPercentage;
         }
     }
 }
