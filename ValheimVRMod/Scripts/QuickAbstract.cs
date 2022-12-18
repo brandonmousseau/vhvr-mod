@@ -25,7 +25,7 @@ namespace ValheimVRMod.Scripts {
         private GameObject sphere;
 
         public Transform parent;
-        private Vector3 offset;
+        private Transform quickMenuLocker;
 
         private void Awake() {
             
@@ -68,10 +68,13 @@ namespace ValheimVRMod.Scripts {
 
             transform.SetParent(Player.m_localPlayer.transform);
             transform.parent = null;
-            offset = transform.position - Player.m_localPlayer.transform.position ;
+            // Record the current relative transform of the quick menu to the vr cam rig so that we can use it later to lock it relative to the vr cam rig.
+            quickMenuLocker.parent = GetVRCamRig();
+            quickMenuLocker.SetPositionAndRotation(transform.position, transform.rotation);
         }
         private void Update() {
-            transform.position = offset + Player.m_localPlayer.transform.position;
+            // Lock the quick menu's positioin and rotation relative to the vr cam rig so it moves and rotates with the player.
+            transform.SetPositionAndRotation(quickMenuLocker.position, quickMenuLocker.rotation);
             sphere.transform.position = parent.position;
             hoverItem();
         }
@@ -134,7 +137,7 @@ namespace ValheimVRMod.Scripts {
             hoveredItemRenderer.sprite = Sprite.Create(tex_hovered, new Rect(0.0f, 0.0f, tex_hovered.width, tex_hovered.height), new Vector2(0.5f, 0.5f));
             hoveredItemRenderer.sortingOrder = 1;
             hoveredItem.SetActive(false);
-            
+            quickMenuLocker = new GameObject().transform;
         }
 
         protected void reorderElements()
@@ -269,6 +272,10 @@ namespace ValheimVRMod.Scripts {
             fSize = child.lossyScale;
             sprite.drawMode = SpriteDrawMode.Sliced;
             sprite.size = fSize * 9;
+        }
+
+        private static Transform GetVRCamRig() {
+            return CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform.parent;
         }
     }
 }
