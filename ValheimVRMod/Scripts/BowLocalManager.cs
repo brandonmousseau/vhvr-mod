@@ -189,7 +189,7 @@ namespace ValheimVRMod.Scripts {
             aimDir = getAimDir();
             if (arrow) {
                 arrow.transform.position = pullObj.transform.position + aimDir * arrowLength;
-                arrow.transform.rotation = Quaternion.LookRotation(aimDir, -transform.up);
+                arrow.transform.rotation = Quaternion.LookRotation(aimDir, -bowOrientation.transform.up);
             }
             var currDrawPercentage = pullPercentage();
             currentMaxDrawPercentage = Math.Max(currDrawPercentage, currentMaxDrawPercentage);
@@ -239,7 +239,7 @@ namespace ValheimVRMod.Scripts {
         }
 
         private bool checkHandNearString() {
-            if (Vector3.Distance(mainHand.position, transform.TransformPoint(pullStart)) >
+            if (Vector3.Distance(mainHand.position, bowOrientation.transform.TransformPoint(pullStart)) >
                 attachRange) {
                 return false;
             }
