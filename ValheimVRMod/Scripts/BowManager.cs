@@ -53,10 +53,6 @@ namespace ValheimVRMod.Scripts {
             // throws an exception.
             meshTriangles = mesh.triangles;
 
-            // we need to run this method in thread as it takes longer than a frame and freezes game for a moment
-            Thread thread = new Thread(() => initializeRenderersAsync());
-            thread.Start();
-
             bowOrientation = new GameObject();
             bowOrientation.transform.SetParent(transform.parent, false);
             bowOrientation.transform.localPosition = new Vector3(0, 0, 0);
@@ -84,6 +80,10 @@ namespace ValheimVRMod.Scripts {
             bowTransformUpdater.transform.SetParent(bowOrientation.transform, false);
             bowTransformUpdater.transform.position = transform.position;
             bowTransformUpdater.transform.rotation = transform.rotation;
+            
+            // we need to run this method in thread as it takes longer than a frame and freezes game for a moment
+            Thread thread = new Thread(() => initializeRenderersAsync());
+            thread.Start();            
 
             pullObj = new GameObject();
             pullObj.transform.SetParent(bowOrientation.transform, false);
