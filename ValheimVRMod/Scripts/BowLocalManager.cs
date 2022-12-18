@@ -14,6 +14,7 @@ namespace ValheimVRMod.Scripts {
 
         private GameObject arrow;
         private GameObject chargeIndicator;
+        private GameObject drawIndicator;
         private LineRenderer predictionLine;
         private float projectileVel;
         private float projectileVelMin;
@@ -48,6 +49,7 @@ namespace ValheimVRMod.Scripts {
             predictionLine.reflectionProbeUsage = ReflectionProbeUsage.Off;
 
             createChargeIndicator();
+            drawIndicator.transform.localPosition -= Vector3.forward * 0.001f;
 
             arrowAttach.transform.SetParent(mainHand, false);
 
@@ -64,6 +66,7 @@ namespace ValheimVRMod.Scripts {
             Destroy(predictionLine);
             Destroy(arrowAttach);
             Destroy(chargeIndicator);
+            Destroy(drawIndicator);
         }
 
         private void destroyArrow() {
@@ -135,6 +138,16 @@ namespace ValheimVRMod.Scripts {
                 chargeIndicator.SetActive(true);
             } else {
                 chargeIndicator.SetActive(false);
+            }
+            if (pulling && realLifePullPercentage < 1 && realLifePullPercentage > 0)
+            {
+                drawIndicator.transform.localScale = new Vector3(0.05f * (1 - realLifePullPercentage), 0.0001f, 0.05f * (1 - realLifePullPercentage));
+                drawIndicator.GetComponent<MeshRenderer>().material.color = new Vector4(0f, realLifePullPercentage, 1, 1);
+                drawIndicator.SetActive(true);
+            }
+            else
+            {
+                drawIndicator.SetActive(false);
             }
         }
         
@@ -311,7 +324,7 @@ namespace ValheimVRMod.Scripts {
 
         private void createChargeIndicator() {
             chargeIndicator = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            chargeIndicator.transform.SetParent(transform);
+            chargeIndicator.transform.SetParent(bowOrientation.transform);
             chargeIndicator.transform.localPosition = new Vector3(0, -VHVRConfig.ArrowRestElevation() * 0.75f, 0);
             chargeIndicator.transform.localRotation = Quaternion.Euler(90, 0, 0);
             chargeIndicator.layer = LayerUtils.getWorldspaceUiLayer();
@@ -323,6 +336,20 @@ namespace ValheimVRMod.Scripts {
             chargeIndicator.GetComponent<MeshRenderer>().reflectionProbeUsage = ReflectionProbeUsage.Off;
 
             Destroy(chargeIndicator.GetComponent<Collider>());
+
+            drawIndicator = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            drawIndicator.transform.SetParent(bowOrientation.transform);
+            drawIndicator.transform.localPosition = new Vector3(0, -VHVRConfig.ArrowRestElevation() * 0.75f, 0);
+            drawIndicator.transform.localRotation = Quaternion.Euler(90, 0, 0);
+            drawIndicator.layer = LayerUtils.getWorldspaceUiLayer();
+            drawIndicator.SetActive(false);
+            drawIndicator.GetComponent<MeshRenderer>().material.color = new Vector4(0.5f, 0.5f, 0, 0.5f);
+            drawIndicator.GetComponent<MeshRenderer>().receiveShadows = false;
+            drawIndicator.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
+            drawIndicator.GetComponent<MeshRenderer>().lightProbeUsage = LightProbeUsage.Off;
+            drawIndicator.GetComponent<MeshRenderer>().reflectionProbeUsage = ReflectionProbeUsage.Off;
+
+            Destroy(drawIndicator.GetComponent<Collider>());
         }
 
         private GameObject findTrail(Transform transform) {

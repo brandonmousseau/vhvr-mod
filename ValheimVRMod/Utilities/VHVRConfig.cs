@@ -117,6 +117,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<string> arrowRestSide;
         private static ConfigEntry<string> bowDrawRestrictType;
         private static ConfigEntry<float> bowDrawRange;
+        private static ConfigEntry<bool> bowAccuracyBasedOnCharge;
         private static ConfigEntry<float> bowStaminaAdjust;
         private static ConfigEntry<bool> advancedBuildMode;
         private static ConfigEntry<bool> freePlaceAutoReturn;
@@ -682,6 +683,11 @@ namespace ValheimVRMod.Utilities
                 0.6f,
                 new ConfigDescription("Adjust the range of the max bow draw, lower value make it useful for controller with inside out tracking",
                 new AcceptableValueRange<float>(0.3f, 0.7f)));
+
+            bowAccuracyBasedOnCharge = config.Bind("Motion Control",
+                                                    "BowAccuracyBasedOnCharge",
+                                                    true,
+                                                    "Use Vanilla bow draw charge as accuracy multiplier instead of real draw range, if set to false, the accuracy would be based on draw range");
 
             bowStaminaAdjust = config.Bind("Motion Control",
                 "BowStaminaAdjust",
@@ -1263,6 +1269,10 @@ namespace ValheimVRMod.Utilities
             return bhapticsEnabled.Value && !NonVrPlayer();
         }
 
+        public static bool IsBowAccuracyBasedOnCharge()
+        {
+            return bowAccuracyBasedOnCharge.Value;
+        }
         public static float GetBowMaxDrawRange()
         {
             return bowDrawRange.Value;

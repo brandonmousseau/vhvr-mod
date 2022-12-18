@@ -166,10 +166,13 @@ namespace ValheimVRMod.Patches {
             __instance.m_launchAngle = 0;
             
             if (VHVRConfig.RestrictBowDrawSpeed() != "None" ) {
-                __instance.m_projectileAccuracyMin = __instance.m_projectileAccuracyMin - __instance.m_projectileAccuracyMin * BowLocalManager.instance.lastDrawPercentage;
-                if (___m_ammoItem != null)
+                if (VHVRConfig.IsBowAccuracyBasedOnCharge())
                 {
-                    ___m_ammoItem.m_shared.m_attack.m_projectileAccuracyMin = ___m_ammoItem.m_shared.m_attack.m_projectileAccuracyMin - ___m_ammoItem.m_shared.m_attack.m_projectileAccuracyMin * BowLocalManager.instance.lastDrawPercentage;
+                    __instance.m_projectileAccuracyMin = __instance.m_projectileAccuracyMin - __instance.m_projectileAccuracyMin * BowLocalManager.instance.lastDrawPercentage;
+                    if (___m_ammoItem != null)
+                    {
+                        ___m_ammoItem.m_shared.m_attack.m_projectileAccuracyMin = ___m_ammoItem.m_shared.m_attack.m_projectileAccuracyMin - ___m_ammoItem.m_shared.m_attack.m_projectileAccuracyMin * BowLocalManager.instance.lastDrawPercentage;
+                    }
                 }
                 return;
             }
