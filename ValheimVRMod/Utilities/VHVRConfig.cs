@@ -624,7 +624,7 @@ namespace ValheimVRMod.Utilities
         }
 
         private static void InitializeMotionControlSettings() {
-
+            //Bow Changes
             useArrowPredictionGraphic = config.Bind("Motion Control",
                 "UseArrowPredictionGraphic",
                 true,
@@ -634,34 +634,6 @@ namespace ValheimVRMod.Utilities
                 0.5f,
                 new ConfigDescription("set size of the particles on drawing arrows (fire,poison, etc.)",
                     new AcceptableValueRange<float>(0, 1)));
-            spearThrowingType = config.Bind("Motion Control",
-                                            "SpearThrowingMode",
-                                            "TwoStagedThrowing",
-                                            new ConfigDescription("Change the throwing mode." +
-                                            "DartType - Throw by holding grab and trigger and then releasing trigger, Throw aim is based on first trigger pressed to release in a straight line, and throwing power is based on how fast you swing. " +
-                                            "TwoStagedThrowing - Throw aim is based on first grab and then aim is locked after pressing trigger, throw by releasing trigger while swinging, throw speed based on how fast you swing. " +
-                                            "SecondHandAiming - Throw by holding grab and trigger and then releasing trigger, Throw aim is based from your head to your left hand in a straight line, throw by releasing trigger while swinging, throw speed based on how fast you swing.",
-                                            new AcceptableValueList<string>(new string[] { "DartType", "TwoStagedThrowing", "SecondHandAiming" })));
-            spearThrowSpeedDynamic = config.Bind("Motion Control",
-                                                "SpearThrowSpeedDynamic",
-                                                true,
-                                                "Determine whether or not your throw power depends on swing speed, setting to false make the throw always on fixed speed.");
-            spearInverseWield = config.Bind("Motion Control",
-                                                "SpearInverseWield",
-                                                true,
-                                                "Use this to flip the spear tip, so you can stab forward instead of needing to do downward stabbing");
-            useSpearDirectionGraphic = config.Bind("Motion Control",
-                                                    "UseSpearDirectionGraphic",
-                                                    true,
-                                                    "Use this to toggle the direction line of throwing when using the spear with VR controls.");
-            twoHandedWield = config.Bind("Motion Control",
-                                                    "TwoHandedWield",
-                                                    true,
-                                                    "Use this to toggle controls of two handed weapon (left & right hand grab on weapon), allow blocking and better weapon handling");
-            twoHandedWithShield = config.Bind("Motion Control",
-                                                    "TwoHandedWithShield",
-                                                    false,
-                                                    "Allows Two Handed Wield while using shield");
             arrowRestElevation = config.Bind("Motion Control",
                 "ArrowRestElevation",
                 0.15f,
@@ -694,10 +666,38 @@ namespace ValheimVRMod.Utilities
                 1.0f,
                 new ConfigDescription("Multiplier for stamina drain on bow. Reduce for less stamina drain.",
                 new AcceptableValueRange<float>(0.25f, 1.0f)));
-            //restrictBowDrawSpeed = config.Bind("Motion Control",
-            //    "RestrictBowDrawSpeed",
-            //    false,
-            //    "Whether to apply vanilla-style restriction on bow drawing speed and make premature releases inaccurate. If unchecked, extra bow stamina drain is applied for game balance.");
+
+            //Spear Changes
+            spearThrowingType = config.Bind("Motion Control",
+                                            "SpearThrowingMode",
+                                            "TwoStagedThrowing",
+                                            new ConfigDescription("Change the throwing mode." +
+                                            "DartType - Throw by holding grab and trigger and then releasing trigger, Throw aim is based on first trigger pressed to release in a straight line, and throwing power is based on how fast you swing. " +
+                                            "TwoStagedThrowing - Throw aim is based on first grab and then aim is locked after pressing trigger, throw by releasing trigger while swinging, throw speed based on how fast you swing. " +
+                                            "SecondHandAiming - Throw by holding grab and trigger and then releasing trigger, Throw aim is based from your head to your left hand in a straight line, throw by releasing trigger while swinging, throw speed based on how fast you swing.",
+                                            new AcceptableValueList<string>(new string[] { "DartType", "TwoStagedThrowing", "SecondHandAiming" })));
+            spearThrowSpeedDynamic = config.Bind("Motion Control",
+                                                "SpearThrowSpeedDynamic",
+                                                true,
+                                                "Determine whether or not your throw power depends on swing speed, setting to false make the throw always on fixed speed.");
+            spearInverseWield = config.Bind("Motion Control",
+                                                "SpearInverseWield",
+                                                true,
+                                                "Use this to flip the spear tip, so you can stab forward instead of needing to do downward stabbing");
+            useSpearDirectionGraphic = config.Bind("Motion Control",
+                                                    "UseSpearDirectionGraphic",
+                                                    true,
+                                                    "Use this to toggle the direction line of throwing when using the spear with VR controls.");
+            //Two-handed Changes
+            twoHandedWield = config.Bind("Motion Control",
+                                                    "TwoHandedWield",
+                                                    true,
+                                                    "Use this to toggle controls of two handed weapon (left & right hand grab on weapon), allow blocking and better weapon handling");
+            twoHandedWithShield = config.Bind("Motion Control",
+                                                    "TwoHandedWithShield",
+                                                    false,
+                                                    "Allows Two Handed Wield while using shield");
+
             advancedBuildMode = config.Bind("Motion Control",
                                                     "AdvancedBuildMode",
                                                     false,
