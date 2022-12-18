@@ -11,7 +11,7 @@ namespace ValheimVRMod.Scripts {
     public class BowLocalManager : BowManager {
         private const float attachRange = 0.2f;
         private const float legacyArrowCenterToTailDistance = 1.25f;
-        private const float carapaceArrowCenterToTailDistance = 0.75f;
+        private const float shortArrowCenterToTailDistance = 0.78f;
 
         private GameObject arrow;
         private GameObject chargeIndicator;
@@ -294,8 +294,9 @@ namespace ValheimVRMod.Scripts {
 
             switch (Player.m_localPlayer.GetAmmoItem().m_shared.m_name)
             {
+                case "$item_arrow_needle":
                 case "$item_arrow_carapace":
-                    centerToTailDistance = carapaceArrowCenterToTailDistance;
+                    centerToTailDistance = shortArrowCenterToTailDistance;
                     break;
                 default:
                     centerToTailDistance = legacyArrowCenterToTailDistance;
