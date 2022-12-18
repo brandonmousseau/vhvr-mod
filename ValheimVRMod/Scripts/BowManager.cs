@@ -41,7 +41,7 @@ namespace ValheimVRMod.Scripts {
         private Vector3 localStringBottomPos = new Vector3(0, 0, 0);
         private Vector3 handleTop = new Vector3(0, 0, 0);
         private Vector3 handleBottom = new Vector3(0, 0, 0);
-        private const float handleHeight = 0.52f;
+        private const float handleHeight = 0.624f;
 
         private int[] meshTriangles;
 
@@ -56,7 +56,6 @@ namespace ValheimVRMod.Scripts {
             bowOrientation = new GameObject();
             bowOrientation.transform.SetParent(transform.parent, false);
             bowOrientation.transform.localPosition = new Vector3(0, 0, 0);
-            bowOrientation.transform.localScale = transform.localScale;
 
             // Use the rotation of the bow and the hand to find the correct bow orientation.
             float fProjected = Vector3.Dot(transform.forward, transform.parent.right);
@@ -151,7 +150,7 @@ namespace ValheimVRMod.Scripts {
             handleTop = new Vector3(0, 0, 0);
             handleBottom = new Vector3(0, 0, 0);
             boneWeights = new BoneWeight[verts.Length];
-            gripLocalHalfWidth = Mathf.NegativeInfinity;
+            float localGripLocalHalfWidth = Mathf.NegativeInfinity;
             for (int i = 0; i < verts.Length; i++) {
                 Vector3 v = verts[i];
                 if (v.y > handleHeight / 2f) {
@@ -175,10 +174,7 @@ namespace ValheimVRMod.Scripts {
                 }
                 boneWeights[i].weight0 = 1;
             }
-            if (gripLocalHalfWidth < 0)
-            {
-                gripLocalHalfWidth = defaultHandleWidth * 0.5f;
-            }
+            gripLocalHalfWidth = localGripLocalHalfWidth > 0 ? localGripLocalHalfWidth * transform.localScale.x : defaultHandleWidth * 0.5f;
 
             initialized = true;
         }
@@ -242,7 +238,7 @@ namespace ValheimVRMod.Scripts {
         private void createNewString() {
             var lineRenderer = gameObject.AddComponent<LineRenderer>();
             lineRenderer.useWorldSpace = true;
-            lineRenderer.widthMultiplier = 0.005f;
+            lineRenderer.widthMultiplier = 0.006f;
             lineRenderer.positionCount = 3;
             updateStringRenderer();
             lineRenderer.material.color = new Color(0.703125f, 0.48828125f, 0.28515625f); // just a random brown color
