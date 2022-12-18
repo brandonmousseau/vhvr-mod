@@ -107,13 +107,13 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            if (hasGPower && hoveredIndex == elementCount)
+            if (hasGPower && hoveredIndex == allElementCount - 3)
             {
                 Player.m_localPlayer.StartGuardianPower();
                 return;
             }
 
-            if (hoveredIndex == elementCount + 1) {
+            if (hoveredIndex == allElementCount - 2) {
                 if (Player.m_localPlayer.InEmote() && Player.m_localPlayer.IsSitting())
                     stopEmote.Invoke(Player.m_localPlayer, null);
                 else
@@ -122,7 +122,7 @@ namespace ValheimVRMod.Scripts {
             }
 
 
-            if (hoveredIndex == elementCount + 2)
+            if (hoveredIndex == allElementCount - 1)
             {
                 toggleMap = true;
                 return;
