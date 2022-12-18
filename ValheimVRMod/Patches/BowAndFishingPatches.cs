@@ -41,8 +41,14 @@ namespace ValheimVRMod.Patches {
 
             if (EquipScript.getLeft() == EquipType.Bow && VHVRConfig.RestrictBowDrawSpeed() != "None") {
                 // Since the attack draw percentage is not patched in the prefix, we need to clamp it here in case the real life pull percentage is smaller than the unpatched attack draw percentage.
-                if (BowLocalManager.instance && !BowLocalManager.instance.pulling)
+                
+                if (BowLocalManager.instance)
                 {
+                    if(__result > BowLocalManager.instance.lastDrawPercentage)
+                    {
+                        BowLocalManager.instance.lastDrawPercentage = __result;
+                    }
+                    if(!BowLocalManager.instance.pulling)
                     __result = Math.Min(__result, BowManager.realLifePullPercentage);
                 }
             }
@@ -160,6 +166,11 @@ namespace ValheimVRMod.Patches {
             __instance.m_launchAngle = 0;
             
             if (VHVRConfig.RestrictBowDrawSpeed() != "None" ) {
+                __instance.m_projectileAccuracyMin = __instance.m_projectileAccuracyMin - __instance.m_projectileAccuracyMin * BowLocalManager.instance.lastDrawPercentage;
+                if (___m_ammoItem != null)
+                {
+                    ___m_ammoItem.m_shared.m_attack.m_projectileAccuracyMin = ___m_ammoItem.m_shared.m_attack.m_projectileAccuracyMin - ___m_ammoItem.m_shared.m_attack.m_projectileAccuracyMin * BowLocalManager.instance.lastDrawPercentage;
+                }
                 return;
             }
 

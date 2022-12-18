@@ -17,6 +17,7 @@ namespace ValheimVRMod.Scripts {
         private float gripLocalHalfWidth = 0;
 
         public static float realLifePullPercentage;
+        public float lastDrawPercentage;
 
         protected Vector3 pullStart;
         protected GameObject pullObj;
@@ -235,6 +236,7 @@ namespace ValheimVRMod.Scripts {
 
             if (pulling) {
                 if (!wasPulling) {
+                    lastDrawPercentage = 0;
                     wasPulling = true;
                 }
 
