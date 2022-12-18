@@ -10,7 +10,8 @@ using Valve.VR.InteractionSystem;
 namespace ValheimVRMod.Scripts {
     public class BowLocalManager : BowManager {
         private const float attachRange = 0.2f;
-        private const float arrowLength = 1.25f;
+        private const float legacyArrowCenterToTailDistance = 1.25f;
+        private const float carapaceArrowCenterToTailDistance = 0.75f;
 
         private GameObject arrow;
         private GameObject chargeIndicator;
@@ -22,6 +23,7 @@ namespace ValheimVRMod.Scripts {
         private Attack attack;
         private float attackDrawPercentage;
         private float currentMaxDrawPercentage;
+        private float centerToTailDistance = legacyArrowCenterToTailDistance;
 
         public static BowLocalManager instance;
         public static Vector3 spawnPoint;
@@ -201,7 +203,7 @@ namespace ValheimVRMod.Scripts {
             spawnPoint = getArrowRestPosition();
             aimDir = getAimDir();
             if (arrow) {
-                arrow.transform.position = pullObj.transform.position + aimDir * arrowLength;
+                arrow.transform.position = pullObj.transform.position + aimDir * centerToTailDistance;
                 arrow.transform.rotation = Quaternion.LookRotation(aimDir, -bowOrientation.transform.up);
             }
             var currDrawPercentage = pullPercentage();
@@ -280,7 +282,7 @@ namespace ValheimVRMod.Scripts {
             }
             
             var ammoItem = Player.m_localPlayer.GetAmmoItem();
-            
+
             if (ammoItem == null || ammoItem.m_shared.m_itemType != ItemDrop.ItemData.ItemType.Ammo) {
                 // out of ammo
                 if (!Attack.HaveAmmo(Player.m_localPlayer, item))
@@ -288,6 +290,16 @@ namespace ValheimVRMod.Scripts {
                     return;
                 }
                 Attack.EquipAmmoItem(Player.m_localPlayer, item);
+            }
+
+            switch (Player.m_localPlayer.GetAmmoItem().m_shared.m_name)
+            {
+                case "$item_arrow_carapace":
+                    centerToTailDistance = carapaceArrowCenterToTailDistance;
+                    break;
+                default:
+                    centerToTailDistance = legacyArrowCenterToTailDistance;
+                    break;
             }
 
             try {
@@ -309,7 +321,7 @@ namespace ValheimVRMod.Scripts {
             Destroy(findTrail(arrow.transform));
             Destroy(arrow.GetComponentInChildren<Collider>());
             arrow.transform.localRotation = Quaternion.identity;
-            arrow.transform.localPosition = new Vector3(0, 0, 1.25f);
+            arrow.transform.localPosition = new Vector3(0, 0, centerToTailDistance);
             foreach (ParticleSystem particleSystem in arrow.GetComponentsInChildren<ParticleSystem>()) {
                 particleSystem.transform.localScale *= VHVRConfig.ArrowParticleSize();
             }
