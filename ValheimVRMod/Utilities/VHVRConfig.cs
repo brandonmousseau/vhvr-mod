@@ -670,12 +670,13 @@ namespace ValheimVRMod.Utilities
             //Spear Changes
             spearThrowingType = config.Bind("Motion Control",
                                             "SpearThrowingMode",
-                                            "TwoStagedThrowing",
-                                            new ConfigDescription("Change the throwing mode." +
-                                            "DartType - Throw by holding grab and trigger and then releasing trigger, Throw aim is based on first trigger pressed to release in a straight line, and throwing power is based on how fast you swing. " +
-                                            "TwoStagedThrowing - Throw aim is based on first grab and then aim is locked after pressing trigger, throw by releasing trigger while swinging, throw speed based on how fast you swing. " +
-                                            "SecondHandAiming - Throw by holding grab and trigger and then releasing trigger, Throw aim is based from your head to your left hand in a straight line, throw by releasing trigger while swinging, throw speed based on how fast you swing.",
-                                            new AcceptableValueList<string>(new string[] { "DartType", "TwoStagedThrowing", "SecondHandAiming" })));
+                                            "Classic",
+                                            new ConfigDescription("Change the throwing mode, Throw by holding grab and trigger and then release trigger." +
+                                            "Classic - Throw aim is based on swing direction" +
+                                            "DartType - Throw aim is based on first trigger pressed to release in a straight line" +
+                                            "TwoStagedThrowing - Throw aim is based on first grab and then aim is locked after pressing trigger" +
+                                            "SecondHandAiming - Throw aim is based from your head to your left hand in a straight line",
+                                            new AcceptableValueList<string>(new string[] { "Classic", "DartType", "TwoStagedThrowing", "SecondHandAiming"})));
             spearThrowSpeedDynamic = config.Bind("Motion Control",
                                                 "SpearThrowSpeedDynamic",
                                                 true,

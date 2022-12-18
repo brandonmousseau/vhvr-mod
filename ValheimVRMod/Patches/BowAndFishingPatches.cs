@@ -161,11 +161,13 @@ namespace ValheimVRMod.Patches {
             if (___m_character != Player.m_localPlayer || !VHVRConfig.UseVrControls()) {
                 return;
             }
+
+            
             
             __instance.m_useCharacterFacing = false;
             __instance.m_launchAngle = 0;
-            
-            if (VHVRConfig.RestrictBowDrawSpeed() != "None" ) {
+
+            if (VHVRConfig.RestrictBowDrawSpeed() != "None" && EquipScript.getLeft() == EquipType.Bow) {
                 if (VHVRConfig.IsBowAccuracyBasedOnCharge())
                 {
                     __instance.m_projectileAccuracyMin = __instance.m_projectileAccuracyMin - __instance.m_projectileAccuracyMin * BowLocalManager.instance.lastDrawPercentage;

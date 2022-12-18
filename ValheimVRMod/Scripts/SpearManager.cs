@@ -12,6 +12,7 @@ namespace ValheimVRMod.Scripts {
         private const int MIN_SNAPSHOTSCHECK = 3;
         private int tickCounter;
         private List<Vector3> snapshots = new List<Vector3>();
+        private List<Vector3> throwDirSnapshot = new List<Vector3>();
         private GameObject fixedSpear;
         public WeaponWield weaponWield;
 
@@ -101,6 +102,9 @@ namespace ValheimVRMod.Scripts {
                 case "SecondHandAiming":
                     UpdateSecondHandAimCalculation();
                     return;
+                case "Classic":
+                    UpdateClassicThrowCalculation();
+                    return;
                 default:
                     Debug.LogError("Wrong SpearThrowType");
                     return;
@@ -155,12 +159,66 @@ namespace ValheimVRMod.Scripts {
             var pStartAim = Player.m_localPlayer.transform.InverseTransformPoint(mainHandTransform.position);
             UpdateThrowCalculation(direction, lineDirection, pStartAim);
         }
-        
+
+        private void UpdateClassicThrowCalculation()
+        {
+            var dist = 0.0f;
+            Vector3 posStart = mainHandTransform.position;
+            Vector3 posEnd = mainHandTransform.position;
+
+            foreach (Vector3 snapshot in snapshots)
+            {
+                var curDist = Vector3.Distance(snapshot, posEnd);
+                if (curDist > dist)
+                {
+                    dist = curDist;
+                    posStart = Player.m_localPlayer.transform.TransformPoint(snapshot);
+                }
+            }
+            var direction = posEnd - posStart;
+            if(throwDirSnapshot.Count == 0 || direction != throwDirSnapshot[throwDirSnapshot.Count - 1])
+            {
+                throwDirSnapshot.Add(direction);
+            }
+            var avgDir = Vector3.zero;
+            var totalCount = 0;
+            for (var i = 0; i < throwDirSnapshot.Count;i++)
+            {
+                if (Vector3.Angle(throwDirSnapshot[i], direction) < 5)
+                {
+                    avgDir += throwDirSnapshot[i];
+                    totalCount++;
+                }
+                else if (Vector3.Angle(throwDirSnapshot[i], direction) > 40)
+                {
+                    throwDirSnapshot.RemoveAt(i);
+                }
+            }
+            if (throwDirSnapshot.Count > 8)
+            {
+                throwDirSnapshot.RemoveAt(0);
+            }
+            avgDir = avgDir / (totalCount);
+
+
+            var lineDirection = avgDir;
+            var pStartAim = Player.m_localPlayer.transform.InverseTransformPoint(mainHandTransform.position);
+            UpdateThrowCalculation(avgDir, lineDirection, pStartAim);
+        }
+
         private void UpdateThrowCalculation(Vector3 direction, Vector3 lineDirection, Vector3 pStartAim) {
-            if (!isThrowingStance && !isThrowing && VHVRConfig.SpearThrowType() != "DartType") {
-                UpdateDirectionLine(
-                    mainHandTransform.position,
-                    mainHandTransform.position + lineDirection.normalized * 50);
+            if (!isThrowingStance && !isThrowing) {
+                switch (VHVRConfig.SpearThrowType())
+                {
+                    case "DartType":
+                    case "Classic":
+                        break;
+                    default:
+                        UpdateDirectionLine(
+                            mainHandTransform.position,
+                            mainHandTransform.position + lineDirection.normalized * 50);
+                        break;
+                }
             }
             
             if (useAction.GetStateDown(mainHandInputSource)) {
