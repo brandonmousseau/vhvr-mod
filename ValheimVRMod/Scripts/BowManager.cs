@@ -41,6 +41,7 @@ namespace ValheimVRMod.Scripts {
         private Vector3 localStringBottomPos = new Vector3(0, 0, 0);
         private Vector3 handleTop = new Vector3(0, 0, 0);
         private Vector3 handleBottom = new Vector3(0, 0, 0);
+        private bool foundStringInMesh;
         private const float handleHeight = 0.624f;
 
         private int[] meshTriangles;
@@ -116,6 +117,7 @@ namespace ValheimVRMod.Scripts {
             // so we simply iterate all triangles and compare their vertex distances to a certain minimum size
             // for the new triangle array, we just skip those with bigger vertex distance
             // but we save the top and bottom points of the deleted vertices so we can use them for our new string.
+            foundStringInMesh = false;
             Vector3 highestPoint = new Vector3(0, Mathf.NegativeInfinity, 0);
             Vector3 lowestPoint = new Vector3(0, Mathf.Infinity, 0);
             for (int i = 0; i < meshTriangles.Length / 3; i++) {
@@ -134,10 +136,12 @@ namespace ValheimVRMod.Scripts {
 
                 foreach (Vector3 v in new[] {v1, v2, v3}) {
                     if (v.y > highestPoint.y) {
+                        foundStringInMesh = true;
                         highestPoint = v;
                     }
 
                     if (v.y < lowestPoint.y) {
+                        foundStringInMesh = true;
                         lowestPoint = v;
                     }
                 }
@@ -151,12 +155,14 @@ namespace ValheimVRMod.Scripts {
             handleBottom = new Vector3(0, 0, 0);
             boneWeights = new BoneWeight[verts.Length];
             float localGripLocalHalfWidth = Mathf.NegativeInfinity;
+            float handleTopLocalHeight = (transform.InverseTransformPoint(bowOrientation.transform.TransformPoint(new Vector3(0, handleHeight * 0.5f, 0)))).y;
+            float handleBottomLocalHeight = (transform.InverseTransformPoint(bowOrientation.transform.TransformPoint(new Vector3(0, -handleHeight * 0.5f, 0)))).y;
             for (int i = 0; i < verts.Length; i++) {
                 Vector3 v = verts[i];
-                if (v.y > handleHeight / 2f) {
+                if (v.y > handleTopLocalHeight) {
                     // The vertex is in the upper limb.
                     boneWeights[i].boneIndex0 = 0;
-                } else if (v.y >= -handleHeight / 2f) {
+                } else if (v.y >= handleBottomLocalHeight) {
                     // The vertex is in the handle.
                     boneWeights[i].boneIndex0 = 1;
                     if (v.y > handleTop.y) {
@@ -174,6 +180,8 @@ namespace ValheimVRMod.Scripts {
                 }
                 boneWeights[i].weight0 = 1;
             }
+            handleTop = bowOrientation.transform.InverseTransformPoint(transform.TransformPoint(handleTop));
+            handleBottom = bowOrientation.transform.InverseTransformPoint(transform.TransformPoint(handleBottom));
             gripLocalHalfWidth = localGripLocalHalfWidth > 0 ? localGripLocalHalfWidth * transform.localScale.x : defaultHandleWidth * 0.5f;
 
             initialized = true;
@@ -314,7 +322,7 @@ namespace ValheimVRMod.Scripts {
             float pullDelta = pullObj.transform.localPosition.z - pullStart.z;
 
             // Just a heuristic and simplified approximation for the bend angle.
-            float bendAngleDegrees = pullDelta <= 0 ? 0 : Mathf.Asin(Math.Min(1, pullDelta)) * 180 / Mathf.PI;
+            float bendAngleDegrees = !foundStringInMesh || pullDelta <= 0 ? 0 : Mathf.Asin(Math.Min(1, pullDelta)) * 180 / Mathf.PI;
             upperLimbBone.localRotation = Quaternion.Euler(bendAngleDegrees, 0, 0);
             lowerLimbBone.localRotation = Quaternion.Euler(-bendAngleDegrees, 0, 0);
 
