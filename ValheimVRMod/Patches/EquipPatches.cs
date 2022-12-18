@@ -60,7 +60,7 @@ namespace ValheimVRMod.Patches {
                     meshFilter.gameObject.AddComponent<FishingManager>();
                     break;
                 case EquipType.ThrowObject:
-                    meshFilter.gameObject.AddComponent<SpearManager>();
+                    spearManager = meshFilter.gameObject.AddComponent<SpearManager>();
                     break;
                 case EquipType.Spear:
                 case EquipType.SpearChitin:
