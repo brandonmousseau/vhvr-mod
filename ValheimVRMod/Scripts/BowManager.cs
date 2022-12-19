@@ -46,6 +46,12 @@ namespace ValheimVRMod.Scripts {
 
         private int[] meshTriangles;
 
+        //async stuff
+        private float handleTopLocalHeight;
+        private float handleBottomLocalHeight;
+        private Vector3 highestPoint;
+        private Vector3 lowestPoint;
+
         void Awake() {
             Mesh mesh = GetComponent<MeshFilter>().mesh;
             verts = mesh.vertices;
@@ -80,8 +86,16 @@ namespace ValheimVRMod.Scripts {
             bowTransformUpdater.transform.SetParent(bowOrientation.transform, false);
             bowTransformUpdater.transform.position = transform.position;
             bowTransformUpdater.transform.rotation = transform.rotation;
-            
+
             // we need to run this method in thread as it takes longer than a frame and freezes game for a moment
+            foundStringInMesh = false;
+            highestPoint = new Vector3(0, Mathf.NegativeInfinity, 0);
+            lowestPoint = new Vector3(0, Mathf.Infinity, 0);
+            handleTop = new Vector3(0, 0, 0);
+            handleBottom = new Vector3(0, 0, 0);
+            handleTopLocalHeight = (transform.InverseTransformPoint(bowOrientation.transform.TransformPoint(new Vector3(0, handleHeight * 0.5f, 0)))).y;
+            handleBottomLocalHeight = (transform.InverseTransformPoint(bowOrientation.transform.TransformPoint(new Vector3(0, -handleHeight * 0.5f, 0)))).y;
+
             Thread thread = new Thread(() => initializeRenderersAsync());
             thread.Start();            
 
@@ -117,9 +131,6 @@ namespace ValheimVRMod.Scripts {
             // so we simply iterate all triangles and compare their vertex distances to a certain minimum size
             // for the new triangle array, we just skip those with bigger vertex distance
             // but we save the top and bottom points of the deleted vertices so we can use them for our new string.
-            foundStringInMesh = false;
-            Vector3 highestPoint = new Vector3(0, Mathf.NegativeInfinity, 0);
-            Vector3 lowestPoint = new Vector3(0, Mathf.Infinity, 0);
             for (int i = 0; i < meshTriangles.Length / 3; i++) {
                 Vector3 v1 = verts[meshTriangles[i * 3]];
                 Vector3 v2 = verts[meshTriangles[i * 3 + 1]];
@@ -147,16 +158,11 @@ namespace ValheimVRMod.Scripts {
                 }
             }
 
-            localStringTopPos = highestPoint.y > 0 ? bowOrientation.transform.InverseTransformPoint(transform.TransformPoint(highestPoint)) : new Vector3(0, defaultStringLength * 0.5f, defaultBraceHeight);
-            localStringBottomPos = lowestPoint.y < 0 ? bowOrientation.transform.InverseTransformPoint(transform.TransformPoint(lowestPoint)) : new Vector3(0, -defaultStringLength * 0.5f, defaultBraceHeight);
+            
 
             // Calculate vertex bone weights, find the local z coordinates of the top and bottom of the bow handle, and calculate the grip width.
-            handleTop = new Vector3(0, 0, 0);
-            handleBottom = new Vector3(0, 0, 0);
             boneWeights = new BoneWeight[verts.Length];
-            float localGripLocalHalfWidth = Mathf.NegativeInfinity;
-            float handleTopLocalHeight = (transform.InverseTransformPoint(bowOrientation.transform.TransformPoint(new Vector3(0, handleHeight * 0.5f, 0)))).y;
-            float handleBottomLocalHeight = (transform.InverseTransformPoint(bowOrientation.transform.TransformPoint(new Vector3(0, -handleHeight * 0.5f, 0)))).y;
+            
             for (int i = 0; i < verts.Length; i++) {
                 Vector3 v = verts[i];
                 if (v.y > handleTopLocalHeight) {
@@ -180,9 +186,7 @@ namespace ValheimVRMod.Scripts {
                 }
                 boneWeights[i].weight0 = 1;
             }
-            handleTop = bowOrientation.transform.InverseTransformPoint(transform.TransformPoint(handleTop));
-            handleBottom = bowOrientation.transform.InverseTransformPoint(transform.TransformPoint(handleBottom));
-            gripLocalHalfWidth = localGripLocalHalfWidth > 0 ? localGripLocalHalfWidth * transform.localScale.x : defaultHandleWidth * 0.5f;
+
 
             initialized = true;
         }
@@ -271,6 +275,13 @@ namespace ValheimVRMod.Scripts {
             }
 
             if (!wasInitialized) {
+                localStringTopPos = highestPoint.y > 0 ? bowOrientation.transform.InverseTransformPoint(transform.TransformPoint(highestPoint)) : new Vector3(0, defaultStringLength * 0.5f, defaultBraceHeight);
+                localStringBottomPos = lowestPoint.y < 0 ? bowOrientation.transform.InverseTransformPoint(transform.TransformPoint(lowestPoint)) : new Vector3(0, -defaultStringLength * 0.5f, defaultBraceHeight);
+
+                handleTop = bowOrientation.transform.InverseTransformPoint(transform.TransformPoint(handleTop));
+                handleBottom = bowOrientation.transform.InverseTransformPoint(transform.TransformPoint(handleBottom));
+                float localGripLocalHalfWidth = Mathf.NegativeInfinity;
+                gripLocalHalfWidth = localGripLocalHalfWidth > 0 ? localGripLocalHalfWidth * transform.localScale.x : defaultHandleWidth * 0.5f;
                 createLimbBones();
                 initializeStringPosition();
                 GetComponent<MeshFilter>().mesh.vertices = verts;
