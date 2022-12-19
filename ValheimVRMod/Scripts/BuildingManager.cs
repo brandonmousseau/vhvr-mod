@@ -101,37 +101,9 @@ namespace ValheimVRMod.Scripts
         private bool advancePositionMod;
         private Vector3 advanceRotationPosSave;
 
-        private LayerMask piecelayer = LayerMask.GetMask(new string[]
-        {
-            "Default",
-            "static_solid",
-            "Default_small",
-            "piece",
-            "piece_nonsolid",
-            "terrain",
-            "vehicle"
-        });
-        private LayerMask waterpiecelayer = LayerMask.GetMask(new string[]
-        {
-            "Default",
-            "static_solid",
-            "Default_small",
-            "piece",
-            "piece_nonsolid",
-            "terrain",
-            "Water",
-            "vehicle"
-        });
-        private LayerMask piecelayer2 = LayerMask.GetMask(new string[]
-        {
-            "Default",
-            "static_solid",
-            "Default_small",
-            "piece",
-            "terrain",
-            "vehicle"
-        });
-
+        private LayerMask piecelayer;
+        private LayerMask waterpiecelayer;
+        private LayerMask piecelayer2;
 
         private void Awake()
         {
@@ -151,6 +123,36 @@ namespace ValheimVRMod.Scripts
                 snapPointsCollider.Add(CreateSnapPointCollider());
             }
             instance = this;
+            piecelayer = LayerMask.GetMask(new string[]
+            {
+                "Default",
+                "static_solid",
+                "Default_small",
+                "piece",
+                "piece_nonsolid",
+                "terrain",
+                "vehicle"
+            });
+            waterpiecelayer = LayerMask.GetMask(new string[]
+            {
+                "Default",
+                "static_solid",
+                "Default_small",
+                "piece",
+                "piece_nonsolid",
+                "terrain",
+                "Water",
+                "vehicle"
+            });
+            piecelayer2 = LayerMask.GetMask(new string[]
+            {
+                "Default",
+                "static_solid",
+                "Default_small",
+                "piece",
+                "terrain",
+                "vehicle"
+            });
         }
         private void OnDestroy()
         {
