@@ -220,7 +220,7 @@ namespace ValheimVRMod.Scripts {
             }
 
             try {
-                WeaponColData colliderData = WeaponUtils.getForName(name);
+                WeaponColData colliderData = WeaponUtils.getForName(name,item);
                 colliderParent.transform.parent = obj;
                 colliderParent.transform.localPosition = colliderData.pos;
                 colliderParent.transform.localRotation = Quaternion.Euler(colliderData.euler);

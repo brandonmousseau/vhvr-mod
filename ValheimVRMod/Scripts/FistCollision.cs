@@ -17,6 +17,7 @@ namespace ValheimVRMod.Scripts {
         private HandGesture handGesture;
         public static FistCollision instance;
         private FistBlock fistBlock;
+        private float fistRotation = 0;
 
         private static readonly int[] ignoreLayers = {
             LayerUtils.WATERVOLUME_LAYER,
@@ -91,7 +92,6 @@ namespace ValheimVRMod.Scripts {
             transform.localPosition = Vector3.zero;
             transform.localScale = Vector3.one;
             transform.SetParent(Player.m_localPlayer.transform, true);
-
         }
 
         public void setColliderParent(Transform obj, bool rightHand) {
@@ -119,7 +119,7 @@ namespace ValheimVRMod.Scripts {
                 && SteamVR_Actions.valheim_Grab.GetState(inputSource);
 
             var isEquippedWithFistGesture =
-                usingClaws() && SteamVR_Actions.valheim_Grab.GetState(inputSource);
+                (usingClaws() || usingDualKnives()) && SteamVR_Actions.valheim_Grab.GetState(inputSource);
 
             return VRPlayer.inFirstPerson && colliderParent != null && 
                    (isEquippedWithFistGesture || isUnequipedWithFistGesture);
@@ -147,8 +147,23 @@ namespace ValheimVRMod.Scripts {
             return false;
         }
 
-        private bool usingClaws() {
-            return EquipScript.getRight().Equals(EquipType.Claws);
+        public bool usingClaws() {
+            var item = EquipScript.getRight();
+            return item.Equals(EquipType.Claws) || item.Equals(EquipType.DualKnives);
+        }
+
+        public bool usingDualKnives()
+        {
+            var item = EquipScript.getRight();
+            if (item.Equals(EquipType.DualKnives))
+            {
+                transform.transform.localRotation = Quaternion.Euler(new Vector3(fistRotation, 0, 0));
+            }
+            else
+            {
+                transform.transform.localRotation = Quaternion.identity;
+            }
+            return item.Equals(EquipType.DualKnives);
         }
 
         public bool usingFistWeapon()
@@ -169,7 +184,7 @@ namespace ValheimVRMod.Scripts {
                 && SteamVR_Actions.valheim_Grab.GetState(inputSource);
 
             var isEquippedWithFistGesture =
-                usingClaws() && SteamVR_Actions.valheim_Grab.GetState(inputSource);
+                (usingClaws() || usingDualKnives()) && SteamVR_Actions.valheim_Grab.GetState(inputSource);
 
             return (isEquippedWithFistGesture || isUnequipedWithFistGesture);
         }

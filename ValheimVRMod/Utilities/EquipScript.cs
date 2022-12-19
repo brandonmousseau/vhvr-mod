@@ -7,15 +7,43 @@ namespace ValheimVRMod.Utilities {
         None, 
         Fishing, Cultivator, Hammer, Hoe,
         Bow,  Spear, SpearChitin, ThrowObject,
-        Shield, Tankard, Claws, Magic, Crossbow
+        Shield, Tankard, Claws, Magic, Crossbow,
+
+        Sword, Axe, Knife, Pickaxe, Club, Polearms, DualKnives
     }
     
     public static class EquipScript {
         
         public static EquipType getRight() {
-            
-            switch (Player.m_localPlayer.GetRightItem()?.m_shared.m_name) {
-                
+            if (Player.m_localPlayer.GetRightItem() != null)
+            {
+                return getRightEquipType(Player.m_localPlayer.GetRightItem());
+            }
+            return EquipType.None;
+        }
+
+        public static EquipType getLeft() {
+            if (Player.m_localPlayer.GetLeftItem() != null)
+            {
+                return getLeftEquipType(Player.m_localPlayer.GetLeftItem());
+            }
+            return EquipType.None;
+        }
+
+        public static EquipType getEquippedItem(ItemDrop.ItemData item)
+        {
+            var equip = getRightEquipType(item);
+            if (equip == EquipType.None)
+                equip = getLeftEquipType(item);
+            return equip;
+        }
+
+        public static EquipType getRightEquipType(ItemDrop.ItemData item)
+        {
+            //Right Equipment List
+            switch (item?.m_shared.m_name)
+            {
+
                 //tool
                 case "$item_fishingrod":
                     return EquipType.Fishing;
@@ -39,24 +67,60 @@ namespace ValheimVRMod.Utilities {
                     return EquipType.ThrowObject;
                 case "$item_tankard":
                 case "$item_tankard_anniversary":
-                    return EquipType.Tankard;                
+                    return EquipType.Tankard;
                 case "$item_fistweapon_fenris":
                     return EquipType.Claws;
             }
+            //compatibility setting 
+            var skillType = item?.m_shared.m_skillType;
+            switch (skillType)
+            {
+                //Right Equipment
+                case Skills.SkillType.Unarmed:
+                    return EquipType.Claws;
+                case Skills.SkillType.Spears:
+                    return EquipType.Spear;
+                case Skills.SkillType.BloodMagic:
+                case Skills.SkillType.ElementalMagic:
+                    return EquipType.Magic;
 
-            if (Player.m_localPlayer.GetRightItem()?.m_shared.m_skillType == Skills.SkillType.BloodMagic ||
-                Player.m_localPlayer.GetRightItem()?.m_shared.m_skillType == Skills.SkillType.ElementalMagic) {
-                return EquipType.Magic;
+                case Skills.SkillType.Axes:
+                    return EquipType.Axe;
+                case Skills.SkillType.Pickaxes:
+                    return EquipType.Pickaxe;
+                case Skills.SkillType.Clubs:
+                    return EquipType.Club;
+                case Skills.SkillType.Polearms:
+                    return EquipType.Polearms;
+            }
+
+            var attackAnim = item?.m_shared.m_attack.m_attackAnimation;
+            switch (attackAnim)
+            {
+                case "unarmed_attack":
+                    return EquipType.Claws;
+                case "throw_bomb":
+                    return EquipType.ThrowObject;
+                case "dual_knives":
+                    return EquipType.DualKnives;
+                case "swing_hammer":
+                    return EquipType.Hammer;
+                case "emote_drink":
+                    return EquipType.Tankard;
             }
 
             return EquipType.None;
         }
+        public static EquipType getLeftEquipType(ItemDrop.ItemData item)
+        {
+           
 
-        public static EquipType getLeft() {
-            switch (Player.m_localPlayer.GetLeftItem()?.m_shared.m_itemType) {
+            //LeftEquipment List 
+            switch (item?.m_shared.m_itemType)
+            {
                 case ItemDrop.ItemData.ItemType.Bow:
 
-                    if(Player.m_localPlayer.GetLeftItem()?.m_shared.m_ammoType == "$ammo_bolts") 
+                    if (item?.m_shared.m_ammoType == "$ammo_bolts")
                         return EquipType.Crossbow;
 
                     return EquipType.Bow;
@@ -64,15 +128,23 @@ namespace ValheimVRMod.Utilities {
                     return EquipType.Shield;
             }
 
-            if (Player.m_localPlayer.GetLeftItem()?.m_shared.m_skillType == Skills.SkillType.BloodMagic ||
-                Player.m_localPlayer.GetLeftItem()?.m_shared.m_skillType == Skills.SkillType.ElementalMagic)
+            //compatibility setting 
+            var skillType = item?.m_shared.m_skillType;
+            //var itemType = item?.m_shared.m_itemType;
+            switch (skillType)
             {
-                return EquipType.Magic;
-            }
+                case Skills.SkillType.BloodMagic:
+                case Skills.SkillType.ElementalMagic:
+                    return EquipType.Magic;
 
+                //Left Equipments
+                case Skills.SkillType.Bows:
+                    return EquipType.Bow;
+                case Skills.SkillType.Crossbows:
+                    return EquipType.Crossbow;
+            }
             return EquipType.None;
         }
-
         public static bool getRightAnimSpeedUp()
         {
             if (getRight() == EquipType.Magic)

@@ -6,7 +6,8 @@ namespace ValheimVRMod.Scripts.Block {
     public class FistBlock : Block {
 
         private const float maxParryAngle = 45f;
-        
+        private readonly Vector3 handUp = new Vector3(0, -0.15f, -0.85f);
+
         public static FistBlock instance;
 
         private void OnDisable() {
@@ -22,7 +23,15 @@ namespace ValheimVRMod.Scripts.Block {
 
         public override void setBlocking(Vector3 hitDir) {
             //_blocking = Vector3.Dot(hitDir, getForward()) > 0.5f;
-            if(FistCollision.instance.usingFistWeapon())
+            if (FistCollision.instance.usingDualKnives())
+            {
+                var leftAngle = Vector3.Dot(hitDir, offhand.TransformDirection(handUp));
+                var rightAngle = Vector3.Dot(hitDir, hand.TransformDirection(handUp));
+                var leftHandBlock = (leftAngle > -0.5f && leftAngle < 0.5f);
+                var rightHandBlock = (rightAngle > -0.5f && rightAngle < 0.5f);
+                _blocking = leftHandBlock && rightHandBlock;
+            }
+            else if (FistCollision.instance.usingFistWeapon())
             {
                 var leftHandDir = VRPlayer.leftPointer.rayDirection * Vector3.forward;
                 var rightHandDir = VRPlayer.rightPointer.rayDirection * Vector3.forward;

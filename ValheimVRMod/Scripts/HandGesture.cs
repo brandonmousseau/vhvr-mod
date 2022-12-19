@@ -27,7 +27,7 @@ namespace ValheimVRMod.Scripts {
         }
 
         public bool isUnequiped() {
-            if (isMainHand && (Player.m_localPlayer.GetRightItem() != null && !EquipScript.getRight().Equals(EquipType.Claws)
+            if (isMainHand && (Player.m_localPlayer.GetRightItem() != null && !(FistCollision.instance.usingClaws()|| FistCollision.instance.usingDualKnives())
                                || BowLocalManager.instance != null && BowLocalManager.instance.isHoldingArrow())) {
                 return false;
             }

@@ -260,16 +260,27 @@ namespace ValheimVRMod.Utilities
                 )}
         };
 
-        public static WeaponColData getForName(string name)
+        private static readonly Dictionary<EquipType, WeaponColData> compatibilityColliders = new Dictionary<EquipType, WeaponColData>
+        {
+            {
+                EquipType.Pickaxe, WeaponColData.create(
+                    0,  1.9189f, 0,
+                    0,  0, 0,
+                    2.865605f,  0.1f, 0.1f
+            )}
+        };
+
+        public static WeaponColData getForName(string name,ItemDrop.ItemData item)
         {
 
             if (colliders.ContainsKey(name)) {
                 return colliders[name];
             }
-            
-            throw new InvalidEnumArgumentException(); 
-            
+            if (item != null && compatibilityColliders.ContainsKey(EquipScript.getEquippedItem(item)))
+            {
+                return compatibilityColliders[EquipScript.getEquippedItem(item)];
+            }
+            throw new InvalidEnumArgumentException();
         }
-
     }
 }
