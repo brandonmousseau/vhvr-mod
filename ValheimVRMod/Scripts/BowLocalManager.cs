@@ -169,8 +169,8 @@ namespace ValheimVRMod.Scripts {
             if (!predictionLine.enabled) {
                 return;
             }
-
-            Vector3 vel = aimDir * Mathf.Lerp(projectileVelMin, projectileVel, pullPercentage());
+            var isBowDrawable = Player.m_localPlayer.GetLeftItem().m_shared.m_attack.m_bowDraw;
+            Vector3 vel = aimDir * Mathf.Lerp(projectileVelMin, projectileVel, isBowDrawable ? pullPercentage():1);
 
             float stepLength = 0.1f;
             float stepSize = 20;

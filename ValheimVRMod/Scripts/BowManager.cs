@@ -350,7 +350,7 @@ namespace ValheimVRMod.Scripts {
 
             Vector3 pullPos = bowOrientation.transform.InverseTransformPoint(mainHand.position);
 
-            realLifePullPercentage = Mathf.Pow(Math.Min(Math.Max(pullPos.z - pullStart.z, 0) / (VHVRConfig.GetBowMaxDrawRange() - pullStart.z), 1), 2);
+            realLifePullPercentage = oneHandedAiming ? 1 : Mathf.Pow(Math.Min(Math.Max(pullPos.z - pullStart.z, 0) / (VHVRConfig.GetBowMaxDrawRange() - pullStart.z), 1), 2);
 
             // If RestrictBowDrawSpeed is enabled, limit the vr pull length by the square root of the current attack draw percentage to simulate the resistance.
             float pullLengthRestriction = VHVRConfig.RestrictBowDrawSpeed() == "Full" ? Mathf.Lerp(pullStart.z, VHVRConfig.GetBowMaxDrawRange(), Math.Max(Mathf.Sqrt(Player.m_localPlayer.GetAttackDrawPercentage()), 0.01f)) : VHVRConfig.GetBowMaxDrawRange();

@@ -522,11 +522,28 @@ namespace ValheimVRMod.Patches {
                     BowLocalManager.aborting = false;
                 }
                 else if (BowLocalManager.startedPulling) {
-                    attack = true;
+                    if (Player.m_localPlayer.GetLeftItem().m_shared.m_attack.m_bowDraw)
+                        attack = true;
                     BowLocalManager.startedPulling = false;
                 }
                 else {
-                    attackHold = BowLocalManager.isPulling;
+                    if (Player.m_localPlayer.GetLeftItem().m_shared.m_attack.m_bowDraw)
+                    {
+                        attackHold = BowLocalManager.isPulling;
+                    }
+                    else
+                    {
+                        if (SteamVR_Actions.valheim_Use.state)
+                        {
+                            attack = true;
+                            attackHold = BowLocalManager.isPulling;
+                        }else
+                        {
+                            attack = false;
+                            attackHold = false ;
+                        }
+                    }
+                    
                 }
                 return;
             }
