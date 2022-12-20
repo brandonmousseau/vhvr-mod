@@ -110,6 +110,10 @@ namespace ValheimVRMod.Patches {
                         aimDir = VRPlayer.rightPointer.rayDirection * Vector3.forward;
                     }
                     return false;
+                case EquipType.RuneSkyheim:
+                    spawnPoint = VRPlayer.rightHand.transform.position;
+                    aimDir = VRPlayer.rightPointer.rayDirection * Vector3.forward;
+                    return false;
             }
 
             if (EquipScript.isThrowable(___m_character.GetRightItem()))

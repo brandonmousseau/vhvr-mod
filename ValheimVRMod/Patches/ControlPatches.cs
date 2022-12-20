@@ -536,16 +536,13 @@ namespace ValheimVRMod.Patches {
                     else
                     {
                         
-                        if (SteamVR_Actions.valheim_Use.state)
+                        if (BowLocalManager.isPulling && SteamVR_Actions.valheim_Use.state && timer >= timeEnd)
                         {
-                            if(timer >= timeEnd)
-                            {
-                                timeEnd = 2f;
-                                timer = 0f;
-                                attack = true;
-                                attackHold = BowLocalManager.isPulling;
-                                VRPlayer.rightHand.hapticAction.Execute(0, 0.1f, 75, 0.3f, SteamVR_Input_Sources.RightHand);
-                            }
+                            timeEnd = 2f;
+                            timer = 0f;
+                            attack = true;
+                            attackHold = true;
+                            VRPlayer.rightHand.hapticAction.Execute(0, 0.1f, 75, 0.3f, SteamVR_Input_Sources.RightHand);
                         }
                         else
                         {
@@ -620,6 +617,21 @@ namespace ValheimVRMod.Patches {
                     {
                         attack = true;
                         attackHold = true;
+                    }
+                    break;
+
+
+                case EquipType.RuneSkyheim:
+                    if (SteamVR_Actions.valheim_Use.state && SteamVR_Actions.valheim_Grab.state && timer >= timeEnd)
+                    {
+                        timeEnd = 2f;
+                        timer = 0f;
+                        attack = true;
+                    }
+                    var currentAnimatorClip = Player.m_localPlayer.m_animator.GetCurrentAnimatorClipInfo(0)?[0].clip;
+                    if (currentAnimatorClip?.name == "spear_throw")
+                    {
+                        timeEnd = currentAnimatorClip.length / PatchFixedUpdate.lastSpeedUp;
                     }
                     break;
             }

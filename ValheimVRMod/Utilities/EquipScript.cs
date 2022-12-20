@@ -7,9 +7,13 @@ namespace ValheimVRMod.Utilities {
         None, 
         Fishing, Cultivator, Hammer, Hoe,
         Bow,  Spear, SpearChitin, ThrowObject,
-        Shield, Tankard, Claws, Magic, Crossbow,
-
+        Shield, Tankard, Claws, Magic, Crossbow
+        ,
+        //Melee Weapon
         Sword, Axe, Knife, Pickaxe, Club, Polearms, DualKnives
+        ,
+        //Modded
+        RuneSkyheim
     }
     
     public static class EquipScript {
@@ -70,6 +74,22 @@ namespace ValheimVRMod.Utilities {
                     return EquipType.Tankard;
                 case "$item_fistweapon_fenris":
                     return EquipType.Claws;
+                //modded
+                case "Rune of Frostbolt":
+                case "Rune of Firebolt":
+                case "Rune of Healing":
+                case "Rune of Light":
+                case "Rune of Force":
+                case "Rune of Invigorate":
+                case "Rune of Warmth":
+                case "Rune of Recall":
+                case "Rune of Travel":
+                case "Rune of Blink":
+                case "Rune of Frost Nova":
+                case "Rune of Immolation":
+                case "Rune of Chain Lightning":
+                case "Rune of Glacial Spike":
+                    return EquipType.RuneSkyheim;
             }
             //compatibility setting 
             var skillType = item?.m_shared.m_skillType;
