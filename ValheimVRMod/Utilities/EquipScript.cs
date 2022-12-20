@@ -145,6 +145,15 @@ namespace ValheimVRMod.Utilities {
             }
             return EquipType.None;
         }
+
+        public static bool isThrowable(ItemDrop.ItemData item)
+        {
+            if (item != null)
+            {
+                return item.m_crafterName.Contains("\"EffectType\":\"Throwable\"");
+            }
+            return false;
+        }
         public static bool getRightAnimSpeedUp()
         {
             if (getRight() == EquipType.Magic)

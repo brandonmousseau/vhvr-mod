@@ -112,6 +112,12 @@ namespace ValheimVRMod.Patches {
                     return false;
             }
 
+            if (EquipScript.isThrowable(___m_character.GetRightItem()))
+            {
+                spawnPoint = SpearManager.spawnPoint;
+                aimDir = SpearManager.aimDir;
+                return false;
+            }
             return true;
 
         }
@@ -137,7 +143,6 @@ namespace ValheimVRMod.Patches {
     [HarmonyPatch(typeof(CharacterAnimEvent), "FixedUpdate")]
     class PatchFixedUpdate {
         static void Prefix(Character ___m_character, ref Animator ___m_animator) {
-            
             if (___m_character != Player.m_localPlayer || !VHVRConfig.UseVrControls()) {
                 return;
             }

@@ -352,7 +352,8 @@ namespace ValheimVRMod.Scripts {
         }
 
         private bool isSpear() {
-            return EquipScript.getRight() != EquipType.ThrowObject;
+            var rightWeapon = EquipScript.getRight();
+            return rightWeapon == EquipType.Spear || rightWeapon == EquipType.SpearChitin;
         }
     }
 }

@@ -508,7 +508,6 @@ namespace ValheimVRMod.Patches {
 
     [HarmonyPatch(typeof(Player), nameof(Player.SetControls))]
     class Player_SetControls_EquipPatch {
-      
         static void Prefix(Player __instance, ref bool attack, ref bool attackHold, ref bool block, ref bool blockHold,
             ref bool secondaryAttack) {
             if (!VHVRConfig.UseVrControls() || __instance != Player.m_localPlayer) {
@@ -607,6 +606,12 @@ namespace ValheimVRMod.Patches {
                         attackHold = true;
                     }
                     break;
+            }
+
+            if (EquipScript.isThrowable(__instance.GetRightItem()) && SpearManager.isThrowing)
+            {
+                secondaryAttack = true;
+                SpearManager.isThrowing = false;
             }
         }
     }
