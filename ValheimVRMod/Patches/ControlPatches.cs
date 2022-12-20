@@ -508,11 +508,14 @@ namespace ValheimVRMod.Patches {
 
     [HarmonyPatch(typeof(Player), nameof(Player.SetControls))]
     class Player_SetControls_EquipPatch {
+        protected static float timer = 2f;
+        protected static float timeEnd = 2f;
         static void Prefix(Player __instance, ref bool attack, ref bool attackHold, ref bool block, ref bool blockHold,
             ref bool secondaryAttack) {
             if (!VHVRConfig.UseVrControls() || __instance != Player.m_localPlayer) {
                 return;
             }
+            timer = timer <= timeEnd ? timer + Time.deltaTime : timeEnd;
 
             if (EquipScript.getLeft() == EquipType.Bow) {
                 if (BowLocalManager.aborting) {
@@ -532,14 +535,27 @@ namespace ValheimVRMod.Patches {
                     }
                     else
                     {
+                        
                         if (SteamVR_Actions.valheim_Use.state)
                         {
-                            attack = true;
-                            attackHold = BowLocalManager.isPulling;
-                        }else
+                            if(timer >= timeEnd)
+                            {
+                                timeEnd = 2f;
+                                timer = 0f;
+                                attack = true;
+                                attackHold = BowLocalManager.isPulling;
+                                VRPlayer.rightHand.hapticAction.Execute(0, 0.1f, 75, 0.3f, SteamVR_Input_Sources.RightHand);
+                            }
+                        }
+                        else
                         {
                             attack = false;
                             attackHold = false ;
+                        }
+                        var currentAnimatorClip = Player.m_localPlayer.m_animator.GetCurrentAnimatorClipInfo(0)?[0].clip;
+                        if (currentAnimatorClip?.name == "Bow Aim Recoil")
+                        {
+                            timeEnd = currentAnimatorClip.length / PatchFixedUpdate.lastSpeedUp;
                         }
                     }
                     

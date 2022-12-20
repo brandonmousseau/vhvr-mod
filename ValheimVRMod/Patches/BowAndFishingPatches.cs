@@ -141,8 +141,12 @@ namespace ValheimVRMod.Patches {
      * because the original method switches it back to normal for other animations
      */
     [HarmonyPatch(typeof(CharacterAnimEvent), "FixedUpdate")]
+
     class PatchFixedUpdate {
+
+        public static float lastSpeedUp = 1f;
         static void Prefix(Character ___m_character, ref Animator ___m_animator) {
+            
             if (___m_character != Player.m_localPlayer || !VHVRConfig.UseVrControls()) {
                 return;
             }
@@ -150,6 +154,10 @@ namespace ValheimVRMod.Patches {
             {
                 ___m_animator.speed = 1f;
                 return;
+            }
+            if(!(___m_animator.speed == 1 || ___m_animator.speed == 1000))
+            {
+                lastSpeedUp = ___m_animator.speed;
             }
             ___m_animator.speed = 1000f;
         }
