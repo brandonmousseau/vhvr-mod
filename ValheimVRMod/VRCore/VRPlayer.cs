@@ -682,6 +682,8 @@ namespace ValheimVRMod.VRCore
                 _vrik.enabled = VHVRConfig.UseVrControls() &&
                     inFirstPerson &&
                     validVrikAnimatorState(player.GetComponentInChildren<Animator>());
+                QuickActions.instance.UpdateWristBar();
+                QuickSwitch.instance.UpdateWristBar();
             }
         }
 
@@ -716,6 +718,8 @@ namespace ValheimVRMod.VRCore
             StaticObjects.mouthCollider(cam.transform);
             StaticObjects.addQuickActions(VHVRConfig.LeftHanded() ? rightHand.transform : leftHand.transform);
             StaticObjects.addQuickSwitch(VHVRConfig.LeftHanded() ? leftHand.transform : rightHand.transform);
+            QuickActions.instance.refreshItems();
+            QuickSwitch.instance.refreshItems();
         }
 
         private bool vrikEnabled()

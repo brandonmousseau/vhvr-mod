@@ -75,6 +75,12 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> hideHotbar;
         private static ConfigEntry<bool> alwaysShowStamina;
 
+        private static ConfigEntry<Vector3> rightWristQuickActionPos;
+        private static ConfigEntry<Quaternion> rightWristQuickActionRot;
+        private static ConfigEntry<Vector3> leftWristQuickSwitchPos;
+        private static ConfigEntry<Quaternion> leftWristQuickSwitchRot;
+        private static ConfigEntry<bool> quickActionOnLeftHand;
+
         // Controls Settings
         private static ConfigEntry<bool> useLookLocomotion;
         private static ConfigEntry<string> preferredHand;
@@ -97,7 +103,11 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> runIsToggled;
         private static ConfigEntry<bool> leftHanded;
         private static ConfigEntry<bool> viewTurnWithMountedAnimal;
+        private static ConfigEntry<bool> advancedBuildMode;
+        private static ConfigEntry<bool> freePlaceAutoReturn;
+        private static ConfigEntry<bool> advancedRotationUpWorld;
         private static ConfigEntry<bool> buildOnRelease;
+        private static ConfigEntry<string> buildAngleSnap;
 
         // Graphics Settings
         private static ConfigEntry<bool> useAmplifyOcclusion;
@@ -119,9 +129,6 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> bowDrawRange;
         private static ConfigEntry<bool> bowAccuracyBasedOnCharge;
         private static ConfigEntry<float> bowStaminaAdjust;
-        private static ConfigEntry<bool> advancedBuildMode;
-        private static ConfigEntry<bool> freePlaceAutoReturn;
-        private static ConfigEntry<bool> advancedRotationUpWorld;
         private static ConfigEntry<string> blockingType;
 
 #if DEBUG
@@ -184,6 +191,11 @@ namespace ValheimVRMod.Utilities
             leftWristRot.Value = (Quaternion) leftWristRot.DefaultValue;
             rightWristPos.Value = (Vector3) rightWristPos.DefaultValue;
             rightWristRot.Value = (Quaternion)rightWristRot.DefaultValue;
+
+            rightWristQuickActionPos.Value = (Vector3)rightWristQuickActionPos.DefaultValue;
+            rightWristQuickActionRot.Value = (Quaternion)rightWristQuickActionRot.DefaultValue;
+            leftWristQuickSwitchPos.Value = (Vector3)leftWristQuickSwitchPos.DefaultValue;
+            leftWristQuickSwitchRot.Value = (Quaternion)leftWristQuickSwitchRot.DefaultValue;
         }
 
         private static void InitializeImmutableSettings() 
@@ -454,6 +466,7 @@ namespace ValheimVRMod.Utilities
                                             "RightWristRot",
                                             new Quaternion(0.29660001397132876f, 0.03720000013709068f, 0.10580000281333924f, 0.9484000205993652f),
                                             "Rotation for reposition VR Hud on Right Wrist");
+
             healthPanelPlacement = config.Bind("VRHUD",
                                               "HealthPanelPlacement",
                                               "LeftWrist",
@@ -491,6 +504,26 @@ namespace ValheimVRMod.Utilities
                                         "AlwaysShowStamina",
                                         true,
                                         "Always show the stamina bar even if its full");
+            rightWristQuickActionPos = config.Bind("VRHUD",
+                                            "RightWristQuickAction",
+                                            new Vector3(0.001420379034243524f, 0.09409096091985703f, -0.19604730606079102f),
+                                            "Position of extra Quick Action bar on Right Wrist.");
+            rightWristQuickActionRot = config.Bind("VRHUD",
+                                            "RightWristQuickActionRot",
+                                            new Quaternion(0.6157100796699524f, 0.6319897174835205f, -0.16848529875278474f, 0.4394344985485077f),
+                                            "Rotation for extra Quick Action bar on Right Wrist.");
+            leftWristQuickSwitchPos = config.Bind("VRHUD",
+                                            "LeftWristQuickSwitch",
+                                            new Vector3(-0.005364172160625458f, 0.11832620203495026f, -0.19671690464019776f),
+                                            "Position of extra Quick Switch bar on Left Wrist.");
+            leftWristQuickSwitchRot = config.Bind("VRHUD",
+                                            "LeftWristQuickSwitchRot",
+                                            new Quaternion(-0.5040010213851929f, 0.7026780843734741f, -0.09470813721418381f, -0.4932106137275696f),
+                                            "Rotation for reposition extra Quick Switch bar on Left Wrist");
+            quickActionOnLeftHand = config.Bind("VRHUD",
+                                        "QuickActionOnLeftHand",
+                                        false,
+                                        "Switch hand placement of Quick Action and Quick Switch Hotbar");
         }
 
         private static void InitializeControlsSettings()
@@ -560,10 +593,6 @@ namespace ValheimVRMod.Utilities
                                        "ViewTurnWithMountedAnimal",
                                        false,
                                        "Whether the view turns automatically together with the mounted animal when the animal turns.");
-            buildOnRelease = config.Bind("Controls",
-                                         "BuildOnRelease",
-                                         true,
-                                         "If true, when building, objects will be placed when releasing the trigger isntead of on pressing it down.");
             InitializeConfigurableKeyBindings(config);
         }
 
@@ -617,7 +646,7 @@ namespace ValheimVRMod.Utilities
                                                   new AcceptableValueRange<float>(0, 3)));
             nearClipPlane = config.Bind("Graphics",
                                         "NearClipPlane",
-                                        .05f,
+                                        .09f,
                                         new ConfigDescription("This can be used to adjust the distance where where anything inside will be clipped out and not rendered. You can try adjusting this if you experience" +
                                                               " problems where you see the nose of the player character for example.",
                                         new AcceptableValueRange<float>(0.05f, 0.5f)));
@@ -698,19 +727,6 @@ namespace ValheimVRMod.Utilities
                                                     "TwoHandedWithShield",
                                                     false,
                                                     "Allows Two Handed Wield while using shield");
-
-            advancedBuildMode = config.Bind("Motion Control",
-                                                    "AdvancedBuildMode",
-                                                    false,
-                                                    "Enable Advanced Building mode (Free place, Advanced Rotation)");
-            freePlaceAutoReturn = config.Bind("Motion Control",
-                                                    "FreePlaceAutoReturn",
-                                                    false,
-                                                    "Automatically return to normal building mode after building a piece in Free place mode");
-            advancedRotationUpWorld = config.Bind("Motion Control",
-                                                    "AdvanceRotationUpWorld",
-                                                    true,
-                                                    "Always use rotate vertically up when using analog rotation while in advanced build mode");
             
             blockingType = config.Bind("Motion Control",
                                         "BlockingType",
@@ -719,6 +735,28 @@ namespace ValheimVRMod.Utilities
                                         "Motion Control - Shield by aiming the shield towards enemy, and swing shield while blocking to parry." +
                                         "Grab button - Shield by aiming and pressing grab button, parry by timing the grab button.",
                                         new AcceptableValueList<string>(new string[] { "MotionControl", "GrabButton"})));
+
+
+            advancedBuildMode = config.Bind("Motion Control",
+                                                   "AdvancedBuildMode",
+                                                   false,
+                                                   "Enable Advanced Building mode (Free place, Advanced Rotation)");
+            freePlaceAutoReturn = config.Bind("Motion Control",
+                                                    "FreePlaceAutoReturn",
+                                                    false,
+                                                    "Automatically return to normal building mode after building a piece in Free place mode");
+            advancedRotationUpWorld = config.Bind("Motion Control",
+                                                    "AdvanceRotationUpWorld",
+                                                    true,
+                                                    "Always use rotate vertically up when using analog rotation while in advanced build mode");
+            buildOnRelease = config.Bind("Motion Control",
+                                         "BuildOnRelease",
+                                         true,
+                                         "If true, when building, objects will be placed when releasing the trigger isntead of on pressing it down.");
+            buildAngleSnap = config.Bind("Motion Control",
+                                         "BuildAngleSnap",
+                                         "26, 22.5, 10, 5, 2.5, 1, 0.5, 0.1, 0.05, 0.01",
+                                         "List of Build angle snap for advance rotation mode");
             // #if DEBUG
             //             DebugPosX = config.Bind("Motion Control",
             //                 "DebugPosX",
@@ -1130,18 +1168,6 @@ namespace ValheimVRMod.Utilities
         {
             return twoHandedWithShield.Value;
         }
-        public static bool AdvancedBuildingMode()
-        {
-            return advancedBuildMode.Value;
-        }
-        public static bool FreePlaceAutoReturn()
-        {
-            return freePlaceAutoReturn.Value;
-        }
-        public static bool AdvancedRotationUpWorld()
-        {
-            return advancedRotationUpWorld.Value;
-        }
         public static bool UseSpearDirectionGraphic()
         {
             return useSpearDirectionGraphic.Value;
@@ -1250,6 +1276,43 @@ namespace ValheimVRMod.Utilities
             return alwaysShowStamina.Value;
         }
 
+        public static Vector3 RightWristQuickActionPos()
+        {
+            return rightWristQuickActionPos.Value;
+        }
+        public static Quaternion RightWristQuickActionRot()
+        {
+            return rightWristQuickActionRot.Value;
+        }
+        public static Vector3 DefaultRightWristQuickActionPos()
+        {
+            return (Vector3)rightWristQuickActionPos.DefaultValue;
+        }
+        public static Quaternion DefaultRightWristQuickActionRot()
+        {
+            return (Quaternion)rightWristQuickActionRot.DefaultValue;
+        }
+        public static Vector3 LeftWristQuickSwitchPos()
+        {
+            return leftWristQuickSwitchPos.Value;
+        }
+        public static Quaternion LeftWristQuickSwitchRot()
+        {
+            return leftWristQuickSwitchRot.Value;
+        }
+        public static Vector3 DefaultLeftWristQuickSwitchPos()
+        {
+            return (Vector3)leftWristQuickSwitchPos.DefaultValue;
+        }
+        public static Quaternion DefaultLeftWristQuickSwitchRot()
+        {
+            return (Quaternion)leftWristQuickSwitchRot.DefaultValue;
+        }
+        public static bool QuickActionOnLeftHand()
+        {
+            return quickActionOnLeftHand.Value;
+        }
+
         public static bool LockGuiWhileMenuOpen()
         {
             return lockGuiWhileInventoryOpen.Value;
@@ -1260,9 +1323,28 @@ namespace ValheimVRMod.Utilities
             return disableRecenterPose.Value;
         }
 
+        public static bool AdvancedBuildingMode()
+        {
+            return advancedBuildMode.Value;
+        }
+        public static bool FreePlaceAutoReturn()
+        {
+            return freePlaceAutoReturn.Value;
+        }
+        public static bool AdvancedRotationUpWorld()
+        {
+            return advancedRotationUpWorld.Value;
+        }
         public static bool BuildOnRelease()
         {
             return buildOnRelease.Value;
+        }
+
+        public static float[] BuildAngleSnap()
+        {
+            //"22.5, 15, 10, 5, 2.5, 1, 0.5"
+            float[] snapList = Array.ConvertAll(buildAngleSnap.Value.Split(','), float.Parse);
+            return snapList;
         }
       
         public static bool BhapticsEnabled()

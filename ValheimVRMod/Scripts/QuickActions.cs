@@ -1,32 +1,35 @@
 using System;
-using System.Reflection;
-using HarmonyLib;
 using UnityEngine;
 using ValheimVRMod.Utilities;
+using ValheimVRMod.VRCore;
 
 namespace ValheimVRMod.Scripts {
     public class QuickActions : QuickAbstract {
 
         private int elementCount;
         private int extraElementCount;
-        private MethodInfo stopEmote = AccessTools.Method(typeof(Player), "StopEmote");
-        private bool hasGPower;
-        private Texture2D sitTexture; 
-        private Texture2D mapTexture;
-
-        public static bool toggleMap;
-        
-        QuickActions() {
-            sitTexture = VRAssetManager.GetAsset<Texture2D>("sit");    
-            mapTexture = VRAssetManager.GetAsset<Texture2D>("map");    
+        public static QuickActions instance;
+        protected override void InitializeWrist()
+        {
+            currentHand = VRPlayer.rightHand;
+            instance = this;
         }
-
         protected override int getElementCount() {
             return elementCount;
         }
         protected override int getExtraElementCount()
         {
             return extraElementCount;
+        }
+        public override void UpdateWristBar()
+        {
+            if(wrist.transform.parent != VRPlayer.rightHand.transform)
+            {
+                wrist.transform.SetParent(VRPlayer.rightHand.transform);
+            }
+            wrist.transform.localPosition = VHVRConfig.RightWristQuickActionPos();
+            wrist.transform.localRotation = VHVRConfig.RightWristQuickActionRot();
+            wrist.SetActive(isInView() || IsInArea());
         }
 
         public override void refreshItems() {
@@ -45,57 +48,35 @@ namespace ValheimVRMod.Scripts {
                 if (item == null) {
                     continue;
                 }
-                
-                switch (item.m_shared.m_itemType) {
-                    case ItemDrop.ItemData.ItemType.Tool:
-                    case ItemDrop.ItemData.ItemType.Torch:
-                    case ItemDrop.ItemData.ItemType.OneHandedWeapon:
-                    case ItemDrop.ItemData.ItemType.TwoHandedWeapon:
-                    default:
-                        
-                        elements[elementCount].transform.GetChild(1).gameObject.SetActive(item.m_equiped || item.m_durability == 0);
-                        if (item.m_durability == 0) {
-                            elements[elementCount].transform.GetChild(1).GetComponent<SpriteRenderer>().color = Color.red;
-                        }
-                        else {
-                            elements[elementCount].transform.GetChild(1).GetComponent<SpriteRenderer>().color = Color.white;
-                        }
-                        elements[elementCount].transform.GetChild(2).GetComponent<SpriteRenderer>().sprite = item.GetIcon();
-                        elements[elementCount].name = i.ToString();
-                        ResizeIcon(elements[elementCount]);
-                        elementCount++;
-                        break;
+
+                elements[elementCount].transform.GetChild(1).gameObject.SetActive(item.m_equiped || item.m_durability == 0);
+                if (item.m_durability == 0)
+                {
+                    elements[elementCount].transform.GetChild(1).GetComponent<SpriteRenderer>().color = Color.red;
                 }
-            }
+                else
+                {
+                    elements[elementCount].transform.GetChild(1).GetComponent<SpriteRenderer>().color = Color.white;
+                }
 
-            //Extra
-            StatusEffect se;
-            float cooldown;
-            extraElementCount = 0;
-            Player.m_localPlayer.GetGuardianPowerHUD(out se, out cooldown);
-            if (se)
+                if (item.GetIcon().name != elements[elementCount].Name)
+                {
+                    elements[elementCount].transform.GetChild(2).GetComponent<SpriteRenderer>().sprite = item.GetIcon();
+                    ResizeIcon(elements[elementCount].gameObject);
+                }
+                elements[elementCount].num = i;
+                elements[elementCount].Name = item.GetIcon().name;
+                elementCount++;
+            }
+            if (VHVRConfig.QuickActionOnLeftHand())
             {
-                hasGPower = true;
-                extraElements[extraElementCount].transform.GetChild(2).GetComponent<SpriteRenderer>().sprite = se.m_icon;
-                ResizeIcon(extraElements[extraElementCount]);
-                extraElementCount++;
+                RefreshQuickAction(inventory, extraElements, out extraElementCount);
             }
-
-            extraElements[extraElementCount].transform.GetChild(2).GetComponent<SpriteRenderer>().sprite = Sprite.Create(sitTexture,
-                new Rect(0.0f, 0.0f, sitTexture.width, sitTexture.height),
-                new Vector2(0.5f, 0.5f), 500);
-            extraElementCount++;
-
-            extraElements[extraElementCount].transform.GetChild(2).GetComponent<SpriteRenderer>().sprite = Sprite.Create(mapTexture,
-                new Rect(0.0f, 0.0f, mapTexture.width, mapTexture.height),
-                new Vector2(0.5f, 0.5f), 500);
-            extraElementCount++;
-
-            //extraElements[extraElementCount].transform.GetChild(2).GetComponent<SpriteRenderer>().sprite = Sprite.Create(mapTexture,
-            //    new Rect(0.0f, 0.0f, mapTexture.width, mapTexture.height),
-            //    new Vector2(0.5f, 0.5f), 500);
-            //extraElementCount++;
-
+            else
+            {
+                RefreshQuickSwitch(extraElements,out extraElementCount);
+            }
+                
             reorderElements();
             
         }
@@ -107,31 +88,25 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            if (hasGPower && hoveredIndex == allElementCount - 3)
-            {
-                Player.m_localPlayer.StartGuardianPower();
-                return;
-            }
-
-            if (hoveredIndex == allElementCount - 2) {
-                if (Player.m_localPlayer.InEmote() && Player.m_localPlayer.IsSitting())
-                    stopEmote.Invoke(Player.m_localPlayer, null);
-                else
-                    Player.m_localPlayer.StartEmote("sit", false);
-                return;
-            }
-
-
-            if (hoveredIndex == allElementCount - 1)
-            {
-                toggleMap = true;
-                return;
-            }
-
             var inventory = Player.m_localPlayer.GetInventory();
-            ItemDrop.ItemData item = inventory.GetItemAt(Int32.Parse(elements[hoveredIndex].name), 0);
+
+            if (VHVRConfig.QuickActionOnLeftHand())
+            {
+                if (SelectHoverQuickSwitch(hoveredIndex, elementCount, inventory))
+                {
+                    return;
+                }
+            }
+            else
+            {
+                if (SelectHoverQuickAction(hoveredIndex, allElementCount))
+                {
+                    return;
+                }
+            }
+
+            ItemDrop.ItemData item = inventory.GetItemAt(elements[hoveredIndex].num, 0);
             Player.m_localPlayer.UseItem(inventory, item, false);
-            
         }
     }
 }

@@ -100,6 +100,13 @@ namespace ValheimVRMod.VRCore.UI
             {
                 checkRecenterPose(Time.unscaledDeltaTime);
             }
+            if (GetButtonDown("Inventory") || GetButtonDown("JoyMenu"))
+            {
+                if (Minimap.IsOpen())
+                {
+                    Minimap.instance.SetMapMode(Minimap.MapMode.Small);
+                }
+            }
 
             checkQuickItems<QuickSwitch>(StaticObjects.quickSwitch, 
                 VHVRConfig.LeftHanded() ?  SteamVR_Actions.valheim_QuickActions : SteamVR_Actions.valheim_QuickSwitch, true);
@@ -267,9 +274,9 @@ namespace ValheimVRMod.VRCore.UI
                 return false;
             }
             if (zinput == "Map") {
-                if (QuickActions.toggleMap)
+                if (QuickAbstract.toggleMap)
                 {
-                    QuickActions.toggleMap = false;
+                    QuickAbstract.toggleMap = false;
                     return true;
                 } else
                 {

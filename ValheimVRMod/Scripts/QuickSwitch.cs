@@ -1,5 +1,7 @@
 using System;
 using UnityEngine;
+using ValheimVRMod.Utilities;
+using ValheimVRMod.VRCore;
 
 namespace ValheimVRMod.Scripts {
     public class QuickSwitch : QuickAbstract {
@@ -7,12 +9,29 @@ namespace ValheimVRMod.Scripts {
         private int elementCount;
         private int extraElementCount;
 
+        public static QuickSwitch instance;
+
+        protected override void InitializeWrist()
+        {
+            currentHand = VRPlayer.leftHand;
+            instance = this;
+        }
         protected override int getElementCount() {
             return elementCount;
         }
         protected override int getExtraElementCount()
         {
             return extraElementCount;
+        }
+        public override void UpdateWristBar()
+        {
+            if (wrist.transform.parent != VRPlayer.leftHand.transform)
+            {
+                wrist.transform.SetParent(VRPlayer.leftHand.transform);
+            }
+            wrist.transform.localPosition = VHVRConfig.LeftWristQuickSwitchPos();
+            wrist.transform.localRotation = VHVRConfig.LeftWristQuickSwitchRot();
+            wrist.SetActive(isInView() || IsInArea());
         }
         /**
          * loop the inventory hotbar and set corresponding item icons + activate equipped layers
@@ -33,62 +52,40 @@ namespace ValheimVRMod.Scripts {
                 if (item == null) {
                     continue;
                 }
-                
-                switch (item.m_shared.m_itemType) {
-                    case ItemDrop.ItemData.ItemType.Tool:
-                    case ItemDrop.ItemData.ItemType.Torch:
-                    case ItemDrop.ItemData.ItemType.OneHandedWeapon:
-                    case ItemDrop.ItemData.ItemType.TwoHandedWeapon:
-                    default:
-                        elements[elementCount].transform.GetChild(1).gameObject.SetActive(item.m_equiped || item.m_durability == 0);
-                        if (item.m_durability == 0) {
-                            elements[elementCount].transform.GetChild(1).GetComponent<SpriteRenderer>().color = Color.red;
-                        }
-                        else {
-                            elements[elementCount].transform.GetChild(1).GetComponent<SpriteRenderer>().color = Color.white;
-                        }
-                        elements[elementCount].transform.GetChild(2).GetComponent<SpriteRenderer>().sprite = item.GetIcon();
-                        elements[elementCount].name = i.ToString() ;
-                        ResizeIcon(elements[elementCount]);
-                        elementCount++;
-                        break;
+
+                elements[elementCount].transform.GetChild(1).gameObject.SetActive(item.m_equiped || item.m_durability == 0);
+                if (item.m_durability == 0)
+                {
+                    elements[elementCount].transform.GetChild(1).GetComponent<SpriteRenderer>().color = Color.red;
                 }
+                else
+                {
+                    elements[elementCount].transform.GetChild(1).GetComponent<SpriteRenderer>().color = Color.white;
+                }
+
+                if (item.GetIcon().name != elements[elementCount].Name)
+                {
+                    elements[elementCount].transform.GetChild(2).GetComponent<SpriteRenderer>().sprite = item.GetIcon();
+                    ResizeIcon(elements[elementCount].gameObject);
+                }
+
+                elements[elementCount].num = i;
+                elements[elementCount].Name = item.GetIcon().name;
+                elementCount++;
             }
 
-            extraElementCount = 0;
-            for (int i = 0; i < 4; i++)
+
+            //Extra
+            if (VHVRConfig.QuickActionOnLeftHand())
             {
-
-                ItemDrop.ItemData item = inventory?.GetItemAt(i+4, 1);
-
-                if (item == null)
-                {
-                    continue;
-                }
-
-                switch (item.m_shared.m_itemType)
-                {
-                    case ItemDrop.ItemData.ItemType.Tool:
-                    case ItemDrop.ItemData.ItemType.Torch:
-                    case ItemDrop.ItemData.ItemType.OneHandedWeapon:
-                    case ItemDrop.ItemData.ItemType.TwoHandedWeapon:
-                    default:
-                        extraElements[extraElementCount].transform.GetChild(1).gameObject.SetActive(item.m_equiped || item.m_durability == 0);
-                        if (item.m_durability == 0)
-                        {
-                            extraElements[extraElementCount].transform.GetChild(1).GetComponent<SpriteRenderer>().color = Color.red;
-                        }
-                        else
-                        {
-                            extraElements[extraElementCount].transform.GetChild(1).GetComponent<SpriteRenderer>().color = Color.white;
-                        }
-                        extraElements[extraElementCount].transform.GetChild(2).GetComponent<SpriteRenderer>().sprite = item.GetIcon();
-                        extraElements[extraElementCount].name = (i+4).ToString();
-                        ResizeIcon(extraElements[extraElementCount]);
-                        extraElementCount++;
-                        break;
-                }
+                RefreshQuickSwitch(extraElements, out extraElementCount);
             }
+            else
+            {
+                RefreshQuickAction(inventory, extraElements, out extraElementCount);
+            }
+
+
             reorderElements();
         }
 
@@ -98,18 +95,24 @@ namespace ValheimVRMod.Scripts {
             if (hoveredIndex < 0 || hoveredIndex >= allElementCount) {
                 return;
             }
-
             var inventory = Player.m_localPlayer.GetInventory();
-            if (hoveredIndex >= elementCount)
-            {
-                ItemDrop.ItemData item2 = inventory.GetItemAt(Int32.Parse(extraElements[hoveredIndex-elementCount].name), 1);
-                Player.m_localPlayer.UseItem(inventory, item2, false);
-                return;
-            }
 
-            ItemDrop.ItemData item = inventory.GetItemAt(Int32.Parse(elements[hoveredIndex].name), 0);
+            if (VHVRConfig.QuickActionOnLeftHand())
+            {
+                if (SelectHoverQuickAction(hoveredIndex, allElementCount))
+                {
+                    return;
+                }
+            }
+            else
+            {
+                if (SelectHoverQuickSwitch(hoveredIndex, elementCount, inventory))
+                {
+                    return;
+                }
+            }
+            ItemDrop.ItemData item = inventory.GetItemAt(elements[hoveredIndex].num, 0);
             Player.m_localPlayer.UseItem(inventory, item, false);
-            
         }
     }
 }
