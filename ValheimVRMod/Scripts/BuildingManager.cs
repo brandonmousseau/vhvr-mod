@@ -1748,6 +1748,10 @@ namespace ValheimVRMod.Scripts
                 Piece pieceParent = piece.GetComponentInParent(typeof(Piece)) as Piece;
 
                 //same function as IsOverlapingOtherPiece
+                if (!pieceParent)
+                {
+                    continue;
+                }
                 if (Vector3.Distance(pos, pieceParent.transform.position) < 0.05f &&
                     (allowRotatedOverlap || Quaternion.Angle(piece.transform.rotation, rotation) <= 1f) &&
                     pieceParent.gameObject.name.StartsWith(name))

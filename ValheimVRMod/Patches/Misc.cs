@@ -222,4 +222,17 @@ namespace ValheimVRMod.Patches
             return false;
         }
     }
+
+    [HarmonyPatch(typeof(ParticleMist),nameof(ParticleMist.Awake))]
+    class Patch_ParticleMist
+    {
+        public static void Postfix(ParticleMist __instance)
+        {
+            var rend = __instance.m_ps.GetComponent<ParticleSystemRenderer>();
+            rend.allowRoll = false;
+            rend.renderMode = ParticleSystemRenderMode.VerticalBillboard;
+        }
+    }
+
+
 }

@@ -32,6 +32,7 @@ namespace ValheimVRMod.Scripts {
         public static bool isPulling;
         public static bool startedPulling;
         public static bool aborting;
+        public static bool finishedPulling;
 
         private GameObject arrowAttach;
 
@@ -213,6 +214,12 @@ namespace ValheimVRMod.Scripts {
                 Player.m_localPlayer.UseStamina((currentMaxDrawPercentage - attackDrawPercentage) * additionalStaminaDrain * VHVRConfig.GetBowStaminaScalar());
             }
             attackDrawPercentage = currentMaxDrawPercentage;
+            if (attackDrawPercentage == 1 && !finishedPulling) 
+            {
+                SteamVR_Input_Sources bowHand = VHVRConfig.LeftHanded() ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand;
+                finishedPulling = true;
+                getMainHand().otherHand.hapticAction.Execute(0, 0.2f, 100, 0.3f, bowHand);
+            }
         }
 
         private void releaseString(bool withoutShoot = false) {
@@ -224,6 +231,7 @@ namespace ValheimVRMod.Scripts {
 
             predictionLine.enabled = false;
             pulling = isPulling = false;
+            finishedPulling = false;
             attackDrawPercentage = pullPercentage();
             currentMaxDrawPercentage = 0;
             spawnPoint = getArrowRestPosition();
