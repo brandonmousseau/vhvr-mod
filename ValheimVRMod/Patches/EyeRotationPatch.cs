@@ -27,6 +27,10 @@ namespace ValheimVRMod.Patches
 
         public static float? previousHeadLocalRotation;
         public static float? lastAttachmentHeading;
+        public static Quaternion lastAttachRot;
+
+        public static GameObject headLookRef;
+        public static bool wasAttached;
 
         public static void Prefix(Player __instance, ref Quaternion ___m_lookYaw, CraftingStation ___m_currentStation)
         {
@@ -40,6 +44,10 @@ namespace ValheimVRMod.Patches
                 return;
             }
 
+            if (!headLookRef)
+            {
+                headLookRef = new GameObject();
+            }
             /* Attached to something, like boat controls */
             if(__instance.IsAttached() && (VHVRConfig.ViewTurnWithMountedAnimal() || !__instance.IsRiding()))
             {
@@ -47,15 +55,43 @@ namespace ValheimVRMod.Patches
                 if(__instance.m_attached && __instance.m_attachPoint)
                 {
                     // Rotate VRPlayer together with delta ship rotation
-                    var newPlayerHeading = __instance.m_attachPoint.forward;
-                    newPlayerHeading.y = 0;
-                    newPlayerHeading.Normalize();
-                    float newHeadingRotation = Quaternion.LookRotation(newPlayerHeading, __instance.transform.up).eulerAngles.y;
-                    if(lastAttachmentHeading.HasValue)
-                        ___m_lookYaw *= Quaternion.AngleAxis(newHeadingRotation - lastAttachmentHeading.Value, Vector3.up);
-                    lastAttachmentHeading = newHeadingRotation;
+
+                    if (VHVRConfig.IsShipImmersiveCamera() && !__instance.IsRiding())
+                    {
+                        headLookRef.transform.SetParent(__instance.m_attachPoint);
+                        if (!wasAttached)
+                        {
+                            headLookRef.transform.position = __instance.transform.position;
+                            __instance.m_lookYaw = Quaternion.LookRotation(__instance.m_body.transform.forward, __instance.m_attachPoint.up);
+                            headLookRef.transform.rotation = __instance.transform.rotation;
+                            lastAttachRot = headLookRef.transform.rotation;
+                            wasAttached = true;
+                        }
+                        else
+                        {
+                            var newPlayerRot = headLookRef.transform.rotation;
+                            ___m_lookYaw *= Quaternion.Inverse(lastAttachRot) * newPlayerRot;
+                            lastAttachRot = headLookRef.transform.rotation;
+                        }
+                    }
+                    else
+                    {
+                        var newPlayerHeading = __instance.m_attachPoint.forward;
+                        newPlayerHeading.y = 0;
+                        newPlayerHeading.Normalize();
+                        float newHeadingRotation = Quaternion.LookRotation(newPlayerHeading, __instance.transform.up).eulerAngles.y;
+                        if (lastAttachmentHeading.HasValue)
+                            ___m_lookYaw *= Quaternion.AngleAxis(newHeadingRotation - lastAttachmentHeading.Value, Vector3.up);
+                        lastAttachmentHeading = newHeadingRotation;
+                    }
+                    
                 }
                 return;
+            }
+            else
+            {
+                headLookRef.transform.parent = null;
+                wasAttached = false;
             }
 
 
@@ -191,6 +227,7 @@ namespace ValheimVRMod.Patches
 
                 if(attachPoint)
                 {
+                    VRManager.tryRecenter();
                     // Rotate VRPlayer together with delta ship rotation
                     var attachmentHeading = attachPoint.transform.forward;
                     attachmentHeading.y = 0;
@@ -199,6 +236,82 @@ namespace ValheimVRMod.Patches
                     __instance.m_lookYaw = Quaternion.LookRotation(attachmentHeading, __instance.transform.up);
 
                     Player_SetMouseLook_Patch.lastAttachmentHeading = null;
+                }
+            }
+        }
+
+        /// <summary>
+        /// With IsShipImmersiveCamera option, the camera will follow the rotation and tilt of the ship
+        /// </summary>
+        [HarmonyPatch(typeof(GameCamera), nameof(GameCamera.ApplyCameraTilt))]
+        class GameCamera_ApplyCameraTilt_Patch
+        {
+            static GameObject headLookRef;
+            static bool wasAttached;
+            static Quaternion lastAttachRot;
+            static void Postfix(Player player)
+            {
+                if (VHVRConfig.NonVrPlayer() ||
+                    player != Player.m_localPlayer ||
+                    !VRPlayer.attachedToPlayer ||
+                    !VRPlayer.inFirstPerson || !VHVRConfig.IsShipImmersiveCamera())
+                {
+                    return;
+                }
+
+                if (!headLookRef)
+                {
+                    headLookRef = new GameObject();
+                }
+                if (!player.IsAttached())
+                {
+                    var ship = player.GetStandingOnShip();
+                    var moveableBase = player.transform.parent;
+                    if (ship || (moveableBase && moveableBase?.name == "MoveableBase"))
+                    {
+                        Transform referenceUp = null;
+                        if (ship)
+                        {
+                            referenceUp = ship.transform;
+                        }
+                        else if (moveableBase && moveableBase?.name == "MoveableBase")
+                        {
+                            referenceUp = moveableBase.transform;
+                        }
+
+                        if (referenceUp == null)
+                        {
+                            return;
+                        }
+                        if (VHVRConfig.IsShipImmersiveCamera())
+                        {
+                            headLookRef.transform.SetParent(referenceUp);
+                            headLookRef.transform.position = player.transform.position;
+                            if (!wasAttached)
+                            {
+                                player.m_lookYaw = Quaternion.LookRotation(player.m_body.transform.forward, referenceUp.up);
+                                headLookRef.transform.rotation = player.m_body.transform.rotation;
+                                lastAttachRot = headLookRef.transform.rotation;
+                                wasAttached = true;
+                            }
+                            else
+                            {
+                                var newPlayerRot = headLookRef.transform.rotation;
+                                player.m_body.transform.rotation *= Quaternion.Inverse(lastAttachRot) * newPlayerRot;
+                                player.m_lookYaw = Quaternion.LookRotation(player.m_body.transform.forward, referenceUp.up);
+                                headLookRef.transform.rotation = player.m_body.transform.rotation;
+                                lastAttachRot = headLookRef.transform.rotation;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (wasAttached)
+                        {
+                            player.m_lookYaw = Quaternion.LookRotation(player.m_body.transform.forward, Vector3.up);
+                            wasAttached = false;
+                        }
+                    }
                 }
             }
         }

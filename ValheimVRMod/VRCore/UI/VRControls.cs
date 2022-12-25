@@ -273,6 +273,10 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return false;
             }
+            if (zinput == "Jump" && shouldDisableJumpEvade())
+            {
+                return false;
+            }
             if (zinput == "Map") {
                 if (QuickAbstract.toggleMap)
                 {
@@ -351,6 +355,10 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return false;
             }
+            if (zinput == "Jump" && shouldDisableJumpEvade())
+            {
+                return false;
+            }
             if (zinput == "JoyAltPlace")
             {
                 return CheckAltButton();
@@ -387,6 +395,10 @@ namespace ValheimVRMod.VRCore.UI
                 return false;
             }
             if (zinput == "Remove" && (!shouldEnableRemove() || shouldDisableJumpRemove()))
+            {
+                return false;
+            }
+            if (zinput == "Jump" && shouldDisableJumpEvade())
             {
                 return false;
             }
@@ -645,6 +657,11 @@ namespace ValheimVRMod.VRCore.UI
         private bool shouldDisableJumpRemove()
         {
             return BuildingManager.instance && (BuildingManager.instance.isCurrentlyMoving() || BuildingManager.instance.isCurrentlyPreciseMoving() || BuildingManager.instance.isHoldingPlace());
+        }
+
+        private bool shouldDisableJumpEvade()
+        {
+            return SteamVR_Actions.valheim_UseLeft.state;
         }
 
         private void init()

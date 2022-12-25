@@ -872,7 +872,7 @@ namespace ValheimVRMod.Patches {
             if (dir == Vector3.zero)
                 return;
 
-            if (SteamVR_Actions.valheim_UseLeft.GetStateDown(SteamVR_Input_Sources.LeftHand))
+            if (SteamVR_Actions.valheim_UseLeft.state && SteamVR_Actions.valheim_Jump.stateDown)
             {
                 if (__instance.m_stamina < __instance.m_dodgeStaminaUsage)
                 {

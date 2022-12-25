@@ -134,6 +134,18 @@ namespace ValheimVRMod.Patches {
             return false;
         }
     }
+    [HarmonyPatch(typeof(Hud),nameof(Hud.UpdateStagger))]
+    class PatchStagger
+    {
+        static void Postfix(Hud __instance, Player player)
+        {
+            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls())
+            {
+                return;
+            }
+            __instance.m_staggerAnimator.SetBool("Visible", player.GetStaggerPercentage()>0f);
+        }
+    }
 
     [HarmonyPatch(typeof(Character), "RPC_Damage")]
     class PatchRPCDamager {

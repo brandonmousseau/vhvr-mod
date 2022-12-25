@@ -28,6 +28,7 @@ namespace ValheimVRMod.Scripts.Block {
         protected SteamVR_Input_Sources currhand = VHVRConfig.LeftHanded() ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand;
         protected bool wasParryStart = false;
         public bool wasResetTimer = false;
+        public bool wasGetHit = false;
 
         //Currently there's 2 Blocking type 
         //"MotionControl" and "GrabButton"
@@ -72,6 +73,12 @@ namespace ValheimVRMod.Scripts.Block {
 
             if (VHVRConfig.BlockingType() == "MotionControl")
                 ParryCheck(posStart, posEnd , posStart2, posEnd2);
+
+            if(wasGetHit && !SteamVR_Actions.valheim_Grab.GetState(currhand))
+            {
+                _meshCooldown.tryTrigger(cooldown);
+                wasGetHit = false;
+            }
         }
         public abstract void setBlocking(Vector3 hitDir);
         protected abstract void ParryCheck(Vector3 posStart, Vector3 posEnd, Vector3 posStart2, Vector3 posEnd2);
@@ -102,7 +109,14 @@ namespace ValheimVRMod.Scripts.Block {
         public void block() {
             if (VHVRConfig.BlockingType() == "MotionControl")
             {
-                _meshCooldown.tryTrigger(cooldown);
+                if (SteamVR_Actions.valheim_Grab.GetState(currhand))
+                {
+                    wasGetHit = true;
+                }   
+                else
+                {
+                    _meshCooldown.tryTrigger(cooldown);
+                }
             }
         }
 

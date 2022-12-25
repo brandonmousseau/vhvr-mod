@@ -7,11 +7,11 @@ using UnityEngine;
 
 namespace ValheimVRMod.Utilities
 {
-    
+
     static class VHVRConfig {
 
         public static ConfigFile config;
-        
+
         // Immutable Settings
         private static ConfigEntry<bool> vrModEnabled;
         private static ConfigEntry<bool> nonVrPlayer;
@@ -32,6 +32,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> recenterOnStart;
         private static ConfigEntry<bool> roomscaleFadeToBlack;
         private static ConfigEntry<bool> disableRecenterPose;
+        private static ConfigEntry<bool> immersiveShipCamera;
 
         // UI Settings
         private static ConfigEntry<float> overlayCurvature;
@@ -113,7 +114,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> useAmplifyOcclusion;
         private static ConfigEntry<float> taaSharpenAmmount;
         private static ConfigEntry<float> nearClipPlane;
-        
+
         // Motion Control Settings
         private static ConfigEntry<bool> useArrowPredictionGraphic;
         private static ConfigEntry<float> arrowParticleSize;
@@ -149,7 +150,7 @@ namespace ValheimVRMod.Utilities
         private const string k_arrowRestMediterranean = "Mediterranean";
 
         public static void InitializeConfiguration(ConfigFile mConfig) {
-            
+
             config = mConfig;
             InitializeImmutableSettings();
             InitializeGeneralSettings();
@@ -187,9 +188,9 @@ namespace ValheimVRMod.Utilities
         private static void ResetVrHudPositions()
         {
             LogUtils.LogDebug("Resetting HUD Positions for new version.");
-            leftWristPos.Value = (Vector3) leftWristPos.DefaultValue;
-            leftWristRot.Value = (Quaternion) leftWristRot.DefaultValue;
-            rightWristPos.Value = (Vector3) rightWristPos.DefaultValue;
+            leftWristPos.Value = (Vector3)leftWristPos.DefaultValue;
+            leftWristRot.Value = (Quaternion)leftWristRot.DefaultValue;
+            rightWristPos.Value = (Vector3)rightWristPos.DefaultValue;
             rightWristRot.Value = (Quaternion)rightWristRot.DefaultValue;
 
             rightWristQuickActionPos.Value = (Vector3)rightWristQuickActionPos.DefaultValue;
@@ -198,7 +199,7 @@ namespace ValheimVRMod.Utilities
             leftWristQuickSwitchRot.Value = (Quaternion)leftWristQuickSwitchRot.DefaultValue;
         }
 
-        private static void InitializeImmutableSettings() 
+        private static void InitializeImmutableSettings()
         {
             vrModEnabled = createImmutableSetting("Immutable",
                 "ModEnabled",
@@ -234,13 +235,13 @@ namespace ValheimVRMod.Utilities
             T defaultValue,
             string description)
         {
-            
+
             ConfigEntry<T> immutableSetting = config.Bind(section, key, defaultValue, description);
-            
+
             // now trying to find same setting in start options and override on match
-            
+
             var p = new OptionSet {
-                { key + "=", 
+                { key + "=",
                     "the immutable " + key + " to get the value of",
                     (T v) => immutableSetting.Value = v }
             };
@@ -315,7 +316,10 @@ namespace ValheimVRMod.Utilities
                                                 "Set to this true enable using the arrow keys to position the camera when in first or third person mode. You can use this to" +
                                                 " set the values of First/ThirdPersonHeadOffsetX/Y/Z while in game rather than having to edit them manually in the config file. " +
                                                 "Your settings will be remembered between gameplay sessions via this config file.");
-
+            immersiveShipCamera = config.Bind("General",
+                                          "ImmersiveShipCamera",
+                                          false,
+                                          "Make the camera follows the ship tilt while standing/sitting on ship (may induce motion sickness)");
         }
 
         private static void InitializeUISettings()
@@ -349,7 +353,7 @@ namespace ValheimVRMod.Utilities
 
             uiPanelResolution = config.Bind("UI",
                                       "UIPanelResolution",
-                                      new Vector2(1920,1080),
+                                      new Vector2(1920, 1080),
                                       new ConfigDescription("The resolution of the UI Panel display (non-Overlay GUI), Use above 1300 width and 940 height for no crop/clipping for vanilla ui, need restart to update"));
             uiPanelResolutionCompat = config.Bind("UI",
                                       "UIPanelResolutionCompatibility",
@@ -360,7 +364,7 @@ namespace ValheimVRMod.Utilities
                                       3f,
                                       new ConfigDescription("Distance to draw the UI panel at.",
                                       new AcceptableValueRange<float>(0.5f, 15f)));
-            uiPanelVerticalOffset  = config.Bind("UI",
+            uiPanelVerticalOffset = config.Bind("UI",
                                       "UIPanelVerticalOffset",
                                       1f,
                                       new ConfigDescription("Height the UI Panel will be drawn.",
@@ -705,7 +709,7 @@ namespace ValheimVRMod.Utilities
                                             "DartType - Throw aim is based on first trigger pressed to release in a straight line" +
                                             "TwoStagedThrowing - Throw aim is based on first grab and then aim is locked after pressing trigger" +
                                             "SecondHandAiming - Throw aim is based from your head to your left hand in a straight line",
-                                            new AcceptableValueList<string>(new string[] { "Classic", "DartType", "TwoStagedThrowing", "SecondHandAiming"})));
+                                            new AcceptableValueList<string>(new string[] { "Classic", "DartType", "TwoStagedThrowing", "SecondHandAiming" })));
             spearThrowSpeedDynamic = config.Bind("Motion Control",
                                                 "SpearThrowSpeedDynamic",
                                                 true,
@@ -727,14 +731,14 @@ namespace ValheimVRMod.Utilities
                                                     "TwoHandedWithShield",
                                                     false,
                                                     "Allows Two Handed Wield while using shield");
-            
+
             blockingType = config.Bind("Motion Control",
                                         "BlockingType",
                                         "MotionControl",
                                         new ConfigDescription("Change the block logic." +
                                         "Motion Control - Shield by aiming the shield towards enemy, and swing shield while blocking to parry." +
                                         "Grab button - Shield by aiming and pressing grab button, parry by timing the grab button.",
-                                        new AcceptableValueList<string>(new string[] { "MotionControl", "GrabButton"})));
+                                        new AcceptableValueList<string>(new string[] { "MotionControl", "GrabButton" })));
 
 
             advancedBuildMode = config.Bind("Motion Control",
@@ -1051,23 +1055,23 @@ namespace ValheimVRMod.Utilities
             return nonVrPlayer.Value;
 #endif
         }
-        
+
 #if DEBUG
         public static Vector3 getDebugPos()
         {
             return new Vector3(DebugPosX.Value, DebugPosY.Value, DebugPosZ.Value);
         }
-        
+
         public static Vector3 getDebugRot()
         {
             return new Vector3(DebugRotX.Value, DebugRotY.Value, DebugRotZ.Value);
         }
-        
+
         public static float getDebugScale() {
             return DebugScale.Value;
         }
 #endif
-        
+
         public static bool UnlockDesktopCursor()
         {
             return unlockDesktopCursor.Value;
@@ -1100,7 +1104,7 @@ namespace ValheimVRMod.Utilities
         {
             return Mathf.Abs(smoothSnapSpeed.Value);
         }
-        
+
         public static bool WeaponNeedsSpeed()
         {
             return weaponNeedsSpeed.Value;
@@ -1181,17 +1185,17 @@ namespace ValheimVRMod.Utilities
         {
             return useLegacyHud.Value;
         }
-        
+
         public static float CameraHudX()
         {
             return cameraHudX.Value;
         }
-        
+
         public static float CameraHudY()
         {
             return cameraHudY.Value;
         }
-        
+
         public static float CameraHudScale()
         {
             return cameraHudScale.Value;
@@ -1346,7 +1350,7 @@ namespace ValheimVRMod.Utilities
             float[] snapList = Array.ConvertAll(buildAngleSnap.Value.Split(','), float.Parse);
             return snapList;
         }
-      
+
         public static bool BhapticsEnabled()
         {
             return bhapticsEnabled.Value && !NonVrPlayer();
@@ -1363,6 +1367,11 @@ namespace ValheimVRMod.Utilities
         public static float GetBowStaminaScalar()
         {
             return bowStaminaAdjust.Value;
+        }
+
+        public static bool IsShipImmersiveCamera()
+        {
+            return immersiveShipCamera.Value;
         }
     }
 }
