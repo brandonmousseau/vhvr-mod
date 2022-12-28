@@ -289,10 +289,12 @@ namespace ValheimVRMod.Scripts {
                     PostInitDefault();
                 }
 
-                // Variables needed for custom shader.
-                handleTopInObjectSpace = transform.InverseTransformVector(bowOrientation.transform.TransformPoint(handleTop) - transform.position);
-                handleBottomInObjectSpace = transform.InverseTransformVector(bowOrientation.transform.TransformPoint(handleBottom) - transform.position);
-                bowRightInObjectSpace = transform.InverseTransformVector(bowOrientation.transform.right).normalized;
+                if (useCustomShader) {
+                    // Variables needed for custom shader.
+                    handleTopInObjectSpace = transform.InverseTransformVector(bowOrientation.transform.TransformPoint(handleTop) - transform.position);
+                    handleBottomInObjectSpace = transform.InverseTransformVector(bowOrientation.transform.TransformPoint(handleBottom) - transform.position);
+                    bowRightInObjectSpace = transform.InverseTransformVector(bowOrientation.transform.right).normalized;
+                }
 
                 createLimbBones();
                 initializeStringPosition();
