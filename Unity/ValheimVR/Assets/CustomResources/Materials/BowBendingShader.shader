@@ -75,7 +75,7 @@ Shader "BowBendingShader"
             v.vertex = targetPos;
         }
 
-        void surf (Input IN, inout SurfaceOutputStandardSpecular o) {
+        void surf (Input IN, inout SurfaceOutputStandard o) {
            fixed4 c = tex2D (_MainTex, IN.uv_MainTex);
            if (IN.vertColor.a > 0) {
                o.Albedo = c.rgb;
