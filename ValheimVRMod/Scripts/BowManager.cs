@@ -7,7 +7,7 @@ namespace ValheimVRMod.Scripts {
     public class BowManager : MonoBehaviour {
         private const float minStringSize = 0.965f;
         private const float defaultStringLength = 1.5f;
-        private const float defaultBraceHeight = 0.33f;
+        private const float defaultBraceHeight = 0.325f;
         private const float defaultHandleWidth = 0.05f;
         private const bool useCustomShader = false;
 
