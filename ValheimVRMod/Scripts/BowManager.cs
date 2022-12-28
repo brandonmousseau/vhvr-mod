@@ -211,7 +211,7 @@ namespace ValheimVRMod.Scripts {
             stringBottom.SetParent(lowerLimbBone, false);
             stringTop.position = transform.TransformPoint(localStringTopPos);
             stringBottom.position = transform.TransformPoint(localStringBottomPos);
-            pullStart = bowOrientation.transform.InverseTransformPoint(Vector3.Lerp(localStringTopPos, localStringBottomPos, 0.5f));
+            pullStart = bowOrientation.transform.InverseTransformPoint(Vector3.Lerp(stringTop.position, stringBottom.position, 0.5f));
         }
        
         private void PostInitDefault() {
