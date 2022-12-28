@@ -20,6 +20,11 @@ namespace ValheimVRMod.Scripts {
         private GameObject bowTransformUpdater;
         private float gripLocalHalfWidth = 0;
 
+        private const bool useCustomShader = false;
+        private Vector3 handleTopInObjectSpace;
+        private Vector3 handleBottomInObjectSpace;
+        private Vector3 bowRightInObjectSpace;
+        
         public static float realLifePullPercentage;
         public float lastDrawPercentage;
 
@@ -213,6 +218,11 @@ namespace ValheimVRMod.Scripts {
             handleTop = new Vector3(0, handleHeight * 0.5f, 0);
             handleBottom = new Vector3(0, -handleHeight * 0.5f, 0);
             gripLocalHalfWidth = defaultHandleWidth * 0.5f;
+
+            // Variables needed for custom shader.
+            handleTopInObjectSpace = transform.InverseTransformVector(bowOrientation.transform.TransformPoint(handleTop) - transform.position);
+            handleBottomInObjectSpace = transform.InverseTransformVector(bowOrientation.transform.TransformPoint(handleBottom) - transform.position);
+            bowRightInObjectSpace = transform.InverseTransformVector(bowOrientation.transform.right).normalized;
         }
 
         private void skinBones() {
