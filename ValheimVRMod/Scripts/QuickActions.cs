@@ -48,7 +48,19 @@ namespace ValheimVRMod.Scripts {
                 if (item == null) {
                     continue;
                 }
-
+                if (VHVRConfig.GetQuickMenuIsSeperate())
+                {
+                    switch (item.m_shared.m_itemType)
+                    {
+                        case ItemDrop.ItemData.ItemType.Tool:
+                        case ItemDrop.ItemData.ItemType.Torch:
+                        case ItemDrop.ItemData.ItemType.OneHandedWeapon:
+                        case ItemDrop.ItemData.ItemType.TwoHandedWeapon:
+                            continue;
+                        default:
+                            break;
+                    }
+                }
                 elements[elementCount].transform.GetChild(1).gameObject.SetActive(item.m_equiped || item.m_durability == 0);
                 if (item.m_durability == 0)
                 {

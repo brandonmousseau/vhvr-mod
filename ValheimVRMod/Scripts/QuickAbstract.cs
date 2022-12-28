@@ -42,11 +42,13 @@ namespace ValheimVRMod.Scripts {
         protected bool hasGPower;
         private Texture2D sitTexture;
         private Texture2D mapTexture;
+        private Texture2D recenterTexture;
         public static bool toggleMap;
 
         private void Awake() {
             sitTexture = VRAssetManager.GetAsset<Texture2D>("sit");
             mapTexture = VRAssetManager.GetAsset<Texture2D>("map");
+            recenterTexture = VRAssetManager.GetAsset<Texture2D>("recenter");
             elements = new QuickIcon[MAX_ELEMENTS];
             extraElements = new QuickIcon[MAX_EXTRA_ELEMENTS];
             wrist = new GameObject();
@@ -274,16 +276,6 @@ namespace ValheimVRMod.Scripts {
                     hoverRot = elements[hoveredIndex].transform.rotation;
                 }
             }
-            
-            //exact square mode backup
-            //for (int i = 0; i < getElementCount(); i++) {
-            //    var dist = Vector3.Distance(parent.position, elements[i].transform.position);
-
-            //    if (dist < maxDist) {
-            //        maxDist = dist;
-            //        hoveredIndex = i;
-            //    }
-            //}
 
             var hovering = false;
             
@@ -445,6 +437,16 @@ namespace ValheimVRMod.Scripts {
                 extraElements[extraElementCount].Name = "QuickActionMAP";
             }
             extraElementCount++;
+
+            if (extraElements[extraElementCount].Name != "QuickActionRECENTER")
+            {
+                extraElements[extraElementCount].transform.GetChild(2).GetComponent<SpriteRenderer>().sprite = Sprite.Create(recenterTexture,
+                new Rect(0.0f, 0.0f, recenterTexture.width, recenterTexture.height),
+                new Vector2(0.5f, 0.5f), 500);
+                ResizeIcon(extraElements[extraElementCount].gameObject);
+                extraElements[extraElementCount].Name = "QuickActionRECENTER";
+            }
+            extraElementCount++;
         }
 
         protected bool SelectHoverQuickSwitch(int hoveredIndex,int elementCount,Inventory inventory)
@@ -459,13 +461,13 @@ namespace ValheimVRMod.Scripts {
         }
         protected bool SelectHoverQuickAction(int hoveredIndex, int allElementCount)
         {
-            if (hasGPower && hoveredIndex == allElementCount - 3)
+            if (hasGPower && hoveredIndex == allElementCount - 4)
             {
                 Player.m_localPlayer.StartGuardianPower();
                 return true;
             }
 
-            if (hoveredIndex == allElementCount - 2)
+            if (hoveredIndex == allElementCount - 3)
             {
                 if (Player.m_localPlayer.InEmote() && Player.m_localPlayer.IsSitting())
                     stopEmote.Invoke(Player.m_localPlayer, null);
@@ -474,9 +476,15 @@ namespace ValheimVRMod.Scripts {
                 return true;
             }
 
-            if (hoveredIndex == allElementCount - 1)
+            if (hoveredIndex == allElementCount - 2)
             {
                 toggleMap = true;
+                return true;
+            }
+
+            if (hoveredIndex == allElementCount - 1)
+            {
+                VRManager.tryRecenter();
                 return true;
             }
             return false; 

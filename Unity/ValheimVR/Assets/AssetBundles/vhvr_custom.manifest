@@ -1,9 +1,9 @@
 ManifestFileVersion: 0
-CRC: 3347021369
+CRC: 1442134191
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 5b9548f26801ed524fdbe4f7c5b4baeb
+    Hash: 256f8053439dd2bd4b8cd387effa0e08
   TypeTreeHash:
     serializedVersion: 2
     Hash: 1fe3abd029edb3522ae5dbbc711d0a74
@@ -31,6 +31,7 @@ SerializeReferenceClassIdentifiers: []
 Assets:
 - Assets/CustomResources/RuneStakeCy.prefab
 - Assets/QuickOutline/Resources/Shaders/OutlineFill.shader
+- Assets/CustomResources/Textures/recenter.png
 - Assets/QuickOutline/Resources/Materials/OutlineMask.mat
 - Assets/CustomResources/CustomObject/Reel/Reel.prefab
 - Assets/CustomResources/Textures/sit.png

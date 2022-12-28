@@ -32,7 +32,8 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> recenterOnStart;
         private static ConfigEntry<bool> roomscaleFadeToBlack;
         private static ConfigEntry<bool> disableRecenterPose;
-        private static ConfigEntry<bool> immersiveShipCamera;
+        private static ConfigEntry<bool> immersiveShipCameraSitting;
+        private static ConfigEntry<string> immersiveShipCameraStanding;
 
         // UI Settings
         private static ConfigEntry<float> overlayCurvature;
@@ -56,6 +57,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> unlockDesktopCursor;
         private static ConfigEntry<string> QuickMenuType;
         private static ConfigEntry<int> QuickMenuVerticalAngle;
+        private static ConfigEntry<bool> QuickMenuClassicSeperate;
         private static ConfigEntry<bool> lockGuiWhileInventoryOpen;
 
         // VR Hud Settings
@@ -316,10 +318,15 @@ namespace ValheimVRMod.Utilities
                                                 "Set to this true enable using the arrow keys to position the camera when in first or third person mode. You can use this to" +
                                                 " set the values of First/ThirdPersonHeadOffsetX/Y/Z while in game rather than having to edit them manually in the config file. " +
                                                 "Your settings will be remembered between gameplay sessions via this config file.");
-            immersiveShipCamera = config.Bind("General",
-                                          "ImmersiveShipCamera",
+            immersiveShipCameraSitting = config.Bind("General",
+                                          "ImmersiveShipCameraSitting",
                                           false,
                                           "Make the camera follows the ship tilt while standing/sitting on ship (may induce motion sickness)");
+            immersiveShipCameraStanding = config.Bind("General",
+                                          "ImmersiveShipCameraStanding",
+                                          "WorldUp",
+                                          new ConfigDescription("Make the camera follows the ship direction while standing on it, World up will only follow the ship direction, while ShipUp will follow both ship tilt and direction",
+                                          new AcceptableValueList<string>(new string[] { "None", "WorldUp", "ShipUp" })));
         }
 
         private static void InitializeUISettings()
@@ -427,6 +434,10 @@ namespace ValheimVRMod.Utilities
                 180,
                 new ConfigDescription("Set the quickmenu vertical angle, affects all QuickMenu type except Hand Follow Cam ",
                     new AcceptableValueRange<int>(0, 360)));
+            QuickMenuClassicSeperate = config.Bind("UI",
+                "QuickMenuClassicSeperate",
+                false,
+                new ConfigDescription("Set the quickmenu to have seperate types of item on left and right (melee weapon on one side, and shield,bow, other items on the other side)"));
             lockGuiWhileInventoryOpen = config.Bind("UI",
                 "LockGuiPositionWhenMenuOpen",
                 true,
@@ -1085,6 +1096,11 @@ namespace ValheimVRMod.Utilities
             return QuickMenuVerticalAngle.Value;
         }
 
+        public static bool GetQuickMenuIsSeperate()
+        {
+            return QuickMenuClassicSeperate.Value;
+        }
+
         public static float GetSnapTurnAngle()
         {
             return snapTurnAngle.Value;
@@ -1371,7 +1387,15 @@ namespace ValheimVRMod.Utilities
 
         public static bool IsShipImmersiveCamera()
         {
-            return immersiveShipCamera.Value;
+            return immersiveShipCameraSitting.Value;
+        }
+        public static bool isShipImmersiveCameraStanding()
+        {
+            return immersiveShipCameraStanding.Value != "None";
+        }
+        public static string ShipImmersiveCameraType()
+        {
+            return immersiveShipCameraStanding.Value;
         }
     }
 }
