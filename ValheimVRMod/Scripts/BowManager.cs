@@ -9,6 +9,7 @@ namespace ValheimVRMod.Scripts {
         private const float defaultStringLength = 1.5f;
         private const float defaultBraceHeight = 0.33f;
         private const float defaultHandleWidth = 0.05f;
+        private const bool useCustomShader = false;
 
         private Vector3[] verts;
         private BoneWeight[] boneWeights;
@@ -20,7 +21,6 @@ namespace ValheimVRMod.Scripts {
         private GameObject bowTransformUpdater;
         private float gripLocalHalfWidth = 0;
 
-        private const bool useCustomShader = false;
         private Vector3 handleTopInObjectSpace;
         private Vector3 handleBottomInObjectSpace;
         private Vector3 bowRightInObjectSpace;
@@ -224,6 +224,19 @@ namespace ValheimVRMod.Scripts {
             handleBottomInObjectSpace = transform.InverseTransformVector(bowOrientation.transform.TransformPoint(handleBottom) - transform.position);
             bowRightInObjectSpace = transform.InverseTransformVector(bowOrientation.transform.right).normalized;
         }
+        
+        void ApplyCustomShader() {
+            MeshRenderer vanillaMeshRenderer = gameObject.GetComponent<MeshRenderer>();
+            Material vanillaMaterial = vanillaMeshRenderer.material;
+            vanillaMeshRenderer.material = Instantiate(VRAssetManager.GetAsset<Material>("BowBendingMaterial")); ;
+            vanillaMeshRenderer.material.color = vanillaMaterial.color;
+            vanillaMeshRenderer.material.mainTexture = vanillaMaterial.mainTexture;
+            Vector3 localHandleVector = handleTopInObjectSpace - handleBottomInObjectSpace;
+            vanillaMeshRenderer.material.SetVector("_HandleVector", localHandleVector);
+            vanillaMeshRenderer.material.SetFloat("_HandleTopHeight", Vector3.Dot(handleTopInObjectSpace, localHandleVector));
+            vanillaMeshRenderer.material.SetFloat("_HandleBottomHeight", Vector3.Dot(handleBottomInObjectSpace, localHandleVector));
+            vanillaMeshRenderer.material.SetFloat("_SoftLimbHeight", 0.125f);
+        }
 
         private void skinBones() {
             Transform handleBone = new GameObject("BowHandleBone").transform;
@@ -343,6 +356,15 @@ namespace ValheimVRMod.Scripts {
             float bendAngleDegrees = !canAccessMesh || pullDelta <= 0 ? 0 : Mathf.Asin(Math.Min(1, pullDelta)) * 180 / Mathf.PI;
             upperLimbBone.localRotation = Quaternion.Euler(bendAngleDegrees, 0, 0);
             lowerLimbBone.localRotation = Quaternion.Euler(-bendAngleDegrees, 0, 0);
+            
+            if (!canAccessMesh && useCustomShader) {
+                Quaternion upperLimbRotation = Quaternion.AngleAxis(bendAngleDegrees, bowRightInObjectSpace);
+                Quaternion lowerLimbRotation = Quaternion.AngleAxis(-bendAngleDegrees, bowRightInObjectSpace);
+                Matrix4x4 upperLimbTransform = Matrix4x4.TRS(handleTopInObjectSpace - upperLimbRotation * handleTopInObjectSpace, upperLimbRotation, scaleOne);
+                Matrix4x4 lowerLimbTransform = Matrix4x4.TRS(handleBottomInObjectSpace - lowerLimbRotation * handleBottomInObjectSpace, lowerLimbRotation, scaleOne);
+                gameObject.GetComponent<MeshRenderer>().material.SetMatrix("_UpperLimbTransform", upperLimbTransform);
+                gameObject.GetComponent<MeshRenderer>().material.SetMatrix("_LowerLimbTransform", lowerLimbTransform);
+            }
 
             updateStringRenderer();
         }
