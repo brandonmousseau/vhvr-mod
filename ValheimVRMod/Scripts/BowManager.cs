@@ -26,7 +26,7 @@ namespace ValheimVRMod.Scripts {
         private Vector3 bowRightInObjectSpace;
 
         private static Vector3 scaleOne = new Vector3(1, 1, 1);
-        
+
         public static float realLifePullPercentage;
         public float lastDrawPercentage;
 
@@ -64,24 +64,8 @@ namespace ValheimVRMod.Scripts {
             bowOrientation = new GameObject();
             bowOrientation.transform.SetParent(transform.parent, false);
             bowOrientation.transform.localPosition = new Vector3(0, 0, 0);
-
-            // Use the rotation of the bow and the hand to find the correct bow orientation.
-            float fProjected = Vector3.Dot(transform.forward, transform.parent.right);
-            float rProjected = Vector3.Dot(transform.right, transform.parent.right);
-            if (fProjected < -Mathf.Abs(rProjected))
-            {
-                bowOrientation.transform.rotation = transform.rotation;
-            } else if (fProjected > Mathf.Abs(rProjected))
-            {
-                bowOrientation.transform.rotation = transform.rotation * Quaternion.Euler(0, 180, 0);
-            } else if (rProjected > 0)
-            {
-                bowOrientation.transform.rotation = transform.rotation * Quaternion.Euler(0, -90, 0);
-            } else {
-                bowOrientation.transform.rotation = transform.rotation * Quaternion.Euler(0, 90, 0);
-            }
-
-            originalRotation = bowOrientation.transform.localRotation;
+            // Euler Angles: angle: 1.850218, 258.9168, 80.66032
+            bowOrientation.transform.localRotation = originalRotation = new Quaternion(-0.4918001f, -0.5951466f, 0.420751f, 0.4763422f);
 
             bowTransformUpdater = new GameObject();
             bowTransformUpdater.transform.SetParent(bowOrientation.transform, false);
@@ -220,24 +204,21 @@ namespace ValheimVRMod.Scripts {
             handleTop = new Vector3(0, handleHeight * 0.5f, 0);
             handleBottom = new Vector3(0, -handleHeight * 0.5f, 0);
             gripLocalHalfWidth = defaultHandleWidth * 0.5f;
-
-            // Variables needed for custom shader.
-            handleTopInObjectSpace = transform.InverseTransformVector(bowOrientation.transform.TransformPoint(handleTop) - transform.position);
-            handleBottomInObjectSpace = transform.InverseTransformVector(bowOrientation.transform.TransformPoint(handleBottom) - transform.position);
-            bowRightInObjectSpace = transform.InverseTransformVector(bowOrientation.transform.right).normalized;
         }
         
         void ApplyCustomShader() {
-            MeshRenderer vanillaMeshRenderer = gameObject.GetComponent<MeshRenderer>();
-            Material vanillaMaterial = vanillaMeshRenderer.material;
-            vanillaMeshRenderer.material = Instantiate(VRAssetManager.GetAsset<Material>("BowBendingMaterial")); ;
-            vanillaMeshRenderer.material.color = vanillaMaterial.color;
-            vanillaMeshRenderer.material.mainTexture = vanillaMaterial.mainTexture;
+            MeshRenderer meshRenderer = gameObject.GetComponent<MeshRenderer>();
+            Material vanillaMaterial = meshRenderer.material;
+            meshRenderer.material = Instantiate(VRAssetManager.GetAsset<Material>("BowBendingMaterial")); ;
+            meshRenderer.material.color = vanillaMaterial.color;
+            meshRenderer.material.mainTexture = vanillaMaterial.mainTexture;
+            // Use a higher render queue to prevent certain shadow artifacts.
+            meshRenderer.material.renderQueue = 3000;
             Vector3 localHandleVector = handleTopInObjectSpace - handleBottomInObjectSpace;
-            vanillaMeshRenderer.material.SetVector("_HandleVector", localHandleVector);
-            vanillaMeshRenderer.material.SetFloat("_HandleTopHeight", Vector3.Dot(handleTopInObjectSpace, localHandleVector));
-            vanillaMeshRenderer.material.SetFloat("_HandleBottomHeight", Vector3.Dot(handleBottomInObjectSpace, localHandleVector));
-            vanillaMeshRenderer.material.SetFloat("_SoftLimbHeight", 0.125f);
+            meshRenderer.material.SetVector("_HandleVector", localHandleVector);
+            meshRenderer.material.SetFloat("_HandleTopHeight", Vector3.Dot(handleTopInObjectSpace, localHandleVector));
+            meshRenderer.material.SetFloat("_HandleBottomHeight", Vector3.Dot(handleBottomInObjectSpace, localHandleVector));
+            meshRenderer.material.SetFloat("_SoftLimbHeight", 0.125f);
         }
 
         private void skinBones() {
@@ -253,22 +234,20 @@ namespace ValheimVRMod.Scripts {
                 bindPoses[i] = bones[i].worldToLocalMatrix * transform.localToWorldMatrix;
             }
 
-            MeshRenderer vanillaMeshRenderer = gameObject.GetComponent<MeshRenderer>();
-            Material bowMaterial = vanillaMeshRenderer.material;
-            SkinnedMeshRenderer skinnedMeshRenderer = gameObject.AddComponent<SkinnedMeshRenderer>();
-            Mesh mesh = gameObject.GetComponent<MeshFilter>().mesh;
-            mesh.boneWeights = boneWeights;
-            mesh.bindposes = bindPoses;
-            skinnedMeshRenderer.bones = bones;
-            skinnedMeshRenderer.sharedMesh = mesh;
-            skinnedMeshRenderer.material = bowMaterial;
-            skinnedMeshRenderer.forceMatrixRecalculationPerRender = true;
-
-            // Destroy the original renderer since we will be using SkinnedMeshRenderer only.
-            Destroy(vanillaMeshRenderer);
-
-            if (useCustomShader && !canAccessMesh)
-            {
+            if (canAccessMesh) {
+                MeshRenderer vanillaMeshRenderer = gameObject.GetComponent<MeshRenderer>();
+                Material bowMaterial = vanillaMeshRenderer.material;
+                SkinnedMeshRenderer skinnedMeshRenderer = gameObject.AddComponent<SkinnedMeshRenderer>();
+                Mesh mesh = gameObject.GetComponent<MeshFilter>().mesh;
+                mesh.boneWeights = boneWeights;
+                mesh.bindposes = bindPoses;
+                skinnedMeshRenderer.bones = bones;
+                skinnedMeshRenderer.sharedMesh = mesh;
+                skinnedMeshRenderer.material = bowMaterial;
+                skinnedMeshRenderer.forceMatrixRecalculationPerRender = true;
+                // Destroy the original renderer since we will be using SkinnedMeshRenderer only.
+                Destroy(vanillaMeshRenderer);
+            } else if (useCustomShader) {
                 ApplyCustomShader();
             }
         }
@@ -309,6 +288,12 @@ namespace ValheimVRMod.Scripts {
                     LogUtils.LogWarning("Cannot access bow mesh, using default bow anatomy");
                     PostInitDefault();
                 }
+
+                // Variables needed for custom shader.
+                handleTopInObjectSpace = transform.InverseTransformVector(bowOrientation.transform.TransformPoint(handleTop) - transform.position);
+                handleBottomInObjectSpace = transform.InverseTransformVector(bowOrientation.transform.TransformPoint(handleBottom) - transform.position);
+                bowRightInObjectSpace = transform.InverseTransformVector(bowOrientation.transform.right).normalized;
+
                 createLimbBones();
                 initializeStringPosition();
                 GetComponent<MeshFilter>().mesh.vertices = verts;
