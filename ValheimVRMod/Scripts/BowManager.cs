@@ -24,6 +24,8 @@ namespace ValheimVRMod.Scripts {
         private Vector3 handleTopInObjectSpace;
         private Vector3 handleBottomInObjectSpace;
         private Vector3 bowRightInObjectSpace;
+
+        private static Vector3 scaleOne = new Vector3(1, 1, 1);
         
         public static float realLifePullPercentage;
         public float lastDrawPercentage;
@@ -209,7 +211,7 @@ namespace ValheimVRMod.Scripts {
             stringBottom.SetParent(lowerLimbBone, false);
             stringTop.position = transform.TransformPoint(localStringTopPos);
             stringBottom.position = transform.TransformPoint(localStringBottomPos);
-            pullStart = bowOrientation.transform.InverseTransformPoint(Vector3.Lerp(localStringTopPos), localStringBottomPos, 0.5f));
+            pullStart = bowOrientation.transform.InverseTransformPoint(Vector3.Lerp(localStringTopPos, localStringBottomPos, 0.5f));
         }
        
         private void PostInitDefault() {
@@ -264,6 +266,11 @@ namespace ValheimVRMod.Scripts {
 
             // Destroy the original renderer since we will be using SkinnedMeshRenderer only.
             Destroy(vanillaMeshRenderer);
+
+            if (useCustomShader && !canAccessMesh)
+            {
+                ApplyCustomShader();
+            }
         }
 
         /**
@@ -353,9 +360,11 @@ namespace ValheimVRMod.Scripts {
             float pullDelta = pullObj.transform.localPosition.z - pullStart.z;
 
             // Just a heuristic and simplified approximation for the bend angle.
-            float bendAngleDegrees = !canAccessMesh || pullDelta <= 0 ? 0 : Mathf.Asin(Math.Min(1, pullDelta)) * 180 / Mathf.PI;
-            upperLimbBone.localRotation = Quaternion.Euler(bendAngleDegrees, 0, 0);
-            lowerLimbBone.localRotation = Quaternion.Euler(-bendAngleDegrees, 0, 0);
+            float bendAngleDegrees = pullDelta <= 0 ? 0 : Mathf.Asin(Math.Min(1, pullDelta)) * 180 / Mathf.PI;
+            if (canAccessMesh || useCustomShader) {
+                upperLimbBone.localRotation = Quaternion.Euler(bendAngleDegrees, 0, 0);
+                lowerLimbBone.localRotation = Quaternion.Euler(-bendAngleDegrees, 0, 0);
+            }
             
             if (!canAccessMesh && useCustomShader) {
                 Quaternion upperLimbRotation = Quaternion.AngleAxis(bendAngleDegrees, bowRightInObjectSpace);
