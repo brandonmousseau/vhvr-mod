@@ -46,8 +46,8 @@ namespace ValheimVRMod.Scripts {
         public bool pulling;
         public Transform mainHand;
 
-        private Vector3 localStringTopPos = new Vector3(0, Mathf.NegativeInfinity, 0);
-        private Vector3 localStringBottomPos = new Vector3(0, Mathf.Infinity, 0);
+        private Vector3 stringTopInObjectSpace = new Vector3(0, Mathf.NegativeInfinity, 0);
+        private Vector3 stringBottomInObjectSpace = new Vector3(0, Mathf.Infinity, 0);
         private Vector3 handleTop = new Vector3(0, 0, 0);
         private Vector3 handleBottom = new Vector3(0, 0, 0);
         private bool canAccessMesh;
@@ -137,13 +137,13 @@ namespace ValheimVRMod.Scripts {
                     float currentHeight = Vector3.Dot(v, upVectorInLocalSpace);
                     if (currentHeight > stringTopHeight) {
                         canAccessMesh = true;
-                        localStringTopPos = v;
+                        stringTopInObjectSpace = v;
                         stringTopHeight = currentHeight;
                     }
 
                     if (currentHeight < stringBottomHeight) {
                         canAccessMesh = true;
-                        localStringBottomPos = v;
+                        stringBottomInObjectSpace = v;
                         stringBottomHeight = currentHeight;
                     }
                 }
@@ -209,14 +209,14 @@ namespace ValheimVRMod.Scripts {
             stringBottom = new GameObject().transform;
             stringTop.SetParent(upperLimbBone, false);
             stringBottom.SetParent(lowerLimbBone, false);
-            stringTop.position = transform.TransformPoint(localStringTopPos);
-            stringBottom.position = transform.TransformPoint(localStringBottomPos);
+            stringTop.position = transform.TransformPoint(stringTopInObjectSpace);
+            stringBottom.position = transform.TransformPoint(stringBottomInObjectSpace);
             pullStart = bowOrientation.transform.InverseTransformPoint(Vector3.Lerp(stringTop.position, stringBottom.position, 0.5f));
         }
        
         private void PostInitDefault() {
-            localStringTopPos = transform.InverseTransformPoint(bowOrientation.transform.TransformPoint(new Vector3(0, defaultStringLength * 0.5f, defaultBraceHeight)));
-            localStringBottomPos = transform.InverseTransformPoint(bowOrientation.transform.TransformPoint(new Vector3(0, -defaultStringLength * 0.5f, defaultBraceHeight)));
+            stringTopInObjectSpace = transform.InverseTransformPoint(bowOrientation.transform.TransformPoint(new Vector3(0, defaultStringLength * 0.5f, defaultBraceHeight)));
+            stringBottomInObjectSpace = transform.InverseTransformPoint(bowOrientation.transform.TransformPoint(new Vector3(0, -defaultStringLength * 0.5f, defaultBraceHeight)));
             handleTop = new Vector3(0, handleHeight * 0.5f, 0);
             handleBottom = new Vector3(0, -handleHeight * 0.5f, 0);
             gripLocalHalfWidth = defaultHandleWidth * 0.5f;
