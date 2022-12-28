@@ -24,6 +24,8 @@ namespace ValheimVRMod.Scripts {
         private Vector3 handleTopInObjectSpace;
         private Vector3 handleBottomInObjectSpace;
         private Vector3 bowRightInObjectSpace;
+        private Vector3 upVectorInLocalSpace;
+        private Vector3 rightVectorInLocalSpace;
 
         private static Vector3 scaleOne = new Vector3(1, 1, 1);
 
@@ -72,6 +74,9 @@ namespace ValheimVRMod.Scripts {
             bowTransformUpdater.transform.position = transform.position;
             bowTransformUpdater.transform.rotation = transform.rotation;
 
+            upVectorInLocalSpace = transform.InverseTransformDirection(bowOrientation.transform.up);
+            rightVectorInLocalSpace = transform.InverseTransformDirection(bowOrientation.transform.right);
+
             float handleTopLocalHeight = (transform.InverseTransformPoint(bowOrientation.transform.TransformPoint(new Vector3(0, handleHeight * 0.5f, 0)))).y;
             float handleBottomLocalHeight = (transform.InverseTransformPoint(bowOrientation.transform.TransformPoint(new Vector3(0, -handleHeight * 0.5f, 0)))).y;
             canAccessMesh = false;
@@ -111,6 +116,9 @@ namespace ValheimVRMod.Scripts {
             // so we simply iterate all triangles and compare their vertex distances to a certain minimum size
             // for the new triangle array, we just skip those with bigger vertex distance
             // but we save the top and bottom points of the deleted vertices so we can use them for our new string.
+
+            float stringTopHeight = Mathf.NegativeInfinity;
+            float stringBottomHeight = Mathf.Infinity;
             for (int i = 0; i < meshTriangles.Length / 3; i++) {
                 Vector3 v1 = verts[meshTriangles[i * 3]];
                 Vector3 v2 = verts[meshTriangles[i * 3 + 1]];
@@ -126,14 +134,17 @@ namespace ValheimVRMod.Scripts {
                 verts[meshTriangles[i * 3 + 2]] = verts[meshTriangles[i * 3]];
 
                 foreach (Vector3 v in new[] {v1, v2, v3}) {
-                    if (v.y > localStringTopPos.y) {
+                    float currentHeight = Vector3.Dot(v, upVectorInLocalSpace);
+                    if (currentHeight > stringTopHeight) {
                         canAccessMesh = true;
                         localStringTopPos = v;
+                        stringTopHeight = currentHeight;
                     }
 
-                    if (v.y < localStringBottomPos.y) {
+                    if (currentHeight < stringBottomHeight) {
                         canAccessMesh = true;
                         localStringBottomPos = v;
+                        stringBottomHeight = currentHeight;
                     }
                 }
             }
@@ -143,27 +154,32 @@ namespace ValheimVRMod.Scripts {
 
             Vector3 localHandleTop = new Vector3(0, 0, 0);
             Vector3 localHandleBottom = new Vector3(0, 0, 0);
+            float handleTopVertexHeight = Mathf.NegativeInfinity;
+            float handleBottomVertexHeight = Mathf.Infinity;
             float localGripLocalHalfWidth = Mathf.NegativeInfinity;
             for (int i = 0; i < verts.Length; i++) {
                 Vector3 v = verts[i];
-                if (v.y > handleTopLocalHeight) {
+                float currentHeight = Vector3.Dot(v, upVectorInLocalSpace);
+                if (currentHeight > handleTopLocalHeight) {
                     // The vertex is in the upper limb.
                     boneWeights[i].boneIndex0 = 0;
-                } else if (v.y >= handleBottomLocalHeight) {
+                } else if (currentHeight >= handleBottomLocalHeight) {
                     // The vertex is in the handle.
                     boneWeights[i].boneIndex0 = 1;
-                    if (v.y > localHandleTop.y) {
+                    if (currentHeight > handleTopVertexHeight) {
                         localHandleTop = v;
+                        handleTopVertexHeight = currentHeight;
                     }
-                    if (v.y < localHandleBottom.y) {
+                    if (currentHeight < handleBottomVertexHeight) {
                         localHandleBottom = v;
+                        handleBottomVertexHeight = currentHeight;
                     }
                 } else {
                     // The vertex is in the lower limb.
                     boneWeights[i].boneIndex0 = 2;
                 }
-                if (0 <= v.y && v.y < VHVRConfig.ArrowRestElevation()) {
-                    localGripLocalHalfWidth = Math.Max(Math.Abs(v.x), localGripLocalHalfWidth);
+                if (0 <= currentHeight && currentHeight < VHVRConfig.ArrowRestElevation()) {
+                    localGripLocalHalfWidth = Math.Max(Math.Abs(Vector3.Dot(v, rightVectorInLocalSpace)), localGripLocalHalfWidth);
                 }
                 boneWeights[i].weight0 = 1;
             }
