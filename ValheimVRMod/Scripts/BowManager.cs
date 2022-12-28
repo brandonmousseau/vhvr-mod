@@ -240,6 +240,12 @@ namespace ValheimVRMod.Scripts {
             meshRenderer.material.SetFloat("_HandleTopHeight", Vector3.Dot(handleTopInObjectSpace, localHandleVector));
             meshRenderer.material.SetFloat("_HandleBottomHeight", Vector3.Dot(handleBottomInObjectSpace, localHandleVector));
             meshRenderer.material.SetFloat("_SoftLimbHeight", 0.125f);
+
+            Vector3 stringTopToBottomDirection = (stringBottomInObjectSpace - stringTopInObjectSpace).normalized;
+            meshRenderer.material.SetVector("_StringTop", new Vector4(stringTopInObjectSpace.x, stringTopInObjectSpace.y, stringTopInObjectSpace.z, 1));
+            meshRenderer.material.SetVector("_StringTopToBottomDirection", new Vector4(stringTopToBottomDirection.x, stringTopToBottomDirection.y, stringTopToBottomDirection.z, 0));
+            meshRenderer.material.SetFloat("_StringLength", (stringTopInObjectSpace - stringBottomInObjectSpace).magnitude);
+            meshRenderer.material.SetFloat("_StringRadius", 0.01f);
         }
 
         private void skinBones() {
