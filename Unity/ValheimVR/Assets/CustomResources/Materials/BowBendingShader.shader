@@ -7,13 +7,15 @@ Shader "BowBendingShader"
         _HandleBottomHeight("_Handle Bottom Height", Float) = 0
         _MainTex ("Texture", 2D) = "white" {}
         _BumpMap ("Bumpmap", 2D) = "bump" {}
+        _MetallicGlossMap ("Metallic Gloss Map", 2D) = "bump" {}
+        _EmissionMap ("Emission Map", 2D) = "black" {}
     }
     SubShader
     {
         Tags { "RenderType" = "Opaque" }
 
         CGPROGRAM
-        #pragma surface surf Lambert vertex:vert
+        #pragma surface surf Standard vertex:vert
 
         #include "UnityCG.cginc"
         #include "UnityLightingCommon.cginc" // for _LightColor0
@@ -27,10 +29,15 @@ Shader "BowBendingShader"
 
         sampler2D _MainTex;
         sampler2D _BumpMap;
+        sampler2D _MetallicGlossMap;
+        sampler2D _EmissionMap;
 
         struct Input {
           float2 uv_MainTex;
           float2 uv_BumpMap;
+          float2 uv_MetallicGlossMap;
+          float2 uv_EmissionMap;
+          float4 vertColor : COLOR;
         };
 
         void vert (inout appdata_full v)
@@ -51,9 +58,14 @@ Shader "BowBendingShader"
             v.vertex = targetPos;
         }
 
-        void surf (Input IN, inout SurfaceOutput o) {
-           o.Albedo = tex2D (_MainTex, IN.uv_MainTex).rgb;
+        void surf (Input IN, inout SurfaceOutputStandard o) {
+           fixed4 c = tex2D (_MainTex, IN.uv_MainTex);
+           o.Albedo = c.rgb;
+           o.Alpha = c.a;
            o.Normal = UnpackNormal (tex2D (_BumpMap, IN.uv_BumpMap));
+           o.Metallic = tex2D (_MetallicGlossMap, IN.uv_MetallicGlossMap).r;
+           o.Smoothness = 0.5;
+           o.Emission = tex2D(_EmissionMap, IN.uv_EmissionMap).rgb;
         }
 
         ENDCG
