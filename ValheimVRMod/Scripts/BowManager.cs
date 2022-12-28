@@ -231,7 +231,6 @@ namespace ValheimVRMod.Scripts {
             meshRenderer.material.SetTexture("_BumpMap", vanillaMaterial.GetTexture("_BumpMap"));
             meshRenderer.material.SetTexture("_MetallicGlossMap", vanillaMaterial.GetTexture("_MetallicGlossMap"));
             meshRenderer.material.SetTexture("_EmissionMap", vanillaMaterial.GetTexture("_EmissionMap"));
-            meshRenderer.material.renderQueue = vanillaMaterial.renderQueue;
 
             // A higher render queue is needed to to prevent certain shadow artifacts when using vertex and fragment shaders. It is not necesssary for surface shaders.
             // meshRenderer.material.renderQueue = 3000;
