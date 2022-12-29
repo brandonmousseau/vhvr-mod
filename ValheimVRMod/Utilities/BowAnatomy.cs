@@ -30,9 +30,8 @@ namespace ValheimVRMod.Utilities
 
         private static Dictionary<string, BowAnatomy> BowAnatomies = new Dictionary<string, BowAnatomy>
         {
-            // Note: item name is snipesnap not spinesnap
             {
-                "$item_bow_snipesnap",
+                "$item_bow_snipesnap", // Note: item name is snipesnap not spinesnap
                 new BowAnatomy(
                     /* stringTop= */ new Vector3(0, 0.75f, 0.325f),
                     /* stringBottom= */ new Vector3(0, -0.75f, 0.325f),
