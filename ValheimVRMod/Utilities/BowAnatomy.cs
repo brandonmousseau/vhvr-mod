@@ -17,7 +17,6 @@ namespace ValheimVRMod.Utilities
         public readonly float handleHeight;
         public readonly float softLimbHeight;
         public readonly float stringRadius;
-        public readonly
 
         private static BowAnatomy DefaultBowAnatomy = new BowAnatomy(new Vector3(0, 0.75f, 0.325f), new Vector3(0, -0.75f, 0.325f), new Vector3(0, 0.312f, 0), new Vector3(0, -0.312f, 0), 0.05f, 0.624f, 0.125f, 0.0008f);
         private static Dictionary<string, BowAnatomy> BowAnatomies = new Dictionary<string, BowAnatomy>
