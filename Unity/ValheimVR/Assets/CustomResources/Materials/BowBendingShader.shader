@@ -51,10 +51,11 @@ Shader "BowBendingShader"
         {
             v.color.a = 1.0;
             if (_StringRadius > 0) {
-                float4 topToCurrent = v.vertex - _StringTop;
-                topToCurrent.w = 0;
-                float stringComponent = dot(topToCurrent, normalize(_StringTopToBottomDirection));
-                if (length(topToCurrent - normalize(_StringTopToBottomDirection) * stringComponent) < _StringRadius) {
+                float4 stringTopToCurrentVertex = v.vertex - _StringTop;
+                float4 projectionOnString = dot(stringTopToCurrentVertex, _StringTopToBottomDirection) * _StringTopToBottomDirection;
+                float distanceToString = length((stringTopToCurrentVertex - projectionOnString).xyz);
+                if (distanceToString < _StringRadius) {
+                   // Hide vanilla string.
                    v.color.a = 0.0;
                 }
             }
@@ -76,21 +77,11 @@ Shader "BowBendingShader"
         }
 
         void surf (Input IN, inout SurfaceOutputStandard o) {
-           fixed4 c = tex2D (_MainTex, IN.uv_MainTex);
-           if (IN.vertColor.a > 0) {
-               o.Albedo = c.rgb;
-               o.Normal = UnpackNormal (tex2D (_BumpMap, IN.uv_BumpMap));
-               o.Alpha = 1.0;
-               o.Metallic = tex2D (_MetallicGlossMap, IN.uv_MetallicGlossMap).r;
-               o.Smoothness = 0.5;
-               o.Emission = tex2D(_EmissionMap, IN.uv_EmissionMap).rgb;
-           } else {
-               o.Albedo = fixed3(0, 0, 0);
-               o.Alpha = 0;
-               o.Metallic = 0;
-               o.Smoothness = 0;
-               o.Emission = fixed3(0, 0, 0);
-           }
+           o.Albedo = tex2D(_MainTex, IN.uv_MainTex).rgb;
+           o.Alpha = IN.vertColor.a;
+           o.Normal = UnpackNormal (tex2D (_BumpMap, IN.uv_BumpMap));
+           o.Metallic = o.Smoothness = tex2D (_MetallicGlossMap, IN.uv_MetallicGlossMap).r;
+           o.Emission = IN.vertColor.a > 0 ? tex2D(_EmissionMap, IN.uv_EmissionMap).rgb : fixed3(0, 0, 0);
         }
 
         ENDCG
