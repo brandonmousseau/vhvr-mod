@@ -9,6 +9,13 @@ namespace ValheimVRMod.Utilities
 {
     public class BowAnatomy
     {
+        public enum BowBendingImplType
+        {
+            Shader, // Use custom shader for bow bending animation
+            Skinned, // Attempt to us skinned mesh render for bow animation
+            Auto // Use skinned mesh render for bow animation if the mesh can be accessed or use custom shader otherwise
+        }
+
         public readonly Vector3 stringTop;
         public readonly Vector3 stringBottom;
         public readonly Vector3 handleTop;
@@ -17,6 +24,7 @@ namespace ValheimVRMod.Utilities
         public readonly float handleHeight;
         public readonly float softLimbHeight;
         public readonly float stringRadius;
+        public readonly BowBendingImplType bowBendingImpl;
 
         private static BowAnatomy DefaultBowAnatomy = new BowAnatomy(
             /* stringTop= */ new Vector3(0, 0.75f, 0.325f),
@@ -26,7 +34,8 @@ namespace ValheimVRMod.Utilities
             /* handleWidth= */ 0.05f,
             /* handleHeight= */ 0.624f,
             /* softLimbHeight= */ 0.125f,
-            /* stringRadius= */ 0.008f);
+            /* stringRadius= */ 0.008f,
+            /* bowBendingImpl= */ BowBendingImplType.Skinned);
 
         private static Dictionary<string, BowAnatomy> BowAnatomies = new Dictionary<string, BowAnatomy>
         {
@@ -40,7 +49,8 @@ namespace ValheimVRMod.Utilities
                     /* handleWidth= */ 0.05f,
                     /* handleHeight= */ 0.46f,
                     /* softLimbHeight= */ 0.1f,
-                    /* stringRadius= */ 0.008f)
+                    /* stringRadius= */ 0.008f,
+                    /* bowBendingImpl= */ BowBendingImplType.Skinned)
             }
         };
 
@@ -64,7 +74,8 @@ namespace ValheimVRMod.Utilities
             float handleWidth,
             float handleHeight,
             float softLimbHeight,
-            float stringRadius)
+            float stringRadius,
+            BowBendingImplType bowBendingImpl)
         {
             this.stringTop = stringTop;
             this.stringBottom = stringBottom;
@@ -74,6 +85,7 @@ namespace ValheimVRMod.Utilities
             this.handleHeight = handleHeight;
             this.softLimbHeight = softLimbHeight;
             this.stringRadius = stringRadius;
+            this.bowBendingImpl = bowBendingImpl;
         }
     }
 }
