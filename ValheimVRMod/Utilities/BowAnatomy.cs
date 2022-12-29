@@ -18,24 +18,32 @@ namespace ValheimVRMod.Utilities
         public readonly float softLimbHeight;
         public readonly float stringRadius;
 
-        private static BowAnatomy DefaultBowAnatomy = new BowAnatomy(new Vector3(0, 0.75f, 0.325f), new Vector3(0, -0.75f, 0.325f), new Vector3(0, 0.312f, 0), new Vector3(0, -0.312f, 0), 0.05f, 0.624f, 0.125f, 0.0008f);
+        private static BowAnatomy DefaultBowAnatomy = new BowAnatomy(
+            /* stringTop= */ new Vector3(0, 0.75f, 0.325f),
+            /* stringBottom= */ new Vector3(0, -0.75f, 0.325f),
+            /* handleTop= */ new Vector3(0, 0.312f, 0),
+            /* handleBottom= */ new Vector3(0, -0.312f, 0),
+            /* handleWidth= */ 0.05f,
+            /* handleHeight= */ 0.624f,
+            /* softLimbHeight= */ 0.125f,
+            /* stringRadius= */ 0.008f);
+
         private static Dictionary<string, BowAnatomy> BowAnatomies = new Dictionary<string, BowAnatomy>
         {
             // Note: item name is snipesnap not spinesnap
-            {"$item_bow_snipesnap", new BowAnatomy(new Vector3(0, 0.75f, 0.325f), new Vector3(0, -0.75f, 0.325f), new Vector3(0, 0.23f, 0), new Vector3(0, -0.23f, 0), 0.05f, 0.46f, 0.1f, 0.008f)}
+            {
+                "$item_bow_snipesnap",
+                new BowAnatomy(
+                    /* stringTop= */ new Vector3(0, 0.75f, 0.325f),
+                    /* stringBottom= */ new Vector3(0, -0.75f, 0.325f),
+                    /* handleTop= */ new Vector3(0, 0.23f, 0),
+                    /* handleBottom= */ new Vector3(0, -0.23f, 0),
+                    /* handleWidth= */ 0.05f,
+                    /* handleHeight= */ 0.46f,
+                    /* softLimbHeight= */ 0.1f,
+                    /* stringRadius= */ 0.008f)
+            }
         };
-
-        protected BowAnatomy(Vector3 stringTop, Vector3 stringBottom, Vector3 handleTop, Vector3 handleBottom, float handleWidth, float handleHeight, float softLimbHeight, float stringRadius)
-        {
-            this.stringTop = stringTop;
-            this.stringBottom = stringBottom;
-            this.handleTop = handleTop;
-            this.handleBottom = handleBottom;
-            this.handleWidth = handleWidth;
-            this.handleHeight = handleHeight;
-            this.softLimbHeight = softLimbHeight;
-            this.stringRadius = stringRadius;
-        }
 
         public static BowAnatomy getBowAnatomy(string bowName)
         {
@@ -47,6 +55,26 @@ namespace ValheimVRMod.Utilities
             {
                 return DefaultBowAnatomy;
             }
+        }
+
+        protected BowAnatomy(
+            Vector3 stringTop,
+            Vector3 stringBottom,
+            Vector3 handleTop,
+            Vector3 handleBottom,
+            float handleWidth,
+            float handleHeight,
+            float softLimbHeight,
+            float stringRadius)
+        {
+            this.stringTop = stringTop;
+            this.stringBottom = stringBottom;
+            this.handleTop = handleTop;
+            this.handleBottom = handleBottom;
+            this.handleWidth = handleWidth;
+            this.handleHeight = handleHeight;
+            this.softLimbHeight = softLimbHeight;
+            this.stringRadius = stringRadius;
         }
     }
 }
