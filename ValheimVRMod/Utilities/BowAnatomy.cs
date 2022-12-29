@@ -18,11 +18,11 @@ namespace ValheimVRMod.Utilities
     public readonly float softLimbHeight;
     public readonly float stringRadius;
     
-    private static BowAnatomy DefaultBowAnatomy = new BowAnatomy(new Vector3(0, 0.75f, 0.325f), new Vector3(0, -0.75f, 0.325f), new Vector3(0, 0.312f, 0), new Vector3(0, -0.312f, 0), 0.05f, 0.624f, 0.125f, 0.01f);
+    private static BowAnatomy DefaultBowAnatomy = new BowAnatomy(new Vector3(0, 0.75f, 0.325f), new Vector3(0, -0.75f, 0.325f), new Vector3(0, 0.312f, 0), new Vector3(0, -0.312f, 0), 0.05f, 0.624f, 0.125f, 0.0008f);
     private static Dictionary<string, BowAnatomy> BowAnatomies = new Dictionary<string, BowAnatomy>
     {
         // Note: item name is snipesnap not spinesnap
-        {"$item_bow_snipesnap", new BowAnatomy(new Vector3(0, 0.75f, 0.325f), new Vector3(0, -0.75f, 0.325f), new Vector3(0, 0.23f, 0), new Vector3(0, -0.23f, 0), 0.05f, 0.46f, 0.1f, 0.01f)}
+        {"$item_bow_snipesnap", new BowAnatomy(new Vector3(0, 0.75f, 0.325f), new Vector3(0, -0.75f, 0.325f), new Vector3(0, 0.23f, 0), new Vector3(0, -0.23f, 0), 0.05f, 0.46f, 0.1f, 0.008f)}
     };
            
     protected BowAnatomy(Vector3 stringTop, Vector3 stringBottom, Vector3 handleTop, Vector3 handleBottom, float handleWidth, float handleHeight, float softLimbHeight, float stringRadius) {
