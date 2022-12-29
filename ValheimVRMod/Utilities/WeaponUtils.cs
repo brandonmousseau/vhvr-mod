@@ -159,19 +159,19 @@ namespace ValheimVRMod.Utilities
                     0.4f,  0.4f, 0.4f
                 )}, {
                 "AtgeirBlackmetal", WeaponColData.create(
-                    0.101f,  2.361f, 0,
+                    0.101f,  1.361f, 0,
                     0,  0, 0,
-                    0.0777498f,  0.7300777f, 0.01543969f
+                    0.0777498f,  2.7300777f, 0.01543969f
                 )}, {
                 "AtgeirBronze", WeaponColData.create(
-                    0,  -0.111f, -2.029f,
+                    0,  -0.111f, -1.529f,
                     7.082f,  0, 0,
-                    0.02239758f,  0.1004803f, 0.9769629f
+                    0.02239758f,  0.1004803f, 1.9769629f
                 )}, {
                 "AtgeirIron", WeaponColData.create(
-                    0,  -0.111f, -2.029f,
+                    0,  -0.111f, -1.529f,
                     7.082f,  0, 0,
-                    0.02239758f,  0.1004803f, 0.9769629f
+                    0.02239758f,  0.1004803f, 1.9769629f
                 )}, {
                 "Battleaxe", WeaponColData.create(
                     -0.679f,  3.496f, -0.003f,
@@ -224,9 +224,9 @@ namespace ValheimVRMod.Utilities
                     0.18f,  0.03f, 0.18f
                 )}, {
                 "AtgeirHimminAfl", WeaponColData.create(
-                    0,  2.419f, -0.002f,
+                    0,  1.419f, -0.002f,
                     0, 0, 0,
-                    0.40725f,  0.6230943f, 0.03f
+                    0.40725f,  2.6230943f, 0.03f
                 )}, {
                 "AxeJotunBane", WeaponColData.create(
                     -0.0048f,  0.6406f, 0.001f,
