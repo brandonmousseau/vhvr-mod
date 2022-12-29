@@ -6,8 +6,6 @@ using ValheimVRMod.Utilities;
 namespace ValheimVRMod.Scripts {
     public class BowManager : MonoBehaviour {
         private const float minStringSize = 0.965f;
-        private const bool useCustomShader = false;
-
         private Vector3[] verts;
         private BoneWeight[] boneWeights;
         private bool wasPulling;
@@ -52,6 +50,7 @@ namespace ValheimVRMod.Scripts {
         private Vector3 handleTop = new Vector3(0, 0, 0);
         private Vector3 handleBottom = new Vector3(0, 0, 0);
         private bool canAccessMesh;
+        private bool useCustomShader;
 
         private int[] meshTriangles;
 
@@ -150,6 +149,8 @@ namespace ValheimVRMod.Scripts {
                     }
                 }
             }
+
+            useCustomShader = fallbackBowAnatomy.bowBendingImpl == BowAnatomy.BowBendingImplType.Shader || (fallbackBowAnatomy.bowBendingImpl == BowAnatomy.BowBendingImplType.Auto && !canAccessMesh);
 
             // Calculate vertex bone weights, find the local z coordinates of the top and bottom of the bow handle, and calculate the grip width.
             boneWeights = new BoneWeight[verts.Length];
@@ -263,7 +264,11 @@ namespace ValheimVRMod.Scripts {
                 bindPoses[i] = bones[i].worldToLocalMatrix * transform.localToWorldMatrix;
             }
 
-            if (canAccessMesh) {
+            if (useCustomShader) {
+                // Use custom shader to animate bow bending.
+                ApplyCustomShader();
+            } else {
+                // Use skinned mesh to animate bow bending.
                 MeshRenderer vanillaMeshRenderer = gameObject.GetComponent<MeshRenderer>();
                 Material bowMaterial = vanillaMeshRenderer.material;
                 SkinnedMeshRenderer skinnedMeshRenderer = gameObject.AddComponent<SkinnedMeshRenderer>();
@@ -276,8 +281,6 @@ namespace ValheimVRMod.Scripts {
                 skinnedMeshRenderer.forceMatrixRecalculationPerRender = true;
                 // Destroy the original renderer since we will be using SkinnedMeshRenderer only.
                 Destroy(vanillaMeshRenderer);
-            } else if (useCustomShader) {
-                ApplyCustomShader();
             }
         }
 
@@ -382,7 +385,7 @@ namespace ValheimVRMod.Scripts {
                 lowerLimbBone.localRotation = Quaternion.Euler(-bendAngleDegrees, 0, 0);
             }
             
-            if (!canAccessMesh && useCustomShader) {
+            if (useCustomShader) {
                 Quaternion upperLimbRotation = Quaternion.AngleAxis(bendAngleDegrees, bowRightInObjectSpace);
                 Quaternion lowerLimbRotation = Quaternion.AngleAxis(-bendAngleDegrees, bowRightInObjectSpace);
                 Matrix4x4 upperLimbTransform = Matrix4x4.TRS(handleTopInObjectSpace - upperLimbRotation * handleTopInObjectSpace, upperLimbRotation, scaleOne);
