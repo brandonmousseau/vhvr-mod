@@ -1,9 +1,9 @@
 ManifestFileVersion: 0
-CRC: 1442134191
+CRC: 68937348
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 256f8053439dd2bd4b8cd387effa0e08
+    Hash: ba436e41c2bb68aee640ca2b9e5ed620
   TypeTreeHash:
     serializedVersion: 2
     Hash: 1fe3abd029edb3522ae5dbbc711d0a74
@@ -36,6 +36,7 @@ Assets:
 - Assets/CustomResources/CustomObject/Reel/Reel.prefab
 - Assets/CustomResources/Textures/sit.png
 - Assets/CustomResources/Materials/OutlineMaterial.mat
+- Assets/CustomResources/Materials/BowBendingMaterial.mat
 - Assets/QuickOutline/Resources/Shaders/OutlineMask.shader
 - Assets/CustomResources/Textures/black_screen.png
 - Assets/CustomResources/Materials/vr_panel_unlit.mat

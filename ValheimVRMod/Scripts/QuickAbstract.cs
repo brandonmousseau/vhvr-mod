@@ -118,14 +118,25 @@ namespace ValheimVRMod.Scripts {
         }
         private void Update() {
             // Lock the quick menu's positioin and rotation relative to the vr cam rig so it moves and rotates with the player.
+            if (!quickMenuLocker && GetVRCamRig())
+            {
+                quickMenuLocker = new GameObject().transform;
+                quickMenuLocker.parent = GetVRCamRig();
+                quickMenuLocker.SetPositionAndRotation(transform.position, transform.rotation);
+            }
             transform.SetPositionAndRotation(quickMenuLocker.position, quickMenuLocker.rotation);
-            sphere.transform.position = parent.position;
+            if (sphere)
+            {
+                sphere.transform.position = parent.position;
+            }
             hoverItem();
         }
 
         private void OnDestroy()
         {
             Destroy(wrist);
+            Destroy(quickMenuLocker);
+            Destroy(radialMenu);
         }
         public abstract void UpdateWristBar();
         protected abstract int getElementCount();
@@ -257,7 +268,7 @@ namespace ValheimVRMod.Scripts {
             {
                 radialMenu.gameObject.SetActive(false);
             }
-            else if (hoveredIndex == -1)
+            else if (hoveredIndex == -1 && getElementCount() != 0)
             {
                 radialMenu.gameObject.SetActive(true);
                 var convertedPos = transform.InverseTransformPoint(parent.position);
@@ -265,7 +276,7 @@ namespace ValheimVRMod.Scripts {
                 //var currentangle = Vector3.SignedAngle(transform.up, parent.position - transform.position, -transform.forward);
                 var currentangle = Vector3.SignedAngle(Vector3.up, convertedPos.normalized, -Vector3.forward);
                 var distFromCenter = Vector3.Distance(transform.position, parent.position);
-                if (distFromCenter > 0.07f)
+                if (distFromCenter > 0.07f )
                 {
                     var elementAngle = 360 / getElementCount();
                     var wrappedAngle = currentangle + elementAngle / 2f;

@@ -1056,5 +1056,18 @@ namespace ValheimVRMod.Patches
             new GameObject().AddComponent<VRDamageTexts>().CreateText(lastText.m_textField.text, pos, lastText.m_textField.color, mySelf, __instance.m_textDuration);
         }
     }
+    [HarmonyPatch(typeof(Player), nameof(Player.OnDeath))]
+    class PatchDeath
+    {
+        public static void Postfix(Player __instance)
+        {
+            if (VHVRConfig.NonVrPlayer() || __instance != Player.m_localPlayer)
+            {
+                return;
+            }
+            VRHud.instance.resetHUDDeath();
+            VRGUI.triggerGuiRecenter();
+        }
+    }
 }
 

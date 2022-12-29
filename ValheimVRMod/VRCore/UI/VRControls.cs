@@ -182,9 +182,16 @@ namespace ValheimVRMod.VRCore.UI
             }
             
             if (action.GetStateDown(SteamVR_Input_Sources.Any) || rightClickDown) {
-                if (inPlaceMode() && (buildQuickActionTimer >= 0.3f || !useRightClick)) 
-                    obj.SetActive(true);
-                else if (!inPlaceMode())
+                if (inPlaceMode())
+                {
+                    if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand))
+                    {
+                        buildQuickActionTimer = 1;
+                    }
+                    if ((buildQuickActionTimer >= 0.3f || !useRightClick))
+                        obj.SetActive(true);
+                }
+                else
                     obj.SetActive(true);
             }
 
