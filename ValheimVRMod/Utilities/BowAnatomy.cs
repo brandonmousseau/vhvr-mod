@@ -50,7 +50,7 @@ namespace ValheimVRMod.Utilities
                     /* handleHeight= */ 0.46f,
                     /* softLimbHeight= */ 0.1f,
                     /* stringRadius= */ 0.008f,
-                    /* bowBendingImpl= */ BowBendingImplType.Skinned)
+                    /* bowBendingImpl= */ BowBendingImplType.Auto)
             }
         };
 
