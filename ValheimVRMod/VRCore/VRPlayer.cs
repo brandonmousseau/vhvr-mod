@@ -6,6 +6,7 @@ using RootMotion.FinalIK;
 using UnityEngine;
 using UnityEngine.PostProcessing;
 using UnityEngine.SceneManagement;
+using UnityEngine.SpatialTracking;
 using UnityStandardAssets.ImageEffects;
 using ValheimVRMod.Scripts;
 using ValheimVRMod.Patches;
@@ -206,6 +207,23 @@ namespace ValheimVRMod.VRCore
             } else roomscaleMovement = Vector3.zero;
         }
 
+        // Fixes an issue on Pimax HMDs that causes rotation to be incorrect:
+        // See: https://www.reddit.com/r/Pimax/comments/qhkrfp/pimax_unity_xr_plugin_issue/
+        private static void UpdateTrackedPoseDriverPoseSource()
+        {
+            var hmd = Valve.VR.InteractionSystem.Player.instance.hmdTransform;
+            var trackedPoseDriver = hmd.gameObject.GetComponent<TrackedPoseDriver>();
+            if (trackedPoseDriver == null)
+            {
+                LogWarning("Null TrackedPoseDriver on HMD transform.");
+            }
+            else
+            {
+                LogInfo("Setting TrackedPoseDriver.poseSource to Head.");
+                trackedPoseDriver.SetPoseSource(trackedPoseDriver.deviceType, TrackedPoseDriver.TrackedPose.Head);
+            }
+        }
+
         void maybeUpdateHeadPosition()
         {
             if (VHVRConfig.AllowHeadRepositioning())
@@ -393,6 +411,7 @@ namespace ValheimVRMod.VRCore
                 if (_instance != null)
                 {
                     DisableRigidBodies(_instance);
+                    UpdateTrackedPoseDriverPoseSource();
                 }
             }
             return _instance != null;

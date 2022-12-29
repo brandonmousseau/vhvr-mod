@@ -78,6 +78,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\Unity\build\ValheimVR_Data\Managed\Unity.XR.OpenVR.dll</HintPath>
     </Reference>
+    <Reference Include="UnityEngine.SpatialTracking">
+      <HintPath>..\Unity\build\ValheimVR_Data\Managed\UnityEngine.SpatialTracking.dll</HintPath>
+    </Reference>
     <Reference Include="UnityEngine.UI, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\Unity\build\ValheimVR_Data\Managed\UnityEngine.UI.dll</HintPath>
