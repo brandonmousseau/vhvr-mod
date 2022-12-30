@@ -27,8 +27,8 @@ namespace ValheimVRMod.Utilities
         public readonly BowBendingImplType bowBendingImpl;
 
         private static BowAnatomy DefaultBowAnatomy = new BowAnatomy(
-            /* stringTop= */ new Vector3(0, 0.75f, 0.325f),
-            /* stringBottom= */ new Vector3(0, -0.75f, 0.325f),
+            /* stringTop= */ new Vector3(0, 0.75f, -0.325f),
+            /* stringBottom= */ new Vector3(0, -0.75f, -0.325f),
             /* handleTop= */ new Vector3(0, 0.312f, 0),
             /* handleBottom= */ new Vector3(0, -0.312f, 0),
             /* handleWidth= */ 0.05f,
@@ -42,13 +42,13 @@ namespace ValheimVRMod.Utilities
             {
                 "$item_bow_snipesnap", // Note: item name is snipesnap not spinesnap
                 new BowAnatomy(
-                    /* stringTop= */ new Vector3(0, 0.75f, 0.325f),
-                    /* stringBottom= */ new Vector3(0, -0.75f, 0.325f),
-                    /* handleTop= */ new Vector3(0, 0.23f, 0),
-                    /* handleBottom= */ new Vector3(0, -0.23f, 0),
+                    /* stringTop= */ new Vector3(0, 0.75f, -0.325f),
+                    /* stringBottom= */ new Vector3(0, -0.75f, -0.325f),
+                    /* handleTop= */ new Vector3(0, 0.26f, 0),
+                    /* handleBottom= */ new Vector3(0, -0.26f, 0),
                     /* handleWidth= */ 0.05f,
-                    /* handleHeight= */ 0.46f,
-                    /* softLimbHeight= */ 0.1f,
+                    /* handleHeight= */ 0.52f,
+                    /* softLimbHeight= */ 0.15f,
                     /* stringRadius= */ 0.008f,
                     /* bowBendingImpl= */ BowBendingImplType.Auto)
             }
