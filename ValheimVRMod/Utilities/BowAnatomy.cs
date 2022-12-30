@@ -12,8 +12,8 @@ namespace ValheimVRMod.Utilities
         public enum BowBendingImplType
         {
             Shader, // Use custom shader for bow bending animation
-            Skinned, // Attempt to use skinned mesh render for bow animation
-            Auto // Use skinned mesh render for bow animation if the mesh can be accessed or use custom shader otherwise
+            Skinned, // Attempt to use skinned mesh renderer for bow bending animation
+            Auto // Use skinned mesh renderer for bow bending animation if the mesh can be accessed or use custom shader otherwise
         }
 
         public readonly Vector3 stringTop;
