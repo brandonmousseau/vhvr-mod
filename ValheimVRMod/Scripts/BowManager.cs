@@ -38,7 +38,7 @@ namespace ValheimVRMod.Scripts {
         protected Transform pullStart;
         // A transform centered and the bow handle center with up vector parallel to the string and pointing upward and forward vector pointing toward the shooting direction.
         protected Transform bowOrientation;
-        // An object placed at the nocking point with the direction of the pulling force as its forward direction.
+        // An object placed at the nocking point that moves with the pulling hand.
         protected GameObject pullObj;
         // An object placed at the handle center with the direction of the push force as its forward direction.
         protected GameObject pushObj;
