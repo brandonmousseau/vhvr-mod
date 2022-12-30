@@ -199,13 +199,12 @@ namespace ValheimVRMod.Scripts {
             }
 
             VrikCreator.GetDominantHandConnector().position = pullObj.transform.position;
-            arrowAttach.transform.rotation = pullObj.transform.rotation;
-            arrowAttach.transform.position = pullObj.transform.position;
+            arrowAttach.transform.SetPositionAndRotation(pullObj.transform.position, pushObj.transform.rotation);
             spawnPoint = getArrowRestPosition();
             aimDir = getAimDir();
             if (arrow) {
                 arrow.transform.position = pullObj.transform.position + aimDir * centerToTailDistance;
-                arrow.transform.rotation = Quaternion.LookRotation(aimDir, -bowOrientation.transform.up);
+                arrow.transform.rotation = Quaternion.LookRotation(aimDir, bowOrientation.transform.up);
             }
             var currDrawPercentage = pullPercentage();
             currentMaxDrawPercentage = Math.Max(currDrawPercentage, currentMaxDrawPercentage);
@@ -262,8 +261,7 @@ namespace ValheimVRMod.Scripts {
         }
 
         private bool checkHandNearString() {
-            if (Vector3.Distance(mainHand.position, bowOrientation.transform.TransformPoint(pullStart)) >
-                attachRange) {
+            if (Vector3.Distance(mainHand.position, pullStart.position) > attachRange) {
                 return false;
             }
 
@@ -346,7 +344,7 @@ namespace ValheimVRMod.Scripts {
         private void createChargeIndicator() {
             chargeIndicator = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             chargeIndicator.transform.SetParent(bowOrientation.transform);
-            chargeIndicator.transform.localPosition = new Vector3(0, -VHVRConfig.ArrowRestElevation() * 0.75f, 0);
+            chargeIndicator.transform.localPosition = new Vector3(0, VHVRConfig.ArrowRestElevation() * 0.75f, 0);
             chargeIndicator.transform.localRotation = Quaternion.Euler(90, 0, 0);
             chargeIndicator.layer = LayerUtils.getWorldspaceUiLayer();
             chargeIndicator.SetActive(false);
@@ -360,7 +358,7 @@ namespace ValheimVRMod.Scripts {
 
             drawIndicator = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             drawIndicator.transform.SetParent(bowOrientation.transform);
-            drawIndicator.transform.localPosition = new Vector3(0, -VHVRConfig.ArrowRestElevation() * 0.75f, 0);
+            drawIndicator.transform.localPosition = new Vector3(0, VHVRConfig.ArrowRestElevation() * 0.75f, 0);
             drawIndicator.transform.localRotation = Quaternion.Euler(90, 0, 0);
             drawIndicator.layer = LayerUtils.getWorldspaceUiLayer();
             drawIndicator.SetActive(false);
