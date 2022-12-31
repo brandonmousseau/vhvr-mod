@@ -20,8 +20,7 @@ namespace ValheimVRMod.Scripts {
         // The half width of the grip in the coordinate system of the bow object.
         private float gripLocalHalfWidth = 0;
         // Hard coded bow anatomy data including those used when bow anatomy cannot be computed from mesh data.
-        private BowAnatomy fallbackBowAnatomy;
-        private float handleHeight;
+        private BowAnatomy bowAnatomy;
         private Vector3 handleTop = new Vector3(0, 0, 0);
         private Vector3 handleBottom = new Vector3(0, 0, 0);
         private bool canAccessMesh;
@@ -70,16 +69,15 @@ namespace ValheimVRMod.Scripts {
             bowTransformUpdater.SetParent(bowOrientation, false);
             bowTransformUpdater.SetPositionAndRotation(transform.position, transform.rotation);
 
-            fallbackBowAnatomy = BowAnatomy.getBowAnatomy(Player.m_localPlayer.GetLeftItem().m_shared.m_name);
-            handleHeight = fallbackBowAnatomy.handleHeight;
+            bowAnatomy = BowAnatomy.getBowAnatomy(Player.m_localPlayer.GetLeftItem().m_shared.m_name);
 
             gameObject.GetComponentInChildren<ParticleSystem>()?.gameObject.SetActive(VHVRConfig.EnableBowGlowParticle());
             gameObject.GetComponentInChildren<Light>()?.gameObject.SetActive(VHVRConfig.EnableBowGlowLight());
 
             bowUpInObjectSpace = transform.InverseTransformDirection(bowOrientation.up);
             bowRightInObjectSpace = transform.InverseTransformDirection(bowOrientation.right);
-            float handleTopLocalHeight = Vector3.Dot(transform.InverseTransformPoint(bowOrientation.TransformPoint(new Vector3(0, handleHeight * 0.5f, 0))), bowUpInObjectSpace);
-            float handleBottomLocalHeight = Vector3.Dot(transform.InverseTransformPoint(bowOrientation.TransformPoint(new Vector3(0, -handleHeight * 0.5f, 0))), bowUpInObjectSpace);
+            float handleTopLocalHeight = Vector3.Dot(transform.InverseTransformPoint(bowOrientation.TransformPoint(new Vector3(0, bowAnatomy.handleHeight * 0.5f, 0))), bowUpInObjectSpace);
+            float handleBottomLocalHeight = Vector3.Dot(transform.InverseTransformPoint(bowOrientation.TransformPoint(new Vector3(0, -bowAnatomy.handleHeight * 0.5f, 0))), bowUpInObjectSpace);
             // we need to run this method in thread as it takes longer than a frame and freezes game for a moment
             Thread thread = new Thread(() => initializeRenderersAsync(handleTopLocalHeight, handleBottomLocalHeight, transform.localScale.x));
             thread.Start();
@@ -159,7 +157,7 @@ namespace ValheimVRMod.Scripts {
                 }
             }
 
-            useCustomShader = fallbackBowAnatomy.bowBendingImpl == BowAnatomy.BowBendingImplType.Shader || (fallbackBowAnatomy.bowBendingImpl == BowAnatomy.BowBendingImplType.Auto && !canAccessMesh);
+            useCustomShader = bowAnatomy.bowBendingImpl == BowAnatomy.BowBendingImplType.Shader || (bowAnatomy.bowBendingImpl == BowAnatomy.BowBendingImplType.Auto && !canAccessMesh);
 
             // Calculate vertex bone weights, find the local z coordinates of the top and bottom of the bow handle, and calculate the grip width.
             boneWeights = new BoneWeight[verts.Length];
@@ -204,8 +202,8 @@ namespace ValheimVRMod.Scripts {
             upperLimbBone = new GameObject("BowUpperLimbBone").transform;
             lowerLimbBone = new GameObject("BowLowerLimbBone").transform;
             upperLimbBone.parent = lowerLimbBone.parent = bowOrientation;
-            upperLimbBone.localPosition = new Vector3(0, handleHeight / 2, handleTop.z);
-            lowerLimbBone.localPosition = new Vector3(0, -handleHeight / 2, handleBottom.z);
+            upperLimbBone.localPosition = new Vector3(0, bowAnatomy.handleHeight / 2, handleTop.z);
+            lowerLimbBone.localPosition = new Vector3(0, -bowAnatomy.handleHeight / 2, handleBottom.z);
             upperLimbBone.localRotation = Quaternion.identity;
             lowerLimbBone.localRotation = Quaternion.identity;
         }
@@ -229,12 +227,12 @@ namespace ValheimVRMod.Scripts {
                 handleTop = bowOrientation.InverseTransformPoint(transform.TransformPoint(handleTopInObjectSpace));
                 handleBottom = bowOrientation.InverseTransformPoint(transform.TransformPoint(handleBottomInObjectSpace));
             } else {
-                LogUtils.LogWarning("Cannot access bow mesh, using default bow anatomy");
-                restingStringTopInObjectSpace = transform.InverseTransformPoint(bowOrientation.TransformPoint(fallbackBowAnatomy.stringTop));
-                restingStringBottomInObjectSpace = transform.InverseTransformPoint(bowOrientation.TransformPoint(fallbackBowAnatomy.stringBottom));
-                handleTop = fallbackBowAnatomy.handleTop;
-                handleBottom = fallbackBowAnatomy.handleBottom;
-                gripLocalHalfWidth = fallbackBowAnatomy.handleWidth * 0.5f;
+                LogUtils.LogWarning("Cannot access bow mesh, falling back to hardcoded bow anatomy data");
+                restingStringTopInObjectSpace = transform.InverseTransformPoint(bowOrientation.TransformPoint(bowAnatomy.fallbackStringTop));
+                restingStringBottomInObjectSpace = transform.InverseTransformPoint(bowOrientation.TransformPoint(bowAnatomy.fallbackStringBottom));
+                handleTop = bowAnatomy.fallbackHandleTop;
+                handleBottom = bowAnatomy.fallbackHandleBottom;
+                gripLocalHalfWidth = bowAnatomy.fallbackHandleWidth * 0.5f;
                 handleTopInObjectSpace = transform.InverseTransformVector(bowOrientation.TransformPoint(handleTop) - transform.position);
                 handleBottomInObjectSpace = transform.InverseTransformVector(bowOrientation.TransformPoint(handleBottom) - transform.position);
             }
@@ -260,13 +258,13 @@ namespace ValheimVRMod.Scripts {
             bowBendingMaterial.SetVector("_HandleVector", bowUpInObjectSpace);
             bowBendingMaterial.SetFloat("_HandleTopHeight", Vector3.Dot(handleTopInObjectSpace, bowUpInObjectSpace));
             bowBendingMaterial.SetFloat("_HandleBottomHeight", Vector3.Dot(handleBottomInObjectSpace, bowUpInObjectSpace));
-            bowBendingMaterial.SetFloat("_SoftLimbHeight", fallbackBowAnatomy.softLimbHeight / transform.localScale.y);
+            bowBendingMaterial.SetFloat("_SoftLimbHeight", bowAnatomy.softLimbHeight / transform.localScale.y);
 
             Vector3 stringTopToBottomDirection = (restingStringBottomInObjectSpace - restingStringTopInObjectSpace).normalized;
             bowBendingMaterial.SetVector("_StringTop", new Vector4(restingStringTopInObjectSpace.x, restingStringTopInObjectSpace.y, restingStringTopInObjectSpace.z, 1));
             bowBendingMaterial.SetVector("_StringTopToBottomDirection", new Vector4(stringTopToBottomDirection.x, stringTopToBottomDirection.y, stringTopToBottomDirection.z, 0));
             bowBendingMaterial.SetFloat("_StringLength", (restingStringTopInObjectSpace - restingStringBottomInObjectSpace).magnitude);
-            bowBendingMaterial.SetFloat("_StringRadius", fallbackBowAnatomy.stringRadius);
+            bowBendingMaterial.SetFloat("_StringRadius", bowAnatomy.stringRadius);
 
             return bowBendingMaterial;
         }
