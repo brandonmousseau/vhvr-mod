@@ -1,4 +1,4 @@
-﻿using static ValheimVRMod.Utilities.LogUtils;
+using static ValheimVRMod.Utilities.LogUtils;
 
 using AmplifyOcclusion;
 using System.Reflection;
@@ -712,6 +712,8 @@ namespace ValheimVRMod.VRCore
             if (_vrik != null) {
                 _vrik.enabled = VHVRConfig.UseVrControls() &&
                     inFirstPerson &&
+                    !player.InDodge() &&
+                    !player.IsStaggering() &&
                     validVrikAnimatorState(player.GetComponentInChildren<Animator>());
                 QuickActions.instance.UpdateWristBar();
                 QuickSwitch.instance.UpdateWristBar();
