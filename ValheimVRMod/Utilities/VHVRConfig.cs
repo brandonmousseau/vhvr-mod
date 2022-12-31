@@ -116,6 +116,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> useAmplifyOcclusion;
         private static ConfigEntry<float> taaSharpenAmmount;
         private static ConfigEntry<float> nearClipPlane;
+        private static ConfigEntry<string> bowGlow;
 
         // Motion Control Settings
         private static ConfigEntry<bool> useArrowPredictionGraphic;
@@ -665,6 +666,13 @@ namespace ValheimVRMod.Utilities
                                         new ConfigDescription("This can be used to adjust the distance where where anything inside will be clipped out and not rendered. You can try adjusting this if you experience" +
                                                               " problems where you see the nose of the player character for example.",
                                         new AcceptableValueRange<float>(0.05f, 0.5f)));
+            bowGlow = config.Bind("Graphics",
+                                  "BowGlow",
+                                  "None",
+                                  new ConfigDescription(
+                                      "Whether the glowing effect of the bow (if any in the Vanilla game) should be enabled. Disable it if you find the glow affects you aim negatively.",
+                                      new AcceptableValueList<string>(new string[] {"None", "LightWithoutParticles", "Full"})));
+
         }
 
         private static void InitializeMotionControlSettings() {
@@ -896,6 +904,16 @@ namespace ValheimVRMod.Utilities
         public static bool UseAmplifyOcclusion()
         {
             return useAmplifyOcclusion.Value;
+        }
+
+        public static bool EnableBowGlowParticle()
+        {
+            return bowGlow.Value == "Full";
+        }
+
+        public static bool EnableBowGlowLight()
+        {
+            return bowGlow.Value == "Full" || bowGlow.Value == "LightWithoutParticles";
         }
 
         public static float GetTaaSharpenAmmount()
