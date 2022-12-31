@@ -133,6 +133,10 @@ namespace ValheimVRMod.Scripts {
             {
                 return false;
             }
+            if (Player.m_localPlayer.IsStaggering())
+            {
+                return false;
+            }
 
             // if attack is vertical, we can only hit one target at a time
             if (attack.m_attackType != Attack.AttackType.Horizontal  && 

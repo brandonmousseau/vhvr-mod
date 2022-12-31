@@ -99,7 +99,18 @@ namespace ValheimVRMod.VRCore.UI
             }
         }
 
-        public void Update()
+        public void OnRenderObject()
+        {
+            if (ensureGuiCanvas())
+            {
+                if (!USING_OVERLAY)
+                {
+                    updateUiPanel();
+                    maybeInitializePointers();
+                }
+            }
+        }
+        public void FixedUpdate()
         {
             if (ensureGuiCanvas())
             {
@@ -187,13 +198,18 @@ namespace ValheimVRMod.VRCore.UI
                 if (playerInstance.IsAttachedToShip())
                 {
                     // Always lock the UI to the forward direction of ship when sailing.
-                    Vector3 forwardDirection = Vector3.ProjectOnPlane(Player.m_localPlayer.m_attachPoint.forward, Vector3.up).normalized;
+                    var upTarget = Vector3.up;
+                    if (VHVRConfig.IsShipImmersiveCamera())
+                    {
+                        upTarget = VRPlayer.instance.transform.up;
+                    }
+                    Vector3 forwardDirection = Vector3.ProjectOnPlane(Player.m_localPlayer.m_attachPoint.forward, upTarget).normalized;
                     _uiPanel.transform.rotation = Quaternion.LookRotation(forwardDirection, VRPlayer.instance.transform.up);
                     _uiPanel.transform.position = playerInstance.transform.position + _uiPanel.transform.rotation * offsetPosition;
                     return;
                 }
                 _uiPanel.transform.localScale = new Vector3(VHVRConfig.GetUiPanelSize() * GUI_DIMENSIONS.x / GUI_DIMENSIONS.y,
-                                                        VHVRConfig.GetUiPanelSize(), 1f);
+                                                        VHVRConfig.GetUiPanelSize(), 0.00001f);
                 var currentDirection = getCurrentGuiDirection();
                 if (isRecentering)
                 {
@@ -226,7 +242,7 @@ namespace ValheimVRMod.VRCore.UI
             }
             float ratio = (float)GUI_DIMENSIONS.x / (float)GUI_DIMENSIONS.y;
             _uiPanel.transform.localScale = new Vector3(VHVRConfig.GetUiPanelSize() * ratio,
-                                                        VHVRConfig.GetUiPanelSize(), 1f);
+                                                        VHVRConfig.GetUiPanelSize(), 0.00001f);
         }
 
         private bool shouldLockDynamicGuiPosition()

@@ -94,6 +94,8 @@ namespace ValheimVRMod.VRCore
         private static SteamVR_LaserPointer _rightPointer;
         private string _preferredHand;
 
+        private float timerLeft;
+        private float timerRight;
         public static Hand leftHand { get { return _leftHand;} }
         public static Hand rightHand { get { return _rightHand;} }
 
@@ -196,7 +198,17 @@ namespace ValheimVRMod.VRCore
             UpdateAmplifyOcclusionStatus();
             Pose.checkInteractions();
             CheckSneakRoomscale();
-            
+
+            if (timerLeft > 0)
+            {
+                timerLeft -= Time.deltaTime;
+                leftHand.hapticAction.Execute(0f, 0.1f, 20f, 0.1f, SteamVR_Input_Sources.LeftHand);
+            }
+            if (timerRight > 0)
+            {
+                timerRight -= Time.deltaTime;
+                rightHand.hapticAction.Execute(0f, 0.1f, 20f, 0.1f, SteamVR_Input_Sources.RightHand);
+            }
         }
 
         private void FixedUpdate() 
@@ -1020,6 +1032,12 @@ namespace ValheimVRMod.VRCore
                 vrCamPosition.y = 0;
                 _vrCameraRig.localPosition = -vrCamPosition;
             }
+        }
+
+        public void TriggerHandVibration(float time)
+        {
+            timerLeft = time;
+            timerRight = time;
         }
     }
 }

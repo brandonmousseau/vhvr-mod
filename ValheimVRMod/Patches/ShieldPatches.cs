@@ -6,6 +6,7 @@ using ValheimVRMod.VRCore;
 using Valve.VR;
 using Valve.VR.InteractionSystem;
 using UnityEngine;
+using System.Collections;
 
 namespace ValheimVRMod.Patches {
     
@@ -76,7 +77,7 @@ namespace ValheimVRMod.Patches {
             float duration = 0f;
             float freq = 100f;
             float amplitude = 0f;
-            if (___m_blockTimer < ShieldBlock.blockTimerTolerance) {
+            if (___m_blockTimer < Block.blockTimerTolerance) {
                 duration = 0.7f;
                 amplitude = 0.3f;
             }
@@ -85,19 +86,25 @@ namespace ValheimVRMod.Patches {
                 amplitude = 0.2f;
             }
 
-            switch (handHapticTrigger)
+            if (__instance.m_staggerDamage < __instance.GetStaggerTreshold()) 
             {
-                case HandHapticTrigger.BothHand:
-                    VRPlayer.leftHand.hapticAction.Execute(delay, duration, freq, amplitude, SteamVR_Input_Sources.LeftHand);
-                    VRPlayer.rightHand.hapticAction.Execute(delay, duration, freq, amplitude, SteamVR_Input_Sources.RightHand);
-                    break;
-                case HandHapticTrigger.LeftHand:
-                    VRPlayer.leftHand.hapticAction.Execute(delay, duration, freq, amplitude, SteamVR_Input_Sources.LeftHand);
-                    break;
-                case HandHapticTrigger.RightHand:
-                    VRPlayer.rightHand.hapticAction.Execute(delay, duration, freq, amplitude, SteamVR_Input_Sources.RightHand);
-                    break;
+                switch (handHapticTrigger)
+                {
+                    case HandHapticTrigger.BothHand:
+                        VRPlayer.leftHand.hapticAction.Execute(delay, duration, freq, amplitude, SteamVR_Input_Sources.LeftHand);
+                        VRPlayer.rightHand.hapticAction.Execute(delay, duration, freq, amplitude, SteamVR_Input_Sources.RightHand);
+                        break;
+                    case HandHapticTrigger.LeftHand:
+                        VRPlayer.leftHand.hapticAction.Execute(delay, duration, freq, amplitude, SteamVR_Input_Sources.LeftHand);
+                        break;
+                    case HandHapticTrigger.RightHand:
+                        VRPlayer.rightHand.hapticAction.Execute(delay, duration, freq, amplitude, SteamVR_Input_Sources.RightHand);
+                        break;
+                }
             }
+            
+
+            
 
             ShieldBlock.instance?.block();
             WeaponBlock.instance?.block();
@@ -169,6 +176,22 @@ namespace ValheimVRMod.Patches {
             ShieldBlock.instance?.resetBlocking();
             WeaponBlock.instance?.resetBlocking();
             FistBlock.instance?.resetBlocking();
+        }
+    }
+    [HarmonyPatch(typeof(Character),nameof(Character.AddStaggerDamage))]
+    class PatchStaggerDamage
+    {
+        static void Postfix(Character __instance)
+        {
+            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls())
+            {
+                return;
+            }
+
+            if (__instance.m_staggerDamage >= __instance.GetStaggerTreshold())
+            {
+                VRPlayer.vrPlayerInstance.TriggerHandVibration(1.2f);
+            }
         }
     }
 }

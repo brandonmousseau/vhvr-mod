@@ -239,7 +239,6 @@ namespace ValheimVRMod.Patches
 
                 if(attachPoint)
                 {
-                    VRManager.tryRecenter();
                     // Rotate VRPlayer together with delta ship rotation
                     var attachmentHeading = attachPoint.transform.forward;
                     attachmentHeading.y = 0;
@@ -250,7 +249,8 @@ namespace ValheimVRMod.Patches
                         upTarget = Vector3.up;
                     }
                     __instance.m_lookYaw = Quaternion.LookRotation(attachmentHeading, upTarget);
-
+                    VRPlayer.headPositionInitialized = false;
+                    VRPlayer.vrPlayerInstance?.ResetRoomscaleCamera();
                     Player_SetMouseLook_Patch.lastAttachmentHeading = null;
                 }
             }
@@ -387,9 +387,8 @@ namespace ValheimVRMod.Patches
                 attachmentHeading.y = 0;
                 attachmentHeading.Normalize();
                 __instance.m_lookYaw = Quaternion.LookRotation(attachmentHeading, Vector3.up);
-                float deltaRotation = __instance.transform.rotation.eulerAngles.y - Valve.VR.InteractionSystem.Player.instance.hmdTransform.rotation.eulerAngles.y;
-                VRPlayer.instance.transform.localRotation *= Quaternion.AngleAxis(deltaRotation, Vector3.up);
-                VRManager.tryRecenter();
+                VRPlayer.headPositionInitialized = false;
+                VRPlayer.vrPlayerInstance?.ResetRoomscaleCamera();
                 Player_SetMouseLook_Patch.previousHeadLocalRotation = null;
             }
         }

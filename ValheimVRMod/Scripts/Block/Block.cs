@@ -96,6 +96,10 @@ namespace ValheimVRMod.Scripts.Block {
         }
 
         public bool isBlocking() {
+            if (Player.m_localPlayer.IsStaggering())
+            {
+                return false;
+            }
             if (VHVRConfig.BlockingType() == "GrabButton")
             {
                 return SteamVR_Actions.valheim_Grab.GetState(currhand) && !_meshCooldown.inCoolDown() && _blocking;

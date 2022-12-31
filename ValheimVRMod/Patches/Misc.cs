@@ -228,11 +228,13 @@ namespace ValheimVRMod.Patches
     {
         public static void Postfix(ParticleMist __instance)
         {
+            if (VHVRConfig.NonVrPlayer() || !__instance)
+            {
+                return;
+            }
             var rend = __instance.m_ps.GetComponent<ParticleSystemRenderer>();
             rend.allowRoll = false;
             rend.renderMode = ParticleSystemRenderMode.VerticalBillboard;
         }
     }
-
-
 }
