@@ -73,6 +73,9 @@ namespace ValheimVRMod.Scripts {
             fallbackBowAnatomy = BowAnatomy.getBowAnatomy(Player.m_localPlayer.GetLeftItem().m_shared.m_name);
             handleHeight = fallbackBowAnatomy.handleHeight;
 
+            gameObject.GetComponentInChildren<ParticleSystem>()?.gameObject.SetActive(VHVRConfig.EnableBowGlowParticle());
+            gameObject.GetComponentInChildren<Light>()?.gameObject.SetActive(VHVRConfig.EnableBowGlowLight());
+
             bowUpInObjectSpace = transform.InverseTransformDirection(bowOrientation.up);
             bowRightInObjectSpace = transform.InverseTransformDirection(bowOrientation.right);
             float handleTopLocalHeight = Vector3.Dot(transform.InverseTransformPoint(bowOrientation.TransformPoint(new Vector3(0, handleHeight * 0.5f, 0))), bowUpInObjectSpace);
