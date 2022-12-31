@@ -212,11 +212,6 @@ namespace ValheimVRMod.Scripts
                         distLimit = 0.09f;
                         originMultiplier = 0.2f;
                         break;
-                    case "atgeir_attack":
-                        distMultiplier = -0.18f;
-                        distLimit = 0.18f;
-                        originMultiplier = -0.7f;
-                        break;
                     case "crossbow_fire":
                         originMultiplier = 0.35f;
                         forceRotateHand = false;
