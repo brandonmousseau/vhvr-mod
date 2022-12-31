@@ -9,8 +9,19 @@ namespace ValheimVRMod.Scripts {
         private bool isRightHand;
         private bool isMainHand;
         private Quaternion handFixedRotation;
+        private Hand _sourceHand;
         private Transform sourceTransform;
-        private Hand sourceHand;
+        
+        public Hand sourceHand {
+            get
+            {
+                return _sourceHand;
+            }
+            set {
+                _sourceHand = value;
+                ensureSourceTransform();
+            }
+        }
 
         private void Start() {
             isRightHand = sourceHand == VRPlayer.rightHand;
@@ -32,11 +43,6 @@ namespace ValheimVRMod.Scripts {
             }
 
             return true;
-        }
-
-        public void SetSourceHand(Hand sourceHand) {
-            this.sourceHand = sourceHand;
-            ensureSourceTransform();
         }
 
         private void Update() {
