@@ -10,16 +10,11 @@ namespace ValheimVRMod.Scripts {
         private bool isMainHand;
         private Quaternion handFixedRotation;
         private Transform sourceTransform;
-        public Hand sourceHand;
+        private Hand sourceHand;
 
         private void Start() {
             isRightHand = sourceHand == VRPlayer.rightHand;
             isMainHand = isRightHand ^ VHVRConfig.LeftHanded();
-            foreach (var t in sourceHand.GetComponentsInChildren<Transform>()) {
-                if (t.name == "wrist_r") {
-                    sourceTransform = t;
-                }
-            }
         }
 
         void OnRenderObject() {
@@ -38,7 +33,12 @@ namespace ValheimVRMod.Scripts {
 
             return true;
         }
-        
+
+        public void SetSourceHand(Hand sourceHand) {
+            this.sourceHand = sourceHand;
+            ensureSourceTransform();
+        }
+
         private void Update() {
 
             if (!isUnequiped() || Game.IsPaused()) {
@@ -49,7 +49,24 @@ namespace ValheimVRMod.Scripts {
             updateFingerRotations();
         }
 
+        private void ensureSourceTransform()
+        {
+            if (sourceTransform != null)
+            {
+                return;
+            }
+
+            foreach (var t in sourceHand.GetComponentsInChildren<Transform>())
+            {
+                if (t.name == "wrist_r")
+                {
+                    sourceTransform = t;
+                }
+            }
+        }
+
         private void updateFingerRotations() {
+            ensureSourceTransform();
 
             for (int i = 0; i < transform.childCount; i++) {
 
