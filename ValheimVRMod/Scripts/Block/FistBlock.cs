@@ -42,12 +42,14 @@ namespace ValheimVRMod.Scripts.Block {
                 var leftHandtoUp = Vector3.Dot(up, leftHandDir);
                 var leftHandtoHit = Vector3.Dot(hitDir, leftHandDir);
                 var leftHandtoRight = Vector3.Dot(right, leftHandDir);
-                var leftHandBlock = (leftHandtoHit > -0.6f && leftHandtoHit < 0.6f) && (leftHandtoUp > -0.1f) && (leftHandtoRight > -0.1f); ;
+                var leftHandLateralOffset = Vector3.Dot(VRPlayer.leftHand.transform.position - Player.m_localPlayer.transform.position, right);
+                var leftHandBlock = leftHandtoHit > -0.6f && leftHandtoHit < 0.6f && leftHandtoUp > -0.1f && leftHandtoRight > -0.5f && leftHandLateralOffset > -0.2f;
 
                 var rightHandtoUp = Vector3.Dot(up, rightHandDir);
                 var rightHandtoHit = Vector3.Dot(hitDir, rightHandDir);
                 var rightHandtoLeft = Vector3.Dot(left, rightHandDir);
-                var rightHandBlock = (rightHandtoHit > -0.6f && rightHandtoHit < 0.6f) && (rightHandtoUp > -0.1f) && (rightHandtoLeft > -0.1f);
+                var rightHandLateralOffset = Vector3.Dot(VRPlayer.rightHand.transform.position - Player.m_localPlayer.transform.position, right);
+                var rightHandBlock = rightHandtoHit > -0.6f && rightHandtoHit < 0.6f && rightHandtoUp > -0.1f && rightHandtoLeft > -0.5f && rightHandLateralOffset < 0.2f;
 
                 _blocking = leftHandBlock && rightHandBlock;
             }
