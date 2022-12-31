@@ -23,6 +23,9 @@ namespace ValheimVRMod.Scripts
         private float shieldSize = 1f;
         private bool isOtherHandWeapon = false;
 
+        bool applyMistwalkerParticleFix;
+        ParticleSystem mistwalkerParticleSystem;
+        Transform mistwalkerTransform;
 
         public enum isTwoHanded
         {
@@ -40,7 +43,14 @@ namespace ValheimVRMod.Scripts
                 item = Player.m_localPlayer.GetLeftItem();
                 isOtherHandWeapon = true;
             }
-                
+
+            if (item.m_shared.m_name == "$item_sword_mistwalker")
+            {
+                applyMistwalkerParticleFix = true;
+                mistwalkerParticleSystem = gameObject.GetComponentInChildren<ParticleSystem>();
+                mistwalkerTransform = gameObject.GetComponentInChildren<MeshFilter>().transform;
+            }
+
             attack = item.m_shared.m_attack.Clone();
 
             rotSave = new GameObject();
@@ -80,7 +90,13 @@ namespace ValheimVRMod.Scripts
         private void OnRenderObject()
         {
             WieldHandle();
+            if (applyMistwalkerParticleFix)
+            {
+                // The particle system of the glowing effect on Mistwalker for some reason needs it rotation updated explicitly in order to follow the sword in VR.
+                mistwalkerParticleSystem.transform.rotation = mistwalkerTransform.rotation;
+            }
         }
+
         private void WieldHandle()
         {
             weaponForward = transform.forward;
