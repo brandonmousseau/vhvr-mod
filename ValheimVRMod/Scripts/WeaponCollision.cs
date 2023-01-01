@@ -133,7 +133,7 @@ namespace ValheimVRMod.Scripts {
             {
                 return false;
             }
-            if (Player.m_localPlayer.IsStaggering())
+            if (Player.m_localPlayer.IsStaggering() || Player.m_localPlayer.InDodge())
             {
                 return false;
             }
