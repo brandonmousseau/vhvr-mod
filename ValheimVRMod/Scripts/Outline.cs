@@ -114,7 +114,7 @@ public class Outline : MonoBehaviour {
     }
 
     outlineMaskMaterial = new Material(sharedOutlineMaskMaterial);
-    outlineFillMaterial = new Material(sharedOutlineMaskMaterial);
+    outlineFillMaterial = new Material(sharedOutlineFillMaterial);
   }
 
   void OnEnable() {
