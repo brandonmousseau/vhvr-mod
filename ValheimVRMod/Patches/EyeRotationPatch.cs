@@ -106,6 +106,10 @@ namespace ValheimVRMod.Patches
                 wasAttached = false;
             }
 
+            if (Player.m_localPlayer.InDodge())
+            {
+                return;
+            }
 
             // Calculate the current head local rotation
             float currentHeadLocalRotation = Valve.VR.InteractionSystem.Player.instance.hmdTransform.localRotation.eulerAngles.y;
@@ -116,7 +120,7 @@ namespace ValheimVRMod.Patches
                 
                 // Rotate the look yaw by the amount the player rotated their head since last iteration
                 ___m_lookYaw *= Quaternion.AngleAxis(deltaRotation, Vector3.up);
-        
+
                 // Rotate the VRPlayer to match the current yaw
                 // to offset the rotation the VRPlayer will experience due to rotation of yaw.
                 VRPlayer.instance.transform.localRotation *= Quaternion.AngleAxis(-deltaRotation, Vector3.up);
@@ -161,7 +165,7 @@ namespace ValheimVRMod.Patches
             {
                 return;
             }
-            if (VRPlayer.attachedToPlayer)
+            if (VRPlayer.attachedToPlayer && !Player.m_localPlayer.InDodge())
             {
                 var hmdTransform = Valve.VR.InteractionSystem.Player.instance.hmdTransform;
                 // Set the eye rotation equal to HMD rotation
