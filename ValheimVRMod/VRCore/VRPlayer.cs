@@ -774,6 +774,9 @@ namespace ValheimVRMod.VRCore
             {
                 // Head bone and Player#m_head has different scales than the player, therefore directly parenting the camera to them should be avoided lest it changes the appeared scale of the world.
                 _instance.transform.position = ensureDodgingHeadOrientation().position;
+                if (VHVRConfig.ImmersiveDodgeRoll()) {
+                    _instance.transform.rotation = ensureDodgingHeadOrientation().rotation;
+                }
             }
         }
 
