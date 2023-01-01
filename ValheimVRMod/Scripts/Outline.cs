@@ -76,8 +76,10 @@ public class Outline : MonoBehaviour {
   private List<ListVector3> bakeValues = new List<ListVector3>();
 
   private Renderer[] renderers;
-  private Material outlineMaskMaterial;
-  private Material outlineFillMaterial;
+  private static Material sharedOutlineMaskMaterial;
+  private static Material sharedOutlineFillMaterial;
+  private Material OutlineMaskMaterial;
+  private Material OutlineFillMaterial;
 
   private bool needsUpdate;
 
@@ -102,11 +104,17 @@ public class Outline : MonoBehaviour {
       return;
     }
     
-    outlineMaskMaterial = Instantiate(VRAssetManager.GetAsset<Material>("OutlineMask"));
-    outlineFillMaterial = Instantiate(VRAssetManager.GetAsset<Material>("OutlineFill"));
+    if (sharedOutlineMaskMaterial == null) {
+      sharedOutlineMaskMaterial = Instantiate(VRAssetManager.GetAsset<Material>("OutlineMask"));
+      sharedOutlineMaskMaterial.name = "OutlineMask (Instance)";
+    }
+    if (sharedOutlineFillMaterial == null) {
+      sharedOutlineFillMaterial = Instantiate(VRAssetManager.GetAsset<Material>("OutlineFill"));
+      sharedOutlineMaskMaterial.name = "OutlineFill (Instance)";
+    }
 
-    outlineMaskMaterial.name = "OutlineMask (Instance)";
-    outlineFillMaterial.name = "OutlineFill (Instance)";
+    outlineMaskMaterial = new Material(sharedOutlineMaskMaterial);
+    outlineFillMaterial = new Material(sharedOutlineMaskMaterial);
   }
 
   void OnEnable() {
