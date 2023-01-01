@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using ValheimVRMod.VRCore;
 using ValheimVRMod.VRCore.UI;
 using HarmonyLib;
@@ -889,7 +889,7 @@ namespace ValheimVRMod.Patches {
     [HarmonyPatch(typeof(Player), "UpdateDodge")]
     class UpdateDodgeVr
     {
-        static float currdodgetimer = 0f;
+        public static float currdodgetimer { get; private set; } = 0f;
         static Vector3 currDodgeDir;
         static bool Prefix(Player __instance, float dt)
         {
