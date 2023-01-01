@@ -67,13 +67,18 @@ namespace ValheimVRMod.Scripts {
             outline.OutlineColor = FullOutlineColor;
             outline.OutlineMode = Outline.Mode.OutlineVisible;
         }
+
+        private static Color GetOutlineColor(Color fullColor, Color hiddenColor, float percentage)
+        {
+            return Color.Lerp(hiddenColor, fullColor, percentage);
+        }
         
         private void FixedUpdate() {
             if (outline == null)
             {
                 return;
             }
-            outline.OutlineColor = Color.Lerp(HiddenOutlineColor, FullOutlineColor, Mathf.Max(cooldown, 0) / cooldownStart);
+            outline.OutlineColor = GetOutlineColor(FullOutlineColor, HiddenOutlineColor, Mathf.Max(cooldown, 0) / cooldownStart);
             if (! inCoolDown()) {
                 return;
             }
