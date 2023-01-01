@@ -16,6 +16,7 @@ namespace ValheimVRMod.Scripts.Block {
         
         private void Awake() {
             _meshCooldown = gameObject.AddComponent<MeshCooldown>();
+            _meshCooldown.keepOutlineInstance = true;
             instance = this;
             hand = VHVRConfig.LeftHanded() ? VRPlayer.leftHand.transform : VRPlayer.rightHand.transform;
             offhand = VHVRConfig.LeftHanded() ? VRPlayer.rightHand.transform : VRPlayer.leftHand.transform;
