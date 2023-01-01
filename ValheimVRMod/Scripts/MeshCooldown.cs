@@ -3,7 +3,7 @@ using ValheimVRMod.Utilities;
 
 namespace ValheimVRMod.Scripts {
     public class MeshCooldown : MonoBehaviour {
-        public string blockType;
+        public bool keepOutlineInstance = false;
 
         private static readonly Color FullOutlineColor = Color.red;
         private static readonly Color HiddenOutlineColor = new Color(1, 0, 0, 0);
@@ -43,8 +43,10 @@ namespace ValheimVRMod.Scripts {
             return dmgMultiplier;
         }
 
-        void Awake() {
-            outline = gameObject.AddComponent<Outline>();
+        private void ensureOutline() {
+            if (outline == null) {
+                outline = gameObject.AddComponent<Outline>();
+            }
         }
 
         void OnDisable() {
@@ -60,6 +62,7 @@ namespace ValheimVRMod.Scripts {
         }
 
         private void resetOutline() {
+            ensureOutline();
             outline.OutlineWidth = 10;
             outline.OutlineColor = FullOutlineColor;
             outline.OutlineMode = Outline.Mode.OutlineVisible;
@@ -75,6 +78,10 @@ namespace ValheimVRMod.Scripts {
            
             if (! inCoolDown()) {
                 outline.OutlineMode = Outline.Mode.OutlineHidden;
+                if (!keepOutlineInstance) {
+                    Destroy(outline);
+                    outline = null;                    
+                }
                 
                 if (sharedInstance == this) {
                     staminaDrained = false;
