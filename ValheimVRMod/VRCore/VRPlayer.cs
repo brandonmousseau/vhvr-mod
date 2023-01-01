@@ -17,6 +17,7 @@ using Valve.VR.Extras;
 using Valve.VR.InteractionSystem;
 using Pose = ValheimVRMod.Utilities.Pose;
 using ValheimVRMod.Scripts.Block;
+using ValheimVRMod.Patches;
 
 /**
  * VRPlayer manages instantiating the SteamVR Player
@@ -772,12 +773,23 @@ namespace ValheimVRMod.VRCore
             }
             else if (attachedToPlayer)
             {
+                float smoothener = GetDodgeExitSmoothener();
                 // Head bone and Player#m_head has different scales than the player, therefore directly parenting the camera to them should be avoided lest it changes the appeared scale of the world.
-                _instance.transform.position = ensureDodgingHeadOrientation().position;
+                Vector3 nonDodgingHeadPosition = _instance.transform.position;
+                _instance.transform.position = Vector3.Lerp(ensureDodgingHeadOrientation().position, nonDodgingHeadPosition, smoothener);
                 if (VHVRConfig.ImmersiveDodgeRoll()) {
                     _instance.transform.rotation = ensureDodgingHeadOrientation().rotation;
+                    Quaternion fullDodgeHeadRotation = _instance.transform.localRotation;
+                    _instance.transform.localRotation = Quaternion.Lerp(fullDodgeHeadRotation, headRotationBeforeDodge, smoothener);
                 }
             }
+        }
+
+        // The camera transform at the end of a dodge roll animation may not be the same as its non-dodging equivalent so we need to use a lerp to ensure an smooth exit.
+        private float GetDodgeExitSmoothener()
+        {
+            float threshold = 0.1f;
+            return UpdateDodgeVr.currdodgetimer > threshold ? 0 : (threshold - UpdateDodgeVr.currdodgetimer) / threshold;
         }
 
         private bool validVrikAnimatorState(Animator animator)
