@@ -23,9 +23,8 @@ namespace ValheimVRMod.Scripts
         private float shieldSize = 1f;
         private bool isOtherHandWeapon = false;
 
-        bool applyParticleFix;
-        ParticleSystem weaponParticleSystem;
-        Transform particleFixTransform;
+        ParticleSystem particleSystem;
+        Transform particleSystemTransformUpdater;
 
         public enum isTwoHanded
         {
@@ -44,24 +43,14 @@ namespace ValheimVRMod.Scripts
                 isOtherHandWeapon = true;
             }
 
-            if (item.m_shared.m_name == "$item_sword_mistwalker")
-            {
-                applyParticleFix = true;
-                weaponParticleSystem = gameObject.GetComponentInChildren<ParticleSystem>();
-                particleFixTransform = gameObject.GetComponentInChildren<MeshFilter>().transform;
-            }
-            else
-            {
-                var particleItem = gameObject.GetComponentInChildren<ParticleSystem>();
-                if (particleItem)
-                {
-                    applyParticleFix = true;
-                    weaponParticleSystem = particleItem;
-                    particleFixTransform = transform;
-                }
-            }
 
-            
+            particleSystem = gameObject.GetComponentInChildren<ParticleSystem>();
+            if (particleSystem != null)
+            {
+                particleSystemTransformUpdater = new GameObject().transform;
+                particleSystemTransformUpdater.parent = transform;
+                particleSystemTransformUpdater.SetPositionAndRotation(particleSystem.transform.position, particleSystem.transform.rotation);
+            }
 
             attack = item.m_shared.m_attack.Clone();
 
@@ -97,16 +86,19 @@ namespace ValheimVRMod.Scripts
         {
             ResetOffset();
             Destroy(rotSave);
+            if (particleSystemTransformUpdater != null)
+            {
+                Destroy(particleSystemTransformUpdater.gameObject);
+            }
         }
 
         private void OnRenderObject()
         {
             WieldHandle();
-            if (applyParticleFix)
+            if (particleSystem != null)
             {
-                // The particle system of the glowing effect on Mistwalker for some reason needs it rotation updated explicitly in order to follow the sword in VR.
-                // also fix epic loot particles rotation.
-                weaponParticleSystem.transform.rotation = particleFixTransform.rotation;
+                // The particle system on Mistwalker (as well as some modded weapons) for some reason needs it rotation updated explicitly in order to follow the sword in VR.
+                particleSystem.transform.rotation = particleSystemTransformUpdater.transform.rotation;
             }
         }
 
