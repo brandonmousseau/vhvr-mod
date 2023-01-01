@@ -78,8 +78,8 @@ public class Outline : MonoBehaviour {
   private Renderer[] renderers;
   private static Material sharedOutlineMaskMaterial;
   private static Material sharedOutlineFillMaterial;
-  private Material OutlineMaskMaterial;
-  private Material OutlineFillMaterial;
+  private Material outlineMaskMaterial;
+  private Material outlineFillMaterial;
 
   private bool needsUpdate;
 
