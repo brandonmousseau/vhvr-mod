@@ -34,6 +34,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> disableRecenterPose;
         private static ConfigEntry<bool> immersiveShipCameraSitting;
         private static ConfigEntry<string> immersiveShipCameraStanding;
+        private static ConfigEntry<bool> immersiveDodgeRoll;
 
         // UI Settings
         private static ConfigEntry<float> overlayCurvature;
@@ -328,6 +329,10 @@ namespace ValheimVRMod.Utilities
                                           "WorldUp",
                                           new ConfigDescription("Make the camera follows the ship direction while standing on it, World up will only follow the ship direction, while ShipUp will follow both ship tilt and direction",
                                           new AcceptableValueList<string>(new string[] { "None", "WorldUp", "ShipUp" })));
+            immersiveDodgeRoll = config.Bind("General",
+                                          "ImmersiveDodgeRoll",
+                                          false,
+                                          "Make the camera rotate with character head during dodge roll (may induce motion sickness)");
         }
 
         private static void InitializeUISettings()
@@ -1407,13 +1412,20 @@ namespace ValheimVRMod.Utilities
         {
             return immersiveShipCameraSitting.Value;
         }
+
         public static bool isShipImmersiveCameraStanding()
         {
             return immersiveShipCameraStanding.Value != "None";
         }
+
         public static string ShipImmersiveCameraType()
         {
             return immersiveShipCameraStanding.Value;
+        }
+
+        public static bool ImmersiveDodgeRoll()
+        {
+            return immersiveDodgeRoll.Value;
         }
     }
 }
