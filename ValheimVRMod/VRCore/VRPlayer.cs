@@ -94,6 +94,10 @@ namespace ValheimVRMod.VRCore
         private static SteamVR_LaserPointer _rightPointer;
         private string _preferredHand;
 
+        private Quaternion headRotationBeforeDodge;
+        private Transform dodgingHeadOrientation;
+        private bool wasDodging = false;
+
         private float timerLeft;
         private float timerRight;
         public static Hand leftHand { get { return _leftHand;} }
@@ -195,6 +199,8 @@ namespace ValheimVRMod.VRCore
             enableCameras();
             checkAndSetHandsAndPointers();
             updateVrik();
+            // When dodge starts, we need to make sure that updateVrik() has been called first so that the head is no longer controlled by Vrik before doing any dodge-related camera rotation.
+            maybeMoveVRPlayerDuringDodge();
             UpdateAmplifyOcclusionStatus();
             Pose.checkInteractions();
             CheckSneakRoomscale();
@@ -208,6 +214,14 @@ namespace ValheimVRMod.VRCore
             {
                 timerRight -= Time.deltaTime;
                 rightHand.hapticAction.Execute(0f, 0.1f, 20f, 0.1f, SteamVR_Input_Sources.RightHand);
+            }
+        }
+
+        void OnDestroy()
+        {
+            if (dodgingHeadOrientation != null)
+            {
+                Destroy(dodgingHeadOrientation.gameObject);
             }
         }
 
@@ -647,6 +661,9 @@ namespace ValheimVRMod.VRCore
             }
             _instance.transform.SetParent(playerCharacter.transform, false);
             attachedToPlayer = true;
+
+            maybeExitDodge();
+
             maybeInitHeadPosition(playerCharacter);
             float firstPersonAdjust = inFirstPerson ? FIRST_PERSON_HEIGHT_OFFSET : 0.0f;
             setHeadVisibility(!inFirstPerson);
@@ -720,6 +737,46 @@ namespace ValheimVRMod.VRCore
             }
         }
 
+        private Transform ensureDodgingHeadOrientation()
+        {
+            if (dodgingHeadOrientation == null)
+            {
+                dodgingHeadOrientation = new GameObject().transform;
+                dodgingHeadOrientation.parent = getHeadBone();
+            }
+            return dodgingHeadOrientation;
+        }
+
+        private void maybeExitDodge()
+        {
+            if (!getPlayerCharacter().InDodge() && wasDodging)
+            {
+                if (attachedToPlayer)
+                {
+                    _instance.transform.localRotation = headRotationBeforeDodge;
+                }
+                wasDodging = false;
+            }
+        }
+
+        private void maybeMoveVRPlayerDuringDodge() {
+            if (!getPlayerCharacter().InDodge()) {
+                return;
+            }
+            
+            if (!wasDodging)
+            {
+                headRotationBeforeDodge = _instance.transform.localRotation;
+                ensureDodgingHeadOrientation().SetPositionAndRotation(_instance.transform.position, _instance.transform.rotation);
+                wasDodging = true;
+            }
+            else if (attachedToPlayer)
+            {
+                // Head bone and Player#m_head has different scales than the player, therefore directly parenting the camera to them should be avoided lest it changes the appeared scale of the world.
+                _instance.transform.position = ensureDodgingHeadOrientation().position;
+            }
+        }
+
         private bool validVrikAnimatorState(Animator animator)
         {
             if (animator == null)
@@ -772,7 +829,7 @@ namespace ValheimVRMod.VRCore
 
         private void maybeInitHeadPosition(Player playerCharacter)
         {
-            if (!headPositionInitialized && inFirstPerson)
+            if (!headPositionInitialized && inFirstPerson && !playerCharacter.InDodge())
             {
                 // First set the position without any adjustment
                 Vector3 desiredPosition = getDesiredPosition(playerCharacter);
