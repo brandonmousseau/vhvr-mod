@@ -69,6 +69,10 @@ namespace ValheimVRMod.Scripts {
         }
         
         private void FixedUpdate() {
+            if (outline == null)
+            {
+                return;
+            }
             outline.OutlineColor = Color.Lerp(HiddenOutlineColor, FullOutlineColor, Mathf.Max(cooldown, 0) / cooldownStart);
             if (! inCoolDown()) {
                 return;
@@ -80,7 +84,7 @@ namespace ValheimVRMod.Scripts {
                 outline.OutlineMode = Outline.Mode.OutlineHidden;
                 if (!keepOutlineInstance) {
                     Destroy(outline);
-                    outline = null;                    
+                    outline = null;
                 }
                 
                 if (sharedInstance == this) {
