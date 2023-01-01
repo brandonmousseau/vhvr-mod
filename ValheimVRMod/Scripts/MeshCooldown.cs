@@ -70,7 +70,7 @@ namespace ValheimVRMod.Scripts {
 
         private static Color GetOutlineColor(Color fullColor, Color hiddenColor, float percentage)
         {
-            return Color.Lerp(hiddenColor, fullColor, percentage);
+            return Color.Lerp(hiddenColor, fullColor, percentage > 0.5f ? 1 : percentage * 2);
         }
         
         private void FixedUpdate() {
