@@ -23,9 +23,9 @@ namespace ValheimVRMod.Scripts
         private float shieldSize = 1f;
         private bool isOtherHandWeapon = false;
 
-        bool applyMistwalkerParticleFix;
-        ParticleSystem mistwalkerParticleSystem;
-        Transform mistwalkerTransform;
+        bool applyParticleFix;
+        ParticleSystem weaponParticleSystem;
+        Transform particleFixTransform;
 
         public enum isTwoHanded
         {
@@ -46,10 +46,22 @@ namespace ValheimVRMod.Scripts
 
             if (item.m_shared.m_name == "$item_sword_mistwalker")
             {
-                applyMistwalkerParticleFix = true;
-                mistwalkerParticleSystem = gameObject.GetComponentInChildren<ParticleSystem>();
-                mistwalkerTransform = gameObject.GetComponentInChildren<MeshFilter>().transform;
+                applyParticleFix = true;
+                weaponParticleSystem = gameObject.GetComponentInChildren<ParticleSystem>();
+                particleFixTransform = gameObject.GetComponentInChildren<MeshFilter>().transform;
             }
+            else
+            {
+                var particleItem = gameObject.GetComponentInChildren<ParticleSystem>();
+                if (particleItem)
+                {
+                    applyParticleFix = true;
+                    weaponParticleSystem = particleItem;
+                    particleFixTransform = transform;
+                }
+            }
+
+            
 
             attack = item.m_shared.m_attack.Clone();
 
@@ -90,10 +102,11 @@ namespace ValheimVRMod.Scripts
         private void OnRenderObject()
         {
             WieldHandle();
-            if (applyMistwalkerParticleFix)
+            if (applyParticleFix)
             {
                 // The particle system of the glowing effect on Mistwalker for some reason needs it rotation updated explicitly in order to follow the sword in VR.
-                mistwalkerParticleSystem.transform.rotation = mistwalkerTransform.rotation;
+                // also fix epic loot particles rotation.
+                weaponParticleSystem.transform.rotation = particleFixTransform.rotation;
             }
         }
 
