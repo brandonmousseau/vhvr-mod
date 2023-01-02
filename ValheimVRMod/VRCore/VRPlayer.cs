@@ -732,6 +732,7 @@ namespace ValheimVRMod.VRCore
                     inFirstPerson &&
                     !player.InDodge() &&
                     !player.IsStaggering() &&
+                    !player.IsSleeping() &&
                     validVrikAnimatorState(player.GetComponentInChildren<Animator>());
                 QuickActions.instance.UpdateWristBar();
                 QuickSwitch.instance.UpdateWristBar();
@@ -789,7 +790,7 @@ namespace ValheimVRMod.VRCore
         // The camera transform at the end of a dodge roll animation may not be the same as its non-dodging equivalent so we need to use a lerp to ensure an smooth exit.
         private float GetDodgeExitSmoothener()
         {
-            float threshold = 0.1f;
+            float threshold = 0.3f;
             return UpdateDodgeVr.currdodgetimer > threshold ? 0 : (threshold - UpdateDodgeVr.currdodgetimer) / threshold;
         }
 
