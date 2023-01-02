@@ -750,7 +750,7 @@ namespace ValheimVRMod.VRCore
 
         private void maybeExitDodge()
         {
-            if (!getPlayerCharacter().InDodge() && wasDodging)
+            if (getPlayerCharacter() != null && !getPlayerCharacter().InDodge() && wasDodging)
             {
                 if (attachedToPlayer)
                 {
@@ -761,7 +761,8 @@ namespace ValheimVRMod.VRCore
         }
 
         private void maybeMoveVRPlayerDuringDodge() {
-            if (!getPlayerCharacter().InDodge()) {
+            if (getPlayerCharacter() == null || !getPlayerCharacter().InDodge())
+            {
                 return;
             }
             
