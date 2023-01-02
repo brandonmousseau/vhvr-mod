@@ -773,17 +773,17 @@ namespace ValheimVRMod.VRCore
                 ensureDodgingHeadOrientation().SetPositionAndRotation(_instance.transform.position, _instance.transform.rotation);
                 wasDodging = true;
             }
-            else if (attachedToPlayer)
+            else if (attachedToPlayer && VHVRConfig.ImmersiveDodgeRoll())
             {
                 float smoothener = GetDodgeExitSmoothener();
+                
                 // Head bone and Player#m_head has different scales than the player, therefore directly parenting the camera to them should be avoided lest it changes the appeared scale of the world.
                 Vector3 nonDodgingHeadPosition = _instance.transform.position;
                 _instance.transform.position = Vector3.Lerp(ensureDodgingHeadOrientation().position, nonDodgingHeadPosition, smoothener);
-                if (VHVRConfig.ImmersiveDodgeRoll()) {
-                    _instance.transform.rotation = ensureDodgingHeadOrientation().rotation;
-                    Quaternion fullDodgeHeadRotation = _instance.transform.localRotation;
-                    _instance.transform.localRotation = Quaternion.Lerp(fullDodgeHeadRotation, headRotationBeforeDodge, smoothener);
-                }
+
+                _instance.transform.rotation = ensureDodgingHeadOrientation().rotation;
+                Quaternion fullDodgeHeadRotation = _instance.transform.localRotation;
+                _instance.transform.localRotation = Quaternion.Slerp(fullDodgeHeadRotation, headRotationBeforeDodge, smoothener);
             }
         }
 
