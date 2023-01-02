@@ -50,7 +50,9 @@ namespace ValheimVRMod.Scripts {
         }
 
         void OnDisable() {
-            outline.OutlineMode = Outline.Mode.OutlineHidden;
+            if (outline != null) {
+                outline.OutlineMode = Outline.Mode.OutlineHidden;
+            }
         }
 
         void OnDestory() {
