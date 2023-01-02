@@ -87,7 +87,7 @@ namespace ValheimVRMod.Patches {
             {
                 spearManager = meshFilter.gameObject.AddComponent<SpearManager>();
             }
-            var weaponWield = ___m_rightItemInstance.AddComponent<WeaponWield>();
+            var weaponWield = ___m_rightItemInstance.AddComponent<WeaponWield>().Initialize(false);
             weaponWield.itemName = ___m_rightItem;
             var weaponCol = StaticObjects.rightWeaponCollider().GetComponent<WeaponCollision>();
             weaponCol.setColliderParent(meshFilter.transform, ___m_rightItem, true);
@@ -140,7 +140,7 @@ namespace ValheimVRMod.Patches {
                 StaticObjects.quickSwitch.GetComponent<QuickSwitch>().refreshItems();
                 StaticObjects.quickActions.GetComponent<QuickActions>().refreshItems();
             }
-            LogUtils.LogDebug("Left weapon " + ___m_leftItemInstance.name);
+            WeaponWield weaponWield;
             switch (EquipScript.getLeft()) {
                 
                 case EquipType.Bow:
@@ -154,11 +154,14 @@ namespace ValheimVRMod.Patches {
                     
                     return;
                 case EquipType.Crossbow:
-                    var weaponWield = ___m_leftItemInstance.AddComponent<WeaponWield>();
+                    weaponWield = ___m_leftItemInstance.AddComponent<WeaponWield>().Initialize(true) ;
                     weaponWield.itemName = ___m_leftItem;
                     weaponWield.gameObject.AddComponent<WeaponBlock>().weaponWield = weaponWield;
                     return;
-
+                case EquipType.Lantern:
+                    weaponWield = ___m_leftItemInstance.AddComponent<WeaponWield>().Initialize(true);
+                    weaponWield.itemName = ___m_leftItem;
+                    break;
                 case EquipType.Shield:
                     meshFilter.gameObject.AddComponent<ShieldBlock>().itemName = ___m_leftItem;
                     return;

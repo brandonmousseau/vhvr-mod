@@ -33,16 +33,17 @@ namespace ValheimVRMod.Scripts
             LeftHandBehind
         }
 
-        private void Awake()
+        public WeaponWield Initialize(bool isLeftHandEquip)
         {
-            item = Player.m_localPlayer.GetRightItem();
-            isOtherHandWeapon = false;
-            if (item == null)
+            isOtherHandWeapon = isLeftHandEquip;
+            if (isLeftHandEquip)
             {
                 item = Player.m_localPlayer.GetLeftItem();
-                isOtherHandWeapon = true;
             }
-
+            else
+            {
+                item = Player.m_localPlayer.GetRightItem();
+            }
 
             particleSystem = gameObject.GetComponentInChildren<ParticleSystem>();
             if (particleSystem != null)
@@ -81,6 +82,7 @@ namespace ValheimVRMod.Scripts
                 mainHandInputSource = SteamVR_Input_Sources.RightHand;
             }
 
+            return this;
         }
         private void OnDestroy()
         {

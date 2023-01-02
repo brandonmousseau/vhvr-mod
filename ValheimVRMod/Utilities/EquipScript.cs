@@ -12,6 +12,9 @@ namespace ValheimVRMod.Utilities {
         //Melee Weapon
         Sword, Axe, Knife, Pickaxe, Club, Polearms, DualKnives
         ,
+        //utility
+        Lantern
+        ,
         //Modded
         RuneSkyheim
     }
@@ -74,6 +77,8 @@ namespace ValheimVRMod.Utilities {
                     return EquipType.Tankard;
                 case "$item_fistweapon_fenris":
                     return EquipType.Claws;
+                case "$item_lantern":
+                    return EquipType.Lantern;
                 //modded
                 case "Rune of Frostbolt":
                 case "Rune of Firebolt":
@@ -163,6 +168,13 @@ namespace ValheimVRMod.Utilities {
                 case Skills.SkillType.Crossbows:
                     return EquipType.Crossbow;
             }
+
+            switch (item?.m_shared.m_name)
+            {
+                case "$item_lantern":
+                    return EquipType.Lantern;
+            }
+
             return EquipType.None;
         }
 
