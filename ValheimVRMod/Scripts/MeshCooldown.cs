@@ -75,7 +75,7 @@ namespace ValheimVRMod.Scripts {
             return Color.Lerp(hiddenColor, fullColor, percentage > 0.5f ? 1 : percentage * 2);
         }
         
-        private void FixedUpdate() {
+        protected void FixedUpdate() {
             if (outline == null)
             {
                 return;
