@@ -27,6 +27,10 @@ namespace ValheimVRMod.Patches {
         /**
          * in Start Patch we put some logic from original Start method and some more logic from original DoMeleeAttack
          */
+
+        private static float attackHeight ;
+        private static float attackRange ;
+        private static float attackOffset ;
         static bool Prefix(
             Humanoid character,
             CharacterAnimEvent animEvent,
@@ -67,6 +71,9 @@ namespace ValheimVRMod.Patches {
             ___m_character = character;
             ___m_animEvent = animEvent;
             ___m_weapon = weapon;
+            attackHeight = ___m_attackHeight;
+            attackRange = ___m_attackRange;
+            attackOffset = ___m_attackOffset;
             ___m_attackHeight = 0;
             ___m_attackRange = 0;
             ___m_attackOffset = 0;
@@ -78,18 +85,21 @@ namespace ValheimVRMod.Patches {
                 ___m_attackMaskTerrain = LayerMask.GetMask("Default", "static_solid", "Default_small", "piece", "piece_nonsolid", "terrain", nameof (character), "character_net", "character_ghost", "hitbox", "character_noenv", "vehicle");
             }
             
-            if (!MeshCooldown.staminaDrained) {
+            if (!AttackTargetMeshCooldown.staminaDrained) {
                 float staminaUsage = (float) __instance.GetAttackStamina();
                 if (staminaUsage > 0.0f && !character.HaveStamina(staminaUsage + 0.1f)) {
                     // FIXME: Mystlands probably changed this from StaminaBarNoStaminaFlash
                     if (character.IsPlayer())
                         Hud.instance.StaminaBarEmptyFlash();
                     __result = false;
+                    ___m_attackHeight = attackHeight;
+                    ___m_attackRange = attackRange;
+                    ___m_attackOffset = attackOffset;
                     return false;
                 }
             
                 character.UseStamina(staminaUsage);
-                MeshCooldown.staminaDrained = true;
+                AttackTargetMeshCooldown.staminaDrained = true;
             }
 
             Collider col = StaticObjects.lastHitCollider;
@@ -106,6 +116,11 @@ namespace ValheimVRMod.Patches {
             }
             
             doMeleeAttack(___m_character, ___m_weapon, ___m_ammoItem, __instance, ___m_hitEffect, ___m_specialHitSkill, ___m_specialHitType, ___m_lowerDamagePerHit, ___m_forceMultiplier, ___m_staggerMultiplier, ___m_damageMultiplier, ___m_attackChainLevels, ___m_currentAttackCainLevel, ___m_resetChainIfHit, ref ___m_nextAttackChainLevel, ___m_hitTerrainEffect, ___m_attackHitNoise, pos, col, dir, ___m_spawnOnTrigger);
+
+            ___m_attackHeight = attackHeight;
+            ___m_attackRange = attackRange;
+            ___m_attackOffset = attackOffset;
+
             return false;
             
         }
@@ -188,7 +203,8 @@ namespace ValheimVRMod.Patches {
                     hitData.m_damage.Modify(2f);
                     hitData.m_pushForce *= 1.2f;
                 }
-                hitData.m_damage.Modify(MeshCooldown.calcDamageMultiplier());
+                
+                hitData.m_damage.Modify(AttackTargetMeshCooldown.calcDamageMultiplier());
 
                 ___m_character.GetSEMan().ModifyAttack(skill, ref hitData);
                 if (component is Character)
