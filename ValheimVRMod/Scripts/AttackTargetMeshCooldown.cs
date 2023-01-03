@@ -6,9 +6,9 @@ namespace ValheimVRMod.Scripts {
         public static MeshCooldown lastAttackTargetMeshCooldown;
         public static float damageMultiplier;
 
-        public bool tryTrigger(float cd) {
-            bool isTriggred = base.tryTrigger();
-            if (isTriggred) {
+        public override bool tryTrigger(float cd) {
+            bool isTriggered = base.tryTrigger(cd);
+            if (isTriggered) {
                 lastAttackTargetMeshCooldown = this;
                 damageMultiplier = 1;
             }
@@ -28,12 +28,12 @@ namespace ValheimVRMod.Scripts {
             return dmgMultiplier;
         }
 
-        void OnDisable() {
+        protected override void OnDisable() {
             lastAttackTargetMeshCooldown = null;
             base.OnDisable();
         }
 
-        protected void FixedUpdate() {
+        protected override void FixedUpdate() {
             base.FixedUpdate();
             if (! inCoolDown()) {
                 if (lastAttackTargetMeshCooldown == this) {
