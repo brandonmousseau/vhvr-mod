@@ -3,8 +3,9 @@ using ValheimVRMod.Utilities;
 
 namespace ValheimVRMod.Scripts {
     public class AttackTargetMeshCooldown : MeshCooldown {
-        public static MeshCooldown lastAttackTargetMeshCooldown;
         public static float damageMultiplier;
+        public static bool staminaDrained;
+        private static MeshCooldown lastAttackTargetMeshCooldown;
 
         public override bool tryTrigger(float cd) {
             bool isTriggered = base.tryTrigger(cd);
@@ -28,6 +29,11 @@ namespace ValheimVRMod.Scripts {
             return dmgMultiplier;
         }
 
+        public static bool isLastTargetInCooldown()
+        {
+            return lastAttackTargetMeshCooldown != null && lastAttackTargetMeshCooldown.inCoolDown();
+        }
+
         protected override void OnDisable() {
             lastAttackTargetMeshCooldown = null;
             base.OnDisable();
@@ -37,6 +43,7 @@ namespace ValheimVRMod.Scripts {
             base.FixedUpdate();
             if (! inCoolDown()) {
                 if (lastAttackTargetMeshCooldown == this) {
+                    staminaDrained = false;
                     lastAttackTargetMeshCooldown = null;
                 }
             }
