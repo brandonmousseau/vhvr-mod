@@ -78,12 +78,12 @@ namespace ValheimVRMod.Scripts {
                 return false;
             }
 
-            var meshCooldown = target.GetComponent<MeshCooldown>();
-            if (meshCooldown == null) {
-                meshCooldown = target.AddComponent<MeshCooldown>();
+            var attackTargetMeshCooldown = target.GetComponent<AttackTargetMeshCooldown>();
+            if (attackTargetMeshCooldown == null) {
+                attackTargetMeshCooldown = target.AddComponent<AttackTargetMeshCooldown>();
             }
 
-            return meshCooldown.tryTrigger(0.63f);
+            return attackTargetMeshCooldown.tryTrigger(0.63f);
         }
 
         private void OnRenderObject() {
