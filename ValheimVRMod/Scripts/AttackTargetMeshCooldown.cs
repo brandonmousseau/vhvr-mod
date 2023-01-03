@@ -12,7 +12,7 @@ namespace ValheimVRMod.Scripts {
                 lastAttackTargetMeshCooldown = this;
                 damageMultiplier = 1;
             }
-            return is Triggered;
+            return isTriggered;
         }
 
         public static float calcDamageMultiplier() {
