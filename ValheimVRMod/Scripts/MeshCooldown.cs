@@ -16,7 +16,7 @@ namespace ValheimVRMod.Scripts {
         public static bool staminaDrained;
         public static float damageMultiplier;
 
-        public bool tryTrigger(float cd) {
+        public virtual bool tryTrigger(float cd) {
             if (inCoolDown()) {
                 return false;
             }
@@ -49,7 +49,7 @@ namespace ValheimVRMod.Scripts {
             }
         }
 
-        void OnDisable() {
+        protected virtual void OnDisable() {
             if (outline != null) {
                 outline.OutlineMode = Outline.Mode.OutlineHidden;
             }
@@ -75,7 +75,7 @@ namespace ValheimVRMod.Scripts {
             return Color.Lerp(hiddenColor, fullColor, percentage > 0.5f ? 1 : percentage * 2);
         }
         
-        protected void FixedUpdate() {
+        protected virtual void FixedUpdate() {
             if (outline == null)
             {
                 return;
