@@ -12,10 +12,6 @@ namespace ValheimVRMod.Scripts {
         private float cooldown;
         private Outline outline;
 
-        public static MeshCooldown sharedInstance;
-        public static bool staminaDrained;
-        public static float damageMultiplier;
-
         public virtual bool tryTrigger(float cd) {
             if (inCoolDown()) {
                 return false;
@@ -23,24 +19,7 @@ namespace ValheimVRMod.Scripts {
 
             cooldown = cooldownStart = cd;
             resetOutline();
-            if (sharedInstance == null) {
-                sharedInstance = this;
-                damageMultiplier = 1;
-            }
             return true;
-        }
-
-        public static float calcDamageMultiplier() {
-            var dmgMultiplier = damageMultiplier;
-            
-            if (damageMultiplier == 1) {
-                damageMultiplier /= 3;
-            }
-            else {
-                damageMultiplier /= 2;
-            }
-
-            return dmgMultiplier;
         }
 
         private void ensureOutline() {
@@ -92,11 +71,6 @@ namespace ValheimVRMod.Scripts {
                 if (!keepOutlineInstance) {
                     Destroy(outline);
                     outline = null;
-                }
-                
-                if (sharedInstance == this) {
-                    staminaDrained = false;
-                    sharedInstance = null;
                 }
             }
         }
