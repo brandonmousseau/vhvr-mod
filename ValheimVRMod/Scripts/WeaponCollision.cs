@@ -139,8 +139,7 @@ namespace ValheimVRMod.Scripts {
             }
 
             // if attack is vertical, we can only hit one target at a time
-            if (attack.m_attackType != Attack.AttackType.Horizontal  && 
-                MeshCooldown.sharedInstance != null && MeshCooldown.sharedInstance.inCoolDown()) {
+            if (attack.m_attackType != Attack.AttackType.Horizontal  && AttackTargetMeshCooldown.isLastTargetInCooldown()) {
                 return false;
             }
 
@@ -153,12 +152,12 @@ namespace ValheimVRMod.Scripts {
                 target = character.gameObject;
             }
             
-            var meshCooldown = target.GetComponent<MeshCooldown>();
-            if (meshCooldown == null) {
-                meshCooldown = target.AddComponent<MeshCooldown>();
+            var attackTargetMeshCooldown = target.GetComponent<AttackTargetMeshCooldown>();
+            if (attackTargetMeshCooldown == null) {
+                attackTargetMeshCooldown = target.AddComponent<AttackTargetMeshCooldown>();
             }
             
-            return meshCooldown.tryTrigger(hitTime);
+            return attackTargetMeshCooldown.tryTrigger(hitTime);
         }
 
         private void OnRenderObject() {
@@ -247,7 +246,7 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            var inCooldown = MeshCooldown.sharedInstance != null && MeshCooldown.sharedInstance.inCoolDown();
+            var inCooldown = AttackTargetMeshCooldown.isLastTargetInCooldown();
 
             if (outline.enabled && Player.m_localPlayer.HaveStamina(getStaminaUsage() + 0.1f)
                                 && (attack.m_attackType == Attack.AttackType.Horizontal || !inCooldown)) {
