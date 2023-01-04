@@ -177,7 +177,15 @@ namespace ValheimVRMod.Patches {
                 float randomSkillFactor = ___m_character.GetRandomSkillFactor(skill);
 
                 if (___m_lowerDamagePerHit) {
-                    randomSkillFactor /= 0.75f;
+                    
+                    if(WeaponCollision.wasSecondaryAttack && WeaponCollision.secondaryHitList.Length >= 1)
+                    {
+                        randomSkillFactor /= WeaponCollision.secondaryHitList.Length * 0.75f;
+                    }
+                    else
+                    {
+                        randomSkillFactor /= 0.75f;
+                    }
                 }
 
                 HitData hitData = new HitData();
@@ -203,7 +211,7 @@ namespace ValheimVRMod.Patches {
                     hitData.m_damage.Modify(2f);
                     hitData.m_pushForce *= 1.2f;
                 }
-                if (___m_lowerDamagePerHit)
+                if (___m_lowerDamagePerHit && !WeaponCollision.wasSecondaryAttack)
                 {
                     hitData.m_damage.Modify(AttackTargetMeshCooldown.calcDamageMultiplier());
                 }
@@ -225,8 +233,12 @@ namespace ValheimVRMod.Patches {
                 __instance.SpawnOnHitTerrain(pos, ___m_weapon.m_shared.m_spawnOnHitTerrain);
             }
 
-            if (___m_weapon.m_shared.m_useDurability && ___m_character.IsPlayer())
+            if (___m_weapon.m_shared.m_useDurability && ___m_character.IsPlayer() && !AttackTargetMeshCooldown.durabilityDrained)
+            {
                 ___m_weapon.m_durability -= ___m_weapon.m_shared.m_useDurabilityDrain;
+                AttackTargetMeshCooldown.durabilityDrained = true;
+            }
+                
             ___m_character.AddNoise(___m_attackHitNoise);
 
             // FIXME: Setup now takes in input an additional ammo parameter, look into this
