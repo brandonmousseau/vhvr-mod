@@ -8,8 +8,10 @@ using Valve.VR;
 using Valve.VR.InteractionSystem;
 using System.Collections.Generic;
 
-namespace ValheimVRMod.Scripts {
-    public abstract class QuickAbstract : MonoBehaviour {
+namespace ValheimVRMod.Scripts
+{
+    public abstract class QuickAbstract : MonoBehaviour
+    {
 
         private float elementDistance = 0.1f;
         protected const int MAX_ELEMENTS = 11;
@@ -49,7 +51,8 @@ namespace ValheimVRMod.Scripts {
         public static bool toggleMap;
         public static bool shouldStartChat;
 
-        private void Awake() {
+        private void Awake()
+        {
             sitTexture = VRAssetManager.GetAsset<Texture2D>("sit");
             mapTexture = VRAssetManager.GetAsset<Texture2D>("map");
             recenterTexture = VRAssetManager.GetAsset<Texture2D>("recenter");
@@ -75,8 +78,10 @@ namespace ValheimVRMod.Scripts {
 
             public QuickMenuItemCallback callback { private get; set; }
 
-            public Sprite sprite {
-                set {
+            public Sprite sprite
+            {
+                set
+                {
                     transform.GetChild(2).GetComponent<SpriteRenderer>().sprite = value;
                     ResizeIcon();
                 }
@@ -92,7 +97,8 @@ namespace ValheimVRMod.Scripts {
                 return callback == null ? false : callback();
             }
 
-            public void useAsInventoryItemAndRefreshColor(Inventory inventory, ItemDrop.ItemData item, int itemIndex) {
+            public void useAsInventoryItemAndRefreshColor(Inventory inventory, ItemDrop.ItemData item, int itemIndex)
+            {
                 if (item.GetIcon().name != Name)
                 {
                     Name = item.GetIcon().name;
@@ -130,19 +136,20 @@ namespace ValheimVRMod.Scripts {
 
         protected abstract void InitializeWrist();
 
-        private void OnEnable() {
+        private void OnEnable()
+        {
             transform.SetParent(parent, false);
             transform.localPosition = Vector3.zero;
-            
+
             switch (VHVRConfig.getQuickMenuType())
             {
                 case "Full Hand":
-                    transform.localRotation = Quaternion.Euler(VHVRConfig.getQuickMenuVerticalAngle()-120, 0, 0);
+                    transform.localRotation = Quaternion.Euler(VHVRConfig.getQuickMenuVerticalAngle() - 120, 0, 0);
                     break;
-                
+
                 case "Full Player":
                     transform.LookAt(transform.position + Player.m_localPlayer.transform.forward, Player.m_localPlayer.transform.up);
-                    transform.localRotation *= Quaternion.Euler(VHVRConfig.getQuickMenuVerticalAngle()-180, 0, 0);
+                    transform.localRotation *= Quaternion.Euler(VHVRConfig.getQuickMenuVerticalAngle() - 180, 0, 0);
                     break;
                 case "Hand Follow Cam":
                     //Camera Version
@@ -168,7 +175,9 @@ namespace ValheimVRMod.Scripts {
             quickMenuLocker.parent = GetVRCamRig();
             quickMenuLocker.SetPositionAndRotation(transform.position, transform.rotation);
         }
-        private void Update() {
+
+        private void Update()
+        {
             // Lock the quick menu's positioin and rotation relative to the vr cam rig so it moves and rotates with the player.
             if (!quickMenuLocker && GetVRCamRig())
             {
@@ -198,10 +207,13 @@ namespace ValheimVRMod.Scripts {
                 Destroy(item);
             }
         }
+
         public abstract void UpdateWristBar();
+
         public abstract void refreshItems();
 
-        private void createSphere() {
+        private void createSphere()
+        {
             sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             sphere.transform.SetParent(transform);
             sphere.transform.localScale *= 0.02f;
@@ -209,25 +221,26 @@ namespace ValheimVRMod.Scripts {
             sphere.GetComponent<MeshRenderer>().material.color = Color.red;
             Destroy(sphere.GetComponent<Collider>());
         }
-        
+
         /**
-         * create:
-         * - standart layer (gray)
+         * Creates:
+         * - standard layer (gray)
          * - disabled equipped layers (blue)
          * - items, without sprite yet
          */
-        private void initialize() {
-            
+        private void initialize()
+        {
+
             tex_standard = new Texture2D(1, 1);
-            tex_standard.SetPixel(0,0, standard);
+            tex_standard.SetPixel(0, 0, standard);
             tex_standard.Apply();
-        
+
             tex_hovered = new Texture2D(1, 1);
-            tex_hovered.SetPixel(0,0, hovered);
+            tex_hovered.SetPixel(0, 0, hovered);
             tex_hovered.Apply();
-        
+
             tex_selected = new Texture2D(1, 1);
-            tex_selected.SetPixel(0,0, selected);
+            tex_selected.SetPixel(0, 0, selected);
             tex_selected.Apply();
 
             for (int i = 0; i < MAX_ELEMENTS; i++)
@@ -287,12 +300,14 @@ namespace ValheimVRMod.Scripts {
                     continue;
                 }
                 var extraOffset = (i * 0.05f) - (extraElementCount / 2 * 0.05f) + (extraElementCount % 2 == 0 ? 0.025f : 0);
-                var position = new Vector2((float)extraOffset,0);
+                var position = new Vector2((float)extraOffset, 0);
                 extraElements[i].gameObject.SetActive(true);
                 extraElements[i].transform.localPosition = position;
             }
         }
-        private void hoverItem() {
+
+        private void hoverItem()
+        {
 
             float maxDist = 0.05f;
             Vector3 hoverPos = Vector3.zero;
@@ -334,7 +349,7 @@ namespace ValheimVRMod.Scripts {
                 //var currentangle = Vector3.SignedAngle(transform.up, parent.position - transform.position, -transform.forward);
                 var currentangle = Vector3.SignedAngle(Vector3.up, convertedPos.normalized, -Vector3.forward);
                 var distFromCenter = Vector3.Distance(transform.position, parent.position);
-                if (distFromCenter > 0.07f )
+                if (distFromCenter > 0.07f)
                 {
                     var elementAngle = 360 / elementCount;
                     var wrappedAngle = currentangle + elementAngle / 2f;
@@ -347,8 +362,9 @@ namespace ValheimVRMod.Scripts {
             }
 
             var hovering = false;
-            
-            if (hoveredIndex >= 0 && hoveredIndex < elements.Length+extraElements.Length - 2) {
+
+            if (hoveredIndex >= 0 && hoveredIndex < elements.Length + extraElements.Length - 2)
+            {
                 if (lastHoveredIndex != hoveredIndex)
                 {
                     if (currentHand == VRPlayer.leftHand)
@@ -365,7 +381,7 @@ namespace ValheimVRMod.Scripts {
             {
                 lastHoveredIndex = -1;
             }
-            
+
             hoveredItem.SetActive(hovering);
 
         }
@@ -397,10 +413,11 @@ namespace ValheimVRMod.Scripts {
             renderer.sortingOrder = 3;
         }
 
-        private static Transform GetVRCamRig() {
+        private static Transform GetVRCamRig()
+        {
             return CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform.parent;
         }
-        
+
         protected bool IsInArea()
         {
             var wristBasedPos = wrist.transform.InverseTransformPoint(parent.position);
