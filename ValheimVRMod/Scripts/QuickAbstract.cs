@@ -10,10 +10,10 @@ using System.Collections.Generic;
 
 namespace ValheimVRMod.Scripts {
     public abstract class QuickAbstract : MonoBehaviour {
-        
+
         private float elementDistance = 0.1f;
-        private const int MAX_ELEMENTS = 11;
-        private const int MAX_EXTRA_ELEMENTS = 4;
+        protected const int MAX_ELEMENTS = 11;
+        protected const int MAX_EXTRA_ELEMENTS = 4;
 
         private Color standard = new Color(0.2f, 0.2f, 0.2f, 0.5f);
         private Color hovered = new Color(0.5f, 0.5f, 0.5f, 0.5f);
@@ -24,11 +24,13 @@ namespace ValheimVRMod.Scripts {
         protected Texture2D tex_selected;
 
         protected GameObject hoveredItem;
+        private int elementCount;
+        private int extraElementCount;
         protected int hoveredIndex = -1;
         private int lastHoveredIndex = -1;
-        protected QuickIcon[] elements;
-        protected QuickIcon[] extraElements;
-        
+        protected QuickMenuItem[] elements;
+        protected QuickMenuItem[] extraElements;
+
         protected GameObject sphere;
 
         public Transform parent;
@@ -49,8 +51,8 @@ namespace ValheimVRMod.Scripts {
             sitTexture = VRAssetManager.GetAsset<Texture2D>("sit");
             mapTexture = VRAssetManager.GetAsset<Texture2D>("map");
             recenterTexture = VRAssetManager.GetAsset<Texture2D>("recenter");
-            elements = new QuickIcon[MAX_ELEMENTS];
-            extraElements = new QuickIcon[MAX_EXTRA_ELEMENTS];
+            elements = new QuickMenuItem[MAX_ELEMENTS];
+            extraElements = new QuickMenuItem[MAX_EXTRA_ELEMENTS];
             wrist = new GameObject();
             radialMenu = new GameObject();
             radialMenu.transform.SetParent(transform);
@@ -58,21 +60,63 @@ namespace ValheimVRMod.Scripts {
             createSphere();
             InitializeWrist();
             refreshItems();
-            
+
         }
 
-        protected class QuickIcon
+        protected class QuickMenuItem : MonoBehaviour
         {
             public string Name { get; set; }
-            public GameObject gameObject { get; set; }
-            public Transform transform { get; set; }
             public int num { get; set; }
 
-            public QuickIcon()
+            public delegate bool QuickMenuItemCallback();
+
+            public QuickMenuItemCallback callback;
+
+            public Sprite sprite {
+                set {
+                    transform.GetChild(2).GetComponent<SpriteRenderer>().sprite = value;
+                    ResizeIcon();
+                }
+            }
+
+            public QuickMenuItem()
             {
-                gameObject = new GameObject();
-                transform = gameObject.transform;
                 num = -1;
+            }
+
+            public void useAsInventoryItemAndRefreshColor(Inventory inventory, ItemDrop.ItemData item, int itemIndex) {
+                if (item.GetIcon().name != Name)
+                {
+                    Name = item.GetIcon().name;
+                    sprite = item.GetIcon();
+                    callback = delegate ()
+                    {
+                        Player.m_localPlayer.UseItem(inventory, item, false);
+                        return true;
+                    };
+                }
+
+                transform.GetChild(1).gameObject.SetActive(item.m_equiped || item.m_durability == 0);
+                if (item.m_durability == 0)
+                {
+                    transform.GetChild(1).GetComponent<SpriteRenderer>().color = Color.red;
+                }
+                else
+                {
+                    transform.GetChild(1).GetComponent<SpriteRenderer>().color = Color.white;
+                }
+            }
+
+            private void ResizeIcon()
+            {
+                Vector3 fSize;
+                var child = gameObject.transform.GetChild(2);
+                if (!child) return;
+                var sprite = child.GetComponent<SpriteRenderer>();
+                if (!sprite) return;
+                fSize = child.lossyScale;
+                sprite.drawMode = SpriteDrawMode.Sliced;
+                sprite.size = fSize * 9;
             }
         }
 
@@ -137,12 +181,17 @@ namespace ValheimVRMod.Scripts {
             Destroy(wrist);
             Destroy(quickMenuLocker);
             Destroy(radialMenu);
+            foreach (QuickMenuItem item in elements)
+            {
+                Destroy(item);
+            }
+            foreach (QuickMenuItem item in extraElements)
+            {
+                Destroy(item);
+            }
         }
         public abstract void UpdateWristBar();
-        protected abstract int getElementCount();
-        protected abstract int getExtraElementCount();
         public abstract void refreshItems();
-        public abstract void selectHoveredItem();
 
         private void createSphere() {
             sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
@@ -173,9 +222,10 @@ namespace ValheimVRMod.Scripts {
             tex_selected.SetPixel(0,0, selected);
             tex_selected.Apply();
 
-            for (int i = 0; i < MAX_ELEMENTS; i++) {
+            for (int i = 0; i < MAX_ELEMENTS; i++)
+            {
 
-                elements[i] = new QuickIcon();
+                elements[i] = new GameObject().AddComponent<QuickMenuItem>();
                 elements[i].transform.SetParent(radialMenu.transform, false);
 
                 CreateItemLayers(elements[i].gameObject);
@@ -183,7 +233,7 @@ namespace ValheimVRMod.Scripts {
 
             for (int i = 0; i < MAX_EXTRA_ELEMENTS; i++)
             {
-                extraElements[i] = new QuickIcon();
+                extraElements[i] = new GameObject().AddComponent<QuickMenuItem>();
                 extraElements[i].transform.SetParent(wrist.transform, false);
 
                 CreateItemLayers(extraElements[i].gameObject);
@@ -206,13 +256,13 @@ namespace ValheimVRMod.Scripts {
             for (int i = 0; i < MAX_ELEMENTS; i++)
             {
 
-                if (i >= getElementCount())
+                if (i >= elementCount)
                 {
                     elements[i].gameObject.SetActive(false);
                     continue;
                 }
 
-                double a = (360 / getElementCount() * Mathf.Deg2Rad * i) + 90 * Mathf.Deg2Rad;
+                double a = (360 / elementCount * Mathf.Deg2Rad * i) + 90 * Mathf.Deg2Rad;
                 double x = Math.Cos(a) * elementDistance;
                 double y = Math.Sin(a) * elementDistance;
                 var position = new Vector2((float)-x, (float)y);
@@ -223,12 +273,12 @@ namespace ValheimVRMod.Scripts {
 
             for (int i = 0; i < MAX_EXTRA_ELEMENTS; i++)
             {
-                if (i >= getExtraElementCount())
+                if (i >= extraElementCount)
                 {
                     extraElements[i].gameObject.SetActive(false);
                     continue;
                 }
-                var extraOffset = (i * 0.05f) - (getExtraElementCount() / 2 * 0.05f) + (getExtraElementCount() % 2 == 0 ? 0.025f : 0);
+                var extraOffset = (i * 0.05f) - (extraElementCount / 2 * 0.05f) + (extraElementCount % 2 == 0 ? 0.025f : 0);
                 var position = new Vector2((float)extraOffset,0);
                 extraElements[i].gameObject.SetActive(true);
                 extraElements[i].transform.localPosition = position;
@@ -246,14 +296,14 @@ namespace ValheimVRMod.Scripts {
             sphere.transform.position -= projectedPos;
 
             //extraItems
-            for (int i = 0; i < getExtraElementCount(); i++)
+            for (int i = 0; i < extraElementCount; i++)
             {
                 var dist = Vector3.Distance(parent.position, extraElements[i].transform.position);
 
                 if (dist < maxDist)
                 {
                     maxDist = dist;
-                    hoveredIndex = i + getElementCount();
+                    hoveredIndex = i + elementCount;
                     hoverPos = extraElements[i].transform.position;
                     hoverRot = extraElements[i].transform.rotation;
                 }
@@ -268,7 +318,7 @@ namespace ValheimVRMod.Scripts {
             {
                 radialMenu.gameObject.SetActive(false);
             }
-            else if (hoveredIndex == -1 && getElementCount() != 0)
+            else if (hoveredIndex == -1 && elementCount != 0)
             {
                 radialMenu.gameObject.SetActive(true);
                 var convertedPos = transform.InverseTransformPoint(parent.position);
@@ -278,11 +328,11 @@ namespace ValheimVRMod.Scripts {
                 var distFromCenter = Vector3.Distance(transform.position, parent.position);
                 if (distFromCenter > 0.07f )
                 {
-                    var elementAngle = 360 / getElementCount();
+                    var elementAngle = 360 / elementCount;
                     var wrappedAngle = currentangle + elementAngle / 2f;
                     wrappedAngle = (wrappedAngle + 360f) % 360f;
                     hoveredIndex = (int)(wrappedAngle / elementAngle);
-                    if (hoveredIndex >= getElementCount()) hoveredIndex = 0;
+                    if (hoveredIndex >= elementCount) hoveredIndex = 0;
                     hoverPos = elements[hoveredIndex].transform.position;
                     hoverRot = elements[hoveredIndex].transform.rotation;
                 }
@@ -312,7 +362,7 @@ namespace ValheimVRMod.Scripts {
 
         }
 
-        private void CreateItemLayers(GameObject currentParent)
+        protected void CreateItemLayers(GameObject currentParent)
         {
             GameObject standardLayer = new GameObject();
             standardLayer.layer = LayerUtils.getWorldspaceUiLayer();
@@ -337,18 +387,6 @@ namespace ValheimVRMod.Scripts {
             item.transform.localScale /= 15;
             var renderer = item.AddComponent<SpriteRenderer>();
             renderer.sortingOrder = 3;
-        }
-
-        protected void ResizeIcon(GameObject element)
-        {
-            Vector3 fSize;
-            var child = element.transform.GetChild(2);
-            if (!child) return;
-            var sprite = child.GetComponent<SpriteRenderer>();
-            if (!sprite) return;
-            fSize = child.lossyScale;
-            sprite.drawMode = SpriteDrawMode.Sliced;
-            sprite.size = fSize * 9;
         }
 
         private static Transform GetVRCamRig() {
@@ -377,9 +415,49 @@ namespace ValheimVRMod.Scripts {
             return true;
         }
 
-        protected void RefreshQuickAction(Inventory inventory,QuickIcon[] extraElements,out int extraElementCount)
+        protected void refreshRadialItems()
+        {
+
+            if (Player.m_localPlayer == null)
+            {
+                return;
+            }
+
+            elementCount = 0;
+            var inventory = Player.m_localPlayer.GetInventory();
+
+            for (int i = 0; i < 8; i++)
+            {
+
+                ItemDrop.ItemData item = inventory?.GetItemAt(i, 0);
+
+                if (item == null)
+                {
+                    continue;
+                }
+                if (VHVRConfig.GetQuickMenuIsSeperate())
+                {
+                    switch (item.m_shared.m_itemType)
+                    {
+                        case ItemDrop.ItemData.ItemType.Tool:
+                        case ItemDrop.ItemData.ItemType.Torch:
+                        case ItemDrop.ItemData.ItemType.OneHandedWeapon:
+                        case ItemDrop.ItemData.ItemType.TwoHandedWeapon:
+                            break;
+                        default:
+                            continue;
+                    }
+                }
+
+                elements[elementCount].useAsInventoryItemAndRefreshColor(inventory, item, i);
+                elementCount++;
+            }
+        }
+
+        protected void RefreshQuickAction()
         {
             extraElementCount = 0;
+            Inventory inventory = Player.m_localPlayer.GetInventory();
             for (int i = 0; i < 4; i++)
             {
 
@@ -389,29 +467,16 @@ namespace ValheimVRMod.Scripts {
                 {
                     continue;
                 }
-                
-                extraElements[extraElementCount].transform.GetChild(1).gameObject.SetActive(item.m_equiped || item.m_durability == 0);
-                if (item.m_durability == 0)
-                {
-                    extraElements[extraElementCount].transform.GetChild(1).GetComponent<SpriteRenderer>().color = Color.red;
-                }
-                else
-                {
-                    extraElements[extraElementCount].transform.GetChild(1).GetComponent<SpriteRenderer>().color = Color.white;
-                }
-
 
                 if (item.GetIcon().name != extraElements[extraElementCount].Name)
                 {
-                    extraElements[extraElementCount].transform.GetChild(2).GetComponent<SpriteRenderer>().sprite = item.GetIcon();
-                    ResizeIcon(extraElements[extraElementCount].gameObject);
+                    extraElements[extraElementCount].useAsInventoryItemAndRefreshColor(inventory, item, i + 4);
                 }
-                extraElements[extraElementCount].num = i + 4;
-                extraElements[extraElementCount].Name = item.GetIcon().name;
                 extraElementCount++;
             }
         }
-        protected void RefreshQuickSwitch(QuickIcon[] extraElements, out int extraElementCount)
+
+        protected void RefreshQuickSwitch()
         {
             StatusEffect se;
             float cooldown;
@@ -422,83 +487,79 @@ namespace ValheimVRMod.Scripts {
                 hasGPower = true;
                 if (extraElements[extraElementCount].Name != ("QuickActionPOWER_" + se.name))
                 {
-                    extraElements[extraElementCount].transform.GetChild(2).GetComponent<SpriteRenderer>().sprite = se.m_icon;
-                    ResizeIcon(extraElements[extraElementCount].gameObject);
+                    extraElements[extraElementCount].sprite = se.m_icon;
                     extraElements[extraElementCount].Name = "QuickActionPOWER_" + se.name;
+                    extraElements[extraElementCount].callback = delegate ()
+                    {
+                        if (!hasGPower)
+                        {
+                            return false;
+                        }
+                        Player.m_localPlayer.StartGuardianPower();
+                        return true;
+                    };
                 }
                 extraElementCount++;
             }
 
             if (extraElements[extraElementCount].Name != "QuickActionSIT")
             {
-                extraElements[extraElementCount].transform.GetChild(2).GetComponent<SpriteRenderer>().sprite = Sprite.Create(sitTexture,
-                new Rect(0.0f, 0.0f, sitTexture.width, sitTexture.height),
-                new Vector2(0.5f, 0.5f), 500);
-                ResizeIcon(extraElements[extraElementCount].gameObject);
+                extraElements[extraElementCount].sprite =
+                    Sprite.Create(sitTexture, new Rect(0.0f, 0.0f, sitTexture.width, sitTexture.height), new Vector2(0.5f, 0.5f), 500);
                 extraElements[extraElementCount].Name = "QuickActionSIT";
+                extraElements[extraElementCount].callback = delegate ()
+                {
+                    if (Player.m_localPlayer.InEmote() && Player.m_localPlayer.IsSitting())
+                        stopEmote.Invoke(Player.m_localPlayer, null);
+                    else
+                        Player.m_localPlayer.StartEmote("sit", false);
+                    return true;
+                };
             }
             extraElementCount++;
 
             if (extraElements[extraElementCount].Name != "QuickActionMAP")
             {
-                extraElements[extraElementCount].transform.GetChild(2).GetComponent<SpriteRenderer>().sprite = Sprite.Create(mapTexture,
-               new Rect(0.0f, 0.0f, mapTexture.width, mapTexture.height),
-               new Vector2(0.5f, 0.5f), 500);
-                ResizeIcon(extraElements[extraElementCount].gameObject);
+                extraElements[extraElementCount].sprite =
+                    Sprite.Create(mapTexture, new Rect(0.0f, 0.0f, mapTexture.width, mapTexture.height), new Vector2(0.5f, 0.5f), 500);
                 extraElements[extraElementCount].Name = "QuickActionMAP";
+                extraElements[extraElementCount].callback = delegate ()
+                {
+                    toggleMap = true;
+                    return true;
+                };
             }
             extraElementCount++;
 
             if (extraElements[extraElementCount].Name != "QuickActionRECENTER")
             {
-                extraElements[extraElementCount].transform.GetChild(2).GetComponent<SpriteRenderer>().sprite = Sprite.Create(recenterTexture,
-                new Rect(0.0f, 0.0f, recenterTexture.width, recenterTexture.height),
-                new Vector2(0.5f, 0.5f), 500);
-                ResizeIcon(extraElements[extraElementCount].gameObject);
+                extraElements[extraElementCount].sprite =
+                    Sprite.Create(recenterTexture, new Rect(0.0f, 0.0f, recenterTexture.width, recenterTexture.height), new Vector2(0.5f, 0.5f), 500);
                 extraElements[extraElementCount].Name = "QuickActionRECENTER";
+                extraElements[extraElementCount].callback = delegate ()
+                {
+                    VRManager.tryRecenter();
+                    return true;
+                };
             }
             extraElementCount++;
         }
 
-        protected bool SelectHoverQuickSwitch(int hoveredIndex,int elementCount,Inventory inventory)
+        public bool selectHoveredItem()
         {
-            if (hoveredIndex >= elementCount)
+            if (hoveredIndex < 0)
             {
-                ItemDrop.ItemData item2 = inventory.GetItemAt(extraElements[hoveredIndex - elementCount].num, 1);
-                Player.m_localPlayer.UseItem(inventory, item2, false);
-                return true;
+                return false;
+            }
+            else if (hoveredIndex < elementCount)
+            {
+                return elements[hoveredIndex].callback();
+            }
+            else if (hoveredIndex < elementCount + extraElementCount)
+            {
+                return extraElements[hoveredIndex - elementCount].callback();
             }
             return false;
-        }
-        protected bool SelectHoverQuickAction(int hoveredIndex, int allElementCount)
-        {
-            if (hasGPower && hoveredIndex == allElementCount - 4)
-            {
-                Player.m_localPlayer.StartGuardianPower();
-                return true;
-            }
-
-            if (hoveredIndex == allElementCount - 3)
-            {
-                if (Player.m_localPlayer.InEmote() && Player.m_localPlayer.IsSitting())
-                    stopEmote.Invoke(Player.m_localPlayer, null);
-                else
-                    Player.m_localPlayer.StartEmote("sit", false);
-                return true;
-            }
-
-            if (hoveredIndex == allElementCount - 2)
-            {
-                toggleMap = true;
-                return true;
-            }
-
-            if (hoveredIndex == allElementCount - 1)
-            {
-                VRManager.tryRecenter();
-                return true;
-            }
-            return false; 
         }
     }
 }
