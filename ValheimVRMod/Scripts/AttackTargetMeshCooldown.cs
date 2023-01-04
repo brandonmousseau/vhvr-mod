@@ -7,6 +7,11 @@ namespace ValheimVRMod.Scripts {
         public static bool staminaDrained;
         private static MeshCooldown lastAttackTargetMeshCooldown;
 
+        void Awake()
+        {
+            keepOutlineInstance = false;
+        }
+
         public override bool tryTrigger(float cd) {
             bool isTriggered = base.tryTrigger(cd);
             if (isTriggered && lastAttackTargetMeshCooldown == null) {
