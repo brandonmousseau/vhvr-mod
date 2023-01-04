@@ -203,8 +203,10 @@ namespace ValheimVRMod.Patches {
                     hitData.m_damage.Modify(2f);
                     hitData.m_pushForce *= 1.2f;
                 }
-                
-                hitData.m_damage.Modify(AttackTargetMeshCooldown.calcDamageMultiplier());
+                if (___m_lowerDamagePerHit)
+                {
+                    hitData.m_damage.Modify(AttackTargetMeshCooldown.calcDamageMultiplier());
+                }
 
                 ___m_character.GetSEMan().ModifyAttack(skill, ref hitData);
                 if (component is Character)
@@ -245,4 +247,20 @@ namespace ValheimVRMod.Patches {
             return;
         }
     }
+
+    [HarmonyPatch(typeof(Humanoid),nameof(Humanoid.GetAttackSpeedFactorMovement))]
+    class Patch_AttackSpeedFactorMovement
+    {
+        static void Postfix(Humanoid __instance,ref float __result)
+        {
+            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls())
+            {
+                return ;
+            }
+            if (WeaponCollision.wasSecondaryAttack)
+                __result *= 0.2F;
+            return;
+        }
+    }
+
 }

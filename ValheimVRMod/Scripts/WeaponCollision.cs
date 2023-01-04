@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Rendering;
 using ValheimVRMod.Scripts.Block;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
@@ -23,6 +24,7 @@ namespace ValheimVRMod.Scripts {
         private List<Vector3> snapshotsC;
         private ItemDrop.ItemData item;
         private Attack attack;
+        private Attack secondaryAttack;
         private bool isRightHand;
         private Outline outline;
         private float hitTime;
@@ -34,6 +36,14 @@ namespace ValheimVRMod.Scripts {
         
         private int maxSnapshots;
         private float colliderDistance;
+
+
+        //secondary attack
+        private Vector3 firstPos;
+        private Vector3 lastPos;
+        private RaycastHit[] secondaryHitList;
+        private LineRenderer slashLine;
+        public static bool wasSecondaryAttack;
 
         private static readonly int[] ignoreLayers = {
             LayerUtils.WATERVOLUME_LAYER,
@@ -47,6 +57,19 @@ namespace ValheimVRMod.Scripts {
             colliderParent = new GameObject();
             snapshots = new List<Vector3>();
             snapshotsC = new List<Vector3>();
+
+            firstPos = Vector3.zero;
+            lastPos = Vector3.zero;
+
+            slashLine = new GameObject().AddComponent<LineRenderer>();
+            slashLine.widthMultiplier = 0.01f;
+            slashLine.positionCount = 2;
+            slashLine.material.color = Color.white;
+            slashLine.enabled = false;
+            slashLine.receiveShadows = false;
+            slashLine.shadowCastingMode = ShadowCastingMode.Off;
+            slashLine.lightProbeUsage = LightProbeUsage.Off;
+            slashLine.reflectionProbeUsage = ReflectionProbeUsage.Off;
         }
 
         private void OnTriggerStay(Collider collider) {
@@ -137,7 +160,10 @@ namespace ValheimVRMod.Scripts {
             {
                 return false;
             }
-
+            if(firstPos != Vector3.zero)
+            {
+                return false;
+            }
             // if attack is vertical, we can only hit one target at a time
             if (attack.m_attackType != Attack.AttackType.Horizontal  && AttackTargetMeshCooldown.isLastTargetInCooldown()) {
                 return false;
@@ -187,6 +213,7 @@ namespace ValheimVRMod.Scripts {
             }
             
             attack = item.m_shared.m_attack.Clone();
+            secondaryAttack = item.m_shared.m_secondaryAttack.Clone();
 
             switch (attack.m_attackAnimation) {
                 case "atgeir_attack":
@@ -242,7 +269,14 @@ namespace ValheimVRMod.Scripts {
 
         private void Update() {
             
+
             if (!outline) {
+                return;
+            }
+
+            SecondaryAttack();
+            if (wasSecondaryAttack)
+            {
                 return;
             }
 
@@ -255,6 +289,114 @@ namespace ValheimVRMod.Scripts {
             else if (!outline.enabled && (!Player.m_localPlayer.HaveStamina(getStaminaUsage() + 0.1f)
                                           || attack.m_attackType != Attack.AttackType.Horizontal && inCooldown)) {
                 outline.enabled = true;
+            }
+        }
+
+
+        private void SecondaryAttack()
+        {
+            var inCooldown = AttackTargetMeshCooldown.isLastTargetInCooldown();
+            var localWeaponForward = WeaponWield.weaponForward * secondaryAttack.m_attackRange/2;
+            var localHandPos = VRPlayer.rightHand.transform.position - Player.m_localPlayer.transform.position;
+            var rangeMultiplier = 1.25f;
+            if (!(inCooldown || firstPos != Vector3.zero))
+            {
+                wasSecondaryAttack = false;
+                outline.enabled = false;
+            }
+            if (WeaponWield.isCurrentlyTwoHanded())
+            {
+                localHandPos -= WeaponWield.weaponForward * Vector3.Distance(VRPlayer.rightHand.transform.position, VRPlayer.leftHand.transform.position)/2;
+            }
+            if (isRightHand)
+            {
+                
+                if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand))
+                {
+                    if (firstPos == Vector3.zero && SteamVR_Actions.valheim_Use.state)
+                    {
+                        firstPos = localHandPos + localWeaponForward;
+                        wasSecondaryAttack = true;
+                    }
+
+                    if (firstPos != Vector3.zero && !SteamVR_Actions.valheim_Use.state)
+                    {
+                        lastPos = localHandPos + localWeaponForward;
+                    }
+                }
+            }
+            List<Vector3> pointList = new List<Vector3>();
+            if (firstPos != Vector3.zero)
+            {
+                pointList.Add(Player.m_localPlayer.transform.position + firstPos);
+            }
+            if (lastPos == Vector3.zero)
+            {
+                pointList.Add(Player.m_localPlayer.transform.position + firstPos + ((localHandPos + localWeaponForward - firstPos).normalized * Vector3.Distance(firstPos, localHandPos + localWeaponForward) * rangeMultiplier));
+            }
+            if (firstPos != Vector3.zero)
+            {
+                slashLine.SetPositions(pointList.ToArray());
+                slashLine.enabled = true;
+            }
+
+            if (firstPos != Vector3.zero && lastPos != Vector3.zero && !inCooldown)
+            {
+                int layerMask = secondaryAttack.m_hitTerrain ? Attack.m_attackMaskTerrain : Attack.m_attackMask;
+                firstPos = Player.m_localPlayer.transform.position + firstPos;
+                lastPos = Player.m_localPlayer.transform.position + lastPos;
+                secondaryHitList = Physics.SphereCastAll(firstPos, attack.m_attackRayWidth*2, (lastPos - firstPos).normalized, Mathf.Min(secondaryAttack.m_attackRange * rangeMultiplier,Vector3.Distance(firstPos,lastPos) * rangeMultiplier), layerMask, QueryTriggerInteraction.Ignore);
+                pointList = new List<Vector3>();
+                pointList.Add(firstPos);
+                pointList.Add(firstPos + ((lastPos - firstPos).normalized * Vector3.Distance(firstPos, lastPos) * rangeMultiplier));
+                slashLine.SetPositions(pointList.ToArray());
+
+                foreach (var raycastHit in secondaryHitList)
+                {
+                    if (raycastHit.collider.transform == Player.m_localPlayer.transform)
+                    {
+                        continue;
+                    }
+                    StaticObjects.lastHitPoint = raycastHit.collider.transform.position;
+                    StaticObjects.lastHitDir = (lastPos - firstPos).normalized;
+                    StaticObjects.lastHitCollider = raycastHit.collider;
+                    if (secondaryAttack.Start(Player.m_localPlayer, null, null,
+                    Player.m_localPlayer.m_animEvent,
+                    null, item, null, 0.0f, 0.0f))
+                    {
+                        if (isRightHand)
+                        {
+                            VRPlayer.rightHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, SteamVR_Input_Sources.RightHand);
+                        }
+                        else
+                        {
+                            VRPlayer.leftHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, SteamVR_Input_Sources.LeftHand);
+                        }
+                        //bHaptics
+                        if (!BhapticsTactsuit.suitDisabled)
+                        {
+                            BhapticsTactsuit.SwordRecoil(!VHVRConfig.LeftHanded());
+                        }
+                    }
+
+                    var attackTargetMeshCooldown = raycastHit.collider.gameObject.GetComponent<AttackTargetMeshCooldown>();
+                    if (attackTargetMeshCooldown == null)
+                    {
+                        attackTargetMeshCooldown = raycastHit.collider.gameObject.AddComponent<AttackTargetMeshCooldown>();
+                    }
+
+                    attackTargetMeshCooldown.tryTrigger(hitTime*2);
+                }
+                firstPos = Vector3.zero;
+                lastPos = Vector3.zero;
+                outline.enabled = true;
+                wasSecondaryAttack = true;
+            }
+
+            if (!SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand))
+            {
+                firstPos = Vector3.zero;
+                lastPos = Vector3.zero;
             }
         }
 
