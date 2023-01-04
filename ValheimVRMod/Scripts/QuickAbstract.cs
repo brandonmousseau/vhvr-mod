@@ -13,7 +13,7 @@ namespace ValheimVRMod.Scripts {
 
         private float elementDistance = 0.1f;
         protected const int MAX_ELEMENTS = 11;
-        protected const int MAX_EXTRA_ELEMENTS = 4;
+        protected const int MAX_EXTRA_ELEMENTS = 5;
 
         private Color standard = new Color(0.2f, 0.2f, 0.2f, 0.5f);
         private Color hovered = new Color(0.5f, 0.5f, 0.5f, 0.5f);
@@ -45,12 +45,15 @@ namespace ValheimVRMod.Scripts {
         private Texture2D sitTexture;
         private Texture2D mapTexture;
         private Texture2D recenterTexture;
+        private Texture2D chatTexture;
         public static bool toggleMap;
+        public static bool shouldStartChat;
 
         private void Awake() {
             sitTexture = VRAssetManager.GetAsset<Texture2D>("sit");
             mapTexture = VRAssetManager.GetAsset<Texture2D>("map");
             recenterTexture = VRAssetManager.GetAsset<Texture2D>("recenter");
+            chatTexture = VRAssetManager.GetAsset<Texture2D>("black_screen");
             elements = new QuickMenuItem[MAX_ELEMENTS];
             extraElements = new QuickMenuItem[MAX_EXTRA_ELEMENTS];
             wrist = new GameObject();
@@ -539,6 +542,21 @@ namespace ValheimVRMod.Scripts {
                 extraElements[extraElementCount].callback = delegate ()
                 {
                     VRManager.tryRecenter();
+                    return true;
+                };
+            }
+            extraElementCount++;
+
+            if (extraElements[extraElementCount].Name != "QuickActionCHAT")
+            {
+                extraElements[extraElementCount].sprite =
+                    Sprite.Create(chatTexture, new Rect(0.0f, 0.0f, chatTexture.width, chatTexture.height), new Vector2(0.5f, 0.5f), 500);
+                extraElements[extraElementCount].Name = "QuickActionCHAT";
+                extraElements[extraElementCount].callback = delegate ()
+                {
+                    shouldStartChat = true;
+                    TextInput.m_instance.Show("", "", 256);
+                    TextInput.m_instance.m_panel.gameObject.transform.localScale = new Vector3(0, 0, 0);
                     return true;
                 };
             }
