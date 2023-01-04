@@ -38,6 +38,11 @@ namespace ValheimVRMod.Scripts {
         {
             return lastAttackTargetMeshCooldown != null && lastAttackTargetMeshCooldown.inCoolDown();
         }
+        
+        protected override bool keepOutlineInstance()
+        {
+            return false;
+        }
 
         protected override void OnDisable() {
             lastAttackTargetMeshCooldown = null;
