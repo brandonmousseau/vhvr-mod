@@ -9,7 +9,7 @@ namespace ValheimVRMod.Scripts {
 
         public override bool tryTrigger(float cd) {
             bool isTriggered = base.tryTrigger(cd);
-            if (isTriggered) {
+            if (isTriggered && lastAttackTargetMeshCooldown == null) {
                 lastAttackTargetMeshCooldown = this;
                 damageMultiplier = 1;
             }
