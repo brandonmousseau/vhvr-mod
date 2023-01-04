@@ -73,7 +73,7 @@ namespace ValheimVRMod.Scripts {
 
             public delegate bool QuickMenuItemCallback();
 
-            public QuickMenuItemCallback callback;
+            public QuickMenuItemCallback callback { private get; set; }
 
             public Sprite sprite {
                 set {
@@ -85,6 +85,11 @@ namespace ValheimVRMod.Scripts {
             public QuickMenuItem()
             {
                 num = -1;
+            }
+
+            public bool execute()
+            {
+                return callback == null ? false : callback();
             }
 
             public void useAsInventoryItemAndRefreshColor(Inventory inventory, ItemDrop.ItemData item, int itemIndex) {
@@ -571,11 +576,11 @@ namespace ValheimVRMod.Scripts {
             }
             else if (hoveredIndex < elementCount)
             {
-                return elements[hoveredIndex].callback();
+                return elements[hoveredIndex].execute();
             }
             else if (hoveredIndex < elementCount + extraElementCount)
             {
-                return extraElements[hoveredIndex - elementCount].callback();
+                return extraElements[hoveredIndex - elementCount].execute();
             }
             return false;
         }
