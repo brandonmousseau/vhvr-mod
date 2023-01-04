@@ -13,7 +13,7 @@ namespace ValheimVRMod.Scripts
         private Attack attack;
         private bool weaponSubPos;
 
-        public Vector3 weaponForward;
+        public static Vector3 weaponForward;
         public string itemName;
         private ItemDrop.ItemData item;
         private GameObject rotSave;
@@ -21,6 +21,10 @@ namespace ValheimVRMod.Scripts
         public static isTwoHanded _isTwoHanded;
         private SteamVR_Input_Sources mainHandInputSource;
         private float shieldSize = 1f;
+        private bool isOtherHandWeapon = false;
+
+        ParticleSystem particleSystem;
+        Transform particleSystemTransformUpdater;
 
         public enum isTwoHanded
         {
@@ -29,9 +33,26 @@ namespace ValheimVRMod.Scripts
             LeftHandBehind
         }
 
-        private void Awake()
+        public WeaponWield Initialize(bool isLeftHandEquip)
         {
-            item = Player.m_localPlayer.GetRightItem();
+            isOtherHandWeapon = isLeftHandEquip;
+            if (isLeftHandEquip)
+            {
+                item = Player.m_localPlayer.GetLeftItem();
+            }
+            else
+            {
+                item = Player.m_localPlayer.GetRightItem();
+            }
+
+            particleSystem = gameObject.GetComponentInChildren<ParticleSystem>();
+            if (particleSystem != null)
+            {
+                particleSystemTransformUpdater = new GameObject().transform;
+                particleSystemTransformUpdater.parent = transform;
+                particleSystemTransformUpdater.SetPositionAndRotation(particleSystem.transform.position, particleSystem.transform.rotation);
+            }
+
             attack = item.m_shared.m_attack.Clone();
 
             rotSave = new GameObject();
@@ -61,20 +82,31 @@ namespace ValheimVRMod.Scripts
                 mainHandInputSource = SteamVR_Input_Sources.RightHand;
             }
 
+            return this;
         }
         private void OnDestroy()
         {
             ResetOffset();
             Destroy(rotSave);
+            if (particleSystemTransformUpdater != null)
+            {
+                Destroy(particleSystemTransformUpdater.gameObject);
+            }
         }
 
         private void OnRenderObject()
         {
             WieldHandle();
-
+            if (particleSystem != null)
+            {
+                // The particle system on Mistwalker (as well as some modded weapons) for some reason needs it rotation updated explicitly in order to follow the sword in VR.
+                particleSystem.transform.rotation = particleSystemTransformUpdater.transform.rotation;
+            }
         }
+
         private void WieldHandle()
         {
+            weaponForward = transform.forward;
             switch (itemName)
             {
                 case "Hoe":
@@ -92,6 +124,10 @@ namespace ValheimVRMod.Scripts
                     KnifeWield();
                     break;
                 default:
+                    if (isLeftHandWeapon() && EquipScript.getLeft() != EquipType.Crossbow)
+                    {
+                        break;
+                    }
                     UpdateTwoHandedWield();
                     if (!isSpear() && VHVRConfig.TwoHandedWithShield())
                     {
@@ -99,6 +135,7 @@ namespace ValheimVRMod.Scripts
                     }
                     break;
             }
+            weaponForward = transform.forward;
         }
         private void KnifeWield()
         {
@@ -111,7 +148,6 @@ namespace ValheimVRMod.Scripts
             {
                 ResetOffset();
                 transform.localRotation *= Quaternion.AngleAxis(180, Vector3.right);
-                weaponForward = transform.forward;
                 weaponSubPos = true;
             }
             else if (weaponSubPos)
@@ -172,6 +208,10 @@ namespace ValheimVRMod.Scripts
                 var originMultiplier = -0.1f;
                 var rotOffset = 180;
                 bool rearHandIsDominant = (VHVRConfig.LeftHanded() == (_isTwoHanded == isTwoHanded.LeftHandBehind));
+                bool forceRotateHand = true;
+
+                //debug check animation
+                //LogUtils.LogDebug("animation = " + attack.m_attackAnimation);
                 switch (attack.m_attackAnimation)
                 {
                     case "spear_poke":
@@ -179,10 +219,9 @@ namespace ValheimVRMod.Scripts
                         distLimit = 0.09f;
                         originMultiplier = 0.2f;
                         break;
-                    case "atgeir_attack":
-                        distMultiplier = -0.18f;
-                        distLimit = 0.18f;
-                        originMultiplier = -0.7f;
+                    case "crossbow_fire":
+                        originMultiplier = 0.35f;
+                        forceRotateHand = false;
                         break;
                     default:
                         if (!rearHandIsDominant && !isSpear()) {
@@ -197,17 +236,20 @@ namespace ValheimVRMod.Scripts
                 //VRIK Hand rotation
                 var frontHandConnector = _isTwoHanded == isTwoHanded.LeftHandBehind ? VrikCreator.rightHandConnector : VrikCreator.leftHandConnector;
                 var rearHandConnector = _isTwoHanded == isTwoHanded.LeftHandBehind ? VrikCreator.leftHandConnector : VrikCreator.rightHandConnector;
-                frontHandConnector.LookAt(frontHandConnector.position - weaponHoldVector, frontHand.transform.up);
-                rearHandConnector.LookAt(rearHandConnector.position + weaponHoldVector, rearHand.transform.up);
-                if (GetHandAngleDiff(frontHand.transform, rearHand.transform) <= 0)
+                if (forceRotateHand)
                 {
-                    frontHandConnector.Rotate(Vector3.up, 180);
+                    frontHandConnector.LookAt(frontHandConnector.position - weaponHoldVector, frontHand.transform.up);
+                    rearHandConnector.LookAt(rearHandConnector.position + weaponHoldVector, rearHand.transform.up);
+                    if (GetHandAngleDiff(frontHand.transform, rearHand.transform) <= 0)
+                    {
+                        frontHandConnector.Rotate(Vector3.up, 180);
+                    }
+                    if (GetHandAngleDiff(rearHand.transform, frontHand.transform) < 0)
+                    {
+                        rearHandConnector.Rotate(Vector3.up, 180);
+                    }
+                    rearHandConnector.Rotate(Vector3.right, 10);
                 }
-                if (GetHandAngleDiff(rearHand.transform, frontHand.transform) < 0)
-                {
-                    rearHandConnector.Rotate(Vector3.up, 180);
-                }
-                rearHandConnector.Rotate(Vector3.right, 10);
                 frontHandConnector.position = frontHandConnector.parent.position + frontHandConnector.forward * HAND_CENTER_OFFSET + (frontHandCenter - frontHand.transform.position);
                 rearHandConnector.position = rearHandConnector.parent.position + rearHandConnector.forward * HAND_CENTER_OFFSET + (rearHandCenter - rearHand.transform.position);
 
@@ -231,9 +273,14 @@ namespace ValheimVRMod.Scripts
                 {
                     transform.LookAt(rearHandCenter - weaponHoldVector.normalized * 5, transform.up);
                     transform.localRotation = transform.localRotation * (rotSave.transform.localRotation) * Quaternion.AngleAxis(180, Vector3.right) * Quaternion.AngleAxis(rotOffset, transform.InverseTransformDirection(-weaponHoldVector));
+
+                    if (isOtherHandWeapon)
+                    {
+                        var angleDiff = Vector3.SignedAngle(transform.up, rearHand.transform.TransformDirection(0, -0.3f, -0.7f), transform.forward);
+                        transform.localRotation = transform.localRotation * Quaternion.AngleAxis(angleDiff, Vector3.forward) * Quaternion.AngleAxis(180, Vector3.forward);
+                    }
                 }
 
-                weaponForward = transform.forward;
                 weaponSubPos = true;
                 shieldSize = 0.4f;
             }
@@ -281,6 +328,14 @@ namespace ValheimVRMod.Scripts
                 default:
                     return isCurrentlyTwoHanded();
             }
+        }
+
+        public bool isLeftHandWeapon()
+        {
+            var player = Player.m_localPlayer;
+            var leftHandItem = player?.m_leftItem?.m_shared.m_itemType;
+
+            return !(leftHandItem is null) && leftHandItem != ItemDrop.ItemData.ItemType.Shield;
         }
     }
 }

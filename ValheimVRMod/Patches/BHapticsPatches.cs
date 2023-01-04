@@ -117,7 +117,7 @@ namespace ValheimVRMod.Patches
     /**
     * on arrow release
     */
-    [HarmonyPatch(typeof(Attack), "OnAttackTrigger")]
+    [HarmonyPatch(typeof(Attack), nameof(Attack.OnAttackTrigger))]
     class Attack_ArrowThrowing_Patch
     {
         public static void Postfix(Attack __instance)
@@ -644,7 +644,7 @@ namespace ValheimVRMod.Patches
     /**
      * Boss animations / attacks
      */
-    [HarmonyPatch(typeof(Attack), "OnAttackTrigger")]
+    [HarmonyPatch(typeof(Attack), nameof(Attack.OnAttackTrigger))]
     class Attack_OnAttackTrigger_Patch
     {
         public static Dictionary<string, float> rangeBoss = new Dictionary<string, float>()

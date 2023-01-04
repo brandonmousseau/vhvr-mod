@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using ValheimVRMod.VRCore;
 using ValheimVRMod.VRCore.UI;
 using HarmonyLib;
@@ -508,12 +508,14 @@ namespace ValheimVRMod.Patches {
 
     [HarmonyPatch(typeof(Player), nameof(Player.SetControls))]
     class Player_SetControls_EquipPatch {
-      
+        protected static float timer = 2f;
+        protected static float timeEnd = 2f;
         static void Prefix(Player __instance, ref bool attack, ref bool attackHold, ref bool block, ref bool blockHold,
             ref bool secondaryAttack) {
             if (!VHVRConfig.UseVrControls() || __instance != Player.m_localPlayer) {
                 return;
             }
+            timer = timer <= timeEnd ? timer + Time.deltaTime : timeEnd;
 
             if (EquipScript.getLeft() == EquipType.Bow) {
                 if (BowLocalManager.aborting) {
@@ -522,17 +524,57 @@ namespace ValheimVRMod.Patches {
                     BowLocalManager.aborting = false;
                 }
                 else if (BowLocalManager.startedPulling) {
-                    attack = true;
+                    if (Player.m_localPlayer.GetLeftItem().m_shared.m_attack.m_bowDraw)
+                        attack = true;
                     BowLocalManager.startedPulling = false;
                 }
                 else {
-                    attackHold = BowLocalManager.isPulling;
+                    if (Player.m_localPlayer.GetLeftItem().m_shared.m_attack.m_bowDraw)
+                    {
+                        attackHold = BowLocalManager.isPulling;
+                    }
+                    else
+                    {
+                        
+                        if (BowLocalManager.isPulling && SteamVR_Actions.valheim_Use.state && timer >= timeEnd)
+                        {
+                            timeEnd = 2f;
+                            timer = 0f;
+                            attack = true;
+                            attackHold = true;
+                            VRPlayer.rightHand.hapticAction.Execute(0, 0.1f, 75, 0.3f, SteamVR_Input_Sources.RightHand);
+                        }
+                        else
+                        {
+                            attack = false;
+                            attackHold = false ;
+                        }
+                        var currentAnimatorClip = Player.m_localPlayer.m_animator.GetCurrentAnimatorClipInfo(0)?[0].clip;
+                        if (currentAnimatorClip?.name == "Bow Aim Recoil")
+                        {
+                            timeEnd = currentAnimatorClip.length / PatchFixedUpdate.lastSpeedUp;
+                        }
+                    }
+                    
                 }
                 return;
             }
 
             if (EquipScript.getLeft() == EquipType.Shield) {
                 blockHold = ShieldBlock.instance?.isBlocking() ?? false;
+            }
+
+            if (EquipScript.getLeft() == EquipType.Magic && SteamVR_Actions.valheim_UseLeft.state)
+            {
+                // TODO: Create a proper manager for this
+                attack = true;
+                attackHold = true;
+            }
+
+            if (EquipScript.getLeft() == EquipType.Crossbow && WeaponWield.isCurrentlyTwoHanded() && SteamVR_Actions.valheim_Use.stateDown)
+            {
+                attack = true;
+                attackHold = true;
             }
 
             switch (EquipScript.getRight()) {
@@ -570,6 +612,34 @@ namespace ValheimVRMod.Patches {
                     }
 
                     break;
+                case EquipType.Magic:
+                    if (SteamVR_Actions.valheim_Use.state)
+                    {
+                        attack = true;
+                        attackHold = true;
+                    }
+                    break;
+
+
+                case EquipType.RuneSkyheim:
+                    if (SteamVR_Actions.valheim_Use.state && SteamVR_Actions.valheim_Grab.state && timer >= timeEnd)
+                    {
+                        timeEnd = 2f;
+                        timer = 0f;
+                        attack = true;
+                    }
+                    var currentAnimatorClip = Player.m_localPlayer.m_animator.GetCurrentAnimatorClipInfo(0)?[0].clip;
+                    if (currentAnimatorClip?.name == "spear_throw")
+                    {
+                        timeEnd = currentAnimatorClip.length / PatchFixedUpdate.lastSpeedUp;
+                    }
+                    break;
+            }
+
+            if (EquipScript.isThrowable(__instance.GetRightItem()) && SpearManager.isThrowing)
+            {
+                secondaryAttack = true;
+                SpearManager.isThrowing = false;
             }
         }
     }
@@ -792,6 +862,7 @@ namespace ValheimVRMod.Patches {
     [HarmonyPatch(typeof(Player), "Update")]
     class Player_UpdateDodge_Patch
     {
+        public static bool wasDodging = false;
         static void Postfix(Player __instance)
         {
             if (VHVRConfig.NonVrPlayer())
@@ -801,14 +872,16 @@ namespace ValheimVRMod.Patches {
             if (dir == Vector3.zero)
                 return;
 
-            if (SteamVR_Actions.valheim_UseLeft.GetStateDown(SteamVR_Input_Sources.LeftHand))
+            if (SteamVR_Actions.valheim_UseLeft.state && SteamVR_Actions.valheim_Jump.stateDown)
             {
                 if (__instance.m_stamina < __instance.m_dodgeStaminaUsage)
                 {
-                    Hud.instance.StaminaBarNoStaminaFlash();
+                    // FIXME: Mystlands probably changed this from StaminaBarNoStaminaFlash
+                    Hud.instance.StaminaBarEmptyFlash();
                     return;
                 }
                 __instance.Dodge(dir);
+                wasDodging = true;
             }
         }
     }
@@ -816,7 +889,7 @@ namespace ValheimVRMod.Patches {
     [HarmonyPatch(typeof(Player), "UpdateDodge")]
     class UpdateDodgeVr
     {
-        static float currdodgetimer = 0f;
+        public static float currdodgetimer { get; private set; } = 0f;
         static Vector3 currDodgeDir;
         static bool Prefix(Player __instance, float dt)
         {
@@ -833,7 +906,7 @@ namespace ValheimVRMod.Patches {
                 float num = __instance.m_dodgeStaminaUsage - __instance.m_dodgeStaminaUsage * __instance.m_equipmentMovementModifier;
                 if (__instance.HaveStamina(num))
                 {
-                    __instance.AbortEquipQueue();
+                    __instance.ClearActionQueue();
                     __instance.m_queuedDodgeTimer = 0f;
                     currdodgetimer = 0.8f;
                     currDodgeDir = __instance.transform.forward;
@@ -855,6 +928,10 @@ namespace ValheimVRMod.Patches {
             if (currdodgetimer > 0)
             {
                 __instance.m_rootMotion = (__instance.m_queuedDodgeDir.normalized / 11) - (currDodgeDir / 15);
+            }
+            else
+            {
+                Player_UpdateDodge_Patch.wasDodging = false;
             }
             return false;
         }

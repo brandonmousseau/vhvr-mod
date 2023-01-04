@@ -6,6 +6,7 @@ using HarmonyLib;
 using UnityEngine;
 using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
+using ValheimVRMod.VRCore;
 
 namespace ValheimVRMod.Patches {
 
@@ -20,8 +21,8 @@ namespace ValheimVRMod.Patches {
                 return true;
             }
 
-            if (EquipScript.getLeft() == EquipType.Bow && !VHVRConfig.RestrictBowDrawSpeed()) {
-                __result = BowLocalManager.realLifePullPercentage;
+            if (EquipScript.getLeft() == EquipType.Bow && VHVRConfig.RestrictBowDrawSpeed() == "None") {
+                __result = BowLocalManager.instance.GetAttackPercentage();
                 return false;
             }
 
@@ -38,9 +39,18 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
-            if (EquipScript.getLeft() == EquipType.Bow && VHVRConfig.RestrictBowDrawSpeed()) {
+            if (EquipScript.getLeft() == EquipType.Bow && VHVRConfig.RestrictBowDrawSpeed() != "None") {
                 // Since the attack draw percentage is not patched in the prefix, we need to clamp it here in case the real life pull percentage is smaller than the unpatched attack draw percentage.
-                __result = Math.Min(__result, BowManager.realLifePullPercentage);
+                
+                if (BowLocalManager.instance)
+                {
+                    if(__result > BowLocalManager.instance.lastDrawPercentage)
+                    {
+                        BowLocalManager.instance.lastDrawPercentage = __result;
+                    }
+                    if(!BowLocalManager.instance.pulling)
+                    __result = Math.Min(__result, BowManager.realLifePullPercentage);
+                }
             }
         }
     }
@@ -50,7 +60,7 @@ namespace ValheimVRMod.Patches {
         */
     [HarmonyPatch(typeof(Attack), "GetProjectileSpawnPoint")]
     class PatchGetProjectileSpawnPoint {
-        static bool Prefix(out Vector3 spawnPoint, out Vector3 aimDir, Humanoid ___m_character) {
+        static bool Prefix(Attack __instance, out Vector3 spawnPoint, out Vector3 aimDir, Humanoid ___m_character) {
 
             spawnPoint = Vector3.zero;
             aimDir = Vector3.zero;
@@ -59,10 +69,20 @@ namespace ValheimVRMod.Patches {
                 return true;
             }
 
-            if (EquipScript.getLeft() == EquipType.Bow) {
-                spawnPoint = BowLocalManager.spawnPoint;
-                aimDir = BowLocalManager.aimDir;
-                return false;
+            switch(EquipScript.getLeft()) { 
+                case EquipType.Bow: 
+                    spawnPoint = BowLocalManager.spawnPoint;
+                    aimDir = BowLocalManager.aimDir;
+                    return false;
+                case EquipType.Crossbow:
+                    spawnPoint = VRPlayer.rightPointer.rayStartingPosition + WeaponWield.weaponForward * Vector3.Distance(Vector3.zero, (Vector3.up * __instance.m_attackHeight + Vector3.forward * __instance.m_attackRange + Vector3.right * __instance.m_attackOffset)) * 0.4f;
+                    aimDir = WeaponWield.weaponForward;
+                    return false;
+                case EquipType.Magic:
+                    // TODO: Create a proper manager for this
+                    spawnPoint = VRPlayer.leftPointer.rayStartingPosition;
+                    aimDir = VRPlayer.leftPointer.rayDirection * Vector3.forward;
+                    return false;
             }
             
             switch (EquipScript.getRight()) {
@@ -77,8 +97,31 @@ namespace ValheimVRMod.Patches {
                     spawnPoint = SpearManager.spawnPoint;
                     aimDir = SpearManager.aimDir;
                     return false;
+                case EquipType.Magic:
+                    // TODO: Create a proper manager for this
+                    spawnPoint = VRPlayer.rightPointer.rayStartingPosition + WeaponWield.weaponForward * Vector3.Distance(Vector3.zero, (Vector3.up * __instance.m_attackHeight + Vector3.forward * __instance.m_attackRange + Vector3.right * __instance.m_attackOffset))*0.6f;
+                    
+                    if (WeaponWield.isCurrentlyTwoHanded())
+                    {
+                        aimDir = WeaponWield.weaponForward;
+                    }
+                    else
+                    {
+                        aimDir = VRPlayer.rightPointer.rayDirection * Vector3.forward;
+                    }
+                    return false;
+                case EquipType.RuneSkyheim:
+                    spawnPoint = VRPlayer.rightHand.transform.position;
+                    aimDir = VRPlayer.rightPointer.rayDirection * Vector3.forward;
+                    return false;
             }
 
+            if (EquipScript.isThrowable(___m_character.GetRightItem()))
+            {
+                spawnPoint = SpearManager.spawnPoint;
+                aimDir = SpearManager.aimDir;
+                return false;
+            }
             return true;
 
         }
@@ -102,13 +145,24 @@ namespace ValheimVRMod.Patches {
      * because the original method switches it back to normal for other animations
      */
     [HarmonyPatch(typeof(CharacterAnimEvent), "FixedUpdate")]
+
     class PatchFixedUpdate {
+
+        public static float lastSpeedUp = 1f;
         static void Prefix(Character ___m_character, ref Animator ___m_animator) {
             
             if (___m_character != Player.m_localPlayer || !VHVRConfig.UseVrControls()) {
                 return;
             }
-            
+            if (!EquipScript.getLeftAnimSpeedUp() || !EquipScript.getRightAnimSpeedUp() || ___m_character.IsStaggering())
+            {
+                ___m_animator.speed = 1f;
+                return;
+            }
+            if(!(___m_animator.speed == 1 || ___m_animator.speed == 1000))
+            {
+                lastSpeedUp = ___m_animator.speed;
+            }
             ___m_animator.speed = 1000f;
         }
     }  
@@ -124,11 +178,21 @@ namespace ValheimVRMod.Patches {
             if (___m_character != Player.m_localPlayer || !VHVRConfig.UseVrControls()) {
                 return;
             }
+
+            
             
             __instance.m_useCharacterFacing = false;
             __instance.m_launchAngle = 0;
-            
-            if (VHVRConfig.RestrictBowDrawSpeed()) {
+
+            if (VHVRConfig.RestrictBowDrawSpeed() != "None" && EquipScript.getLeft() == EquipType.Bow) {
+                if (VHVRConfig.IsBowAccuracyBasedOnCharge())
+                {
+                    __instance.m_projectileAccuracyMin = __instance.m_projectileAccuracyMin - __instance.m_projectileAccuracyMin * BowLocalManager.instance.lastDrawPercentage;
+                    if (___m_ammoItem != null)
+                    {
+                        ___m_ammoItem.m_shared.m_attack.m_projectileAccuracyMin = ___m_ammoItem.m_shared.m_attack.m_projectileAccuracyMin - ___m_ammoItem.m_shared.m_attack.m_projectileAccuracyMin * BowLocalManager.instance.lastDrawPercentage;
+                    }
+                }
                 return;
             }
 
@@ -186,6 +250,36 @@ namespace ValheimVRMod.Patches {
                 
             }
             return patched;
+        }
+    }
+
+    [HarmonyPatch(typeof(Attack), nameof(Attack.OnAttackTrigger))]
+    class Attack_Crossbow_Pushback
+    {
+        private static float recoilPushback = 0f;
+        public static void Prefix(Attack __instance)
+        {
+            if (__instance.m_character != Player.m_localPlayer)
+            {
+                return;
+            }
+            if (__instance.m_recoilPushback > 0f && EquipScript.getLeft() == EquipType.Crossbow)
+            {
+                recoilPushback = __instance.m_recoilPushback;
+                __instance.m_recoilPushback = 0f;
+            }
+        }
+        public static void Postfix(Attack __instance)
+        {
+            if (__instance.m_character != Player.m_localPlayer)
+            {
+                return;
+            }
+            if (recoilPushback > 0f && EquipScript.getLeft() == EquipType.Crossbow)
+            {
+                __instance.m_character.ApplyPushback(-WeaponWield.weaponForward, recoilPushback);
+                recoilPushback = 0f;
+            }
         }
     }
 }

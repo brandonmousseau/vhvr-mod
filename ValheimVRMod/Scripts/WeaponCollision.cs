@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using UnityEngine;
+using ValheimVRMod.Scripts.Block;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using Valve.VR;
@@ -29,6 +30,7 @@ namespace ValheimVRMod.Scripts {
 
         public bool itemIsTool;
         public static bool isDrinking;
+        public WeaponWield weaponWield;
         
         private int maxSnapshots;
         private float colliderDistance;
@@ -127,9 +129,17 @@ namespace ValheimVRMod.Scripts {
                 return false;
             }
 
+            if (Player.m_localPlayer.m_blocking && !weaponWield.allowBlocking() && VHVRConfig.BlockingType() == "GrabButton")
+            {
+                return false;
+            }
+            if (Player.m_localPlayer.IsStaggering() || Player.m_localPlayer.InDodge())
+            {
+                return false;
+            }
+
             // if attack is vertical, we can only hit one target at a time
-            if (attack.m_attackType != Attack.AttackType.Horizontal  && 
-                MeshCooldown.sharedInstance != null && MeshCooldown.sharedInstance.inCoolDown()) {
+            if (attack.m_attackType != Attack.AttackType.Horizontal  && AttackTargetMeshCooldown.isLastTargetInCooldown()) {
                 return false;
             }
 
@@ -142,12 +152,12 @@ namespace ValheimVRMod.Scripts {
                 target = character.gameObject;
             }
             
-            var meshCooldown = target.GetComponent<MeshCooldown>();
-            if (meshCooldown == null) {
-                meshCooldown = target.AddComponent<MeshCooldown>();
+            var attackTargetMeshCooldown = target.GetComponent<AttackTargetMeshCooldown>();
+            if (attackTargetMeshCooldown == null) {
+                attackTargetMeshCooldown = target.AddComponent<AttackTargetMeshCooldown>();
             }
             
-            return meshCooldown.tryTrigger(hitTime);
+            return attackTargetMeshCooldown.tryTrigger(hitTime);
         }
 
         private void OnRenderObject() {
@@ -213,7 +223,7 @@ namespace ValheimVRMod.Scripts {
             }
 
             try {
-                WeaponColData colliderData = WeaponUtils.getForName(name);
+                WeaponColData colliderData = WeaponUtils.getForName(name,item);
                 colliderParent.transform.parent = obj;
                 colliderParent.transform.localPosition = colliderData.pos;
                 colliderParent.transform.localRotation = Quaternion.Euler(colliderData.euler);
@@ -222,7 +232,9 @@ namespace ValheimVRMod.Scripts {
                 maxSnapshots = (int) (MAX_SNAPSHOTS_BASE + MAX_SNAPSHOTS_FACTOR * colliderDistance);
                 setScriptActive(true);
             }
-            catch (InvalidEnumArgumentException) {
+            catch (InvalidEnumArgumentException)
+            {
+                LogUtils.LogWarning($"Collider not found for: {name}");
                 setScriptActive(false);
             }
         }
@@ -234,7 +246,7 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            var inCooldown = MeshCooldown.sharedInstance != null && MeshCooldown.sharedInstance.inCoolDown();
+            var inCooldown = AttackTargetMeshCooldown.isLastTargetInCooldown();
 
             if (outline.enabled && Player.m_localPlayer.HaveStamina(getStaminaUsage() + 0.1f)
                                 && (attack.m_attackType == Attack.AttackType.Horizontal || !inCooldown)) {

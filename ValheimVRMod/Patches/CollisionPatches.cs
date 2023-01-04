@@ -7,7 +7,7 @@ using ValheimVRMod.Utilities;
 
 namespace ValheimVRMod.Patches {
     
-    [HarmonyPatch(typeof(Attack), "GetAttackOrigin")]
+    [HarmonyPatch(typeof(Attack), nameof(Attack.GetAttackOrigin))]
     class PatchAreaAttack {
 
         static bool Prefix(ref Transform __result,  ref Humanoid ___m_character) {
@@ -21,12 +21,16 @@ namespace ValheimVRMod.Patches {
     }
     
     
-    [HarmonyPatch(typeof(Attack), "Start")]
+    [HarmonyPatch(typeof(Attack), nameof(Attack.Start))]
     class PatchAttackStart {
 
         /**
          * in Start Patch we put some logic from original Start method and some more logic from original DoMeleeAttack
          */
+
+        private static float attackHeight ;
+        private static float attackRange ;
+        private static float attackOffset ;
         static bool Prefix(
             Humanoid character,
             CharacterAnimEvent animEvent,
@@ -34,6 +38,7 @@ namespace ValheimVRMod.Patches {
             ref Humanoid ___m_character,
             ref CharacterAnimEvent ___m_animEvent,
             ref ItemDrop.ItemData ___m_weapon,
+            ref ItemDrop.ItemData ___m_ammoItem,
             ref Attack __instance,
             ref EffectList ___m_hitEffect,
             ref Skills.SkillType ___m_specialHitSkill,
@@ -66,6 +71,9 @@ namespace ValheimVRMod.Patches {
             ___m_character = character;
             ___m_animEvent = animEvent;
             ___m_weapon = weapon;
+            attackHeight = ___m_attackHeight;
+            attackRange = ___m_attackRange;
+            attackOffset = ___m_attackOffset;
             ___m_attackHeight = 0;
             ___m_attackRange = 0;
             ___m_attackOffset = 0;
@@ -77,17 +85,21 @@ namespace ValheimVRMod.Patches {
                 ___m_attackMaskTerrain = LayerMask.GetMask("Default", "static_solid", "Default_small", "piece", "piece_nonsolid", "terrain", nameof (character), "character_net", "character_ghost", "hitbox", "character_noenv", "vehicle");
             }
             
-            if (!MeshCooldown.staminaDrained) {
+            if (!AttackTargetMeshCooldown.staminaDrained) {
                 float staminaUsage = (float) __instance.GetAttackStamina();
                 if (staminaUsage > 0.0f && !character.HaveStamina(staminaUsage + 0.1f)) {
+                    // FIXME: Mystlands probably changed this from StaminaBarNoStaminaFlash
                     if (character.IsPlayer())
-                        Hud.instance.StaminaBarNoStaminaFlash();
+                        Hud.instance.StaminaBarEmptyFlash();
                     __result = false;
+                    ___m_attackHeight = attackHeight;
+                    ___m_attackRange = attackRange;
+                    ___m_attackOffset = attackOffset;
                     return false;
                 }
             
                 character.UseStamina(staminaUsage);
-                MeshCooldown.staminaDrained = true;
+                AttackTargetMeshCooldown.staminaDrained = true;
             }
 
             Collider col = StaticObjects.lastHitCollider;
@@ -103,12 +115,17 @@ namespace ValheimVRMod.Patches {
                 return false;
             }
             
-            doMeleeAttack(___m_character, ___m_weapon, __instance, ___m_hitEffect, ___m_specialHitSkill, ___m_specialHitType, ___m_lowerDamagePerHit, ___m_forceMultiplier, ___m_staggerMultiplier, ___m_damageMultiplier, ___m_attackChainLevels, ___m_currentAttackCainLevel, ___m_resetChainIfHit, ref ___m_nextAttackChainLevel, ___m_hitTerrainEffect, ___m_attackHitNoise, pos, col, dir, ___m_spawnOnTrigger);
+            doMeleeAttack(___m_character, ___m_weapon, ___m_ammoItem, __instance, ___m_hitEffect, ___m_specialHitSkill, ___m_specialHitType, ___m_lowerDamagePerHit, ___m_forceMultiplier, ___m_staggerMultiplier, ___m_damageMultiplier, ___m_attackChainLevels, ___m_currentAttackCainLevel, ___m_resetChainIfHit, ref ___m_nextAttackChainLevel, ___m_hitTerrainEffect, ___m_attackHitNoise, pos, col, dir, ___m_spawnOnTrigger);
+
+            ___m_attackHeight = attackHeight;
+            ___m_attackRange = attackRange;
+            ___m_attackOffset = attackOffset;
+
             return false;
             
         }
 
-        private static void doMeleeAttack(Humanoid ___m_character, ItemDrop.ItemData ___m_weapon, Attack __instance,
+        private static void doMeleeAttack(Humanoid ___m_character, ItemDrop.ItemData ___m_weapon, ItemDrop.ItemData ___m_ammoItem, Attack __instance,
             EffectList ___m_hitEffect, Skills.SkillType ___m_specialHitSkill, DestructibleType ___m_specialHitType,
             bool ___m_lowerDamagePerHit, float ___m_forceMultiplier, float ___m_staggerMultiplier, float ___m_damageMultiplier,
             int ___m_attackChainLevels, int ___m_currentAttackCainLevel, DestructibleType ___m_resetChainIfHit,
@@ -176,7 +193,7 @@ namespace ValheimVRMod.Patches {
                 hitData.m_skill = skill;
                 hitData.m_damage = ___m_weapon.GetDamage();
                 hitData.m_point = pos;
-                hitData.m_dir = dir;
+                hitData.m_dir = Player.m_localPlayer.transform.forward;
                 hitData.m_hitCollider = col;
                 hitData.SetAttacker(___m_character);
                 hitData.m_damage.Modify(___m_damageMultiplier);
@@ -186,7 +203,8 @@ namespace ValheimVRMod.Patches {
                     hitData.m_damage.Modify(2f);
                     hitData.m_pushForce *= 1.2f;
                 }
-                hitData.m_damage.Modify(MeshCooldown.calcDamageMultiplier());
+                
+                hitData.m_damage.Modify(AttackTargetMeshCooldown.calcDamageMultiplier());
 
                 ___m_character.GetSEMan().ModifyAttack(skill, ref hitData);
                 if (component is Character)
@@ -209,18 +227,20 @@ namespace ValheimVRMod.Patches {
                 ___m_weapon.m_durability -= ___m_weapon.m_shared.m_useDurabilityDrain;
             ___m_character.AddNoise(___m_attackHitNoise);
 
+            // FIXME: Setup now takes in input an additional ammo parameter, look into this
             if (___m_weapon.m_shared.m_spawnOnHit)
                 Object.Instantiate(___m_weapon.m_shared.m_spawnOnHit, pos,
                         Quaternion.identity).GetComponent<IProjectile>()
-                    ?.Setup(___m_character, zero, ___m_attackHitNoise, null, ___m_weapon);
+                    ?.Setup(___m_character, zero, ___m_attackHitNoise, null, ___m_weapon, ___m_ammoItem);
             foreach (Skills.SkillType skill in skillTypeSet)
                 ___m_character.RaiseSkill(skill, flag2 ? 1.5f : 1f);
 
             if (!___m_spawnOnTrigger)
                 return;
+            // FIXME: Setup now takes in input an additional ammo parameter, look into this
             Object.Instantiate(___m_spawnOnTrigger, zero,
                 Quaternion.identity).GetComponent<IProjectile>()?.Setup(___m_character,
-                ___m_character.transform.forward, -1f, null, ___m_weapon);
+                ___m_character.transform.forward, -1f, null, ___m_weapon, ___m_ammoItem);
 
             return;
         }

@@ -14,7 +14,7 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CommonDir>C:\Program Files (x86)\Steam\steamapps\common\</CommonDir>
-    <UnityDir>C:\Program Files (x86)\Hub\Editor\2019.2.16f1\2020.3.33f1\</UnityDir>
+    <UnityDir>C:\Program Files (x86)\Hub\Editor\2020.3.33f1\</UnityDir>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -61,7 +61,7 @@
     <PackageReference Include="BepInEx.Core" Version="5.4.19" />
     <PackageReference Include="NDesk.Options" Version="0.2.1" />
     <PackageReference Include="UnityEngine.Modules" Version="2020.3.33" />
-    <PackageReference Include="ValheimGameLibs" Version="0.209.10" />
+    <PackageReference Include="ValheimGameLibs" Version="0.212.7" />
 	<PackageReference Include="Bhaptics.Tac" Version="1.4.16" />
   </ItemGroup>
   <ItemGroup>
@@ -77,6 +77,9 @@
     <Reference Include="Unity.XR.OpenVR, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\Unity\build\ValheimVR_Data\Managed\Unity.XR.OpenVR.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.SpatialTracking">
+      <HintPath>..\Unity\build\ValheimVR_Data\Managed\UnityEngine.SpatialTracking.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.UI, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>

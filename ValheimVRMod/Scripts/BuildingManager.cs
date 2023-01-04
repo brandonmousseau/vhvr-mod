@@ -35,6 +35,7 @@ namespace ValheimVRMod.Scripts
         private GameObject snapPointer;
         private LineRenderer snapLine;
         private float snapTimer;
+        private bool isExclusiveSnap;
 
         //Precision Mode
         private bool isFreeMode = false;
@@ -84,6 +85,7 @@ namespace ValheimVRMod.Scripts
         private Text rotationText;
         private LineRenderer rotationBorder1;
         private LineRenderer rotationBorder2;
+        private int step = 1;
 
         public Piece currentComponent;
         public Transform originalRayTraceTransform;
@@ -101,37 +103,10 @@ namespace ValheimVRMod.Scripts
         private bool advancePositionMod;
         private Vector3 advanceRotationPosSave;
 
-        private LayerMask piecelayer = LayerMask.GetMask(new string[]
-        {
-            "Default",
-            "static_solid",
-            "Default_small",
-            "piece",
-            "piece_nonsolid",
-            "terrain",
-            "vehicle"
-        });
-        private LayerMask waterpiecelayer = LayerMask.GetMask(new string[]
-        {
-            "Default",
-            "static_solid",
-            "Default_small",
-            "piece",
-            "piece_nonsolid",
-            "terrain",
-            "Water",
-            "vehicle"
-        });
-        private LayerMask piecelayer2 = LayerMask.GetMask(new string[]
-        {
-            "Default",
-            "static_solid",
-            "Default_small",
-            "piece",
-            "terrain",
-            "vehicle"
-        });
-
+        private LayerMask piecelayer;
+        private LayerMask waterpiecelayer;
+        private LayerMask piecelayer2;
+        private LayerMask nonpiecelayer;
 
         private void Awake()
         {
@@ -151,6 +126,40 @@ namespace ValheimVRMod.Scripts
                 snapPointsCollider.Add(CreateSnapPointCollider());
             }
             instance = this;
+            piecelayer = LayerMask.GetMask(new string[]
+            {
+                "Default",
+                "static_solid",
+                "Default_small",
+                "piece",
+                "piece_nonsolid",
+                "terrain",
+                "vehicle"
+            });
+            waterpiecelayer = LayerMask.GetMask(new string[]
+            {
+                "Default",
+                "static_solid",
+                "Default_small",
+                "piece",
+                "piece_nonsolid",
+                "terrain",
+                "Water",
+                "vehicle"
+            });
+            piecelayer2 = LayerMask.GetMask(new string[]
+            {
+                "Default",
+                "static_solid",
+                "Default_small",
+                "piece",
+                "terrain",
+                "vehicle"
+            });
+            nonpiecelayer = LayerMask.GetMask(new string[]
+            {
+                "piece_nonsolid"
+            });
         }
         private void OnDestroy()
         {
@@ -437,6 +446,10 @@ namespace ValheimVRMod.Scripts
                     if (currentComponent.m_waterPiece || currentComponent.m_noInWater)
                         layerCheck = waterpiecelayer;
                 }
+                if (VRControls.instance.getClickModifier() && isReferenceActive)
+                {
+                    layerCheck = nonpiecelayer;
+                }
                 if (Physics.Raycast(PlaceModeRayVectorProvider.startingPosition, PlaceModeRayVectorProvider.rayDirection, out pieceRaycast, 50f, layerCheck))
                 {
                     snapLine.enabled = true;
@@ -720,8 +733,9 @@ namespace ValheimVRMod.Scripts
             pieceOnHand = onHand;
             if (VHVRConfig.AdvancedBuildingMode())
                 onHand.transform.rotation = advRotationGhostObject.transform.rotation;
-            if (lastSnapTransform && pieceOnHand && lastSnapDirection != pieceOnHand.transform.localRotation)
+            if (lastSnapTransform && pieceOnHand && (lastSnapDirection != pieceOnHand.transform.localRotation || VRControls.instance.getClickModifier() != isExclusiveSnap))
             {
+                isExclusiveSnap = VRControls.instance.getClickModifier();
                 snapPointer.SetActive(true);
                 lastSnapDirection = pieceOnHand.transform.localRotation;
                 UpdateSnapPointCollider(pieceOnHand, lastSnapTransform);
@@ -749,11 +763,17 @@ namespace ValheimVRMod.Scripts
                 }
             }
 
-            snapLine.SetPosition(0, PlaceModeRayVectorProvider.startingPosition);
-            snapLine.SetPosition(1, nearestTransform.position);
-            snapLine.enabled = true;
-            onHand.SetActive(true);
-            return nearestTransform.position;
+            if (nearestTransform.gameObject.activeSelf)
+            {
+                snapLine.SetPosition(0, PlaceModeRayVectorProvider.startingPosition);
+                snapLine.SetPosition(1, nearestTransform.position);
+                snapLine.enabled = true;
+                onHand.SetActive(true);
+                return nearestTransform.position;
+            }
+            snapLine.enabled = false;
+            isCancelled = true;
+            return onHand.transform.position;
         }
 
         private void BuildSnapPoint()
@@ -950,7 +970,6 @@ namespace ValheimVRMod.Scripts
                             continue;
                         }
                     }
-
                     //actually make snapping point
                     if (snapPointsCollider.Count < snapcount + 1)
                     {
@@ -964,6 +983,34 @@ namespace ValheimVRMod.Scripts
                     snapPointsCollider[snapcount].transform.rotation = onHandPoints.rotation;
                     snapPointsCollider[snapcount].SetActive(true);
                     snapcount++;
+                }
+            }
+            if (isExclusiveSnap)
+            {
+                foreach (var snap in snapPointsCollider)
+                {
+                    if (!snap.gameObject.activeSelf)
+                    {
+                        continue;
+                    }
+                    var count = 0;
+                    var snaplocalPos = pieceRaycast.transform.InverseTransformPoint(snap.transform.position);
+                    if (snaplocalPos.x > -0.02f && snaplocalPos.x < 0.02f)
+                    {
+                        count++;
+                    }
+                    if (snaplocalPos.z > -0.02f && snaplocalPos.z < 0.02f)
+                    {
+                        count++;
+                    }
+                    if (snaplocalPos.y > -0.4f && snaplocalPos.y < 0.4f)
+                    {
+                        count++;
+                    }
+                    if (count < 2)
+                    {
+                        snap.SetActive(false);
+                    }
                 }
             }
         }
@@ -1377,6 +1424,7 @@ namespace ValheimVRMod.Scripts
             {
                 if (!isRotatingAdv)
                 {
+                    step = 1;
                     isRotatingAdv = true;
                     rotationLine.enabled = true;
                     rotateReference.transform.position = ghost.transform.position;
@@ -1390,7 +1438,6 @@ namespace ValheimVRMod.Scripts
                 var distance = Vector3.Distance(rotationAxisParent.transform.position, grabbedAxis2.transform.position);
                 var rotate = false;
                 var dir = "x";
-                float step = 1;
                 float snapAngleMultiplier = 22.5f;
                 if (modSupport)
                 {
@@ -1419,8 +1466,12 @@ namespace ValheimVRMod.Scripts
                         startRotation = grabbedAxis2.transform.localPosition;
                         lastRotationDist = 1;
                     }
-                    step = Mathf.Max(1, Mathf.Floor(distance * 16));
-                    snapAngleMultiplier = 22.5f / step;
+                    if (!VRControls.instance.getClickModifier())
+                    {
+                        step = (int)Mathf.Max(1, Mathf.Floor(distance * 16));
+                    }
+                    var stepmax = Mathf.Min(step-1, VHVRConfig.BuildAngleSnap().Length-1);
+                    snapAngleMultiplier = VHVRConfig.BuildAngleSnap()[stepmax];
                     rotationBorder1.enabled = true;
                     rotationBorder2.enabled = true;
                     rotationBorder1.transform.localPosition = Vector3.zero;
@@ -1464,7 +1515,14 @@ namespace ValheimVRMod.Scripts
                     rotationHelper.z = rotateAngle;
                     dir = "z";
                 }
-                rotationText.text = dir.ToUpper() + " " + rotateAngle + "\n Snap Angle : " + snapAngleMultiplier;
+                var currentEulerAngle = advRotationGhostObject.transform.eulerAngles;
+                var ceaX = Mathf.Round(currentEulerAngle.x * 100) / 100;
+                var ceaY = Mathf.Round(currentEulerAngle.y * 100) / 100;
+                var ceaZ = Mathf.Round(currentEulerAngle.z * 100) / 100;
+                var rotSnapAngleText = rotate ? snapAngleMultiplier.ToString() : "-";
+                rotationText.text = "X "+ ceaX + "|Y "+ ceaY + "|Z " + ceaZ 
+                                + "\n" +dir.ToUpper() + " " + rotateAngle 
+                                + "\n Snap Angle : " + rotSnapAngleText;
                 CreateCircle(rotationBorder1, ((step) * 0.0625f), dir);
                 CreateCircle(rotationBorder2, ((step + 1) * 0.0625f), dir);
                 if (isRotationWorldAxis)
@@ -1690,6 +1748,10 @@ namespace ValheimVRMod.Scripts
                 Piece pieceParent = piece.GetComponentInParent(typeof(Piece)) as Piece;
 
                 //same function as IsOverlapingOtherPiece
+                if (!pieceParent)
+                {
+                    continue;
+                }
                 if (Vector3.Distance(pos, pieceParent.transform.position) < 0.05f &&
                     (allowRotatedOverlap || Quaternion.Angle(piece.transform.rotation, rotation) <= 1f) &&
                     pieceParent.gameObject.name.StartsWith(name))

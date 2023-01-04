@@ -156,7 +156,7 @@ namespace ValheimVRMod.VRCore.UI.HudElements
             Hud.instance.m_pieceDescription = newComponents.pieceDescription;
             Hud.instance.m_buildIcon = newComponents.buildIcon;
             Hud.instance.m_requirementItems = newComponents.requirementItems;
-            if (Player.m_localPlayer.InPlaceMode())
+            if (Player.m_localPlayer && Player.m_localPlayer.InPlaceMode())
             {
                 newComponents.selectedInfoRoot.SetActive(true);
             }

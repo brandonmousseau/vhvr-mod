@@ -60,7 +60,7 @@ namespace ValheimVRMod.Patches {
                     meshFilter.gameObject.AddComponent<FishingManager>();
                     break;
                 case EquipType.ThrowObject:
-                    meshFilter.gameObject.AddComponent<SpearManager>();
+                    spearManager = meshFilter.gameObject.AddComponent<SpearManager>();
                     break;
                 case EquipType.Spear:
                 case EquipType.SpearChitin:
@@ -74,6 +74,7 @@ namespace ValheimVRMod.Patches {
                                 break;
                             case "SpearElderbark":
                             case "SpearBronze":
+                            case "SpearCarapace":
                                 meshFilter.gameObject.transform.localPosition = new Vector3(0, 0, -1.15f);
                                 break;
 
@@ -82,10 +83,16 @@ namespace ValheimVRMod.Patches {
                     spearManager = meshFilter.gameObject.AddComponent<SpearManager>();
                     break;
             }
-            
-            StaticObjects.rightWeaponCollider().GetComponent<WeaponCollision>().setColliderParent(meshFilter.transform, ___m_rightItem, true);
-            var weaponWield = ___m_rightItemInstance.AddComponent<WeaponWield>();
+            if (EquipScript.isThrowable(player.GetRightItem()))
+            {
+                spearManager = meshFilter.gameObject.AddComponent<SpearManager>();
+            }
+            var weaponWield = ___m_rightItemInstance.AddComponent<WeaponWield>().Initialize(false);
             weaponWield.itemName = ___m_rightItem;
+            var weaponCol = StaticObjects.rightWeaponCollider().GetComponent<WeaponCollision>();
+            weaponCol.setColliderParent(meshFilter.transform, ___m_rightItem, true);
+            weaponCol.weaponWield = weaponWield;
+            
             meshFilter.gameObject.AddComponent<WeaponBlock>().weaponWield = weaponWield;
             if (spearManager) spearManager.weaponWield = weaponWield;
 
@@ -133,13 +140,28 @@ namespace ValheimVRMod.Patches {
                 StaticObjects.quickSwitch.GetComponent<QuickSwitch>().refreshItems();
                 StaticObjects.quickActions.GetComponent<QuickActions>().refreshItems();
             }
-
+            WeaponWield weaponWield;
             switch (EquipScript.getLeft()) {
                 
                 case EquipType.Bow:
                     meshFilter.gameObject.AddComponent<BowLocalManager>();
+                    var bow = Player.m_localPlayer.GetLeftItem();
+                    if (!Attack.HaveAmmo(Player.m_localPlayer, bow))
+                    {
+                        return;
+                    }
+                    Attack.EquipAmmoItem(Player.m_localPlayer, bow);
+                    
                     return;
-                
+                case EquipType.Crossbow:
+                    weaponWield = ___m_leftItemInstance.AddComponent<WeaponWield>().Initialize(true) ;
+                    weaponWield.itemName = ___m_leftItem;
+                    weaponWield.gameObject.AddComponent<WeaponBlock>().weaponWield = weaponWield;
+                    return;
+                case EquipType.Lantern:
+                    weaponWield = ___m_leftItemInstance.AddComponent<WeaponWield>().Initialize(true);
+                    weaponWield.itemName = ___m_leftItem;
+                    break;
                 case EquipType.Shield:
                     meshFilter.gameObject.AddComponent<ShieldBlock>().itemName = ___m_leftItem;
                     return;

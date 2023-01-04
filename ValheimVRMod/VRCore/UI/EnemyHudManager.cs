@@ -112,13 +112,21 @@ namespace ValheimVRMod.VRCore.UI
             }
         }
 
-        public void UpdateHealth(Character c, float health)
+        public void UpdateHealth(Player p, Character c, float health)
         {
             HudData data = getEnemyHud(c);
             if (data != null)
             {
                 data.healthSlow.SetValue(health);
                 data.healthFast.SetValue(health);
+
+                if (!(data.healthFastFriendly is null))
+                {
+                    bool isEnemy = !p || BaseAI.IsEnemy(p, c);
+                    data.healthFast.gameObject.SetActive(isEnemy);
+                    data.healthFastFriendly.gameObject.SetActive(!isEnemy);
+                    data.healthFastFriendly.SetValue(health);
+                }
             }
         }
 
@@ -229,6 +237,7 @@ namespace ValheimVRMod.VRCore.UI
             data.hudCanvasRoot = canvasRoot;
             data.healthRoot = data.gui.transform.Find("Health").gameObject; //This is no longer set in the base game
             data.healthFast = data.healthRoot.transform.Find("health_fast").GetComponent<GuiBar>();
+            data.healthFastFriendly = data.healthRoot.transform.Find("health_fast_friendly")?.GetComponent<GuiBar>();
             data.healthSlow = data.healthRoot.transform.Find("health_slow").GetComponent<GuiBar>();
             data.level2 = data.gui.transform.Find("level_2") as RectTransform;
             data.level3 = data.gui.transform.Find("level_3") as RectTransform;
@@ -286,6 +295,7 @@ namespace ValheimVRMod.VRCore.UI
             public RectTransform alerted;
             public RectTransform aware;
             public GuiBar healthFast;
+            public GuiBar healthFastFriendly;
             public GuiBar healthSlow;
             public Text name;
             public bool isMount;

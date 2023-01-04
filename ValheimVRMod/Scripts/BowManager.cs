@@ -5,44 +5,54 @@ using ValheimVRMod.Utilities;
 
 namespace ValheimVRMod.Scripts {
     public class BowManager : MonoBehaviour {
-        
+        // Constant used for detecting string mesh in the bow mesh.
         private const float minStringSize = 0.965f;
+
+        // Vertices extracted from the bow mesh
         private Vector3[] verts;
+        private int[] meshTriangles;
         private BoneWeight[] boneWeights;
-        private bool wasPulling;
         private Transform upperLimbBone;
         private Transform lowerLimbBone;
         private Transform stringTop;
         private Transform stringBottom;
+        private Transform bowTransformUpdater;
+        // The half width of the grip in the coordinate system of the bow object.
         private float gripLocalHalfWidth = 0;
+        // Hard coded bow anatomy data including those used when bow anatomy cannot be computed from mesh data.
+        private BowAnatomy bowAnatomy;
+        private Vector3 handleTop = new Vector3(0, 0, 0);
+        private Vector3 handleBottom = new Vector3(0, 0, 0);
+        private bool canAccessMesh;
+        private bool useCustomShader;
 
-        public static float realLifePullPercentage;
+        private Vector3 handleTopInObjectSpace;
+        private Vector3 handleBottomInObjectSpace;
+        private Vector3 restingStringTopInObjectSpace = new Vector3(0, Mathf.NegativeInfinity, 0);
+        private Vector3 restingStringBottomInObjectSpace = new Vector3(0, Mathf.Infinity, 0);
+        private Vector3 bowUpInObjectSpace;
+        private Vector3 bowRightInObjectSpace;
 
-        protected const float maxPullLength = 0.6f;
-        protected Vector3 pullStart;
+        protected readonly Quaternion originalRotation = new Quaternion(0.4763422f, 0.420751f, 0.5951466f, 0.4918001f); // Euler Angles: 358.1498 78.91683 99.33968
+        protected Transform pullStart;
+        // A transform centered and the bow handle center with up vector parallel to the string and pointing upward and forward vector pointing toward the shooting direction.
+        protected Transform bowOrientation;
+        // An object placed at the nocking point that moves with the pulling hand.
         protected GameObject pullObj;
+        // An object placed at the handle center with the direction of the push force as its forward direction.
         protected GameObject pushObj;
-        protected Quaternion originalRotation;
         protected bool initialized;
         protected bool wasInitialized;
         protected Outline outline;
-        protected bool oneHandedAiming = false;
-
-        public bool pulling;
         public Transform mainHand;
 
-        private Vector3 localStringTopPos = new Vector3(0, 0, 0);
-        private Vector3 localStringBottomPos = new Vector3(0, 0, 0);
-        private Vector3 handleTop = new Vector3(0, 0, 0);
-        private Vector3 handleBottom = new Vector3(0, 0, 0);
-        private const float handleHeight = 0.52f;
-
-        private int[] meshTriangles;
+        private bool wasPulling;
+        protected bool oneHandedAiming = false;
+        public static float realLifePullPercentage;
+        public float lastDrawPercentage;
+        public bool pulling;
 
         void Awake() {
-            
-            originalRotation = transform.localRotation;
-
             Mesh mesh = GetComponent<MeshFilter>().mesh;
             verts = mesh.vertices;
 
@@ -50,19 +60,37 @@ namespace ValheimVRMod.Scripts {
             // throws an exception.
             meshTriangles = mesh.triangles;
 
+            bowOrientation = new GameObject().transform;
+            bowOrientation.SetParent(transform.parent, false);
+            bowOrientation.localPosition = new Vector3(0, 0, 0);
+            bowOrientation.localRotation = originalRotation;
+
+            bowTransformUpdater = new GameObject().transform;
+            bowTransformUpdater.SetParent(bowOrientation, false);
+            bowTransformUpdater.SetPositionAndRotation(transform.position, transform.rotation);
+
+            bowAnatomy = BowAnatomy.getBowAnatomy(Player.m_localPlayer.GetLeftItem().m_shared.m_name);
+
+            gameObject.GetComponentInChildren<ParticleSystem>()?.gameObject.SetActive(VHVRConfig.EnableBowGlowParticle());
+            gameObject.GetComponentInChildren<Light>()?.gameObject.SetActive(VHVRConfig.EnableBowGlowLight());
+
+            bowUpInObjectSpace = transform.InverseTransformDirection(bowOrientation.up);
+            bowRightInObjectSpace = transform.InverseTransformDirection(bowOrientation.right);
+            float handleTopLocalHeight = Vector3.Dot(transform.InverseTransformPoint(bowOrientation.TransformPoint(new Vector3(0, bowAnatomy.handleHeight * 0.5f, 0))), bowUpInObjectSpace);
+            float handleBottomLocalHeight = Vector3.Dot(transform.InverseTransformPoint(bowOrientation.TransformPoint(new Vector3(0, -bowAnatomy.handleHeight * 0.5f, 0))), bowUpInObjectSpace);
             // we need to run this method in thread as it takes longer than a frame and freezes game for a moment
-            Thread thread = new Thread(()=>initializeRenderersAsync());
+            Thread thread = new Thread(() => initializeRenderersAsync(handleTopLocalHeight, handleBottomLocalHeight, transform.localScale.x));
             thread.Start();
 
             pullObj = new GameObject();
-            pullObj.transform.SetParent(transform, false);
+            pullObj.transform.SetParent(bowOrientation, false);
             pullObj.transform.forward *= -1;
 
             pushObj = new GameObject();
-            pushObj.transform.SetParent(transform, false);
+            pushObj.transform.SetParent(bowOrientation, false);
         }
 
-        void Update()  {
+        void Update() {
             if (outline == null && gameObject.GetComponent<SkinnedMeshRenderer>() != null) {
                 createOutline();
             }
@@ -71,21 +99,34 @@ namespace ValheimVRMod.Scripts {
         protected void OnDestroy() {
             Destroy(pullObj);
             Destroy(pushObj);
+            Destroy(pullStart.gameObject);
+            Destroy(bowOrientation.gameObject);
+            Destroy(bowTransformUpdater.gameObject);
+            Destroy(stringTop.gameObject);
+            Destroy(stringBottom.gameObject);
+            Destroy(upperLimbBone.gameObject);
+            Destroy(lowerLimbBone.gameObject);
         }
 
         protected Vector3 getArrowRestPosition() {
-            return transform.TransformPoint(new Vector3(gripLocalHalfWidth * VHVRConfig.ArrowRestHorizontalOffsetMultiplier(), -VHVRConfig.ArrowRestElevation(), 0));
+            return bowOrientation.TransformPoint(new Vector3(gripLocalHalfWidth * VHVRConfig.ArrowRestHorizontalOffsetMultiplier(), VHVRConfig.ArrowRestElevation(), 0));
         }
 
-        private void initializeRenderersAsync() {
+        protected float GetBraceHeight() {
+            return -(pullStart.localPosition.z);
+        }
 
-            // Removing the old bow string, which is part of the bow mesh to later replace it with a linerenderer.
+        private void initializeRenderersAsync(float handleTopLocalHeight, float handleBottomLocalHeight, float bowScale) {
+
+            // Remove the old bow string, which is part of the bow mesh to later replace it with a linerenderer.
             // we are making use of the fact that string triangles are longer then all other triangles
             // so we simply iterate all triangles and compare their vertex distances to a certain minimum size
             // for the new triangle array, we just skip those with bigger vertex distance
             // but we save the top and bottom points of the deleted vertices so we can use them for our new string.
-            localStringTopPos = new Vector3(0, 0, 0);
-            localStringBottomPos = new Vector3(0, 0, 0);
+
+            float stringTopHeight = Mathf.NegativeInfinity;
+            float stringBottomHeight = Mathf.Infinity;
+            canAccessMesh = false;
             for (int i = 0; i < meshTriangles.Length / 3; i++) {
                 Vector3 v1 = verts[meshTriangles[i * 3]];
                 Vector3 v2 = verts[meshTriangles[i * 3 + 1]];
@@ -96,48 +137,61 @@ namespace ValheimVRMod.Scripts {
                     Vector3.Distance(v3, v1) < minStringSize) {
                     continue;
                 }
-                
+
                 verts[meshTriangles[i * 3 + 1]] = verts[meshTriangles[i * 3]];
                 verts[meshTriangles[i * 3 + 2]] = verts[meshTriangles[i * 3]];
 
-                foreach (Vector3 v in new[] {v1, v2, v3}) {
-                    if (v.y > localStringTopPos.y) {
-                        localStringTopPos = v;
+                foreach (Vector3 v in new[] { v1, v2, v3 }) {
+                    float currentHeight = Vector3.Dot(v, bowUpInObjectSpace);
+                    if (currentHeight > stringTopHeight) {
+                        canAccessMesh = true;
+                        restingStringTopInObjectSpace = v;
+                        stringTopHeight = currentHeight;
                     }
 
-                    if (v.y < localStringBottomPos.y) {
-                        localStringBottomPos = v;
+                    if (currentHeight < stringBottomHeight) {
+                        canAccessMesh = true;
+                        restingStringBottomInObjectSpace = v;
+                        stringBottomHeight = currentHeight;
                     }
                 }
             }
 
+            useCustomShader = bowAnatomy.bowBendingImpl == BowAnatomy.BowBendingImplType.Shader || (bowAnatomy.bowBendingImpl == BowAnatomy.BowBendingImplType.Auto && !canAccessMesh);
+
             // Calculate vertex bone weights, find the local z coordinates of the top and bottom of the bow handle, and calculate the grip width.
-            handleTop = new Vector3(0, 0, 0);
-            handleBottom = new Vector3(0, 0, 0);
             boneWeights = new BoneWeight[verts.Length];
+
+            float handleTopVertexHeight = Mathf.NegativeInfinity;
+            float handleBottomVertexHeight = Mathf.Infinity;
+            float localGripLocalHalfWidth = Mathf.NegativeInfinity;
             for (int i = 0; i < verts.Length; i++) {
                 Vector3 v = verts[i];
-                if (v.y > handleHeight / 2f) {
+                float currentHeight = Vector3.Dot(v, bowUpInObjectSpace);
+                if (currentHeight > handleTopLocalHeight) {
                     // The vertex is in the upper limb.
                     boneWeights[i].boneIndex0 = 0;
-                } else if (v.y >= -handleHeight / 2f) {
+                } else if (currentHeight >= handleBottomLocalHeight) {
                     // The vertex is in the handle.
                     boneWeights[i].boneIndex0 = 1;
-                    if (v.y > handleTop.y) {
-                        handleTop = v;
+                    if (currentHeight > handleTopVertexHeight) {
+                        handleTopInObjectSpace = v;
+                        handleTopVertexHeight = currentHeight;
                     }
-                    if (v.y < handleBottom.y) {
-                        handleBottom = v;
+                    if (currentHeight < handleBottomVertexHeight) {
+                        handleBottomInObjectSpace = v;
+                        handleBottomVertexHeight = currentHeight;
                     }
                 } else {
                     // The vertex is in the lower limb.
                     boneWeights[i].boneIndex0 = 2;
                 }
-                if (0 <= v.y && v.y < VHVRConfig.ArrowRestElevation()) {
-                    gripLocalHalfWidth = Math.Max(Math.Abs(v.x), gripLocalHalfWidth);
+                if (0 <= currentHeight && currentHeight < VHVRConfig.ArrowRestElevation()) {
+                    localGripLocalHalfWidth = Math.Max(Math.Abs(Vector3.Dot(v, bowRightInObjectSpace)), localGripLocalHalfWidth);
                 }
                 boneWeights[i].weight0 = 1;
             }
+            gripLocalHalfWidth = localGripLocalHalfWidth * bowScale;
 
             initialized = true;
         }
@@ -147,9 +201,9 @@ namespace ValheimVRMod.Scripts {
             // Create the bones for the limbs.
             upperLimbBone = new GameObject("BowUpperLimbBone").transform;
             lowerLimbBone = new GameObject("BowLowerLimbBone").transform;
-            upperLimbBone.parent = lowerLimbBone.parent = transform;
-            upperLimbBone.localPosition = new Vector3(0, handleHeight / 2, handleTop.z);
-            lowerLimbBone.localPosition = new Vector3(0, -handleHeight / 2, handleBottom.z);
+            upperLimbBone.parent = lowerLimbBone.parent = bowOrientation;
+            upperLimbBone.localPosition = new Vector3(0, bowAnatomy.handleHeight / 2, handleTop.z);
+            lowerLimbBone.localPosition = new Vector3(0, -bowAnatomy.handleHeight / 2, handleBottom.z);
             upperLimbBone.localRotation = Quaternion.identity;
             lowerLimbBone.localRotation = Quaternion.identity;
         }
@@ -161,14 +215,63 @@ namespace ValheimVRMod.Scripts {
             stringBottom = new GameObject().transform;
             stringTop.SetParent(upperLimbBone, false);
             stringBottom.SetParent(lowerLimbBone, false);
-            stringTop.position = transform.TransformPoint(localStringTopPos);
-            stringBottom.position = transform.TransformPoint(localStringBottomPos);
-            pullStart = Vector3.Lerp(localStringTopPos, localStringBottomPos, 0.5f);
+            stringTop.position = transform.TransformPoint(restingStringTopInObjectSpace);
+            stringBottom.position = transform.TransformPoint(restingStringBottomInObjectSpace);
+            pullStart = new GameObject().transform;
+            pullStart.parent = bowOrientation;
+            pullStart.position = Vector3.Lerp(stringTop.position, stringBottom.position, 0.5f);
+        }
+
+        private void PostInit() {
+            if (canAccessMesh) {
+                handleTop = bowOrientation.InverseTransformPoint(transform.TransformPoint(handleTopInObjectSpace));
+                handleBottom = bowOrientation.InverseTransformPoint(transform.TransformPoint(handleBottomInObjectSpace));
+            } else {
+                LogUtils.LogWarning("Cannot access bow mesh, falling back to hardcoded bow anatomy data");
+                restingStringTopInObjectSpace = transform.InverseTransformPoint(bowOrientation.TransformPoint(bowAnatomy.fallbackStringTop));
+                restingStringBottomInObjectSpace = transform.InverseTransformPoint(bowOrientation.TransformPoint(bowAnatomy.fallbackStringBottom));
+                handleTop = bowAnatomy.fallbackHandleTop;
+                handleBottom = bowAnatomy.fallbackHandleBottom;
+                gripLocalHalfWidth = bowAnatomy.fallbackHandleWidth * 0.5f;
+                handleTopInObjectSpace = transform.InverseTransformVector(bowOrientation.TransformPoint(handleTop) - transform.position);
+                handleBottomInObjectSpace = transform.InverseTransformVector(bowOrientation.TransformPoint(handleBottom) - transform.position);
+            }
+
+            createLimbBones();
+            initializeStringPosition();
+            GetComponent<MeshFilter>().mesh.vertices = verts;
+            skinBones();
+            createNewString();
+        }
+
+        private Material GetBowBendingMaterial(Material vanillaMaterial) {
+            Material bowBendingMaterial = Instantiate(VRAssetManager.GetAsset<Material>("BowBendingMaterial")); ;
+            bowBendingMaterial.color = vanillaMaterial.color;
+            bowBendingMaterial.mainTexture = vanillaMaterial.mainTexture;
+            bowBendingMaterial.SetTexture("_BumpMap", vanillaMaterial.GetTexture("_BumpMap"));
+            bowBendingMaterial.SetTexture("_MetallicGlossMap", vanillaMaterial.GetTexture("_MetallicGlossMap"));
+            bowBendingMaterial.SetTexture("_EmissionMap", vanillaMaterial.GetTexture("_EmissionMap"));
+
+            // A higher render queue is needed to to prevent certain shadow artifacts when using vertex and fragment shaders. It is not necesssary for surface shaders.
+            // meshRenderer.material.renderQueue = 3000;
+
+            bowBendingMaterial.SetVector("_HandleVector", bowUpInObjectSpace);
+            bowBendingMaterial.SetFloat("_HandleTopHeight", Vector3.Dot(handleTopInObjectSpace, bowUpInObjectSpace));
+            bowBendingMaterial.SetFloat("_HandleBottomHeight", Vector3.Dot(handleBottomInObjectSpace, bowUpInObjectSpace));
+            bowBendingMaterial.SetFloat("_SoftLimbHeight", bowAnatomy.softLimbHeight / transform.localScale.y);
+
+            Vector3 stringTopToBottomDirection = (restingStringBottomInObjectSpace - restingStringTopInObjectSpace).normalized;
+            bowBendingMaterial.SetVector("_StringTop", new Vector4(restingStringTopInObjectSpace.x, restingStringTopInObjectSpace.y, restingStringTopInObjectSpace.z, 1));
+            bowBendingMaterial.SetVector("_StringTopToBottomDirection", new Vector4(stringTopToBottomDirection.x, stringTopToBottomDirection.y, stringTopToBottomDirection.z, 0));
+            bowBendingMaterial.SetFloat("_StringLength", (restingStringTopInObjectSpace - restingStringBottomInObjectSpace).magnitude);
+            bowBendingMaterial.SetFloat("_StringRadius", bowAnatomy.stringRadius);
+
+            return bowBendingMaterial;
         }
 
         private void skinBones() {
             Transform handleBone = new GameObject("BowHandleBone").transform;
-            handleBone.parent = transform;
+            handleBone.parent = bowOrientation;
             handleBone.localRotation = Quaternion.identity;
             handleBone.localPosition = Vector3.Lerp(upperLimbBone.localPosition, lowerLimbBone.localPosition, 0);
 
@@ -179,19 +282,24 @@ namespace ValheimVRMod.Scripts {
                 bindPoses[i] = bones[i].worldToLocalMatrix * transform.localToWorldMatrix;
             }
 
-            MeshRenderer vanillaMeshRenderer = gameObject.GetComponent<MeshRenderer>();
-            Material bowMaterial = vanillaMeshRenderer.material;
-            SkinnedMeshRenderer skinnedMeshRenderer = gameObject.AddComponent<SkinnedMeshRenderer>();
-            Mesh mesh = gameObject.GetComponent<MeshFilter>().mesh;
-            mesh.boneWeights = boneWeights;
-            mesh.bindposes = bindPoses;
-            skinnedMeshRenderer.bones = bones;
-            skinnedMeshRenderer.sharedMesh = mesh;
-            skinnedMeshRenderer.material = bowMaterial;
-            skinnedMeshRenderer.forceMatrixRecalculationPerRender = true;
-
-            // Destroy the original renderer since we will be using SkinnedMeshRenderer only.
-            Destroy(vanillaMeshRenderer);
+            MeshRenderer originalMeshRenderer = gameObject.GetComponent<MeshRenderer>();
+            Material vanillaMaterial = originalMeshRenderer.material;
+            if (useCustomShader) {
+                // Use custom shader to animate bow bending.
+                originalMeshRenderer.material = GetBowBendingMaterial(vanillaMaterial);
+            } else if (canAccessMesh) {
+                // Use skinned mesh to animate bow bending.
+                SkinnedMeshRenderer skinnedMeshRenderer = gameObject.AddComponent<SkinnedMeshRenderer>();
+                Mesh mesh = gameObject.GetComponent<MeshFilter>().mesh;
+                mesh.boneWeights = boneWeights;
+                mesh.bindposes = bindPoses;
+                skinnedMeshRenderer.bones = bones;
+                skinnedMeshRenderer.sharedMesh = mesh;
+                skinnedMeshRenderer.material = vanillaMaterial;
+                skinnedMeshRenderer.forceMatrixRecalculationPerRender = true;
+                // Destroy the original renderer since we will be using SkinnedMeshRenderer only.
+                Destroy(originalMeshRenderer);
+            }
         }
 
         /**
@@ -201,7 +309,7 @@ namespace ValheimVRMod.Scripts {
         private void createNewString() {
             var lineRenderer = gameObject.AddComponent<LineRenderer>();
             lineRenderer.useWorldSpace = true;
-            lineRenderer.widthMultiplier = 0.005f;
+            lineRenderer.widthMultiplier = 0.006f;
             lineRenderer.positionCount = 3;
             updateStringRenderer();
             lineRenderer.material.color = new Color(0.703125f, 0.48828125f, 0.28515625f); // just a random brown color
@@ -226,16 +334,13 @@ namespace ValheimVRMod.Scripts {
             }
 
             if (!wasInitialized) {
-                createLimbBones();
-                initializeStringPosition();
-                GetComponent<MeshFilter>().mesh.vertices = verts;
-                skinBones();
-                createNewString();
+                PostInit();
                 wasInitialized = true;
             }
 
             if (pulling) {
                 if (!wasPulling) {
+                    lastDrawPercentage = 0;
                     wasPulling = true;
                 }
 
@@ -243,8 +348,9 @@ namespace ValheimVRMod.Scripts {
                 pullString();
             } else if (wasPulling) {
                 wasPulling = false;
-                pullObj.transform.localPosition = pullStart;
-                transform.localRotation = originalRotation;
+                pullObj.transform.position = pullStart.position;
+                bowOrientation.localRotation = originalRotation;
+                transform.SetPositionAndRotation(bowTransformUpdater.position, bowTransformUpdater.rotation);
             }
 
             morphBow();
@@ -255,25 +361,40 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            float realLifeHandDistance = transform.InverseTransformPoint(mainHand.position).magnitude;
+            float realLifeHandDistance = bowOrientation.InverseTransformPoint(mainHand.position).magnitude;
 
             // The angle between the push direction and the arrow direction.
             double pushOffsetAngle = Math.Asin(VHVRConfig.ArrowRestElevation() / realLifeHandDistance);
 
-            // Align the z-axis of the pushObj with the direction of the draw force and determine its y-axis using the orientation of the bow hand.
-            pushObj.transform.LookAt(mainHand, worldUp: -transform.parent.forward);
+            // Align the forward vector of the pushObj with the direction of the push force and determine its y-axis using the orientation of the bow hand.
+            Vector3 pushDirection = pushObj.transform.position - mainHand.position;
+            pushObj.transform.LookAt(pushObj.transform.position + pushDirection, worldUp: transform.parent.forward);
 
             // Assuming that the bow is perpendicular to the arrow, the angle between the y-axis of the bow and the y-axis of the pushObj should also be pushOffsetAngle.
-            transform.rotation = pushObj.transform.rotation * Quaternion.AngleAxis((float) (-pushOffsetAngle * (180.0 / Math.PI)), Vector3.right);
+            bowOrientation.rotation = pushObj.transform.rotation * Quaternion.AngleAxis((float) (-pushOffsetAngle * (180.0 / Math.PI)), Vector3.right);
+
+            transform.SetPositionAndRotation(bowTransformUpdater.position, bowTransformUpdater.rotation);
          }
 
         private void morphBow() {
-            float pullDelta = pullObj.transform.localPosition.z - pullStart.z;
-
+            if (!canAccessMesh && !useCustomShader) {
+                return;
+            }
+            float pullDelta = pullStart.localPosition.z - pullObj.transform.localPosition.z;
             // Just a heuristic and simplified approximation for the bend angle.
             float bendAngleDegrees = pullDelta <= 0 ? 0 : Mathf.Asin(Math.Min(1, pullDelta)) * 180 / Mathf.PI;
-            upperLimbBone.localRotation = Quaternion.Euler(bendAngleDegrees, 0, 0);
-            lowerLimbBone.localRotation = Quaternion.Euler(-bendAngleDegrees, 0, 0);
+
+            upperLimbBone.localRotation = Quaternion.Euler(-bendAngleDegrees, 0, 0);
+            lowerLimbBone.localRotation = Quaternion.Euler(bendAngleDegrees, 0, 0);
+            
+            if (useCustomShader) {
+                Quaternion upperLimbRotation = Quaternion.AngleAxis(-bendAngleDegrees, bowRightInObjectSpace);
+                Quaternion lowerLimbRotation = Quaternion.AngleAxis(bendAngleDegrees, bowRightInObjectSpace);
+                Matrix4x4 upperLimbTransform = Matrix4x4.TRS(handleTopInObjectSpace - upperLimbRotation * handleTopInObjectSpace, upperLimbRotation, Vector3.one);
+                Matrix4x4 lowerLimbTransform = Matrix4x4.TRS(handleBottomInObjectSpace - lowerLimbRotation * handleBottomInObjectSpace, lowerLimbRotation, Vector3.one);
+                gameObject.GetComponent<MeshRenderer>().material.SetMatrix("_UpperLimbTransform", upperLimbTransform);
+                gameObject.GetComponent<MeshRenderer>().material.SetMatrix("_LowerLimbTransform", lowerLimbTransform);
+            }
 
             updateStringRenderer();
         }
@@ -286,18 +407,18 @@ namespace ValheimVRMod.Scripts {
 
         private void pullString() {
 
-            Vector3 pullPos = transform.InverseTransformPoint(mainHand.position);
+            Vector3 pullPos = bowOrientation.InverseTransformPoint(mainHand.position);
 
-            realLifePullPercentage = Mathf.Pow(Math.Min(Math.Max(pullPos.z - pullStart.z, 0) / (maxPullLength - pullStart.z), 1), 2);
+            realLifePullPercentage = oneHandedAiming ? 1 : Mathf.Pow(Math.Min(Math.Max(pullStart.localPosition.z - pullPos.z, 0) / (VHVRConfig.GetBowMaxDrawRange() - GetBraceHeight()), 1), 2);
 
             // If RestrictBowDrawSpeed is enabled, limit the vr pull length by the square root of the current attack draw percentage to simulate the resistance.
-            float pullLengthRestriction = VHVRConfig.RestrictBowDrawSpeed() ? Mathf.Lerp(pullStart.z, maxPullLength, Math.Max(Mathf.Sqrt(Player.m_localPlayer.GetAttackDrawPercentage()), 0.01f)) : maxPullLength;
+            float pullLengthRestriction = VHVRConfig.RestrictBowDrawSpeed() == "Full" ? Mathf.Lerp(GetBraceHeight(), VHVRConfig.GetBowMaxDrawRange(), Math.Max(Mathf.Sqrt(Player.m_localPlayer.GetAttackDrawPercentage()), 0.01f)) : VHVRConfig.GetBowMaxDrawRange();
 
             if (oneHandedAiming) {
                 pullPos.x = 0f;
-                pullPos.y = -VHVRConfig.ArrowRestElevation();
+                pullPos.y = VHVRConfig.ArrowRestElevation();
             }
-            pullPos.z = Mathf.Clamp(pullPos.z, pullStart.z, pullLengthRestriction);
+            pullPos.z = Mathf.Clamp(pullPos.z, -pullLengthRestriction, -GetBraceHeight());
 
             pullObj.transform.localPosition = pullPos;
 

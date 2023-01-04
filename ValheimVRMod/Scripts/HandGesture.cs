@@ -9,17 +9,23 @@ namespace ValheimVRMod.Scripts {
         private bool isRightHand;
         private bool isMainHand;
         private Quaternion handFixedRotation;
+        private Hand _sourceHand;
         private Transform sourceTransform;
-        public Hand sourceHand;
+        
+        public Hand sourceHand {
+            get
+            {
+                return _sourceHand;
+            }
+            set {
+                _sourceHand = value;
+                ensureSourceTransform();
+            }
+        }
 
         private void Start() {
             isRightHand = sourceHand == VRPlayer.rightHand;
             isMainHand = isRightHand ^ VHVRConfig.LeftHanded();
-            foreach (var t in sourceHand.GetComponentsInChildren<Transform>()) {
-                if (t.name == "wrist_r") {
-                    sourceTransform = t;
-                }
-            }
         }
 
         void OnRenderObject() {
@@ -27,7 +33,7 @@ namespace ValheimVRMod.Scripts {
         }
 
         public bool isUnequiped() {
-            if (isMainHand && (Player.m_localPlayer.GetRightItem() != null && !EquipScript.getRight().Equals(EquipType.Claws)
+            if (isMainHand && (Player.m_localPlayer.GetRightItem() != null && !(FistCollision.instance.usingClaws()|| FistCollision.instance.usingDualKnives())
                                || BowLocalManager.instance != null && BowLocalManager.instance.isHoldingArrow())) {
                 return false;
             }
@@ -38,7 +44,7 @@ namespace ValheimVRMod.Scripts {
 
             return true;
         }
-        
+
         private void Update() {
 
             if (!isUnequiped() || Game.IsPaused()) {
@@ -49,7 +55,24 @@ namespace ValheimVRMod.Scripts {
             updateFingerRotations();
         }
 
+        private void ensureSourceTransform()
+        {
+            if (sourceTransform != null)
+            {
+                return;
+            }
+
+            foreach (var t in sourceHand.GetComponentsInChildren<Transform>())
+            {
+                if (t.name == "wrist_r")
+                {
+                    sourceTransform = t;
+                }
+            }
+        }
+
         private void updateFingerRotations() {
+            ensureSourceTransform();
 
             for (int i = 0; i < transform.childCount; i++) {
 

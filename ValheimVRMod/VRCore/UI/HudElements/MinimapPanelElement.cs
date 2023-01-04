@@ -155,6 +155,8 @@ namespace ValheimVRMod.VRCore.UI.HudElements
                 // Use the map as the pin root for the VR HUD (for...reasons...? can't make them render
                 // otherwise but no idea why xD ....)
                 Minimap.instance.m_pinRootSmall = newComponents.map.GetComponent<RectTransform>();
+                //Move the player marker to above the pin
+                newComponents.mapMarker.transform.SetParent(newComponents.map.transform.parent);
             }
             Minimap.instance.m_smallMarker = newComponents.mapMarker.GetComponent<RectTransform>();
             Minimap.instance.m_smallShipMarker = newComponents.mapShipMarker.GetComponent<RectTransform>();

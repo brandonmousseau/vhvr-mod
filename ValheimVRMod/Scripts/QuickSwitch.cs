@@ -1,67 +1,46 @@
 using System;
 using UnityEngine;
+using ValheimVRMod.Utilities;
+using ValheimVRMod.VRCore;
 
 namespace ValheimVRMod.Scripts {
     public class QuickSwitch : QuickAbstract {
 
-        private int elementCount;
+        public static QuickSwitch instance;
 
-        protected override int getElementCount() {
-            return elementCount;
+        protected override void InitializeWrist()
+        {
+            currentHand = VRPlayer.leftHand;
+            instance = this;
         }
-        
+
+        public override void UpdateWristBar()
+        {
+            if (wrist.transform.parent != VRPlayer.leftHand.transform)
+            {
+                wrist.transform.SetParent(VRPlayer.leftHand.transform);
+            }
+            wrist.transform.localPosition = VHVRConfig.LeftWristQuickSwitchPos();
+            wrist.transform.localRotation = VHVRConfig.LeftWristQuickSwitchRot();
+            wrist.SetActive(isInView() || IsInArea());
+        }
         /**
          * loop the inventory hotbar and set corresponding item icons + activate equipped layers
          */
         public override void refreshItems() {
+            refreshRadialItems();
 
-            if (Player.m_localPlayer == null) {
-                return;
+            //Extra
+            if (VHVRConfig.QuickActionOnLeftHand())
+            {
+                RefreshQuickSwitch();
             }
-            
-            elementCount = 0;
-            var inventory = Player.m_localPlayer.GetInventory();
-            
-            for (int i = 0; i < 8; i++) {
-                
-                ItemDrop.ItemData item = inventory?.GetItemAt(i, 0);
-
-                if (item == null) {
-                    continue;
-                }
-                
-                switch (item.m_shared.m_itemType) {
-                    case ItemDrop.ItemData.ItemType.Tool:
-                    case ItemDrop.ItemData.ItemType.Torch:
-                    case ItemDrop.ItemData.ItemType.OneHandedWeapon:
-                    case ItemDrop.ItemData.ItemType.TwoHandedWeapon:
-                        elements[elementCount].transform.GetChild(1).gameObject.SetActive(item.m_equiped || item.m_durability == 0);
-                        if (item.m_durability == 0) {
-                            elements[elementCount].transform.GetChild(1).GetComponent<SpriteRenderer>().color = Color.red;
-                        }
-                        else {
-                            elements[elementCount].transform.GetChild(1).GetComponent<SpriteRenderer>().color = Color.white;
-                        }
-                        elements[elementCount].transform.GetChild(2).GetComponent<SpriteRenderer>().sprite = item.GetIcon();
-                        elements[elementCount].name = i.ToString() ;
-                        elementCount++;
-                        break;
-                }
+            else
+            {
+                RefreshQuickAction();
             }
 
             reorderElements();
-        }
-
-        public override void selectHoveredItem() {
-
-            if (hoveredIndex < 0) {
-                return;
-            }
-
-            var inventory = Player.m_localPlayer.GetInventory();
-            ItemDrop.ItemData item = inventory.GetItemAt(Int32.Parse(elements[hoveredIndex].name), 0);
-            Player.m_localPlayer.UseItem(inventory, item, false);
-            
         }
     }
 }

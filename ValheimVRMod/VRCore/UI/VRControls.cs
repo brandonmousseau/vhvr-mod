@@ -100,6 +100,13 @@ namespace ValheimVRMod.VRCore.UI
             {
                 checkRecenterPose(Time.unscaledDeltaTime);
             }
+            if (GetButtonDown("Inventory") || GetButtonDown("JoyMenu"))
+            {
+                if (Minimap.IsOpen())
+                {
+                    Minimap.instance.SetMapMode(Minimap.MapMode.Small);
+                }
+            }
 
             checkQuickItems<QuickSwitch>(StaticObjects.quickSwitch, 
                 VHVRConfig.LeftHanded() ?  SteamVR_Actions.valheim_QuickActions : SteamVR_Actions.valheim_QuickSwitch, true);
@@ -159,6 +166,11 @@ namespace ValheimVRMod.VRCore.UI
             // and when the hammer is equipped, the bindings conflict... so we'll share the right click button
             // here to activate quick switch. This is hacky because rebinding things can break the controls, but
             // it works and allows users to use the quick select while the hammer is equipped.
+            if (StaticObjects.quickSwitch != null)
+            {
+                StaticObjects.quickSwitch.GetComponent<QuickSwitch>().refreshItems();
+                StaticObjects.quickActions.GetComponent<QuickActions>().refreshItems();
+            }
             bool rightClickDown = false;
             bool rightClickUp = false;
             if (useRightClick && laserControlsActive && inPlaceMode())
@@ -170,9 +182,16 @@ namespace ValheimVRMod.VRCore.UI
             }
             
             if (action.GetStateDown(SteamVR_Input_Sources.Any) || rightClickDown) {
-                if (inPlaceMode() && (buildQuickActionTimer >= 0.3f || !useRightClick)) 
-                    obj.SetActive(true);
-                else if (!inPlaceMode())
+                if (inPlaceMode())
+                {
+                    if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand))
+                    {
+                        buildQuickActionTimer = 1;
+                    }
+                    if ((buildQuickActionTimer >= 0.3f || !useRightClick))
+                        obj.SetActive(true);
+                }
+                else
                     obj.SetActive(true);
             }
 
@@ -261,10 +280,14 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return false;
             }
+            if (zinput == "Jump" && shouldDisableJumpEvade())
+            {
+                return false;
+            }
             if (zinput == "Map") {
-                if (QuickActions.toggleMap)
+                if (QuickAbstract.toggleMap)
                 {
-                    QuickActions.toggleMap = false;
+                    QuickAbstract.toggleMap = false;
                     return true;
                 } else
                 {
@@ -339,6 +362,10 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return false;
             }
+            if (zinput == "Jump" && shouldDisableJumpEvade())
+            {
+                return false;
+            }
             if (zinput == "JoyAltPlace")
             {
                 return CheckAltButton();
@@ -375,6 +402,10 @@ namespace ValheimVRMod.VRCore.UI
                 return false;
             }
             if (zinput == "Remove" && (!shouldEnableRemove() || shouldDisableJumpRemove()))
+            {
+                return false;
+            }
+            if (zinput == "Jump" && shouldDisableJumpEvade())
             {
                 return false;
             }
@@ -633,6 +664,11 @@ namespace ValheimVRMod.VRCore.UI
         private bool shouldDisableJumpRemove()
         {
             return BuildingManager.instance && (BuildingManager.instance.isCurrentlyMoving() || BuildingManager.instance.isCurrentlyPreciseMoving() || BuildingManager.instance.isHoldingPlace());
+        }
+
+        private bool shouldDisableJumpEvade()
+        {
+            return SteamVR_Actions.valheim_UseLeft.state;
         }
 
         private void init()

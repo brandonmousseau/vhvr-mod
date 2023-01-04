@@ -198,4 +198,43 @@ namespace ValheimVRMod.Patches
         }
     }
 
+    [HarmonyPatch(typeof(DistantFogEmitter), "PlaceOne")]
+    class PatchFogEmitter
+    {
+        public static bool Prefix(DistantFogEmitter __instance)
+        {
+            if (VHVRConfig.NonVrPlayer() || !__instance)
+            {
+                return true;
+            }
+
+            Vector3 a;
+            if (__instance.GetRandomPoint(__instance.transform.position, out a))
+            {
+                ParticleSystem.EmitParams emitParams = default(ParticleSystem.EmitParams);
+                emitParams.position = a + Vector3.up * __instance.m_placeOffset;
+                var num = UnityEngine.Random.Range(0, __instance.m_psystems.Length);
+                __instance.m_psystems[num].Emit(emitParams, 1);
+                var rend = __instance.m_psystems[num].GetComponent<ParticleSystemRenderer>();
+                rend.allowRoll = false;
+                rend.renderMode = ParticleSystemRenderMode.VerticalBillboard;
+            }
+            return false;
+        }
+    }
+
+    [HarmonyPatch(typeof(ParticleMist),nameof(ParticleMist.Awake))]
+    class Patch_ParticleMist
+    {
+        public static void Postfix(ParticleMist __instance)
+        {
+            if (VHVRConfig.NonVrPlayer() || !__instance)
+            {
+                return;
+            }
+            var rend = __instance.m_ps.GetComponent<ParticleSystemRenderer>();
+            rend.allowRoll = false;
+            rend.renderMode = ParticleSystemRenderMode.VerticalBillboard;
+        }
+    }
 }

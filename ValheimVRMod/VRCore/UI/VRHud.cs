@@ -95,6 +95,7 @@ namespace ValheimVRMod.VRCore.UI
         private Vector3 buildHudPos = new Vector3(-0.019195370376110078f, 0.1886948049068451f, 0.09105824679136276f);
         private Quaternion buildHudRot = new Quaternion(0.4495787024497986f, -0.0009610052220523357f, 0.003949014004319906f, 0.8932315111160278f);
 
+        public bool isDead = false;
 
         // References to all the relevant UI components
         private IVRHudElement[] VRHudElements = new IVRHudElement[]
@@ -102,6 +103,8 @@ namespace ValheimVRMod.VRCore.UI
             //This also gives the order of precedence
             new HealthPanelElement(), //Vertical START
             new StaminaPanelElement(), //Horizontal START
+            new EitrPanelElement(), //Horizontal START
+            new StaggerPanelElement(), //Horizontal START
             new MinimapPanelElement(),
             new BuildSelectedInfoElement()
         };
@@ -114,6 +117,17 @@ namespace ValheimVRMod.VRCore.UI
             if (!VRPlayer.attachedToPlayer || VHVRConfig.UseLegacyHud() || !VHVRConfig.UseVrControls())
             {
                 revertToLegacyHud();
+                return;
+            }
+            if (Player.m_localPlayer && 
+                !Player.m_localPlayer.IsDead() && 
+                isDead && 
+                !(Hud.instance?.m_loadingScreen && Hud.instance.m_loadingScreen.isActiveAndEnabled))
+            {
+                resetHUDRespawn();
+            }
+            if (isDead)
+            {
                 return;
             }
             if (!ensureHudCanvas())
@@ -172,6 +186,18 @@ namespace ValheimVRMod.VRCore.UI
 
                 hudCamera = null;
             }
+        }
+        public void resetHUDDeath()
+        {
+            VRHudElements.ForEach(x => {
+                placePanelToHud(LEGACY, x);
+            });
+            isDead = true;
+        }
+
+        public void resetHUDRespawn()
+        {
+            isDead = false;
         }
 
         private void updateHudPositionAndScale()

@@ -381,7 +381,7 @@ namespace ValheimVRMod.Patches
         // This patch is used to add a duplicate of whatever
         // HUD is added to the base class to the EnemyHudManager
         // mirror class.
-        [HarmonyPatch(typeof(EnemyHud), "ShowHud")]
+        [HarmonyPatch(typeof(EnemyHud), nameof(EnemyHud.ShowHud))]
         class EnemyHud_ShowHud_Patch
         {
             public static void Prefix(Character c, bool isMount, GameObject ___m_baseHudPlayer, GameObject ___m_baseHud, GameObject ___m_baseHudMount, GameObject ___m_baseHudBoss)
@@ -400,7 +400,7 @@ namespace ValheimVRMod.Patches
         // method calls to our EnemyHudManager class to update the values
         // at the right points. This requires the use of a transpiler to insert
         // the method calls at the right place in the code.
-        [HarmonyPatch(typeof(EnemyHud), "UpdateHuds")]
+        [HarmonyPatch(typeof(EnemyHud), nameof(EnemyHud.UpdateHuds))]
         class EnemyHud_UpdateHuds_Patch
         {
             private static FieldInfo guiField = AccessTools.Field(typeof(EnemyHud.HudData), nameof(EnemyHud.HudData.m_gui));
@@ -450,10 +450,10 @@ namespace ValheimVRMod.Patches
                 EnemyHudManager.instance.RemoveEnemyHud(c);
             }
 
-            private static float UpdateHealth(float health, Character c)
+            private static float UpdateHealth(float health, Character c, Player p)
             {
                 AssertCharacter(c);
-                EnemyHudManager.instance.UpdateHealth(c, health);
+                EnemyHudManager.instance.UpdateHealth(p, c, health);
                 // Return health so that it gets put back onto the
                 // evaluation stack right after we use it
                 return health;
@@ -540,6 +540,7 @@ namespace ValheimVRMod.Patches
                 var patched = new List<CodeInstruction>();
                 for (int i = 0; i < original.Count; i++) {
                     patched.Add(original[i]);
+                    // FIXME: Mystlands broke this
                     MaybeAddDestroyHudInstructions(original, ref patched, i);
                     MaybeAddUpdateHealthInstructions(original, ref patched, i);
                     MaybeAddUpdateLevelInstructions(original, ref patched, i);
@@ -600,6 +601,7 @@ namespace ValheimVRMod.Patches
                     // Health percentage method just called, so health percentage is on eval
                     // stack. Load the character field and then call UpdateHealth
                     LoadCharacterField(ref patched);
+                    patched.Add(new CodeInstruction(OpCodes.Ldarg_1));
                     patched.Add(CodeInstruction.Call(typeof(EnemyHud_UpdateHuds_Patch), nameof(UpdateHealth)));
                 }
             }
@@ -634,9 +636,9 @@ namespace ValheimVRMod.Patches
                 var instruction = original[i];
                 if (instruction.Calls(getMaxStaminaMethod))
                 {
-                    // MaxStamina was just called, so it is on the eval stack. "GetStamina" was stored into V_11.
+                    // MaxStamina was just called, so it is on the eval stack. "GetStamina" was stored into V_12.
                     // Before storing the value of GetStamina we detour to UpdateMound
-                    patched.Add(new CodeInstruction(OpCodes.Ldloc_S, 11)); // ldloc.s V_9
+                    patched.Add(new CodeInstruction(OpCodes.Ldloc_S, 12)); // ldloc.s V_12
                     LoadCharacterField(ref patched);
                     patched.Add(CodeInstruction.Call(typeof(EnemyHud_UpdateHuds_Patch), nameof(UpdateMount)));
                 }
@@ -1052,6 +1054,19 @@ namespace ValheimVRMod.Patches
 
             var lastText = __instance.m_worldTexts.Last();
             new GameObject().AddComponent<VRDamageTexts>().CreateText(lastText.m_textField.text, pos, lastText.m_textField.color, mySelf, __instance.m_textDuration);
+        }
+    }
+    [HarmonyPatch(typeof(Player), nameof(Player.OnDeath))]
+    class PatchDeath
+    {
+        public static void Postfix(Player __instance)
+        {
+            if (VHVRConfig.NonVrPlayer() || __instance != Player.m_localPlayer)
+            {
+                return;
+            }
+            VRHud.instance.resetHUDDeath();
+            VRGUI.triggerGuiRecenter();
         }
     }
 }
