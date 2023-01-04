@@ -108,6 +108,30 @@ namespace ValheimVRMod.Patches {
             StringBuilder text = new StringBuilder(256);
             _inputField.caretPosition = (int) SteamVR.instance.overlay.GetKeyboardText(text, 256);
             _inputField.text = text.ToString();
+
+            if (Scripts.QuickAbstract.shouldStartChat)
+            {
+                if (_inputField.text != "")
+                {
+                    if (_inputField.text.StartsWith("/cmd")) //SEND CONSOLE INPUT
+                    {
+                        if (_inputField.text.StartsWith("/cmd "))
+                            _inputField.text = _inputField.text.Remove(0, 5);
+                        else
+                            _inputField.text = _inputField.text.Remove(0, 4);
+
+                        Console.instance.TryRunCommand(_inputField.text);
+                    }
+                    else //SEND CHAT INPUT
+                    {
+                        Chat.instance.m_input.text = _inputField.text;
+                        Chat.instance.InputText();
+                        Chat.instance.m_input.text = "";
+                    }
+                }
+            }
+            Scripts.QuickAbstract.shouldStartChat = false;
+
             triggerReturn = _returnOnClose;
         }
 
