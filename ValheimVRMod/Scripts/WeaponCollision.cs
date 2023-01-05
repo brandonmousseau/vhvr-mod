@@ -17,8 +17,6 @@ namespace ValheimVRMod.Scripts {
         private const float MAX_STAB_ANGLE = 20f;
         private const float MAX_STAB_ANGLE_TWOHAND = 40f;
 
-        private GameObject indicator;
-
         private bool scriptActive;
         private GameObject colliderParent;
         private List<Vector3> snapshots;
@@ -29,7 +27,7 @@ namespace ValheimVRMod.Scripts {
         private Outline outline;
         private float hitTime;
         private bool hasDrunk;
-        private bool lastAttackWasStab;
+        public bool lastAttackWasStab { get; private set};
 
         private Transform mainHand {
             get
