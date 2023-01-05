@@ -3,6 +3,7 @@ using ValheimVRMod.Scripts.Block;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using Valve.VR;
+using Valve.VR.InteractionSystem;
 
 namespace ValheimVRMod.Scripts
 {
@@ -15,6 +16,9 @@ namespace ValheimVRMod.Scripts
 
         public static Vector3 weaponForward;
         public string itemName;
+        public Hand rearHand { get; private set; }
+        public Hand frontHand { get; private set; }
+
         private ItemDrop.ItemData item;
         private GameObject rotSave;
         private GameObject originalRotSave;
@@ -196,8 +200,8 @@ namespace ValheimVRMod.Scripts
                     }
                 }
 
-                var rearHand = _isTwoHanded == isTwoHanded.LeftHandBehind ? VRPlayer.leftHand : VRPlayer.rightHand;
-                var frontHand = rearHand.otherHand;
+                rearHand = _isTwoHanded == isTwoHanded.LeftHandBehind ? VRPlayer.leftHand : VRPlayer.rightHand;
+                frontHand = rearHand.otherHand;
 
                 Vector3 frontHandCenter = getHandCenter(frontHand.transform);
                 Vector3 rearHandCenter = getHandCenter(rearHand.transform);
