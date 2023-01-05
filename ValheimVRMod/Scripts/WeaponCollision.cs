@@ -386,7 +386,7 @@ namespace ValheimVRMod.Scripts {
                 slashLine.material.color = transparency;
             }
 
-            if (!SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand))
+            if (!SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand) || (!WeaponWield.isCurrentlyTwoHanded() && item.m_shared.m_itemType == ItemDrop.ItemData.ItemType.TwoHandedWeapon))
             {
                 firstPos = Vector3.zero;
                 lastPos = Vector3.zero;
