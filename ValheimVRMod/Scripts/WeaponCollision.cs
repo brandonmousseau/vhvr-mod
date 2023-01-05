@@ -27,7 +27,7 @@ namespace ValheimVRMod.Scripts {
         private Outline outline;
         private float hitTime;
         private bool hasDrunk;
-        public bool lastAttackWasStab { get; private set};
+        public bool lastAttackWasStab { get; private set; }
 
         private Transform mainHand {
             get
