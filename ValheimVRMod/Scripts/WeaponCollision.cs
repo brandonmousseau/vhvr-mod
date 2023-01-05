@@ -454,7 +454,7 @@ namespace ValheimVRMod.Scripts {
                 }
             }
 
-            if (firstPos != Vector3.zero && lastPos != Vector3.zero && !inCooldown)
+            if (firstPos != Vector3.zero && lastPos != Vector3.zero && !inCooldown && Vector3.Distance(firstPos, lastPos) >= (secondaryAttack.m_attackRange * 0.5f)) 
             {
                 int layerMask = secondaryAttack.m_hitTerrain ? Attack.m_attackMaskTerrain : Attack.m_attackMask;
                 firstPos = Player.m_localPlayer.transform.position + firstPos;
@@ -471,7 +471,7 @@ namespace ValheimVRMod.Scripts {
                         var direction = Player.m_localPlayer.transform.InverseTransformDirection(Quaternion.AngleAxis(a, Vector3.up) * Vector3.forward);
                         RaycastHit[] tempSecondaryHitList = Physics.SphereCastAll(Player.m_localPlayer.transform.position + Player.m_localPlayer.transform.up * posHeight.y, attack.m_attackRayWidth , direction, secondaryAttack.m_attackRange, layerMask, QueryTriggerInteraction.Ignore);
                         Array.Sort<RaycastHit>(tempSecondaryHitList, (RaycastHit x, RaycastHit y) => x.distance.CompareTo(y.distance));
-                        RaycastSecondaryAttack(tempSecondaryHitList, direction);
+                        RaycastSecondaryAttack(tempSecondaryHitList);
                         pointList.Add((Player.m_localPlayer.transform.position + Player.m_localPlayer.transform.up * posHeight.y) + direction * secondaryAttack.m_attackRange);
                     }
                     slashLine.SetPositions(pointList.ToArray());
@@ -487,7 +487,7 @@ namespace ValheimVRMod.Scripts {
                     hitDir = (lastPos - firstPos).normalized;
                     RaycastHit[] tempSecondaryHitList = Physics.SphereCastAll(firstPos, attack.m_attackRayWidth * 1.5f, (lastPos - firstPos).normalized, minDist, layerMask, QueryTriggerInteraction.Ignore);
                     Array.Sort<RaycastHit>(tempSecondaryHitList, (RaycastHit x, RaycastHit y) => x.distance.CompareTo(y.distance));
-                    RaycastSecondaryAttack(tempSecondaryHitList, (lastPos - firstPos).normalized);
+                    RaycastSecondaryAttack(tempSecondaryHitList);
                 }
                 
 
@@ -548,7 +548,7 @@ namespace ValheimVRMod.Scripts {
             }
         }
 
-        private void RaycastSecondaryAttack(RaycastHit[] raycastList,Vector3 dir)
+        private void RaycastSecondaryAttack(RaycastHit[] raycastList)
         {
             if (raycastList.Length <= 0)
             {
