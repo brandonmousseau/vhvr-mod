@@ -178,9 +178,9 @@ namespace ValheimVRMod.Patches {
 
                 if (___m_lowerDamagePerHit) {
                     
-                    if(WeaponCollision.wasSecondaryAttack && WeaponCollision.secondaryHitList.Length >= 1)
+                    if(WeaponCollision.wasSecondaryAttack && WeaponCollision.secondaryHitList.Count >= 1)
                     {
-                        randomSkillFactor /= WeaponCollision.secondaryHitList.Length * 0.75f;
+                        randomSkillFactor /= WeaponCollision.secondaryHitList.Count * 0.75f;
                     }
                     else
                     {
@@ -201,7 +201,7 @@ namespace ValheimVRMod.Patches {
                 hitData.m_skill = skill;
                 hitData.m_damage = ___m_weapon.GetDamage();
                 hitData.m_point = pos;
-                hitData.m_dir = Player.m_localPlayer.transform.forward;
+                hitData.m_dir = WeaponCollision.hitDir == Vector3.zero ? (pos - Player.m_localPlayer.transform.position).normalized : WeaponCollision.hitDir;
                 hitData.m_hitCollider = col;
                 hitData.SetAttacker(___m_character);
                 hitData.m_damage.Modify(___m_damageMultiplier);
@@ -238,7 +238,7 @@ namespace ValheimVRMod.Patches {
                 ___m_weapon.m_durability -= ___m_weapon.m_shared.m_useDurabilityDrain;
                 AttackTargetMeshCooldown.durabilityDrained = true;
             }
-                
+
             ___m_character.AddNoise(___m_attackHitNoise);
 
             // FIXME: Setup now takes in input an additional ammo parameter, look into this
