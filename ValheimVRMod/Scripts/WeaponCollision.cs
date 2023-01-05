@@ -334,7 +334,7 @@ namespace ValheimVRMod.Scripts {
             {
                 if (Vector3.Distance(snapshot, transform.localPosition) > MIN_DISTANCE + colliderDistance / 2)
                 {
-                    return false;
+                    return true;
                 }
             }
 
