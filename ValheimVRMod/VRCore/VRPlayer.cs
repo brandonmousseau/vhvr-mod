@@ -101,8 +101,9 @@ namespace ValheimVRMod.VRCore
 
         private float timerLeft;
         private float timerRight;
-        public static Hand leftHand { get { return _leftHand;} }
-        public static Hand rightHand { get { return _rightHand;} }
+        public static Hand leftHand { get { return _leftHand; } }
+        public static Hand rightHand { get { return _rightHand; } }
+        public static Hand dominantHand { get { return VHVRConfig.LeftHanded() ? leftHand : rightHand; } }
 
         public static bool handsActive
         {
@@ -823,8 +824,8 @@ namespace ValheimVRMod.VRCore
             StaticObjects.rightFist().setColliderParent(_vrik.references.rightHand, true);
             Player.m_localPlayer.gameObject.AddComponent<FistBlock>();
             StaticObjects.mouthCollider(cam.transform);
-            StaticObjects.addQuickActions(VHVRConfig.LeftHanded() ? rightHand.transform : leftHand.transform);
-            StaticObjects.addQuickSwitch(VHVRConfig.LeftHanded() ? leftHand.transform : rightHand.transform);
+            StaticObjects.addQuickActions(dominantHand.otherHand.transform);
+            StaticObjects.addQuickSwitch(dominantHand.transform);
             QuickActions.instance.refreshItems();
             QuickSwitch.instance.refreshItems();
         }

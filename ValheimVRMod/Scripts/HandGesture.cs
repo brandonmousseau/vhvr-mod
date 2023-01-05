@@ -55,24 +55,25 @@ namespace ValheimVRMod.Scripts {
             updateFingerRotations();
         }
 
-        private void ensureSourceTransform()
+        private bool ensureSourceTransform()
         {
-            if (sourceTransform != null)
-            {
-                return;
-            }
-
-            foreach (var t in sourceHand.GetComponentsInChildren<Transform>())
-            {
-                if (t.name == "wrist_r")
+            if (sourceTransform == null) {
+                foreach (var t in sourceHand.GetComponentsInChildren<Transform>())
                 {
-                    sourceTransform = t;
+                    if (t.name == "wrist_r")
+                    {
+                        sourceTransform = t;
+                    }
                 }
             }
+            return sourceTransform != null;
         }
 
         private void updateFingerRotations() {
-            ensureSourceTransform();
+            if (!ensureSourceTransform())
+            {
+                return;
+            }
 
             for (int i = 0; i < transform.childCount; i++) {
 

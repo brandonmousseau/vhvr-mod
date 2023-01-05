@@ -171,21 +171,39 @@ namespace ValheimVRMod.Scripts
             wasWrist = false;
             lastHoveredIndex = -1;
             radialMenu.SetActive(false);
-            // Record the current relative transform of the quick menu to the vr cam rig so that we can use it later to lock it relative to the vr cam rig.
+            resetQuickMenuLocker();
+        }
+
+        // Records the current relative transform of the quick menu to the vr cam rig so that we can use it later to lock it relative to the vr cam rig.
+        private void resetQuickMenuLocker()
+        {
+            if (!quickMenuLocker)
+            {
+                quickMenuLocker = new GameObject().transform;
+            }
+            
             quickMenuLocker.parent = GetVRCamRig();
             quickMenuLocker.SetPositionAndRotation(transform.position, transform.rotation);
         }
 
         private void Update()
         {
-            // Lock the quick menu's positioin and rotation relative to the vr cam rig so it moves and rotates with the player.
-            if (!quickMenuLocker && GetVRCamRig())
+            if (!quickMenuLocker)
             {
-                quickMenuLocker = new GameObject().transform;
-                quickMenuLocker.parent = GetVRCamRig();
-                quickMenuLocker.SetPositionAndRotation(transform.position, transform.rotation);
+                resetQuickMenuLocker();
             }
-            transform.SetPositionAndRotation(quickMenuLocker.position, quickMenuLocker.rotation);
+
+            if (quickMenuLocker != null) {
+                // Lock the quick menu's position and rotation relative to the vr cam rig so it moves and rotates with the player.
+                transform.SetPositionAndRotation(quickMenuLocker.position, quickMenuLocker.rotation);
+            }
+            
+            if (VHVRConfig.getQuickMenuType() == "Hand Follow Cam") {
+                Transform VRCamTransform = CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform;
+                // Rotate the menu around its x-axis to have it facing the current height of the player.
+                transform.LookAt(Vector3.ProjectOnPlane(VRCamTransform.position - transform.position, transform.right) + transform.position);
+            }
+
             if (sphere)
             {
                 sphere.transform.position = parent.position;
