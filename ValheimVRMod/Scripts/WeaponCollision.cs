@@ -28,25 +28,8 @@ namespace ValheimVRMod.Scripts {
         private float hitTime;
         private bool hasDrunk;
         public bool lastAttackWasStab { get; private set; }
-
-        private Transform mainHand {
-            get
-            {
-                if (WeaponWield.isCurrentlyTwoHanded())
-                {
-                    return weaponWield.rearHand.transform;
-                }
-                return VHVRConfig.LeftHanded() ? VRPlayer.leftHand.transform : VRPlayer.rightHand.transform;
-            }
-        }
-
-        private Vector3 weaponDirection
-        {
-            get
-            {
-                return (transform.position - mainHand.position).normalized;
-            }
-        }
+        private Transform mainHand { get { return WeaponWield.isCurrentlyTwoHanded() ? weaponWield.rearHand.transform : VRPlayer.dominantHand.transform; } }
+        private Vector3 weaponDirection { get { return (transform.position - mainHand.position).normalized; } }
 
         public bool itemIsTool;
         public static bool isDrinking;
