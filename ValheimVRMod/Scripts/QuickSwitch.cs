@@ -5,6 +5,7 @@ using ValheimVRMod.VRCore;
 using Valve.VR;
 
 namespace ValheimVRMod.Scripts {
+    // TODO: rename this to RightHandQuickMenu. This class is not specific to quick switches.
     public class QuickSwitch : QuickAbstract {
 
         public static QuickSwitch instance;
@@ -17,33 +18,37 @@ namespace ValheimVRMod.Scripts {
 
         protected override void ExecuteHapticFeedbackOnHoverTo()
         {
-            VRPlayer.dominantHand.hapticAction.Execute(0, 0.1f, 40, 0.1f, VRPlayer.dominantHandInputSource);
+            VRPlayer.rightHand.hapticAction.Execute(0, 0.1f, 40, 0.1f, SteamVR_Input_Sources.RightHand);
         }
+
+        protected override Transform handTransform { get { return VRPlayer.rightHand.transform; } }
 
         public override void UpdateWristBar()
         {
-            if (wrist.transform.parent != VRPlayer.dominantHand.otherHand.transform)
+            // The wrist bar is on the other hand.
+            if (wrist.transform.parent != VRPlayer.leftHand.transform)
             {
-                wrist.transform.SetParent(VRPlayer.dominantHand.otherHand.transform);
+                wrist.transform.SetParent(VRPlayer.leftHand.transform);
             }
-            wrist.transform.localPosition = VHVRConfig.NonDominantHandWristQuickBarPos();
-            wrist.transform.localRotation = VHVRConfig.NonDominantHandWristQuickBarRot();
+            wrist.transform.localPosition = VHVRConfig.LeftWristQuickBarPos();
+            wrist.transform.localRotation = VHVRConfig.LeftWristQuickBarRot();
             wrist.SetActive(isInView() || IsInArea());
         }
+
         /**
          * loop the inventory hotbar and set corresponding item icons + activate equipped layers
          */
         public override void refreshItems() {
-            refreshRadialItems(/* isDominantHand= */ true);
+            refreshRadialItems(/* isDominantHand= */ !VHVRConfig.LeftHanded());
 
             //Extra
-            if (VHVRConfig.QuickActionOnLeftHand() ^ VHVRConfig.LeftHanded())
+            if (VHVRConfig.QuickActionOnLeftHand())
             {
-                RefreshQuickSwitch();
+                RefreshWristQuickSwitch();
             }
             else
             {
-                RefreshQuickAction();
+                RefreshWristQuickAction();
             }
 
             reorderElements();

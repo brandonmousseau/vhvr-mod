@@ -65,15 +65,15 @@ namespace ValheimVRMod.Utilities {
             return collisionScript = collisionObj.AddComponent<T>();
         } 
         
-        public static void addQuickActions(Transform hand) {
+        public static void addQuickActions() {
             quickActions = new GameObject();
-            quickActions.AddComponent<QuickActions>().parent = hand;
+            quickActions.AddComponent<QuickActions>();
             quickActions.SetActive(false);
         }
         
-        public static void addQuickSwitch(Transform hand) {
+        public static void addQuickSwitch() {
             quickSwitch = new GameObject();
-            quickSwitch.AddComponent<QuickSwitch>().parent = hand;
+            quickSwitch.AddComponent<QuickSwitch>();
             quickSwitch.SetActive(false);
         }
 

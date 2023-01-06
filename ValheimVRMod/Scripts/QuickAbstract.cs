@@ -35,7 +35,7 @@ namespace ValheimVRMod.Scripts
 
         protected GameObject sphere;
 
-        public Transform parent;
+        protected abstract Transform handTransform { get; }
         private Transform quickMenuLocker;
         protected GameObject wrist;
         protected GameObject radialMenu;
@@ -135,7 +135,7 @@ namespace ValheimVRMod.Scripts
 
         private void OnEnable()
         {
-            transform.SetParent(parent, false);
+            transform.SetParent(handTransform, false);
             transform.localPosition = Vector3.zero;
 
             switch (VHVRConfig.getQuickMenuType())
@@ -203,7 +203,7 @@ namespace ValheimVRMod.Scripts
 
             if (sphere)
             {
-                sphere.transform.position = parent.position;
+                sphere.transform.position = handTransform.position;
             }
             hoverItem();
         }
@@ -327,14 +327,14 @@ namespace ValheimVRMod.Scripts
             Quaternion hoverRot = Quaternion.identity;
             hoveredIndex = -1;
 
-            var projectedPos = Vector3.Project(parent.position - transform.position, transform.forward);
+            var projectedPos = Vector3.Project(handTransform.position - transform.position, transform.forward);
             transform.position += projectedPos;
             sphere.transform.position -= projectedPos;
 
             //extraItems
             for (int i = 0; i < extraElementCount; i++)
             {
-                var dist = Vector3.Distance(parent.position, extraElements[i].transform.position);
+                var dist = Vector3.Distance(handTransform.position, extraElements[i].transform.position);
 
                 if (dist < maxDist)
                 {
@@ -357,11 +357,11 @@ namespace ValheimVRMod.Scripts
             else if (hoveredIndex == -1 && elementCount != 0)
             {
                 radialMenu.gameObject.SetActive(true);
-                var convertedPos = transform.InverseTransformPoint(parent.position);
+                var convertedPos = transform.InverseTransformPoint(handTransform.position);
                 convertedPos = new Vector3(convertedPos.x, convertedPos.y, 0);
                 //var currentangle = Vector3.SignedAngle(transform.up, parent.position - transform.position, -transform.forward);
                 var currentangle = Vector3.SignedAngle(Vector3.up, convertedPos.normalized, -Vector3.forward);
-                var distFromCenter = Vector3.Distance(transform.position, parent.position);
+                var distFromCenter = Vector3.Distance(transform.position, handTransform.position);
                 if (distFromCenter > 0.07f)
                 {
                     var elementAngle = 360 / elementCount;
@@ -430,7 +430,7 @@ namespace ValheimVRMod.Scripts
 
         protected bool IsInArea()
         {
-            var wristBasedPos = wrist.transform.InverseTransformPoint(parent.position);
+            var wristBasedPos = wrist.transform.InverseTransformPoint(handTransform.position);
             if (wristBasedPos.y > -0.07f && wristBasedPos.y < 0.07f &&
                 wristBasedPos.z > -0.07f && wristBasedPos.z < 0.07f &&
                 wristBasedPos.x > -0.15f && wristBasedPos.x < 0.15f)
@@ -452,13 +452,6 @@ namespace ValheimVRMod.Scripts
 
         protected void refreshRadialItems(bool isDominantHand)
         {
-            Transform handTransform = isDominantHand ? VRPlayer.dominantHand.transform : VRPlayer.dominantHand.otherHand.transform;
-            if (parent != handTransform )
-            {
-                parent = handTransform;
-                transform.position = handTransform.position;
-            }
-
             if (Player.m_localPlayer == null)
             {
                 return;
@@ -486,7 +479,7 @@ namespace ValheimVRMod.Scripts
             }
         }
 
-        protected void RefreshQuickAction()
+        protected void RefreshWristQuickAction()
         {
             extraElementCount = 0;
             Inventory inventory = Player.m_localPlayer.GetInventory();
@@ -508,7 +501,7 @@ namespace ValheimVRMod.Scripts
             }
         }
 
-        protected void RefreshQuickSwitch()
+        protected void RefreshWristQuickSwitch()
         {
             StatusEffect se;
             float cooldown;
