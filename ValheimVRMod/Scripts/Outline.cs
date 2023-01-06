@@ -119,8 +119,7 @@ public class Outline : MonoBehaviour {
 
   private bool IsPlayerHairMaterials(List<Material> materials) {
     foreach (Material material in materials) {
-      if (material.name.
-      ("PlayerHair")) {
+      if (material.name.StartsWith("PlayerHair")) {
         return true;
       }
     }
