@@ -737,8 +737,8 @@ namespace ValheimVRMod.VRCore
                     !player.IsStaggering() &&
                     !player.IsSleeping() &&
                     validVrikAnimatorState(player.GetComponentInChildren<Animator>());
-                QuickActions.instance.UpdateWristBar();
-                QuickSwitch.instance.UpdateWristBar();
+                LeftHandQuickMenu.instance.UpdateWristBar();
+                RightHandQuickMenu.instance.UpdateWristBar();
             }
         }
 
@@ -826,10 +826,9 @@ namespace ValheimVRMod.VRCore
             StaticObjects.rightFist().setColliderParent(_vrik.references.rightHand, true);
             Player.m_localPlayer.gameObject.AddComponent<FistBlock>();
             StaticObjects.mouthCollider(cam.transform);
-            StaticObjects.addQuickActions(dominantHand.otherHand.transform);
-            StaticObjects.addQuickSwitch(dominantHand.transform);
-            QuickActions.instance.refreshItems();
-            QuickSwitch.instance.refreshItems();
+            StaticObjects.addQuickMenus();
+            LeftHandQuickMenu.instance.refreshItems();
+            RightHandQuickMenu.instance.refreshItems();
         }
 
         private bool vrikEnabled()

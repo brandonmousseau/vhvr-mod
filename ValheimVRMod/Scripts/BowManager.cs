@@ -79,7 +79,8 @@ namespace ValheimVRMod.Scripts {
             float handleTopLocalHeight = Vector3.Dot(transform.InverseTransformPoint(bowOrientation.TransformPoint(new Vector3(0, bowAnatomy.handleHeight * 0.5f, 0))), bowUpInObjectSpace);
             float handleBottomLocalHeight = Vector3.Dot(transform.InverseTransformPoint(bowOrientation.TransformPoint(new Vector3(0, -bowAnatomy.handleHeight * 0.5f, 0))), bowUpInObjectSpace);
             // we need to run this method in thread as it takes longer than a frame and freezes game for a moment
-            Thread thread = new Thread(() => initializeRenderersAsync(handleTopLocalHeight, handleBottomLocalHeight, transform.localScale.x));
+            var xScale = transform.localScale.x;
+            Thread thread = new Thread(() => initializeRenderersAsync(handleTopLocalHeight, handleBottomLocalHeight, xScale));
             thread.Start();
 
             pullObj = new GameObject();
