@@ -211,9 +211,8 @@ namespace ValheimVRMod.Scripts {
             attackDrawPercentage = currentMaxDrawPercentage;
             if (attackDrawPercentage == 1 && !finishedPulling) 
             {
-                SteamVR_Input_Sources bowHand = VHVRConfig.LeftHanded() ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand;
                 finishedPulling = true;
-                VRPlayer.dominantHand.otherHand.hapticAction.Execute(0, 0.2f, 100, 0.3f, bowHand);
+                VRPlayer.dominantHand.otherHand.hapticAction.Execute(0, 0.2f, 100, 0.3f, VRPlayer.nonDominantHandInputSource);
             }
         }
 
@@ -245,10 +244,8 @@ namespace ValheimVRMod.Scripts {
             }
 
             // SHOOTING FEEDBACK
-            SteamVR_Input_Sources arrowHand = VHVRConfig.LeftHanded() ? SteamVR_Input_Sources.LeftHand : SteamVR_Input_Sources.RightHand;
-            SteamVR_Input_Sources bowHand = VHVRConfig.LeftHanded() ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand;
-            VRPlayer.dominantHand.hapticAction.Execute(0, 0.1f, 75, 0.9f, arrowHand);
-            VRPlayer.dominantHand.otherHand.hapticAction.Execute(0, 0.2f, 100, 0.3f, bowHand);
+            VRPlayer.dominantHand.hapticAction.Execute(0, 0.1f, 75, 0.9f, VRPlayer.dominantHandInputSource);
+            VRPlayer.dominantHand.otherHand.hapticAction.Execute(0, 0.2f, 100, 0.3f, VRPlayer.nonDominantHandInputSource);
             destroyArrow();
         }
 
