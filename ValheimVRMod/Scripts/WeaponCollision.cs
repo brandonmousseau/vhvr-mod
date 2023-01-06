@@ -28,8 +28,7 @@ namespace ValheimVRMod.Scripts {
         private float hitTime;
         private bool hasDrunk;
         public bool lastAttackWasStab { get; private set; }
-        private Transform mainHand { get { return WeaponWield.isCurrentlyTwoHanded() ? weaponWield.rearHand.transform : VRPlayer.dominantHand.transform; } }
-        private Vector3 weaponDirection { get { return (transform.position - mainHand.position).normalized; } }
+        private Vector3 weaponDirection { get { return (transform.position - weaponWield.mainHand.transform.position).normalized; } }
 
         public bool itemIsTool;
         public static bool isDrinking;
@@ -67,7 +66,7 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            isDrinking = hasDrunk = mainHand.rotation.eulerAngles.x > 0 && mainHand.rotation.eulerAngles.x < 90;
+            isDrinking = hasDrunk = weaponWield.mainHand.transform.rotation.eulerAngles.x > 0 && weaponWield.mainHand.transform.rotation.eulerAngles.x < 90;
 
             //bHaptics
             if (isDrinking && !BhapticsTactsuit.suitDisabled)
@@ -82,7 +81,7 @@ namespace ValheimVRMod.Scripts {
             if (!isCollisionAllowed()) {
                 return;
             }
-            
+
             if (isRightHand && EquipScript.getRight() == EquipType.Tankard) {
                 if (collider.name == "MouthCollider" && hasDrunk) {
                     hasDrunk = false;
@@ -183,7 +182,7 @@ namespace ValheimVRMod.Scripts {
             outline.OutlineColor = Color.red;
             outline.OutlineWidth = 5;
             outline.OutlineMode = Outline.Mode.OutlineVisible;
-            
+
             isRightHand = rightHand;
             if (isRightHand) {
                 item = Player.m_localPlayer.GetRightItem();   
@@ -291,7 +290,7 @@ namespace ValheimVRMod.Scripts {
             }
             
             snapshots.Add(transform.localPosition);
-            weaponHandleSnapshots.Add(mainHand.position);
+            weaponHandleSnapshots.Add(weaponWield.mainHand.transform.position);
             if (snapshots.Count > maxSnapshots) {
                 snapshots.RemoveAt(0);
             }
@@ -326,7 +325,7 @@ namespace ValheimVRMod.Scripts {
 
         private bool isStab()
         {
-            Vector3 attackDirection = mainHand.position - weaponHandleSnapshots[0];
+            Vector3 attackDirection = weaponWield.mainHand.transform.position - weaponHandleSnapshots[0];
             Vector3 weaponDirection = this.weaponDirection;
 
             if (Vector3.Angle(weaponDirection, attackDirection) > (WeaponWield.isCurrentlyTwoHanded() ? MAX_STAB_ANGLE_TWOHAND : MAX_STAB_ANGLE))
@@ -337,7 +336,7 @@ namespace ValheimVRMod.Scripts {
             float minDistance = WeaponWield.isCurrentlyTwoHanded() ? MIN_DISTANCE_STAB_TWOHAND : MIN_DISTANCE_STAB;
             foreach (Vector3 snapshot in weaponHandleSnapshots)
             {
-                if (Vector3.Dot(mainHand.position - snapshot, weaponDirection) > minDistance)
+                if (Vector3.Dot(weaponWield.mainHand.transform.position - snapshot, weaponDirection) > minDistance)
                 {
                     LogUtils.LogDebug("VHVR: stab detected on weapon direction: " + weaponDirection);
                     return true;
