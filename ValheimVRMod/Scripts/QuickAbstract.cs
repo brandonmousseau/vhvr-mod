@@ -68,14 +68,11 @@ namespace ValheimVRMod.Scripts
 
         protected class QuickMenuItem : MonoBehaviour
         {
-            public string Name { get; set; }
-            public int num { get; set; }
-
+            public string itemName { get; private set; }
             public delegate bool QuickMenuItemCallback();
 
-            public QuickMenuItemCallback callback { private get; set; }
-
-            public Sprite sprite
+            private QuickMenuItemCallback callback;
+            private Sprite sprite
             {
                 set
                 {
@@ -84,21 +81,16 @@ namespace ValheimVRMod.Scripts
                 }
             }
 
-            public QuickMenuItem()
-            {
-                num = -1;
-            }
-
             public bool execute()
             {
                 return callback == null ? false : callback();
             }
 
-            public void useAsInventoryItemAndRefreshColor(Inventory inventory, ItemDrop.ItemData item, int itemIndex)
+            public void useAsInventoryItemAndRefreshColor(Inventory inventory, ItemDrop.ItemData item)
             {
-                if (item.GetIcon().name != Name)
+                if (item.GetIcon().name != itemName)
                 {
-                    Name = item.GetIcon().name;
+                    itemName = item.GetIcon().name;
                     sprite = item.GetIcon();
                     callback = delegate ()
                     {
@@ -116,6 +108,13 @@ namespace ValheimVRMod.Scripts
                 {
                     transform.GetChild(1).GetComponent<SpriteRenderer>().color = Color.white;
                 }
+            }
+
+            public void useAsQuickAction(string itemName, Sprite sprite, QuickMenuItemCallback callback)
+            {
+                this.itemName = itemName;
+                this.sprite = sprite;
+                this.callback = callback;
             }
 
             private void ResizeIcon()
@@ -474,7 +473,7 @@ namespace ValheimVRMod.Scripts
                     continue;
                 }
 
-                elements[elementCount].useAsInventoryItemAndRefreshColor(inventory, item, i);
+                elements[elementCount].useAsInventoryItemAndRefreshColor(inventory, item);
                 elementCount++;
             }
         }
@@ -493,9 +492,9 @@ namespace ValheimVRMod.Scripts
                     continue;
                 }
 
-                if (item.GetIcon().name != extraElements[extraElementCount].Name)
+                if (item.GetIcon().name != extraElements[extraElementCount].itemName)
                 {
-                    extraElements[extraElementCount].useAsInventoryItemAndRefreshColor(inventory, item, i + 4);
+                    extraElements[extraElementCount].useAsInventoryItemAndRefreshColor(inventory, item);
                 }
                 extraElementCount++;
             }
@@ -510,77 +509,78 @@ namespace ValheimVRMod.Scripts
             if (se)
             {
                 hasGPower = true;
-                if (extraElements[extraElementCount].Name != ("QuickActionPOWER_" + se.name))
+                if (extraElements[extraElementCount].itemName != ("QuickActionPOWER_" + se.name))
                 {
-                    extraElements[extraElementCount].sprite = se.m_icon;
-                    extraElements[extraElementCount].Name = "QuickActionPOWER_" + se.name;
-                    extraElements[extraElementCount].callback = delegate ()
-                    {
-                        if (!hasGPower)
+                    extraElements[extraElementCount].useAsQuickAction(
+                        "QuickActionPOWER_" + se.name,
+                        se.m_icon,
+                        delegate ()
                         {
-                            return false;
-                        }
-                        Player.m_localPlayer.StartGuardianPower();
-                        return true;
-                    };
+                            if (!hasGPower)
+                            {
+                                return false;
+                            }
+                            Player.m_localPlayer.StartGuardianPower();
+                            return true;
+                        });
                 }
                 extraElementCount++;
             }
 
-            if (extraElements[extraElementCount].Name != "QuickActionSIT")
+            if (extraElements[extraElementCount].itemName != "QuickActionSIT")
             {
-                extraElements[extraElementCount].sprite =
-                    Sprite.Create(sitTexture, new Rect(0.0f, 0.0f, sitTexture.width, sitTexture.height), new Vector2(0.5f, 0.5f), 500);
-                extraElements[extraElementCount].Name = "QuickActionSIT";
-                extraElements[extraElementCount].callback = delegate ()
-                {
-                    if (Player.m_localPlayer.InEmote() && Player.m_localPlayer.IsSitting())
-                        stopEmote.Invoke(Player.m_localPlayer, null);
-                    else
-                        Player.m_localPlayer.StartEmote("sit", false);
-                    return true;
-                };
+                extraElements[extraElementCount].useAsQuickAction(
+                    "QuickActionSIT",
+                    Sprite.Create(sitTexture, new Rect(0.0f, 0.0f, sitTexture.width, sitTexture.height), new Vector2(0.5f, 0.5f), 500),
+                    delegate ()
+                    {
+                        if (Player.m_localPlayer.InEmote() && Player.m_localPlayer.IsSitting())
+                            stopEmote.Invoke(Player.m_localPlayer, null);
+                        else
+                            Player.m_localPlayer.StartEmote("sit", false);
+                        return true;
+                    });
             }
             extraElementCount++;
 
-            if (extraElements[extraElementCount].Name != "QuickActionMAP")
+            if (extraElements[extraElementCount].itemName != "QuickActionMAP")
             {
-                extraElements[extraElementCount].sprite =
-                    Sprite.Create(mapTexture, new Rect(0.0f, 0.0f, mapTexture.width, mapTexture.height), new Vector2(0.5f, 0.5f), 500);
-                extraElements[extraElementCount].Name = "QuickActionMAP";
-                extraElements[extraElementCount].callback = delegate ()
-                {
-                    toggleMap = true;
-                    return true;
-                };
+                extraElements[extraElementCount].useAsQuickAction(
+                    "QuickActionMAP",
+                    Sprite.Create(mapTexture, new Rect(0.0f, 0.0f, mapTexture.width, mapTexture.height), new Vector2(0.5f, 0.5f), 500),
+                    delegate ()
+                    {
+                        toggleMap = true;
+                        return true;
+                    });
             }
             extraElementCount++;
 
-            if (extraElements[extraElementCount].Name != "QuickActionRECENTER")
+            if (extraElements[extraElementCount].itemName != "QuickActionRECENTER")
             {
-                extraElements[extraElementCount].sprite =
-                    Sprite.Create(recenterTexture, new Rect(0.0f, 0.0f, recenterTexture.width, recenterTexture.height), new Vector2(0.5f, 0.5f), 500);
-                extraElements[extraElementCount].Name = "QuickActionRECENTER";
-                extraElements[extraElementCount].callback = delegate ()
-                {
-                    VRManager.tryRecenter();
-                    return true;
-                };
+                extraElements[extraElementCount].useAsQuickAction(
+                    "QuickActionRECENTER",
+                    Sprite.Create(recenterTexture, new Rect(0.0f, 0.0f, recenterTexture.width, recenterTexture.height), new Vector2(0.5f, 0.5f), 500),
+                    delegate ()
+                    {
+                        VRManager.tryRecenter();
+                        return true;
+                    });
             }
             extraElementCount++;
 
-            if (extraElements[extraElementCount].Name != "QuickActionCHAT")
+            if (extraElements[extraElementCount].itemName != "QuickActionCHAT")
             {
-                extraElements[extraElementCount].sprite =
-                    Sprite.Create(chatTexture, new Rect(0.0f, 0.0f, chatTexture.width, chatTexture.height), new Vector2(0.5f, 0.5f), 500);
-                extraElements[extraElementCount].Name = "QuickActionCHAT";
-                extraElements[extraElementCount].callback = delegate ()
-                {
-                    shouldStartChat = true;
-                    TextInput.m_instance.Show("", "", 256);
-                    TextInput.m_instance.m_panel.gameObject.transform.localScale = new Vector3(0, 0, 0);
-                    return true;
-                };
+                extraElements[extraElementCount].useAsQuickAction(
+                    "QuickActionCHAT",
+                    Sprite.Create(chatTexture, new Rect(0.0f, 0.0f, chatTexture.width, chatTexture.height), new Vector2(0.5f, 0.5f), 500),
+                    delegate ()
+                    {
+                        shouldStartChat = true;
+                        TextInput.m_instance.Show("", "", 256);
+                        TextInput.m_instance.m_panel.gameObject.transform.localScale = new Vector3(0, 0, 0);
+                        return true;
+                    });
             }
             extraElementCount++;
         }
