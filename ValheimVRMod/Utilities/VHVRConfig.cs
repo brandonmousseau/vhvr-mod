@@ -79,10 +79,10 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> hideHotbar;
         private static ConfigEntry<bool> alwaysShowStamina;
 
-        private static ConfigEntry<Vector3> rightWristQuickActionPos;
-        private static ConfigEntry<Quaternion> rightWristQuickActionRot;
-        private static ConfigEntry<Vector3> leftWristQuickSwitchPos;
-        private static ConfigEntry<Quaternion> leftWristQuickSwitchRot;
+        private static ConfigEntry<Vector3> rightWristQuickBarPos;
+        private static ConfigEntry<Quaternion> rightWristQuickBarRot;
+        private static ConfigEntry<Vector3> leftWristQuickBarPos;
+        private static ConfigEntry<Quaternion> leftWristQuickBarRot;
         private static ConfigEntry<bool> quickActionOnLeftHand;
 
         // Controls Settings
@@ -197,10 +197,10 @@ namespace ValheimVRMod.Utilities
             rightWristPos.Value = (Vector3)rightWristPos.DefaultValue;
             rightWristRot.Value = (Quaternion)rightWristRot.DefaultValue;
 
-            rightWristQuickActionPos.Value = (Vector3)rightWristQuickActionPos.DefaultValue;
-            rightWristQuickActionRot.Value = (Quaternion)rightWristQuickActionRot.DefaultValue;
-            leftWristQuickSwitchPos.Value = (Vector3)leftWristQuickSwitchPos.DefaultValue;
-            leftWristQuickSwitchRot.Value = (Quaternion)leftWristQuickSwitchRot.DefaultValue;
+            rightWristQuickBarPos.Value = (Vector3)rightWristQuickBarPos.DefaultValue;
+            rightWristQuickBarRot.Value = (Quaternion)rightWristQuickBarRot.DefaultValue;
+            leftWristQuickBarPos.Value = (Vector3)leftWristQuickBarPos.DefaultValue;
+            leftWristQuickBarRot.Value = (Quaternion)leftWristQuickBarRot.DefaultValue;
         }
 
         private static void InitializeImmutableSettings()
@@ -525,19 +525,19 @@ namespace ValheimVRMod.Utilities
                                         "AlwaysShowStamina",
                                         true,
                                         "Always show the stamina bar even if its full");
-            rightWristQuickActionPos = config.Bind("VRHUD",
+            rightWristQuickBarPos = config.Bind("VRHUD",
                                             "RightWristQuickAction",
                                             new Vector3(0.001420379034243524f, 0.09409096091985703f, -0.19604730606079102f),
                                             "Position of extra Quick Action bar on Right Wrist.");
-            rightWristQuickActionRot = config.Bind("VRHUD",
+            rightWristQuickBarRot = config.Bind("VRHUD",
                                             "RightWristQuickActionRot",
                                             new Quaternion(0.6157100796699524f, 0.6319897174835205f, -0.16848529875278474f, 0.4394344985485077f),
                                             "Rotation for extra Quick Action bar on Right Wrist.");
-            leftWristQuickSwitchPos = config.Bind("VRHUD",
+            leftWristQuickBarPos = config.Bind("VRHUD",
                                             "LeftWristQuickSwitch",
                                             new Vector3(-0.005364172160625458f, 0.11832620203495026f, -0.19671690464019776f),
                                             "Position of extra Quick Switch bar on Left Wrist.");
-            leftWristQuickSwitchRot = config.Bind("VRHUD",
+            leftWristQuickBarRot = config.Bind("VRHUD",
                                             "LeftWristQuickSwitchRot",
                                             new Quaternion(-0.5040010213851929f, 0.7026780843734741f, -0.09470813721418381f, -0.4932106137275696f),
                                             "Rotation for reposition extra Quick Switch bar on Left Wrist");
@@ -1319,37 +1319,37 @@ namespace ValheimVRMod.Utilities
             return alwaysShowStamina.Value;
         }
 
-        public static Vector3 RightWristQuickActionPos()
+        public static Vector3 DominantHandWristQuickBarPos()
         {
-            return rightWristQuickActionPos.Value;
+            return LeftHanded() ? leftWristQuickBarPos.Value : rightWristQuickBarPos.Value;
         }
-        public static Quaternion RightWristQuickActionRot()
+        public static Quaternion DominantHandWristQuickBarRot()
         {
-            return rightWristQuickActionRot.Value;
+            return LeftHanded() ? leftWristQuickBarRot.Value : rightWristQuickBarRot.Value;
         }
-        public static Vector3 DefaultRightWristQuickActionPos()
+        public static Vector3 NonDominantHandWristQuickBarPos()
         {
-            return (Vector3)rightWristQuickActionPos.DefaultValue;
+            return LeftHanded() ? rightWristQuickBarPos.Value : leftWristQuickBarPos.Value;
         }
-        public static Quaternion DefaultRightWristQuickActionRot()
+        public static Quaternion NonDominantHandWristQuickBarRot()
         {
-            return (Quaternion)rightWristQuickActionRot.DefaultValue;
+            return LeftHanded() ? rightWristQuickBarRot.Value : leftWristQuickBarRot.Value;
         }
-        public static Vector3 LeftWristQuickSwitchPos()
+        public static Vector3 DefaultRightWristQuickBarPos()
         {
-            return leftWristQuickSwitchPos.Value;
+            return (Vector3)rightWristQuickBarPos.DefaultValue;
         }
-        public static Quaternion LeftWristQuickSwitchRot()
+        public static Quaternion DefaultRightWristQuickBarRot()
         {
-            return leftWristQuickSwitchRot.Value;
+            return (Quaternion)rightWristQuickBarRot.DefaultValue;
         }
-        public static Vector3 DefaultLeftWristQuickSwitchPos()
+        public static Vector3 DefaultLeftWristQuickBarPos()
         {
-            return (Vector3)leftWristQuickSwitchPos.DefaultValue;
+            return (Vector3)leftWristQuickBarPos.DefaultValue;
         }
-        public static Quaternion DefaultLeftWristQuickSwitchRot()
+        public static Quaternion DefaultLeftWristQuickBarRot()
         {
-            return (Quaternion)leftWristQuickSwitchRot.DefaultValue;
+            return (Quaternion)leftWristQuickBarRot.DefaultValue;
         }
         public static bool QuickActionOnLeftHand()
         {
