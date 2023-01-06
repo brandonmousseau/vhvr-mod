@@ -39,7 +39,6 @@ namespace ValheimVRMod.Scripts
         private Transform quickMenuLocker;
         protected GameObject wrist;
         protected GameObject radialMenu;
-        protected Hand currentHand;
         private bool wasWrist;
 
         protected MethodInfo stopEmote = AccessTools.Method(typeof(Player), "StopEmote");
@@ -51,7 +50,7 @@ namespace ValheimVRMod.Scripts
         public static bool toggleMap;
         public static bool shouldStartChat;
 
-        private void Awake()
+        protected virtual void Awake()
         {
             sitTexture = VRAssetManager.GetAsset<Texture2D>("sit");
             mapTexture = VRAssetManager.GetAsset<Texture2D>("map");
@@ -64,9 +63,7 @@ namespace ValheimVRMod.Scripts
             radialMenu.transform.SetParent(transform);
             initialize();
             createSphere();
-            InitializeWrist();
             refreshItems();
-
         }
 
         protected class QuickMenuItem : MonoBehaviour
@@ -134,7 +131,7 @@ namespace ValheimVRMod.Scripts
             }
         }
 
-        protected abstract void InitializeWrist();
+        protected abstract void ExecuteHapticFeedbackOnHoverTo();
 
         private void OnEnable()
         {
@@ -225,9 +222,7 @@ namespace ValheimVRMod.Scripts
                 Destroy(item);
             }
         }
-
         public abstract void UpdateWristBar();
-
         public abstract void refreshItems();
 
         private void createSphere()
@@ -385,10 +380,7 @@ namespace ValheimVRMod.Scripts
             {
                 if (lastHoveredIndex != hoveredIndex)
                 {
-                    if (currentHand == VRPlayer.leftHand)
-                        VRPlayer.rightHand.hapticAction.Execute(0, 0.1f, 40, 0.1f, SteamVR_Input_Sources.RightHand);
-                    else
-                        VRPlayer.leftHand.hapticAction.Execute(0, 0.1f, 40, 0.1f, SteamVR_Input_Sources.LeftHand);
+                    ExecuteHapticFeedbackOnHoverTo();
                 }
                 hoveredItem.transform.position = hoverPos;
                 hoveredItem.transform.rotation = hoverRot;
@@ -458,8 +450,14 @@ namespace ValheimVRMod.Scripts
             return true;
         }
 
-        protected void refreshRadialItems(bool isRightHand)
+        protected void refreshRadialItems(bool isDominantHand)
         {
+            Transform handTransform = isDominantHand ? VRPlayer.dominantHand.transform : VRPlayer.dominantHand.otherHand.transform;
+            if (parent != handTransform )
+            {
+                parent = handTransform;
+                transform.position = handTransform.position;
+            }
 
             if (Player.m_localPlayer == null)
             {
@@ -478,34 +476,9 @@ namespace ValheimVRMod.Scripts
                 {
                     continue;
                 }
-                if (VHVRConfig.GetQuickMenuIsSeperate())
+                if (VHVRConfig.GetQuickMenuIsSeperate() && (EquipScript.IsDominantHandItem(item) ^ isDominantHand))
                 {
-                    if (isRightHand)
-                    {
-                        switch (item.m_shared.m_itemType)
-                        {
-                            case ItemDrop.ItemData.ItemType.Tool:
-                            case ItemDrop.ItemData.ItemType.Torch:
-                            case ItemDrop.ItemData.ItemType.OneHandedWeapon:
-                            case ItemDrop.ItemData.ItemType.TwoHandedWeapon:
-                                break;
-                            default:
-                                continue;
-                        }
-                    }
-                    else
-                    {
-                        switch (item.m_shared.m_itemType)
-                        {
-                            case ItemDrop.ItemData.ItemType.Tool:
-                            case ItemDrop.ItemData.ItemType.Torch:
-                            case ItemDrop.ItemData.ItemType.OneHandedWeapon:
-                            case ItemDrop.ItemData.ItemType.TwoHandedWeapon:
-                                continue;
-                            default:
-                                break;
-                        }
-                    }
+                    continue;
                 }
 
                 elements[elementCount].useAsInventoryItemAndRefreshColor(inventory, item, i);

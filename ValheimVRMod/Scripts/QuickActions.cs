@@ -2,33 +2,39 @@ using System;
 using UnityEngine;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
+using Valve.VR;
 
 namespace ValheimVRMod.Scripts {
     public class QuickActions : QuickAbstract {
 
         public static QuickActions instance;
 
-        protected override void InitializeWrist()
+        protected override void Awake()
         {
-            currentHand = VRPlayer.rightHand;
+            base.Awake();
             instance = this;
+        }
+
+        protected override void ExecuteHapticFeedbackOnHoverTo()
+        {
+            VRPlayer.dominantHand.otherHand.hapticAction.Execute(0, 0.1f, 40, 0.1f, VRPlayer.nonDominantHandInputSource);
         }
 
         public override void UpdateWristBar()
         {
-            if(wrist.transform.parent != VRPlayer.rightHand.transform)
+            if(wrist.transform.parent != VRPlayer.dominantHand.transform)
             {
-                wrist.transform.SetParent(VRPlayer.rightHand.transform);
+                wrist.transform.SetParent(VRPlayer.dominantHand.transform);
             }
-            wrist.transform.localPosition = VHVRConfig.RightWristQuickActionPos();
-            wrist.transform.localRotation = VHVRConfig.RightWristQuickActionRot();
+            wrist.transform.localPosition = VHVRConfig.DominantHandWristQuickBarPos();
+            wrist.transform.localRotation = VHVRConfig.DominantHandWristQuickBarRot();
             wrist.SetActive(isInView() || IsInArea());
         }
 
         public override void refreshItems() {
-            refreshRadialItems(false);
+            refreshRadialItems(/* isDominantHand= */ false);
 
-            if (VHVRConfig.QuickActionOnLeftHand())
+            if (VHVRConfig.QuickActionOnLeftHand() ^ VHVRConfig.LeftHanded())
             {
                 RefreshQuickAction();
             }
@@ -38,7 +44,6 @@ namespace ValheimVRMod.Scripts {
             }
                 
             reorderElements();
-            
         }
     }
 }
