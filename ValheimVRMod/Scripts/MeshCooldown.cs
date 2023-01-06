@@ -23,6 +23,9 @@ namespace ValheimVRMod.Scripts {
 
         private void ensureOutline() {
             if (outline == null) {
+                outline = gameObject.GetComponent<Outline>();
+                if (outline)
+                    Destroy(outline);
                 outline = gameObject.AddComponent<Outline>();
             }
         }

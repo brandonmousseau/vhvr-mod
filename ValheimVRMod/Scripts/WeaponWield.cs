@@ -329,7 +329,10 @@ namespace ValheimVRMod.Scripts
             switch (attack.m_attackAnimation)
             {
                 case "knife_stab":
-                    return weaponSubPos;
+                    if (EquipScript.getLeft() == EquipType.Shield)
+                        return false;
+                    else
+                        return weaponSubPos;
                 default:
                     return isCurrentlyTwoHanded();
             }

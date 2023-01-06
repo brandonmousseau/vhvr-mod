@@ -28,7 +28,7 @@ namespace ValheimVRMod.Scripts {
          * loop the inventory hotbar and set corresponding item icons + activate equipped layers
          */
         public override void refreshItems() {
-            refreshRadialItems();
+            refreshRadialItems(true);
 
             //Extra
             if (VHVRConfig.QuickActionOnLeftHand())
