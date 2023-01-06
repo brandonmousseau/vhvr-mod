@@ -304,6 +304,11 @@ namespace ValheimVRMod.Scripts
                 elements[i].transform.localPosition = position;
             }
 
+            if (!Player.m_localPlayer)
+            {
+                return;
+            }
+
             for (int i = 0; i < MAX_EXTRA_ELEMENTS; i++)
             {
                 if (i >= extraElementCount)
@@ -313,6 +318,7 @@ namespace ValheimVRMod.Scripts
                 }
                 var extraOffset = (i * 0.05f) - (extraElementCount / 2 * 0.05f) + (extraElementCount % 2 == 0 ? 0.025f : 0);
                 var position = new Vector2((float)extraOffset, 0);
+
                 extraElements[i].gameObject.SetActive(true);
                 extraElements[i].transform.localPosition = position;
             }
@@ -457,8 +463,11 @@ namespace ValheimVRMod.Scripts
             }
 
             elementCount = 0;
-            var inventory = Player.m_localPlayer.GetInventory();
-
+            var inventory = Player.m_localPlayer?.GetInventory();
+            if (inventory == null)
+            {
+                return;
+            }
             for (int i = 0; i < 8; i++)
             {
 
@@ -480,8 +489,18 @@ namespace ValheimVRMod.Scripts
 
         protected void RefreshWristQuickAction()
         {
+            if (Player.m_localPlayer == null)
+            {
+                return;
+            }
+
             extraElementCount = 0;
-            Inventory inventory = Player.m_localPlayer.GetInventory();
+
+            Inventory inventory = Player.m_localPlayer?.GetInventory();
+            if (inventory == null)
+            {
+                return;
+            }
             for (int i = 0; i < 4; i++)
             {
 
@@ -502,6 +521,10 @@ namespace ValheimVRMod.Scripts
 
         protected void RefreshWristQuickSwitch()
         {
+            if (!Player.m_localPlayer)
+            {
+                return;
+            }
             StatusEffect se;
             float cooldown;
             extraElementCount = 0;
