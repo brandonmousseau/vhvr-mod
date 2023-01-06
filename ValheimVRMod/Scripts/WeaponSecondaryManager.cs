@@ -42,16 +42,9 @@ namespace ValheimVRMod.Scripts
 
             slashLine = new GameObject().AddComponent<LineRenderer>();
             slashLine.widthMultiplier = 0.02f;
-            slashLine.positionCount = 3;
+            slashLine.positionCount = 5;
             slashLine.material = new Material(Shader.Find("Custom/AlphaParticle"));
             slashLine.material.color = slashColor;
-
-            slashCurve = new AnimationCurve();
-            slashCurve.AddKey(0f, 0.1f);
-            slashCurve.AddKey(0.25f, 0.65f);
-            slashCurve.AddKey(0.5f, 1f);
-            slashCurve.AddKey(0.75f, 0.65f);
-            slashCurve.AddKey(1f, 0.1f);
 
             circleCurve = new AnimationCurve();
             circleCurve.AddKey(0f, 1f);
@@ -60,7 +53,7 @@ namespace ValheimVRMod.Scripts
             circleCurve.AddKey(0.75f, 0.65f);
             circleCurve.AddKey(1f, 1f);
 
-            slashLine.widthCurve = slashCurve;
+            
             slashLine.numCapVertices = 3;
             slashLine.enabled = false;
             slashLine.receiveShadows = false;
@@ -100,6 +93,47 @@ namespace ValheimVRMod.Scripts
             }
             attack = item.m_shared.m_attack.Clone();
             secondaryAttack = item.m_shared.m_secondaryAttack.Clone();
+
+            
+            float damage = 0;
+            if (item.m_shared.m_damages.m_slash > damage)
+            {
+                slashCurve = new AnimationCurve();
+                slashCurve.AddKey(0f, 0.1f);
+                slashCurve.AddKey(0.25f, 0.65f);
+                slashCurve.AddKey(0.5f, 1f);
+                slashCurve.AddKey(0.75f, 0.65f);
+                slashCurve.AddKey(1f, 0.1f);
+                damage = item.m_shared.m_damages.m_slash;
+            }
+            if(item.m_shared.m_damages.m_pierce > damage)
+            {
+                slashCurve = new AnimationCurve();
+                slashCurve.AddKey(0f, 0.3f);
+                slashCurve.AddKey(0.25f, 1f);
+                slashCurve.AddKey(1f, 0.1f);
+                damage = item.m_shared.m_damages.m_pierce;
+            }
+            if (item.m_shared.m_damages.m_blunt > damage)
+            {
+                slashCurve = new AnimationCurve();
+                slashCurve.AddKey(0f, 0.1f);
+                slashCurve.AddKey(0.5f, 0.5f);
+                slashCurve.AddKey(1f, 1f);
+                damage = item.m_shared.m_damages.m_blunt;
+            }
+
+            if (damage == 0)
+            {
+                slashCurve = new AnimationCurve();
+                slashCurve.AddKey(0f, 0.1f);
+                slashCurve.AddKey(0.25f, 0.65f);
+                slashCurve.AddKey(0.5f, 1f);
+                slashCurve.AddKey(0.75f, 0.65f);
+                slashCurve.AddKey(1f, 0.1f);
+            }
+
+            slashLine.widthCurve = slashCurve;
         }
         private void Update()
         {
@@ -225,10 +259,12 @@ namespace ValheimVRMod.Scripts
                 if (firstPos != Vector3.zero && lastPos == Vector3.zero)
                 {
                     pointList.Add(Player.m_localPlayer.transform.position + firstPos);
-                    slashLine.positionCount = 3;
+                    slashLine.positionCount = 5;
                     var currpos = localHandPos + localWeaponForward;
                     var minDist = Mathf.Min(secondaryAttack.m_attackRange * rangeMultiplier, Vector3.Distance(firstPos, currpos) * rangeMultiplier);
-                    pointList.Add(Player.m_localPlayer.transform.position + firstPos + ((currpos - firstPos).normalized * minDist / 2));
+                    pointList.Add(Player.m_localPlayer.transform.position + firstPos + ((currpos - firstPos).normalized * minDist * 0.25f));
+                    pointList.Add(Player.m_localPlayer.transform.position + firstPos + ((currpos - firstPos).normalized * minDist * 0.5f));
+                    pointList.Add(Player.m_localPlayer.transform.position + firstPos + ((currpos - firstPos).normalized * minDist * 0.75f));
                     pointList.Add(Player.m_localPlayer.transform.position + firstPos + ((currpos - firstPos).normalized * minDist));
                     slashLine.SetPositions(pointList.ToArray());
                     slashLine.enabled = true;
@@ -269,10 +305,12 @@ namespace ValheimVRMod.Scripts
                 {
                     var minDist = Mathf.Min(secondaryAttack.m_attackRange * rangeMultiplier, Vector3.Distance(firstPos, lastPos) * rangeMultiplier);
                     pointList.Add(firstPos);
-                    pointList.Add(firstPos + ((lastPos - firstPos).normalized * minDist / 2));
+                    pointList.Add(firstPos + ((lastPos - firstPos).normalized * minDist * 0.25f));
+                    pointList.Add(firstPos + ((lastPos - firstPos).normalized * minDist * 0.5f));
+                    pointList.Add(firstPos + ((lastPos - firstPos).normalized * minDist * 0.75f));
                     pointList.Add(firstPos + ((lastPos - firstPos).normalized * minDist));
                     slashLine.SetPositions(pointList.ToArray());
-                    slashLine.positionCount = 3;
+                    slashLine.positionCount = 5;
                     hitDir = (lastPos - firstPos).normalized;
                     RaycastHit[] tempSecondaryHitList = Physics.SphereCastAll(firstPos, attack.m_attackRayWidth * 1.5f, (lastPos - firstPos).normalized, minDist, layerMask, QueryTriggerInteraction.Ignore);
                     Array.Sort<RaycastHit>(tempSecondaryHitList, (RaycastHit x, RaycastHit y) => x.distance.CompareTo(y.distance));
