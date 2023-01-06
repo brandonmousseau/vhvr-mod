@@ -26,7 +26,7 @@ namespace ValheimVRMod.Scripts {
         }
 
         public override void refreshItems() {
-            refreshRadialItems();
+            refreshRadialItems(false);
 
             if (VHVRConfig.QuickActionOnLeftHand())
             {

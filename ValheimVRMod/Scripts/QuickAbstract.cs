@@ -458,7 +458,7 @@ namespace ValheimVRMod.Scripts
             return true;
         }
 
-        protected void refreshRadialItems()
+        protected void refreshRadialItems(bool isRightHand)
         {
 
             if (Player.m_localPlayer == null)
@@ -480,15 +480,31 @@ namespace ValheimVRMod.Scripts
                 }
                 if (VHVRConfig.GetQuickMenuIsSeperate())
                 {
-                    switch (item.m_shared.m_itemType)
+                    if (isRightHand)
                     {
-                        case ItemDrop.ItemData.ItemType.Tool:
-                        case ItemDrop.ItemData.ItemType.Torch:
-                        case ItemDrop.ItemData.ItemType.OneHandedWeapon:
-                        case ItemDrop.ItemData.ItemType.TwoHandedWeapon:
-                            break;
-                        default:
-                            continue;
+                        switch (item.m_shared.m_itemType)
+                        {
+                            case ItemDrop.ItemData.ItemType.Tool:
+                            case ItemDrop.ItemData.ItemType.Torch:
+                            case ItemDrop.ItemData.ItemType.OneHandedWeapon:
+                            case ItemDrop.ItemData.ItemType.TwoHandedWeapon:
+                                break;
+                            default:
+                                continue;
+                        }
+                    }
+                    else
+                    {
+                        switch (item.m_shared.m_itemType)
+                        {
+                            case ItemDrop.ItemData.ItemType.Tool:
+                            case ItemDrop.ItemData.ItemType.Torch:
+                            case ItemDrop.ItemData.ItemType.OneHandedWeapon:
+                            case ItemDrop.ItemData.ItemType.TwoHandedWeapon:
+                                continue;
+                            default:
+                                break;
+                        }
                     }
                 }
 
