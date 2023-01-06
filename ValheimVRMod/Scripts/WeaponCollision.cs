@@ -20,13 +20,15 @@ namespace ValheimVRMod.Scripts {
         private bool scriptActive;
         private GameObject colliderParent;
         private List<Vector3> snapshots;
-        private List<Vector3> snapshotsC;
+        private List<Vector3> weaponHandleSnapshots;
         private ItemDrop.ItemData item;
         private Attack attack;
         private bool isRightHand;
         private Outline outline;
         private float hitTime;
         private bool hasDrunk;
+        public bool lastAttackWasStab { get; private set; }
+        private Vector3 weaponDirection { get { return (transform.position - weaponWield.mainHand.transform.position).normalized; } }
 
         public bool itemIsTool;
         public static bool isDrinking;
@@ -46,7 +48,12 @@ namespace ValheimVRMod.Scripts {
         {
             colliderParent = new GameObject();
             snapshots = new List<Vector3>();
-            snapshotsC = new List<Vector3>();
+            weaponHandleSnapshots = new List<Vector3>();
+        }
+
+        void Destroy()
+        {
+            Destroy(colliderParent);
         }
 
         private void OnTriggerStay(Collider collider) {
@@ -59,11 +66,7 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            var mainHand = VHVRConfig.LeftHanded() ? VRPlayer.leftHand : VRPlayer.rightHand;
-            
-            isDrinking = hasDrunk = 
-                mainHand.transform.rotation.eulerAngles.x > 0 
-                && mainHand.transform.rotation.eulerAngles.x < 90;
+            isDrinking = hasDrunk = weaponWield.mainHand.transform.rotation.eulerAngles.x > 0 && weaponWield.mainHand.transform.rotation.eulerAngles.x < 90;
 
             //bHaptics
             if (isDrinking && !BhapticsTactsuit.suitDisabled)
@@ -78,7 +81,7 @@ namespace ValheimVRMod.Scripts {
             if (!isCollisionAllowed()) {
                 return;
             }
-            
+
             if (isRightHand && EquipScript.getRight() == EquipType.Tankard) {
                 if (collider.name == "MouthCollider" && hasDrunk) {
                     hasDrunk = false;
@@ -122,6 +125,7 @@ namespace ValheimVRMod.Scripts {
                 }
             }
         }
+
         private bool tryHitTarget(GameObject target) {
 
             // ignore certain Layers
@@ -133,6 +137,7 @@ namespace ValheimVRMod.Scripts {
             {
                 return false;
             }
+
             if (Player.m_localPlayer.IsStaggering() || Player.m_localPlayer.InDodge())
             {
                 return false;
@@ -177,7 +182,7 @@ namespace ValheimVRMod.Scripts {
             outline.OutlineColor = Color.red;
             outline.OutlineWidth = 5;
             outline.OutlineMode = Outline.Mode.OutlineVisible;
-            
+
             isRightHand = rightHand;
             if (isRightHand) {
                 item = Player.m_localPlayer.GetRightItem();   
@@ -239,7 +244,6 @@ namespace ValheimVRMod.Scripts {
             }
         }
 
-
         private void Update() {
             
             if (!outline) {
@@ -276,11 +280,9 @@ namespace ValheimVRMod.Scripts {
 
             if (!active) {
                 snapshots.Clear();
-                snapshotsC.Clear();
+                weaponHandleSnapshots.Clear();
             }
         }
-
-        
         
         private void FixedUpdate() {
             if (!isCollisionAllowed()) {
@@ -288,65 +290,59 @@ namespace ValheimVRMod.Scripts {
             }
             
             snapshots.Add(transform.localPosition);
-            snapshotsC.Add(GetHandPosition());
+            weaponHandleSnapshots.Add(weaponWield.mainHand.transform.position);
             if (snapshots.Count > maxSnapshots) {
                 snapshots.RemoveAt(0);
             }
-            if (snapshotsC.Count > maxSnapshots) {
-                snapshotsC.RemoveAt(0);
+            if (weaponHandleSnapshots.Count > maxSnapshots) {
+                weaponHandleSnapshots.RemoveAt(0);
             }
         }
 
         public bool hasMomentum() {
-            
+
+            lastAttackWasStab = isStab();
+
+            if (lastAttackWasStab)
+            {
+                return true;
+            }
+
             if (!VHVRConfig.WeaponNeedsSpeed()) {
                 return true;
             }
 
-            foreach (Vector3 snapshot in snapshots) {
-                if (Vector3.Distance(snapshot, transform.localPosition) > MIN_DISTANCE + colliderDistance / 2) {
+            foreach (Vector3 snapshot in snapshots)
+            {
+                if (Vector3.Distance(snapshot, transform.localPosition) > MIN_DISTANCE + colliderDistance / 2)
+                {
                     return true;
-                }
-            }
-
-            if (WeaponWield.isCurrentlyTwoHanded())
-            {
-                foreach (Vector3 snapshot in snapshots)
-                {
-                    if (Vector3.Distance(snapshot, transform.localPosition) > MIN_DISTANCE_STAB_TWOHAND && isStab())
-                    {
-                        return true;
-                    }
-                }
-            }
-            else
-            {
-                foreach (Vector3 snapshot in snapshotsC)
-                {
-                    if (Vector3.Distance(snapshot, GetHandPosition()) > MIN_DISTANCE_STAB && isStab())
-                    {
-                        return true;
-                    }
                 }
             }
 
             return false;
         }
-        public float SwingAngle() {
-            float angle = Vector3.Angle(snapshotsC[0] - snapshotsC[snapshotsC.Count - 1], snapshotsC[0] - Player.m_localPlayer.transform.InverseTransformPoint(transform.position));
-            return angle;
-        }
 
-        public bool isStab() {
-            return WeaponWield.isCurrentlyTwoHanded() ? (SwingAngle() < MAX_STAB_ANGLE_TWOHAND) : (SwingAngle() < MAX_STAB_ANGLE);
-        }
-        private Vector3 GetHandPosition() {
-            if (isRightHand) {
-                return Player.m_localPlayer.transform.InverseTransformPoint(VRPlayer.rightHand.transform.position);
+        private bool isStab()
+        {
+            Vector3 attackDirection = weaponWield.mainHand.transform.position - weaponHandleSnapshots[0];
+            Vector3 weaponDirection = this.weaponDirection;
+
+            if (Vector3.Angle(weaponDirection, attackDirection) > (WeaponWield.isCurrentlyTwoHanded() ? MAX_STAB_ANGLE_TWOHAND : MAX_STAB_ANGLE))
+            {
+                return false;
             }
-            else {
-                return Player.m_localPlayer.transform.InverseTransformPoint(VRPlayer.leftHand.transform.position);
+
+            float minDistance = WeaponWield.isCurrentlyTwoHanded() ? MIN_DISTANCE_STAB_TWOHAND : MIN_DISTANCE_STAB;
+            foreach (Vector3 snapshot in weaponHandleSnapshots)
+            {
+                if (Vector3.Dot(weaponWield.mainHand.transform.position - snapshot, weaponDirection) > minDistance)
+                {
+                    LogUtils.LogDebug("VHVR: stab detected on weapon direction: " + weaponDirection);
+                    return true;
+                }
             }
+            return false;
         }
     }
 }
