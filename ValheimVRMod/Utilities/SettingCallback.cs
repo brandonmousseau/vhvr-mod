@@ -45,17 +45,16 @@ namespace ValheimVRMod.Utilities {
             return createSettingObj(VHVRConfig.RightWristPos(), VHVRConfig.RightWristRot(), "Right Wrist", true);
         }
 
-        public static bool LeftWristQuickSwitch(UnityAction<Vector3, Quaternion> pAction)
+        public static bool DominantHandWristQuickBar(UnityAction<Vector3, Quaternion> pAction)
         {
             action = pAction;
-            return createSettingObj(VHVRConfig.LeftWristQuickSwitchPos(), VHVRConfig.LeftWristQuickSwitchRot(), "Left Wrist Quick Switch", false);
+            return createSettingObj(VHVRConfig.DominantHandWristQuickBarPos(), VHVRConfig.DominantHandWristQuickBarRot(), "Dominant Hand Wrist Quick Bar", false);
         }
-        public static bool RightWristQuickAction(UnityAction<Vector3, Quaternion> pAction)
+        public static bool NonDominantHandWristQuickBar(UnityAction<Vector3, Quaternion> pAction)
         {
             action = pAction;
-            return createSettingObj(VHVRConfig.RightWristQuickActionPos(), VHVRConfig.RightWristQuickActionRot(), "Right Wrist Quick Action", true);
+            return createSettingObj(VHVRConfig.NonDominantHandWristQuickBarPos(), VHVRConfig.NonDominantHandWristQuickBarRot(), "Non-dominant Hand Wrist Quick Bar", false);
         }
-
 
         private static bool createSettingObj(Vector3 pos, Quaternion rot, string panel, bool isRightWrist) {
 
