@@ -218,10 +218,20 @@ namespace ValheimVRMod.Utilities
                     0, 0, 0,
                     0.18f,  0.03f, 0.18f
                 )}, {
+                "Tankard_dvergr", WeaponColData.create(
+                    0,  0.31f, 0,
+                    0, 0, 0,
+                    0.18f,  0.03f, 0.18f
+                )}, {
                 "TankardAnniversary", WeaponColData.create(
                     0,  0.48f, 0,
                     0, 0, 0,
                     0.18f,  0.03f, 0.18f
+                )}, {
+                "TankardOdin", WeaponColData.create(
+                    0,  -0.01f, 0.115f,
+                    0, 0, 0,
+                    0.025f, 0.025f, 0.005f
                 )}, {
                 "AtgeirHimminAfl", WeaponColData.create(
                     0,  1.419f, -0.002f,
