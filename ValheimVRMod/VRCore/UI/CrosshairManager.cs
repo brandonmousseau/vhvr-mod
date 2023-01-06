@@ -194,7 +194,10 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return true;
             }
-            ensureCrosshairCamera();
+            if (!ensureCrosshairCamera())
+            {
+                return false;
+            }
             _crosshairCanvasParent = new GameObject("CrosshairCanvasGameObject");
             _crosshairCanvasParent.layer = LayerUtils.getWorldspaceUiLayer();
             GameObject.DontDestroyOnLoad(_crosshairCanvasParent);
