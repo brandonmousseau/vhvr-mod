@@ -18,6 +18,7 @@ namespace ValheimVRMod.Scripts
         public string itemName;
         public Hand rearHand { get; private set; }
         public Hand frontHand { get; private set; }
+        public Hand mainHand { get { return isCurrentlyTwoHanded() ? rearHand : VRPlayer.dominantHand; } } 
 
         private ItemDrop.ItemData item;
         private GameObject rotSave;
