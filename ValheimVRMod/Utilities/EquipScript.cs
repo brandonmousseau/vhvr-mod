@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace ValheimVRMod.Utilities {
     
@@ -18,8 +19,21 @@ namespace ValheimVRMod.Utilities {
         //Modded
         RuneSkyheim
     }
-    
+
     public static class EquipScript {
+
+        public readonly static HashSet<ItemDrop.ItemData.ItemType> DominantHandItemTypes =
+            new HashSet<ItemDrop.ItemData.ItemType>(
+                new ItemDrop.ItemData.ItemType[]{
+                    ItemDrop.ItemData.ItemType.Tool,
+                    ItemDrop.ItemData.ItemType.Torch,
+                    ItemDrop.ItemData.ItemType.OneHandedWeapon,
+                    ItemDrop.ItemData.ItemType.TwoHandedWeapon});
+
+        public static bool IsDominantHandItem(ItemDrop.ItemData item)
+        {
+            return DominantHandItemTypes.Contains(item.m_shared.m_itemType);
+        }
         
         public static EquipType getRight() {
             if (Player.m_localPlayer.GetRightItem() != null)
