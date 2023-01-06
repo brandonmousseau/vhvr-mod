@@ -92,7 +92,8 @@ namespace ValheimVRMod.Patches {
             var weaponCol = StaticObjects.rightWeaponCollider().GetComponent<WeaponCollision>();
             weaponCol.setColliderParent(meshFilter.transform, ___m_rightItem, true);
             weaponCol.weaponWield = weaponWield;
-            
+            meshFilter.gameObject.AddComponent<WeaponSecondaryManager>().Initialize(meshFilter.transform, ___m_rightItem, true);
+
             meshFilter.gameObject.AddComponent<WeaponBlock>().weaponWield = weaponWield;
             if (spearManager) spearManager.weaponWield = weaponWield;
 
@@ -168,6 +169,7 @@ namespace ValheimVRMod.Patches {
             }
 
             StaticObjects.leftWeaponCollider().GetComponent<WeaponCollision>().setColliderParent(meshFilter.transform, ___m_leftItem, false);
+            meshFilter.gameObject.AddComponent<WeaponSecondaryManager>().Initialize(meshFilter.transform, ___m_leftItem, false);
             ParticleFix.maybeFix(___m_leftItemInstance);
         }
     }

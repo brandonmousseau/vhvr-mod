@@ -178,9 +178,9 @@ namespace ValheimVRMod.Patches {
 
                 if (___m_lowerDamagePerHit) {
                     
-                    if(WeaponCollision.wasSecondaryAttack && WeaponCollision.secondaryHitList.Count >= 1)
+                    if(WeaponSecondaryManager.wasSecondaryAttack && WeaponSecondaryManager.secondaryHitList.Count >= 1)
                     {
-                        randomSkillFactor /= WeaponCollision.secondaryHitList.Count * 0.75f;
+                        randomSkillFactor /= WeaponSecondaryManager.secondaryHitList.Count * 0.75f;
                     }
                     else
                     {
@@ -201,7 +201,7 @@ namespace ValheimVRMod.Patches {
                 hitData.m_skill = skill;
                 hitData.m_damage = ___m_weapon.GetDamage();
                 hitData.m_point = pos;
-                hitData.m_dir = WeaponCollision.hitDir == Vector3.zero ? (pos - Player.m_localPlayer.transform.position).normalized : WeaponCollision.hitDir;
+                hitData.m_dir = WeaponSecondaryManager.hitDir == Vector3.zero ? (pos - Player.m_localPlayer.transform.position).normalized : WeaponSecondaryManager.hitDir;
                 hitData.m_hitCollider = col;
                 hitData.SetAttacker(___m_character);
                 hitData.m_damage.Modify(___m_damageMultiplier);
@@ -211,7 +211,7 @@ namespace ValheimVRMod.Patches {
                     hitData.m_damage.Modify(2f);
                     hitData.m_pushForce *= 1.2f;
                 }
-                if (___m_lowerDamagePerHit && !WeaponCollision.wasSecondaryAttack)
+                if (___m_lowerDamagePerHit && !WeaponSecondaryManager.wasSecondaryAttack)
                 {
                     hitData.m_damage.Modify(AttackTargetMeshCooldown.calcDamageMultiplier());
                 }
@@ -269,7 +269,7 @@ namespace ValheimVRMod.Patches {
             {
                 return ;
             }
-            if (WeaponCollision.wasSecondaryAttack)
+            if (WeaponSecondaryManager.wasSecondaryAttack)
                 __result *= 0.2F;
             return;
         }
