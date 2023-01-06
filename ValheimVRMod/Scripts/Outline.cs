@@ -119,7 +119,8 @@ public class Outline : MonoBehaviour {
 
   private bool IsPlayerHairMaterials(List<Material> materials) {
     foreach (Material material in materials) {
-      if (material.name.StartsWith("PlayerHair")) {
+      if (material.name.
+      ("PlayerHair")) {
         return true;
       }
     }
@@ -187,7 +188,7 @@ public class Outline : MonoBehaviour {
 
       // TODO: there is a chance that the vanilla game or other mods has modified the material array since we added the outline materials,
       // which would make the outline materials references here stale and cause us to fail to remove them.
-      // Consider, instead, iterating over the materials and check materials[i].startWith("OutlineMask") || materials[i].startWith("OutlineFill")
+      // Consider, instead, iterating over the materials and check materials[i].name.startWith("OutlineMask") || materials[i].name.startWith("OutlineFill")
       materials.Remove(outlineMaskMaterial);
       materials.Remove(outlineFillMaterial);
 
