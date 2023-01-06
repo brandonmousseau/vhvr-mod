@@ -113,9 +113,9 @@ namespace ValheimVRMod.Patches
     class PatchInventoryChanged {
 
         static void Postfix() {
-            if (StaticObjects.quickSwitch != null && VHVRConfig.UseVrControls()) {
-                StaticObjects.quickSwitch.GetComponent<QuickSwitch>()?.refreshItems();
-                StaticObjects.quickActions.GetComponent<QuickActions>()?.refreshItems();
+            if (StaticObjects.rightHandQuickMenu != null && VHVRConfig.UseVrControls()) {
+                StaticObjects.rightHandQuickMenu.GetComponent<RightHandQuickMenu>()?.refreshItems();
+                StaticObjects.leftHandQuickMenu.GetComponent<LeftHandQuickMenu>()?.refreshItems();
             }
         }
     }
@@ -124,9 +124,9 @@ namespace ValheimVRMod.Patches
     class PatchOnSelectedItem {
 
         static void Postfix() {
-            if (StaticObjects.quickSwitch != null && VHVRConfig.UseVrControls()) {
-                StaticObjects.quickSwitch.GetComponent<QuickSwitch>().refreshItems();
-                StaticObjects.quickActions.GetComponent<QuickActions>().refreshItems();
+            if (StaticObjects.rightHandQuickMenu != null && VHVRConfig.UseVrControls()) {
+                StaticObjects.rightHandQuickMenu.GetComponent<RightHandQuickMenu>().refreshItems();
+                StaticObjects.leftHandQuickMenu.GetComponent<LeftHandQuickMenu>().refreshItems();
             }
         }
     }
@@ -166,9 +166,9 @@ namespace ValheimVRMod.Patches
         }
 
         static void Postfix() {
-            if (StaticObjects.quickSwitch != null) {
-                StaticObjects.quickSwitch.GetComponent<QuickSwitch>().refreshItems();
-                StaticObjects.quickActions.GetComponent<QuickActions>().refreshItems();
+            if (StaticObjects.rightHandQuickMenu != null) {
+                StaticObjects.rightHandQuickMenu.GetComponent<RightHandQuickMenu>().refreshItems();
+                StaticObjects.leftHandQuickMenu.GetComponent<LeftHandQuickMenu>().refreshItems();
             }
         }
     }
@@ -182,8 +182,9 @@ namespace ValheimVRMod.Patches
                 return;
             }
             
-            if (StaticObjects.quickActions != null) {
-                StaticObjects.quickActions.GetComponent<QuickActions>().refreshItems();
+            if (StaticObjects.leftHandQuickMenu != null) {
+                StaticObjects.leftHandQuickMenu.GetComponent<LeftHandQuickMenu>().refreshItems();
+                StaticObjects.rightHandQuickMenu.GetComponent<RightHandQuickMenu>().refreshItems();
             }
         }
     }

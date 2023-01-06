@@ -108,8 +108,8 @@ namespace ValheimVRMod.VRCore.UI
                 }
             }
 
-            checkQuickItems<QuickSwitch>(StaticObjects.quickSwitch, SteamVR_Actions.valheim_QuickSwitch, true);
-            checkQuickItems<QuickActions>(StaticObjects.quickActions, SteamVR_Actions.valheim_QuickActions, false);
+            checkQuickItems<RightHandQuickMenu>(StaticObjects.rightHandQuickMenu, SteamVR_Actions.valheim_QuickSwitch, true);
+            checkQuickItems<LeftHandQuickMenu>(StaticObjects.leftHandQuickMenu, SteamVR_Actions.valheim_QuickActions, false);
         }
 
         void FixedUpdate()
@@ -164,10 +164,10 @@ namespace ValheimVRMod.VRCore.UI
             // and when the hammer is equipped, the bindings conflict... so we'll share the right click button
             // here to activate quick switch. This is hacky because rebinding things can break the controls, but
             // it works and allows users to use the quick select while the hammer is equipped.
-            if (StaticObjects.quickSwitch != null)
+            if (StaticObjects.rightHandQuickMenu != null)
             {
-                StaticObjects.quickSwitch.GetComponent<QuickSwitch>().refreshItems();
-                StaticObjects.quickActions.GetComponent<QuickActions>().refreshItems();
+                StaticObjects.rightHandQuickMenu.GetComponent<RightHandQuickMenu>().refreshItems();
+                StaticObjects.leftHandQuickMenu.GetComponent<LeftHandQuickMenu>().refreshItems();
             }
             bool rightClickDown = false;
             bool rightClickUp = false;

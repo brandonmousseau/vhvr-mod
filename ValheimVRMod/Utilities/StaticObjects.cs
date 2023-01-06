@@ -10,8 +10,8 @@ namespace ValheimVRMod.Utilities {
         private static WeaponCollision _rightWeaponCollider;
         private static FistCollision _leftFist;
         private static FistCollision _rightFist;
-        public static GameObject quickActions;
-        public static GameObject quickSwitch;
+        public static GameObject leftHandQuickMenu;
+        public static GameObject rightHandQuickMenu;
         private static GameObject _shieldObj;
         private static GameObject _mouthCollider;
         
@@ -65,16 +65,14 @@ namespace ValheimVRMod.Utilities {
             return collisionScript = collisionObj.AddComponent<T>();
         } 
         
-        public static void addQuickActions() {
-            quickActions = new GameObject();
-            quickActions.AddComponent<QuickActions>();
-            quickActions.SetActive(false);
-        }
-        
-        public static void addQuickSwitch() {
-            quickSwitch = new GameObject();
-            quickSwitch.AddComponent<QuickSwitch>();
-            quickSwitch.SetActive(false);
+        public static void addQuickMenus() {
+            leftHandQuickMenu = new GameObject();
+            leftHandQuickMenu.AddComponent<LeftHandQuickMenu>();
+            leftHandQuickMenu.SetActive(false);
+
+            rightHandQuickMenu = new GameObject();
+            rightHandQuickMenu.AddComponent<RightHandQuickMenu>();
+            rightHandQuickMenu.SetActive(false);
         }
 
         public static GameObject shieldObj() {
