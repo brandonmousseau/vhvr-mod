@@ -185,6 +185,9 @@ public class Outline : MonoBehaviour {
       // Remove outline shaders
       var materials = renderer.sharedMaterials.ToList();
 
+      // TODO: there is a chance that the vanilla game or other mods has modified the material array since we added the outline materials,
+      // which would make the outline materials references here stale and cause us to fail to remove them.
+      // Consider, instead, iterating over the materials and check materials[i].startWith("OutlineMask") || materials[i].startWith("OutlineFill")
       materials.Remove(outlineMaskMaterial);
       materials.Remove(outlineFillMaterial);
 
