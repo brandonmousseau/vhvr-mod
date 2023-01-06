@@ -5,10 +5,9 @@ using ValheimVRMod.VRCore;
 using Valve.VR;
 
 namespace ValheimVRMod.Scripts {
-    // TODO: rename this to LeftHandQuickMenu. This class is not specific to quick switches.
-    public class QuickActions : QuickAbstract {
+    public class LeftHandQuickMenu : QuickAbstract {
 
-        public static QuickActions instance;
+        public static LeftHandQuickMenu instance;
 
         protected override void Awake()
         {

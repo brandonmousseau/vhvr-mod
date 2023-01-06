@@ -45,9 +45,9 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
-            if (StaticObjects.quickSwitch != null) {
-                StaticObjects.quickSwitch.GetComponent<QuickSwitch>().refreshItems();
-                StaticObjects.quickActions.GetComponent<QuickActions>().refreshItems();
+            if (StaticObjects.rightHandQuickMenu != null) {
+                StaticObjects.rightHandQuickMenu.GetComponent<RightHandQuickMenu>().refreshItems();
+                StaticObjects.leftHandQuickMenu.GetComponent<LeftHandQuickMenu>().refreshItems();
             }
             SpearManager spearManager = null;
 
@@ -136,9 +136,9 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
-            if (StaticObjects.quickSwitch != null) {
-                StaticObjects.quickSwitch.GetComponent<QuickSwitch>().refreshItems();
-                StaticObjects.quickActions.GetComponent<QuickActions>().refreshItems();
+            if (StaticObjects.rightHandQuickMenu != null) {
+                StaticObjects.rightHandQuickMenu.GetComponent<RightHandQuickMenu>().refreshItems();
+                StaticObjects.leftHandQuickMenu.GetComponent<LeftHandQuickMenu>().refreshItems();
             }
             WeaponWield weaponWield;
             switch (EquipScript.getLeft()) {
