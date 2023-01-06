@@ -1319,6 +1319,22 @@ namespace ValheimVRMod.Utilities
             return alwaysShowStamina.Value;
         }
 
+        public static Vector3 LeftWristQuickBarPos()
+        {
+            return leftWristQuickBarPos.Value;
+        }
+        public static Quaternion LeftWristQuickBarRot()
+        {
+            return leftWristQuickBarRot.Value;
+        }
+        public static Vector3 RightWristQuickBarPos()
+        {
+            return rightWristQuickBarPos.Value;
+        }
+        public static Quaternion RightWristQuickBarRot()
+        {
+            return rightWristQuickBarRot.Value;
+        }
         public static Vector3 DominantHandWristQuickBarPos()
         {
             return LeftHanded() ? leftWristQuickBarPos.Value : rightWristQuickBarPos.Value;
