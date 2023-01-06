@@ -5,6 +5,7 @@ using ValheimVRMod.VRCore;
 using Valve.VR;
 
 namespace ValheimVRMod.Scripts {
+    // TODO: rename this to LeftHandQuickMenu. This class is not specific to quick switches.
     public class QuickActions : QuickAbstract {
 
         public static QuickActions instance;
@@ -17,30 +18,33 @@ namespace ValheimVRMod.Scripts {
 
         protected override void ExecuteHapticFeedbackOnHoverTo()
         {
-            VRPlayer.dominantHand.otherHand.hapticAction.Execute(0, 0.1f, 40, 0.1f, VRPlayer.nonDominantHandInputSource);
+            VRPlayer.leftHand.hapticAction.Execute(0, 0.1f, 40, 0.1f, SteamVR_Input_Sources.LeftHand);
         }
+
+        protected override Transform handTransform { get { return VRPlayer.leftHand.transform; } }
 
         public override void UpdateWristBar()
         {
-            if(wrist.transform.parent != VRPlayer.dominantHand.transform)
+            // The wrist bar is on the other hand.
+            if (wrist.transform.parent != VRPlayer.rightHand.transform)
             {
-                wrist.transform.SetParent(VRPlayer.dominantHand.transform);
+                wrist.transform.SetParent(VRPlayer.rightHand.transform);
             }
-            wrist.transform.localPosition = VHVRConfig.DominantHandWristQuickBarPos();
-            wrist.transform.localRotation = VHVRConfig.DominantHandWristQuickBarRot();
+            wrist.transform.localPosition = VHVRConfig.RightWristQuickBarPos();
+            wrist.transform.localRotation = VHVRConfig.RightWristQuickBarRot();
             wrist.SetActive(isInView() || IsInArea());
         }
 
         public override void refreshItems() {
-            refreshRadialItems(/* isDominantHand= */ false);
+            refreshRadialItems(/* isDominantHand= */ VHVRConfig.LeftHanded());
 
-            if (VHVRConfig.QuickActionOnLeftHand() ^ VHVRConfig.LeftHanded())
+            if (VHVRConfig.QuickActionOnLeftHand())
             {
-                RefreshQuickAction();
+                RefreshWristQuickAction();
             }
             else
             {
-                RefreshQuickSwitch();
+                RefreshWristQuickSwitch();
             }
                 
             reorderElements();

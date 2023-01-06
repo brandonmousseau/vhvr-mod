@@ -826,8 +826,8 @@ namespace ValheimVRMod.VRCore
             StaticObjects.rightFist().setColliderParent(_vrik.references.rightHand, true);
             Player.m_localPlayer.gameObject.AddComponent<FistBlock>();
             StaticObjects.mouthCollider(cam.transform);
-            StaticObjects.addQuickActions(dominantHand.otherHand.transform);
-            StaticObjects.addQuickSwitch(dominantHand.transform);
+            StaticObjects.addQuickActions();
+            StaticObjects.addQuickSwitch();
             QuickActions.instance.refreshItems();
             QuickSwitch.instance.refreshItems();
         }
