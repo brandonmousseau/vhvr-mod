@@ -18,6 +18,7 @@ namespace ValheimVRMod.Scripts
         private Attack secondaryAttack;
         private Outline outline;
         private bool isRightHand;
+        private GameObject parent;
 
         //secondary attack
         public static Vector3 firstPos;
@@ -76,12 +77,17 @@ namespace ValheimVRMod.Scripts
 
         private void OnDisable()
         {
+            firstPos = Vector3.zero;
+            lastPos = Vector3.zero;
+            secondaryHitList = new List<Attack.HitPoint>();
             slashLine.enabled = false;
             wasSecondaryAttack = false;
+            wasSecondaryAttacked = true;
         }
 
         public void Initialize(Transform obj, string name, bool rightHand)
         {
+            parent = obj.parent.gameObject;
             outline = obj.parent.gameObject.GetComponent<Outline>();
             isRightHand = rightHand;
             if (isRightHand)
@@ -99,6 +105,7 @@ namespace ValheimVRMod.Scripts
         {
             if (!outline)
             {
+                outline = parent.GetComponent<Outline>();
                 return;
             }
             SecondaryAttack();
@@ -233,7 +240,7 @@ namespace ValheimVRMod.Scripts
                 if(Vector3.Distance(firstPos,lastPos) < secondaryAttack.m_attackRange * 0.5f)
                 {
                     secondaryAttackTimer = Mathf.Min(GetSecondaryAttackHitTime() / 2, 0.3f);
-                secondaryAttackTimerFull = -GetSecondaryAttackHitTime() + secondaryAttackTimer;
+                    secondaryAttackTimerFull = -GetSecondaryAttackHitTime() + secondaryAttackTimer;
                     firstPos = Vector3.zero;
                     lastPos = Vector3.zero;
                     return;
