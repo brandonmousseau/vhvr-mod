@@ -40,7 +40,7 @@ namespace ValheimVRMod.Scripts {
         private void Start() {
             instance = this;
             arrowAttach = new GameObject();
-            mainHand = getMainHand().transform;
+            mainHand = VRPlayer.dominantHand.transform;
             predictionLine = new GameObject().AddComponent<LineRenderer>();
             predictionLine.widthMultiplier = 0.03f;
             predictionLine.positionCount = 20;
@@ -76,10 +76,6 @@ namespace ValheimVRMod.Scripts {
             if (arrow != null) {
                 arrow.GetComponent<ZNetView>().Destroy();
             }
-        }
-
-        private Hand getMainHand() {
-            return VHVRConfig.LeftHanded() ? VRPlayer.leftHand : VRPlayer.rightHand;
         }
 
         /**
@@ -217,7 +213,7 @@ namespace ValheimVRMod.Scripts {
             {
                 SteamVR_Input_Sources bowHand = VHVRConfig.LeftHanded() ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand;
                 finishedPulling = true;
-                getMainHand().otherHand.hapticAction.Execute(0, 0.2f, 100, 0.3f, bowHand);
+                VRPlayer.dominantHand.otherHand.hapticAction.Execute(0, 0.2f, 100, 0.3f, bowHand);
             }
         }
 
@@ -251,8 +247,8 @@ namespace ValheimVRMod.Scripts {
             // SHOOTING FEEDBACK
             SteamVR_Input_Sources arrowHand = VHVRConfig.LeftHanded() ? SteamVR_Input_Sources.LeftHand : SteamVR_Input_Sources.RightHand;
             SteamVR_Input_Sources bowHand = VHVRConfig.LeftHanded() ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand;
-            getMainHand().hapticAction.Execute(0, 0.1f, 75, 0.9f, arrowHand);
-            getMainHand().otherHand.hapticAction.Execute(0, 0.2f, 100, 0.3f, bowHand);
+            VRPlayer.dominantHand.hapticAction.Execute(0, 0.1f, 75, 0.9f, arrowHand);
+            VRPlayer.dominantHand.otherHand.hapticAction.Execute(0, 0.2f, 100, 0.3f, bowHand);
             destroyArrow();
         }
 
