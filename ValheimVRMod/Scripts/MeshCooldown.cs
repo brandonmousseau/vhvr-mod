@@ -21,13 +21,14 @@ namespace ValheimVRMod.Scripts {
             return true;
         }
 
-        private void ensureOutline() {
+        private bool ensureOutline() {
             if (outline == null) {
                 outline = gameObject.GetComponent<Outline>();
                 if (outline)
                     Destroy(outline);
                 outline = gameObject.AddComponent<Outline>();
             }
+            return outline != null;
         }
 
         // Whether the outline should be kept (as opposed to destroyed) after cooldown finishes.
@@ -51,10 +52,12 @@ namespace ValheimVRMod.Scripts {
         }
 
         private void resetOutline() {
-            ensureOutline();
-            outline.OutlineWidth = 10;
-            outline.OutlineColor = FullOutlineColor;
-            outline.OutlineMode = Outline.Mode.OutlineVisible;
+            if (ensureOutline())
+            {
+                outline.OutlineWidth = 10;
+                outline.OutlineColor = FullOutlineColor;
+                outline.OutlineMode = Outline.Mode.OutlineVisible;
+            }
         }
 
         private static Color GetOutlineColor(Color fullColor, Color hiddenColor, float percentage)
