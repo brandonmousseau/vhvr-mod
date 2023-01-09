@@ -66,17 +66,17 @@ namespace ValheimVRMod.Scripts {
         }
         
         protected virtual void FixedUpdate() {
-            if (outline == null)
-            {
-                return;
-            }
-            outline.OutlineColor = GetOutlineColor(FullOutlineColor, HiddenOutlineColor, Mathf.Max(cooldown, 0) / cooldownStart);
             if (! inCoolDown()) {
                 return;
             }
 
             cooldown -= Time.fixedDeltaTime;
-           
+
+            if (outline != null)
+            {
+                outline.OutlineColor = GetOutlineColor(FullOutlineColor, HiddenOutlineColor, Mathf.Max(cooldown, 0) / cooldownStart);
+            }
+
             if (! inCoolDown()) {
                 outline.OutlineMode = Outline.Mode.OutlineHidden;
                 if (!keepOutlineInstance()) {
