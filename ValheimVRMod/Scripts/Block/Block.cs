@@ -96,7 +96,7 @@ namespace ValheimVRMod.Scripts.Block {
         }
 
         public bool isBlocking() {
-            if (Player.m_localPlayer.IsStaggering())
+            if (Player.m_localPlayer.IsStaggering() || WeaponSecondaryManager.wasSecondaryAttack)
             {
                 return false;
             }
