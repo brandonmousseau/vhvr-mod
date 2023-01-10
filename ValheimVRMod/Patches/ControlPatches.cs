@@ -571,7 +571,7 @@ namespace ValheimVRMod.Patches {
                 attackHold = true;
             }
 
-            if (EquipScript.getLeft() == EquipType.Crossbow && WeaponWield.isCurrentlyTwoHanded() && SteamVR_Actions.valheim_Use.stateDown)
+            if (EquipScript.getLeft() == EquipType.Crossbow && CrossbowManager.IsPullingTrigger())
             {
                 attack = true;
                 attackHold = true;
