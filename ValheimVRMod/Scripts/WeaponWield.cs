@@ -99,7 +99,7 @@ namespace ValheimVRMod.Scripts
             }
         }
 
-        private void OnRenderObject()
+        protected virtual void OnRenderObject()
         {
             WieldHandle();
             if (particleSystem != null)
