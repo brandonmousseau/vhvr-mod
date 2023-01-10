@@ -5,13 +5,30 @@ using ValheimVRMod.VRCore;
 using Valve.VR;
 
 namespace ValheimVRMod.Scripts {
-   class CrossbowManager : WeaponWield
+    class CrossbowManager : WeaponWield
     {
         private static CrossbowManager instance;
+
+        private Quaternion originalLocalRotation;
 
         void Start()
         {
             instance = this;
+        }
+
+        void Awake()
+        {
+            originalLocalRotation = transform.localRotation;
+        }
+
+        protected override void OnRenderObject()
+        {
+            base.OnRenderObject();
+            if (!isCurrentlyTwoHanded() && VHVRConfig.LeftHanded())
+            {
+                // Make sure the top of the bow is facing the up when holding it one-handed.
+                transform.localRotation = originalLocalRotation * Quaternion.AngleAxis(180, Vector3.forward);
+            }
         }
 
         public static bool IsPullingTrigger()
