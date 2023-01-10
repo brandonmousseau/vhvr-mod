@@ -72,11 +72,13 @@ namespace ValheimVRMod.Scripts {
 
             cooldown -= Time.fixedDeltaTime;
 
-            if (outline != null)
+            // TODO: find out why outline failed to be added.
+            if (outline == null)
             {
-                outline.OutlineColor = GetOutlineColor(FullOutlineColor, HiddenOutlineColor, Mathf.Max(cooldown, 0) / cooldownStart);
+                return;
             }
 
+            outline.OutlineColor = GetOutlineColor(FullOutlineColor, HiddenOutlineColor, Mathf.Max(cooldown, 0) / cooldownStart);
             if (! inCoolDown()) {
                 outline.OutlineMode = Outline.Mode.OutlineHidden;
                 if (!keepOutlineInstance()) {
