@@ -154,9 +154,10 @@ namespace ValheimVRMod.Patches {
                     
                     return;
                 case EquipType.Crossbow:
-                    weaponWield = ___m_leftItemInstance.AddComponent<WeaponWield>().Initialize(true) ;
-                    weaponWield.itemName = ___m_leftItem;
-                    weaponWield.gameObject.AddComponent<WeaponBlock>().weaponWield = weaponWield;
+                    CrossbowManager crossbowManager = ___m_leftItemInstance.AddComponent<CrossbowManager>();
+                    crossbowManager.Initialize(true);
+                    crossbowManager.itemName = ___m_leftItem;
+                    crossbowManager.gameObject.AddComponent<WeaponBlock>().weaponWield = crossbowManager;
                     return;
                 case EquipType.Lantern:
                     weaponWield = ___m_leftItemInstance.AddComponent<WeaponWield>().Initialize(true);
