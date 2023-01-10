@@ -266,13 +266,19 @@ namespace ValheimVRMod.Scripts
                     transform.localRotation = transform.localRotation * (rotSave.transform.localRotation) * Quaternion.AngleAxis(180, Vector3.right) * Quaternion.AngleAxis(rotOffset, transform.InverseTransformDirection(-weaponHoldVector));
                     transform.localRotation = transform.localRotation * (rotSave.transform.localRotation) * Quaternion.AngleAxis(180, Vector3.right);
                 }
-                else if(attack.m_attackAnimation == "atgeir_attack")
+                else if (attack.m_attackAnimation == "atgeir_attack")
                 {
                     transform.LookAt(rearHandCenter - weaponHoldVector.normalized * 5, transform.up);
                     transform.localRotation = transform.localRotation * (originalRotSave.transform.localRotation) * Quaternion.AngleAxis(180, Vector3.right) * Quaternion.AngleAxis(rotOffset, transform.InverseTransformDirection(-weaponHoldVector));
                     //var debugRot = VHVRConfig.getDebugRot();
                     //LogUtils.LogDebug("x: " + debugRot.x + " y: " + debugRot.y + " z: " + debugRot.z);
                     transform.localRotation = transform.localRotation * Quaternion.AngleAxis(-19.1f, Vector3.up) * Quaternion.AngleAxis(-8, Vector3.right);
+                }
+                else if (EquipScript.getLeft() == EquipType.Crossbow) {
+                    Vector3 frontHandPlamar = _isTwoHanded == isTwoHanded.LeftHandBehind ? -frontHand.transform.right : frontHand.transform.right;
+                    Vector3 rearHandRadial = rearHand.transform.up;
+                    transform.LookAt(rearHandCenter - weaponHoldVector.normalized * 5, frontHandPlamar + rearHandRadial);
+                    transform.localRotation = transform.localRotation * (rotSave.transform.localRotation) * Quaternion.AngleAxis(180, Vector3.right) * Quaternion.AngleAxis(rotOffset, transform.InverseTransformDirection(-weaponHoldVector));
                 }
                 else
                 {
