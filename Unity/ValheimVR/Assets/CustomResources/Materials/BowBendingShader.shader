@@ -5,12 +5,13 @@ Shader "BowBendingShader"
         _HandleVector("Handle Vector", Vector) = (0, 0, 0, 1)
         _HandleTopHeight("Handle Top Height", Float) = 0
         _HandleBottomHeight("Handle Bottom Height", Float) = 0
-        _StringRadius("String Radius", Float) = 0
+        _StringTop("String Top", Vector) = (0, 0, 0, 1) // Used to detect the vanilla string so that it can be hidden
+        _StringRadius("String Radius", Float) = 0 // Used to detect the vanilla string so that it can be hidden
         _MainTex ("Texture", 2D) = "white" {}
         _BumpMap ("Bumpmap", 2D) = "bump" {}
         _MetallicGlossMap ("Metallic Gloss Map", 2D) = "bump" {}
     	_EmissionMap ("Emission Map", 2D) = "black" {}
-        _Cutoff ("Alpha cutoff", Range(0,1)) = 0.5
+        _Cutoff("Alpha cutoff", Range(0, 1)) = 0.5
     }
     SubShader
     {
