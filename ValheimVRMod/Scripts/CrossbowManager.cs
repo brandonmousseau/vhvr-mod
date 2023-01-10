@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using UnityEngine;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
@@ -28,7 +27,7 @@ namespace ValheimVRMod.Scripts {
                 // Make sure the top of the bow is facing the up when holding it one-handed.
                 transform.localRotation = originalLocalRotation * Quaternion.AngleAxis(180, Vector3.forward);
             } else {
-                transform.locationRotation = originalLocalRotation;
+                transform.localRotation = originalLocalRotation;
             }
             base.OnRenderObject();
         }
