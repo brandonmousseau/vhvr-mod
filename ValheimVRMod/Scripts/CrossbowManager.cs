@@ -23,12 +23,14 @@ namespace ValheimVRMod.Scripts {
 
         protected override void OnRenderObject()
         {
-            base.OnRenderObject();
             if (!isCurrentlyTwoHanded() && VHVRConfig.LeftHanded())
             {
                 // Make sure the top of the bow is facing the up when holding it one-handed.
                 transform.localRotation = originalLocalRotation * Quaternion.AngleAxis(180, Vector3.forward);
+            } else {
+                transform.locationRotation = originalLocalRotation;
             }
+            base.OnRenderObject();
         }
 
         public static bool IsPullingTrigger()
