@@ -19,11 +19,13 @@ namespace ValheimVRMod.Scripts
         private Outline outline;
         private bool isRightHand;
         private GameObject parent;
+        private bool isSecondaryAvailable;
 
         //secondary attack
         public static Vector3 firstPos;
         private Vector3 lastPos;
         private LineRenderer slashLine;
+        private TrailRenderer slashTrail;
         private float secondaryAttackTimer;
         private float secondaryAttackTimerFull = -0.5f;
         private bool wasSecondaryAttacked;
@@ -34,6 +36,13 @@ namespace ValheimVRMod.Scripts
         public static List<Attack.HitPoint> secondaryHitList;
         public static bool wasSecondaryAttack;
         public static Vector3 hitDir;
+        private float rangeMultiplier;
+        private List<Vector3> lastpointList;
+        private Vector3 pointVel1;
+        private Vector3 pointVel2;
+        private Vector3 pointVel3;
+        private Vector3 pointVel4;
+        private Vector3 pointVel5;
 
         private void Awake()
         {
@@ -61,11 +70,27 @@ namespace ValheimVRMod.Scripts
             slashLine.lightProbeUsage = LightProbeUsage.Off;
             slashLine.reflectionProbeUsage = ReflectionProbeUsage.Off;
             slashLine.loop = false;
+
+
+            slashTrail = new GameObject().AddComponent<TrailRenderer>();
+            slashTrail.widthMultiplier = 0f;
+            slashTrail.material = new Material(Shader.Find("Custom/AlphaParticle"));
+            slashTrail.material.color = Color.clear;
+            slashTrail.numCapVertices = 3;
+            slashTrail.receiveShadows = false;
+            slashTrail.shadowCastingMode = ShadowCastingMode.Off;
+            slashTrail.lightProbeUsage = LightProbeUsage.Off;
+            slashTrail.reflectionProbeUsage = ReflectionProbeUsage.Off;
+            slashTrail.time = 0.25f;
+            slashTrail.numCornerVertices = 3;
+            slashTrail.minVertexDistance = 0.05f;
+            slashTrail.emitting = false;
         }
 
         private void OnDestroy()
         {
             Destroy(slashLine);
+            Destroy(slashTrail);
         }
 
         private void OnDisable()
@@ -134,6 +159,21 @@ namespace ValheimVRMod.Scripts
             }
 
             slashLine.widthCurve = slashCurve;
+            isSecondaryAvailable = true;
+            rangeMultiplier = 1.25f;
+            slashTrail.Clear();
+
+            if (attack.m_attackAnimation == "swing_pickaxe")
+            {
+                secondaryAttack = attack;
+                rangeMultiplier = 2f;
+                slashTrail.time = 0.4f;
+            }
+            if (secondaryAttack.m_attackAnimation == "" || obj.gameObject.GetComponent<SpearManager>() != null)
+            {
+                isSecondaryAvailable = false;
+            }
+            
         }
         private void Update()
         {
@@ -147,14 +187,12 @@ namespace ValheimVRMod.Scripts
 
         private void SecondaryAttack()
         {
-            if (attack.m_attackAnimation == "swing_pickaxe")
-            {
-                secondaryAttack = attack;
-            }
-            if (secondaryAttack.m_attackAnimation == "")
+
+            if (!isSecondaryAvailable)
             {
                 return;
             }
+
             if (secondaryAttackTimer >= secondaryAttackTimerFull)
             {
                 secondaryAttackTimer -= Time.deltaTime;
@@ -168,7 +206,6 @@ namespace ValheimVRMod.Scripts
             var localWeaponForward = WeaponWield.weaponForward * secondaryAttack.m_attackRange / 2;
             var localHandPos = mainHand.transform.position - Player.m_localPlayer.transform.position;
             var posHeight = Player.m_localPlayer.transform.InverseTransformPoint(mainHand.transform.position + localWeaponForward);
-            var rangeMultiplier = 1.25f;
 
             if (WeaponWield.isCurrentlyTwoHanded())
             {
@@ -180,7 +217,10 @@ namespace ValheimVRMod.Scripts
                 firstPos = Vector3.zero;
                 lastPos = Vector3.zero;
             }
-            if (SteamVR_Actions.valheim_Grab.GetState(mainHandSource) && !inCooldown)
+            if (SteamVR_Actions.valheim_Grab.GetState(mainHandSource) && 
+                !inCooldown && 
+                !VRPlayer.vrPlayerInstance.CheckMenuIsOpen() && 
+                !(item.m_shared.m_itemType == ItemDrop.ItemData.ItemType.TwoHandedWeapon && !WeaponWield.isCurrentlyTwoHanded()))
             {
                 if (firstPos == Vector3.zero && mainHandTrigger)
                 {
@@ -189,6 +229,15 @@ namespace ValheimVRMod.Scripts
                     slashLine.widthMultiplier = 0.02f;
                     slashLine.widthCurve = slashCurve;
                     slashLine.loop = false;
+
+                    slashTrail.transform.SetParent(mainHand.transform);
+                    slashTrail.transform.position = Player.m_localPlayer.transform.position + firstPos;
+                    slashTrail.material.color = Color.clear;
+                    //slashTrail.widthMultiplier = 0.02f;
+                    //slashTrail.widthCurve = slashCurve;
+                    slashTrail.emitting = true;
+                    slashTrail.Clear();
+
                     wasSecondaryAttack = true;
                     hitDir = Vector3.zero;
                 }
@@ -205,6 +254,9 @@ namespace ValheimVRMod.Scripts
                 var transparency = Color.Lerp(Color.clear, slashColor, Mathf.Max(secondaryAttackTimer + 0.7f, 0) / 0.7f);
                 slashLine.widthMultiplier = 0.02f * Mathf.Max(secondaryAttackTimer + 0.5f, 0) / 0.5f;
                 slashLine.material.color = transparency;
+
+                //slashTrail.widthMultiplier = 0.02f * Mathf.Max(secondaryAttackTimer + 0.5f, 0) / 0.5f;
+                //slashTrail.material.color = transparency;
             }
 
             if (!(inCooldown || firstPos != Vector3.zero))
@@ -212,6 +264,7 @@ namespace ValheimVRMod.Scripts
                 if (secondaryAttackTimer <= secondaryAttackTimerFull)
                 {
                     wasSecondaryAttack = false;
+                    slashTrail.emitting = false;
                     outline.enabled = false;
                     if (!secondaryAttackJustEnded)
                     {
@@ -231,6 +284,7 @@ namespace ValheimVRMod.Scripts
             }
 
             List<Vector3> pointList = new List<Vector3>();
+            if(lastpointList == null) lastpointList = new List<Vector3>();
             if (secondaryAttack.m_attackAnimation == "atgeir_secondary")
             {
                 if (firstPos != Vector3.zero && lastPos == Vector3.zero)
@@ -258,16 +312,51 @@ namespace ValheimVRMod.Scripts
             {
                 if (firstPos != Vector3.zero && lastPos == Vector3.zero)
                 {
-                    pointList.Add(Player.m_localPlayer.transform.position + firstPos);
-                    slashLine.positionCount = 5;
                     var currpos = localHandPos + localWeaponForward;
                     var minDist = Mathf.Min(secondaryAttack.m_attackRange * rangeMultiplier, Vector3.Distance(firstPos, currpos) * rangeMultiplier);
-                    pointList.Add(Player.m_localPlayer.transform.position + firstPos + ((currpos - firstPos).normalized * minDist * 0.25f));
-                    pointList.Add(Player.m_localPlayer.transform.position + firstPos + ((currpos - firstPos).normalized * minDist * 0.5f));
-                    pointList.Add(Player.m_localPlayer.transform.position + firstPos + ((currpos - firstPos).normalized * minDist * 0.75f));
-                    pointList.Add(Player.m_localPlayer.transform.position + firstPos + ((currpos - firstPos).normalized * minDist));
-                    slashLine.SetPositions(pointList.ToArray());
-                    slashLine.enabled = true;
+                    slashTrail.transform.position = Player.m_localPlayer.transform.position + currpos;
+                    slashTrail.enabled = true;
+
+                    //pointList.Add(Player.m_localPlayer.transform.position + firstPos);
+                    slashLine.positionCount = 5;
+
+                    //pointList.Add(Player.m_localPlayer.transform.position + firstPos + ((currpos - firstPos).normalized * minDist * 0.25f));
+                    //pointList.Add(Player.m_localPlayer.transform.position + firstPos + ((currpos - firstPos).normalized * minDist * 0.5f));
+                    //pointList.Add(Player.m_localPlayer.transform.position + firstPos + ((currpos - firstPos).normalized * minDist * 0.75f));
+                    //pointList.Add(Player.m_localPlayer.transform.position + firstPos + ((currpos - firstPos).normalized * minDist));
+                    //slashLine.SetPositions(pointList.ToArray());
+                    //slashLine.enabled = true;
+                    if (slashTrail.positionCount > 5)
+                    {
+                        var firstTrail = slashTrail.GetPosition(0);
+                        var halfTrail = slashTrail.GetPosition((int)((slashTrail.positionCount - 1) * 0.5f));
+                        var endTrail = slashTrail.GetPosition(slashTrail.positionCount - 1);
+                        
+                        if (lastpointList.Count != 0)
+                        {
+                            pointList.Add(Vector3.SmoothDamp(lastpointList[0], firstTrail, ref pointVel1, 0.06f));
+                            pointList.Add(Vector3.SmoothDamp(lastpointList[1], (firstTrail + halfTrail) / 2, ref pointVel2, 0.06f));
+                            pointList.Add(Vector3.SmoothDamp(lastpointList[2], halfTrail, ref pointVel3, 0.06f));
+                            pointList.Add(Vector3.SmoothDamp(lastpointList[3], (halfTrail + endTrail) / 2, ref pointVel4, 0.06f));
+                            pointList.Add(Vector3.SmoothDamp(lastpointList[4], endTrail, ref pointVel5, 0.06f));
+                        }
+                        else
+                        {
+                            pointList.Add(firstTrail);
+                            pointList.Add((firstTrail + halfTrail) / 2);
+                            pointList.Add(halfTrail);
+                            pointList.Add((halfTrail + endTrail) / 2);
+                            pointList.Add(endTrail);
+                        }
+
+                        slashLine.SetPositions(pointList.ToArray());
+                        slashLine.enabled = true;
+                        lastpointList = pointList;
+                    }
+                    else
+                    {
+                        slashLine.enabled = false;
+                    }
                 }
             }
 
@@ -279,6 +368,9 @@ namespace ValheimVRMod.Scripts
                     secondaryAttackTimerFull = -GetSecondaryAttackHitTime() + secondaryAttackTimer;
                     firstPos = Vector3.zero;
                     lastPos = Vector3.zero;
+                    wasSecondaryAttack = false;
+                    slashTrail.emitting = false;
+                    lastpointList = new List<Vector3>();
                     return;
                 }
                 int layerMask = secondaryAttack.m_hitTerrain ? Attack.m_attackMaskTerrain : Attack.m_attackMask;
@@ -304,15 +396,34 @@ namespace ValheimVRMod.Scripts
                 else
                 {
                     var minDist = Mathf.Min(secondaryAttack.m_attackRange * rangeMultiplier, Vector3.Distance(firstPos, lastPos) * rangeMultiplier);
-                    pointList.Add(firstPos);
-                    pointList.Add(firstPos + ((lastPos - firstPos).normalized * minDist * 0.25f));
-                    pointList.Add(firstPos + ((lastPos - firstPos).normalized * minDist * 0.5f));
-                    pointList.Add(firstPos + ((lastPos - firstPos).normalized * minDist * 0.75f));
-                    pointList.Add(firstPos + ((lastPos - firstPos).normalized * minDist));
+                    //pointList.Add(firstPos);
+                    //pointList.Add(firstPos + ((lastPos - firstPos).normalized * minDist * 0.25f));
+                    //pointList.Add(firstPos + ((lastPos - firstPos).normalized * minDist * 0.5f));
+                    //pointList.Add(firstPos + ((lastPos - firstPos).normalized * minDist * 0.75f));
+                    //pointList.Add(firstPos + ((lastPos - firstPos).normalized * minDist));
+                    //slashLine.SetPositions(pointList.ToArray());
+                    var firstTrail = slashTrail.GetPosition(0);
+                    var halfTrail = slashTrail.GetPosition((int)((slashTrail.positionCount - 1) * 0.5f));
+                    var endTrail = slashTrail.GetPosition(slashTrail.positionCount - 1);
+                    pointList.Add(firstTrail);
+                    pointList.Add((firstTrail + halfTrail) / 2);
+                    pointList.Add(halfTrail);
+                    pointList.Add((halfTrail + endTrail) / 2);
+                    pointList.Add(endTrail);
                     slashLine.SetPositions(pointList.ToArray());
                     slashLine.positionCount = 5;
-                    hitDir = (lastPos - firstPos).normalized;
-                    RaycastHit[] tempSecondaryHitList = Physics.SphereCastAll(firstPos, attack.m_attackRayWidth * 1.5f, (lastPos - firstPos).normalized, minDist, layerMask, QueryTriggerInteraction.Ignore);
+                    //hitDir = (lastPos - firstPos).normalized;
+                    //RaycastHit[] tempSecondaryHitList = Physics.SphereCastAll(firstPos, attack.m_attackRayWidth * 1.5f, (lastPos - firstPos).normalized, minDist, layerMask, QueryTriggerInteraction.Ignore);
+                    //Array.Sort<RaycastHit>(tempSecondaryHitList, (RaycastHit x, RaycastHit y) => x.distance.CompareTo(y.distance));
+                    //RaycastSecondaryAttack(tempSecondaryHitList);
+
+                    hitDir = (halfTrail - endTrail).normalized;
+
+                    RaycastHit[] tempSecondaryHitList = Physics.SphereCastAll(firstTrail, attack.m_attackRayWidth * 1.5f, (halfTrail - firstTrail).normalized, Vector3.Distance(firstTrail,halfTrail), layerMask, QueryTriggerInteraction.Ignore);
+                    Array.Sort<RaycastHit>(tempSecondaryHitList, (RaycastHit x, RaycastHit y) => x.distance.CompareTo(y.distance));
+                    RaycastSecondaryAttack(tempSecondaryHitList);
+
+                    tempSecondaryHitList = Physics.SphereCastAll(halfTrail, attack.m_attackRayWidth * 1.5f, (endTrail - halfTrail).normalized, Vector3.Distance(halfTrail, endTrail), layerMask, QueryTriggerInteraction.Ignore);
                     Array.Sort<RaycastHit>(tempSecondaryHitList, (RaycastHit x, RaycastHit y) => x.distance.CompareTo(y.distance));
                     RaycastSecondaryAttack(tempSecondaryHitList);
                 }
@@ -339,8 +450,10 @@ namespace ValheimVRMod.Scripts
                 {
                     wasSecondaryAttack = false;
                 }
+                slashTrail.emitting = false;
                 firstPos = Vector3.zero;
                 lastPos = Vector3.zero;
+                lastpointList = new List<Vector3>();
             }
 
 
@@ -413,7 +526,7 @@ namespace ValheimVRMod.Scripts
                         }
                         bool multiCollider = secondaryAttack.m_pickaxeSpecial && (gameObject.GetComponent<MineRock5>() || gameObject.GetComponent<MineRock>());
                         secondaryAttack.AddHitPoint(secondaryHitList, gameObject, raycastHit.collider, raycastHit.point, raycastHit.distance, multiCollider);
-                        if (!secondaryAttack.m_hitThroughWalls && Vector3.Distance(raycastList[0].point, raycastHit.point) >= 0.3f)
+                        if (!secondaryAttack.m_hitThroughWalls && Vector3.Distance(raycastList[0].point, raycastHit.point) >= 0.3f && attack.m_attackAnimation != "swing_pickaxe")
                         {
                             break;
                         }

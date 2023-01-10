@@ -1117,5 +1117,9 @@ namespace ValheimVRMod.VRCore
             timerLeft = time;
             timerRight = time;
         }
+        public bool CheckMenuIsOpen()
+        {
+            return Hud.IsPieceSelectionVisible() || StoreGui.IsVisible() || InventoryGui.IsVisible() || Menu.IsVisible() || (TextViewer.instance && TextViewer.instance.IsVisible()) || Minimap.IsOpen();
+        }
     }
 }

@@ -178,7 +178,7 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
-            if (BuildingManager.instance.isSnapMode() && !BuildingManager.instance.CheckMenuIsOpen())
+            if (BuildingManager.instance.isSnapMode() && !VRPlayer.vrPlayerInstance.CheckMenuIsOpen())
             {
                 BuildingManager.instance.UpdateSelectedSnapPoints(___m_placementGhost);
             }

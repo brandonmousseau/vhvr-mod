@@ -269,4 +269,23 @@ namespace ValheimVRMod.Patches {
             }
         }
     }
+
+    [HarmonyPatch(typeof(Player),nameof(Player.ToggleEquiped))]
+    class PatchEquipActionQueue
+    {
+        static bool Prefix(Player __instance, ref bool __result)
+        {
+            if(__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls())
+            {
+                return true;
+            }
+
+            if (WeaponSecondaryManager.wasSecondaryAttack)
+            {
+                __result = false;
+                return false;
+            }
+            return true;
+        }
+    }
 }
