@@ -18,6 +18,9 @@ namespace ValheimVRMod.Scripts {
         void Awake()
         {
             originalLocalRotation = transform.localRotation;
+            // The mesh for the unloaded bow and and the mesh for the loaded bow are in two different child game objects.
+            // We only need to use our custom bending animation on the unloaded one.
+            transform.FindChild("Unloaded").gameObject.AddComponent<CrossbowMorphManager>();
         }
 
         protected override void OnRenderObject()
