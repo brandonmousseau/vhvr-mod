@@ -5,6 +5,7 @@ using Valve.VR;
 
 namespace ValheimVRMod.Scripts {
     
+    // Manages the manual operation and the shape change of the cross bow during pulling.
     class CrossbowMorphManager : MonoBehaviour
     {
         public static CrossbowMorphManager instance { get; private set; }
@@ -18,15 +19,13 @@ namespace ValheimVRMod.Scripts {
         private Transform rightLimbBone;
         private Transform stringLeft;
         private Transform stringRight;
-        private Transform pullStart;
-        private GameObject pullObj;
+        private Transform pullStart; // Where the hand should grab to start pulling the string.
         private LineRenderer stringRenderer;
         private Vector3 pullDirection;
         private float maxDrawDelta;
 
-        // Draw percentage restriction due to the vanilla reload animation progress.
         // Note: we make draw length proportional to the square root of reload progress.
-        private float vanillaDrawPercentageRestriction;
+        private float vanillaDrawPercentageRestriction; // Draw percentage restriction due to the vanilla reload animation progress.
         private float realLifeDrawPercentage;
         private float drawPercentage {
             get {
@@ -35,7 +34,7 @@ namespace ValheimVRMod.Scripts {
         }
 
         public bool isPulling { get; private set; }
-        public bool shouldAutoReload { get { return anatomy == null; } }
+        public bool shouldAutoReload { get { return anatomy == null; } } // If crossbow anatomy data is not available, fallback to the vanilla auto-reload logic.
 
         void Start()
         {
@@ -77,7 +76,7 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            updatePullStatus();
+            UpdatePullStatus();
 
             if (Player.m_localPlayer.IsWeaponLoaded())
             {
@@ -89,8 +88,7 @@ namespace ValheimVRMod.Scripts {
             }
             else
             {
-                pullObj.transform.position = VRPlayer.dominantHand.transform.position;
-                Vector3 pullVector = pullObj.transform.localPosition - anatomy.restingNockingPoint;
+                Vector3 pullVector = transform.InverseTransformPoint(VRPlayer.dominantHand.transform.position) - anatomy.restingNockingPoint;
                 realLifeDrawPercentage = Mathf.Max(0, Vector3.Dot(pullVector, pullDirection) / maxDrawDelta);
             }
 
@@ -116,7 +114,6 @@ namespace ValheimVRMod.Scripts {
             Destroy(stringLeft.gameObject);
             Destroy(stringRight.gameObject);
             Destroy(pullStart.gameObject);
-            Destroy(pullObj);
         }
 
         private Player.MinorActionData GetReloadAction(Player player)
@@ -171,10 +168,6 @@ namespace ValheimVRMod.Scripts {
             pullStart.parent = transform;
             pullStart.localPosition = anatomy.restingNockingPoint;
 
-            pullObj = new GameObject();
-            pullObj.transform.parent = transform;
-            pullObj.transform.localPosition = Vector3.zero;
-
             pullDirection = (anatomy.anchorPoint - anatomy.restingNockingPoint).normalized;
             maxDrawDelta = (anatomy.anchorPoint - anatomy.restingNockingPoint).magnitude;
 
@@ -189,19 +182,22 @@ namespace ValheimVRMod.Scripts {
             updateStringRenderer();
         }
 
-        private void updatePullStatus()
+        private bool IsHandClosePullStart()
+        {
+            return Vector3.Distance(VRPlayer.dominantHand.transform.position, pullStart.position) <= MaxNockingDistance;
+        }
+
+        private void UpdatePullStatus()
         {
             bool wasPulling = isPulling;
-            bool loaded = Player.m_localPlayer.IsWeaponLoaded();
             isPulling =
-                !loaded &&
+                !Player.m_localPlayer.IsWeaponLoaded() &&
                 SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource) &&
-                (wasPulling || Vector3.Distance(VRPlayer.dominantHand.transform.position, pullStart.position) <= MaxNockingDistance);
+                (wasPulling || IsHandClosePullStart());
             if (isPulling)
             {
                 if (!Player.m_localPlayer.IsReloadActionQueued())
                 {
-                    LogUtils.LogWarning("Crossbow pull start");
                     Player.m_localPlayer.ResetLoadedWeapon();
                     Player.m_localPlayer.QueueReloadAction();
                 }
@@ -209,7 +205,6 @@ namespace ValheimVRMod.Scripts {
             }
             else if (wasPulling)
             {
-                LogUtils.LogWarning("Crossbow pull stop");
                 VrikCreator.ResetHandConnectors();
                 if (!Player.m_localPlayer.IsWeaponLoaded())
                 {
