@@ -41,16 +41,6 @@ namespace ValheimVRMod.Scripts {
             instance = this;
         }
 
-        public static bool AllowTwoHandedWield()
-        {
-            if (EquipScript.getLeft() != EquipType.Crossbow || instance == null || instance.shouldAutoReload)
-            {
-                return true;
-            }
-
-            return !instance.isPulling && !instance.IsHandClosePullStart();
-        }
-
         public void UpdateWeaponLoading(Player player, float dt) {
             if (player != Player.m_localPlayer || shouldAutoReload)
             {
@@ -192,7 +182,7 @@ namespace ValheimVRMod.Scripts {
             updateStringRenderer();
         }
 
-        private bool IsHandClosePullStart()
+        public bool IsHandClosePullStart()
         {
             return !CrossbowManager.isCurrentlyTwoHanded() && Vector3.Distance(VRPlayer.dominantHand.transform.position, pullStart.position) <= MaxNockingDistance;
         }
