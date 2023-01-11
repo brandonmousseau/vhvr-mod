@@ -107,9 +107,8 @@ namespace ValheimVRMod.Patches {
                     aimDir = CrossbowManager.AimDir;
                     return false;
                 case EquipType.Magic:
-                    // TODO: Create a proper manager for this
-                    spawnPoint = VRPlayer.leftPointer.rayStartingPosition;
-                    aimDir = VRPlayer.leftPointer.rayDirection * Vector3.forward;
+                    spawnPoint = MagicWeaponManager.GetProjectileSpawnPoint(__instance);
+                    aimDir = MagicWeaponManager.AimDir;
                     return false;
             }
             
@@ -126,17 +125,8 @@ namespace ValheimVRMod.Patches {
                     aimDir = SpearManager.aimDir;
                     return false;
                 case EquipType.Magic:
-                    // TODO: Create a proper manager for this
-                    spawnPoint = VRPlayer.rightPointer.rayStartingPosition + WeaponWield.weaponForward * Vector3.Distance(Vector3.zero, (Vector3.up * __instance.m_attackHeight + Vector3.forward * __instance.m_attackRange + Vector3.right * __instance.m_attackOffset))*0.6f;
-                    
-                    if (WeaponWield.isCurrentlyTwoHanded())
-                    {
-                        aimDir = WeaponWield.weaponForward;
-                    }
-                    else
-                    {
-                        aimDir = VRPlayer.rightPointer.rayDirection * Vector3.forward;
-                    }
+                    spawnPoint = MagicWeaponManager.GetProjectileSpawnPoint(__instance);
+                    aimDir = aimDir = VRPlayer.rightPointer.rayDirection * Vector3.forward;
                     return false;
                 case EquipType.RuneSkyheim:
                     spawnPoint = VRPlayer.rightHand.transform.position;
