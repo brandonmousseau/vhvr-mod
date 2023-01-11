@@ -276,9 +276,26 @@ namespace ValheimVRMod.Scripts
                     transform.localRotation = transform.localRotation * Quaternion.AngleAxis(-19.1f, Vector3.up) * Quaternion.AngleAxis(-8, Vector3.right);
                 }
                 else if (EquipScript.getLeft() == EquipType.Crossbow) {
-                    Vector3 frontHandPlamar = _isTwoHanded == isTwoHanded.LeftHandBehind ? -frontHand.transform.right : frontHand.transform.right;
+                    Vector3 frontHandPalmar = _isTwoHanded == isTwoHanded.LeftHandBehind ? -frontHand.transform.right : frontHand.transform.right;
                     Vector3 rearHandRadial = rearHand.transform.up;
-                    transform.LookAt(rearHandCenter - weaponHoldVector.normalized * 5, frontHandPlamar + rearHandRadial);
+                    Vector3 weaponUp = rearHandRadial;
+                    switch (VHVRConfig.CrossbowSaggitalRotationSource())
+                    {
+                        case "RearHand":
+                            weaponUp = rearHandRadial;
+                            Vector3 verticalOffset = (weaponUp - Vector3.Project(weaponUp, weaponHoldVector)).normalized * 0.06f;
+                            // Rotate the crossbow slightly upward so that it does not clip through the front hand.
+                            transform.position += verticalOffset;
+                            weaponHoldVector += verticalOffset;
+                            break;
+                        case "BothHands":
+                            weaponUp = frontHandPalmar + rearHandRadial;
+                            break;
+                        default:
+                            LogUtils.LogWarning("WeaponWield: unknown CrossbowSaggitalRotationSource");
+                            break;
+                    }
+                    transform.LookAt(rearHandCenter - weaponHoldVector.normalized * 5, weaponUp);
                     transform.localRotation = transform.localRotation * (rotSave.transform.localRotation) * Quaternion.AngleAxis(180, Vector3.right) * Quaternion.AngleAxis(rotOffset, transform.InverseTransformDirection(-weaponHoldVector));
                 }
                 else

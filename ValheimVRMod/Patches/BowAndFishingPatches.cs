@@ -126,7 +126,7 @@ namespace ValheimVRMod.Patches {
                     return false;
                 case EquipType.Magic:
                     spawnPoint = MagicWeaponManager.GetProjectileSpawnPoint(__instance);
-                    aimDir = aimDir = VRPlayer.rightPointer.rayDirection * Vector3.forward;
+                    aimDir = MagicWeaponManager.AimDir;
                     return false;
                 case EquipType.RuneSkyheim:
                     spawnPoint = VRPlayer.rightHand.transform.position;
