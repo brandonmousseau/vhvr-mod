@@ -182,7 +182,8 @@ namespace ValheimVRMod.Scripts
 
             if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand) && 
                 SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand) &&
-                !(isSpear() && SpearManager.IsAiming()) )
+                !(isSpear() && SpearManager.IsAiming()) &&
+                CrossbowMorphManager.AllowTwoHandedWield())
             {
                 float handAngleDiff = GetHandAngleDiff(VRPlayer.rightHand.transform, VRPlayer.leftHand.transform);
                 if (_isTwoHanded == isTwoHanded.SingleHanded)
@@ -297,7 +298,8 @@ namespace ValheimVRMod.Scripts
             }
             else if (SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.LeftHand) || 
                      SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.RightHand)||
-                     (isSpear() && (SpearManager.IsAiming() || SpearManager.isThrowing)))
+                     (isSpear() && (SpearManager.IsAiming() || SpearManager.isThrowing)) ||
+                     !CrossbowMorphManager.AllowTwoHandedWield())
             {
                 _isTwoHanded = isTwoHanded.SingleHanded;
                 weaponSubPos = false;

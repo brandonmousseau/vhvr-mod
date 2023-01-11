@@ -41,6 +41,16 @@ namespace ValheimVRMod.Scripts {
             instance = this;
         }
 
+        public static bool AllowTwoHandedWield()
+        {
+            if (EquipScript.getLeft() != EquipType.Crossbow || instance == null || instance.shouldAutoReload)
+            {
+                return true;
+            }
+
+            return !instance.isPulling && !instance.IsHandClosePullStart();
+        }
+
         public void UpdateWeaponLoading(Player player, float dt) {
             if (player != Player.m_localPlayer || shouldAutoReload)
             {
