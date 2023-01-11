@@ -134,6 +134,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> bowDrawRange;
         private static ConfigEntry<bool> bowAccuracyBasedOnCharge;
         private static ConfigEntry<float> bowStaminaAdjust;
+        private static ConfigEntry<string> crossbowSaggitalRotationSource;
         private static ConfigEntry<string> blockingType;
 
 #if DEBUG
@@ -756,6 +757,12 @@ namespace ValheimVRMod.Utilities
                                                     false,
                                                     "Allows Two Handed Wield while using shield");
 
+            crossbowSaggitalRotationSource = config.Bind("Motion Control",
+                                        "CrossbowSaggitalRotationSource",
+                                        "MotionControl",
+                                        new ConfigDescription("Which hand(s) can rotate the crossbow along its saggital axis during two-handed hold",
+                                        new AcceptableValueList<string>(new string[] { "RearHand", "BothHands" })));
+
             blockingType = config.Bind("Motion Control",
                                         "BlockingType",
                                         "MotionControl",
@@ -1215,6 +1222,12 @@ namespace ValheimVRMod.Utilities
         {
             return useSpearDirectionGraphic.Value;
         }
+
+        public static string CrossbowSaggitalRotationSource()
+        {
+            return crossbowSaggitalRotationSource.Value;
+        }
+
         public static string BlockingType()
         {
             return blockingType.Value;
