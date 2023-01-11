@@ -10,6 +10,8 @@ namespace ValheimVRMod.Scripts {
 
         private Quaternion originalLocalRotation;
 
+        private CrossbowMorphManager crossbowMorphManager;
+
         void Start()
         {
             instance = this;
@@ -20,7 +22,7 @@ namespace ValheimVRMod.Scripts {
             originalLocalRotation = transform.localRotation;
             // The mesh for the unloaded bow and and the mesh for the loaded bow are in two different child game objects.
             // We only need to use our custom bending animation on the unloaded one.
-            transform.FindChild("Unloaded").gameObject.AddComponent<CrossbowMorphManager>();
+            crossbowMorphManager = transform.FindChild("Unloaded").gameObject.AddComponent<CrossbowMorphManager>();
         }
 
         protected override void OnRenderObject()
@@ -33,6 +35,11 @@ namespace ValheimVRMod.Scripts {
                 transform.localRotation = originalLocalRotation;
             }
             base.OnRenderObject();
+        }
+
+        protected override bool TemporaryDisableTwoHandedWield()
+        {
+            return crossbowMorphManager.isPulling || crossbowMorphManager.IsHandClosePullStart();
         }
 
         public static bool IsPullingTrigger()
