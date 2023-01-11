@@ -4,10 +4,10 @@ using ValheimVRMod.VRCore;
 using Valve.VR;
 
 namespace ValheimVRMod.Scripts {
-    private SpearManager spearManager;
     class SpearWield : WeaponWield
     {
-        void Awake()
+    private SpearManager spearManager;
+    void Awake()
         {
             spearManager = gameObject.GetComponentInChildren<MeshFilter>().addComponent<SpearManager>();
         }
