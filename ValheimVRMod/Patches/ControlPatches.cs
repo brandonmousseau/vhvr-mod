@@ -564,9 +564,8 @@ namespace ValheimVRMod.Patches {
                 blockHold = ShieldBlock.instance?.isBlocking() ?? false;
             }
 
-            if (EquipScript.getLeft() == EquipType.Magic && SteamVR_Actions.valheim_UseLeft.state)
+            if (EquipScript.getLeft() == EquipType.Magic && MagicWeaponManager.AttemptingAttack)
             {
-                // TODO: Create a proper manager for this
                 attack = true;
                 attackHold = true;
             }
@@ -613,7 +612,7 @@ namespace ValheimVRMod.Patches {
 
                     break;
                 case EquipType.Magic:
-                    if (SteamVR_Actions.valheim_Use.state)
+                    if (MagicWeaponManager.AttemptingAttack)
                     {
                         attack = true;
                         attackHold = true;
