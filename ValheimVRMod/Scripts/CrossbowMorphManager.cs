@@ -184,7 +184,7 @@ namespace ValheimVRMod.Scripts {
 
         private bool IsHandClosePullStart()
         {
-            return Vector3.Distance(VRPlayer.dominantHand.transform.position, pullStart.position) <= MaxNockingDistance;
+            return !CrossbowManager.isCurrentlyTwoHanded() && Vector3.Distance(VRPlayer.dominantHand.transform.position, pullStart.position) <= MaxNockingDistance;
         }
 
         private void UpdatePullStatus()
