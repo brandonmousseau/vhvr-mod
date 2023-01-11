@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using UnityEngine;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
@@ -53,7 +52,7 @@ namespace ValheimVRMod.Scripts {
             vanillaDrawPercentageRestriction = action == null ? 0 : ReloadPercentageToDrawPercentage(action.m_time / action.m_duration);
             if (action != null)
             {
-                action.m_time = Mathf.Min(Mathf.Max(DrawPercentageToReloadPercentage(realLifeDrawPercentage) * action.m_duration, 0), action.m_time);
+                action.m_time = Mathf.Clamp(action.m_time, 0, DrawPercentageToReloadPercentage(realLifeDrawPercentage) * action.m_duration);
             }
         }
 
