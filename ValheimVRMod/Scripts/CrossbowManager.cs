@@ -7,6 +7,8 @@ namespace ValheimVRMod.Scripts {
     class CrossbowManager : WeaponWield
     {
         private static CrossbowManager instance;
+        private static readonly Quaternion frontGripRotationForLeftHand = Quaternion.Euler(0, -45, 90);
+        private static readonly Quaternion frontGripRotationForRightHand = Quaternion.Euler(0, 45, -90);
 
         private Quaternion originalLocalRotation;
 
@@ -23,6 +25,23 @@ namespace ValheimVRMod.Scripts {
             // The mesh for the unloaded bow and and the mesh for the loaded bow are in two different child game objects.
             // We only need to use our custom bending animation on the unloaded one.
             crossbowMorphManager = transform.FindChild("Unloaded").gameObject.AddComponent<CrossbowMorphManager>();
+        }
+
+        protected override void RotateHandsForTwoHandedWield(Vector3 weaponHoldVector) {
+            if (VHVRConfig.CrossbowSaggitalRotationSource() != "RearHand")
+            {
+                return;
+            }
+
+            Quaternion lookRotation = Quaternion.LookRotation(weaponHoldVector, rearHand.transform.up);
+            if (frontHand == VRPlayer.leftHand)
+            {
+                VrikCreator.leftHandConnector.rotation = lookRotation * frontGripRotationForLeftHand;
+            }
+            else
+            {
+                VrikCreator.rightHandConnector.rotation = lookRotation * frontGripRotationForRightHand;
+            }
         }
 
         protected override void OnRenderObject()
