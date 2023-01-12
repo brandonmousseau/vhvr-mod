@@ -232,7 +232,6 @@ namespace ValheimVRMod.Scripts
                 var distLimit = 0f;
                 var distMultiplier = 0f;
                 var originMultiplier = -0.1f;
-                var rotOffset = 180;
                 bool rearHandIsDominant = (VHVRConfig.LeftHanded() == (_isTwoHanded == isTwoHanded.LeftHandBehind));
 
                 //debug check animation
@@ -265,50 +264,19 @@ namespace ValheimVRMod.Scripts
 
                 //weapon pos&rotation
                 transform.position = rearHandCenter + weaponOffset;
+                transform.rotation = Quaternion.LookRotation(weaponHoldVector, originalTransform.up) * singleHandedTransform.localRotation;
+
                 if (EquipScript.isSpearEquippedUlnarForward())
                 {
-                    transform.LookAt(frontHandCenter - weaponHoldVector.normalized * 5, transform.up);
-                    transform.localRotation = transform.localRotation * originalTransform.localRotation * Quaternion.AngleAxis(180, Vector3.right) * Quaternion.AngleAxis(rotOffset, transform.InverseTransformDirection(-weaponHoldVector));
-                    transform.localRotation = transform.localRotation * originalTransform.localRotation * Quaternion.AngleAxis(180, Vector3.right);
+                    transform.rotation *= Quaternion.Euler(180, 0, 0);
                 }
-                else if (attack.m_attackAnimation == "atgeir_attack")
+                else if (EquipScript.getLeft() == EquipType.Crossbow && VHVRConfig.CrossbowSaggitalRotationSource() == "BothHands")
                 {
-                    transform.LookAt(rearHandCenter - weaponHoldVector.normalized * 5, transform.up);
-                    transform.localRotation = transform.localRotation * originalTransform.localRotation * Quaternion.AngleAxis(180, Vector3.right) * Quaternion.AngleAxis(rotOffset, transform.InverseTransformDirection(-weaponHoldVector));
-                    //var debugRot = VHVRConfig.getDebugRot();
-                    //LogUtils.LogDebug("x: " + debugRot.x + " y: " + debugRot.y + " z: " + debugRot.z);
-                    transform.localRotation = transform.localRotation * Quaternion.AngleAxis(-19.1f, Vector3.up) * Quaternion.AngleAxis(-8, Vector3.right);
-                }
-                else if (EquipScript.getLeft() == EquipType.Crossbow) {
+                    Vector3 frontHandPalmar = _isTwoHanded == isTwoHanded.LeftHandBehind ? -frontHand.transform.right : frontHand.transform.right;
+                    Vector3 frontHandRadial = frontHand.transform.up;
                     Vector3 rearHandRadial = rearHand.transform.up;
-                    Vector3 weaponUp = rearHandRadial;
-                    switch (VHVRConfig.CrossbowSaggitalRotationSource())
-                    {
-                        case "RearHand":
-                            weaponUp = rearHandRadial;
-                            break;
-                        case "BothHands":
-                            Vector3 frontHandPalmar = _isTwoHanded == isTwoHanded.LeftHandBehind ? -frontHand.transform.right : frontHand.transform.right;
-                            Vector3 frontHandRadial = frontHand.transform.up;
-                            weaponUp = (frontHandPalmar * 1.73f + frontHandRadial).normalized + rearHandRadial;
-                            break;
-                        default:
-                            LogUtils.LogWarning("WeaponWield: unknown CrossbowSaggitalRotationSource");
-                            break;
-                    }
-                    transform.LookAt(rearHandCenter - weaponHoldVector.normalized * 5, weaponUp);
-                    transform.localRotation = transform.localRotation * originalTransform.localRotation * Quaternion.AngleAxis(180, Vector3.right) * Quaternion.AngleAxis(rotOffset, transform.InverseTransformDirection(-weaponHoldVector));
-                }
-                else
-                {
-                    transform.LookAt(rearHandCenter - weaponHoldVector.normalized * 5, transform.up);
-                    transform.localRotation = transform.localRotation * originalTransform.localRotation * Quaternion.AngleAxis(180, Vector3.right) * Quaternion.AngleAxis(rotOffset, transform.InverseTransformDirection(-weaponHoldVector));
-
-                    if (isOtherHandWeapon)
-                    {
-                        var angleDiff = Vector3.SignedAngle(transform.up, rearHand.transform.TransformDirection(0, -0.3f, -0.7f), transform.forward);
-                        transform.localRotation = transform.localRotation * Quaternion.AngleAxis(angleDiff, Vector3.forward) * Quaternion.AngleAxis(180, Vector3.forward);
-                    }
+                    Vector3 weaponUp = (frontHandPalmar * 1.73f + frontHandRadial).normalized + rearHandRadial;
+                    transform.rotation = Quaternion.LookRotation(weaponHoldVector, weaponUp) * originalTransform.localRotation;
                 }
 
                 weaponSubPos = true;
