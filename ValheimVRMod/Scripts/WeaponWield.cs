@@ -148,24 +148,6 @@ namespace ValheimVRMod.Scripts
         // The preferred up direction used to determine the weapon's rotation around it longitudinal axis during two-handed wield.
         protected virtual Vector3 GetPreferredTwoHandedWeaponUp()
         {
-            if (EquipScript.getLeft() == EquipType.Crossbow)
-            {
-                // TODO: move to CrossbowManager
-                Vector3 rearHandRadial = rearHand.transform.up;
-                switch (VHVRConfig.CrossbowSaggitalRotationSource())
-                {
-                    case "RearHand":
-                        return rearHandRadial;
-                    case "BothHands":
-                        Vector3 frontHandPalmar = _isTwoHanded == isTwoHanded.LeftHandBehind ? -frontHand.transform.right : frontHand.transform.right;
-                        Vector3 frontHandRadial = frontHand.transform.up;
-                        return (frontHandPalmar * 1.73f + frontHandRadial).normalized + rearHandRadial;
-                    default:
-                        LogUtils.LogWarning("WeaponWield: unknown CrossbowSaggitalRotationSource");
-                        return rearHandRadial;
-                }
-            }
-
             return singleHandedTransform.up;
         }
 
