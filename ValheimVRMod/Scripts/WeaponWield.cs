@@ -283,10 +283,6 @@ namespace ValheimVRMod.Scripts
                     {
                         case "RearHand":
                             weaponUp = rearHandRadial;
-                            Vector3 verticalOffset = (weaponUp - Vector3.Project(weaponUp, weaponHoldVector)).normalized * 0.06f;
-                            // Rotate the crossbow slightly upward so that it does not clip through the front hand.
-                            transform.position += verticalOffset;
-                            weaponHoldVector += verticalOffset;
                             break;
                         case "BothHands":
                             weaponUp = frontHandPalmar + rearHandRadial;
