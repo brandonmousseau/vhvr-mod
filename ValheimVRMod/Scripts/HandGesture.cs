@@ -33,12 +33,38 @@ namespace ValheimVRMod.Scripts {
         }
 
         public bool isUnequiped() {
-            if (isMainHand && (Player.m_localPlayer.GetRightItem() != null && !(FistCollision.instance.usingClaws()|| FistCollision.instance.usingDualKnives())
-                               || BowLocalManager.instance != null && BowLocalManager.instance.isHoldingArrow())) {
+            if (EquipScript.getLeft() == EquipType.Crossbow)
+            {
+                if (CrossbowManager._isTwoHanded == WeaponWield.isTwoHanded.LeftHandBehind)
+                {
+                    return !isRightHand;
+                }
+                if (CrossbowManager._isTwoHanded == WeaponWield.isTwoHanded.RightHandBehind) {
+                    return isRightHand;
+                }
+                if (CrossbowManager._isTwoHanded == WeaponWield.isTwoHanded.SingleHanded)
+                {
+                    return isMainHand;
+                }
+            }
+            else if (WeaponWield.isCurrentlyTwoHanded())
+            {
                 return false;
             }
+
+            if (FistCollision.instance.usingClaws() || FistCollision.instance.usingDualKnives()) {
+                return true;
+            }
             
-            if (!isMainHand && (Player.m_localPlayer.GetLeftItem() != null || WeaponWield._isTwoHanded != WeaponWield.isTwoHanded.SingleHanded)) {
+            if (BowLocalManager.instance != null && BowLocalManager.instance.isHoldingArrow()) {
+                return false;
+            }
+                
+            if (isMainHand && Player.m_localPlayer.GetRightItem() != null) {
+                return false;
+            }
+
+            if (!isMainHand && Player.m_localPlayer.GetLeftItem() != null) {
                 return false;
             }
 
@@ -69,7 +95,8 @@ namespace ValheimVRMod.Scripts {
             return sourceTransform != null;
         }
 
-        private void updateFingerRotations() {
+        private void updateFingerRotations()
+        {
             if (!ensureSourceTransform())
             {
                 return;
@@ -108,7 +135,8 @@ namespace ValheimVRMod.Scripts {
             }
         }
 
-        private void updateFingerPart(Transform source, Transform target) {
+        private void updateFingerPart(Transform source, Transform target)
+        {
             target.rotation = Quaternion.LookRotation(-source.up, isRightHand ? source.right : -source.right);
 
             if (source.childCount > 0 && target.childCount > 0) {
