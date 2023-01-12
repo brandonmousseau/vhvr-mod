@@ -7,6 +7,8 @@ namespace ValheimVRMod.Scripts {
     class CrossbowManager : WeaponWield
     {
         private static CrossbowManager instance;
+        private static readonly Quaternion frontGripRotationForLeftHand = Quaternion.Euler(0, -15, 90);
+        private static readonly Quaternion frontGripRotationForRightHand = Quaternion.Euler(0, 15, -90);
 
         private Quaternion originalLocalRotation;
 
@@ -20,16 +22,32 @@ namespace ValheimVRMod.Scripts {
             originalLocalRotation = transform.localRotation;
         }
 
-        protected override void OnRenderObject()
-        {
-            if (!isCurrentlyTwoHanded() && VHVRConfig.LeftHanded())
+        protected override void RotateHandsForTwoHandedWield(Vector3 weaponHoldVector) {
+            if (VHVRConfig.CrossbowSaggitalRotationSource() != "RearHand")
             {
-                // Make sure the top of the bow is facing the up when holding it one-handed.
-                transform.localRotation = originalLocalRotation * Quaternion.AngleAxis(180, Vector3.forward);
-            } else {
-                transform.localRotation = originalLocalRotation;
+                return;
             }
-            base.OnRenderObject();
+
+            Quaternion lookRotation = Quaternion.LookRotation(weaponHoldVector, rearHand.transform.up);
+            if (frontHand == VRPlayer.leftHand)
+            {
+                VrikCreator.leftHandConnector.rotation = lookRotation * frontGripRotationForLeftHand;
+            }
+            else
+            {
+                VrikCreator.rightHandConnector.rotation = lookRotation * frontGripRotationForRightHand;
+            }
+        }
+
+        protected override Quaternion GetSingleHandedRotation(Quaternion originalRotation)
+        {
+            // Make sure the top of the bow is facing up when holding it one-handed.
+            return VHVRConfig.LeftHanded() ? originalRotation * Quaternion.AngleAxis(180, Vector3.forward) : originalRotation;
+        }
+
+        protected override bool TemporaryDisableTwoHandedWield()
+        {
+            return crossbowMorphManager.isPulling || crossbowMorphManager.IsHandClosePullStart();
         }
 
         public static bool IsPullingTrigger()

@@ -1,13 +1,15 @@
 using System;
 using System.Collections.Generic;
 
-namespace ValheimVRMod.Utilities {
-    
+namespace ValheimVRMod.Utilities
+{
+
     [Flags]
-    public enum EquipType {
-        None, 
+    public enum EquipType
+    {
+        None,
         Fishing, Cultivator, Hammer, Hoe,
-        Bow,  Spear, SpearChitin, ThrowObject,
+        Bow, Spear, SpearChitin, ThrowObject,
         Shield, Tankard, Claws, Magic, Crossbow
         ,
         //Melee Weapon
@@ -20,7 +22,8 @@ namespace ValheimVRMod.Utilities {
         RuneSkyheim
     }
 
-    public static class EquipScript {
+    public static class EquipScript
+    {
 
         public readonly static HashSet<ItemDrop.ItemData.ItemType> DominantHandItemTypes =
             new HashSet<ItemDrop.ItemData.ItemType>(
@@ -34,8 +37,9 @@ namespace ValheimVRMod.Utilities {
         {
             return DominantHandItemTypes.Contains(item.m_shared.m_itemType);
         }
-        
-        public static EquipType getRight() {
+
+        public static EquipType getRight()
+        {
             if (Player.m_localPlayer.GetRightItem() != null)
             {
                 return getRightEquipType(Player.m_localPlayer.GetRightItem());
@@ -43,7 +47,8 @@ namespace ValheimVRMod.Utilities {
             return EquipType.None;
         }
 
-        public static EquipType getLeft() {
+        public static EquipType getLeft()
+        {
             if (Player.m_localPlayer.GetLeftItem() != null)
             {
                 return getLeftEquipType(Player.m_localPlayer.GetLeftItem());
@@ -154,7 +159,7 @@ namespace ValheimVRMod.Utilities {
         }
         public static EquipType getLeftEquipType(ItemDrop.ItemData item)
         {
-           
+
 
             //LeftEquipment List 
             switch (item?.m_shared.m_itemType)
@@ -202,12 +207,31 @@ namespace ValheimVRMod.Utilities {
             }
             return false;
         }
+
+        public static bool isSpearEquipped()
+        {
+            return getRight() == EquipType.Spear || getRight() == EquipType.SpearChitin;
+        }
+
+        // Whether there is a spear equipped pointing at the ulnar direction of hold hand.
+        public static bool isSpearEquippedUlnarForward()
+        {
+            return isSpearEquipped() && !VHVRConfig.SpearInverseWield();
+        }
+
+        // Whether there is a spear equipped pointing at the radial direction of hold hand.
+        public static bool isSpearEquippedRadialForward()
+        {
+            return isSpearEquipped() && VHVRConfig.SpearInverseWield();
+        }
+
         public static bool getRightAnimSpeedUp()
         {
             if (getRight() == EquipType.Magic)
                 return false;
             return true;
         }
+
         public static bool getLeftAnimSpeedUp()
         {
             if (getLeft() == EquipType.Magic || getLeft() == EquipType.Crossbow)
