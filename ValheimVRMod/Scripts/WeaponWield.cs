@@ -26,6 +26,8 @@ namespace ValheimVRMod.Scripts
         public static isTwoHanded _isTwoHanded;
         private float shieldSize = 1f;
         private bool isOtherHandWeapon = false;
+        private Transform frontHandConnector { get { return _isTwoHanded == isTwoHanded.LeftHandBehind ? VrikCreator.rightHandConnector : VrikCreator.leftHandConnector; } }
+        private Transform rearHandConnector { get { return _isTwoHanded == isTwoHanded.LeftHandBehind ? VrikCreator.leftHandConnector : VrikCreator.rightHandConnector; } }
 
         ParticleSystem particleSystem;
         Transform particleSystemTransformUpdater;
@@ -107,6 +109,22 @@ namespace ValheimVRMod.Scripts
             return EquipScript.isSpearEquipped() && (SpearManager.IsAiming() || SpearManager.isThrowing);
         }
 
+        protected virtual void RotateHandsForTwoHandedWield(Vector3 weaponHoldVector)
+        {
+            frontHandConnector.LookAt(frontHandConnector.position - weaponHoldVector, frontHand.transform.up);
+            rearHandConnector.LookAt(rearHandConnector.position + weaponHoldVector, rearHand.transform.up);
+            
+            if (GetHandAngleDiff(frontHand.transform, rearHand.transform) <= 0)
+            {
+                frontHandConnector.Rotate(Vector3.up, 180);
+            }
+            if (GetHandAngleDiff(rearHand.transform, frontHand.transform) < 0)
+            {
+                rearHandConnector.Rotate(Vector3.up, 180);
+            }
+            rearHandConnector.Rotate(Vector3.right, 10);
+        }
+   
         private void WieldHandle()
         {
             weaponForward = transform.forward;
@@ -159,8 +177,8 @@ namespace ValheimVRMod.Scripts
                 ReturnToSingleHanded();
                 weaponSubPos = false;
             }
-
         }
+        
         private void UpdateTwoHandedWield()
         {
             if (!VHVRConfig.TwoHandedWield())
@@ -212,7 +230,6 @@ namespace ValheimVRMod.Scripts
                 var originMultiplier = -0.1f;
                 var rotOffset = 180;
                 bool rearHandIsDominant = (VHVRConfig.LeftHanded() == (_isTwoHanded == isTwoHanded.LeftHandBehind));
-                bool forceRotateHand = true;
 
                 //debug check animation
                 //LogUtils.LogDebug("animation = " + attack.m_attackAnimation);
@@ -225,7 +242,6 @@ namespace ValheimVRMod.Scripts
                         break;
                     case "crossbow_fire":
                         originMultiplier = 0.35f;
-                        forceRotateHand = false;
                         break;
                     default:
                         if (!rearHandIsDominant && !EquipScript.isSpearEquipped()) {
@@ -238,22 +254,8 @@ namespace ValheimVRMod.Scripts
                 ReturnToSingleHanded();
 
                 //VRIK Hand rotation
-                var frontHandConnector = _isTwoHanded == isTwoHanded.LeftHandBehind ? VrikCreator.rightHandConnector : VrikCreator.leftHandConnector;
-                var rearHandConnector = _isTwoHanded == isTwoHanded.LeftHandBehind ? VrikCreator.leftHandConnector : VrikCreator.rightHandConnector;
-                if (forceRotateHand)
-                {
-                    frontHandConnector.LookAt(frontHandConnector.position - weaponHoldVector, frontHand.transform.up);
-                    rearHandConnector.LookAt(rearHandConnector.position + weaponHoldVector, rearHand.transform.up);
-                    if (GetHandAngleDiff(frontHand.transform, rearHand.transform) <= 0)
-                    {
-                        frontHandConnector.Rotate(Vector3.up, 180);
-                    }
-                    if (GetHandAngleDiff(rearHand.transform, frontHand.transform) < 0)
-                    {
-                        rearHandConnector.Rotate(Vector3.up, 180);
-                    }
-                    rearHandConnector.Rotate(Vector3.right, 10);
-                }
+                RotateHandsForTwoHandedWield(weaponHoldVector);
+                // Adjust the positions so that they are rotated around the hand centers which are slightly off from their local origins.
                 frontHandConnector.position = frontHandConnector.parent.position + frontHandConnector.forward * HAND_CENTER_OFFSET + (frontHandCenter - frontHand.transform.position);
                 rearHandConnector.position = rearHandConnector.parent.position + rearHandConnector.forward * HAND_CENTER_OFFSET + (rearHandCenter - rearHand.transform.position);
 
