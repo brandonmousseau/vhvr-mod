@@ -18,14 +18,14 @@ namespace ValheimVRMod.Scripts
         public string itemName;
         public Hand rearHand { get; private set; }
         public Hand frontHand { get; private set; }
-        public Hand mainHand { get { return isCurrentlyTwoHanded() ? rearHand : VRPlayer.dominantHand; } } 
+        public Hand mainHand { get { return isCurrentlyTwoHanded() ? rearHand : VRPlayer.dominantHand; } }
 
         private ItemDrop.ItemData item;
         private Transform singleHandedTransform;
         private Transform originalTransform;
+        private Quaternion offsetFromPointingDir; // The rotation offset of this transform relative to the direction the weapon is pointing at.
         public static isTwoHanded _isTwoHanded;
         private float shieldSize = 1f;
-        private bool isOtherHandWeapon = false;
         private Transform frontHandConnector { get { return _isTwoHanded == isTwoHanded.LeftHandBehind ? VrikCreator.rightHandConnector : VrikCreator.leftHandConnector; } }
         private Transform rearHandConnector { get { return _isTwoHanded == isTwoHanded.LeftHandBehind ? VrikCreator.leftHandConnector : VrikCreator.rightHandConnector; } }
 
@@ -39,10 +39,9 @@ namespace ValheimVRMod.Scripts
             LeftHandBehind
         }
 
-        public WeaponWield Initialize(bool isLeftHandEquip)
+        public WeaponWield Initialize(bool holdInNonDominantHand)
         {
-            isOtherHandWeapon = isLeftHandEquip;
-            if (isLeftHandEquip)
+            if (holdInNonDominantHand)
             {
                 item = Player.m_localPlayer.GetLeftItem();
             }
@@ -68,10 +67,13 @@ namespace ValheimVRMod.Scripts
             originalTransform.rotation = transform.rotation;
             transform.rotation = singleHandedTransform.rotation = GetSingleHandedRotation(originalTransform.rotation);
 
+            offsetFromPointingDir = Quaternion.Inverse(Quaternion.LookRotation(GetSingleHandedWeaponForward(), transform.up)) * transform.rotation;
+
             _isTwoHanded = isTwoHanded.SingleHanded;
 
             return this;
         }
+
         private void OnDestroy()
         {
             ReturnToSingleHanded();
@@ -97,6 +99,20 @@ namespace ValheimVRMod.Scripts
         {
             // TODO: implement a subclass ThrowableWeaponWield and move this impl to the override method there.
             return EquipScript.isSpearEquipped() && (SpearManager.IsAiming() || SpearManager.isThrowing);
+        }
+
+        // Returns the direction the weapon is pointing during single-handed wielding.
+        protected virtual Vector3 GetSingleHandedWeaponForward()
+        {
+            // TODO: move to ThrowableWeaponWield.
+            if (EquipScript.isSpearEquippedUlnarForward())
+            {
+                return -originalTransform.forward;
+            }
+
+            // TODO: maybe put atgeir forward data here.
+            LogUtils.LogWarning("Forward direction: " + transform.InverseTransformDirection(originalTransform.forward));
+            return originalTransform.forward;
         }
         
         // Calculates the correct rotation of this game object for single-handed mode using the original rotation.
@@ -128,7 +144,13 @@ namespace ValheimVRMod.Scripts
             }
             rearHandConnector.Rotate(Vector3.right, 10);
         }
-   
+
+        // The preferred up direction used to determine the weapon's rotation around it longitudinal axis during two-handed wield.
+        protected virtual Vector3 GetPreferredTwoHandedWeaponUp()
+        {
+            return singleHandedTransform.up;
+        }
+
         private void WieldHandle()
         {
             weaponForward = transform.forward;
@@ -264,32 +286,7 @@ namespace ValheimVRMod.Scripts
 
                 //weapon pos&rotation
                 transform.position = rearHandCenter + weaponOffset;
-                transform.rotation = Quaternion.LookRotation(weaponHoldVector, originalTransform.up) * singleHandedTransform.localRotation;
-
-                if (EquipScript.isSpearEquippedUlnarForward())
-                {
-                    transform.rotation *= Quaternion.Euler(180, 0, 0);
-                }
-                else if (EquipScript.getLeft() == EquipType.Crossbow)
-                {
-                    Vector3 rearHandRadial = rearHand.transform.up;
-                    Vector3 weaponUp = rearHandRadial;
-                    switch (VHVRConfig.CrossbowSaggitalRotationSource())
-                    {
-                        case "RearHand":
-                            weaponUp = rearHandRadial;
-                            break;
-                        case "BothHands":
-                            Vector3 frontHandPalmar = _isTwoHanded == isTwoHanded.LeftHandBehind ? -frontHand.transform.right : frontHand.transform.right;
-                            Vector3 frontHandRadial = frontHand.transform.up;
-                            weaponUp = (frontHandPalmar * 1.73f + frontHandRadial).normalized + rearHandRadial;
-                            break;
-                        default:
-                            LogUtils.LogWarning("WeaponWield: unknown CrossbowSaggitalRotationSource");
-                            break;
-                    }
-                    transform.rotation = Quaternion.LookRotation(weaponHoldVector, weaponUp) * originalTransform.localRotation;
-                }
+                transform.rotation = Quaternion.LookRotation(weaponHoldVector, GetPreferredTwoHandedWeaponUp()) * offsetFromPointingDir;
 
                 weaponSubPos = true;
                 shieldSize = 0.4f;
