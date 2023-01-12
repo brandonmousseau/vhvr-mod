@@ -47,7 +47,8 @@ namespace ValheimVRMod.Scripts {
 
         protected override bool TemporaryDisableTwoHandedWield()
         {
-            return crossbowMorphManager.isPulling || crossbowMorphManager.IsHandClosePullStart();
+            // return crossbowMorphManager.isPulling || crossbowMorphManager.IsHandClosePullStart();
+            return false;
         }
 
         public static bool IsPullingTrigger()
