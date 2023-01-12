@@ -280,7 +280,6 @@ namespace ValheimVRMod.Scripts
                     transform.localRotation = transform.localRotation * Quaternion.AngleAxis(-19.1f, Vector3.up) * Quaternion.AngleAxis(-8, Vector3.right);
                 }
                 else if (EquipScript.getLeft() == EquipType.Crossbow) {
-                    Vector3 frontHandPalmar = _isTwoHanded == isTwoHanded.LeftHandBehind ? -frontHand.transform.right : frontHand.transform.right;
                     Vector3 rearHandRadial = rearHand.transform.up;
                     Vector3 weaponUp = rearHandRadial;
                     switch (VHVRConfig.CrossbowSaggitalRotationSource())
@@ -289,7 +288,9 @@ namespace ValheimVRMod.Scripts
                             weaponUp = rearHandRadial;
                             break;
                         case "BothHands":
-                            weaponUp = frontHandPalmar + rearHandRadial;
+                            Vector3 frontHandPalmar = _isTwoHanded == isTwoHanded.LeftHandBehind ? -frontHand.transform.right : frontHand.transform.right;
+                            Vector3 frontHandRadial = frontHand.transform.up;
+                            weaponUp = (frontHandPalmar * 1.73f + frontHandRadial).normalized + rearHandRadial;
                             break;
                         default:
                             LogUtils.LogWarning("WeaponWield: unknown CrossbowSaggitalRotationSource");
