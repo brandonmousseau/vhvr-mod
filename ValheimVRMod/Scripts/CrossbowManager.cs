@@ -7,8 +7,8 @@ namespace ValheimVRMod.Scripts {
     class CrossbowManager : WeaponWield
     {
         private static CrossbowManager instance;
-        private static readonly Quaternion frontGripRotationForLeftHand = Quaternion.Euler(0, -45, 90);
-        private static readonly Quaternion frontGripRotationForRightHand = Quaternion.Euler(0, 45, -90);
+        private static readonly Quaternion frontGripRotationForLeftHand = Quaternion.Euler(0, -15, 90);
+        private static readonly Quaternion frontGripRotationForRightHand = Quaternion.Euler(0, 15, -90);
 
         private Quaternion originalLocalRotation;
 
@@ -44,16 +44,10 @@ namespace ValheimVRMod.Scripts {
             }
         }
 
-        protected override void OnRenderObject()
+        protected override Quaternion GetSingleHandedRotation(Quaternion originalRotation)
         {
-            if (!isCurrentlyTwoHanded() && VHVRConfig.LeftHanded())
-            {
-                // Make sure the top of the bow is facing the up when holding it one-handed.
-                transform.localRotation = originalLocalRotation * Quaternion.AngleAxis(180, Vector3.forward);
-            } else {
-                transform.localRotation = originalLocalRotation;
-            }
-            base.OnRenderObject();
+            // Make sure the top of the bow is facing up when holding it one-handed.
+            return VHVRConfig.LeftHanded() ? originalRotation * Quaternion.AngleAxis(180, Vector3.forward) : originalRotation;
         }
 
         protected override bool TemporaryDisableTwoHandedWield()

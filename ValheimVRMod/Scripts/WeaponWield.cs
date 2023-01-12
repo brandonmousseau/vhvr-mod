@@ -66,17 +66,7 @@ namespace ValheimVRMod.Scripts
             originalTransform.parent = singleHandedTransform.parent = transform.parent;
             originalTransform.position = singleHandedTransform.position = transform.position;
             originalTransform.rotation = transform.rotation;
-            
-            switch (attack.m_attackAnimation)
-            {
-                case "atgeir_attack":
-                    // Atgeir wield rotation fix
-                    singleHandedTransform.localRotation = transform.localRotation = transform.localRotation * Quaternion.AngleAxis(-20 , Vector3.up) * Quaternion.AngleAxis(-7 , Vector3.right);
-                    break;
-                default:
-                    singleHandedTransform.rotation = transform.rotation;
-                    break;
-            }
+            transform.rotation = singleHandedTransform.rotation = GetSingleHandedRotation(originalTransform.rotation);
 
             _isTwoHanded = isTwoHanded.SingleHanded;
 
@@ -108,6 +98,20 @@ namespace ValheimVRMod.Scripts
             // TODO: implement a subclass ThrowableWeaponWield and move this impl to the override method there.
             return EquipScript.isSpearEquipped() && (SpearManager.IsAiming() || SpearManager.isThrowing);
         }
+        
+        // Calculates the correct rotation of this game object for single-handed mode using the original rotation.
+        // This should be the same as the original rotation in most cases but there are exceptions.
+        protected virtual Quaternion GetSingleHandedRotation(Quaternion originalRotation)
+        {
+            switch (attack.m_attackAnimation)
+            {
+                case "atgeir_attack":
+                    // Atgeir wield rotation fix
+                    return originalRotation * Quaternion.AngleAxis(-20, Vector3.up) * Quaternion.AngleAxis(-7, Vector3.right);
+                default:
+                    return originalRotation;
+            }
+        }        
 
         protected virtual void RotateHandsForTwoHandedWield(Vector3 weaponHoldVector)
         {
@@ -283,10 +287,6 @@ namespace ValheimVRMod.Scripts
                     {
                         case "RearHand":
                             weaponUp = rearHandRadial;
-                            Vector3 verticalOffset = (weaponUp - Vector3.Project(weaponUp, weaponHoldVector)).normalized * 0.06f;
-                            // Rotate the crossbow slightly upward so that it does not clip through the front hand.
-                            transform.position += verticalOffset;
-                            weaponHoldVector += verticalOffset;
                             break;
                         case "BothHands":
                             weaponUp = frontHandPalmar + rearHandRadial;
