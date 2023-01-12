@@ -10,10 +10,10 @@ namespace ValheimVRMod.Scripts {
         void Awake()
         {
             MeshFilter meshFilter = gameObject.GetComponentInChildren<MeshFilter>();
-            if (IsUlnarForwardSpear())
+            if (EquipScript.isSpearEquippedRadialForward())
             {
                 meshFilter.gameObject.transform.localRotation *= Quaternion.AngleAxis(180, Vector3.right);
-                LogUtils.LogWarning("Spear item: " + itemName);
+                // LogUtils.LogWarning("Spear item: " + itemName);
                 switch (itemName) // TODO: is this the right property to check?
                 {
                     case "SpearChitin":
@@ -31,27 +31,21 @@ namespace ValheimVRMod.Scripts {
             spearManager = meshFilter.gameObject.AddComponent<SpearManager>();
             spearManager.weaponWield = this;
         }
-
-        public static bool IsRadialForwardSpear()
-        {
-            return IsSpear() && !VHVRConfig.SpearInverseWield();
+        
+        protected override GetSingleHandedRotation(Quaternion originalRotation) {
+            // TODO: consider use this instead of the rotating the mesh filter for inversed spear wield:
+            // return EquipScript.isSpearEquippedUlnarForward() ? originalRotation : originalRotation * Quaternion.euler(180, 0, 0);
+            return base.GetSingleHandedRotation(originalRotation);
         }
-
-        public static bool IsUlnarForwardSpear()
+        
+        protected override bool TemporaryDisableTwoHandedWield()
         {
-            return IsSpear() && VHVRConfig.SpearInverseWield();
+            return EquipScript.isSpearEquipped() && (SpearManager.IsAiming() || SpearManager.isThrowing);
         }
-
-        protected bool InExclusiveOneHandedMode()
-        {
-            // TODO: add a base method in WeaponWield and override.
-            return IsSpear() && (SpearManager.IsAiming() || SpearManager.isThrowing);
-        }
-
-        private static bool IsSpear()
-        {
-            // TODO: move this to EquipScript.
-            return EquipScript.getRight() == EquipType.Spear || EquipScript.getRight() == EquipType.SpearChitin;
+        
+        protected override Vector3 GetSingleHandedWeaponForward() {
+            Vector3 roughDirection = EquipScript.isSpearEquippedRadialForward() ? VRPlayer.dominantHand.up : -VRPlayer.dominantHand.up;
+            return Vector3.Project(roughDirection, base.GetSingleHandedWeaponForward()).normalized;
         }
     }
 }
