@@ -7,8 +7,8 @@ namespace ValheimVRMod.Scripts {
     class CrossbowManager : WeaponWield
     {
         private static CrossbowManager instance;
-        private static readonly Quaternion frontGripRotationForLeftHand = Quaternion.Euler(0, -45, 90);
-        private static readonly Quaternion frontGripRotationForRightHand = Quaternion.Euler(0, 45, -90);
+        private static readonly Quaternion frontGripRotationForLeftHand = Quaternion.Euler(0, -15, 90);
+        private static readonly Quaternion frontGripRotationForRightHand = Quaternion.Euler(0, 15, -90);
 
         private Quaternion originalLocalRotation;
 
