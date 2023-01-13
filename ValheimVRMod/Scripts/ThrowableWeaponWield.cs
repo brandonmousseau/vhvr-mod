@@ -32,11 +32,11 @@ namespace ValheimVRMod.Scripts
             spearManager.weaponWield = this;
         }
 
-        protected override Quaternion GetSingleHandedRotation(Quaternion originalRotation)
+        protected override Quaternion GetSingleHandedWeaponPointingDir(Quaternion originalRotation)
         {
             // TODO: consider use this instead of the rotating the mesh filter for inversed spear wield:
             // return EquipScript.isSpearEquippedUlnarForward() ? originalRotation : originalRotation * Quaternion.euler(180, 0, 0);
-            return base.GetSingleHandedRotation(originalRotation);
+            return base.GetSingleHandedWeaponPointingDir(originalRotation);
         }
 
         protected override bool TemporaryDisableTwoHandedWield()
