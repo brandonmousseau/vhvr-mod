@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
+using UnityEngine;
 
 namespace ValheimVRMod.Utilities
 {
@@ -291,6 +291,24 @@ namespace ValheimVRMod.Utilities
                 return compatibilityColliders[EquipScript.getEquippedItem(item)];
             }
             throw new InvalidEnumArgumentException();
+        }
+
+        public static Vector3 EstimateWeaponPointingDirection(MeshFilter weaponMeshFilter, Vector3 handPosition)
+        {
+            Bounds weaponLocalBounds = weaponMeshFilter.sharedMesh.bounds;
+
+            Vector3 longestDimension = weaponMeshFilter.transform.forward;
+            if (weaponLocalBounds.extents.x > weaponLocalBounds.extents.y && weaponLocalBounds.extents.x > weaponLocalBounds.extents.z)
+            {
+                longestDimension = weaponMeshFilter.transform.right;
+            }
+            else if (weaponLocalBounds.extents.y > weaponLocalBounds.extents.z && weaponLocalBounds.extents.y > weaponLocalBounds.extents.x)
+            {
+                longestDimension = weaponMeshFilter.transform.up;
+            }
+
+            Vector3 roughDirection = weaponMeshFilter.transform.TransformPoint(weaponLocalBounds.center) - handPosition;
+            return Vector3.Project(roughDirection, longestDimension).normalized;
         }
     }
 }
