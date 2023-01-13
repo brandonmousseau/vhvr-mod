@@ -5,9 +5,8 @@ using Valve.VR;
 
 namespace ValheimVRMod.Scripts
 {
-    class ThrowableWeaponWield : WeaponWield
+    class SpearWield : WeaponWield
     {
-        private SpearManager spearManager;
         void Awake()
         {
             MeshFilter meshFilter = gameObject.GetComponentInChildren<MeshFilter>();
@@ -26,10 +25,6 @@ namespace ValheimVRMod.Scripts
                         break;
                 }
             }
-
-            // TODO: consider renaming this ThrowableManager
-            spearManager = meshFilter.gameObject.AddComponent<SpearManager>();
-            spearManager.weaponWield = this;
         }
 
         protected override Quaternion GetSingleHandedRotation(Quaternion originalRotation)
@@ -41,7 +36,7 @@ namespace ValheimVRMod.Scripts
 
         protected override bool TemporaryDisableTwoHandedWield()
         {
-            return EquipScript.isSpearEquipped() && (SpearManager.IsAiming() || SpearManager.isThrowing);
+            return SpearManager.IsAiming() || SpearManager.isThrowing;
         }
 
         protected override Vector3 GetSingleHandedWeaponPointingDir()
