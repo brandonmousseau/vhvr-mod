@@ -38,6 +38,11 @@ namespace ValheimVRMod.Scripts {
                 VrikCreator.rightHandConnector.rotation = lookRotation * frontGripRotationForRightHand;
             }
         }
+        
+        protected override Vector3 GetSingleHandedWeaponPointingDir()
+        {
+            return transform.forward;
+        }        
 
         protected override Quaternion GetSingleHandedRotation(Quaternion originalRotation)
         {
@@ -45,9 +50,27 @@ namespace ValheimVRMod.Scripts {
             return VHVRConfig.LeftHanded() ? originalRotation * Quaternion.AngleAxis(180, Vector3.forward) : originalRotation;
         }
 
+        protected override Vector3 GetPreferredTwoHandedWeaponUp()
+        {
+            Vector3 rearHandRadial = rearHand.transform.up;
+            switch (VHVRConfig.CrossbowSaggitalRotationSource())
+            {
+                case "RearHand":
+                    return rearHandRadial;
+                case "BothHands":
+                    Vector3 frontHandPalmar = _isTwoHanded == isTwoHanded.LeftHandBehind ? -frontHand.transform.right : frontHand.transform.right;
+                    Vector3 frontHandRadial = frontHand.transform.up;
+                    return (frontHandPalmar * 1.73f + frontHandRadial).normalized + rearHandRadial;
+                default:
+                    LogUtils.LogWarning("WeaponWield: unknown CrossbowSaggitalRotationSource");
+                    return rearHandRadial;
+            }
+        }
+
         protected override bool TemporaryDisableTwoHandedWield()
         {
-            return crossbowMorphManager.isPulling || crossbowMorphManager.IsHandClosePullStart();
+            // return crossbowMorphManager.isPulling || crossbowMorphManager.IsHandClosePullStart();
+            return false;
         }
 
         public static bool IsPullingTrigger()
