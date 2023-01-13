@@ -49,7 +49,6 @@ namespace ValheimVRMod.Patches {
                 StaticObjects.rightHandQuickMenu.GetComponent<RightHandQuickMenu>().refreshItems();
                 StaticObjects.leftHandQuickMenu.GetComponent<LeftHandQuickMenu>().refreshItems();
             }
-            SpearManager spearManager = null;
 
             switch (EquipScript.getRight()) {
                 case EquipType.Hammer:
@@ -59,42 +58,21 @@ namespace ValheimVRMod.Patches {
                     meshFilter.gameObject.transform.localPosition = new Vector3(0, 0, -0.4f);
                     meshFilter.gameObject.AddComponent<FishingManager>();
                     break;
-                case EquipType.ThrowObject:
-                    spearManager = meshFilter.gameObject.AddComponent<SpearManager>();
-                    break;
-                case EquipType.Spear:
-                case EquipType.SpearChitin:
-                    if (VHVRConfig.SpearInverseWield())
-                    {
-                        meshFilter.gameObject.transform.localRotation *= Quaternion.AngleAxis(180, Vector3.right);
-                        switch (___m_rightItem)
-                        {
-                            case "SpearChitin":
-                                meshFilter.gameObject.transform.localPosition = new Vector3(0, 0, -0.2f);
-                                break;
-                            case "SpearElderbark":
-                            case "SpearBronze":
-                            case "SpearCarapace":
-                                meshFilter.gameObject.transform.localPosition = new Vector3(0, 0, -1.15f);
-                                break;
-
-                        }
-                    }
-                    spearManager = meshFilter.gameObject.AddComponent<SpearManager>();
-                    break;
             }
-            if (EquipScript.isThrowable(player.GetRightItem()))
+            WeaponWield weaponWield;
+            if (EquipScript.isThrowable(player.GetRightItem()) || EquipScript.isSpearEquipped() || EquipScript.getRight() == EquipType.ThrowObject)
             {
-                spearManager = meshFilter.gameObject.AddComponent<SpearManager>();
+                weaponWield = ___m_rightItemInstance.AddComponent<ThrowableWeaponWield>().Initialize(false);
             }
-            var weaponWield = ___m_rightItemInstance.AddComponent<WeaponWield>().Initialize(false);
+            else
+            {
+                weaponWield = ___m_rightItemInstance.AddComponent<WeaponWield>().Initialize(false);
+            }
             weaponWield.itemName = ___m_rightItem;
             var weaponCol = StaticObjects.rightWeaponCollider().GetComponent<WeaponCollision>();
             weaponCol.setColliderParent(meshFilter.transform, ___m_rightItem, true);
             weaponCol.weaponWield = weaponWield;
-            
             meshFilter.gameObject.AddComponent<WeaponBlock>().weaponWield = weaponWield;
-            if (spearManager) spearManager.weaponWield = weaponWield;
 
             ParticleFix.maybeFix(___m_rightItemInstance);
         }
