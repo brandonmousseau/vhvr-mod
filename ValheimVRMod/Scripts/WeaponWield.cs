@@ -102,7 +102,7 @@ namespace ValheimVRMod.Scripts
         }
 
         // Returns the direction the weapon is pointing during single-handed wielding.
-        protected virtual Vector3 GetSingleHandedWeaponForward()
+        protected virtual Vector3 GetSingleHandedWeaponPointingDir()
         {
             // TODO: move to ThrowableWeaponWield.
             if (EquipScript.isSpearEquippedUlnarForward())
