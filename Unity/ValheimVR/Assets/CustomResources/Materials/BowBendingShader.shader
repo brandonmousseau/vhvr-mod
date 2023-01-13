@@ -13,6 +13,7 @@ Shader "BowBendingShader"
     	_EmissionMap ("Emission Map", 2D) = "black" {}
         _Cutoff("Alpha cutoff", Range(0, 1)) = 0.5
         _MaxSmoothness("Max Smoothness", Range(0, 1)) = 0.83
+        _MinSmoothness("Min Smoothness", Range(0, 1)) = 0.08
     }
     SubShader
     {
@@ -41,6 +42,7 @@ Shader "BowBendingShader"
         sampler2D _MetallicGlossMap;
         sampler2D _EmissionMap;
         float _MaxSmoothness;
+        float _MinSmoothness;
 
         struct Input {
             float2 uv_MainTex;
@@ -87,9 +89,8 @@ Shader "BowBendingShader"
            o.Albedo = tex2D(_MainTex, IN.uv_MainTex).rgb;
            o.Alpha = IN.vertColor.a;
            o.Normal = UnpackNormal (tex2D (_BumpMap, IN.uv_BumpMap));
-           float metalic = tex2D(_MetallicGlossMap, IN.uv_MetallicGlossMap).r;
-           o.Metallic = metalic;
-           o.Smoothness = min(_MaxSmoothness, metalic);
+           o.Metallic = tex2D(_MetallicGlossMap, IN.uv_MetallicGlossMap).r;
+           o.Smoothness = clamp(o.Metallic, _MinSmoothness, _MaxSmoothness);
            o.Emission = IN.vertColor.a > 0 ? tex2D(_EmissionMap, IN.uv_EmissionMap).rgb : fixed3(0, 0, 0);
         }
 
