@@ -44,7 +44,7 @@ namespace ValheimVRMod.Scripts
             return EquipScript.isSpearEquipped() && (SpearManager.IsAiming() || SpearManager.isThrowing);
         }
 
-        protected override Vector3 GetSingleHandedWeaponForward()
+        protected override Vector3 GetSingleHandedWeaponPointingDir()
         {
             Vector3 roughDirection = EquipScript.isSpearEquippedRadialForward() ? transform.forward : -transform.forward;
             return Vector3.Project(roughDirection, base.GetSingleHandedWeaponForward()).normalized;
