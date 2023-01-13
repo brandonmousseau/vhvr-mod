@@ -28,6 +28,7 @@ namespace ValheimVRMod.Scripts
         private float shieldSize = 1f;
         private Transform frontHandConnector { get { return _isTwoHanded == isTwoHanded.LeftHandBehind ? VrikCreator.rightHandConnector : VrikCreator.leftHandConnector; } }
         private Transform rearHandConnector { get { return _isTwoHanded == isTwoHanded.LeftHandBehind ? VrikCreator.leftHandConnector : VrikCreator.rightHandConnector; } }
+        private Vector3 estimatedLocalWeaponPointingDir = Vector3.zero;
 
         ParticleSystem particleSystem;
         Transform particleSystemTransformUpdater;
@@ -103,7 +104,21 @@ namespace ValheimVRMod.Scripts
         // Returns the direction the weapon is pointing during single-handed wielding.
         protected virtual Vector3 GetSingleHandedWeaponPointingDir()
         {
-            return originalTransform.forward;
+            if (estimatedLocalWeaponPointingDir == Vector3.zero)
+            {
+                MeshFilter weaponMeshFilter = gameObject.GetComponentInChildren<MeshFilter>();
+
+                if (weaponMeshFilter != null)
+                {
+                    estimatedLocalWeaponPointingDir = transform.InverseTransformDirection(WeaponUtils.EstimateWeaponPointingDirection(weaponMeshFilter, transform.parent.position));
+                }
+                else
+                {
+                    estimatedLocalWeaponPointingDir = Vector3.forward;
+                }
+            }
+
+            return transform.TransformDirection(estimatedLocalWeaponPointingDir);
         }
         
         // Calculates the correct rotation of this game object for single-handed mode using the original rotation.
