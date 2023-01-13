@@ -11,7 +11,7 @@ namespace ValheimVRMod.Scripts
     {
         // Equipments whose skinned mesh renderer's unmodded bounding box is too small that we need to expand it so that they do not disappear.
         private readonly static HashSet<string> EquipItemNames = new HashSet<string>(new string[] { "ArmorFenringChest" });
-        private readonly static HashSet<string> EquipGameObjectNames = new HashSet<string>(new string[] { "FenringPants" });
+        private readonly static HashSet<string> EquipGameObjectNames = new HashSet<string>(new string[] { "FenringPants" }); // Confusingly, the name of the game object of ArmorFenringChest is "FenringPants".
 
         private SkinnedMeshRenderer playerBodyMeshRenderer;
         private bool pendingBoundingBoxFix = false;
