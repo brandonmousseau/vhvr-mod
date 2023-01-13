@@ -18,9 +18,9 @@ namespace ValheimVRMod.Scripts
                     case "$item_spear_chitin":
                         meshFilter.gameObject.transform.localPosition = new Vector3(0, 0, -0.2f);
                         break;
-                    case "item_spear_ancientbark":
-                    case "item_spear_bronze":
-                    case "item_spear_carapace":
+                    case "$item_spear_ancientbark":
+                    case "$item_spear_bronze":
+                    case "$item_spear_carapace":
                         meshFilter.gameObject.transform.localPosition = new Vector3(0, 0, -1.15f);
                         break;
                 }
