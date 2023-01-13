@@ -3,7 +3,8 @@ using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using Valve.VR;
 
-namespace ValheimVRMod.Scripts {
+namespace ValheimVRMod.Scripts
+{
     class ThrowableWeaponWield : WeaponWield
     {
         private SpearManager spearManager;
@@ -13,15 +14,14 @@ namespace ValheimVRMod.Scripts {
             if (EquipScript.isSpearEquippedRadialForward())
             {
                 meshFilter.gameObject.transform.localRotation *= Quaternion.AngleAxis(180, Vector3.right);
-                // LogUtils.LogWarning("Spear item: " + itemName);
-                switch (itemName) // TODO: is this the right property to check?
+                switch (Player.m_localPlayer.m_rightItem.m_shared.m_name)
                 {
-                    case "SpearChitin":
+                    case "$item_spear_chitin":
                         meshFilter.gameObject.transform.localPosition = new Vector3(0, 0, -0.2f);
                         break;
-                    case "SpearElderbark":
-                    case "SpearBronze":
-                    case "SpearCarapace":
+                    case "item_spear_ancientbark":
+                    case "item_spear_bronze":
+                    case "item_spear_carapace":
                         meshFilter.gameObject.transform.localPosition = new Vector3(0, 0, -1.15f);
                         break;
                 }
