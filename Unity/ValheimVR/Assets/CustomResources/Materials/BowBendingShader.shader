@@ -67,13 +67,17 @@ Shader "BowBendingShader"
             float height = dot(v.vertex, _HandleVector);
             if (height  > _HandleTopHeight) {
                 targetPos = mul(_UpperLimbTransform, v.vertex);
+                v.normal = mul(_UpperLimbTransform, float4(v.normal, 0)).xyz;
                 if (height < _HandleTopHeight + _SoftLimbHeight) {
-                    targetPos = lerp(v.vertex, targetPos , (height - _HandleTopHeight) / _SoftLimbHeight);
+                    float weight = (height - _HandleTopHeight) / _SoftLimbHeight;
+                    targetPos = lerp(v.vertex, targetPos, weight);
                 }
             } else if (height < _HandleBottomHeight) {
                 targetPos = mul(_LowerLimbTransform, v.vertex);
+                v.normal = mul(_LowerLimbTransform, float4(v.normal, 0)).xyz;
                 if (height > _HandleBottomHeight - _SoftLimbHeight) {
-                    targetPos  = lerp(v.vertex, targetPos , (_HandleBottomHeight - height) / _SoftLimbHeight);
+                    float weight = (_HandleBottomHeight - height) / _SoftLimbHeight;
+                    targetPos  = lerp(v.vertex, targetPos, weight);
                 }
             }
             v.vertex = targetPos;
