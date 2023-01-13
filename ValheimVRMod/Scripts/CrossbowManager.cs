@@ -52,6 +52,11 @@ namespace ValheimVRMod.Scripts {
                 VrikCreator.rightHandConnector.rotation = lookRotation * frontGripRotationForRightHand;
             }
         }
+        
+        protected override Vector3 GetSingleHandedWeaponPointingDir()
+        {
+            return transform.forward;
+        }        
 
         protected override Vector3 GetSingleHandedWeaponPointingDir()
         {
