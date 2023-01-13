@@ -34,5 +34,10 @@ namespace ValheimVRMod.Scripts
             Vector3 roughDirection = EquipScript.isSpearEquippedUlnarForward() ? -transform.forward : transform.forward;
             return Vector3.Project(roughDirection, base.GetSingleHandedWeaponPointingDir()).normalized;
         }
+        
+        protected override float GetPreferredOffsetFromRearHand(float handDist)
+        {
+            return 0.09f / Mathf.Max(handDist, 0.09f) + 0.2f;
+        }        
     }
 }
