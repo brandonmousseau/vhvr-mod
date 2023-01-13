@@ -69,7 +69,7 @@ namespace ValheimVRMod.Scripts
             transform.rotation = singleHandedTransform.rotation = GetSingleHandedRotation(originalTransform.rotation);
 
             MeshFilter weaponMeshFilter = gameObject.GetComponentInChildren<MeshFilter>();
-            if (weaponMeshFilter != null && attack.m_attackAnimation == "atgeir_attack")
+            if (weaponMeshFilter != null)
             {
                 estimatedLocalWeaponPointingDir = transform.InverseTransformDirection(WeaponUtils.EstimateWeaponPointingDirection(weaponMeshFilter, transform.parent.position));
             }
