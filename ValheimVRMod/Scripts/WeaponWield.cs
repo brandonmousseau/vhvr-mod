@@ -67,7 +67,7 @@ namespace ValheimVRMod.Scripts
             originalTransform.rotation = transform.rotation;
             transform.rotation = singleHandedTransform.rotation = GetSingleHandedRotation(originalTransform.rotation);
 
-            offsetFromPointingDir = Quaternion.Inverse(Quaternion.LookRotation(GetSingleHandedWeaponForward(), transform.up)) * transform.rotation;
+            offsetFromPointingDir = Quaternion.Inverse(Quaternion.LookRotation(GetSingleHandedWeaponPointingDir(), transform.up)) * transform.rotation;
 
             _isTwoHanded = isTwoHanded.SingleHanded;
 
