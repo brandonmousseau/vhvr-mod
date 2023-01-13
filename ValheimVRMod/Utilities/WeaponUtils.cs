@@ -293,20 +293,24 @@ namespace ValheimVRMod.Utilities
             throw new InvalidEnumArgumentException();
         }
 
-        // Estimates the direction that the weapon is pointing by identifying the direction of the longest edge of its mesh bounds.
+        // Estimates the direction that the weapon is pointing by identifying the dimension on which its mesh bounds is offset the farthest.
         // This estimation therefore assumes:
-        //   1. The weapon pointing direction is parallel to the x, y, or z axis of the mesh transform; and
-        //   2. The length of the weapon is larger than both its width and its thickness.
+        //   1. The weapon pointing direction is parallel to the x, y, or z axis of the mesh; and
+        //   2. The offset of tip of the weapon is larger than its lateral, dorsal, and ventral expanse.
         public static Vector3 EstimateWeaponPointingDirection(MeshFilter weaponMeshFilter, Vector3 handPosition)
         {
             Bounds weaponLocalBounds = weaponMeshFilter.sharedMesh.bounds;
+            Vector3 centerOffset = weaponLocalBounds.center - weaponMeshFilter.transform.InverseTransformPoint(handPosition);
+            float maxX = Mathf.Abs(centerOffset.x) + weaponLocalBounds.extents.x;
+            float maxY = Mathf.Abs(centerOffset.y) + weaponLocalBounds.extents.y;
+            float maxZ = Mathf.Abs(centerOffset.z) + weaponLocalBounds.extents.z;
 
             Vector3 longestDimension = weaponMeshFilter.transform.forward;
-            if (weaponLocalBounds.extents.x > weaponLocalBounds.extents.y && weaponLocalBounds.extents.x > weaponLocalBounds.extents.z)
+            if (maxX > maxY && maxX > maxZ)
             {
                 longestDimension = weaponMeshFilter.transform.right;
             }
-            else if (weaponLocalBounds.extents.y > weaponLocalBounds.extents.z && weaponLocalBounds.extents.y > weaponLocalBounds.extents.x)
+            else if (maxY > maxZ && maxY > maxX)
             {
                 longestDimension = weaponMeshFilter.transform.up;
             }
