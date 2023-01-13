@@ -97,21 +97,12 @@ namespace ValheimVRMod.Scripts
 
         protected virtual bool TemporaryDisableTwoHandedWield()
         {
-            // TODO: implement a subclass ThrowableWeaponWield and move this impl to the override method there.
-            return EquipScript.isSpearEquipped() && (SpearManager.IsAiming() || SpearManager.isThrowing);
+            return false;
         }
 
         // Returns the direction the weapon is pointing during single-handed wielding.
         protected virtual Vector3 GetSingleHandedWeaponPointingDir()
         {
-            // TODO: move to ThrowableWeaponWield.
-            if (EquipScript.isSpearEquippedUlnarForward())
-            {
-                return -originalTransform.forward;
-            }
-
-            // TODO: maybe put atgeir forward data here.
-            LogUtils.LogWarning("Forward direction: " + transform.InverseTransformDirection(originalTransform.forward));
             return originalTransform.forward;
         }
         
