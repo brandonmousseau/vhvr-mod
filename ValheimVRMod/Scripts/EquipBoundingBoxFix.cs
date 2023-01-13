@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using ValheimVRMod.VRCore;
-using ValheimVRMod.Utilities;
 
 namespace ValheimVRMod.Scripts
 {
@@ -10,11 +9,10 @@ namespace ValheimVRMod.Scripts
     public class EquipBoundingBoxFix : MonoBehaviour
     {
         // Equipments whose skinned mesh renderer's unmodded bounding box is too small that we need to expand it so that they do not disappear.
-        private readonly static HashSet<string> EquipItemNames = new HashSet<string>(new string[] { "ArmorFenringChest" });
-        private readonly static HashSet<string> EquipGameObjectNames = new HashSet<string>(new string[] { "FenringPants" }); // Confusingly, the name of the game object of ArmorFenringChest is "FenringPants".
+        private readonly static HashSet<string> EquipItemNames = new HashSet<string>(new string[] { "ArmorFenringChest", "FistFenrirClaw", "KnifeSkollAndHati" });
 
         private SkinnedMeshRenderer playerBodyMeshRenderer;
-        private bool pendingBoundingBoxFix = false;
+        private HashSet<SkinnedMeshRenderer> pendingRenderersToFix = new HashSet<SkinnedMeshRenderer>();
 
         public static EquipBoundingBoxFix GetInstanceForPlayer(Player player)
         {
@@ -26,24 +24,6 @@ namespace ValheimVRMod.Scripts
         }
 
         void Update()
-        {
-            if (pendingBoundingBoxFix)
-            {
-                FixSkinnedMeshRendererBounds();
-            }
-        }
-
-        public void RequestFixBoundingBox(String name)
-        {
-            if (!EquipItemNames.Contains(name))
-            {
-                return;
-            }
-
-            pendingBoundingBoxFix = true;
-        }
-
-        private void FixSkinnedMeshRendererBounds()
         {
             if (!VRPlayer.inFirstPerson || !EnsureBodyRenderer())
             {
@@ -63,14 +43,12 @@ namespace ValheimVRMod.Scripts
                     center + Vector3.Reflect(extents, Vector3.forward),
                     center - Vector3.Reflect(extents, Vector3.forward)};
 
-            SkinnedMeshRenderer[] playerSkinnedMeshRenderers = gameObject.GetComponentsInChildren<SkinnedMeshRenderer>();
-            foreach (SkinnedMeshRenderer renderer in playerSkinnedMeshRenderers)
+            foreach (SkinnedMeshRenderer renderer in pendingRenderersToFix)
             {
-                if (!EquipGameObjectNames.Contains(renderer.gameObject.name))
+                if (renderer == null)
                 {
                     continue;
                 }
-
                 Bounds localBounds = renderer.localBounds;
                 // Expand the bounds of the equipment to encapsulate the bounds of the player body.
                 foreach (Vector3 p in playerBoundVertices)
@@ -80,7 +58,20 @@ namespace ValheimVRMod.Scripts
                 renderer.localBounds = localBounds;
             }
 
-            pendingBoundingBoxFix = false;
+            pendingRenderersToFix.Clear();
+        }
+
+        public void RequestBoundingBoxFix(String itemName, GameObject itemInstance)
+        {
+            if (!EquipItemNames.Contains(itemName))
+            {
+                return;
+            }
+
+            foreach (SkinnedMeshRenderer renderer in itemInstance.GetComponentsInChildren<SkinnedMeshRenderer>())
+            {
+                pendingRenderersToFix.Add(renderer);
+            }
         }
 
         private bool EnsureBodyRenderer()
