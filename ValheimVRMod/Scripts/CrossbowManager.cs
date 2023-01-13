@@ -76,6 +76,11 @@ namespace ValheimVRMod.Scripts {
             }
         }
 
+        protected override float GetPreferredOffsetFromRearHand(float handDist)
+        {
+            return 0.35f;
+        }
+
         protected override bool TemporaryDisableTwoHandedWield()
         {
             return crossbowMorphManager.isPulling || crossbowMorphManager.IsHandClosePullStart();
