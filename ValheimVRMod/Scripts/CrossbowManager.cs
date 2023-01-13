@@ -8,7 +8,7 @@ namespace ValheimVRMod.Scripts {
     {
         private static CrossbowManager instance;
         private static readonly Quaternion frontGripRotationForLeftHand = Quaternion.Euler(0, -15, 90);
-        private static readonly Quaternion frontGripRotationForRightHand = Quaternion.Euler(0, 15, -90);
+        private static readonly Quaternion frontGripRotationForRightHand = Quaternion.Euler(0, 0, -120);
 
         private Quaternion originalLocalRotation;
 
@@ -36,13 +36,8 @@ namespace ValheimVRMod.Scripts {
             return CrossbowAnatomy.getAnatomy(Player.m_localPlayer.GetLeftItem().m_shared.m_name) == null;
         }
 
-        protected override void RotateHandsForTwoHandedWield(Vector3 weaponHoldVector) {
-            if (VHVRConfig.CrossbowSaggitalRotationSource() != "RearHand")
-            {
-                return;
-            }
-
-            Quaternion lookRotation = Quaternion.LookRotation(weaponHoldVector, rearHand.transform.up);
+        protected override void RotateHandsForTwoHandedWield(Vector3 weaponPointingDir) {
+            Quaternion lookRotation = Quaternion.LookRotation(weaponPointingDir, GetPreferredTwoHandedWeaponUp());
             if (frontHand == VRPlayer.leftHand)
             {
                 VrikCreator.leftHandConnector.rotation = lookRotation * frontGripRotationForLeftHand;
