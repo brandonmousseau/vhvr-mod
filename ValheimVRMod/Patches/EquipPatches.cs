@@ -60,7 +60,7 @@ namespace ValheimVRMod.Patches {
                     break;
             }
             WeaponWield weaponWield;
-            if (EquipScript.isThrowable(player.GetRightItem()) || EquipScript.isSpear() || EquipScript.getRight() == EquipType.ThrowObject)
+            if (EquipScript.isThrowable(player.GetRightItem()) || EquipScript.isSpearEquipped() || EquipScript.getRight() == EquipType.ThrowObject)
             {
                 weaponWield = ___m_rightItemInstance.AddComponent<ThrowableWeaponWield>().Initialize(false);
             }
