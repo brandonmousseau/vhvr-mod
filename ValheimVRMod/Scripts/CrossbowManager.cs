@@ -58,11 +58,6 @@ namespace ValheimVRMod.Scripts {
             return transform.forward;
         }        
 
-        protected override Vector3 GetSingleHandedWeaponPointingDir()
-        {
-            return transform.forward;
-        }
-
         protected override Quaternion GetSingleHandedRotation(Quaternion originalRotation)
         {
             // Make sure the top of the bow is facing up when holding it one-handed.
