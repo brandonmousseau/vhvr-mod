@@ -112,7 +112,7 @@ namespace ValheimVRMod.Scripts
         {
             return transform.TransformDirection(estimatedLocalWeaponPointingDir);
         }
-        
+
         // Calculates the correct rotation of this game object for single-handed mode using the original rotation.
         // This should be the same as the original rotation in most cases but there are exceptions.
         protected virtual Quaternion GetSingleHandedRotation(Quaternion originalRotation)
@@ -127,10 +127,10 @@ namespace ValheimVRMod.Scripts
             }
         }        
 
-        protected virtual void RotateHandsForTwoHandedWield(Vector3 weaponHoldVector)
+        protected virtual void RotateHandsForTwoHandedWield(Vector3 weaponPointingDir)
         {
-            frontHandConnector.LookAt(frontHandConnector.position - weaponHoldVector, frontHand.transform.up);
-            rearHandConnector.LookAt(rearHandConnector.position + weaponHoldVector, rearHand.transform.up);
+            frontHandConnector.LookAt(frontHandConnector.position - weaponPointingDir, frontHand.transform.up);
+            rearHandConnector.LookAt(rearHandConnector.position + weaponPointingDir, rearHand.transform.up);
             
             if (GetHandAngleDiff(frontHand.transform, rearHand.transform) <= 0)
             {
@@ -147,6 +147,25 @@ namespace ValheimVRMod.Scripts
         protected virtual Vector3 GetPreferredTwoHandedWeaponUp()
         {
             return singleHandedTransform.up;
+        }
+
+        // The preferred forward offset amount of the weapon's position from the rear hand during two-handed wield.
+        protected virtual float GetPreferredOffsetFromRearHand(float handDist)
+        {
+            bool rearHandIsDominant = (VHVRConfig.LeftHanded() == (_isTwoHanded == isTwoHanded.LeftHandBehind));
+            if (rearHandIsDominant)
+            {
+                return -0.1f;
+            }
+            else if (handDist > 0.15f)
+            {
+                return 0.05f;
+            }
+            else
+            {
+                // Anchor the weapon in the front/dominant hand instead.
+                return handDist - 0.1f;
+            }
         }
 
         private void WieldHandle()
@@ -247,44 +266,18 @@ namespace ValheimVRMod.Scripts
 
                 Vector3 frontHandCenter = getHandCenter(frontHand.transform);
                 Vector3 rearHandCenter = getHandCenter(rearHand.transform);
-                var handDist = Vector3.Distance(frontHandCenter, rearHandCenter);
-                var weaponHoldVector = frontHandCenter - rearHandCenter;
-                var distLimit = 0f;
-                var distMultiplier = 0f;
-                var originMultiplier = -0.1f;
-                bool rearHandIsDominant = (VHVRConfig.LeftHanded() == (_isTwoHanded == isTwoHanded.LeftHandBehind));
-
-                //debug check animation
-                //LogUtils.LogDebug("animation = " + attack.m_attackAnimation);
-                switch (attack.m_attackAnimation)
-                {
-                    case "spear_poke":
-                        distMultiplier = -0.09f;
-                        distLimit = 0.09f;
-                        originMultiplier = 0.2f;
-                        break;
-                    case "crossbow_fire":
-                        originMultiplier = 0.35f;
-                        break;
-                    default:
-                        if (!rearHandIsDominant && !EquipScript.isSpearEquipped()) {
-                            // Anchor the weapon on the dominant hand.
-                            originMultiplier = Mathf.Min(handDist, 0.15f) - 0.1f;
-                        }
-                        break;
-                }
-                var weaponOffset = weaponHoldVector.normalized * (HAND_CENTER_OFFSET + originMultiplier - distMultiplier / Mathf.Max(handDist, distLimit));
+                var weaponPointingDir = (frontHandCenter - rearHandCenter).normalized;
                 ReturnToSingleHanded();
 
                 //VRIK Hand rotation
-                RotateHandsForTwoHandedWield(weaponHoldVector);
+                RotateHandsForTwoHandedWield(weaponPointingDir);
                 // Adjust the positions so that they are rotated around the hand centers which are slightly off from their local origins.
                 frontHandConnector.position = frontHandConnector.parent.position + frontHandConnector.forward * HAND_CENTER_OFFSET + (frontHandCenter - frontHand.transform.position);
                 rearHandConnector.position = rearHandConnector.parent.position + rearHandConnector.forward * HAND_CENTER_OFFSET + (rearHandCenter - rearHand.transform.position);
 
                 //weapon pos&rotation
-                transform.position = rearHandCenter + weaponOffset;
-                transform.rotation = Quaternion.LookRotation(weaponHoldVector, GetPreferredTwoHandedWeaponUp()) * offsetFromPointingDir;
+                transform.position = rearHandCenter + weaponPointingDir * (HAND_CENTER_OFFSET + GetPreferredOffsetFromRearHand(Vector3.Distance(frontHandCenter, rearHandCenter)));
+                transform.rotation = Quaternion.LookRotation(weaponPointingDir, GetPreferredTwoHandedWeaponUp()) * offsetFromPointingDir;
 
                 weaponSubPos = true;
                 shieldSize = 0.4f;
