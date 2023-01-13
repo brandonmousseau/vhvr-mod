@@ -214,9 +214,9 @@ namespace ValheimVRMod.Patches {
     {
         static void Postfix(string name)
         {
-            if (VHVRConfig.UseVrControls())
+            if (VHVRConfig.UseVrControls() && Player.m_localPlayer != null)
             {
-                EquipBoundingBoxFix.GetInstanceForPlayer(Player.m_localPlayer).RequestFixBoundingBox(name);
+                EquipBoundingBoxFix.GetInstanceForPlayer(Player.m_localPlayer)?.RequestFixBoundingBox(name);
             }
         }
     }
@@ -226,9 +226,9 @@ namespace ValheimVRMod.Patches {
     {
         static void Postfix(string name)
         {
-            if (VHVRConfig.UseVrControls())
+            if (VHVRConfig.UseVrControls() && Player.m_localPlayer != null)
             {
-                EquipBoundingBoxFix.GetInstanceForPlayer(Player.m_localPlayer).RequestFixBoundingBox(name);
+                EquipBoundingBoxFix.GetInstanceForPlayer(Player.m_localPlayer)?.RequestFixBoundingBox(name);
             }
         }
     }
