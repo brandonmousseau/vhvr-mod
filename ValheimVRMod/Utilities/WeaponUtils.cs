@@ -293,6 +293,10 @@ namespace ValheimVRMod.Utilities
             throw new InvalidEnumArgumentException();
         }
 
+        // Estimates the direction that the weapon is pointing by identifying the direction of the longest edge of its mesh bounds.
+        // This estimation therefore assumes:
+        //   1. The weapon pointing direction is parallel to the x, y, or z axis of the mesh transform; and
+        //   2. The length of the weapon is larger than both its width and its thickness.
         public static Vector3 EstimateWeaponPointingDirection(MeshFilter weaponMeshFilter, Vector3 handPosition)
         {
             Bounds weaponLocalBounds = weaponMeshFilter.sharedMesh.bounds;
