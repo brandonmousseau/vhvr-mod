@@ -31,20 +31,22 @@ namespace ValheimVRMod.Scripts {
             spearManager = meshFilter.gameObject.AddComponent<SpearManager>();
             spearManager.weaponWield = this;
         }
-        
-        protected override GetSingleHandedRotation(Quaternion originalRotation) {
+
+        protected override Quaternion GetSingleHandedRotation(Quaternion originalRotation)
+        {
             // TODO: consider use this instead of the rotating the mesh filter for inversed spear wield:
             // return EquipScript.isSpearEquippedUlnarForward() ? originalRotation : originalRotation * Quaternion.euler(180, 0, 0);
             return base.GetSingleHandedRotation(originalRotation);
         }
-        
+
         protected override bool TemporaryDisableTwoHandedWield()
         {
             return EquipScript.isSpearEquipped() && (SpearManager.IsAiming() || SpearManager.isThrowing);
         }
-        
-        protected override Vector3 GetSingleHandedWeaponForward() {
-            Vector3 roughDirection = EquipScript.isSpearEquippedRadialForward() ? VRPlayer.dominantHand.up : -VRPlayer.dominantHand.up;
+
+        protected override Vector3 GetSingleHandedWeaponForward()
+        {
+            Vector3 roughDirection = EquipScript.isSpearEquippedRadialForward() ? transform.forward : -transform.forward;
             return Vector3.Project(roughDirection, base.GetSingleHandedWeaponForward()).normalized;
         }
     }
