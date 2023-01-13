@@ -101,6 +101,10 @@ namespace ValheimVRMod.Scripts {
             {
                 VrikCreator.ResetHandConnectors();
                 isPulling = false;
+                if (Player.m_localPlayer.IsWeaponLoaded())
+                {
+                    VRPlayer.dominantHand.hapticAction.Execute(0, 0.2f, 100, 0.3f, VRPlayer.dominantHandInputSource);
+                }
             }
         }
 
@@ -210,10 +214,7 @@ namespace ValheimVRMod.Scripts {
             else if (wasPulling)
             {
                 VrikCreator.ResetHandConnectors();
-                if (Player.m_localPlayer.IsWeaponLoaded()) {
-                    VRPlayer.dominantHand.hapticAction.Execute(0, 0.2f, 100, 0.3f, VRPlayer.dominantHandInputSource);
-                }
-                else
+                if (!Player.m_localPlayer.IsWeaponLoaded())
                 {
                     Player.m_localPlayer.CancelReloadAction();
                 }
