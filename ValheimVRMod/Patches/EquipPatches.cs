@@ -65,16 +65,16 @@ namespace ValheimVRMod.Patches {
                     meshFilter.gameObject.AddComponent<FishingManager>();
                     break;
             }
-            WeaponWield weaponWield;
+            WeaponWield weaponWield = EquipScript.isSpearEquipped() ? ___m_rightItemInstance.AddComponent<SpearWield>() : ___m_rightItemInstance.AddComponent<WeaponWield>();
+            weaponWield.itemName = ___m_rightItem;
+            weaponWield.Initialize(false);
+
             if (EquipScript.isThrowable(player.GetRightItem()) || EquipScript.isSpearEquipped() || EquipScript.getRight() == EquipType.ThrowObject)
             {
-                weaponWield = ___m_rightItemInstance.AddComponent<ThrowableWeaponWield>().Initialize(false);
+                // TODO: rename this to ThrowableManager
+                (meshFilter.gameObject.AddComponent<SpearManager>()).weaponWield = weaponWield;
             }
-            else
-            {
-                weaponWield = ___m_rightItemInstance.AddComponent<WeaponWield>().Initialize(false);
-            }
-            weaponWield.itemName = ___m_rightItem;
+
             var weaponCol = StaticObjects.rightWeaponCollider().GetComponent<WeaponCollision>();
             weaponCol.setColliderParent(meshFilter.transform, ___m_rightItem, true);
             weaponCol.weaponWield = weaponWield;
