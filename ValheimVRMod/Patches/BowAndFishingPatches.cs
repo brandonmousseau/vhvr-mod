@@ -55,6 +55,34 @@ namespace ValheimVRMod.Patches {
         }
     }
 
+    [HarmonyPatch(typeof(Player), "UpdateWeaponLoading")]
+    class PatchUpdateWeaponLoading
+    {
+        static void Postfix(Player __instance, ItemDrop.ItemData weapon, ref float dt)
+        {
+            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls() || EquipScript.getLeft() != EquipType.Crossbow || CrossbowMorphManager.instance == null)
+            {
+                return;
+            }
+            CrossbowMorphManager.instance.UpdateWeaponLoading(__instance, dt);
+        }
+
+    }
+
+    [HarmonyPatch(typeof(Player), "QueueReloadAction")]
+    class PatchQueueReloadAction
+    {
+        static bool Prefix(Player __instance)
+        {
+            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls() || EquipScript.getLeft() != EquipType.Crossbow)
+            {
+                return true;
+            }
+            return CrossbowManager.CanQueueReloadAction();
+        }
+
+    }
+
     /**
         * Manipulate Position and Direction of the Arrow SpawnPoint
         */
