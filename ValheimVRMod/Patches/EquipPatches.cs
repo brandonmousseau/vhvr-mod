@@ -207,8 +207,32 @@ namespace ValheimVRMod.Patches {
             
             MeshHider.hide(___m_beardItemInstance);
         }
-    }    
-    
+    }
+
+    [HarmonyPatch(typeof(VisEquipment), "SetChestItem")]
+    class PatchSetChestItem
+    {
+        static void Postfix(string name)
+        {
+            if (VHVRConfig.UseVrControls())
+            {
+                EquipBoundingBoxFix.GetInstanceForPlayer(Player.m_localPlayer).RequestFixBoundingBox(name);
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(VisEquipment), "SetLegItem")]
+    class PatchSetLegItem
+    {
+        static void Postfix(string name)
+        {
+            if (VHVRConfig.UseVrControls())
+            {
+                EquipBoundingBoxFix.GetInstanceForPlayer(Player.m_localPlayer).RequestFixBoundingBox(name);
+            }
+        }
+    }
+
     [HarmonyPatch(typeof(VisEquipment), "AttachItem")]
     class PatchAttachItem {
         
