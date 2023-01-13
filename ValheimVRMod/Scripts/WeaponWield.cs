@@ -67,7 +67,7 @@ namespace ValheimVRMod.Scripts
             originalTransform.rotation = transform.rotation;
             transform.rotation = singleHandedTransform.rotation = GetSingleHandedRotation(originalTransform.rotation);
 
-            offsetFromPointingDir = Quaternion.Inverse(Quaternion.LookRotation(GetSingleHandedWeaponForward(), transform.up)) * transform.rotation;
+            offsetFromPointingDir = Quaternion.Inverse(Quaternion.LookRotation(GetSingleHandedWeaponPointingDir(), transform.up)) * transform.rotation;
 
             _isTwoHanded = isTwoHanded.SingleHanded;
 
@@ -97,21 +97,12 @@ namespace ValheimVRMod.Scripts
 
         protected virtual bool TemporaryDisableTwoHandedWield()
         {
-            // TODO: implement a subclass ThrowableWeaponWield and move this impl to the override method there.
-            return EquipScript.isSpearEquipped() && (SpearManager.IsAiming() || SpearManager.isThrowing);
+            return false;
         }
 
         // Returns the direction the weapon is pointing during single-handed wielding.
-        protected virtual Vector3 GetSingleHandedWeaponForward()
+        protected virtual Vector3 GetSingleHandedWeaponPointingDir()
         {
-            // TODO: move to ThrowableWeaponWield.
-            if (EquipScript.isSpearEquippedUlnarForward())
-            {
-                return -originalTransform.forward;
-            }
-
-            // TODO: maybe put atgeir forward data here.
-            LogUtils.LogWarning("Forward direction: " + transform.InverseTransformDirection(originalTransform.forward));
             return originalTransform.forward;
         }
         
@@ -122,7 +113,7 @@ namespace ValheimVRMod.Scripts
             switch (attack.m_attackAnimation)
             {
                 case "atgeir_attack":
-                    // Atgeir wield rotation fix
+                    // Atgeir wield rotation fix: the tip of the atgeir is pointing at (0.328, -0.145, 0.934) in local coordinates.
                     return originalRotation * Quaternion.AngleAxis(-20, Vector3.up) * Quaternion.AngleAxis(-7, Vector3.right);
                 default:
                     return originalRotation;

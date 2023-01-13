@@ -135,6 +135,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> bowAccuracyBasedOnCharge;
         private static ConfigEntry<float> bowStaminaAdjust;
         private static ConfigEntry<string> crossbowSaggitalRotationSource;
+        private static ConfigEntry<bool> crossbowManualReload;
         private static ConfigEntry<string> blockingType;
 
 #if DEBUG
@@ -762,7 +763,10 @@ namespace ValheimVRMod.Utilities
                                         "MotionControl",
                                         new ConfigDescription("Which hand(s) can rotate the crossbow along its saggital axis during two-handed hold",
                                         new AcceptableValueList<string>(new string[] { "RearHand", "BothHands" })));
-
+            crossbowManualReload = config.Bind("Motion Control",
+                                                    "CrossbowManualReload",
+                                                    true,
+                                                    "When supported, crossbows requires manually pulling the string to reload");
             blockingType = config.Bind("Motion Control",
                                         "BlockingType",
                                         "MotionControl",
@@ -1226,6 +1230,11 @@ namespace ValheimVRMod.Utilities
         public static string CrossbowSaggitalRotationSource()
         {
             return crossbowSaggitalRotationSource.Value;
+        }
+
+        public static bool CrossbowManualReload()
+        {
+            return crossbowManualReload.Value;
         }
 
         public static string BlockingType()
