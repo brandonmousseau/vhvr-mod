@@ -10,7 +10,7 @@ namespace ValheimVRMod.Scripts
     public class EquipBoundingBoxFix : MonoBehaviour
     {
         // Equipments whose skinned mesh renderer's unmodded bounding box is too small that we need to expand it so that they do not disappear.
-        private readonly static HashSet<string> EquipItemNames = new HashSet<string>(new string[] { "ArmorFenringChest", "ArmorFenringLegs" });
+        private readonly static HashSet<string> EquipItemNames = new HashSet<string>(new string[] { "ArmorFenringChest" });
         private readonly static HashSet<string> EquipGameObjectNames = new HashSet<string>(new string[] { "FenringPants" });
 
         private SkinnedMeshRenderer playerBodyMeshRenderer;
