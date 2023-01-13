@@ -209,7 +209,6 @@ namespace ValheimVRMod.Scripts {
             }
             else if (wasPulling)
             {
-                // TODO: add haptic feedback when the weapon is successfully loaded.
                 VrikCreator.ResetHandConnectors();
                 if (Player.m_localPlayer.IsWeaponLoaded()) {
                     VRPlayer.dominantHand.hapticAction.Execute(0, 0.2f, 100, 0.3f, VRPlayer.dominantHandInputSource);
