@@ -78,7 +78,7 @@ namespace ValheimVRMod.Patches {
             {
                 return true;
             }
-            return CrossbowMorphManager.instance != null && (CrossbowMorphManager.instance.shouldAutoReload || CrossbowMorphManager.instance.isPulling);
+            return CrossbowManager.CanQueueReloadAction();
         }
 
     }

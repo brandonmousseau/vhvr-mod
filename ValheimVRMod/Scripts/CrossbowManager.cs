@@ -27,6 +27,15 @@ namespace ValheimVRMod.Scripts {
             crossbowMorphManager = transform.FindChild("Unloaded").gameObject.AddComponent<CrossbowMorphManager>();
         }
 
+        public static bool CanQueueReloadAction() {
+            if (instance?.crossbowMorphManager != null)
+            {
+                return instance.crossbowMorphManager.shouldAutoReload || instance.crossbowMorphManager.isPulling;
+            }
+
+            return CrossbowAnatomy.getAnatomy(Player.m_localPlayer.GetLeftItem().m_shared.m_name) == null;
+        }
+
         protected override void RotateHandsForTwoHandedWield(Vector3 weaponHoldVector) {
             if (VHVRConfig.CrossbowSaggitalRotationSource() != "RearHand")
             {
@@ -42,6 +51,11 @@ namespace ValheimVRMod.Scripts {
             {
                 VrikCreator.rightHandConnector.rotation = lookRotation * frontGripRotationForRightHand;
             }
+        }
+
+        protected override Vector3 GetSingleHandedWeaponForward()
+        {
+            return transform.forward;
         }
 
         protected override Quaternion GetSingleHandedRotation(Quaternion originalRotation)

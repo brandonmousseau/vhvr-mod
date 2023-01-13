@@ -29,12 +29,12 @@ namespace ValheimVRMod.Scripts {
         private float realLifeDrawPercentage;
         private float drawPercentage {
             get {
-                return Mathf.Min(vanillaDrawPercentageRestriction, realLifeDrawPercentage);
+                return shouldAutoReload ? vanillaDrawPercentageRestriction : Mathf.Min(vanillaDrawPercentageRestriction, realLifeDrawPercentage);
             }
         }
 
         public bool isPulling { get; private set; }
-        public bool shouldAutoReload { get { return anatomy == null; } } // If crossbow anatomy data is not available, fallback to the vanilla auto-reload logic.
+        public bool shouldAutoReload { get { return anatomy == null || !VHVRConfig.CrossbowManualReload(); } } // If crossbow anatomy data is not available, fallback to the vanilla auto-reload logic.
 
         void Start()
         {
@@ -42,14 +42,14 @@ namespace ValheimVRMod.Scripts {
         }
 
         public void UpdateWeaponLoading(Player player, float dt) {
-            if (player != Player.m_localPlayer || shouldAutoReload)
+            if (player != Player.m_localPlayer || anatomy == null)
             {
                 return;
             }
 
             Player.MinorActionData action = GetReloadAction(player);
             vanillaDrawPercentageRestriction = action == null ? 0 : ReloadPercentageToDrawPercentage(action.m_time / action.m_duration);
-            if (action != null)
+            if (action != null && !shouldAutoReload)
             {
                 action.m_time = Mathf.Clamp(action.m_time, 0, DrawPercentageToReloadPercentage(realLifeDrawPercentage) * action.m_duration);
             }
@@ -189,6 +189,10 @@ namespace ValheimVRMod.Scripts {
 
         private void UpdatePullStatus()
         {
+            if (shouldAutoReload)
+            {
+                return;
+            }
             bool wasPulling = isPulling;
             isPulling =
                 !Player.m_localPlayer.IsWeaponLoaded() &&
