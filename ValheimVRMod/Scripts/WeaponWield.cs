@@ -122,7 +122,7 @@ namespace ValheimVRMod.Scripts
             switch (attack.m_attackAnimation)
             {
                 case "atgeir_attack":
-                    // Atgeir wield rotation fix
+                    // Atgeir wield rotation fix: the tip of the atgeir is pointing at (0.328, -0.145, 0.934) in local coordinates.
                     return originalRotation * Quaternion.AngleAxis(-20, Vector3.up) * Quaternion.AngleAxis(-7, Vector3.right);
                 default:
                     return originalRotation;
