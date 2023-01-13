@@ -1,4 +1,5 @@
 using HarmonyLib;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 using ValheimVRMod.Scripts;
@@ -14,21 +15,26 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
-            MeshFilter meshFilter = ___m_rightItemInstance.GetComponentInChildren<MeshFilter>();
-
-            if (meshFilter == null) {
-                return;
-            }
-
             Player player = ___m_rightItemInstance.GetComponentInParent<Player>();
             
             if (player == null) {
                 return;
             }
 
+            if (player == Player.m_localPlayer && VHVRConfig.UseVrControls())
+            {
+                EquipBoundingBoxFix.GetInstanceForPlayer(player)?.RequestBoundingBoxFix(___m_rightItem, ___m_rightItemInstance);
+            }
+
+            MeshFilter meshFilter = ___m_rightItemInstance.GetComponentInChildren<MeshFilter>();
+            if (meshFilter == null)
+            {
+                return;
+            }
+
             var vrPlayerSync = player.GetComponent<VRPlayerSync>();
             
-            if (vrPlayerSync != null) {
+            if (vrPlayerSync != null && meshFilter != null) {
                 if (VHVRConfig.LeftHanded()) {
                     player.GetComponent<VRPlayerSync>().currentLeftWeapon = meshFilter.gameObject;
                     player.GetComponent<VRPlayerSync>().currentLeftWeapon.name = ___m_rightItem;    
@@ -83,17 +89,22 @@ namespace ValheimVRMod.Patches {
         static void Postfix(bool __result, string ___m_leftItem, GameObject ___m_leftItemInstance) {
             if (!__result || ___m_leftItemInstance == null) {
                 return;
-            } 
-                          
-            MeshFilter meshFilter = ___m_leftItemInstance.GetComponentInChildren<MeshFilter>();
-
-            if (meshFilter == null) {
-                return;
             }
 
             Player player = ___m_leftItemInstance.GetComponentInParent<Player>();
             
             if (player == null) {
+                return;
+            }
+
+            if (player == Player.m_localPlayer && VHVRConfig.UseVrControls())
+            {
+                EquipBoundingBoxFix.GetInstanceForPlayer(player)?.RequestBoundingBoxFix(___m_leftItem, ___m_leftItemInstance);
+            }
+
+            MeshFilter meshFilter = ___m_leftItemInstance.GetComponentInChildren<MeshFilter>();
+            if (meshFilter == null)
+            {
                 return;
             }
 
@@ -118,6 +129,7 @@ namespace ValheimVRMod.Patches {
                 StaticObjects.rightHandQuickMenu.GetComponent<RightHandQuickMenu>().refreshItems();
                 StaticObjects.leftHandQuickMenu.GetComponent<LeftHandQuickMenu>().refreshItems();
             }
+
             WeaponWield weaponWield;
             switch (EquipScript.getLeft()) {
                 
@@ -187,26 +199,26 @@ namespace ValheimVRMod.Patches {
         }
     }
 
-    [HarmonyPatch(typeof(VisEquipment), "SetChestItem")]
-    class PatchSetChestItem
+    [HarmonyPatch(typeof(VisEquipment), "SetChestEquiped")]
+    class PatchSetChestEquiped
     {
-        static void Postfix(string name)
+        static void Postfix(bool __result, string ___m_chestItem, List<GameObject> ___m_chestItemInstances)
         {
-            if (VHVRConfig.UseVrControls() && Player.m_localPlayer != null)
+            if (!__result || ___m_chestItemInstances == null || ___m_chestItemInstances.Count == 0 || !VHVRConfig.UseVrControls())
             {
-                EquipBoundingBoxFix.GetInstanceForPlayer(Player.m_localPlayer)?.RequestFixBoundingBox(name);
+                return;
             }
-        }
-    }
 
-    [HarmonyPatch(typeof(VisEquipment), "SetLegItem")]
-    class PatchSetLegItem
-    {
-        static void Postfix(string name)
-        {
-            if (VHVRConfig.UseVrControls() && Player.m_localPlayer != null)
+            Player player = ___m_chestItemInstances[0].GetComponentInParent<Player>();
+
+            if (player == null || player != Player.m_localPlayer)
             {
-                EquipBoundingBoxFix.GetInstanceForPlayer(Player.m_localPlayer)?.RequestFixBoundingBox(name);
+                return;
+            }
+             
+            foreach (GameObject itemInstance in ___m_chestItemInstances)
+            {
+                EquipBoundingBoxFix.GetInstanceForPlayer(player)?.RequestBoundingBoxFix(___m_chestItem, itemInstance);
             }
         }
     }
