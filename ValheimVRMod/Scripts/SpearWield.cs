@@ -12,7 +12,7 @@ namespace ValheimVRMod.Scripts
             MeshFilter meshFilter = gameObject.GetComponentInChildren<MeshFilter>();
             if (EquipScript.isSpearEquippedRadialForward())
             {
-                meshFilter.gameObject.transform.localPosition = Quaternion.AngleAxis(180, Vector3.right) * weaponMeshFilter.gameObject.transform.localPosition;
+                meshFilter.gameObject.transform.localPosition = Quaternion.AngleAxis(180, Vector3.right) * meshFilter.gameObject.transform.localPosition;
                 meshFilter.gameObject.transform.localRotation *= Quaternion.AngleAxis(180, Vector3.right);
             }
         }
