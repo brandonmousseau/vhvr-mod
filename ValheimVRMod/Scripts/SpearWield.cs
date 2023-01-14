@@ -12,18 +12,8 @@ namespace ValheimVRMod.Scripts
             MeshFilter meshFilter = gameObject.GetComponentInChildren<MeshFilter>();
             if (EquipScript.isSpearEquippedRadialForward())
             {
+                meshFilter.gameObject.transform.localPosition = Quaternion.AngleAxis(180, Vector3.right) * meshFilter.gameObject.transform.localPosition;
                 meshFilter.gameObject.transform.localRotation *= Quaternion.AngleAxis(180, Vector3.right);
-                switch (Player.m_localPlayer.m_rightItem.m_shared.m_name)
-                {
-                    case "$item_spear_chitin":
-                        meshFilter.gameObject.transform.localPosition = new Vector3(0, 0, -0.2f);
-                        break;
-                    case "item_spear_ancientbark":
-                    case "item_spear_bronze":
-                    case "item_spear_carapace":
-                        meshFilter.gameObject.transform.localPosition = new Vector3(0, 0, -1.15f);
-                        break;
-                }
             }
         }
 
@@ -41,8 +31,13 @@ namespace ValheimVRMod.Scripts
 
         protected override Vector3 GetSingleHandedWeaponPointingDir()
         {
-            Vector3 roughDirection = EquipScript.isSpearEquippedRadialForward() ? transform.forward : -transform.forward;
+            Vector3 roughDirection = EquipScript.isSpearEquippedUlnarForward() ? -transform.forward : transform.forward;
             return Vector3.Project(roughDirection, base.GetSingleHandedWeaponPointingDir()).normalized;
         }
+        
+        protected override float GetPreferredOffsetFromRearHand(float handDist)
+        {
+            return 0.09f / Mathf.Max(handDist, 0.09f) + 0.2f;
+        }        
     }
 }
