@@ -72,7 +72,7 @@ namespace ValheimVRMod.Patches {
             if (EquipScript.isThrowable(player.GetRightItem()) || EquipScript.isSpearEquipped() || EquipScript.getRight() == EquipType.ThrowObject)
             {
                 // TODO: rename this to ThrowableManager
-                (meshFilter.gameObject.AddComponent<SpearManager>()).weaponWield = weaponWield;
+                (meshFilter.gameObject.AddComponent<ThrowableManager>()).weaponWield = weaponWield;
             }
 
             var weaponCol = StaticObjects.rightWeaponCollider().GetComponent<WeaponCollision>();

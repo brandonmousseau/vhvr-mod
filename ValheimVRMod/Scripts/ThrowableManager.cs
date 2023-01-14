@@ -7,7 +7,7 @@ using ValheimVRMod.Scripts.Block;
 using ValheimVRMod.Utilities;
 
 namespace ValheimVRMod.Scripts {
-    public class SpearManager : MonoBehaviour {
+    public class ThrowableManager : MonoBehaviour {
         private const int MAX_SNAPSHOTS = 7;
         private const int MIN_SNAPSHOTSCHECK = 3;
         private int tickCounter;
