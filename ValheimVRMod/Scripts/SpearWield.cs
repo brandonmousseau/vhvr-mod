@@ -31,7 +31,7 @@ namespace ValheimVRMod.Scripts
 
         protected override Vector3 GetSingleHandedWeaponPointingDir()
         {
-            Vector3 roughDirection = EquipScript.isSpearEquippedRadialForward() ? transform.forward : -transform.forward;
+            Vector3 roughDirection = EquipScript.isSpearEquippedUlnarForward() ? -transform.forward : transform.forward;
             return Vector3.Project(roughDirection, base.GetSingleHandedWeaponPointingDir()).normalized;
         }
     }
