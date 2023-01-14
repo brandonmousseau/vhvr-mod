@@ -588,18 +588,18 @@ namespace ValheimVRMod.Patches {
                     break;
 
                 case EquipType.Spear:
-                    if (SpearManager.isThrowing) {
+                    if (ThrowableManager.isThrowing) {
                         secondaryAttack = true;
-                        SpearManager.isThrowing = false;
+                        ThrowableManager.isThrowing = false;
                     }
                     
                     break;
                 
                 case EquipType.SpearChitin:
                 case EquipType.ThrowObject:
-                    if (SpearManager.isThrowing) {
+                    if (ThrowableManager.isThrowing) {
                         attack = true;
-                        SpearManager.isThrowing = false;
+                        ThrowableManager.isThrowing = false;
                     }
 
                     break;
@@ -635,10 +635,10 @@ namespace ValheimVRMod.Patches {
                     break;
             }
 
-            if (EquipScript.isThrowable(__instance.GetRightItem()) && SpearManager.isThrowing)
+            if (EquipScript.isThrowable(__instance.GetRightItem()) && ThrowableManager.isThrowing)
             {
                 secondaryAttack = true;
-                SpearManager.isThrowing = false;
+                ThrowableManager.isThrowing = false;
             }
         }
     }
