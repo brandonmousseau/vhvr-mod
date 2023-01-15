@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 using Valve.VR;
 using ValheimVRMod.VRCore;
@@ -6,56 +6,43 @@ using UnityEngine.Rendering;
 using ValheimVRMod.Scripts.Block;
 using ValheimVRMod.Utilities;
 
-namespace ValheimVRMod.Scripts {
-    public class SpearManager : MonoBehaviour {
+namespace ValheimVRMod.Scripts
+{
+    public class ThrowableManager : MonoBehaviour
+    {
         private const int MAX_SNAPSHOTS = 7;
         private const int MIN_SNAPSHOTSCHECK = 3;
-        private int tickCounter;
-        private List<Vector3> snapshots = new List<Vector3>();
-        private List<Vector3> throwDirSnapshot = new List<Vector3>();
-        private GameObject fixedSpear;
-        public WeaponWield weaponWield;
-
+        private static readonly Vector3 handAimOffset = new Vector3(0, -0.45f, -0.55f);
+        private static readonly Vector3 handAimOffsetInverse = new Vector3(0, -0.15f, -0.85f);
         private const float minDist = 0.16f;
         private const float slowThrowModifier = 1.5f;
         private const float mediumThrowModifier = 2f;
         private const float fastThrowModifier = 2.5f;
         private const float mediumThrowMinDist = 0.65f;
         private const float fastThrowMinDist = 0.9f;
+        private const float totalCooldown = 2;
 
-        public static Vector3 spawnPoint;
-        public static Vector3 aimDir;
-        public static Vector3 startAim; 
+        public WeaponWield weaponWield { private get; set; }
+
+
+
+        public static Vector3 spawnPoint { get; private set; }
+        public static Vector3 aimDir { get; private set; }
+        public static Vector3 startAim { get; private set; }
         public static bool isThrowing;
+        public static bool isAiming { get; private set; }
+
         private GameObject rotSave;
-        private static bool isThrowingStance;
         private LineRenderer directionLine;
+        private SteamVR_Action_Boolean useAction { get { return VHVRConfig.LeftHanded() ? SteamVR_Actions.valheim_UseLeft : SteamVR_Actions.valheim_Use; } }
+
         private float directionCooldown;
-        private float totalCooldown = 2;
-        private readonly Vector3 handAimOffset = new Vector3(0, -0.45f, -0.55f);
-        private readonly Vector3 handAimOffsetInverse = new Vector3(0, -0.15f, -0.85f);
+        private int tickCounter;
+        private List<Vector3> snapshots = new List<Vector3>();
+        private List<Vector3> throwDirSnapshot = new List<Vector3>();
 
-        private Transform mainHandTransform;
-        private Transform offHandTransform;
-        private SteamVR_Input_Sources mainHandInputSource;
-        private SteamVR_Action_Boolean useAction;
-
-        private void Awake() {
-            
-            if (VHVRConfig.LeftHanded()) {
-                mainHandInputSource = SteamVR_Input_Sources.LeftHand;
-                mainHandTransform = VRPlayer.leftHand.transform;
-                offHandTransform = VRPlayer.rightHand.transform;
-                useAction = SteamVR_Actions.valheim_UseLeft;
-            }
-            else {
-                mainHandInputSource = SteamVR_Input_Sources.RightHand;
-                mainHandTransform = VRPlayer.rightHand.transform;
-                offHandTransform = VRPlayer.leftHand.transform;
-                useAction = SteamVR_Actions.valheim_Use;
-            }
-            
-            fixedSpear = new GameObject();
+        private void Awake()
+        {
             rotSave = new GameObject();
             rotSave.transform.SetParent(transform.parent);
             rotSave.transform.position = transform.position;
@@ -72,27 +59,29 @@ namespace ValheimVRMod.Scripts {
             directionLine.reflectionProbeUsage = ReflectionProbeUsage.Off;
         }
 
-        private void OnDestroy() {
+        private void OnDestroy()
+        {
             ResetSpearOffset();
-            Destroy(fixedSpear);
             Destroy(rotSave);
-            Destroy(directionLine,directionCooldown);
+            Destroy(directionLine, directionCooldown);
         }
 
-        private void OnRenderObject() {
-            fixedSpear.transform.position = transform.position;
-            
-            if (SteamVR_Actions.valheim_Grab.GetStateUp(mainHandInputSource)) {
+        private void OnRenderObject()
+        {
+            if (SteamVR_Actions.valheim_Grab.GetStateUp(VRPlayer.dominantHandInputSource))
+            {
                 startAim = Vector3.zero;
                 ResetSpearOffset();
                 return;
             }
-            
-            if (!SteamVR_Actions.valheim_Grab.GetState(mainHandInputSource) || weaponWield.allowBlocking()) {
+
+            if (!SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource) || weaponWield.allowBlocking())
+            {
                 return;
             }
-            
-            switch (VHVRConfig.SpearThrowType()) {
+
+            switch (VHVRConfig.SpearThrowType())
+            {
                 case "DartType":
                     UpdateDartSpearThrowCalculation();
                     return;
@@ -111,60 +100,69 @@ namespace ValheimVRMod.Scripts {
             }
         }
 
-        private void FixedUpdate() {
+        private void FixedUpdate()
+        {
             tickCounter++;
-            if (tickCounter < 5) {
+            if (tickCounter < 5)
+            {
                 return;
             }
 
-            snapshots.Add(Player.m_localPlayer.transform.InverseTransformPoint(mainHandTransform.position));
+            snapshots.Add(Player.m_localPlayer.transform.InverseTransformPoint(VRPlayer.dominantHand.transform.position));
 
-            if (snapshots.Count > MAX_SNAPSHOTS) {
+            if (snapshots.Count > MAX_SNAPSHOTS)
+            {
                 snapshots.RemoveAt(0);
             }
-            
+
             tickCounter = 0;
-            if (!VHVRConfig.UseSpearDirectionGraphic()) {
+            if (!VHVRConfig.UseSpearDirectionGraphic())
+            {
                 return;
             }
 
-            if (directionCooldown <= 0 || weaponWield.allowBlocking()) {
+            if (directionCooldown <= 0 || weaponWield.allowBlocking())
+            {
                 directionCooldown = 0;
                 directionLine.enabled = false;
             }
-            else if (!isThrowingStance) {
-                directionCooldown -= Time.unscaledDeltaTime*5;
+            else if (!isAiming)
+            {
+                directionCooldown -= Time.unscaledDeltaTime * 5;
             }
         }
-        private void UpdateSecondHandAimCalculation() {
-            
+        private void UpdateSecondHandAimCalculation()
+        {
+
             ShieldBlock.instance?.ScaleShieldSize(0.4f);
-            var direction = offHandTransform.position - CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform.position;
+            var direction = VRPlayer.dominantHand.otherHand.transform.position - CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform.position;
             var lineDirection = direction;
             var pStartAim = direction.normalized;
             UpdateThrowCalculation(direction, lineDirection, pStartAim);
         }
-        
-        private void UpdateTwoStagedThrowCalculation() {
-            
+
+        private void UpdateTwoStagedThrowCalculation()
+        {
+
             var direction = startAim;
-            var lineDirection = mainHandTransform.TransformDirection(VHVRConfig.SpearInverseWield() ? handAimOffsetInverse : handAimOffset);
+            var lineDirection = VRPlayer.dominantHand.transform.TransformDirection(VHVRConfig.SpearInverseWield() ? handAimOffsetInverse : handAimOffset);
             var pStartAim = lineDirection.normalized;
             UpdateThrowCalculation(direction, lineDirection, pStartAim);
         }
-        private void UpdateDartSpearThrowCalculation() {
-            
-            var direction = Player.m_localPlayer.transform.TransformDirection(Player.m_localPlayer.transform.InverseTransformPoint(mainHandTransform.position) - startAim);
+        private void UpdateDartSpearThrowCalculation()
+        {
+
+            var direction = Player.m_localPlayer.transform.TransformDirection(Player.m_localPlayer.transform.InverseTransformPoint(VRPlayer.dominantHand.transform.position) - startAim);
             var lineDirection = direction;
-            var pStartAim = Player.m_localPlayer.transform.InverseTransformPoint(mainHandTransform.position);
+            var pStartAim = Player.m_localPlayer.transform.InverseTransformPoint(VRPlayer.dominantHand.transform.position);
             UpdateThrowCalculation(direction, lineDirection, pStartAim);
         }
 
         private void UpdateClassicThrowCalculation()
         {
             var dist = 0.0f;
-            Vector3 posStart = mainHandTransform.position;
-            Vector3 posEnd = mainHandTransform.position;
+            Vector3 posStart = VRPlayer.dominantHand.transform.position;
+            Vector3 posEnd = VRPlayer.dominantHand.transform.position;
 
             foreach (Vector3 snapshot in snapshots)
             {
@@ -176,13 +174,13 @@ namespace ValheimVRMod.Scripts {
                 }
             }
             var direction = posEnd - posStart;
-            if(throwDirSnapshot.Count == 0 || direction != throwDirSnapshot[throwDirSnapshot.Count - 1])
+            if (throwDirSnapshot.Count == 0 || direction != throwDirSnapshot[throwDirSnapshot.Count - 1])
             {
                 throwDirSnapshot.Add(direction);
             }
             var avgDir = Vector3.zero;
             var totalCount = 0;
-            for (var i = 0; i < throwDirSnapshot.Count;i++)
+            for (var i = 0; i < throwDirSnapshot.Count; i++)
             {
                 if (Vector3.Angle(throwDirSnapshot[i], direction) < 5)
                 {
@@ -202,12 +200,14 @@ namespace ValheimVRMod.Scripts {
 
 
             var lineDirection = avgDir;
-            var pStartAim = Player.m_localPlayer.transform.InverseTransformPoint(mainHandTransform.position);
+            var pStartAim = Player.m_localPlayer.transform.InverseTransformPoint(VRPlayer.dominantHand.transform.position);
             UpdateThrowCalculation(avgDir, lineDirection, pStartAim);
         }
 
-        private void UpdateThrowCalculation(Vector3 direction, Vector3 lineDirection, Vector3 pStartAim) {
-            if (!isThrowingStance && !isThrowing) {
+        private void UpdateThrowCalculation(Vector3 direction, Vector3 lineDirection, Vector3 pStartAim)
+        {
+            if (!isAiming && !isThrowing)
+            {
                 switch (VHVRConfig.SpearThrowType())
                 {
                     case "DartType":
@@ -215,50 +215,58 @@ namespace ValheimVRMod.Scripts {
                         break;
                     default:
                         UpdateDirectionLine(
-                            mainHandTransform.position,
-                            mainHandTransform.position + lineDirection.normalized * 50);
+                            VRPlayer.dominantHand.transform.position,
+                            VRPlayer.dominantHand.transform.position + lineDirection.normalized * 50);
                         break;
                 }
             }
-            
-            if (useAction.GetStateDown(mainHandInputSource)) {
-                if (startAim == Vector3.zero) {
+
+            if (useAction.GetStateDown(VRPlayer.dominantHandInputSource))
+            {
+                if (startAim == Vector3.zero)
+                {
                     startAim = pStartAim;
                 }
 
-                isThrowingStance = true;
+                isAiming = true;
             }
 
-            if (isThrowingStance) {
+            if (isAiming)
+            {
                 UpdateSpearThrowModel(direction.normalized);
                 UpdateDirectionLine(
-                    mainHandTransform.position - direction.normalized,
-                    mainHandTransform.position + direction.normalized * 50);
+                    VRPlayer.dominantHand.transform.position - direction.normalized,
+                    VRPlayer.dominantHand.transform.position + direction.normalized * 50);
             }
 
-            if (!useAction.GetStateUp(mainHandInputSource)) {
+            if (!useAction.GetStateUp(VRPlayer.dominantHandInputSource))
+            {
                 return;
             }
 
-            if (snapshots.Count < MIN_SNAPSHOTSCHECK) {
+            if (snapshots.Count < MIN_SNAPSHOTSCHECK)
+            {
                 return;
             }
 
-            if (isThrowing) {
+            if (isThrowing)
+            {
                 ResetSpearOffset();
                 startAim = Vector3.zero;
                 return;
             }
 
-            spawnPoint = mainHandTransform.position;
+            spawnPoint = VRPlayer.dominantHand.transform.position;
             var throwing = CalculateThrowAndDistance();
             aimDir = direction.normalized * throwing.ThrowSpeed;
 
-            if (throwing.Distance > minDist) {
+            if (throwing.Distance > minDist)
+            {
                 isThrowing = true;
             }
 
-            if (useAction.GetStateUp(mainHandInputSource) && throwing.Distance <= minDist) {
+            if (useAction.GetStateUp(VRPlayer.dominantHandInputSource) && throwing.Distance <= minDist)
+            {
                 startAim = Vector3.zero;
                 ResetSpearOffset();
             }
@@ -266,35 +274,40 @@ namespace ValheimVRMod.Scripts {
 
         private void UpdateSpearThrowModel(Vector3 inversePosition)
         {
-            if (!isSpear()) {
+            if (!EquipScript.isSpearEquipped())
+            {
                 return;
             }
-            
-            var offsetPos = Vector3.Distance(mainHandTransform.position, rotSave.transform.position);
-            transform.position = mainHandTransform.position - Vector3.ClampMagnitude(inversePosition, offsetPos);
-            transform.LookAt(mainHandTransform.position + inversePosition);
+
+            var offsetPos = Vector3.Distance(VRPlayer.dominantHand.transform.position, rotSave.transform.position);
+            transform.position = VRPlayer.dominantHand.transform.position - Vector3.ClampMagnitude(inversePosition, offsetPos);
+            transform.LookAt(VRPlayer.dominantHand.transform.position + inversePosition);
             transform.localRotation *= rotSave.transform.localRotation;
-            
+
             if (!VHVRConfig.SpearInverseWield())
             {
                 transform.localRotation *= Quaternion.AngleAxis(180, Vector3.right);
             }
         }
+
         private void ResetSpearOffset()
         {
-            isThrowingStance = false;
+            isAiming = false;
             ShieldBlock.instance?.ScaleShieldSize(1f);
 
-            if (!isSpear()) {
+            if (!EquipScript.isSpearEquipped())
+            {
                 return;
             }
-            
+
             transform.position = rotSave.transform.position;
             transform.localRotation = rotSave.transform.localRotation;
         }
-        private void UpdateDirectionLine(Vector3 pos1 ,Vector3 pos2)
+
+        private void UpdateDirectionLine(Vector3 pos1, Vector3 pos2)
         {
-            if (!VHVRConfig.UseSpearDirectionGraphic() || weaponWield.allowBlocking()) {
+            if (!VHVRConfig.UseSpearDirectionGraphic() || weaponWield.allowBlocking())
+            {
                 return;
             }
             List<Vector3> pointList = new List<Vector3>();
@@ -311,7 +324,7 @@ namespace ValheimVRMod.Scripts {
             public Vector3 PosEnd { get; set; }
             public float ThrowSpeed { get; set; }
             public float Distance { get; set; }
-            public ThrowCalculate(Vector3 posStart,Vector3 posEnd,float throwSpeed)
+            public ThrowCalculate(Vector3 posStart, Vector3 posEnd, float throwSpeed)
             {
                 PosStart = posStart;
                 PosEnd = posEnd;
@@ -319,41 +332,38 @@ namespace ValheimVRMod.Scripts {
                 Distance = Vector3.Distance(posEnd, posStart);
             }
         }
+
         private ThrowCalculate CalculateThrowAndDistance()
         {
             var dist = 0.0f;
-            Vector3 posStart = Player.m_localPlayer.transform.InverseTransformPoint(mainHandTransform.position);
+            Vector3 posStart = Player.m_localPlayer.transform.InverseTransformPoint(VRPlayer.dominantHand.transform.position);
             Vector3 posEnd = posStart;
 
-            foreach (Vector3 snapshot in snapshots) {
+            foreach (Vector3 snapshot in snapshots)
+            {
                 var curDist = Vector3.Distance(snapshot, posEnd);
-                if (curDist > dist) {
+                if (curDist > dist)
+                {
                     dist = curDist;
                     posStart = snapshot;
                 }
             }
 
             var throwSpeed = 1f;
-            if (VHVRConfig.SpearThrowSpeedDynamic()) {
+            if (VHVRConfig.SpearThrowSpeedDynamic())
+            {
                 var speedModifier = slowThrowModifier;
-                if (dist > fastThrowMinDist) {
+                if (dist > fastThrowMinDist)
+                {
                     speedModifier = fastThrowModifier;
                 }
-                else if (dist > mediumThrowMinDist) {
+                else if (dist > mediumThrowMinDist)
+                {
                     speedModifier = mediumThrowModifier;
                 }
                 throwSpeed = Vector3.Distance(posEnd, posStart) * speedModifier;
             }
             return new ThrowCalculate(posStart, posEnd, throwSpeed);
-        }
-        public static bool IsAiming()
-        {
-            return isThrowingStance;
-        }
-
-        private bool isSpear() {
-            var rightWeapon = EquipScript.getRight();
-            return rightWeapon == EquipType.Spear || rightWeapon == EquipType.SpearChitin;
         }
     }
 }

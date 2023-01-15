@@ -121,8 +121,8 @@ namespace ValheimVRMod.Patches {
                 case EquipType.Spear:
                 case EquipType.SpearChitin:
                 case EquipType.ThrowObject:
-                    spawnPoint = SpearManager.spawnPoint;
-                    aimDir = SpearManager.aimDir;
+                    spawnPoint = ThrowableManager.spawnPoint;
+                    aimDir = ThrowableManager.aimDir;
                     return false;
                 case EquipType.Magic:
                     spawnPoint = MagicWeaponManager.GetProjectileSpawnPoint(__instance);
@@ -136,8 +136,8 @@ namespace ValheimVRMod.Patches {
 
             if (EquipScript.isThrowable(___m_character.GetRightItem()))
             {
-                spawnPoint = SpearManager.spawnPoint;
-                aimDir = SpearManager.aimDir;
+                spawnPoint = ThrowableManager.spawnPoint;
+                aimDir = ThrowableManager.aimDir;
                 return false;
             }
             return true;
