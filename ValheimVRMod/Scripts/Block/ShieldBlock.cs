@@ -11,14 +11,15 @@ namespace ValheimVRMod.Scripts.Block {
         private float scaling = 1f;
         private Vector3 posRef;
         private Vector3 scaleRef;
-        
+
         public static ShieldBlock instance;
 
         private void OnDisable() {
             instance = null;
         }
         
-        private void Awake() {
+        protected override void Awake() {
+            base.Awake();
             _meshCooldown = gameObject.AddComponent<MeshCooldown>();
             instance = this;
             InitShield();
@@ -32,8 +33,8 @@ namespace ValheimVRMod.Scripts.Block {
             offhand = VHVRConfig.LeftHanded() ? VRPlayer.leftHand.transform : VRPlayer.rightHand.transform;
         }
 
-        public override void setBlocking(Vector3 hitDir) {
-            _blocking = Vector3.Dot(hitDir, getForward()) > 0.5f;
+        public override void setBlocking(Vector3 hitPoint, Vector3 hitDir) {
+            _blocking = Vector3.Dot(hitDir, getForward()) > 0.3f && hitIntersectsBlockBox(hitPoint, hitDir);
         }
 
         private Vector3 getForward() {
@@ -50,22 +51,21 @@ namespace ValheimVRMod.Scripts.Block {
             }
             return -StaticObjects.shieldObj().transform.forward;
         }
-        protected override void ParryCheck(Vector3 posStart, Vector3 posEnd, Vector3 posStart2, Vector3 posEnd2) {
 
+        protected override void ParryCheck(Vector3 posStart, Vector3 posEnd, Vector3 posStart2, Vector3 posEnd2) {
             var shieldSnapshot = VHVRConfig.LeftHanded() ? snapshotsLeft : snapshots;
             if (Vector3.Distance(posEnd, posStart) > minDist) {
-                
+
                 Vector3 shieldPos = shieldSnapshot[shieldSnapshot.Count - 1] + Player.m_localPlayer.transform.InverseTransformDirection(-hand.right) / 2;
                 if (Vector3.Angle(shieldPos - shieldSnapshot[0] , shieldSnapshot[shieldSnapshot.Count - 1] - shieldSnapshot[0]) < maxParryAngle) {
                     blockTimer = blockTimerParry;
                 }
-                
             } else {
                 blockTimer = blockTimerNonParry;
             }
         }
 
-        private void OnRenderObject() {
+        protected void OnRenderObject() {
             if (scaling != 1f)
             {
                 transform.localScale = scaleRef * scaling;
@@ -76,9 +76,10 @@ namespace ValheimVRMod.Scripts.Block {
                 transform.localScale = scaleRef;
                 transform.localPosition = posRef;
             }
+            StaticObjects.shieldObj().transform.position = transform.position;
             StaticObjects.shieldObj().transform.rotation = transform.rotation;
-            
         }
+
         public void ScaleShieldSize(float scale)
         {
             scaling = scale;
