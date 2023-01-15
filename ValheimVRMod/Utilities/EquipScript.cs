@@ -203,6 +203,11 @@ namespace ValheimVRMod.Utilities
         {
             if (item != null)
             {
+                string getValue = "";
+                if (item.m_customData.TryGetValue("randyknapp.mods.epicloot#EpicLoot.MagicItemComponent", out getValue))
+                {
+                    return getValue.Contains("Throwable");
+                }
                 return item.m_crafterName.Contains("\"EffectType\":\"Throwable\"");
             }
             return false;
