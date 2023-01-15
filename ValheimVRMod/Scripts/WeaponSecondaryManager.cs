@@ -169,7 +169,7 @@ namespace ValheimVRMod.Scripts
                 rangeMultiplier = 2f;
                 slashTrail.time = 0.4f;
             }
-            if (secondaryAttack.m_attackAnimation == "" || obj.gameObject.GetComponent<SpearManager>() != null)
+            if (secondaryAttack.m_attackAnimation == "" || obj.gameObject.GetComponent<ThrowableManager>() != null)
             {
                 isSecondaryAvailable = false;
             }
