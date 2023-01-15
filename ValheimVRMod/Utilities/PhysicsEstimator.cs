@@ -22,10 +22,6 @@ namespace ValheimVRMod.Utilities
             }
             set
             {
-                if (lastRenderedTransform != null)
-                {
-                    lastRenderedTransform.SetParent(value, true);
-                }
                 if (_refTransform == value)
                 {
                     return;
@@ -36,23 +32,18 @@ namespace ValheimVRMod.Utilities
                 _refTransform = value;
             }
         }
-        public Transform lastRenderedTransform { get; private set; }
+
         public bool renderDebugVelocityLine = false;
 
         private void Awake()
         {
-            lastRenderedTransform = new GameObject().transform;
-            lastRenderedTransform.parent = transform;
-            lastRenderedTransform.SetPositionAndRotation(transform.position, transform.rotation);
-            lastRenderedTransform.localScale = Vector3.one;
-            lastRenderedTransform.SetParent(refTransform, true);
             CreateDebugVelocityLine();
         }
 
         void FixedUpdate()
         {
-            snapshots.Add(refTransform == null ? lastRenderedTransform.position : lastRenderedTransform.localPosition);
-            rotationSnapshots.Add(refTransform == null ? lastRenderedTransform.rotation : lastRenderedTransform.localRotation);
+            snapshots.Add(refTransform == null ? transform.position : refTransform.InverseTransformPoint(transform.position));
+            rotationSnapshots.Add(refTransform == null ? transform.rotation : Quaternion.Inverse(refTransform.rotation) * transform.rotation);
             if (snapshots.Count >= 2) {
                 // TODO: consider using least square fit or a smoonthening function over all snapshots, but should balance with performance too.
                 velocitySnapshots.Add((snapshots[snapshots.Count - 1] - snapshots[0]) / Time.fixedDeltaTime / (snapshots.Count - 1));
@@ -74,15 +65,14 @@ namespace ValheimVRMod.Utilities
 
         void OnRenderObject()
         {
-            lastRenderedTransform.SetPositionAndRotation(transform.position, transform.rotation);
             debugVelocityLine.enabled = renderDebugVelocityLine;
-            debugVelocityLine.SetPosition(0, lastRenderedTransform.position);
-            debugVelocityLine.SetPosition(1, lastRenderedTransform.position + GetVelocity());
+            debugVelocityLine.SetPosition(0, transform.position);
+            debugVelocityLine.SetPosition(1, transform.position + GetVelocity());
         }
 
         void Destroy()
         {
-            Destroy(lastRenderedTransform.gameObject);
+            Destroy(debugVelocityLine.gameObject);
         }
 
         public Vector3 GetVelocity()
@@ -114,7 +104,7 @@ namespace ValheimVRMod.Utilities
 
         private void CreateDebugVelocityLine()
         {
-            debugVelocityLine = lastRenderedTransform.gameObject.AddComponent<LineRenderer>();
+            debugVelocityLine = new GameObject().AddComponent<LineRenderer>();
             debugVelocityLine.useWorldSpace = true;
             debugVelocityLine.widthMultiplier = 0.006f;
             debugVelocityLine.positionCount = 2;
