@@ -4,16 +4,17 @@ using ValheimVRMod.Utilities;
 using Valve.VR;
 
 namespace ValheimVRMod.Scripts.Block {
+
     public abstract class Block : MonoBehaviour {
-        
         // CONST
+        private const float BlockDistanceTolerance = 0.05f;
         private const float cooldown = 1;
         private const int maxSnapshots = 7;
         protected const float blockTimerParry = 0.1f;
         protected const float minDist = 0.4f;
         public const float blockTimerTolerance = blockTimerParry + 0.2f;
         public const float blockTimerNonParry = 9999f;
-        
+
         // VARIABLE
         private int tickCounter;
         protected bool _blocking;
@@ -30,6 +31,14 @@ namespace ValheimVRMod.Scripts.Block {
         public bool wasResetTimer = false;
         public bool wasGetHit = false;
 
+        private PhysicsEstimator physicsEstimator;
+
+        protected virtual void Awake()
+        {
+            physicsEstimator = gameObject.AddComponent<PhysicsEstimator>();
+            physicsEstimator.refTransform = Player.m_localPlayer.transform;
+        }
+            
         //Currently there's 2 Blocking type 
         //"MotionControl" and "GrabButton"
         private void FixedUpdate() {
@@ -80,7 +89,7 @@ namespace ValheimVRMod.Scripts.Block {
                 wasGetHit = false;
             }
         }
-        public abstract void setBlocking(Vector3 hitDir);
+        public abstract void setBlocking(Vector3 hitPoint, Vector3 hitDir);
         protected abstract void ParryCheck(Vector3 posStart, Vector3 posEnd, Vector3 posStart2, Vector3 posEnd2);
 
         public void resetBlocking() {
@@ -109,7 +118,7 @@ namespace ValheimVRMod.Scripts.Block {
                 return _blocking && !_meshCooldown.inCoolDown();
             }
         }
-        
+
         public void block() {
             if (VHVRConfig.BlockingType() == "MotionControl")
             {
@@ -145,6 +154,23 @@ namespace ValheimVRMod.Scripts.Block {
         public void resetTimer()
         {
             wasResetTimer = false;
+        }
+
+        protected bool hitIntersectsBlockBox(Vector3 hitPoint, Vector3 hitDir) {
+            Mesh mesh = gameObject.GetComponent<MeshFilter>()?.sharedMesh;
+            if (mesh == null)
+            {
+                // Cannot find mesh bounds, abort calculation.
+                return true;
+            }
+
+            Bounds blockBounds = new Bounds(mesh.bounds.center, mesh.bounds.size);
+            blockBounds.Expand(BlockDistanceTolerance);
+
+            return WeaponUtils.LineIntersectWithBounds(
+                blockBounds,
+                physicsEstimator.lastRenderedTransform.InverseTransformPoint(hitPoint),
+                physicsEstimator.lastRenderedTransform.InverseTransformDirection(hitDir));
         }
     }
 }
