@@ -26,8 +26,7 @@ namespace ValheimVRMod.Scripts.Block {
             CreateBlockBoxes();
         }
 
-        public override void setBlocking(Vector3 hitDir, Vector3 hitPoint) {
-            //_blocking = Vector3.Dot(hitDir, getForward()) > 0.5f;
+        public override void setBlocking(Vector3 hitPoint, Vector3 hitDir) {
             if (FistCollision.instance.usingDualKnives() || FistCollision.instance.usingFistWeapon())
             {
                 if (WeaponUtils.LineIntersectsWithBounds(leftHandBlockBox.GetComponent<MeshFilter>().sharedMesh.bounds, leftHandBlockBox.transform.InverseTransformPoint(hitPoint), leftHandBlockBox.transform.InverseTransformDirection(hitDir)))
