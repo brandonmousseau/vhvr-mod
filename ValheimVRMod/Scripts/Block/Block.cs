@@ -167,7 +167,7 @@ namespace ValheimVRMod.Scripts.Block {
             Bounds blockBounds = new Bounds(mesh.bounds.center, mesh.bounds.size);
             blockBounds.Expand(BlockDistanceTolerance);
 
-            return WeaponUtils.LineIntersectWithBounds(
+            return WeaponUtils.LineIntersectsWithBounds(
                 blockBounds,
                 physicsEstimator.lastRenderedTransform.InverseTransformPoint(hitPoint),
                 physicsEstimator.lastRenderedTransform.InverseTransformDirection(hitDir));
