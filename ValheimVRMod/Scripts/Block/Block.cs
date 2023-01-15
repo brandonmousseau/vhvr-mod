@@ -31,14 +31,25 @@ namespace ValheimVRMod.Scripts.Block {
         public bool wasResetTimer = false;
         public bool wasGetHit = false;
 
-        private PhysicsEstimator physicsEstimator;
+        private Transform lastRenderedTransform;
+        protected PhysicsEstimator physicsEstimator;
 
         protected virtual void Awake()
         {
-            physicsEstimator = gameObject.AddComponent<PhysicsEstimator>();
+            lastRenderedTransform = new GameObject().transform;
+            physicsEstimator = lastRenderedTransform.gameObject.AddComponent<PhysicsEstimator>();
             physicsEstimator.refTransform = Player.m_localPlayer.transform;
         }
-            
+
+        protected virtual void OnRenderObject()
+        {
+            // The transform of the shield may not be valid outside OnRenderObject(), therefore we need to record its state for later use.
+            lastRenderedTransform.parent = transform;
+            lastRenderedTransform.SetPositionAndRotation(transform.position, transform.rotation);
+            lastRenderedTransform.localScale = Vector3.one;
+            lastRenderedTransform.SetParent(null, true);
+        }
+
         //Currently there's 2 Blocking type 
         //"MotionControl" and "GrabButton"
         private void FixedUpdate() {
@@ -169,8 +180,8 @@ namespace ValheimVRMod.Scripts.Block {
 
             return WeaponUtils.LineIntersectsWithBounds(
                 blockBounds,
-                physicsEstimator.lastRenderedTransform.InverseTransformPoint(hitPoint),
-                physicsEstimator.lastRenderedTransform.InverseTransformDirection(hitDir));
+                lastRenderedTransform.InverseTransformPoint(hitPoint),
+                lastRenderedTransform.InverseTransformDirection(hitDir));
         }
     }
 }
