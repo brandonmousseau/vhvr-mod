@@ -320,7 +320,7 @@ namespace ValheimVRMod.Utilities
         }
 
         // Whether the straight line (t -> p + t * v) intersects with the given bounds.
-        public static bool LineIntersectWithBounds(Bounds bounds, Vector3 p, Vector3 v)
+        public static bool LineIntersectsWithBounds(Bounds bounds, Vector3 p, Vector3 v)
         {
             // Center the bound and the line around the original bounds center to simplify calculation.
             Bounds centeredBounds = new Bounds(Vector3.zero, bounds.size);
