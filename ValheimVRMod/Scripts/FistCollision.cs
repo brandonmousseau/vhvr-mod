@@ -55,12 +55,12 @@ namespace ValheimVRMod.Scripts {
             StaticObjects.lastHitCollider = collider;
 
             var item = Player.m_localPlayer.m_unarmedWeapon.m_itemData;
-
-            if (usingClaws()) {
-                item = Player.m_localPlayer.GetRightItem();
-            }
-
             var attack = Player.m_localPlayer.m_unarmedWeapon.m_itemData.m_shared.m_attack;
+            if (usingClaws() || usingDualKnives())
+            {
+                item = Player.m_localPlayer.GetRightItem();
+                attack = item.m_shared.m_attack.Clone();
+            }
             if (attack.Start(Player.m_localPlayer, null, null, Player.m_localPlayer.m_animEvent,
                 null, item, null, 0.0f, 0.0f)) {
                 if (isRightHand) {
