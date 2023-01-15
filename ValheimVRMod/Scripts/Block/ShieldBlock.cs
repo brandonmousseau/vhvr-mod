@@ -65,7 +65,8 @@ namespace ValheimVRMod.Scripts.Block {
             }
         }
 
-        protected void OnRenderObject() {
+        protected override void OnRenderObject() {
+            base.OnRenderObject();
             if (scaling != 1f)
             {
                 transform.localScale = scaleRef * scaling;
