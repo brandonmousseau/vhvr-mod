@@ -13,14 +13,15 @@ namespace ValheimVRMod.Scripts.Block {
             instance = null;
         }
         
-        private void Awake() {
+        protected override void Awake() {
+            base.Awake();
             _meshCooldown = gameObject.AddComponent<MeshCooldown>();
             instance = this;
             hand = VHVRConfig.LeftHanded() ? VRPlayer.leftHand.transform : VRPlayer.rightHand.transform;
             offhand = VHVRConfig.LeftHanded() ? VRPlayer.rightHand.transform : VRPlayer.leftHand.transform;
         }
 
-        public override void setBlocking(Vector3 hitDir) {
+        public override void setBlocking(Vector3 hitPoint, Vector3 hitDir) {
             var angle = Vector3.Dot(hitDir, WeaponWield.weaponForward);
             if (weaponWield.isLeftHandWeapon() && EquipScript.getLeft() != EquipType.Crossbow)
             {
@@ -28,7 +29,7 @@ namespace ValheimVRMod.Scripts.Block {
                 var rightAngle = Vector3.Dot(hitDir, hand.TransformDirection(handUp));
                 var leftHandBlock = (leftAngle > -0.5f && leftAngle < 0.5f) ;
                 var rightHandBlock = (rightAngle > -0.5f && rightAngle < 0.5f);
-                _blocking = leftHandBlock && rightHandBlock;
+                _blocking = leftHandBlock && rightHandBlock && hitIntersectsBlockBox(hitPoint, hitDir);
             }
             else
             {
@@ -39,11 +40,11 @@ namespace ValheimVRMod.Scripts.Block {
                 }
                 else
                 {
-                    _blocking = weaponWield.allowBlocking() && angle > -0.5f && angle < 0.5f;
+                    _blocking = weaponWield.allowBlocking() && angle > -0.3f && angle < 0.3f && hitIntersectsBlockBox(hitPoint, hitDir);
                 }
             }
         }
-        
+
         protected override void ParryCheck(Vector3 posStart, Vector3 posEnd, Vector3 posStart2, Vector3 posEnd2) {
             if (Vector3.Distance(posEnd, posStart) > minDist) 
             {
