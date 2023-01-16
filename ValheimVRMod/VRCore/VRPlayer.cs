@@ -452,6 +452,9 @@ namespace ValheimVRMod.VRCore
             if (_vrCam == null || !_vrCam.enabled)
             {
                 enableVrCamera();
+            } else
+            {
+                _vrCam.nearClipPlane = VHVRConfig.GetNearClipPlane();
             }
             if (_handsCam == null || !_handsCam.enabled)
             {
