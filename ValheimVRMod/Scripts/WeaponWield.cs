@@ -129,18 +129,10 @@ namespace ValheimVRMod.Scripts
 
         protected virtual void RotateHandsForTwoHandedWield(Vector3 weaponPointingDir)
         {
-            frontHandConnector.LookAt(frontHandConnector.position - weaponPointingDir, frontHand.transform.up);
-            rearHandConnector.LookAt(rearHandConnector.position + weaponPointingDir, rearHand.transform.up);
-            
-            if (GetHandAngleDiff(frontHand.transform, rearHand.transform) <= 0)
-            {
-                frontHandConnector.Rotate(Vector3.up, 180);
-            }
-            if (GetHandAngleDiff(rearHand.transform, frontHand.transform) < 0)
-            {
-                rearHandConnector.Rotate(Vector3.up, 180);
-            }
-            rearHandConnector.Rotate(Vector3.right, 10);
+            Vector3 frontHandForward = Vector3.Project(frontHand.transform.forward, weaponPointingDir);
+            Vector3 rearHandForward = Vector3.Project(rearHand.transform.forward, weaponPointingDir);
+            frontHandConnector.rotation = Quaternion.LookRotation(frontHandForward, frontHand.transform.up);
+            rearHandConnector.rotation = Quaternion.LookRotation(rearHandForward, rearHand.transform.up) * Quaternion.Euler(10, 0, 0);
         }
 
         // The preferred up direction used to determine the weapon's rotation around it longitudinal axis during two-handed wield.
