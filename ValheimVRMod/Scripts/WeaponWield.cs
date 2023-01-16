@@ -129,10 +129,10 @@ namespace ValheimVRMod.Scripts
 
         protected virtual void RotateHandsForTwoHandedWield(Vector3 weaponPointingDir)
         {
-            Vector3 frontHandForward = Vector3.Project(frontHand.transform.forward, weaponPointingDir);
-            Vector3 rearHandForward = Vector3.Project(rearHand.transform.forward, weaponPointingDir);
-            frontHandConnector.rotation = Quaternion.LookRotation(frontHandForward, frontHand.transform.up);
-            rearHandConnector.rotation = Quaternion.LookRotation(rearHandForward, rearHand.transform.up) * Quaternion.Euler(10, 0, 0);
+            Vector3 desiredFrontHandForward = Vector3.Project(frontHand.transform.forward, weaponPointingDir);
+            Vector3 desiredRearHandForward = Vector3.Project(rearHand.transform.forward, Quaternion.AngleAxis(10, rearHand.transform.right) * weaponPointingDir);
+            frontHandConnector.rotation = Quaternion.LookRotation(desiredFrontHandForward, frontHand.transform.up);
+            rearHandConnector.rotation = Quaternion.LookRotation(desiredRearHandForward, rearHand.transform.up);
         }
 
         // The preferred up direction used to determine the weapon's rotation around it longitudinal axis during two-handed wield.
@@ -236,14 +236,16 @@ namespace ValheimVRMod.Scripts
                 SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand) &&
                 !TemporaryDisableTwoHandedWield())
             {
-                float handAngleDiff = GetHandAngleDiff(VRPlayer.rightHand.transform, VRPlayer.leftHand.transform);
                 if (_isTwoHanded == isTwoHanded.SingleHanded)
                 {
-                    if (handAngleDiff > 0.6f)
+                    Vector3 rightHandToLeftHand = getHandCenter(VRPlayer.leftHand.transform) - getHandCenter(VRPlayer.rightHand.transform);
+                    float wieldingAngle = Vector3.Angle(rightHandToLeftHand, GetSingleHandedWeaponPointingDir());
+
+                    if (wieldingAngle < 60)
                     {
                         _isTwoHanded = isTwoHanded.RightHandBehind;
                     }
-                    else if (handAngleDiff < -0.6f)
+                    else if (wieldingAngle > 60f)
                     {
                         _isTwoHanded = isTwoHanded.LeftHandBehind;
                     }
@@ -259,7 +261,6 @@ namespace ValheimVRMod.Scripts
                 Vector3 frontHandCenter = getHandCenter(frontHand.transform);
                 Vector3 rearHandCenter = getHandCenter(rearHand.transform);
                 var weaponPointingDir = (frontHandCenter - rearHandCenter).normalized;
-                ReturnToSingleHanded();
 
                 //VRIK Hand rotation
                 RotateHandsForTwoHandedWield(weaponPointingDir);
@@ -290,12 +291,6 @@ namespace ValheimVRMod.Scripts
             shieldSize = 1f;
             transform.position = singleHandedTransform.position;
             transform.localRotation = singleHandedTransform.localRotation;
-        }
-
-        private float GetHandAngleDiff(Transform mainHand, Transform refHand)
-        {
-            Vector3 localHandWieldDirection = attack.m_attackAnimation == "spear_poke" ? new Vector3(0, 0.45f, 0.55f) : Vector3.forward;
-            return Vector3.Dot(localHandWieldDirection, mainHand.InverseTransformVector(getHandCenter(refHand) - getHandCenter(mainHand)).normalized);
         }
 
         private static Vector3 getHandCenter(Transform hand) {
