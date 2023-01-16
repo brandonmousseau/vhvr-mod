@@ -1,6 +1,7 @@
 using UnityEngine;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
+using Valve.VR;
 
 namespace ValheimVRMod.Scripts.Block {
     public class WeaponBlock : Block {
@@ -23,25 +24,26 @@ namespace ValheimVRMod.Scripts.Block {
 
         public override void setBlocking(Vector3 hitPoint, Vector3 hitDir) {
             var angle = Vector3.Dot(hitDir, WeaponWield.weaponForward);
-            if (weaponWield.isLeftHandWeapon() && EquipScript.getLeft() != EquipType.Crossbow)
+            if (VHVRConfig.BlockingType() == "Realistic")
+            {
+                _blocking = angle > -0.3f && angle < 0.3f && hitIntersectsBlockBox(hitPoint, hitDir) && SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource);
+            }
+            else if (weaponWield.isLeftHandWeapon() && EquipScript.getLeft() != EquipType.Crossbow)
             {
                 var leftAngle = Vector3.Dot(hitDir, offhand.TransformDirection(handUp));
                 var rightAngle = Vector3.Dot(hitDir, hand.TransformDirection(handUp));
                 var leftHandBlock = (leftAngle > -0.5f && leftAngle < 0.5f) ;
                 var rightHandBlock = (rightAngle > -0.5f && rightAngle < 0.5f);
-                _blocking = leftHandBlock && rightHandBlock && hitIntersectsBlockBox(hitPoint, hitDir);
+                _blocking = leftHandBlock && rightHandBlock;
+            }
+            else if (VHVRConfig.BlockingType() == "GrabButton")
+            {
+                bool isShieldorWeaponBlock = (EquipScript.getLeft() != EquipType.Shield) || (EquipScript.getLeft() == EquipType.Shield && weaponWield.allowBlocking());
+                _blocking = isShieldorWeaponBlock && angle > -0.5f && angle < 0.5f;
             }
             else
             {
-                if (VHVRConfig.BlockingType() == "GrabButton")
-                {
-                    bool isShieldorWeaponBlock = (EquipScript.getLeft() != EquipType.Shield) || (EquipScript.getLeft() == EquipType.Shield && weaponWield.allowBlocking());
-                    _blocking = isShieldorWeaponBlock && angle > -0.5f && angle < 0.5f;
-                }
-                else
-                {
-                    _blocking = weaponWield.allowBlocking() && angle > -0.3f && angle < 0.3f && hitIntersectsBlockBox(hitPoint, hitDir);
-                }
+                _blocking = weaponWield.allowBlocking() && angle > -0.5f && angle < 0.5f;
             }
         }
 

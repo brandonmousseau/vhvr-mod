@@ -1,6 +1,7 @@
 using UnityEngine;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
+using Valve.VR;
 
 namespace ValheimVRMod.Scripts.Block {
     public class ShieldBlock : Block {
@@ -34,7 +35,17 @@ namespace ValheimVRMod.Scripts.Block {
         }
 
         public override void setBlocking(Vector3 hitPoint, Vector3 hitDir) {
-            _blocking = Vector3.Dot(hitDir, getForward()) > 0.3f && hitIntersectsBlockBox(hitPoint, hitDir);
+            if (VHVRConfig.BlockingType() == "GrabButton")
+            {
+                _blocking = SteamVR_Actions.valheim_Grab.GetState(VRPlayer.nonDominantHandInputSource);
+            }
+            else if (VHVRConfig.BlockingType() == "Realistic")
+            {
+                _blocking = Vector3.Dot(hitDir, getForward()) > 0.3f && hitIntersectsBlockBox(hitPoint, hitDir);
+            }
+            else {
+                _blocking = Vector3.Dot(hitDir, getForward()) > 0.5;
+            }
         }
 
         private Vector3 getForward() {

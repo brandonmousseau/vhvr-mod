@@ -87,7 +87,7 @@ namespace ValheimVRMod.Scripts.Block {
                 }
             }
 
-            if (VHVRConfig.BlockingType() == "MotionControl")
+            if (VHVRConfig.BlockingType() != "GrabButton")
                 ParryCheck(posStart, posEnd , posStart2, posEnd2);
 
             if(wasGetHit && !SteamVR_Actions.valheim_Grab.GetState(currhand))
@@ -127,7 +127,7 @@ namespace ValheimVRMod.Scripts.Block {
         }
 
         public void block() {
-            if (VHVRConfig.BlockingType() == "MotionControl")
+            if (VHVRConfig.BlockingType() != "GrabButton")
             {
                 if (SteamVR_Actions.valheim_Grab.GetState(currhand))
                 {
