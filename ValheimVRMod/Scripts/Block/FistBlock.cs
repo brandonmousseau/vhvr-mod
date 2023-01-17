@@ -5,7 +5,6 @@ using ValheimVRMod.VRCore;
 namespace ValheimVRMod.Scripts.Block {
     public class FistBlock : Block {
 
-        private const float maxParryAngle = 45f;
         private readonly Vector3 handUp = new Vector3(0, -0.15f, -0.85f);
 
         private GameObject leftHandBlockBox;
@@ -112,7 +111,7 @@ namespace ValheimVRMod.Scripts.Block {
             leftHandBlockBox.transform.parent = VRPlayer.leftHand.transform;
             leftHandBlockBox.transform.localRotation = Quaternion.Euler(45, 0, 0);
             leftHandBlockBox.transform.localPosition = new Vector3(0, 0.15f, -0.2f);
-            leftHandBlockBox.transform.localScale = new Vector3(0.25f, 0.25f, 0.8f);
+            leftHandBlockBox.transform.localScale = new Vector3(0.3f, 0.3f, 0.85f);
             leftHandBlockBox.GetComponent<MeshRenderer>().enabled = false;
             Destroy(leftHandBlockBox.GetComponent<Collider>());
 
@@ -120,7 +119,7 @@ namespace ValheimVRMod.Scripts.Block {
             rightHandBlockBox.transform.parent = VRPlayer.rightHand.transform;
             rightHandBlockBox.transform.localRotation = Quaternion.Euler(45, 0, 0);
             rightHandBlockBox.transform.localPosition = new Vector3(0, 0.15f, -0.2f);
-            rightHandBlockBox.transform.localScale = new Vector3(0.25f, 0.25f, 0.8f);
+            rightHandBlockBox.transform.localScale = new Vector3(0.3f, 0.3f, 0.85f);
             rightHandBlockBox.GetComponent<MeshRenderer>().enabled = false;
             Destroy(rightHandBlockBox.GetComponent<Collider>());
         }        
