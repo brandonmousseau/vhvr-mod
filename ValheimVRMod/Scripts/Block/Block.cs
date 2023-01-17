@@ -4,16 +4,17 @@ using ValheimVRMod.Utilities;
 using Valve.VR;
 
 namespace ValheimVRMod.Scripts.Block {
+
     public abstract class Block : MonoBehaviour {
-        
         // CONST
+        private const float BlockDistanceTolerance = 0.05f;
         private const float cooldown = 1;
         private const int maxSnapshots = 7;
         protected const float blockTimerParry = 0.1f;
         protected const float minDist = 0.4f;
         public const float blockTimerTolerance = blockTimerParry + 0.2f;
         public const float blockTimerNonParry = 9999f;
-        
+
         // VARIABLE
         private int tickCounter;
         protected bool _blocking;
@@ -29,6 +30,21 @@ namespace ValheimVRMod.Scripts.Block {
         protected bool wasParryStart = false;
         public bool wasResetTimer = false;
         public bool wasGetHit = false;
+        private Transform lastRenderedTransform;
+
+        protected virtual void Awake()
+        {
+            lastRenderedTransform = new GameObject().transform;
+        }
+
+        protected virtual void OnRenderObject()
+        {
+            // The transform of the shield may not be valid outside OnRenderObject(), therefore we need to record its state for later use.
+            lastRenderedTransform.parent = transform;
+            lastRenderedTransform.SetPositionAndRotation(transform.position, transform.rotation);
+            lastRenderedTransform.localScale = Vector3.one;
+            lastRenderedTransform.SetParent(null, true);
+        }
 
         //Currently there's 2 Blocking type 
         //"MotionControl" and "GrabButton"
@@ -71,7 +87,7 @@ namespace ValheimVRMod.Scripts.Block {
                 }
             }
 
-            if (VHVRConfig.BlockingType() == "MotionControl")
+            if (VHVRConfig.BlockingType() != "GrabButton")
                 ParryCheck(posStart, posEnd , posStart2, posEnd2);
 
             if(wasGetHit && !SteamVR_Actions.valheim_Grab.GetState(currhand))
@@ -80,7 +96,7 @@ namespace ValheimVRMod.Scripts.Block {
                 wasGetHit = false;
             }
         }
-        public abstract void setBlocking(Vector3 hitDir);
+        public abstract void setBlocking(Vector3 hitPoint, Vector3 hitDir);
         protected abstract void ParryCheck(Vector3 posStart, Vector3 posEnd, Vector3 posStart2, Vector3 posEnd2);
 
         public void resetBlocking() {
@@ -109,9 +125,9 @@ namespace ValheimVRMod.Scripts.Block {
                 return _blocking && !_meshCooldown.inCoolDown();
             }
         }
-        
+
         public void block() {
-            if (VHVRConfig.BlockingType() == "MotionControl")
+            if (VHVRConfig.BlockingType() != "GrabButton")
             {
                 if (SteamVR_Actions.valheim_Grab.GetState(currhand))
                 {
@@ -145,6 +161,23 @@ namespace ValheimVRMod.Scripts.Block {
         public void resetTimer()
         {
             wasResetTimer = false;
+        }
+
+        protected bool hitIntersectsBlockBox(Vector3 hitPoint, Vector3 hitDir) {
+            Mesh mesh = gameObject.GetComponent<MeshFilter>()?.sharedMesh;
+            if (mesh == null)
+            {
+                // Cannot find mesh bounds, abort calculation.
+                return true;
+            }
+
+            Bounds blockBounds = new Bounds(mesh.bounds.center, mesh.bounds.size);
+            blockBounds.Expand(BlockDistanceTolerance);
+
+            return WeaponUtils.LineIntersectsWithBounds(
+                blockBounds,
+                lastRenderedTransform.InverseTransformPoint(hitPoint),
+                lastRenderedTransform.InverseTransformDirection(hitDir));
         }
     }
 }

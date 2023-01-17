@@ -5,8 +5,11 @@ using ValheimVRMod.VRCore;
 namespace ValheimVRMod.Scripts.Block {
     public class FistBlock : Block {
 
-        private const float maxParryAngle = 45f;
         private readonly Vector3 handUp = new Vector3(0, -0.15f, -0.85f);
+
+        private GameObject leftHandBlockBox;
+        private GameObject rightHandBlockBox;
+        private LineRenderer debugHitRenderer; // A line indicating the position of direction of attack, used for debugging only.
 
         public static FistBlock instance;
 
@@ -14,16 +17,45 @@ namespace ValheimVRMod.Scripts.Block {
             instance = null;
         }
         
-        private void Awake() {
+        protected override void Awake() {
+            base.Awake();
             _meshCooldown = gameObject.AddComponent<MeshCooldown>();
             instance = this;
             hand = VHVRConfig.LeftHanded() ? VRPlayer.leftHand.transform : VRPlayer.rightHand.transform;
             offhand = VHVRConfig.LeftHanded() ? VRPlayer.rightHand.transform : VRPlayer.leftHand.transform;
+            CreateBlockBoxes();
+
+            debugHitRenderer = new GameObject().AddComponent<LineRenderer>();
+            debugHitRenderer.useWorldSpace = true;
+            debugHitRenderer.widthMultiplier = 0.006f;
+            debugHitRenderer.positionCount = 2;
+            debugHitRenderer.enabled = false;
         }
 
-        public override void setBlocking(Vector3 hitDir) {
-            //_blocking = Vector3.Dot(hitDir, getForward()) > 0.5f;
-            if (FistCollision.instance.usingDualKnives())
+        void OnDestroy()
+        {
+            Destroy(debugHitRenderer.gameObject);
+        }
+
+        public override void setBlocking(Vector3 hitPoint, Vector3 hitDir) {
+            debugHitRenderer.SetPosition(0, hitPoint);
+            debugHitRenderer.SetPosition(1, hitPoint + hitDir.normalized);
+
+            if (VHVRConfig.BlockingType() == "Realistic")
+            {
+                if (!FistCollision.instance.usingDualKnives() && !FistCollision.instance.usingFistWeapon())
+                {
+                    _blocking = false;
+                }
+                else if (WeaponUtils.LineIntersectsWithBounds(leftHandBlockBox.GetComponent<MeshFilter>().sharedMesh.bounds, leftHandBlockBox.transform.InverseTransformPoint(hitPoint), leftHandBlockBox.transform.InverseTransformDirection(hitDir)))
+                {
+                    _blocking = true;
+                }
+                else if (WeaponUtils.LineIntersectsWithBounds(rightHandBlockBox.GetComponent<MeshFilter>().sharedMesh.bounds, rightHandBlockBox.transform.InverseTransformPoint(hitPoint), rightHandBlockBox.transform.InverseTransformPoint(hitDir)))
+                {
+                    _blocking = true;
+                }
+            } else if (FistCollision.instance.usingDualKnives())
             {
                 var leftAngle = Vector3.Dot(hitDir, offhand.TransformDirection(handUp));
                 var rightAngle = Vector3.Dot(hitDir, hand.TransformDirection(handUp));
@@ -53,10 +85,6 @@ namespace ValheimVRMod.Scripts.Block {
 
                 _blocking = leftHandBlock && rightHandBlock;
             }
-            else
-            {
-                _blocking = false;
-            }
         }
 
         protected override void ParryCheck(Vector3 posStart, Vector3 posEnd, Vector3 posStart2, Vector3 posEnd2) {
@@ -76,5 +104,24 @@ namespace ValheimVRMod.Scripts.Block {
                 }
             }
         }
+        
+        private void CreateBlockBoxes()
+        {
+            leftHandBlockBox = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            leftHandBlockBox.transform.parent = VRPlayer.leftHand.transform;
+            leftHandBlockBox.transform.localRotation = Quaternion.Euler(45, 0, 0);
+            leftHandBlockBox.transform.localPosition = new Vector3(0, 0.15f, -0.2f);
+            leftHandBlockBox.transform.localScale = new Vector3(0.3f, 0.3f, 0.85f);
+            leftHandBlockBox.GetComponent<MeshRenderer>().enabled = false;
+            Destroy(leftHandBlockBox.GetComponent<Collider>());
+
+            rightHandBlockBox = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            rightHandBlockBox.transform.parent = VRPlayer.rightHand.transform;
+            rightHandBlockBox.transform.localRotation = Quaternion.Euler(45, 0, 0);
+            rightHandBlockBox.transform.localPosition = new Vector3(0, 0.15f, -0.2f);
+            rightHandBlockBox.transform.localScale = new Vector3(0.3f, 0.3f, 0.85f);
+            rightHandBlockBox.GetComponent<MeshRenderer>().enabled = false;
+            Destroy(rightHandBlockBox.GetComponent<Collider>());
+        }        
     }
 }
