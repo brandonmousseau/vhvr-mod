@@ -2,6 +2,7 @@ using HarmonyLib;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
+using ValheimVRMod.VRCore;
 using ValheimVRMod.Scripts;
 using ValheimVRMod.Scripts.Block;
 using ValheimVRMod.Utilities;
@@ -172,8 +173,8 @@ namespace ValheimVRMod.Patches {
             if (!__result || !VHVRConfig.UseVrControls()) {
                 return;
             }
-            
-            MeshHider.hide(___m_helmetItemInstance);
+
+            ___m_helmetItemInstance.AddComponent<HeadEquipVisibiltiyUpdater>();
         }
     }
     
@@ -185,7 +186,7 @@ namespace ValheimVRMod.Patches {
                 return;
             }
             
-            MeshHider.hide(___m_hairItemInstance);
+            ___m_hairItemInstance.AddComponent<HeadEquipVisibiltiyUpdater>();
         }
     }
     
@@ -197,7 +198,7 @@ namespace ValheimVRMod.Patches {
                 return;
             }
             
-            MeshHider.hide(___m_beardItemInstance);
+            ___m_beardItemInstance.AddComponent<HeadEquipVisibiltiyUpdater>();
         }
     }
 
@@ -267,21 +268,51 @@ namespace ValheimVRMod.Patches {
         }
     }
 
-    static class MeshHider {
-        public static void hide(GameObject obj) {
+    class HeadEquipVisibiltiyUpdater : MonoBehaviour
+    {
+        private bool isLocalPlayer;
 
-            if (obj == null) {
-                return;
-            }
-            
-            Player player = obj.GetComponentInParent<Player>();
-            if (player == null || Player.m_localPlayer != player) {
-                return;
-            }
+        private bool isHidden = false;
 
-            foreach (Renderer renderer in obj.GetComponentsInChildren<Renderer>()) {
-                renderer.shadowCastingMode = ShadowCastingMode.ShadowsOnly;    
+        void Awake() {
+            Player player = gameObject.GetComponentInParent<Player>();
+            isLocalPlayer = (player != null && player == Player.m_localPlayer);
+        }
+
+        void OnRenderObject()
+        {
+            if (shouldHide())
+            {
+                if (!isHidden) {
+                    foreach (Renderer renderer in gameObject.GetComponentsInChildren<Renderer>())
+                    {
+                        renderer.shadowCastingMode = ShadowCastingMode.ShadowsOnly;
+                    }
+                    isHidden = true;
+                }
+            } else if (isHidden)
+            {
+                foreach (Renderer renderer in gameObject.GetComponentsInChildren<Renderer>())
+                {
+                    renderer.shadowCastingMode = ShadowCastingMode.On;
+                }
+                isHidden = false;
             }
+        }
+
+        private bool shouldHide() { 
+            if (!isLocalPlayer || !VRPlayer.attachedToPlayer)
+            {
+                return false;
+            }
+            if (!Menu.IsVisible())
+            {
+                return true;
+            }
+            Vector3 cameraPos = CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform.position;
+            Vector3 characterHeadPos = Player.m_localPlayer.m_head.transform.position;
+            // When the user is in the menu, show head equipments when the camera moves away from the character so that the full character is visible to the user.
+            return Vector3.Distance(cameraPos, characterHeadPos) < 0.25f;
         }
     }
 
