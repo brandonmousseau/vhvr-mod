@@ -64,7 +64,7 @@ namespace ValheimVRMod.VRCore
         private static VRIK _vrik;
 
         private static float referencePlayerHeight;
-        public static bool isRoomscaleSneaking {  get { return _isRoomscaleSneaking; } }
+        public static bool isRoomscaleSneaking { get { return _isRoomscaleSneaking; } }
         private static bool _isRoomscaleSneaking = false;
 
         private static GameObject _prefab;
@@ -85,8 +85,8 @@ namespace ValheimVRMod.VRCore
         private float _forwardSmoothVel = 0.0f, _sideSmoothVel = 0.0f;
         private static float _roomscaleAnimationForwardSpeed = 0.0f;
         private static float _roomscaleAnimationSideSpeed = 0.0f;
-        public static float roomscaleAnimationForwardSpeed { get { return _roomscaleAnimationForwardSpeed;} }
-        public static float roomscaleAnimationSideSpeed { get { return _roomscaleAnimationSideSpeed;} }
+        public static float roomscaleAnimationForwardSpeed { get { return _roomscaleAnimationForwardSpeed; } }
+        public static float roomscaleAnimationSideSpeed { get { return _roomscaleAnimationSideSpeed; } }
         public static Vector3 roomscaleMovement { get; private set; }
 
         private static Hand _leftHand;
@@ -104,6 +104,35 @@ namespace ValheimVRMod.VRCore
         public static Hand leftHand { get { return _leftHand; } }
         public static Hand rightHand { get { return _rightHand; } }
         public static Hand dominantHand { get { return VHVRConfig.LeftHanded() ? leftHand : rightHand; } }
+
+        public static PhysicsEstimator leftHandPhysicsEstimator
+        {
+            get
+            {
+                PhysicsEstimator value = leftHand.gameObject.GetComponent<PhysicsEstimator>();
+                if (value == null && attachedToPlayer)
+                {
+                    value = leftHand.gameObject.AddComponent<PhysicsEstimator>();
+                    value.refTransform = Player.m_localPlayer.transform;
+                }
+                return value;
+            }
+        }
+
+        public static PhysicsEstimator rightHandPhysicsEstimator
+        {
+            get
+            {
+                PhysicsEstimator value = rightHand.gameObject.GetComponent<PhysicsEstimator>();
+                if (value == null && attachedToPlayer)
+                {
+                    value = rightHand.gameObject.AddComponent<PhysicsEstimator>();
+                    value.refTransform = Player.m_localPlayer.transform;
+                }
+                return value;
+            }
+        }
+
         public static SteamVR_Input_Sources dominantHandInputSource { get { return VHVRConfig.LeftHanded() ? SteamVR_Input_Sources.LeftHand : SteamVR_Input_Sources.RightHand; } }
         public static SteamVR_Input_Sources nonDominantHandInputSource { get { return VHVRConfig.LeftHanded() ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand; } }
 
