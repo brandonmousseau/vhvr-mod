@@ -5,18 +5,18 @@ using ValheimVRMod.Scripts.Block;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using Valve.VR;
+using Valve.VR.InteractionSystem;
 
 namespace ValheimVRMod.Scripts {
     public class FistCollision : MonoBehaviour {
-        private const float MIN_DISTANCE = 0.2f;
-        private const int MAX_SNAPSHOTS = 20;
-
+        public static FistCollision instance;
+        private const float MIN_SPEED = 2.5f;
         private GameObject colliderParent = null;
-        private List<Vector3> snapshots = new List<Vector3>();
         private bool isRightHand;
         private HandGesture handGesture;
-        public static FistCollision instance;
-        private FistBlock fistBlock;
+        private Hand thisHand { get { return isRightHand ? VRPlayer.rightHand : VRPlayer.leftHand; } }
+        private PhysicsEstimator physicsEstimator { get { return isRightHand ? VRPlayer.rightHandPhysicsEstimator : VRPlayer.leftHandPhysicsEstimator; } }
+
         private float fistRotation = 0;
 
         private static readonly int[] ignoreLayers = {
@@ -51,7 +51,7 @@ namespace ValheimVRMod.Scripts {
             }
 
             StaticObjects.lastHitPoint = transform.position;
-            StaticObjects.lastHitDir = snapshots[snapshots.Count - 1] - snapshots[snapshots.Count - 5];
+            StaticObjects.lastHitDir = physicsEstimator.GetVelocity().normalized;
             StaticObjects.lastHitCollider = collider;
 
             var item = Player.m_localPlayer.m_unarmedWeapon.m_itemData;
@@ -64,7 +64,7 @@ namespace ValheimVRMod.Scripts {
             if (attack.Start(Player.m_localPlayer, null, null, Player.m_localPlayer.m_animEvent,
                 null, item, null, 0.0f, 0.0f)) {
                 if (isRightHand) {
-                    VRPlayer.rightHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, SteamVR_Input_Sources.RightHand);
+                    VRPlayer.rightHand.hapticAction.Execute( 0, 0.2f, 100, 0.5f, SteamVR_Input_Sources.RightHand);
                 } else {
                     VRPlayer.leftHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, SteamVR_Input_Sources.LeftHand);
                 }
@@ -125,26 +125,13 @@ namespace ValheimVRMod.Scripts {
                    (isEquippedWithFistGesture || isUnequipedWithFistGesture);
         }
 
-        private void FixedUpdate() {
-            snapshots.Add(transform.localPosition);
-            if (snapshots.Count > MAX_SNAPSHOTS) {
-                snapshots.RemoveAt(0);
-            }
-        }
-
         public bool hasMomentum() {
 
             if (!VHVRConfig.WeaponNeedsSpeed()) {
                 return true;
             }
 
-            foreach (Vector3 snapshot in snapshots) {
-                if (Vector3.Distance(snapshot, transform.localPosition) > MIN_DISTANCE
-                    && Vector3.Dot((snapshot - transform.localPosition).normalized, Vector3.forward) < 0) {
-                    return true;
-                }
-            }
-            return false;
+            return physicsEstimator.GetVelocity().magnitude > MIN_SPEED;
         }
 
         public bool usingClaws() {
