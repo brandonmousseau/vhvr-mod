@@ -32,8 +32,8 @@ namespace ValheimVRMod.Scripts.Block {
             {
                 var leftAngle = Vector3.Dot(hitDir, offhand.TransformDirection(handUp));
                 var rightAngle = Vector3.Dot(hitDir, hand.TransformDirection(handUp));
-                var leftHandBlock = (leftAngle > -0.5f && leftAngle < 0.5f) ;
-                var rightHandBlock = (rightAngle > -0.5f && rightAngle < 0.5f);
+                var leftHandBlock = (leftAngle > 60 && leftAngle < 120f) ;
+                var rightHandBlock = (rightAngle > 60 && rightAngle < 120f);
                 _blocking = leftHandBlock && rightHandBlock;
             }
             else if (VHVRConfig.BlockingType() == "GrabButton")
