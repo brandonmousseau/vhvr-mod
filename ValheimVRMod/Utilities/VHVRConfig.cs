@@ -769,11 +769,12 @@ namespace ValheimVRMod.Utilities
                                                     "When supported, crossbows requires manually pulling the string to reload");
             blockingType = config.Bind("Motion Control",
                                         "BlockingType",
-                                        "MotionControl",
-                                        new ConfigDescription("Change the block logic." +
-                                        "Motion Control - Shield by aiming the shield towards enemy, and swing shield while blocking to parry." +
-                                        "Grab button - Shield by aiming and pressing grab button, parry by timing the grab button.",
-                                        new AcceptableValueList<string>(new string[] { "MotionControl", "GrabButton" })));
+                                        "Gesture",
+                                        new ConfigDescription("Block logic: " +
+                                        "Gesture - Block by holding the shield or weapon perpendicular to the attack, swing while blocking to parry. " +
+                                        "Grab button - Block by aiming and pressing grab button, parry by timing the grab button. " +
+                                        "Realistic - Block precisely where the enemy hits, swing while blocking to parry",
+                                        new AcceptableValueList<string>(new string[] { "Gesture", "GrabButton", "Realistic" })));
 
 
             advancedBuildMode = config.Bind("Motion Control",
