@@ -7,7 +7,7 @@ namespace ValheimVRMod.Scripts.Block {
     public class ShieldBlock : Block {
 
         public string itemName;
-        private const float MIN_PARRY_SPEED = 3f;
+        private const float MIN_PARRY_SPEED = 1f;
         private const float MAX_PARRY_ANGLE = 45f;
         private const float MAX_PARRY_DIRECTION_CHANGE_RATE = 10f;
 
