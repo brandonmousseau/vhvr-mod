@@ -37,14 +37,14 @@ namespace ValheimVRMod.Scripts.Block {
             }
 
             Color color = hitIndicator.material.color;
-            if (color.a <= 0.01f)
+            if (color.a <= 0.05f)
             {
                 hitIndicator.gameObject.SetActive(false);
                 return;
             }
 
             // Fade the hit indicator gradually.
-            hitIndicator.material.color = new Color(color.r, color.g, color.b, color.a * (1 - Time.fixedDeltaTime * 2));
+            hitIndicator.material.color = new Color(color.r, color.g, color.b, color.a * (1 - Time.fixedDeltaTime * 3));
         }
 
         void OnDestroy()
@@ -156,6 +156,8 @@ namespace ValheimVRMod.Scripts.Block {
             material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
             material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
             material.SetInt("_ZWrite", 0);
+            material.SetFloat("_Glossiness", 0);
+            material.SetFloat("_Metallic", 0);
             material.DisableKeyword("_ALPHATEST_ON");
             material.DisableKeyword("_ALPHABLEND_ON");
             material.EnableKeyword("_ALPHAPREMULTIPLY_ON");
