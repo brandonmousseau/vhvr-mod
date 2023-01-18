@@ -7,9 +7,8 @@ namespace ValheimVRMod.Scripts.Block {
     public class ShieldBlock : Block {
 
         public string itemName;
-        private const float MIN_PARRY_SPEED = 1f;
-        private const float MAX_PARRY_ANGLE = 45f;
-        private const float MAX_PARRY_DIRECTION_CHANGE_RATE = 10f;
+        private const float MIN_PARRY_SPEED = 1.5f;
+        private const float MAX_PARRY_DIRECTION_CHANGE_RATE = 7f;
 
         private float scaling = 1f;
         private Vector3 posRef;
@@ -101,6 +100,7 @@ namespace ValheimVRMod.Scripts.Block {
         {
             scaling = scale;
         }
+
         private Vector3 CalculatePos()
         {
             return VRPlayer.leftHand.transform.InverseTransformDirection(hand.TransformDirection(posRef) *(scaleRef * scaling).x);
