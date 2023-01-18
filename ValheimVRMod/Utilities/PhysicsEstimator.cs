@@ -85,6 +85,21 @@ namespace ValheimVRMod.Utilities
             return refTransform == null ? velocitySnapshots[0] : refTransform.TransformVector(velocitySnapshots[0]);
         }
 
+        public Quaternion GetAngularVelocity()
+        {
+            if (rotationSnapshots.Count <= 1)
+            {
+                return Quaternion.identity;
+            }
+            float deltaT = (rotationSnapshots.Count - 1) * Time.fixedDeltaTime;
+            Quaternion q = Quaternion.Slerp(Quaternion.identity, Quaternion.Inverse(rotationSnapshots[0]) * rotationSnapshots[rotationSnapshots.Count - 1], 1 / deltaT);
+            if (refTransform == null)
+            {
+                return q;
+            }
+            return refTransform.rotation * q * Quaternion.Inverse(refTransform.rotation);
+        }
+            
         public Vector3 GetAcceleration() {
             if (velocitySnapshots.Count <= 1) {
                 return Vector3.zero;
@@ -137,3 +152,4 @@ namespace ValheimVRMod.Utilities
         }
     }
 }
+
