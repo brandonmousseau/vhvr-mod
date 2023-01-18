@@ -7,8 +7,9 @@ namespace ValheimVRMod.Scripts.Block {
     public class ShieldBlock : Block {
 
         public string itemName;
-        private const float MIN_PARRY_SPEED = 2f;
+        private const float MIN_PARRY_SPEED = 1f;
         private const float MAX_PARRY_ANGLE = 45f;
+        private const float MAX_PARRY_DIRECTION_CHANGE_RATE = 6f;
 
         private float scaling = 1f;
         private Vector3 posRef;
@@ -66,8 +67,10 @@ namespace ValheimVRMod.Scripts.Block {
 
         protected override void ParryCheck(Vector3 posStart, Vector3 posEnd, Vector3 posStart2, Vector3 posEnd2) {
             Vector3 v = physicsEstimator.GetVelocity();
+            Vector3 a = physicsEstimator.GetAcceleration();
+            float directionChangeRate = Vector3.ProjectOnPlane(a, v).magnitude / v.magnitude;
             Vector3 shieldFacing = VHVRConfig.LeftHanded() ? VRPlayer.rightHand.transform.right : -VRPlayer.leftHand.transform.right;
-            if (v.magnitude > MIN_PARRY_SPEED && Vector3.Angle(v, shieldFacing) < MAX_PARRY_ANGLE) {
+            if (v.magnitude > MIN_PARRY_SPEED && directionChangeRate < MAX_PARRY_DIRECTION_CHANGE_RATE) {
                 blockTimer = blockTimerParry;
             }
             else
