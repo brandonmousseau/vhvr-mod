@@ -107,7 +107,7 @@ namespace ValheimVRMod.Scripts
             return false;
         }
 
-        // Returns the direction the weapon is pointing during single-handed wielding.
+        // Returns the direction the weapon is pointing.
         protected virtual Vector3 GetWeaponPointingDir()
         {
             return transform.TransformDirection(estimatedLocalWeaponPointingDir);
