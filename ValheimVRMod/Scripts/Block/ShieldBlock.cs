@@ -64,7 +64,7 @@ namespace ValheimVRMod.Scripts.Block {
             return -StaticObjects.shieldObj().transform.forward;
         }
 
-        protected override void ParryCheck(Vector3 posStart, Vector3 posEnd, Vector3 posStart2, Vector3 posEnd2) {
+        protected override void ParryCheck() {
             Vector3 v = physicsEstimator.GetVelocity();
             Vector3 shieldFacing = VHVRConfig.LeftHanded() ? VRPlayer.rightHand.transform.right : -VRPlayer.leftHand.transform.right;
             if (v.magnitude > MIN_PARRY_SPEED && Vector3.Angle(v, shieldFacing) < MAX_PARRY_ANGLE) {
