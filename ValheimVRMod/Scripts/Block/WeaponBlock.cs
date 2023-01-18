@@ -61,7 +61,7 @@ namespace ValheimVRMod.Scripts.Block
             }
         }
 
-        protected override void ParryCheck(Vector3 posStart, Vector3 posEnd, Vector3 posStart2, Vector3 posEnd2)
+        protected override void ParryCheck()
         {
             Vector3 parryVector = weaponWield.physicsEstimator.GetVelocityOfPoint(lastHitPointAlongWeapon);
             if (parryVector.magnitude > MIN_PARRY_SPEED)

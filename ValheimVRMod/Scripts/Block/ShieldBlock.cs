@@ -64,7 +64,7 @@ namespace ValheimVRMod.Scripts.Block {
             return -StaticObjects.shieldObj().transform.forward;
         }
 
-        protected override void ParryCheck(Vector3 posStart, Vector3 posEnd, Vector3 posStart2, Vector3 posEnd2) {
+        protected override void ParryCheck() {
             Vector3 v = physicsEstimator.GetVelocity();
             Vector3 a = physicsEstimator.GetAcceleration();
             float directionChangeRate = Vector3.ProjectOnPlane(a, v).magnitude / v.magnitude;
