@@ -29,6 +29,10 @@ namespace ValheimVRMod.Scripts
         private Transform frontHandConnector { get { return _isTwoHanded == isTwoHanded.LeftHandBehind ? VrikCreator.rightHandConnector : VrikCreator.leftHandConnector; } }
         private Transform rearHandConnector { get { return _isTwoHanded == isTwoHanded.LeftHandBehind ? VrikCreator.leftHandConnector : VrikCreator.rightHandConnector; } }
         private Vector3 estimatedLocalWeaponPointingDir = Vector3.forward;
+        private Transform lastRenderedTransform;
+        public PhysicsEstimator physicsEstimator { get; private set; }
+
+
 
         ParticleSystem particleSystem;
         Transform particleSystemTransformUpdater;
@@ -38,6 +42,13 @@ namespace ValheimVRMod.Scripts
             SingleHanded,
             RightHandBehind,
             LeftHandBehind
+        }
+
+        void Awake()
+        {
+            lastRenderedTransform = new GameObject().transform;
+            physicsEstimator = lastRenderedTransform.gameObject.AddComponent<PhysicsEstimator>();
+            physicsEstimator.refTransform = gameObject.GetComponentInParent<Player>().transform;
         }
 
         public WeaponWield Initialize(bool holdInNonDominantHand)
@@ -61,7 +72,7 @@ namespace ValheimVRMod.Scripts
 
             attack = item.m_shared.m_attack.Clone();
 
-            originalTransform = new GameObject().transform;            
+            originalTransform = new GameObject().transform;
             singleHandedTransform = new GameObject().transform;
             originalTransform.parent = singleHandedTransform.parent = transform.parent;
             originalTransform.position = singleHandedTransform.position = transform.position;
@@ -73,7 +84,7 @@ namespace ValheimVRMod.Scripts
             {
                 estimatedLocalWeaponPointingDir = transform.InverseTransformDirection(WeaponUtils.EstimateWeaponPointingDirection(weaponMeshFilter, transform.parent.position));
             }
-            
+
             offsetFromPointingDir = Quaternion.Inverse(Quaternion.LookRotation(GetWeaponPointingDir(), transform.up)) * transform.rotation;
 
             _isTwoHanded = isTwoHanded.SingleHanded;
@@ -86,6 +97,7 @@ namespace ValheimVRMod.Scripts
             ReturnToSingleHanded();
             Destroy(originalTransform.gameObject);
             Destroy(singleHandedTransform.gameObject);
+            Destroy(lastRenderedTransform);
             if (particleSystemTransformUpdater != null)
             {
                 Destroy(particleSystemTransformUpdater.gameObject);
@@ -100,6 +112,12 @@ namespace ValheimVRMod.Scripts
                 // The particle system on Mistwalker (as well as some modded weapons) for some reason needs it rotation updated explicitly in order to follow the sword in VR.
                 particleSystem.transform.rotation = particleSystemTransformUpdater.transform.rotation;
             }
+
+            // The transform outside OnRenderObject() might be invalid or discontinuous, therefore we need to record its state within this method for physics calculation later.
+            lastRenderedTransform.parent = transform;
+            lastRenderedTransform.SetPositionAndRotation(transform.position, transform.rotation);
+            lastRenderedTransform.localScale = Vector3.one;
+            lastRenderedTransform.SetParent(null, true);
         }
 
         protected virtual bool TemporaryDisableTwoHandedWield()
@@ -125,7 +143,7 @@ namespace ValheimVRMod.Scripts
                 default:
                     return originalRotation;
             }
-        }        
+        }
 
         protected virtual void RotateHandsForTwoHandedWield(Vector3 weaponPointingDir)
         {
@@ -213,7 +231,7 @@ namespace ValheimVRMod.Scripts
                 weaponSubPos = false;
             }
         }
-        
+
         private void UpdateTwoHandedWield()
         {
             if (!VHVRConfig.TwoHandedWield())
@@ -232,7 +250,7 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand) && 
+            if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand) &&
                 SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand) &&
                 !TemporaryDisableTwoHandedWield())
             {
@@ -275,8 +293,8 @@ namespace ValheimVRMod.Scripts
                 weaponSubPos = true;
                 shieldSize = 0.4f;
             }
-            else if (SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.LeftHand) || 
-                     SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.RightHand)||
+            else if (SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.LeftHand) ||
+                     SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.RightHand) ||
                      TemporaryDisableTwoHandedWield())
             {
                 _isTwoHanded = isTwoHanded.SingleHanded;
@@ -293,7 +311,8 @@ namespace ValheimVRMod.Scripts
             transform.localRotation = singleHandedTransform.localRotation;
         }
 
-        private static Vector3 getHandCenter(Transform hand) {
+        private static Vector3 getHandCenter(Transform hand)
+        {
             return hand.transform.position - hand.transform.forward * HAND_CENTER_OFFSET;
         }
 
