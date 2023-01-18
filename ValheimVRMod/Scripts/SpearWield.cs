@@ -29,10 +29,10 @@ namespace ValheimVRMod.Scripts
             return ThrowableManager.isAiming || ThrowableManager.isThrowing;
         }
 
-        protected override Vector3 GetSingleHandedWeaponPointingDir()
+        protected override Vector3 GetWeaponPointingDir()
         {
             Vector3 roughDirection = EquipScript.isSpearEquippedUlnarForward() ? -transform.forward : transform.forward;
-            return Vector3.Project(roughDirection, base.GetSingleHandedWeaponPointingDir()).normalized;
+            return Vector3.Project(roughDirection, base.GetWeaponPointingDir()).normalized;
         }
         
         protected override float GetPreferredOffsetFromRearHand(float handDist)
