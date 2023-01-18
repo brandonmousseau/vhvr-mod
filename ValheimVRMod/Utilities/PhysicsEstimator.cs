@@ -85,6 +85,22 @@ namespace ValheimVRMod.Utilities
             return refTransform == null ? velocitySnapshots[0] : refTransform.TransformVector(velocitySnapshots[0]);
         }
 
+        public Vector3 GetVelocityOfPoint(Vector3 pos)
+        {
+            if (velocitySnapshots.Count == 0)
+            {
+                return Vector3.zero;
+            }
+            Vector3 v = velocitySnapshots[0];
+            if (rotationSnapshots.Count > 1)
+            {
+                Vector3 localPos = transform.InverseTransformPoint(pos);
+                Vector3 shiftDueToRotation = rotationSnapshots[rotationSnapshots.Count - 1] * localPos - rotationSnapshots[0] * localPos;
+                v += shiftDueToRotation / Time.fixedDeltaTime / (rotationSnapshots.Count - 1);
+            }
+            return refTransform == null ? v : refTransform.TransformVector(v);
+        }
+
         public Vector3 GetAverageVelocityInSnapshots()
         {
             if (velocitySnapshots.Count == 0)

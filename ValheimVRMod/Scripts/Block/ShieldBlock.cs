@@ -34,17 +34,17 @@ namespace ValheimVRMod.Scripts.Block {
             offhand = VHVRConfig.LeftHanded() ? VRPlayer.leftHand.transform : VRPlayer.rightHand.transform;
         }
 
-        public override void setBlocking(Vector3 hitPoint, Vector3 hitDir) {
+        public override void setBlocking(HitData hitData) {
             if (VHVRConfig.BlockingType() == "GrabButton")
             {
                 _blocking = SteamVR_Actions.valheim_Grab.GetState(VRPlayer.nonDominantHandInputSource);
             }
             else if (VHVRConfig.BlockingType() == "Realistic")
             {
-                _blocking = Vector3.Dot(hitDir, getForward()) > 0.3f && hitIntersectsBlockBox(hitPoint, hitDir);
+                _blocking = Vector3.Dot(hitData.m_dir, getForward()) > 0.3f && hitIntersectsBlockBox(hitData);
             }
             else {
-                _blocking = Vector3.Dot(hitDir, getForward()) > 0.5;
+                _blocking = Vector3.Dot(hitData.m_dir, getForward()) > 0.5;
             }
         }
 

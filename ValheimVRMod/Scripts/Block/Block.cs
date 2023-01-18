@@ -48,7 +48,7 @@ namespace ValheimVRMod.Scripts.Block {
 
         //Currently there's 2 Blocking type 
         //"MotionControl" and "GrabButton"
-        private void FixedUpdate() {
+        protected virtual void FixedUpdate() {
             tickCounter++;
             if (tickCounter < 5) {
                 return;
@@ -96,7 +96,7 @@ namespace ValheimVRMod.Scripts.Block {
                 wasGetHit = false;
             }
         }
-        public abstract void setBlocking(Vector3 hitPoint, Vector3 hitDir);
+        public abstract void setBlocking(HitData hitData);
         protected abstract void ParryCheck(Vector3 posStart, Vector3 posEnd, Vector3 posStart2, Vector3 posEnd2);
 
         public void resetBlocking() {
@@ -163,7 +163,7 @@ namespace ValheimVRMod.Scripts.Block {
             wasResetTimer = false;
         }
 
-        protected bool hitIntersectsBlockBox(Vector3 hitPoint, Vector3 hitDir) {
+        protected bool hitIntersectsBlockBox(HitData hitData) {
             Mesh mesh = gameObject.GetComponent<MeshFilter>()?.sharedMesh;
             if (mesh == null)
             {
@@ -172,12 +172,17 @@ namespace ValheimVRMod.Scripts.Block {
             }
 
             Bounds blockBounds = new Bounds(mesh.bounds.center, mesh.bounds.size);
-            blockBounds.Expand(BlockDistanceTolerance);
+            blockBounds.Expand(GetBlockTolerance(hitData.m_damage, hitData.m_pushForce));
 
             return WeaponUtils.LineIntersectsWithBounds(
                 blockBounds,
-                lastRenderedTransform.InverseTransformPoint(hitPoint),
-                lastRenderedTransform.InverseTransformDirection(hitDir));
+                lastRenderedTransform.InverseTransformPoint(hitData.m_point),
+                lastRenderedTransform.InverseTransformDirection(hitData.m_dir));
+        }
+
+        protected float GetBlockTolerance(HitData.DamageTypes damageTypes, float pushForce) {
+            // Adjust for block tolerance radius: blunt damage and push force increases tolerance raidus whereas pierce damage decreases tolerance radius.
+            return 0.5f * Mathf.Log(1 + damageTypes.m_blunt * 0.1f + pushForce * 0.01f) / Mathf.Log(3 + damageTypes.m_pierce * 0.1f);
         }
     }
 }
