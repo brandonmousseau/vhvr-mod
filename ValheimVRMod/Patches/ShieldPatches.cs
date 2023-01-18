@@ -162,9 +162,9 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
-            FistBlock.instance?.setBlocking(hit.m_point, hit.m_dir);
-            ShieldBlock.instance?.setBlocking(hit.m_point, hit.m_dir);
-            WeaponBlock.instance?.setBlocking(hit.m_point, hit.m_dir);
+            FistBlock.instance?.setBlocking(hit);
+            ShieldBlock.instance?.setBlocking(hit);
+            WeaponBlock.instance?.setBlocking(hit);
         }
         
         static void Postfix(Character __instance) {
