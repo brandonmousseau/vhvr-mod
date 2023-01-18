@@ -5,12 +5,15 @@ using ValheimVRMod.VRCore;
 
 namespace ValheimVRMod.Scripts.Block {
     public class FistBlock : Block {
-
+        private const float MIN_PARRY_SPEED = 1f;
         private readonly Vector3 handUp = new Vector3(0, -0.15f, -0.85f);
 
         private GameObject leftHandBlockBox;
         private GameObject rightHandBlockBox;
         private MeshRenderer hitIndicator; // Renderer of disk indicating the position, direction, and block tolerance of an attack.
+
+        private bool blockedWithLeftHand;
+        private bool blockedWithRightHand;
 
         public static FistBlock instance;
 
@@ -66,16 +69,14 @@ namespace ValheimVRMod.Scripts.Block {
                 (leftBlockBounds = new Bounds(leftBlockBounds.center, leftBlockBounds.size)).Expand(blockTolerance);
                 Bounds rightBlockBounds = rightHandBlockBox.GetComponent<MeshFilter>().sharedMesh.bounds;
                 (rightBlockBounds = new Bounds(rightBlockBounds.center, rightBlockBounds.size)).Expand(blockTolerance);
+                blockedWithLeftHand = WeaponUtils.LineIntersectsWithBounds(leftBlockBounds, leftHandBlockBox.transform.InverseTransformPoint(hitData.m_point), leftHandBlockBox.transform.InverseTransformDirection(hitData.m_dir));
+                blockedWithRightHand = WeaponUtils.LineIntersectsWithBounds(rightBlockBounds, rightHandBlockBox.transform.InverseTransformPoint(hitData.m_point), rightHandBlockBox.transform.InverseTransformDirection(hitData.m_dir));
 
                 if (!FistCollision.instance.usingDualKnives() && !FistCollision.instance.usingFistWeapon())
                 {
                     _blocking = false;
                 }
-                else if (WeaponUtils.LineIntersectsWithBounds(leftBlockBounds, leftHandBlockBox.transform.InverseTransformPoint(hitData.m_point), leftHandBlockBox.transform.InverseTransformDirection(hitData.m_dir)))
-                {
-                    _blocking = true;
-                }
-                else if (WeaponUtils.LineIntersectsWithBounds(rightBlockBounds, rightHandBlockBox.transform.InverseTransformPoint(hitData.m_point), rightHandBlockBox.transform.InverseTransformDirection(hitData.m_dir)))
+                else if (blockedWithLeftHand || blockedWithRightHand)
                 {
                     _blocking = true;
                 }
@@ -114,17 +115,33 @@ namespace ValheimVRMod.Scripts.Block {
         protected override void ParryCheck(Vector3 posStart, Vector3 posEnd, Vector3 posStart2, Vector3 posEnd2) {
             if (FistCollision.instance.usingFistWeapon())
             {
-                if (Vector3.Distance(posEnd, posStart) > minDist)
+                float leftHandSpeed = VRPlayer.leftHandPhysicsEstimator?.GetVelocity().magnitude ?? 0;
+                float rightHandSpeed = VRPlayer.rightHandPhysicsEstimator?.GetVelocity().magnitude ?? 0;
+                if (VHVRConfig.BlockingType() == "Realistic")
                 {
-                    blockTimer = blockTimerParry;
-                }
-                else if (Vector3.Distance(posEnd2, posStart2) > minDist)
-                {
-                    blockTimer = blockTimerParry;
+                    if (blockedWithLeftHand && leftHandSpeed > MIN_PARRY_SPEED)
+                    {
+                        blockTimer = blockTimerParry;
+                    }
+                    else if (blockedWithRightHand && rightHandSpeed > MIN_PARRY_SPEED)
+                    {
+                        blockTimer = blockTimerParry;
+                    }
+                    else
+                    {
+                        blockTimer = blockTimerNonParry;
+                    }
                 }
                 else
                 {
-                    blockTimer = blockTimerNonParry;
+                    if (leftHandSpeed > MIN_PARRY_SPEED || rightHandSpeed > MIN_PARRY_SPEED)
+                    {
+                        blockTimer = blockTimerParry;
+                    }
+                    else
+                    {
+                        blockTimer = blockTimerNonParry;
+                    }
                 }
             }
         }

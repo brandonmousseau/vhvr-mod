@@ -7,8 +7,9 @@ namespace ValheimVRMod.Scripts
 {
     class SpearWield : WeaponWield
     {
-        void Awake()
+        protected override void Awake()
         {
+            base.Awake();
             MeshFilter meshFilter = gameObject.GetComponentInChildren<MeshFilter>();
             if (EquipScript.isSpearEquippedRadialForward())
             {

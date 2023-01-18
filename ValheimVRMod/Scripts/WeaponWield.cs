@@ -44,7 +44,7 @@ namespace ValheimVRMod.Scripts
             LeftHandBehind
         }
 
-        void Awake()
+        protected virtual void Awake()
         {
             lastRenderedTransform = new GameObject().transform;
             physicsEstimator = lastRenderedTransform.gameObject.AddComponent<PhysicsEstimator>();
