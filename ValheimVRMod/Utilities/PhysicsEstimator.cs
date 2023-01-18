@@ -85,6 +85,14 @@ namespace ValheimVRMod.Utilities
             return refTransform == null ? velocitySnapshots[0] : refTransform.TransformVector(velocitySnapshots[0]);
         }
 
+        public Vector3 GetAcceleration() {
+            if (velocitySnapshots.Count <= 1) {
+                return Vector3.zero;
+            }
+            Vector3 a = (velocitySnapshots[velocitySnapshots.Count - 1] - velocitySnapshots[0]) / Time.fixedDeltaTime / (velocitySnapshots.Count - 1);
+            return refTransform == null ? a : refTransform.TransformVector(a);
+        }
+
         public Vector3 GetVelocityOfPoint(Vector3 pos)
         {
             if (velocitySnapshots.Count == 0)
