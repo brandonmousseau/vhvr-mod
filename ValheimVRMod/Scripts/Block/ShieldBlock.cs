@@ -44,11 +44,9 @@ namespace ValheimVRMod.Scripts.Block {
             else if (VHVRConfig.BlockingType() == "Realistic")
             {
                 _blocking = Vector3.Dot(hitData.m_dir, getForward()) > 0.3f && hitIntersectsBlockBox(hitData);
-                ParryCheck();
             }
             else {
                 _blocking = Vector3.Dot(hitData.m_dir, getForward()) > 0.5;
-                ParryCheck();
             }
         }
 
