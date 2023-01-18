@@ -7,19 +7,14 @@ namespace ValheimVRMod.Scripts.Block {
 
     public abstract class Block : MonoBehaviour {
         // CONST
-        private const float BlockDistanceTolerance = 0.05f;
         private const float cooldown = 1;
-        private const int maxSnapshots = 7;
         protected const float blockTimerParry = 0.1f;
-        protected const float minDist = 0.4f;
         public const float blockTimerTolerance = blockTimerParry + 0.2f;
         public const float blockTimerNonParry = 9999f;
 
         // VARIABLE
         private int tickCounter;
         protected bool _blocking;
-        protected List<Vector3> snapshots = new List<Vector3>();
-        protected List<Vector3> snapshotsLeft = new List<Vector3>();
         protected Transform hand;
         protected Transform offhand;
         protected MeshCooldown _meshCooldown;
@@ -57,41 +52,8 @@ namespace ValheimVRMod.Scripts.Block {
                 return;
             }
             
-            Vector3 posStart = Player.m_localPlayer.transform.InverseTransformPoint(hand.position);
-            Vector3 posEnd = posStart;
-            snapshots.Add(posStart);
-            Vector3 posStart2 = Player.m_localPlayer.transform.InverseTransformPoint(offhand.position);
-            Vector3 posEnd2 = posStart2;
-            snapshotsLeft.Add(posStart2);
-
-            if (snapshots.Count > maxSnapshots) {
-                snapshots.RemoveAt(0);
-                snapshotsLeft.RemoveAt(0);
-            }
-
             tickCounter = 0;
-            var dist = 0.0f;
-            var dist2 = 0.0f;
-
-            foreach (Vector3 snapshot in snapshots) {
-                var curDist = Vector3.Distance(snapshot, posEnd);
-                if (curDist > dist) {
-                    dist = curDist;
-                    posStart = snapshot;
-                }
-            }
-            foreach (Vector3 snapshot in snapshotsLeft)
-            {
-                var curDist = Vector3.Distance(snapshot, posEnd2);
-                if (curDist > dist2)
-                {
-                    dist2 = curDist;
-                    posStart2 = snapshot;
-                }
-            }
-
-            if (VHVRConfig.BlockingType() != "GrabButton")
-                ParryCheck(posStart, posEnd , posStart2, posEnd2);
+            if (VHVRConfig.BlockingType() != "GrabButton") ParryCheck();
 
             if(wasGetHit && !SteamVR_Actions.valheim_Grab.GetState(currhand))
             {
@@ -100,7 +62,7 @@ namespace ValheimVRMod.Scripts.Block {
             }
         }
         public abstract void setBlocking(HitData hitData);
-        protected abstract void ParryCheck(Vector3 posStart, Vector3 posEnd, Vector3 posStart2, Vector3 posEnd2);
+        protected abstract void ParryCheck();
 
         public void resetBlocking() {
             if (VHVRConfig.BlockingType() == "GrabButton")

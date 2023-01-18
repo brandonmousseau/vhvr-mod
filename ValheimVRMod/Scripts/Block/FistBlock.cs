@@ -112,7 +112,7 @@ namespace ValheimVRMod.Scripts.Block {
             }
         }
 
-        protected override void ParryCheck(Vector3 posStart, Vector3 posEnd, Vector3 posStart2, Vector3 posEnd2) {
+        protected override void ParryCheck() {
             if (FistCollision.instance.usingFistWeapon())
             {
                 float leftHandSpeed = VRPlayer.leftHandPhysicsEstimator?.GetVelocity().magnitude ?? 0;
