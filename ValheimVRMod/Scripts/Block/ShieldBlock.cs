@@ -7,7 +7,8 @@ namespace ValheimVRMod.Scripts.Block {
     public class ShieldBlock : Block {
 
         public string itemName;
-        private const float maxParryAngle = 45f;
+        private const float MIN_PARRY_SPEED = 2f;
+        private const float MAX_PARRY_ANGLE = 45f;
 
         private float scaling = 1f;
         private Vector3 posRef;
@@ -64,14 +65,13 @@ namespace ValheimVRMod.Scripts.Block {
         }
 
         protected override void ParryCheck(Vector3 posStart, Vector3 posEnd, Vector3 posStart2, Vector3 posEnd2) {
-            var shieldSnapshot = VHVRConfig.LeftHanded() ? snapshotsLeft : snapshots;
-            if (Vector3.Distance(posEnd, posStart) > minDist) {
-
-                Vector3 shieldPos = shieldSnapshot[shieldSnapshot.Count - 1] + Player.m_localPlayer.transform.InverseTransformDirection(-hand.right) / 2;
-                if (Vector3.Angle(shieldPos - shieldSnapshot[0] , shieldSnapshot[shieldSnapshot.Count - 1] - shieldSnapshot[0]) < maxParryAngle) {
-                    blockTimer = blockTimerParry;
-                }
-            } else {
+            Vector3 v = physicsEstimator.GetVelocity();
+            Vector3 shieldFacing = VHVRConfig.LeftHanded() ? VRPlayer.rightHand.transform.right : -VRPlayer.leftHand.transform.right;
+            if (v.magnitude > MIN_PARRY_SPEED && Vector3.Angle(v, shieldFacing) < MAX_PARRY_ANGLE) {
+                blockTimer = blockTimerParry;
+            }
+            else
+            {
                 blockTimer = blockTimerNonParry;
             }
         }
@@ -90,6 +90,8 @@ namespace ValheimVRMod.Scripts.Block {
             }
             StaticObjects.shieldObj().transform.position = transform.position;
             StaticObjects.shieldObj().transform.rotation = transform.rotation;
+
+            Vector3 v = physicsEstimator.GetVelocity();
         }
 
         public void ScaleShieldSize(float scale)

@@ -31,10 +31,13 @@ namespace ValheimVRMod.Scripts.Block {
         public bool wasResetTimer = false;
         public bool wasGetHit = false;
         private Transform lastRenderedTransform;
+        protected PhysicsEstimator physicsEstimator;
 
         protected virtual void Awake()
         {
             lastRenderedTransform = new GameObject().transform;
+            physicsEstimator = lastRenderedTransform.gameObject.AddComponent<PhysicsEstimator>();
+            physicsEstimator.refTransform = gameObject.GetComponentInParent<Player>().transform;
         }
 
         protected virtual void OnRenderObject()
