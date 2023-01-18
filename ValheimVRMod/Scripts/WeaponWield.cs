@@ -74,7 +74,7 @@ namespace ValheimVRMod.Scripts
                 estimatedLocalWeaponPointingDir = transform.InverseTransformDirection(WeaponUtils.EstimateWeaponPointingDirection(weaponMeshFilter, transform.parent.position));
             }
             
-            offsetFromPointingDir = Quaternion.Inverse(Quaternion.LookRotation(GetSingleHandedWeaponPointingDir(), transform.up)) * transform.rotation;
+            offsetFromPointingDir = Quaternion.Inverse(Quaternion.LookRotation(GetWeaponPointingDir(), transform.up)) * transform.rotation;
 
             _isTwoHanded = isTwoHanded.SingleHanded;
 
@@ -108,7 +108,7 @@ namespace ValheimVRMod.Scripts
         }
 
         // Returns the direction the weapon is pointing during single-handed wielding.
-        protected virtual Vector3 GetSingleHandedWeaponPointingDir()
+        protected virtual Vector3 GetWeaponPointingDir()
         {
             return transform.TransformDirection(estimatedLocalWeaponPointingDir);
         }
@@ -162,7 +162,7 @@ namespace ValheimVRMod.Scripts
 
         private void WieldHandle()
         {
-            weaponForward = transform.forward;
+            weaponForward = GetWeaponPointingDir();
             switch (itemName)
             {
                 case "Hoe":
@@ -191,7 +191,7 @@ namespace ValheimVRMod.Scripts
                     }
                     break;
             }
-            weaponForward = transform.forward;
+            weaponForward = GetWeaponPointingDir();
         }
         private void KnifeWield()
         {
@@ -239,7 +239,7 @@ namespace ValheimVRMod.Scripts
                 if (_isTwoHanded == isTwoHanded.SingleHanded)
                 {
                     Vector3 rightHandToLeftHand = getHandCenter(VRPlayer.leftHand.transform) - getHandCenter(VRPlayer.rightHand.transform);
-                    float wieldingAngle = Vector3.Angle(rightHandToLeftHand, GetSingleHandedWeaponPointingDir());
+                    float wieldingAngle = Vector3.Angle(rightHandToLeftHand, GetWeaponPointingDir());
 
                     if (wieldingAngle < 60)
                     {

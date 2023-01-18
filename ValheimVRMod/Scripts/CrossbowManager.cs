@@ -48,7 +48,7 @@ namespace ValheimVRMod.Scripts {
             }
         }
         
-        protected override Vector3 GetSingleHandedWeaponPointingDir()
+        protected override Vector3 GetWeaponPointingDir()
         {
             return transform.forward;
         }        
