@@ -7,9 +7,9 @@ namespace ValheimVRMod.Scripts.Block {
     public class ShieldBlock : Block {
 
         public string itemName;
-        private const float MIN_PARRY_SPEED = 1f;
+        private const float MIN_PARRY_SPEED = 3f;
         private const float MAX_PARRY_ANGLE = 45f;
-        private const float MAX_PARRY_DIRECTION_CHANGE_RATE = 6f;
+        private const float MAX_PARRY_DIRECTION_CHANGE_RATE = 10f;
 
         private float scaling = 1f;
         private Vector3 posRef;
@@ -44,9 +44,11 @@ namespace ValheimVRMod.Scripts.Block {
             else if (VHVRConfig.BlockingType() == "Realistic")
             {
                 _blocking = Vector3.Dot(hitData.m_dir, getForward()) > 0.3f && hitIntersectsBlockBox(hitData);
+                ParryCheck();
             }
             else {
                 _blocking = Vector3.Dot(hitData.m_dir, getForward()) > 0.5;
+                ParryCheck();
             }
         }
 
