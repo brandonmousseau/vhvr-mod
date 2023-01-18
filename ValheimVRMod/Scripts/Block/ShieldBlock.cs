@@ -7,8 +7,9 @@ namespace ValheimVRMod.Scripts.Block {
     public class ShieldBlock : Block {
 
         public string itemName;
-        private const float MIN_PARRY_SPEED = 1.5f;
-        private const float MAX_PARRY_DIRECTION_CHANGE_RATE = 7f;
+        private const float MIN_PARRY_SPEED = 2f;
+        private const float MIN_PARRY_SWING_DIST = 0.4f;
+        private const float MAX_PARRY_ANGLE = 150f;
 
         private float scaling = 1f;
         private Vector3 posRef;
@@ -67,11 +68,12 @@ namespace ValheimVRMod.Scripts.Block {
         }
 
         protected override void ParryCheck() {
-            Vector3 v = physicsEstimator.GetVelocity();
+            Vector3 v = physicsEstimator.GetAverageVelocityInSnapshots();
             Vector3 a = physicsEstimator.GetAcceleration();
-            float directionChangeRate = Vector3.ProjectOnPlane(a, v).magnitude / v.magnitude;
+            PhysicsEstimator handPhysicsEstimator = VHVRConfig.LeftHanded() ? VRPlayer.rightHandPhysicsEstimator : VRPlayer.leftHandPhysicsEstimator;
+            float l = handPhysicsEstimator.GetLongestLocomotion(/* deltaT= */ 0.4f).magnitude;
             Vector3 shieldFacing = VHVRConfig.LeftHanded() ? VRPlayer.rightHand.transform.right : -VRPlayer.leftHand.transform.right;
-            if (v.magnitude > MIN_PARRY_SPEED && directionChangeRate < MAX_PARRY_DIRECTION_CHANGE_RATE) {
+            if (v.magnitude > MIN_PARRY_SPEED && l > MIN_PARRY_SWING_DIST && Vector3.Angle(v, shieldFacing) < MAX_PARRY_ANGLE) {
                 blockTimer = blockTimerParry;
             }
             else
