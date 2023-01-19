@@ -8,7 +8,7 @@ namespace ValheimVRMod.Scripts.Block {
 
         public string itemName;
         private const float MIN_PARRY_SPEED = 2f;
-        private const float MIN_PARRY_SWING_DIST = 0.4f;
+        private const float MIN_PARRY_SWING_DIST = 0.5f;
         private const float MAX_PARRY_ANGLE = 150f;
 
         private float scaling = 1f;
