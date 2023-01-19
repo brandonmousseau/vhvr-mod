@@ -33,7 +33,8 @@ namespace ValheimVRMod.Scripts.Block {
         protected override void FixedUpdate()
         {
             base.FixedUpdate();
-            blockTimer += Time.fixedDeltaTime;
+            // Parry time restriction is made more lenient for realistic blocking to balance difficulty.
+            blockTimer += (VHVRConfig.BlockingType() == "Realistic" ? Time.fixedDeltaTime * 0.5f : Time.fixedDeltaTime);
         }
 
         private void InitShield()
@@ -83,6 +84,11 @@ namespace ValheimVRMod.Scripts.Block {
                 if (!attemptingParry)
                 {
                     blockTimer = blockTimerParry;
+                    if (VHVRConfig.BlockingType() == "Realistic")
+                    {
+                        // Parry time restriction is made more lenient for realistic blocking to balance difficulty.
+                        blockTimer *= 0.5f;
+                    }
                     attemptingParry = true;
                 }
             }
