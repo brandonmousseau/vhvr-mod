@@ -7,13 +7,15 @@ namespace ValheimVRMod.Scripts.Block {
     public class ShieldBlock : Block {
 
         public string itemName;
-        private const float MIN_PARRY_SPEED = 2f;
-        private const float MIN_PARRY_SWING_DIST = 0.4f;
+        private const float MIN_PARRY_ENTRY_SPEED = 1.5f;
+        private const float MIN_PARRY_SWING_DIST = 0.5f;
         private const float MAX_PARRY_ANGLE = 150f;
+        private const float PARRY_EXIT_SPEED = 0.2f;
 
         private float scaling = 1f;
         private Vector3 posRef;
         private Vector3 scaleRef;
+        private bool attemptingParry;
 
         public static ShieldBlock instance;
 
@@ -27,7 +29,13 @@ namespace ValheimVRMod.Scripts.Block {
             instance = this;
             InitShield();
         }
-        
+
+        protected override void FixedUpdate()
+        {
+            base.FixedUpdate();
+            blockTimer += Time.fixedDeltaTime;
+        }
+
         private void InitShield()
         {
             posRef = _meshCooldown.transform.localPosition;
@@ -68,17 +76,20 @@ namespace ValheimVRMod.Scripts.Block {
         }
 
         protected override void ParryCheck() {
-            Vector3 v = physicsEstimator.GetAverageVelocityInSnapshots();
-            Vector3 a = physicsEstimator.GetAcceleration();
             PhysicsEstimator handPhysicsEstimator = VHVRConfig.LeftHanded() ? VRPlayer.rightHandPhysicsEstimator : VRPlayer.leftHandPhysicsEstimator;
             float l = handPhysicsEstimator.GetLongestLocomotion(/* deltaT= */ 0.4f).magnitude;
             Vector3 shieldFacing = VHVRConfig.LeftHanded() ? VRPlayer.rightHand.transform.right : -VRPlayer.leftHand.transform.right;
-            if (v.magnitude > MIN_PARRY_SPEED && l > MIN_PARRY_SWING_DIST && Vector3.Angle(v, shieldFacing) < MAX_PARRY_ANGLE) {
-                blockTimer = blockTimerParry;
+            if (physicsEstimator.GetVelocity().magnitude > MIN_PARRY_ENTRY_SPEED && Vector3.Angle(physicsEstimator.GetVelocity(), shieldFacing) < MAX_PARRY_ANGLE) {
+                if (!attemptingParry)
+                {
+                    blockTimer = blockTimerParry;
+                    attemptingParry = true;
+                }
             }
-            else
+            else if (attemptingParry && physicsEstimator.GetAverageVelocityInSnapshots().magnitude < PARRY_EXIT_SPEED)
             {
                 blockTimer = blockTimerNonParry;
+                attemptingParry = false;
             }
         }
 
