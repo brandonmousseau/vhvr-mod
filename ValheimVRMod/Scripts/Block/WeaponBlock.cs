@@ -33,12 +33,12 @@ namespace ValheimVRMod.Scripts.Block
 
             // The weaponWield.transform outside its OnRenderObject() might be invalid, therefore we use weaponWield.physicsEstimator.transform intead.
             Vector3 hitPointAlongWeapon = weaponWield.physicsEstimator.transform.position + Vector3.Project(hitData.m_point - weaponWield.physicsEstimator.transform.position, WeaponWield.weaponForward);
+            Vector3 weaponVelocity = weaponWield.physicsEstimator.GetVelocityOfPoint(hitPointAlongWeapon);
 
             if (VHVRConfig.BlockingType() == "Realistic")
             {
-                Vector3 parryVector = weaponWield.physicsEstimator.GetVelocityOfPoint(hitPointAlongWeapon);
                 bool blockWithAngle = 15 < angle && angle < 165;
-                bool blockWithSpeed = parryVector.magnitude > MIN_PARRY_SPEED;
+                bool blockWithSpeed = weaponVelocity.magnitude > MIN_PARRY_SPEED;
                 _blocking = (blockWithAngle || blockWithSpeed) && hitIntersectsBlockBox(hitData) && SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource);
             }
             else if (weaponWield.isLeftHandWeapon() && EquipScript.getLeft() != EquipType.Crossbow)
@@ -59,14 +59,13 @@ namespace ValheimVRMod.Scripts.Block
                 _blocking = weaponWield.allowBlocking() && angle > 60 && angle < 120;
             }
 
-            CheckParryMotion(hitPointAlongWeapon, hitData.m_dir);
+            CheckParryMotion(weaponVelocity, hitData.m_dir);
         }
 
-        private void CheckParryMotion(Vector3 hitPointAlongWeapon, Vector3 hitDir)
+        private void CheckParryMotion(Vector3 weaponVelocity, Vector3 hitDir)
         {
-            Vector3 v = weaponWield.physicsEstimator.GetVelocityOfPoint(hitPointAlongWeapon);
             // Only consider the component of the velocity perpendicular to the hit direction as parrying speed.
-            float parrySpeed = Vector3.ProjectOnPlane(v, hitDir).magnitude;
+            float parrySpeed = Vector3.ProjectOnPlane(weaponVelocity, hitDir).magnitude;
             blockTimer = parrySpeed > MIN_PARRY_SPEED ? blockTimerParry : blockTimer = blockTimerNonParry;
         }
     }
