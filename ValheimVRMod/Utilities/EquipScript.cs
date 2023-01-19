@@ -129,7 +129,8 @@ namespace ValheimVRMod.Utilities
                 case Skills.SkillType.BloodMagic:
                 case Skills.SkillType.ElementalMagic:
                     return EquipType.Magic;
-
+                case Skills.SkillType.Swords:
+                    return EquipType.Sword;
                 case Skills.SkillType.Axes:
                     return EquipType.Axe;
                 case Skills.SkillType.Pickaxes:
@@ -228,6 +229,16 @@ namespace ValheimVRMod.Utilities
         public static bool isSpearEquippedRadialForward()
         {
             return isSpearEquipped() && VHVRConfig.SpearInverseWield();
+        }
+
+        public static bool isTwoHandedAxeEquiped()
+        {
+            return getRight() == EquipType.Axe && Player.m_localPlayer.GetRightItem().m_shared.m_itemType == ItemDrop.ItemData.ItemType.TwoHandedWeapon;
+        }
+
+        public static bool isTwoHandedClubEquiped()
+        {
+            return getRight() == EquipType.Club && Player.m_localPlayer.GetRightItem().m_shared.m_itemType == ItemDrop.ItemData.ItemType.TwoHandedWeapon;
         }
 
         public static bool getRightAnimSpeedUp()
