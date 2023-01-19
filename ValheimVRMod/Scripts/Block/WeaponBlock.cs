@@ -59,9 +59,10 @@ namespace ValheimVRMod.Scripts.Block
             {
                 _blocking = weaponWield.allowBlocking() && angle > 60 && angle < 120;
             }
+            CheckParryMotion();
         }
 
-        protected override void ParryCheck()
+        private void CheckParryMotion()
         {
             Vector3 parryVector = weaponWield.physicsEstimator.GetVelocityOfPoint(lastHitPointAlongWeapon);
             if (parryVector.magnitude > MIN_PARRY_SPEED)

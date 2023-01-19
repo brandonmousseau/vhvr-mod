@@ -12,9 +12,6 @@ namespace ValheimVRMod.Scripts.Block {
         private GameObject rightHandBlockBox;
         private MeshRenderer hitIndicator; // Renderer of disk indicating the position, direction, and block tolerance of an attack.
 
-        private bool blockedWithLeftHand;
-        private bool blockedWithRightHand;
-
         public static FistBlock instance;
 
         private void OnDisable() {
@@ -69,8 +66,8 @@ namespace ValheimVRMod.Scripts.Block {
                 (leftBlockBounds = new Bounds(leftBlockBounds.center, leftBlockBounds.size)).Expand(blockTolerance);
                 Bounds rightBlockBounds = rightHandBlockBox.GetComponent<MeshFilter>().sharedMesh.bounds;
                 (rightBlockBounds = new Bounds(rightBlockBounds.center, rightBlockBounds.size)).Expand(blockTolerance);
-                blockedWithLeftHand = WeaponUtils.LineIntersectsWithBounds(leftBlockBounds, leftHandBlockBox.transform.InverseTransformPoint(hitData.m_point), leftHandBlockBox.transform.InverseTransformDirection(hitData.m_dir));
-                blockedWithRightHand = WeaponUtils.LineIntersectsWithBounds(rightBlockBounds, rightHandBlockBox.transform.InverseTransformPoint(hitData.m_point), rightHandBlockBox.transform.InverseTransformDirection(hitData.m_dir));
+                bool blockedWithLeftHand = WeaponUtils.LineIntersectsWithBounds(leftBlockBounds, leftHandBlockBox.transform.InverseTransformPoint(hitData.m_point), leftHandBlockBox.transform.InverseTransformDirection(hitData.m_dir));
+                bool blockedWithRightHand = WeaponUtils.LineIntersectsWithBounds(rightBlockBounds, rightHandBlockBox.transform.InverseTransformPoint(hitData.m_point), rightHandBlockBox.transform.InverseTransformDirection(hitData.m_dir));
 
                 if (!FistCollision.instance.usingDualKnives() && !FistCollision.instance.usingFistWeapon())
                 {
@@ -80,13 +77,17 @@ namespace ValheimVRMod.Scripts.Block {
                 {
                     _blocking = true;
                 }
-            } else if (FistCollision.instance.usingDualKnives())
+
+                CheckParryMotion(hitData.m_dir, blockedWithLeftHand, blockedWithRightHand);
+            }
+            else if (FistCollision.instance.usingDualKnives())
             {
                 var leftAngle = Vector3.Dot(hitData.m_dir, offhand.TransformDirection(handUp));
                 var rightAngle = Vector3.Dot(hitData.m_dir, hand.TransformDirection(handUp));
                 var leftHandBlock = (leftAngle > -0.5f && leftAngle < 0.5f);
                 var rightHandBlock = (rightAngle > -0.5f && rightAngle < 0.5f);
                 _blocking = leftHandBlock && rightHandBlock;
+                CheckParryMotion(hitData.m_dir, true, true);
             }
             else if (FistCollision.instance.usingFistWeapon())
             {
@@ -109,39 +110,43 @@ namespace ValheimVRMod.Scripts.Block {
                 var rightHandBlock = rightHandtoHit > -0.6f && rightHandtoHit < 0.6f && rightHandtoUp > -0.1f && rightHandtoLeft > -0.5f && rightHandLateralOffset < 0.2f;
 
                 _blocking = leftHandBlock && rightHandBlock;
+                CheckParryMotion(hitData.m_dir, true, true);
             }
         }
 
-        protected override void ParryCheck() {
-            if (FistCollision.instance.usingFistWeapon())
+        private void CheckParryMotion(Vector3 hitDir, bool blockedWithLeftHand, bool blockedWithRightHand)
+        {
+            if (!FistCollision.instance.usingFistWeapon()) {
+                return;
+            }
+
+            float leftHandSpeed = Vector3.ProjectOnPlane(VRPlayer.leftHandPhysicsEstimator.GetVelocity(), hitDir).magnitude;
+            float rightHandSpeed = Vector3.ProjectOnPlane(VRPlayer.rightHandPhysicsEstimator.GetVelocity(), hitDir).magnitude;
+
+            if (VHVRConfig.BlockingType() == "Realistic")
             {
-                float leftHandSpeed = VRPlayer.leftHandPhysicsEstimator?.GetVelocity().magnitude ?? 0;
-                float rightHandSpeed = VRPlayer.rightHandPhysicsEstimator?.GetVelocity().magnitude ?? 0;
-                if (VHVRConfig.BlockingType() == "Realistic")
+                if (blockedWithLeftHand && leftHandSpeed > MIN_PARRY_SPEED)
                 {
-                    if (blockedWithLeftHand && leftHandSpeed > MIN_PARRY_SPEED)
-                    {
-                        blockTimer = blockTimerParry;
-                    }
-                    else if (blockedWithRightHand && rightHandSpeed > MIN_PARRY_SPEED)
-                    {
-                        blockTimer = blockTimerParry;
-                    }
-                    else
-                    {
-                        blockTimer = blockTimerNonParry;
-                    }
+                    blockTimer = blockTimerParry;
+                }
+                else if (blockedWithRightHand && rightHandSpeed > MIN_PARRY_SPEED)
+                {
+                    blockTimer = blockTimerParry;
                 }
                 else
                 {
-                    if (leftHandSpeed > MIN_PARRY_SPEED || rightHandSpeed > MIN_PARRY_SPEED)
-                    {
-                        blockTimer = blockTimerParry;
-                    }
-                    else
-                    {
-                        blockTimer = blockTimerNonParry;
-                    }
+                    blockTimer = blockTimerNonParry;
+                }
+            }
+            else
+            {
+                if (leftHandSpeed > MIN_PARRY_SPEED || rightHandSpeed > MIN_PARRY_SPEED)
+                {
+                    blockTimer = blockTimerParry;
+                }
+                else
+                {
+                    blockTimer = blockTimerNonParry;
                 }
             }
         }
