@@ -7,7 +7,7 @@ namespace ValheimVRMod.Scripts.Block {
     public class ShieldBlock : Block {
 
         public string itemName;
-        private const float MIN_PARRY_SPEED = 1.5f;
+        private const float MIN_PARRY_ENTRY_SPEED = 1.5f;
         private const float MIN_PARRY_SWING_DIST = 0.5f;
         private const float MAX_PARRY_ANGLE = 150f;
         private const float PARRY_EXIT_SPEED = 0.2f;
@@ -76,20 +76,17 @@ namespace ValheimVRMod.Scripts.Block {
         }
 
         protected override void ParryCheck() {
-            Vector3 v = physicsEstimator.GetAverageVelocityInSnapshots();
-            Vector3 a = physicsEstimator.GetAcceleration();
             PhysicsEstimator handPhysicsEstimator = VHVRConfig.LeftHanded() ? VRPlayer.rightHandPhysicsEstimator : VRPlayer.leftHandPhysicsEstimator;
             float l = handPhysicsEstimator.GetLongestLocomotion(/* deltaT= */ 0.4f).magnitude;
             Vector3 shieldFacing = VHVRConfig.LeftHanded() ? VRPlayer.rightHand.transform.right : -VRPlayer.leftHand.transform.right;
-
-            if (physicsEstimator.GetVelocity().magnitude > MIN_PARRY_SPEED && Vector3.Angle(v, shieldFacing) < MAX_PARRY_ANGLE) {
+            if (physicsEstimator.GetVelocity().magnitude > MIN_PARRY_ENTRY_SPEED && Vector3.Angle(physicsEstimator.GetVelocity(), shieldFacing) < MAX_PARRY_ANGLE) {
                 if (!attemptingParry)
                 {
                     blockTimer = blockTimerParry;
                     attemptingParry = true;
                 }
             }
-            else if (v.magnitude < PARRY_EXIT_SPEED)
+            else if (attemptingParry && physicsEstimator.GetAverageVelocityInSnapshots().magnitude < PARRY_EXIT_SPEED)
             {
                 blockTimer = blockTimerNonParry;
                 attemptingParry = false;
