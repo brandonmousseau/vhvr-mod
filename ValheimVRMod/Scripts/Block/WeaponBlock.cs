@@ -12,7 +12,6 @@ namespace ValheimVRMod.Scripts.Block
 
         private const float MIN_PARRY_SPEED = 2.5f;
         private readonly Vector3 handUp = new Vector3(0, -0.15f, -0.85f);
-        private Vector3 lastHitPointAlongWeapon;
 
         private void OnDisable()
         {
@@ -33,11 +32,11 @@ namespace ValheimVRMod.Scripts.Block
             var angle = Vector3.Angle(hitData.m_dir, WeaponWield.weaponForward);
 
             // The weaponWield.transform outside its OnRenderObject() might be invalid, therefore we use weaponWield.physicsEstimator.transform intead.
-            lastHitPointAlongWeapon = weaponWield.physicsEstimator.transform.position + Vector3.Project(hitData.m_point - weaponWield.physicsEstimator.transform.position, WeaponWield.weaponForward);
+            Vector3 hitPointAlongWeapon = weaponWield.physicsEstimator.transform.position + Vector3.Project(hitData.m_point - weaponWield.physicsEstimator.transform.position, WeaponWield.weaponForward);
 
             if (VHVRConfig.BlockingType() == "Realistic")
             {
-                Vector3 parryVector = weaponWield.physicsEstimator.GetVelocityOfPoint(lastHitPointAlongWeapon);
+                Vector3 parryVector = weaponWield.physicsEstimator.GetVelocityOfPoint(hitPointAlongWeapon);
                 bool blockWithAngle = 15 < angle && angle < 165;
                 bool blockWithSpeed = parryVector.magnitude > MIN_PARRY_SPEED;
                 _blocking = (blockWithAngle || blockWithSpeed) && hitIntersectsBlockBox(hitData) && SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource);
@@ -59,20 +58,16 @@ namespace ValheimVRMod.Scripts.Block
             {
                 _blocking = weaponWield.allowBlocking() && angle > 60 && angle < 120;
             }
-            CheckParryMotion();
+
+            CheckParryMotion(hitPointAlongWeapon, hitData.m_dir);
         }
 
-        private void CheckParryMotion()
+        private void CheckParryMotion(Vector3 hitPointAlongWeapon, Vector3 hitDir)
         {
-            Vector3 parryVector = weaponWield.physicsEstimator.GetVelocityOfPoint(lastHitPointAlongWeapon);
-            if (parryVector.magnitude > MIN_PARRY_SPEED)
-            {
-                blockTimer = blockTimerParry;
-            }
-            else
-            {
-                blockTimer = blockTimerNonParry;
-            }
+            Vector3 v = weaponWield.physicsEstimator.GetVelocityOfPoint(hitPointAlongWeapon);
+            // Only consider the component of the velocity perpendicular to the hit direction as parrying speed.
+            float parrySpeed = Vector3.ProjectOnPlane(v, hitDir).magnitude;
+            blockTimer = parrySpeed > MIN_PARRY_SPEED ? blockTimerParry : blockTimer = blockTimerNonParry;
         }
     }
 }
