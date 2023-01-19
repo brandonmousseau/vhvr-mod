@@ -149,7 +149,7 @@ namespace ValheimVRMod.Scripts {
             }
 
             // if attack is vertical, we can only hit one target at a time
-            if (attack.m_attackType != Attack.AttackType.Horizontal && AttackTargetMeshCooldown.isLastTargetInCooldown()) {
+            if (attack.m_attackType != Attack.AttackType.Horizontal && AttackTargetMeshCooldown.isPrimaryTargetInCooldown()) {
                 return false;
             }
 
@@ -254,7 +254,7 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            var inCooldown = AttackTargetMeshCooldown.isLastTargetInCooldown();
+            var inCooldown = AttackTargetMeshCooldown.isPrimaryTargetInCooldown();
 
             if (outline.enabled && Player.m_localPlayer.HaveStamina(getStaminaUsage() + 0.1f)
                                 && (attack.m_attackType == Attack.AttackType.Horizontal || !inCooldown)) {
