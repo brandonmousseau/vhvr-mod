@@ -14,6 +14,7 @@ namespace ValheimVRMod.Utilities
         private List<Quaternion> rotationSnapshots = new List<Quaternion>();
         private List<Vector3> velocitySnapshots = new List<Vector3>();
         private List<Vector3> sparseSnapshots = new List<Vector3>(); // Sparsely snapshotted positions for estimating longest locomotion in a time span.
+        private Vector3? cachedAverageVelocityInSnapshots = null;
         private LineRenderer debugVelocityLine;
 
         private int sparseSnapshotTicker = 0;
@@ -34,6 +35,8 @@ namespace ValheimVRMod.Utilities
                 snapshots.Clear();
                 rotationSnapshots.Clear();
                 velocitySnapshots.Clear();
+                sparseSnapshots.Clear();
+                cachedAverageVelocityInSnapshots = null;
                 _refTransform = value;
             }
         }
@@ -58,7 +61,7 @@ namespace ValheimVRMod.Utilities
                 sparseSnapshots.Add(snapshots[0]);
                 sparseSnapshotTicker = 0;
             }
-
+            cachedAverageVelocityInSnapshots = null;
 
             if (snapshots.Count > MAX_SNAPSHOTS)
             {
@@ -143,14 +146,17 @@ namespace ValheimVRMod.Utilities
                 return Vector3.zero;
             }
 
-            Vector3 vSum = Vector3.zero;
-            foreach (Vector3 v in velocitySnapshots)
+            if (cachedAverageVelocityInSnapshots == null)
             {
-                vSum += v;
+                Vector3 vSum = Vector3.zero;
+                foreach (Vector3 v in velocitySnapshots)
+                {
+                    vSum += v;
+                }
+                cachedAverageVelocityInSnapshots = vSum / velocitySnapshots.Count;
             }
-            Vector3 vAverage = vSum / velocitySnapshots.Count;
 
-            return refTransform == null ? vAverage : refTransform.TransformVector(vAverage);
+            return refTransform == null ? ((Vector3) cachedAverageVelocityInSnapshots) : refTransform.TransformVector((Vector3) cachedAverageVelocityInSnapshots);
         }
 
         // Returns the farthest locomtion in the past deltaT seconds relative to the current position.
