@@ -5,19 +5,18 @@ namespace ValheimVRMod.Scripts {
     public class AttackTargetMeshCooldown : MeshCooldown {
         public static float damageMultiplier;
         public static bool staminaDrained;
-        private static MeshCooldown lastAttackTargetMeshCooldown;
-
+        private static MeshCooldown primaryTargetMeshCooldown;
         public override bool tryTrigger(float cd) {
             bool isTriggered = base.tryTrigger(cd);
-            if (isTriggered && lastAttackTargetMeshCooldown == null) {
-                lastAttackTargetMeshCooldown = this;
+            if (isTriggered && primaryTargetMeshCooldown == null) {
+                primaryTargetMeshCooldown = this;
                 damageMultiplier = 1;
             }
             return isTriggered;
         }
 
         public static float calcDamageMultiplier() {
-            var dmgMultiplier = damageMultiplier;
+            var oldDamageMultiplier = damageMultiplier;
             
             if (damageMultiplier == 1) {
                 damageMultiplier /= 3;
@@ -26,12 +25,12 @@ namespace ValheimVRMod.Scripts {
                 damageMultiplier /= 2;
             }
 
-            return dmgMultiplier;
+            return oldDamageMultiplier;
         }
 
-        public static bool isLastTargetInCooldown()
+        public static bool isPrimaryTargetInCooldown()
         {
-            return lastAttackTargetMeshCooldown != null && lastAttackTargetMeshCooldown.inCoolDown();
+            return primaryTargetMeshCooldown != null && primaryTargetMeshCooldown.inCoolDown();
         }
         
         protected override bool keepOutlineInstance()
@@ -40,16 +39,16 @@ namespace ValheimVRMod.Scripts {
         }
 
         protected override void OnDisable() {
-            lastAttackTargetMeshCooldown = null;
+            primaryTargetMeshCooldown = null;
             base.OnDisable();
         }
 
         protected override void FixedUpdate() {
             base.FixedUpdate();
             if (! inCoolDown()) {
-                if (lastAttackTargetMeshCooldown == this) {
+                if (primaryTargetMeshCooldown == this) {
                     staminaDrained = false;
-                    lastAttackTargetMeshCooldown = null;
+                    primaryTargetMeshCooldown = null;
                 }
             }
         }
