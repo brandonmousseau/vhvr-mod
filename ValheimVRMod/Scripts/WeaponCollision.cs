@@ -22,6 +22,7 @@ namespace ValheimVRMod.Scripts {
         private List<Vector3> weaponHandleSnapshots;
         private ItemDrop.ItemData item;
         private Attack attack;
+        private Attack secondaryAttack;
         private bool isRightHand;
         private Outline outline;
         private float hitTime;
@@ -30,6 +31,7 @@ namespace ValheimVRMod.Scripts {
         public PhysicsEstimator physicsEstimator { get; private set; }
         public PhysicsEstimator mainHandPhysicsEstimator { get { return weaponWield.mainHand == VRPlayer.leftHand ? VRPlayer.leftHandPhysicsEstimator : VRPlayer.rightHandPhysicsEstimator; } }
         public bool lastAttackWasStab { get; private set; }
+        public bool atgeirSecondaryAttackInProgress { get; private set; }
         public bool itemIsTool;
         public static bool isDrinking;
         public WeaponWield weaponWield;
@@ -113,7 +115,14 @@ namespace ValheimVRMod.Scripts {
             StaticObjects.lastHitDir = physicsEstimator.GetVelocity().normalized;
             StaticObjects.lastHitCollider = collider;
 
-            if (attack.Start(Player.m_localPlayer, null, null,
+            bool isSecondaryAttack = RoomscaleSecondaryAttackUtils.IsSecondaryAttack(this);
+            if (EquipScript.getRight() == EquipType.Polearms)
+            {
+                // Allow continuing an ongoing Atgeir secondary attack until cooldown finishes.
+                isSecondaryAttack = atgeirSecondaryAttackInProgress = (atgeirSecondaryAttackInProgress || isSecondaryAttack);
+            }
+
+            if ((isSecondaryAttack ? secondaryAttack : attack).Start(Player.m_localPlayer, null, null,
                         Player.m_localPlayer.m_animEvent,
                         null, item, null, 0.0f, 0.0f))
             {
@@ -196,6 +205,7 @@ namespace ValheimVRMod.Scripts {
             }
 
             attack = item.m_shared.m_attack.Clone();
+            secondaryAttack = item.m_shared.m_secondaryAttack.Clone();
 
             switch (attack.m_attackAnimation) {
                 case "atgeir_attack":
@@ -255,6 +265,10 @@ namespace ValheimVRMod.Scripts {
             }
 
             var inCooldown = AttackTargetMeshCooldown.isPrimaryTargetInCooldown();
+            if (!inCooldown)
+            {
+                atgeirSecondaryAttackInProgress = false;
+            }
 
             if (outline.enabled && Player.m_localPlayer.HaveStamina(getStaminaUsage() + 0.1f)
                                 && (attack.m_attackType == Attack.AttackType.Horizontal || !inCooldown)) {
