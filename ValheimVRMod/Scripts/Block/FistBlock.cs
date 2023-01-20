@@ -120,13 +120,15 @@ namespace ValheimVRMod.Scripts.Block {
                 return;
             }
 
-            float leftHandSpeed = Vector3.ProjectOnPlane(VRPlayer.leftHandPhysicsEstimator.GetVelocity(), hitDir).magnitude;
-            float rightHandSpeed = Vector3.ProjectOnPlane(VRPlayer.rightHandPhysicsEstimator.GetVelocity(), hitDir).magnitude;
-            if (blockedWithLeftHand && leftHandSpeed > MIN_PARRY_SPEED)
+            // Only consider the component of the velocity perpendicular to the hit direction as parrying speed.
+            float leftHandParrySpeed = Vector3.ProjectOnPlane(VRPlayer.leftHandPhysicsEstimator.GetVelocity(), hitDir).magnitude;
+            float rightHandParrySpeed = Vector3.ProjectOnPlane(VRPlayer.rightHandPhysicsEstimator.GetVelocity(), hitDir).magnitude;
+
+            if (blockedWithLeftHand && leftHandParrySpeed > MIN_PARRY_SPEED)
             {
                 blockTimer = blockTimerParry;
             }
-            else if (blockedWithRightHand && rightHandSpeed > MIN_PARRY_SPEED)
+            else if (blockedWithRightHand && rightHandParrySpeed > MIN_PARRY_SPEED)
             {
                 blockTimer = blockTimerParry;
             }
