@@ -62,28 +62,13 @@ namespace ValheimVRMod.Scripts.Block {
             }
             else if (VHVRConfig.BlockingType() == "Realistic")
             {
-                _blocking = Vector3.Dot(hitData.m_dir, getForward()) > 0.3f && hitIntersectsBlockBox(hitData);
+                _blocking = Vector3.Dot(hitData.m_dir, shieldFacing) < -0.25f && hitIntersectsBlockBox(hitData);
                 CheckParryMotion();
             }
             else {
-                _blocking = Vector3.Dot(hitData.m_dir, getForward()) > 0.5f;
+                _blocking = Vector3.Dot(hitData.m_dir, shieldFacing) < -0.5f;
                 CheckParryMotion();
             }
-        }
-
-        private Vector3 getForward() {
-            switch (itemName)
-            {
-                case "ShieldWood":
-                case "ShieldBanded":
-                    return StaticObjects.shieldObj().transform.forward;
-                case "ShieldKnight":
-                    return -StaticObjects.shieldObj().transform.right;
-                case "ShieldBronzeBuckler":
-                case "ShieldIronBuckler":
-                    return VHVRConfig.LeftHanded() ? StaticObjects.shieldObj().transform.up : -StaticObjects.shieldObj().transform.up;
-            }
-            return -StaticObjects.shieldObj().transform.forward;
         }
 
         private void CheckParryMotion() {
