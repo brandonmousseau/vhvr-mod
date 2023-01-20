@@ -41,6 +41,7 @@ namespace ValheimVRMod.Patches
                 __instance != Player.m_localPlayer ||
                 !VRPlayer.attachedToPlayer ||
                 !VRPlayer.inFirstPerson ||
+                Game.IsPaused() ||
                 !VHVRConfig.UseLookLocomotion() ||
                 ___m_currentStation != null /* Not Crafting */)
             {
