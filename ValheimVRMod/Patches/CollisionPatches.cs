@@ -238,7 +238,6 @@ namespace ValheimVRMod.Patches {
                 ___m_weapon.m_durability -= ___m_weapon.m_shared.m_useDurabilityDrain;
                 AttackTargetMeshCooldown.durabilityDrained = true;
             }
-
             ___m_character.AddNoise(___m_attackHitNoise);
 
             // FIXME: Setup now takes in input an additional ammo parameter, look into this
