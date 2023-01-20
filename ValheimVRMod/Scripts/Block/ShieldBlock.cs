@@ -62,11 +62,11 @@ namespace ValheimVRMod.Scripts.Block {
             }
             else if (VHVRConfig.BlockingType() == "Realistic")
             {
-                _blocking = Vector3.Dot(hitData.m_dir, shieldFacing) > 0.25f && hitIntersectsBlockBox(hitData);
+                _blocking = Vector3.Dot(hitData.m_dir, shieldFacing) < -0.25f && hitIntersectsBlockBox(hitData);
                 CheckParryMotion();
             }
             else {
-                _blocking = Vector3.Dot(hitData.m_dir, shieldFacing) > 0.5f;
+                _blocking = Vector3.Dot(hitData.m_dir, shieldFacing) < -0.5f;
                 CheckParryMotion();
             }
         }
