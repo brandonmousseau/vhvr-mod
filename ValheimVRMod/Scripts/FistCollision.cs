@@ -11,6 +11,9 @@ namespace ValheimVRMod.Scripts {
     public class FistCollision : MonoBehaviour {
         public static FistCollision instance;
         private const float MIN_SPEED = 2.5f;
+        private const float MIN_HOOK_SPEED = 5f;
+        private const float MIN_HOOK_DISTANCE = 1f;
+        private const float MAX_HOOK_ALIGNMENT_ANGLE = 30f;
         private GameObject colliderParent = null;
         private bool isRightHand;
         private HandGesture handGesture;
@@ -54,13 +57,14 @@ namespace ValheimVRMod.Scripts {
             StaticObjects.lastHitDir = physicsEstimator.GetVelocity().normalized;
             StaticObjects.lastHitCollider = collider;
 
-            var item = Player.m_localPlayer.m_unarmedWeapon.m_itemData;
-            var attack = Player.m_localPlayer.m_unarmedWeapon.m_itemData.m_shared.m_attack;
-            if (usingClaws() || usingDualKnives())
+            bool usingWeapon = usingClaws() || usingDualKnives();
+            var item = usingWeapon ? Player.m_localPlayer.GetRightItem() : Player.m_localPlayer.m_unarmedWeapon.m_itemData;
+            Attack attack = isSecondaryAttack() ? item.m_shared.m_secondaryAttack : item.m_shared.m_attack;
+            if (usingWeapon)
             {
-                item = Player.m_localPlayer.GetRightItem();
-                attack = item.m_shared.m_attack.Clone();
+                attack = attack.Clone();
             }
+
             if (attack.Start(Player.m_localPlayer, null, null, Player.m_localPlayer.m_animEvent,
                 null, item, null, 0.0f, 0.0f)) {
                 if (isRightHand) {
@@ -125,6 +129,22 @@ namespace ValheimVRMod.Scripts {
                    (isEquippedWithFistGesture || isUnequipedWithFistGesture);
         }
 
+        private bool isSecondaryAttack()
+        {
+            if (usingClaws())
+            {
+                // Claws' secondary attack is kicking despite having the damage amount of claw primary attack.
+                // Skipping it since it would be no-op in VR aside from playing a kicking instead of clawing sound effect. 
+                return false;
+            }
+            Vector3 v = physicsEstimator.GetAverageVelocityInSnapshots();
+            if (v.magnitude < MIN_HOOK_SPEED) {
+                return false;
+            }
+            Vector3 thrust = physicsEstimator.GetLongestLocomotion(1f);
+            return Vector3.Dot(thrust, v.normalized) >= MIN_HOOK_DISTANCE && Vector3.Angle(thrust, v) <= MAX_HOOK_ALIGNMENT_ANGLE;
+        }
+
         public bool hasMomentum() {
 
             if (!VHVRConfig.WeaponNeedsSpeed()) {
@@ -177,3 +197,4 @@ namespace ValheimVRMod.Scripts {
         }
     }
 }
+

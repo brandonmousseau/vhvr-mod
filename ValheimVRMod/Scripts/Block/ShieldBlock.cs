@@ -7,12 +7,18 @@ namespace ValheimVRMod.Scripts.Block {
     public class ShieldBlock : Block {
 
         public string itemName;
-        private const float MIN_PARRY_SPEED = 1.5f;
-        private const float MAX_PARRY_DIRECTION_CHANGE_RATE = 7f;
+        private const float MIN_PARRY_ENTRY_SPEED = 1.5f;
+        private const float MIN_PARRY_SWING_DIST = 0.5f;
+        private const float MAX_PARRY_ANGLE = 150f;
+        private const float PARRY_EXIT_SPEED = 0.2f;
+        private const int PARRY_CHECK_INTERVAL = 5;
 
         private float scaling = 1f;
         private Vector3 posRef;
         private Vector3 scaleRef;
+        private bool attemptingParry;
+        private int parryCheckFixedUpateTicker = 0;
+        private Vector3 shieldFacing { get { return VHVRConfig.LeftHanded() ? VRPlayer.rightHand.transform.right : -VRPlayer.leftHand.transform.right; } }
 
         public static ShieldBlock instance;
 
@@ -26,7 +32,21 @@ namespace ValheimVRMod.Scripts.Block {
             instance = this;
             InitShield();
         }
-        
+
+        protected override void FixedUpdate()
+        {
+            base.FixedUpdate();
+
+            // Parry time restriction is made more lenient for realistic blocking to balance difficulty.
+            blockTimer += (VHVRConfig.BlockingType() == "Realistic" ? Time.fixedDeltaTime * 0.5f : Time.fixedDeltaTime);
+
+            if (++parryCheckFixedUpateTicker >= PARRY_CHECK_INTERVAL)
+            {
+                CheckParryMotion();
+                parryCheckFixedUpateTicker = 0;
+            }
+        }
+
         private void InitShield()
         {
             posRef = _meshCooldown.transform.localPosition;
@@ -43,11 +63,11 @@ namespace ValheimVRMod.Scripts.Block {
             else if (VHVRConfig.BlockingType() == "Realistic")
             {
                 _blocking = Vector3.Dot(hitData.m_dir, getForward()) > 0.3f && hitIntersectsBlockBox(hitData);
-                ParryCheck();
+                CheckParryMotion();
             }
             else {
                 _blocking = Vector3.Dot(hitData.m_dir, getForward()) > 0.5f;
-                ParryCheck();
+                CheckParryMotion();
             }
         }
 
@@ -66,17 +86,25 @@ namespace ValheimVRMod.Scripts.Block {
             return -StaticObjects.shieldObj().transform.forward;
         }
 
-        protected override void ParryCheck() {
-            Vector3 v = physicsEstimator.GetVelocity();
-            Vector3 a = physicsEstimator.GetAcceleration();
-            float directionChangeRate = Vector3.ProjectOnPlane(a, v).magnitude / v.magnitude;
-            Vector3 shieldFacing = VHVRConfig.LeftHanded() ? VRPlayer.rightHand.transform.right : -VRPlayer.leftHand.transform.right;
-            if (v.magnitude > MIN_PARRY_SPEED && directionChangeRate < MAX_PARRY_DIRECTION_CHANGE_RATE) {
-                blockTimer = blockTimerParry;
+        private void CheckParryMotion() {
+            PhysicsEstimator handPhysicsEstimator = VHVRConfig.LeftHanded() ? VRPlayer.rightHandPhysicsEstimator : VRPlayer.leftHandPhysicsEstimator;
+            float l = handPhysicsEstimator.GetLongestLocomotion(/* deltaT= */ 0.4f).magnitude;
+            if (physicsEstimator.GetVelocity().magnitude > MIN_PARRY_ENTRY_SPEED && Vector3.Angle(physicsEstimator.GetVelocity(), shieldFacing) < MAX_PARRY_ANGLE) {
+                if (!attemptingParry)
+                {
+                    blockTimer = blockTimerParry;
+                    if (VHVRConfig.BlockingType() == "Realistic")
+                    {
+                        // Parry time restriction is made more lenient for realistic blocking to balance difficulty.
+                        blockTimer *= 0.5f;
+                    }
+                    attemptingParry = true;
+                }
             }
-            else
+            else if (attemptingParry && physicsEstimator.GetAverageVelocityInSnapshots().magnitude < PARRY_EXIT_SPEED)
             {
                 blockTimer = blockTimerNonParry;
+                attemptingParry = false;
             }
         }
 

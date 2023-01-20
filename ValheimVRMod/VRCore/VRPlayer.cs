@@ -113,7 +113,7 @@ namespace ValheimVRMod.VRCore
                 if (value == null && attachedToPlayer)
                 {
                     value = leftHand.gameObject.AddComponent<PhysicsEstimator>();
-                    value.refTransform = Player.m_localPlayer.transform;
+                    value.refTransform = CameraUtils.getCamera(CameraUtils.VR_CAMERA)?.transform.parent;
                 }
                 return value;
             }
@@ -127,7 +127,7 @@ namespace ValheimVRMod.VRCore
                 if (value == null && attachedToPlayer)
                 {
                     value = rightHand.gameObject.AddComponent<PhysicsEstimator>();
-                    value.refTransform = Player.m_localPlayer.transform;
+                    value.refTransform = CameraUtils.getCamera(CameraUtils.VR_CAMERA)?.transform.parent;
                 }
                 return value;
             }

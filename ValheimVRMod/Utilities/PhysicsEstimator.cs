@@ -7,11 +7,17 @@ namespace ValheimVRMod.Utilities
     public class PhysicsEstimator : MonoBehaviour
     {
         private const int MAX_SNAPSHOTS = 8;
+        private const int MAX_SPARSE_SNAPSHOTS = 16;
+        private const int SPARSE_SNAPSHOT_INTERVAL = 4;
 
         private List<Vector3> snapshots = new List<Vector3>();
         private List<Quaternion> rotationSnapshots = new List<Quaternion>();
         private List<Vector3> velocitySnapshots = new List<Vector3>();
+        private List<Vector3> sparseSnapshots = new List<Vector3>(); // Sparsely snapshotted positions for estimating longest locomotion in a time span.
+        private Vector3? cachedAverageVelocityInSnapshots = null;
         private LineRenderer debugVelocityLine;
+
+        private int sparseSnapshotTicker = 0;
 
         // The transform used as the frames of reference for velocity calculation.
         private Transform _refTransform;
@@ -29,6 +35,8 @@ namespace ValheimVRMod.Utilities
                 snapshots.Clear();
                 rotationSnapshots.Clear();
                 velocitySnapshots.Clear();
+                sparseSnapshots.Clear();
+                cachedAverageVelocityInSnapshots = null;
                 _refTransform = value;
             }
         }
@@ -48,6 +56,12 @@ namespace ValheimVRMod.Utilities
                 // TODO: consider using least square fit or a smoonthening function over all snapshots, but should balance with performance too.
                 velocitySnapshots.Add((snapshots[snapshots.Count - 1] - snapshots[0]) / Time.fixedDeltaTime / (snapshots.Count - 1));
             }
+            if ((++sparseSnapshotTicker) >= SPARSE_SNAPSHOT_INTERVAL)
+            {
+                sparseSnapshots.Add(snapshots[0]);
+                sparseSnapshotTicker = 0;
+            }
+            cachedAverageVelocityInSnapshots = null;
 
             if (snapshots.Count > MAX_SNAPSHOTS)
             {
@@ -60,6 +74,10 @@ namespace ValheimVRMod.Utilities
             if (velocitySnapshots.Count > MAX_SNAPSHOTS)
             {
                 velocitySnapshots.RemoveAt(0);
+            }
+            if (sparseSnapshots.Count > MAX_SPARSE_SNAPSHOTS)
+            {
+                sparseSnapshots.RemoveAt(0);
             }
         }
 
@@ -85,6 +103,18 @@ namespace ValheimVRMod.Utilities
             return refTransform == null ? velocitySnapshots[0] : refTransform.TransformVector(velocitySnapshots[0]);
         }
 
+        public Quaternion GetAngularVelocity()
+        {
+            if (rotationSnapshots.Count <= 1)
+            {
+                return Quaternion.identity;
+            }
+            Quaternion deltaRotation = Quaternion.Inverse(rotationSnapshots[0]) * rotationSnapshots[rotationSnapshots.Count - 1];
+            float deltaT = (rotationSnapshots.Count - 1) * Time.fixedDeltaTime;
+            Quaternion w = Quaternion.SlerpUnclamped(Quaternion.identity, deltaRotation, 1 / deltaT);
+            return refTransform == null ? w : refTransform.rotation * w * Quaternion.Inverse(refTransform.rotation);
+        }
+            
         public Vector3 GetAcceleration() {
             if (velocitySnapshots.Count <= 1) {
                 return Vector3.zero;
@@ -116,14 +146,36 @@ namespace ValheimVRMod.Utilities
                 return Vector3.zero;
             }
 
-            Vector3 vSum = Vector3.zero;
-            foreach (Vector3 v in velocitySnapshots)
+            if (cachedAverageVelocityInSnapshots == null)
             {
-                vSum += v;
+                Vector3 vSum = Vector3.zero;
+                foreach (Vector3 v in velocitySnapshots)
+                {
+                    vSum += v;
+                }
+                cachedAverageVelocityInSnapshots = vSum / velocitySnapshots.Count;
             }
-            Vector3 vAverage = vSum / velocitySnapshots.Count;
 
-            return refTransform == null ? vAverage : refTransform.TransformVector(vAverage);
+            return refTransform == null ? ((Vector3) cachedAverageVelocityInSnapshots) : refTransform.TransformVector((Vector3) cachedAverageVelocityInSnapshots);
+        }
+
+        // Returns the farthest locomtion in the past deltaT seconds relative to the current position.
+        public Vector3 GetLongestLocomotion(float deltaT)
+        {
+            Vector3 longestLocomotion = Vector3.zero;
+            float longestDist = 0;
+            float currentDeltaT = 0;
+            for (int i = 0; i < sparseSnapshots.Count && currentDeltaT <= deltaT; i++, currentDeltaT += Time.fixedDeltaTime * SPARSE_SNAPSHOT_INTERVAL)
+            {
+                Vector3 locomotion = snapshots[snapshots.Count - 1] - sparseSnapshots[i];
+                float dist = locomotion.magnitude;
+                if (dist > longestDist)
+                {
+                    longestLocomotion = locomotion;
+                    longestDist = dist;
+                }
+            }
+            return refTransform == null ? longestLocomotion : refTransform.TransformVector(longestLocomotion);
         }
 
         private void CreateDebugVelocityLine()
@@ -137,3 +189,4 @@ namespace ValheimVRMod.Utilities
         }
     }
 }
+

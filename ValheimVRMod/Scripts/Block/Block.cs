@@ -53,7 +53,6 @@ namespace ValheimVRMod.Scripts.Block {
             }
             
             tickCounter = 0;
-            if (VHVRConfig.BlockingType() != "GrabButton") ParryCheck();
 
             if(wasGetHit && !SteamVR_Actions.valheim_Grab.GetState(currhand))
             {
@@ -61,9 +60,8 @@ namespace ValheimVRMod.Scripts.Block {
                 wasGetHit = false;
             }
         }
-        public abstract void setBlocking(HitData hitData);
-        protected abstract void ParryCheck();
 
+        public abstract void setBlocking(HitData hitData);
         public void resetBlocking() {
             if (VHVRConfig.BlockingType() == "GrabButton")
             {
@@ -147,7 +145,7 @@ namespace ValheimVRMod.Scripts.Block {
 
         protected float GetBlockTolerance(HitData.DamageTypes damageTypes, float pushForce) {
             // Adjust for block tolerance radius: blunt damage and push force increases tolerance raidus whereas pierce damage decreases tolerance radius.
-            return 0.5f * Mathf.Log(1 + damageTypes.m_blunt * 0.1f + pushForce * 0.01f) / Mathf.Log(3 + damageTypes.m_pierce * 0.1f);
+            return 0.5f * Mathf.Log(1 + damageTypes.m_blunt * 0.1f + pushForce * 0.01f) * (0.5f + 1f / Mathf.Log(8 + damageTypes.m_pierce * 0.1f));
         }
     }
 }

@@ -11,12 +11,11 @@ using Valve.VR;
 
 namespace ValheimVRMod.Scripts {
     public class WeaponCollision : MonoBehaviour {
-        private const float MIN_DISTANCE = 0.2f;
-        private const float MIN_DISTANCE_STAB = 0.25f;
-        private const float MIN_DISTANCE_STAB_TWOHAND = 0.22f;
+        private const float MIN_SPEED = 1.5f;
+        private const float MIN_STAB_SPEED = 1f;
         private const int MAX_SNAPSHOTS_BASE = 20;
         private const int MAX_SNAPSHOTS_FACTOR = -5;
-        private const float MAX_STAB_ANGLE = 20f;
+        private const float MAX_STAB_ANGLE = 30f;
         private const float MAX_STAB_ANGLE_TWOHAND = 40f;
 
         private bool scriptActive;
@@ -29,13 +28,14 @@ namespace ValheimVRMod.Scripts {
         private Outline outline;
         private float hitTime;
         private bool hasDrunk;
-        public bool lastAttackWasStab { get; private set; }
-        private Vector3 weaponDirection { get { return (transform.position - weaponWield.mainHand.transform.position).normalized; } }
 
+        public PhysicsEstimator physicsEstimator { get; private set; }
+        public PhysicsEstimator mainHandPhysicsEstimator { get { return weaponWield.mainHand == VRPlayer.leftHand ? VRPlayer.leftHandPhysicsEstimator : VRPlayer.rightHandPhysicsEstimator; } }
+        public bool lastAttackWasStab { get; private set; }
         public bool itemIsTool;
         public static bool isDrinking;
         public WeaponWield weaponWield;
-        
+
         private int maxSnapshots;
         private float colliderDistance;
 
@@ -49,8 +49,13 @@ namespace ValheimVRMod.Scripts {
         private void Awake()
         {
             colliderParent = new GameObject();
+
+            // TODO: cleanup unused snapshot lists.
             snapshots = new List<Vector3>();
             weaponHandleSnapshots = new List<Vector3>();
+
+            physicsEstimator = gameObject.AddComponent<PhysicsEstimator>();
+            physicsEstimator.refTransform = CameraUtils.getCamera(CameraUtils.VR_CAMERA)?.transform.parent;
         }
 
         void Destroy()
@@ -88,7 +93,7 @@ namespace ValheimVRMod.Scripts {
                 if (collider.name == "MouthCollider" && hasDrunk) {
                     hasDrunk = false;
                 }
-                
+
                 return;
             }
 
@@ -105,14 +110,14 @@ namespace ValheimVRMod.Scripts {
             if (!tryHitTarget(collider.gameObject)) {
                 return;
             }
-            
+
             StaticObjects.lastHitPoint = transform.position;
-            StaticObjects.lastHitDir = snapshots[snapshots.Count - 1] - snapshots[snapshots.Count - 5];
+            StaticObjects.lastHitDir = physicsEstimator.GetVelocity().normalized;
             StaticObjects.lastHitCollider = collider;
-            
+
             if (attack.Start(Player.m_localPlayer, null, null,
-                Player.m_localPlayer.m_animEvent,
-                null, item, null, 0.0f, 0.0f))
+                        Player.m_localPlayer.m_animEvent,
+                        null, item, null, 0.0f, 0.0f))
             {
                 if (isRightHand) {
                     VRPlayer.rightHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, SteamVR_Input_Sources.RightHand);
@@ -149,24 +154,24 @@ namespace ValheimVRMod.Scripts {
                 return false;
             }
             // if attack is vertical, we can only hit one target at a time
-            if (attack.m_attackType != Attack.AttackType.Horizontal  && AttackTargetMeshCooldown.isLastTargetInCooldown()) {
+            if (attack.m_attackType != Attack.AttackType.Horizontal && AttackTargetMeshCooldown.isPrimaryTargetInCooldown()) {
                 return false;
             }
 
             if (target.GetComponentInParent<MineRock5>() != null) {
                 target = target.transform.parent.gameObject;
             }
-            
+
             var character = target.GetComponentInParent<Character>();
             if (character != null) {
                 target = character.gameObject;
             }
-            
+
             var attackTargetMeshCooldown = target.GetComponent<AttackTargetMeshCooldown>();
             if (attackTargetMeshCooldown == null) {
                 attackTargetMeshCooldown = target.AddComponent<AttackTargetMeshCooldown>();
             }
-            
+
             return attackTargetMeshCooldown.tryTrigger(hitTime);
         }
 
@@ -182,7 +187,6 @@ namespace ValheimVRMod.Scripts {
         }
 
         public void setColliderParent(Transform obj, string name, bool rightHand) {
-
             outline = obj.parent.gameObject.AddComponent<Outline>();
             outline.OutlineColor = Color.red;
             outline.OutlineWidth = 5;
@@ -190,12 +194,12 @@ namespace ValheimVRMod.Scripts {
 
             isRightHand = rightHand;
             if (isRightHand) {
-                item = Player.m_localPlayer.GetRightItem();   
+                item = Player.m_localPlayer.GetRightItem();
             }
             else {
                 item = Player.m_localPlayer.GetLeftItem();
             }
-            
+
             attack = item.m_shared.m_attack.Clone();
 
             switch (attack.m_attackAnimation) {
@@ -233,13 +237,13 @@ namespace ValheimVRMod.Scripts {
             }
 
             try {
-                WeaponColData colliderData = WeaponUtils.getForName(name,item);
+                WeaponColData colliderData = WeaponUtils.getForName(name, item);
                 colliderParent.transform.parent = obj;
                 colliderParent.transform.localPosition = colliderData.pos;
                 colliderParent.transform.localRotation = Quaternion.Euler(colliderData.euler);
                 colliderParent.transform.localScale = colliderData.scale;
                 colliderDistance = Vector3.Distance(colliderParent.transform.position, obj.parent.position);
-                maxSnapshots = (int) (MAX_SNAPSHOTS_BASE + MAX_SNAPSHOTS_FACTOR * colliderDistance);
+                maxSnapshots = (int)(MAX_SNAPSHOTS_BASE + MAX_SNAPSHOTS_FACTOR * colliderDistance);
                 setScriptActive(true);
             }
             catch (InvalidEnumArgumentException)
@@ -255,7 +259,7 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            var inCooldown = AttackTargetMeshCooldown.isLastTargetInCooldown();
+            var inCooldown = AttackTargetMeshCooldown.isPrimaryTargetInCooldown();
 
             if (outline.enabled && Player.m_localPlayer.HaveStamina(getStaminaUsage() + 0.1f)
                                 && (attack.m_attackType == Attack.AttackType.Horizontal || !inCooldown)) {
@@ -268,12 +272,12 @@ namespace ValheimVRMod.Scripts {
         }
 
         private float getStaminaUsage() {
-            
+
             if (attack.m_attackStamina <= 0.0) {
-                return 0.0f;   
+                return 0.0f;
             }
             double attackStamina = attack.m_attackStamina;
-            return (float) (attackStamina - attackStamina * 0.330000013113022 * Player.m_localPlayer.GetSkillFactor(item.m_shared.m_skillType));
+            return (float)(attackStamina - attackStamina * 0.330000013113022 * Player.m_localPlayer.GetSkillFactor(item.m_shared.m_skillType));
         }
         
         private bool isCollisionAllowed() {
@@ -305,7 +309,6 @@ namespace ValheimVRMod.Scripts {
         }
 
         public bool hasMomentum() {
-
             lastAttackWasStab = isStab();
 
             if (lastAttackWasStab)
@@ -317,12 +320,9 @@ namespace ValheimVRMod.Scripts {
                 return true;
             }
 
-            foreach (Vector3 snapshot in snapshots)
+            if (physicsEstimator.GetAverageVelocityInSnapshots().magnitude > MIN_SPEED + colliderDistance * 2)
             {
-                if (Vector3.Distance(snapshot, transform.localPosition) > MIN_DISTANCE + colliderDistance / 2)
-                {
-                    return true;
-                }
+                return true;
             }
 
             return false;
@@ -330,22 +330,17 @@ namespace ValheimVRMod.Scripts {
 
         private bool isStab()
         {
-            Vector3 attackDirection = weaponWield.mainHand.transform.position - weaponHandleSnapshots[0];
-            Vector3 weaponDirection = this.weaponDirection;
+            Vector3 attackVelocity = mainHandPhysicsEstimator == null ? Vector3.zero : mainHandPhysicsEstimator.GetAverageVelocityInSnapshots();
 
-            if (Vector3.Angle(weaponDirection, attackDirection) > (WeaponWield.isCurrentlyTwoHanded() ? MAX_STAB_ANGLE_TWOHAND : MAX_STAB_ANGLE))
+            if (Vector3.Angle(WeaponWield.weaponForward, attackVelocity) > (WeaponWield.isCurrentlyTwoHanded() ? MAX_STAB_ANGLE_TWOHAND : MAX_STAB_ANGLE))
             {
                 return false;
             }
 
-            float minDistance = WeaponWield.isCurrentlyTwoHanded() ? MIN_DISTANCE_STAB_TWOHAND : MIN_DISTANCE_STAB;
-            foreach (Vector3 snapshot in weaponHandleSnapshots)
+            if (Vector3.Dot(attackVelocity, WeaponWield.weaponForward) > MIN_STAB_SPEED)
             {
-                if (Vector3.Dot(weaponWield.mainHand.transform.position - snapshot, weaponDirection) > minDistance)
-                {
-                    LogUtils.LogDebug("VHVR: stab detected on weapon direction: " + weaponDirection);
-                    return true;
-                }
+                LogUtils.LogDebug("VHVR: stab detected on weapon direction: " + WeaponWield.weaponForward);
+                return true;
             }
             return false;
         }
