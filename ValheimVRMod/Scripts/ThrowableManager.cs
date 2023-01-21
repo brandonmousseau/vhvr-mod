@@ -10,8 +10,6 @@ namespace ValheimVRMod.Scripts
 {
     public class ThrowableManager : MonoBehaviour
     {
-        private const int MAX_SNAPSHOTS = 7;
-        private const int MIN_SNAPSHOTSCHECK = 3;
         private static readonly Vector3 handAimOffset = new Vector3(0, -0.45f, -0.55f);
         private static readonly Vector3 handAimOffsetInverse = new Vector3(0, -0.15f, -0.85f);
         private const float minDist = 0.16f;
@@ -38,8 +36,7 @@ namespace ValheimVRMod.Scripts
 
         private float directionCooldown;
         private int tickCounter;
-        private List<Vector3> snapshots = new List<Vector3>();
-        private List<Vector3> throwDirSnapshot = new List<Vector3>();
+        PhysicsEstimator handPhysicsEstimator { get { return VHVRConfig.LeftHanded() ? VRPlayer.leftHandPhysicsEstimator : VRPlayer.rightHandPhysicsEstimator; } }
 
         private void Awake()
         {
@@ -108,20 +105,13 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            snapshots.Add(Player.m_localPlayer.transform.InverseTransformPoint(VRPlayer.dominantHand.transform.position));
-
-            if (snapshots.Count > MAX_SNAPSHOTS)
-            {
-                snapshots.RemoveAt(0);
-            }
-
             tickCounter = 0;
             if (!VHVRConfig.UseSpearDirectionGraphic())
             {
                 return;
             }
 
-            if (directionCooldown <= 0 || weaponWield.allowBlocking())
+            if (directionCooldown <= 0 || WeaponWield.isCurrentlyTwoHanded())
             {
                 directionCooldown = 0;
                 directionLine.enabled = false;
@@ -160,45 +150,7 @@ namespace ValheimVRMod.Scripts
 
         private void UpdateClassicThrowCalculation()
         {
-            var dist = 0.0f;
-            Vector3 posStart = VRPlayer.dominantHand.transform.position;
-            Vector3 posEnd = VRPlayer.dominantHand.transform.position;
-
-            foreach (Vector3 snapshot in snapshots)
-            {
-                var curDist = Vector3.Distance(snapshot, posEnd);
-                if (curDist > dist)
-                {
-                    dist = curDist;
-                    posStart = Player.m_localPlayer.transform.TransformPoint(snapshot);
-                }
-            }
-            var direction = posEnd - posStart;
-            if (throwDirSnapshot.Count == 0 || direction != throwDirSnapshot[throwDirSnapshot.Count - 1])
-            {
-                throwDirSnapshot.Add(direction);
-            }
-            var avgDir = Vector3.zero;
-            var totalCount = 0;
-            for (var i = 0; i < throwDirSnapshot.Count; i++)
-            {
-                if (Vector3.Angle(throwDirSnapshot[i], direction) < 5)
-                {
-                    avgDir += throwDirSnapshot[i];
-                    totalCount++;
-                }
-                else if (Vector3.Angle(throwDirSnapshot[i], direction) > 40)
-                {
-                    throwDirSnapshot.RemoveAt(i);
-                }
-            }
-            if (throwDirSnapshot.Count > 8)
-            {
-                throwDirSnapshot.RemoveAt(0);
-            }
-            avgDir = avgDir / (totalCount);
-
-
+            var avgDir = handPhysicsEstimator.GetAverageVelocityInSnapshots();
             var lineDirection = avgDir;
             var pStartAim = Player.m_localPlayer.transform.InverseTransformPoint(VRPlayer.dominantHand.transform.position);
             UpdateThrowCalculation(avgDir, lineDirection, pStartAim);
@@ -233,18 +185,27 @@ namespace ValheimVRMod.Scripts
 
             if (isAiming)
             {
-                UpdateSpearThrowModel(direction.normalized);
+
+                if (VHVRConfig.SpearThrowType() == "Classic")
+                {
+                    // Since classic throw type calculates spear pointing solely based on hand velocity,
+                    // avoid responding to it too much at low velocity so that the spear direction does not flicker.
+                    Vector3 defaultDirection =
+                        Quaternion.AngleAxis(-30, VRPlayer.dominantHand.transform.right) * (VHVRConfig.SpearInverseWield() ? -WeaponWield.weaponForward : WeaponWield.weaponForward);
+                    float aligning = Vector3.Dot(defaultDirection, direction.normalized) * handPhysicsEstimator.GetVelocity().magnitude;
+                    Vector3 aligningDirection = aligning > 0 ? direction.normalized : -direction.normalized;
+                    Vector3 spearPointing = Vector3.RotateTowards(defaultDirection, aligningDirection, Mathf.Atan(Mathf.Abs(aligning) * 0.5f), Mathf.Infinity);
+                    UpdateSpearThrowModel(spearPointing);
+                }
+                else {
+                    UpdateSpearThrowModel(direction.normalized);
+                }
                 UpdateDirectionLine(
                     VRPlayer.dominantHand.transform.position - direction.normalized,
                     VRPlayer.dominantHand.transform.position + direction.normalized * 50);
             }
 
             if (!useAction.GetStateUp(VRPlayer.dominantHandInputSource))
-            {
-                return;
-            }
-
-            if (snapshots.Count < MIN_SNAPSHOTSCHECK)
             {
                 return;
             }
@@ -257,7 +218,7 @@ namespace ValheimVRMod.Scripts
             }
 
             spawnPoint = VRPlayer.dominantHand.transform.position;
-            var throwing = CalculateThrowAndDistance();
+            var throwing = CalculateThrowAndDistance(direction);
             aimDir = direction.normalized * throwing.ThrowSpeed;
 
             if (throwing.Distance > minDist)
@@ -306,7 +267,7 @@ namespace ValheimVRMod.Scripts
 
         private void UpdateDirectionLine(Vector3 pos1, Vector3 pos2)
         {
-            if (!VHVRConfig.UseSpearDirectionGraphic() || weaponWield.allowBlocking())
+            if (!VHVRConfig.UseSpearDirectionGraphic() || WeaponWield.isCurrentlyTwoHanded())
             {
                 return;
             }
@@ -320,50 +281,25 @@ namespace ValheimVRMod.Scripts
 
         class ThrowCalculate
         {
-            public Vector3 PosStart { get; set; }
-            public Vector3 PosEnd { get; set; }
             public float ThrowSpeed { get; set; }
             public float Distance { get; set; }
-            public ThrowCalculate(Vector3 posStart, Vector3 posEnd, float throwSpeed)
+            public ThrowCalculate(float throwSpeed, float distance)
             {
-                PosStart = posStart;
-                PosEnd = posEnd;
                 ThrowSpeed = throwSpeed;
-                Distance = Vector3.Distance(posEnd, posStart);
+                Distance = distance;
             }
         }
 
-        private ThrowCalculate CalculateThrowAndDistance()
+        private ThrowCalculate CalculateThrowAndDistance(Vector3 direction)
         {
-            var dist = 0.0f;
-            Vector3 posStart = Player.m_localPlayer.transform.InverseTransformPoint(VRPlayer.dominantHand.transform.position);
-            Vector3 posEnd = posStart;
-
-            foreach (Vector3 snapshot in snapshots)
-            {
-                var curDist = Vector3.Distance(snapshot, posEnd);
-                if (curDist > dist)
-                {
-                    dist = curDist;
-                    posStart = snapshot;
-                }
-            }
-
             var throwSpeed = 1f;
             if (VHVRConfig.SpearThrowSpeedDynamic())
             {
-                var speedModifier = slowThrowModifier;
-                if (dist > fastThrowMinDist)
-                {
-                    speedModifier = fastThrowModifier;
-                }
-                else if (dist > mediumThrowMinDist)
-                {
-                    speedModifier = mediumThrowModifier;
-                }
-                throwSpeed = Vector3.Distance(posEnd, posStart) * speedModifier;
+                throwSpeed = Vector3.Dot(handPhysicsEstimator.GetAverageVelocityInSnapshots(), direction.normalized);
+                // Apply some non-linear damping otherwise the spear flies too fast even if thrown at low speed.
+                throwSpeed *= Mathf.Clamp(throwSpeed  * 0.25f, 0.25f, 0.5f);
             }
-            return new ThrowCalculate(posStart, posEnd, throwSpeed);
+            return new ThrowCalculate(throwSpeed, handPhysicsEstimator.GetLongestLocomotion(0.4f).magnitude);
         }
     }
 }
