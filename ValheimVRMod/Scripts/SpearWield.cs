@@ -7,6 +7,8 @@ namespace ValheimVRMod.Scripts
 {
     class SpearWield : WeaponWield
     {
+        private float harpoonHidingTimer = 0;
+
         protected override void Awake()
         {
             base.Awake();
@@ -15,6 +17,32 @@ namespace ValheimVRMod.Scripts
             {
                 meshFilter.gameObject.transform.localPosition = Quaternion.AngleAxis(180, Vector3.right) * meshFilter.gameObject.transform.localPosition;
                 meshFilter.gameObject.transform.localRotation *= Quaternion.AngleAxis(180, Vector3.right);
+            }
+        }
+
+        protected override void OnRenderObject()
+        {
+            base.OnRenderObject();
+            if (ThrowableManager.isThrowing) {
+                harpoonHidingTimer = 1;
+            }
+            else if (ThrowableManager.isAiming)
+            {
+                harpoonHidingTimer = 0;
+            }
+        }
+
+        void FixedUpdate()
+        {
+            if (harpoonHidingTimer > 0)
+            {
+                harpoonHidingTimer -= Time.fixedDeltaTime;
+            }
+
+            if (EquipScript.getRight() == EquipType.SpearChitin)
+            {
+                MeshRenderer spearRenderer = gameObject.GetComponentInChildren<ThrowableManager>().gameObject.GetComponent<MeshRenderer>();
+                spearRenderer.shadowCastingMode = harpoonHidingTimer > 0 ? UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly : UnityEngine.Rendering.ShadowCastingMode.On;
             }
         }
 
