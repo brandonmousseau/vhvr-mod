@@ -1,6 +1,8 @@
 ﻿using System;
 using UnityEngine;
 using ValheimVRMod.Scripts;
+using ValheimVRMod.VRCore;
+using Valve.VR;
 
 namespace ValheimVRMod.Utilities
 {
@@ -21,6 +23,7 @@ namespace ValheimVRMod.Utilities
         private delegate bool SecondaryAttackCheck(WeaponCollision weaponCollision);
 
         private static SecondaryAttackCheck[] secondaryAttackChecks = new SecondaryAttackCheck[] {
+
             delegate(WeaponCollision weaponCollision) // Sword check
             {
                 if (EquipScript.getRight() != EquipType.Sword)
@@ -46,9 +49,10 @@ namespace ValheimVRMod.Utilities
 
                 return Vector3.Angle(thrust, WeaponWield.weaponForward) <= MAX_STAB_ANGLE;
             },
+
             delegate (WeaponCollision weaponCollision) // Single-handed axe check
             {
-                if (EquipScript.getRight() != EquipType.Axe || EquipScript.isTwoHandedAxeEquiped())
+                if (EquipScript.getRight() != EquipType.Axe || EquipScript.isTwoHandedAxeEquiped() || weaponCollision.lastAttackWasStab)
                 {
                     return false;
                 }
@@ -76,18 +80,24 @@ namespace ValheimVRMod.Utilities
 
                 return Vector3.Angle(thrust, swingVelocity) <= MAX_ANGLE;
             },
+
             delegate (WeaponCollision weaponCollision) // Two-handed axe check
             {
-                return EquipScript.isTwoHandedAxeEquiped() && weaponCollision.lastAttackWasStab;
+                if (!EquipScript.isTwoHandedAxeEquiped())
+                {
+                    return false;
+                }
+                return !WeaponWield.isCurrentlyTwoHanded() || weaponCollision.lastAttackWasStab;
             },
+
             delegate (WeaponCollision weaponCollision) // Single-handed club check
             {
-                if (EquipScript.getRight() != EquipType.Club || EquipScript.isTwoHandedClubEquiped())
+                if (EquipScript.getRight() != EquipType.Club || EquipScript.isTwoHandedClubEquiped() || weaponCollision.lastAttackWasStab)
                 {
                     return false;
                 }
 
-                // TODO: consider adjusting these constants to account for weapon length.
+                // TODO: consider adjusting these constants to account for weapon length variation.
                 const float MIN_SPEED = 10f;
                 const float MIN_THRUST_DISTANCE = 1.5f;
                 const float MAX_ANGLE = 60;
@@ -110,17 +120,43 @@ namespace ValheimVRMod.Utilities
 
                 return Vector3.Angle(thrust, swingVelocity) <= MAX_ANGLE;
             },
+
             delegate (WeaponCollision weaponCollision) // Polearms check
             {
-                if (EquipScript.getRight() != EquipType.Polearms) {
+                if (EquipScript.getRight() != EquipType.Polearms || !WeaponWield.isCurrentlyTwoHanded()) {
                     return false;
                 }
                     
-                const float MIN_SWIPING_SPEED = 5f;
+                const float MIN_SWIPING_SPEED = 2.5f;
                 float swipingSpeed = Vector3.ProjectOnPlane(weaponCollision.physicsEstimator.GetAverageVelocityInSnapshots(), WeaponWield.weaponForward).magnitude;
+                LogUtils.LogWarning("Atgeir: " + swipingSpeed);
                 return !weaponCollision.lastAttackWasStab && swipingSpeed >= MIN_SWIPING_SPEED;
-            }
+            },
 
+            delegate (WeaponCollision weaponCollision) // Knife check
+            {
+                LogUtils.LogWarning("Knife? " + (EquipScript.getRight() == EquipType.Knife) + " " + SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource));
+                if (EquipScript.getRight() != EquipType.Knife || !SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource)) {
+                    return false;
+                }
+
+                const float MIN_SPEED = 4f;
+                const float MIN_THRUST_DISTANCE = 1f;
+
+                Vector3 velocity = weaponCollision.mainHandPhysicsEstimator.GetAverageVelocityInSnapshots();
+                Vector3 velocityInPlayerCoordinates = Player.m_localPlayer.transform.InverseTransformVector(velocity);
+                float sagittalSpeed = new Vector2(velocityInPlayerCoordinates.y, Mathf.Max(velocityInPlayerCoordinates.z, 0)).magnitude;
+                if (sagittalSpeed < MIN_SPEED)
+                {
+                    return false;
+                }
+
+                Vector3 thrust = weaponCollision.mainHandPhysicsEstimator.GetLongestLocomotion(0.5f);
+                Vector3 thrustInPlayerCoordinates = Player.m_localPlayer.transform.InverseTransformVector(thrust);
+                float sagittalSpeedThrust = new Vector2(thrustInPlayerCoordinates.y, Mathf.Max(thrustInPlayerCoordinates.z, 0)).magnitude;
+
+                return sagittalSpeedThrust >= MIN_THRUST_DISTANCE;
+            }
         };
     }
 }
