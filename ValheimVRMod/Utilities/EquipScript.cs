@@ -150,6 +150,8 @@ namespace ValheimVRMod.Utilities
                     return EquipType.ThrowObject;
                 case "dual_knives":
                     return EquipType.DualKnives;
+                case "knife_stab":
+                    return EquipType.Knife;
                 case "swing_hammer":
                     return EquipType.Hammer;
                 case "emote_drink":
