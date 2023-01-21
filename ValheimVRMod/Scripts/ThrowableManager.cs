@@ -75,7 +75,7 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            if (!SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource) || weaponWield.allowBlocking())
+            if (!SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource) || WeaponWield.isCurrentlyTwoHanded())
             {
                 return;
             }

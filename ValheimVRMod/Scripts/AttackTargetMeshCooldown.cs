@@ -5,6 +5,7 @@ namespace ValheimVRMod.Scripts {
     public class AttackTargetMeshCooldown : MeshCooldown {
         public static float damageMultiplier;
         public static bool staminaDrained;
+        public static bool durabilityDrained;
         private static MeshCooldown primaryTargetMeshCooldown;
         public override bool tryTrigger(float cd) {
             bool isTriggered = base.tryTrigger(cd);
@@ -48,6 +49,7 @@ namespace ValheimVRMod.Scripts {
             if (! inCoolDown()) {
                 if (primaryTargetMeshCooldown == this) {
                     staminaDrained = false;
+                    durabilityDrained = false;
                     primaryTargetMeshCooldown = null;
                 }
             }

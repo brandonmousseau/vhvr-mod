@@ -11,7 +11,21 @@ namespace ValheimVRMod.Scripts.Block {
         private const float MIN_PARRY_SWING_DIST = 0.5f;
         private const float MAX_PARRY_ANGLE = 150f;
         private const float PARRY_EXIT_SPEED = 0.2f;
-        private const int PARRY_CHECK_INTERVAL = 5;
+        private const int PARRY_CHECK_INTERVAL = 3;
+        private static float PARRY_WINDOW_EASING_FACTOR {
+            get
+            {
+                switch (VHVRConfig.BlockingType())
+                {
+                    case "Realistic":
+                        return 0.5f;
+                    case "Gesture":
+                        return 0.75f;
+                    default:
+                        return 1;
+                }
+            }
+        }
 
         private float scaling = 1f;
         private Vector3 posRef;
@@ -38,7 +52,7 @@ namespace ValheimVRMod.Scripts.Block {
             base.FixedUpdate();
 
             // Parry time restriction is made more lenient for realistic blocking to balance difficulty.
-            blockTimer += (VHVRConfig.BlockingType() == "Realistic" ? Time.fixedDeltaTime * 0.5f : Time.fixedDeltaTime);
+            blockTimer += Time.fixedDeltaTime * PARRY_WINDOW_EASING_FACTOR;
 
             if (++parryCheckFixedUpateTicker >= PARRY_CHECK_INTERVAL)
             {
@@ -77,12 +91,7 @@ namespace ValheimVRMod.Scripts.Block {
             if (physicsEstimator.GetVelocity().magnitude > MIN_PARRY_ENTRY_SPEED && Vector3.Angle(physicsEstimator.GetVelocity(), shieldFacing) < MAX_PARRY_ANGLE) {
                 if (!attemptingParry)
                 {
-                    blockTimer = blockTimerParry;
-                    if (VHVRConfig.BlockingType() == "Realistic")
-                    {
-                        // Parry time restriction is made more lenient for realistic blocking to balance difficulty.
-                        blockTimer *= 0.5f;
-                    }
+                    blockTimer = blockTimerParry * PARRY_WINDOW_EASING_FACTOR;
                     attemptingParry = true;
                 }
             }
