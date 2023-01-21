@@ -43,6 +43,7 @@ namespace ValheimVRMod.Scripts
         private Vector3 pointVel3;
         private Vector3 pointVel4;
         private Vector3 pointVel5;
+        private bool wasLeap;
 
         private void Awake()
         {
@@ -183,6 +184,31 @@ namespace ValheimVRMod.Scripts
                 return;
             }
             SecondaryAttack();
+            //secondaryJump();
+
+
+        }
+
+
+        private void secondaryJump()
+        {
+            if(SteamVR_Actions.valheim_Use.GetState(SteamVR_Input_Sources.RightHand) && 
+                SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand) && 
+                SteamVR_Actions.valheim_Jump.GetStateDown(SteamVR_Input_Sources.RightHand)  && 
+                Player.m_localPlayer.IsOnGround())
+            {
+                //Player.m_localPlayer.SetCrouch(false);
+                //var forward = Player.m_localPlayer.m_moveDir == Vector3.zero ? Player.m_localPlayer.m_body.transform.forward.normalized * 15 : Player.m_localPlayer.m_moveDir.normalized * 30;
+                //Player.m_localPlayer.m_pushForce = (forward) + (Vector3.up * 5);
+                //Player.m_localPlayer.UpdateBodyFriction();
+                //wasLeap = true;
+            }
+
+            if (wasLeap && !Player.m_localPlayer.IsOnGround())
+            {
+                //Player.m_localPlayer.m_collider.material.staticFriction = 0.5f;
+                //Player.m_localPlayer.m_collider.material.dynamicFriction = 0.5f;
+            }
         }
 
         private void SecondaryAttack()
@@ -202,7 +228,7 @@ namespace ValheimVRMod.Scripts
             var offHand = isRightHand ? VRPlayer.leftHand : VRPlayer.rightHand;
             var mainHandSource = isRightHand ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand;
             var mainHandTrigger = isRightHand ? SteamVR_Actions.valheim_Use.state : SteamVR_Actions.valheim_UseLeft.state;
-            var inCooldown = AttackTargetMeshCooldown.isLastTargetInCooldown();
+            var inCooldown = AttackTargetMeshCooldown.isPrimaryTargetInCooldown();
             var localWeaponForward = WeaponWield.weaponForward * secondaryAttack.m_attackRange / 2;
             var localHandPos = mainHand.transform.position - Player.m_localPlayer.transform.position;
             var posHeight = Player.m_localPlayer.transform.InverseTransformPoint(mainHand.transform.position + localWeaponForward);
@@ -217,6 +243,7 @@ namespace ValheimVRMod.Scripts
                 firstPos = Vector3.zero;
                 lastPos = Vector3.zero;
             }
+            
             if (SteamVR_Actions.valheim_Grab.GetState(mainHandSource) && 
                 !inCooldown && 
                 !VRPlayer.vrPlayerInstance.CheckMenuIsOpen() && 
@@ -261,6 +288,7 @@ namespace ValheimVRMod.Scripts
                     wasSecondaryAttack = false;
                     slashTrail.emitting = false;
                     outline.enabled = false;
+                    wasLeap = false;
                     if (!secondaryAttackJustEnded)
                     {
                         if (isRightHand)
@@ -347,17 +375,6 @@ namespace ValheimVRMod.Scripts
 
             if (firstPos != Vector3.zero && lastPos != Vector3.zero && !inCooldown)
             {
-                if(Vector3.Distance(firstPos,lastPos) < secondaryAttack.m_attackRange * 0.5f)
-                {
-                    secondaryAttackTimer = Mathf.Min(GetSecondaryAttackHitTime() / 2, 0.3f);
-                    secondaryAttackTimerFull = -GetSecondaryAttackHitTime() + secondaryAttackTimer;
-                    firstPos = Vector3.zero;
-                    lastPos = Vector3.zero;
-                    wasSecondaryAttack = false;
-                    slashTrail.emitting = false;
-                    lastpointList = new List<Vector3>();
-                    return;
-                }
                 int layerMask = secondaryAttack.m_hitTerrain ? Attack.m_attackMaskTerrain : Attack.m_attackMask;
                 firstPos = Player.m_localPlayer.transform.position + firstPos;
                 lastPos = Player.m_localPlayer.transform.position + lastPos;
@@ -365,6 +382,11 @@ namespace ValheimVRMod.Scripts
                 pointList = new List<Vector3>();
                 if (secondaryAttack.m_attackAnimation == "atgeir_secondary")
                 {
+                    if (Vector3.Distance(firstPos, lastPos) < secondaryAttack.m_attackRange * 0.5f)
+                    {
+                        ResetSecondaryAttack();
+                        return;
+                    }
                     slashLine.positionCount = 360 / 4;
                     slashLine.loop = true;
                     slashLine.widthCurve = circleCurve;
@@ -391,13 +413,28 @@ namespace ValheimVRMod.Scripts
                     pointList.Add(endTrail);
                     slashLine.SetPositions(pointList.ToArray());
                     slashLine.positionCount = 5;
+
+                    if ((Vector3.Distance(firstTrail, halfTrail) + Vector3.Distance(halfTrail, endTrail)) < secondaryAttack.m_attackRange * 0.5f)
+                    {
+                        ResetSecondaryAttack();
+                        return;
+                    }
+                    
                     hitDir = (endTrail - halfTrail).normalized;
 
-                    RaycastHit[] tempSecondaryHitList = Physics.SphereCastAll(firstTrail, attack.m_attackRayWidth * 1.5f, (halfTrail - firstTrail).normalized, Vector3.Distance(firstTrail,halfTrail), layerMask, QueryTriggerInteraction.Ignore);
+                    var multiplier = 1;
+                    var rayWidth = secondaryAttack.m_attackRayWidth == 0 ? attack.m_attackRayWidth : secondaryAttack.m_attackRayWidth;
+                    if (secondaryAttack.m_attackAnimation == "knife_secondary" && wasLeap)
+                    {
+                        multiplier = 2;
+                    }
+
+                    RaycastHit[] tempSecondaryHitList = Physics.SphereCastAll(firstTrail, rayWidth * 1.25f * multiplier, (halfTrail - firstTrail).normalized, Vector3.Distance(firstTrail,halfTrail), layerMask, QueryTriggerInteraction.Ignore);
                     Array.Sort<RaycastHit>(tempSecondaryHitList, (RaycastHit x, RaycastHit y) => x.distance.CompareTo(y.distance));
                     RaycastSecondaryAttack(tempSecondaryHitList);
 
-                    tempSecondaryHitList = Physics.SphereCastAll(halfTrail, attack.m_attackRayWidth * 1.5f, (endTrail - halfTrail).normalized, Vector3.Distance(halfTrail, endTrail), layerMask, QueryTriggerInteraction.Ignore);
+                    
+                    tempSecondaryHitList = Physics.SphereCastAll(halfTrail, rayWidth * 1.25f * multiplier, (endTrail - halfTrail).normalized, Vector3.Distance(halfTrail, endTrail) * multiplier, layerMask, QueryTriggerInteraction.Ignore);
                     Array.Sort<RaycastHit>(tempSecondaryHitList, (RaycastHit x, RaycastHit y) => x.distance.CompareTo(y.distance));
                     RaycastSecondaryAttack(tempSecondaryHitList);
                 }
@@ -462,6 +499,17 @@ namespace ValheimVRMod.Scripts
             }
         }
 
+        private void ResetSecondaryAttack()
+        {
+            secondaryAttackTimer = Mathf.Min(GetSecondaryAttackHitTime() / 2, 0.3f);
+            secondaryAttackTimerFull = -GetSecondaryAttackHitTime() + secondaryAttackTimer;
+            firstPos = Vector3.zero;
+            lastPos = Vector3.zero;
+            wasSecondaryAttack = false;
+            slashTrail.emitting = false;
+            lastpointList = new List<Vector3>();
+            wasLeap = false;
+        }
         private void RaycastSecondaryAttack(RaycastHit[] raycastList)
         {
             if (raycastList.Length <= 0)
@@ -514,17 +562,19 @@ namespace ValheimVRMod.Scripts
             switch (secondaryAttack.m_attackAnimation)
             {
                 case "axe_secondary":
-                    return 1.8f;
+                    return 2f;
                 case "atgeir_secondary":
+                    return 1.54f;
                 case "mace_secondary":
+                    return 1.72f;
                 case "sword_secondary":
                 case "greatsword_secondary":
-                    return 2f;
+                    return 1.84f;
                 case "knife_secondary":
                 case "dual_knives_secondary":
-                    return 1.5f;
+                    return 1.52f;
                 case "battleaxe_secondary":
-                    return 0.86f;
+                    return 0.7f;
                 case "swing_pickaxe":
                     return 1.3f;
                 default:
