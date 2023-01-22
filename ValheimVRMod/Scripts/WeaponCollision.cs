@@ -191,13 +191,13 @@ namespace ValheimVRMod.Scripts {
 
             if (isSecondaryAttack)
             {
-                // Use the target cooldown time of the primary attack if it is shorter to allow primary attack immediately after secondary attack;
-                // The secondary attack cooldown time is manage by postSecondaryAttackCountdown in this class intead.
+                // Use the target cooldown time of the primary attack if it is shorter to allow a primary attack immediately after secondary attack;
+                // The secondary attack cooldown time is managed by postSecondaryAttackCountdown in this class intead.
                 float targetCooldownTime = Mathf.Min(WeaponUtils.GetAttackDuration(attack), WeaponUtils.GetAttackDuration(secondaryAttack));
-                return attackTargetMeshCooldown.tryTrigger(targetCooldownTime);
+                return attackTargetMeshCooldown.tryTriggerSecondaryAttack(targetCooldownTime);
             }
             
-            return attackTargetMeshCooldown.tryTrigger(WeaponUtils.GetAttackDuration(attack));
+            return attackTargetMeshCooldown.tryTriggerPrimaryAttack(WeaponUtils.GetAttackDuration(attack));
         }
 
         private void OnRenderObject() {
