@@ -135,7 +135,6 @@ namespace ValheimVRMod.Utilities
 
             delegate (WeaponCollision weaponCollision) // Knife check
             {
-                LogUtils.LogWarning("Knife? " + (EquipScript.getRight() == EquipType.Knife) + " " + SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource));
                 if (EquipScript.getRight() != EquipType.Knife || !SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource)) {
                     return false;
                 }

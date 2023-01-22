@@ -291,22 +291,16 @@ namespace ValheimVRMod.Scripts {
                 Player.m_localPlayer.HaveStamina(getStaminaUsage() + 0.1f) && (attack.m_attackType == Attack.AttackType.Horizontal || !inCooldown);
             if (!canDoPrimaryAttack)
             {
-                if (!outline.enabled)
-                {
-                    outline.enabled = true;
-                }
+                outline.enabled = true;
                 outline.OutlineColor = Color.red;
                 outline.OutlineWidth = 5;
             }
             else if (postSecondaryAttackCountdown > 0.5f) {
-                if (!outline.enabled)
-                {
-                    outline.enabled = true;
-                }
+                outline.enabled = true;
                 outline.OutlineColor = Color.Lerp(new Color(1, 1, 0, 0), Color.yellow, postSecondaryAttackCountdown - 0.5f);
                 outline.OutlineWidth = 10;
             }
-            else if (outline.enabled)
+            else
             {
                 outline.enabled = false;
             }
