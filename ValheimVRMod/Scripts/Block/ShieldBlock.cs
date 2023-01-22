@@ -91,7 +91,7 @@ namespace ValheimVRMod.Scripts.Block {
             if (physicsEstimator.GetVelocity().magnitude > MIN_PARRY_ENTRY_SPEED && Vector3.Angle(physicsEstimator.GetVelocity(), shieldFacing) < MAX_PARRY_ANGLE) {
                 if (!attemptingParry)
                 {
-                    blockTimer = blockTimerParry * PARRY_WINDOW_EASING_FACTOR;
+                    blockTimer = 0;
                     attemptingParry = true;
                 }
             }
