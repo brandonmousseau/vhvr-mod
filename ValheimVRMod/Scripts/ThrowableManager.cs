@@ -35,6 +35,7 @@ namespace ValheimVRMod.Scripts
         private SteamVR_Action_Boolean useAction { get { return VHVRConfig.LeftHanded() ? SteamVR_Actions.valheim_UseLeft : SteamVR_Actions.valheim_Use; } }
 
         private float directionCooldown;
+        private float aimingDuration = 0;
         private int tickCounter;
         PhysicsEstimator handPhysicsEstimator { get { return VHVRConfig.LeftHanded() ? VRPlayer.leftHandPhysicsEstimator : VRPlayer.rightHandPhysicsEstimator; } }
 
@@ -99,6 +100,11 @@ namespace ValheimVRMod.Scripts
 
         private void FixedUpdate()
         {
+            if (isAiming)
+            {
+                aimingDuration += Time.fixedDeltaTime;
+            }
+
             tickCounter++;
             if (tickCounter < 5)
             {
@@ -210,6 +216,8 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
+            aimingDuration = 0;
+
             if (isThrowing)
             {
                 ResetSpearOffset();
@@ -299,7 +307,7 @@ namespace ValheimVRMod.Scripts
                 // Apply some non-linear damping otherwise the spear flies too fast even if thrown at low speed.
                 throwSpeed *= Mathf.Clamp(throwSpeed  * 0.25f, 0.25f, 0.5f);
             }
-            return new ThrowCalculate(throwSpeed, handPhysicsEstimator.GetLongestLocomotion(0.4f).magnitude);
+            return new ThrowCalculate(throwSpeed, handPhysicsEstimator.GetLongestLocomotion(Mathf.Min(0.4f, aimingDuration)).magnitude);
         }
     }
 }
