@@ -3,7 +3,7 @@ using ValheimVRMod.Utilities;
 
 namespace ValheimVRMod.Scripts {
     public class MeshCooldown : MonoBehaviour {
-        protected virtual Color FullOutlineColor { get; } = new Color(1, 0, 0, 1);
+        protected virtual Color FullOutlineColor { get; } = Color.red;
         private Color HiddenOutlineColor { get { return new Color(FullOutlineColor.r, FullOutlineColor.g, FullOutlineColor.b, 0); } }
 
         private float cooldownStart;
