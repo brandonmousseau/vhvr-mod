@@ -165,7 +165,7 @@ namespace ValheimVRMod.Utilities
             Vector3 longestLocomotion = Vector3.zero;
             float longestDist = 0;
             float currentDeltaT = 0;
-            for (int i = 0; i < sparseSnapshots.Count && currentDeltaT <= deltaT; i++, currentDeltaT += Time.fixedDeltaTime * SPARSE_SNAPSHOT_INTERVAL)
+            for (int i = sparseSnapshots.Count - 1; i >= 0 && currentDeltaT <= deltaT; i--, currentDeltaT += Time.fixedDeltaTime * SPARSE_SNAPSHOT_INTERVAL)
             {
                 Vector3 locomotion = snapshots[snapshots.Count - 1] - sparseSnapshots[i];
                 float dist = locomotion.magnitude;
