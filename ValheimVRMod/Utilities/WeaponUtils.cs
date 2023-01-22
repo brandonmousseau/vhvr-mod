@@ -282,13 +282,13 @@ namespace ValheimVRMod.Utilities
 
         private static readonly Dictionary<string, float> ATTACK_DURATIONS = new Dictionary<string, float>
         {
-            { "atgeir_attack", 0.68f },
-            { "battleaxe_attack", 1.44f },
+            { "atgeir_attack", 0.81f },
+            { "battleaxe_attack", 0.87f },
             { "knife_stab", 0.49f },
             { "swing_longsword", 0.63f },
             { "spear_poke", 0.63f },
-            { "swing_pickaxe", 1.34f },
-            { "swing_sledge", 1.70f},
+            { "swing_pickaxe", 1.3f },
+            { "swing_sledge", 2.15f},
             { "swing_axe", 0.64f },
             { "unarmed_attack", 0.54f },
             { "atgeir_secondary", 1.54f },
