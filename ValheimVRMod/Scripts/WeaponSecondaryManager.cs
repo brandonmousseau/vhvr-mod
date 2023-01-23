@@ -394,16 +394,14 @@ namespace ValheimVRMod.Scripts
                     }
                     
                     hitDir = (endTrail - halfTrail).normalized;
-
-                    var multiplier = 1;
                     var rayWidth = secondaryAttack.m_attackRayWidth == 0 ? attack.m_attackRayWidth : secondaryAttack.m_attackRayWidth;
 
-                    RaycastHit[] tempSecondaryHitList = Physics.SphereCastAll(firstTrail, rayWidth * 1.25f * multiplier, (halfTrail - firstTrail).normalized, Vector3.Distance(firstTrail,halfTrail), layerMask, QueryTriggerInteraction.Ignore);
+                    RaycastHit[] tempSecondaryHitList = Physics.SphereCastAll(firstTrail, rayWidth * 1.25f, (halfTrail - firstTrail).normalized, Vector3.Distance(firstTrail,halfTrail), layerMask, QueryTriggerInteraction.Ignore);
                     Array.Sort<RaycastHit>(tempSecondaryHitList, (RaycastHit x, RaycastHit y) => x.distance.CompareTo(y.distance));
                     RaycastSecondaryAttack(tempSecondaryHitList);
 
                     
-                    tempSecondaryHitList = Physics.SphereCastAll(halfTrail, rayWidth * 1.25f * multiplier, (endTrail - halfTrail).normalized, Vector3.Distance(halfTrail, endTrail) * multiplier, layerMask, QueryTriggerInteraction.Ignore);
+                    tempSecondaryHitList = Physics.SphereCastAll(halfTrail, rayWidth * 1.25f, (endTrail - halfTrail).normalized, Vector3.Distance(halfTrail, endTrail), layerMask, QueryTriggerInteraction.Ignore);
                     Array.Sort<RaycastHit>(tempSecondaryHitList, (RaycastHit x, RaycastHit y) => x.distance.CompareTo(y.distance));
                     RaycastSecondaryAttack(tempSecondaryHitList);
                 }
