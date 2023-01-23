@@ -415,14 +415,23 @@ namespace ValheimVRMod.Scripts
                 {
                     foreach (var hit in secondaryHitList)
                     {
-                        var attackTargetMeshCooldown = hit.collider.gameObject.GetComponent<AttackTargetMeshCooldown>();
+                        var target = hit.collider.gameObject;
+                        var character = hit.collider.gameObject.GetComponentInParent<Character>();
+                        if (character != null)
+                        {
+                            target = character.gameObject;
+                        }
+
+                        var attackTargetMeshCooldown = target.GetComponent<AttackTargetMeshCooldown>();
                         if (attackTargetMeshCooldown == null)
                         {
-                            attackTargetMeshCooldown = hit.collider.gameObject.AddComponent<AttackTargetMeshCooldown>();
+                            attackTargetMeshCooldown = target.AddComponent<AttackTargetMeshCooldown>();
                         }
                         attackTargetMeshCooldown.tryTriggerSecondaryAttack(GetSecondaryAttackHitTime());
                     }
                     outline.enabled = true;
+                    outline.OutlineColor = Color.yellow;
+                    outline.OutlineWidth = 10;
                     wasSecondaryAttack = true;
                     wasSecondaryAttacked = false;
                 }
