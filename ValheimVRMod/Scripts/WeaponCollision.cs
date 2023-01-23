@@ -11,8 +11,6 @@ namespace ValheimVRMod.Scripts {
     public class WeaponCollision : MonoBehaviour {
         private const float MIN_SPEED = 1.5f;
         private const float MIN_STAB_SPEED = 1f;
-        private const int MAX_SNAPSHOTS_BASE = 20;
-        private const int MAX_SNAPSHOTS_FACTOR = -5;
         private const float MAX_STAB_ANGLE = 30f;
         private const float MAX_STAB_ANGLE_TWOHAND = 40f;
 
@@ -25,7 +23,6 @@ namespace ValheimVRMod.Scripts {
         private Attack secondaryAttack;
         private bool isRightHand;
         private Outline outline;
-        private float hitTime;
         private bool hasDrunk;
         private float postSecondaryAttackCountdown;
 
@@ -191,12 +188,13 @@ namespace ValheimVRMod.Scripts {
 
             if (isSecondaryAttack)
             {
-                return attackTargetMeshCooldown.tryTriggerSecondaryAttack(WeaponUtils.GetAttackDuration(secondaryAttack));
+                // Use the target cooldown time of the primary attack if it is shorter to allow a primary attack immediately after secondary attack;
+                // The secondary attack cooldown time is managed by postSecondaryAttackCountdown in this class intead.
+                float targetCooldownTime = Mathf.Min(WeaponUtils.GetAttackDuration(attack), WeaponUtils.GetAttackDuration(secondaryAttack));
+                return attackTargetMeshCooldown.tryTriggerSecondaryAttack(targetCooldownTime);
             }
-            else
-            {
-                return attackTargetMeshCooldown.tryTriggerPrimaryAttack(WeaponUtils.GetAttackDuration(attack));
-            }
+            
+            return attackTargetMeshCooldown.tryTriggerPrimaryAttack(WeaponUtils.GetAttackDuration(attack));
         }
 
         private void OnRenderObject() {
@@ -225,35 +223,6 @@ namespace ValheimVRMod.Scripts {
             attack = item.m_shared.m_attack.Clone();
             secondaryAttack = item.m_shared.m_secondaryAttack.Clone();
 
-            // Cleanup unused hitTime
-            switch (attack.m_attackAnimation) {
-                case "atgeir_attack":
-                    hitTime = 0.81f;
-                    break;
-                case "battleaxe_attack":
-                    hitTime = 0.87f;
-                    break;
-                case "knife_stab":
-                    hitTime = 0.49f;
-                    break;
-                case "swing_longsword":
-                case "spear_poke":
-                    hitTime = 0.63f;
-                    break;
-                case "swing_pickaxe":
-                    hitTime = 1.3f;
-                    break;
-                case "swing_sledge":
-                    hitTime = 2.15f;
-                    break;
-                case "swing_axe":
-                    hitTime = 0.64f;
-                    break;
-                default:
-                    hitTime = 0.63f;
-                    break;
-            }
-
             itemIsTool = name == "Hammer";
 
             if (colliderParent == null) {
@@ -267,7 +236,6 @@ namespace ValheimVRMod.Scripts {
                 colliderParent.transform.localRotation = Quaternion.Euler(colliderData.euler);
                 colliderParent.transform.localScale = colliderData.scale;
                 colliderDistance = Vector3.Distance(colliderParent.transform.position, obj.parent.position);
-                maxSnapshots = (int)(MAX_SNAPSHOTS_BASE + MAX_SNAPSHOTS_FACTOR * colliderDistance);
                 setScriptActive(true);
             }
             catch (InvalidEnumArgumentException)
