@@ -284,6 +284,8 @@ namespace ValheimVRMod.Utilities
         {
             { "atgeir_attack", 0.81f },
             { "battleaxe_attack", 0.87f },
+            { "dual_knives", 0.43f },
+            { "greatword", 1.13f },
             { "knife_stab", 0.49f },
             { "swing_longsword", 0.63f },
             { "spear_poke", 0.63f },
@@ -293,6 +295,8 @@ namespace ValheimVRMod.Utilities
             { "unarmed_attack", 0.54f },
             { "atgeir_secondary", 1.54f },
             { "battleaxe_secondary", 0.7f },
+            { "dual_knives_secondary", 1.54f },
+            { "greatword_secondary", 2.04f },
             { "knife_secondary", 1.52f },
             { "sword_secondary", 1.84f },
             { "mace_secondary", 1.72f },
