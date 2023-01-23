@@ -6,7 +6,7 @@ namespace ValheimVRMod.Utilities
 {
     public static class WeaponUtils
     {
-        
+
         private static readonly Dictionary<string, WeaponColData> colliders = new Dictionary<string, WeaponColData>
         {
             {           // AXES
@@ -279,6 +279,41 @@ namespace ValheimVRMod.Utilities
                     2.865605f,  0.1f, 0.1f
             )}
         };
+
+        private static readonly Dictionary<string, float> ATTACK_DURATIONS = new Dictionary<string, float>
+        {
+            { "atgeir_attack", 0.81f },
+            { "battleaxe_attack", 0.87f },
+            { "knife_stab", 0.49f },
+            { "swing_longsword", 0.63f },
+            { "spear_poke", 0.63f },
+            { "swing_pickaxe", 1.3f },
+            { "swing_sledge", 2.15f},
+            { "swing_axe", 0.64f },
+            { "unarmed_attack", 0.54f },
+            { "atgeir_secondary", 1.54f },
+            { "battleaxe_secondary", 0.7f },
+            { "knife_secondary", 1.52f },
+            { "sword_secondary", 1.84f },
+            { "mace_secondary", 1.72f },
+            { "axe_secondary", 2f },
+            { "unarmed_kick", 1.34f }
+        };
+        private const float DEFAULT_ATTACK_DURATION = 0.63f;
+
+        private static readonly HashSet<string> TWO_HANDED_MULTITARGET_SWIPE_NAMES =
+            new HashSet<string>(new string[] { "battleaxe_attack", "atgeir_secondary" });
+
+        public static float GetAttackDuration(Attack attack)
+        {
+            float? t = ATTACK_DURATIONS[attack.m_attackAnimation];
+            return t ?? DEFAULT_ATTACK_DURATION;
+        }
+
+        public static bool IsTwoHandedMultitargetSwipe(Attack attack)
+        {
+            return TWO_HANDED_MULTITARGET_SWIPE_NAMES.Contains(attack.m_attackAnimation);
+        }
 
         public static WeaponColData getForName(string name,ItemDrop.ItemData item)
         {

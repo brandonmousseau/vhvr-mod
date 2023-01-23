@@ -10,7 +10,7 @@ namespace ValheimVRMod.Scripts.Block
         public WeaponWield weaponWield;
         public static WeaponBlock instance;
 
-        private const float MIN_PARRY_SPEED = 2.5f;
+        private const float MIN_PARRY_SPEED = 1.5f;
         private readonly Vector3 handUp = new Vector3(0, -0.15f, -0.85f);
 
         private void OnDisable()

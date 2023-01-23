@@ -24,14 +24,17 @@ namespace ValheimVRMod.Scripts {
         private List<Vector3> weaponHandleSnapshots;
         private ItemDrop.ItemData item;
         private Attack attack;
+        private Attack secondaryAttack;
         private bool isRightHand;
         private Outline outline;
         private float hitTime;
         private bool hasDrunk;
+        private float postSecondaryAttackCountdown;
 
         public PhysicsEstimator physicsEstimator { get; private set; }
         public PhysicsEstimator mainHandPhysicsEstimator { get { return weaponWield.mainHand == VRPlayer.leftHand ? VRPlayer.leftHandPhysicsEstimator : VRPlayer.rightHandPhysicsEstimator; } }
         public bool lastAttackWasStab { get; private set; }
+        public float twoHandedMultitargetSwipeCountdown { get; private set; } = 0;
         public bool itemIsTool;
         public static bool isDrinking;
         public WeaponWield weaponWield;
@@ -107,15 +110,34 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            if (!tryHitTarget(collider.gameObject)) {
+            bool isSecondaryAttack = postSecondaryAttackCountdown <= 0 && RoomscaleSecondaryAttackUtils.IsSecondaryAttack(this);
+            if (EquipScript.getRight() == EquipType.Polearms)
+            {
+                // Allow continuing an ongoing atgeir secondary attack (multitarget swipe) until cooldown finishes.
+                isSecondaryAttack = postSecondaryAttackCountdown > 0 || isSecondaryAttack;
+            }
+
+            if (!tryHitTarget(collider.gameObject, isSecondaryAttack)) {
                 return;
             }
+
+            if (isSecondaryAttack && postSecondaryAttackCountdown <= 0)
+            {
+                postSecondaryAttackCountdown = WeaponUtils.GetAttackDuration(secondaryAttack);
+            }
+
+            Attack currentAttack = isSecondaryAttack ? secondaryAttack : attack;
+
+            if (WeaponUtils.IsTwoHandedMultitargetSwipe(currentAttack) && twoHandedMultitargetSwipeCountdown <= 0)
+            {
+                twoHandedMultitargetSwipeCountdown = WeaponUtils.GetAttackDuration(currentAttack);
+            }     
 
             StaticObjects.lastHitPoint = transform.position;
             StaticObjects.lastHitDir = physicsEstimator.GetVelocity().normalized;
             StaticObjects.lastHitCollider = collider;
 
-            if (attack.Start(Player.m_localPlayer, null, null,
+            if (currentAttack.Start(Player.m_localPlayer, null, null,
                         Player.m_localPlayer.m_animEvent,
                         null, item, null, 0.0f, 0.0f))
             {
@@ -133,7 +155,7 @@ namespace ValheimVRMod.Scripts {
             }
         }
 
-        private bool tryHitTarget(GameObject target) {
+        private bool tryHitTarget(GameObject target, bool isSecondaryAttack) {
 
             // ignore certain Layers
             if (ignoreLayers.Contains(target.layer)) {
@@ -172,7 +194,15 @@ namespace ValheimVRMod.Scripts {
                 attackTargetMeshCooldown = target.AddComponent<AttackTargetMeshCooldown>();
             }
 
-            return attackTargetMeshCooldown.tryTrigger(hitTime);
+            if (isSecondaryAttack)
+            {
+                // Use the target cooldown time of the primary attack if it is shorter to allow a primary attack immediately after secondary attack;
+                // The secondary attack cooldown time is managed by postSecondaryAttackCountdown in this class intead.
+                float targetCooldownTime = Mathf.Min(WeaponUtils.GetAttackDuration(attack), WeaponUtils.GetAttackDuration(secondaryAttack));
+                return attackTargetMeshCooldown.tryTriggerSecondaryAttack(targetCooldownTime);
+            }
+            
+            return attackTargetMeshCooldown.tryTriggerPrimaryAttack(WeaponUtils.GetAttackDuration(attack));
         }
 
         private void OnRenderObject() {
@@ -201,7 +231,9 @@ namespace ValheimVRMod.Scripts {
             }
 
             attack = item.m_shared.m_attack.Clone();
+            secondaryAttack = item.m_shared.m_secondaryAttack.Clone();
 
+            // Cleanup unused hitTime
             switch (attack.m_attackAnimation) {
                 case "atgeir_attack":
                     hitTime = 0.81f;
@@ -259,15 +291,23 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            var inCooldown = AttackTargetMeshCooldown.isPrimaryTargetInCooldown();
-
-            if (outline.enabled && Player.m_localPlayer.HaveStamina(getStaminaUsage() + 0.1f)
-                                && (attack.m_attackType == Attack.AttackType.Horizontal || !inCooldown)) {
-                outline.enabled = false;
-            }
-            else if (!outline.enabled && (!Player.m_localPlayer.HaveStamina(getStaminaUsage() + 0.1f)
-                                          || attack.m_attackType != Attack.AttackType.Horizontal && inCooldown)) {
+            bool inCooldown = AttackTargetMeshCooldown.isPrimaryTargetInCooldown();
+            bool canDoPrimaryAttack =
+                Player.m_localPlayer.HaveStamina(getStaminaUsage() + 0.1f) && (attack.m_attackType == Attack.AttackType.Horizontal || !inCooldown);
+            if (!canDoPrimaryAttack)
+            {
                 outline.enabled = true;
+                outline.OutlineColor = Color.red;
+                outline.OutlineWidth = 5;
+            }
+            else if (postSecondaryAttackCountdown > 0.5f) {
+                outline.enabled = true;
+                outline.OutlineColor = Color.Lerp(new Color(1, 1, 0, 0), Color.yellow, postSecondaryAttackCountdown - 0.5f);
+                outline.OutlineWidth = 10;
+            }
+            else
+            {
+                outline.enabled = false;
             }
         }
 
@@ -294,6 +334,15 @@ namespace ValheimVRMod.Scripts {
         }
         
         private void FixedUpdate() {
+            if (postSecondaryAttackCountdown > 0)
+            {
+                postSecondaryAttackCountdown -= Time.fixedDeltaTime;
+            }
+            if (twoHandedMultitargetSwipeCountdown > 0)
+            {
+                postSecondaryAttackCountdown -= Time.fixedDeltaTime;
+            }
+
             if (!isCollisionAllowed()) {
                 return;
             }

@@ -3,10 +3,15 @@ using ValheimVRMod.Utilities;
 
 namespace ValheimVRMod.Scripts {
     public class AttackTargetMeshCooldown : MeshCooldown {
+        protected override Color FullOutlineColor { get { return isSecondaryAttackCooldown? Color.yellow : base.FullOutlineColor; } }
+
         public static float damageMultiplier;
         public static bool staminaDrained;
         public static bool durabilityDrained;
-        private static MeshCooldown primaryTargetMeshCooldown;
+        private static AttackTargetMeshCooldown primaryTargetMeshCooldown;
+
+        private bool isSecondaryAttackCooldown;
+
         public override bool tryTrigger(float cd) {
             bool isTriggered = base.tryTrigger(cd);
             if (isTriggered && primaryTargetMeshCooldown == null) {
@@ -14,6 +19,26 @@ namespace ValheimVRMod.Scripts {
                 damageMultiplier = 1;
             }
             return isTriggered;
+        }
+
+        public bool tryTriggerSecondaryAttack(float cd)
+        {
+            if (tryTrigger(cd))
+            {
+                isSecondaryAttackCooldown = true;
+                return true;
+            }
+            return false;
+        }
+
+        public bool tryTriggerPrimaryAttack(float cd)
+        {
+            if (tryTrigger(cd))
+            {
+                isSecondaryAttackCooldown = false;
+                return true;
+            }
+            return false;
         }
 
         public static float calcDamageMultiplier() {
@@ -26,6 +51,12 @@ namespace ValheimVRMod.Scripts {
                 damageMultiplier /= 2;
             }
 
+            WeaponCollision weaponCollision = Player.m_localPlayer.gameObject.GetComponentInChildren<WeaponCollision>();
+            if (weaponCollision && weaponCollision.twoHandedMultitargetSwipeCountdown > 0)
+            {
+                return 1;
+            }
+            
             return oldDamageMultiplier;
         }
 
