@@ -13,17 +13,9 @@ namespace ValheimVRMod.Scripts
         private static readonly Vector3 handAimOffset = new Vector3(0, -0.45f, -0.55f);
         private static readonly Vector3 handAimOffsetInverse = new Vector3(0, -0.15f, -0.85f);
         private const float minDist = 0.16f;
-        private const float slowThrowModifier = 1.5f;
-        private const float mediumThrowModifier = 2f;
-        private const float fastThrowModifier = 2.5f;
-        private const float mediumThrowMinDist = 0.65f;
-        private const float fastThrowMinDist = 0.9f;
-        private const float totalCooldown = 2;
+        private const float TOTAL_DIRECTION_LINE_COOL_DOWN = 2;
 
         public WeaponWield weaponWield { private get; set; }
-
-
-
         public static Vector3 spawnPoint { get; private set; }
         public static Vector3 aimDir { get; private set; }
         public static Vector3 startAim { get; private set; }
@@ -37,7 +29,7 @@ namespace ValheimVRMod.Scripts
         private float directionCooldown;
         private float aimingDuration = 0;
         private int tickCounter;
-        PhysicsEstimator handPhysicsEstimator { get { return VHVRConfig.LeftHanded() ? VRPlayer.leftHandPhysicsEstimator : VRPlayer.rightHandPhysicsEstimator; } }
+        private PhysicsEstimator handPhysicsEstimator { get { return VHVRConfig.LeftHanded() ? VRPlayer.leftHandPhysicsEstimator : VRPlayer.rightHandPhysicsEstimator; } }
 
         private void Awake()
         {
@@ -284,7 +276,7 @@ namespace ValheimVRMod.Scripts
             pointList.Add(pos2);
             directionLine.SetPositions(pointList.ToArray());
             directionLine.enabled = true;
-            directionCooldown = totalCooldown;
+            directionCooldown = TOTAL_DIRECTION_LINE_COOL_DOWN;
         }
 
         class ThrowCalculate
