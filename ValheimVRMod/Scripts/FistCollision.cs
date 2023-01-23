@@ -21,6 +21,7 @@ namespace ValheimVRMod.Scripts {
         private PhysicsEstimator physicsEstimator { get { return isRightHand ? VRPlayer.rightHandPhysicsEstimator : VRPlayer.leftHandPhysicsEstimator; } }
 
         private float fistRotation = 0;
+        private static float LocalPlayerSecondaryAttackCooldown = 0;
 
         private static readonly int[] ignoreLayers = {
             LayerUtils.WATERVOLUME_LAYER,
@@ -32,6 +33,16 @@ namespace ValheimVRMod.Scripts {
         private void Awake() {
             colliderParent = new GameObject();
             instance = this;
+        }
+
+        void FixedUpdate()
+        {
+            // There are two instances of fist collision, only have the right hand one update the static field LocalPlayerSecondaryAttackCooldown
+            // so that it is not double-updated.
+            if (LocalPlayerSecondaryAttackCooldown > 0 && isRightHand)
+            {
+                LocalPlayerSecondaryAttackCooldown -= Time.fixedDeltaTime;
+            }
         }
 
         private void OnTriggerStay(Collider collider) {
@@ -49,21 +60,31 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            if (!tryHitTarget(collider.gameObject)) {
+            bool isCurrentlySecondaryAttack = LocalPlayerSecondaryAttackCooldown > 0 && this.isSecondaryAttack();
+            bool usingWeapon = usingClaws() || usingDualKnives();
+            var item = usingWeapon ? Player.m_localPlayer.GetRightItem() : Player.m_localPlayer.m_unarmedWeapon.m_itemData;
+            Attack primaryAttack = item.m_shared.m_attack;
+            Attack attack = isCurrentlySecondaryAttack ? item.m_shared.m_secondaryAttack : primaryAttack;
+            if (usingWeapon)
+            {
+                attack = attack.Clone();
+            }
+
+            // Always use the duration of the primary attack for target cooldown to allow primary attack immediately following a secondary attack.
+            // The secondary attack cooldown is managed by LocalPlayerSecondaryAttackCooldown in this class instead.
+            if (!tryHitTarget(collider.gameObject, isCurrentlySecondaryAttack, WeaponUtils.GetAttackDuration(primaryAttack)))
+            {
                 return;
+            }
+
+            if (isCurrentlySecondaryAttack)
+            {
+                LocalPlayerSecondaryAttackCooldown = WeaponUtils.GetAttackDuration(attack);
             }
 
             StaticObjects.lastHitPoint = transform.position;
             StaticObjects.lastHitDir = physicsEstimator.GetVelocity().normalized;
             StaticObjects.lastHitCollider = collider;
-
-            bool usingWeapon = usingClaws() || usingDualKnives();
-            var item = usingWeapon ? Player.m_localPlayer.GetRightItem() : Player.m_localPlayer.m_unarmedWeapon.m_itemData;
-            Attack attack = isSecondaryAttack() ? item.m_shared.m_secondaryAttack : item.m_shared.m_attack;
-            if (usingWeapon)
-            {
-                attack = attack.Clone();
-            }
 
             if (attack.Start(Player.m_localPlayer, null, null, Player.m_localPlayer.m_animEvent,
                 null, item, null, 0.0f, 0.0f)) {
@@ -75,7 +96,7 @@ namespace ValheimVRMod.Scripts {
             }
         }
 
-        private bool tryHitTarget(GameObject target) {
+        private bool tryHitTarget(GameObject target, bool isSecondaryAttack, float duratrion) {
 
             // ignore certain Layers
             if (ignoreLayers.Contains(target.layer)) {
@@ -87,7 +108,7 @@ namespace ValheimVRMod.Scripts {
                 attackTargetMeshCooldown = target.AddComponent<AttackTargetMeshCooldown>();
             }
 
-            return attackTargetMeshCooldown.tryTrigger(0.63f);
+            return isSecondaryAttack ? attackTargetMeshCooldown.tryTriggerSecondaryAttack(duratrion) : attackTargetMeshCooldown.tryTriggerPrimaryAttack(duratrion);
         }
 
         private void OnRenderObject() {
