@@ -191,13 +191,12 @@ namespace ValheimVRMod.Scripts {
 
             if (isSecondaryAttack)
             {
-                // Use the target cooldown time of the primary attack if it is shorter to allow a primary attack immediately after secondary attack;
-                // The secondary attack cooldown time is managed by postSecondaryAttackCountdown in this class intead.
-                float targetCooldownTime = Mathf.Min(WeaponUtils.GetAttackDuration(attack), WeaponUtils.GetAttackDuration(secondaryAttack));
-                return attackTargetMeshCooldown.tryTriggerSecondaryAttack(targetCooldownTime);
+                return attackTargetMeshCooldown.tryTriggerSecondaryAttack(WeaponUtils.GetAttackDuration(secondaryAttack));
             }
-            
-            return attackTargetMeshCooldown.tryTriggerPrimaryAttack(WeaponUtils.GetAttackDuration(attack));
+            else
+            {
+                return attackTargetMeshCooldown.tryTriggerPrimaryAttack(WeaponUtils.GetAttackDuration(attack));
+            }
         }
 
         private void OnRenderObject() {
@@ -213,8 +212,6 @@ namespace ValheimVRMod.Scripts {
 
         public void setColliderParent(Transform obj, string name, bool rightHand) {
             outline = obj.parent.gameObject.AddComponent<Outline>();
-            outline.OutlineColor = Color.red;
-            outline.OutlineWidth = 5;
             outline.OutlineMode = Outline.Mode.OutlineVisible;
 
             isRightHand = rightHand;
@@ -293,11 +290,13 @@ namespace ValheimVRMod.Scripts {
             {
                 outline.enabled = true;
                 outline.OutlineColor = Color.red;
+                outline.OutlineMode = Outline.Mode.OutlineVisible;
                 outline.OutlineWidth = 5;
             }
             else if (postSecondaryAttackCountdown > 0.5f) {
                 outline.enabled = true;
-                outline.OutlineColor = Color.Lerp(new Color(1, 1, 0, 0), Color.yellow, postSecondaryAttackCountdown - 0.5f);
+                outline.OutlineColor = Color.Lerp(new Color(1, 1, 0, 0), new Color(1, 1, 0, 0.5f), postSecondaryAttackCountdown - 0.5f);
+                outline.OutlineMode = Outline.Mode.OutlineAll;
                 outline.OutlineWidth = 10;
             }
             else

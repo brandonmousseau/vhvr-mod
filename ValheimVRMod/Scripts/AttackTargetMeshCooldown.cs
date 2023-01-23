@@ -12,13 +12,24 @@ namespace ValheimVRMod.Scripts {
 
         private bool isSecondaryAttackCooldown;
 
-        public override bool tryTrigger(float cd) {
-            bool isTriggered = base.tryTrigger(cd);
-            if (isTriggered && primaryTargetMeshCooldown == null) {
-                primaryTargetMeshCooldown = this;
-                damageMultiplier = 1;
+        public bool tryTriggerPrimaryAttack(float cd)
+        {
+            if (inCoolDown() && isSecondaryAttackCooldown)
+            {
+                // Allow using primary attack on a target immediately after secondary-attacking it.
+                instantCooldown();
             }
-            return isTriggered;
+            if (tryTrigger(cd))
+            {
+                isSecondaryAttackCooldown = false;
+                if (primaryTargetMeshCooldown == null)
+                {
+                    primaryTargetMeshCooldown = this;
+                    damageMultiplier = 1;
+                }
+                return true;
+            }
+            return false;
         }
 
         public bool tryTriggerSecondaryAttack(float cd)
@@ -26,21 +37,11 @@ namespace ValheimVRMod.Scripts {
             if (tryTrigger(cd))
             {
                 isSecondaryAttackCooldown = true;
+                damageMultiplier = 1;
                 return true;
             }
             return false;
         }
-
-        public bool tryTriggerPrimaryAttack(float cd)
-        {
-            if (tryTrigger(cd))
-            {
-                isSecondaryAttackCooldown = false;
-                return true;
-            }
-            return false;
-        }
-
         public static float calcDamageMultiplier() {
             var oldDamageMultiplier = damageMultiplier;
             
