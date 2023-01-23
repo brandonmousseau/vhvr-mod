@@ -43,7 +43,6 @@ namespace ValheimVRMod.Scripts
         private Vector3 pointVel3;
         private Vector3 pointVel4;
         private Vector3 pointVel5;
-        private bool wasLeap;
 
         private void Awake()
         {
@@ -184,31 +183,6 @@ namespace ValheimVRMod.Scripts
                 return;
             }
             SecondaryAttack();
-            //secondaryJump();
-
-
-        }
-
-
-        private void secondaryJump()
-        {
-            if(SteamVR_Actions.valheim_Use.GetState(SteamVR_Input_Sources.RightHand) && 
-                SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand) && 
-                SteamVR_Actions.valheim_Jump.GetStateDown(SteamVR_Input_Sources.RightHand)  && 
-                Player.m_localPlayer.IsOnGround())
-            {
-                //Player.m_localPlayer.SetCrouch(false);
-                //var forward = Player.m_localPlayer.m_moveDir == Vector3.zero ? Player.m_localPlayer.m_body.transform.forward.normalized * 15 : Player.m_localPlayer.m_moveDir.normalized * 30;
-                //Player.m_localPlayer.m_pushForce = (forward) + (Vector3.up * 5);
-                //Player.m_localPlayer.UpdateBodyFriction();
-                //wasLeap = true;
-            }
-
-            if (wasLeap && !Player.m_localPlayer.IsOnGround())
-            {
-                //Player.m_localPlayer.m_collider.material.staticFriction = 0.5f;
-                //Player.m_localPlayer.m_collider.material.dynamicFriction = 0.5f;
-            }
         }
 
         private void SecondaryAttack()
@@ -288,7 +262,6 @@ namespace ValheimVRMod.Scripts
                     wasSecondaryAttack = false;
                     slashTrail.emitting = false;
                     outline.enabled = false;
-                    wasLeap = false;
                     if (!secondaryAttackJustEnded)
                     {
                         if (isRightHand)
@@ -424,10 +397,6 @@ namespace ValheimVRMod.Scripts
 
                     var multiplier = 1;
                     var rayWidth = secondaryAttack.m_attackRayWidth == 0 ? attack.m_attackRayWidth : secondaryAttack.m_attackRayWidth;
-                    if (secondaryAttack.m_attackAnimation == "knife_secondary" && wasLeap)
-                    {
-                        multiplier = 2;
-                    }
 
                     RaycastHit[] tempSecondaryHitList = Physics.SphereCastAll(firstTrail, rayWidth * 1.25f * multiplier, (halfTrail - firstTrail).normalized, Vector3.Distance(firstTrail,halfTrail), layerMask, QueryTriggerInteraction.Ignore);
                     Array.Sort<RaycastHit>(tempSecondaryHitList, (RaycastHit x, RaycastHit y) => x.distance.CompareTo(y.distance));
@@ -451,7 +420,7 @@ namespace ValheimVRMod.Scripts
                         {
                             attackTargetMeshCooldown = hit.collider.gameObject.AddComponent<AttackTargetMeshCooldown>();
                         }
-                        attackTargetMeshCooldown.tryTrigger(GetSecondaryAttackHitTime());
+                        attackTargetMeshCooldown.tryTriggerSecondaryAttack(GetSecondaryAttackHitTime());
                     }
                     outline.enabled = true;
                     wasSecondaryAttack = true;
@@ -508,7 +477,6 @@ namespace ValheimVRMod.Scripts
             wasSecondaryAttack = false;
             slashTrail.emitting = false;
             lastpointList = new List<Vector3>();
-            wasLeap = false;
         }
         private void RaycastSecondaryAttack(RaycastHit[] raycastList)
         {
