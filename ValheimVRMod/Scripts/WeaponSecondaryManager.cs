@@ -308,7 +308,6 @@ namespace ValheimVRMod.Scripts
                 else
                 {
                     var currpos = localHandPos + localWeaponForward;
-                    var minDist = Mathf.Min(secondaryAttack.m_attackRange * rangeMultiplier, Vector3.Distance(firstPos, currpos) * rangeMultiplier);
                     slashTrail.transform.position = Player.m_localPlayer.transform.position + currpos;
                     slashTrail.enabled = true;
                     slashLine.positionCount = 5;
@@ -375,7 +374,6 @@ namespace ValheimVRMod.Scripts
                 }
                 else
                 {
-                    var minDist = Mathf.Min(secondaryAttack.m_attackRange * rangeMultiplier, Vector3.Distance(firstPos, lastPos) * rangeMultiplier);
                     var firstTrail = slashTrail.GetPosition(0);
                     var halfTrail = slashTrail.GetPosition((int)((slashTrail.positionCount - 1) * 0.5f));
                     var endTrail = slashTrail.GetPosition(slashTrail.positionCount - 1);
@@ -462,11 +460,6 @@ namespace ValheimVRMod.Scripts
                         else
                         {
                             VRPlayer.leftHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, SteamVR_Input_Sources.LeftHand);
-                        }
-                        //bHaptics
-                        if (!BhapticsTactsuit.suitDisabled)
-                        {
-                            BhapticsTactsuit.SwordRecoil(!VHVRConfig.LeftHanded());
                         }
                     }
                 }
