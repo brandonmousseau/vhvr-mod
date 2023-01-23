@@ -290,13 +290,11 @@ namespace ValheimVRMod.Scripts {
             {
                 outline.enabled = true;
                 outline.OutlineColor = Color.red;
-                outline.OutlineMode = Outline.Mode.OutlineVisible;
                 outline.OutlineWidth = 5;
             }
             else if (postSecondaryAttackCountdown > 0.5f) {
                 outline.enabled = true;
                 outline.OutlineColor = Color.Lerp(new Color(1, 1, 0, 0), new Color(1, 1, 0, 0.5f), postSecondaryAttackCountdown - 0.5f);
-                outline.OutlineMode = Outline.Mode.OutlineAll;
                 outline.OutlineWidth = 10;
             }
             else
