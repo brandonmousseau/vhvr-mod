@@ -621,8 +621,8 @@ namespace ValheimVRMod.VRCore.UI
             _guiCamera.clearFlags = CameraClearFlags.Color;
             // Required to actually capture only the GUI layer
             _guiCamera.cullingMask = (1 << LayerMask.NameToLayer("UI"));
-            _guiCamera.farClipPlane = 1.1f;
-            _guiCamera.nearClipPlane = 0.9f;
+            _guiCamera.farClipPlane = 5f;
+            _guiCamera.nearClipPlane = 0.1f;
             _guiCamera.enabled = true;
         }
 

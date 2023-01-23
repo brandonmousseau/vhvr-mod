@@ -157,6 +157,11 @@ namespace ValheimVRMod.VRCore.UI.HudElements
                 Minimap.instance.m_pinRootSmall = newComponents.map.GetComponent<RectTransform>();
                 //Move the player marker to above the pin
                 newComponents.mapMarker.transform.SetParent(newComponents.map.transform.parent);
+
+                //make sure hud windmarker is on the right layer
+                newComponents.mapWindMarker.gameObject.layer = LayerUtils.getWorldspaceUiLayer();
+                Quaternion quaternion = Quaternion.LookRotation(EnvMan.instance.GetWindDir());
+                newComponents.mapWindMarker.transform.localRotation = Quaternion.Euler(0f, 0f, -quaternion.eulerAngles.y);
             }
             Minimap.instance.m_smallMarker = newComponents.mapMarker.GetComponent<RectTransform>();
             Minimap.instance.m_smallShipMarker = newComponents.mapShipMarker.GetComponent<RectTransform>();
