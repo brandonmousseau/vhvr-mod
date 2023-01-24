@@ -36,11 +36,6 @@ namespace ValheimVRMod.Scripts {
             return true;
         }
 
-        protected void instantCooldown()
-        {
-            cooldown = 0;
-        }
-
         protected virtual void OnDisable() {
             if (outline != null) {
                 outline.OutlineMode = Outline.Mode.OutlineHidden;
