@@ -39,7 +39,7 @@ namespace ValheimVRMod.Scripts {
         {
             // There are two instances of fist collision, only have the right hand one update the static field LocalPlayerSecondaryAttackCooldown
             // so that it is not double-updated.
-            if (LocalPlayerSecondaryAttackCooldown > 0 && isRightHand)
+            if (LocalPlayerSecondaryAttackCooldown <= 0 && isRightHand)
             {
                 LocalPlayerSecondaryAttackCooldown -= Time.fixedDeltaTime;
             }
