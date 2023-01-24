@@ -14,11 +14,6 @@ namespace ValheimVRMod.Scripts {
 
         public bool tryTriggerPrimaryAttack(float cd)
         {
-            if (inCoolDown() && isSecondaryAttackCooldown)
-            {
-                // Allow using primary attack on a target immediately after secondary-attacking it.
-                instantCooldown();
-            }
             if (tryTrigger(cd))
             {
                 isSecondaryAttackCooldown = false;
