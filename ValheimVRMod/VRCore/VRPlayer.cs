@@ -98,12 +98,14 @@ namespace ValheimVRMod.VRCore
         private Quaternion headRotationBeforeDodge;
         private Transform dodgingHeadOrientation;
         private bool wasDodging = false;
+        private bool pausedMovement = false;
 
         private float timerLeft;
         private float timerRight;
         public static Hand leftHand { get { return _leftHand; } }
         public static Hand rightHand { get { return _rightHand; } }
         public static Hand dominantHand { get { return VHVRConfig.LeftHanded() ? leftHand : rightHand; } }
+        public static bool ShouldPauseMovement { get { return Menu.IsVisible() && !VHVRConfig.AllowMovementWhenInMenu(); } }
 
         public static PhysicsEstimator leftHandPhysicsEstimator
         {
@@ -260,10 +262,33 @@ namespace ValheimVRMod.VRCore
 
         private void FixedUpdate() 
         {
-            if(inFirstPerson)
+            if (ShouldPauseMovement)
             {
-                DoRoomScaleMovement();
-            } else roomscaleMovement = Vector3.zero;
+                if (vrikEnabled() && !pausedMovement)
+                {
+                    VrikCreator.Pause(getPlayerCharacter());
+                    pausedMovement = true;
+                }
+            }
+            else
+            {
+                if (vrikEnabled() && pausedMovement)
+                {
+                    // Before unpausing, move the camera back to the position before the pause to prevent teleporting the player to the cuurent camera position.
+                    _vrCameraRig.localPosition -= (_vrCam.transform.localPosition - _lastCamPosition);
+                    _lastCamPosition = _vrCam.transform.localPosition;
+                    VrikCreator.Unpause(getPlayerCharacter());
+                    pausedMovement = false;
+                }
+                if (inFirstPerson)
+                {
+                    DoRoomScaleMovement();
+                }
+                else
+                {
+                    roomscaleMovement = Vector3.zero;
+                }
+            }
         }
 
         // Fixes an issue on Pimax HMDs that causes rotation to be incorrect:
