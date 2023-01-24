@@ -105,7 +105,7 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            bool isSecondaryAttack = postSecondaryAttackCountdown <= 0 && RoomscaleSecondaryAttackUtils.IsSecondaryAttack(this);
+            bool isSecondaryAttack = postSecondaryAttackCountdown <= 0 && RoomscaleSecondaryAttackUtils.IsSecondaryAttack(this.physicsEstimator, this.mainHandPhysicsEstimator);
             if (EquipScript.getRight() == EquipType.Polearms)
             {
                 // Allow continuing an ongoing atgeir secondary attack (multitarget swipe) until cooldown finishes.
