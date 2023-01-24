@@ -39,7 +39,7 @@ namespace ValheimVRMod.Scripts {
         {
             // There are two instances of fist collision, only have the right hand one update the static field LocalPlayerSecondaryAttackCooldown
             // so that it is not double-updated.
-            if (LocalPlayerSecondaryAttackCooldown <= 0 && isRightHand)
+            if (LocalPlayerSecondaryAttackCooldown > 0 && isRightHand)
             {
                 LocalPlayerSecondaryAttackCooldown -= Time.fixedDeltaTime;
             }
@@ -60,7 +60,7 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            bool isCurrentlySecondaryAttack = LocalPlayerSecondaryAttackCooldown > 0 && this.isSecondaryAttack();
+            bool isCurrentlySecondaryAttack = LocalPlayerSecondaryAttackCooldown <= 0 && this.isSecondaryAttack();
             bool usingWeapon = usingClaws() || usingDualKnives();
             var item = usingWeapon ? Player.m_localPlayer.GetRightItem() : Player.m_localPlayer.m_unarmedWeapon.m_itemData;
             Attack primaryAttack = item.m_shared.m_attack;
