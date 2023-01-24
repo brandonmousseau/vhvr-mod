@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
+using System.Text.RegularExpressions;
 using BepInEx.Configuration;
 using HarmonyLib;
 using UnityEngine;
@@ -55,12 +57,21 @@ namespace ValheimVRMod.VRCore.UI {
                     modSettings.GetComponent<Button>().onClick.SetPersistentListenerState(0, UnityEventCallState.Off);
                     modSettings.GetComponent<Button>().onClick.RemoveAllListeners();
                     modSettings.GetComponent<Button>().onClick.AddListener(createModSettings);
+
+                    Transform screenshotButton = GameObject.Instantiate(menuList.GetChild(i), menuList);
+                    screenshotButton.GetComponentInChildren<Text>().text = "Screenshot";
+                    screenshotButton.GetComponent<Button>().onClick.SetPersistentListenerState(0, UnityEventCallState.Off);
+                    screenshotButton.GetComponent<Button>().onClick.RemoveAllListeners();
+                    screenshotButton.GetComponent<Button>().onClick.AddListener(CaptureScreenshot);
+                    Vector2 currentPosition = screenshotButton.GetComponent<RectTransform>().anchoredPosition;
+                    screenshotButton.GetComponent<RectTransform>().anchoredPosition = currentPosition + Vector2.up * 40;
+
                     settingsFound = true;
                 }
                 else if (settingsFound) {
                     var rectTransform = menuList.GetChild(i).GetComponent<RectTransform>();
                     rectTransform.anchoredPosition = new Vector2(rectTransform.anchoredPosition.x,
-                        rectTransform.anchoredPosition.y - 40);
+                        rectTransform.anchoredPosition.y - 80);
                 }
             }
         }
@@ -457,6 +468,18 @@ namespace ValheimVRMod.VRCore.UI {
             });
             keyBinding.GetComponent<RectTransform>().anchoredPosition = pos;
             ZInput.instance.AddButton(configValue.Key, (KeyCode) Enum.Parse(typeof(KeyCode), configValue.Value.GetSerializedValue()));
+        }
+
+        private static void CaptureScreenshot()
+        {
+            string dir = new Regex("[\\/]valheim_Data$", RegexOptions.IgnoreCase).Replace(Application.dataPath, "") + "/VHVRScreenshots";
+            if (!Directory.Exists(dir))
+            {
+                Directory.CreateDirectory(dir);
+            }
+            string path = dir + "/vhvr_screenshot_" + System.DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".png";
+            LogUtils.LogDebug("Saving screenshot to " + path);
+            ScreenCapture.CaptureScreenshot(path);
         }
 
         private static int mod(int x, int m) {
