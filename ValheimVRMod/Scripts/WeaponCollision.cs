@@ -11,8 +11,6 @@ namespace ValheimVRMod.Scripts {
     public class WeaponCollision : MonoBehaviour {
         private const float MIN_SPEED = 1.5f;
         private const float MIN_STAB_SPEED = 1f;
-        private const int MAX_SNAPSHOTS_BASE = 20;
-        private const int MAX_SNAPSHOTS_FACTOR = -5;
         private const float MAX_STAB_ANGLE = 30f;
         private const float MAX_STAB_ANGLE_TWOHAND = 40f;
 
@@ -25,13 +23,11 @@ namespace ValheimVRMod.Scripts {
         private Attack secondaryAttack;
         private bool isRightHand;
         private Outline outline;
-        private float hitTime;
         private bool hasDrunk;
         private float postSecondaryAttackCountdown;
 
         public PhysicsEstimator physicsEstimator { get; private set; }
         public PhysicsEstimator mainHandPhysicsEstimator { get { return weaponWield.mainHand == VRPlayer.leftHand ? VRPlayer.leftHandPhysicsEstimator : VRPlayer.rightHandPhysicsEstimator; } }
-        public bool lastAttackWasStab { get; private set; }
         public float twoHandedMultitargetSwipeCountdown { get; private set; } = 0;
         public bool itemIsTool;
         public static bool isDrinking;
@@ -108,7 +104,7 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            bool isSecondaryAttack = postSecondaryAttackCountdown <= 0 && RoomscaleSecondaryAttackUtils.IsSecondaryAttack(this);
+            bool isSecondaryAttack = postSecondaryAttackCountdown <= 0 && RoomscaleSecondaryAttackUtils.IsSecondaryAttack(this.physicsEstimator, this.mainHandPhysicsEstimator);
             if (EquipScript.getRight() == EquipType.Polearms)
             {
                 // Allow continuing an ongoing atgeir secondary attack (multitarget swipe) until cooldown finishes.
@@ -213,8 +209,6 @@ namespace ValheimVRMod.Scripts {
 
         public void setColliderParent(Transform obj, string name, bool rightHand) {
             outline = obj.parent.gameObject.AddComponent<Outline>();
-            outline.OutlineColor = Color.red;
-            outline.OutlineWidth = 5;
             outline.OutlineMode = Outline.Mode.OutlineVisible;
 
             isRightHand = rightHand;
@@ -227,35 +221,6 @@ namespace ValheimVRMod.Scripts {
 
             attack = item.m_shared.m_attack.Clone();
             secondaryAttack = item.m_shared.m_secondaryAttack.Clone();
-
-            // Cleanup unused hitTime
-            switch (attack.m_attackAnimation) {
-                case "atgeir_attack":
-                    hitTime = 0.81f;
-                    break;
-                case "battleaxe_attack":
-                    hitTime = 0.87f;
-                    break;
-                case "knife_stab":
-                    hitTime = 0.49f;
-                    break;
-                case "swing_longsword":
-                case "spear_poke":
-                    hitTime = 0.63f;
-                    break;
-                case "swing_pickaxe":
-                    hitTime = 1.3f;
-                    break;
-                case "swing_sledge":
-                    hitTime = 2.15f;
-                    break;
-                case "swing_axe":
-                    hitTime = 0.64f;
-                    break;
-                default:
-                    hitTime = 0.63f;
-                    break;
-            }
 
             itemIsTool = name == "Hammer";
 
@@ -270,7 +235,6 @@ namespace ValheimVRMod.Scripts {
                 colliderParent.transform.localRotation = Quaternion.Euler(colliderData.euler);
                 colliderParent.transform.localScale = colliderData.scale;
                 colliderDistance = Vector3.Distance(colliderParent.transform.position, obj.parent.position);
-                maxSnapshots = (int)(MAX_SNAPSHOTS_BASE + MAX_SNAPSHOTS_FACTOR * colliderDistance);
                 setScriptActive(true);
             }
             catch (InvalidEnumArgumentException)
@@ -297,7 +261,7 @@ namespace ValheimVRMod.Scripts {
             }
             else if (postSecondaryAttackCountdown > 0.5f) {
                 outline.enabled = true;
-                outline.OutlineColor = Color.Lerp(new Color(1, 1, 0, 0), Color.yellow, postSecondaryAttackCountdown - 0.5f);
+                outline.OutlineColor = Color.Lerp(new Color(1, 1, 0, 0), new Color(1, 1, 0, 0.5f), postSecondaryAttackCountdown - 0.5f);
                 outline.OutlineWidth = 10;
             }
             else
@@ -353,9 +317,7 @@ namespace ValheimVRMod.Scripts {
         }
 
         public bool hasMomentum() {
-            lastAttackWasStab = isStab();
-
-            if (lastAttackWasStab)
+            if (isStab())
             {
                 return true;
             }
