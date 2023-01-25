@@ -42,6 +42,7 @@ namespace ValheimVRMod.Patches
                 !VRPlayer.attachedToPlayer ||
                 !VRPlayer.inFirstPerson ||
                 Game.IsPaused() ||
+                VRPlayer.ShouldPauseMovement ||
                 !VHVRConfig.UseLookLocomotion() ||
                 ___m_currentStation != null /* Not Crafting */)
             {
@@ -53,10 +54,10 @@ namespace ValheimVRMod.Patches
                 headLookRef = new GameObject();
             }
             /* Attached to something, like boat controls */
-            if(__instance.IsAttached() && (VHVRConfig.ViewTurnWithMountedAnimal() || !__instance.IsRiding()))
+            if (__instance.IsAttached() && (VHVRConfig.ViewTurnWithMountedAnimal() || !__instance.IsRiding()))
             {
                 //Apply ship rotation
-                if(__instance.m_attached && __instance.m_attachPoint)
+                if (__instance.m_attached && __instance.m_attachPoint)
                 {
                     // Rotate VRPlayer together with delta ship rotation
 
@@ -97,7 +98,7 @@ namespace ValheimVRMod.Patches
                             ___m_lookYaw *= Quaternion.AngleAxis(newHeadingRotation - lastAttachmentHeading.Value, Vector3.up);
                         lastAttachmentHeading = newHeadingRotation;
                     }
-                    
+
                 }
                 return;
             }
@@ -114,11 +115,11 @@ namespace ValheimVRMod.Patches
 
             // Calculate the current head local rotation
             float currentHeadLocalRotation = Valve.VR.InteractionSystem.Player.instance.hmdTransform.localRotation.eulerAngles.y;
-            if(previousHeadLocalRotation.HasValue)
+            if (previousHeadLocalRotation.HasValue)
             {
                 // Find the difference between the current rotation and previous rotation
                 float deltaRotation = currentHeadLocalRotation - previousHeadLocalRotation.Value;
-                
+
                 // Rotate the look yaw by the amount the player rotated their head since last iteration
                 ___m_lookYaw *= Quaternion.AngleAxis(deltaRotation, Vector3.up);
 
@@ -126,7 +127,7 @@ namespace ValheimVRMod.Patches
                 // to offset the rotation the VRPlayer will experience due to rotation of yaw.
                 VRPlayer.instance.transform.localRotation *= Quaternion.AngleAxis(-deltaRotation, Vector3.up);
             }
-            
+
             // Save the current rotation for use in next iteration
             previousHeadLocalRotation = currentHeadLocalRotation;
         }
@@ -137,7 +138,7 @@ namespace ValheimVRMod.Patches
             {
                 return;
             }
-           ___m_lookDir = __instance.gameObject.transform.forward;
+            ___m_lookDir = __instance.gameObject.transform.forward;
         }
     }
 
@@ -171,7 +172,8 @@ namespace ValheimVRMod.Patches
                 var hmdTransform = Valve.VR.InteractionSystem.Player.instance.hmdTransform;
                 // Set the eye rotation equal to HMD rotation
                 __instance.m_eye.rotation = hmdTransform.rotation;
-            } else if (!VRPlayer.attachedToPlayer)
+            }
+            else if (!VRPlayer.attachedToPlayer)
             {
                 // We still want to restrict camera movement via the mouse to the
                 // horizontal plane and allow any vertical movement to be from
@@ -224,12 +226,12 @@ namespace ValheimVRMod.Patches
             }
         }
 
-        
+
         /// <summary>
         /// When interacting with an attachment point orient player in the direction of the attachment point
         /// </summary>
         [HarmonyPatch(typeof(Player), nameof(Player.AttachStart))]
-        
+
         class Player_AttachStart_Patch
         {
             static void Postfix(Player __instance, Transform attachPoint)
@@ -242,7 +244,7 @@ namespace ValheimVRMod.Patches
                     return;
                 }
 
-                if(attachPoint)
+                if (attachPoint)
                 {
                     // Rotate VRPlayer together with delta ship rotation
                     var attachmentHeading = attachPoint.transform.forward;
@@ -312,7 +314,7 @@ namespace ValheimVRMod.Patches
                             headLookRef.transform.position = player.m_head.transform.position;
                             var targetUp = Vector3.up;
                             var targetforward = player.m_body.transform.forward;
-                           
+
                             if (!wasAttached)
                             {
                                 player.m_lookYaw = Quaternion.LookRotation(targetforward, targetUp);
@@ -372,7 +374,7 @@ namespace ValheimVRMod.Patches
         /// Orient the player to the body direction when detaching from objects
         /// </summary>
         [HarmonyPatch(typeof(Player), nameof(Player.AttachStop))]
-        
+
         class Player_AttachStop_Patch
         {
             static void Prefix(Player __instance)

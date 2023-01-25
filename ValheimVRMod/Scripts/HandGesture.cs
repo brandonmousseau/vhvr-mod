@@ -69,7 +69,7 @@ namespace ValheimVRMod.Scripts {
 
         private void Update() {
 
-            if (!isUnequiped() || Game.IsPaused()) {
+            if (!isUnequiped() || Game.IsPaused() || VRPlayer.ShouldPauseMovement) {
                 return;
             }
             
