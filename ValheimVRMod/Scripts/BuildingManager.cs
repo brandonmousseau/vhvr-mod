@@ -793,7 +793,7 @@ namespace ValheimVRMod.Scripts
                 snapTimer = 0;
                 isSnapping = false;
             }
-            if (SteamVR_Actions.laserPointers_LeftClick.GetState(SteamVR_Input_Sources.RightHand) && !isReferenceActive && !isFreeMode && !CheckMenuIsOpen())
+            if (SteamVR_Actions.laserPointers_LeftClick.GetState(SteamVR_Input_Sources.RightHand) && !isReferenceActive && !isFreeMode && !VRPlayer.vrPlayerInstance.CheckMenuIsOpen())
             {
                 if (Physics.Raycast(PlaceModeRayVectorProvider.startingPosition, PlaceModeRayVectorProvider.rayDirection, out pieceRaycast, 50f, LayerMask.GetMask("piece")))
                 {
@@ -1673,10 +1673,6 @@ namespace ValheimVRMod.Scripts
         }
 
         //Utilities 
-        public bool CheckMenuIsOpen()
-        {
-            return Hud.IsPieceSelectionVisible() || StoreGui.IsVisible() || InventoryGui.IsVisible() || Menu.IsVisible() || (TextViewer.instance && TextViewer.instance.IsVisible()) || Minimap.IsOpen();
-        }
         public bool isSnapRotatePiece()
         {
             return !(modSupport && lastSnapMod);
