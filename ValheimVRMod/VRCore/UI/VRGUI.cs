@@ -110,6 +110,7 @@ namespace ValheimVRMod.VRCore.UI
                 }
             }
         }
+
         public void FixedUpdate()
         {
             if (ensureGuiCanvas())
@@ -303,7 +304,7 @@ namespace ValheimVRMod.VRCore.UI
                 _leftPointer = VRPlayer.leftPointer;
                 if (_leftPointer != null)
                 {
-                    _leftPointer.PointerTracking += OnPointerTracking;
+                    _leftPointer.PointerTracking += OnPointerTrackingLeftHand;
                 }
             }
             if (_rightPointer == null)
@@ -343,6 +344,19 @@ namespace ValheimVRMod.VRCore.UI
         {
             if (isUiPanel(e.target))
                 _inputModule.SimulateRightClick();
+        }
+
+        public void OnPointerTrackingLeftHand(object p, PointerEventArgs e)
+        {
+            if (isUiPanel(e.target))
+            {
+                SoftwareCursor.simulatedMousePosition =
+                    convertLocalUiPanelCoordinatesToCursorCoordinates(e.target.InverseTransformPoint(e.position));
+                // PointerEventArgs#buttonStateLeft does not give valid state of the trigger, so we need to check other things in order to emulate mouse clicks.
+                // Note: when the laser pointer is active, SteamVR_Actions.valheim_Use or SteamVR_Actions.valheim_UseLeft does not detect left controller trigger press either.
+                _inputModule.UpdateLeftButtonState(SteamVR_Actions.default_SkeletonLeftHand.GetFingerCurl(SteamVR_Skeleton_FingerIndexEnum.index) > 0.75f);
+                _inputModule.UpdateRightButtonState(SteamVR_Actions.valheim_QuickActions.GetState(SteamVR_Input_Sources.LeftHand));
+            }
         }
 
         public void OnPointerTracking(object p, PointerEventArgs e)
