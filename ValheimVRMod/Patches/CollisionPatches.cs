@@ -180,7 +180,7 @@ namespace ValheimVRMod.Patches {
                     
                     if(WeaponSecondaryManager.wasSecondaryAttack && WeaponSecondaryManager.secondaryHitList.Count >= 1)
                     {
-                        randomSkillFactor /= WeaponSecondaryManager.secondaryHitList.Count * 0.75f;
+                        randomSkillFactor /= (WeaponSecondaryManager.secondaryHitList.Count - WeaponSecondaryManager.hitExtra) * 0.75f;
                     }
                     else
                     {

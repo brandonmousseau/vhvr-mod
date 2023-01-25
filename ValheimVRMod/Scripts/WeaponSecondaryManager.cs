@@ -34,6 +34,7 @@ namespace ValheimVRMod.Scripts
         private AnimationCurve slashCurve;
         private AnimationCurve circleCurve;
         public static List<Attack.HitPoint> secondaryHitList;
+        public static int hitExtra;
         public static bool wasSecondaryAttack;
         public static Vector3 hitDir;
         private float rangeMultiplier;
@@ -359,6 +360,7 @@ namespace ValheimVRMod.Scripts
                 firstPos = Player.m_localPlayer.transform.position + firstPos;
                 lastPos = Player.m_localPlayer.transform.position + lastPos;
                 secondaryHitList = new List<Attack.HitPoint>();
+                hitExtra = 0;
                 pointList = new List<Vector3>();
                 if (secondaryAttack.m_attackAnimation == "atgeir_secondary")
                 {
@@ -432,6 +434,11 @@ namespace ValheimVRMod.Scripts
                         {
                             isTerrain = false;
                         }
+                        else
+                        {
+                            hitExtra += 1;
+                        }
+
                         var character = hit.collider.gameObject.GetComponentInParent<Character>();
                         if (character != null)
                         {
@@ -489,6 +496,7 @@ namespace ValheimVRMod.Scripts
                 }
                 wasSecondaryAttacked = true;
                 secondaryAttackJustEnded = false;
+                hitExtra = 0;
             }
         }
 
