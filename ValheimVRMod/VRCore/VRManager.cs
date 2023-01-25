@@ -1,4 +1,4 @@
-﻿using static ValheimVRMod.Utilities.LogUtils;
+using static ValheimVRMod.Utilities.LogUtils;
 
 using UnityEngine;
 using UnityEngine.XR;
@@ -158,6 +158,11 @@ namespace ValheimVRMod.VRCore
 
         public static void tryRecenter()
         {
+            if (VRPlayer.ShouldPauseMovement)
+            {
+                return;
+            }
+
             List<XRInputSubsystem> inputSubsystems = new List<XRInputSubsystem>();
             SubsystemManager.GetInstances(inputSubsystems);
             foreach (var subsystem in inputSubsystems)
