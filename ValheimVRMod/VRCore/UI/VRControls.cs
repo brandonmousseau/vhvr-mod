@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 using Valve.VR;
 using ValheimVRMod.Scripts;
@@ -548,7 +548,8 @@ namespace ValheimVRMod.VRCore.UI
 
         public bool getClickModifier()
         {
-            return _clickModifier.GetState(SteamVR_Input_Sources.Any);
+            // Left pointer does not detect click modifier properly so we need to explicitly check the grab state.
+            return _clickModifier.GetState(SteamVR_Input_Sources.Any) || (VRPlayer.leftPointer.active && SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand));
         }
 
         private int getAltPieceRotation()
