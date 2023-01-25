@@ -424,7 +424,7 @@ namespace ValheimVRMod.Patches {
         // bool crouch is a toggle
         static void Prefix(Player __instance, ref bool crouch)
         {
-            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls())
+            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls() || VRPlayer.ShouldPauseMovement)
             {
                 return;
             }
