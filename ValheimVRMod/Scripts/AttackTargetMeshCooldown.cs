@@ -27,12 +27,24 @@ namespace ValheimVRMod.Scripts {
             return false;
         }
 
-        public bool tryTriggerSecondaryAttack(float cd)
+        public bool tryTriggerSecondaryAttack(float cd, bool ignorePrimary = true)
         {
             if (tryTrigger(cd))
             {
                 isSecondaryAttackCooldown = true;
-                damageMultiplier = 1;
+                
+                if (ignorePrimary)
+                {
+                    damageMultiplier = 1;
+                }
+                else
+                {
+                    if (primaryTargetMeshCooldown == null)
+                    {
+                        primaryTargetMeshCooldown = this;
+                        damageMultiplier = 1;
+                    }
+                }
                 return true;
             }
             return false;
