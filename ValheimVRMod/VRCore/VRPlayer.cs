@@ -106,6 +106,21 @@ namespace ValheimVRMod.VRCore
         public static Hand rightHand { get { return _rightHand; } }
         public static Hand dominantHand { get { return VHVRConfig.LeftHanded() ? leftHand : rightHand; } }
         public static bool ShouldPauseMovement { get { return Menu.IsVisible() && !VHVRConfig.AllowMovementWhenInMenu(); } }
+        public static bool IsClickableGuiOpen
+        {
+            get
+            {
+                return
+                    Hud.IsPieceSelectionVisible() ||
+                    StoreGui.IsVisible() ||
+                    InventoryGui.IsVisible() ||
+                    Menu.IsVisible() ||
+                    (TextViewer.instance && TextViewer.instance.IsVisible()) ||
+                    Minimap.IsOpen();
+            }
+        }
+
+        public static bool IsInteractiveGuiOpen { get { return IsClickableGuiOpen || (Chat.instance && Chat.instance.HasFocus()) || Console.IsVisible(); } }
 
         public static PhysicsEstimator leftHandPhysicsEstimator
         {
@@ -687,14 +702,7 @@ namespace ValheimVRMod.VRCore
         // Some logic from GameCamera class
         private bool canAdjustCameraDistance()
         {
-            return (!Chat.instance || !Chat.instance.HasFocus()) &&
-                    !Console.IsVisible() &&
-                    !InventoryGui.IsVisible() &&
-                    !StoreGui.IsVisible() &&
-                    !Menu.IsVisible() &&
-                    !Minimap.IsOpen() &&
-                    attachedToPlayer &&
-                    !getPlayerCharacter().InCutscene() ? !getPlayerCharacter().InPlaceMode() : false;
+            return !IsInteractiveGuiOpen && !getPlayerCharacter().InCutscene() && !getPlayerCharacter().InPlaceMode();
         }
 
         private bool shouldAttachToPlayerCharacter()
@@ -1173,10 +1181,6 @@ namespace ValheimVRMod.VRCore
         {
             timerLeft = time;
             timerRight = time;
-        }
-        public bool CheckMenuIsOpen()
-        {
-            return Hud.IsPieceSelectionVisible() || StoreGui.IsVisible() || InventoryGui.IsVisible() || Menu.IsVisible() || (TextViewer.instance && TextViewer.instance.IsVisible()) || Minimap.IsOpen();
         }
     }
 }

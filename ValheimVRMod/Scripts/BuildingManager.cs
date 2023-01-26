@@ -793,7 +793,7 @@ namespace ValheimVRMod.Scripts
                 snapTimer = 0;
                 isSnapping = false;
             }
-            if (SteamVR_Actions.laserPointers_LeftClick.GetState(SteamVR_Input_Sources.RightHand) && !isReferenceActive && !isFreeMode && !VRPlayer.vrPlayerInstance.CheckMenuIsOpen())
+            if (SteamVR_Actions.laserPointers_LeftClick.GetState(SteamVR_Input_Sources.RightHand) && !isReferenceActive && !isFreeMode && !VRPlayer.IsClickableGuiOpen)
             {
                 if (Physics.Raycast(PlaceModeRayVectorProvider.startingPosition, PlaceModeRayVectorProvider.rayDirection, out pieceRaycast, 50f, LayerMask.GetMask("piece")))
                 {
