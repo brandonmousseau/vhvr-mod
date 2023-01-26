@@ -287,7 +287,7 @@ namespace ValheimVRMod.VRCore
                 if (vrikEnabled() && pausedMovement)
                 {
                     // Before unpausing, move the camera back to the position before the pause to prevent teleporting the player to the cuurent camera position.
-                    _vrCameraRig.localPosition -= (_vrCam.transform.localPosition - _lastCamPosition);
+                    _vrCameraRig.localPosition -= Vector3.ProjectOnPlane(_vrCam.transform.localPosition - _lastCamPosition, Vector3.up);
                     _lastCamPosition = _vrCam.transform.localPosition;
                     VrikCreator.Unpause(getPlayerCharacter());
                     pausedMovement = false;
