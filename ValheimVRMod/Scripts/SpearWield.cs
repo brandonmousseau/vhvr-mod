@@ -36,7 +36,7 @@ namespace ValheimVRMod.Scripts
         {
             if (harpoonHidingTimer > 0)
             {
-                //harpoonHidingTimer -= Time.fixedDeltaTime;
+                harpoonHidingTimer -= Time.fixedDeltaTime;
             }
 
             if (EquipScript.getRight() == EquipType.SpearChitin)
