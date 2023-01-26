@@ -79,7 +79,7 @@ namespace ValheimVRMod.Patches {
             var weaponCol = StaticObjects.rightWeaponCollider().GetComponent<WeaponCollision>();
             weaponCol.setColliderParent(meshFilter.transform, ___m_rightItem, true);
             weaponCol.weaponWield = weaponWield;
-            meshFilter.gameObject.AddComponent<WeaponSecondaryManager>().Initialize(meshFilter.transform, ___m_rightItem, true);
+            meshFilter.gameObject.AddComponent<ButtonSecondaryAttackManager>().Initialize(meshFilter.transform, ___m_rightItem, true);
             meshFilter.gameObject.AddComponent<WeaponBlock>().weaponWield = weaponWield;
 
             ParticleFix.maybeFix(___m_rightItemInstance);
@@ -161,7 +161,7 @@ namespace ValheimVRMod.Patches {
             }
 
             StaticObjects.leftWeaponCollider().GetComponent<WeaponCollision>().setColliderParent(meshFilter.transform, ___m_leftItem, false);
-            meshFilter.gameObject.AddComponent<WeaponSecondaryManager>().Initialize(meshFilter.transform, ___m_leftItem, false);
+            meshFilter.gameObject.AddComponent<ButtonSecondaryAttackManager>().Initialize(meshFilter.transform, ___m_leftItem, false);
             ParticleFix.maybeFix(___m_leftItemInstance);
         }
     }
@@ -326,7 +326,7 @@ namespace ValheimVRMod.Patches {
                 return true;
             }
 
-            if (WeaponSecondaryManager.wasSecondaryAttack)
+            if (ButtonSecondaryAttackManager.wasSecondaryAttack)
             {
                 __result = false;
                 return false;

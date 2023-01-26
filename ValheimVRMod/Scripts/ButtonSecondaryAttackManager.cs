@@ -11,7 +11,7 @@ using Valve.VR;
 
 namespace ValheimVRMod.Scripts
 {
-    class WeaponSecondaryManager : MonoBehaviour
+    class ButtonSecondaryAttackManager : MonoBehaviour
     {
         private ItemDrop.ItemData item;
         private Attack attack;

@@ -178,9 +178,9 @@ namespace ValheimVRMod.Patches {
 
                 if (___m_lowerDamagePerHit) {
                     
-                    if(WeaponSecondaryManager.wasSecondaryAttack && WeaponSecondaryManager.secondaryHitList.Count >= 1)
+                    if(ButtonSecondaryAttackManager.wasSecondaryAttack && ButtonSecondaryAttackManager.secondaryHitList.Count >= 1)
                     {
-                        randomSkillFactor /= (WeaponSecondaryManager.secondaryHitList.Count - WeaponSecondaryManager.hitExtra) * 0.75f;
+                        randomSkillFactor /= (ButtonSecondaryAttackManager.secondaryHitList.Count - ButtonSecondaryAttackManager.hitExtra) * 0.75f;
                     }
                     else
                     {
@@ -201,7 +201,7 @@ namespace ValheimVRMod.Patches {
                 hitData.m_skill = skill;
                 hitData.m_damage = ___m_weapon.GetDamage();
                 hitData.m_point = pos;
-                hitData.m_dir = WeaponSecondaryManager.hitDir == Vector3.zero ? (pos - Player.m_localPlayer.transform.position).normalized : WeaponSecondaryManager.hitDir;
+                hitData.m_dir = ButtonSecondaryAttackManager.hitDir == Vector3.zero ? (pos - Player.m_localPlayer.transform.position).normalized : ButtonSecondaryAttackManager.hitDir;
                 hitData.m_hitCollider = col;
                 hitData.SetAttacker(___m_character);
                 hitData.m_damage.Modify(___m_damageMultiplier);
@@ -211,7 +211,7 @@ namespace ValheimVRMod.Patches {
                     hitData.m_damage.Modify(2f);
                     hitData.m_pushForce *= 1.2f;
                 }
-                if (___m_lowerDamagePerHit && !WeaponSecondaryManager.wasSecondaryAttack)
+                if (___m_lowerDamagePerHit && !ButtonSecondaryAttackManager.wasSecondaryAttack)
                 {
                     hitData.m_damage.Modify(AttackTargetMeshCooldown.calcDamageMultiplier());
                 }
@@ -269,7 +269,7 @@ namespace ValheimVRMod.Patches {
             {
                 return ;
             }
-            if (WeaponSecondaryManager.wasSecondaryAttack)
+            if (ButtonSecondaryAttackManager.wasSecondaryAttack)
                 __result *= 0.2F;
             return;
         }

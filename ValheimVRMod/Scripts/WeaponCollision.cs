@@ -168,7 +168,7 @@ namespace ValheimVRMod.Scripts {
             {
                 return false;
             }
-            if(WeaponSecondaryManager.firstPos != Vector3.zero || WeaponSecondaryManager.wasSecondaryAttack)
+            if(ButtonSecondaryAttackManager.firstPos != Vector3.zero || ButtonSecondaryAttackManager.wasSecondaryAttack)
             {
                 return false;
             }
@@ -259,7 +259,7 @@ namespace ValheimVRMod.Scripts {
 
         private void Update() {
 
-            if (!outline || WeaponSecondaryManager.wasSecondaryAttack) {
+            if (!outline || ButtonSecondaryAttackManager.wasSecondaryAttack) {
                 return;
             }
 
