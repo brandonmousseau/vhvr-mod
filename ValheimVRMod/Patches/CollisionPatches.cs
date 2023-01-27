@@ -178,9 +178,9 @@ namespace ValheimVRMod.Patches {
 
                 if (___m_lowerDamagePerHit) {
                     
-                    if(ButtonSecondaryAttackManager.wasSecondaryAttack && ButtonSecondaryAttackManager.secondaryHitList.Count >= 1)
+                    if(ButtonSecondaryAttackManager.isSecondaryAttackStarted && ButtonSecondaryAttackManager.secondaryHitList.Count >= 1)
                     {
-                        randomSkillFactor /= (ButtonSecondaryAttackManager.secondaryHitList.Count - ButtonSecondaryAttackManager.hitExtra) * 0.75f;
+                        randomSkillFactor /= (ButtonSecondaryAttackManager.secondaryHitList.Count - ButtonSecondaryAttackManager.terrainHitCount) * 0.75f;
                     }
                     else
                     {
@@ -211,7 +211,7 @@ namespace ValheimVRMod.Patches {
                     hitData.m_damage.Modify(2f);
                     hitData.m_pushForce *= 1.2f;
                 }
-                if (___m_lowerDamagePerHit && !ButtonSecondaryAttackManager.wasSecondaryAttack)
+                if (___m_lowerDamagePerHit && !ButtonSecondaryAttackManager.isSecondaryAttackStarted)
                 {
                     hitData.m_damage.Modify(AttackTargetMeshCooldown.calcDamageMultiplier());
                 }
@@ -269,7 +269,7 @@ namespace ValheimVRMod.Patches {
             {
                 return ;
             }
-            if (ButtonSecondaryAttackManager.wasSecondaryAttack)
+            if (ButtonSecondaryAttackManager.isSecondaryAttackStarted)
                 __result *= 0.2F;
             return;
         }

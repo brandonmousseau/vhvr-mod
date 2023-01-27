@@ -326,7 +326,7 @@ namespace ValheimVRMod.Patches {
                 return true;
             }
 
-            if (ButtonSecondaryAttackManager.wasSecondaryAttack)
+            if (ButtonSecondaryAttackManager.isSecondaryAttackStarted)
             {
                 __result = false;
                 return false;
