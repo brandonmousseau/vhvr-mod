@@ -106,6 +106,11 @@ namespace ValheimVRMod.Scripts
 
         protected virtual void OnRenderObject()
         {
+            if (VRPlayer.ShouldPauseMovement)
+            {
+                return;
+            }
+
             WieldHandle();
             if (particleSystem != null)
             {
