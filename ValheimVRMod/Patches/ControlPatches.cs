@@ -178,7 +178,7 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
-            if (BuildingManager.instance.isSnapMode() && !VRPlayer.vrPlayerInstance.CheckMenuIsOpen())
+            if (BuildingManager.instance.isSnapMode() && !VRPlayer.IsClickableGuiOpen)
             {
                 BuildingManager.instance.UpdateSelectedSnapPoints(___m_placementGhost);
             }
@@ -424,7 +424,7 @@ namespace ValheimVRMod.Patches {
         // bool crouch is a toggle
         static void Prefix(Player __instance, ref bool crouch)
         {
-            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls())
+            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls() || VRPlayer.ShouldPauseMovement)
             {
                 return;
             }

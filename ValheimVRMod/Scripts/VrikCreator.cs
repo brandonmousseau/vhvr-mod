@@ -26,12 +26,25 @@ namespace ValheimVRMod.Scripts {
         private static readonly Quaternion rightSpearRotation = Quaternion.Euler(0, -90, -140);
         private static readonly Vector3 rightSpearEllbow = new Vector3(-1, -3f, 0);
         
-        public static Transform rightHandConnector;
-        public static Transform leftHandConnector;
+        public static Transform rightHandConnector = null;
+        public static Transform leftHandConnector = null;
+        public static Transform camera;
+        private static Transform CameraRig { get { return camera.parent; } }
 
 
-        public static VRIK initialize(GameObject target, Transform leftController, Transform rightController, Transform camera) {
-            VRIK vrik = target.AddComponent<VRIK>();
+        private static VRIK CreateTargets(GameObject playerObject)
+        {
+            VRIK vrik = playerObject.GetComponent<VRIK>() ?? playerObject.AddComponent<VRIK>();
+            vrik.solver.leftArm.target = new GameObject().transform;
+            vrik.solver.rightArm.target = new GameObject().transform;
+            vrik.solver.spine.headTarget = new GameObject().transform;
+            leftHandConnector = new GameObject().transform;
+            rightHandConnector = new GameObject().transform;
+            return vrik;
+        }
+
+        private static void InitializeTargts(VRIK vrik, Transform leftController, Transform rightController, Transform camera)
+        {
             vrik.AutoDetectReferences();
             vrik.references.leftThigh = null;
             vrik.references.leftCalf = null;
@@ -42,21 +55,16 @@ namespace ValheimVRMod.Scripts {
             vrik.references.rightFoot = null;
             vrik.references.rightToes = null;
 
-            vrik.solver.leftArm.target = new GameObject().transform;
-            leftHandConnector = new GameObject().transform;
             leftHandConnector.SetParent(leftController, false);
             vrik.solver.leftArm.target.SetParent(leftHandConnector, false);
-            
-            vrik.solver.rightArm.target = new GameObject().transform;
-            rightHandConnector = new GameObject().transform;
+
             rightHandConnector.SetParent(rightController, false);
             vrik.solver.rightArm.target.SetParent(rightHandConnector, false);
 
-            Transform head = new GameObject().transform;
-            head.SetParent(camera);
+            Transform head = vrik.solver.spine.headTarget;
+            head.SetParent(VrikCreator.camera = camera);
             head.localPosition = new Vector3(0, -0.165f, -0.09f);
             head.localRotation = Quaternion.Euler(0, 90, 20);
-            vrik.solver.spine.headTarget = head;
             vrik.solver.spine.maxRootAngle = 180;
 
             //Avoid akward movements
@@ -67,10 +75,23 @@ namespace ValheimVRMod.Scripts {
             vrik.solver.spine.bodyRotStiffness = 0f;
             //Force head to allow more vertical headlook
             vrik.solver.spine.headClampWeight = 0f;
+        }
 
+
+        private static bool IsPaused(VRIK vrik)
+        {
+            return
+                vrik.solver.leftArm.target.parent == CameraRig &&
+                vrik.solver.rightArm.target.parent == CameraRig &&
+                vrik.solver.spine.headTarget.parent == CameraRig;
+        }
+
+        public static VRIK initialize(GameObject playerGameObject, Transform leftController, Transform rightController, Transform camera) {
+            VRIK vrik = CreateTargets(playerGameObject);
+            InitializeTargts(vrik, leftController, rightController, camera);
             return vrik;
         }
-        
+
         public static void resetVrikHandTransform(Humanoid player) {
             
             VRIK vrik = player.GetComponent<VRIK>();   
@@ -78,7 +99,7 @@ namespace ValheimVRMod.Scripts {
             if (vrik == null) {
                 return;
             }
-            
+
             if (player.GetComponent<VRPlayerSync>()?.currentLeftWeapon != null) {
                 if (VHVRConfig.LeftHanded() && player.GetComponent<VRPlayerSync>().currentLeftWeapon.name.StartsWith("Spear") && !VHVRConfig.SpearInverseWield()) {
                     vrik.solver.leftArm.target.localPosition = leftspearPosition;
@@ -129,6 +150,45 @@ namespace ValheimVRMod.Scripts {
             leftHandConnector.localRotation = Quaternion.identity;
             rightHandConnector.localPosition = Vector3.zero;
             rightHandConnector.localRotation = Quaternion.identity;
+        }
+
+
+        public static void Pause(Humanoid player) {
+            VRIK vrik = player?.GetComponent<VRIK>();
+
+            if (vrik == null)
+            {
+                return;
+            }
+
+            if (IsPaused(vrik))
+            {
+                LogUtils.LogWarning("Trying to pause VRIK while it is already paused.");
+                return;
+            }
+
+            vrik.solver.leftArm.target.SetParent(camera.parent, true);
+            vrik.solver.rightArm.target.SetParent(camera.parent, true);
+            vrik.solver.spine.headTarget.SetParent(camera.parent, true);
+        }
+
+        public static void Unpause(Humanoid player)
+        {
+            VRIK vrik = player?.GetComponent<VRIK>();
+
+            if (vrik == null)
+            {
+                return;
+            }
+
+            if (!IsPaused(vrik))
+            {
+                LogUtils.LogWarning("Trying to unpause VRIK while it is not yet paused.");
+                return;
+            }
+
+            InitializeTargts(vrik, leftHandConnector.parent, rightHandConnector.parent, camera);
+            resetVrikHandTransform(player);
         }
     }
 }

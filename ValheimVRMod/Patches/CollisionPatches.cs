@@ -229,9 +229,9 @@ namespace ValheimVRMod.Patches {
                 Quaternion.identity); // Quaternion.identity might need to be replaced
             ___m_hitTerrainEffect.Create(pos, Quaternion.identity);
 
-            if (___m_weapon.m_shared.m_spawnOnHitTerrain && WeaponCollision.isTerrain) {
+            if (___m_weapon.m_shared.m_spawnOnHitTerrain && WeaponCollision.isLastHitOnTerrain) {
                 __instance.SpawnOnHitTerrain(pos, ___m_weapon.m_shared.m_spawnOnHitTerrain);
-                WeaponCollision.isTerrain = false;
+                WeaponCollision.isLastHitOnTerrain = false;
             }
 
             if (___m_weapon.m_shared.m_useDurability && ___m_character.IsPlayer() && !AttackTargetMeshCooldown.durabilityDrained)

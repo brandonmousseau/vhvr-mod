@@ -35,6 +35,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> immersiveShipCameraSitting;
         private static ConfigEntry<string> immersiveShipCameraStanding;
         private static ConfigEntry<bool> immersiveDodgeRoll;
+        private static ConfigEntry<bool> allowMovementWhenInMenu;
 
         // UI Settings
         private static ConfigEntry<float> overlayCurvature;
@@ -335,6 +336,10 @@ namespace ValheimVRMod.Utilities
                                           "ImmersiveDodgeRoll",
                                           false,
                                           "Make the camera rotate with character head during dodge roll (may induce motion sickness)");
+            allowMovementWhenInMenu = config.Bind("General",
+                                          "AllowMovementWhenInMenu",
+                                          true,
+                                          "Allow player character movement when the menu is open. Note that in single player this has no effect due to game pause.");
         }
 
         private static void InitializeUISettings()
@@ -1466,5 +1471,11 @@ namespace ValheimVRMod.Utilities
         {
             return immersiveDodgeRoll.Value;
         }
+
+        public static bool AllowMovementWhenInMenu()
+        {
+            return allowMovementWhenInMenu.Value;
+        }
+
     }
 }

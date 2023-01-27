@@ -34,7 +34,7 @@ namespace ValheimVRMod.Scripts {
         public bool itemIsTool;
         public static bool isDrinking;
         public WeaponWield weaponWield;
-        public static bool isTerrain;
+        public static bool isLastHitOnTerrain;
 
         private int maxSnapshots;
         private float colliderDistance;
@@ -177,7 +177,7 @@ namespace ValheimVRMod.Scripts {
                 return false;
             }
 
-            isTerrain = false;
+            isLastHitOnTerrain = false;
 
             if (target.GetComponentInParent<MineRock5>() != null) {
                 target = target.transform.parent.gameObject;
@@ -185,7 +185,7 @@ namespace ValheimVRMod.Scripts {
 
             if(target.GetComponent<Heightmap>() != null)
             {
-                isTerrain = true;
+                isLastHitOnTerrain = true;
             }
 
             var character = target.GetComponentInParent<Character>();
