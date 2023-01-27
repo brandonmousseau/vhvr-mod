@@ -27,28 +27,27 @@ namespace ValheimVRMod.Scripts {
             return false;
         }
 
-        public bool tryTriggerSecondaryAttack(float cd, bool ignorePrimary = true)
+        public bool tryTriggerSecondaryAttack(float cd, bool ignorePrimaryAttackCooldown = true)
         {
             if (tryTrigger(cd))
             {
                 isSecondaryAttackCooldown = true;
                 
-                if (ignorePrimary)
+                if (ignorePrimaryAttackCooldown)
                 {
                     damageMultiplier = 1;
                 }
-                else
+                else if (primaryTargetMeshCooldown == null)
                 {
-                    if (primaryTargetMeshCooldown == null)
-                    {
-                        primaryTargetMeshCooldown = this;
-                        damageMultiplier = 1;
-                    }
+                    primaryTargetMeshCooldown = this;
+                    damageMultiplier = 1;
                 }
+
                 return true;
             }
             return false;
         }
+
         public static float calcDamageMultiplier() {
             var oldDamageMultiplier = damageMultiplier;
             
