@@ -266,14 +266,7 @@ namespace ValheimVRMod.Scripts
                     outline.enabled = false;
                     if (!isSecondaryAttackEnded)
                     {
-                        if (isRightHand)
-                        {
-                            VRPlayer.rightHand.hapticAction.Execute(0, 0.2f, 50, 0.1f, SteamVR_Input_Sources.RightHand);
-                        }
-                        else
-                        {
-                            VRPlayer.leftHand.hapticAction.Execute(0, 0.2f, 50, 0.1f, SteamVR_Input_Sources.LeftHand);
-                        }
+                        VRPlayer.dominantHand.hapticAction.Execute(0, 0.2f, 50, 0.1f, VRPlayer.dominantHandInputSource);
                         hitDir = Vector3.zero;
                         isSecondaryAttackEnded = true;
                     }
