@@ -1161,7 +1161,7 @@ namespace ValheimVRMod.VRCore
                 var globalDeltaPosition = _instance.transform.TransformVector(deltaPosition);
                 globalDeltaPosition.y = 0;
                 roomscaleMovement = globalDeltaPosition;
-                _vrCameraRig.localPosition -= deltaPosition;
+                _vrCameraRig.localPosition -= deltaPosition; // Since we move the VR camera rig with the player character elsewhere, we counteract that here to prevent it from moving.
             } else roomscaleMovement = Vector3.zero;
 
             //Set animation parameters
