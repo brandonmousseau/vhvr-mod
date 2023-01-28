@@ -14,6 +14,7 @@ namespace ValheimVRMod.Scripts {
         private const float shortArrowCenterToTailDistance = 0.78f;
 
         private GameObject arrow;
+        private GameObject pausedCosmeticArrow; // An arrow shown on the bow when player movment is paused even after the actual arrow is shot for cosmetic purposes.
         private GameObject chargeIndicator;
         private GameObject drawIndicator;
         private LineRenderer predictionLine;
@@ -66,6 +67,7 @@ namespace ValheimVRMod.Scripts {
         protected new void OnDestroy() {
             base.OnDestroy();
             destroyArrow();
+            destroyPausedCosmeticArrow();
             Destroy(predictionLine);
             Destroy(arrowAttach);
             Destroy(chargeIndicator);
@@ -76,6 +78,15 @@ namespace ValheimVRMod.Scripts {
             if (arrow != null) {
                 arrow.GetComponent<ZNetView>().Destroy();
             }
+        }
+
+        private void destroyPausedCosmeticArrow()
+        {
+            if (pausedCosmeticArrow != null)
+            {
+                Destroy(pausedCosmeticArrow);
+            }
+            pausedCosmeticArrow = null;
         }
 
         /**
@@ -89,6 +100,22 @@ namespace ValheimVRMod.Scripts {
             }
 
             base.OnRenderObject();
+            if (VRPlayer.ShouldPauseMovement)
+            {
+                if (arrow != null && pausedCosmeticArrow == null)
+                {
+                    // Show an arrow on the bow when player movement is paused.
+                    // This arrow will persist after the actual arrow is shown until player movement is unpaused.
+                    // It is purely cosmetic and has no effect on arrow shooting and attacks in actual gameplay.
+                    pausedCosmeticArrow = Instantiate(arrow, transform);
+                    pausedCosmeticArrow.transform.SetPositionAndRotation(arrow.transform.position, arrow.transform.rotation);
+                }
+            }
+            else
+            {
+                destroyPausedCosmeticArrow();
+            }
+
 
             var arrowHand = VHVRConfig.LeftHanded() ? SteamVR_Input_Sources.LeftHand : SteamVR_Input_Sources.RightHand;
             var bowHand = VHVRConfig.LeftHanded() ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand;
