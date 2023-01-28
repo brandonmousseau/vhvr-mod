@@ -41,7 +41,7 @@ namespace ValheimVRMod.Utilities
                     return false;
                 }
 
-                float stabSpeed = Vector3.Dot(handPhysicsEstimator.GetAverageVelocityInSnapshots(), WeaponWield.weaponForward);
+                float stabSpeed = Vector3.Dot(handPhysicsEstimator.GetVelocity(), WeaponWield.weaponForward);
                 if (stabSpeed < MIN_STAB_SPEED)
                 {
                     return false;
@@ -139,7 +139,7 @@ namespace ValheimVRMod.Utilities
                 }
                     
                 const float MIN_SWIPING_SPEED = 2.5f;
-                float swipingSpeed = Vector3.ProjectOnPlane(collisionPhysicsEstimator.GetAverageVelocityInSnapshots(), WeaponWield.weaponForward).magnitude;
+                float swipingSpeed = Vector3.ProjectOnPlane(collisionPhysicsEstimator.GetVelocity(), WeaponWield.weaponForward).magnitude;
                 return !IsStab(handPhysicsEstimator) && swipingSpeed >= MIN_SWIPING_SPEED;
             },
 
