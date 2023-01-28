@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using UnityEngine;
 using ValheimVRMod.Utilities;
+using ValheimVRMod.VRCore;
 
 namespace ValheimVRMod.Scripts {
     public class BowManager : MonoBehaviour {
@@ -337,6 +338,11 @@ namespace ValheimVRMod.Scripts {
             if (!wasInitialized) {
                 PostInit();
                 wasInitialized = true;
+            }
+
+            if (VRPlayer.ShouldPauseMovement && gameObject.GetComponentInParent<Player>() == Player.m_localPlayer)
+            {
+                return;
             }
 
             if (pulling) {
