@@ -511,12 +511,14 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
+            
             foreach (var raycastHit in raycastList)
             {
                 if (raycastHit.collider.gameObject == Player.m_localPlayer.gameObject)
                 {
                     continue;
                 }
+                //Follows Attack.DoMeleeAttack Function 
                 GameObject hitObject = Projectile.FindHitObject(raycastHit.collider);
                 if (hitObject && hitObject != Player.m_localPlayer.gameObject)
                 {
@@ -527,7 +529,7 @@ namespace ValheimVRMod.Scripts
                         if (targetCharacter != null)
                         {
                             bool flag = BaseAI.IsEnemy(Player.m_localPlayer, targetCharacter) || (targetCharacter.GetBaseAI() && targetCharacter.GetBaseAI().IsAggravatable());
-                            if ((!flag) || (!item.m_shared.m_tamedOnly && !Player.m_localPlayer.IsPVPEnabled() && !flag) || (item.m_shared.m_tamedOnly && !targetCharacter.IsTamed()))
+                            if ((!item.m_shared.m_tamedOnly && !Player.m_localPlayer.IsPVPEnabled() && !flag) || (item.m_shared.m_tamedOnly && !targetCharacter.IsTamed()))
                             {
                                 continue;
                             }
