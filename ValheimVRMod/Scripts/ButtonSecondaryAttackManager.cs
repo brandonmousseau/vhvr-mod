@@ -517,21 +517,21 @@ namespace ValheimVRMod.Scripts
                 {
                     continue;
                 }
-                GameObject gameObject = Projectile.FindHitObject(raycastHit.collider);
-                if (gameObject && !(gameObject == Player.m_localPlayer.gameObject))
+                GameObject hitObject = Projectile.FindHitObject(raycastHit.collider);
+                if (hitObject && hitObject != Player.m_localPlayer.gameObject)
                 {
-                    Vagon component = gameObject.GetComponent<Vagon>();
-                    if (!component || !component.IsAttached(Player.m_localPlayer))
+                    Vagon vagon = hitObject.GetComponent<Vagon>();
+                    if (!vagon || !vagon.IsAttached(Player.m_localPlayer))
                     {
-                        Character component2 = gameObject.GetComponent<Character>();
-                        if (component2 != null)
+                        Character targetCharacter = hitObject.GetComponent<Character>();
+                        if (targetCharacter != null)
                         {
-                            bool flag = BaseAI.IsEnemy(Player.m_localPlayer, component2) || (component2.GetBaseAI() && component2.GetBaseAI().IsAggravatable() && Player.m_localPlayer.IsPlayer());
-                            if ((!Player.m_localPlayer.IsPlayer() && !flag) || (!item.m_shared.m_tamedOnly && Player.m_localPlayer.IsPlayer() && !Player.m_localPlayer.IsPVPEnabled() && !flag) || (item.m_shared.m_tamedOnly && !component2.IsTamed()))
+                            bool flag = BaseAI.IsEnemy(Player.m_localPlayer, targetCharacter) || (targetCharacter.GetBaseAI() && targetCharacter.GetBaseAI().IsAggravatable());
+                            if ((!flag) || (!item.m_shared.m_tamedOnly && !Player.m_localPlayer.IsPVPEnabled() && !flag) || (item.m_shared.m_tamedOnly && !targetCharacter.IsTamed()))
                             {
                                 continue;
                             }
-                            if (item.m_shared.m_dodgeable && component2.IsDodgeInvincible())
+                            if (item.m_shared.m_dodgeable && targetCharacter.IsDodgeInvincible())
                             {
                                 continue;
                             }
@@ -540,8 +540,8 @@ namespace ValheimVRMod.Scripts
                         {
                             continue;
                         }
-                        bool multiCollider = secondaryAttack.m_pickaxeSpecial && (gameObject.GetComponent<MineRock5>() || gameObject.GetComponent<MineRock>());
-                        secondaryAttack.AddHitPoint(secondaryHitList, gameObject, raycastHit.collider, raycastHit.point, raycastHit.distance, multiCollider);
+                        bool multiCollider = secondaryAttack.m_pickaxeSpecial && (hitObject.GetComponent<MineRock5>() || hitObject.GetComponent<MineRock>());
+                        secondaryAttack.AddHitPoint(secondaryHitList, hitObject, raycastHit.collider, raycastHit.point, raycastHit.distance, multiCollider);
                         if (!secondaryAttack.m_hitThroughWalls && Vector3.Distance(raycastList[0].point, raycastHit.point) >= 0.3f && attack.m_attackAnimation != "swing_pickaxe")
                         {
                             break;
