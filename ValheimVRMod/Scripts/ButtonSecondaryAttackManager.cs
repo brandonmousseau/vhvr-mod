@@ -187,10 +187,10 @@ namespace ValheimVRMod.Scripts
                 outline = parent.GetComponent<Outline>();
                 return;
             }
-            SecondaryAttack();
+            UpdateSecondaryAttack();
         }
 
-        private void SecondaryAttack()
+        private void UpdateSecondaryAttack()
         {
 
             if (!isSecondaryAvailable)
@@ -220,6 +220,7 @@ namespace ValheimVRMod.Scripts
                 lastPos = Vector3.zero;
             }
             
+            //Input Check
             if (SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource) && 
                 !inCooldown && 
                 !VRPlayer.IsClickableGuiOpen && 
@@ -249,7 +250,7 @@ namespace ValheimVRMod.Scripts
                 }
             }
             
-
+            //Timer Check for slash line fadeout
             if (secondaryAttackTimer <= 0 && firstPos == Vector3.zero)
             {
                 var transparency = Color.Lerp(Color.clear, slashColor, Mathf.Max(secondaryAttackTimer + 0.7f, 0) / 0.7f);
@@ -257,6 +258,7 @@ namespace ValheimVRMod.Scripts
                 slashLine.material.color = transparency;
             }
 
+            //reset variables and trigger vibration when cooldown ended
             if (!(inCooldown || firstPos != Vector3.zero))
             {
                 if (secondaryAttackTimer <= secondaryAttackTimerFull)
@@ -278,6 +280,7 @@ namespace ValheimVRMod.Scripts
             if(lastpointList == null) 
                 lastpointList = new List<Vector3>();
 
+            //Rendering line when input is held
             if (firstPos != Vector3.zero && lastPos == Vector3.zero)
             {
                 if (secondaryAttack.m_attackAnimation == "atgeir_secondary")
@@ -347,6 +350,7 @@ namespace ValheimVRMod.Scripts
                 }
             }
 
+            //Secondary attack check after input is hold and then released
             if (firstPos != Vector3.zero && lastPos != Vector3.zero && !inCooldown)
             {
                 int layerMask = secondaryAttack.m_hitTerrain ? Attack.m_attackMaskTerrain : Attack.m_attackMask;
@@ -355,6 +359,8 @@ namespace ValheimVRMod.Scripts
                 secondaryHitList = new List<Attack.HitPoint>();
                 terrainHitCount = 0;
                 pointList = new List<Vector3>();
+
+                //Secondary attack raycast check
                 if (secondaryAttack.m_attackAnimation == "atgeir_secondary")
                 {
                     if (Vector3.Distance(firstPos, lastPos) < secondaryAttack.m_attackRange * 0.5f)
@@ -417,6 +423,8 @@ namespace ValheimVRMod.Scripts
                 var hitTime = WeaponUtils.GetAttackDuration(secondaryAttack);
                 secondaryAttackTimer = Mathf.Min(hitTime / 2, 0.3f);
                 secondaryAttackTimerFull = -hitTime + secondaryAttackTimer;
+
+                //Secondary attack check target outlines and terrain hit
                 if (secondaryHitList.Count >= 1 && Player.m_localPlayer.HaveStamina(getStaminaSecondaryAtttackUsage() + 0.1f))
                 {
                     var isTerrain = item.m_shared.m_spawnOnHitTerrain ? true : false;
