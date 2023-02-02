@@ -175,12 +175,12 @@ namespace ValheimVRMod.Patches {
             if (___m_character != Player.m_localPlayer || !VHVRConfig.UseVrControls()) {
                 return;
             }
-            if (!EquipScript.getLeftAnimSpeedUp() || !EquipScript.getRightAnimSpeedUp() || ___m_character.IsStaggering())
+            if (!EquipScript.shouldSkipAttackAnimation() || ___m_character.IsStaggering())
             {
                 ___m_animator.speed = 1f;
                 return;
             }
-            if(!(___m_animator.speed == 1 || ___m_animator.speed == 1000))
+            if(___m_animator.speed != 1 && ___m_animator.speed != 1000)
             {
                 lastSpeedUp = ___m_animator.speed;
             }
