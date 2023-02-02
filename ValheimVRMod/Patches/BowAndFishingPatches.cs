@@ -39,18 +39,20 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
-            if (EquipScript.getLeft() == EquipType.Bow && VHVRConfig.RestrictBowDrawSpeed() != "None") {
+            if (EquipScript.getLeft() != EquipType.Bow || VHVRConfig.RestrictBowDrawSpeed() == "None" || BowLocalManager.instance == null)
+            {
+                return;
+            }
+
+            if(__result > BowLocalManager.instance.lastDrawPercentage)
+            {
+                BowLocalManager.instance.lastDrawPercentage = __result;
+            }
+
+            if (!BowLocalManager.instance.pulling)
+            {
                 // Since the attack draw percentage is not patched in the prefix, we need to clamp it here in case the real life pull percentage is smaller than the unpatched attack draw percentage.
-                
-                if (BowLocalManager.instance)
-                {
-                    if(__result > BowLocalManager.instance.lastDrawPercentage)
-                    {
-                        BowLocalManager.instance.lastDrawPercentage = __result;
-                    }
-                    if(!BowLocalManager.instance.pulling)
-                    __result = Math.Min(__result, BowManager.realLifePullPercentage);
-                }
+                __result = Math.Min(__result, BowManager.realLifePullPercentage);
             }
         }
     }
