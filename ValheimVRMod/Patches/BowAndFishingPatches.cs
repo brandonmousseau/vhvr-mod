@@ -291,7 +291,7 @@ namespace ValheimVRMod.Patches {
         private static float recoilPushback = 0f;
         public static void Prefix(Attack __instance)
         {
-            if (__instance.m_character != Player.m_localPlayer)
+            if (__instance.m_character != Player.m_localPlayer || !VHVRConfig.UseVrControls())
             {
                 return;
             }
@@ -303,7 +303,7 @@ namespace ValheimVRMod.Patches {
         }
         public static void Postfix(Attack __instance)
         {
-            if (__instance.m_character != Player.m_localPlayer)
+            if (__instance.m_character != Player.m_localPlayer || !VHVRConfig.UseVrControls())
             {
                 return;
             }
