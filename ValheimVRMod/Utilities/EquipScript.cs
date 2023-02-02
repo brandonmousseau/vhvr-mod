@@ -243,17 +243,12 @@ namespace ValheimVRMod.Utilities
             return getRight() == EquipType.Club && Player.m_localPlayer.GetRightItem().m_shared.m_itemType == ItemDrop.ItemData.ItemType.TwoHandedWeapon;
         }
 
-        public static bool getRightAnimSpeedUp()
+        public static bool shouldSkipAttackAnimation()
         {
-            if (getRight() == EquipType.Magic)
+            if (getRight() == EquipType.Magic || getLeft() == EquipType.Magic || getLeft() == EquipType.Crossbow)
+            {
                 return false;
-            return true;
-        }
-
-        public static bool getLeftAnimSpeedUp()
-        {
-            if (getLeft() == EquipType.Magic || getLeft() == EquipType.Crossbow)
-                return false;
+            }
             return true;
         }
     }
