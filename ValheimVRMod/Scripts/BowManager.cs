@@ -51,7 +51,6 @@ namespace ValheimVRMod.Scripts {
         private bool wasPulling;
         protected bool oneHandedAiming = false;
         public static float realLifePullPercentage;
-        public float timeBasedChargePercentage;
         public bool pulling;
 
         void Awake() {
@@ -349,7 +348,6 @@ namespace ValheimVRMod.Scripts {
 
             if (pulling) {
                 if (!wasPulling) {
-                    timeBasedChargePercentage = 0;
                     wasPulling = true;
                 }
 
