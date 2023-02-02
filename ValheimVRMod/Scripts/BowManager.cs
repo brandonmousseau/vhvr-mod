@@ -34,6 +34,7 @@ namespace ValheimVRMod.Scripts {
         private Vector3 bowUpInObjectSpace;
         private Vector3 bowRightInObjectSpace;
         private float stringLength;
+        private float maxDrawRange { get { return Mathf.Max(VHVRConfig.GetBowMaxDrawRange(), GetBraceHeight() + 0.1f); } }
 
         protected readonly Quaternion originalRotation = new Quaternion(0.4763422f, 0.420751f, 0.5951466f, 0.4918001f); // Euler Angles: 358.1498 78.91683 99.33968
         protected Transform pullStart;
@@ -418,10 +419,10 @@ namespace ValheimVRMod.Scripts {
 
             Vector3 pullPos = bowOrientation.InverseTransformPoint(mainHand.position);
 
-            realLifePullPercentage = oneHandedAiming ? 1 : Mathf.Pow(Math.Min(Math.Max(pullStart.localPosition.z - pullPos.z, 0) / (VHVRConfig.GetBowMaxDrawRange() - GetBraceHeight()), 1), 2);
+            realLifePullPercentage = oneHandedAiming ? 1 : Mathf.Pow(Math.Min(Math.Max(pullStart.localPosition.z - pullPos.z, 0) / (maxDrawRange - GetBraceHeight()), 1), 2);
 
             // If RestrictBowDrawSpeed is enabled, limit the vr pull length by the square root of the current attack draw percentage to simulate the resistance.
-            float pullLengthRestriction = VHVRConfig.RestrictBowDrawSpeed() == "Full" ? Mathf.Lerp(GetBraceHeight(), VHVRConfig.GetBowMaxDrawRange(), Math.Max(Mathf.Sqrt(Player.m_localPlayer.GetAttackDrawPercentage()), 0.01f)) : VHVRConfig.GetBowMaxDrawRange();
+            float pullLengthRestriction = VHVRConfig.RestrictBowDrawSpeed() == "Full" ? Mathf.Lerp(GetBraceHeight(), maxDrawRange, Math.Max(Mathf.Sqrt(Player.m_localPlayer.GetAttackDrawPercentage()), 0.01f)) : Mathf.Max(0.8f, maxDrawRange);
 
             if (oneHandedAiming) {
                 pullPos.x = 0f;
