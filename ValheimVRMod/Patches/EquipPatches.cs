@@ -70,7 +70,7 @@ namespace ValheimVRMod.Patches {
             weaponWield.itemName = ___m_rightItem;
             weaponWield.Initialize(false);
 
-            if (MagicWeaponManager.SwingToLaunch)
+            if (MagicWeaponManager.IsSwingLaunchEnabled())
             {
                 meshFilter.gameObject.AddComponent<SwingLaunchManager>();
             }

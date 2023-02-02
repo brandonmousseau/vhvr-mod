@@ -17,13 +17,17 @@ namespace ValheimVRMod.Scripts {
 
         private static bool IsRightHandWeapon { get { return IsDominantHandWeapon ^ VHVRConfig.LeftHanded(); } }
         private static SteamVR_LaserPointer WeaponHandPointer { get { return IsRightHandWeapon ? VRPlayer.rightPointer : VRPlayer.leftPointer; } }
-      
         public static Vector3 AimDir {
             get
             {
-                return SwingToLaunch ? SwingLaunchManager.aimDir : WeaponWield.isCurrentlyTwoHanded() ? WeaponWield.weaponForward : WeaponHandPointer.rayDirection * Vector3.forward;
+                return IsSwingLaunchEnabled() ? SwingLaunchManager.aimDir : WeaponWield.isCurrentlyTwoHanded() ? WeaponWield.weaponForward : WeaponHandPointer.rayDirection * Vector3.forward;
             }
         }
+
+        public static bool IsSwingLaunchEnabled() {
+            return SWING_LAUNCH_MAGIC_STAFF_NAMES.Contains(Player.m_localPlayer?.GetRightItem()?.m_shared?.m_name); 
+        }
+
         public static bool AttemptingAttack {
             get
             {
@@ -31,14 +35,13 @@ namespace ValheimVRMod.Scripts {
                 {
                     return false;
                 }
-                return SwingToLaunch ? SwingLaunchManager.isThrowing : IsRightHandWeapon ? SteamVR_Actions.valheim_Use.state : SteamVR_Actions.valheim_UseLeft.state;
+                return IsSwingLaunchEnabled() ? SwingLaunchManager.isThrowing : IsRightHandWeapon ? SteamVR_Actions.valheim_Use.state : SteamVR_Actions.valheim_UseLeft.state;
             }
         }
-        public static bool SwingToLaunch { get { return SWING_LAUNCH_MAGIC_STAFF_NAMES.Contains(Player.m_localPlayer?.GetRightItem()?.m_shared?.m_name); } }
 
         public static bool ShouldSkipAttackAnimation()
         {
-            return SwingToLaunch;
+            return IsSwingLaunchEnabled();
         }
 
         public static Vector3 GetProjectileSpawnPoint(Attack attack) 
