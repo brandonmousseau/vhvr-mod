@@ -133,7 +133,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<string> arrowRestSide;
         private static ConfigEntry<string> bowDrawRestrictType;
         private static ConfigEntry<float> bowDrawRange;
-        private static ConfigEntry<bool> bowAccuracyIgnoresDrawLength;
+        private static ConfigEntry<bool> bowChargeIgnoresDrawLength;
         private static ConfigEntry<float> bowStaminaAdjust;
         private static ConfigEntry<string> crossbowSaggitalRotationSource;
         private static ConfigEntry<bool> crossbowManualReload;
@@ -720,10 +720,10 @@ namespace ValheimVRMod.Utilities
                 new ConfigDescription("Adjust the range of the max bow draw, lower value make it useful for controller with inside out tracking",
                 new AcceptableValueRange<float>(0.3f, 0.7f)));
 
-            bowAccuracyIgnoresDrawLength = config.Bind("Motion Control",
-                                                    "BowAccuracyIgnoresDrawLength",
+            bowChargeIgnoresDrawLength = config.Bind("Motion Control",
+                                                    "BowChargeIgnoresDrawLength",
                                                     true,
-                                                    "Use charging time instead of draw length to determine bow accuracy");
+                                                    "Use charging time instead of draw length to determine bow charge percentage");
 
             bowStaminaAdjust = config.Bind("Motion Control",
                 "BowStaminaAdjust",
@@ -1439,9 +1439,9 @@ namespace ValheimVRMod.Utilities
             return bhapticsEnabled.Value && !NonVrPlayer();
         }
 
-        public static bool BowAccuracyIgnoresDrawLength()
+        public static bool BowChargeIgnoresDrawLength()
         {
-            return bowAccuracyIgnoresDrawLength.Value;
+            return bowChargeIgnoresDrawLength.Value;
         }
         public static float GetBowMaxDrawRange()
         {

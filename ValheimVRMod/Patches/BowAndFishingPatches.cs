@@ -44,13 +44,8 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
-            if(__result > BowLocalManager.instance.timeBasedChargePercentage)
-            {
-                BowLocalManager.instance.timeBasedChargePercentage = __result;
-            }
-
             // Only clamp the charge upon releasing, not during pulling.
-            if (!BowLocalManager.instance.pulling)
+            if (!BowLocalManager.instance.pulling && !VHVRConfig.BowChargeIgnoresDrawLength())
             {
                 // Since the attack draw percentage is not patched in the prefix, we need to clamp it here in case the real life pull percentage is smaller than the unpatched attack draw percentage.
                 __result = Math.Min(__result, BowManager.realLifePullPercentage);
@@ -199,32 +194,10 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
-
-
             __instance.m_useCharacterFacing = false;
             __instance.m_launchAngle = 0;
 
             if (VHVRConfig.RestrictBowDrawSpeed() != "None" && EquipScript.getLeft() == EquipType.Bow) {
-                if (VHVRConfig.BowAccuracyIgnoresDrawLength())
-                {
-
-                    float currentSpreadFactor = 1 - Mathf.Sqrt(BowLocalManager.instance.GetAttackPercentage());
-                    if (currentSpreadFactor <= 0)
-                    {
-                        return;
-                    }
-
-                    float desiredSpreadFactor = 1 - Mathf.Sqrt(BowLocalManager.instance.timeBasedChargePercentage);
-                    float accuracyAdjustment = desiredSpreadFactor / currentSpreadFactor;
-                    float minSpread = __instance.m_projectileAccuracy;
-
-                    // We scale the max spread (i. e. m_projectileAccuracyMin) to compensate for the difference between desiredSpreadFactor and currentSpreadFactor.
-                    __instance.m_projectileAccuracyMin = Mathf.Lerp(minSpread, __instance.m_projectileAccuracyMin, accuracyAdjustment);
-                    if (___m_ammoItem != null)
-                    {
-                        ___m_ammoItem.m_shared.m_attack.m_projectileAccuracyMin = Mathf.Lerp(___m_ammoItem.m_shared.m_attack.m_projectileAccuracy, ___m_ammoItem.m_shared.m_attack.m_projectileAccuracyMin, accuracyAdjustment);
-                    }
-                }
                 return;
             }
 

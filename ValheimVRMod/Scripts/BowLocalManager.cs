@@ -277,7 +277,15 @@ namespace ValheimVRMod.Scripts {
         }
 
         private float pullPercentage() {
-            return VHVRConfig.RestrictBowDrawSpeed() != "None" ? Math.Min(realLifePullPercentage, Player.m_localPlayer.GetAttackDrawPercentage()) : realLifePullPercentage;
+            if (VHVRConfig.RestrictBowDrawSpeed() == "None")
+            {
+                return realLifePullPercentage;
+            }
+            if (VHVRConfig.BowChargeIgnoresDrawLength())
+            {
+                return Player.m_localPlayer.GetAttackDrawPercentage();
+            }
+            return Math.Min(realLifePullPercentage, Player.m_localPlayer.GetAttackDrawPercentage());
         }
 
         private bool checkHandNearString() {
