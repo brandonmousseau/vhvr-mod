@@ -44,11 +44,12 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
-            if(__result > BowLocalManager.instance.lastDrawPercentage)
+            if(__result > BowLocalManager.instance.timeBasedChargePercentage)
             {
-                BowLocalManager.instance.lastDrawPercentage = __result;
+                BowLocalManager.instance.timeBasedChargePercentage = __result;
             }
 
+            // Only clamp the charge upon releasing, not during pulling.
             if (!BowLocalManager.instance.pulling)
             {
                 // Since the attack draw percentage is not patched in the prefix, we need to clamp it here in case the real life pull percentage is smaller than the unpatched attack draw percentage.
@@ -194,23 +195,34 @@ namespace ValheimVRMod.Patches {
     class PatchFireProjectileBurst {
         
         static void Prefix(ref Attack __instance, ref ItemDrop.ItemData ___m_ammoItem, Humanoid ___m_character) {
-           
             if (___m_character != Player.m_localPlayer || !VHVRConfig.UseVrControls()) {
                 return;
             }
 
-            
-            
+
+
             __instance.m_useCharacterFacing = false;
             __instance.m_launchAngle = 0;
 
             if (VHVRConfig.RestrictBowDrawSpeed() != "None" && EquipScript.getLeft() == EquipType.Bow) {
-                if (VHVRConfig.IsBowAccuracyBasedOnCharge())
+                if (VHVRConfig.BowAccuracyIgnoresDrawLength())
                 {
-                    __instance.m_projectileAccuracyMin = __instance.m_projectileAccuracyMin - __instance.m_projectileAccuracyMin * BowLocalManager.instance.lastDrawPercentage;
+
+                    float currentSpreadFactor = 1 - Mathf.Sqrt(BowLocalManager.instance.GetAttackPercentage());
+                    if (currentSpreadFactor <= 0)
+                    {
+                        return;
+                    }
+
+                    float desiredSpreadFactor = 1 - Mathf.Sqrt(BowLocalManager.instance.timeBasedChargePercentage);
+                    float accuracyAdjustment = desiredSpreadFactor / currentSpreadFactor;
+                    float minSpread = __instance.m_projectileAccuracy;
+
+                    // We scale the max spread (i. e. m_projectileAccuracyMin) to compensate for the difference between desiredSpreadFactor and currentSpreadFactor.
+                    __instance.m_projectileAccuracyMin = Mathf.Lerp(minSpread, __instance.m_projectileAccuracyMin, accuracyAdjustment);
                     if (___m_ammoItem != null)
                     {
-                        ___m_ammoItem.m_shared.m_attack.m_projectileAccuracyMin = ___m_ammoItem.m_shared.m_attack.m_projectileAccuracyMin - ___m_ammoItem.m_shared.m_attack.m_projectileAccuracyMin * BowLocalManager.instance.lastDrawPercentage;
+                        ___m_ammoItem.m_shared.m_attack.m_projectileAccuracyMin = Mathf.Lerp(___m_ammoItem.m_shared.m_attack.m_projectileAccuracy, ___m_ammoItem.m_shared.m_attack.m_projectileAccuracyMin, accuracyAdjustment);
                     }
                 }
                 return;

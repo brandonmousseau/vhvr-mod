@@ -133,7 +133,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<string> arrowRestSide;
         private static ConfigEntry<string> bowDrawRestrictType;
         private static ConfigEntry<float> bowDrawRange;
-        private static ConfigEntry<bool> bowAccuracyBasedOnCharge;
+        private static ConfigEntry<bool> bowAccuracyIgnoresDrawLength;
         private static ConfigEntry<float> bowStaminaAdjust;
         private static ConfigEntry<string> crossbowSaggitalRotationSource;
         private static ConfigEntry<bool> crossbowManualReload;
@@ -720,10 +720,10 @@ namespace ValheimVRMod.Utilities
                 new ConfigDescription("Adjust the range of the max bow draw, lower value make it useful for controller with inside out tracking",
                 new AcceptableValueRange<float>(0.3f, 0.7f)));
 
-            bowAccuracyBasedOnCharge = config.Bind("Motion Control",
-                                                    "BowAccuracyBasedOnCharge",
+            bowAccuracyIgnoresDrawLength = config.Bind("Motion Control",
+                                                    "BowAccuracyIgnoresDrawLength",
                                                     true,
-                                                    "Use Vanilla bow draw charge as accuracy multiplier instead of real draw range, if set to false, the accuracy would be based on draw range");
+                                                    "Use charging time instead of draw length to determine bow accuracy");
 
             bowStaminaAdjust = config.Bind("Motion Control",
                 "BowStaminaAdjust",
@@ -1439,9 +1439,9 @@ namespace ValheimVRMod.Utilities
             return bhapticsEnabled.Value && !NonVrPlayer();
         }
 
-        public static bool IsBowAccuracyBasedOnCharge()
+        public static bool BowAccuracyIgnoresDrawLength()
         {
-            return bowAccuracyBasedOnCharge.Value;
+            return bowAccuracyIgnoresDrawLength.Value;
         }
         public static float GetBowMaxDrawRange()
         {
