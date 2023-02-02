@@ -33,6 +33,7 @@ namespace ValheimVRMod.Scripts {
         private Vector3 restingStringBottomInObjectSpace = new Vector3(0, Mathf.Infinity, 0);
         private Vector3 bowUpInObjectSpace;
         private Vector3 bowRightInObjectSpace;
+        private float stringLength;
 
         protected readonly Quaternion originalRotation = new Quaternion(0.4763422f, 0.420751f, 0.5951466f, 0.4918001f); // Euler Angles: 358.1498 78.91683 99.33968
         protected Transform pullStart;
@@ -50,7 +51,7 @@ namespace ValheimVRMod.Scripts {
         private bool wasPulling;
         protected bool oneHandedAiming = false;
         public static float realLifePullPercentage;
-        public float lastDrawPercentage;
+        public float timeBasedChargePercentage;
         public bool pulling;
 
         void Awake() {
@@ -219,6 +220,7 @@ namespace ValheimVRMod.Scripts {
             stringBottom.SetParent(lowerLimbBone, false);
             stringTop.position = transform.TransformPoint(restingStringTopInObjectSpace);
             stringBottom.position = transform.TransformPoint(restingStringBottomInObjectSpace);
+            stringLength = bowOrientation.InverseTransformVector(stringTop.position - stringBottom.position).magnitude;
             pullStart = new GameObject().transform;
             pullStart.parent = bowOrientation;
             pullStart.position = Vector3.Lerp(stringTop.position, stringBottom.position, 0.5f);
@@ -347,7 +349,7 @@ namespace ValheimVRMod.Scripts {
 
             if (pulling) {
                 if (!wasPulling) {
-                    lastDrawPercentage = 0;
+                    timeBasedChargePercentage = 0;
                     wasPulling = true;
                 }
 
@@ -389,7 +391,7 @@ namespace ValheimVRMod.Scripts {
             }
             float pullDelta = pullStart.localPosition.z - pullObj.transform.localPosition.z;
             // Just a heuristic and simplified approximation for the bend angle.
-            float bendAngleDegrees = pullDelta <= 0 ? 0 : Mathf.Asin(Math.Min(1, pullDelta)) * 180 / Mathf.PI;
+            float bendAngleDegrees = pullDelta <= 0 ? 0 : Mathf.Asin(Math.Min(1, pullDelta * 1.25f / stringLength)) * 180 / Mathf.PI;
 
             upperLimbBone.localRotation = Quaternion.Euler(-bendAngleDegrees, 0, 0);
             lowerLimbBone.localRotation = Quaternion.Euler(bendAngleDegrees, 0, 0);
