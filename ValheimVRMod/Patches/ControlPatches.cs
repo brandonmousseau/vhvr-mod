@@ -626,6 +626,7 @@ namespace ValheimVRMod.Patches {
                     {
                         attack = true;
                         attackHold = true;
+                        SwingLaunchManager.isThrowing = false;
                     }
                     break;
 
