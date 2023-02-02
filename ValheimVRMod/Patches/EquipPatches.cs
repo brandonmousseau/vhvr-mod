@@ -70,6 +70,11 @@ namespace ValheimVRMod.Patches {
             weaponWield.itemName = ___m_rightItem;
             weaponWield.Initialize(false);
 
+            if (MagicWeaponManager.SwingToLaunch)
+            {
+                meshFilter.gameObject.AddComponent<SwingLaunchManager>();
+            }
+
             if (EquipScript.isThrowable(player.GetRightItem()) || EquipScript.isSpearEquipped() || EquipScript.getRight() == EquipType.ThrowObject)
             {
                 // TODO: rename this to ThrowableManager
