@@ -15,8 +15,34 @@ namespace ValheimVRMod.Scripts {
         private static bool IsRightHandWeapon { get { return IsDominantHandWeapon ^ VHVRConfig.LeftHanded(); } }
         private static SteamVR_LaserPointer WeaponHandPointer { get { return IsRightHandWeapon ? VRPlayer.rightPointer : VRPlayer.leftPointer; } }
       
-        public static Vector3 AimDir { get { return WeaponWield.isCurrentlyTwoHanded() ? WeaponWield.weaponForward : WeaponHandPointer.rayDirection * Vector3.forward; } }
-        public static bool AttemptingAttack { get { return !IsMagicWeaponEquipped ? false : IsRightHandWeapon ? SteamVR_Actions.valheim_Use.state : SteamVR_Actions.valheim_UseLeft.state; } }
+        public static Vector3 AimDir {
+            get
+            {
+                if (SwingToLaunch)
+                {
+                    return SwingLaunchManager.aimDir;
+                }
+                return WeaponWield.isCurrentlyTwoHanded() ? WeaponWield.weaponForward : WeaponHandPointer.rayDirection * Vector3.forward;
+            }
+        }
+        public static bool AttemptingAttack {
+            get
+            {
+                if (SwingToLaunch)
+                {
+                    return SwingLaunchManager.isThrowing;
+                }
+                return !IsMagicWeaponEquipped ? false : IsRightHandWeapon ? SteamVR_Actions.valheim_Use.state : SteamVR_Actions.valheim_UseLeft.state;
+            }
+        }
+        public static bool SwingToLaunch
+        {
+            get
+            {
+                // return false;
+                return (Player.m_localPlayer?.GetRightItem()?.m_shared?.m_name ?? "") == "$item_stafffireball";
+            }
+        }
 
         public static Vector3 GetProjectileSpawnPoint(Attack attack) 
         {
