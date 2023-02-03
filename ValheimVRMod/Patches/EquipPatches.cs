@@ -84,6 +84,7 @@ namespace ValheimVRMod.Patches {
             var weaponCol = StaticObjects.rightWeaponCollider().GetComponent<WeaponCollision>();
             weaponCol.setColliderParent(meshFilter.transform, ___m_rightItem, true);
             weaponCol.weaponWield = weaponWield;
+            meshFilter.gameObject.AddComponent<ButtonSecondaryAttackManager>().Initialize(meshFilter.transform, ___m_rightItem, true);
             meshFilter.gameObject.AddComponent<WeaponBlock>().weaponWield = weaponWield;
 
             ParticleFix.maybeFix(___m_rightItemInstance);
@@ -165,6 +166,7 @@ namespace ValheimVRMod.Patches {
             }
 
             StaticObjects.leftWeaponCollider().GetComponent<WeaponCollision>().setColliderParent(meshFilter.transform, ___m_leftItem, false);
+            meshFilter.gameObject.AddComponent<ButtonSecondaryAttackManager>().Initialize(meshFilter.transform, ___m_leftItem, false);
             ParticleFix.maybeFix(___m_leftItemInstance);
         }
     }
@@ -316,6 +318,25 @@ namespace ValheimVRMod.Patches {
             Vector3 characterHeadPos = Player.m_localPlayer.m_head.transform.position;
             // When the user is in the menu, show head equipments when the camera moves away from the character so that the full character is visible to the user.
             return Vector3.Distance(cameraPos, characterHeadPos) < 0.25f;
+        }
+    }
+
+    [HarmonyPatch(typeof(Player),nameof(Player.ToggleEquiped))]
+    class PatchEquipActionQueue
+    {
+        static bool Prefix(Player __instance, ref bool __result)
+        {
+            if(__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls())
+            {
+                return true;
+            }
+
+            if (ButtonSecondaryAttackManager.isSecondaryAttackStarted)
+            {
+                __result = false;
+                return false;
+            }
+            return true;
         }
     }
 }
