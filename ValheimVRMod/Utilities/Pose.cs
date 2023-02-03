@@ -73,9 +73,10 @@ namespace ValheimVRMod.Utilities {
         }
         
         private static bool isUnpressSheath() {
-            return isBuildingTool() 
-                   || isHoldingThrowable();
+            return true;
         }
+
+        //reserved in case we need it later
         private static bool isHoldingThrowable() {
             return EquipScript.getRight() == EquipType.Spear 
                    || EquipScript.getRight() == EquipType.SpearChitin
