@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using ValheimVRMod.Scripts;
 
 namespace ValheimVRMod.Utilities
 {
@@ -245,11 +246,11 @@ namespace ValheimVRMod.Utilities
 
         public static bool shouldSkipAttackAnimation()
         {
-            if (getRight() == EquipType.Magic || getLeft() == EquipType.Magic || getLeft() == EquipType.Crossbow)
+            if (getLeft() == EquipType.Magic || getRight() == EquipType.Magic) 
             {
-                return false;
+                return MagicWeaponManager.ShouldSkipAttackAnimation();
             }
-            return true;
+            return getLeft() != EquipType.Crossbow;
         }
     }
 }
