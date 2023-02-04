@@ -12,7 +12,7 @@ namespace ValheimVRMod.Scripts
     // Manager of poles that can be swung to launch a projectile from its tip.
     public class SwingLaunchManager : MonoBehaviour
     {
-        private const float MIN_THROW_SPEED = 0.5f;
+        private const float MIN_THROW_SPEED = 3f;
         private const float FULL_THROW_SPEED = 5f;
 
         public static float attackDrawPercentage { get; private set; }
@@ -23,28 +23,31 @@ namespace ValheimVRMod.Scripts
 
         protected SteamVR_Action_Boolean dominantHandInputAction { get { return VHVRConfig.LeftHanded() ? SteamVR_Actions.valheim_UseLeft : SteamVR_Actions.valheim_Use; } }
         private WeaponWield weaponWield { get { return gameObject.GetComponentInParent<WeaponWield>(); } }
-        private PhysicsEstimator physicsEstimator { get { return WeaponWield.isCurrentlyTwoHanded() && weaponWield != null ? weaponWield.physicsEstimator : VHVRConfig.LeftHanded() ? VRPlayer.leftHandPhysicsEstimator : VRPlayer.rightHandPhysicsEstimator; } }
-
+        private float peakSpeed = 0;
 
         protected virtual void OnRenderObject()
         {
             if (dominantHandInputAction.GetStateDown(VRPlayer.dominantHandInputSource))
             {
                 preparingThrow = true;
+                peakSpeed = 0;
             }
 
-            if (preparingThrow && dominantHandInputAction.GetStateUp(VRPlayer.dominantHandInputSource) && !isThrowing)
+            if (dominantHandInputAction.state)
             {
-                ReleaseProjectile();
+                UpdateThrowDirAndSpeed();
             }
+            
+            MaybeReleaseProjectile();
 
-            if (!dominantHandInputAction.GetState(VRPlayer.dominantHandInputSource))
+            if (!dominantHandInputAction.state)
             {
                 preparingThrow = false;
             }
         }
 
-        private void ReleaseProjectile() {
+        private void UpdateThrowDirAndSpeed()
+        {
             spawnPoint = GetProjectileSpawnPoint();
 
             Vector3 v;
@@ -61,13 +64,27 @@ namespace ValheimVRMod.Scripts
                 aimDir = physicsEstimator.GetAverageVelocityInSnapshots().normalized;
             }
 
-            attackDrawPercentage = v.magnitude / FULL_THROW_SPEED;
-
-            if (v.magnitude > MIN_THROW_SPEED)
+            float currentSpeed = v.magnitude;
+            if (currentSpeed > peakSpeed)
             {
-                isThrowing = true;
+                peakSpeed = currentSpeed;
             }
 
+            attackDrawPercentage = currentSpeed / FULL_THROW_SPEED;
+        }
+
+        private void MaybeReleaseProjectile() {
+            if (!preparingThrow || isThrowing || peakSpeed < MIN_THROW_SPEED)
+            {
+                return;
+            }
+
+            if (ReleaseTriggerToAttack() && !dominantHandInputAction.GetStateUp(VRPlayer.dominantHandInputSource))
+            {
+                return;
+            }
+            
+            isThrowing = true;
             preparingThrow = false;
         }
 
@@ -75,6 +92,11 @@ namespace ValheimVRMod.Scripts
         {
             // TODO: Consider moving MagicWeaponManager.GetProjectileSpawnPoint() to WeaponUtils since its logic is not specific to magic weapons.
             return MagicWeaponManager.GetProjectileSpawnPoint(Player.m_localPlayer.GetRightItem().m_shared.m_attack);
+        }
+
+        protected virtual bool ReleaseTriggerToAttack()
+        {
+            return true;
         }
     }
 }
