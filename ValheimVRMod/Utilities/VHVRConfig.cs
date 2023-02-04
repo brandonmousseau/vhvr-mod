@@ -132,7 +132,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> arrowRestElevation;
         private static ConfigEntry<string> arrowRestSide;
         private static ConfigEntry<string> bowDrawRestrictType;
-        private static ConfigEntry<float> bowDrawRange;
+        private static ConfigEntry<float> bowFullDrawLength;
         private static ConfigEntry<bool> bowAccuracyIgnoresDrawLength;
         private static ConfigEntry<float> bowStaminaAdjust;
         private static ConfigEntry<string> crossbowSaggitalRotationSource;
@@ -714,11 +714,11 @@ namespace ValheimVRMod.Utilities
                 new ConfigDescription("Whether to apply vanilla-style restriction on bow drawing speed and make premature releases inaccurate. Full - Use Vanilla charge time, with physical hand drawing restrict. Partial - Use Vanilla charge time, but allow you to fully draw it from start. None - no restriction to draw speed but use extra stamina drain",
                 new AcceptableValueList<string>(new string[] { "Full", "Partial", "None" })));
 
-            bowDrawRange = config.Bind("Motion Control",
-                "BowDrawRange",
+            bowFullDrawLength = config.Bind("Motion Control",
+                "BowFullDrawLength",
                 0.6f,
-                new ConfigDescription("Adjust the range of the max bow draw, lower value make it useful for controller with inside out tracking",
-                new AcceptableValueRange<float>(0.3f, 0.7f)));
+                new ConfigDescription("Adjust the full draw length of bow; Lower value is useful for controller with inside out tracking",
+                new AcceptableValueRange<float>(0.2f, 0.8f)));
 
             bowAccuracyIgnoresDrawLength = config.Bind("Motion Control",
                                                     "BowAccuracyIgnoresDrawLength",
@@ -1443,9 +1443,9 @@ namespace ValheimVRMod.Utilities
         {
             return bowAccuracyIgnoresDrawLength.Value;
         }
-        public static float GetBowMaxDrawRange()
+        public static float GetBowFullDrawLength()
         {
-            return bowDrawRange.Value;
+            return bowFullDrawLength.Value;
         }
         public static float GetBowStaminaScalar()
         {

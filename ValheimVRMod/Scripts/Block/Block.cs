@@ -75,7 +75,7 @@ namespace ValheimVRMod.Scripts.Block {
         }
 
         public bool isBlocking() {
-            if (Player.m_localPlayer.IsStaggering())
+            if (Player.m_localPlayer.IsStaggering() || ButtonSecondaryAttackManager.isSecondaryAttackStarted)
             {
                 return false;
             }

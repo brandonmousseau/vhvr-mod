@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using ValheimVRMod.Scripts;
 
 namespace ValheimVRMod.Utilities
 {
@@ -243,18 +244,13 @@ namespace ValheimVRMod.Utilities
             return getRight() == EquipType.Club && Player.m_localPlayer.GetRightItem().m_shared.m_itemType == ItemDrop.ItemData.ItemType.TwoHandedWeapon;
         }
 
-        public static bool getRightAnimSpeedUp()
+        public static bool shouldSkipAttackAnimation()
         {
-            if (getRight() == EquipType.Magic)
-                return false;
-            return true;
-        }
-
-        public static bool getLeftAnimSpeedUp()
-        {
-            if (getLeft() == EquipType.Magic || getLeft() == EquipType.Crossbow)
-                return false;
-            return true;
+            if (getLeft() == EquipType.Magic || getRight() == EquipType.Magic) 
+            {
+                return MagicWeaponManager.ShouldSkipAttackAnimation();
+            }
+            return getLeft() != EquipType.Crossbow;
         }
     }
 }

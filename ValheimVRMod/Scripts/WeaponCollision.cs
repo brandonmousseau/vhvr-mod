@@ -1,7 +1,9 @@
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Rendering;
 using ValheimVRMod.Scripts.Block;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
@@ -166,7 +168,10 @@ namespace ValheimVRMod.Scripts {
             {
                 return false;
             }
-
+            if(ButtonSecondaryAttackManager.firstPos != Vector3.zero || ButtonSecondaryAttackManager.isSecondaryAttackStarted)
+            {
+                return false;
+            }
             // if attack is vertical, we can only hit one target at a time
             if (attack.m_attackType != Attack.AttackType.Horizontal && AttackTargetMeshCooldown.isPrimaryTargetInCooldown()) {
                 return false;
@@ -254,7 +259,7 @@ namespace ValheimVRMod.Scripts {
 
         private void Update() {
 
-            if (!outline) {
+            if (!outline || ButtonSecondaryAttackManager.isSecondaryAttackStarted) {
                 return;
             }
 
@@ -286,7 +291,7 @@ namespace ValheimVRMod.Scripts {
             double attackStamina = attack.m_attackStamina;
             return (float)(attackStamina - attackStamina * 0.330000013113022 * Player.m_localPlayer.GetSkillFactor(item.m_shared.m_skillType));
         }
-
+        
         private bool isCollisionAllowed() {
             return scriptActive && VRPlayer.inFirstPerson && colliderParent != null;
         }
