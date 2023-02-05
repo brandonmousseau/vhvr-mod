@@ -113,6 +113,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> advancedRotationUpWorld;
         private static ConfigEntry<bool> buildOnRelease;
         private static ConfigEntry<string> buildAngleSnap;
+        private static ConfigEntry<float> smoothTurnSpeed;
 
         // Graphics Settings
         private static ConfigEntry<bool> useAmplifyOcclusion;
@@ -564,6 +565,11 @@ namespace ValheimVRMod.Utilities
                                             "Setting this to true ties the direction you are looking to the walk direction while in first person mode. " +
                                             "Set this to false if you prefer to disconnect these so you can look" +
                                             " look by turning your head without affecting movement direction.");
+            smoothTurnSpeed = config.Bind("Controls",
+                                          "SmoothTurnSpeed",
+                                          1f,
+                                          new ConfigDescription("Controls the sensitivity for smooth turning while motion controls active.",
+                                          new AcceptableValueRange<float>(.25f, 2.5f)));
             snapTurnEnabled = config.Bind("Controls",
                                           "SnapTurnEnabled",
                                           false,
@@ -1477,6 +1483,11 @@ namespace ValheimVRMod.Utilities
         public static bool AllowMovementWhenInMenu()
         {
             return allowMovementWhenInMenu.Value;
+        }
+
+        public static float SmoothTurnSpeed()
+        {
+            return smoothTurnSpeed.Value;
         }
 
     }
