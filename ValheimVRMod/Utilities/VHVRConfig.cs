@@ -223,7 +223,9 @@ namespace ValheimVRMod.Utilities
                 "This setting, if true, will also force UseOverlayGui to be false as this setting Overlay GUI is not compatible with VR laser pointer inputs.");
             useOverlayGui = createImmutableSetting("Immutable",
                 "UseOverlayGui",
-                true,
+                false,
+                "WARNING: Setting this option will result in disabling the game from pausing due to a conflict. " +
+                " Only use this if you are okay with the game not pausing while the menu is active. " +
                 "Whether or not to use OpenVR overlay for the GUI. This produces a" +
                 " cleaner GUI but will only be compatible with M&K or Gamepad controls.");
             pluginVersion = createImmutableSetting("Immutable",
