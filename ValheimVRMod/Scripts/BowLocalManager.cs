@@ -107,7 +107,7 @@ namespace ValheimVRMod.Scripts {
                     // Show an arrow on the bow when player movement is paused.
                     // This arrow will persist after the actual arrow is shown until player movement is unpaused.
                     // It is purely cosmetic and has no effect on arrow shooting and attacks in actual gameplay.
-                    pausedCosmeticArrow = Instantiate(arrow, transform);
+                    pausedCosmeticArrow = Instantiate(arrow, bowOrientation);
                     pausedCosmeticArrow.transform.SetPositionAndRotation(arrow.transform.position, arrow.transform.rotation);
                 }
             }

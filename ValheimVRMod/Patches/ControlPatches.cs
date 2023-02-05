@@ -63,6 +63,16 @@ namespace ValheimVRMod.Patches {
     class ZInput_GetJoyLeftStickX_Patch {
         static void Postfix(ref float __result) {
             if (VRControls.mainControlsActive) {
+                var joystick = VRControls.instance.GetJoyLeftStickX();
+
+                if (Player.m_localPlayer.IsAttached())
+                {
+                    if (joystick > -0.3f && joystick < 0.3f)
+                    {
+                        __result = 0f;
+                        return;
+                    }
+                }
                 __result = __result + VRControls.instance.GetJoyLeftStickX();
             }
         }
@@ -616,6 +626,7 @@ namespace ValheimVRMod.Patches {
                     {
                         attack = true;
                         attackHold = true;
+                        SwingLaunchManager.isThrowing = false;
                     }
                     break;
 

@@ -177,7 +177,15 @@ namespace ValheimVRMod.Patches {
                 float randomSkillFactor = ___m_character.GetRandomSkillFactor(skill);
 
                 if (___m_lowerDamagePerHit) {
-                    randomSkillFactor /= 0.75f;
+                    
+                    if(ButtonSecondaryAttackManager.isSecondaryAttackStarted && ButtonSecondaryAttackManager.secondaryHitList.Count >= 1)
+                    {
+                        randomSkillFactor /= (ButtonSecondaryAttackManager.secondaryHitList.Count - ButtonSecondaryAttackManager.terrainHitCount) * 0.75f;
+                    }
+                    else
+                    {
+                        randomSkillFactor /= 0.75f;
+                    }
                 }
 
                 HitData hitData = new HitData();
@@ -193,7 +201,7 @@ namespace ValheimVRMod.Patches {
                 hitData.m_skill = skill;
                 hitData.m_damage = ___m_weapon.GetDamage();
                 hitData.m_point = pos;
-                hitData.m_dir = Player.m_localPlayer.transform.forward;
+                hitData.m_dir = ButtonSecondaryAttackManager.hitDir == Vector3.zero ? (pos - Player.m_localPlayer.transform.position).normalized : ButtonSecondaryAttackManager.hitDir;
                 hitData.m_hitCollider = col;
                 hitData.SetAttacker(___m_character);
                 hitData.m_damage.Modify(___m_damageMultiplier);
@@ -203,8 +211,10 @@ namespace ValheimVRMod.Patches {
                     hitData.m_damage.Modify(2f);
                     hitData.m_pushForce *= 1.2f;
                 }
-                
-                hitData.m_damage.Modify(AttackTargetMeshCooldown.calcDamageMultiplier());
+                if (___m_lowerDamagePerHit && !ButtonSecondaryAttackManager.isSecondaryAttackStarted)
+                {
+                    hitData.m_damage.Modify(AttackTargetMeshCooldown.calcDamageMultiplier());
+                }
 
                 ___m_character.GetSEMan().ModifyAttack(skill, ref hitData);
                 if (component is Character)
@@ -249,4 +259,20 @@ namespace ValheimVRMod.Patches {
             return;
         }
     }
+
+    [HarmonyPatch(typeof(Humanoid),nameof(Humanoid.GetAttackSpeedFactorMovement))]
+    class Patch_AttackSpeedFactorMovement
+    {
+        static void Postfix(Humanoid __instance,ref float __result)
+        {
+            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls())
+            {
+                return ;
+            }
+            if (ButtonSecondaryAttackManager.isSecondaryAttackStarted)
+                __result *= 0.2F;
+            return;
+        }
+    }
+
 }

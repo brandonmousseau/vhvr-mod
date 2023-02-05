@@ -31,8 +31,7 @@ namespace ValheimVRMod.Scripts
         private Vector3 estimatedLocalWeaponPointingDir = Vector3.forward;
         private Transform lastRenderedTransform;
         public PhysicsEstimator physicsEstimator { get; private set; }
-
-
+        public static bool IsDominantHandBehind { get { return isCurrentlyTwoHanded() && (_isTwoHanded == isTwoHanded.RightHandBehind ^ VHVRConfig.LeftHanded()); } }
 
         ParticleSystem particleSystem;
         Transform particleSystemTransformUpdater;
