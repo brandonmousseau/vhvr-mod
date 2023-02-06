@@ -74,6 +74,8 @@ namespace ValheimVRMod.Utilities {
         
         private static bool isUnpressSheath() {
             return true;
+            //return isBuildingTool()
+            //       || isHoldingThrowable();
         }
 
         //reserved in case we need it later
