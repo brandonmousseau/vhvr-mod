@@ -549,7 +549,7 @@ namespace ValheimVRMod.VRCore.UI
         public bool getClickModifier()
         {
             // Left pointer does not detect click modifier properly so we need to explicitly check the grab state.
-            return _clickModifier.GetState(SteamVR_Input_Sources.Any) || (VHVRConfig.GetPreferredHand() == VRPlayer.LEFT_HAND && VRPlayer.leftPointer.active && SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand));
+            return _clickModifier.GetState(SteamVR_Input_Sources.Any) || (VRPlayer.leftPointer.pointerIsActive() && SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand));
         }
 
         private int getAltPieceRotation()
