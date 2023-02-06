@@ -113,6 +113,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> advancedRotationUpWorld;
         private static ConfigEntry<bool> buildOnRelease;
         private static ConfigEntry<string> buildAngleSnap;
+        private static ConfigEntry<float> smoothTurnSpeed;
 
         // Graphics Settings
         private static ConfigEntry<bool> useAmplifyOcclusion;
@@ -132,7 +133,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> arrowRestElevation;
         private static ConfigEntry<string> arrowRestSide;
         private static ConfigEntry<string> bowDrawRestrictType;
-        private static ConfigEntry<float> bowDrawRange;
+        private static ConfigEntry<float> bowFullDrawLength;
         private static ConfigEntry<bool> bowAccuracyIgnoresDrawLength;
         private static ConfigEntry<float> bowStaminaAdjust;
         private static ConfigEntry<string> crossbowSaggitalRotationSource;
@@ -223,7 +224,9 @@ namespace ValheimVRMod.Utilities
                 "This setting, if true, will also force UseOverlayGui to be false as this setting Overlay GUI is not compatible with VR laser pointer inputs.");
             useOverlayGui = createImmutableSetting("Immutable",
                 "UseOverlayGui",
-                true,
+                false,
+                "WARNING: Setting this option will result in disabling the game from pausing due to a conflict. " +
+                " Only use this if you are okay with the game not pausing while the menu is active. " +
                 "Whether or not to use OpenVR overlay for the GUI. This produces a" +
                 " cleaner GUI but will only be compatible with M&K or Gamepad controls.");
             pluginVersion = createImmutableSetting("Immutable",
@@ -562,6 +565,11 @@ namespace ValheimVRMod.Utilities
                                             "Setting this to true ties the direction you are looking to the walk direction while in first person mode. " +
                                             "Set this to false if you prefer to disconnect these so you can look" +
                                             " look by turning your head without affecting movement direction.");
+            smoothTurnSpeed = config.Bind("Controls",
+                                          "SmoothTurnSpeed",
+                                          1f,
+                                          new ConfigDescription("Controls the sensitivity for smooth turning while motion controls active.",
+                                          new AcceptableValueRange<float>(.25f, 2.5f)));
             snapTurnEnabled = config.Bind("Controls",
                                           "SnapTurnEnabled",
                                           false,
@@ -714,11 +722,11 @@ namespace ValheimVRMod.Utilities
                 new ConfigDescription("Whether to apply vanilla-style restriction on bow drawing speed and make premature releases inaccurate. Full - Use Vanilla charge time, with physical hand drawing restrict. Partial - Use Vanilla charge time, but allow you to fully draw it from start. None - no restriction to draw speed but use extra stamina drain",
                 new AcceptableValueList<string>(new string[] { "Full", "Partial", "None" })));
 
-            bowDrawRange = config.Bind("Motion Control",
-                "BowDrawRange",
+            bowFullDrawLength = config.Bind("Motion Control",
+                "BowFullDrawLength",
                 0.6f,
-                new ConfigDescription("Adjust the range of the max bow draw, lower value make it useful for controller with inside out tracking",
-                new AcceptableValueRange<float>(0.3f, 0.7f)));
+                new ConfigDescription("Adjust the full draw length of bow; Lower value is useful for controller with inside out tracking",
+                new AcceptableValueRange<float>(0.2f, 0.8f)));
 
             bowAccuracyIgnoresDrawLength = config.Bind("Motion Control",
                                                     "BowAccuracyIgnoresDrawLength",
@@ -1443,9 +1451,9 @@ namespace ValheimVRMod.Utilities
         {
             return bowAccuracyIgnoresDrawLength.Value;
         }
-        public static float GetBowMaxDrawRange()
+        public static float GetBowFullDrawLength()
         {
-            return bowDrawRange.Value;
+            return bowFullDrawLength.Value;
         }
         public static float GetBowStaminaScalar()
         {
@@ -1475,6 +1483,11 @@ namespace ValheimVRMod.Utilities
         public static bool AllowMovementWhenInMenu()
         {
             return allowMovementWhenInMenu.Value;
+        }
+
+        public static float SmoothTurnSpeed()
+        {
+            return smoothTurnSpeed.Value;
         }
 
     }

@@ -237,4 +237,23 @@ namespace ValheimVRMod.Patches
             rend.renderMode = ParticleSystemRenderMode.VerticalBillboard;
         }
     }
+
+
+    // If the Overlay GUI is used and the Main Menu is brought up, when the game pauses, the GUI stops rendering
+    // because the timeScale is set to 0. Not having a better workaround currently, I will force the game to not pause
+    // and print a message to inform the user why that's happening.
+    [HarmonyPatch(typeof(Game), nameof(Game.Pause))]
+    class NoPauseWithOverlayGuiPatch
+    {
+        public static bool Prefix()
+        {
+            if (VHVRConfig.NonVrPlayer() || VHVRConfig.UseVrControls() || !VHVRConfig.GetUseOverlayGui())
+            {
+                return true;
+            }
+            LogUtils.LogInfo("Game Pause disabled - to enable Pausing set UseOverlayGui to false or UseVrControls to true. This is due to a conflict with pausing while the overlay is active.");
+            Game.m_pause = false;
+            return false;
+        }
+    }
 }

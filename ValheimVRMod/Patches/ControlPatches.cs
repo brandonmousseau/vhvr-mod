@@ -946,5 +946,18 @@ namespace ValheimVRMod.Patches {
             return false;
         }
     }
+
+    [HarmonyPatch(typeof(Player), nameof(Player.SetMouseLook))]
+    class Player_SmoothTurnSpeed_Patch
+    {
+        static void Prefix(ref Vector2 mouseLook)
+        {
+            if (!VHVRConfig.UseVrControls() || VHVRConfig.SnapTurnEnabled())
+            {
+                return;
+            }
+            mouseLook.x *= VHVRConfig.SmoothTurnSpeed();
+        }
+    }
 }
 
