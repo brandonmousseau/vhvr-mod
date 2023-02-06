@@ -600,7 +600,7 @@ namespace ValheimVRMod.Scripts
                     delegate ()
                     {
                         shouldStartChat = true;
-                        TextInput.m_instance.Show("", "", 256);
+                        TextInput.m_instance.Show("ChatText", "", 256);
                         TextInput.m_instance.m_panel.gameObject.transform.localScale = new Vector3(0, 0, 0);
                         return true;
                     });

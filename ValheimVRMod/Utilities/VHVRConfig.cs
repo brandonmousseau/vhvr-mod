@@ -61,6 +61,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<int> QuickMenuVerticalAngle;
         private static ConfigEntry<bool> QuickMenuClassicSeperate;
         private static ConfigEntry<bool> lockGuiWhileInventoryOpen;
+        private static ConfigEntry<bool> autoOpenKeyboardOnInteract;
 
         // VR Hud Settings
         private static ConfigEntry<bool> useLegacyHud;
@@ -457,6 +458,11 @@ namespace ValheimVRMod.Utilities
                 "LockGuiPositionWhenMenuOpen",
                 true,
                 "Use this so that the GUI will remain in place whenever the Inventory or Menu is open.");
+
+            autoOpenKeyboardOnInteract = config.Bind("UI",
+                "AutoOpenKeyboardOnInteract",
+                true,
+                "Automatically open keyboard when interact with things that have text input (eg. Signs, Portal), Turning it off would have better support with modded stuff (especially modded portal)");
         }
 
         private static void InitializeVrHudSettings()
@@ -1406,6 +1412,11 @@ namespace ValheimVRMod.Utilities
         public static bool LockGuiWhileMenuOpen()
         {
             return lockGuiWhileInventoryOpen.Value;
+        }
+
+        public static bool AutoOpenKeyboardOnInteract()
+        {
+            return autoOpenKeyboardOnInteract.Value;
         }
 
         public static bool DisableRecenterPose()

@@ -17,7 +17,10 @@ namespace ValheimVRMod.Patches {
         public static void Postfix(TextInput __instance) {
             if (VHVRConfig.UseVrControls()) {
                 instance = __instance;
-                InputManager.start(instance.m_textField, true, OnClose);
+                if (VHVRConfig.AutoOpenKeyboardOnInteract() || instance.m_topic.text == "ChatText")
+                {
+                    InputManager.start(instance.m_textField, true, OnClose);
+                }
             }
         }
 
