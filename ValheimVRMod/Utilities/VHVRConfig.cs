@@ -88,7 +88,7 @@ namespace ValheimVRMod.Utilities
 
         // Controls Settings
         private static ConfigEntry<bool> useLookLocomotion;
-        private static ConfigEntry<string> preferredHand;
+        private static ConfigEntry<string> dominantHand;
         private static ConfigEntry<KeyCode> headReposFowardKey;
         private static ConfigEntry<KeyCode> headReposBackwardKey;
         private static ConfigEntry<KeyCode> headReposLeftKey;
@@ -106,7 +106,6 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> weaponNeedsSpeed;
         private static ConfigEntry<float> altPieceRotationDelay;
         private static ConfigEntry<bool> runIsToggled;
-        private static ConfigEntry<bool> leftHanded;
         private static ConfigEntry<bool> viewTurnWithMountedAnimal;
         private static ConfigEntry<bool> advancedBuildMode;
         private static ConfigEntry<bool> freePlaceAutoReturn;
@@ -602,11 +601,10 @@ namespace ValheimVRMod.Utilities
                                           "ExclusiveRoomScaleSneak",
                                           false,
                                           "If this is set to true and Room Scale sneaking is on, Controller-based sneak inputs will be disabled. Use this if you ONLY want to sneak by phsyically crouching.");
-            preferredHand = config.Bind("Controls",
-                                        "PreferredHand",
+            dominantHand = config.Bind("Controls",
+                                        "DominantHand",
                                         "Right",
-                                        new ConfigDescription("Which hand do you want to use for the main laser pointer input? If" +
-                                        " only one hand is active, it will be used automatically regardless of this setting.",
+                                        new ConfigDescription("The dominant hand of the player",
                                         new AcceptableValueList<string>(new string[] { "Right", "Left" })));
             weaponNeedsSpeed = config.Bind("Controls",
                 "SwingWeapons",
@@ -621,10 +619,6 @@ namespace ValheimVRMod.Utilities
                                        "RunIsToggled",
                                        true,
                                        "Determine whether or not you need to hold run or it is a toggle. Keep it as toggle (true) to have your thumb free when sprinting.");
-            leftHanded = config.Bind("Controls",
-                "Left Handed",
-                false,
-                "Left Handed Mode");
             viewTurnWithMountedAnimal = config.Bind("Controls",
                                        "ViewTurnWithMountedAnimal",
                                        false,
@@ -849,7 +843,8 @@ namespace ValheimVRMod.Utilities
 
         public static string GetPreferredHand()
         {
-            return preferredHand.Value == "Left" ? VRPlayer.LEFT_HAND : VRPlayer.RIGHT_HAND;
+            // TODO: rename this method to GetDominantHand.
+            return dominantHand.Value == "Left" ? VRPlayer.LEFT_HAND : VRPlayer.RIGHT_HAND;
         }
 
         public static OpenVRSettings.MirrorViewModes GetMirrorViewMode()
@@ -1204,7 +1199,7 @@ namespace ValheimVRMod.Utilities
 
         public static bool LeftHanded()
         {
-            return leftHanded.Value;
+            return GetPreferredHand() == VRPlayer.LEFT_HAND;
         }
 
         public static bool ViewTurnWithMountedAnimal()
