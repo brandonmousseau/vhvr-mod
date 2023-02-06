@@ -96,7 +96,7 @@ namespace ValheimVRMod.Scripts
             ReturnToSingleHanded();
             Destroy(originalTransform.gameObject);
             Destroy(singleHandedTransform.gameObject);
-            Destroy(lastRenderedTransform);
+            Destroy(lastRenderedTransform.gameObject);
             if (particleSystemTransformUpdater != null)
             {
                 Destroy(particleSystemTransformUpdater.gameObject);
