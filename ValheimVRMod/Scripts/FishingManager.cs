@@ -48,6 +48,7 @@ namespace ValheimVRMod.Scripts
 
             rodTop = transform.parent.Find("_RodTop");
             rodTop.transform.localPosition = new Vector3(0, -0.01f, 3.3f);
+            // TODO: removed fixedRodTop since it is unused.
             fixedRodTop = new GameObject();
             instance = this;
             CreateReel();
@@ -207,7 +208,7 @@ namespace ValheimVRMod.Scripts
 
         protected override Vector3 GetProjectileSpawnPoint()
         {
-            return fixedRodTop.transform.position;
+            return rodTop.transform.position;
         }
 
         protected override bool ReleaseTriggerToAttack()
@@ -218,11 +219,7 @@ namespace ValheimVRMod.Scripts
             return false;
         }
 
-        protected override bool UseHandMovementDirection()
-        {
-            return false;
-        }
-
+       
         private void UpdateReel()
         {
             var offHandCenter = VRPlayer.dominantHand.otherHand.transform.TransformPoint(handCenter);
