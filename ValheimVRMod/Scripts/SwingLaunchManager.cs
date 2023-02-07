@@ -1,10 +1,7 @@
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using Valve.VR;
-using Valve.VR.InteractionSystem;
 
 namespace ValheimVRMod.Scripts
 {
@@ -12,7 +9,7 @@ namespace ValheimVRMod.Scripts
     // Manager of poles that can be swung to launch a projectile from its tip.
     public class SwingLaunchManager : MonoBehaviour
     {
-        private const float MIN_THROW_SPEED = 3f;
+        private const float MIN_THROW_SPEED = 3.5f;
         private const float FULL_THROW_SPEED = 5f;
 
         public static float attackDrawPercentage { get; private set; }
@@ -23,6 +20,7 @@ namespace ValheimVRMod.Scripts
 
         protected SteamVR_Action_Boolean dominantHandInputAction { get { return VHVRConfig.LeftHanded() ? SteamVR_Actions.valheim_UseLeft : SteamVR_Actions.valheim_Use; } }
         private WeaponWield weaponWield { get { return gameObject.GetComponentInParent<WeaponWield>(); } }
+        private PhysicsEstimator handPhysicsEstimator { get { return VHVRConfig.LeftHanded() ? VRPlayer.leftHandPhysicsEstimator : VRPlayer.rightHandPhysicsEstimator; } }
         private float peakSpeed = 0;
 
         protected virtual void OnRenderObject()
@@ -32,6 +30,8 @@ namespace ValheimVRMod.Scripts
                 preparingThrow = true;
                 peakSpeed = 0;
             }
+
+            spawnPoint = GetProjectileSpawnPoint();
 
             if (dominantHandInputAction.state)
             {
@@ -48,8 +48,6 @@ namespace ValheimVRMod.Scripts
 
         private void UpdateThrowDirAndSpeed()
         {
-            spawnPoint = GetProjectileSpawnPoint();
-
             Vector3 v;
             if (WeaponWield.isCurrentlyTwoHanded() && weaponWield != null)
             {
@@ -58,10 +56,9 @@ namespace ValheimVRMod.Scripts
             }
             else
             {
-                PhysicsEstimator physicsEstimator = (VHVRConfig.LeftHanded() ? VRPlayer.leftHandPhysicsEstimator : VRPlayer.rightHandPhysicsEstimator);
-                v = physicsEstimator.GetVelocityOfPoint(spawnPoint);
+                v = handPhysicsEstimator.GetVelocityOfPoint(spawnPoint);
                 // When wielding single-handed, using hand movement direction may be more intuitive than using spawn point movement direction.
-                aimDir = UseHandMovementDirection() ? physicsEstimator.GetAverageVelocityInSnapshots().normalized : v.normalized;
+                aimDir = handPhysicsEstimator.GetAverageVelocityInSnapshots().normalized;
             }
 
             float currentSpeed = v.magnitude;
@@ -95,11 +92,6 @@ namespace ValheimVRMod.Scripts
         }
 
         protected virtual bool ReleaseTriggerToAttack()
-        {
-            return true;
-        }
-
-        protected virtual bool UseHandMovementDirection()
         {
             return true;
         }
