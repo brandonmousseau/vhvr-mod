@@ -7,7 +7,7 @@ using Valve.VR.InteractionSystem;
 
 namespace ValheimVRMod.Utilities {
     public static class Pose {
-        
+        public const bool ALWAYS_USE_UNPRESS_SHEATH = true;
         public static bool toggleShowLeftHand = true;
         public static bool toggleShowRightHand = true;
         public static bool justUnsheathed;
@@ -73,21 +73,14 @@ namespace ValheimVRMod.Utilities {
         }
         
         private static bool isUnpressSheath() {
-            return true;
-            //return isBuildingTool()
-            //       || isHoldingThrowable();
-        }
-
-        //reserved in case we need it later
-        private static bool isHoldingThrowable() {
-            return EquipScript.getRight() == EquipType.Spear 
+            // TODO: remove this method and clean up if it always returns true.
+            return ALWAYS_USE_UNPRESS_SHEATH
+                   || EquipScript.getRight() == EquipType.Spear 
                    || EquipScript.getRight() == EquipType.SpearChitin
                    || EquipScript.getRight() == EquipType.ThrowObject
                    || EquipScript.getRight() == EquipType.Fishing
-                   || EquipScript.getRight() == EquipType.Tankard;
-        }
-        private static bool isBuildingTool() {
-            return EquipScript.getRight() == EquipType.Hammer 
+                   || EquipScript.getRight() == EquipType.Tankard
+                   || EquipScript.getRight() == EquipType.Hammer 
                    || EquipScript.getRight() == EquipType.Hoe 
                    || EquipScript.getRight() == EquipType.Cultivator;
         }
