@@ -60,8 +60,8 @@ namespace ValheimVRMod.Scripts
             {
                 PhysicsEstimator physicsEstimator = (VHVRConfig.LeftHanded() ? VRPlayer.leftHandPhysicsEstimator : VRPlayer.rightHandPhysicsEstimator);
                 v = physicsEstimator.GetVelocityOfPoint(spawnPoint);
-                // When wielding single-handed, use the hand movement direction instead of spawn point movement direction for more intuitive control.
-                aimDir = physicsEstimator.GetAverageVelocityInSnapshots().normalized;
+                // When wielding single-handed, using hand movement direction may be more intuitive than using spawn point movement direction.
+                aimDir = UseHandMovementDirection() ? physicsEstimator.GetAverageVelocityInSnapshots().normalized : v.normalized;
             }
 
             float currentSpeed = v.magnitude;
@@ -95,6 +95,11 @@ namespace ValheimVRMod.Scripts
         }
 
         protected virtual bool ReleaseTriggerToAttack()
+        {
+            return true;
+        }
+
+        protected virtual bool UseHandMovementDirection()
         {
             return true;
         }

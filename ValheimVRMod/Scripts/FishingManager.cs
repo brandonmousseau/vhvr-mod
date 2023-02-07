@@ -210,6 +210,19 @@ namespace ValheimVRMod.Scripts
             return fixedRodTop.transform.position;
         }
 
+        protected override bool ReleaseTriggerToAttack()
+        {
+            // We are unable to skip vanilla fishing throwing animation which delays bait casting.
+            // By allowing the attack to start before the player release trigger,
+            // we can reduce the delay between releasing the trigger and bait casting.
+            return false;
+        }
+
+        protected override bool UseHandMovementDirection()
+        {
+            return false;
+        }
+
         private void UpdateReel()
         {
             var offHandCenter = VRPlayer.dominantHand.otherHand.transform.TransformPoint(handCenter);
