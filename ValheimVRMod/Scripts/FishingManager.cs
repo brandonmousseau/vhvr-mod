@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using ValheimVRMod.Utilities;
@@ -8,22 +8,11 @@ using Valve.VR.InteractionSystem;
 
 namespace ValheimVRMod.Scripts
 {
-    public class FishingManager : MonoBehaviour
+    public class FishingManager : SwingLaunchManager
     {
-        private const int MAX_SNAPSHOTS = 7;
-        private const int MIN_SNAPSHOTSCHECK = 3;
-        private const float MIN_DISTANCE = 0.2f;
-        private static float maxDist = 1.0f;
         private Transform rodTop;
         private int tickCounter;
-        private List<Vector3> snapshots = new List<Vector3>();
-        private bool preparingThrow;
 
-        private SteamVR_Input_Sources inputSource;
-        private SteamVR_Action_Boolean inputAction;
-        private Hand inputHand;
-        private SteamVR_Input_Sources offHandSource;
-        private Hand offHand;
         private float reelOffset;
 
         private FishingFloat fishingFloat;
@@ -43,10 +32,6 @@ namespace ValheimVRMod.Scripts
         private GameObject baitTextParent;
         private Text baitText;
 
-        public static float attackDrawPercentage;
-        public static Vector3 spawnPoint;
-        public static Vector3 aimDir;
-        public static bool isThrowing;
         public static bool isFishing;
         public static bool isPulling;
         public static GameObject fixedRodTop;
@@ -57,24 +42,6 @@ namespace ValheimVRMod.Scripts
 
         private void Awake()
         {
-
-            inputSource = VHVRConfig.LeftHanded()
-                ? SteamVR_Input_Sources.LeftHand
-                : SteamVR_Input_Sources.RightHand;
-            inputAction = VHVRConfig.LeftHanded()
-                ? SteamVR_Actions.valheim_UseLeft
-                : SteamVR_Actions.valheim_Use;
-            inputHand = VHVRConfig.LeftHanded()
-                ? VRPlayer.leftHand
-                : VRPlayer.rightHand;
-
-            offHandSource = VHVRConfig.LeftHanded()
-                ? SteamVR_Input_Sources.RightHand
-                : SteamVR_Input_Sources.LeftHand;
-            offHand = VHVRConfig.LeftHanded()
-                ? VRPlayer.rightHand
-                : VRPlayer.leftHand;
-
             reelOffset = VHVRConfig.LeftHanded()
                 ? -0.08f
                 : 0.08f;
@@ -87,6 +54,7 @@ namespace ValheimVRMod.Scripts
             CreateText();
             UpdateBaitText();
         }
+
         private void CreateReel()
         {
             reelParent = new GameObject();
@@ -168,16 +136,16 @@ namespace ValheimVRMod.Scripts
             }
             isFishing = false;
         }
-        private void OnRenderObject()
-        {
 
+        protected override void OnRenderObject()
+        {
             fixedRodTop.transform.position = rodTop.position;
             UpdateBaitText();
             if (!reelGrabbed)
             {
                 if (fishingFloat)
                     fishingFloat.m_pullLineSpeed = 1;
-                isPulling = isFishing && inputAction.GetState(inputSource);
+                isPulling = isFishing && dominantHandInputAction.GetState(VRPlayer.dominantHandInputSource);
             }
 
             if (fishingFloat)
@@ -220,48 +188,7 @@ namespace ValheimVRMod.Scripts
                 wasHooked = false;
             }
             UpdateReel();
-            if (!isFishing && inputAction.GetStateDown(inputSource))
-            {
-                preparingThrow = true;
-            }
-
-            if (!inputAction.GetStateUp(inputSource))
-            {
-                return;
-            }
-            if (isFishing || isThrowing || !preparingThrow)
-            {
-                return;
-            }
-            if (snapshots.Count < MIN_SNAPSHOTSCHECK)
-            {
-                return;
-            }
-
-            spawnPoint = rodTop.position;
-            var dist = 0.0f;
-            Vector3 posEnd = fixedRodTop.transform.position;
-            Vector3 posStart = fixedRodTop.transform.position;
-
-            foreach (Vector3 snapshot in snapshots)
-            {
-                var curDist = Vector3.Distance(snapshot, posEnd);
-                if (curDist > dist)
-                {
-                    dist = curDist;
-                    posStart = snapshot;
-                }
-            }
-
-            aimDir = (posEnd - posStart).normalized;
-            aimDir = Quaternion.AngleAxis(-30, Vector3.Cross(Vector3.up, aimDir)) * aimDir;
-            attackDrawPercentage = Vector3.Distance(snapshots[snapshots.Count - 1], snapshots[snapshots.Count - 2]) / maxDist;
-
-            if (Vector3.Distance(posEnd, posStart) > MIN_DISTANCE)
-            {
-                isThrowing = true;
-                preparingThrow = false;
-            }
+            base.OnRenderObject();
         }
 
         private void FixedUpdate()
@@ -271,21 +198,21 @@ namespace ValheimVRMod.Scripts
             {
                 return;
             }
-            snapshots.Add(fixedRodTop.transform.position);
-            if (snapshots.Count > MAX_SNAPSHOTS)
-            {
-                snapshots.RemoveAt(0);
-            }
             tickCounter = 0;
             if (isFishing && fishingFloat.GetCatch() && (int)(Time.fixedTime * 10) % 2 >= 1)
             {
-                inputHand.hapticAction.Execute(0, 0.001f, 150, 0.7f, inputSource);
+                VRPlayer.dominantHand.hapticAction.Execute(0, 0.001f, 150, 0.7f, VRPlayer.dominantHandInputSource);
             }
+        }
+
+        protected override Vector3 GetProjectileSpawnPoint()
+        {
+            return fixedRodTop.transform.position;
         }
 
         private void UpdateReel()
         {
-            var offHandCenter = offHand.transform.TransformPoint(handCenter);
+            var offHandCenter = VRPlayer.dominantHand.otherHand.transform.TransformPoint(handCenter);
 
             if (reelGrabbed)
             {
@@ -338,10 +265,10 @@ namespace ValheimVRMod.Scripts
                 if (Mathf.RoundToInt(Mathf.Abs(totalRotation)) > 45)
                 {
                     totalRotation = 0;
-                    offHand.hapticAction.Execute(0, 0.002f, 150, 0.1f, offHandSource);
+                    VRPlayer.dominantHand.otherHand.hapticAction.Execute(0, 0.002f, 150, 0.1f, VRPlayer.nonDominantHandInputSource);
                 }
 
-                if (!SteamVR_Actions.valheim_Grab.GetState(offHandSource))
+                if (!SteamVR_Actions.valheim_Grab.GetState(VRPlayer.nonDominantHandInputSource))
                 {
                     reeltimer = 0;
                     reelStart = Vector3.zero;
@@ -352,11 +279,11 @@ namespace ValheimVRMod.Scripts
             }
             else
             {
-                if (SteamVR_Actions.valheim_Grab.GetState(offHandSource) && !WeaponWield.isCurrentlyTwoHanded())
+                if (SteamVR_Actions.valheim_Grab.GetState(VRPlayer.nonDominantHandInputSource) && !WeaponWield.isCurrentlyTwoHanded())
                 {
                     if (Vector3.Distance(offHandCenter, reelParent.transform.position) < 0.2f)
                     {
-                        var handUp = offHand.transform.TransformDirection(0, -0.3f, -0.7f);
+                        var handUp = VRPlayer.dominantHand.otherHand.transform.TransformDirection(0, -0.3f, -0.7f);
                         reelGrabbed = true;
                     }
                 }
@@ -369,7 +296,7 @@ namespace ValheimVRMod.Scripts
             {
                 return;
             }
-            inputHand.hapticAction.Execute(0.4f, 0.7f, 100, 0.2f, inputSource);
+            VRPlayer.dominantHand.hapticAction.Execute(0.4f, 0.7f, 100, 0.2f, VRPlayer.dominantHandInputSource);
         }
 
         private void UpdateBaitText()
