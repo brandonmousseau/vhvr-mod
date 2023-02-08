@@ -47,7 +47,7 @@ namespace ValheimVRMod.Scripts
         {
             lastRenderedTransform = new GameObject().transform;
             physicsEstimator = lastRenderedTransform.gameObject.AddComponent<PhysicsEstimator>();
-            physicsEstimator.refTransform = gameObject.GetComponentInParent<Player>().transform;
+            physicsEstimator.refTransform = CameraUtils.getCamera(CameraUtils.VR_CAMERA)?.transform.parent;
         }
 
         public WeaponWield Initialize(bool holdInNonDominantHand)
