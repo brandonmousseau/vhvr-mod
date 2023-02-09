@@ -256,4 +256,26 @@ namespace ValheimVRMod.Patches
             return false;
         }
     }
+
+    //Supposedly only update on Start, but somehow it doesnt work on some mobs (eg. fuling/goblin), so its using fixedupdate for now
+    [HarmonyPatch(typeof(Character),nameof(Character.FixedUpdate))]
+    class CharacterSetLodGroupSize
+    {
+        public static void Postfix(Character __instance)
+        {
+            if (VHVRConfig.NonVrPlayer())
+            {
+                return;
+            }
+            if (__instance.m_tamed)
+            {
+                return;
+            }
+            if (__instance.m_lodGroup && __instance.m_lodGroup.size < 20)
+            {
+                __instance.m_lodGroup.size = 20;
+            }
+            
+        }
+    }
 }
