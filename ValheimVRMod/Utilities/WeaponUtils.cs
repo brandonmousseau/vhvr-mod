@@ -310,8 +310,7 @@ namespace ValheimVRMod.Utilities
 
         public static float GetAttackDuration(Attack attack)
         {
-            float? t = ATTACK_DURATIONS[attack.m_attackAnimation];
-            return t ?? DEFAULT_ATTACK_DURATION;
+            return ATTACK_DURATIONS.ContainsKey(attack.m_attackAnimation) ? ATTACK_DURATIONS[attack.m_attackAnimation] : DEFAULT_ATTACK_DURATION;
         }
 
         public static bool IsTwoHandedMultitargetSwipe(Attack attack)
