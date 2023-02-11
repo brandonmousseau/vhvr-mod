@@ -271,9 +271,9 @@ namespace ValheimVRMod.Patches
             {
                 return;
             }
-            if (__instance.m_lodGroup && __instance.m_lodGroup.size < 20)
+            if (__instance.m_lodGroup && __instance.m_lodGroup.size < VHVRConfig.GetEnemyRenderDistanceValue())
             {
-                __instance.m_lodGroup.size = 20;
+                __instance.m_lodGroup.size = VHVRConfig.GetEnemyRenderDistanceValue();
             }
             
         }
