@@ -110,6 +110,12 @@ namespace ValheimVRMod.Patches {
                 {
                     return;
                 }
+
+                // TODO: examine whether this check should be enabled for smooth-turn mode as well.
+                if (VHVRConfig.SnapTurnEnabled() && Mathf.Abs(VRControls.instance.GetJoyRightStickX()) < Mathf.Abs(VRControls.instance.GetJoyRightStickY()))
+                {
+                    return;
+                }
                 
                 __result = __result + VRControls.instance.GetJoyRightStickX();
             }
