@@ -15,7 +15,7 @@ namespace ValheimVRMod.Scripts
         private const float minDist = 0.16f;
         private const float TOTAL_DIRECTION_LINE_COOL_DOWN = 2;
 
-        public WeaponWield weaponWield { private get; set; }
+        public LocalWeaponWield weaponWield { private get; set; }
         public static Vector3 spawnPoint { get; private set; }
         public static Vector3 aimDir { get; private set; }
         public static Vector3 startAim { get; private set; }
@@ -65,7 +65,7 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            if (!SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource) || WeaponWield.isCurrentlyTwoHanded())
+            if (!SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource) || LocalWeaponWield.isCurrentlyTwoHanded())
             {
                 return;
             }
@@ -109,7 +109,7 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            if (directionCooldown <= 0 || WeaponWield.isCurrentlyTwoHanded())
+            if (directionCooldown <= 0 || LocalWeaponWield.isCurrentlyTwoHanded())
             {
                 directionCooldown = 0;
                 directionLine.enabled = false;
@@ -189,7 +189,7 @@ namespace ValheimVRMod.Scripts
                     // Since classic throw type calculates spear pointing solely based on hand velocity,
                     // avoid responding to it too much at low velocity so that the spear direction does not flicker.
                     Vector3 defaultDirection =
-                        Quaternion.AngleAxis(-30, VRPlayer.dominantHand.transform.right) * (VHVRConfig.SpearInverseWield() ? -WeaponWield.weaponForward : WeaponWield.weaponForward);
+                        Quaternion.AngleAxis(-30, VRPlayer.dominantHand.transform.right) * (VHVRConfig.SpearInverseWield() ? -LocalWeaponWield.weaponForward : LocalWeaponWield.weaponForward);
                     float aligning = Vector3.Dot(defaultDirection, direction.normalized) * handPhysicsEstimator.GetVelocity().magnitude;
                     Vector3 aligningDirection = aligning > 0 ? direction.normalized : -direction.normalized;
                     Vector3 spearPointing = Vector3.RotateTowards(defaultDirection, aligningDirection, Mathf.Atan(Mathf.Abs(aligning) * 0.5f), Mathf.Infinity);
@@ -267,7 +267,7 @@ namespace ValheimVRMod.Scripts
 
         private void UpdateDirectionLine(Vector3 pos1, Vector3 pos2)
         {
-            if (!VHVRConfig.UseSpearDirectionGraphic() || WeaponWield.isCurrentlyTwoHanded())
+            if (!VHVRConfig.UseSpearDirectionGraphic() || LocalWeaponWield.isCurrentlyTwoHanded())
             {
                 return;
             }

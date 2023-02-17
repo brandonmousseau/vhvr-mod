@@ -7,7 +7,8 @@ using Valve.VR.InteractionSystem;
 
 namespace ValheimVRMod.Scripts
 {
-    public class WeaponWield : MonoBehaviour
+    // Manages weapon wield of the local player.
+    public class LocalWeaponWield : MonoBehaviour
     {
         private const float HAND_CENTER_OFFSET = 0.08f;
 
@@ -50,7 +51,7 @@ namespace ValheimVRMod.Scripts
             physicsEstimator.refTransform = CameraUtils.getCamera(CameraUtils.VR_CAMERA)?.transform.parent;
         }
 
-        public WeaponWield Initialize(bool holdInNonDominantHand)
+        public LocalWeaponWield Initialize(bool holdInNonDominantHand)
         {
             if (holdInNonDominantHand)
             {

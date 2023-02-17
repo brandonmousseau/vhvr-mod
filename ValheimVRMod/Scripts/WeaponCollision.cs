@@ -33,7 +33,7 @@ namespace ValheimVRMod.Scripts {
         public float twoHandedMultitargetSwipeCountdown { get; private set; } = 0;
         public bool itemIsTool;
         public static bool isDrinking;
-        public WeaponWield weaponWield;
+        public LocalWeaponWield weaponWield;
         public static bool isLastHitOnTerrain;
 
         private int maxSnapshots;
@@ -351,14 +351,14 @@ namespace ValheimVRMod.Scripts {
         {
             Vector3 attackVelocity = mainHandPhysicsEstimator == null ? Vector3.zero : mainHandPhysicsEstimator.GetAverageVelocityInSnapshots();
 
-            if (Vector3.Angle(WeaponWield.weaponForward, attackVelocity) > (WeaponWield.isCurrentlyTwoHanded() ? MAX_STAB_ANGLE_TWOHAND : MAX_STAB_ANGLE))
+            if (Vector3.Angle(LocalWeaponWield.weaponForward, attackVelocity) > (LocalWeaponWield.isCurrentlyTwoHanded() ? MAX_STAB_ANGLE_TWOHAND : MAX_STAB_ANGLE))
             {
                 return false;
             }
 
-            if (Vector3.Dot(attackVelocity, WeaponWield.weaponForward) > MIN_STAB_SPEED)
+            if (Vector3.Dot(attackVelocity, LocalWeaponWield.weaponForward) > MIN_STAB_SPEED)
             {
-                LogUtils.LogDebug("VHVR: stab detected on weapon direction: " + WeaponWield.weaponForward);
+                LogUtils.LogDebug("VHVR: stab detected on weapon direction: " + LocalWeaponWield.weaponForward);
                 return true;
             }
             return false;

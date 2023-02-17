@@ -41,19 +41,19 @@ namespace ValheimVRMod.Utilities
                     return false;
                 }
 
-                float stabSpeed = Vector3.Dot(handPhysicsEstimator.GetVelocity(), WeaponWield.weaponForward);
+                float stabSpeed = Vector3.Dot(handPhysicsEstimator.GetVelocity(), LocalWeaponWield.weaponForward);
                 if (stabSpeed < MIN_STAB_SPEED)
                 {
                     return false;
                 }
 
                 Vector3 thrust = handPhysicsEstimator == null ? Vector3.zero : handPhysicsEstimator.GetLongestLocomotion(1f);
-                if (Vector3.Dot(thrust, WeaponWield.weaponForward) < MIN_THRUST_DISTANCE)
+                if (Vector3.Dot(thrust, LocalWeaponWield.weaponForward) < MIN_THRUST_DISTANCE)
                 {
                     return false;
                 }
 
-                return Vector3.Angle(thrust, WeaponWield.weaponForward) <= MAX_STAB_ANGLE;
+                return Vector3.Angle(thrust, LocalWeaponWield.weaponForward) <= MAX_STAB_ANGLE;
             },
 
             delegate (PhysicsEstimator collisionPhysicsEstimator, PhysicsEstimator handPhysicsEstimator) // Single-handed axe check
@@ -98,7 +98,7 @@ namespace ValheimVRMod.Utilities
                 {
                     return false;
                 }
-                return !WeaponWield.isCurrentlyTwoHanded() || IsStab(handPhysicsEstimator);
+                return !LocalWeaponWield.isCurrentlyTwoHanded() || IsStab(handPhysicsEstimator);
             },
 
             delegate (PhysicsEstimator collisionPhysicsEstimator, PhysicsEstimator handPhysicsEstimator) // Single-handed club check
@@ -134,12 +134,12 @@ namespace ValheimVRMod.Utilities
 
             delegate (PhysicsEstimator collisionPhysicsEstimator, PhysicsEstimator handPhysicsEstimator) // Polearms check
             {
-                if (EquipScript.getRight() != EquipType.Polearms || !WeaponWield.isCurrentlyTwoHanded()) {
+                if (EquipScript.getRight() != EquipType.Polearms || !LocalWeaponWield.isCurrentlyTwoHanded()) {
                     return false;
                 }
                     
                 const float MIN_SWIPING_SPEED = 2.5f;
-                float swipingSpeed = Vector3.ProjectOnPlane(collisionPhysicsEstimator.GetVelocity(), WeaponWield.weaponForward).magnitude;
+                float swipingSpeed = Vector3.ProjectOnPlane(collisionPhysicsEstimator.GetVelocity(), LocalWeaponWield.weaponForward).magnitude;
                 return !IsStab(handPhysicsEstimator) && swipingSpeed >= MIN_SWIPING_SPEED;
             },
 
@@ -183,7 +183,7 @@ namespace ValheimVRMod.Utilities
 
         private static bool IsStab(PhysicsEstimator physicsEstimator)
         {
-            return Vector3.Angle(physicsEstimator.GetAverageVelocityInSnapshots(), WeaponWield.weaponForward) < MAX_STAB_ANGLE;
+            return Vector3.Angle(physicsEstimator.GetAverageVelocityInSnapshots(), LocalWeaponWield.weaponForward) < MAX_STAB_ANGLE;
         }
 
         private static Vector3 GetSagittalComponentOfVector(Vector3 v)

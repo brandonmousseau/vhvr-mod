@@ -309,7 +309,7 @@ namespace ValheimVRMod.Patches {
             }
             if (recoilPushback > 0f && EquipScript.getLeft() == EquipType.Crossbow)
             {
-                __instance.m_character.ApplyPushback(-WeaponWield.weaponForward, recoilPushback);
+                __instance.m_character.ApplyPushback(-LocalWeaponWield.weaponForward, recoilPushback);
                 recoilPushback = 0f;
             }
         }
