@@ -25,19 +25,19 @@ namespace ValheimVRMod.Scripts
         private Transform singleHandedTransform;
         private Transform originalTransform;
         private Quaternion offsetFromPointingDir; // The rotation offset of this transform relative to the direction the weapon is pointing at.
-        public static isTwoHanded _isTwoHanded;
+        public static TwoHandedState LocalPlayerTwoHandedState { get; private set; }
         private float shieldSize = 1f;
-        private Transform frontHandConnector { get { return _isTwoHanded == isTwoHanded.LeftHandBehind ? VrikCreator.rightHandConnector : VrikCreator.leftHandConnector; } }
-        private Transform rearHandConnector { get { return _isTwoHanded == isTwoHanded.LeftHandBehind ? VrikCreator.leftHandConnector : VrikCreator.rightHandConnector; } }
+        private Transform frontHandConnector { get { return LocalPlayerTwoHandedState == TwoHandedState.LeftHandBehind ? VrikCreator.rightHandConnector : VrikCreator.leftHandConnector; } }
+        private Transform rearHandConnector { get { return LocalPlayerTwoHandedState == TwoHandedState.LeftHandBehind ? VrikCreator.leftHandConnector : VrikCreator.rightHandConnector; } }
         private Vector3 estimatedLocalWeaponPointingDir = Vector3.forward;
         private Transform lastRenderedTransform;
         public PhysicsEstimator physicsEstimator { get; private set; }
-        public static bool IsDominantHandBehind { get { return isCurrentlyTwoHanded() && (_isTwoHanded == isTwoHanded.RightHandBehind ^ VHVRConfig.LeftHanded()); } }
+        public static bool IsDominantHandBehind { get { return isCurrentlyTwoHanded() && (LocalPlayerTwoHandedState == TwoHandedState.RightHandBehind ^ VHVRConfig.LeftHanded()); } }
 
         ParticleSystem particleSystem;
         Transform particleSystemTransformUpdater;
 
-        public enum isTwoHanded
+        public enum TwoHandedState
         {
             SingleHanded,
             RightHandBehind,
@@ -87,7 +87,7 @@ namespace ValheimVRMod.Scripts
 
             offsetFromPointingDir = Quaternion.Inverse(Quaternion.LookRotation(GetWeaponPointingDir(), transform.up)) * transform.rotation;
 
-            _isTwoHanded = isTwoHanded.SingleHanded;
+            LocalPlayerTwoHandedState = TwoHandedState.SingleHanded;
 
             return this;
         }
@@ -167,7 +167,7 @@ namespace ValheimVRMod.Scripts
         // The preferred forward offset amount of the weapon's position from the rear hand during two-handed wield.
         protected virtual float GetPreferredOffsetFromRearHand(float handDist)
         {
-            bool rearHandIsDominant = (VHVRConfig.LeftHanded() == (_isTwoHanded == isTwoHanded.LeftHandBehind));
+            bool rearHandIsDominant = (VHVRConfig.LeftHanded() == (LocalPlayerTwoHandedState == TwoHandedState.LeftHandBehind));
             if (rearHandIsDominant)
             {
                 return -0.1f;
@@ -218,7 +218,7 @@ namespace ValheimVRMod.Scripts
         }
         private void KnifeWield()
         {
-            if (_isTwoHanded != isTwoHanded.SingleHanded)
+            if (LocalPlayerTwoHandedState != TwoHandedState.SingleHanded)
             {
                 return;
             }
@@ -248,7 +248,7 @@ namespace ValheimVRMod.Scripts
             {
                 if (weaponSubPos)
                 {
-                    _isTwoHanded = isTwoHanded.SingleHanded;
+                    LocalPlayerTwoHandedState = TwoHandedState.SingleHanded;
                     weaponSubPos = false;
                     ReturnToSingleHanded();
                 }
@@ -259,18 +259,18 @@ namespace ValheimVRMod.Scripts
                 SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand) &&
                 !TemporaryDisableTwoHandedWield())
             {
-                if (_isTwoHanded == isTwoHanded.SingleHanded)
+                if (LocalPlayerTwoHandedState == TwoHandedState.SingleHanded)
                 {
                     Vector3 rightHandToLeftHand = getHandCenter(VRPlayer.leftHand.transform) - getHandCenter(VRPlayer.rightHand.transform);
                     float wieldingAngle = Vector3.Angle(rightHandToLeftHand, GetWeaponPointingDir());
 
                     if (wieldingAngle < 60)
                     {
-                        _isTwoHanded = isTwoHanded.RightHandBehind;
+                        LocalPlayerTwoHandedState = TwoHandedState.RightHandBehind;
                     }
                     else if (wieldingAngle > 60f)
                     {
-                        _isTwoHanded = isTwoHanded.LeftHandBehind;
+                        LocalPlayerTwoHandedState = TwoHandedState.LeftHandBehind;
                     }
                     else
                     {
@@ -278,7 +278,7 @@ namespace ValheimVRMod.Scripts
                     }
                 }
 
-                rearHand = _isTwoHanded == isTwoHanded.LeftHandBehind ? VRPlayer.leftHand : VRPlayer.rightHand;
+                rearHand = LocalPlayerTwoHandedState == TwoHandedState.LeftHandBehind ? VRPlayer.leftHand : VRPlayer.rightHand;
                 frontHand = rearHand.otherHand;
 
                 Vector3 frontHandCenter = getHandCenter(frontHand.transform);
@@ -302,7 +302,7 @@ namespace ValheimVRMod.Scripts
                      SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.RightHand) ||
                      TemporaryDisableTwoHandedWield())
             {
-                _isTwoHanded = isTwoHanded.SingleHanded;
+                LocalPlayerTwoHandedState = TwoHandedState.SingleHanded;
                 weaponSubPos = false;
                 ReturnToSingleHanded();
             }
@@ -323,7 +323,7 @@ namespace ValheimVRMod.Scripts
 
         public static bool isCurrentlyTwoHanded()
         {
-            return _isTwoHanded != isTwoHanded.SingleHanded;
+            return LocalPlayerTwoHandedState != TwoHandedState.SingleHanded;
         }
 
         public bool allowBlocking()

@@ -31,14 +31,14 @@ namespace ValheimVRMod.Scripts {
         public bool isUnequiped() {
             if (EquipScript.getLeft() == EquipType.Crossbow)
             {
-                if (CrossbowManager._isTwoHanded == LocalWeaponWield.isTwoHanded.LeftHandBehind)
+                if (CrossbowManager.LocalPlayerTwoHandedState == LocalWeaponWield.TwoHandedState.LeftHandBehind)
                 {
                     return !isRightHand;
                 }
-                if (CrossbowManager._isTwoHanded == LocalWeaponWield.isTwoHanded.RightHandBehind) {
+                if (CrossbowManager.LocalPlayerTwoHandedState == LocalWeaponWield.TwoHandedState.RightHandBehind) {
                     return isRightHand;
                 }
-                if (CrossbowManager._isTwoHanded == LocalWeaponWield.isTwoHanded.SingleHanded)
+                if (CrossbowManager.LocalPlayerTwoHandedState == LocalWeaponWield.TwoHandedState.SingleHanded)
                 {
                     return isMainHand;
                 }
