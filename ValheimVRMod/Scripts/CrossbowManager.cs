@@ -68,7 +68,7 @@ namespace ValheimVRMod.Scripts {
                 case "RearHand":
                     return rearHandRadial;
                 case "BothHands":
-                    Vector3 frontHandPalmar = _isTwoHanded == isTwoHanded.LeftHandBehind ? -frontHand.transform.right : frontHand.transform.right;
+                    Vector3 frontHandPalmar = LocalPlayerTwoHandedState == TwoHandedState.LeftHandBehind ? -frontHand.transform.right : frontHand.transform.right;
                     Vector3 frontHandRadial = frontHand.transform.up;
                     return (frontHandPalmar * 1.73f + frontHandRadial).normalized + rearHandRadial;
                 default:
