@@ -8,7 +8,7 @@ using Valve.VR.InteractionSystem;
 namespace ValheimVRMod.Scripts
 {
     // Manages weapon wield of the local player.
-    public class LocalWeaponWield : MonoBehaviour
+    public class LocalWeaponWield : WeaponWield
     {
         private const float HAND_CENTER_OFFSET = 0.08f;
 
