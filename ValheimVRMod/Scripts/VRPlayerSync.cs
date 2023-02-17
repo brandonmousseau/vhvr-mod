@@ -2,6 +2,7 @@ using System.Linq;
 using RootMotion.FinalIK;
 using UnityEngine;
 using ValheimVRMod.Utilities;
+using ValheimVRMod.VRCore;
 
 using static ValheimVRMod.Utilities.LogUtils;
 
@@ -112,7 +113,7 @@ namespace ValheimVRMod.Scripts {
         // Transmit position, rotation, and velocity information to server
         private void ownerSync()
         {
-            if (!VHVRConfig.UseVrControls()) {
+            if (!VHVRConfig.UseVrControls() || VRPlayer.ShouldPauseMovement) {
                 return;
             }
 
