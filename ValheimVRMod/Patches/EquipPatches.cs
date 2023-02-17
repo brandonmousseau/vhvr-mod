@@ -66,7 +66,7 @@ namespace ValheimVRMod.Patches {
                     meshFilter.gameObject.AddComponent<FishingManager>();
                     break;
             }
-            WeaponWield weaponWield = EquipScript.isSpearEquipped() ? ___m_rightItemInstance.AddComponent<SpearWield>() : ___m_rightItemInstance.AddComponent<WeaponWield>();
+            LocalWeaponWield weaponWield = EquipScript.isSpearEquipped() ? ___m_rightItemInstance.AddComponent<SpearWield>() : ___m_rightItemInstance.AddComponent<LocalWeaponWield>();
             weaponWield.itemName = ___m_rightItem;
             weaponWield.Initialize(false);
 
@@ -137,7 +137,7 @@ namespace ValheimVRMod.Patches {
                 StaticObjects.leftHandQuickMenu.GetComponent<LeftHandQuickMenu>().refreshItems();
             }
 
-            WeaponWield weaponWield;
+            LocalWeaponWield weaponWield;
             switch (EquipScript.getLeft()) {
                 
                 case EquipType.Bow:
@@ -157,7 +157,7 @@ namespace ValheimVRMod.Patches {
                     crossbowManager.gameObject.AddComponent<WeaponBlock>().weaponWield = crossbowManager;
                     return;
                 case EquipType.Lantern:
-                    weaponWield = ___m_leftItemInstance.AddComponent<WeaponWield>().Initialize(true);
+                    weaponWield = ___m_leftItemInstance.AddComponent<LocalWeaponWield>().Initialize(true);
                     weaponWield.itemName = ___m_leftItem;
                     break;
                 case EquipType.Shield:
@@ -174,7 +174,7 @@ namespace ValheimVRMod.Patches {
     [HarmonyPatch(typeof(VisEquipment), "SetHelmetEquiped")]
     class PatchHelmet {
         static void Postfix(bool __result, GameObject ___m_helmetItemInstance) {
-            
+
             if (!__result || !VHVRConfig.UseVrControls()) {
                 return;
             }
@@ -256,7 +256,8 @@ namespace ValheimVRMod.Patches {
         /// <summary>
         /// For Left Handed mode we need to mirror models of shields and tankard 
         /// </summary>
-        static void Postfix(GameObject __result) {
+        static void Postfix(GameObject __result)
+        {
 
             if (Player.m_localPlayer == null 
                 || __result == null

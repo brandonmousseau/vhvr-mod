@@ -23,7 +23,7 @@ namespace ValheimVRMod.Scripts {
         public static Vector3 AimDir {
             get
             {
-                return UseSwingForCurrentAttack() ? SwingLaunchManager.aimDir : WeaponWield.isCurrentlyTwoHanded() ? WeaponWield.weaponForward : WeaponHandPointer.rayDirection * Vector3.forward;
+                return UseSwingForCurrentAttack() ? SwingLaunchManager.aimDir : LocalWeaponWield.isCurrentlyTwoHanded() ? LocalWeaponWield.weaponForward : WeaponHandPointer.rayDirection * Vector3.forward;
             }
         }
 
@@ -49,14 +49,14 @@ namespace ValheimVRMod.Scripts {
 
         public static Vector3 GetProjectileSpawnPoint(Attack attack) 
         {
-            return WeaponHandPointer.rayStartingPosition + WeaponWield.weaponForward * (new Vector3(attack.m_attackOffset, attack.m_attackRange, attack.m_attackHeight)).magnitude * 0.6f;
+            return WeaponHandPointer.rayStartingPosition + LocalWeaponWield.weaponForward * (new Vector3(attack.m_attackOffset, attack.m_attackRange, attack.m_attackHeight)).magnitude * 0.6f;
         }
 
         private static bool UseSwingForCurrentAttack()
         {
             // Disable swing launch if the staff is held with two hands like a rifle
             // (dominant hand behind the other hand).
-            return IsSwingLaunchEnabled() && !WeaponWield.IsDominantHandBehind;
+            return IsSwingLaunchEnabled() && !LocalWeaponWield.IsDominantHandBehind;
         }
     }
  }

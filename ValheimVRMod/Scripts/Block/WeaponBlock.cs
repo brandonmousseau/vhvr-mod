@@ -7,7 +7,7 @@ namespace ValheimVRMod.Scripts.Block
 {
     public class WeaponBlock : Block
     {
-        public WeaponWield weaponWield;
+        public LocalWeaponWield weaponWield;
         public static WeaponBlock instance;
 
         private const float MIN_PARRY_SPEED = 1.5f;
@@ -29,10 +29,10 @@ namespace ValheimVRMod.Scripts.Block
 
         public override void setBlocking(HitData hitData)
         {
-            var angle = Vector3.Angle(hitData.m_dir, WeaponWield.weaponForward);
+            var angle = Vector3.Angle(hitData.m_dir, LocalWeaponWield.weaponForward);
 
             // The weaponWield.transform outside its OnRenderObject() might be invalid, therefore we use weaponWield.physicsEstimator.transform intead.
-            Vector3 hitPointAlongWeapon = weaponWield.physicsEstimator.transform.position + Vector3.Project(hitData.m_point - weaponWield.physicsEstimator.transform.position, WeaponWield.weaponForward);
+            Vector3 hitPointAlongWeapon = weaponWield.physicsEstimator.transform.position + Vector3.Project(hitData.m_point - weaponWield.physicsEstimator.transform.position, LocalWeaponWield.weaponForward);
             Vector3 weaponVelocity = weaponWield.physicsEstimator.GetVelocityOfPoint(hitPointAlongWeapon);
 
             if (VHVRConfig.BlockingType() == "Realistic")

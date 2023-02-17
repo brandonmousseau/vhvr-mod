@@ -5,7 +5,7 @@ using Valve.VR;
 
 namespace ValheimVRMod.Scripts
 {
-    class SpearWield : WeaponWield
+    class SpearWield : LocalWeaponWield
     {
         private float harpoonHidingTimer = 0;
 

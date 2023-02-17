@@ -205,16 +205,16 @@ namespace ValheimVRMod.Scripts
             
             var mainHandTrigger = isRightHand ? SteamVR_Actions.valheim_Use.state : SteamVR_Actions.valheim_UseLeft.state;
             var inCooldown = AttackTargetMeshCooldown.isPrimaryTargetInCooldown();
-            var localWeaponForward = WeaponWield.weaponForward * secondaryAttack.m_attackRange / 2;
+            var localWeaponForward = LocalWeaponWield.weaponForward * secondaryAttack.m_attackRange / 2;
             var localHandPos = VRPlayer.dominantHand.transform.position - Player.m_localPlayer.transform.position;
             var posHeight = Player.m_localPlayer.transform.InverseTransformPoint(VRPlayer.dominantHand.transform.position + localWeaponForward);
 
-            if (WeaponWield.isCurrentlyTwoHanded())
+            if (LocalWeaponWield.isCurrentlyTwoHanded())
             {
-                localHandPos -= WeaponWield.weaponForward * Vector3.Distance(VRPlayer.dominantHand.transform.position, VRPlayer.dominantHand.otherHand.transform.position);
+                localHandPos -= LocalWeaponWield.weaponForward * Vector3.Distance(VRPlayer.dominantHand.transform.position, VRPlayer.dominantHand.otherHand.transform.position);
             }
             if (!SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource) || 
-                item.m_shared.m_itemType == ItemDrop.ItemData.ItemType.TwoHandedWeapon && !WeaponWield.isCurrentlyTwoHanded())
+                item.m_shared.m_itemType == ItemDrop.ItemData.ItemType.TwoHandedWeapon && !LocalWeaponWield.isCurrentlyTwoHanded())
             {
                 firstPos = Vector3.zero;
                 lastPos = Vector3.zero;
@@ -224,7 +224,7 @@ namespace ValheimVRMod.Scripts
             if (SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource) && 
                 !inCooldown && 
                 !VRPlayer.IsClickableGuiOpen && 
-                !(item.m_shared.m_itemType == ItemDrop.ItemData.ItemType.TwoHandedWeapon && !WeaponWield.isCurrentlyTwoHanded()))
+                !(item.m_shared.m_itemType == ItemDrop.ItemData.ItemType.TwoHandedWeapon && !LocalWeaponWield.isCurrentlyTwoHanded()))
             {
                 if (firstPos == Vector3.zero && mainHandTrigger)
                 {

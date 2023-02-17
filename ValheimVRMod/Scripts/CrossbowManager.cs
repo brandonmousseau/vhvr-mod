@@ -4,7 +4,7 @@ using ValheimVRMod.VRCore;
 using Valve.VR;
 
 namespace ValheimVRMod.Scripts {
-    class CrossbowManager : WeaponWield
+    class CrossbowManager : LocalWeaponWield
     {
         private static CrossbowManager instance;
         private static readonly Quaternion frontGripRotationForLeftHand = Quaternion.Euler(0, -15, 90);
