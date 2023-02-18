@@ -256,8 +256,19 @@ namespace ValheimVRMod.Patches {
         /// <summary>
         /// For Left Handed mode we need to mirror models of shields and tankard 
         /// </summary>
-        static void Postfix(GameObject __result)
-        {
+        static void Postfix(VisEquipment __instance, GameObject __result, int itemHash) {
+            
+            if (__instance.m_isPlayer && __result != null && itemHash == 703889544)
+            {
+                var lights = __result.GetComponentsInChildren<Light>();
+                if (lights.Length > 1)
+                {
+                    LogUtils.LogChildTree(__result.transform);
+                    lights[0].intensity = 0;
+                    // lights[0].enabled = false;
+                }
+            }
+
 
             if (Player.m_localPlayer == null 
                 || __result == null
@@ -271,6 +282,31 @@ namespace ValheimVRMod.Patches {
             
             __result.transform.localScale = new Vector3 (__result.transform.localScale.x, __result.transform.localScale.y * -1 , __result.transform.localScale.z);
 
+        }
+    }
+
+    class LightUpdater : MonoBehaviour
+    {
+        private bool isLocalPlayer;
+
+        void Awake()
+        {
+            Player player = gameObject.GetComponentInParent<Player>();
+            isLocalPlayer = (player != null && player == Player.m_localPlayer);
+        }
+
+        void Update()
+        {
+            if (isLocalPlayer)
+            {
+                var lights = gameObject.GetComponentsInChildren<Light>();
+                if (lights.Length > 1)
+                {
+                    // LogUtils.LogChildTree(gameObject.transform);
+                    LogUtils.LogWarning("Lights: " + lights.Length + " --- " + lights[0].name + " --- " + lights[1].name);
+                    lights[1].intensity = 0;
+                }
+            }
         }
     }
 

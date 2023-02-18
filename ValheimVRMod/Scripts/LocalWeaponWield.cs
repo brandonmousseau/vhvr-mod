@@ -17,9 +17,25 @@ namespace ValheimVRMod.Scripts
 
         public static Vector3 weaponForward;
         public string itemName;
-        public Hand rearHand { get; private set; }
-        public Hand frontHand { get; private set; }
-        public Hand mainHand { get { return isCurrentlyTwoHanded() ? rearHand : VRPlayer.dominantHand; } }
+
+        public Transform rearHandTransform { get; private set; }
+        public Transform frontHandTransform { get; private set; }
+
+
+        public Hand mainHand {
+            get {
+                switch (LocalPlayerTwoHandedState)
+                {
+                    case TwoHandedState.RightHandBehind:
+                        return VRPlayer.rightHand;
+                    case TwoHandedState.LeftHandBehind:
+                        return VRPlayer.leftHand;
+                    default:
+                        return VRPlayer.dominantHand;
+                }
+
+            }
+        }
 
         private ItemDrop.ItemData item;
         private Transform singleHandedTransform;
@@ -152,10 +168,10 @@ namespace ValheimVRMod.Scripts
 
         protected virtual void RotateHandsForTwoHandedWield(Vector3 weaponPointingDir)
         {
-            Vector3 desiredFrontHandForward = Vector3.Project(frontHand.transform.forward, weaponPointingDir);
-            Vector3 desiredRearHandForward = Vector3.Project(rearHand.transform.forward, Quaternion.AngleAxis(10, rearHand.transform.right) * weaponPointingDir);
-            frontHandConnector.rotation = Quaternion.LookRotation(desiredFrontHandForward, frontHand.transform.up);
-            rearHandConnector.rotation = Quaternion.LookRotation(desiredRearHandForward, rearHand.transform.up);
+            Vector3 desiredFrontHandForward = Vector3.Project(frontHandTransform.forward, weaponPointingDir);
+            Vector3 desiredRearHandForward = Vector3.Project(rearHandTransform.forward, Quaternion.AngleAxis(10, rearHandTransform.right) * weaponPointingDir);
+            frontHandConnector.rotation = Quaternion.LookRotation(desiredFrontHandForward, frontHandTransform.up);
+            rearHandConnector.rotation = Quaternion.LookRotation(desiredRearHandForward, rearHandTransform.up);
         }
 
         // The preferred up direction used to determine the weapon's rotation around it longitudinal axis during two-handed wield.
@@ -278,18 +294,18 @@ namespace ValheimVRMod.Scripts
                     }
                 }
 
-                rearHand = LocalPlayerTwoHandedState == TwoHandedState.LeftHandBehind ? VRPlayer.leftHand : VRPlayer.rightHand;
-                frontHand = rearHand.otherHand;
+                rearHandTransform = LocalPlayerTwoHandedState == TwoHandedState.LeftHandBehind ? VRPlayer.leftHand.transform : VRPlayer.rightHand.transform;
+                frontHandTransform = LocalPlayerTwoHandedState == TwoHandedState.LeftHandBehind ? VRPlayer.rightHand.transform : VRPlayer.leftHand.transform;
 
-                Vector3 frontHandCenter = getHandCenter(frontHand.transform);
-                Vector3 rearHandCenter = getHandCenter(rearHand.transform);
+                Vector3 frontHandCenter = getHandCenter(frontHandTransform);
+                Vector3 rearHandCenter = getHandCenter(rearHandTransform);
                 var weaponPointingDir = (frontHandCenter - rearHandCenter).normalized;
 
                 //VRIK Hand rotation
                 RotateHandsForTwoHandedWield(weaponPointingDir);
                 // Adjust the positions so that they are rotated around the hand centers which are slightly off from their local origins.
-                frontHandConnector.position = frontHandConnector.parent.position + frontHandConnector.forward * HAND_CENTER_OFFSET + (frontHandCenter - frontHand.transform.position);
-                rearHandConnector.position = rearHandConnector.parent.position + rearHandConnector.forward * HAND_CENTER_OFFSET + (rearHandCenter - rearHand.transform.position);
+                frontHandConnector.position = frontHandConnector.parent.position + frontHandConnector.forward * HAND_CENTER_OFFSET + (frontHandCenter - frontHandTransform.position);
+                rearHandConnector.position = rearHandConnector.parent.position + rearHandConnector.forward * HAND_CENTER_OFFSET + (rearHandCenter - rearHandTransform.position);
 
                 //weapon pos&rotation
                 transform.position = rearHandCenter + weaponPointingDir * (HAND_CENTER_OFFSET + GetPreferredOffsetFromRearHand(Vector3.Distance(frontHandCenter, rearHandCenter)));

@@ -297,6 +297,19 @@ namespace ValheimVRMod.VRCore.UI
                     return false;
                 }
             }
+            // LogWarning("Inv: " + SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand) + " " + SteamVR_Actions.valheim_ToggleMap.GetStateDown(SteamVR_Input_Sources.Any));
+            if (SteamVR_Actions.valheim_ToggleMap.GetStateDown(SteamVR_Input_Sources.Any))
+            {
+                if (zinput == "Inventory")
+                {
+                    return !SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand);
+                }
+                if (zinput == ToggleMiniMap)
+                {
+                    return SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand);
+                }
+
+            }
 
             // Handle Map zoom specially using context scroll input
             if (zinput == "MapZoomOut")
