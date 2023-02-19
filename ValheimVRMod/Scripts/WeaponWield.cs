@@ -7,8 +7,9 @@ using Valve.VR.InteractionSystem;
 
 namespace ValheimVRMod.Scripts
 {
-    public class WeaponWield : MonoBehaviour
+    public abstract class WeaponWield : MonoBehaviour
     {
         // TODO: move non-local-player logic from LocalWeaponWield to this class.
+        protected abstract bool IsPlayerLeftHanded();
     }
 }
