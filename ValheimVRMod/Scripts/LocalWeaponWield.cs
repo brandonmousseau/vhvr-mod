@@ -21,7 +21,6 @@ namespace ValheimVRMod.Scripts
         public Transform rearHandTransform { get; private set; }
         public Transform frontHandTransform { get; private set; }
 
-
         public Hand mainHand {
             get {
                 switch (LocalPlayerTwoHandedState)
@@ -67,16 +66,9 @@ namespace ValheimVRMod.Scripts
             physicsEstimator.refTransform = CameraUtils.getCamera(CameraUtils.VR_CAMERA)?.transform.parent;
         }
 
-        public LocalWeaponWield Initialize(bool holdInNonDominantHand)
+        public LocalWeaponWield Initialize(ItemDrop.ItemData item)
         {
-            if (holdInNonDominantHand)
-            {
-                item = Player.m_localPlayer.GetLeftItem();
-            }
-            else
-            {
-                item = Player.m_localPlayer.GetRightItem();
-            }
+            this.item = item;
 
             particleSystem = gameObject.GetComponentInChildren<ParticleSystem>();
             if (particleSystem != null)
@@ -141,6 +133,10 @@ namespace ValheimVRMod.Scripts
             lastRenderedTransform.SetParent(null, true);
         }
 
+        protected override bool IsPlayerLeftHanded() {
+            return VHVRConfig.LeftHanded();
+        }
+
         protected virtual bool TemporaryDisableTwoHandedWield()
         {
             return false;
@@ -183,7 +179,7 @@ namespace ValheimVRMod.Scripts
         // The preferred forward offset amount of the weapon's position from the rear hand during two-handed wield.
         protected virtual float GetPreferredOffsetFromRearHand(float handDist)
         {
-            bool rearHandIsDominant = (VHVRConfig.LeftHanded() == (LocalPlayerTwoHandedState == TwoHandedState.LeftHandBehind));
+            bool rearHandIsDominant = (IsPlayerLeftHanded() == (LocalPlayerTwoHandedState == TwoHandedState.LeftHandBehind));
             if (rearHandIsDominant)
             {
                 return -0.1f;
