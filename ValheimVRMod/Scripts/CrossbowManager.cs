@@ -39,13 +39,14 @@ namespace ValheimVRMod.Scripts {
 
         protected override void RotateHandsForTwoHandedWield(Vector3 weaponPointingDir) {
             Quaternion lookRotation = Quaternion.LookRotation(weaponPointingDir, GetPreferredTwoHandedWeaponUp());
-            if (frontHand == VRPlayer.leftHand)
+            switch (LocalPlayerTwoHandedState)
             {
-                VrikCreator.leftHandConnector.rotation = lookRotation * frontGripRotationForLeftHand;
-            }
-            else
-            {
-                VrikCreator.rightHandConnector.rotation = lookRotation * frontGripRotationForRightHand;
+                case TwoHandedState.LeftHandBehind:
+                    VrikCreator.rightHandConnector.rotation = lookRotation * frontGripRotationForRightHand;
+                    break;
+                case TwoHandedState.RightHandBehind:
+                    VrikCreator.leftHandConnector.rotation = lookRotation * frontGripRotationForLeftHand;
+                    break;
             }
         }
         
@@ -62,14 +63,14 @@ namespace ValheimVRMod.Scripts {
 
         protected override Vector3 GetPreferredTwoHandedWeaponUp()
         {
-            Vector3 rearHandRadial = rearHand.transform.up;
+            Vector3 rearHandRadial = rearHandTransform.up;
             switch (VHVRConfig.CrossbowSaggitalRotationSource())
             {
                 case "RearHand":
                     return rearHandRadial;
                 case "BothHands":
-                    Vector3 frontHandPalmar = LocalPlayerTwoHandedState == TwoHandedState.LeftHandBehind ? -frontHand.transform.right : frontHand.transform.right;
-                    Vector3 frontHandRadial = frontHand.transform.up;
+                    Vector3 frontHandPalmar = LocalPlayerTwoHandedState == TwoHandedState.LeftHandBehind ? -frontHandTransform.right : frontHandTransform.right;
+                    Vector3 frontHandRadial = frontHandTransform.up;
                     return (frontHandPalmar * 1.73f + frontHandRadial).normalized + rearHandRadial;
                 default:
                     LogUtils.LogWarning("WeaponWield: unknown CrossbowSaggitalRotationSource");
@@ -89,11 +90,19 @@ namespace ValheimVRMod.Scripts {
 
         public static bool IsPullingTrigger()
         {
-            if (instance == null || !isCurrentlyTwoHanded())
+            if (instance == null)
             {
                 return false;
             }
-            return instance.rearHand == VRPlayer.leftHand ? SteamVR_Actions.valheim_UseLeft.stateDown : SteamVR_Actions.valheim_Use.stateDown;
+            switch (LocalPlayerTwoHandedState)
+            {
+                case TwoHandedState.LeftHandBehind:
+                    return SteamVR_Actions.valheim_UseLeft.stateDown;
+                case TwoHandedState.RightHandBehind:
+                    return SteamVR_Actions.valheim_Use.stateDown;
+                default:
+                    return false;
+            }
         }
 
         public static Vector3 AimDir { get { return weaponForward; } }
