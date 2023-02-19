@@ -16,7 +16,7 @@ namespace ValheimVRMod.Scripts
         private bool weaponSubPos;
 
         public static Vector3 weaponForward;
-        public string itemName;
+        private string itemName;
 
         public Transform rearHandTransform { get; private set; }
         public Transform frontHandTransform { get; private set; }
@@ -54,13 +54,6 @@ namespace ValheimVRMod.Scripts
         ParticleSystem particleSystem;
         Transform particleSystemTransformUpdater;
 
-        public enum TwoHandedState
-        {
-            SingleHanded,
-            RightHandBehind,
-            LeftHandBehind
-        }
-
         protected virtual void Awake()
         {
             lastRenderedTransform = new GameObject().transform;
@@ -68,9 +61,10 @@ namespace ValheimVRMod.Scripts
             physicsEstimator.refTransform = CameraUtils.getCamera(CameraUtils.VR_CAMERA)?.transform.parent;
         }
 
-        public LocalWeaponWield Initialize(ItemDrop.ItemData item)
+        public LocalWeaponWield Initialize(ItemDrop.ItemData item, string itemName)
         {
             this.item = item;
+            this.itemName = itemName;
 
             particleSystem = gameObject.GetComponentInChildren<ParticleSystem>();
             if (particleSystem != null)
@@ -144,12 +138,33 @@ namespace ValheimVRMod.Scripts
             return false;
         }
 
-        protected override bool ShouldUseTwoHandedWield()
+        protected override TwoHandedState GetDesiredTwoHandedState(bool wasTwoHanded)
         {
-            return
-                SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand) &&
-                SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand) &&
-                !TemporaryDisableTwoHandedWield();
+            if (!SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand) ||
+                !SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand) ||
+                TemporaryDisableTwoHandedWield())
+            {
+                return TwoHandedState.SingleHanded;
+            }
+
+            if (wasTwoHanded)
+            {
+                // Stay in current two-handed mode since both hands are grabbing.
+                return LocalPlayerTwoHandedState;
+            }
+            
+            Vector3 rightHandToLeftHand = getHandCenter(VRPlayer.leftHand.transform) - getHandCenter(VRPlayer.rightHand.transform);
+            float wieldingAngle = Vector3.Angle(rightHandToLeftHand, GetWeaponPointingDir());
+            if (wieldingAngle < 60)
+            {
+                return TwoHandedState.RightHandBehind;
+            }
+            else if (wieldingAngle > 60f)
+            {
+                return TwoHandedState.LeftHandBehind;
+            }
+
+            return TwoHandedState.SingleHanded;
         }
 
         // Returns the direction the weapon is pointing.
@@ -277,26 +292,9 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            if (ShouldUseTwoHandedWield())
+            LocalPlayerTwoHandedState = GetDesiredTwoHandedState(wasTwoHanded);
+            if (LocalPlayerTwoHandedState != TwoHandedState.SingleHanded)
             {
-                if (LocalPlayerTwoHandedState == TwoHandedState.SingleHanded)
-                {
-                    Vector3 rightHandToLeftHand = getHandCenter(VRPlayer.leftHand.transform) - getHandCenter(VRPlayer.rightHand.transform);
-                    float wieldingAngle = Vector3.Angle(rightHandToLeftHand, GetWeaponPointingDir());
-
-                    if (wieldingAngle < 60)
-                    {
-                        LocalPlayerTwoHandedState = TwoHandedState.RightHandBehind;
-                    }
-                    else if (wieldingAngle > 60f)
-                    {
-                        LocalPlayerTwoHandedState = TwoHandedState.LeftHandBehind;
-                    }
-                    else
-                    {
-                        return;
-                    }
-                }
                 wasTwoHanded = true;
 
                 rearHandTransform = LocalPlayerTwoHandedState == TwoHandedState.LeftHandBehind ? VRPlayer.leftHand.transform : VRPlayer.rightHand.transform;
