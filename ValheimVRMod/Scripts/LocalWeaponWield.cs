@@ -49,6 +49,8 @@ namespace ValheimVRMod.Scripts
         public PhysicsEstimator physicsEstimator { get; private set; }
         public static bool IsDominantHandBehind { get { return isCurrentlyTwoHanded() && (LocalPlayerTwoHandedState == TwoHandedState.RightHandBehind ^ VHVRConfig.LeftHanded()); } }
 
+        private bool wasTwoHanded = false;
+
         ParticleSystem particleSystem;
         Transform particleSystemTransformUpdater;
 
@@ -140,6 +142,14 @@ namespace ValheimVRMod.Scripts
         protected virtual bool TemporaryDisableTwoHandedWield()
         {
             return false;
+        }
+
+        protected override bool ShouldUseTwoHandedWield()
+        {
+            return
+                SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand) &&
+                SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand) &&
+                !TemporaryDisableTwoHandedWield();
         }
 
         // Returns the direction the weapon is pointing.
@@ -267,9 +277,7 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand) &&
-                SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand) &&
-                !TemporaryDisableTwoHandedWield())
+            if (ShouldUseTwoHandedWield())
             {
                 if (LocalPlayerTwoHandedState == TwoHandedState.SingleHanded)
                 {
@@ -289,6 +297,7 @@ namespace ValheimVRMod.Scripts
                         return;
                     }
                 }
+                wasTwoHanded = true;
 
                 rearHandTransform = LocalPlayerTwoHandedState == TwoHandedState.LeftHandBehind ? VRPlayer.leftHand.transform : VRPlayer.rightHand.transform;
                 frontHandTransform = LocalPlayerTwoHandedState == TwoHandedState.LeftHandBehind ? VRPlayer.rightHand.transform : VRPlayer.leftHand.transform;
@@ -310,11 +319,10 @@ namespace ValheimVRMod.Scripts
                 weaponSubPos = true;
                 shieldSize = 0.4f;
             }
-            else if (SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.LeftHand) ||
-                     SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.RightHand) ||
-                     TemporaryDisableTwoHandedWield())
+            else if (wasTwoHanded)
             {
                 LocalPlayerTwoHandedState = TwoHandedState.SingleHanded;
+                wasTwoHanded = false;
                 weaponSubPos = false;
                 ReturnToSingleHanded();
             }

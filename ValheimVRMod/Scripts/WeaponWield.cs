@@ -11,5 +11,6 @@ namespace ValheimVRMod.Scripts
     {
         // TODO: move non-local-player logic from LocalWeaponWield to this class.
         protected abstract bool IsPlayerLeftHanded();
+        protected abstract bool ShouldUseTwoHandedWield();
     }
 }
