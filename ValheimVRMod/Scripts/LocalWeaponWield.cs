@@ -42,8 +42,8 @@ namespace ValheimVRMod.Scripts
         private Quaternion offsetFromPointingDir; // The rotation offset of this transform relative to the direction the weapon is pointing at.
         public static TwoHandedState LocalPlayerTwoHandedState { get; private set; }
         private float shieldSize = 1f;
-        private Transform frontHandConnector { get { return LocalPlayerTwoHandedState == TwoHandedState.LeftHandBehind ? VrikCreator.rightHandConnector : VrikCreator.leftHandConnector; } }
-        private Transform rearHandConnector { get { return LocalPlayerTwoHandedState == TwoHandedState.LeftHandBehind ? VrikCreator.leftHandConnector : VrikCreator.rightHandConnector; } }
+        private Transform frontHandConnector { get { return LocalPlayerTwoHandedState == TwoHandedState.LeftHandBehind ? VrikCreator.localPlayerRightHandConnector : VrikCreator.localPlayerLeftHandConnector; } }
+        private Transform rearHandConnector { get { return LocalPlayerTwoHandedState == TwoHandedState.LeftHandBehind ? VrikCreator.localPlayerLeftHandConnector : VrikCreator.localPlayerRightHandConnector; } }
         private Vector3 estimatedLocalWeaponPointingDir = Vector3.forward;
         private Transform lastRenderedTransform;
         public PhysicsEstimator physicsEstimator { get; private set; }

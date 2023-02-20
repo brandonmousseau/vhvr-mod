@@ -221,7 +221,7 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            VrikCreator.GetDominantHandConnector().position = pullObj.transform.position;
+            VrikCreator.GetLocalPlayerDominantHandConnector().position = pullObj.transform.position;
             arrowAttach.transform.SetPositionAndRotation(pullObj.transform.position, pushObj.transform.rotation);
             spawnPoint = getArrowRestPosition();
             aimDir = getAimDir();

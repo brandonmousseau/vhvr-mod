@@ -210,7 +210,7 @@ namespace ValheimVRMod.Scripts {
                     Player.m_localPlayer.ResetLoadedWeapon();
                     Player.m_localPlayer.QueueReloadAction();
                 }
-                VrikCreator.GetDominantHandConnector().position = stringRenderer.GetPosition(1);
+                VrikCreator.GetLocalPlayerDominantHandConnector().position = stringRenderer.GetPosition(1);
             }
             else if (wasPulling)
             {
