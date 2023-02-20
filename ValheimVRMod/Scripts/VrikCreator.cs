@@ -26,8 +26,8 @@ namespace ValheimVRMod.Scripts {
         private static readonly Quaternion rightSpearRotation = Quaternion.Euler(0, -90, -140);
         private static readonly Vector3 rightSpearEllbow = new Vector3(-1, -3f, 0);
         
-        public static Transform rightHandConnector = null;
-        public static Transform leftHandConnector = null;
+        public static Transform localPlayerRightHandConnector = null;
+        public static Transform localPlayerLeftHandConnector = null;
         public static Transform camera;
         private static Transform CameraRig { get { return camera.parent; } }
 
@@ -38,12 +38,12 @@ namespace ValheimVRMod.Scripts {
             vrik.solver.leftArm.target = new GameObject().transform;
             vrik.solver.rightArm.target = new GameObject().transform;
             vrik.solver.spine.headTarget = new GameObject().transform;
-            leftHandConnector = new GameObject().transform;
-            rightHandConnector = new GameObject().transform;
+            localPlayerLeftHandConnector = new GameObject().transform;
+            localPlayerRightHandConnector = new GameObject().transform;
             return vrik;
         }
 
-        private static void InitializeTargts(VRIK vrik, Transform leftController, Transform rightController, Transform camera)
+        private static void InitializeTargts(VRIK vrik, Transform leftController, Transform rightController, Transform camera, bool isLocalPlayer)
         {
             vrik.AutoDetectReferences();
             vrik.references.leftThigh = null;
@@ -55,14 +55,20 @@ namespace ValheimVRMod.Scripts {
             vrik.references.rightFoot = null;
             vrik.references.rightToes = null;
 
+            Transform leftHandConnector = isLocalPlayer ? VrikCreator.localPlayerLeftHandConnector : new GameObject().transform;
             leftHandConnector.SetParent(leftController, false);
             vrik.solver.leftArm.target.SetParent(leftHandConnector, false);
 
+            Transform rightHandConnector = isLocalPlayer ? VrikCreator.localPlayerRightHandConnector : new GameObject().transform;
             rightHandConnector.SetParent(rightController, false);
             vrik.solver.rightArm.target.SetParent(rightHandConnector, false);
 
             Transform head = vrik.solver.spine.headTarget;
-            head.SetParent(VrikCreator.camera = camera);
+            head.SetParent(camera);
+            if (isLocalPlayer)
+            {
+                VrikCreator.camera = camera;
+            }
             head.localPosition = new Vector3(0, -0.165f, -0.09f);
             head.localRotation = Quaternion.Euler(0, 90, 20);
             vrik.solver.spine.maxRootAngle = 180;
@@ -88,7 +94,7 @@ namespace ValheimVRMod.Scripts {
 
         public static VRIK initialize(GameObject playerGameObject, Transform leftController, Transform rightController, Transform camera) {
             VRIK vrik = CreateTargets(playerGameObject);
-            InitializeTargts(vrik, leftController, rightController, camera);
+            InitializeTargts(vrik, leftController, rightController, camera, playerGameObject == Player.m_localPlayer.gameObject);
             return vrik;
         }
 
@@ -134,27 +140,22 @@ namespace ValheimVRMod.Scripts {
             vrik.solver.rightArm.palmToThumbAxis = rightUnequippedEllbow;
         }
 
-        public static Transform GetDominantHandConnector()
+        public static Transform GetLocalPlayerDominantHandConnector()
         {
-            return VHVRConfig.LeftHanded() ? VrikCreator.leftHandConnector : VrikCreator.rightHandConnector;
-        }
-
-        public static Transform GetNonDominantHandConnector()
-        {
-            return VHVRConfig.LeftHanded() ? VrikCreator.rightHandConnector : VrikCreator.leftHandConnector;
+            return VHVRConfig.LeftHanded() ? VrikCreator.localPlayerLeftHandConnector : VrikCreator.localPlayerRightHandConnector;
         }
 
         public static void ResetHandConnectors()
         {
-            leftHandConnector.localPosition = Vector3.zero;
-            leftHandConnector.localRotation = Quaternion.identity;
-            rightHandConnector.localPosition = Vector3.zero;
-            rightHandConnector.localRotation = Quaternion.identity;
+            localPlayerLeftHandConnector.localPosition = Vector3.zero;
+            localPlayerLeftHandConnector.localRotation = Quaternion.identity;
+            localPlayerRightHandConnector.localPosition = Vector3.zero;
+            localPlayerRightHandConnector.localRotation = Quaternion.identity;
         }
 
 
-        public static void Pause(Humanoid player) {
-            VRIK vrik = player?.GetComponent<VRIK>();
+        public static void PauseLocalPlayerVrik() {
+            VRIK vrik = Player.m_localPlayer?.GetComponent<VRIK>();
 
             if (vrik == null)
             {
@@ -172,9 +173,9 @@ namespace ValheimVRMod.Scripts {
             vrik.solver.spine.headTarget.SetParent(camera.parent, true);
         }
 
-        public static void Unpause(Humanoid player)
+        public static void UnpauseLocalPlayerVrik()
         {
-            VRIK vrik = player?.GetComponent<VRIK>();
+            VRIK vrik = Player.m_localPlayer?.GetComponent<VRIK>();
 
             if (vrik == null)
             {
@@ -187,8 +188,8 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            InitializeTargts(vrik, leftHandConnector.parent, rightHandConnector.parent, camera);
-            resetVrikHandTransform(player);
+            InitializeTargts(vrik, localPlayerLeftHandConnector.parent, localPlayerRightHandConnector.parent, camera, isLocalPlayer: true);
+            resetVrikHandTransform(Player.m_localPlayer);
         }
     }
 }

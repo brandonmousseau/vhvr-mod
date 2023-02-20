@@ -42,10 +42,10 @@ namespace ValheimVRMod.Scripts {
             switch (LocalPlayerTwoHandedState)
             {
                 case TwoHandedState.LeftHandBehind:
-                    VrikCreator.rightHandConnector.rotation = lookRotation * frontGripRotationForRightHand;
+                    VrikCreator.localPlayerRightHandConnector.rotation = lookRotation * frontGripRotationForRightHand;
                     break;
                 case TwoHandedState.RightHandBehind:
-                    VrikCreator.leftHandConnector.rotation = lookRotation * frontGripRotationForLeftHand;
+                    VrikCreator.localPlayerLeftHandConnector.rotation = lookRotation * frontGripRotationForLeftHand;
                     break;
             }
         }

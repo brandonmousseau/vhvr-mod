@@ -278,7 +278,7 @@ namespace ValheimVRMod.VRCore
             {
                 if (vrikEnabled() && !pausedMovement)
                 {
-                    VrikCreator.Pause(getPlayerCharacter());
+                    VrikCreator.PauseLocalPlayerVrik();
                     pausedMovement = true;
                 }
             }
@@ -289,7 +289,7 @@ namespace ValheimVRMod.VRCore
                     // Before unpausing, move the camera back to the position before the pause to prevent teleporting the player to the cuurent camera position.
                     _vrCameraRig.localPosition -= Vector3.ProjectOnPlane(_vrCam.transform.localPosition - _lastCamPosition, Vector3.up);
                     _lastCamPosition = _vrCam.transform.localPosition;
-                    VrikCreator.Unpause(getPlayerCharacter());
+                    VrikCreator.UnpauseLocalPlayerVrik();
                     pausedMovement = false;
                 }
                 if (inFirstPerson)
