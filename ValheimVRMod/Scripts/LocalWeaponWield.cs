@@ -13,7 +13,7 @@ namespace ValheimVRMod.Scripts
         private const float HAND_CENTER_OFFSET = 0.08f;
 
         private Attack attack;
-        private bool weaponSubPos;
+        private bool knifeReverseHold;
 
         public static Vector3 weaponForward;
         private string itemName;
@@ -282,32 +282,22 @@ namespace ValheimVRMod.Scripts
 
         private void KnifeWield()
         {
-            if (twoHandedState != TwoHandedState.SingleHanded)
-            {
-                return;
-            }
-
             if (SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource))
             {
                 ReturnToSingleHanded();
                 // Reverse grip
                 transform.localRotation *= Quaternion.AngleAxis(180, Vector3.right);
-                weaponSubPos = true;
+                knifeReverseHold = true;
             }
-            else if (weaponSubPos)
+            else if (knifeReverseHold)
             {
                 ReturnToSingleHanded();
-                weaponSubPos = false;
+                knifeReverseHold = false;
             }
         }
 
         private void UpdateTwoHandedWield()
         {
-            if (!VHVRConfig.TwoHandedWithShield() && EquipScript.getLeft() == EquipType.Shield)
-            {
-                weaponSubPos = false;
-            }
-
             twoHandedState = GetDesiredTwoHandedState(wasTwoHanded);
             if (twoHandedState != TwoHandedState.SingleHanded)
             {
@@ -334,7 +324,6 @@ namespace ValheimVRMod.Scripts
 
             if (twoHandedState == TwoHandedState.SingleHanded)
             {
-                weaponSubPos = false;
                 shieldSize = 1f;
             }
             else
@@ -347,7 +336,6 @@ namespace ValheimVRMod.Scripts
                 frontHandConnector.position = frontHandConnector.parent.position + frontHandConnector.forward * HAND_CENTER_OFFSET + (frontHandCenter - frontHandTransform.position);
                 rearHandConnector.position = rearHandConnector.parent.position + rearHandConnector.forward * HAND_CENTER_OFFSET + (rearHandCenter - rearHandTransform.position);
 
-                weaponSubPos = true;
                 shieldSize = 0.4f;
             }
         }
@@ -377,7 +365,7 @@ namespace ValheimVRMod.Scripts
                     if (EquipScript.getLeft() == EquipType.Shield)
                         return false;
                     else
-                        return weaponSubPos;
+                        return SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource);
                 default:
                     return VHVRConfig.BlockingType() == "Gesture" ? isCurrentlyTwoHanded() : SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource);
             }
