@@ -169,12 +169,9 @@ namespace ValheimVRMod.Scripts
             }
         }
 
-
-
         protected abstract bool IsPlayerLeftHanded();
         protected abstract Transform GetLeftHandTransform();
         protected abstract Transform GetRightHandTransform();
         protected abstract TwoHandedState GetDesiredTwoHandedState(bool wasTwoHanded);
-
     }
 }
