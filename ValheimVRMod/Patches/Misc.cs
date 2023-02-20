@@ -284,9 +284,17 @@ namespace ValheimVRMod.Patches
             {
                 __instance.m_lodGroup.size = creatures[__instance.m_name];
             }
-            else if (creatures[__instance.m_name] < VHVRConfig.GetEnemyRenderDistanceValue() && __instance.m_lodGroup.size != VHVRConfig.GetEnemyRenderDistanceValue()) 
+            else
             {
-                __instance.m_lodGroup.size = VHVRConfig.GetEnemyRenderDistanceValue();
+                if(creatures[__instance.m_name] < VHVRConfig.GetEnemyRenderDistanceValue() && __instance.m_lodGroup.size != VHVRConfig.GetEnemyRenderDistanceValue())
+                {
+                    __instance.m_lodGroup.size = VHVRConfig.GetEnemyRenderDistanceValue();
+                }
+                else if (creatures[__instance.m_name] > VHVRConfig.GetEnemyRenderDistanceValue() && __instance.m_lodGroup.size != creatures[__instance.m_name])
+                {
+                    __instance.m_lodGroup.size = creatures[__instance.m_name];
+                }
+                
             }
         }
     }
