@@ -289,7 +289,7 @@ namespace ValheimVRMod.Scripts
             }
             else
             {
-                if (SteamVR_Actions.valheim_Grab.GetState(VRPlayer.nonDominantHandInputSource) && !WeaponWield.isCurrentlyTwoHanded())
+                if (SteamVR_Actions.valheim_Grab.GetState(VRPlayer.nonDominantHandInputSource) && !LocalWeaponWield.isCurrentlyTwoHanded())
                 {
                     if (Vector3.Distance(offHandCenter, reelParent.transform.position) < 0.2f)
                     {

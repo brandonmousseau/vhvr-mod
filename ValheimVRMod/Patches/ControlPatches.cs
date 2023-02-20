@@ -110,6 +110,14 @@ namespace ValheimVRMod.Patches {
                 {
                     return;
                 }
+
+                // When toggling running, disable turning left or right if the the x-rotation amount of the stick is less than the y-rotation amount.
+                // This prevents unwanted accidental turning when moving the stick forward or backward.
+                // TODO: examine whether this check should be enabled for smooth-turn mode as well.
+                if (VHVRConfig.SnapTurnEnabled() && VHVRConfig.ToggleRun() && Mathf.Abs(VRControls.instance.GetJoyRightStickX()) < Mathf.Abs(VRControls.instance.GetJoyRightStickY()))
+                {
+                    return;
+                }
                 
                 __result = __result + VRControls.instance.GetJoyRightStickX();
             }

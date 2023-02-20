@@ -19,7 +19,7 @@ namespace ValheimVRMod.Scripts
         private static bool preparingThrow;
 
         protected SteamVR_Action_Boolean dominantHandInputAction { get { return VHVRConfig.LeftHanded() ? SteamVR_Actions.valheim_UseLeft : SteamVR_Actions.valheim_Use; } }
-        private WeaponWield weaponWield { get { return gameObject.GetComponentInParent<WeaponWield>(); } }
+        private LocalWeaponWield weaponWield { get { return gameObject.GetComponentInParent<LocalWeaponWield>(); } }
         private PhysicsEstimator handPhysicsEstimator { get { return VHVRConfig.LeftHanded() ? VRPlayer.leftHandPhysicsEstimator : VRPlayer.rightHandPhysicsEstimator; } }
         private float peakSpeed = 0;
 
@@ -49,7 +49,7 @@ namespace ValheimVRMod.Scripts
         private void UpdateThrowDirAndSpeed()
         {
             Vector3 v;
-            if (WeaponWield.isCurrentlyTwoHanded() && weaponWield != null)
+            if (LocalWeaponWield.isCurrentlyTwoHanded() && weaponWield != null)
             {
                 v = weaponWield.physicsEstimator.GetVelocityOfPoint(spawnPoint);
                 aimDir = v.normalized;

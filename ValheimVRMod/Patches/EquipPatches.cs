@@ -66,9 +66,8 @@ namespace ValheimVRMod.Patches {
                     meshFilter.gameObject.AddComponent<FishingManager>();
                     break;
             }
-            WeaponWield weaponWield = EquipScript.isSpearEquipped() ? ___m_rightItemInstance.AddComponent<SpearWield>() : ___m_rightItemInstance.AddComponent<WeaponWield>();
-            weaponWield.itemName = ___m_rightItem;
-            weaponWield.Initialize(false);
+            LocalWeaponWield weaponWield = EquipScript.isSpearEquipped() ? ___m_rightItemInstance.AddComponent<SpearWield>() : ___m_rightItemInstance.AddComponent<LocalWeaponWield>();
+            weaponWield.Initialize(Player.m_localPlayer.GetRightItem(), ___m_rightItem);
 
             if (MagicWeaponManager.IsSwingLaunchEnabled())
             {
@@ -137,7 +136,7 @@ namespace ValheimVRMod.Patches {
                 StaticObjects.leftHandQuickMenu.GetComponent<LeftHandQuickMenu>().refreshItems();
             }
 
-            WeaponWield weaponWield;
+            LocalWeaponWield weaponWield;
             switch (EquipScript.getLeft()) {
                 
                 case EquipType.Bow:
@@ -152,13 +151,12 @@ namespace ValheimVRMod.Patches {
                     return;
                 case EquipType.Crossbow:
                     CrossbowManager crossbowManager = ___m_leftItemInstance.AddComponent<CrossbowManager>();
-                    crossbowManager.Initialize(true);
-                    crossbowManager.itemName = ___m_leftItem;
+                    crossbowManager.Initialize(Player.m_localPlayer.GetLeftItem(), ___m_leftItem);
                     crossbowManager.gameObject.AddComponent<WeaponBlock>().weaponWield = crossbowManager;
                     return;
                 case EquipType.Lantern:
-                    weaponWield = ___m_leftItemInstance.AddComponent<WeaponWield>().Initialize(true);
-                    weaponWield.itemName = ___m_leftItem;
+                    weaponWield = ___m_leftItemInstance.AddComponent<LocalWeaponWield>();
+                    weaponWield.Initialize(Player.m_localPlayer.GetLeftItem(), ___m_leftItem);
                     break;
                 case EquipType.Shield:
                     meshFilter.gameObject.AddComponent<ShieldBlock>().itemName = ___m_leftItem;
@@ -174,7 +172,7 @@ namespace ValheimVRMod.Patches {
     [HarmonyPatch(typeof(VisEquipment), "SetHelmetEquiped")]
     class PatchHelmet {
         static void Postfix(bool __result, GameObject ___m_helmetItemInstance) {
-            
+
             if (!__result || !VHVRConfig.UseVrControls()) {
                 return;
             }
@@ -256,8 +254,8 @@ namespace ValheimVRMod.Patches {
         /// <summary>
         /// For Left Handed mode we need to mirror models of shields and tankard 
         /// </summary>
-        static void Postfix(GameObject __result) {
-
+        static void Postfix(GameObject __result)
+        {
             if (Player.m_localPlayer == null 
                 || __result == null
                 || __result.GetComponentInParent<Player>() != Player.m_localPlayer
