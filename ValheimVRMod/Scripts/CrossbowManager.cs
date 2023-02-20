@@ -39,7 +39,7 @@ namespace ValheimVRMod.Scripts {
 
         protected override void RotateHandsForTwoHandedWield(Vector3 weaponPointingDir) {
             Quaternion lookRotation = Quaternion.LookRotation(weaponPointingDir, GetPreferredTwoHandedWeaponUp());
-            switch (LocalPlayerTwoHandedState)
+            switch (twoHandedState)
             {
                 case TwoHandedState.LeftHandBehind:
                     VrikCreator.localPlayerRightHandConnector.rotation = lookRotation * frontGripRotationForRightHand;
@@ -69,7 +69,7 @@ namespace ValheimVRMod.Scripts {
                 case "RearHand":
                     return rearHandRadial;
                 case "BothHands":
-                    Vector3 frontHandPalmar = LocalPlayerTwoHandedState == TwoHandedState.LeftHandBehind ? -frontHandTransform.right : frontHandTransform.right;
+                    Vector3 frontHandPalmar = twoHandedState == TwoHandedState.LeftHandBehind ? -frontHandTransform.right : frontHandTransform.right;
                     Vector3 frontHandRadial = frontHandTransform.up;
                     return (frontHandPalmar * 1.73f + frontHandRadial).normalized + rearHandRadial;
                 default:
@@ -94,7 +94,7 @@ namespace ValheimVRMod.Scripts {
             {
                 return false;
             }
-            switch (LocalPlayerTwoHandedState)
+            switch (instance.twoHandedState)
             {
                 case TwoHandedState.LeftHandBehind:
                     return SteamVR_Actions.valheim_UseLeft.stateDown;
