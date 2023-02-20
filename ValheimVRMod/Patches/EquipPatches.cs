@@ -67,8 +67,7 @@ namespace ValheimVRMod.Patches {
                     break;
             }
             LocalWeaponWield weaponWield = EquipScript.isSpearEquipped() ? ___m_rightItemInstance.AddComponent<SpearWield>() : ___m_rightItemInstance.AddComponent<LocalWeaponWield>();
-            weaponWield.itemName = ___m_rightItem;
-            weaponWield.Initialize(Player.m_localPlayer.GetRightItem());
+            weaponWield.Initialize(Player.m_localPlayer.GetRightItem(), ___m_rightItem);
 
             if (MagicWeaponManager.IsSwingLaunchEnabled())
             {
@@ -152,13 +151,11 @@ namespace ValheimVRMod.Patches {
                     return;
                 case EquipType.Crossbow:
                     CrossbowManager crossbowManager = ___m_leftItemInstance.AddComponent<CrossbowManager>();
-                    crossbowManager.Initialize(Player.m_localPlayer.GetLeftItem());
-                    crossbowManager.itemName = ___m_leftItem;
+                    crossbowManager.Initialize(Player.m_localPlayer.GetLeftItem(), ___m_leftItem);
                     crossbowManager.gameObject.AddComponent<WeaponBlock>().weaponWield = crossbowManager;
                     return;
                 case EquipType.Lantern:
-                    weaponWield = ___m_leftItemInstance.AddComponent<LocalWeaponWield>().Initialize(Player.m_localPlayer.GetLeftItem());
-                    weaponWield.itemName = ___m_leftItem;
+                    weaponWield = ___m_leftItemInstance.AddComponent<LocalWeaponWield>().Initialize(Player.m_localPlayer.GetLeftItem(), ___m_leftItem);
                     break;
                 case EquipType.Shield:
                     meshFilter.gameObject.AddComponent<ShieldBlock>().itemName = ___m_leftItem;
