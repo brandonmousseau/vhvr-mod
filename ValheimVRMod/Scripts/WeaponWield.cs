@@ -9,7 +9,15 @@ namespace ValheimVRMod.Scripts
 {
     public abstract class WeaponWield : MonoBehaviour
     {
+        public enum TwoHandedState
+        {
+            SingleHanded,
+            RightHandBehind,
+            LeftHandBehind
+        }
+
         // TODO: move non-local-player logic from LocalWeaponWield to this class.
         protected abstract bool IsPlayerLeftHanded();
+        protected abstract TwoHandedState GetDesiredTwoHandedState(bool wasTwoHanded);
     }
 }
