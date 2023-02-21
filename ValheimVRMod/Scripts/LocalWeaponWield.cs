@@ -61,7 +61,6 @@ namespace ValheimVRMod.Scripts
             // TODO: find out whether on of these two weaponForward updates can be skipped.
             weaponForward = GetWeaponPointingDir();
             base.OnRenderObject();
-            weaponForward = GetWeaponPointingDir();
 
             LocalPlayerTwoHandedState = twoHandedState;
 
@@ -96,6 +95,8 @@ namespace ValheimVRMod.Scripts
             {
                 ShieldBlock.instance?.ScaleShieldSize(shieldSize);
             }
+
+            weaponForward = GetWeaponPointingDir();
         }
 
         protected override bool IsPlayerLeftHanded() {
