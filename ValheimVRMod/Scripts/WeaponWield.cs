@@ -11,9 +11,9 @@ namespace ValheimVRMod.Scripts
     {
         public enum TwoHandedState
         {
-            SingleHanded,
-            RightHandBehind,
-            LeftHandBehind
+            SingleHanded = 0,
+            RightHandBehind = 1,
+            LeftHandBehind = 2
         }
 
         protected const float HAND_CENTER_OFFSET = 0.08f;
