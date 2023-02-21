@@ -58,20 +58,21 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            // TODO: find out whether on of these two weaponForward updates can be skipped.
-            weaponForward = GetWeaponPointingDir();
+            bool wasTwoHanded = (LocalPlayerTwoHandedState != TwoHandedState.SingleHanded);
             base.OnRenderObject();
-
             LocalPlayerTwoHandedState = twoHandedState;
 
-            if (twoHandedState == TwoHandedState.SingleHanded)
+            if (attack.m_attackAnimation == "knife_stab")
             {
-                shieldSize = 1f;
+                KnifeWield();
             }
-            else
+
+            weaponForward = GetWeaponPointingDir();
+
+            if (twoHandedState != TwoHandedState.SingleHanded)
             {
                 //VRIK Hand rotation
-                RotateHandsForTwoHandedWield(GetWeaponPointingDir());
+                RotateHandsForTwoHandedWield(weaponForward);
                 // Adjust the positions so that they are rotated around the hand centers which are slightly off from their local origins.
                 Vector3 frontHandCenter = getHandCenter(frontHandTransform);
                 Vector3 rearHandCenter = getHandCenter(rearHandTransform);
@@ -80,23 +81,22 @@ namespace ValheimVRMod.Scripts
 
                 shieldSize = 0.4f;
             }
+            else if (wasTwoHanded)
+            {
+                VrikCreator.ResetHandConnectors();
+                shieldSize = 1f;
+            }
+
+            if (!EquipScript.isSpearEquipped() && VHVRConfig.TwoHandedWithShield())
+            {
+                ShieldBlock.instance?.ScaleShieldSize(shieldSize);
+            }
 
             // The transform outside OnRenderObject() might be invalid or discontinuous, therefore we need to record its state within this method for physics calculation later.
             lastRenderedTransform.parent = transform;
             lastRenderedTransform.SetPositionAndRotation(transform.position, transform.rotation);
             lastRenderedTransform.localScale = Vector3.one;
             lastRenderedTransform.SetParent(null, true);
-
-            if (attack.m_attackAnimation == "knife_stab")
-            {
-                KnifeWield();
-            }
-            if (!EquipScript.isSpearEquipped() && VHVRConfig.TwoHandedWithShield())
-            {
-                ShieldBlock.instance?.ScaleShieldSize(shieldSize);
-            }
-
-            weaponForward = GetWeaponPointingDir();
         }
 
         protected override bool IsPlayerLeftHanded() {
@@ -163,7 +163,8 @@ namespace ValheimVRMod.Scripts
                 // Stay in current two-handed mode since both hands are grabbing.
                 return twoHandedState;
             }
-            
+
+            // Enter two-handed wield as needed.
             Vector3 rightHandToLeftHand = getHandCenter(GetLeftHandTransform()) - getHandCenter(GetRightHandTransform());
             float wieldingAngle = Vector3.Angle(rightHandToLeftHand, GetWeaponPointingDir());
             if (wieldingAngle < 60)
@@ -190,6 +191,7 @@ namespace ValheimVRMod.Scripts
         {
             if (SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource))
             {
+                // TODO: directly set rotation instead of calling ReturnToSingleHanded();
                 ReturnToSingleHanded();
                 // Reverse grip
                 transform.localRotation *= Quaternion.AngleAxis(180, Vector3.right);
@@ -197,15 +199,10 @@ namespace ValheimVRMod.Scripts
             }
             else if (knifeReverseHold)
             {
+                // TODO: directly set rotation instead of calling ReturnToSingleHanded();
                 ReturnToSingleHanded();
                 knifeReverseHold = false;
             }
-        }
-
-        protected override void ReturnToSingleHanded()
-        {
-            VrikCreator.ResetHandConnectors();
-            base.ReturnToSingleHanded();
         }
 
         public static bool isCurrentlyTwoHanded()
