@@ -33,8 +33,6 @@ namespace ValheimVRMod.Scripts
         private ParticleSystem particleSystem;
         private Transform particleSystemTransformUpdater;
 
-        private bool wasTwoHanded = false;
-
         // TODO: move non-local-player logic from LocalWeaponWield to this class.
         public WeaponWield Initialize(ItemDrop.ItemData item, string itemName)
         {
@@ -86,6 +84,7 @@ namespace ValheimVRMod.Scripts
 
         protected virtual void OnRenderObject()
         {
+            // TODO: override UpdateTwoHandedWield() instead of OnRenderObject().
             UpdateTwoHandedWield();
             if (particleSystem != null)
             {
@@ -140,33 +139,41 @@ namespace ValheimVRMod.Scripts
         }
         protected virtual void ReturnToSingleHanded()
         {
+            // TODO: make this method private instead protected.
             transform.position = singleHandedTransform.position;
             transform.localRotation = singleHandedTransform.localRotation;
         }
 
-        private void UpdateTwoHandedWield()
+        // Updates weapon position and rotation and returns the new direction that the weapon is pointing toward.
+        protected virtual Vector3 UpdateTwoHandedWield()
         {
+            bool wasTwoHanded = (twoHandedState != TwoHandedState.SingleHanded);
             twoHandedState = GetDesiredTwoHandedState(wasTwoHanded);
             if (twoHandedState != TwoHandedState.SingleHanded)
             {
-                wasTwoHanded = true;
-
                 rearHandTransform = twoHandedState == TwoHandedState.LeftHandBehind ? GetLeftHandTransform() : GetRightHandTransform();
                 frontHandTransform = twoHandedState == TwoHandedState.LeftHandBehind ? GetRightHandTransform() : GetLeftHandTransform();
 
                 Vector3 frontHandCenter = getHandCenter(frontHandTransform);
                 Vector3 rearHandCenter = getHandCenter(rearHandTransform);
-                var weaponPointingDir = (frontHandCenter - rearHandCenter).normalized;
+                Vector3 weaponPointingDir = (frontHandCenter - rearHandCenter).normalized;
 
                 //weapon pos&rotation
                 transform.position = rearHandCenter + weaponPointingDir * (HAND_CENTER_OFFSET + GetPreferredOffsetFromRearHand(Vector3.Distance(frontHandCenter, rearHandCenter)));
                 transform.rotation = Quaternion.LookRotation(weaponPointingDir, GetPreferredTwoHandedWeaponUp()) * offsetFromPointingDir;
+                return weaponPointingDir;
             }
             else if (wasTwoHanded)
             {
-                wasTwoHanded = false;
                 ReturnToSingleHanded();
             }
+
+            return GetWeaponPointingDir();
+        }
+
+        protected Quaternion GetOriginalRotation()
+        {
+            return originalTransform.rotation;
         }
 
         protected abstract bool IsPlayerLeftHanded();
