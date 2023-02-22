@@ -160,7 +160,7 @@ namespace ValheimVRMod.Utilities
 
                 Vector3 thrust = handPhysicsEstimator.GetLongestLocomotion(0.5f);
 
-                return thrust.magnitude >= MIN_THRUST_DISTANCE && IsStab(handPhysicsEstimator);
+                return thrust.magnitude >= MIN_THRUST_DISTANCE;
             },
 
             delegate (PhysicsEstimator collisionPhysicsEstimator, PhysicsEstimator handPhysicsEstimator) // Fist and dual knife check

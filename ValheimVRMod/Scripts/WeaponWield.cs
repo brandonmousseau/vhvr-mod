@@ -1,9 +1,5 @@
 using UnityEngine;
-using ValheimVRMod.Scripts.Block;
 using ValheimVRMod.Utilities;
-using ValheimVRMod.VRCore;
-using Valve.VR;
-using Valve.VR.InteractionSystem;
 
 namespace ValheimVRMod.Scripts
 {
@@ -25,7 +21,6 @@ namespace ValheimVRMod.Scripts
         protected Attack attack { get; private set; }
         protected string itemName { get; private set; }
 
-        private ItemDrop.ItemData item;
         private Transform singleHandedTransform;
         private Transform originalTransform;
         private Quaternion offsetFromPointingDir; // The rotation offset of this transform relative to the direction the weapon is pointing at.
@@ -33,12 +28,8 @@ namespace ValheimVRMod.Scripts
         private ParticleSystem particleSystem;
         private Transform particleSystemTransformUpdater;
 
-        private bool wasTwoHanded = false;
-
-        // TODO: move non-local-player logic from LocalWeaponWield to this class.
         public WeaponWield Initialize(ItemDrop.ItemData item, string itemName)
         {
-            this.item = item;
             this.itemName = itemName;
 
             particleSystem = gameObject.GetComponentInChildren<ParticleSystem>();
@@ -138,40 +129,48 @@ namespace ValheimVRMod.Scripts
                 return handDist - 0.1f;
             }
         }
-        protected virtual void ReturnToSingleHanded()
-        {
-            transform.position = singleHandedTransform.position;
-            transform.localRotation = singleHandedTransform.localRotation;
-        }
 
-        private void UpdateTwoHandedWield()
+        // Updates weapon position and rotation and returns the new direction that the weapon is pointing toward.
+        protected virtual Vector3 UpdateTwoHandedWield()
         {
+            bool wasTwoHanded = (twoHandedState != TwoHandedState.SingleHanded);
             twoHandedState = GetDesiredTwoHandedState(wasTwoHanded);
             if (twoHandedState != TwoHandedState.SingleHanded)
             {
-                wasTwoHanded = true;
-
                 rearHandTransform = twoHandedState == TwoHandedState.LeftHandBehind ? GetLeftHandTransform() : GetRightHandTransform();
                 frontHandTransform = twoHandedState == TwoHandedState.LeftHandBehind ? GetRightHandTransform() : GetLeftHandTransform();
 
                 Vector3 frontHandCenter = getHandCenter(frontHandTransform);
                 Vector3 rearHandCenter = getHandCenter(rearHandTransform);
-                var weaponPointingDir = (frontHandCenter - rearHandCenter).normalized;
+                Vector3 weaponPointingDir = (frontHandCenter - rearHandCenter).normalized;
 
                 //weapon pos&rotation
                 transform.position = rearHandCenter + weaponPointingDir * (HAND_CENTER_OFFSET + GetPreferredOffsetFromRearHand(Vector3.Distance(frontHandCenter, rearHandCenter)));
                 transform.rotation = Quaternion.LookRotation(weaponPointingDir, GetPreferredTwoHandedWeaponUp()) * offsetFromPointingDir;
+                return weaponPointingDir;
             }
             else if (wasTwoHanded)
             {
-                wasTwoHanded = false;
                 ReturnToSingleHanded();
             }
+
+            return GetWeaponPointingDir();
+        }
+
+        protected Quaternion GetOriginalRotation()
+        {
+            return originalTransform.rotation;
         }
 
         protected abstract bool IsPlayerLeftHanded();
         protected abstract Transform GetLeftHandTransform();
         protected abstract Transform GetRightHandTransform();
         protected abstract TwoHandedState GetDesiredTwoHandedState(bool wasTwoHanded);
+
+        private void ReturnToSingleHanded()
+        {
+            transform.position = singleHandedTransform.position;
+            transform.localRotation = singleHandedTransform.localRotation;
+        }
     }
 }
