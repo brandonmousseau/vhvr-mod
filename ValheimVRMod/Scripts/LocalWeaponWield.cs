@@ -51,23 +51,22 @@ namespace ValheimVRMod.Scripts
             base.OnDestroy();
         }
 
-        protected override void OnRenderObject()
+        protected override Vector3 UpdateTwoHandedWield()
         {
             if (VRPlayer.ShouldPauseMovement)
             {
-                return;
+                return weaponForward;
             }
 
             bool wasTwoHanded = (LocalPlayerTwoHandedState != TwoHandedState.SingleHanded);
-            base.OnRenderObject();
+            weaponForward = base.UpdateTwoHandedWield();
             LocalPlayerTwoHandedState = twoHandedState;
 
             if (attack.m_attackAnimation == "knife_stab")
             {
                 KnifeWield();
+                weaponForward = GetWeaponPointingDir();
             }
-
-            weaponForward = GetWeaponPointingDir();
 
             if (twoHandedState != TwoHandedState.SingleHanded)
             {
@@ -97,6 +96,8 @@ namespace ValheimVRMod.Scripts
             lastRenderedTransform.SetPositionAndRotation(transform.position, transform.rotation);
             lastRenderedTransform.localScale = Vector3.one;
             lastRenderedTransform.SetParent(null, true);
+
+            return weaponForward;
         }
 
         protected override bool IsPlayerLeftHanded() {
@@ -191,16 +192,13 @@ namespace ValheimVRMod.Scripts
         {
             if (SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource))
             {
-                // TODO: directly set rotation instead of calling ReturnToSingleHanded();
-                ReturnToSingleHanded();
                 // Reverse grip
-                transform.localRotation *= Quaternion.AngleAxis(180, Vector3.right);
+                transform.localRotation = GetOriginalRotation() * Quaternion.AngleAxis(180, Vector3.right);
                 knifeReverseHold = true;
             }
             else if (knifeReverseHold)
             {
-                // TODO: directly set rotation instead of calling ReturnToSingleHanded();
-                ReturnToSingleHanded();
+                transform.localRotation = GetOriginalRotation();
                 knifeReverseHold = false;
             }
         }
