@@ -1,13 +1,14 @@
 using System.Linq;
 using RootMotion.FinalIK;
 using UnityEngine;
+using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 
 using static ValheimVRMod.Utilities.LogUtils;
 
 namespace ValheimVRMod.Scripts {
-    public class VRPlayerSync : MonoBehaviour {
+    public class VRPlayerSync : MonoBehaviour, WeaponWieldSync.TwoHandedStateProvider {
 
         private VRIK vrik;
         
@@ -16,6 +17,9 @@ namespace ValheimVRMod.Scripts {
         public GameObject camera = null;
         public GameObject rightHand = null;
         public GameObject leftHand = null;
+
+        private WeaponWield.TwoHandedState twoHandedState = WeaponWield.TwoHandedState.SingleHanded;
+        private bool isLeftHanded = false;
 
         private Vector3 ownerLastPositionCamera = Vector3.zero;
         private Vector3 ownerVelocityCamera = Vector3.zero;
@@ -72,6 +76,16 @@ namespace ValheimVRMod.Scripts {
             }
         }
 
+        public WeaponWield.TwoHandedState GetTwoHandedState()
+        {
+            return twoHandedState;
+        }
+
+        public bool IsLeftHanded()
+        {
+            return isLeftHanded;
+        }
+
         private void calculateOwnerVelocities(float dt)
         {
             ownerVelocityCamera = (camera.transform.position - ownerLastPositionCamera) / dt;
@@ -124,6 +138,9 @@ namespace ValheimVRMod.Scripts {
             writeFingers(pkg, GetComponent<VRIK>().references.leftHand);
             writeFingers(pkg, GetComponent<VRIK>().references.rightHand);
             pkg.Write(BowLocalManager.instance != null && BowLocalManager.instance.pulling);
+            // TODO: write isLeftHanded and twoHandedSate to the package.
+            isLeftHanded = VHVRConfig.LeftHanded();
+            twoHandedState = LocalWeaponWield.LocalPlayerTwoHandedState;
 
             GetComponent<ZNetView>().GetZDO().Set("vr_data", pkg.GetArray());
         }
@@ -169,6 +186,7 @@ namespace ValheimVRMod.Scripts {
             hasTempRelPos = true;
             readFingers(pkg);
             maybePullBow(pkg.ReadBool());
+            // TODO: read isLeftHanded and twoHandedState from the package.
         }
 
         private void maybePullBow(bool pulling) {

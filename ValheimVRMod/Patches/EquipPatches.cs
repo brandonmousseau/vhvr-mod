@@ -48,7 +48,17 @@ namespace ValheimVRMod.Patches {
                 VrikCreator.resetVrikHandTransform(player);   
             }
 
-            if (Player.m_localPlayer != player || !VHVRConfig.UseVrControls()) {
+            if (Player.m_localPlayer != player)
+            {
+                if (vrPlayerSync != null)
+                {
+                    WeaponWieldSync weaponWieldSync = ___m_rightItemInstance.AddComponent<WeaponWieldSync>();
+                    weaponWieldSync.Initialize(player.GetLeftItem(), ___m_rightItem, vrPlayerSync, vrPlayerSync.leftHand.transform, vrPlayerSync.rightHand.transform);
+                }
+                return;
+            }
+
+            if (!VHVRConfig.UseVrControls()) {
                 return;
             }
 
@@ -127,7 +137,17 @@ namespace ValheimVRMod.Patches {
                 VrikCreator.resetVrikHandTransform(player);
             }
 
-            if (Player.m_localPlayer != player || !VHVRConfig.UseVrControls()) {
+            if (Player.m_localPlayer != player)
+            {
+                if (vrPlayerSync != null)
+                {
+                    WeaponWieldSync weaponWieldSync = ___m_leftItemInstance.AddComponent<WeaponWieldSync>();
+                    weaponWieldSync.Initialize(player.GetLeftItem(), ___m_leftItem, vrPlayerSync, vrPlayerSync.leftHand.transform, vrPlayerSync.rightHand.transform);
+                }
+                return;
+            }
+            
+            if (!VHVRConfig.UseVrControls()) {
                 return;
             }
 
