@@ -46,7 +46,6 @@ namespace ValheimVRMod.Scripts
         protected override void OnDestroy()
         {
             VrikCreator.ResetHandConnectors();
-            ReturnToSingleHanded();
             Destroy(lastRenderedTransform.gameObject);
             base.OnDestroy();
         }
