@@ -1,9 +1,5 @@
 using UnityEngine;
-using ValheimVRMod.Scripts.Block;
 using ValheimVRMod.Utilities;
-using ValheimVRMod.VRCore;
-using Valve.VR;
-using Valve.VR.InteractionSystem;
 
 namespace ValheimVRMod.Scripts
 {
@@ -25,7 +21,6 @@ namespace ValheimVRMod.Scripts
         protected Attack attack { get; private set; }
         protected string itemName { get; private set; }
 
-        private ItemDrop.ItemData item;
         private Transform singleHandedTransform;
         private Transform originalTransform;
         private Quaternion offsetFromPointingDir; // The rotation offset of this transform relative to the direction the weapon is pointing at.
@@ -33,10 +28,8 @@ namespace ValheimVRMod.Scripts
         private ParticleSystem particleSystem;
         private Transform particleSystemTransformUpdater;
 
-        // TODO: move non-local-player logic from LocalWeaponWield to this class.
         public WeaponWield Initialize(ItemDrop.ItemData item, string itemName)
         {
-            this.item = item;
             this.itemName = itemName;
 
             particleSystem = gameObject.GetComponentInChildren<ParticleSystem>();
@@ -84,7 +77,6 @@ namespace ValheimVRMod.Scripts
 
         protected virtual void OnRenderObject()
         {
-            // TODO: override UpdateTwoHandedWield() instead of OnRenderObject().
             UpdateTwoHandedWield();
             if (particleSystem != null)
             {
@@ -137,12 +129,6 @@ namespace ValheimVRMod.Scripts
                 return handDist - 0.1f;
             }
         }
-        protected virtual void ReturnToSingleHanded()
-        {
-            // TODO: make this method private instead protected.
-            transform.position = singleHandedTransform.position;
-            transform.localRotation = singleHandedTransform.localRotation;
-        }
 
         // Updates weapon position and rotation and returns the new direction that the weapon is pointing toward.
         protected virtual Vector3 UpdateTwoHandedWield()
@@ -180,5 +166,11 @@ namespace ValheimVRMod.Scripts
         protected abstract Transform GetLeftHandTransform();
         protected abstract Transform GetRightHandTransform();
         protected abstract TwoHandedState GetDesiredTwoHandedState(bool wasTwoHanded);
+
+        private void ReturnToSingleHanded()
+        {
+            transform.position = singleHandedTransform.position;
+            transform.localRotation = singleHandedTransform.localRotation;
+        }
     }
 }
