@@ -50,7 +50,7 @@ namespace ValheimVRMod.Patches {
 
             if (Player.m_localPlayer != player)
             {
-                if (vrPlayerSync != null && player.GetRightItem() != null)
+                if (vrPlayerSync != null)
                 {
                     WeaponWieldSync weaponWieldSync = ___m_rightItemInstance.AddComponent<WeaponWieldSync>();
                     weaponWieldSync.Initialize(player.GetRightItem(), ___m_rightItem, vrPlayerSync, vrPlayerSync.leftHand.transform, vrPlayerSync.rightHand.transform);
@@ -139,10 +139,11 @@ namespace ValheimVRMod.Patches {
 
             if (Player.m_localPlayer != player)
             {
-                if (vrPlayerSync != null && player.GetLeftItem() != null && player.GetLeftItem().m_shared.m_attack != null)
+                if (vrPlayerSync != null)
                 {
-                    WeaponWieldSync weaponWieldSync = ___m_leftItemInstance.AddComponent<WeaponWieldSync>();
-                    weaponWieldSync.Initialize(player.GetLeftItem(), ___m_leftItem, vrPlayerSync, vrPlayerSync.leftHand.transform, vrPlayerSync.rightHand.transform);
+                    // TODO: figure out why crossbow is backward when sync'd over network and maybe add weapon wield sync for crossbow.
+                    // WeaponWieldSync weaponWieldSync = ___m_leftItemInstance.AddComponent<WeaponWieldSync>();
+                    // weaponWieldSync.Initialize(player.GetLeftItem(), ___m_leftItem, vrPlayerSync, vrPlayerSync.leftHand.transform, vrPlayerSync.rightHand.transform);
                 }
                 return;
             }

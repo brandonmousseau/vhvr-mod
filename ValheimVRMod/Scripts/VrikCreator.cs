@@ -94,7 +94,7 @@ namespace ValheimVRMod.Scripts {
 
         public static VRIK initialize(GameObject playerGameObject, Transform leftController, Transform rightController, Transform camera) {
             VRIK vrik = CreateTargets(playerGameObject);
-            InitializeTargts(vrik, leftController, rightController, camera, playerGameObject == Player.m_localPlayer.gameObject);
+            InitializeTargts(vrik, leftController, rightController, camera, Player.m_localPlayer != null && playerGameObject == Player.m_localPlayer.gameObject);
             return vrik;
         }
 
