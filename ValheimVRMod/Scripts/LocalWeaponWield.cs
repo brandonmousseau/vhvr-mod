@@ -17,6 +17,9 @@ namespace ValheimVRMod.Scripts
 
         protected bool isRedDotVisible { set { redDotRenderer.enabled = value; } }
 
+        private const float RED_DOT_DISTANCE = 256;
+        private const float RED_DOT_SIZE_RADIANS = 1f / 256f;
+        private static Material RedDotMaterial = null;
         private MeshRenderer redDotRenderer; // Red dot for aiming
 
         public Hand mainHand {
@@ -68,7 +71,7 @@ namespace ValheimVRMod.Scripts
             weaponForward = base.UpdateTwoHandedWield();
             LocalPlayerTwoHandedState = twoHandedState;
 
-            if (attack.m_attackAnimation == "knife_stab")
+            if (attack?.m_attackAnimation == "knife_stab")
             {
                 KnifeWield();
                 weaponForward = GetWeaponPointingDir();
@@ -154,7 +157,7 @@ namespace ValheimVRMod.Scripts
                     break;
             }
 
-            if (attack.m_attackAnimation == "knife_stab") {
+            if (attack?.m_attackAnimation == "knife_stab") {
                 return TwoHandedState.SingleHanded;
             }
             
@@ -221,7 +224,7 @@ namespace ValheimVRMod.Scripts
 
         public bool allowBlocking()
         {
-            switch (attack.m_attackAnimation)
+            switch (attack?.m_attackAnimation)
             {
                 case "knife_stab":
                     if (EquipScript.getLeft() == EquipType.Shield)
@@ -245,16 +248,21 @@ namespace ValheimVRMod.Scripts
         {
             redDotRenderer = GameObject.CreatePrimitive(PrimitiveType.Sphere).GetComponent<MeshRenderer>();
             redDotRenderer.transform.parent = transform;
-            redDotRenderer.transform.position = transform.position + weaponForward * 256f;
-            redDotRenderer.transform.localScale = Vector3.one;
+            redDotRenderer.transform.position = transform.position + weaponForward * RED_DOT_DISTANCE;
+            redDotRenderer.transform.localScale = Vector3.one * RED_DOT_DISTANCE * RED_DOT_SIZE_RADIANS;
             GameObject.Destroy(redDotRenderer.gameObject.GetComponent<Collider>());
-            Material material = redDotRenderer.material;
-            material.color = Color.black;
-            material.EnableKeyword("_EMISSION");
-            material.SetColor("_EmissionColor", Color.red);
-            material.SetFloat("_Glossiness", 0);
-            material.SetFloat("_Metallic", 0);
-            redDotRenderer.material = material;
+            if (RedDotMaterial == null)
+            {
+                // Since the red dot is rendered at a far distance and could be subject to strong fog effect,
+                // we need a fog-free material so that its color does not fade.
+                // TODO: consider writing a custom shader instead of borrowing the VR pointer material.
+                RedDotMaterial = new Material(VRPlayer.leftPointer.gameObject.GetComponentInChildren<Renderer>().material);
+                RedDotMaterial.color = Color.black;
+                RedDotMaterial.EnableKeyword("_EMISSION");
+                RedDotMaterial.SetColor("_EmissionColor", Color.red);
+            }
+
+            redDotRenderer.sharedMaterial = RedDotMaterial;
             redDotRenderer.gameObject.layer = LayerUtils.getWorldspaceUiLayer();
             redDotRenderer.receiveShadows = false;
             redDotRenderer.shadowCastingMode = ShadowCastingMode.Off;
