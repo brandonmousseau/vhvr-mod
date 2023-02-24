@@ -9,6 +9,7 @@ namespace ValheimVRMod.Scripts
         {
             TwoHandedState GetTwoHandedState();
             bool IsLeftHanded();
+            bool IsVrEnabled();
         }
 
         private TwoHandedStateProvider twoHandedStateSync;
@@ -17,10 +18,10 @@ namespace ValheimVRMod.Scripts
 
         public void Initialize(ItemDrop.ItemData item, string itemName, TwoHandedStateProvider twoHandedStateSync, Transform leftHandTransform, Transform rightHandTransform)
         {
-            base.Initialize(item, itemName);
             this.twoHandedStateSync = twoHandedStateSync;
             this.leftHandTransform = leftHandTransform;
             this.rightHandTransform = rightHandTransform;
+            base.Initialize(item, itemName);
         }
 
         protected override bool IsPlayerLeftHanded()
@@ -41,6 +42,13 @@ namespace ValheimVRMod.Scripts
         protected override TwoHandedState GetDesiredTwoHandedState(bool wasTwoHanded)
         {
             return twoHandedStateSync.GetTwoHandedState();
+        }
+
+        protected override void OnRenderObject()
+        {
+            if (twoHandedStateSync.IsVrEnabled()) {
+                base.OnRenderObject();
+            }
         }
     }
 }
