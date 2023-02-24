@@ -91,11 +91,6 @@ namespace ValheimVRMod.Scripts {
             return vrik != null;
         }        
 
-        public bool IsVrEnabled()
-        {
-            return vrik != null;
-        }
-
         private void calculateOwnerVelocities(float dt)
         {
             ownerVelocityCamera = (camera.transform.position - ownerLastPositionCamera) / dt;
