@@ -26,7 +26,7 @@ namespace ValheimVRMod.Scripts.Block {
             offhand = VHVRConfig.LeftHanded() ? VRPlayer.rightHand.transform : VRPlayer.leftHand.transform;
             CreateBlockBoxes();
 
-            CreateDebugHitRenderer();
+            CreateHitIndicator();
         }
 
         protected override void FixedUpdate() {
@@ -157,7 +157,7 @@ namespace ValheimVRMod.Scripts.Block {
             Destroy(rightHandBlockBox.GetComponent<Collider>());
         }
 
-        private void CreateDebugHitRenderer()
+        private void CreateHitIndicator()
         {
             hitIndicator = GameObject.CreatePrimitive(PrimitiveType.Sphere).GetComponent<MeshRenderer>();
             GameObject.Destroy(hitIndicator.gameObject.GetComponent<Collider>());

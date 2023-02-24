@@ -85,6 +85,11 @@ namespace ValheimVRMod.Scripts {
         {
             return isLeftHanded;
         }
+        
+        public bool IsVrEnabled()
+        {
+            return vrik != null;
+        }        
 
         public bool IsVrEnabled()
         {

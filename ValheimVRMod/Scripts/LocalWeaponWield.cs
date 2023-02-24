@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Rendering;
 using ValheimVRMod.Scripts.Block;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
@@ -13,6 +14,11 @@ namespace ValheimVRMod.Scripts
         public static Vector3 weaponForward;
         public static TwoHandedState LocalPlayerTwoHandedState { get; private set; }
         public static bool IsDominantHandBehind { get { return isCurrentlyTwoHanded() && (LocalPlayerTwoHandedState == TwoHandedState.RightHandBehind ^ VHVRConfig.LeftHanded()); } }
+
+        protected bool isRedDotVisible { set { redDotRenderer.enabled = value; } }
+
+        private MeshRenderer redDotRenderer; // Red dot for aiming
+
         public Hand mainHand {
             get {
                 switch (twoHandedState)
@@ -47,6 +53,7 @@ namespace ValheimVRMod.Scripts
         {
             VrikCreator.ResetHandConnectors();
             Destroy(lastRenderedTransform.gameObject);
+            Destroy(redDotRenderer.gameObject);
             base.OnDestroy();
         }
 
@@ -65,6 +72,11 @@ namespace ValheimVRMod.Scripts
             {
                 KnifeWield();
                 weaponForward = GetWeaponPointingDir();
+            }
+
+            if (!redDotRenderer)
+            {
+                InitializeRedDot();
             }
 
             if (twoHandedState != TwoHandedState.SingleHanded)
@@ -192,12 +204,12 @@ namespace ValheimVRMod.Scripts
             if (SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource))
             {
                 // Reverse grip
-                transform.rotation = GetOriginalRotation() * Quaternion.AngleAxis(180, Vector3.right);
+                transform.localRotation = GetOriginalRotation() * Quaternion.AngleAxis(180, Vector3.right);
                 knifeReverseHold = true;
             }
             else if (knifeReverseHold)
             {
-                transform.rotation = GetOriginalRotation();
+                transform.localRotation = GetOriginalRotation();
                 knifeReverseHold = false;
             }
         }
@@ -227,6 +239,28 @@ namespace ValheimVRMod.Scripts
             var leftHandItem = player?.m_leftItem?.m_shared.m_itemType;
 
             return !(leftHandItem is null) && leftHandItem != ItemDrop.ItemData.ItemType.Shield;
+        }
+
+        private void InitializeRedDot()
+        {
+            redDotRenderer = GameObject.CreatePrimitive(PrimitiveType.Sphere).GetComponent<MeshRenderer>();
+            redDotRenderer.transform.parent = transform;
+            redDotRenderer.transform.position = transform.position + weaponForward * 256f;
+            redDotRenderer.transform.localScale = Vector3.one;
+            GameObject.Destroy(redDotRenderer.gameObject.GetComponent<Collider>());
+            Material material = redDotRenderer.material;
+            material.color = Color.black;
+            material.EnableKeyword("_EMISSION");
+            material.SetColor("_EmissionColor", Color.red);
+            material.SetFloat("_Glossiness", 0);
+            material.SetFloat("_Metallic", 0);
+            redDotRenderer.material = material;
+            redDotRenderer.gameObject.layer = LayerUtils.getWorldspaceUiLayer();
+            redDotRenderer.receiveShadows = false;
+            redDotRenderer.shadowCastingMode = ShadowCastingMode.Off;
+            redDotRenderer.lightProbeUsage = LightProbeUsage.Off;
+            redDotRenderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
+            redDotRenderer.enabled = false;
         }
     }
 }
