@@ -71,7 +71,7 @@ namespace ValheimVRMod.Scripts
             weaponForward = base.UpdateTwoHandedWield();
             LocalPlayerTwoHandedState = twoHandedState;
 
-            if (attack?.m_attackAnimation == "knife_stab")
+            if (attackAnimation == "knife_stab")
             {
                 KnifeWield();
                 weaponForward = GetWeaponPointingDir();
@@ -157,7 +157,7 @@ namespace ValheimVRMod.Scripts
                     break;
             }
 
-            if (attack?.m_attackAnimation == "knife_stab") {
+            if (attackAnimation == "knife_stab") {
                 return TwoHandedState.SingleHanded;
             }
             
@@ -224,7 +224,7 @@ namespace ValheimVRMod.Scripts
 
         public bool allowBlocking()
         {
-            switch (attack?.m_attackAnimation)
+            switch (attackAnimation)
             {
                 case "knife_stab":
                     if (EquipScript.getLeft() == EquipType.Shield)

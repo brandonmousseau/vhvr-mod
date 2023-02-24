@@ -18,7 +18,7 @@ namespace ValheimVRMod.Scripts
         public Transform rearHandTransform { get; private set; }
         public Transform frontHandTransform { get; private set; }
 
-        protected Attack attack { get; private set; }
+        protected string attackAnimation { get; private set; }
         protected string itemName { get; private set; }
 
         private Transform singleHandedTransform;
@@ -40,8 +40,7 @@ namespace ValheimVRMod.Scripts
                 particleSystemTransformUpdater.SetPositionAndRotation(particleSystem.transform.position, particleSystem.transform.rotation);
             }
 
-            // TODO: move this to LocalWeaponWield since 1) it is only used there and 2) it might not be available for non-local players.
-            attack = item?.m_shared.m_attack?.Clone();
+            attackAnimation = item?.m_shared.m_attack?.m_attackAnimation?? "";
 
             originalTransform = new GameObject().transform;
             singleHandedTransform = new GameObject().transform;
@@ -96,7 +95,7 @@ namespace ValheimVRMod.Scripts
         // This should be the same as the original rotation in most cases but there are exceptions.
         protected virtual Quaternion GetSingleHandedRotation(Quaternion originalRotation)
         {
-            switch (attack?.m_attackAnimation)
+            switch (attackAnimation)
             {
                 case "atgeir_attack":
                     // Atgeir wield rotation fix: the tip of the atgeir is pointing at (0.328, -0.145, 0.934) in local coordinates.
