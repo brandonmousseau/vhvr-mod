@@ -28,6 +28,12 @@ namespace ValheimVRMod.Scripts {
             crossbowMorphManager = transform.FindChild("Unloaded").gameObject.AddComponent<CrossbowMorphManager>();
         }
 
+        protected override void OnRenderObject()
+        {
+            base.OnRenderObject();
+            isRedDotVisible = VHVRConfig.UseArrowPredictionGraphic() && twoHandedState != TwoHandedState.SingleHanded;
+        }
+
         public static bool CanQueueReloadAction() {
             if (instance?.crossbowMorphManager != null)
             {
