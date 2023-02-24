@@ -53,7 +53,7 @@ namespace ValheimVRMod.Patches {
                 if (vrPlayerSync != null)
                 {
                     WeaponWieldSync weaponWieldSync = ___m_rightItemInstance.AddComponent<WeaponWieldSync>();
-                    weaponWieldSync.Initialize(player.GetLeftItem(), ___m_rightItem, vrPlayerSync, vrPlayerSync.leftHand.transform, vrPlayerSync.rightHand.transform);
+                    weaponWieldSync.Initialize(player.GetRightItem(), ___m_rightItem, vrPlayerSync, vrPlayerSync.leftHand.transform, vrPlayerSync.rightHand.transform);
                 }
                 return;
             }
