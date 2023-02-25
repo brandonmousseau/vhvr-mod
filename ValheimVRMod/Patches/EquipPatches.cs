@@ -86,7 +86,6 @@ namespace ValheimVRMod.Patches {
 
             if (EquipScript.isThrowable(player.GetRightItem()) || EquipScript.isSpearEquipped() || EquipScript.getRight() == EquipType.ThrowObject)
             {
-                // TODO: rename this to ThrowableManager
                 (meshFilter.gameObject.AddComponent<ThrowableManager>()).weaponWield = weaponWield;
             }
 
@@ -292,7 +291,6 @@ namespace ValheimVRMod.Patches {
         static void Postfix(GameObject __result)
         {
             // TODO: consider fixing orietantion for dead raiser too.
-            // TODO: figure out a way to fix oriention for non-local players.
             // TODO: figure out a way to fix oriention for non-local players.
             if (Player.m_localPlayer == null 
                 || __result == null
