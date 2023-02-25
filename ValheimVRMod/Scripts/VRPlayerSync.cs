@@ -143,9 +143,8 @@ namespace ValheimVRMod.Scripts {
             writeFingers(pkg, GetComponent<VRIK>().references.leftHand);
             writeFingers(pkg, GetComponent<VRIK>().references.rightHand);
             pkg.Write(BowLocalManager.instance != null && BowLocalManager.instance.pulling);
-            // TODO: write isLeftHanded and twoHandedSate to the package.
-            isLeftHanded = VHVRConfig.LeftHanded();
-            twoHandedState = LocalWeaponWield.LocalPlayerTwoHandedState;
+            pkg.Write(isLeftHanded = VHVRConfig.LeftHanded());
+            pkg.Write((byte) (twoHandedState = LocalWeaponWield.LocalPlayerTwoHandedState));
 
             GetComponent<ZNetView>().GetZDO().Set("vr_data", pkg.GetArray());
         }
@@ -191,7 +190,8 @@ namespace ValheimVRMod.Scripts {
             hasTempRelPos = true;
             readFingers(pkg);
             maybePullBow(pkg.ReadBool());
-            // TODO: read isLeftHanded and twoHandedState from the package.
+            isLeftHanded = pkg.ReadBool();
+            twoHandedState = (WeaponWield.TwoHandedState) pkg.ReadByte();
         }
 
         private void maybePullBow(bool pulling) {
