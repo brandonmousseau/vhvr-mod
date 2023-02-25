@@ -53,7 +53,7 @@ namespace ValheimVRMod.Patches {
                 if (vrPlayerSync != null)
                 {
                     WeaponWieldSync weaponWieldSync = ___m_rightItemInstance.AddComponent<WeaponWieldSync>();
-                    weaponWieldSync.Initialize(player.GetRightItem(), ___m_rightItem, vrPlayerSync, vrPlayerSync.leftHand.transform, vrPlayerSync.rightHand.transform);
+                    weaponWieldSync.Initialize(player.GetRightItem(), ___m_rightItem, isDominantHandWeapon: true, vrPlayerSync, vrPlayerSync.leftHand.transform, vrPlayerSync.rightHand.transform);
                 }
                 return;
             }
@@ -141,9 +141,8 @@ namespace ValheimVRMod.Patches {
             {
                 if (vrPlayerSync != null)
                 {
-                    // TODO: figure out why crossbow is backward when sync'd over network and maybe add weapon wield sync for crossbow.
-                    // WeaponWieldSync weaponWieldSync = ___m_leftItemInstance.AddComponent<WeaponWieldSync>();
-                    // weaponWieldSync.Initialize(player.GetLeftItem(), ___m_leftItem, vrPlayerSync, vrPlayerSync.leftHand.transform, vrPlayerSync.rightHand.transform);
+                    WeaponWieldSync weaponWieldSync = ___m_leftItemInstance.AddComponent<WeaponWieldSync>();
+                    weaponWieldSync.Initialize(player.GetLeftItem(), ___m_leftItem, isDominantHandWeapon: false, vrPlayerSync, vrPlayerSync.leftHand.transform, vrPlayerSync.rightHand.transform);
                 }
                 return;
             }
@@ -258,10 +257,25 @@ namespace ValheimVRMod.Patches {
         /// </summary>
         static void Prefix(VisEquipment __instance, ref Transform joint) {
 
-            if (joint.GetComponentInParent<Player>() != Player.m_localPlayer
-                || !VHVRConfig.UseVrControls() 
-                || !VHVRConfig.LeftHanded()) {
+            Player player = joint.GetComponentInParent<Player>();
+            if (player == null)
+            {
                 return;
+            }
+
+            if (player == Player.m_localPlayer)
+            {
+                if (!VHVRConfig.UseVrControls() || !VHVRConfig.LeftHanded())
+                {
+                    return;
+                }
+            } else
+            {
+                VRPlayerSync vrPlayerSync = player.GetComponent<VRPlayerSync>();
+                if (vrPlayerSync == null || !vrPlayerSync.IsLeftHanded())
+                {
+                    return;
+                }
             }
 
             if (joint == __instance.m_rightHand) {
@@ -277,6 +291,9 @@ namespace ValheimVRMod.Patches {
         /// </summary>
         static void Postfix(GameObject __result)
         {
+            // TODO: consider fixing orietantion for dead raiser too.
+            // TODO: figure out a way to fix oriention for non-local players.
+            // TODO: figure out a way to fix oriention for non-local players.
             if (Player.m_localPlayer == null 
                 || __result == null
                 || __result.GetComponentInParent<Player>() != Player.m_localPlayer
