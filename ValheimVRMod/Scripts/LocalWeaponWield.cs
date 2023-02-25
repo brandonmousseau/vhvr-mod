@@ -207,12 +207,12 @@ namespace ValheimVRMod.Scripts
             if (SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource))
             {
                 // Reverse grip
-                transform.localRotation = GetOriginalRotation() * Quaternion.AngleAxis(180, Vector3.right);
+                transform.rotation = GetOriginalRotation() * Quaternion.AngleAxis(180, Vector3.right);
                 knifeReverseHold = true;
             }
             else if (knifeReverseHold)
             {
-                transform.localRotation = GetOriginalRotation();
+                transform.rotation = GetOriginalRotation();
                 knifeReverseHold = false;
             }
         }
