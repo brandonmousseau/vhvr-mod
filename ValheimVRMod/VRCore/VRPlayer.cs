@@ -884,7 +884,7 @@ namespace ValheimVRMod.VRCore
                 leftHand.transform, rightHand.transform, cam.transform);
             var vrPlayerSync = player.gameObject.GetComponent<VRPlayerSync>();
             vrPlayerSync.camera = cam.gameObject;
-            // Consider use _vrik.localPlayerRightHandConnector and _vrik.localPlayerRightHandConnector for vrPlayerSync so that the hand rotation is correct during two-handed wield.
+            // TODO: Consider use _vrik.localPlayerRightHandConnector and _vrik.localPlayerRightHandConnector for vrPlayerSync so that the hand rotation is correct during two-handed wield.
             vrPlayerSync.leftHand = leftHand.gameObject;
             vrPlayerSync.rightHand = rightHand.gameObject;
             VrikCreator.resetVrikHandTransform(player);
