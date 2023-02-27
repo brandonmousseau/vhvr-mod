@@ -50,6 +50,9 @@ namespace ValheimVRMod.Scripts {
         public GameObject currentLeftWeapon;
         public GameObject currentRightWeapon;
 
+        public int remotePlayerNonDominantHandItemHash;
+        public int remotePlayerDominantHandItemHash;
+
         private void Awake() {
             camera = new GameObject();
             rightHand = new GameObject();
@@ -202,7 +205,7 @@ namespace ValheimVRMod.Scripts {
                 }
                 
                 bowManager = currentLeftWeapon.AddComponent<BowManager>();
-                bowManager.mainHand = VHVRConfig.LeftHanded() ? leftHand.transform : rightHand.transform;
+                bowManager.mainHand = isLeftHanded ? leftHand.transform : rightHand.transform;
             }
 
             bowManager.pulling = pulling;
