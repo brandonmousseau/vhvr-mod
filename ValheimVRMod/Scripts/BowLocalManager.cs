@@ -18,6 +18,7 @@ namespace ValheimVRMod.Scripts {
         private GameObject chargeIndicator;
         private GameObject drawIndicator;
         private LineRenderer predictionLine;
+        private float fullDrawLength { get { return Mathf.Max(VHVRConfig.GetBowFullDrawLength(), GetBraceHeight() + 0.1f); } }
         private float projectileVel;
         private float projectileVelMin;
         private ItemDrop.ItemData item;
@@ -29,6 +30,7 @@ namespace ValheimVRMod.Scripts {
         public static BowLocalManager instance;
         public static Vector3 spawnPoint;
         public static Vector3 aimDir;
+        public static float realLifePullPercentage { get; private set; }
 
         public static bool isPulling;
         public static bool startedPulling;
@@ -145,6 +147,15 @@ namespace ValheimVRMod.Scripts {
             }
         }
 
+        protected override float getPullLenghtRestriction()
+        {
+            // If RestrictBowDrawSpeed is enabled, limit the vr pull length by the square root of the current attack draw percentage to simulate the resistance.
+            return
+                VHVRConfig.RestrictBowDrawSpeed() == "Full" ?
+                    Mathf.Lerp(GetBraceHeight(), fullDrawLength, Math.Max(Mathf.Sqrt(Player.m_localPlayer.GetAttackDrawPercentage()), 0.01f)) :
+                    fullDrawLength + 0.05f;
+        }
+
         private void updateOutline() {
             if (outline == null) {
                 return;
@@ -219,6 +230,18 @@ namespace ValheimVRMod.Scripts {
             if (Player.m_localPlayer.GetStamina() <= 0) {
                 releaseString(true);
                 return;
+            }
+
+            realLifePullPercentage = oneHandedAiming ? 1 : Mathf.Pow(Math.Min(Math.Max(pullStart.localPosition.z - pullObj.transform.localPosition.z, 0) / (fullDrawLength - GetBraceHeight()), 1), 2);
+         
+            //bHaptics
+            if (!BhapticsTactsuit.suitDisabled && realLifePullPercentage != 0)
+            {
+                BhapticsTactsuit.StartThreadHaptic(VHVRConfig.LeftHanded() ? "BowStringLeft" : "BowStringRight",
+                    realLifePullPercentage * 1.5f, true);
+                // ARMS TACTOSY
+                BhapticsTactsuit.StartThreadHaptic(VHVRConfig.LeftHanded() ? "Recoil_L" : "Recoil_R",
+                    realLifePullPercentage * 1.5f, true);
             }
 
             VrikCreator.GetLocalPlayerDominantHandConnector().position = pullObj.transform.position;
