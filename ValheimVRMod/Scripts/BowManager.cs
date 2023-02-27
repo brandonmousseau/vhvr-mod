@@ -34,7 +34,6 @@ namespace ValheimVRMod.Scripts {
         private Vector3 bowUpInObjectSpace;
         private Vector3 bowRightInObjectSpace;
         private float stringLength;
-        private float fullDrawLength { get { return Mathf.Max(VHVRConfig.GetBowFullDrawLength(), GetBraceHeight() + 0.1f); } }
 
         protected readonly Quaternion originalRotation = new Quaternion(0.4763422f, 0.420751f, 0.5951466f, 0.4918001f); // Euler Angles: 358.1498 78.91683 99.33968
         protected Transform pullStart;
@@ -51,7 +50,6 @@ namespace ValheimVRMod.Scripts {
 
         private bool wasPulling;
         protected bool oneHandedAiming = false;
-        public static float realLifePullPercentage;
         public float timeBasedChargePercentage;
         public bool pulling;
 
@@ -72,7 +70,8 @@ namespace ValheimVRMod.Scripts {
             bowTransformUpdater.SetParent(bowOrientation, false);
             bowTransformUpdater.SetPositionAndRotation(transform.position, transform.rotation);
 
-            bowAnatomy = BowAnatomy.getBowAnatomy(Player.m_localPlayer.GetLeftItem().m_shared.m_name);
+            // TODO: figure out away to get the correct bow anatomy for non-local players (GetLeftItem() returns null for non-local players).
+            bowAnatomy = BowAnatomy.getBowAnatomy(GetComponentInParent<Player>()?.GetLeftItem()?.m_shared?.m_name ?? "");
 
             gameObject.GetComponentInChildren<ParticleSystem>()?.gameObject.SetActive(VHVRConfig.EnableBowGlowParticle());
             gameObject.GetComponentInChildren<Light>()?.gameObject.SetActive(VHVRConfig.EnableBowGlowLight());
@@ -118,6 +117,11 @@ namespace ValheimVRMod.Scripts {
 
         protected float GetBraceHeight() {
             return -(pullStart.localPosition.z);
+        }
+
+        protected virtual float getPullLenghtRestriction()
+        {
+            return 1;
         }
 
         private void initializeRenderersAsync(float handleTopLocalHeight, float handleBottomLocalHeight, float bowScale) {
@@ -364,6 +368,7 @@ namespace ValheimVRMod.Scripts {
             }
 
             morphBow();
+            updateStringRenderer();
         }
 
         private void rotateBowOnPulling() {
@@ -405,11 +410,10 @@ namespace ValheimVRMod.Scripts {
                 gameObject.GetComponent<MeshRenderer>().material.SetMatrix("_UpperLimbTransform", upperLimbTransform);
                 gameObject.GetComponent<MeshRenderer>().material.SetMatrix("_LowerLimbTransform", lowerLimbTransform);
             }
-
-            updateStringRenderer();
         }
 
         private void updateStringRenderer() {
+            LogUtils.LogWarning("String positions: " + (pullObj.transform.localPosition));
             gameObject.GetComponent<LineRenderer>().SetPosition(0, stringTop.position);
             gameObject.GetComponent<LineRenderer>().SetPosition(1, pulling ? pullObj.transform.position : stringTop.position);
             gameObject.GetComponent<LineRenderer>().SetPosition(2, stringBottom.position);
@@ -419,28 +423,13 @@ namespace ValheimVRMod.Scripts {
 
             Vector3 pullPos = bowOrientation.InverseTransformPoint(mainHand.position);
 
-            realLifePullPercentage = oneHandedAiming ? 1 : Mathf.Pow(Math.Min(Math.Max(pullStart.localPosition.z - pullPos.z, 0) / (fullDrawLength - GetBraceHeight()), 1), 2);
-
-            // If RestrictBowDrawSpeed is enabled, limit the vr pull length by the square root of the current attack draw percentage to simulate the resistance.
-            float pullLengthRestriction = VHVRConfig.RestrictBowDrawSpeed() == "Full" ? Mathf.Lerp(GetBraceHeight(), fullDrawLength, Math.Max(Mathf.Sqrt(Player.m_localPlayer.GetAttackDrawPercentage()), 0.01f)) : (fullDrawLength + 0.05f);
-
             if (oneHandedAiming) {
                 pullPos.x = 0f;
                 pullPos.y = VHVRConfig.ArrowRestElevation();
             }
-            pullPos.z = Mathf.Clamp(pullPos.z, -pullLengthRestriction, -GetBraceHeight());
+            pullPos.z = Mathf.Clamp(pullPos.z, -getPullLenghtRestriction(), -GetBraceHeight());
 
             pullObj.transform.localPosition = pullPos;
-
-            //bHaptics
-            if (!BhapticsTactsuit.suitDisabled && realLifePullPercentage != 0)
-            {
-                BhapticsTactsuit.StartThreadHaptic(VHVRConfig.LeftHanded() ? "BowStringLeft" : "BowStringRight",
-                    realLifePullPercentage * 1.5f, true);
-                // ARMS TACTOSY
-                BhapticsTactsuit.StartThreadHaptic(VHVRConfig.LeftHanded() ? "Recoil_L" : "Recoil_R",
-                    realLifePullPercentage * 1.5f, true);
-            }
         }
     }
 }
