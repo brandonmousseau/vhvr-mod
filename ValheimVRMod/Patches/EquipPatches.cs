@@ -52,6 +52,7 @@ namespace ValheimVRMod.Patches {
             {
                 if (vrPlayerSync != null)
                 {
+                    // TODO: figure out away to get item name for non-local players (GetRightItem() returns null for non-local players and ___m_rightItem is empty).
                     WeaponWieldSync weaponWieldSync = ___m_rightItemInstance.AddComponent<WeaponWieldSync>();
                     weaponWieldSync.Initialize(player.GetRightItem(), ___m_rightItem, isDominantHandWeapon: true, vrPlayerSync, vrPlayerSync.leftHand.transform, vrPlayerSync.rightHand.transform);
                 }
@@ -140,6 +141,7 @@ namespace ValheimVRMod.Patches {
             {
                 if (vrPlayerSync != null)
                 {
+                    // TODO: figure out away to get item name for non-local players (GetLeftItem() returns null for non-local players and ___m_leftItem is empty).
                     WeaponWieldSync weaponWieldSync = ___m_leftItemInstance.AddComponent<WeaponWieldSync>();
                     weaponWieldSync.Initialize(player.GetLeftItem(), ___m_leftItem, isDominantHandWeapon: false, vrPlayerSync, vrPlayerSync.leftHand.transform, vrPlayerSync.rightHand.transform);
                 }
@@ -271,7 +273,17 @@ namespace ValheimVRMod.Patches {
             } else
             {
                 VRPlayerSync vrPlayerSync = player.GetComponent<VRPlayerSync>();
-                if (vrPlayerSync == null || !vrPlayerSync.IsLeftHanded())
+                if (vrPlayerSync == null)
+                {
+                    return;
+                }
+                // Since VisEquipment#m_leftItem and VisEquipment#m_rightItem are emtpy for remote players and
+                // Player#getLeftItem() and Player#getRightItem() return null for remote players,
+                // we need to record the item hash to figure out what items a remote player is equipped with.
+                // TODO: implement item-specific logic in WeaponWieldSync using the item hash.
+                vrPlayerSync.remotePlayerNonDominantHandItemHash = __instance.m_currentLeftItemHash;
+                vrPlayerSync.remotePlayerDominantHandItemHash = __instance.m_currentRightItemHash;
+                if (!vrPlayerSync.IsLeftHanded())
                 {
                     return;
                 }
@@ -291,7 +303,7 @@ namespace ValheimVRMod.Patches {
         static void Postfix(GameObject __result)
         {
             // TODO: consider fixing orietantion for dead raiser too.
-            // TODO: figure out a way to fix oriention for non-local players.
+            // TODO: figure out a way to fix oriention for non-local players (e. g. using vrPlayerSync.remotePlayerNonDominantHandItemHash).
             if (Player.m_localPlayer == null 
                 || __result == null
                 || __result.GetComponentInParent<Player>() != Player.m_localPlayer
