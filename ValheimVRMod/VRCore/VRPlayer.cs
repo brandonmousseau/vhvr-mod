@@ -17,7 +17,6 @@ using Valve.VR.Extras;
 using Valve.VR.InteractionSystem;
 using Pose = ValheimVRMod.Utilities.Pose;
 using ValheimVRMod.Scripts.Block;
-using ValheimVRMod.Patches;
 
 /**
  * VRPlayer manages instantiating the SteamVR Player
@@ -884,9 +883,8 @@ namespace ValheimVRMod.VRCore
                 leftHand.transform, rightHand.transform, cam.transform);
             var vrPlayerSync = player.gameObject.GetComponent<VRPlayerSync>();
             vrPlayerSync.camera = cam.gameObject;
-            // TODO: Consider use _vrik.localPlayerRightHandConnector and _vrik.localPlayerRightHandConnector for vrPlayerSync so that the hand rotation is correct during two-handed wield.
-            vrPlayerSync.leftHand = leftHand.gameObject;
-            vrPlayerSync.rightHand = rightHand.gameObject;
+            vrPlayerSync.leftHand = _vrik.solver.leftArm.target.parent.gameObject;
+            vrPlayerSync.rightHand = _vrik.solver.rightArm.target.parent.gameObject;
             VrikCreator.resetVrikHandTransform(player);
             _vrik.references.leftHand.gameObject.AddComponent<HandGesture>().sourceHand = leftHand;
             _vrik.references.rightHand.gameObject.AddComponent<HandGesture>().sourceHand = rightHand;
