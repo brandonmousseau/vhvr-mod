@@ -120,6 +120,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> taaSharpenAmmount;
         private static ConfigEntry<float> nearClipPlane;
         private static ConfigEntry<string> bowGlow;
+        private static ConfigEntry<float> enemyRenderDistance;
 
         // Motion Control Settings
         private static ConfigEntry<bool> useArrowPredictionGraphic;
@@ -692,6 +693,11 @@ namespace ValheimVRMod.Utilities
                                   new ConfigDescription(
                                       "Whether the glowing effect of the bow (if any in the Vanilla game) should be enabled. Disable it if you find the glow affects you aim negatively.",
                                       new AcceptableValueList<string>(new string[] {"None", "LightWithoutParticles", "Full"})));
+            enemyRenderDistance = config.Bind("Graphics",
+                                        "EnemyRenderDistance",
+                                        8f,
+                                        new ConfigDescription("Increase the mobs render distance, does not apply to tamed creature, only raise mob render distance, not lowering them (default eg. deer render distance is around 2, neck is around 10) (also limited by default ingame draw distance option)",
+                                        new AcceptableValueRange<float>(1f, 50f)));
 
         }
 
@@ -1191,6 +1197,11 @@ namespace ValheimVRMod.Utilities
         public static float GetNearClipPlane()
         {
             return nearClipPlane.Value;
+        }
+
+        public static float GetEnemyRenderDistanceValue()
+        {
+            return enemyRenderDistance.Value;
         }
 
         public static float AltPieceRotationDelay()

@@ -256,4 +256,46 @@ namespace ValheimVRMod.Patches
             return false;
         }
     }
+
+    //Supposedly only update on Start, but somehow it doesnt work on some mobs (eg. fuling/goblin), so its using fixedupdate for now
+    [HarmonyPatch(typeof(Character),nameof(Character.FixedUpdate))]
+    class CharacterSetLodGroupSize
+    {
+        private static Dictionary<String, float> creatures = new Dictionary<string, float>();
+        public static void Postfix(Character __instance)
+        {
+            if (VHVRConfig.NonVrPlayer())
+            {
+                return;
+            }
+            //return in case no lod group
+            if (!__instance.m_lodGroup)
+            {
+                return;
+            }
+
+            //add new creature on list if its not in yet
+            if (!creatures.ContainsKey(__instance.m_name)) 
+            {
+                creatures[__instance.m_name] = __instance.m_lodGroup.size;
+            }
+
+            if(__instance.m_tamed && __instance.m_lodGroup.size != creatures[__instance.m_name])
+            {
+                __instance.m_lodGroup.size = creatures[__instance.m_name];
+            }
+            else
+            {
+                if(creatures[__instance.m_name] < VHVRConfig.GetEnemyRenderDistanceValue() && __instance.m_lodGroup.size != VHVRConfig.GetEnemyRenderDistanceValue())
+                {
+                    __instance.m_lodGroup.size = VHVRConfig.GetEnemyRenderDistanceValue();
+                }
+                else if (creatures[__instance.m_name] > VHVRConfig.GetEnemyRenderDistanceValue() && __instance.m_lodGroup.size != creatures[__instance.m_name])
+                {
+                    __instance.m_lodGroup.size = creatures[__instance.m_name];
+                }
+                
+            }
+        }
+    }
 }
