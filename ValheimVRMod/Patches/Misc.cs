@@ -8,6 +8,7 @@ using HarmonyLib;
 using Valve.VR;
 using UnityEngine;
 using ValheimVRMod.Utilities;
+using UnityEngine.Rendering;
 
 using static ValheimVRMod.Utilities.LogUtils;
 
@@ -298,4 +299,36 @@ namespace ValheimVRMod.Patches
             }
         }
     }
+
+    // Pass correct camera to Graphics.DrawMesh
+    [HarmonyPatch(typeof(Heightmap), nameof(Heightmap.Render))]
+    class HeightMapRenderPatch
+    {
+        static bool Prefix(Heightmap __instance)
+        {
+            if (VHVRConfig.NonVrPlayer())
+            {
+                return true;
+            }
+            ShadowCastingMode shadowCastingMode;
+            bool flag;
+            if (__instance.m_renderMesh)
+            {
+                if (!__instance.m_isDistantLod)
+                {
+                    shadowCastingMode = (Heightmap.EnableDistantTerrainShadows ? ShadowCastingMode.On : ShadowCastingMode.TwoSided);
+                    flag = true;
+                }
+                else
+                {
+                    shadowCastingMode = (Heightmap.EnableDistantTerrainShadows ? ShadowCastingMode.On : ShadowCastingMode.Off);
+                    flag = false;
+                }
+                Matrix4x4 matrix4x4 = Matrix4x4.TRS(__instance.gameObject.transform.position, Quaternion.identity, Vector3.one);
+                Graphics.DrawMesh(__instance.m_renderMesh, matrix4x4, __instance.m_materialInstance, __instance.gameObject.layer, Utils.GetMainCamera(), 0, new MaterialPropertyBlock(), shadowCastingMode, flag);
+            }
+            return false;
+        }
+    }
+
 }
