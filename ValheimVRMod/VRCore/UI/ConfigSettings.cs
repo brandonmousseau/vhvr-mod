@@ -38,7 +38,6 @@ namespace ValheimVRMod.VRCore.UI {
         public static void instantiate(Transform mList, Transform mParent, GameObject sPrefab) {
             menuList = mList.transform.Find("MenuEntries").transform;
             menuParent = mParent;
-            LogUtils.LogChildTree(menuParent);
             settingsPrefab = sPrefab;
             createMenuEntry();
             generatePrefabs();
