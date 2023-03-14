@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using ValheimVRMod.Utilities;
@@ -243,15 +244,15 @@ namespace ValheimVRMod.VRCore.UI
             data.level3 = data.gui.transform.Find("level_3") as RectTransform;
             data.alerted = data.gui.transform.Find("Alerted") as RectTransform;
             data.aware = data.gui.transform.Find("Aware") as RectTransform;
-            data.name = data.gui.transform.Find("Name").GetComponent<Text>();
+            data.name = data.gui.transform.Find("Name").GetComponent<TextMeshProUGUI>();
             data.name.text = Localization.instance.Localize(c.GetHoverName());
             data.isMount = isMount;
 
             if (isMount)
             {
                 data.mountStamina = data.gui.transform.Find("Stamina/stamina_fast").GetComponent<GuiBar>();
-                data.mountStaminaText = data.gui.transform.Find("Stamina/StaminaText").GetComponent<Text>();
-                data.mountHealthText = data.gui.transform.Find("Health/HealthText").GetComponent<Text>();
+                data.mountStaminaText = data.gui.transform.Find("Stamina/StaminaText").GetComponent<TextMeshProUGUI>();
+                data.mountHealthText = data.gui.transform.Find("Health/HealthText").GetComponent<TextMeshProUGUI>();
             }
 
             data.gui.transform.localPosition = data.hudCanvasRoot.GetComponent<Canvas>().GetComponent<RectTransform>().rect.center;
@@ -297,11 +298,11 @@ namespace ValheimVRMod.VRCore.UI
             public GuiBar healthFast;
             public GuiBar healthFastFriendly;
             public GuiBar healthSlow;
-            public Text name;
+            public TextMeshProUGUI name;
             public bool isMount;
             public GuiBar mountStamina; 
-            public Text mountStaminaText;
-            public Text mountHealthText;
+            public TextMeshProUGUI mountStaminaText;
+            public TextMeshProUGUI mountHealthText;
 
             public HudData() { }
         }

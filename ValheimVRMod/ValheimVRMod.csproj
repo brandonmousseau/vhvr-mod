@@ -61,7 +61,7 @@
     <PackageReference Include="BepInEx.Core" Version="5.4.19" />
     <PackageReference Include="NDesk.Options" Version="0.2.1" />
     <PackageReference Include="UnityEngine.Modules" Version="2020.3.33" />
-    <PackageReference Include="ValheimGameLibs" Version="0.212.7" />
+    <PackageReference Include="ValheimGameLibs" Version="0.214.2" />
 	<PackageReference Include="Bhaptics.Tac" Version="1.4.16" />
   </ItemGroup>
   <ItemGroup>
@@ -70,6 +70,9 @@
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
+    <Reference Include="Unity.TextMeshPro">
+      <HintPath>$(CommonDir)Valheim\valheim_Data\Managed\Unity.TextMeshPro.dll</HintPath>
+    </Reference>
     <Reference Include="Unity.XR.Management, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\Unity\build\ValheimVR_Data\Managed\Unity.XR.Management.dll</HintPath>
@@ -117,12 +120,12 @@
   </ItemGroup>
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
     <Exec Command="make-release.cmd" EnvironmentVariables="
-    SOLUTION_DIR=$(SolutionDir);
-    GAME_DIR=$(CommonDir)Valheim\;
-    TARGET_PATH=$(TargetPath);
-    TARGET_DIR=$(TargetDir);
-    CONFIGURATION_NAME=$(ConfigurationName);    
-    UNITY_DIR=$(UnityDir);">
+	    SOLUTION_DIR=$(SolutionDir);
+	    GAME_DIR=$(CommonDir)Valheim\;   
+	    TARGET_PATH=$(TargetPath);   
+	    TARGET_DIR=$(TargetDir);  
+	    CONFIGURATION_NAME=$(ConfigurationName);    
+	    UNITY_DIR=$(UnityDir);">
       <Output TaskParameter="ConsoleOutput" ItemName="OutputOfExec" />
     </Exec>
   </Target>

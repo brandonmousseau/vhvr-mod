@@ -6,6 +6,7 @@ using UnityEngine.UI;
 using HarmonyLib;
 
 using static ValheimVRMod.Utilities.LogUtils;
+using TMPro;
 
 namespace ValheimVRMod.VRCore.UI
 {
@@ -451,7 +452,7 @@ namespace ValheimVRMod.VRCore.UI
             }
             if (_hoverNameClone != null)
             {
-                Text hoverText = _hoverNameClone.GetComponent<Text>();
+                TextMeshProUGUI hoverText = _hoverNameClone.GetComponent<TextMeshProUGUI>();
                 if (hoverText != null)
                 {
                     hud.m_hoverName = hoverText;

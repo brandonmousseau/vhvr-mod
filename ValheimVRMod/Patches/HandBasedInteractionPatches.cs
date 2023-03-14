@@ -10,6 +10,7 @@ using Valve.VR;
 using UnityEngine.UI;
 
 using static ValheimVRMod.Utilities.LogUtils;
+using TMPro;
 
 namespace ValheimVRMod.Patches
 {
@@ -82,7 +83,7 @@ namespace ValheimVRMod.Patches
                 {
                     hoverable = null;
                 }
-                Text hoverText = CrosshairManager.instance.hoverNameCloneLeftHand.GetComponent<Text>();
+                TextMeshProUGUI hoverText = CrosshairManager.instance.hoverNameCloneLeftHand.GetComponent<TextMeshProUGUI>();
                 Image crosshair = CrosshairManager.instance.crosshairCloneLeftHand.GetComponent<Image>();
                 if (hoverText == null)
                 {
