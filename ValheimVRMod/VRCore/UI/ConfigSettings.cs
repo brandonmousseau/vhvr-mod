@@ -11,6 +11,7 @@ using UnityEngine.UI;
 using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
 using Object = UnityEngine.Object;
+using TMPro;
 
 namespace ValheimVRMod.VRCore.UI {
     public class ConfigSettings {
@@ -35,7 +36,7 @@ namespace ValheimVRMod.VRCore.UI {
         public static GameObject toolTip;
         
         public static void instantiate(Transform mList, Transform mParent, GameObject sPrefab) {
-            menuList = mList;
+            menuList = mList.transform.Find("MenuEntries").transform;
             menuParent = mParent;
             settingsPrefab = sPrefab;
             createMenuEntry();
@@ -53,13 +54,13 @@ namespace ValheimVRMod.VRCore.UI {
             for (int i = 0; i < menuList.childCount; i++) {
                 if (menuList.GetChild(i).name == "Settings") {
                     var modSettings = GameObject.Instantiate(menuList.GetChild(i), menuList);
-                    modSettings.GetComponentInChildren<Text>().text = MenuName;
+                    modSettings.GetComponentInChildren<TextMeshProUGUI>().text = MenuName;
                     modSettings.GetComponent<Button>().onClick.SetPersistentListenerState(0, UnityEventCallState.Off);
                     modSettings.GetComponent<Button>().onClick.RemoveAllListeners();
                     modSettings.GetComponent<Button>().onClick.AddListener(createModSettings);
 
                     Transform screenshotButton = GameObject.Instantiate(menuList.GetChild(i), menuList);
-                    screenshotButton.GetComponentInChildren<Text>().text = "Screenshot";
+                    screenshotButton.GetComponentInChildren<TextMeshProUGUI>().text = "Screenshot";
                     screenshotButton.GetComponent<Button>().onClick.SetPersistentListenerState(0, UnityEventCallState.Off);
                     screenshotButton.GetComponent<Button>().onClick.RemoveAllListeners();
                     screenshotButton.GetComponent<Button>().onClick.AddListener(CaptureScreenshot);
