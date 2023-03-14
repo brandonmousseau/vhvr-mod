@@ -90,7 +90,7 @@ namespace ValheimVRMod.VRCore.UI {
             keyBindingPrefab = tabPrefab.transform.Find("Key_Binding").gameObject;
             chooserPrefab = settingsPrefab.transform.Find("panel").Find("Tabs").Find("Misc").Find("Language")
                 .gameObject;
-            buttonPrefab = tabPrefab.transform.Find("Back").gameObject;
+            buttonPrefab = settingsPrefab.transform.Find("panel").Find("Back").gameObject;
 
         }
 
