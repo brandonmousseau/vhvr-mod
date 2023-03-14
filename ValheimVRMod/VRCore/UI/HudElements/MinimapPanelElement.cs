@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using ValheimVRMod.Utilities;
 using static ValheimVRMod.VRCore.UI.VRHud;
 using static ValheimVRMod.Utilities.LogUtils;
+using TMPro;
 
 namespace ValheimVRMod.VRCore.UI.HudElements
 {
@@ -34,7 +35,7 @@ namespace ValheimVRMod.VRCore.UI.HudElements
             public GameObject Root => mapRoot;
 
             public GameObject mapRoot;          //GameObject        "small"
-            public GameObject mapBiomeName;     //Text              "small/biome"
+            public GameObject mapBiomeName;     //Text              "small/small_biome"
             public GameObject map;              //GameObject        "small/map"
             public GameObject mapPinsRoot;      //RectTransform     "small/map/pin_root"
             public GameObject mapMarker;        //RectTransform     "small/map/player_marker"
@@ -132,9 +133,9 @@ namespace ValheimVRMod.VRCore.UI.HudElements
                 LogError("Invalid root object while caching SmallMinimapPanel");
             }
             cache.mapRoot = root;
-            cache.mapBiomeName = root.transform.Find("biome").gameObject;
+            cache.mapBiomeName = root.transform.Find("small_biome").gameObject;
             cache.map = root.transform.Find("map").gameObject;
-            cache.mapPinsRoot = cache.map.transform.Find("pin_root").gameObject;
+            cache.mapPinsRoot = cache.mapRoot.transform.Find("small_mapPin_root").gameObject;
             cache.mapMarker = cache.map.transform.Find("player_marker").gameObject;
             cache.mapWindMarker = cache.map.transform.Find("wind_marker").gameObject;
             cache.mapShipMarker = cache.map.transform.Find("ship_marker").gameObject;
@@ -145,7 +146,7 @@ namespace ValheimVRMod.VRCore.UI.HudElements
             Minimap.instance.m_smallRoot = newComponents.mapRoot;
             Minimap.instance.m_mapSmall = newComponents.map;
             Minimap.instance.m_mapImageSmall = newComponents.map.GetComponent<RawImage>();
-            Minimap.instance.m_biomeNameSmall = newComponents.mapBiomeName.GetComponent<Text>();
+            Minimap.instance.m_biomeNameSmall = newComponents.mapBiomeName.GetComponent<TMP_Text>();
             if (isOriginal)
             {
                 // Use the original pinRoot
