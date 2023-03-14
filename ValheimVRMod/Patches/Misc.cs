@@ -300,11 +300,16 @@ namespace ValheimVRMod.Patches
         }
     }
 
+    // Pass correct camera to Graphics.DrawMesh
     [HarmonyPatch(typeof(Heightmap), nameof(Heightmap.Render))]
-    class HMR
+    class HeightMapRenderPatch
     {
         static bool Prefix(Heightmap __instance)
         {
+            if (VHVRConfig.NonVrPlayer())
+            {
+                return true;
+            }
             ShadowCastingMode shadowCastingMode;
             bool flag;
             if (__instance.m_renderMesh)
