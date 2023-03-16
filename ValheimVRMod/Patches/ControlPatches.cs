@@ -59,6 +59,21 @@ namespace ValheimVRMod.Patches {
         }
     }
 
+    [HarmonyPatch(typeof(ZInput), nameof(ZInput.GetKeyDown))]
+    class ZInput_GetKeyDown_Patch
+    {
+        static bool Prefix(KeyCode key, ref bool __result)
+        {
+            if (key == KeyCode.Return && PatchMinimap.pendingInputEnter)
+            {
+                PatchMinimap.maybeClearPendingInputEnter();
+                __result = true;
+                return false;
+            }
+            return true;
+        }
+    }
+
     [HarmonyPatch(typeof(ZInput), nameof(ZInput.GetJoyLeftStickX))]
     class ZInput_GetJoyLeftStickX_Patch {
         static void Postfix(ref float __result) {
