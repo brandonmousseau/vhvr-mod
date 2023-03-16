@@ -688,7 +688,7 @@ namespace ValheimVRMod.Patches {
         }
     }
 
-    [HarmonyPatch(typeof(InventoryGrid), "GetHoveredElement")]
+    [HarmonyPatch(typeof(InventoryGrid), nameof(InventoryGrid.GetHoveredElement))]
     static class InventoryGrid_GetHoveredElement_Patch
     {
         static bool Prefix(InventoryGrid __instance, ref InventoryGrid.Element __result)
