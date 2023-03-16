@@ -64,8 +64,10 @@ namespace ValheimVRMod.Patches {
     {
         static bool Prefix(KeyCode key, ref bool __result)
         {
-            if (key == KeyCode.Return && PatchMinimap.pendingInputEnter)
+            if (PatchMinimap.pendingInputEnter && key == KeyCode.Return)
             {
+                // After the user input map pin text and close the VR keyboard,
+                // use Enter key to enter the text.
                 PatchMinimap.maybeClearPendingInputEnter();
                 __result = true;
                 return false;
