@@ -687,7 +687,28 @@ namespace ValheimVRMod.Patches {
                 mod = InventoryGrid.Modifier.Move;
         }
     }
-    
+
+    [HarmonyPatch(typeof(InventoryGrid), "GetHoveredElement")]
+    static class InventoryGrid_GetHoveredElement_Patch
+    {
+        static bool Prefix(InventoryGrid __instance, ref InventoryGrid.Element __result)
+        {
+            foreach (InventoryGrid.Element element in __instance.m_elements)
+            {
+                RectTransform rectTransform = element.m_go.transform as RectTransform;
+                // Use SoftwareCursor.ScaledMouseVector() instead of the vanilla Input.mousePosition to support VR GUI.
+                Vector2 point = rectTransform.InverseTransformPoint(SoftwareCursor.ScaledMouseVector());
+                if (rectTransform.rect.Contains(point))
+                {
+                    __result = element;
+                    return false;
+                }
+            }
+            __result = null;
+            return false;
+        }
+    }
+
     // This patch enables adding map pins without needing to "Double Click".
     // Instead it is triggered using the "click modifier" plus a single left click.
     [HarmonyPatch(typeof(Minimap), nameof(Minimap.OnMapLeftClick))]
