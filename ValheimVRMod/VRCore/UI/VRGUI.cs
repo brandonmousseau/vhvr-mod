@@ -3,6 +3,7 @@ using UnityEngine.EventSystems;
 using ValheimVRMod.Utilities;
 using Valve.VR;
 using Valve.VR.Extras;
+using System.Collections.Generic;
 
 using static ValheimVRMod.Utilities.LogUtils;
 
@@ -134,6 +135,19 @@ namespace ValheimVRMod.VRCore.UI
                     maybeInitializePointers();
                 }
             }
+        }
+
+        public void Update()
+        {
+            if (VHVRConfig.UseVrControls())
+            {
+                return;
+            }
+
+            bool leftButtonPressed = Input.GetMouseButton(0);
+            bool rightButtonPressed = Input.GetMouseButton(1);
+            bool middleButtonPressed = Input.GetMouseButton(2);
+            _inputModule.UpdateButtonStates(leftButtonPressed, rightButtonPressed, middleButtonPressed);
         }
 
         public void LateUpdate()
@@ -334,17 +348,6 @@ namespace ValheimVRMod.VRCore.UI
             _uiPanelCamera.transform.SetParent(vrCam.transform);
         }
 
-        public void OnPointerClick(object p, PointerEventArgs e)
-        {
-            if (isUiPanel(e.target))
-                _inputModule.SimulateClick();
-        }
-
-        public void OnPointerRightClick(object p, PointerEventArgs e)
-        {
-            if (isUiPanel(e.target))
-                _inputModule.SimulateRightClick();
-        }
 
         public void OnPointerTrackingLeftHand(object p, PointerEventArgs e)
         {
@@ -354,8 +357,9 @@ namespace ValheimVRMod.VRCore.UI
                     convertLocalUiPanelCoordinatesToCursorCoordinates(e.target.InverseTransformPoint(e.position));
                 // PointerEventArgs#buttonStateLeft does not give valid state of the trigger, so we need to check other things in order to emulate mouse clicks.
                 // Note: when the laser pointer is active, SteamVR_Actions.valheim_Use or SteamVR_Actions.valheim_UseLeft does not detect left controller trigger press either.
-                _inputModule.UpdateLeftButtonState(SteamVR_Actions.default_SkeletonLeftHand.GetFingerCurl(SteamVR_Skeleton_FingerIndexEnum.index) > 0.75f);
-                _inputModule.UpdateRightButtonState(SteamVR_Actions.valheim_QuickActions.GetState(SteamVR_Input_Sources.LeftHand));
+                _inputModule.UpdateButtonStates(SteamVR_Actions.default_SkeletonLeftHand.GetFingerCurl(SteamVR_Skeleton_FingerIndexEnum.index) > 0.75f,
+                        SteamVR_Actions.valheim_QuickActions.GetState(SteamVR_Input_Sources.LeftHand),
+                        false);
             }
         }
 
@@ -365,8 +369,7 @@ namespace ValheimVRMod.VRCore.UI
             {
                 SoftwareCursor.simulatedMousePosition =
                     convertLocalUiPanelCoordinatesToCursorCoordinates(e.target.InverseTransformPoint(e.position));
-                _inputModule.UpdateLeftButtonState(e.buttonStateLeft);
-                _inputModule.UpdateRightButtonState(e.buttonStateRight);
+                _inputModule.UpdateButtonStates(e.buttonStateLeft, e.buttonStateRight, false);
             }
         }
 
@@ -642,81 +645,30 @@ namespace ValheimVRMod.VRCore.UI
 
         class VRGUI_InputModule : StandaloneInputModule
         {
-            bool lastLeftState = false;
-            bool lastRightState = false;
+
+            Dictionary<PointerEventData.InputButton, bool> lastButtonStateMap = new Dictionary<PointerEventData.InputButton, bool>();
             private bool inDragDeadZone;
 
-            private void SimulateButtonState(PointerEventData.FramePressState state, PointerEventData.InputButton button)
-            {
+            public VRGUI_InputModule() {
+                lastButtonStateMap[PointerEventData.InputButton.Left] = false;
+                lastButtonStateMap[PointerEventData.InputButton.Right] = false;
+                lastButtonStateMap[PointerEventData.InputButton.Middle] = false;
+            }
+
+            public void UpdateButtonStates(bool leftButtonPressed, bool rightButtonPressed, bool middleButtonPressed) {
                 // Use the existing EventSystems input module input as the
                 // input for our custom input module.
                 m_InputOverride = EventSystem.current.currentInputModule.input;
-                MouseState mousePointerEventData = GetMousePointerEventData();
-                // Retrieve button state data for intended button
-                MouseButtonEventData buttonState = mousePointerEventData.GetButtonState(button).eventData;
-                // Set the mouse button state to required state
-                buttonState.buttonState = state;
-                ProcessMousePress(buttonState);
-
-                if (button != PointerEventData.InputButton.Left) {
-                    return;
-                }
-                
-                if (state == PointerEventData.FramePressState.Pressed) {
-                    inDragDeadZone = true;
-                }
-                
-                if (inDragDeadZone && Vector2.Distance(buttonState.buttonData.pressPosition, buttonState.buttonData.position) > 15) {
-                    inDragDeadZone = false;
-                }
-                
-                if (! inDragDeadZone) {
-                    ProcessMove(buttonState.buttonData);
-                    ProcessDrag(buttonState.buttonData);   
-                }
+                UpdateButtonState(leftButtonPressed, PointerEventData.InputButton.Left);
+                UpdateButtonState(rightButtonPressed, PointerEventData.InputButton.Right);
+                UpdateButtonState(middleButtonPressed, PointerEventData.InputButton.Middle);
             }
 
-            public void SimulateClick()
-            {
-                SimulateButtonState(PointerEventData.FramePressState.PressedAndReleased, PointerEventData.InputButton.Left);
-            }
-
-            public void SimulateRightClick()
-            {
-                SimulateButtonState(PointerEventData.FramePressState.PressedAndReleased, PointerEventData.InputButton.Right);
-            }
-
-            public void SimulateLeftMouseHold()
-            {
-                SimulateButtonState(PointerEventData.FramePressState.Pressed, PointerEventData.InputButton.Left);
-            }
-
-            public void SimulateRightMouseHold()
-            {
-                SimulateButtonState(PointerEventData.FramePressState.Pressed, PointerEventData.InputButton.Right);
-            }
-
-            public void UpdateLeftButtonState(bool state)
+            private void UpdateButtonState(bool state, PointerEventData.InputButton button)
             {
                 var buttonState = PointerEventData.FramePressState.NotChanged;
-                if (lastLeftState != state)
-                {
-                    if (state)
-                    {
-                        buttonState = PointerEventData.FramePressState.Pressed;
-                    } else
-                    {
-                        buttonState = PointerEventData.FramePressState.Released;
-                    }
-                }
-                lastLeftState = state;
-                SimulateButtonState(buttonState, PointerEventData.InputButton.Left);
-            }
-
-            public void UpdateRightButtonState(bool state)
-            {
-                var buttonState = PointerEventData.FramePressState.NotChanged;
-                if (lastRightState != state)
+                bool lastButtonState = lastButtonStateMap[button];
+                if (lastButtonState != state)
                 {
                     if (state)
                     {
@@ -727,8 +679,34 @@ namespace ValheimVRMod.VRCore.UI
                         buttonState = PointerEventData.FramePressState.Released;
                     }
                 }
-                lastRightState = state;
-                SimulateButtonState(buttonState, PointerEventData.InputButton.Right);
+                lastButtonStateMap[button] = state;
+                SimulateButtonState(buttonState, button);
+            }
+
+            private void SimulateButtonState(PointerEventData.FramePressState state, PointerEventData.InputButton button) {
+                MouseState mousePointerEventData = GetMousePointerEventData();
+                // Retrieve button state data for intended button
+                MouseButtonEventData buttonState = mousePointerEventData.GetButtonState(button).eventData;
+                // Set the mouse button state to required state
+                buttonState.buttonState = state;
+                ProcessMousePress(buttonState);
+                if (button != PointerEventData.InputButton.Left)
+                {
+                    return;
+                }
+                ProcessMove(buttonState.buttonData);
+
+                if (state == PointerEventData.FramePressState.Pressed) {
+                    inDragDeadZone = true;
+                }
+
+                if (inDragDeadZone && Vector2.Distance(buttonState.buttonData.pressPosition, buttonState.buttonData.position) > 15) {
+                    inDragDeadZone = false;
+                }
+
+                if (!inDragDeadZone) {
+                    ProcessDrag(buttonState.buttonData);
+                }
             }
         }
     }
