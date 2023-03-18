@@ -5,23 +5,32 @@ using UnityEngine.Events;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using ValheimVRMod.VRCore.UI;
+using ValheimVRMod.Utilities;
 
 namespace ValheimVRMod.Scripts {
     public class ConfigComponent : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler {
 
+        private static HashSet<ConfigComponent> hovered = new HashSet<ConfigComponent>();
+        private static string textStr = "";
+
         public KeyValuePair<string, ConfigEntryBase> configValue;
         public UnityAction<string> saveAction;
         public string value;
-        
-        public void OnPointerEnter(PointerEventData eventData) {
+
+        public void LateUpdate() {
             var textObj = ConfigSettings.toolTip.GetComponentInChildren<Text>();
-            textObj.text = configValue.Value.Description.Description;
-            ConfigSettings.toolTip.GetComponent<Image>().rectTransform.sizeDelta =  new Vector2( 758 , textObj.preferredHeight + 8);
-            ConfigSettings.toolTip.SetActive(true);
+            textObj.text = textStr;
+            ConfigSettings.toolTip.GetComponent<Image>().rectTransform.sizeDelta = new Vector2(758, textObj.preferredHeight + 8);
+            ConfigSettings.toolTip.SetActive(hovered.Count > 0);
+        }
+
+        public void OnPointerEnter(PointerEventData eventData) {
+            hovered.Add(this);
+            textStr = configValue.Value.Description.Description;
         }
 
         public void OnPointerExit(PointerEventData eventData) {
-            ConfigSettings.toolTip.SetActive(false);
+            hovered.Remove(this);
         }
 
         private void OnDestroy() {
