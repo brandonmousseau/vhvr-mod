@@ -6,6 +6,7 @@ using Valve.VR.Extras;
 using System.Collections.Generic;
 
 using static ValheimVRMod.Utilities.LogUtils;
+using UnityEngine.InputSystem.UI;
 
 namespace ValheimVRMod.VRCore.UI
 {
@@ -139,15 +140,27 @@ namespace ValheimVRMod.VRCore.UI
 
         public void Update()
         {
+            disableVanillaInputSystemUiInputModule();
             if (VHVRConfig.UseVrControls())
             {
                 return;
             }
-
             bool leftButtonPressed = Input.GetMouseButton(0);
             bool rightButtonPressed = Input.GetMouseButton(1);
             bool middleButtonPressed = Input.GetMouseButton(2);
             _inputModule.UpdateButtonStates(leftButtonPressed, rightButtonPressed, middleButtonPressed);
+        }
+
+        // The Input system was replaced and it is incompabible. We now rely on inserting mouse controls
+        // via the StandaloneInputModule. So we'll disable this one to avoid conflicts (e.g. double
+        // mouse cursors interacting with UI).
+        private void disableVanillaInputSystemUiInputModule()
+        {
+            if (EventSystem.current.gameObject)
+            {
+                var inputUiModule = EventSystem.current.GetComponent<InputSystemUIInputModule>();
+                inputUiModule.enabled = false;
+            }
         }
 
         public void LateUpdate()

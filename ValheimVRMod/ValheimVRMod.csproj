@@ -70,6 +70,9 @@
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
+    <Reference Include="Unity.InputSystem">
+      <HintPath>$(CommonDir)Valheim\valheim_Data\Managed\Unity.InputSystem.dll</HintPath>
+    </Reference>
     <Reference Include="Unity.TextMeshPro">
       <HintPath>$(CommonDir)Valheim\valheim_Data\Managed\Unity.TextMeshPro.dll</HintPath>
     </Reference>
