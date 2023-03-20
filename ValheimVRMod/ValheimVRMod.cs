@@ -30,6 +30,7 @@ namespace ValheimVRMod
                 enabled = false;
                 return;
             }
+            Game.isModded = true;
             LogInfo("ValheimVR Mod Awakens!");
 #if NONVRMODE
             LogInfo("Running non-VR mode companion mod!");
