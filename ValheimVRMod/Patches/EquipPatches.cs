@@ -157,9 +157,7 @@ namespace ValheimVRMod.Patches {
                 StaticObjects.leftHandQuickMenu.GetComponent<LeftHandQuickMenu>().refreshItems();
             }
 
-            LocalWeaponWield weaponWield;
             switch (EquipScript.getLeft()) {
-                
                 case EquipType.Bow:
                     meshFilter.gameObject.AddComponent<BowLocalManager>();
                     var bow = Player.m_localPlayer.GetLeftItem();
@@ -176,13 +174,13 @@ namespace ValheimVRMod.Patches {
                     crossbowManager.gameObject.AddComponent<WeaponBlock>().weaponWield = crossbowManager;
                     return;
                 case EquipType.Lantern:
+                    // TODO: implement a component that makes dverger lantern hangs downward regardless of hand orientation.
                     return;
                 case EquipType.Shield:
                     meshFilter.gameObject.AddComponent<ShieldBlock>().itemName = ___m_leftItem;
                     return;
             }
 
-            StaticObjects.leftWeaponCollider().GetComponent<WeaponCollision>().setColliderParent(meshFilter.transform, ___m_leftItem, false);
             meshFilter.gameObject.AddComponent<ButtonSecondaryAttackManager>().Initialize(meshFilter.transform, ___m_leftItem, false);
             ParticleFix.maybeFix(___m_leftItemInstance);
         }
