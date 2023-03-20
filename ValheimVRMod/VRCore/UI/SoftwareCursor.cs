@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.UI;
 using System.Runtime.InteropServices;
 using ValheimVRMod.Utilities;
@@ -58,6 +58,10 @@ namespace ValheimVRMod.VRCore.UI
         public static GameObject instance { get {
                 if (_cursorInstance == null && searchForCursorTexture())
                 {
+                    if (VHVRConfig.NonVrPlayer())
+                    {
+                        LogUtils.LogWarning("Software cursor should not be used in flatscreen mode.");
+                    }
                     _instance = new GameObject("VRSoftwareCursor");
                     _instance.layer = LayerMask.NameToLayer("UI");
                     var canvasGroup = _instance.AddComponent<CanvasGroup>();
