@@ -1,6 +1,7 @@
 using UnityEngine;
 
 namespace ValheimVRMod.Scripts {
+    // Fix for updating the position and rotation (e. g. Mistwalker and some modded weapons) of particle system in weapons.
     public class ParticleFix : MonoBehaviour {
 
         private Transform origin;
@@ -9,6 +10,7 @@ namespace ValheimVRMod.Scripts {
             origin = new GameObject().transform;
             origin.parent = transform.parent;
             origin.localPosition = transform.localPosition;
+            origin.localRotation = transform.localRotation;
             transform.SetParent(null);
         }
         
@@ -18,8 +20,13 @@ namespace ValheimVRMod.Scripts {
                 Destroy(gameObject);
                 return;
             }
-            
-            transform.position = origin.position;
+
+            transform.SetPositionAndRotation(origin.position, origin.rotation);
+        }
+
+        void OnDestroy()
+        {
+            Destroy(origin.gameObject);
         }
 
         public static void maybeFix(GameObject target) {

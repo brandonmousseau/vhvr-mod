@@ -25,20 +25,10 @@ namespace ValheimVRMod.Scripts
         private Transform originalTransform;
         private Quaternion offsetFromPointingDir; // The rotation offset of this transform relative to the direction the weapon is pointing at.
         private Vector3 estimatedLocalWeaponPointingDir = Vector3.forward;
-        private ParticleSystem particleSystem;
-        private Transform particleSystemTransformUpdater;
 
         public WeaponWield Initialize(ItemDrop.ItemData item, string itemName)
         {
             this.itemName = itemName;
-
-            particleSystem = gameObject.GetComponentInChildren<ParticleSystem>();
-            if (particleSystem != null)
-            {
-                particleSystemTransformUpdater = new GameObject().transform;
-                particleSystemTransformUpdater.parent = transform;
-                particleSystemTransformUpdater.SetPositionAndRotation(particleSystem.transform.position, particleSystem.transform.rotation);
-            }
 
             attackAnimation = item?.m_shared.m_attack?.m_attackAnimation?? "";
 
@@ -69,20 +59,11 @@ namespace ValheimVRMod.Scripts
         {
             Destroy(originalTransform.gameObject);
             Destroy(singleHandedTransform.gameObject);
-            if (particleSystemTransformUpdater != null)
-            {
-                Destroy(particleSystemTransformUpdater.gameObject);
-            }
         }
 
         protected virtual void OnRenderObject()
         {
             UpdateTwoHandedWield();
-            if (particleSystem != null)
-            {
-                // The particle system on Mistwalker (as well as some modded weapons) for some reason needs it rotation updated explicitly in order to follow the sword in VR.
-                particleSystem.transform.rotation = particleSystemTransformUpdater.transform.rotation;
-            }
         }
 
         // Returns the direction the weapon is pointing.
