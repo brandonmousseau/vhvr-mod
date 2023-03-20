@@ -18,8 +18,6 @@ namespace ValheimVRMod.Scripts {
 
         private bool scriptActive;
         private GameObject colliderParent;
-        private List<Vector3> snapshots;
-        private List<Vector3> weaponHandleSnapshots;
         private ItemDrop.ItemData item;
         private Attack attack;
         private Attack secondaryAttack;
@@ -36,7 +34,6 @@ namespace ValheimVRMod.Scripts {
         public LocalWeaponWield weaponWield;
         public static bool isLastHitOnTerrain;
 
-        private int maxSnapshots;
         private float colliderDistance;
 
         private static readonly int[] ignoreLayers = {
@@ -49,11 +46,6 @@ namespace ValheimVRMod.Scripts {
         private void Awake()
         {
             colliderParent = new GameObject();
-
-            // TODO: cleanup unused snapshot lists.
-            snapshots = new List<Vector3>();
-            weaponHandleSnapshots = new List<Vector3>();
-
             physicsEstimator = gameObject.AddComponent<PhysicsEstimator>();
             physicsEstimator.refTransform = CameraUtils.getCamera(CameraUtils.VR_CAMERA)?.transform.parent;
         }
@@ -296,13 +288,8 @@ namespace ValheimVRMod.Scripts {
             return scriptActive && VRPlayer.inFirstPerson && colliderParent != null;
         }
 
-        private void setScriptActive(bool active) {
-            scriptActive = active;
-
-            if (!active) {
-                snapshots.Clear();
-                weaponHandleSnapshots.Clear();
-            }
+        private void setScriptActive(bool scriptActive) {
+            this.scriptActive = scriptActive;
         }
         
         private void FixedUpdate() {
@@ -317,15 +304,6 @@ namespace ValheimVRMod.Scripts {
 
             if (!isCollisionAllowed()) {
                 return;
-            }
-            
-            snapshots.Add(transform.localPosition);
-            weaponHandleSnapshots.Add(weaponWield.mainHand.transform.position);
-            if (snapshots.Count > maxSnapshots) {
-                snapshots.RemoveAt(0);
-            }
-            if (weaponHandleSnapshots.Count > maxSnapshots) {
-                weaponHandleSnapshots.RemoveAt(0);
             }
         }
 
