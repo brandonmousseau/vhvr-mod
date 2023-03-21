@@ -158,8 +158,28 @@ namespace ValheimVRMod.VRCore.UI {
                 createTabForSection(section, sectionCount);
             }
 
+            setupOkAndBack(settings.transform.Find("panel"));
+
             tabButtons.GetComponent<TabHandler>().SetActiveTab(0);
             Settings.instance.UpdateBindings();
+        }
+
+        // Adds listeners for ok and back buttons
+        private static void setupOkAndBack(Transform panel) {
+            foreach (Transform child in panel)
+            {
+                switch (child.name)
+                {
+                    case "Ok":
+                        child.GetComponent<Button>().onClick.AddListener(() => { doSave = true; });
+                        Object.Destroy(child.GetComponent<UIGamePad>());
+                        break;
+                    case "Back":
+                        child.GetComponent<Button>().onClick.AddListener(() => { doSave = false; });
+                        Object.Destroy(child.GetComponent<UIGamePad>());
+                        break;
+                }
+            }
         }
 
         /// <summary>
@@ -184,21 +204,9 @@ namespace ValheimVRMod.VRCore.UI {
             var newTab = Object.Instantiate(tabs.GetChild(0), tabs);
             newTab.name = section.Key;
 
-            // add listeners for ok and back buttons, remove all other elements 
-            foreach (Transform child in newTab.transform) {
-                switch (child.name) {
-                    case "Ok":
-                        child.GetComponent<Button>().onClick.AddListener(() => {doSave = true;});
-                        Object.Destroy(child.GetComponent<UIGamePad>());
-                        break;
-                    case "Back":
-                        child.GetComponent<Button>().onClick.AddListener(() => {doSave = false;});
-                        Object.Destroy(child.GetComponent<UIGamePad>());
-                        break;
-                    default:
-                        Object.Destroy(child.gameObject);
-                        break;
-                }
+            foreach (Transform child in newTab.transform)
+            {
+                Object.Destroy(child.gameObject);
             }
 
             // Register the new Tab in Tab array
