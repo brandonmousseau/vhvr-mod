@@ -166,19 +166,26 @@ namespace ValheimVRMod.VRCore.UI {
 
         // Adds listeners for ok and back buttons
         private static void setupOkAndBack(Transform panel) {
-            foreach (Transform child in panel)
+            Button okButton = panel.Find("Ok")?.GetComponent<Button>();
+            if (okButton == null)
             {
-                switch (child.name)
-                {
-                    case "Ok":
-                        child.GetComponent<Button>().onClick.AddListener(() => { doSave = true; });
-                        Object.Destroy(child.GetComponent<UIGamePad>());
-                        break;
-                    case "Back":
-                        child.GetComponent<Button>().onClick.AddListener(() => { doSave = false; });
-                        Object.Destroy(child.GetComponent<UIGamePad>());
-                        break;
-                }
+                LogUtils.LogWarning("Failed to find Ok button for VHVR");
+            }
+            else
+            {
+                okButton.onClick.AddListener(() => { doSave = true; });
+                Object.Destroy(okButton.GetComponent<UIGamePad>());
+            }
+
+            Button backButton = panel.Find("Back")?.GetComponent<Button>();
+            if (backButton == null)
+            {
+                LogUtils.LogWarning("Failed to find Back button for VHVR");
+            }
+            else
+            {
+                backButton.onClick.AddListener(() => { doSave = false; });
+                Object.Destroy(backButton.GetComponent<UIGamePad>());
             }
         }
 
