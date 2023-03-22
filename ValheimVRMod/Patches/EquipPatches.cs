@@ -22,7 +22,7 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
-            if (player == Player.m_localPlayer && VHVRConfig.UseVrControls())
+            if (player == Player.m_localPlayer && !VHVRConfig.NonVrPlayer())
             {
                 EquipBoundingBoxFix.GetInstanceForPlayer(player)?.RequestBoundingBoxFix(___m_rightItem, ___m_rightItemInstance);
             }
@@ -113,7 +113,7 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
-            if (player == Player.m_localPlayer && VHVRConfig.UseVrControls())
+            if (player == Player.m_localPlayer && !VHVRConfig.NonVrPlayer())
             {
                 EquipBoundingBoxFix.GetInstanceForPlayer(player)?.RequestBoundingBoxFix(___m_leftItem, ___m_leftItemInstance);
             }
@@ -227,7 +227,7 @@ namespace ValheimVRMod.Patches {
     {
         static void Postfix(bool __result, string ___m_chestItem, List<GameObject> ___m_chestItemInstances)
         {
-            if (!__result || ___m_chestItemInstances == null || ___m_chestItemInstances.Count == 0 || !VHVRConfig.UseVrControls())
+            if (!__result || ___m_chestItemInstances == null || ___m_chestItemInstances.Count == 0 || VHVRConfig.NonVrPlayer())
             {
                 return;
             }
