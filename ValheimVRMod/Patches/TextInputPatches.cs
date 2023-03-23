@@ -77,10 +77,7 @@ namespace ValheimVRMod.Patches {
 
         public static void maybeClearPendingInputEnter()
         {
-            if (instance.m_namePin == null)
-            {
-                pendingInputEnter = false;
-            }
+            pendingInputEnter = false;
         }
 
         private static void OnClose()
