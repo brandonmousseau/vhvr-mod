@@ -412,7 +412,7 @@ namespace ValheimVRMod.VRCore.UI {
             button.GetComponent<RectTransform>().localScale *= 0.5f;
             button.GetComponentInChildren<Text>().text = "Set";
 
-            if (menuList.name != "Menu") {
+            if (menuList.name != "MenuEntries") {
                 button.GetComponent<Button>().enabled = false;
             }
             
@@ -443,7 +443,7 @@ namespace ValheimVRMod.VRCore.UI {
             defaultButton.GetComponent<RectTransform>().localScale *= 0.5f;
             defaultButton.GetComponentInChildren<Text>().text = "Reset";
 
-            if (menuList.name != "Menu")
+            if (menuList.name != "MenuEntries")
             {
                 defaultButton.GetComponent<Button>().enabled = false;
                 return;
