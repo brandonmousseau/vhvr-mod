@@ -412,10 +412,6 @@ namespace ValheimVRMod.VRCore.UI {
             button.GetComponent<RectTransform>().localScale *= 0.5f;
             button.GetComponentInChildren<Text>().text = "Set";
 
-            if (menuList.name != "MenuEntries") {
-                button.GetComponent<Button>().enabled = false;
-            }
-            
             button.GetComponent<Button>().onClick.SetPersistentListenerState(0, UnityEventCallState.Off);
             button.GetComponent<Button>().onClick.RemoveAllListeners();
             button.GetComponent<Button>().onClick.AddListener(() => {
@@ -442,12 +438,6 @@ namespace ValheimVRMod.VRCore.UI {
             defaultButton.GetComponent<RectTransform>().anchoredPosition = pos;
             defaultButton.GetComponent<RectTransform>().localScale *= 0.5f;
             defaultButton.GetComponentInChildren<Text>().text = "Reset";
-
-            if (menuList.name != "MenuEntries")
-            {
-                defaultButton.GetComponent<Button>().enabled = false;
-                return;
-            }
 
             defaultButton.GetComponent<Button>().onClick.SetPersistentListenerState(0, UnityEventCallState.Off);
             defaultButton.GetComponent<Button>().onClick.RemoveAllListeners();
