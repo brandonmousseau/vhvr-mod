@@ -158,8 +158,35 @@ namespace ValheimVRMod.VRCore.UI {
                 createTabForSection(section, sectionCount);
             }
 
+            setupOkAndBack(settings.transform.Find("panel"));
+
             tabButtons.GetComponent<TabHandler>().SetActiveTab(0);
             Settings.instance.UpdateBindings();
+        }
+
+        // Adds listeners for ok and back buttons
+        private static void setupOkAndBack(Transform panel) {
+            Button okButton = panel.Find("Ok")?.GetComponent<Button>();
+            if (okButton == null)
+            {
+                LogUtils.LogWarning("Failed to find Ok button for VHVR");
+            }
+            else
+            {
+                okButton.onClick.AddListener(() => { doSave = true; });
+                Object.Destroy(okButton.GetComponent<UIGamePad>());
+            }
+
+            Button backButton = panel.Find("Back")?.GetComponent<Button>();
+            if (backButton == null)
+            {
+                LogUtils.LogWarning("Failed to find Back button for VHVR");
+            }
+            else
+            {
+                backButton.onClick.AddListener(() => { doSave = false; });
+                Object.Destroy(backButton.GetComponent<UIGamePad>());
+            }
         }
 
         /// <summary>
@@ -184,21 +211,9 @@ namespace ValheimVRMod.VRCore.UI {
             var newTab = Object.Instantiate(tabs.GetChild(0), tabs);
             newTab.name = section.Key;
 
-            // add listeners for ok and back buttons, remove all other elements 
-            foreach (Transform child in newTab.transform) {
-                switch (child.name) {
-                    case "Ok":
-                        child.GetComponent<Button>().onClick.AddListener(() => {doSave = true;});
-                        Object.Destroy(child.GetComponent<UIGamePad>());
-                        break;
-                    case "Back":
-                        child.GetComponent<Button>().onClick.AddListener(() => {doSave = false;});
-                        Object.Destroy(child.GetComponent<UIGamePad>());
-                        break;
-                    default:
-                        Object.Destroy(child.gameObject);
-                        break;
-                }
+            foreach (Transform child in newTab.transform)
+            {
+                Object.Destroy(child.gameObject);
             }
 
             // Register the new Tab in Tab array
@@ -397,7 +412,7 @@ namespace ValheimVRMod.VRCore.UI {
             button.GetComponent<RectTransform>().localScale *= 0.5f;
             button.GetComponentInChildren<Text>().text = "Set";
 
-            if (menuList.name != "Menu") {
+            if (menuList.name != "MenuEntries") {
                 button.GetComponent<Button>().enabled = false;
             }
             
@@ -428,7 +443,7 @@ namespace ValheimVRMod.VRCore.UI {
             defaultButton.GetComponent<RectTransform>().localScale *= 0.5f;
             defaultButton.GetComponentInChildren<Text>().text = "Reset";
 
-            if (menuList.name != "Menu")
+            if (menuList.name != "MenuEntries")
             {
                 defaultButton.GetComponent<Button>().enabled = false;
                 return;

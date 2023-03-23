@@ -413,7 +413,6 @@ namespace ValheimVRMod.Scripts {
         }
 
         private void updateStringRenderer() {
-            LogUtils.LogWarning("String positions: " + (pullObj.transform.localPosition));
             gameObject.GetComponent<LineRenderer>().SetPosition(0, stringTop.position);
             gameObject.GetComponent<LineRenderer>().SetPosition(1, pulling ? pullObj.transform.position : stringTop.position);
             gameObject.GetComponent<LineRenderer>().SetPosition(2, stringBottom.position);

@@ -22,7 +22,7 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
-            if (player == Player.m_localPlayer && VHVRConfig.UseVrControls())
+            if (player == Player.m_localPlayer && !VHVRConfig.NonVrPlayer())
             {
                 EquipBoundingBoxFix.GetInstanceForPlayer(player)?.RequestBoundingBoxFix(___m_rightItem, ___m_rightItemInstance);
             }
@@ -113,7 +113,7 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
-            if (player == Player.m_localPlayer && VHVRConfig.UseVrControls())
+            if (player == Player.m_localPlayer && !VHVRConfig.NonVrPlayer())
             {
                 EquipBoundingBoxFix.GetInstanceForPlayer(player)?.RequestBoundingBoxFix(___m_leftItem, ___m_leftItemInstance);
             }
@@ -157,9 +157,7 @@ namespace ValheimVRMod.Patches {
                 StaticObjects.leftHandQuickMenu.GetComponent<LeftHandQuickMenu>().refreshItems();
             }
 
-            LocalWeaponWield weaponWield;
             switch (EquipScript.getLeft()) {
-                
                 case EquipType.Bow:
                     meshFilter.gameObject.AddComponent<BowLocalManager>();
                     var bow = Player.m_localPlayer.GetLeftItem();
@@ -176,15 +174,13 @@ namespace ValheimVRMod.Patches {
                     crossbowManager.gameObject.AddComponent<WeaponBlock>().weaponWield = crossbowManager;
                     return;
                 case EquipType.Lantern:
-                    weaponWield = ___m_leftItemInstance.AddComponent<LocalWeaponWield>();
-                    weaponWield.Initialize(Player.m_localPlayer.GetLeftItem(), ___m_leftItem);
-                    break;
+                    // TODO: implement a component that makes dverger lantern hangs downward regardless of hand orientation.
+                    return;
                 case EquipType.Shield:
                     meshFilter.gameObject.AddComponent<ShieldBlock>().itemName = ___m_leftItem;
                     return;
             }
 
-            StaticObjects.leftWeaponCollider().GetComponent<WeaponCollision>().setColliderParent(meshFilter.transform, ___m_leftItem, false);
             meshFilter.gameObject.AddComponent<ButtonSecondaryAttackManager>().Initialize(meshFilter.transform, ___m_leftItem, false);
             ParticleFix.maybeFix(___m_leftItemInstance);
         }
@@ -231,7 +227,7 @@ namespace ValheimVRMod.Patches {
     {
         static void Postfix(bool __result, string ___m_chestItem, List<GameObject> ___m_chestItemInstances)
         {
-            if (!__result || ___m_chestItemInstances == null || ___m_chestItemInstances.Count == 0 || !VHVRConfig.UseVrControls())
+            if (!__result || ___m_chestItemInstances == null || ___m_chestItemInstances.Count == 0 || VHVRConfig.NonVrPlayer())
             {
                 return;
             }

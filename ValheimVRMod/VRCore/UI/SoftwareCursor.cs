@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.UI;
 using System.Runtime.InteropServices;
 using ValheimVRMod.Utilities;
@@ -58,6 +58,10 @@ namespace ValheimVRMod.VRCore.UI
         public static GameObject instance { get {
                 if (_cursorInstance == null && searchForCursorTexture())
                 {
+                    if (VHVRConfig.NonVrPlayer())
+                    {
+                        LogUtils.LogWarning("Software cursor should not be used in flatscreen mode.");
+                    }
                     _instance = new GameObject("VRSoftwareCursor");
                     _instance.layer = LayerMask.NameToLayer("UI");
                     var canvasGroup = _instance.AddComponent<CanvasGroup>();
@@ -119,27 +123,32 @@ namespace ValheimVRMod.VRCore.UI
         {
             if (parent == null)
             {
-                LogDebug("Parent of SoftwareCursor is null.");
                 return;
             }
             instance.SetActive(true);
-            Rect rect = parent.rect;
-            float deltaX = Input.GetAxis("Mouse X");
-            float deltaY = Input.GetAxis("Mouse Y");
-            Vector2 newPosition = lastCursorPosition;
-            if (Cursor.visible && !cursorVisible)
+            // We only need to update the "lastCursorPosition" if we are using KB&M controls.
+            // The value gets updated by the laser pointer intersection logic in VRGUI when
+            // using motion controls.
+            if (!VHVRConfig.UseVrControls())
             {
-                // Cursor just became visible this update, so re-center it.
-                newPosition = rect.center;
+                Rect rect = parent.rect;
+                float deltaX = Input.GetAxis("Mouse X");
+                float deltaY = Input.GetAxis("Mouse Y");
+                Vector2 newPosition = lastCursorPosition;
+                if (Cursor.visible && !cursorVisible)
+                {
+                    // Cursor just became visible this update, so re-center it.
+                    newPosition = rect.center;
+                }
+                cursorVisible = Cursor.visible;
+                newPosition.x += deltaX * CURSOR_SPEED * PlayerController.m_mouseSens;
+                newPosition.y += deltaY * CURSOR_SPEED * PlayerController.m_mouseSens;
+                newPosition.x = Mathf.Clamp(newPosition.x, rect.xMin, rect.xMax);
+                newPosition.y = Mathf.Clamp(newPosition.y, rect.yMin, rect.yMax);
+                lastCursorPosition = newPosition;
             }
-            cursorVisible = Cursor.visible;
-            newPosition.x += deltaX * CURSOR_SPEED * PlayerController.m_mouseSens;
-            newPosition.y += deltaY * CURSOR_SPEED * PlayerController.m_mouseSens;
-            newPosition.x = Mathf.Clamp(newPosition.x, rect.xMin, rect.xMax);
-            newPosition.y = Mathf.Clamp(newPosition.y, rect.yMin, rect.yMax);
-            lastCursorPosition = newPosition;
             // Update position of cursor within canvas rect
-            instance.transform.localPosition = newPosition;
+            instance.transform.localPosition = lastCursorPosition;
         }
 
         // TODO: Find if there is a better way to grab
