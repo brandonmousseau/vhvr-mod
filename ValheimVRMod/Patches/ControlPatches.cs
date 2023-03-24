@@ -15,7 +15,19 @@ namespace ValheimVRMod.Patches {
 
     [HarmonyPatch(typeof(ZInput), nameof(ZInput.GetButtonDown))]
     class ZInput_GetButtonDown_Patch {
+        private static HashSet<string> pendingButtons = new HashSet<string>();
+
+        static public void EmulateButtonDown(string name)
+        {
+            pendingButtons.Add(name);
+        }
+
         static bool Prefix(string name, ref bool __result) {
+            if (pendingButtons.Remove(name)) {
+                __result = true;
+                return false;
+            }
+
             // Need to bypass original function for any required ZInputs that begin
             // with "Joy" to ensure the VR Controls still work when
             // Gamepad is disabled.
@@ -62,13 +74,17 @@ namespace ValheimVRMod.Patches {
     [HarmonyPatch(typeof(ZInput), nameof(ZInput.GetKeyDown))]
     class ZInput_GetKeyDown_Patch
     {
+        private static HashSet<KeyCode> pendingKeys = new HashSet<KeyCode>();
+
+        static public void EmulateKeyDown(KeyCode key)
+        {
+            pendingKeys.Add(key);
+        }
+
         static bool Prefix(KeyCode key, ref bool __result)
         {
-            if (PatchMinimap.pendingInputEnter && key == KeyCode.Return)
+            if (pendingKeys.Remove(key))
             {
-                // After the user input map pin text and close the VR keyboard,
-                // use Enter key to enter the text.
-                PatchMinimap.maybeClearPendingInputEnter();
                 __result = true;
                 return false;
             }
