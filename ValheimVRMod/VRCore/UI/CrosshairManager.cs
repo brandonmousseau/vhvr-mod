@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.Patches;
 using UnityEngine.SceneManagement;
@@ -79,8 +79,9 @@ namespace ValheimVRMod.VRCore.UI
             }
             if (Player.m_localPlayer && Player.m_localPlayer.IsAttachedToShip() && Player.m_localPlayer.GetControlledShip())
             {
-                _hoverNameCanvasParentLeft.SetActive(false);
-                _hoverNameCanvasParent.SetActive(false);
+                // TODO: check if these should simply be skipped when motion control is disabled.
+                _hoverNameCanvasParentLeft?.SetActive(false);
+                _hoverNameCanvasParent?.SetActive(false);
                 return;
             }
             if ((_canvasCrosshairRoot == null || _canvasCrosshairRootClone == null)
