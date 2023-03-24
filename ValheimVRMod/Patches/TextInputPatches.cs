@@ -4,6 +4,7 @@ using HarmonyLib;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
+using ValheimVRMod.Patches;
 using ValheimVRMod.Utilities;
 using Valve.VR;
 using TMPro;
@@ -58,31 +59,27 @@ namespace ValheimVRMod.Patches {
         {
             if (VHVRConfig.UseVrControls() && __instance.inputType == InputField.InputType.Password)
             {
-                InputManager.start(__instance, null, true);
+                bool isClientSidePasswordDialog = (__instance == ZNet.instance?.m_passwordDialog?.GetComponentInChildren<InputField>());
+                if (isClientSidePasswordDialog)
+                {
+                    // After the user input the password and close the VR keyboard, use JoyButtonA to send the password.
+                    InputManager.start(__instance, null, true, () => ZInput_GetButtonDown_Patch.EmulateButtonDown("JoyButtonA"));
+                }
+                else {
+                    InputManager.start(__instance, null, true);
+                }
             }
         }
     }
-    
+
+
     [HarmonyPatch(typeof(Minimap), "ShowPinNameInput")]
     class PatchMinimap {
-        private static Minimap instance;
-        public static bool pendingInputEnter { get; private set; }
-
         public static void Postfix(Minimap __instance) {
             if (VHVRConfig.UseVrControls()) {
-                instance = __instance;
-                InputManager.start(__instance.m_nameInput, null, true, OnClose);
+                // After the user input map pin text and close the VR keyboard, use Enter key to enter the text.
+                InputManager.start(__instance.m_nameInput, null, true, () => ZInput_GetKeyDown_Patch.EmulateKeyDown(KeyCode.Return));
             }
-        }
-
-        public static void maybeClearPendingInputEnter()
-        {
-            pendingInputEnter = false;
-        }
-
-        private static void OnClose()
-        {
-            pendingInputEnter = true;
         }
     }
     
