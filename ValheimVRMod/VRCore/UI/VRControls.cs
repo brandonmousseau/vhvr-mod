@@ -548,7 +548,7 @@ namespace ValheimVRMod.VRCore.UI
 
         public bool getClickModifier()
         {
-            // TODO: investigate why _clickModifier.GetState() does not work.
+            // TODO: update _clickModifier in the action set to use grab buttons. It is obsoletely bound to left controller trigger now and cannot be used here.
             if (VRPlayer.leftPointer.pointerIsActive() && SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand))
             {
                 return true;
