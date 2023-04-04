@@ -78,7 +78,7 @@ namespace ValheimVRMod.Patches {
         public static void Postfix(Minimap __instance) {
             if (VHVRConfig.UseVrControls()) {
                 // After the user input map pin text and close the VR keyboard, use Enter key to enter the text.
-                InputManager.start(__instance.m_nameInput, null, true, () => ZInput_GetKeyDown_Patch.EmulateKeyDown(KeyCode.Return));
+                InputManager.start(__instance.m_nameInput, null, returnOnClose: true);
             }
         }
     }
