@@ -14,7 +14,7 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CommonDir>C:\Program Files (x86)\Steam\steamapps\common\</CommonDir>
-    <UnityDir>C:\Program Files (x86)\Hub\Editor\2020.3.33f1\</UnityDir>
+    <UnityDir>C:\Program Files (x86)\Hub\Editor\2020.3.45f1\</UnityDir>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -58,10 +58,10 @@
     <ErrorReport>prompt</ErrorReport>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="BepInEx.Core" Version="5.4.19" />
+    <PackageReference Include="BepInEx.Core" Version="5.4.21" />
     <PackageReference Include="NDesk.Options" Version="0.2.1" />
-    <PackageReference Include="UnityEngine.Modules" Version="2020.3.33" />
-    <PackageReference Include="ValheimGameLibs" Version="0.214.2" />
+    <PackageReference Include="UnityEngine.Modules" Version="2020.3.45" />
+    <PackageReference Include="ValheimGameLibs" Version="0.215.2" />
 	<PackageReference Include="Bhaptics.Tac" Version="1.4.16" />
   </ItemGroup>
   <ItemGroup>
