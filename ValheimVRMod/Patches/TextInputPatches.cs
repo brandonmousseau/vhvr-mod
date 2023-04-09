@@ -59,15 +59,7 @@ namespace ValheimVRMod.Patches {
         {
             if (VHVRConfig.UseVrControls() && __instance.inputType == InputField.InputType.Password)
             {
-                bool isClientSidePasswordDialog = (__instance == ZNet.instance?.m_passwordDialog?.GetComponentInChildren<InputField>());
-                if (isClientSidePasswordDialog)
-                {
-                    // After the user input the password and close the VR keyboard, use JoyButtonA to send the password.
-                    InputManager.start(__instance, null, true, () => ZInput_GetButtonDown_Patch.EmulateButtonDown("JoyButtonA"));
-                }
-                else {
-                    InputManager.start(__instance, null, true);
-                }
+                InputManager.start(__instance, null, true);
             }
         }
     }
