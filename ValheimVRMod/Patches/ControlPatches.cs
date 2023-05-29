@@ -997,7 +997,7 @@ namespace ValheimVRMod.Patches {
             AnimatorStateInfo currentAnimatorStateInfo = __instance.m_animator.GetCurrentAnimatorStateInfo(0);
             AnimatorStateInfo nextAnimatorStateInfo = __instance.m_animator.GetNextAnimatorStateInfo(0);
             bool flag = __instance.m_animator.IsInTransition(0);
-            bool flag2 = __instance.m_animator.GetBool("dodge") || (currentAnimatorStateInfo.tagHash == Player.m_animatorTagDodge && !flag) || (flag && nextAnimatorStateInfo.tagHash == Player.m_animatorTagDodge);
+            bool flag2 = __instance.m_animator.GetBool("dodge") || (currentAnimatorStateInfo.tagHash == Player.s_animatorTagDodge && !flag) || (flag && nextAnimatorStateInfo.tagHash == Player.s_animatorTagDodge);
             bool value = flag2 && __instance.m_dodgeInvincible;
             __instance.m_nview.GetZDO().Set("dodgeinv", value);
             __instance.m_inDodge = flag2;
