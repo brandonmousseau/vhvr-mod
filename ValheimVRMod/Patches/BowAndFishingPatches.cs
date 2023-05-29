@@ -165,7 +165,7 @@ namespace ValheimVRMod.Patches {
      * Remove attack animation by speeding it up. It only applies to attack moves,
      * because the original method switches it back to normal for other animations
      */
-    [HarmonyPatch(typeof(CharacterAnimEvent), "FixedUpdate")]
+    [HarmonyPatch(typeof(CharacterAnimEvent), nameof(CharacterAnimEvent.CustomFixedUpdate))]
 
     class PatchFixedUpdate {
 
