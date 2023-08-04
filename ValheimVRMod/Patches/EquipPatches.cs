@@ -186,7 +186,7 @@ namespace ValheimVRMod.Patches {
         }
     }
 
-    [HarmonyPatch(typeof(VisEquipment), nameof(VisEquipment.SetHairEquipped))]
+    [HarmonyPatch(typeof(VisEquipment), nameof(VisEquipment.SetHelmetEquipped))]
     class PatchHelmet {
         static void Postfix(bool __result, GameObject ___m_helmetItemInstance) {
 
