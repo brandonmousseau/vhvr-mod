@@ -69,18 +69,19 @@ namespace ValheimVRMod.Scripts {
 
         protected override Vector3 GetPreferredTwoHandedWeaponUp()
         {
-            Vector3 rearHandRadial = rearHandTransform.up;
+            Vector3 rearHandleUp = Vector3.Cross(frontHandTransform.position - rearHandTransform.position, rearHandTransform.right).normalized;
             switch (VHVRConfig.CrossbowSaggitalRotationSource())
             {
                 case "RearHand":
-                    return rearHandRadial;
+                    return rearHandleUp;
                 case "BothHands":
                     Vector3 frontHandPalmar = twoHandedState == TwoHandedState.LeftHandBehind ? -frontHandTransform.right : frontHandTransform.right;
                     Vector3 frontHandRadial = frontHandTransform.up;
-                    return (frontHandPalmar * 1.73f + frontHandRadial).normalized + rearHandRadial;
+                    Vector3 frontHandleUp = (frontHandPalmar * 1.73f + frontHandRadial).normalized;
+                    return frontHandleUp + rearHandleUp;
                 default:
                     LogUtils.LogWarning("WeaponWield: unknown CrossbowSaggitalRotationSource");
-                    return rearHandRadial;
+                    return rearHandleUp;
             }
         }
 
