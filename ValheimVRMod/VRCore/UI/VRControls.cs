@@ -653,11 +653,7 @@ namespace ValheimVRMod.VRCore.UI
         // disable context scrolling for now 
         private bool altPieceRotationControlsActive()
         {
-            return      //(!contextScroll.activeBinding) &&
-                        inPlaceMode() &&
-                        hasPlacementGhost() &&
-                        !Hud.IsPieceSelectionVisible() &&
-                        SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand);
+            return inPlaceMode() && !Hud.IsPieceSelectionVisible() && SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand);
         }
 
         // disable Jump input under certain conditions
