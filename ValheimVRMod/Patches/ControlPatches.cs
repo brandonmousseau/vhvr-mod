@@ -695,13 +695,36 @@ namespace ValheimVRMod.Patches {
         }
     }
 
-    
+
     // Used to make stack splitting easier
     [HarmonyPatch(typeof(InventoryGui), "Awake")]
     class InventoryGui_Awake_Patch {
         static void Prefix(InventoryGui __instance)
         {
             __instance.m_splitSlider.gameObject.AddComponent<SliderSelector>();
+        }
+    }
+
+    [HarmonyPatch(typeof(InventoryGui), nameof(InventoryGui.Update))]
+    class InventoryGui_Update_Patch
+    {
+        static void Prefix(InventoryGui __instance)
+        {
+            if (VHVRConfig.NonVrPlayer() || !VHVRConfig.UseVrControls())
+            {
+                return;
+            }
+            if (!SteamVR_Actions.laserPointers_LeftClick.GetState(SteamVR_Input_Sources.Any))
+            {
+                // When a chest is opened, laser pointers take priority over valheim_Use.
+                // As the player releases the trigger when a chest is open,
+                // the button-up state of vaheim_Use is therefore not detected.
+                // The game will mistakenly think that the use button is still being pressed.
+                // Since "quick stack all" is triggered by holding the use button,
+                // resetting the timer here prevents it from being triggered inadvertently.
+                // TODO: try find a way to fix the wrong state of valheim_Use instead of resetting this timer.
+                __instance.m_containerHoldTime = 0;
+            }
         }
     }
 
