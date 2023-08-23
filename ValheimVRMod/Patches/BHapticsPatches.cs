@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using HarmonyLib;
 using ValheimVRMod.Utilities;
@@ -420,7 +420,7 @@ namespace ValheimVRMod.Patches
                         }
                     }
                     speedActive((speed == Sadle.Speed.NoChange) ? __instance.m_speed : speed,
-                        __instance.m_character.IsSwiming());
+                        __instance.m_character.IsSwimming());
 
                     //attacking
                     if (__instance.m_character.InAttack())

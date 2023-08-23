@@ -175,7 +175,7 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
             ZPackage pkg = new ZPackage(vr_data);
-            var currentDataRevision = zdo.m_dataRevision;
+            var currentDataRevision = zdo.DataRevision;
             if (currentDataRevision != lastDataRevision)
             {
                 // New data revision since last sync so we reset our deltaT counter

@@ -23,8 +23,8 @@ namespace ValheimVRMod.Patches
                 return;
             }
 
-            __instance.m_zanim.SetFloat(Player.forward_speed, __instance.m_animator.GetFloat(Player.forward_speed) + VRPlayer.roomscaleAnimationForwardSpeed*VRPlayer.ROOMSCALE_ANIMATION_WEIGHT);
-            __instance.m_zanim.SetFloat(Player.sideway_speed, __instance.m_animator.GetFloat(Player.sideway_speed) + VRPlayer.roomscaleAnimationSideSpeed*VRPlayer.ROOMSCALE_ANIMATION_WEIGHT);
+            __instance.m_zanim.SetFloat(Player.s_forwardSpeed, __instance.m_animator.GetFloat(Player.s_forwardSpeed) + VRPlayer.roomscaleAnimationForwardSpeed * VRPlayer.ROOMSCALE_ANIMATION_WEIGHT);
+            __instance.m_zanim.SetFloat(Player.s_sidewaySpeed, __instance.m_animator.GetFloat(Player.s_sidewaySpeed) + VRPlayer.roomscaleAnimationSideSpeed * VRPlayer.ROOMSCALE_ANIMATION_WEIGHT);
         }
     }
 

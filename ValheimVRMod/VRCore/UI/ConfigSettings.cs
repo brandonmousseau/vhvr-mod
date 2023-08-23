@@ -20,7 +20,7 @@ namespace ValheimVRMod.VRCore.UI {
         private const int TabButtonWidth = 100;
         
         private static GameObject tabButtonPrefab;
-        private static GameObject tabPrefab;
+        private static GameObject controlSettingsPrefab;
         private static GameObject togglePrefab;
         private static GameObject sliderPrefab;
         private static GameObject chooserPrefab;
@@ -85,10 +85,10 @@ namespace ValheimVRMod.VRCore.UI {
             var tabButtons = settingsPrefab.transform.Find("panel").Find("TabButtons");
             tabButtonPrefab = tabButtons.GetChild(0).gameObject;
             var tabs = settingsPrefab.transform.Find("panel").Find("Tabs");
-            tabPrefab = tabs.GetChild(0).gameObject;
-            togglePrefab = tabPrefab.GetComponentInChildren<Toggle>().gameObject;
-            sliderPrefab = tabPrefab.GetComponentInChildren<Slider>().transform.parent.gameObject;
-            keyBindingPrefab = tabPrefab.transform.Find("Key_Binding").gameObject;
+            controlSettingsPrefab = tabs.GetChild(0).gameObject;
+            togglePrefab = controlSettingsPrefab.GetComponentInChildren<Toggle>().gameObject;
+            sliderPrefab = controlSettingsPrefab.GetComponentInChildren<Slider>().transform.parent.gameObject;
+            keyBindingPrefab = controlSettingsPrefab.transform.Find("Use").gameObject;
             chooserPrefab = settingsPrefab.transform.Find("panel").Find("Tabs").Find("Misc").Find("Language")
                 .gameObject;
             buttonPrefab = settingsPrefab.transform.Find("panel").Find("Back").gameObject;

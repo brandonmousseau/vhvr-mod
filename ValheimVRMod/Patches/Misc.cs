@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Reflection.Emit;
 using System.Reflection;
 using System.IO;
@@ -259,7 +259,7 @@ namespace ValheimVRMod.Patches
     }
 
     //Supposedly only update on Start, but somehow it doesnt work on some mobs (eg. fuling/goblin), so its using fixedupdate for now
-    [HarmonyPatch(typeof(Character),nameof(Character.FixedUpdate))]
+    [HarmonyPatch(typeof(Character), nameof(Character.CustomFixedUpdate))]
     class CharacterSetLodGroupSize
     {
         private static Dictionary<String, float> creatures = new Dictionary<string, float>();

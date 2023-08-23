@@ -9,10 +9,10 @@ using ValheimVRMod.Utilities;
 
 namespace ValheimVRMod.Patches {
 
-     [HarmonyPatch(typeof(VisEquipment), "SetRightHandEquiped")]
-     class PatchSetRightHandEquiped {
+    [HarmonyPatch(typeof(VisEquipment), nameof(VisEquipment.SetRightHandEquipped))]
+    class PatchSetRightHandEquipped {
         static void Postfix(bool __result, string ___m_rightItem, ref GameObject ___m_rightItemInstance) {
-            if (!__result || ___m_rightItemInstance == null) {
+            if (!__result || !___m_rightItemInstance) {
                 return;
             }
 
@@ -100,10 +100,10 @@ namespace ValheimVRMod.Patches {
         }
     }
 
-    [HarmonyPatch(typeof(VisEquipment), "SetLeftHandEquiped")]
-    class PatchSetLeftHandEquiped {
+    [HarmonyPatch(typeof(VisEquipment), nameof(VisEquipment.SetLeftHandEquipped))]
+    class PatchSetLeftHandEquipped {
         static void Postfix(bool __result, string ___m_leftItem, GameObject ___m_leftItemInstance) {
-            if (!__result || ___m_leftItemInstance == null) {
+            if (!__result || !___m_leftItemInstance) {
                 return;
             }
 
@@ -185,36 +185,36 @@ namespace ValheimVRMod.Patches {
             ParticleFix.maybeFix(___m_leftItemInstance);
         }
     }
-    
-    [HarmonyPatch(typeof(VisEquipment), "SetHelmetEquiped")]
+
+    [HarmonyPatch(typeof(VisEquipment), nameof(VisEquipment.SetHelmetEquipped))]
     class PatchHelmet {
         static void Postfix(bool __result, GameObject ___m_helmetItemInstance) {
 
-            if (!__result || !VHVRConfig.UseVrControls()) {
+            if (!__result || !VHVRConfig.UseVrControls() || !___m_helmetItemInstance) {
                 return;
             }
 
             ___m_helmetItemInstance.AddComponent<HeadEquipVisibiltiyUpdater>();
         }
     }
-    
-    [HarmonyPatch(typeof(VisEquipment), "SetHairEquiped")]
+
+    [HarmonyPatch(typeof(VisEquipment), nameof(VisEquipment.SetHairEquipped))]
     class PatchHair {
         static void Postfix(bool __result, GameObject ___m_hairItemInstance) {
             
-            if (!__result || !VHVRConfig.UseVrControls()) {
+            if (!__result || !VHVRConfig.UseVrControls() || !___m_hairItemInstance) {
                 return;
             }
             
             ___m_hairItemInstance.AddComponent<HeadEquipVisibiltiyUpdater>();
         }
     }
-    
-    [HarmonyPatch(typeof(VisEquipment), "SetBeardEquiped")]
+
+    [HarmonyPatch(typeof(VisEquipment), nameof(VisEquipment.SetBeardEquipped))]
     class PatchBeard {
         static void Postfix(bool __result, GameObject ___m_beardItemInstance) {
             
-            if (!__result || !VHVRConfig.UseVrControls()) {
+            if (!__result || !VHVRConfig.UseVrControls() || !___m_beardItemInstance) {
                 return;
             }
             
@@ -222,7 +222,7 @@ namespace ValheimVRMod.Patches {
         }
     }
 
-    [HarmonyPatch(typeof(VisEquipment), "SetChestEquiped")]
+    [HarmonyPatch(typeof(VisEquipment), nameof(VisEquipment.SetChestEquipped))]
     class PatchSetChestEquiped
     {
         static void Postfix(bool __result, string ___m_chestItem, List<GameObject> ___m_chestItemInstances)
@@ -246,7 +246,7 @@ namespace ValheimVRMod.Patches {
         }
     }
 
-    [HarmonyPatch(typeof(VisEquipment), "AttachItem")]
+    [HarmonyPatch(typeof(VisEquipment), nameof(VisEquipment.AttachItem))]
     class PatchAttachItem {
         
         /// <summary>
@@ -301,7 +301,7 @@ namespace ValheimVRMod.Patches {
             // TODO: consider fixing orietantion for dead raiser too.
             // TODO: figure out a way to fix oriention for non-local players (e. g. using vrPlayerSync.remotePlayerNonDominantHandItemHash).
             if (Player.m_localPlayer == null 
-                || __result == null
+                || !__result
                 || __result.GetComponentInParent<Player>() != Player.m_localPlayer
                 || !VHVRConfig.UseVrControls() 
                 || !VHVRConfig.LeftHanded()
@@ -363,7 +363,7 @@ namespace ValheimVRMod.Patches {
         }
     }
 
-    [HarmonyPatch(typeof(Player),nameof(Player.ToggleEquiped))]
+    [HarmonyPatch(typeof(Player), "ToggleEquipped")]
     class PatchEquipActionQueue
     {
         static bool Prefix(Player __instance, ref bool __result)

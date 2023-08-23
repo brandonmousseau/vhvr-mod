@@ -7,21 +7,6 @@ using TMPro;
 
 namespace ValheimVRMod.VRCore.UI.HudElements
 {
-    /**
-     * Small Minimap Panel Hierarchy:
-        small(Clone) (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
-          |map (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.RawImage;UnityEngine.UI.RectMask2D;)
-          |   |pin_root (UnityEngine.RectTransform;UnityEngine.Canvas;)
-          |   |   |MapPin(Clone) (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
-          |   |   |   |Checked (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
-          |   |   |   |Name (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Text;UnityEngine.UI.Outline;)
-          |   |   |....
-          |   |ship_marker (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
-          |   |player_marker (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;)
-          |   |wind_marker (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Image;UnityEngine.Canvas;)
-          |biome (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Text;UnityEngine.UI.Outline;UnityEngine.Animator;)
-          |Key tip (UnityEngine.RectTransform;UnityEngine.CanvasRenderer;UnityEngine.UI.Text;UnityEngine.UI.Outline;)
-     */
     public class MinimapPanelElement : IVRHudElement
     {
         public string Placement => VHVRConfig.MinimapPanelPlacement();
@@ -37,7 +22,7 @@ namespace ValheimVRMod.VRCore.UI.HudElements
             public GameObject mapRoot;          //GameObject        "small"
             public GameObject mapBiomeName;     //Text              "small/small_biome"
             public GameObject map;              //GameObject        "small/map"
-            public GameObject mapPinsRoot;      //RectTransform     "small/map/pin_root"
+            public GameObject mapPinsRoot;      //RectTransform     "small/map/small_mapPin_root"
             public GameObject mapMarker;        //RectTransform     "small/map/player_marker"
             public GameObject mapWindMarker;    //RectTransform     "small/map/wind_marker"
             public GameObject mapShipMarker;    //RectTransform     "small/map/ship_marker"
@@ -135,7 +120,7 @@ namespace ValheimVRMod.VRCore.UI.HudElements
             cache.mapRoot = root;
             cache.mapBiomeName = root.transform.Find("small_biome").gameObject;
             cache.map = root.transform.Find("map").gameObject;
-            cache.mapPinsRoot = cache.mapRoot.transform.Find("small_mapPin_root").gameObject;
+            cache.mapPinsRoot = cache.map.transform.Find("small_mapPin_root").gameObject;
             cache.mapMarker = cache.map.transform.Find("player_marker").gameObject;
             cache.mapWindMarker = cache.map.transform.Find("wind_marker").gameObject;
             cache.mapShipMarker = cache.map.transform.Find("ship_marker").gameObject;

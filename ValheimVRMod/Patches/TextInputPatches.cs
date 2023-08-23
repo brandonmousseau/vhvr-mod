@@ -1,5 +1,6 @@
 using System.Text;
 using System.Threading;
+using Fishlabs;
 using HarmonyLib;
 using UnityEngine;
 using UnityEngine.Events;
@@ -21,7 +22,7 @@ namespace ValheimVRMod.Patches {
                 instance = __instance;
                 if (VHVRConfig.AutoOpenKeyboardOnInteract() || instance.m_topic.text == "ChatText")
                 {
-                    InputManager.start(instance.m_textField, instance.m_textFieldTMP, true, OnClose);
+                    InputManager.start(instance.m_textField, instance.m_textFieldTMP, null, true, OnClose);
                 }
             }
         }
@@ -38,7 +39,7 @@ namespace ValheimVRMod.Patches {
         {
             if (VHVRConfig.UseVrControls())
             {
-                InputManager.start(__instance, null);
+                InputManager.start(__instance, null, null);
             }
         }
     }
@@ -47,7 +48,7 @@ namespace ValheimVRMod.Patches {
     class PatchInputFieldTmpClick {
         public static void Postfix(TMP_InputField __instance) {
             if (VHVRConfig.UseVrControls()) {
-                InputManager.start(null, __instance);
+                InputManager.start(null, __instance, null);
             }
         }
     }
@@ -59,15 +60,7 @@ namespace ValheimVRMod.Patches {
         {
             if (VHVRConfig.UseVrControls() && __instance.inputType == InputField.InputType.Password)
             {
-                bool isClientSidePasswordDialog = (__instance == ZNet.instance?.m_passwordDialog?.GetComponentInChildren<InputField>());
-                if (isClientSidePasswordDialog)
-                {
-                    // After the user input the password and close the VR keyboard, use JoyButtonA to send the password.
-                    InputManager.start(__instance, null, true, () => ZInput_GetButtonDown_Patch.EmulateButtonDown("JoyButtonA"));
-                }
-                else {
-                    InputManager.start(__instance, null, true);
-                }
+                InputManager.start(__instance, null, null, true);
             }
         }
     }
@@ -78,7 +71,7 @@ namespace ValheimVRMod.Patches {
         public static void Postfix(Minimap __instance) {
             if (VHVRConfig.UseVrControls()) {
                 // After the user input map pin text and close the VR keyboard, use Enter key to enter the text.
-                InputManager.start(__instance.m_nameInput, null, true, () => ZInput_GetKeyDown_Patch.EmulateKeyDown(KeyCode.Return));
+                InputManager.start(null, null, __instance.m_nameInput, returnOnClose: true);
             }
         }
     }
@@ -110,15 +103,17 @@ namespace ValheimVRMod.Patches {
         private static bool initialized;
         private static InputField _inputField;
         private static TMP_InputField _inputFieldTmp;
+        private static GuiInputField _inputFieldGui; 
         private static UnityAction _closedAction;
         private static bool _returnOnClose;
         
         public static float closeTime;
         public static bool triggerReturn;
 
-        public static void start(InputField inputField, TMP_InputField inputFieldTmp, bool returnOnClose = false, UnityAction closedAction = null) {
-
+        public static void start(InputField inputField, TMP_InputField inputFieldTmp, GuiInputField inputFieldGui, bool returnOnClose = false, UnityAction closedAction = null) {
+            // TODO: consider enforcing the check that one and only one among inputField, inputFieldGui, and inputFieldTmp is non-null.
             _inputField = inputField;
+            _inputFieldGui = inputFieldGui;
             _inputFieldTmp = inputFieldTmp;
             _returnOnClose = returnOnClose;
             _closedAction = closedAction;
@@ -127,8 +122,13 @@ namespace ValheimVRMod.Patches {
                 _inputField.text = "";
             }
 
-            if (_inputFieldTmp != null && _inputFieldTmp.text == "...") {
+            if (_inputFieldTmp != null && _inputFieldTmp.text == "...")
+            {
                 _inputFieldTmp.text = "";
+            }
+
+            if (_inputFieldGui != null && _inputFieldGui.text == "...") {
+                _inputFieldGui.text = "";
             }
 
             if (!initialized) {
@@ -136,7 +136,7 @@ namespace ValheimVRMod.Patches {
                 initialized = true;
             }
             
-            SteamVR.instance.overlay.ShowKeyboard(0, 0, 0, "TextInput", 256, _inputField != null ? _inputField.text : _inputFieldTmp.text, 1);
+            SteamVR.instance.overlay.ShowKeyboard(0, 0, 0, "TextInput", 256, _inputField != null ? _inputField.text : _inputFieldTmp != null ? _inputFieldTmp.text : _inputFieldGui.text, 1);
         }
 
         private static void OnKeyboardClosed(VREvent_t args) {
@@ -151,10 +151,16 @@ namespace ValheimVRMod.Patches {
                 _inputField.text = text;
             }
 
-            if (_inputFieldTmp )
+            if (_inputFieldTmp)
             {
                 _inputFieldTmp.caretPosition = caretPosition;
                 _inputFieldTmp.text = text;
+            }
+
+            if (_inputFieldGui)
+            {
+                _inputFieldGui.caretPosition = caretPosition;
+                _inputFieldGui.text = text;
             }
 
             if (Scripts.QuickAbstract.shouldStartChat)
