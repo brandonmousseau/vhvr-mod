@@ -192,7 +192,7 @@ namespace ValheimVRMod.Patches
         {
             public static void Postfix(Player __instance)
             {
-                if (VHVRConfig.NonVrPlayer() || __instance != Player.m_localPlayer)
+                if (!ShouldFaceLookDirection(__instance))
                 {
                     return;
                 }
@@ -205,7 +205,7 @@ namespace ValheimVRMod.Patches
         {
             public static void Postfix(Player __instance)
             {
-                if (VHVRConfig.NonVrPlayer() || __instance != Player.m_localPlayer)
+                if (!ShouldFaceLookDirection(__instance))
                 {
                     return;
                 }
@@ -218,12 +218,19 @@ namespace ValheimVRMod.Patches
         {
             public static void Postfix(Player __instance)
             {
-                if (VHVRConfig.NonVrPlayer() || __instance != Player.m_localPlayer)
+                if (!ShouldFaceLookDirection(__instance))
                 {
                     return;
                 }
                 __instance.FaceLookDirection();
             }
+        }
+
+        static bool ShouldFaceLookDirection(Player player)
+        {
+            // TODO: Consider disabling face-look-direction patch whenever VRPlayer.attachedToPlayer is false as opposed to just when PlayerCustomizaton.IsBarberGuiVisible().
+
+            return !VHVRConfig.NonVrPlayer() && player == Player.m_localPlayer && !PlayerCustomizaton.IsBarberGuiVisible();
         }
 
 

@@ -104,7 +104,7 @@ namespace ValheimVRMod.VRCore
         public static Hand leftHand { get { return _leftHand; } }
         public static Hand rightHand { get { return _rightHand; } }
         public static Hand dominantHand { get { return VHVRConfig.LeftHanded() ? leftHand : rightHand; } }
-        public static bool ShouldPauseMovement { get { return Menu.IsVisible() && !VHVRConfig.AllowMovementWhenInMenu(); } }
+        public static bool ShouldPauseMovement { get { return PlayerCustomizaton.IsBarberGuiVisible() || (Menu.IsVisible() && !VHVRConfig.AllowMovementWhenInMenu()); } }
         public static bool IsClickableGuiOpen
         {
             get {
@@ -713,7 +713,8 @@ namespace ValheimVRMod.VRCore
                 ensurePlayerInstance() &&
                 !getPlayerCharacter().InCutscene() &&
                 !getPlayerCharacter().IsDead() &&
-                !getPlayerCharacter().InBed();
+                !getPlayerCharacter().InBed() &&
+                !PlayerCustomizaton.IsBarberGuiVisible();
         }
 
         private void attachVrPlayerToPlayerCharacter()
@@ -1125,7 +1126,7 @@ namespace ValheimVRMod.VRCore
         void DoRoomScaleMovement()
         {
             var player = getPlayerCharacter();
-            if (_vrCam == null || player == null || player.gameObject == null || player.IsAttached()) 
+            if (_vrCam == null || player == null || player.gameObject == null || player.IsAttached())
             {
               return;
             }
