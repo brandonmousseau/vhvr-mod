@@ -253,7 +253,10 @@ namespace ValheimVRMod.Patches {
         /// For Left Handed mode, switch left with right items
         /// </summary>
         static void Prefix(VisEquipment __instance, ref Transform joint) {
-
+            if (joint == null)
+            {
+                return;
+            }
             Player player = joint.GetComponentInParent<Player>();
             if (player == null)
             {
