@@ -11,7 +11,7 @@ namespace ValheimVRMod.Patches {
     class PatchAreaAttack {
 
         static bool Prefix(ref Transform __result,  ref Humanoid ___m_character) {
-            if (___m_character != Player.m_localPlayer || ! VHVRConfig.UseVrControls()) {
+            if (___m_character != Player.m_localPlayer || !VHVRConfig.UseVrControls()) {
                 return true;
             }
              

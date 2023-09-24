@@ -701,6 +701,10 @@ namespace ValheimVRMod.Patches {
     class InventoryGui_Awake_Patch {
         static void Prefix(InventoryGui __instance)
         {
+            if (VHVRConfig.NonVrPlayer())
+            {
+                return;
+            }
             __instance.m_splitSlider.gameObject.AddComponent<SliderSelector>();
         }
     }
@@ -749,6 +753,10 @@ namespace ValheimVRMod.Patches {
     {
         static bool Prefix(InventoryGrid __instance, ref InventoryGrid.Element __result)
         {
+            if (VHVRConfig.NonVrPlayer())
+            {
+                return true;
+            }
             foreach (InventoryGrid.Element element in __instance.m_elements)
             {
                 RectTransform rectTransform = element.m_go.transform as RectTransform;

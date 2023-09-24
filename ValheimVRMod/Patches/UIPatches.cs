@@ -89,9 +89,10 @@ namespace ValheimVRMod.Patches
     {
         public static void Postfix(ref Vector3 __result)
         {
-            if (! VHVRConfig.NonVrPlayer()) {
-                __result = SoftwareCursor.simulatedMousePosition;
+            if (VHVRConfig.NonVrPlayer()) {
+                return;
             }
+            __result = SoftwareCursor.simulatedMousePosition;
         }
     }
 
@@ -798,14 +799,16 @@ namespace ValheimVRMod.Patches
     {
         static bool Prefix(HotkeyBar __instance)
         {
+            if (VHVRConfig.NonVrPlayer())
+            {
+                return true;
+            }
             if (VHVRConfig.HideHotbar())
             {
                 clearHotbar(__instance);
                 return false;
-            } else
-            {
-                return true;
             }
+            return true;
         }
 
         private static void clearHotbar(HotkeyBar hotkeyBar)

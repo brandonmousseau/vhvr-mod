@@ -3,6 +3,7 @@ using HarmonyLib;
 using UnityEngine;
 using UnityEngine.PostProcessing;
 using UnityEngine.Rendering;
+using ValheimVRMod.Utilities;
 
 class FogComponentPatches
 {
@@ -27,6 +28,10 @@ class FogComponentPatches
         private static Vector3[] _frustumCornersBuffer = new Vector3[4];
         private static bool Prefix(CommandBuffer cb, FogComponent __instance)
         {
+            if (VHVRConfig.NonVrPlayer())
+            {
+                return true;
+            }
             FogModel.Settings settings = __instance.model.settings;
             Material material = __instance.context.materialFactory.Get("Hidden/Post FX/Fog");
             material.shaderKeywords = null;

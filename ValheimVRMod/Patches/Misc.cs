@@ -55,7 +55,7 @@ namespace ValheimVRMod.Patches
     }
 
     // This patch just forces IsUsingSteamVRInput to always return true.
-    // Without this, there seems to be some problem with how the DLL namespacest
+    // Without this, there seems to be some problem with how the DLL namespaces
     // are loaded when using certain other mods. Normally this method will result
     // in a call to the Assembly.GetTypes method, but for whatever reason, this
     // ends up throwing an exception and crashes the mod. The mod I know that causes
@@ -83,6 +83,10 @@ namespace ValheimVRMod.Patches
     {
         public static bool Prefix()
         {
+            if (VHVRConfig.NonVrPlayer())
+            {
+                return true;
+            }
             return false;
         }
     }
@@ -113,6 +117,10 @@ namespace ValheimVRMod.Patches
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
             var original = new List<CodeInstruction>(instructions);
+            if (VHVRConfig.NonVrPlayer())
+            {
+                return original;
+            }
             for (int i = 0; i < original.Count; i++)
             {
                 if (i + 4 < original.Count)
@@ -173,6 +181,10 @@ namespace ValheimVRMod.Patches
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
             var original = new List<CodeInstruction>(instructions);
+            if (VHVRConfig.NonVrPlayer())
+            {
+                return original;
+            }
             var patched = new List<CodeInstruction>();
             for (int i = 0; i < original.Count; i++)
             {

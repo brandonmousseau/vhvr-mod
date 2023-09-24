@@ -8,6 +8,10 @@ namespace ValheimVRMod.Patches {
     class PatchDebug {
 
         static bool Prefix(Hand __instance, ref List<Hand.AttachedObject> ___attachedObjects) {
+            if (VHVRConfig.NonVrPlayer())
+            {
+                return true;
+            }
             if (__instance.currentAttachedObject == null) {
                 return false;
             }

@@ -247,8 +247,9 @@ namespace ValheimVRMod.Patches
 
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
-            if (VHVRConfig.UseVrControls())
+            if (VHVRConfig.UseVrControls() || VHVRConfig.NonVrPlayer())
             {
+                LogUtils.LogDebug("Skipping KBandMouse_FindHoverObjectPatch patch.");
                 return instructions;
             }
             var original = new List<CodeInstruction>(instructions);

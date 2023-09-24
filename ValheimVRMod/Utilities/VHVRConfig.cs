@@ -1115,11 +1115,7 @@ namespace ValheimVRMod.Utilities
 
         public static bool NonVrPlayer()
         {
-#if NONVRMODE
-            return true;
-#else
             return nonVrPlayer.Value;
-#endif
         }
 
 #if DEBUG
