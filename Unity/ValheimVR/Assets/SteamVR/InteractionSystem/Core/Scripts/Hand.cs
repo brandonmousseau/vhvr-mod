@@ -53,17 +53,17 @@ namespace Valve.VR.InteractionSystem
 
         public SteamVR_Action_Boolean uiInteractAction = SteamVR_Input.GetAction<SteamVR_Action_Boolean>("InteractUI");
 
-        public bool useHoverSphere = true;
+        public bool useHoverSphere = false;
         public Transform hoverSphereTransform;
         public float hoverSphereRadius = 0.05f;
         public LayerMask hoverLayerMask = -1;
         public float hoverUpdateInterval = 0.1f;
 
-        public bool useControllerHoverComponent = true;
+        public bool useControllerHoverComponent = false;
         public string controllerHoverComponent = "tip";
         public float controllerHoverRadius = 0.075f;
 
-        public bool useFingerJointHover = true;
+        public bool useFingerJointHover = false;
         public SteamVR_Skeleton_JointIndexEnum fingerJointHover = SteamVR_Skeleton_JointIndexEnum.indexTip;
         public float fingerJointHoverRadius = 0.025f;
 
