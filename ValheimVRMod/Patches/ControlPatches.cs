@@ -625,6 +625,7 @@ namespace ValheimVRMod.Patches {
             {
                 attack = true;
                 attackHold = true;
+                CrossbowMorphManager.instance.destroyBolt();
             }
 
             switch (EquipScript.getRight()) {

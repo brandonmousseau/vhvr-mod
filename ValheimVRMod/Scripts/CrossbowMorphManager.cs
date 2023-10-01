@@ -12,6 +12,7 @@ namespace ValheimVRMod.Scripts {
 
         // The max distance allowed between the dominant hand and the nocking point to start pulling the string.
         private const float MaxNockingDistance = 0.2f;
+        private const float boltCenterToTailDistance = 0.51f;
 
         private bool initialized = false;
         private CrossbowAnatomy anatomy;
@@ -23,6 +24,12 @@ namespace ValheimVRMod.Scripts {
         private LineRenderer stringRenderer;
         private Vector3 pullDirection;
         private float maxDrawDelta;
+        private Transform mainHand;
+        private ItemDrop.ItemData item;
+        private GameObject bolt;
+        private GameObject boltAttach;
+        
+        public bool isBoltLoaded = false;
 
         // Note: we make draw length proportional to the square root of reload progress.
         private float vanillaDrawPercentageRestriction; // Draw percentage restriction due to the vanilla reload animation progress.
@@ -39,6 +46,10 @@ namespace ValheimVRMod.Scripts {
         void Start()
         {
             instance = this;
+            mainHand = VRPlayer.dominantHand.transform;
+            boltAttach = new GameObject();
+            boltAttach.transform.SetParent(mainHand, false);
+            item = Player.m_localPlayer.GetLeftItem();
         }
 
         public void UpdateWeaponLoading(Player player, float dt) {
@@ -88,7 +99,7 @@ namespace ValheimVRMod.Scripts {
             }
             else
             {
-                Vector3 pullVector = transform.InverseTransformPoint(VRPlayer.dominantHand.transform.position) - anatomy.restingNockingPoint;
+                Vector3 pullVector = transform.InverseTransformPoint(mainHand.position) - anatomy.restingNockingPoint;
                 realLifeDrawPercentage = Mathf.Max(0, Vector3.Dot(pullVector, pullDirection) / maxDrawDelta);
             }
 
@@ -119,6 +130,8 @@ namespace ValheimVRMod.Scripts {
             Destroy(stringLeft.gameObject);
             Destroy(stringRight.gameObject);
             Destroy(pullStart.gameObject);
+            destroyBolt();
+            Destroy(boltAttach);
         }
 
         private Player.MinorActionData GetReloadAction(Player player)
@@ -189,13 +202,21 @@ namespace ValheimVRMod.Scripts {
 
         public bool IsHandClosePullStart()
         {
-            return !CrossbowManager.isCurrentlyTwoHanded() && Vector3.Distance(VRPlayer.dominantHand.transform.position, pullStart.position) <= MaxNockingDistance;
+            return !CrossbowManager.isCurrentlyTwoHanded() && Vector3.Distance(mainHand.position, pullStart.position) <= MaxNockingDistance;
         }
 
         private void UpdatePullStatus()
         {
             if (shouldAutoReload)
             {
+                boltAttach.transform.SetParent(transform.parent);
+                boltAttach.transform.position = stringRenderer.GetPosition(1);
+                boltAttach.transform.localRotation = Quaternion.identity;
+
+                if (bolt == null)
+                {
+                    isBoltLoaded = createBolt();   
+                }
                 return;
             }
             bool wasPulling = isPulling;
@@ -211,6 +232,12 @@ namespace ValheimVRMod.Scripts {
                     Player.m_localPlayer.QueueReloadAction();
                 }
                 VrikCreator.GetLocalPlayerDominantHandConnector().position = stringRenderer.GetPosition(1);
+                
+                boltAttach.transform.SetParent(transform.parent);
+                boltAttach.transform.position = stringRenderer.GetPosition(1);
+                boltAttach.transform.localRotation = Quaternion.identity;
+                isBoltLoaded = bolt != null;
+
             }
             else if (wasPulling)
             {
@@ -218,6 +245,9 @@ namespace ValheimVRMod.Scripts {
                 if (!Player.m_localPlayer.IsWeaponLoaded())
                 {
                     Player.m_localPlayer.CancelReloadAction();
+                    boltAttach.transform.SetParent(mainHand, false);
+                    boltAttach.transform.localPosition = Vector3.zero;
+                    isBoltLoaded = false;
                 }
             }
         }
@@ -283,5 +313,108 @@ namespace ValheimVRMod.Scripts {
 
             return bowBendingMaterial;
         }
+        
+        public void destroyBolt() {
+            if (bolt != null) {
+                bolt.GetComponent<ZNetView>().Destroy();
+            }
+            isBoltLoaded = false;
+        }
+        
+         public void toggleBolt() {
+
+             if (isBoltLoaded || shouldAutoReload)
+             {
+                 return;
+             }
+             
+            if (bolt != null) {
+                destroyBolt();
+                //bHaptics
+                if (!BhapticsTactsuit.suitDisabled)
+                {
+                    BhapticsTactsuit.PlaybackHaptics(VHVRConfig.LeftHanded() ?
+                         "HolsterArrowLeftShoulder" : "HolsterArrowRightShoulder");
+                }
+                return;
+            }
+            
+            boltAttach.transform.SetParent(mainHand);
+            boltAttach.transform.localRotation = Quaternion.identity;
+            boltAttach.transform.localPosition = Vector3.zero;
+
+            if (!createBolt())
+            {
+                return;
+            }
+            
+            //bHaptics
+            if (!BhapticsTactsuit.suitDisabled)
+            {
+                BhapticsTactsuit.PlaybackHaptics(VHVRConfig.LeftHanded() ?
+                    "UnholsterArrowLeftShoulder" : "UnholsterArrowRightShoulder");
+            }
+         }
+         
+         private bool createBolt()
+         {
+             var ammoItem = Player.m_localPlayer.GetAmmoItem();
+             
+             if (ammoItem == null || ammoItem.m_shared.m_itemType != ItemDrop.ItemData.ItemType.Ammo) {
+                 // out of ammo
+                 if (!Attack.HaveAmmo(Player.m_localPlayer, item))
+                 {
+                     return false;
+                 }
+                 Attack.EquipAmmoItem(Player.m_localPlayer, item);
+             }
+             
+             bolt = Instantiate(ammoItem.m_shared.m_attack.m_attackProjectile, boltAttach.transform);
+             // we need to disable the Projectile Component, else the arrow will shoot out of the hands like a New Year rocket
+             bolt.GetComponent<Projectile>().enabled = false;
+             // also Destroy the Trail, as this produces particles when moving with arrow in hand
+             Destroy(findTrail(bolt.transform));
+             Destroy(bolt.GetComponentInChildren<Collider>());
+             bolt.transform.localRotation = Quaternion.identity;
+             bolt.transform.localPosition = new Vector3(0, 0, boltCenterToTailDistance);
+             foreach (ParticleSystem particleSystem in bolt.GetComponentsInChildren<ParticleSystem>()) {
+                 particleSystem.transform.localScale *= VHVRConfig.ArrowParticleSize();
+             }
+             boltAttach.transform.localRotation = Quaternion.identity;
+             boltAttach.transform.localPosition = Vector3.zero;
+             return true;
+         }
+
+         private GameObject findTrail(Transform transform) {
+
+             foreach (ParticleSystem p in transform.GetComponentsInChildren<ParticleSystem>()) {
+                 var go = p.gameObject;
+                 if (go.name == "trail") {
+                     return go;
+                 }
+             }
+
+             return null;
+         }
+         
+         public bool isHoldingBolt() {
+             return bolt != null && !isBoltLoaded;
+         }
+         
+         public void loadBoltIfBoltinHandIsNearAnchor()
+         {
+             var anchorpoint = new Vector3(0, 0.082f, -0.29f);
+
+             if (
+                 !CrossbowManager.isCurrentlyTwoHanded() &&
+                 isHoldingBolt() &&
+                 Player.m_localPlayer.IsWeaponLoaded() &&
+                 Vector3.Distance(mainHand.transform.position, transform.TransformPoint(anatomy.anchorPoint)) <= 0.2f)
+             {
+                 boltAttach.transform.SetParent(transform.parent, false);
+                 instance.boltAttach.transform.localPosition = anchorpoint;
+                 instance.isBoltLoaded = true;
+             }
+         }
     }
 }
