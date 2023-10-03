@@ -12,7 +12,6 @@ namespace ValheimVRMod.Scripts {
 
         // The max distance allowed between the dominant hand and the nocking point to start pulling the string.
         private const float MaxNockingDistance = 0.2f;
-        private const float boltCenterToTailDistance = 0.51f;
 
         private bool initialized = false;
         private CrossbowAnatomy anatomy;
@@ -25,7 +24,7 @@ namespace ValheimVRMod.Scripts {
         private Vector3 pullDirection;
         private float maxDrawDelta;
         private Transform mainHand;
-        private ItemDrop.ItemData item;
+        private ItemDrop.ItemData weapon;
         private GameObject bolt;
         private GameObject boltAttach;
         
@@ -49,7 +48,7 @@ namespace ValheimVRMod.Scripts {
             mainHand = VRPlayer.dominantHand.transform;
             boltAttach = new GameObject();
             boltAttach.transform.SetParent(mainHand, false);
-            item = Player.m_localPlayer.GetLeftItem();
+            weapon = Player.m_localPlayer.GetLeftItem();
         }
 
         public void UpdateWeaponLoading(Player player, float dt) {
@@ -209,9 +208,7 @@ namespace ValheimVRMod.Scripts {
         {
             if (shouldAutoReload)
             {
-                boltAttach.transform.SetParent(transform.parent);
-                boltAttach.transform.position = stringRenderer.GetPosition(1);
-                boltAttach.transform.localRotation = Quaternion.identity;
+                attachBoltToCrossbow();
 
                 if (bolt == null)
                 {
@@ -233,9 +230,7 @@ namespace ValheimVRMod.Scripts {
                 }
                 VrikCreator.GetLocalPlayerDominantHandConnector().position = stringRenderer.GetPosition(1);
                 
-                boltAttach.transform.SetParent(transform.parent);
-                boltAttach.transform.position = stringRenderer.GetPosition(1);
-                boltAttach.transform.localRotation = Quaternion.identity;
+                attachBoltToCrossbow();
                 isBoltLoaded = bolt != null;
 
             }
@@ -362,11 +357,11 @@ namespace ValheimVRMod.Scripts {
              
              if (ammoItem == null || ammoItem.m_shared.m_itemType != ItemDrop.ItemData.ItemType.Ammo) {
                  // out of ammo
-                 if (!Attack.HaveAmmo(Player.m_localPlayer, item))
+                 if (!Attack.HaveAmmo(Player.m_localPlayer, weapon))
                  {
                      return false;
                  }
-                 Attack.EquipAmmoItem(Player.m_localPlayer, item);
+                 Attack.EquipAmmoItem(Player.m_localPlayer, weapon);
              }
              
              bolt = Instantiate(ammoItem.m_shared.m_attack.m_attackProjectile, boltAttach.transform);
@@ -376,7 +371,7 @@ namespace ValheimVRMod.Scripts {
              Destroy(findTrail(bolt.transform));
              Destroy(bolt.GetComponentInChildren<Collider>());
              bolt.transform.localRotation = Quaternion.identity;
-             bolt.transform.localPosition = new Vector3(0, 0, boltCenterToTailDistance);
+             bolt.transform.localPosition = new Vector3(0, 0, anatomy.boltCenterToTailDistance);
              foreach (ParticleSystem particleSystem in bolt.GetComponentsInChildren<ParticleSystem>()) {
                  particleSystem.transform.localScale *= VHVRConfig.ArrowParticleSize();
              }
@@ -415,6 +410,13 @@ namespace ValheimVRMod.Scripts {
                  instance.boltAttach.transform.localPosition = anchorpoint;
                  instance.isBoltLoaded = true;
              }
+         }
+         
+         private void attachBoltToCrossbow()
+         {
+             boltAttach.transform.SetParent(transform.parent);
+             boltAttach.transform.position = stringRenderer.GetPosition(1);
+             boltAttach.transform.localRotation = Quaternion.identity;
          }
     }
 }
