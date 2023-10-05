@@ -816,36 +816,44 @@ namespace ValheimVRMod.Utilities
                                          "BuildAngleSnap",
                                          "26, 22.5, 10, 5, 2.5, 1, 0.5, 0.1, 0.05, 0.01",
                                          "List of Build angle snap for advance rotation mode");
-            // #if DEBUG
-            //             DebugPosX = config.Bind("Motion Control",
-            //                 "DebugPosX",
-            //                 0.0f,
-            //                 "DebugPosX");
-            //             DebugPosY = config.Bind("Motion Control",
-            //                 "DebugPosY",
-            //                 0.0f,
-            //                 "DebugPosY");
-            //             DebugPosZ = config.Bind("Motion Control",
-            //                 "DebugPosZ",
-            //                 0.0f,
-            //                 "DebugPosZ");
-            //             DebugRotX = config.Bind("Motion Control",
-            //                 "DebugRotX",
-            //                 0.0f,
-            //                 "DebugRotX");
-            //             DebugRotY = config.Bind("Motion Control",
-            //                 "DebugRotY",
-            //                 0.0f,
-            //                 "DebugRotY");
-            //             DebugRotZ = config.Bind("Motion Control",
-            //                 "DebugRotZ",
-            //                 0.0f,
-            //                 "DebugRotZ");
-            //             DebugScale = config.Bind("Motion Control",
-            //                 "DebugScale",
-            //                 1.0f,
-            //                 "DebugScale");
-            // #endif
+            
+            #if DEBUG
+            DebugPosX = config.Bind("Motion Control",
+                "DebugPosX",
+                0.0f,
+                new ConfigDescription("DebugPosX",
+                    new AcceptableValueRange<float>(-1.0f, 1.0f)));
+            DebugPosY = config.Bind("Motion Control",
+                "DebugPosY",
+                0.0f,
+                new ConfigDescription("DebugPosY",
+                    new AcceptableValueRange<float>(-1.0f, 1.0f)));
+            DebugPosZ = config.Bind("Motion Control",
+                "DebugPosZ",
+                0.0f,
+                new ConfigDescription("DebugPosZ",
+                    new AcceptableValueRange<float>(-1.0f, 1.0f)));
+            DebugRotX = config.Bind("Motion Control",
+                "DebugRotX",
+                0.0f,
+                new ConfigDescription("DebugRotX",
+                    new AcceptableValueRange<float>(-1.0f, 1.0f)));
+            DebugRotY = config.Bind("Motion Control",
+                "DebugRotY",
+                0.0f,
+                new ConfigDescription("DebugRotY",
+                    new AcceptableValueRange<float>(-1.0f, 1.0f)));
+            DebugRotZ = config.Bind("Motion Control",
+                "DebugRotZ",
+                0.0f,
+                new ConfigDescription("DebugRotZ",
+                    new AcceptableValueRange<float>(-1.0f, 1.0f)));
+            DebugScale = config.Bind("Motion Control",
+                "DebugScale",
+                1.0f,
+                new ConfigDescription("DebugScale",
+                    new AcceptableValueRange<float>(0.0f, 2.0f)));
+            #endif
         }
 
         public static bool ModEnabled()

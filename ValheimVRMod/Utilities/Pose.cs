@@ -46,6 +46,8 @@ namespace ValheimVRMod.Utilities {
                     
                     if (isDominantHand && EquipScript.getLeft() == EquipType.Bow) {
                         BowLocalManager.instance.toggleArrow();
+                    } else if (isDominantHand && EquipScript.getLeft() == EquipType.Crossbow) {
+                        CrossbowMorphManager.instance.toggleBolt();
                     } else if (isHoldingItem(isDominantHand)) {
                         PatchHideHandItems.HideLocalPlayerHandItem(isDominantHand);
                     } else {

@@ -13,6 +13,7 @@ namespace ValheimVRMod.Utilities {
         public readonly float maxBendAngleRadians;
         public readonly float softLimbHeight;
         public readonly float stringRadius;
+        public readonly float boltCenterToTailDistance;
 
         private static Dictionary<string, CrossbowAnatomy> anatomies = new Dictionary<string, CrossbowAnatomy>
         {
@@ -24,10 +25,11 @@ namespace ValheimVRMod.Utilities {
                     /* restingStringLeft= */ new Vector3(-0.625f, 1.255f, -0.05f),
                     /* restingStringRight= */ new Vector3(0.625f, 1.255f, -0.05f),
                     /* restingNockingPoint= */ new Vector3(0, 1.255f, -0.05f),
-                    /* anchorPoint= */ new Vector3(0, 0.675f, -0.05f),
+                    /* anchorPoint= */  new Vector3(0, 0.69f, -0.05f),
                     /* maxBendAngleRadians= */ 0.28f,
                     /* softLimbHeight= */ 0.01f,
-                    /* stringRadius= */ 0.005f)
+                    /* stringRadius= */ 0.005f,
+                    /* boltCenterToTailDistance= */ 0.51f)
             }
         };
 
@@ -45,7 +47,8 @@ namespace ValheimVRMod.Utilities {
             Vector3 anchorPoint,
             float maxBendAngleRadians,
             float softLimbHeight,
-            float stringRadius)
+            float stringRadius,
+            float boltCenterToTailDistance)
         {
             this.hardLimbLeft = hardLimbLeft;
             this.hardLimbRight = hardLimbRight;
@@ -56,6 +59,7 @@ namespace ValheimVRMod.Utilities {
             this.maxBendAngleRadians = maxBendAngleRadians;
             this.softLimbHeight = softLimbHeight;
             this.stringRadius = stringRadius;
+            this.boltCenterToTailDistance = boltCenterToTailDistance;
         }
     }
 }
