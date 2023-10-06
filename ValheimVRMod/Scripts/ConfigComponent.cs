@@ -18,7 +18,7 @@ namespace ValheimVRMod.Scripts {
         public string value;
 
         public void LateUpdate() {
-            var textObj = ConfigSettings.toolTip.GetComponentInChildren<Text>();
+            TMPro.TMP_Text textObj = ConfigSettings.toolTip.GetComponentInChildren<TMPro.TMP_Text>();
             textObj.text = textStr;
             ConfigSettings.toolTip.GetComponent<Image>().rectTransform.sizeDelta = new Vector2(758, textObj.preferredHeight + 8);
             ConfigSettings.toolTip.SetActive(hovered.Count > 0);
