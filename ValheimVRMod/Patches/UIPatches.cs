@@ -995,8 +995,8 @@ namespace ValheimVRMod.Patches
             {
                 __instance.m_dragGo.transform.position = SoftwareCursor.ScaledMouseVector() + new Vector3(10,50);
                 Image component = __instance.m_dragGo.transform.Find("icon").GetComponent<Image>();
-                Text component2 = __instance.m_dragGo.transform.Find("name").GetComponent<Text>();
-                Text component3 = __instance.m_dragGo.transform.Find("amount").GetComponent<Text>();
+                TMPro.TMP_Text component2 = __instance.m_dragGo.transform.Find("name").GetComponent<TMPro.TMP_Text>();
+                TMPro.TMP_Text component3 = __instance.m_dragGo.transform.Find("amount").GetComponent<TMPro.TMP_Text>();
                 component.sprite = __instance.m_dragItem.GetIcon();
                 component2.text = __instance.m_dragItem.m_shared.m_name;
                 component3.text = ((__instance.m_dragAmount > 1) ? __instance.m_dragAmount.ToString() : "");
