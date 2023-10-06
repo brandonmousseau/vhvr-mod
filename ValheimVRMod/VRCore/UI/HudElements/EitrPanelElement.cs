@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -126,7 +126,7 @@ namespace ValheimVRMod.VRCore.UI.HudElements
             Hud.instance.m_eitrAnimator = newComponents.eitrAnimator;
             Hud.instance.m_eitrBarFast = newComponents.eitrBarFast.GetComponent<GuiBar>();
             Hud.instance.m_eitrBarSlow = newComponents.eitrBarSlow.GetComponent<GuiBar>();
-            Hud.instance.m_eitrText = newComponents.eitrText.GetComponent<Text>();
+            Hud.instance.m_eitrText = newComponents.eitrText.GetComponent<TMPro.TMP_Text>();
         }
     }
 }
