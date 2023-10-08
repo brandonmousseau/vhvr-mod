@@ -105,11 +105,11 @@ namespace ValheimVRMod.VRCore.UI {
             bkgImage.rectTransform.anchoredPosition = new Vector2(0, -350);
             bkgImage.color = new Color(0,0,0,0.5f);
             var textObj = Object.Instantiate(togglePrefab.transform.GetChild(0), toolTip.transform);
-            var text = textObj.GetComponent<Text>();
+            TMP_Text text = textObj.GetComponent<TMP_Text>();
             text.rectTransform.sizeDelta = new Vector2(width, 300);
-            text.resizeTextForBestFit = false;
+            // text.resizeTextForBestFit = false;
             text.fontSize = 20;
-            text.alignment = TextAnchor.MiddleLeft;
+            text.alignment = TextAlignmentOptions.MidlineLeft;
             text.rectTransform.anchoredPosition = new Vector2(padding, padding);
             toolTip.SetActive(false);
         }
@@ -119,7 +119,7 @@ namespace ValheimVRMod.VRCore.UI {
         /// </summary>
         private static void createModSettings() {
             settings = Object.Instantiate(settingsPrefab, menuParent);
-            settings.transform.Find("panel").Find("Settings_topic").GetComponent<Text>().text = MenuName;
+            settings.transform.Find("panel").Find("Settings_topic").GetComponent<TMP_Text>().text = MenuName;
             createToolTip(settings.transform);
             var tabButtons = settings.transform.Find("panel").Find("TabButtons");
 
@@ -202,7 +202,7 @@ namespace ValheimVRMod.VRCore.UI {
             var tabButtonXPosition = TabButtonWidth * (tabCounter - (sectionCount - 1) * 0.5f);
             rectTransform.anchoredPosition = new Vector2(tabButtonXPosition, rectTransform.anchoredPosition.y);
 
-            foreach (Text text in newTabButton.GetComponentsInChildren<Text>()) {
+            foreach (TMP_Text text in newTabButton.GetComponentsInChildren<TMP_Text>()) {
                 text.text = section.Key;
             }
             
@@ -303,7 +303,7 @@ namespace ValheimVRMod.VRCore.UI {
             var sliderObj = Object.Instantiate(sliderPrefab, parent);
             var configComponent = sliderObj.AddComponent<ConfigComponent>();
             configComponent.configValue = configValue;
-            sliderObj.GetComponent<Text>().text = configValue.Key;
+            sliderObj.GetComponent<TMP_Text>().text = configValue.Key;
             sliderObj.GetComponent<RectTransform>().anchoredPosition = pos;
             var slider = sliderObj.GetComponentInChildren<Slider>();
             slider.minValue = float.Parse(type.GetProperty("MinValue").GetValue(acceptableValues).ToString());
@@ -324,7 +324,7 @@ namespace ValheimVRMod.VRCore.UI {
             var chooserObj = Object.Instantiate(chooserPrefab, parent);
             var configComponent = chooserObj.AddComponent<ConfigComponent>();
             configComponent.configValue = configValue;
-            chooserObj.GetComponent<Text>().text = configValue.Key;
+            chooserObj.GetComponent<TMP_Text>().text = configValue.Key;
             chooserObj.GetComponent<RectTransform>().anchoredPosition = pos;
             var valueList = (string[]) type.GetProperty("AcceptableValues").GetValue(acceptableValues);
             var currentIndex = Array.IndexOf(valueList, configValue.Value.GetSerializedValue());
@@ -336,15 +336,15 @@ namespace ValheimVRMod.VRCore.UI {
                         child.localScale *= 0.8f;
                         child.GetComponent<RectTransform>().anchoredPosition = new Vector2(180, 0);
                         child.GetComponent<RectTransform>().sizeDelta = new Vector2(150, 0);
-                        child.GetComponentInChildren<Text>().fontSize = 6;
-                        child.GetComponentInChildren<Text>().text = configValue.Value.GetSerializedValue();
+                        child.GetComponentInChildren<TMP_Text>().fontSize = 6;
+                        child.GetComponentInChildren<TMP_Text>().text = configValue.Value.GetSerializedValue();
                         break;
                     case "Left":
                         child.localScale *= 0.5f;
                         child.GetComponent<RectTransform>().anchoredPosition = new Vector2(110, 0);
                         child.GetComponent<Button>().onClick.AddListener(() => {
                             var text = valueList[mod(--currentIndex, valueList.Length)];
-                            chooserObj.transform.Find("bkg").GetComponentInChildren<Text>().text = text;
+                            chooserObj.transform.Find("bkg").GetComponentInChildren<TMP_Text>().text = text;
                         });
                         break;
                     case "Right":
@@ -352,7 +352,7 @@ namespace ValheimVRMod.VRCore.UI {
                         child.GetComponent<RectTransform>().anchoredPosition = new Vector2(250, 0);
                         child.GetComponent<Button>().onClick.AddListener(() => {
                             var text = valueList[mod(++currentIndex, valueList.Length)];
-                            chooserObj.transform.Find("bkg").GetComponentInChildren<Text>().text = text;
+                            chooserObj.transform.Find("bkg").GetComponentInChildren<TMP_Text>().text = text;
                         });
                         break;
                     default:
@@ -362,7 +362,7 @@ namespace ValheimVRMod.VRCore.UI {
             }
             
             configComponent.saveAction = param => {
-                configValue.Value.SetSerializedValue(chooserObj.transform.Find("bkg").GetComponentInChildren<Text>().text);
+                configValue.Value.SetSerializedValue(chooserObj.transform.Find("bkg").GetComponentInChildren<TMP_Text>().text);
             };
         }
         
@@ -374,7 +374,7 @@ namespace ValheimVRMod.VRCore.UI {
             configComponent.saveAction = param => {
                 configValue.Value.SetSerializedValue(toggle.GetComponent<Toggle>().isOn ? "true" : "false");
             };
-            toggle.GetComponentInChildren<Text>().text = configValue.Key;
+            toggle.GetComponentInChildren<TMP_Text>().text = configValue.Key;
             toggle.GetComponent<Toggle>().isOn = configValue.Value.GetSerializedValue() == "true";
             
             pos.x -= 210;
@@ -399,7 +399,7 @@ namespace ValheimVRMod.VRCore.UI {
             foreach (Transform child in label.transform) {
                 GameObject.Destroy(child.gameObject);
             }
-            var text = label.GetComponent<Text>();
+            var text = label.GetComponent<TMP_Text>();
             text.text = configValue.Key;
             
             pos.y += 225;
@@ -410,7 +410,7 @@ namespace ValheimVRMod.VRCore.UI {
             pos.x += 150;
             button.GetComponent<RectTransform>().anchoredPosition = pos;
             button.GetComponent<RectTransform>().localScale *= 0.5f;
-            button.GetComponentInChildren<Text>().text = "Set";
+            button.GetComponentInChildren<TMP_Text>().text = "Set";
 
             if (menuList.name != "MenuEntries") {
                 button.GetComponent<Button>().enabled = false;
@@ -441,7 +441,7 @@ namespace ValheimVRMod.VRCore.UI {
             pos.x += button.GetComponent<RectTransform>().rect.width/2;
             defaultButton.GetComponent<RectTransform>().anchoredPosition = pos;
             defaultButton.GetComponent<RectTransform>().localScale *= 0.5f;
-            defaultButton.GetComponentInChildren<Text>().text = "Reset";
+            defaultButton.GetComponentInChildren<TMP_Text>().text = "Reset";
 
             if (menuList.name != "MenuEntries")
             {
@@ -476,7 +476,7 @@ namespace ValheimVRMod.VRCore.UI {
             configComponent.saveAction = param => {
                 configValue.Value.SetSerializedValue(param);
             };
-            keyBinding.GetComponent<Text>().text = configValue.Key;
+            keyBinding.GetComponent<TMP_Text>().text = configValue.Key;
             Settings.m_instance.m_keys.Add(new Settings.KeySetting {m_keyName = configValue.Key, m_keyTransform = keyBinding.GetComponent<RectTransform>()});
             keyBinding.GetComponentInChildren<Button>().onClick.AddListener(() => {
                 Settings.instance.OnKeySet();

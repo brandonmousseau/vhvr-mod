@@ -22,7 +22,7 @@ namespace ValheimVRMod.Patches {
                 instance = __instance;
                 if (VHVRConfig.AutoOpenKeyboardOnInteract() || instance.m_topic.text == "ChatText")
                 {
-                    InputManager.start(instance.m_textField, instance.m_textFieldTMP, null, true, OnClose);
+                    InputManager.start(null, null, instance.m_inputField, true, OnClose);
                 }
             }
         }
@@ -53,29 +53,41 @@ namespace ValheimVRMod.Patches {
         }
     }
 
-    [HarmonyPatch(typeof(InputField), "OnFocus")]
+
+    [HarmonyPatch(typeof(TMP_InputField), "OnFocus")]
     class PatchPasswordFieldFocus
     {
-        public static void Postfix(InputField __instance)
+        static private TMP_InputField passwordInputField;
+        public static void Postfix(TMP_InputField __instance)
         {
-            if (VHVRConfig.UseVrControls() && __instance.inputType == InputField.InputType.Password)
+            if (VHVRConfig.UseVrControls() && __instance.inputType == TMP_InputField.InputType.Password)
             {
-                InputManager.start(__instance, null, null, true);
+                InputManager.start(null, __instance, null, false, OnClose);
+                passwordInputField = __instance;
             }
         }
-    }
 
+        private static void OnClose()
+        {
+            passwordInputField.OnSubmit(null);
+        }
+
+    }
 
     [HarmonyPatch(typeof(Minimap), "ShowPinNameInput")]
     class PatchMinimap {
         public static void Postfix(Minimap __instance) {
             if (VHVRConfig.UseVrControls()) {
-                // After the user input map pin text and close the VR keyboard, use Enter key to enter the text.
-                InputManager.start(null, null, __instance.m_nameInput, returnOnClose: true);
+                InputManager.start(null, null, __instance.m_nameInput, returnOnClose: false, OnClose);
             }
         }
+
+        private static void OnClose()
+        {
+            Minimap.m_instance.m_nameInput.OnSubmit(null);
+        }
     }
-    
+
     [HarmonyPatch(typeof(Player), "Interact")]
     class PatchPlayerInteract {
         public static bool Prefix() {
@@ -187,6 +199,12 @@ namespace ValheimVRMod.Patches {
             Scripts.QuickAbstract.shouldStartChat = false;
 
             triggerReturn = _returnOnClose;
+
+            // If return is to be triggered, we will wait until then to fire close action.
+            if (!_returnOnClose)
+            {
+                _closedAction?.Invoke();
+            }
         }
 
         public static bool handleReturnKeyInput(ref bool result, KeyCode key) {

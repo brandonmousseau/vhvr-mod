@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -124,7 +124,7 @@ namespace ValheimVRMod.VRCore.UI.HudElements
             Hud.instance.m_staminaAnimator = newComponents.staminaAnimator;
             Hud.instance.m_staminaBar2Fast = newComponents.staminaBarFast.GetComponent<GuiBar>();
             Hud.instance.m_staminaBar2Slow = newComponents.staminaBarSlow.GetComponent<GuiBar>();
-            Hud.instance.m_staminaText = newComponents.staminaText.GetComponent<Text>();
+            Hud.instance.m_staminaText = newComponents.staminaText.GetComponent<TMPro.TMP_Text>();
         }
     }
 }
