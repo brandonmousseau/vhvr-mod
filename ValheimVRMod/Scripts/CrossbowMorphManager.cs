@@ -103,6 +103,12 @@ namespace ValheimVRMod.Scripts {
             }
 
             MorphBow();
+
+            if (isPulling)
+            {
+                // We use string position to calcualte bolt position so it can only be updated after updating the string.
+                attachBoltToCrossbow();
+            }
         }
 
         void OnDisable()
@@ -230,7 +236,6 @@ namespace ValheimVRMod.Scripts {
                 }
                 VrikCreator.GetLocalPlayerDominantHandConnector().position = stringRenderer.GetPosition(1);
                 
-                attachBoltToCrossbow();
                 isBoltLoaded = bolt != null;
 
             }
