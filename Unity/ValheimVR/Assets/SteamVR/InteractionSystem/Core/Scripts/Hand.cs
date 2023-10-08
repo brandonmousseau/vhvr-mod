@@ -156,6 +156,8 @@ namespace Valve.VR.InteractionSystem
             }
         }
 
+        private bool disableHoveringPhysics = true;
+
 
         //-------------------------------------------------
         // The Interactable object this Hand is currently hovering over
@@ -852,6 +854,10 @@ namespace Valve.VR.InteractionSystem
         //-------------------------------------------------
         protected virtual void UpdateHovering()
         {
+
+            if (disableHoveringPhysics)
+                return;
+
             if ((noSteamVRFallbackCamera == null) && (isActive == false))
             {
                 return;
