@@ -361,12 +361,11 @@ namespace ValheimVRMod.Scripts {
              var ammoItem = Player.m_localPlayer.GetAmmoItem();
              
              if (ammoItem == null || ammoItem.m_shared.m_itemType != ItemDrop.ItemData.ItemType.Ammo) {
-                 // out of ammo
-                 if (!Attack.HaveAmmo(Player.m_localPlayer, weapon))
-                 {
-                     return false;
-                 }
-                 Attack.EquipAmmoItem(Player.m_localPlayer, weapon);
+                bool hasAmmo = EquipScript.equipAmmo();
+                if (!hasAmmo)
+                {
+                    return false;
+                }
              }
              
              bolt = Instantiate(ammoItem.m_shared.m_attack.m_attackProjectile, boltAttach.transform);
