@@ -160,18 +160,13 @@ namespace ValheimVRMod.Patches {
             switch (EquipScript.getLeft()) {
                 case EquipType.Bow:
                     meshFilter.gameObject.AddComponent<BowLocalManager>();
-                    var bow = Player.m_localPlayer.GetLeftItem();
-                    if (!Attack.HaveAmmo(Player.m_localPlayer, bow))
-                    {
-                        return;
-                    }
-                    Attack.EquipAmmoItem(Player.m_localPlayer, bow);
-                    
+                    EquipScript.equipAmmo();                   
                     return;
                 case EquipType.Crossbow:
                     CrossbowManager crossbowManager = ___m_leftItemInstance.AddComponent<CrossbowManager>();
                     crossbowManager.Initialize(Player.m_localPlayer.GetLeftItem(), ___m_leftItem);
                     crossbowManager.gameObject.AddComponent<WeaponBlock>().weaponWield = crossbowManager;
+                    EquipScript.equipAmmo();
                     return;
                 case EquipType.Lantern:
                     // TODO: implement a component that makes dverger lantern hangs downward regardless of hand orientation.
