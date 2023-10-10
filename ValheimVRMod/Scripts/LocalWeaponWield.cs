@@ -259,12 +259,8 @@ namespace ValheimVRMod.Scripts
             crosshair.transform.SetParent(transform, false);
             crosshair.transform.position = transform.position + CrosshairManager.WEAPON_CROSSHAIR_DISTANCE * weaponForward;
             crosshair.transform.localRotation = Quaternion.identity;
-            crosshair.SetActive(isAiming());
-        }
-
-        private bool isAiming()
-        {
-            return (EquipScript.getLeft() == EquipType.Crossbow || EquipScript.getRight() == EquipType.Magic) && isCurrentlyTwoHanded();
+            bool isAiming = (EquipScript.getLeft() == EquipType.Crossbow || EquipScript.getRight() == EquipType.Magic) && isCurrentlyTwoHanded();
+            crosshair.SetActive(isAiming);
         }
 
         private void InitializeRedDot()
