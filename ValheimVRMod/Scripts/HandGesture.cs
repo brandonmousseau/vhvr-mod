@@ -31,7 +31,7 @@ namespace ValheimVRMod.Scripts {
         public bool isUnequiped() {
             if (EquipScript.getLeft() == EquipType.Crossbow)
             {
-                if (CrossbowMorphManager.instance.isHoldingBolt()) {
+                if (CrossbowMorphManager.instance != null && CrossbowMorphManager.instance.isHoldingBolt()) {
                     return false;
                 }
                 
