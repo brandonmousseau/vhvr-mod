@@ -713,21 +713,32 @@ namespace ValheimVRMod.Patches {
     [HarmonyPatch(typeof(InventoryGui), nameof(InventoryGui.Update))]
     class InventoryGui_Update_Patch
     {
+        static bool allowQuickStackAll = true;
         static void Prefix(InventoryGui __instance)
         {
             if (VHVRConfig.NonVrPlayer() || !VHVRConfig.UseVrControls())
             {
                 return;
             }
-            if (!SteamVR_Actions.laserPointers_LeftClick.GetState(SteamVR_Input_Sources.Any))
+            if (!__instance.IsContainerOpen())
             {
-                // When a chest is opened, laser pointers take priority over valheim_Use.
-                // As the player releases the trigger when a chest is open,
-                // the button-up state of vaheim_Use is therefore not detected.
-                // The game will mistakenly think that the use button is still being pressed.
-                // Since "quick stack all" is triggered by holding the use button,
-                // resetting the timer here prevents it from being triggered inadvertently.
-                // TODO: try find a way to fix the wrong state of valheim_Use instead of resetting this timer.
+                // When a container is no longer open, reset this flag so that
+                // quick-stack-all can be used next time the player interacts with a container.
+                allowQuickStackAll = true;
+            }
+            else if (SteamVR_Actions.laserPointers_LeftClick.GetStateUp(SteamVR_Input_Sources.Any))
+            {
+                // When a container is open, the GUI is open so laser pointers take priority over valheim_Use.
+                // As the player releases the trigger when the container is open, the button-up state of vaheim_Use is therefore not detected.
+                // The game will mistakenly think that the use button is still being pressed and hold, triggering quick-stack-all inadvertently
+                // so we must patch to prevent that from happening. 
+                // Note: this flag will stay false for the rest of the entire duration when the current container is open
+                // so that dragging item spliiter will not trigger quick-stack-all either.
+                // TODO: try find a way to fix the wrong state of valheim_Use instead of using this ad hoc patch.
+                allowQuickStackAll = false;
+            }
+            if (!allowQuickStackAll) {
+                // Quick-stack-all is triggered by holding the use button and resetting this timer disables quick-stack-all.
                 __instance.m_containerHoldTime = 0;
             }
         }
