@@ -1,13 +1,12 @@
 using UnityEngine;
 using ValheimVRMod.Scripts;
-using ValheimVRMod.VRCore;
 using Object = UnityEngine.Object;
 
 namespace ValheimVRMod.Utilities {
     public static class StaticObjects {
         
-        private static WeaponCollision _leftWeaponCollider;
-        private static WeaponCollision _rightWeaponCollider;
+        public static GameObject leftWeaponCollider;
+        public static GameObject rightWeaponCollider;
         private static FistCollision _leftFist;
         private static FistCollision _rightFist;
         public static GameObject leftHandQuickMenu;
@@ -19,12 +18,23 @@ namespace ValheimVRMod.Utilities {
         public static Vector3 lastHitDir;
         public static Collider lastHitCollider;
         
-        public static WeaponCollision leftWeaponCollider() {
-            return getCollisionScriptCube(ref _leftWeaponCollider);
+        public static WeaponCollision instantiateLeftWeaponCollider(GameObject parent) {
+            
+            if (leftWeaponCollider != null) {
+                GameObject.Destroy(leftWeaponCollider);
+            }
+            leftWeaponCollider = GameObject.Instantiate(parent);
+            return leftWeaponCollider.AddComponent<WeaponCollision>();
         }
         
-        public static WeaponCollision rightWeaponCollider() {
-            return getCollisionScriptCube(ref _rightWeaponCollider);
+        public static WeaponCollision instantiateRightWeaponCollider(GameObject parent) {
+            
+            if (rightWeaponCollider != null) {
+                GameObject.Destroy(rightWeaponCollider);
+            }
+
+            rightWeaponCollider = GameObject.Instantiate(parent);
+            return rightWeaponCollider.AddComponent<WeaponCollision>();
         }
         
         public static FistCollision leftFist() {
@@ -34,22 +44,7 @@ namespace ValheimVRMod.Utilities {
         public static FistCollision rightFist() {
             return getCollisionScriptSphere(ref _rightFist);
         }
-        
-        private static T getCollisionScriptCube<T>(ref T collisionScript) where T : Component{
-            
-            if (collisionScript != null) {
-                return collisionScript;
-            }
-            
-            var collisionObj = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            Object.Destroy(collisionObj.GetComponent<MeshRenderer>());
-            collisionObj.GetComponent<BoxCollider>().isTrigger = true;
-            collisionObj.layer = LayerUtils.CHARACTER;
-            Rigidbody rigidbody = collisionObj.AddComponent<Rigidbody>();
-            rigidbody.useGravity = false;
-            return collisionScript = collisionObj.AddComponent<T>();
-        } 
-        
+
         private static T getCollisionScriptSphere<T>(ref T collisionScript) where T : Component{
             
             if (collisionScript != null) {

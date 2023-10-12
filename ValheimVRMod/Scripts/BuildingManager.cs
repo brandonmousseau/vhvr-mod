@@ -108,8 +108,48 @@ namespace ValheimVRMod.Scripts
         private LayerMask piecelayer2;
         private LayerMask nonpiecelayer;
 
+        private void initLayers()
+        {
+            piecelayer = LayerMask.GetMask(new []
+            {
+                "Default",
+                "static_solid",
+                "Default_small",
+                "piece",
+                "piece_nonsolid",
+                "terrain",
+                "vehicle"
+            }); 
+            
+            waterpiecelayer = LayerMask.GetMask(new []
+            {
+                "Default",
+                "static_solid",
+                "Default_small",
+                "piece",
+                "piece_nonsolid",
+                "terrain",
+                "Water",
+                "vehicle"
+            });
+            piecelayer2 = LayerMask.GetMask(new []
+            {
+                "Default",
+                "static_solid",
+                "Default_small",
+                "piece",
+                "terrain",
+                "vehicle"
+            });
+            nonpiecelayer = LayerMask.GetMask(new []
+            {
+                "piece_nonsolid"
+            });
+        }
+
         private void Awake()
         {
+            initLayers();
             createRefBox();
             createRefPointer();
             createRefPointer2();
@@ -126,40 +166,6 @@ namespace ValheimVRMod.Scripts
                 snapPointsCollider.Add(CreateSnapPointCollider());
             }
             instance = this;
-            piecelayer = LayerMask.GetMask(new string[]
-            {
-                "Default",
-                "static_solid",
-                "Default_small",
-                "piece",
-                "piece_nonsolid",
-                "terrain",
-                "vehicle"
-            });
-            waterpiecelayer = LayerMask.GetMask(new string[]
-            {
-                "Default",
-                "static_solid",
-                "Default_small",
-                "piece",
-                "piece_nonsolid",
-                "terrain",
-                "Water",
-                "vehicle"
-            });
-            piecelayer2 = LayerMask.GetMask(new string[]
-            {
-                "Default",
-                "static_solid",
-                "Default_small",
-                "piece",
-                "terrain",
-                "vehicle"
-            });
-            nonpiecelayer = LayerMask.GetMask(new string[]
-            {
-                "piece_nonsolid"
-            });
         }
         private void OnDestroy()
         {

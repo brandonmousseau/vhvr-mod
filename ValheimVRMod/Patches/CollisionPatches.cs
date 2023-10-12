@@ -15,7 +15,7 @@ namespace ValheimVRMod.Patches {
                 return true;
             }
              
-            __result = StaticObjects.rightWeaponCollider().transform;
+            __result = StaticObjects.rightWeaponCollider.transform;
             return false;
         }
     }

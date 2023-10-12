@@ -56,7 +56,7 @@ namespace ValheimVRMod.Scripts {
         void Awake() {
             Mesh mesh = GetComponent<MeshFilter>().mesh;
             verts = mesh.vertices;
-
+            
             // Need to save this here on the main thread, as accessing mesh.triangles on the background thread
             // throws an exception.
             meshTriangles = mesh.triangles;
@@ -80,10 +80,8 @@ namespace ValheimVRMod.Scripts {
             bowRightInObjectSpace = transform.InverseTransformDirection(bowOrientation.right);
             float handleTopLocalHeight = Vector3.Dot(transform.InverseTransformPoint(bowOrientation.TransformPoint(new Vector3(0, bowAnatomy.handleHeight * 0.5f, 0))), bowUpInObjectSpace);
             float handleBottomLocalHeight = Vector3.Dot(transform.InverseTransformPoint(bowOrientation.TransformPoint(new Vector3(0, -bowAnatomy.handleHeight * 0.5f, 0))), bowUpInObjectSpace);
-            // we need to run this method in thread as it takes longer than a frame and freezes game for a moment
             var xScale = transform.localScale.x;
-            Thread thread = new Thread(() => initializeRenderersAsync(handleTopLocalHeight, handleBottomLocalHeight, xScale));
-            thread.Start();
+            initializeRenderers(handleTopLocalHeight, handleBottomLocalHeight, xScale);
 
             pullObj = new GameObject();
             pullObj.transform.SetParent(bowOrientation, false);
@@ -114,7 +112,7 @@ namespace ValheimVRMod.Scripts {
         protected Vector3 getArrowRestPosition() {
             return bowOrientation.TransformPoint(new Vector3(gripLocalHalfWidth * VHVRConfig.ArrowRestHorizontalOffsetMultiplier(), VHVRConfig.ArrowRestElevation(), 0));
         }
-
+        
         protected float GetBraceHeight() {
             return -(pullStart.localPosition.z);
         }
@@ -124,7 +122,7 @@ namespace ValheimVRMod.Scripts {
             return 1;
         }
 
-        private void initializeRenderersAsync(float handleTopLocalHeight, float handleBottomLocalHeight, float bowScale) {
+        private void initializeRenderers(float handleTopLocalHeight, float handleBottomLocalHeight, float bowScale) {
 
             // Remove the old bow string, which is part of the bow mesh to later replace it with a linerenderer.
             // we are making use of the fact that string triangles are longer then all other triangles

@@ -1,5 +1,6 @@
 using HarmonyLib;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Rendering;
 using ValheimVRMod.VRCore;
@@ -77,8 +78,19 @@ namespace ValheimVRMod.Patches {
                     meshFilter.gameObject.AddComponent<FishingManager>();
                     break;
             }
+
+            WeaponCollision weaponCol = null;
+            if (new [] {
+                    ItemDrop.ItemData.ItemType.OneHandedWeapon, 
+                    ItemDrop.ItemData.ItemType.TwoHandedWeapon, 
+                    ItemDrop.ItemData.ItemType.Torch
+            }.Contains(Player.m_localPlayer.GetRightItem().m_shared.m_itemType)) {
+                weaponCol = StaticObjects.instantiateRightWeaponCollider(___m_rightItemInstance);
+            }
+            
             LocalWeaponWield weaponWield = EquipScript.isSpearEquipped() ? ___m_rightItemInstance.AddComponent<SpearWield>() : ___m_rightItemInstance.AddComponent<LocalWeaponWield>();
             weaponWield.Initialize(Player.m_localPlayer.GetRightItem(), ___m_rightItem);
+            weaponCol?.create(___m_rightItemInstance.transform, true, weaponWield);
 
             if (MagicWeaponManager.IsSwingLaunchEnabled())
             {
@@ -90,9 +102,6 @@ namespace ValheimVRMod.Patches {
                 (meshFilter.gameObject.AddComponent<ThrowableManager>()).weaponWield = weaponWield;
             }
 
-            var weaponCol = StaticObjects.rightWeaponCollider().GetComponent<WeaponCollision>();
-            weaponCol.setColliderParent(meshFilter.transform, ___m_rightItem, true);
-            weaponCol.weaponWield = weaponWield;
             meshFilter.gameObject.AddComponent<ButtonSecondaryAttackManager>().Initialize(meshFilter.transform, ___m_rightItem, true);
             meshFilter.gameObject.AddComponent<WeaponBlock>().weaponWield = weaponWield;
 
@@ -175,7 +184,15 @@ namespace ValheimVRMod.Patches {
                     meshFilter.gameObject.AddComponent<ShieldBlock>().itemName = ___m_leftItem;
                     return;
             }
-
+            
+            if (new [] {
+                    ItemDrop.ItemData.ItemType.OneHandedWeapon, 
+                    ItemDrop.ItemData.ItemType.TwoHandedWeapon, 
+                    ItemDrop.ItemData.ItemType.Torch
+                }.Contains(Player.m_localPlayer.GetRightItem().m_shared.m_itemType)) {
+                StaticObjects.instantiateLeftWeaponCollider(___m_leftItemInstance).create(___m_leftItemInstance.transform, false);
+            }
+            
             meshFilter.gameObject.AddComponent<ButtonSecondaryAttackManager>().Initialize(meshFilter.transform, ___m_leftItem, false);
             ParticleFix.maybeFix(___m_leftItemInstance);
         }

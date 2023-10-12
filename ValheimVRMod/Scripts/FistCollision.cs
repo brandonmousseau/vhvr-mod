@@ -13,8 +13,8 @@ namespace ValheimVRMod.Scripts {
         private const float MIN_SPEED = 2.5f;
         private GameObject colliderParent = null;
         private bool isRightHand;
+        private bool isMainHand;
         private HandGesture handGesture;
-        private Hand thisHand { get { return isRightHand ? VRPlayer.rightHand : VRPlayer.leftHand; } }
         private PhysicsEstimator physicsEstimator { get { return isRightHand ? VRPlayer.rightHandPhysicsEstimator : VRPlayer.leftHandPhysicsEstimator; } }
 
         private float fistRotation = 0;
@@ -27,7 +27,8 @@ namespace ValheimVRMod.Scripts {
             LayerUtils.CHARARCTER_TRIGGER
         };
 
-        private void Awake() {
+        private void Awake() 
+        {
             colliderParent = new GameObject();
             instance = this;
         }
@@ -42,7 +43,8 @@ namespace ValheimVRMod.Scripts {
             }
         }
 
-        private void OnTriggerStay(Collider collider) {
+        private void OnTriggerStay(Collider collider) 
+        {
             if (!isCollisionAllowed()) {
                 return;
             }
@@ -52,6 +54,11 @@ namespace ValheimVRMod.Scripts {
             if (maybePlayer != null && maybePlayer == Player.m_localPlayer) {
                 return;
             }
+            
+            if (collider.GetComponentInParent<WeaponCollision>())
+            {
+                return;
+            }
 
             if (!hasMomentum()) {
                 return;
@@ -59,7 +66,7 @@ namespace ValheimVRMod.Scripts {
 
             bool isCurrentlySecondaryAttack = LocalPlayerSecondaryAttackCooldown <= 0 && RoomscaleSecondaryAttackUtils.IsSecondaryAttack(physicsEstimator, physicsEstimator);
             bool usingWeapon = usingClaws() || usingDualKnives();
-            var item = usingWeapon ? Player.m_localPlayer.GetRightItem() : Player.m_localPlayer.m_unarmedWeapon.m_itemData;
+            var item = usingWeapon ? getMainItem() : Player.m_localPlayer.m_unarmedWeapon.m_itemData;
             Attack primaryAttack = item.m_shared.m_attack;
             Attack attack = isCurrentlySecondaryAttack ? item.m_shared.m_secondaryAttack : primaryAttack;
             if (usingWeapon)
@@ -82,9 +89,9 @@ namespace ValheimVRMod.Scripts {
             StaticObjects.lastHitPoint = transform.position;
             StaticObjects.lastHitDir = physicsEstimator.GetVelocity().normalized;
             StaticObjects.lastHitCollider = collider;
-
+            
             if (attack.Start(Player.m_localPlayer, null, null, Player.m_localPlayer.m_animEvent,
-                null, item, null, 0.0f, 0.0f)) {
+                    null, item, null, 0.0f, 0.0f)) {
                 if (isRightHand) {
                     VRPlayer.rightHand.hapticAction.Execute( 0, 0.2f, 100, 0.5f, SteamVR_Input_Sources.RightHand);
                 } else {
@@ -93,8 +100,8 @@ namespace ValheimVRMod.Scripts {
             }
         }
 
-        private bool tryHitTarget(GameObject target, bool isSecondaryAttack, float duratrion) {
-
+        private bool tryHitTarget(GameObject target, bool isSecondaryAttack, float duratrion) 
+        {
             // ignore certain Layers
             if (ignoreLayers.Contains(target.layer)) {
                 return false;
@@ -108,7 +115,8 @@ namespace ValheimVRMod.Scripts {
             return isSecondaryAttack ? attackTargetMeshCooldown.tryTriggerSecondaryAttack(duratrion) : attackTargetMeshCooldown.tryTriggerPrimaryAttack(duratrion);
         }
 
-        private void OnRenderObject() {
+        private void OnRenderObject() 
+        {
             transform.SetParent(colliderParent.transform);
             transform.localRotation = Quaternion.identity;
             transform.localPosition = Vector3.zero;
@@ -116,9 +124,11 @@ namespace ValheimVRMod.Scripts {
             transform.SetParent(Player.m_localPlayer.transform, true);
         }
 
-        public void setColliderParent(Transform obj, bool rightHand) {
+        public void setColliderParent(Transform obj, bool rightHand)
+        {
 
             isRightHand = rightHand;
+            isMainHand = isRightHand ^ VHVRConfig.LeftHanded();
             handGesture = obj.GetComponent<HandGesture>();
             colliderParent = new GameObject();
             colliderParent.transform.parent = obj;
@@ -126,7 +136,8 @@ namespace ValheimVRMod.Scripts {
             colliderParent.transform.localScale *= 0.45f;
         }
 
-        private bool isCollisionAllowed() {
+        private bool isCollisionAllowed() 
+        {
 
             SteamVR_Input_Sources inputSource;
             
@@ -142,13 +153,13 @@ namespace ValheimVRMod.Scripts {
 
             var isEquippedWithFistGesture =
                 (usingClaws() || usingDualKnives()) && SteamVR_Actions.valheim_Grab.GetState(inputSource);
-
             return VRPlayer.inFirstPerson && colliderParent != null && 
                    (isEquippedWithFistGesture || isUnequipedWithFistGesture);
         }
 
 
-        public bool hasMomentum() {
+        public bool hasMomentum() 
+        {
 
             if (!VHVRConfig.WeaponNeedsSpeed()) {
                 return true;
@@ -157,12 +168,13 @@ namespace ValheimVRMod.Scripts {
             return physicsEstimator.GetVelocity().magnitude > MIN_SPEED;
         }
 
-        public bool usingClaws() {
+        public bool usingClaws() 
+        {
             var item = EquipScript.getRight();
             return item.Equals(EquipType.Claws) || item.Equals(EquipType.DualKnives);
         }
 
-        public bool usingDualKnives()
+        public bool usingDualKnives() 
         {
             var item = EquipScript.getRight();
             if (item.Equals(EquipType.DualKnives))
@@ -176,7 +188,7 @@ namespace ValheimVRMod.Scripts {
             return item.Equals(EquipType.DualKnives);
         }
 
-        public bool usingFistWeapon()
+        public bool usingFistWeapon() 
         {
             SteamVR_Input_Sources inputSource;
 
@@ -197,6 +209,11 @@ namespace ValheimVRMod.Scripts {
                 (usingClaws() || usingDualKnives()) && SteamVR_Actions.valheim_Grab.GetState(inputSource);
 
             return (isEquippedWithFistGesture || isUnequipedWithFistGesture);
+        }
+
+        private ItemDrop.ItemData getMainItem()
+        {
+            return isMainHand ? Player.m_localPlayer.GetRightItem() : Player.m_localPlayer.GetLeftItem();
         }
     }
 }

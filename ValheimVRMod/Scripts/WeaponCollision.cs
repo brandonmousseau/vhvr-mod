@@ -1,10 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.Rendering;
-using ValheimVRMod.Scripts.Block;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using Valve.VR;
@@ -16,7 +11,6 @@ namespace ValheimVRMod.Scripts {
         private const float MAX_STAB_ANGLE = 30f;
         private const float MAX_STAB_ANGLE_TWOHAND = 40f;
 
-        private bool scriptActive;
         private GameObject colliderParent;
         private ItemDrop.ItemData item;
         private Attack attack;
@@ -25,13 +19,12 @@ namespace ValheimVRMod.Scripts {
         private Outline outline;
         private bool hasDrunk;
         private float postSecondaryAttackCountdown;
+        private LocalWeaponWield weaponWield;
 
         public PhysicsEstimator physicsEstimator { get; private set; }
         public PhysicsEstimator mainHandPhysicsEstimator { get { return weaponWield.mainHand == VRPlayer.leftHand ? VRPlayer.leftHandPhysicsEstimator : VRPlayer.rightHandPhysicsEstimator; } }
         public float twoHandedMultitargetSwipeCountdown { get; private set; } = 0;
-        public bool itemIsTool;
         public static bool isDrinking;
-        public LocalWeaponWield weaponWield;
         public static bool isLastHitOnTerrain;
 
         private float colliderDistance;
@@ -45,12 +38,11 @@ namespace ValheimVRMod.Scripts {
 
         private void Awake()
         {
-            colliderParent = new GameObject();
             physicsEstimator = gameObject.AddComponent<PhysicsEstimator>();
             physicsEstimator.refTransform = CameraUtils.getCamera(CameraUtils.VR_CAMERA)?.transform.parent;
         }
 
-        void Destroy()
+        void OnDestroy()
         {
             Destroy(colliderParent);
         }
@@ -95,7 +87,12 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            if (item == null && !itemIsTool || !hasMomentum()) {
+            if (collider.GetComponentInParent<FistCollision>())
+            {
+                return;
+            }
+
+            if (item == null || !hasMomentum()) {
                 return;
             }
 
@@ -205,15 +202,15 @@ namespace ValheimVRMod.Scripts {
             if (!isCollisionAllowed()) {
                 return;
             }
-            transform.SetParent(colliderParent.transform);
-            transform.localRotation = Quaternion.identity;
-            transform.localPosition = Vector3.zero;
-            transform.localScale = Vector3.one;
-            transform.SetParent(Player.m_localPlayer.transform, true);
+            transform.SetPositionAndRotation(colliderParent.transform.position, colliderParent.transform.rotation);
         }
+        
+        public WeaponCollision create(Transform parent, bool rightHand, LocalWeaponWield localWeaponWield = null) {
 
-        public void setColliderParent(Transform obj, string name, bool rightHand) {
-            outline = obj.parent.gameObject.AddComponent<Outline>();
+            colliderParent = parent.gameObject;
+            weaponWield = localWeaponWield;
+            
+            outline = colliderParent.AddComponent<Outline>();
             outline.OutlineMode = Outline.Mode.OutlineVisible;
 
             isRightHand = rightHand;
@@ -223,30 +220,25 @@ namespace ValheimVRMod.Scripts {
             else {
                 item = Player.m_localPlayer.GetLeftItem();
             }
+            
+            attack = item.m_shared.m_attack;
+            secondaryAttack = item.m_shared.m_secondaryAttack;
+            gameObject.AddComponent<Rigidbody>().useGravity = false;
 
-            attack = item.m_shared.m_attack.Clone();
-            secondaryAttack = item.m_shared.m_secondaryAttack.Clone();
-
-            itemIsTool = name == "Hammer";
-
-            if (colliderParent == null) {
-                colliderParent = new GameObject();
-            }
-
-            try {
-                WeaponColData colliderData = WeaponUtils.getForName(name, item);
-                colliderParent.transform.parent = obj;
-                colliderParent.transform.localPosition = colliderData.pos;
-                colliderParent.transform.localRotation = Quaternion.Euler(colliderData.euler);
-                colliderParent.transform.localScale = colliderData.scale;
-                colliderDistance = Vector3.Distance(colliderParent.transform.position, obj.parent.position);
-                setScriptActive(true);
-            }
-            catch (InvalidEnumArgumentException)
+            foreach (MeshFilter component in GetComponentsInChildren<MeshFilter>())
             {
-                LogUtils.LogWarning($"Collider not found for: {name}");
-                setScriptActive(false);
+                component.gameObject.layer = LayerUtils.CHARACTER;
+                var meshCollider = component.gameObject.AddComponent<MeshCollider>();
+                meshCollider.sharedMesh = component.mesh;
+                meshCollider.convex = true;
+                meshCollider.isTrigger = true;
+
+                Destroy(component.GetComponent<MeshRenderer>());
+                Destroy(component.GetComponent<MeshFilter>());
             }
+            colliderDistance = Vector3.Distance(colliderParent.transform.position, parent.parent.position);
+            
+            return this;
         }
 
         private void Update() {
@@ -285,11 +277,12 @@ namespace ValheimVRMod.Scripts {
         }
         
         private bool isCollisionAllowed() {
-            return scriptActive && VRPlayer.inFirstPerson && colliderParent != null;
-        }
-
-        private void setScriptActive(bool scriptActive) {
-            this.scriptActive = scriptActive;
+            if (colliderParent == null) {
+                Destroy(gameObject);
+                return false;
+            }
+            
+            return VRPlayer.inFirstPerson;
         }
         
         private void FixedUpdate() {
