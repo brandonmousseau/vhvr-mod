@@ -124,7 +124,8 @@ namespace ValheimVRMod.VRCore.UI
             _canvasCrosshairRoot.SetActive(false); // Disable the original crosshairs
             _canvasCrosshairRootClone.SetActive(VRPlayer.attachedToPlayer);
             _canvasCrosshairRootClone.transform.SetParent(_crosshairCanvas.transform, false);
-            _crosshairClone.SetActive(VHVRConfig.ShowStaticCrosshair());
+            // Vanilla game has control of isActive state of _crosshairClone, so only disabling its Image component can hide it.
+            _crosshairClone.GetComponent<Image>().enabled = VHVRConfig.ShowStaticCrosshair();
             if (crosshairCloneLeftHand)
             {
                 crosshairCloneLeftHand.SetActive(VHVRConfig.ShowStaticCrosshair());
