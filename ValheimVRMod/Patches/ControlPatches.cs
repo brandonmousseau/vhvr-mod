@@ -657,9 +657,9 @@ namespace ValheimVRMod.Patches {
                     break;
                 
                 case EquipType.Tankard:
-                    if (WeaponCollision.isDrinking) {
+                    if (MainWeaponCollision.isDrinking) {
                         attack = true;
-                        WeaponCollision.isDrinking = false;
+                        MainWeaponCollision.isDrinking = false;
                     }
 
                     break;
