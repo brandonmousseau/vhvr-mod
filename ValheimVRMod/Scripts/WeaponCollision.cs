@@ -24,7 +24,7 @@ namespace ValheimVRMod.Scripts {
         public PhysicsEstimator physicsEstimator { get; private set; }
         public bool itemIsTool;
         public static bool isDrinking;
-        public static bool isLastHitOnTerrain;
+        public bool isLastHitOnTerrain;
 
         private float colliderDistance;
 
