@@ -21,6 +21,20 @@ namespace ValheimVRMod.Scripts {
         public PhysicsEstimator mainHandPhysicsEstimator { get { return weaponWield.mainHand == VRPlayer.leftHand ? VRPlayer.leftHandPhysicsEstimator : VRPlayer.rightHandPhysicsEstimator; } }
         public float twoHandedMultitargetSwipeCountdown { get; private set; } = 0;
 
+        protected override bool isAttackAvailable(GameObject target)
+        {
+            if (Player.m_localPlayer.m_blocking && !weaponWield.allowBlocking() && VHVRConfig.BlockingType() == "GrabButton")
+            {
+                return false;
+            }
+
+            if (ButtonSecondaryAttackManager.firstPos != Vector3.zero || ButtonSecondaryAttackManager.isSecondaryAttackStarted)
+            {
+                return false;
+            }
+
+            return base.isAttackAvailable(target);
+        }
 
         protected override Attack tryHitTarget(AttackTargetMeshCooldown attackTargetMeshCooldown) {
             bool isSecondaryAttack = postSecondaryAttackCountdown <= 0 && RoomscaleSecondaryAttackUtils.IsSecondaryAttack(this.physicsEstimator, this.mainHandPhysicsEstimator);
@@ -80,6 +94,18 @@ namespace ValheimVRMod.Scripts {
             }
 
             return false;
+        }
+
+        private void FixedUpdate()
+        {
+            if (postSecondaryAttackCountdown > 0)
+            {
+                postSecondaryAttackCountdown -= Time.fixedDeltaTime;
+            }
+            if (twoHandedMultitargetSwipeCountdown > 0)
+            {
+                postSecondaryAttackCountdown -= Time.fixedDeltaTime;
+            }
         }
 
         private bool isStab()

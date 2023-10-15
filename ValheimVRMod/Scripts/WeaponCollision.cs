@@ -143,7 +143,7 @@ namespace ValheimVRMod.Scripts {
             }
         }
 
-        private bool isAttackAvailable(GameObject target) {
+        protected virtual bool isAttackAvailable(GameObject target) {
 
             // ignore certain Layers
             if (ignoreLayers.Contains(target.layer)) {
