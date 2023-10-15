@@ -737,7 +737,7 @@ namespace ValheimVRMod.Patches {
                 // TODO: try find a way to fix the wrong state of valheim_Use instead of using this ad hoc patch.
                 allowQuickStackAll = false;
             }
-            if (!allowQuickStackAll) {
+            if (!allowQuickStackAll || !SteamVR_Actions.laserPointers_LeftClick.GetState(SteamVR_Input_Sources.Any)) {
                 // Quick-stack-all is triggered by holding the use button and resetting this timer disables quick-stack-all.
                 __instance.m_containerHoldTime = 0;
             }
@@ -1065,4 +1065,3 @@ namespace ValheimVRMod.Patches {
         }
     }
 }
-

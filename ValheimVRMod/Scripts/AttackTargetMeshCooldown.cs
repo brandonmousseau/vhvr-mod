@@ -58,7 +58,7 @@ namespace ValheimVRMod.Scripts {
                 damageMultiplier /= 2;
             }
 
-            WeaponCollision weaponCollision = Player.m_localPlayer.gameObject.GetComponentInChildren<WeaponCollision>();
+            MainWeaponCollision weaponCollision = Player.m_localPlayer.gameObject.GetComponentInChildren<MainWeaponCollision>();
             if (weaponCollision && weaponCollision.twoHandedMultitargetSwipeCountdown > 0)
             {
                 return 1;

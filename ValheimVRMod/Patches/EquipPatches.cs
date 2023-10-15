@@ -79,18 +79,21 @@ namespace ValheimVRMod.Patches {
                     break;
             }
 
-            WeaponCollision weaponCol = null;
+            MainWeaponCollision weaponCol = null;
             if (new [] {
                     ItemDrop.ItemData.ItemType.OneHandedWeapon, 
                     ItemDrop.ItemData.ItemType.TwoHandedWeapon, 
                     ItemDrop.ItemData.ItemType.Torch
             }.Contains(Player.m_localPlayer.GetRightItem().m_shared.m_itemType)) {
-                weaponCol = StaticObjects.instantiateRightWeaponCollider(___m_rightItemInstance);
+                weaponCol = (MainWeaponCollision) StaticObjects.instantiateRightWeaponCollider(___m_rightItemInstance).create(___m_rightItemInstance.transform, true);
             }
             
             LocalWeaponWield weaponWield = EquipScript.isSpearEquipped() ? ___m_rightItemInstance.AddComponent<SpearWield>() : ___m_rightItemInstance.AddComponent<LocalWeaponWield>();
             weaponWield.Initialize(Player.m_localPlayer.GetRightItem(), ___m_rightItem);
-            weaponCol?.create(___m_rightItemInstance.transform, true, weaponWield);
+            
+            if (weaponCol) {
+                weaponCol.weaponWield = weaponWield;
+            }
 
             if (MagicWeaponManager.IsSwingLaunchEnabled())
             {

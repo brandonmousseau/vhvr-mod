@@ -27,14 +27,14 @@ namespace ValheimVRMod.Utilities {
             return leftWeaponCollider.AddComponent<WeaponCollision>();
         }
         
-        public static WeaponCollision instantiateRightWeaponCollider(GameObject parent) {
+        public static MainWeaponCollision instantiateRightWeaponCollider(GameObject parent) {
             
             if (rightWeaponCollider != null) {
                 GameObject.Destroy(rightWeaponCollider);
             }
 
             rightWeaponCollider = GameObject.Instantiate(parent);
-            return rightWeaponCollider.AddComponent<WeaponCollision>();
+            return rightWeaponCollider.AddComponent<MainWeaponCollision>();
         }
         
         public static FistCollision leftFist() {

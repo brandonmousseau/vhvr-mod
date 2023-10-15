@@ -455,7 +455,8 @@ namespace ValheimVRMod.Scripts
                     }
                     if (isTerrain)
                     {
-                        WeaponCollision.isLastHitOnTerrain = true;
+                        MainWeaponCollision weaponCollision = Player.m_localPlayer.gameObject.GetComponentInChildren<MainWeaponCollision>();
+                        weaponCollision.isLastHitOnTerrain = true;
                     }
                     outline.enabled = true;
                     outline.OutlineColor = new Color(1, 1, 0, 0.5f);

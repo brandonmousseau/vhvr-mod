@@ -1,5 +1,4 @@
 using UnityEngine;
-using ValheimVRMod.Utilities;
 
 namespace ValheimVRMod.Scripts {
     public class MeshCooldown : MonoBehaviour {
@@ -42,7 +41,7 @@ namespace ValheimVRMod.Scripts {
             }
         }
 
-        void OnDestory() {
+        private void OnDestroy() {
             Destroy(outline);
         }
 

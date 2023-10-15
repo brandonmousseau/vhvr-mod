@@ -256,6 +256,7 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
+            crosshair.SetActive(VHVRConfig.ShowStaticCrosshair());
             crosshair.transform.SetParent(transform, false);
             crosshair.transform.position = transform.position + CrosshairManager.WEAPON_CROSSHAIR_DISTANCE * weaponForward;
             crosshair.transform.localRotation = Quaternion.identity;
