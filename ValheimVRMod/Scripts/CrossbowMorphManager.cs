@@ -358,17 +358,14 @@ namespace ValheimVRMod.Scripts {
          
          private bool createBolt()
          {
-             var ammoItem = Player.m_localPlayer.GetAmmoItem();
-             
-             if (ammoItem == null || ammoItem.m_shared.m_itemType != ItemDrop.ItemData.ItemType.Ammo) {
-                bool hasAmmo = EquipScript.equipAmmo();
-                if (!hasAmmo)
-                {
-                    return false;
-                }
-             }
-             
-             bolt = Instantiate(ammoItem.m_shared.m_attack.m_attackProjectile, boltAttach.transform);
+            ItemDrop.ItemData ammoItem = EquipScript.equipAmmo();
+            if (ammoItem == null)
+            {
+                // Out of ammo
+                return false;
+            }
+
+            bolt = Instantiate(ammoItem.m_shared.m_attack.m_attackProjectile, boltAttach.transform);
              // we need to disable the Projectile Component, else the arrow will shoot out of the hands like a New Year rocket
              bolt.GetComponent<Projectile>().enabled = false;
              // also Destroy the Trail, as this produces particles when moving with arrow in hand

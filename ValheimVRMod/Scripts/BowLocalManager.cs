@@ -329,19 +329,15 @@ namespace ValheimVRMod.Scripts {
                 }
                 return;
             }
-            
-            var ammoItem = Player.m_localPlayer.GetAmmoItem();
 
-            if (ammoItem == null || ammoItem.m_shared.m_itemType != ItemDrop.ItemData.ItemType.Ammo) {
-                // out of ammo
-                if (!Attack.HaveAmmo(Player.m_localPlayer, item))
-                {
-                    return;
-                }
-                Attack.EquipAmmoItem(Player.m_localPlayer, item);
+            ItemDrop.ItemData ammoItem = EquipScript.equipAmmo();
+            if (ammoItem == null)
+            {
+                // Out of ammo
+                return;
             }
 
-            switch (Player.m_localPlayer.GetAmmoItem().m_shared.m_name)
+            switch (ammoItem.m_shared.m_name)
             {
                 case "$item_arrow_needle":
                 case "$item_arrow_carapace":
