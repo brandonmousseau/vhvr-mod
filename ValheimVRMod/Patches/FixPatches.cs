@@ -35,4 +35,19 @@ namespace ValheimVRMod.Patches {
             return __instance != Player.m_localPlayer;
         }
     }
+
+    [HarmonyPatch(typeof(VirtualFrameBuffer), nameof(VirtualFrameBuffer.UpdateCurrentRenderScale))]
+    class PatchUpdateCurrentRenderScale
+    {
+        static bool Prefix()
+        {
+            if (VHVRConfig.NonVrPlayer())
+            {
+                return true;
+            }
+            // A render scale less than 1 would cause the game world disappear in VR. Force it to be 1 since we do not support any other value.
+            VirtualFrameBuffer.m_global3DRenderScale = 1f;
+            return false;
+        }
+    }
 }
