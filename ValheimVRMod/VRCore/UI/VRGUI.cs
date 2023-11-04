@@ -454,7 +454,6 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return true;
             }
-            LogInfo("GUI Canvas not found yet.");
             return false;
         }
 
