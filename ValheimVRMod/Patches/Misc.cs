@@ -277,12 +277,7 @@ namespace ValheimVRMod.Patches
         private static Dictionary<String, float> creatures = new Dictionary<string, float>();
         public static void Postfix(Character __instance)
         {
-            if (VHVRConfig.NonVrPlayer())
-            {
-                return;
-            }
-            //return in case no lod group
-            if (!__instance.m_lodGroup)
+            if (VHVRConfig.NonVrPlayer() || __instance == Player.m_localPlayer || !__instance.m_lodGroup)
             {
                 return;
             }
