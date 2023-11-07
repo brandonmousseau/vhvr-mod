@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using BepInEx.Configuration;
 using NDesk.Options;
 using Unity.XR.OpenVR;
@@ -151,6 +152,8 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> DebugScale;
 #endif
 
+        private static Dictionary<int, bool> commandLineOverrides = new Dictionary<int, bool>();
+
         // Common values
         private static readonly string[] k_HudAlignmentValues = { "LeftWrist", "RightWrist", "CameraLocked", "Legacy" };
 
@@ -210,51 +213,56 @@ namespace ValheimVRMod.Utilities
 
         private static void InitializeImmutableSettings()
         {
-            vrModEnabled = createImmutableSetting("Immutable",
+            vrModEnabled = createImmutableSettingWithOverride("Immutable",
                 "ModEnabled",
                 true,
                 "Used to toggle the mod on and off.");
-            nonVrPlayer = createImmutableSetting("Immutable",
+            nonVrPlayer = createImmutableSettingWithOverride("Immutable",
                 "nonVrPlayer",
                 false,
-                "Disables VR completely. This is for Non-Vr Players that want to see their Multiplayer companions in VR Bodys");
-            useVrControls = createImmutableSetting("Immutable",
+                "Disables VR completely. This is for Non-Vr Players that want to see their multiplayer VR companions animations in game.");
+            useVrControls = createImmutableSettingWithOverride("Immutable",
                 "UseVRControls",
                 true,
                 "This setting enables the use of the VR motion controllers as input (Only Oculus Touch and Valve Index supported)." +
                 "This setting, if true, will also force UseOverlayGui to be false as this setting Overlay GUI is not compatible with VR laser pointer inputs.");
-            useOverlayGui = createImmutableSetting("Immutable",
+            useOverlayGui = createImmutableSettingWithOverride("Immutable",
                 "UseOverlayGui",
                 false,
                 "WARNING: Setting this option will result in disabling the game from pausing due to a conflict. " +
                 " Only use this if you are okay with the game not pausing while the menu is active. " +
                 "Whether or not to use OpenVR overlay for the GUI. This produces a" +
                 " cleaner GUI but will only be compatible with M&K or Gamepad controls.");
-            pluginVersion = createImmutableSetting("Immutable",
+            // Do not allow overriding pluginVersion via command line
+            pluginVersion = config.Bind("Immutable",
                 "PluginVersion",
                 "",
                 "For internal use only. Do not edit.");
-            bhapticsEnabled = createImmutableSetting("Immutable",
+            bhapticsEnabled = createImmutableSettingWithOverride("Immutable",
                 "bhapticsEnabled",
                 false,
                 "Enables bhaptics feedback. Only usable if vrModEnabled true AND nonVrPlayer false.");
         }
 
-        private static ConfigEntry<T> createImmutableSetting<T>(
+        private static ConfigEntry<bool> createImmutableSettingWithOverride(
             string section,
             string key,
-            T defaultValue,
+            bool defaultValue,
             string description)
         {
-
-            ConfigEntry<T> immutableSetting = config.Bind(section, key, defaultValue, description);
-
+            ConfigEntry<bool> immutableSetting = config.Bind<bool>(section, key, defaultValue, description);
             // now trying to find same setting in start options and override on match
-
             var p = new OptionSet {
                 { key + "=",
                     "the immutable " + key + " to get the value of",
-                    (T v) => immutableSetting.Value = v }
+                    v => {
+                            LogUtils.LogInfo("Overriding value for mod setting with command line argument: -" + key + "=" + v);
+                            if (bool.TryParse(v, out bool result)) {
+                                commandLineOverrides.Add(immutableSetting.GetHashCode(), result);
+                            } else {
+                                LogUtils.LogError("Invalid boolean string provided for command line option value: " + key + "=" + v);
+                            }
+                        }}
             };
 
             try {
@@ -858,6 +866,10 @@ namespace ValheimVRMod.Utilities
 
         public static bool ModEnabled()
         {
+            if (commandLineOverrides.ContainsKey(vrModEnabled.GetHashCode()))
+            {
+                return commandLineOverrides[vrModEnabled.GetHashCode()];
+            }
             return vrModEnabled.Value;
         }
 
@@ -891,8 +903,13 @@ namespace ValheimVRMod.Utilities
 
         public static bool GetUseOverlayGui()
         {
+            bool useOverlayGuiValue = useOverlayGui.Value;
+            if (commandLineOverrides.ContainsKey(useOverlayGui.GetHashCode()))
+            {
+                useOverlayGuiValue = commandLineOverrides[useOverlayGui.GetHashCode()];
+            }
             // Force this to be off if UseVrControls is on
-            return useOverlayGui.Value && !UseVrControls();
+            return useOverlayGuiValue && !UseVrControls();
         }
 
         public static float GetOverlayWidth()
@@ -1091,7 +1108,12 @@ namespace ValheimVRMod.Utilities
 
         public static bool UseVrControls()
         {
-            return useVrControls.Value && !NonVrPlayer();
+            bool useVrControlsValue = useVrControls.Value;
+            if (commandLineOverrides.ContainsKey(useVrControls.GetHashCode()))
+            {
+                useVrControlsValue = commandLineOverrides[useVrControls.GetHashCode()];
+            }
+            return useVrControlsValue && !NonVrPlayer();
         }
 
         public static bool UseArrowPredictionGraphic()
@@ -1123,6 +1145,10 @@ namespace ValheimVRMod.Utilities
 
         public static bool NonVrPlayer()
         {
+            if (commandLineOverrides.ContainsKey(nonVrPlayer.GetHashCode()))
+            {
+                return commandLineOverrides[nonVrPlayer.GetHashCode()];
+            }
             return nonVrPlayer.Value;
         }
 
@@ -1465,7 +1491,12 @@ namespace ValheimVRMod.Utilities
 
         public static bool BhapticsEnabled()
         {
-            return bhapticsEnabled.Value && !NonVrPlayer();
+            bool bhapticsEnabledValue = bhapticsEnabled.Value;
+            if (commandLineOverrides.ContainsKey(bhapticsEnabled.GetHashCode()))
+            {
+                bhapticsEnabledValue = commandLineOverrides[bhapticsEnabled.GetHashCode()];
+            }
+            return bhapticsEnabledValue && !NonVrPlayer();
         }
 
         public static bool BowAccuracyIgnoresDrawLength()
