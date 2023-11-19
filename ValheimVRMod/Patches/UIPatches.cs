@@ -422,7 +422,7 @@ namespace ValheimVRMod.Patches
             private static MethodInfo enemyHudRemoveMethod =
                 AccessTools.Method(AccessTools.Field(typeof(EnemyHud), nameof(EnemyHud.m_huds)).FieldType, "Remove", new Type[] { typeof(Character) });
             private static MethodInfo worldToScreenPointMethod =
-                AccessTools.Method(typeof(Camera), nameof(Camera.WorldToScreenPoint), new Type[] { typeof(Vector3) });
+                AccessTools.Method(typeof(Utils), nameof(Utils.WorldToScreenPointScaled), new Type[] { typeof(Camera), typeof(Vector3) });
 
             private static bool patchedSetActiveTrue = false;
             private static bool patchedSetActiveFalse = false;
