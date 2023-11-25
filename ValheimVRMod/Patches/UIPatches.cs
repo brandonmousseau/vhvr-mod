@@ -982,6 +982,24 @@ namespace ValheimVRMod.Patches
         }
     }
 
+    [HarmonyPatch(typeof(Minimap), "GetMaskColor")]
+    class MinimapMaskColorPatch
+    {
+        static void Postfix(Minimap __instance, Heightmap.Biome biome, ref Color __result)
+        {
+            if (VHVRConfig.NonVrPlayer())
+            {
+                return;
+            }
+            if (biome == Heightmap.Biome.Mistlands)
+            {
+                // For some reason, bright mask colors makes Mistland completely transparent and hard to see on the large map in VR,
+                // so we need to dim it to prevent that from happening.
+                __result /= 2f;
+            }
+        }
+    }
+
     [HarmonyPatch(typeof(InventoryGui), "UpdateItemDrag")]
     class PatchItemDragMouseFix
     {
