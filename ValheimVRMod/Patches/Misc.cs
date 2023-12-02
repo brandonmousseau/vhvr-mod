@@ -286,7 +286,7 @@ namespace ValheimVRMod.Patches
             UpdateRenderDistance(__instance.m_name, __instance.m_lodGroup, restoreOriginalRenderDistance: __instance.m_tamed);
         }
 
-        public static void UpdateRenderDistance(string key, LODGroup lodGroup, bool restoreOriginalRenderDistance)
+        private static void UpdateRenderDistance(string key, LODGroup lodGroup, bool restoreOriginalRenderDistance)
         {
             if (!originalRenderDistances.ContainsKey(key))
             {
