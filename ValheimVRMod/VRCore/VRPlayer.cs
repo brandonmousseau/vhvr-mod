@@ -87,7 +87,6 @@ namespace ValheimVRMod.VRCore
         public static float roomscaleAnimationForwardSpeed { get { return _roomscaleAnimationForwardSpeed; } }
         public static float roomscaleAnimationSideSpeed { get { return _roomscaleAnimationSideSpeed; } }
         public static Vector3 roomscaleMovement { get; private set; }
-        public static GesturedLocomotionManager gesturedLocomotionManager { get; private set; } = null;
 
         private static Hand _leftHand;
         private static SteamVR_LaserPointer _leftPointer;
@@ -298,7 +297,6 @@ namespace ValheimVRMod.VRCore
                 if (inFirstPerson)
                 {
                     DoRoomScaleMovement();
-                    gesturedLocomotionManager?.UpdateMovementFromGestures(Time.deltaTime);
                 }
                 else
                 {
@@ -581,7 +579,6 @@ namespace ValheimVRMod.VRCore
             vrCam.enabled = true;
             _vrCam = vrCam;
             _vrCameraRig = vrCam.transform.parent;
-            gesturedLocomotionManager = new GesturedLocomotionManager(_vrCameraRig);
 
             _fadeManager.OnFadeToWorld += () => {
                 //Recenter
