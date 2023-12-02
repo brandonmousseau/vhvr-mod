@@ -274,7 +274,8 @@ namespace ValheimVRMod.Patches
     [HarmonyPatch(typeof(Character), nameof(Character.CustomFixedUpdate))]
     class CharacterSetLodGroupSize
     {
-        private static Dictionary<String, float> creatures = new Dictionary<string, float>();
+        private static Dictionary<String, float> originalRenderDistances = new Dictionary<string, float>();
+
         public static void Postfix(Character __instance)
         {
             if (VHVRConfig.NonVrPlayer() || __instance == Player.m_localPlayer || !__instance.m_lodGroup)
@@ -282,27 +283,25 @@ namespace ValheimVRMod.Patches
                 return;
             }
 
-            //add new creature on list if its not in yet
-            if (!creatures.ContainsKey(__instance.m_name)) 
+            UpdateRenderDistance(__instance.m_name, __instance.m_lodGroup, restoreOriginalRenderDistance: __instance.m_tamed);
+        }
+
+        public static void UpdateRenderDistance(string key, LODGroup lodGroup, bool restoreOriginalRenderDistance)
+        {
+            if (!originalRenderDistances.ContainsKey(key))
             {
-                creatures[__instance.m_name] = __instance.m_lodGroup.size;
+                LogUtils.LogDebug("Registering render distance of: " + key);
+                originalRenderDistances[key] = lodGroup.size;
             }
 
-            if(__instance.m_tamed && __instance.m_lodGroup.size != creatures[__instance.m_name])
+            float desiredRenderDistance =
+                restoreOriginalRenderDistance ?
+                originalRenderDistances[key] :
+                Mathf.Max(originalRenderDistances[key], VHVRConfig.GetEnemyRenderDistanceValue());
+
+            if (lodGroup.size != desiredRenderDistance)
             {
-                __instance.m_lodGroup.size = creatures[__instance.m_name];
-            }
-            else
-            {
-                if(creatures[__instance.m_name] < VHVRConfig.GetEnemyRenderDistanceValue() && __instance.m_lodGroup.size != VHVRConfig.GetEnemyRenderDistanceValue())
-                {
-                    __instance.m_lodGroup.size = VHVRConfig.GetEnemyRenderDistanceValue();
-                }
-                else if (creatures[__instance.m_name] > VHVRConfig.GetEnemyRenderDistanceValue() && __instance.m_lodGroup.size != creatures[__instance.m_name])
-                {
-                    __instance.m_lodGroup.size = creatures[__instance.m_name];
-                }
-                
+                lodGroup.size = desiredRenderDistance;
             }
         }
     }
