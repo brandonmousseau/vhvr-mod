@@ -105,6 +105,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> roomScaleSneaking;
         private static ConfigEntry<float> roomScaleSneakHeight;
         private static ConfigEntry<bool> exclusiveRoomScaleSneak;
+        private static ConfigEntry<bool> gesturedLocomotion;
         private static ConfigEntry<bool> weaponNeedsSpeed;
         private static ConfigEntry<float> altPieceRotationDelay;
         private static ConfigEntry<bool> runIsToggled;
@@ -616,6 +617,10 @@ namespace ValheimVRMod.Utilities
                                           "ExclusiveRoomScaleSneak",
                                           false,
                                           "If this is set to true and Room Scale sneaking is on, Controller-based sneak inputs will be disabled. Use this if you ONLY want to sneak by phsyically crouching.");
+            gesturedLocomotion = config.Bind("Controls",
+                                             "Gestured Locomotion",
+                                             false,
+                                             "Enables using arm movements to swim");
             dominantHand = config.Bind("Controls",
                                         "DominantHand",
                                         "Right",
@@ -1222,6 +1227,11 @@ namespace ValheimVRMod.Utilities
         public static bool ExlusiveRoomScaleSneak()
         {
             return exclusiveRoomScaleSneak.Value;
+        }
+
+        public static bool GesturedLocomotion()
+        {
+            return gesturedLocomotion.Value;
         }
 
         public static float GetNearClipPlane()
