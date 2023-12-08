@@ -1,6 +1,7 @@
 using UnityEngine;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
+using ValheimVRMod.VRCore.UI;
 using Valve.VR;
 
 
@@ -8,11 +9,12 @@ namespace ValheimVRMod.Scripts
 {
     public class GesturedLocomotionManager
     {
-        private const float STICK_OUTPUT_WEIGHT = 2f;
+        private const float STICK_OUTPUT_WEIGHT = 1f;
         private const float GROUND_SPEED_CHANGE_DAMPER = 0.25f;
         private const float WATER_SPEED_CHANGE_DAMPER = 1f;
         private const float AIR_SPEED_CHANGE_DAMPER = 4f;
-        private const float MIN_RUN_SPEED = 1.5f;
+        private const float RUN_ACITIVATION_SPEED = 1.25f;
+        private const float RUN_DEACTIVATION_SPEED = 2f;
         private const float MIN_VERTICAL_JUMP_SPEED = 2.5f;
         private const float MIN_WATER_SPEED = 0.0625f;
 
@@ -82,7 +84,17 @@ namespace ValheimVRMod.Scripts
                 stickOutputY = Vector3.Dot(gesturedLocomotionVelocity, stickYDirection) * STICK_OUTPUT_WEIGHT;
             }
 
-            isRunning = previousHorizontalSpeed > MIN_RUN_SPEED || horizontalSpeed > MIN_RUN_SPEED;
+            if (localPlayer.IsOnGround())
+            {
+                if (horizontalSpeed > RUN_ACITIVATION_SPEED)
+                {
+                    isRunning = true;
+                }
+                else if (horizontalSpeed < RUN_DEACTIVATION_SPEED)
+                {
+                    isRunning = false;
+                }
+            }
             if (isJumping)
             {
                 localPlayer.Jump();
