@@ -106,7 +106,7 @@ namespace ValheimVRMod.Patches {
                         return;
                     }
                 }
-                __result = __result + VRControls.instance.GetJoyLeftStickX();
+                __result = __result + VRControls.instance.GetJoyLeftStickX() + (VRPlayer.gesturedLocomotionManager?.stickOutputX ?? 0);
             }
         }
     }
@@ -127,7 +127,7 @@ namespace ValheimVRMod.Patches {
                         return;
                     }
                 }
-                __result = __result + joystick;
+                __result = __result + joystick + (VRPlayer.gesturedLocomotionManager?.stickOutputY?? 0);
             }
         }
     }
@@ -437,7 +437,7 @@ namespace ValheimVRMod.Patches {
             }
             else
             {
-                run = run || ZInput_GetJoyRightStickY_Patch.isRunning;
+                run = run || ZInput_GetJoyRightStickY_Patch.isRunning || (VRPlayer.gesturedLocomotionManager?.isRunning?? false);
             }
         }
 
@@ -455,7 +455,7 @@ namespace ValheimVRMod.Patches {
                 // If the player applies sprint input this update, toggle the sprint.
                 runToggledOn = !runToggledOn;
             }
-            run = runToggledOn;
+            run = runToggledOn || (VRPlayer.gesturedLocomotionManager?.isRunning?? false);
             lastUpdateRunInput = ZInput_GetJoyRightStickY_Patch.isRunning;
         }
     }
