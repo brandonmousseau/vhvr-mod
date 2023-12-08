@@ -111,6 +111,21 @@ namespace ValheimVRMod.Patches {
         }
     }
 
+    [HarmonyPatch(typeof(ZInput), nameof(ZInput.IsGamepadActive))]
+    class ZInput_IsGamepadActive_Patch { 
+        static bool Prefix(ref bool __result)
+        {
+            if (VHVRConfig.NonVrPlayer() || !VHVRConfig.UseVrControls())
+            {
+                return true;
+            }
+            // This will prevent the game from ignoring VR controller stick inputs.
+            __result = true;
+            return false;
+        }
+    
+    }
+
     [HarmonyPatch(typeof(ZInput), nameof(ZInput.GetJoyLeftStickY))]
     class ZInput_GetJoyLeftStickY_Patch {
         static void Postfix(ref float __result) {
@@ -136,7 +151,7 @@ namespace ValheimVRMod.Patches {
     class ZInput_GetJoyRightStickX_Patch {
         static void Postfix(ref float __result) {
             if (VRControls.mainControlsActive) {
-                
+
                 if (ZInput_GetJoyRightStickY_Patch.isRunning 
                     && VRControls.instance.GetJoyRightStickX() > -0.5f 
                     && VRControls.instance.GetJoyRightStickX() < 0.5f)
@@ -151,7 +166,7 @@ namespace ValheimVRMod.Patches {
                 {
                     return;
                 }
-                
+
                 __result = __result + VRControls.instance.GetJoyRightStickX();
             }
         }
