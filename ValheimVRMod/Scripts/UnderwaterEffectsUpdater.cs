@@ -13,7 +13,7 @@ namespace ValheimVRMod.Scripts
         private PostProcessingProfile underwaterPostProcessingProfile = null;
         private bool initialized = false;
 
-        public static bool USING_UNDERWATER_EFFECTS { get; private set; }
+        public static bool UsingUnderwaterEffects { get; private set; }
 
         public void Init(PostProcessingBehaviour postProcessingBehaviour, PostProcessingProfile originalPostProcessingProfile)
         {
@@ -48,22 +48,22 @@ namespace ValheimVRMod.Scripts
 
             bool shouldUseUnderWaterEffects = ShouldUseUnderWaterEffects();
 
-            if (shouldUseUnderWaterEffects && !USING_UNDERWATER_EFFECTS)
+            if (shouldUseUnderWaterEffects && !UsingUnderwaterEffects)
             {
                 postProcessingBehavior.profile = underwaterPostProcessingProfile;
                 underwaterLightBlocker.SetActive(true);
-                USING_UNDERWATER_EFFECTS = true;
+                UsingUnderwaterEffects = true;
                 underwaterLightBlocker.transform.position =
                     new Vector3(
                         transform.position.x,
                         Mathf.Max(transform.position.y, Player.m_localPlayer.m_waterLevel),
                         transform.position.z);
             }
-            else if (!shouldUseUnderWaterEffects && USING_UNDERWATER_EFFECTS)
+            else if (!shouldUseUnderWaterEffects && UsingUnderwaterEffects)
             {
                 postProcessingBehavior.profile = originalPostProcessingProfile;
                 underwaterLightBlocker.SetActive(false);
-                USING_UNDERWATER_EFFECTS = false;
+                UsingUnderwaterEffects = false;
             }
         }
 
