@@ -1090,6 +1090,7 @@ namespace ValheimVRMod.VRCore
                 vrCamEffects.m_dofMinDistance = mainCamEffects.m_dofMinDistance;
                 vrCamEffects.m_dofMaxDistance = mainCamEffects.m_dofMaxDistance;
             }
+             vrCamera.gameObject.AddComponent<UnderwaterEffectsUpdater>().Init(postProcessingBehavior, postProcessingBehavior.profile);
         }
 
         private void CopyClassFields<T>(T source, ref T dest)
