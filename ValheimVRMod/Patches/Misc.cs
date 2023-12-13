@@ -7,6 +7,7 @@ using Unity.XR.OpenVR;
 using HarmonyLib;
 using Valve.VR;
 using UnityEngine;
+using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
 using UnityEngine.Rendering;
 
@@ -322,6 +323,39 @@ namespace ValheimVRMod.Patches
             float dimension = Math.Min(Math.Min(scale.x, scale.y), scale.z);
 
             return camera.fieldOfView * Mathf.PI / 180 * cullingHeight * desiredRenderDistance / dimension;
+        }
+    }
+
+    [HarmonyPatch(typeof(WaterVolume), nameof(WaterVolume.Awake))]
+    class WaterSurfaceVisiblityPatch
+    {
+        public static void Postfix(WaterVolume __instance)
+        {
+            if (VHVRConfig.NonVrPlayer())
+            {
+                return;
+            }
+
+            __instance.gameObject.AddComponent<WaterSurfaceVisibiltyUpdater>().Init(__instance);
+        }
+
+        private class WaterSurfaceVisibiltyUpdater : MonoBehaviour
+        {
+            private WaterVolume waterVolume;
+
+            public void Init(WaterVolume waterVolume)
+            {
+                this.waterVolume = waterVolume;
+            }
+
+            void FixedUpdate()
+            {
+                if (!waterVolume)
+                {
+                    return;
+                }
+                waterVolume.m_waterSurface.shadowCastingMode = UnderwaterEffectsUpdater.UsingUnderwaterEffects ? ShadowCastingMode.ShadowsOnly : ShadowCastingMode.On;
+            }
         }
     }
 }
