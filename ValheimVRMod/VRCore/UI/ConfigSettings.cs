@@ -82,7 +82,8 @@ namespace ValheimVRMod.VRCore.UI {
             menuEntry.GetComponent<Button>().onClick.SetPersistentListenerState(0, UnityEventCallState.Off);
             menuEntry.GetComponent<Button>().onClick.RemoveAllListeners();
             menuEntry.GetComponent<Button>().onClick.AddListener(onClick);
-            menuEntry.GetComponent<RectTransform>().anchoredPosition = menuEntry.GetComponent<RectTransform>().anchoredPosition + offsetFromOriginal;
+            RectTransform rectTransform = menuEntry.GetComponent<RectTransform>();
+            rectTransform.anchoredPosition = rectTransform.anchoredPosition + offsetFromOriginal;
         }
 
         /// <summary>
