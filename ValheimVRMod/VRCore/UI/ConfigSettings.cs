@@ -17,6 +17,9 @@ using TMPro;
 namespace ValheimVRMod.VRCore.UI {
     public class ConfigSettings {
 
+        // TODO: Fix VHVR settings dialog layout and re-enable it.
+        private const bool ENABLE_VHVR_SETTINGS_DIALOG = false;
+        
         private const float MENU_ENTRY_HEIGHT = 40;
         private const string MenuName = "VHVR";
         private const int TabButtonWidth = 100;
@@ -56,8 +59,11 @@ namespace ValheimVRMod.VRCore.UI {
             for (int i = 0; i < menuList.childCount; i++) {
                 Transform menuEntry = menuList.GetChild(i);
                 if (menuEntry.name == "Settings") {
-                    AddMenuEntry(MenuName, menuEntry, Vector2.zero, createModSettings);
-                    addedMenuEntryCount++;
+                    if (ENABLE_VHVR_SETTINGS_DIALOG)
+                    {
+                        AddMenuEntry(MenuName, menuEntry, Vector2.zero, createModSettings);
+                        addedMenuEntryCount++;
+                    }
 
                     AddMenuEntry("Screenshot", menuEntry, Vector2.up * MENU_ENTRY_HEIGHT * addedMenuEntryCount, CaptureScreenshot);
                     addedMenuEntryCount++;
