@@ -98,7 +98,8 @@ namespace ValheimVRMod.Utilities
                 {
                     return false;
                 }
-                return !LocalWeaponWield.isCurrentlyTwoHanded() || IsStab(handPhysicsEstimator);
+
+                return !LocalWeaponWield.isCurrentlyTwoHanded() || LocalWeaponWield.IsDominantHandBehind || IsStab(handPhysicsEstimator);
             },
 
             delegate (PhysicsEstimator collisionPhysicsEstimator, PhysicsEstimator handPhysicsEstimator) // Single-handed club check
@@ -134,13 +135,11 @@ namespace ValheimVRMod.Utilities
 
             delegate (PhysicsEstimator collisionPhysicsEstimator, PhysicsEstimator handPhysicsEstimator) // Polearms check
             {
-                if (EquipScript.getRight() != EquipType.Polearms || !LocalWeaponWield.isCurrentlyTwoHanded()) {
+                if (EquipScript.getRight() != EquipType.Polearms || !LocalWeaponWield.isCurrentlyTwoHanded() || LocalWeaponWield.IsDominantHandBehind) {
                     return false;
                 }
-                    
-                const float MIN_SWIPING_SPEED = 2.5f;
-                float swipingSpeed = Vector3.ProjectOnPlane(collisionPhysicsEstimator.GetVelocity(), LocalWeaponWield.weaponForward).magnitude;
-                return !IsStab(handPhysicsEstimator) && swipingSpeed >= MIN_SWIPING_SPEED;
+
+                return !IsStab(handPhysicsEstimator);
             },
 
             delegate (PhysicsEstimator collisionPhysicsEstimator, PhysicsEstimator handPhysicsEstimator) // One-handed knife check
