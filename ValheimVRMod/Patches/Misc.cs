@@ -7,6 +7,7 @@ using Unity.XR.OpenVR;
 using HarmonyLib;
 using Valve.VR;
 using UnityEngine;
+using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
 using UnityEngine.Rendering;
 
@@ -270,11 +271,11 @@ namespace ValheimVRMod.Patches
         }
     }
 
-    //Supposedly only update on Start, but somehow it doesnt work on some mobs (eg. fuling/goblin), so its using fixedupdate for now
+    // Supposedly only update on Start, but somehow it doesnt work on some mobs (eg. fuling/goblin), so its using fixedupdate for now
     [HarmonyPatch(typeof(Character), nameof(Character.CustomFixedUpdate))]
     class CharacterSetLodGroupSize
     {
-        private static Dictionary<String, float> originalRenderDistances = new Dictionary<string, float>();
+        private static Dictionary<String, float> originalLodGroupSizes = new Dictionary<string, float>();
 
         public static void Postfix(Character __instance)
         {
@@ -283,25 +284,77 @@ namespace ValheimVRMod.Patches
                 return;
             }
 
-            UpdateRenderDistance(__instance.m_name, __instance.m_lodGroup, restoreOriginalRenderDistance: __instance.m_tamed);
+            UpdateRenderDistance(__instance.name, __instance.m_lodGroup, restoreOriginalRenderDistance: __instance.m_tamed);
         }
 
-        private static void UpdateRenderDistance(string key, LODGroup lodGroup, bool restoreOriginalRenderDistance)
+        public static void UpdateRenderDistance(string key, LODGroup lodGroup, bool restoreOriginalRenderDistance)
         {
-            if (!originalRenderDistances.ContainsKey(key))
+            if (!originalLodGroupSizes.ContainsKey(key))
             {
-                LogUtils.LogDebug("Registering render distance of: " + key);
-                originalRenderDistances[key] = lodGroup.size;
+                LogUtils.LogDebug("Registering original LOD group size " + lodGroup.size  + " of " + key);
+                originalLodGroupSizes[key] = lodGroup.size;
             }
 
-            float desiredRenderDistance =
-                restoreOriginalRenderDistance ?
-                originalRenderDistances[key] :
-                Mathf.Max(originalRenderDistances[key], VHVRConfig.GetEnemyRenderDistanceValue());
+            Camera vrCamera = CameraUtils.getCamera(CameraUtils.VR_CAMERA);
 
-            if (lodGroup.size != desiredRenderDistance)
+            float desiredLodGroupSize =
+                restoreOriginalRenderDistance || vrCamera == null ?
+                originalLodGroupSizes[key] :
+                Mathf.Max(originalLodGroupSizes[key], GetDesiredLodGroupSize(lodGroup, VHVRConfig.GetEnemyRenderDistanceValue(), vrCamera));
+
+            if (lodGroup.size != desiredLodGroupSize)
             {
-                lodGroup.size = desiredRenderDistance;
+                lodGroup.size = desiredLodGroupSize;
+            }
+        }
+
+        private static float GetDesiredLodGroupSize(LODGroup lODGroup, float desiredRenderDistance, Camera camera)
+        {
+            float cullingHeight = 1;
+            foreach (LOD lOD in lODGroup.GetLODs())
+            {
+                if (lOD.screenRelativeTransitionHeight < cullingHeight)
+                {
+                    cullingHeight = lOD.screenRelativeTransitionHeight;
+                }
+            }
+
+            Vector3 scale = lODGroup.transform.localScale;
+            float dimension = Math.Min(Math.Min(scale.x, scale.y), scale.z);
+
+            return camera.fieldOfView * Mathf.PI / 180 * cullingHeight * desiredRenderDistance / dimension;
+        }
+    }
+
+    [HarmonyPatch(typeof(WaterVolume), nameof(WaterVolume.Awake))]
+    class WaterSurfaceVisiblityPatch
+    {
+        public static void Postfix(WaterVolume __instance)
+        {
+            if (VHVRConfig.NonVrPlayer())
+            {
+                return;
+            }
+
+            __instance.gameObject.AddComponent<WaterSurfaceVisibiltyUpdater>().Init(__instance);
+        }
+
+        private class WaterSurfaceVisibiltyUpdater : MonoBehaviour
+        {
+            private WaterVolume waterVolume;
+
+            public void Init(WaterVolume waterVolume)
+            {
+                this.waterVolume = waterVolume;
+            }
+
+            void FixedUpdate()
+            {
+                if (!waterVolume)
+                {
+                    return;
+                }
+                waterVolume.m_waterSurface.shadowCastingMode = UnderwaterEffectsUpdater.UsingUnderwaterEffects ? ShadowCastingMode.ShadowsOnly : ShadowCastingMode.On;
             }
         }
     }

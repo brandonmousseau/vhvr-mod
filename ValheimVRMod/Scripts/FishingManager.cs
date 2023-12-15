@@ -200,7 +200,7 @@ namespace ValheimVRMod.Scripts
                 return;
             }
             tickCounter = 0;
-            if (isFishing && fishingFloat.GetCatch() && (int)(Time.fixedTime * 10) % 2 >= 1)
+            if (isFishing && fishingFloat && fishingFloat.GetCatch() && (int)(Time.fixedTime * 10) % 2 >= 1)
             {
                 VRPlayer.dominantHand.hapticAction.Execute(0, 0.001f, 150, 0.7f, VRPlayer.dominantHandInputSource);
             }
