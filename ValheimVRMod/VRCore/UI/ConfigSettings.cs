@@ -490,7 +490,7 @@ namespace ValheimVRMod.VRCore.UI {
                 tmpComfigComponent = configComponent;
             });
             keyBinding.GetComponent<RectTransform>().anchoredPosition = pos;
-            ZInput.instance.AddButton(configValue.Key, (KeyCode) Enum.Parse(typeof(KeyCode), configValue.Value.GetSerializedValue()));
+            ZInput.instance.AddButton(configValue.Key, (GamepadInput) Enum.Parse(typeof(GamepadInput), configValue.Value.GetSerializedValue()));
         }
 
         private static void CaptureScreenshot()
