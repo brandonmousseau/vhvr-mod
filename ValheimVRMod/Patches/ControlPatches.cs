@@ -192,9 +192,7 @@ namespace ValheimVRMod.Patches {
                 return ZInput.IsGamepadActive();
             }
 
-            // We rely on patching ZInput.GetJoyRightStickX() to turn the player left/right whose return value would be ingored
-            // if it thinks that the game pad is inactive.
-
+            // Make the vanilla game believe that the gamepad is active so that it will use ZInput.GetJoyRightStickX() which we patch to turn the player left/right.
             return true;
         }
 
