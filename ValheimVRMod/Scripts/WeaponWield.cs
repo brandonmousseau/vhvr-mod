@@ -96,18 +96,22 @@ namespace ValheimVRMod.Scripts
         protected virtual float GetPreferredOffsetFromRearHand(float handDist)
         {
             bool rearHandIsDominant = (IsPlayerLeftHanded() == (twoHandedState == TwoHandedState.LeftHandBehind));
+            float handleAllowanceBehindDominantHand =
+                EquipScript.getRight() == EquipType.Polearms ?
+                0.6f :
+                0.15f;
             if (rearHandIsDominant)
             {
-                return -0.1f;
+                return -HAND_CENTER_OFFSET;
             }
-            else if (handDist > 0.15f)
+            else if (handDist > handleAllowanceBehindDominantHand)
             {
-                return 0.05f;
+                return handleAllowanceBehindDominantHand - HAND_CENTER_OFFSET;
             }
             else
             {
                 // Anchor the weapon in the front/dominant hand instead.
-                return handDist - 0.1f;
+                return handDist - HAND_CENTER_OFFSET;
             }
         }
 
