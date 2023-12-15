@@ -48,11 +48,14 @@ namespace ValheimVRMod.Scripts
 
             bool shouldUseUnderWaterEffects = ShouldUseUnderWaterEffects();
 
-            if (shouldUseUnderWaterEffects && !UsingUnderwaterEffects)
+            if (shouldUseUnderWaterEffects)
             {
-                postProcessingBehavior.profile = underwaterPostProcessingProfile;
-                underwaterLightBlocker.SetActive(true);
-                UsingUnderwaterEffects = true;
+                if (!UsingUnderwaterEffects)
+                {
+                    postProcessingBehavior.profile = underwaterPostProcessingProfile;
+                    underwaterLightBlocker.SetActive(true);
+                    UsingUnderwaterEffects = true;
+                }
                 underwaterLightBlocker.transform.position =
                     new Vector3(
                         transform.position.x,
@@ -65,6 +68,9 @@ namespace ValheimVRMod.Scripts
                 underwaterLightBlocker.SetActive(false);
                 UsingUnderwaterEffects = false;
             }
+
+            LogUtils.LogWarning("Water: " + transform.position.z + " " + underwaterLightBlocker.transform.position.z + " " + transform.forward);
+
         }
 
         private bool ShouldUseUnderWaterEffects()
