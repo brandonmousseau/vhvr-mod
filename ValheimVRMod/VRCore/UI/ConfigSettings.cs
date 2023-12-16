@@ -17,6 +17,10 @@ using TMPro;
 namespace ValheimVRMod.VRCore.UI {
     public class ConfigSettings {
 
+        // TODO: Fix VHVR settings dialog layout and re-enable it.
+        private const bool ENABLE_VHVR_SETTINGS_DIALOG = false;
+        
+        private const float MENU_ENTRY_HEIGHT = 40;
         private const string MenuName = "VHVR";
         private const int TabButtonWidth = 100;
         
@@ -51,33 +55,35 @@ namespace ValheimVRMod.VRCore.UI {
         /// Create an Entry in the Menu 
         /// </summary>
         private static void createMenuEntry() {
-            
-            bool settingsFound = false;
-
+            int addedMenuEntryCount = 0;
             for (int i = 0; i < menuList.childCount; i++) {
-                if (menuList.GetChild(i).name == "Settings") {
-                    var modSettings = GameObject.Instantiate(menuList.GetChild(i), menuList);
-                    modSettings.GetComponentInChildren<TextMeshProUGUI>().text = MenuName;
-                    modSettings.GetComponent<Button>().onClick.SetPersistentListenerState(0, UnityEventCallState.Off);
-                    modSettings.GetComponent<Button>().onClick.RemoveAllListeners();
-                    modSettings.GetComponent<Button>().onClick.AddListener(createModSettings);
+                Transform menuEntry = menuList.GetChild(i);
+                if (menuEntry.name == "Settings") {
+                    if (ENABLE_VHVR_SETTINGS_DIALOG)
+                    {
+                        AddMenuEntry(MenuName, menuEntry, Vector2.zero, createModSettings);
+                        addedMenuEntryCount++;
+                    }
 
-                    Transform screenshotButton = GameObject.Instantiate(menuList.GetChild(i), menuList);
-                    screenshotButton.GetComponentInChildren<TextMeshProUGUI>().text = "Screenshot";
-                    screenshotButton.GetComponent<Button>().onClick.SetPersistentListenerState(0, UnityEventCallState.Off);
-                    screenshotButton.GetComponent<Button>().onClick.RemoveAllListeners();
-                    screenshotButton.GetComponent<Button>().onClick.AddListener(CaptureScreenshot);
-                    Vector2 currentPosition = screenshotButton.GetComponent<RectTransform>().anchoredPosition;
-                    screenshotButton.GetComponent<RectTransform>().anchoredPosition = currentPosition + Vector2.up * 40;
-
-                    settingsFound = true;
+                    AddMenuEntry("Screenshot", menuEntry, Vector2.up * MENU_ENTRY_HEIGHT * addedMenuEntryCount, CaptureScreenshot);
+                    addedMenuEntryCount++;
                 }
-                else if (settingsFound) {
+                else if (addedMenuEntryCount > 0) {
                     var rectTransform = menuList.GetChild(i).GetComponent<RectTransform>();
-                    rectTransform.anchoredPosition = new Vector2(rectTransform.anchoredPosition.x,
-                        rectTransform.anchoredPosition.y - 80);
+                    rectTransform.anchoredPosition = rectTransform.anchoredPosition + Vector2.up * MENU_ENTRY_HEIGHT * addedMenuEntryCount;
                 }
             }
+        }
+
+        private static void AddMenuEntry(string text, Transform original, Vector2 offsetFromOriginal, UnityAction onClick)
+        {
+            Transform menuEntry = GameObject.Instantiate(original, parent: menuList);
+            menuEntry.GetComponentInChildren<TextMeshProUGUI>().text = text;
+            menuEntry.GetComponent<Button>().onClick.SetPersistentListenerState(0, UnityEventCallState.Off);
+            menuEntry.GetComponent<Button>().onClick.RemoveAllListeners();
+            menuEntry.GetComponent<Button>().onClick.AddListener(onClick);
+            RectTransform rectTransform = menuEntry.GetComponent<RectTransform>();
+            rectTransform.anchoredPosition = rectTransform.anchoredPosition + offsetFromOriginal;
         }
 
         /// <summary>
@@ -490,7 +496,7 @@ namespace ValheimVRMod.VRCore.UI {
                 tmpComfigComponent = configComponent;
             });
             keyBinding.GetComponent<RectTransform>().anchoredPosition = pos;
-            ZInput.instance.AddButton(configValue.Key, (KeyCode) Enum.Parse(typeof(KeyCode), configValue.Value.GetSerializedValue()));
+            ZInput.instance.AddButton(configValue.Key, (GamepadInput) Enum.Parse(typeof(GamepadInput), configValue.Value.GetSerializedValue()));
         }
 
         private static void CaptureScreenshot()

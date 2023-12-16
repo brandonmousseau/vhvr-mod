@@ -28,6 +28,7 @@ namespace ValheimVRMod.Scripts
             underwaterPostProcessingProfile.colorGrading.m_Settings.channelMixer.green.x = -0.125f;
 
             underwaterLightBlocker = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            underwaterLightBlocker.layer = LayerUtils.WATER;
             underwaterLightBlocker.transform.localScale = new Vector3(1024, 0.000001f, 1024);
             underwaterLightBlocker.SetActive(false);
             underwaterLightBlocker.GetComponent<MeshRenderer>().material.color = new Vector4(0.5f, 0.5f, 0.75f, 1);
@@ -48,11 +49,14 @@ namespace ValheimVRMod.Scripts
 
             bool shouldUseUnderWaterEffects = ShouldUseUnderWaterEffects();
 
-            if (shouldUseUnderWaterEffects && !UsingUnderwaterEffects)
+            if (shouldUseUnderWaterEffects)
             {
-                postProcessingBehavior.profile = underwaterPostProcessingProfile;
-                underwaterLightBlocker.SetActive(true);
-                UsingUnderwaterEffects = true;
+                if (!UsingUnderwaterEffects)
+                {
+                    postProcessingBehavior.profile = underwaterPostProcessingProfile;
+                    underwaterLightBlocker.SetActive(true);
+                    UsingUnderwaterEffects = true;
+                }
                 underwaterLightBlocker.transform.position =
                     new Vector3(
                         transform.position.x,

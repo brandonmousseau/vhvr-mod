@@ -33,7 +33,7 @@ namespace ValheimVRMod.Utilities
                     return false;
                 }
 
-                const float MIN_STAB_SPEED = 3.5f;
+                const float MIN_STAB_SPEED = 6f;
                 const float MIN_THRUST_DISTANCE = 1f;
 
                 if (!IsStab(handPhysicsEstimator))
@@ -41,55 +41,26 @@ namespace ValheimVRMod.Utilities
                     return false;
                 }
 
-                float stabSpeed = Vector3.Dot(handPhysicsEstimator.GetVelocity(), LocalWeaponWield.weaponForward);
+                // When wielding with both hands, use the sum of both hands' velocities to make secondary attack easier to trigger.
+                Vector3 handVelocity =
+                    LocalWeaponWield.isCurrentlyTwoHanded() ?
+                    GetHandVelocitySum() :
+                    handPhysicsEstimator.GetAverageVelocityInSnapshots();
+
+                float stabSpeed = Vector3.Dot(handVelocity, LocalWeaponWield.weaponForward);
                 if (stabSpeed < MIN_STAB_SPEED)
                 {
                     return false;
                 }
 
+                if (LocalWeaponWield.isCurrentlyTwoHanded())
+                {
+                    // When holding sword with both hands, waive requirement on thrust distance.
+                    return true;
+                }
+
                 Vector3 thrust = handPhysicsEstimator == null ? Vector3.zero : handPhysicsEstimator.GetLongestLocomotion(1f);
-                if (Vector3.Dot(thrust, LocalWeaponWield.weaponForward) < MIN_THRUST_DISTANCE)
-                {
-                    return false;
-                }
-
-                return Vector3.Angle(thrust, LocalWeaponWield.weaponForward) <= MAX_STAB_ANGLE;
-            },
-
-            delegate (PhysicsEstimator collisionPhysicsEstimator, PhysicsEstimator handPhysicsEstimator) // Single-handed axe check
-            {
-                if (EquipScript.getRight() != EquipType.Axe || EquipScript.isTwoHandedAxeEquiped())
-                {
-                    return false;
-                }
-
-                // TODO: consider adjusting these constants to account for weapon length.
-                const float MIN_SPEED = 10f;
-                const float MIN_THRUST_DISTANCE = 1.8f;
-                const float MAX_ANGLE = 60;
-
-                if (IsStab(handPhysicsEstimator))
-                {
-                    return false;
-                }
-
-                Vector3 v = collisionPhysicsEstimator.GetAverageVelocityInSnapshots();
-                Vector3 sagittalSpeed = GetSagittalComponentOfVector(v);
-                float speedDownAndForward = new Vector2(Mathf.Min(sagittalSpeed.y, 0), Mathf.Max(sagittalSpeed.z, 0)).magnitude;
-                if (speedDownAndForward < MIN_SPEED)
-                {
-                    return false;
-                }
-
-                Vector3 thrust = collisionPhysicsEstimator.GetLongestLocomotion(0.5f);
-                Vector3 sagittalThrust = GetSagittalComponentOfVector(thrust);
-                float thrustDownAndFoward = new Vector2(Mathf.Min(sagittalThrust.y, 0), Mathf.Max(sagittalThrust.z, 0)).magnitude;
-                if (thrustDownAndFoward < MIN_THRUST_DISTANCE)
-                {
-                    return false;
-                }
-
-                return Vector3.Angle(thrust, v) <= MAX_ANGLE;
+                return Vector3.Dot(thrust, LocalWeaponWield.weaponForward) >= MIN_THRUST_DISTANCE;
             },
 
             delegate (PhysicsEstimator collisionPhysicsEstimator, PhysicsEstimator handPhysicsEstimator) // Two-handed axe check
@@ -98,49 +69,53 @@ namespace ValheimVRMod.Utilities
                 {
                     return false;
                 }
-                return !LocalWeaponWield.isCurrentlyTwoHanded() || IsStab(handPhysicsEstimator);
+
+                return !IsTwoHandedWithDominantHandInFront() || IsStab(handPhysicsEstimator);
             },
 
-            delegate (PhysicsEstimator collisionPhysicsEstimator, PhysicsEstimator handPhysicsEstimator) // Single-handed club check
+            delegate (PhysicsEstimator collisionPhysicsEstimator, PhysicsEstimator handPhysicsEstimator) // Single-handed axe and club check
             {
-                if (EquipScript.getRight() != EquipType.Club || EquipScript.isTwoHandedClubEquiped() || IsStab(handPhysicsEstimator))
+                if (EquipScript.getRight() != EquipType.Axe && EquipScript.getRight() != EquipType.Club) {
+                    return false;
+                }
+                
+                if (EquipScript.isTwoHandedAxeEquiped() || EquipScript.isTwoHandedClubEquiped() || IsStab(handPhysicsEstimator))
                 {
                     return false;
                 }
 
                 // TODO: consider adjusting these constants to account for weapon length variation.
-                const float MIN_SPEED = 10f;
+                const float MIN_SPEED = 8f;
                 const float MIN_THRUST_DISTANCE = 1.5f;
-                const float MAX_ANGLE = 60;
+         
+                // When wielding with both hands, use the sum of both hands' velocities to make secondary attack easier to trigger.
+                Vector3 handVelocity =
+                    LocalWeaponWield.isCurrentlyTwoHanded() ?
+                    GetHandVelocitySum() :
+                    handPhysicsEstimator.GetAverageVelocityInSnapshots();
 
-                Vector3 v = collisionPhysicsEstimator.GetAverageVelocityInSnapshots();
-                Vector3 sagittalVelocity = GetSagittalComponentOfVector(v);
-                float sagittalSpeed = new Vector2(sagittalVelocity.y, Mathf.Max(sagittalVelocity.z, 0)).magnitude;
-                if (sagittalSpeed < MIN_SPEED)
+                if (GetSagittalComponent(handVelocity).magnitude < MIN_SPEED)
                 {
                     return false;
+                }
+
+                if (LocalWeaponWield.isCurrentlyTwoHanded())
+                {
+                    // When holding the weapon with both hands, waive requirement on thrust distance.
+                    return true;
                 }
 
                 Vector3 thrust = collisionPhysicsEstimator.GetLongestLocomotion(0.5f);
-                Vector3 sagittalThrust = GetSagittalComponentOfVector(thrust);
-                float sagittalSpeedThrust = new Vector2(sagittalThrust.y, Mathf.Max(sagittalThrust.z, 0)).magnitude;
-                if (sagittalSpeedThrust < MIN_THRUST_DISTANCE)
-                {
-                    return false;
-                }
-
-                return Vector3.Angle(thrust, v) <= MAX_ANGLE;
+                return GetSagittalComponent(thrust).magnitude >= MIN_THRUST_DISTANCE;
             },
 
             delegate (PhysicsEstimator collisionPhysicsEstimator, PhysicsEstimator handPhysicsEstimator) // Polearms check
             {
-                if (EquipScript.getRight() != EquipType.Polearms || !LocalWeaponWield.isCurrentlyTwoHanded()) {
+                if (EquipScript.getRight() != EquipType.Polearms) {
                     return false;
                 }
-                    
-                const float MIN_SWIPING_SPEED = 2.5f;
-                float swipingSpeed = Vector3.ProjectOnPlane(collisionPhysicsEstimator.GetVelocity(), LocalWeaponWield.weaponForward).magnitude;
-                return !IsStab(handPhysicsEstimator) && swipingSpeed >= MIN_SWIPING_SPEED;
+
+                return IsTwoHandedWithDominantHandInFront() && !IsStab(handPhysicsEstimator);
             },
 
             delegate (PhysicsEstimator collisionPhysicsEstimator, PhysicsEstimator handPhysicsEstimator) // One-handed knife check
@@ -149,7 +124,7 @@ namespace ValheimVRMod.Utilities
                     return false;
                 }
 
-                const float MIN_SPEED = 4f;
+                const float MIN_SPEED = 6f;
                 const float MIN_THRUST_DISTANCE = 1f;
 
                 Vector3 velocity = handPhysicsEstimator.GetAverageVelocityInSnapshots();
@@ -169,7 +144,7 @@ namespace ValheimVRMod.Utilities
                 {
                     return false;
                 }
-                const float MIN_HOOK_SPEED = 5f;
+                const float MIN_HOOK_SPEED = 6f;
                 const float MIN_HOOK_DISTANCE = 1f;
                 const float MAX_HOOK_ALIGNMENT_ANGLE = 30f;
                 Vector3 v = handPhysicsEstimator.GetAverageVelocityInSnapshots();
@@ -181,15 +156,24 @@ namespace ValheimVRMod.Utilities
             }
         };
 
+        private static bool IsTwoHandedWithDominantHandInFront()
+        {
+            return LocalWeaponWield.isCurrentlyTwoHanded() && !LocalWeaponWield.IsDominantHandBehind;
+        }
+
+        private static Vector3 GetHandVelocitySum()
+        {
+            return VRPlayer.leftHandPhysicsEstimator.GetAverageVelocityInSnapshots() + VRPlayer.rightHandPhysicsEstimator.GetAverageVelocityInSnapshots();
+        }
+
         private static bool IsStab(PhysicsEstimator physicsEstimator)
         {
             return Vector3.Angle(physicsEstimator.GetAverageVelocityInSnapshots(), LocalWeaponWield.weaponForward) < MAX_STAB_ANGLE;
         }
 
-        private static Vector3 GetSagittalComponentOfVector(Vector3 v)
+        private static Vector3 GetSagittalComponent(Vector3 v)
         {
-            Vector3 vInPlayerCoordinates = Player.m_localPlayer.transform.InverseTransformVector(v);
-            return new Vector3(0, vInPlayerCoordinates.y, vInPlayerCoordinates.z);
+            return Vector3.ProjectOnPlane(v, Player.m_localPlayer.transform.right);
         }
     }
 }

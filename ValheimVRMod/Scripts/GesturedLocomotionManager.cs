@@ -32,7 +32,7 @@ namespace ValheimVRMod.Scripts
         {
             this.vrCameraRig = vrCameraRig;
             gesturedLocomotions =
-                new GesturedLocomotion[] { new GesturedSwim(vrCameraRig) };
+                new GesturedLocomotion[] { new GesturedSwim(vrCameraRig), new GesturedJump(vrCameraRig) };
         }
 
         public void UpdateMovementFromGestures(float deltaTime)
@@ -154,6 +154,66 @@ namespace ValheimVRMod.Scripts
                 }
                 velocity = Vector3.ProjectOnPlane(velocity, upDirection);
                 return velocity.magnitude >= MIN_SWIM_SPEED ? velocity : Vector3.zero;
+            }
+        }
+
+        class GesturedJump : GesturedLocomotion
+        {
+            private const float HORIZONTAL_SPEED_DEADZONE_FACTOR = 0.4f;
+            private const float FORWARD_CORRECTION_FACTOR = 0.39f;
+
+            private bool isPreparingJump = false;
+            private Vector3 jumpVelocity = Vector3.zero;
+
+            public GesturedJump(Transform vrCameraRig) : base(vrCameraRig) { }
+
+            public override Vector3 GetTargetVelocityFromGestures(Player player)
+            {
+                bool wasPreparingJump = isPreparingJump;
+                isPreparingJump =
+                    SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand) &&
+                    SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand) &&
+                    SteamVR_Actions.valheim_UseLeft.GetState(SteamVR_Input_Sources.LeftHand) &&
+                    SteamVR_Actions.valheim_Use.GetState(SteamVR_Input_Sources.RightHand);
+
+                if (IsInAir(player))
+                {
+                    return Vector3.ProjectOnPlane(jumpVelocity, upDirection);
+                }
+
+                bool attemptingJump = wasPreparingJump && !isPreparingJump && player.IsOnGround();
+
+                if (attemptingJump)
+                {
+                    Vector3 velocity = -Vector3.Lerp(leftHandVelocity, rightHandVelocity, 0.5f);
+                    Vector3 verticalVelocty = Vector3.Project(velocity, upDirection);
+                    float verticalSpeed = verticalVelocty.magnitude;
+                    Vector3 horizontalVelocity = Vector3.ProjectOnPlane(velocity, upDirection);
+                    Vector3 handForwardDirection = Vector3.ProjectOnPlane(leftHandTransform.forward + rightHandTransform.forward, upDirection).normalized;
+                    horizontalVelocity += handForwardDirection * FORWARD_CORRECTION_FACTOR * verticalSpeed;
+                    float horizontalSpeed = horizontalVelocity.magnitude;
+                    float horizontalSpeedDeadzone = HORIZONTAL_SPEED_DEADZONE_FACTOR * verticalSpeed;
+                    if (horizontalSpeed > horizontalSpeedDeadzone)
+                    {
+                        horizontalVelocity *= (horizontalSpeed - horizontalSpeedDeadzone) / horizontalSpeed;
+                    }
+                    else
+                    {
+                        horizontalVelocity = Vector3.zero;
+                    }
+                    jumpVelocity = horizontalVelocity + verticalVelocty;
+                }
+                else
+                {
+                    jumpVelocity = Vector3.zero;
+                }
+
+                return jumpVelocity;
+            }
+
+            private static bool IsInAir(Player player)
+            {
+                return !player.IsAttached() && !player.IsSwimming() && !player.IsOnGround();
             }
         }
     }

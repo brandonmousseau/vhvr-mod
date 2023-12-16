@@ -111,21 +111,6 @@ namespace ValheimVRMod.Patches {
         }
     }
 
-    [HarmonyPatch(typeof(ZInput), nameof(ZInput.IsGamepadActive))]
-    class ZInput_IsGamepadActive_Patch { 
-        static bool Prefix(ref bool __result)
-        {
-            if (VHVRConfig.NonVrPlayer() || !VHVRConfig.UseVrControls())
-            {
-                return true;
-            }
-            // This will prevent the game from ignoring VR controller stick inputs.
-            __result = true;
-            return false;
-        }
-    
-    }
-
     [HarmonyPatch(typeof(ZInput), nameof(ZInput.GetJoyLeftStickY))]
     class ZInput_GetJoyLeftStickY_Patch {
         static void Postfix(ref float __result) {
@@ -191,6 +176,44 @@ namespace ValheimVRMod.Patches {
 
                 __result = __result + joystick;
             }
+        }
+    }
+
+    [HarmonyPatch(typeof(PlayerController), "LateUpdate")]
+    class PlayerController_LateUpdate_Patch
+    {
+        private static MethodInfo IsGamepadActive =
+             AccessTools.Method(typeof(ZInput), nameof(ZInput.IsGamepadActive));
+
+        private static bool IsGamepadActivePatched()
+        {
+            if (VHVRConfig.NonVrPlayer() || !VHVRConfig.UseVrControls())
+            {
+                return ZInput.IsGamepadActive();
+            }
+
+            // Make the vanilla game believe that the gamepad is active so that it will use ZInput.GetJoyRightStickX() which we patch to turn the player left/right.
+            return true;
+        }
+
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            var original = new List<CodeInstruction>(instructions);
+            var patched = new List<CodeInstruction>();
+            foreach (var instruction in original)
+            {
+                if (instruction.Calls(IsGamepadActive))
+                {
+                    patched.Add(
+                        CodeInstruction.Call(typeof(PlayerController_LateUpdate_Patch), nameof(IsGamepadActivePatched)));
+                }
+                else
+                {
+                    patched.Add(instruction);
+                }
+            }
+
+            return patched;
         }
     }
 

@@ -8,21 +8,34 @@ namespace ValheimVRMod.Scripts
     class SpearWield : LocalWeaponWield
     {
         private float harpoonHidingTimer = 0;
+        private Vector3 defaultMeshFilterLocalPosition;
+        // Local position of mesh filter shifted forward to better single-handed melee wield.
+        private Vector3 shiftedMeshFilterLocalPosition;
+        private MeshFilter meshFilter;
+
 
         protected override void Awake()
         {
             base.Awake();
-            MeshFilter meshFilter = gameObject.GetComponentInChildren<MeshFilter>();
+            meshFilter = gameObject.GetComponentInChildren<MeshFilter>();
             if (EquipScript.isSpearEquippedRadialForward())
             {
                 meshFilter.gameObject.transform.localPosition = Quaternion.AngleAxis(180, Vector3.right) * meshFilter.gameObject.transform.localPosition;
                 meshFilter.gameObject.transform.localRotation *= Quaternion.AngleAxis(180, Vector3.right);
+                defaultMeshFilterLocalPosition = meshFilter.transform.localPosition;
+                meshFilter.gameObject.transform.position = meshFilter.gameObject.transform.position + GetWeaponPointingDir() * 0.5f;
+                shiftedMeshFilterLocalPosition = meshFilter.transform.localPosition;
+            }
+            else
+            {
+                defaultMeshFilterLocalPosition = shiftedMeshFilterLocalPosition = meshFilter.transform.localPosition;
             }
         }
 
         protected override void OnRenderObject()
         {
             base.OnRenderObject();
+            bool shiftMeshFilter = false;
             if (ThrowableManager.isThrowing) {
                 harpoonHidingTimer = 1;
             }
@@ -30,6 +43,13 @@ namespace ValheimVRMod.Scripts
             {
                 harpoonHidingTimer = 0;
             }
+            else if (!isCurrentlyTwoHanded())
+            {
+                shiftMeshFilter = true;
+            }
+
+            meshFilter.transform.localPosition =
+                shiftMeshFilter ? shiftedMeshFilterLocalPosition : defaultMeshFilterLocalPosition;
         }
 
         void FixedUpdate()
@@ -66,7 +86,23 @@ namespace ValheimVRMod.Scripts
         
         protected override float GetPreferredOffsetFromRearHand(float handDist)
         {
-            return 0.09f / Mathf.Max(handDist, 0.09f) + 0.2f;
+            bool rearHandIsDominant = (IsPlayerLeftHanded() == (twoHandedState == TwoHandedState.LeftHandBehind));
+            float handleLengthBehindCenter = 1.25f;
+            if (rearHandIsDominant)
+            {
+                // When the dominant hand is in the back, anchor the very end of the spear handle in it to allow longer attack range.
+                return handleLengthBehindCenter - HAND_CENTER_OFFSET;
+            }
+            else if (handDist > handleLengthBehindCenter)
+            {
+                // The hands are far away from each other, anchor the end of the spear handle in the rear/non-dominant hand.
+                return handleLengthBehindCenter - HAND_CENTER_OFFSET;
+            }
+            else
+            {
+                // Anchor the center of the spear in the front/dominant hand to allow shorter attack range.
+                return handDist - HAND_CENTER_OFFSET;
+            }
         }        
     }
 }

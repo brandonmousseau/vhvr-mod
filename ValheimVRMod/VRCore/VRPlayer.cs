@@ -1126,7 +1126,7 @@ namespace ValheimVRMod.VRCore
             {
                 float height = Valve.VR.InteractionSystem.Player.instance.eyeHeight;
                 float heightThreshold = referencePlayerHeight * VHVRConfig.RoomScaleSneakHeight();
-                if (height < heightThreshold)
+                if (height < heightThreshold && !getPlayerCharacter().IsSitting())
                 {
                     _isRoomscaleSneaking = true;
                 }

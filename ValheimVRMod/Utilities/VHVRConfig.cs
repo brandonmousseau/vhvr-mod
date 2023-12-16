@@ -620,7 +620,7 @@ namespace ValheimVRMod.Utilities
             gesturedLocomotion = config.Bind("Controls",
                                              "Gestured Locomotion",
                                              false,
-                                             "Enables using arm movements to swim");
+                                             "Enables using arm movements to swim and jump");
             dominantHand = config.Bind("Controls",
                                         "DominantHand",
                                         "Right",
