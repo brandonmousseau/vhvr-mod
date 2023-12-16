@@ -98,7 +98,7 @@ namespace ValheimVRMod.Scripts
             bool rearHandIsDominant = (IsPlayerLeftHanded() == (twoHandedState == TwoHandedState.LeftHandBehind));
             float handleAllowanceBehindDominantHand =
                 EquipScript.getRight() == EquipType.Polearms ?
-                0.6f :
+                0.65f :
                 0.15f;
             if (rearHandIsDominant)
             {

@@ -49,7 +49,10 @@ namespace ValheimVRMod.Scripts.Block {
 
         void OnDestroy()
         {
-            Destroy(hitIndicator.gameObject);
+            if (hitIndicator?.gameObject)
+            {
+                Destroy(hitIndicator.gameObject);
+            }
         }
 
         public override void setBlocking(HitData hitData) {
