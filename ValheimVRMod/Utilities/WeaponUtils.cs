@@ -101,14 +101,14 @@ namespace ValheimVRMod.Utilities
                     0.09493963f,  1.120129f, 0.01100477f
                 )}, {
                 "SpearWolfFang", WeaponColData.create(
-                    0,  -9.06f, 0,
+                    0,  -6.06f, 0,
                     0,  0, 0,
-                    0.3996784f,  1.445521f, 0.4638378f
+                    0.3996784f,  7.445521f, 0.4638378f
                 )}, {
                 "SpearFlint", WeaponColData.create(
-                    0,  0, 1.238f,
+                    0,  0, 0.738f,
                     0,  0, 0,
-                    0.08946446f,  0.05617056f, 0.1811694f
+                    0.08946446f,  0.05617056f, 1.1811694f
                 )}, {
                 // SpearChitin currently has no melee attack, thus collider throws error.
                 // Still keeping this commented, in case it changes some day
@@ -119,14 +119,14 @@ namespace ValheimVRMod.Utilities
                 //     0.01591795f,  0.8536723f, 0.09076092f
                 // )}, {
                 "SpearElderbark", WeaponColData.create(
-                    0,  2.0915f, 0,
+                    0,  1.7915f, 0,
                     0,  0, 0,
-                    0.07673188f,  0.3863854f, 0.02554126f
+                    0.07673188f,  0.9863854f, 0.02554126f
                 )}, {
                 "SpearBronze", WeaponColData.create(
-                    0,  2.182f, 0,
+                    0,  1.882f, 0,
                     0,  0, 0,
-                    0.07756059f,  0.425059f, 0.02554126f
+                    0.07756059f,  1.025059f, 0.02554126f
                 )}, {
                 "SledgeStagbreaker", WeaponColData.create(
                     0,  2.064f, 0,
@@ -159,19 +159,19 @@ namespace ValheimVRMod.Utilities
                     0.4f,  0.4f, 0.4f
                 )}, {
                 "AtgeirBlackmetal", WeaponColData.create(
-                    0.101f,  1.361f, 0,
+                    0,  1.861f, 0,
                     0,  0, 0,
-                    0.0777498f,  2.7300777f, 0.01543969f
+                    0.1277498f,  1.7300777f, 0.01543969f
                 )}, {
                 "AtgeirBronze", WeaponColData.create(
-                    0,  -0.111f, -1.529f,
-                    7.082f,  0, 0,
-                    0.02239758f,  0.1004803f, 1.9769629f
+                    0,  0, -1.229f,
+                    0,  0, 0,
+                    0.02239758f,  0.1504803f, 2.5769629f
                 )}, {
                 "AtgeirIron", WeaponColData.create(
-                    0,  -0.111f, -1.529f,
-                    7.082f,  0, 0,
-                    0.02239758f,  0.1004803f, 1.9769629f
+                    0,  0, -1.229f,
+                    0,  0, 0,
+                    0.02239758f,  0.1504803f, 2.5769629f
                 )}, {
                 "Battleaxe", WeaponColData.create(
                     -0.679f,  3.496f, -0.003f,
@@ -234,9 +234,9 @@ namespace ValheimVRMod.Utilities
                     0.025f, 0.025f, 0.005f
                 )}, {
                 "AtgeirHimminAfl", WeaponColData.create(
-                    0,  1.419f, -0.002f,
+                    0,  1.919f, -0.002f,
                     0, 0, 0,
-                    0.40725f,  2.6230943f, 0.03f
+                    0.10725f,  1.6230943f, 0.03f
                 )}, {
                 "AxeJotunBane", WeaponColData.create(
                     -0.0048f,  0.6406f, 0.001f,
@@ -254,9 +254,9 @@ namespace ValheimVRMod.Utilities
                     0.6946211f,  0.3374455f, 0.3453262f
                 )}, {
                 "SpearCarapace", WeaponColData.create(
-                    0,  2.0915f, 0,
+                    0, 1.9915f, 0,
                     0, 0, 0,
-                    0.07673188f,  0.6555415f, 0.02554126f
+                    0.07673188f,  0.8555415f, 0.02554126f
                 )}, {
                 "SwordMistwalker", WeaponColData.create(
                     0,  0.842f, 0,
