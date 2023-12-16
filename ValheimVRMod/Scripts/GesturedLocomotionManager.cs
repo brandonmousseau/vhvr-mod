@@ -160,7 +160,7 @@ namespace ValheimVRMod.Scripts
         class GesturedJump : GesturedLocomotion
         {
             private const float HORIZONTAL_SPEED_DEADZONE_FACTOR = 0.4f;
-            private const float FORWARD_CORRECTION_FACTOR = 0.39f;
+            private const float FORWARD_CORRECTION_FACTOR = 0.4f;
 
             private bool isPreparingJump = false;
             private Vector3 jumpVelocity = Vector3.zero;
