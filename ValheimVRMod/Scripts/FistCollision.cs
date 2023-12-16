@@ -12,7 +12,7 @@ namespace ValheimVRMod.Scripts
     public class FistCollision : MonoBehaviour
     {
         public static FistCollision instance;
-        private const float MIN_SPEED = 2.5f;
+        private const float MIN_SPEED = 5f;
         private GameObject colliderParent = null;
         private bool isRightHand;
         private HandGesture handGesture;
