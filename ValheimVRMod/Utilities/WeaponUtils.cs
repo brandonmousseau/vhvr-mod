@@ -6,6 +6,7 @@ namespace ValheimVRMod.Utilities
 {
     public static class WeaponUtils
     {
+        private static readonly Vector3[] BASE = new Vector3[] { Vector3.right, Vector3.up, Vector3.forward };
 
         private static readonly Dictionary<string, WeaponColData> colliders = new Dictionary<string, WeaponColData>
         {
@@ -331,30 +332,37 @@ namespace ValheimVRMod.Utilities
             throw new InvalidEnumArgumentException();
         }
 
-        // Estimates the direction that the weapon is pointing by identifying the dimension on which its mesh bounds is offset the farthest.
+        // Estimates the direction and length of weapon handle behind the grip by identifying the dimension on which its mesh bounds is offset the farthest.
         // This estimation therefore assumes:
         //   1. The weapon pointing direction is parallel to the x, y, or z axis of the mesh; and
         //   2. The offset of tip of the weapon is larger than its lateral, dorsal, and ventral expanse.
-        public static Vector3 EstimateWeaponPointingDirection(MeshFilter weaponMeshFilter, Vector3 handPosition)
+        public static Vector3 EstimateHandleAllowanceBehindGrip(MeshFilter weaponMeshFilter, Vector3 handPosition)
         {
             Bounds weaponLocalBounds = weaponMeshFilter.sharedMesh.bounds;
             Vector3 centerOffset = weaponLocalBounds.center - weaponMeshFilter.transform.InverseTransformPoint(handPosition);
-            float maxX = Mathf.Abs(centerOffset.x) + weaponLocalBounds.extents.x;
-            float maxY = Mathf.Abs(centerOffset.y) + weaponLocalBounds.extents.y;
-            float maxZ = Mathf.Abs(centerOffset.z) + weaponLocalBounds.extents.z;
+            Vector3[] corners = new Vector3[] {
+                centerOffset - weaponLocalBounds.extents,
+                centerOffset + weaponLocalBounds.extents
+            };
 
-            Vector3 longestDimension = weaponMeshFilter.transform.forward;
-            if (maxX > maxY && maxX > maxZ)
-            {
-                longestDimension = weaponMeshFilter.transform.right;
-            }
-            else if (maxY > maxZ && maxY > maxX)
-            {
-                longestDimension = weaponMeshFilter.transform.up;
+            float longestExtrusion = 0;
+            Vector3 weaponPointingDirection = Vector3.zero;
+            float weaponLength = 0;
+            for (int i = 0; i < 3; i++) {
+                foreach (Vector3 corner in corners)
+                {
+                    float extrusion = corner[i];
+                    if (Mathf.Abs(extrusion) > longestExtrusion)
+                    {
+                        longestExtrusion = Mathf.Abs(extrusion);
+                        weaponPointingDirection = BASE[i] * Mathf.Sign(extrusion);
+                        weaponLength = weaponLocalBounds.size[i];
+                    }
+                }
             }
 
-            Vector3 roughDirection = weaponMeshFilter.transform.TransformPoint(weaponLocalBounds.center) - handPosition;
-            return Vector3.Project(roughDirection, longestDimension).normalized;
+            float handleAllowanceLengthBehindGrip = weaponLength - longestExtrusion;
+            return weaponMeshFilter.transform.TransformVector(-weaponPointingDirection * handleAllowanceLengthBehindGrip);
         }
 
         // Whether the straight line (t -> p + t * v) intersects with the given bounds.
