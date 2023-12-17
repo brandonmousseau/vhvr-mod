@@ -136,7 +136,7 @@ namespace ValheimVRMod.Patches {
     class ZInput_GetJoyRightStickX_Patch {
         static void Postfix(ref float __result) {
             if (VRControls.mainControlsActive) {
-                
+
                 if (ZInput_GetJoyRightStickY_Patch.isRunning 
                     && VRControls.instance.GetJoyRightStickX() > -0.5f 
                     && VRControls.instance.GetJoyRightStickX() < 0.5f)
@@ -151,7 +151,7 @@ namespace ValheimVRMod.Patches {
                 {
                     return;
                 }
-                
+
                 __result = __result + VRControls.instance.GetJoyRightStickX();
             }
         }
@@ -176,6 +176,44 @@ namespace ValheimVRMod.Patches {
 
                 __result = __result + joystick;
             }
+        }
+    }
+
+    [HarmonyPatch(typeof(PlayerController), "LateUpdate")]
+    class PlayerController_LateUpdate_Patch
+    {
+        private static MethodInfo IsGamepadActive =
+             AccessTools.Method(typeof(ZInput), nameof(ZInput.IsGamepadActive));
+
+        private static bool IsGamepadActivePatched()
+        {
+            if (VHVRConfig.NonVrPlayer() || !VHVRConfig.UseVrControls())
+            {
+                return ZInput.IsGamepadActive();
+            }
+
+            // Make the vanilla game believe that the gamepad is active so that it will use ZInput.GetJoyRightStickX() which we patch to turn the player left/right.
+            return true;
+        }
+
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            var original = new List<CodeInstruction>(instructions);
+            var patched = new List<CodeInstruction>();
+            foreach (var instruction in original)
+            {
+                if (instruction.Calls(IsGamepadActive))
+                {
+                    patched.Add(
+                        CodeInstruction.Call(typeof(PlayerController_LateUpdate_Patch), nameof(IsGamepadActivePatched)));
+                }
+                else
+                {
+                    patched.Add(instruction);
+                }
+            }
+
+            return patched;
         }
     }
 

@@ -1,4 +1,3 @@
-using ValheimVRMod.VRCore.UI;
 using HarmonyLib;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -7,13 +6,15 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Reflection.Emit;
 using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
+using UnityEngine.UI;
+using Fishlabs.Valheim;
+using ValheimVRMod.VRCore.UI;
 using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
 
 using static ValheimVRMod.Utilities.LogUtils;
-using System.Runtime.CompilerServices;
-using System.Text.RegularExpressions;
-using UnityEngine.UI;
 
 namespace ValheimVRMod.Patches
 {
@@ -784,9 +785,10 @@ namespace ValheimVRMod.Patches
         }
     }    
     
-    [HarmonyPatch(typeof(Settings), "UpdateBindings")]
+    [HarmonyPatch(typeof(KeyboardMouseSettings), "UpdateBindings")]
     class PatchEndBindKey {
-        public static void Postfix() {
+        public static void Postfix(KeyboardMouseSettings __instance) {
+            ConfigSettings.keyboardMouseSettings = __instance;
             if (VHVRConfig.NonVrPlayer()) {
                 return;
             }
