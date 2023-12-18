@@ -21,6 +21,7 @@ namespace ValheimVRMod.Scripts {
         private WeaponWield.TwoHandedState twoHandedState = WeaponWield.TwoHandedState.SingleHanded;
         private bool isLeftHanded = false;
 
+        private Player player;
         private Vector3 ownerLastPositionCamera = Vector3.zero;
         private Vector3 ownerVelocityCamera = Vector3.zero;
         private Vector3 ownerLastPositionLeft = Vector3.zero;
@@ -57,6 +58,7 @@ namespace ValheimVRMod.Scripts {
             camera = new GameObject();
             rightHand = new GameObject();
             leftHand = new GameObject();
+            player = GetComponent<Player>();
         }
 
         void Start()
@@ -190,6 +192,12 @@ namespace ValheimVRMod.Scripts {
             extractAndUpdate(pkg, ref leftHand, ref clientTempRelPosLeft, hasTempRelPos);
             extractAndUpdate(pkg, ref rightHand, ref clientTempRelPosRight, hasTempRelPos);
             maybeAddVrik();
+            if (vrik != null)
+            {
+                // TODO: Consider creating a method that does this check and can be used both here
+                // and in VRPlayer.
+                vrik.enabled = !player.InDodge() && !player.IsStaggering() && !player.IsSleeping();
+            }
             hasTempRelPos = true;
             readFingers(pkg);
             maybePullBow(pkg.ReadBool());
@@ -260,9 +268,10 @@ namespace ValheimVRMod.Scripts {
             {
                 return;
             }
-            vrik = VrikCreator.initialize(gameObject, leftHand.transform,
-                rightHand.transform, camera.transform);
-            VrikCreator.resetVrikHandTransform(gameObject.GetComponent<Player>());
+            vrik =
+                VrikCreator.initialize(
+                    gameObject, leftHand.transform, rightHand.transform, camera.transform);
+            VrikCreator.resetVrikHandTransform(player);
         }
 
         private bool isOwner()
