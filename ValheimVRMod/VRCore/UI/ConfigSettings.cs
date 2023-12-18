@@ -90,8 +90,6 @@ namespace ValheimVRMod.VRCore.UI {
         /// Create temporary prefabs out of existing elements
         /// </summary>
         private static void generatePrefabs() {
-
-            LogUtils.LogChildTree(settingsPrefab.transform);
             var tabButtons = settingsPrefab.transform.Find("Panel").Find("TabButtons");
             tabButtonPrefab = tabButtons.GetChild(0).gameObject;
             var tabs = settingsPrefab.transform.Find("Panel").Find("TabContent");
