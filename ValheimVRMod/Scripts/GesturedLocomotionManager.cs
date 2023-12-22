@@ -38,7 +38,7 @@ namespace ValheimVRMod.Scripts
         public void UpdateMovementFromGestures(float deltaTime)
         {
             Player localPlayer = Player.m_localPlayer;
-            if (VHVRConfig.NonVrPlayer() || !VHVRConfig.UseVrControls() || !VHVRConfig.GesturedLocomotion() || localPlayer == null)
+            if (VHVRConfig.NonVrPlayer() || !VHVRConfig.UseVrControls() || localPlayer == null)
             {
                 stickOutputX = stickOutputY = 0;
                 isRunning = false;
@@ -128,7 +128,7 @@ namespace ValheimVRMod.Scripts
 
             public override Vector3 GetTargetVelocityFromGestures(Player player)
             {
-                if (!player.IsSwimming())
+                if (!VHVRConfig.IsGesturedSwimEnabled() || !player.IsSwimming())
                 {
                     return Vector3.zero;
                 }
@@ -169,6 +169,11 @@ namespace ValheimVRMod.Scripts
 
             public override Vector3 GetTargetVelocityFromGestures(Player player)
             {
+                if (!VHVRConfig.IsGesturedJumpEnabled())
+                {
+                    return Vector3.zero;
+                }
+
                 bool wasPreparingJump = isPreparingJump;
                 isPreparingJump =
                     SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand) &&
