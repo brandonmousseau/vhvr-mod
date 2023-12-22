@@ -619,7 +619,7 @@ namespace ValheimVRMod.Utilities
                                           "If this is set to true and Room Scale sneaking is on, Controller-based sneak inputs will be disabled. Use this if you ONLY want to sneak by phsyically crouching.");
             gesturedLocomotion = config.Bind("Controls",
                                              "Gestured Locomotion",
-                                             "SwimOnly",
+                                             "None",
                                              new ConfigDescription(
                                                  "Enables using arm movements to swim, walk, run, and jump",
                                                  new AcceptableValueList<string>(new string[] { "None", "SwimOnly", "Full" })));
