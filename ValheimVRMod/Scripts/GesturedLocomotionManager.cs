@@ -374,6 +374,12 @@ namespace ValheimVRMod.Scripts
                         }
                     }
 
+                    if (!VHVRConfig.IsGesturedWalkRunEnabled())
+                    {
+                        lineRenderer.enabled = false;
+                        return;
+                    }
+
                     if (gesturedWalkRun.isWalkingOrRunningUsingGestures)
                     {
                         // If gestured walk-run is already active, there is no need to display the grab-start wheel
