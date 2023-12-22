@@ -621,7 +621,7 @@ namespace ValheimVRMod.Utilities
                                              "Gestured Locomotion",
                                              "SwimOnly",
                                              new ConfigDescription(
-                                                 "Enables using arm movements to swim and jump",
+                                                 "Enables using arm movements to swim, walk, run, and jump",
                                                  new AcceptableValueList<string>(new string[] { "None", "SwimOnly", "Full" })));
             dominantHand = config.Bind("Controls",
                                         "DominantHand",
@@ -1237,6 +1237,11 @@ namespace ValheimVRMod.Utilities
         }
 
         public static bool IsGesturedJumpEnabled()
+        {
+            return gesturedLocomotion.Value == "Full";
+        }
+
+        public static bool IsGesturedWalkRunEnabled()
         {
             return gesturedLocomotion.Value == "Full";
         }
