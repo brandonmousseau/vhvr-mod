@@ -451,7 +451,7 @@ namespace ValheimVRMod.VRCore.UI {
             button.GetComponent<Button>().onClick.AddListener(() => {
                 // TODO: use something else (e. g. a dictionary from key to method) instead of Reflection to get the methods.
                 // This can be broken easily without noticing: if the target method's name is changed,
-                // This call does not show up in call hieararchy in IDE and does not throw any error at build time.
+                // This call does not show up in call hierarchy in IDE and does not throw any error at build time.
                 var method = typeof(SettingCallback).GetMethod(configValue.Key);
                 if (method == null)
                 {
@@ -494,7 +494,7 @@ namespace ValheimVRMod.VRCore.UI {
             defaultButton.GetComponent<Button>().onClick.AddListener(() => {
                 // TODO: use something else (e. g. a dictionary from key to method) instead of Reflection to get the methods.
                 // This can be broken easily without noticing: if the target method's name is changed,
-                // This call does not show up in call hieararchy in IDE and does not throw any error at build time.
+                // This call does not show up in call hierarchy in IDE and does not throw any error at build time.
                 var method = typeof(SettingCallback).GetMethod(configValue.Key + "Default");
                 if (method == null)
                 {
