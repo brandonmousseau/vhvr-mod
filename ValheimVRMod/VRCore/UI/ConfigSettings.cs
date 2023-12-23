@@ -90,6 +90,7 @@ namespace ValheimVRMod.VRCore.UI {
         /// Create temporary prefabs out of existing elements
         /// </summary>
         private static void generatePrefabs() {
+
             var tabButtons = settingsPrefab.transform.Find("Panel").Find("TabButtons");
             tabButtonPrefab = tabButtons.GetChild(0).gameObject;
             var tabs = settingsPrefab.transform.Find("Panel").Find("TabContent");
@@ -97,10 +98,9 @@ namespace ValheimVRMod.VRCore.UI {
             togglePrefab = controlSettingsPrefab.GetComponentInChildren<Toggle>().gameObject;
             sliderPrefab = controlSettingsPrefab.GetComponentInChildren<Slider>().gameObject;
             keyBindingPrefab = controlSettingsPrefab.transform.Find("List").Find("Bindings").Find("Grid").Find("Use").gameObject;
-            chooserPrefab = settingsPrefab.transform.Find("Panel").Find("TabContent").Find("Gameplay").Find("List").Find("Language")
-                .gameObject;
+            chooserPrefab =
+                settingsPrefab.transform.Find("Panel").Find("TabContent").Find("Gamepad").Find("List").Find("InputLayout").gameObject;
             buttonPrefab = settingsPrefab.transform.Find("Panel").Find("Back").gameObject;
-
         }
 
         private static void createToolTip(Transform settings) {
@@ -182,7 +182,11 @@ namespace ValheimVRMod.VRCore.UI {
             else
             {
                 okButton.onClick.RemoveAllListeners();
-                okButton.onClick.AddListener(() => { doSave = true; });
+                okButton.onClick.m_PersistentCalls.Clear();
+                okButton.onClick.AddListener(() => {
+                    doSave = true;
+                    GameObject.Destroy(settings);
+                });
                 Object.Destroy(okButton.GetComponent<UIGamePad>());
             }
 
@@ -194,7 +198,11 @@ namespace ValheimVRMod.VRCore.UI {
             else
             {
                 backButton.onClick.RemoveAllListeners();
-                backButton.onClick.AddListener(() => { doSave = false; });
+                backButton.onClick.m_PersistentCalls.Clear();
+                backButton.onClick.AddListener(() => {
+                    doSave = false;
+                    GameObject.Destroy(settings);
+                });
                 Object.Destroy(backButton.GetComponent<UIGamePad>());
             }
         }
@@ -211,11 +219,11 @@ namespace ValheimVRMod.VRCore.UI {
             var rectTransform = newTabButton.GetComponent<RectTransform>();
             var tabButtonXPosition = TabButtonWidth * (tabCounter - (sectionCount - 1) * 0.5f);
             rectTransform.anchoredPosition = new Vector2(tabButtonXPosition, rectTransform.anchoredPosition.y);
-
-            foreach (TMP_Text text in newTabButton.GetComponentsInChildren<TMP_Text>()) {
+            foreach (TMP_Text text in newTabButton.GetComponentsInChildren<TMP_Text>())
+            {
                 text.text = section.Key;
             }
-            
+
             // Create new tab content
             var tabs = settings.transform.Find("Panel").Find("TabContent");
             var newTab = Object.Instantiate(tabs.GetChild(0), tabs);
@@ -230,6 +238,8 @@ namespace ValheimVRMod.VRCore.UI {
             var tab = new TabHandler.Tab();
             tab.m_button = newTabButton.GetComponent<Button>();
             var activeTabIndex = tabCounter;
+            tab.m_button.onClick.RemoveAllListeners();
+            tab.m_button.onClick.m_PersistentCalls.Clear();
             tab.m_button.onClick.AddListener(() => {
                 tabButtons.GetComponent<TabHandler>().SetActiveTab(activeTabIndex);
             });
@@ -328,22 +338,25 @@ namespace ValheimVRMod.VRCore.UI {
             };
         }
 
-        private static void createValueList(KeyValuePair<string, ConfigEntryBase> configValue, Transform parent, Vector2 pos, Type type,
-        AcceptableValueBase acceptableValues) {
-            
+        private static void createValueList(
+            KeyValuePair<string, ConfigEntryBase> configValue, Transform parent, Vector2 pos, Type type, AcceptableValueBase acceptableValues) {
+
             var chooserObj = Object.Instantiate(chooserPrefab, parent);
+            chooserObj.SetActive(true);
             var configComponent = chooserObj.AddComponent<ConfigComponent>();
             configComponent.configValue = configValue;
-            chooserObj.transform.Find("Label").GetComponent<TMP_Text>().text = configValue.Key;
+            chooserObj.transform.Find("LabelLeft").gameObject.SetActive(true);
+            chooserObj.transform.Find("LabelLeft").GetComponent<TMP_Text>().text = configValue.Key;
             chooserObj.GetComponent<RectTransform>().anchoredPosition = pos;
             var valueList = (string[]) type.GetProperty("AcceptableValues").GetValue(acceptableValues);
             var currentIndex = Array.IndexOf(valueList, configValue.Value.GetSerializedValue());
 
-            Transform stepper = chooserObj.transform.Find("Stepper");
+            Transform stepper = chooserObj.transform.Find("GUIStepper");
             for (int i = 0; i < stepper.childCount; i++) {
                 var child = stepper.transform.GetChild(i);
                 switch (child.name) {
                     case "Value":
+                        child.gameObject.SetActive(true);
                         child.localScale *= 0.8f;
                         child.GetComponent<RectTransform>().anchoredPosition = new Vector2(180, 0);
                         child.GetComponent<RectTransform>().sizeDelta = new Vector2(150, 0);
@@ -351,16 +364,22 @@ namespace ValheimVRMod.VRCore.UI {
                         child.GetComponentInChildren<TMP_Text>().text = configValue.Value.GetSerializedValue();
                         break;
                     case "Left":
+                        child.gameObject.SetActive(true);
                         child.localScale *= 0.5f;
                         child.GetComponent<RectTransform>().anchoredPosition = new Vector2(110, 0);
+                        child.GetComponent<Button>().onClick.m_PersistentCalls.Clear();
+                        child.GetComponent<Button>().onClick.RemoveAllListeners();
                         child.GetComponent<Button>().onClick.AddListener(() => {
                             var text = valueList[mod(--currentIndex, valueList.Length)];
                             stepper.Find("Value").GetComponentInChildren<TMP_Text>().text = text;
                         });
                         break;
                     case "Right":
+                        child.gameObject.SetActive(true);
                         child.localScale *= 0.5f;
                         child.GetComponent<RectTransform>().anchoredPosition = new Vector2(250, 0);
+                        child.GetComponent<Button>().onClick.m_PersistentCalls.Clear();
+                        child.GetComponent<Button>().onClick.RemoveAllListeners();
                         child.GetComponent<Button>().onClick.AddListener(() => {
                             var text = valueList[mod(++currentIndex, valueList.Length)];
                             stepper.Find("Value").GetComponentInChildren<TMP_Text>().text = text;
@@ -412,7 +431,7 @@ namespace ValheimVRMod.VRCore.UI {
             }
             var text = label.GetComponent<TMP_Text>();
             text.text = configValue.Key;
-            
+
             pos.y += 225;
             text.GetComponent<RectTransform>().anchoredPosition = pos;
             
@@ -426,11 +445,21 @@ namespace ValheimVRMod.VRCore.UI {
             if (menuList.name != "MenuEntries") {
                 button.GetComponent<Button>().enabled = false;
             }
-            
-            button.GetComponent<Button>().onClick.SetPersistentListenerState(0, UnityEventCallState.Off);
+
+            button.GetComponent<Button>().onClick.m_PersistentCalls.Clear();
             button.GetComponent<Button>().onClick.RemoveAllListeners();
             button.GetComponent<Button>().onClick.AddListener(() => {
-                if (! (bool) typeof(SettingCallback).GetMethod(configValue.Key).Invoke(null,
+                // TODO: use something else (e. g. a dictionary from key to method) instead of Reflection to get the methods.
+                // This can be broken easily without noticing: if the target method's name is changed,
+                // This call does not show up in call hieararchy in IDE and does not throw any error at build time.
+                var method = typeof(SettingCallback).GetMethod(configValue.Key);
+                if (method == null)
+                {
+                    LogUtils.LogError("Cannot find method SettingCallback." + configValue.Key);
+                    return;
+                }
+                if (!(bool)method.Invoke(
+                    null,
                     new UnityAction<Vector3, Quaternion>[] {
                         (mPos, mRot) => {
                             configValue.Value.SetSerializedValue(String.Format(CultureInfo.InvariantCulture,
@@ -438,12 +467,12 @@ namespace ValheimVRMod.VRCore.UI {
                             confRot.SetSerializedValue(String.Format(CultureInfo.InvariantCulture,
                                 "{{\"x\":{0}, \"y\":{1}, \"z\":{2}, \"w\":{3}}}", mRot.x, mRot.y, mRot.z, mRot.w));
                         }
-                    })) {
+                    }))
+                {
                     return;
                 }
-                
                 doSave = false;
-                Settings.instance.OnBack();
+                GameObject.Destroy(settings);
                 Menu.instance.OnClose();
             });
 
@@ -460,10 +489,19 @@ namespace ValheimVRMod.VRCore.UI {
                 return;
             }
 
-            defaultButton.GetComponent<Button>().onClick.SetPersistentListenerState(0, UnityEventCallState.Off);
+            defaultButton.GetComponent<Button>().onClick.m_PersistentCalls.Clear();
             defaultButton.GetComponent<Button>().onClick.RemoveAllListeners();
             defaultButton.GetComponent<Button>().onClick.AddListener(() => {
-                if (!(bool)typeof(SettingCallback).GetMethod(configValue.Key +"Default").Invoke(null,
+                // TODO: use something else (e. g. a dictionary from key to method) instead of Reflection to get the methods.
+                // This can be broken easily without noticing: if the target method's name is changed,
+                // This call does not show up in call hieararchy in IDE and does not throw any error at build time.
+                var method = typeof(SettingCallback).GetMethod(configValue.Key + "Default");
+                if (method == null)
+                {
+                    LogUtils.LogError("Cannot find method SettingCallback." + configValue.Key + "Default");
+                    return;
+                }
+                if (!(bool)method.Invoke(null,
                     new UnityAction<Vector3, Quaternion>[] {
                         (mPos, mRot) => {
                             configValue.Value.SetSerializedValue(String.Format(CultureInfo.InvariantCulture,
@@ -487,6 +525,9 @@ namespace ValheimVRMod.VRCore.UI {
             configComponent.saveAction = param => {
                 configValue.Value.SetSerializedValue(param);
             };
+            keyBinding.GetComponentInChildren<Button>().gameObject.SetActive(true);
+            keyBinding.GetComponentInChildren<Button>().transform.GetChild(0).gameObject.SetActive(true);
+
             keyBinding.transform.Find("Label").GetComponent<TMP_Text>().text = configValue.Key;
             keyboardMouseSettings.m_keys.Add(new KeySetting {m_keyName = configValue.Key, m_keyTransform = keyBinding.GetComponent<RectTransform>()});
             keyBinding.GetComponentInChildren<Button>().onClick.AddListener(() => {
@@ -494,7 +535,11 @@ namespace ValheimVRMod.VRCore.UI {
                 tmpComfigComponent = configComponent;
             });
             keyBinding.GetComponent<RectTransform>().anchoredPosition = pos;
-            ZInput.instance.AddButton(configValue.Key, (GamepadInput) Enum.Parse(typeof(GamepadInput), configValue.Value.GetSerializedValue()));
+            if (ZInput.instance.m_buttons.ContainsKey(configValue.Key))
+            {
+                ZInput.instance.m_buttons.Remove(configValue.Key);
+            }
+            ZInput.instance.AddButton(configValue.Key, ZInput.KeyCodeToKey((KeyCode)Enum.Parse(typeof(KeyCode), configValue.Value.GetSerializedValue())));
         }
 
         private static void CaptureScreenshot()
