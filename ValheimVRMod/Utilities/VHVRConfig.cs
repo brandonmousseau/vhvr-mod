@@ -105,7 +105,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> roomScaleSneaking;
         private static ConfigEntry<float> roomScaleSneakHeight;
         private static ConfigEntry<bool> exclusiveRoomScaleSneak;
-        private static ConfigEntry<bool> gesturedLocomotion;
+        private static ConfigEntry<string> gesturedLocomotion;
         private static ConfigEntry<bool> weaponNeedsSpeed;
         private static ConfigEntry<float> altPieceRotationDelay;
         private static ConfigEntry<bool> runIsToggled;
@@ -619,8 +619,10 @@ namespace ValheimVRMod.Utilities
                                           "If this is set to true and Room Scale sneaking is on, Controller-based sneak inputs will be disabled. Use this if you ONLY want to sneak by phsyically crouching.");
             gesturedLocomotion = config.Bind("Controls",
                                              "Gestured Locomotion",
-                                             false,
-                                             "Enables using arm movements to swim and jump");
+                                             "None",
+                                             new ConfigDescription(
+                                                 "Enables using arm movements to swim, walk, run, and jump",
+                                                 new AcceptableValueList<string>(new string[] { "None", "SwimOnly", "Full" })));
             dominantHand = config.Bind("Controls",
                                         "DominantHand",
                                         "Right",
@@ -1229,9 +1231,19 @@ namespace ValheimVRMod.Utilities
             return exclusiveRoomScaleSneak.Value;
         }
 
-        public static bool GesturedLocomotion()
+        public static bool IsGesturedSwimEnabled()
         {
-            return gesturedLocomotion.Value;
+            return gesturedLocomotion.Value == "Full" || gesturedLocomotion.Value == "SwimOnly";
+        }
+
+        public static bool IsGesturedJumpEnabled()
+        {
+            return gesturedLocomotion.Value == "Full";
+        }
+
+        public static bool IsGesturedWalkRunEnabled()
+        {
+            return gesturedLocomotion.Value == "Full";
         }
 
         public static float GetNearClipPlane()
