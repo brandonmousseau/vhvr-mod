@@ -49,7 +49,7 @@ namespace ValheimVRMod.Scripts {
         public Transform mainHand;
 
         private bool wasPulling;
-        protected bool oneHandedAiming = false;
+        protected bool bowHandAiming = false;
         public float timeBasedChargePercentage;
         public bool pulling;
 
@@ -119,10 +119,16 @@ namespace ValheimVRMod.Scripts {
             return -(pullStart.localPosition.z);
         }
 
-        protected virtual float getPullLenghtRestriction()
+        protected virtual float getPullLengthRestriction(float? drawPercentage = null)
         {
             return 1;
         }
+
+        protected virtual bool OnlyUseDominantHand()
+        {
+            return false;
+        }
+
 
         private void initializeRenderersAsync(float handleTopLocalHeight, float handleBottomLocalHeight, float bowScale) {
 
@@ -372,7 +378,13 @@ namespace ValheimVRMod.Scripts {
         }
 
         private void rotateBowOnPulling() {
-            if (oneHandedAiming) {
+            if (OnlyUseDominantHand())
+            {
+                handleDominantHandAiming();
+                return;
+            }
+
+            if (bowHandAiming) {
                 return;
             }
 
@@ -389,7 +401,19 @@ namespace ValheimVRMod.Scripts {
             bowOrientation.rotation = pushObj.transform.rotation * Quaternion.AngleAxis((float) (-pushOffsetAngle * (180.0 / Math.PI)), Vector3.right);
 
             transform.SetPositionAndRotation(bowTransformUpdater.position, bowTransformUpdater.rotation);
-         }
+        }
+
+        private void handleDominantHandAiming()
+        {
+            var dominantHandPointer = VHVRConfig.LeftHanded() ? VRPlayer.leftPointer : VRPlayer.rightPointer;
+            Vector3 aimingDirection = (dominantHandPointer.rayDirection * Vector3.forward).normalized;
+            bowOrientation.LookAt(bowOrientation.position + aimingDirection, mainHand.up);
+            bowOrientation.position =
+                mainHand.position +
+                bowOrientation.TransformVector(
+                    new Vector3(0, -VHVRConfig.ArrowRestElevation(), getPullLengthRestriction(timeBasedChargePercentage)));
+            transform.SetPositionAndRotation(bowTransformUpdater.position, bowTransformUpdater.rotation);
+        }
 
         private void morphBow() {
             if (!canAccessMesh && !useCustomShader) {
@@ -422,11 +446,11 @@ namespace ValheimVRMod.Scripts {
 
             Vector3 pullPos = bowOrientation.InverseTransformPoint(mainHand.position);
 
-            if (oneHandedAiming) {
+            if (bowHandAiming) {
                 pullPos.x = 0f;
                 pullPos.y = VHVRConfig.ArrowRestElevation();
             }
-            pullPos.z = Mathf.Clamp(pullPos.z, -getPullLenghtRestriction(), -GetBraceHeight());
+            pullPos.z = Mathf.Clamp(pullPos.z, -getPullLengthRestriction(), -GetBraceHeight());
 
             pullObj.transform.localPosition = pullPos;
         }
