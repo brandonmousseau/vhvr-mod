@@ -104,7 +104,7 @@ namespace ValheimVRMod.Scripts {
 
             MorphBow();
 
-            if (isPulling)
+            if (isPulling || shouldAutoReload)
             {
                 // We use string position to calcualte bolt position so it can only be updated after updating the string.
                 attachBoltToCrossbow();
@@ -214,8 +214,6 @@ namespace ValheimVRMod.Scripts {
         {
             if (shouldAutoReload)
             {
-                attachBoltToCrossbow();
-
                 if (bolt == null)
                 {
                     isBoltLoaded = createBolt();   
@@ -397,7 +395,7 @@ namespace ValheimVRMod.Scripts {
              return bolt != null && !isBoltLoaded;
          }
          
-         public void loadBoltIfBoltinHandIsNearAnchor()
+         public void loadBoltIfBoltInHandIsNearAnchor()
          {
              var anchorpoint = new Vector3(0, 0.082f, -0.29f);
 

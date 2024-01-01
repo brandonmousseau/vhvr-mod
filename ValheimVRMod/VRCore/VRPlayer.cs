@@ -161,6 +161,15 @@ namespace ValheimVRMod.VRCore
 
         public static SteamVR_LaserPointer leftPointer { get { return _leftPointer; } }
         public static SteamVR_LaserPointer rightPointer { get { return _rightPointer; } }
+
+        public static Vector3 dominantHandRayDirection { get
+            {
+                var pointer =
+                 VHVRConfig.LeftHanded() ? VRPlayer.leftPointer : VRPlayer.rightPointer;
+                return (pointer.rayDirection * Vector3.forward).normalized;
+            } 
+        }
+
         public static SteamVR_LaserPointer activePointer
         {
             get
@@ -1126,7 +1135,7 @@ namespace ValheimVRMod.VRCore
             {
                 float height = Valve.VR.InteractionSystem.Player.instance.eyeHeight;
                 float heightThreshold = referencePlayerHeight * VHVRConfig.RoomScaleSneakHeight();
-                if (height < heightThreshold && !getPlayerCharacter().IsSitting())
+                    if (height < heightThreshold && !getPlayerCharacter().IsSitting())
                 {
                     _isRoomscaleSneaking = true;
                 }
