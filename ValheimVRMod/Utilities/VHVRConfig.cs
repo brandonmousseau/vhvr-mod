@@ -91,6 +91,7 @@ namespace ValheimVRMod.Utilities
         // Controls Settings
         private static ConfigEntry<bool> useLookLocomotion;
         private static ConfigEntry<string> dominantHand;
+        private static ConfigEntry<bool> oneHandedBow;
         private static ConfigEntry<KeyCode> headReposFowardKey;
         private static ConfigEntry<KeyCode> headReposBackwardKey;
         private static ConfigEntry<KeyCode> headReposLeftKey;
@@ -628,6 +629,12 @@ namespace ValheimVRMod.Utilities
                                         "Right",
                                         new ConfigDescription("The dominant hand of the player",
                                         new AcceptableValueList<string>(new string[] { "Right", "Left" })));
+            // TODO: consider having this override crossbowManualReload.
+            oneHandedBow = config.Bind(
+                "Controls",
+                "OneHandedBow",
+                false,
+                "Accessibility feature that allows operating bows and crossbows with the dominant hand alone");
             weaponNeedsSpeed = config.Bind("Controls",
                 "SwingWeapons",
                 true,
@@ -1269,6 +1276,11 @@ namespace ValheimVRMod.Utilities
         public static bool LeftHanded()
         {
             return GetPreferredHand() == VRPlayer.LEFT_HAND;
+        }
+
+        public static bool OneHandedBow()
+        {
+            return oneHandedBow.Value;
         }
 
         public static bool ViewTurnWithMountedAnimal()
