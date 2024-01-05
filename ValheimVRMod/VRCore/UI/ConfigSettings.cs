@@ -31,7 +31,7 @@ namespace ValheimVRMod.VRCore.UI {
         private static GameObject chooserPrefab;
         private static GameObject settingsPrefab;
         private static GameObject keyBindingPrefab;
-        private static GameObject buttonPrefab;
+        private static GameObject transformButtonPrefab;
         private static GameObject settings;
         private static Transform menuList;
         private static Transform menuParent;
@@ -96,17 +96,33 @@ namespace ValheimVRMod.VRCore.UI {
             var tabs = settingsPrefab.transform.Find("Panel").Find("TabContent");
             controlSettingsPrefab = tabs.Find("KeyboardMouse").gameObject;
             togglePrefab = controlSettingsPrefab.GetComponentInChildren<Toggle>().gameObject;
-            sliderPrefab = controlSettingsPrefab.GetComponentInChildren<Slider>().gameObject;
-            keyBindingPrefab = controlSettingsPrefab.transform.Find("List").Find("Bindings").Find("Grid").Find("Use").gameObject;
-            chooserPrefab =
-                settingsPrefab.transform.Find("Panel").Find("TabContent").Find("Gamepad").Find("List").Find("InputLayout").gameObject;
-            buttonPrefab = settingsPrefab.transform.Find("Panel").Find("Back").gameObject;
+            if (sliderPrefab == null)
+            {
+                sliderPrefab = createSliderPrefab(controlSettingsPrefab.GetComponentInChildren<Slider>().gameObject);
+            }
+            if (keyBindingPrefab == null)
+            {
+                keyBindingPrefab = createKeyBindingPrefab(
+                    controlSettingsPrefab.transform.Find("List").Find("Bindings").Find("Grid").Find("Use").gameObject);
+            }
+            if (chooserPrefab == null)
+            {
+                chooserPrefab = createChooserPrefab(
+                    settingsPrefab.transform.Find("Panel").Find("TabContent").Find("Gamepad").Find("List").Find("InputLayout").gameObject);
+            }
+
+            if (transformButtonPrefab == null)
+            {
+                transformButtonPrefab = createTransformButtonPrefab(
+                    sliderPrefab.transform.Find("Label").gameObject,
+                    settingsPrefab.transform.Find("Panel").Find("Back").gameObject);
+            }
         }
 
         private static void createToolTip(Transform settings) {
 
             var padding = 4;
-            var width = 750;
+            var width = 375;
             toolTip = new GameObject();
             toolTip.transform.SetParent(settings, false);
             var bkgImage = toolTip.AddComponent<Image>();
@@ -114,6 +130,7 @@ namespace ValheimVRMod.VRCore.UI {
             bkgImage.color = new Color(0,0,0,0.5f);
             var textObj = Object.Instantiate(togglePrefab.GetComponentInChildren<TMP_Text>().gameObject, toolTip.transform);
             TMP_Text text = textObj.GetComponent<TMP_Text>();
+            text.rectTransform.anchorMin = text.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
             text.rectTransform.sizeDelta = new Vector2(width, 300);
             // text.resizeTextForBestFit = false;
             text.fontSize = 20;
@@ -249,11 +266,11 @@ namespace ValheimVRMod.VRCore.UI {
 
             tabButtons.GetComponent<TabHandler>().m_tabs.Add(tab);
 
-            int posX = 50;
+            int posX = 0;
             int posY = 250;
             
             if (section.Value.Count > 18) {
-                posX = -250;
+                posX = -200;
             }
             
             // iterate all config entries of current section and create elements 
@@ -266,7 +283,7 @@ namespace ValheimVRMod.VRCore.UI {
                 posY -= 30;
                 if (posY < -270) {
                     posY = 250;
-                    posX = 300;
+                    posX = 250;
                 }
             }
 
@@ -317,6 +334,18 @@ namespace ValheimVRMod.VRCore.UI {
             return false;
         }
 
+        private static GameObject createSliderPrefab(GameObject vanillaPrefab)
+        {
+
+            var sliderObj = Object.Instantiate(vanillaPrefab);
+            var rectTransform = sliderObj.GetComponent<RectTransform>();
+            rectTransform.sizeDelta = new Vector2(150, 30);
+            rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
+            rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+            sliderObj.transform.Find("Label").GetComponent<RectTransform>().sizeDelta = new Vector3(200, 0);
+            return sliderObj;
+        }
+
         private static void createValueRange(KeyValuePair<string, ConfigEntryBase> configValue, Transform parent, Vector2 pos, Type type,
             AcceptableValueBase acceptableValues) {
 
@@ -324,12 +353,12 @@ namespace ValheimVRMod.VRCore.UI {
             var configComponent = sliderObj.AddComponent<ConfigComponent>();
             configComponent.configValue = configValue;  
             sliderObj.transform.Find("Label").GetComponent<TMP_Text>().text = configValue.Key;
-            // TODO: create a proper slider prefab instead of adjusting the position here
-            sliderObj.GetComponent<RectTransform>().anchoredPosition = pos + new Vector2(500, 275);
+            sliderObj.GetComponent<RectTransform>().anchoredPosition = pos + Vector2.right * 60;
             var slider = sliderObj.GetComponentInChildren<Slider>();
             slider.minValue = float.Parse(type.GetProperty("MinValue").GetValue(acceptableValues).ToString());
             slider.maxValue =  float.Parse(type.GetProperty("MaxValue").GetValue(acceptableValues).ToString());
             slider.value = float.Parse(configValue.Value.GetSerializedValue(), CultureInfo.InvariantCulture);
+            // TODO: Add a listener to update the displayed number on sliding.
             if (acceptableValues.ValueType == typeof(int)) {
                 slider.wholeNumbers = true;
             }
@@ -339,60 +368,70 @@ namespace ValheimVRMod.VRCore.UI {
             };
         }
 
-        private static void createValueList(
-            KeyValuePair<string, ConfigEntryBase> configValue, Transform parent, Vector2 pos, Type type, AcceptableValueBase acceptableValues) {
-
-            var chooserObj = Object.Instantiate(chooserPrefab, parent);
-            chooserObj.SetActive(true);
-            var configComponent = chooserObj.AddComponent<ConfigComponent>();
-            configComponent.configValue = configValue;
-            chooserObj.transform.Find("LabelLeft").gameObject.SetActive(true);
-            chooserObj.transform.Find("LabelLeft").GetComponent<TMP_Text>().text = configValue.Key;
-            // TODO: create a proper chooser prefab instead of adjusting the position here
-            chooserObj.GetComponent<RectTransform>().anchoredPosition = pos + new Vector2(300, 275);
-            Transform stepper = chooserObj.transform.Find("GUIStepper");
-            stepper.GetComponent<RectTransform>().anchoredPosition = stepper.GetComponent<RectTransform>().anchoredPosition + new Vector2(-200, 0);
-            var valueList = (string[]) type.GetProperty("AcceptableValues").GetValue(acceptableValues);
-            var currentIndex = Array.IndexOf(valueList, configValue.Value.GetSerializedValue());
-            for (int i = 0; i < stepper.childCount; i++) {
+        private static GameObject createChooserPrefab(GameObject vanillaPrefab)
+        {
+            var chooserPrefab = Object.Instantiate(vanillaPrefab);
+            chooserPrefab.transform.Find("LabelLeft").gameObject.SetActive(true);
+            var rectTransform = chooserPrefab.GetComponent<RectTransform>();
+            rectTransform.sizeDelta = new Vector2(180, 30);
+            rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
+            rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+            Transform stepper = chooserPrefab.transform.Find("GUIStepper");
+            for (int i = 0; i < stepper.childCount; i++)
+            {
                 var child = stepper.transform.GetChild(i);
-                switch (child.name) {
+                switch (child.name)
+                {
                     case "Value":
                         child.gameObject.SetActive(true);
-                        child.localScale *= 0.8f;
-                        child.GetComponent<RectTransform>().anchoredPosition = new Vector2(210, 0);
-                        child.GetComponent<RectTransform>().sizeDelta = new Vector2(150, 0);
+                        child.GetComponent<RectTransform>().sizeDelta = new Vector2(-60, -5);
                         child.GetComponentInChildren<TMP_Text>().fontSize = 6;
-                        child.GetComponentInChildren<TMP_Text>().text = configValue.Value.GetSerializedValue();
                         break;
                     case "Left":
                         child.gameObject.SetActive(true);
-                        child.localScale *= 0.5f;
-                        child.GetComponent<RectTransform>().anchoredPosition = new Vector2(200, 0);
+                        child.GetComponent<RectTransform>().sizeDelta = new Vector2(30, 30);
                         child.GetComponent<Button>().onClick.m_PersistentCalls.Clear();
                         child.GetComponent<Button>().onClick.RemoveAllListeners();
-                        child.GetComponent<Button>().onClick.AddListener(() => {
-                            var text = valueList[mod(--currentIndex, valueList.Length)];
-                            stepper.Find("Value").GetComponentInChildren<TMP_Text>().text = text;
-                        });
                         break;
                     case "Right":
                         child.gameObject.SetActive(true);
-                        child.localScale *= 0.5f;
-                        child.GetComponent<RectTransform>().anchoredPosition = new Vector2(230, 0);
+                        child.GetComponent<RectTransform>().sizeDelta = new Vector2(30, 30);
                         child.GetComponent<Button>().onClick.m_PersistentCalls.Clear();
                         child.GetComponent<Button>().onClick.RemoveAllListeners();
-                        child.GetComponent<Button>().onClick.AddListener(() => {
-                            var text = valueList[mod(++currentIndex, valueList.Length)];
-                            stepper.Find("Value").GetComponentInChildren<TMP_Text>().text = text;
-                        });
                         break;
                     default:
                         child.gameObject.SetActive(false);
                         break;
                 }
             }
-            
+            return chooserPrefab;
+        }
+
+        private static void createValueList(
+            KeyValuePair<string, ConfigEntryBase> configValue, Transform parent, Vector2 pos, Type type, AcceptableValueBase acceptableValues) {
+
+            var chooserObj = Object.Instantiate(chooserPrefab, parent);
+            chooserObj.GetComponent<RectTransform>().anchoredPosition = pos + Vector2.left * 10;
+            chooserObj.SetActive(true);
+
+            var configComponent = chooserObj.AddComponent<ConfigComponent>();
+            configComponent.configValue = configValue;
+            chooserObj.transform.Find("LabelLeft").GetComponent<TMP_Text>().text = configValue.Key;
+
+            Transform stepper = chooserObj.transform.Find("GUIStepper");
+            var valueList = (string[])type.GetProperty("AcceptableValues").GetValue(acceptableValues);
+            var currentIndex = Array.IndexOf(valueList, configValue.Value.GetSerializedValue());
+            var valueText = stepper.Find("Value").GetComponentInChildren<TMP_Text>();
+            valueText.text = configValue.Value.GetSerializedValue();
+            stepper.Find("Left").GetComponent<Button>().onClick.AddListener(() =>{
+                var text = valueList[mod(--currentIndex, valueList.Length)];
+                valueText.text = text;
+            });
+            stepper.Find("Right").GetComponent<Button>().onClick.AddListener(() => {
+                var text = valueList[mod(++currentIndex, valueList.Length)];
+                valueText.text = text;
+            });
+
             configComponent.saveAction = param => {
                 configValue.Value.SetSerializedValue(stepper.Find("Value").GetComponentInChildren<TMP_Text>().text);
             };
@@ -408,9 +447,49 @@ namespace ValheimVRMod.VRCore.UI {
             };
             toggle.GetComponentInChildren<TMP_Text>().text = configValue.Key;
             toggle.GetComponent<Toggle>().isOn = configValue.Value.GetSerializedValue() == "true";
-            // TODO: fine tune the position of the toggle.
-            // pos.x -= 210;
             toggle.GetComponent<RectTransform>().anchoredPosition = pos;
+        }
+
+        private static GameObject createTransformButtonPrefab(GameObject vanillaLabel, GameObject vanillaButton)
+        {
+            var transformButtonPrefab = new GameObject();
+            transformButtonPrefab.AddComponent<RectTransform>().sizeDelta = new Vector2(180, 30);
+
+            // Label
+            var label = Object.Instantiate(vanillaLabel, transformButtonPrefab.transform);
+            label.name = "Label";
+            foreach (Transform child in label.transform)
+            {
+                GameObject.Destroy(child.gameObject);
+            }
+            label.GetComponent<RectTransform>().anchorMin = Vector2.one * 0.5f;
+            label.GetComponent<RectTransform>().anchorMax = Vector2.one * 0.5f;
+
+            // Button
+            var setButton = Object.Instantiate(vanillaButton, transformButtonPrefab.transform);
+            setButton.name = "SetButton";
+            setButton.GetComponent<RectTransform>().anchoredPosition = Vector2.right * 50;
+            setButton.GetComponent<RectTransform>().anchorMin = Vector2.one * 0.5f;
+            setButton.GetComponent<RectTransform>().anchorMax = Vector2.one * 0.5f;
+            setButton.GetComponent<RectTransform>().sizeDelta = new Vector2(100, 30);
+            setButton.GetComponentInChildren<TMP_Text>().text = "Set";
+
+            setButton.GetComponent<Button>().onClick.m_PersistentCalls.Clear();
+            setButton.GetComponent<Button>().onClick.RemoveAllListeners();
+
+            // This button will just reset the position and rotation back to the default values.
+            var resetButton = Object.Instantiate(vanillaButton, transformButtonPrefab.transform);
+            resetButton.name = "ResetButton";
+            resetButton.GetComponent<RectTransform>().anchoredPosition = Vector2.right * 150;
+            resetButton.GetComponent<RectTransform>().anchorMin = Vector2.one * 0.5f;
+            resetButton.GetComponent<RectTransform>().anchorMax = Vector2.one * 0.5f;
+            resetButton.GetComponent<RectTransform>().sizeDelta = new Vector2(100, 30);
+            resetButton.GetComponentInChildren<TMP_Text>().text = "Reset";
+
+            resetButton.GetComponent<Button>().onClick.m_PersistentCalls.Clear();
+            resetButton.GetComponent<Button>().onClick.RemoveAllListeners();
+
+            return transformButtonPrefab;
         }
 
         private static void createTransformButton(KeyValuePair<string, ConfigEntryBase> configValue, Transform parent, Vector2 pos, string sectionName) {
@@ -420,37 +499,21 @@ namespace ValheimVRMod.VRCore.UI {
                 Debug.LogError(configValue.Key + "Rot not found. Please make sure a Quaternion with this name exists in section " + sectionName);
                 return;
             }
-            var labledButton = new GameObject();
-            labledButton.transform.SetParent(parent, false);
-            var configComponent = labledButton.AddComponent<ConfigComponent>();
+            var transformButton = GameObject.Instantiate(transformButtonPrefab, parent);
+            transformButton.GetComponent<RectTransform>().anchoredPosition = pos + Vector2.left * 10;
+
+            var configComponent = transformButton.AddComponent<ConfigComponent>();
             configComponent.configValue = configValue;
             configComponent.saveAction = param => {};
-            
-            // Label
-            var label = Object.Instantiate(sliderPrefab.transform.Find("Label").gameObject, labledButton.transform);
-            foreach (Transform child in label.transform) {
-                GameObject.Destroy(child.gameObject);
-            }
-            var text = label.GetComponent<TMP_Text>();
-            text.text = configValue.Key;
-            // TODO: fine tune the position of the toggle.
-            // pos.y += 225;
-            text.GetComponent<RectTransform>().anchoredPosition = pos;
-            
-            // Button
-            var button = Object.Instantiate(buttonPrefab, labledButton.transform);
-            pos.x += 150;
-            button.GetComponent<RectTransform>().anchoredPosition = pos;
-            button.GetComponent<RectTransform>().localScale *= 0.5f;
-            button.GetComponentInChildren<TMP_Text>().text = "Set";
 
+            var label = transformButton.transform.Find("Label").GetComponent<TMP_Text>();
+            label.text = configValue.Key;
+
+            var setButton = transformButton.transform.Find("SetButton").GetComponent<Button>();
             if (menuList.name != "MenuEntries") {
-                button.GetComponent<Button>().enabled = false;
+                setButton.enabled = false;
             }
-
-            button.GetComponent<Button>().onClick.m_PersistentCalls.Clear();
-            button.GetComponent<Button>().onClick.RemoveAllListeners();
-            button.GetComponent<Button>().onClick.AddListener(() => {
+            setButton.onClick.AddListener(() => {
                 // TODO: use something else (e. g. a dictionary from key to method) instead of Reflection to get the methods.
                 // This can be broken easily without noticing: if the target method's name is changed,
                 // This call does not show up in call hierarchy in IDE and does not throw any error at build time.
@@ -479,21 +542,15 @@ namespace ValheimVRMod.VRCore.UI {
             });
 
             // This button will just reset the position and rotation back to the default values.
-            var defaultButton = Object.Instantiate(buttonPrefab, labledButton.transform);
-            pos.x += button.GetComponent<RectTransform>().rect.width/2;
-            defaultButton.GetComponent<RectTransform>().anchoredPosition = pos;
-            defaultButton.GetComponent<RectTransform>().localScale *= 0.5f;
-            defaultButton.GetComponentInChildren<TMP_Text>().text = "Reset";
-
+            var resetButton = transformButton.transform.Find("ResetButton").GetComponent<Button>();
+       
             if (menuList.name != "MenuEntries")
             {
-                defaultButton.GetComponent<Button>().enabled = false;
+                resetButton.enabled = false;
                 return;
             }
 
-            defaultButton.GetComponent<Button>().onClick.m_PersistentCalls.Clear();
-            defaultButton.GetComponent<Button>().onClick.RemoveAllListeners();
-            defaultButton.GetComponent<Button>().onClick.AddListener(() => {
+            resetButton.onClick.AddListener(() => {
                 // TODO: use something else (e. g. a dictionary from key to method) instead of Reflection to get the methods.
                 // This can be broken easily without noticing: if the target method's name is changed,
                 // This call does not show up in call hierarchy in IDE and does not throw any error at build time.                
@@ -516,20 +573,30 @@ namespace ValheimVRMod.VRCore.UI {
                     return;
                 }
             });
+        }
 
+        private static GameObject createKeyBindingPrefab(GameObject vanillaPrefab)
+        {            
+            var keyBindingPrefab = Object.Instantiate(vanillaPrefab);
+            keyBindingPrefab.GetComponentInChildren<RectTransform>().anchorMin = new Vector2(0.5f, 0.5f);
+            keyBindingPrefab.GetComponentInChildren<RectTransform>().anchorMax = new Vector2(0.5f, 0.5f);
+            keyBindingPrefab.GetComponentInChildren<RectTransform>().sizeDelta = new Vector2(100, 25);
+            keyBindingPrefab.GetComponentInChildren<Button>().gameObject.SetActive(true);
+            return keyBindingPrefab;
         }
 
         private static void createKeyBinding(KeyValuePair<string, ConfigEntryBase> configValue, Transform parent, Vector2 pos) {
             
             var keyBinding = Object.Instantiate(keyBindingPrefab, parent);
+
+
+            keyBinding.GetComponent<RectTransform>().anchoredPosition = pos + Vector2.right * 125;
+
             var configComponent = keyBinding.AddComponent<ConfigComponent>();
             configComponent.configValue = configValue;
             configComponent.saveAction = param => {
                 configValue.Value.SetSerializedValue(param);
             };
-            // TODO: find out why the key binding button is not showing up and fix it.
-            keyBinding.GetComponentInChildren<Button>().gameObject.SetActive(true);
-            keyBinding.GetComponentInChildren<Button>().transform.GetChild(0).gameObject.SetActive(true);
 
             keyBinding.transform.Find("Label").GetComponent<TMP_Text>().text = configValue.Key;
             keyboardMouseSettings.m_keys.Add(new KeySetting {m_keyName = configValue.Key, m_keyTransform = keyBinding.GetComponent<RectTransform>()});
@@ -538,9 +605,6 @@ namespace ValheimVRMod.VRCore.UI {
                 tmpComfigComponent = configComponent;
             });
             // TODO: create a proper key binding UI prefab instead of adjusting the position here.
-            pos.x += 500;
-            pos.y += 280;
-            keyBinding.GetComponent<RectTransform>().anchoredPosition = pos;
             if (ZInput.instance.m_buttons.ContainsKey(configValue.Key))
             {
                 ZInput.instance.m_buttons.Remove(configValue.Key);
