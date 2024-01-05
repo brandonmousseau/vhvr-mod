@@ -14,7 +14,7 @@ namespace ValheimVRMod.Scripts
         private const float WATER_SPEED_CHANGE_DAMPER = 1f;
         private const float AIR_SPEED_CHANGE_DAMPER = 4f;
         private const float RUN_ACITIVATION_SPEED = 1.25f;
-        private const float RUN_DEACTIVATION_SPEED = 2f;
+        private const float RUN_DEACTIVATION_SPEED = 1.125f;
         private const float MIN_VERTICAL_JUMP_SPEED = 2.5f;
         private const float MIN_WATER_SPEED = 0.0625f;
 
@@ -25,7 +25,6 @@ namespace ValheimVRMod.Scripts
         private Transform vrCameraRig;
         private readonly GesturedLocomotion[] gesturedLocomotions;
         private Vector3 gesturedLocomotionVelocity = Vector3.zero;
-        private Vector3 gesturedSmoothAcceleration = Vector3.zero;
         private float horizontalSpeed = 0;
 
         public GesturedLocomotionManager(Transform vrCameraRig)
@@ -61,13 +60,7 @@ namespace ValheimVRMod.Scripts
                         AIR_SPEED_CHANGE_DAMPER;
 
             gesturedLocomotionVelocity =
-                Vector3.SmoothDamp(
-                    gesturedLocomotionVelocity,
-                    targetVelocity,
-                    ref gesturedSmoothAcceleration,
-                    damper,
-                    maxSpeed: Mathf.Infinity,
-                    deltaTime);
+                Vector3.Lerp(gesturedLocomotionVelocity, targetVelocity, deltaTime / damper);
 
             float previousHorizontalSpeed = horizontalSpeed;
             horizontalSpeed = Vector3.ProjectOnPlane(gesturedLocomotionVelocity, vrCameraRig.up).magnitude;
@@ -334,9 +327,14 @@ namespace ValheimVRMod.Scripts
                         return true;
                     }
                 }
-                
+
                 // Stop gestured walking if hand movements are slow.
-                return Mathf.Abs(currentSpeed) < MIN_WALK_SPEED && leftHandVelocity.magnitude < MIN_HAND_SPEED && rightHandVelocity.magnitude < MIN_HAND_SPEED;
+                return isWalkingOrRunningUsingGestures &&
+                    Mathf.Abs(currentSpeed) < MIN_WALK_SPEED &&
+                    leftHandVelocity.magnitude < MIN_HAND_SPEED &&
+                    rightHandVelocity.magnitude < MIN_HAND_SPEED &&
+                    VRPlayer.leftHandPhysicsEstimator.GetAverageVelocityInSnapshots().magnitude < MIN_HAND_SPEED &&
+                    VRPlayer.leftHandPhysicsEstimator.GetAverageVelocityInSnapshots().magnitude < MIN_HAND_SPEED;
             }
 
             // A small wheel displayed near the non-dominant hand that can be grabbed with the other hand to start gestured walking.
