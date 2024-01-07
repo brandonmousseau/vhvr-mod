@@ -92,7 +92,10 @@ namespace ValheimVRMod.VRCore.UI {
         private static void generatePrefabs() {
 
             var tabButtons = settingsPrefab.transform.Find("Panel").Find("TabButtons");
-            tabButtonPrefab = tabButtons.GetChild(0).gameObject;
+            if (tabButtonPrefab == null)
+            {
+                tabButtonPrefab = createTabButtonPrefab(tabButtons.GetChild(0).gameObject);
+            }
             var tabs = settingsPrefab.transform.Find("Panel").Find("TabContent");
             controlSettingsPrefab = tabs.Find("KeyboardMouse").gameObject;
             togglePrefab = controlSettingsPrefab.GetComponentInChildren<Toggle>().gameObject;
@@ -110,7 +113,6 @@ namespace ValheimVRMod.VRCore.UI {
                 chooserPrefab = createChooserPrefab(
                     settingsPrefab.transform.Find("Panel").Find("TabContent").Find("Gamepad").Find("List").Find("InputLayout").gameObject);
             }
-
             if (transformButtonPrefab == null)
             {
                 transformButtonPrefab = createTransformButtonPrefab(
@@ -120,7 +122,6 @@ namespace ValheimVRMod.VRCore.UI {
         }
 
         private static void createToolTip(Transform settings) {
-
             var padding = 4;
             var width = 375;
             toolTip = new GameObject();
@@ -154,7 +155,7 @@ namespace ValheimVRMod.VRCore.UI {
             }
             // clear tab array
             tabButtons.GetComponent<TabHandler>().m_tabs.Clear();
-            
+
             // deactivate old tab contents
             foreach (Transform t in settings.transform.Find("Panel").Find("TabContent")) {
                 t.gameObject.SetActive(false);
@@ -205,6 +206,8 @@ namespace ValheimVRMod.VRCore.UI {
                     GameObject.Destroy(settings);
                 });
                 Object.Destroy(okButton.GetComponent<UIGamePad>());
+                var hint = okButton.transform.Find("KeyHint");
+                if (hint) Object.Destroy(hint.gameObject);
             }
 
             Button backButton = panel.Find("Back")?.GetComponent<Button>();
@@ -221,6 +224,8 @@ namespace ValheimVRMod.VRCore.UI {
                     GameObject.Destroy(settings);
                 });
                 Object.Destroy(backButton.GetComponent<UIGamePad>());
+                var hint = backButton.transform.Find("KeyHint");
+                if (hint) Object.Destroy(hint.gameObject);
             }
         }
 
@@ -232,10 +237,13 @@ namespace ValheimVRMod.VRCore.UI {
 
             // Create new tab button
             var newTabButton = Object.Instantiate(tabButtonPrefab, tabButtons);
+
             newTabButton.name = section.Key;
             var rectTransform = newTabButton.GetComponent<RectTransform>();
             var tabButtonXPosition = TabButtonWidth * (tabCounter - (sectionCount - 1) * 0.5f);
             rectTransform.anchoredPosition = new Vector2(tabButtonXPosition, rectTransform.anchoredPosition.y);
+            
+            // TODO: Find out why the tab title changes to "[label_selected]" when being clicked and how to stop that.
             foreach (TMP_Text text in newTabButton.GetComponentsInChildren<TMP_Text>())
             {
                 text.text = section.Key;
@@ -255,8 +263,6 @@ namespace ValheimVRMod.VRCore.UI {
             var tab = new TabHandler.Tab();
             tab.m_button = newTabButton.GetComponent<Button>();
             var activeTabIndex = tabCounter;
-            tab.m_button.onClick.RemoveAllListeners();
-            tab.m_button.onClick.m_PersistentCalls.Clear();
             tab.m_button.onClick.AddListener(() => {
                 tabButtons.GetComponent<TabHandler>().SetActiveTab(activeTabIndex);
             });
@@ -334,6 +340,18 @@ namespace ValheimVRMod.VRCore.UI {
             return false;
         }
 
+        private static GameObject createTabButtonPrefab(GameObject vanillaObject)
+        {
+            var prefab = GameObject.Instantiate(vanillaObject);
+            var hint = prefab.transform.Find("KeyHint");
+            if (hint) GameObject.Destroy(hint.gameObject);
+            var button = prefab.GetComponent<Button>();
+            button.onClick.RemoveAllListeners();
+            button.onClick.m_PersistentCalls.Clear();
+            return prefab;
+
+        }
+
         private static GameObject createSliderPrefab(GameObject vanillaPrefab)
         {
 
@@ -358,7 +376,15 @@ namespace ValheimVRMod.VRCore.UI {
             slider.minValue = float.Parse(type.GetProperty("MinValue").GetValue(acceptableValues).ToString());
             slider.maxValue =  float.Parse(type.GetProperty("MaxValue").GetValue(acceptableValues).ToString());
             slider.value = float.Parse(configValue.Value.GetSerializedValue(), CultureInfo.InvariantCulture);
-            // TODO: Add a listener to update the displayed number on sliding.
+            var text = slider.transform.Find("Value").GetComponent<TMP_Text>();
+            text.text = "" + slider.value;
+
+            slider.onValueChanged.AddListener(
+                (value) =>
+                {
+                    text.text = "" + slider.value;
+                });
+
             if (acceptableValues.ValueType == typeof(int)) {
                 slider.wholeNumbers = true;
             }
@@ -366,6 +392,8 @@ namespace ValheimVRMod.VRCore.UI {
             configComponent.saveAction = param => {
                 configValue.Value.SetSerializedValue(slider.value.ToString(CultureInfo.InvariantCulture));
             };
+
+
         }
 
         private static GameObject createChooserPrefab(GameObject vanillaPrefab)
