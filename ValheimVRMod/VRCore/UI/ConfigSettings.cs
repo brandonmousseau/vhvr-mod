@@ -242,11 +242,11 @@ namespace ValheimVRMod.VRCore.UI {
             var rectTransform = newTabButton.GetComponent<RectTransform>();
             var tabButtonXPosition = TabButtonWidth * (tabCounter - (sectionCount - 1) * 0.5f);
             rectTransform.anchoredPosition = new Vector2(tabButtonXPosition, rectTransform.anchoredPosition.y);
-            
-            // TODO: Find out why the tab title changes to "[label_selected]" when being clicked and how to stop that.
-            foreach (TMP_Text text in newTabButton.GetComponentsInChildren<TMP_Text>())
+
+            var labels = newTabButton.GetComponentsInChildren<TMP_Text>(includeInactive: true);
+            foreach (var label in labels)
             {
-                text.text = section.Key;
+                label.text = section.Key;
             }
 
             // Create new tab content
