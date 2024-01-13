@@ -459,12 +459,12 @@ namespace ValheimVRMod.Scripts
                     originalRayTraceTransform = pieceRaycast.transform;
                     if (modSupport)
                     {
-                        if (pieceRaycast.transform.name == "MoveableBase")
+                        if (pieceRaycast.transform.name == "MovableBase")
                         {
                             originalRayTraceMod = pieceRaycast.transform;
                             originalRayTraceTransform = pieceRaycast.collider.transform;
                         }
-                        else if (pieceRaycast.transform && (SteamVR_Actions.laserPointers_LeftClick.GetStateDown(SteamVR_Input_Sources.RightHand) || !(Player.m_localPlayer.transform.parent && Player.m_localPlayer.transform.parent.name == "MoveableBase")))
+                        else if (pieceRaycast.transform && (SteamVR_Actions.laserPointers_LeftClick.GetStateDown(SteamVR_Input_Sources.RightHand) || !(Player.m_localPlayer.transform.parent && Player.m_localPlayer.transform.parent.name == "MovableBase")))
                         {
                             originalRayTraceMod = null;
                         }
@@ -478,7 +478,7 @@ namespace ValheimVRMod.Scripts
                     snapLine.enabled = true;
                     snapLine.positionCount = 2;
                     originalRayTraceTransform = null;
-                    if (!(Player.m_localPlayer.transform.parent && Player.m_localPlayer.transform.parent.name == "MoveableBase"))
+                    if (!(Player.m_localPlayer.transform.parent && Player.m_localPlayer.transform.parent.name == "MovableBase"))
                     {
                         originalRayTraceMod = null;
                     }
@@ -651,7 +651,7 @@ namespace ValheimVRMod.Scripts
             if (modSupport)
             {
                 var raft = pieceRaycast.transform;
-                if (raft.name == "MoveableBase")
+                if (raft.name == "MovableBase")
                 {
                     buildRefBox.transform.SetParent(raft);
                 }
@@ -688,7 +688,7 @@ namespace ValheimVRMod.Scripts
             var forward = Vector3.forward;
             if (modSupport)
             {
-                if (rayTracedPiece && rayTracedPiece.transform.parent && rayTracedPiece.transform.parent.name == "MoveableBase")
+                if (rayTracedPiece && rayTracedPiece.transform.parent && rayTracedPiece.transform.parent.name == "MovableBase")
                 {
                     forward = rayTracedPiece.transform.parent.forward;
                 }
@@ -802,7 +802,7 @@ namespace ValheimVRMod.Scripts
                         firstSnapTransform = pieceRaycast.transform;
                         if (modSupport)
                         {
-                            if (firstSnapTransform.transform.name == "MoveableBase")
+                            if (firstSnapTransform.transform.name == "MovableBase")
                             {
                                 lastSnapMod = pieceRaycast.transform;
                                 firstSnapTransform = pieceRaycast.collider.transform;
