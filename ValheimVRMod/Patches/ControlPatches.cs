@@ -249,6 +249,7 @@ namespace ValheimVRMod.Patches {
 
             if (BuildingManager.instance.isCurrentlyFreeMode())
             {
+                ___m_placementGhost.SetActive(true);
                 BuildingManager.instance.PrecisionUpdate(___m_placementGhost);
                 if (___m_placementMarkerInstance)
                 {
