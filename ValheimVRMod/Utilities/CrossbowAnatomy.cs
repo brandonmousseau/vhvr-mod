@@ -35,7 +35,8 @@ namespace ValheimVRMod.Utilities {
 
         public static CrossbowAnatomy getAnatomy(string name)
         {
-            return anatomies[name];
+            anatomies.TryGetValue(name, out var anatomy);
+            return anatomy;
         }
 
         protected CrossbowAnatomy(
