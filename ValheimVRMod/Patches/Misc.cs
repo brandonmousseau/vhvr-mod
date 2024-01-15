@@ -326,6 +326,53 @@ namespace ValheimVRMod.Patches
         }
     }
 
+    // These patches just remove a warning log that was very spammy under some circumstances
+    // and resulted in poor performance. (Something to do with spiky fish...)
+    [HarmonyPatch(typeof(Aoe), nameof(Aoe.OnCollisionEnter))]
+    class AoeOnCollisionEnterPatch
+    {
+        public static bool Prefix(Aoe __instance, ref Collision collision)
+        {
+           
+            if (!__instance.m_triggerEnterOnly)
+            {
+                return false;
+            }
+            if (!__instance.m_useTriggers)
+            {
+                return false;
+            }
+            if (__instance.m_nview != null && (!__instance.m_nview.IsValid() || !__instance.m_nview.IsOwner()))
+            {
+                return false;
+            }
+            __instance.OnHit(collision.collider, collision.collider.transform.position);
+            return false;
+        }
+    }
+
+    [HarmonyPatch(typeof(Aoe), nameof(Aoe.OnCollisionStay))]
+    class AoeOnCollisionStayPatch
+    {
+        public static bool Prefix(Aoe __instance, ref Collision collision)
+        {
+            if (__instance.m_triggerEnterOnly)
+            {
+                return false;
+            }
+            if (!__instance.m_useTriggers)
+            {
+                return false;
+            }
+            if (__instance.m_nview != null && (!__instance.m_nview.IsValid() || !__instance.m_nview.IsOwner()))
+            {
+                return false;
+            }
+            __instance.OnHit(collision.collider, collision.collider.transform.position);
+            return false;
+        }
+    }
+
     [HarmonyPatch(typeof(WaterVolume), nameof(WaterVolume.Awake))]
     class WaterSurfaceVisiblityPatch
     {
