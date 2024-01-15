@@ -27,7 +27,7 @@ namespace ValheimVRMod.Scripts {
         private ItemDrop.ItemData weapon;
         private GameObject bolt;
         private GameObject boltAttach;
-        
+
         public bool isBoltLoaded = false;
 
         // Note: we make draw length proportional to the square root of reload progress.
@@ -70,6 +70,7 @@ namespace ValheimVRMod.Scripts {
             anatomy = CrossbowAnatomy.getAnatomy(Player.m_localPlayer.GetLeftItem().m_shared.m_name);
             if (anatomy == null)
             {
+                isBoltLoaded = true;
                 return;
             }
             MeshRenderer meshRenderer = gameObject.GetComponent<MeshRenderer>();
@@ -207,7 +208,7 @@ namespace ValheimVRMod.Scripts {
 
         public bool IsHandClosePullStart()
         {
-            return !CrossbowManager.isCurrentlyTwoHanded() && Vector3.Distance(mainHand.position, pullStart.position) <= MaxNockingDistance;
+            return !CrossbowManager.isCurrentlyTwoHanded() && anatomy != null && Vector3.Distance(mainHand.position, pullStart.position) <= MaxNockingDistance;
         }
 
         private void UpdatePullStatus()
@@ -376,6 +377,7 @@ namespace ValheimVRMod.Scripts {
              }
              boltAttach.transform.localRotation = Quaternion.identity;
              boltAttach.transform.localPosition = Vector3.zero;
+
              return true;
          }
 
