@@ -363,11 +363,6 @@ namespace ValheimVRMod.Scripts
                 return true;
             }
 
-            if (!VHVRConfig.WeaponNeedsSpeed())
-            {
-                return true;
-            }
-
             float handSpeed;
             if (weaponWield.twoHandedState == WeaponWield.TwoHandedState.SingleHanded)
             {
@@ -384,7 +379,7 @@ namespace ValheimVRMod.Scripts
                         VRPlayer.rightHandPhysicsEstimator.GetAverageVelocityInSnapshots().magnitude);
             }
 
-            return handSpeed >= MIN_SPEED;
+            return handSpeed >= MIN_SPEED * VHVRConfig.SwingSpeedRequirement();
         }
 
         private bool isStab()
@@ -396,7 +391,7 @@ namespace ValheimVRMod.Scripts
                 return false;
             }
 
-            if (Vector3.Dot(attackVelocity, LocalWeaponWield.weaponForward) > MIN_STAB_SPEED)
+            if (Vector3.Dot(attackVelocity, LocalWeaponWield.weaponForward) > MIN_STAB_SPEED * VHVRConfig.SwingSpeedRequirement())
             {
                 LogUtils.LogDebug("VHVR: stab detected on weapon direction: " + LocalWeaponWield.weaponForward);
                 return true;
