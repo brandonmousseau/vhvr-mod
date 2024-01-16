@@ -107,7 +107,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> roomScaleSneakHeight;
         private static ConfigEntry<bool> exclusiveRoomScaleSneak;
         private static ConfigEntry<string> gesturedLocomotion;
-        private static ConfigEntry<bool> weaponNeedsSpeed;
+        private static ConfigEntry<float> swingSpeedRequirement;
         private static ConfigEntry<float> altPieceRotationDelay;
         private static ConfigEntry<bool> runIsToggled;
         private static ConfigEntry<bool> viewTurnWithMountedAnimal;
@@ -635,10 +635,12 @@ namespace ValheimVRMod.Utilities
                 "OneHandedBow",
                 false,
                 "Accessibility feature that allows operating bows and crossbows with the dominant hand alone");
-            weaponNeedsSpeed = config.Bind("Controls",
-                "SwingWeapons",
-                true,
-                "Defines if Swinging a Weapon needs certain speed. if set to false, single touch will already trigger hit");
+            swingSpeedRequirement =
+                config.Bind(
+                    "Controls", "SwingSpeedRequirement", 1f,
+                    new ConfigDescription(
+                        "The speed requirement level on weapon swinging for an attack to be triggered. if set to 0, single touch will already trigger hit",
+                        new AcceptableValueRange<float>(0, 1f)));
             altPieceRotationDelay = config.Bind("Controls",
                                                 "AltPieceRotationDelay",
                                                 1f,
@@ -1220,9 +1222,9 @@ namespace ValheimVRMod.Utilities
             return Mathf.Abs(smoothSnapSpeed.Value);
         }
 
-        public static bool WeaponNeedsSpeed()
+        public static float SwingSpeedRequirement()
         {
-            return weaponNeedsSpeed.Value;
+            return swingSpeedRequirement.Value;
         }
 
         public static bool RoomScaleSneakEnabled() {
