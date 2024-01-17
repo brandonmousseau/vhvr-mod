@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -204,12 +204,12 @@ namespace ValheimVRMod.VRCore.UI.HudElements
             Hud.instance.m_healthAnimator = newComponents.healthPanel.GetComponent<Animator>();
             Hud.instance.m_healthBarFast = newComponents.healthBarFast.GetComponent<GuiBar>();
             Hud.instance.m_healthBarSlow = newComponents.healthBarSlow.GetComponent<GuiBar>();
-            Hud.instance.m_healthText = newComponents.healthText.GetComponent<Text>();
+            Hud.instance.m_healthText = newComponents.healthText.GetComponent<TMPro.TMP_Text>();
             // Food
             Hud.instance.m_foodBarRoot = newComponents.foodBarRoot.GetComponent<RectTransform>();
             Hud.instance.m_foodBaseBar = newComponents.foodBaseBar.GetComponent<RectTransform>();
             Hud.instance.m_foodIcon = newComponents.foodIcon.GetComponent<Image>();
-            Hud.instance.m_foodText = newComponents.foodText.GetComponent<Text>();
+            Hud.instance.m_foodText = newComponents.foodText.GetComponent<TMPro.TMP_Text>();
             Image[] foodBarImages = new Image[newComponents.foodBars.Length];
             for (int i = 0; i < foodBarImages.Length; i++)
             {
@@ -222,10 +222,10 @@ namespace ValheimVRMod.VRCore.UI.HudElements
                 foodIconImages[i] = newComponents.foodIcons[i].GetComponent<Image>();
             }
             Hud.instance.m_foodIcons = foodIconImages;
-            Text[] foodTimes = new Text[newComponents.foodTimes.Length];
+            TMPro.TMP_Text[] foodTimes = new TMPro.TMP_Text[newComponents.foodTimes.Length];
             for (int i = 0; i < foodTimes.Length; i++)
             {
-                foodTimes[i] = newComponents.foodTimes[i].GetComponent<Text>();
+                foodTimes[i] = newComponents.foodTimes[i].GetComponent<TMPro.TMP_Text>();
             }
             Hud.instance.m_foodTime = foodTimes;
         }

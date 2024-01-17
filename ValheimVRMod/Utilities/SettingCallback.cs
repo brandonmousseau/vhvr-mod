@@ -37,6 +37,19 @@ namespace ValheimVRMod.Utilities {
             return true;
         }
 
+        public static bool LeftWristQuickSwitchDefault(UnityAction<Vector3, Quaternion> pAction)
+        {
+            pAction(VHVRConfig.DefaultLeftWristQuickBarPos(), VHVRConfig.DefaultLeftWristQuickBarRot());
+            return true;
+        }
+
+        public static bool RightWristQuickActionDefault(UnityAction<Vector3, Quaternion> pAction)
+        {
+            pAction(VHVRConfig.DefaultRightWristQuickBarPos(), VHVRConfig.DefaultRightWristQuickBarRot());
+            return true;
+        }
+
+
         /**
          * called by ConfigSettings.createTransformButton()
          */
@@ -45,22 +58,22 @@ namespace ValheimVRMod.Utilities {
             return createSettingObj(VHVRConfig.RightWristPos(), VHVRConfig.RightWristRot(), "Right Wrist", true);
         }
 
-        public static bool LeftWristQuickBar(UnityAction<Vector3, Quaternion> pAction)
+        public static bool LeftWristQuickSwitch(UnityAction<Vector3, Quaternion> pAction)
         {
             action = pAction;
             return createSettingObj(VHVRConfig.LeftWristQuickBarPos(), VHVRConfig.LeftWristQuickBarRot(), "Left Wrist Quick Bar", false);
         }     
 
-        public static bool RightWristQuickBar(UnityAction<Vector3, Quaternion> pAction)
+        public static bool RightWristQuickAction(UnityAction<Vector3, Quaternion> pAction)
         {
             action = pAction;
-            return createSettingObj(VHVRConfig.RightWristQuickBarPos(), VHVRConfig.RightWristQuickBarRot(), "Right Wrist Quick Bar", false);
+            return createSettingObj(VHVRConfig.RightWristQuickBarPos(), VHVRConfig.RightWristQuickBarRot(), "Right Wrist Quick Bar", true);
         }
 
         private static bool createSettingObj(Vector3 pos, Quaternion rot, string panel, bool isRightWrist) {
 
             if (configRunning) {
-                //TODO show message ?
+                LogUtils.LogWarning("Trying to set HUD when config is not running.");
                 return false;
             }
 

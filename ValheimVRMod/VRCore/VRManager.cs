@@ -139,10 +139,15 @@ namespace ValheimVRMod.VRCore
                 LogError("XRManagerSettings instance is null, cannot initialize loader.");
                 return false;
             }
-            managerSettings.InitializeLoaderSync();
+            int tries = 0;
+            do
+            {
+                managerSettings.InitializeLoaderSync();
+                tries++;
+            } while ((managerSettings.activeLoader == null) && (tries < 10000));
             if (managerSettings.activeLoader == null)
             {
-                LogError("XRManager.activeLoader is null! Cannot initialize VR!");
+                LogError("managerSettings.activeLoader is null after 10000 tries.");
                 return false;
             }
             OpenVRSettings openVrSettings = OpenVRSettings.GetSettings(false);

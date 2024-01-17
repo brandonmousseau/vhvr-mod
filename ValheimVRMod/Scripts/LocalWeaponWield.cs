@@ -3,6 +3,7 @@ using UnityEngine.Rendering;
 using ValheimVRMod.Scripts.Block;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
+using ValheimVRMod.VRCore.UI;
 using Valve.VR;
 using Valve.VR.InteractionSystem;
 
@@ -81,6 +82,8 @@ namespace ValheimVRMod.Scripts
             {
                 InitializeRedDot();
             }
+
+            updateCrosshair();
 
             if (twoHandedState != TwoHandedState.SingleHanded)
             {
@@ -242,6 +245,27 @@ namespace ValheimVRMod.Scripts
             var leftHandItem = player?.m_leftItem?.m_shared.m_itemType;
 
             return !(leftHandItem is null) && leftHandItem != ItemDrop.ItemData.ItemType.Shield;
+        }
+
+        private void updateCrosshair()
+        {
+            GameObject crosshair = CrosshairManager.instance.weaponCrosshair;
+            if (crosshair == null)
+            {
+                LogUtils.LogWarning("Crosshair not found for weapon");
+                return;
+            }
+
+            crosshair.SetActive(VHVRConfig.ShowStaticCrosshair());
+            crosshair.transform.SetParent(transform, false);
+            crosshair.transform.position = transform.position + CrosshairManager.WEAPON_CROSSHAIR_DISTANCE * weaponForward;
+            crosshair.transform.localRotation = Quaternion.identity;
+            bool isAiming = (EquipScript.getLeft() == EquipType.Crossbow || EquipScript.getRight() == EquipType.Magic) && isCurrentlyTwoHanded();
+            if (EquipScript.getLeft() == EquipType.Crossbow && VHVRConfig.OneHandedBow())
+            {
+                isAiming = true;
+            }
+            crosshair.SetActive(isAiming);
         }
 
         private void InitializeRedDot()

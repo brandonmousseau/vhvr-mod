@@ -6,11 +6,10 @@ using Valve.VR;
 namespace ValheimVRMod.Scripts {
     class CrossbowManager : LocalWeaponWield
     {
+        private const float INTERGRIP_DISTANCE = 0.35f;
         private static CrossbowManager instance;
         private static readonly Quaternion frontGripRotationForLeftHand = Quaternion.Euler(0, -15, 90);
         private static readonly Quaternion frontGripRotationForRightHand = Quaternion.Euler(0, 0, -120);
-
-        private Quaternion originalLocalRotation;
 
         private CrossbowMorphManager crossbowMorphManager;
 
@@ -22,16 +21,43 @@ namespace ValheimVRMod.Scripts {
         protected override void Awake()
         {
             base.Awake();
-            originalLocalRotation = transform.localRotation;
             // The mesh for the unloaded bow and and the mesh for the loaded bow are in two different child game objects.
             // We only need to use our custom bending animation on the unloaded one.
-            crossbowMorphManager = transform.FindChild("Unloaded").gameObject.AddComponent<CrossbowMorphManager>();
+            crossbowMorphManager = transform.Find("Unloaded").gameObject.AddComponent<CrossbowMorphManager>();
         }
 
         protected override void OnRenderObject()
         {
             base.OnRenderObject();
             isRedDotVisible = VHVRConfig.UseArrowPredictionGraphic() && twoHandedState != TwoHandedState.SingleHanded;
+            CrossbowMorphManager.instance.loadBoltIfBoltInHandIsNearAnchor();
+            if (twoHandedState == TwoHandedState.SingleHanded && VHVRConfig.OneHandedBow())
+            {
+                UpdateDominantHandAiming();
+            }
+        }
+
+        private void UpdateDominantHandAiming()
+        { 
+            bool isAiming = VHVRConfig.LeftHanded() ? SteamVR_Actions.valheim_UseLeft.state : SteamVR_Actions.valheim_Use.state;
+            if (!isAiming)
+            {
+                transform.localPosition = Vector3.zero;
+                transform.rotation = GetSingleHandedRotation(GetOriginalRotation());
+                VrikCreator.ResetHandConnectors();
+                return;
+            }
+
+            Vector3 aimingDirection = VRPlayer.dominantHandRayDirection;
+            transform.rotation = Quaternion.LookRotation(aimingDirection, VRPlayer.dominantHand.transform.up);
+            transform.position = VRPlayer.dominantHand.transform.position + aimingDirection * INTERGRIP_DISTANCE;
+
+            Quaternion frontHandRotation =
+                VHVRConfig.LeftHanded() ?
+                frontGripRotationForRightHand :
+                frontGripRotationForLeftHand;
+            VrikCreator.GetLocalPlayerNonDominantHandConnector().SetPositionAndRotation(
+                transform.position, transform.rotation * frontHandRotation);
         }
 
         public static bool CanQueueReloadAction() {
@@ -87,7 +113,7 @@ namespace ValheimVRMod.Scripts {
 
         protected override float GetPreferredOffsetFromRearHand(float handDist)
         {
-            return 0.35f;
+            return INTERGRIP_DISTANCE;
         }
 
         protected override bool TemporaryDisableTwoHandedWield()
@@ -101,23 +127,58 @@ namespace ValheimVRMod.Scripts {
             {
                 return false;
             }
+
+            if (!Player.m_localPlayer.IsWeaponLoaded())
+            {
+                return false;
+            }
+
+            bool isPullingTrigger = false;
             switch (instance.twoHandedState)
             {
                 case TwoHandedState.LeftHandBehind:
-                    return SteamVR_Actions.valheim_UseLeft.stateDown;
+                    isPullingTrigger = SteamVR_Actions.valheim_UseLeft.stateDown;
+                    break;
                 case TwoHandedState.RightHandBehind:
-                    return SteamVR_Actions.valheim_Use.stateDown;
+                    isPullingTrigger = SteamVR_Actions.valheim_Use.stateDown;
+                    break;
                 default:
-                    return false;
+                    if (VHVRConfig.OneHandedBow())
+                    {
+                        isPullingTrigger =
+                            VHVRConfig.LeftHanded() ?
+                            SteamVR_Actions.valheim_UseLeft.stateUp :
+                            SteamVR_Actions.valheim_Use.stateUp;
+                    }
+                    break;
+            }
+
+            if (isPullingTrigger && !CrossbowMorphManager.instance.isBoltLoaded)
+            {
+                Player.m_localPlayer.ResetLoadedWeapon();
+                return false;
+            }
+            
+            return isPullingTrigger;
+        }
+
+        public static Vector3 AimDir {
+            get { 
+                if (VHVRConfig.OneHandedBow() && !isCurrentlyTwoHanded())
+                {
+                    return VRPlayer.dominantHandRayDirection;
+                }
+                return weaponForward;
             }
         }
 
-        public static Vector3 AimDir { get { return weaponForward; } }
-
         public static Vector3 GetBoltSpawnPoint(Attack attack)
         {
-            // TODO: simplify logic?
-            return VRPlayer.rightPointer.rayStartingPosition + weaponForward * (new Vector3(attack.m_attackOffset, attack.m_attackRange, attack.m_attackHeight)).magnitude * 0.4f;
+            if (VHVRConfig.OneHandedBow() && !isCurrentlyTwoHanded()) {
+                return VRPlayer.dominantHand.transform.position + INTERGRIP_DISTANCE * AimDir;
+            }
+
+            return VRPlayer.dominantHand.otherHand.transform.position;
         }
     }
 }

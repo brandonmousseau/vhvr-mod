@@ -106,7 +106,7 @@ namespace ValheimVRMod.Patches {
                         return;
                     }
                 }
-                __result = __result + VRControls.instance.GetJoyLeftStickX();
+                __result = __result + VRControls.instance.GetJoyLeftStickX() + (VRPlayer.gesturedLocomotionManager?.stickOutputX ?? 0);
             }
         }
     }
@@ -127,7 +127,7 @@ namespace ValheimVRMod.Patches {
                         return;
                     }
                 }
-                __result = __result + joystick;
+                __result = __result + joystick + (VRPlayer.gesturedLocomotionManager?.stickOutputY?? 0);
             }
         }
     }
@@ -136,7 +136,7 @@ namespace ValheimVRMod.Patches {
     class ZInput_GetJoyRightStickX_Patch {
         static void Postfix(ref float __result) {
             if (VRControls.mainControlsActive) {
-                
+
                 if (ZInput_GetJoyRightStickY_Patch.isRunning 
                     && VRControls.instance.GetJoyRightStickX() > -0.5f 
                     && VRControls.instance.GetJoyRightStickX() < 0.5f)
@@ -151,7 +151,7 @@ namespace ValheimVRMod.Patches {
                 {
                     return;
                 }
-                
+
                 __result = __result + VRControls.instance.GetJoyRightStickX();
             }
         }
@@ -176,6 +176,44 @@ namespace ValheimVRMod.Patches {
 
                 __result = __result + joystick;
             }
+        }
+    }
+
+    [HarmonyPatch(typeof(PlayerController), "LateUpdate")]
+    class PlayerController_LateUpdate_Patch
+    {
+        private static MethodInfo IsGamepadActive =
+             AccessTools.Method(typeof(ZInput), nameof(ZInput.IsGamepadActive));
+
+        private static bool IsGamepadActivePatched()
+        {
+            if (VHVRConfig.NonVrPlayer() || !VHVRConfig.UseVrControls())
+            {
+                return ZInput.IsGamepadActive();
+            }
+
+            // Make the vanilla game believe that the gamepad is active so that it will use ZInput.GetJoyRightStickX() which we patch to turn the player left/right.
+            return true;
+        }
+
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            var original = new List<CodeInstruction>(instructions);
+            var patched = new List<CodeInstruction>();
+            foreach (var instruction in original)
+            {
+                if (instruction.Calls(IsGamepadActive))
+                {
+                    patched.Add(
+                        CodeInstruction.Call(typeof(PlayerController_LateUpdate_Patch), nameof(IsGamepadActivePatched)));
+                }
+                else
+                {
+                    patched.Add(instruction);
+                }
+            }
+
+            return patched;
         }
     }
 
@@ -211,6 +249,7 @@ namespace ValheimVRMod.Patches {
 
             if (BuildingManager.instance.isCurrentlyFreeMode())
             {
+                ___m_placementGhost.SetActive(true);
                 BuildingManager.instance.PrecisionUpdate(___m_placementGhost);
                 if (___m_placementMarkerInstance)
                 {
@@ -437,7 +476,7 @@ namespace ValheimVRMod.Patches {
             }
             else
             {
-                run = run || ZInput_GetJoyRightStickY_Patch.isRunning;
+                run = run || ZInput_GetJoyRightStickY_Patch.isRunning || (VRPlayer.gesturedLocomotionManager?.isRunning?? false);
             }
         }
 
@@ -455,7 +494,7 @@ namespace ValheimVRMod.Patches {
                 // If the player applies sprint input this update, toggle the sprint.
                 runToggledOn = !runToggledOn;
             }
-            run = runToggledOn;
+            run = runToggledOn || (VRPlayer.gesturedLocomotionManager?.isRunning?? false);
             lastUpdateRunInput = ZInput_GetJoyRightStickY_Patch.isRunning;
         }
     }
@@ -625,6 +664,10 @@ namespace ValheimVRMod.Patches {
             {
                 attack = true;
                 attackHold = true;
+                if (!CrossbowMorphManager.instance.shouldAutoReload)
+                {
+                    CrossbowMorphManager.instance.destroyBolt();
+                }
             }
 
             switch (EquipScript.getRight()) {
@@ -695,13 +738,51 @@ namespace ValheimVRMod.Patches {
         }
     }
 
-    
+
     // Used to make stack splitting easier
     [HarmonyPatch(typeof(InventoryGui), "Awake")]
     class InventoryGui_Awake_Patch {
         static void Prefix(InventoryGui __instance)
         {
+            if (VHVRConfig.NonVrPlayer())
+            {
+                return;
+            }
             __instance.m_splitSlider.gameObject.AddComponent<SliderSelector>();
+        }
+    }
+
+    [HarmonyPatch(typeof(InventoryGui), nameof(InventoryGui.Update))]
+    class InventoryGui_Update_Patch
+    {
+        static bool allowQuickStackAll = true;
+        static void Prefix(InventoryGui __instance)
+        {
+            if (VHVRConfig.NonVrPlayer() || !VHVRConfig.UseVrControls())
+            {
+                return;
+            }
+            if (!__instance.IsContainerOpen())
+            {
+                // When a container is no longer open, reset this flag so that
+                // quick-stack-all can be used next time the player interacts with a container.
+                allowQuickStackAll = true;
+            }
+            else if (SteamVR_Actions.laserPointers_LeftClick.GetStateUp(SteamVR_Input_Sources.Any))
+            {
+                // When a container is open, the GUI is open so laser pointers take priority over valheim_Use.
+                // As the player releases the trigger when the container is open, the button-up state of vaheim_Use is therefore not detected.
+                // The game will mistakenly think that the use button is still being pressed and hold, triggering quick-stack-all inadvertently
+                // so we must patch to prevent that from happening. 
+                // Note: this flag will stay false for the rest of the entire duration when the current container is open
+                // so that dragging item spliiter will not trigger quick-stack-all either.
+                // TODO: try find a way to fix the wrong state of valheim_Use instead of using this ad hoc patch.
+                allowQuickStackAll = false;
+            }
+            if (!allowQuickStackAll || !SteamVR_Actions.laserPointers_LeftClick.GetState(SteamVR_Input_Sources.Any)) {
+                // Quick-stack-all is triggered by holding the use button and resetting this timer disables quick-stack-all.
+                __instance.m_containerHoldTime = 0;
+            }
         }
     }
 
@@ -726,6 +807,10 @@ namespace ValheimVRMod.Patches {
     {
         static bool Prefix(InventoryGrid __instance, ref InventoryGrid.Element __result)
         {
+            if (VHVRConfig.NonVrPlayer())
+            {
+                return true;
+            }
             foreach (InventoryGrid.Element element in __instance.m_elements)
             {
                 RectTransform rectTransform = element.m_go.transform as RectTransform;
@@ -1022,4 +1107,3 @@ namespace ValheimVRMod.Patches {
         }
     }
 }
-
