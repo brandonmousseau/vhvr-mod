@@ -170,13 +170,7 @@ namespace ValheimVRMod.Scripts
 
         public bool hasMomentum()
         {
-
-            if (!VHVRConfig.WeaponNeedsSpeed())
-            {
-                return true;
-            }
-
-            return physicsEstimator.GetVelocity().magnitude > MIN_SPEED;
+            return physicsEstimator.GetVelocity().magnitude >= MIN_SPEED * VHVRConfig.SwingSpeedRequirement();
         }
 
         public bool usingClaws()
