@@ -45,7 +45,7 @@ namespace ValheimVRMod.Scripts
             }
         }
 
-        private void OnTriggerStay(Collider collider)
+        private void OnTriggerEnter(Collider collider)
         {
             if (!isCollisionAllowed())
             {
