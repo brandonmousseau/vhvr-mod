@@ -16,8 +16,6 @@ namespace ValheimVRMod.Patches {
     [HarmonyPatch(typeof(Humanoid), "BlockAttack")]
     class PatchBlockAttack {
         
-        private static Hand hand;
-        private static SteamVR_Input_Sources handSource;
         private static HandHapticTrigger handHapticTrigger = HandHapticTrigger.None;
         private enum HandHapticTrigger
         {

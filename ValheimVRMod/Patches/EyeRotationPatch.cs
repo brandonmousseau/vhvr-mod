@@ -192,7 +192,7 @@ namespace ValheimVRMod.Patches
         {
             public static void Postfix(Player __instance)
             {
-                if (VHVRConfig.NonVrPlayer() || __instance != Player.m_localPlayer)
+                if (!ShouldFaceLookDirection(__instance))
                 {
                     return;
                 }
@@ -205,7 +205,7 @@ namespace ValheimVRMod.Patches
         {
             public static void Postfix(Player __instance)
             {
-                if (VHVRConfig.NonVrPlayer() || __instance != Player.m_localPlayer)
+                if (!ShouldFaceLookDirection(__instance))
                 {
                     return;
                 }
@@ -218,12 +218,19 @@ namespace ValheimVRMod.Patches
         {
             public static void Postfix(Player __instance)
             {
-                if (VHVRConfig.NonVrPlayer() || __instance != Player.m_localPlayer)
+                if (!ShouldFaceLookDirection(__instance))
                 {
                     return;
                 }
                 __instance.FaceLookDirection();
             }
+        }
+
+        static bool ShouldFaceLookDirection(Player player)
+        {
+            // TODO: Consider disabling face-look-direction patch whenever VRPlayer.attachedToPlayer is false as opposed to just when PlayerCustomizaton.IsBarberGuiVisible().
+
+            return !VHVRConfig.NonVrPlayer() && player == Player.m_localPlayer && !PlayerCustomizaton.IsBarberGuiVisible();
         }
 
 
@@ -291,17 +298,17 @@ namespace ValheimVRMod.Patches
                 if (!player.IsAttached())
                 {
                     var ship = player.GetStandingOnShip();
-                    var moveableBase = player.transform.parent;
-                    if (ship || (moveableBase && moveableBase?.name == "MoveableBase"))
+                    var movableBase = player.transform.parent;
+                    if (ship || (movableBase && movableBase?.name == "MovableBase"))
                     {
                         Transform referenceUp = null;
                         if (ship)
                         {
                             referenceUp = ship.transform;
                         }
-                        else if (moveableBase && moveableBase?.name == "MoveableBase")
+                        else if (movableBase && movableBase?.name == "MovableBase")
                         {
-                            referenceUp = moveableBase.transform;
+                            referenceUp = movableBase.transform;
                         }
 
                         if (referenceUp == null)

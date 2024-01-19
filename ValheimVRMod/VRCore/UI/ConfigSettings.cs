@@ -1,3 +1,4 @@
+using Fishlabs.Valheim;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -16,17 +17,21 @@ using TMPro;
 namespace ValheimVRMod.VRCore.UI {
     public class ConfigSettings {
 
+        // TODO: Refactor and fix VHVR settings dialog layout.
+        private const bool ENABLE_VHVR_SETTINGS_DIALOG = true;
+        
+        private const float MENU_ENTRY_HEIGHT = 40;
         private const string MenuName = "VHVR";
         private const int TabButtonWidth = 100;
         
         private static GameObject tabButtonPrefab;
-        private static GameObject tabPrefab;
+        private static GameObject controlSettingsPrefab;
         private static GameObject togglePrefab;
         private static GameObject sliderPrefab;
         private static GameObject chooserPrefab;
         private static GameObject settingsPrefab;
         private static GameObject keyBindingPrefab;
-        private static GameObject buttonPrefab;
+        private static GameObject transformButtonPrefab;
         private static GameObject settings;
         private static Transform menuList;
         private static Transform menuParent;
@@ -34,7 +39,9 @@ namespace ValheimVRMod.VRCore.UI {
         private static int tabCounter;
         public static bool doSave;
         public static GameObject toolTip;
-        
+
+        public static KeyboardMouseSettings keyboardMouseSettings;
+
         public static void instantiate(Transform mList, Transform mParent, GameObject sPrefab) {
             menuList = mList.transform.Find("MenuEntries").transform;
             menuParent = mParent;
@@ -48,33 +55,35 @@ namespace ValheimVRMod.VRCore.UI {
         /// Create an Entry in the Menu 
         /// </summary>
         private static void createMenuEntry() {
-            
-            bool settingsFound = false;
-
+            int addedMenuEntryCount = 0;
             for (int i = 0; i < menuList.childCount; i++) {
-                if (menuList.GetChild(i).name == "Settings") {
-                    var modSettings = GameObject.Instantiate(menuList.GetChild(i), menuList);
-                    modSettings.GetComponentInChildren<TextMeshProUGUI>().text = MenuName;
-                    modSettings.GetComponent<Button>().onClick.SetPersistentListenerState(0, UnityEventCallState.Off);
-                    modSettings.GetComponent<Button>().onClick.RemoveAllListeners();
-                    modSettings.GetComponent<Button>().onClick.AddListener(createModSettings);
+                Transform menuEntry = menuList.GetChild(i);
+                if (menuEntry.name == "Settings") {
+                    if (ENABLE_VHVR_SETTINGS_DIALOG)
+                    {
+                        AddMenuEntry(MenuName, menuEntry, Vector2.zero, createModSettings);
+                        addedMenuEntryCount++;
+                    }
 
-                    Transform screenshotButton = GameObject.Instantiate(menuList.GetChild(i), menuList);
-                    screenshotButton.GetComponentInChildren<TextMeshProUGUI>().text = "Screenshot";
-                    screenshotButton.GetComponent<Button>().onClick.SetPersistentListenerState(0, UnityEventCallState.Off);
-                    screenshotButton.GetComponent<Button>().onClick.RemoveAllListeners();
-                    screenshotButton.GetComponent<Button>().onClick.AddListener(CaptureScreenshot);
-                    Vector2 currentPosition = screenshotButton.GetComponent<RectTransform>().anchoredPosition;
-                    screenshotButton.GetComponent<RectTransform>().anchoredPosition = currentPosition + Vector2.up * 40;
-
-                    settingsFound = true;
+                    AddMenuEntry("Screenshot", menuEntry, Vector2.up * MENU_ENTRY_HEIGHT * addedMenuEntryCount, CaptureScreenshot);
+                    addedMenuEntryCount++;
                 }
-                else if (settingsFound) {
+                else if (addedMenuEntryCount > 0) {
                     var rectTransform = menuList.GetChild(i).GetComponent<RectTransform>();
-                    rectTransform.anchoredPosition = new Vector2(rectTransform.anchoredPosition.x,
-                        rectTransform.anchoredPosition.y - 80);
+                    rectTransform.anchoredPosition = rectTransform.anchoredPosition + Vector2.up * MENU_ENTRY_HEIGHT * addedMenuEntryCount;
                 }
             }
+        }
+
+        private static void AddMenuEntry(string text, Transform original, Vector2 offsetFromOriginal, UnityAction onClick)
+        {
+            Transform menuEntry = GameObject.Instantiate(original, parent: menuList);
+            menuEntry.GetComponentInChildren<TextMeshProUGUI>().text = text;
+            menuEntry.GetComponent<Button>().onClick.SetPersistentListenerState(0, UnityEventCallState.Off);
+            menuEntry.GetComponent<Button>().onClick.RemoveAllListeners();
+            menuEntry.GetComponent<Button>().onClick.AddListener(onClick);
+            RectTransform rectTransform = menuEntry.GetComponent<RectTransform>();
+            rectTransform.anchoredPosition = rectTransform.anchoredPosition + offsetFromOriginal;
         }
 
         /// <summary>
@@ -82,34 +91,51 @@ namespace ValheimVRMod.VRCore.UI {
         /// </summary>
         private static void generatePrefabs() {
 
-            var tabButtons = settingsPrefab.transform.Find("panel").Find("TabButtons");
-            tabButtonPrefab = tabButtons.GetChild(0).gameObject;
-            var tabs = settingsPrefab.transform.Find("panel").Find("Tabs");
-            tabPrefab = tabs.GetChild(0).gameObject;
-            togglePrefab = tabPrefab.GetComponentInChildren<Toggle>().gameObject;
-            sliderPrefab = tabPrefab.GetComponentInChildren<Slider>().transform.parent.gameObject;
-            keyBindingPrefab = tabPrefab.transform.Find("Key_Binding").gameObject;
-            chooserPrefab = settingsPrefab.transform.Find("panel").Find("Tabs").Find("Misc").Find("Language")
-                .gameObject;
-            buttonPrefab = settingsPrefab.transform.Find("panel").Find("Back").gameObject;
-
+            var tabButtons = settingsPrefab.transform.Find("Panel").Find("TabButtons");
+            if (tabButtonPrefab == null)
+            {
+                tabButtonPrefab = createTabButtonPrefab(tabButtons.GetChild(0).gameObject);
+            }
+            var tabs = settingsPrefab.transform.Find("Panel").Find("TabContent");
+            controlSettingsPrefab = tabs.Find("KeyboardMouse").gameObject;
+            togglePrefab = controlSettingsPrefab.GetComponentInChildren<Toggle>().gameObject;
+            if (sliderPrefab == null)
+            {
+                sliderPrefab = createSliderPrefab(controlSettingsPrefab.GetComponentInChildren<Slider>().gameObject);
+            }
+            if (keyBindingPrefab == null)
+            {
+                keyBindingPrefab = createKeyBindingPrefab(
+                    controlSettingsPrefab.transform.Find("List").Find("Bindings").Find("Grid").Find("Use").gameObject);
+            }
+            if (chooserPrefab == null)
+            {
+                chooserPrefab = createChooserPrefab(
+                    settingsPrefab.transform.Find("Panel").Find("TabContent").Find("Gamepad").Find("List").Find("InputLayout").gameObject);
+            }
+            if (transformButtonPrefab == null)
+            {
+                transformButtonPrefab = createTransformButtonPrefab(
+                    sliderPrefab.transform.Find("Label").gameObject,
+                    settingsPrefab.transform.Find("Panel").Find("Back").gameObject);
+            }
         }
 
         private static void createToolTip(Transform settings) {
-
             var padding = 4;
-            var width = 750;
+            var width = 375;
             toolTip = new GameObject();
             toolTip.transform.SetParent(settings, false);
             var bkgImage = toolTip.AddComponent<Image>();
             bkgImage.rectTransform.anchoredPosition = new Vector2(0, -350);
             bkgImage.color = new Color(0,0,0,0.5f);
-            var textObj = Object.Instantiate(togglePrefab.transform.GetChild(0), toolTip.transform);
-            var text = textObj.GetComponent<Text>();
+            var textObj = Object.Instantiate(togglePrefab.GetComponentInChildren<TMP_Text>().gameObject, toolTip.transform);
+            TMP_Text text = textObj.GetComponent<TMP_Text>();
+            text.rectTransform.anchorMin = text.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
             text.rectTransform.sizeDelta = new Vector2(width, 300);
-            text.resizeTextForBestFit = false;
+            // text.resizeTextForBestFit = false;
             text.fontSize = 20;
-            text.alignment = TextAnchor.MiddleLeft;
+            text.alignment = TextAlignmentOptions.MidlineLeft;
             text.rectTransform.anchoredPosition = new Vector2(padding, padding);
             toolTip.SetActive(false);
         }
@@ -119,9 +145,9 @@ namespace ValheimVRMod.VRCore.UI {
         /// </summary>
         private static void createModSettings() {
             settings = Object.Instantiate(settingsPrefab, menuParent);
-            settings.transform.Find("panel").Find("Settings_topic").GetComponent<Text>().text = MenuName;
+            settings.transform.Find("Panel").Find("Title").GetComponent<TMP_Text>().text = MenuName;
             createToolTip(settings.transform);
-            var tabButtons = settings.transform.Find("panel").Find("TabButtons");
+            var tabButtons = settings.transform.Find("Panel").Find("TabButtons");
 
             // destroy old tab buttons
             foreach (Transform t in tabButtons) {
@@ -129,9 +155,9 @@ namespace ValheimVRMod.VRCore.UI {
             }
             // clear tab array
             tabButtons.GetComponent<TabHandler>().m_tabs.Clear();
-            
+
             // deactivate old tab contents
-            foreach (Transform t in settings.transform.Find("panel").Find("Tabs")) {
+            foreach (Transform t in settings.transform.Find("Panel").Find("TabContent")) {
                 t.gameObject.SetActive(false);
             }
 
@@ -158,10 +184,10 @@ namespace ValheimVRMod.VRCore.UI {
                 createTabForSection(section, sectionCount);
             }
 
-            setupOkAndBack(settings.transform.Find("panel"));
+            setupOkAndBack(settings.transform.Find("Panel"));
 
             tabButtons.GetComponent<TabHandler>().SetActiveTab(0);
-            Settings.instance.UpdateBindings();
+            keyboardMouseSettings.UpdateBindings();
         }
 
         // Adds listeners for ok and back buttons
@@ -173,8 +199,15 @@ namespace ValheimVRMod.VRCore.UI {
             }
             else
             {
-                okButton.onClick.AddListener(() => { doSave = true; });
+                okButton.onClick.RemoveAllListeners();
+                okButton.onClick.m_PersistentCalls.Clear();
+                okButton.onClick.AddListener(() => {
+                    doSave = true;
+                    GameObject.Destroy(settings);
+                });
                 Object.Destroy(okButton.GetComponent<UIGamePad>());
+                var hint = okButton.transform.Find("KeyHint");
+                if (hint) Object.Destroy(hint.gameObject);
             }
 
             Button backButton = panel.Find("Back")?.GetComponent<Button>();
@@ -184,8 +217,15 @@ namespace ValheimVRMod.VRCore.UI {
             }
             else
             {
-                backButton.onClick.AddListener(() => { doSave = false; });
+                backButton.onClick.RemoveAllListeners();
+                backButton.onClick.m_PersistentCalls.Clear();
+                backButton.onClick.AddListener(() => {
+                    doSave = false;
+                    GameObject.Destroy(settings);
+                });
                 Object.Destroy(backButton.GetComponent<UIGamePad>());
+                var hint = backButton.transform.Find("KeyHint");
+                if (hint) Object.Destroy(hint.gameObject);
             }
         }
 
@@ -193,21 +233,24 @@ namespace ValheimVRMod.VRCore.UI {
         /// Create a new Tab out of a config section
         /// </summary>
         private static void createTabForSection(KeyValuePair<string, Dictionary<string, ConfigEntryBase>> section, int sectionCount) {
-            var tabButtons = settings.transform.Find("panel").Find("TabButtons");
+            var tabButtons = settings.transform.Find("Panel").Find("TabButtons");
 
             // Create new tab button
             var newTabButton = Object.Instantiate(tabButtonPrefab, tabButtons);
+
             newTabButton.name = section.Key;
             var rectTransform = newTabButton.GetComponent<RectTransform>();
             var tabButtonXPosition = TabButtonWidth * (tabCounter - (sectionCount - 1) * 0.5f);
             rectTransform.anchoredPosition = new Vector2(tabButtonXPosition, rectTransform.anchoredPosition.y);
 
-            foreach (Text text in newTabButton.GetComponentsInChildren<Text>()) {
-                text.text = section.Key;
+            var labels = newTabButton.GetComponentsInChildren<TMP_Text>(includeInactive: true);
+            foreach (var label in labels)
+            {
+                label.text = section.Key;
             }
-            
+
             // Create new tab content
-            var tabs = settings.transform.Find("panel").Find("Tabs");
+            var tabs = settings.transform.Find("Panel").Find("TabContent");
             var newTab = Object.Instantiate(tabs.GetChild(0), tabs);
             newTab.name = section.Key;
 
@@ -229,11 +272,11 @@ namespace ValheimVRMod.VRCore.UI {
 
             tabButtons.GetComponent<TabHandler>().m_tabs.Add(tab);
 
-            int posX = -85;
-            int posY = -30;
+            int posX = 0;
+            int posY = 250;
             
-            if (section.Value.Count > 14) {
-                posX = -250;
+            if (section.Value.Count > 18) {
+                posX = -200;
             }
             
             // iterate all config entries of current section and create elements 
@@ -244,9 +287,9 @@ namespace ValheimVRMod.VRCore.UI {
                 }
                 
                 posY -= 30;
-                if (posY < -420) {
-                    posY = -30;
-                    posX = 75;
+                if (posY < -270) {
+                    posY = 250;
+                    posX = 250;
                 }
             }
 
@@ -297,18 +340,51 @@ namespace ValheimVRMod.VRCore.UI {
             return false;
         }
 
+        private static GameObject createTabButtonPrefab(GameObject vanillaObject)
+        {
+            var prefab = GameObject.Instantiate(vanillaObject);
+            var hint = prefab.transform.Find("KeyHint");
+            if (hint) GameObject.Destroy(hint.gameObject);
+            var button = prefab.GetComponent<Button>();
+            button.onClick.RemoveAllListeners();
+            button.onClick.m_PersistentCalls.Clear();
+            return prefab;
+
+        }
+
+        private static GameObject createSliderPrefab(GameObject vanillaPrefab)
+        {
+
+            var sliderObj = Object.Instantiate(vanillaPrefab);
+            var rectTransform = sliderObj.GetComponent<RectTransform>();
+            rectTransform.sizeDelta = new Vector2(150, 30);
+            rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
+            rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+            sliderObj.transform.Find("Label").GetComponent<RectTransform>().sizeDelta = new Vector3(200, 0);
+            return sliderObj;
+        }
+
         private static void createValueRange(KeyValuePair<string, ConfigEntryBase> configValue, Transform parent, Vector2 pos, Type type,
             AcceptableValueBase acceptableValues) {
 
             var sliderObj = Object.Instantiate(sliderPrefab, parent);
             var configComponent = sliderObj.AddComponent<ConfigComponent>();
-            configComponent.configValue = configValue;
-            sliderObj.GetComponent<Text>().text = configValue.Key;
-            sliderObj.GetComponent<RectTransform>().anchoredPosition = pos;
+            configComponent.configValue = configValue;  
+            sliderObj.transform.Find("Label").GetComponent<TMP_Text>().text = configValue.Key;
+            sliderObj.GetComponent<RectTransform>().anchoredPosition = pos + Vector2.right * 60;
             var slider = sliderObj.GetComponentInChildren<Slider>();
             slider.minValue = float.Parse(type.GetProperty("MinValue").GetValue(acceptableValues).ToString());
             slider.maxValue =  float.Parse(type.GetProperty("MaxValue").GetValue(acceptableValues).ToString());
             slider.value = float.Parse(configValue.Value.GetSerializedValue(), CultureInfo.InvariantCulture);
+            var text = slider.transform.Find("Value").GetComponent<TMP_Text>();
+            text.text = "" + slider.value;
+
+            slider.onValueChanged.AddListener(
+                (value) =>
+                {
+                    text.text = "" + slider.value;
+                });
+
             if (acceptableValues.ValueType == typeof(int)) {
                 slider.wholeNumbers = true;
             }
@@ -316,53 +392,76 @@ namespace ValheimVRMod.VRCore.UI {
             configComponent.saveAction = param => {
                 configValue.Value.SetSerializedValue(slider.value.ToString(CultureInfo.InvariantCulture));
             };
+
+
         }
 
-        private static void createValueList(KeyValuePair<string, ConfigEntryBase> configValue, Transform parent, Vector2 pos, Type type,
-        AcceptableValueBase acceptableValues) {
-            
-            var chooserObj = Object.Instantiate(chooserPrefab, parent);
-            var configComponent = chooserObj.AddComponent<ConfigComponent>();
-            configComponent.configValue = configValue;
-            chooserObj.GetComponent<Text>().text = configValue.Key;
-            chooserObj.GetComponent<RectTransform>().anchoredPosition = pos;
-            var valueList = (string[]) type.GetProperty("AcceptableValues").GetValue(acceptableValues);
-            var currentIndex = Array.IndexOf(valueList, configValue.Value.GetSerializedValue());
-
-            for (int i = 0; i < chooserObj.transform.childCount; i++) {
-                var child = chooserObj.transform.GetChild(i);
-                switch (child.name) {
-                    case "bkg":
-                        child.localScale *= 0.8f;
-                        child.GetComponent<RectTransform>().anchoredPosition = new Vector2(180, 0);
-                        child.GetComponent<RectTransform>().sizeDelta = new Vector2(150, 0);
-                        child.GetComponentInChildren<Text>().fontSize = 6;
-                        child.GetComponentInChildren<Text>().text = configValue.Value.GetSerializedValue();
+        private static GameObject createChooserPrefab(GameObject vanillaPrefab)
+        {
+            var chooserPrefab = Object.Instantiate(vanillaPrefab);
+            chooserPrefab.transform.Find("LabelLeft").gameObject.SetActive(true);
+            var rectTransform = chooserPrefab.GetComponent<RectTransform>();
+            rectTransform.sizeDelta = new Vector2(180, 30);
+            rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
+            rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+            Transform stepper = chooserPrefab.transform.Find("GUIStepper");
+            for (int i = 0; i < stepper.childCount; i++)
+            {
+                var child = stepper.transform.GetChild(i);
+                switch (child.name)
+                {
+                    case "Value":
+                        child.gameObject.SetActive(true);
+                        child.GetComponent<RectTransform>().sizeDelta = new Vector2(-60, -5);
+                        child.GetComponentInChildren<TMP_Text>().fontSize = 6;
                         break;
                     case "Left":
-                        child.localScale *= 0.5f;
-                        child.GetComponent<RectTransform>().anchoredPosition = new Vector2(110, 0);
-                        child.GetComponent<Button>().onClick.AddListener(() => {
-                            var text = valueList[mod(--currentIndex, valueList.Length)];
-                            chooserObj.transform.Find("bkg").GetComponentInChildren<Text>().text = text;
-                        });
+                        child.gameObject.SetActive(true);
+                        child.GetComponent<RectTransform>().sizeDelta = new Vector2(30, 30);
+                        child.GetComponent<Button>().onClick.m_PersistentCalls.Clear();
+                        child.GetComponent<Button>().onClick.RemoveAllListeners();
                         break;
                     case "Right":
-                        child.localScale *= 0.5f;
-                        child.GetComponent<RectTransform>().anchoredPosition = new Vector2(250, 0);
-                        child.GetComponent<Button>().onClick.AddListener(() => {
-                            var text = valueList[mod(++currentIndex, valueList.Length)];
-                            chooserObj.transform.Find("bkg").GetComponentInChildren<Text>().text = text;
-                        });
+                        child.gameObject.SetActive(true);
+                        child.GetComponent<RectTransform>().sizeDelta = new Vector2(30, 30);
+                        child.GetComponent<Button>().onClick.m_PersistentCalls.Clear();
+                        child.GetComponent<Button>().onClick.RemoveAllListeners();
                         break;
                     default:
                         child.gameObject.SetActive(false);
                         break;
                 }
             }
-            
+            return chooserPrefab;
+        }
+
+        private static void createValueList(
+            KeyValuePair<string, ConfigEntryBase> configValue, Transform parent, Vector2 pos, Type type, AcceptableValueBase acceptableValues) {
+
+            var chooserObj = Object.Instantiate(chooserPrefab, parent);
+            chooserObj.GetComponent<RectTransform>().anchoredPosition = pos + Vector2.left * 10;
+            chooserObj.SetActive(true);
+
+            var configComponent = chooserObj.AddComponent<ConfigComponent>();
+            configComponent.configValue = configValue;
+            chooserObj.transform.Find("LabelLeft").GetComponent<TMP_Text>().text = configValue.Key;
+
+            Transform stepper = chooserObj.transform.Find("GUIStepper");
+            var valueList = (string[])type.GetProperty("AcceptableValues").GetValue(acceptableValues);
+            var currentIndex = Array.IndexOf(valueList, configValue.Value.GetSerializedValue());
+            var valueText = stepper.Find("Value").GetComponentInChildren<TMP_Text>();
+            valueText.text = configValue.Value.GetSerializedValue();
+            stepper.Find("Left").GetComponent<Button>().onClick.AddListener(() =>{
+                var text = valueList[mod(--currentIndex, valueList.Length)];
+                valueText.text = text;
+            });
+            stepper.Find("Right").GetComponent<Button>().onClick.AddListener(() => {
+                var text = valueList[mod(++currentIndex, valueList.Length)];
+                valueText.text = text;
+            });
+
             configComponent.saveAction = param => {
-                configValue.Value.SetSerializedValue(chooserObj.transform.Find("bkg").GetComponentInChildren<Text>().text);
+                configValue.Value.SetSerializedValue(stepper.Find("Value").GetComponentInChildren<TMP_Text>().text);
             };
         }
         
@@ -374,11 +473,51 @@ namespace ValheimVRMod.VRCore.UI {
             configComponent.saveAction = param => {
                 configValue.Value.SetSerializedValue(toggle.GetComponent<Toggle>().isOn ? "true" : "false");
             };
-            toggle.GetComponentInChildren<Text>().text = configValue.Key;
+            toggle.GetComponentInChildren<TMP_Text>().text = configValue.Key;
             toggle.GetComponent<Toggle>().isOn = configValue.Value.GetSerializedValue() == "true";
-            
-            pos.x -= 210;
             toggle.GetComponent<RectTransform>().anchoredPosition = pos;
+        }
+
+        private static GameObject createTransformButtonPrefab(GameObject vanillaLabel, GameObject vanillaButton)
+        {
+            var transformButtonPrefab = new GameObject();
+            transformButtonPrefab.AddComponent<RectTransform>().sizeDelta = new Vector2(180, 30);
+
+            // Label
+            var label = Object.Instantiate(vanillaLabel, transformButtonPrefab.transform);
+            label.name = "Label";
+            foreach (Transform child in label.transform)
+            {
+                GameObject.Destroy(child.gameObject);
+            }
+            label.GetComponent<RectTransform>().anchorMin = Vector2.one * 0.5f;
+            label.GetComponent<RectTransform>().anchorMax = Vector2.one * 0.5f;
+
+            // Button
+            var setButton = Object.Instantiate(vanillaButton, transformButtonPrefab.transform);
+            setButton.name = "SetButton";
+            setButton.GetComponent<RectTransform>().anchoredPosition = Vector2.right * 50;
+            setButton.GetComponent<RectTransform>().anchorMin = Vector2.one * 0.5f;
+            setButton.GetComponent<RectTransform>().anchorMax = Vector2.one * 0.5f;
+            setButton.GetComponent<RectTransform>().sizeDelta = new Vector2(100, 30);
+            setButton.GetComponentInChildren<TMP_Text>().text = "Set";
+
+            setButton.GetComponent<Button>().onClick.m_PersistentCalls.Clear();
+            setButton.GetComponent<Button>().onClick.RemoveAllListeners();
+
+            // This button will just reset the position and rotation back to the default values.
+            var resetButton = Object.Instantiate(vanillaButton, transformButtonPrefab.transform);
+            resetButton.name = "ResetButton";
+            resetButton.GetComponent<RectTransform>().anchoredPosition = Vector2.right * 150;
+            resetButton.GetComponent<RectTransform>().anchorMin = Vector2.one * 0.5f;
+            resetButton.GetComponent<RectTransform>().anchorMax = Vector2.one * 0.5f;
+            resetButton.GetComponent<RectTransform>().sizeDelta = new Vector2(100, 30);
+            resetButton.GetComponentInChildren<TMP_Text>().text = "Reset";
+
+            resetButton.GetComponent<Button>().onClick.m_PersistentCalls.Clear();
+            resetButton.GetComponent<Button>().onClick.RemoveAllListeners();
+
+            return transformButtonPrefab;
         }
 
         private static void createTransformButton(KeyValuePair<string, ConfigEntryBase> configValue, Transform parent, Vector2 pos, string sectionName) {
@@ -388,38 +527,32 @@ namespace ValheimVRMod.VRCore.UI {
                 Debug.LogError(configValue.Key + "Rot not found. Please make sure a Quaternion with this name exists in section " + sectionName);
                 return;
             }
-            var labledButton = new GameObject();
-            labledButton.transform.SetParent(parent, false);
-            var configComponent = labledButton.AddComponent<ConfigComponent>();
+            var transformButton = GameObject.Instantiate(transformButtonPrefab, parent);
+            transformButton.GetComponent<RectTransform>().anchoredPosition = pos + Vector2.left * 10;
+
+            var configComponent = transformButton.AddComponent<ConfigComponent>();
             configComponent.configValue = configValue;
             configComponent.saveAction = param => {};
-            
-            // Label
-            var label = Object.Instantiate(sliderPrefab, labledButton.transform);
-            foreach (Transform child in label.transform) {
-                GameObject.Destroy(child.gameObject);
-            }
-            var text = label.GetComponent<Text>();
-            text.text = configValue.Key;
-            
-            pos.y += 225;
-            text.GetComponent<RectTransform>().anchoredPosition = pos;
-            
-            // Button
-            var button = Object.Instantiate(buttonPrefab, labledButton.transform);
-            pos.x += 150;
-            button.GetComponent<RectTransform>().anchoredPosition = pos;
-            button.GetComponent<RectTransform>().localScale *= 0.5f;
-            button.GetComponentInChildren<Text>().text = "Set";
 
-            if (menuList.name != "Menu") {
-                button.GetComponent<Button>().enabled = false;
+            var label = transformButton.transform.Find("Label").GetComponent<TMP_Text>();
+            label.text = configValue.Key;
+
+            var setButton = transformButton.transform.Find("SetButton").GetComponent<Button>();
+            if (menuList.name != "MenuEntries") {
+                setButton.enabled = false;
             }
-            
-            button.GetComponent<Button>().onClick.SetPersistentListenerState(0, UnityEventCallState.Off);
-            button.GetComponent<Button>().onClick.RemoveAllListeners();
-            button.GetComponent<Button>().onClick.AddListener(() => {
-                if (! (bool) typeof(SettingCallback).GetMethod(configValue.Key).Invoke(null,
+            setButton.onClick.AddListener(() => {
+                // TODO: use something else (e. g. a dictionary from key to method) instead of Reflection to get the methods.
+                // This can be broken easily without noticing: if the target method's name is changed,
+                // This call does not show up in call hierarchy in IDE and does not throw any error at build time.
+                var method = typeof(SettingCallback).GetMethod(configValue.Key);
+                if (method == null)
+                {
+                    LogUtils.LogError("Cannot find method SettingCallback." + configValue.Key);
+                    return;
+                }
+                if (!(bool)method.Invoke(
+                    null,
                     new UnityAction<Vector3, Quaternion>[] {
                         (mPos, mRot) => {
                             configValue.Value.SetSerializedValue(String.Format(CultureInfo.InvariantCulture,
@@ -427,32 +560,35 @@ namespace ValheimVRMod.VRCore.UI {
                             confRot.SetSerializedValue(String.Format(CultureInfo.InvariantCulture,
                                 "{{\"x\":{0}, \"y\":{1}, \"z\":{2}, \"w\":{3}}}", mRot.x, mRot.y, mRot.z, mRot.w));
                         }
-                    })) {
+                    }))
+                {
                     return;
                 }
-                
                 doSave = false;
-                Settings.instance.OnBack();
+                GameObject.Destroy(settings);
                 Menu.instance.OnClose();
             });
 
             // This button will just reset the position and rotation back to the default values.
-            var defaultButton = Object.Instantiate(buttonPrefab, labledButton.transform);
-            pos.x += button.GetComponent<RectTransform>().rect.width/2;
-            defaultButton.GetComponent<RectTransform>().anchoredPosition = pos;
-            defaultButton.GetComponent<RectTransform>().localScale *= 0.5f;
-            defaultButton.GetComponentInChildren<Text>().text = "Reset";
-
-            if (menuList.name != "Menu")
+            var resetButton = transformButton.transform.Find("ResetButton").GetComponent<Button>();
+       
+            if (menuList.name != "MenuEntries")
             {
-                defaultButton.GetComponent<Button>().enabled = false;
+                resetButton.enabled = false;
                 return;
             }
 
-            defaultButton.GetComponent<Button>().onClick.SetPersistentListenerState(0, UnityEventCallState.Off);
-            defaultButton.GetComponent<Button>().onClick.RemoveAllListeners();
-            defaultButton.GetComponent<Button>().onClick.AddListener(() => {
-                if (!(bool)typeof(SettingCallback).GetMethod(configValue.Key +"Default").Invoke(null,
+            resetButton.onClick.AddListener(() => {
+                // TODO: use something else (e. g. a dictionary from key to method) instead of Reflection to get the methods.
+                // This can be broken easily without noticing: if the target method's name is changed,
+                // This call does not show up in call hierarchy in IDE and does not throw any error at build time.                
+                var method = typeof(SettingCallback).GetMethod(configValue.Key + "Default");
+                if (method == null)
+                {
+                    LogUtils.LogError("Cannot find method SettingCallback." + configValue.Key + "Default");
+                    return;
+                }
+                if (!(bool)method.Invoke(null,
                     new UnityAction<Vector3, Quaternion>[] {
                         (mPos, mRot) => {
                             configValue.Value.SetSerializedValue(String.Format(CultureInfo.InvariantCulture,
@@ -465,25 +601,43 @@ namespace ValheimVRMod.VRCore.UI {
                     return;
                 }
             });
+        }
 
+        private static GameObject createKeyBindingPrefab(GameObject vanillaPrefab)
+        {            
+            var keyBindingPrefab = Object.Instantiate(vanillaPrefab);
+            keyBindingPrefab.GetComponentInChildren<RectTransform>().anchorMin = new Vector2(0.5f, 0.5f);
+            keyBindingPrefab.GetComponentInChildren<RectTransform>().anchorMax = new Vector2(0.5f, 0.5f);
+            keyBindingPrefab.GetComponentInChildren<RectTransform>().sizeDelta = new Vector2(100, 25);
+            keyBindingPrefab.GetComponentInChildren<Button>().gameObject.SetActive(true);
+            return keyBindingPrefab;
         }
 
         private static void createKeyBinding(KeyValuePair<string, ConfigEntryBase> configValue, Transform parent, Vector2 pos) {
             
             var keyBinding = Object.Instantiate(keyBindingPrefab, parent);
+
+
+            keyBinding.GetComponent<RectTransform>().anchoredPosition = pos + Vector2.right * 125;
+
             var configComponent = keyBinding.AddComponent<ConfigComponent>();
             configComponent.configValue = configValue;
             configComponent.saveAction = param => {
                 configValue.Value.SetSerializedValue(param);
             };
-            keyBinding.GetComponent<Text>().text = configValue.Key;
-            Settings.m_instance.m_keys.Add(new Settings.KeySetting {m_keyName = configValue.Key, m_keyTransform = keyBinding.GetComponent<RectTransform>()});
+
+            keyBinding.transform.Find("Label").GetComponent<TMP_Text>().text = configValue.Key;
+            keyboardMouseSettings.m_keys.Add(new KeySetting {m_keyName = configValue.Key, m_keyTransform = keyBinding.GetComponent<RectTransform>()});
             keyBinding.GetComponentInChildren<Button>().onClick.AddListener(() => {
-                Settings.instance.OnKeySet();
+                keyboardMouseSettings.OnOk();
                 tmpComfigComponent = configComponent;
             });
-            keyBinding.GetComponent<RectTransform>().anchoredPosition = pos;
-            ZInput.instance.AddButton(configValue.Key, (KeyCode) Enum.Parse(typeof(KeyCode), configValue.Value.GetSerializedValue()));
+            // TODO: create a proper key binding UI prefab instead of adjusting the position here.
+            if (ZInput.instance.m_buttons.ContainsKey(configValue.Key))
+            {
+                ZInput.instance.m_buttons.Remove(configValue.Key);
+            }
+            ZInput.instance.AddButton(configValue.Key, ZInput.KeyCodeToKey((KeyCode)Enum.Parse(typeof(KeyCode), configValue.Value.GetSerializedValue())));
         }
 
         private static void CaptureScreenshot()
@@ -508,7 +662,7 @@ namespace ValheimVRMod.VRCore.UI {
                 return;
             }
             
-            foreach (Settings.KeySetting key in Settings.instance.m_keys) {
+            foreach (KeySetting key in keyboardMouseSettings.m_keys) {
                 if (key.m_keyName == tmpComfigComponent.configValue.Key) {
                     var buttons = AccessTools.FieldRefAccess<ZInput, Dictionary<string, ZInput.ButtonDef>>(ZInput.instance, "m_buttons");
                     ZInput.ButtonDef buttonDef;

@@ -203,6 +203,24 @@ namespace ValheimVRMod.Utilities
             return EquipType.None;
         }
 
+        public static ItemDrop.ItemData equipAmmo()
+        {
+            if (getLeft() != EquipType.Bow && getLeft() != EquipType.Crossbow)
+            {
+                LogUtils.LogWarning("Attempting to equip ammo without bow or crossbow equipped");
+                return null;
+            }
+                
+            ItemDrop.ItemData weapon = Player.m_localPlayer.GetLeftItem();
+            if (Attack.HaveAmmo(Player.m_localPlayer, weapon))
+            {
+                Attack.EquipAmmoItem(Player.m_localPlayer, weapon);
+                return Player.m_localPlayer.GetAmmoItem();
+            }
+
+            return null;
+        }
+
         public static bool isThrowable(ItemDrop.ItemData item)
         {
             if (item != null)

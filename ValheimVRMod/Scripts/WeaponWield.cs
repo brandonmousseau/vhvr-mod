@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using ValheimVRMod.Utilities;
 
@@ -21,10 +22,13 @@ namespace ValheimVRMod.Scripts
         protected string attackAnimation { get; private set; }
         protected string itemName { get; private set; }
 
+        private static Dictionary<string, Vector3> EstimatedWeaponLocalPointingDirections = new Dictionary<string, Vector3>();
+        private static Dictionary<string, float> DistancesBehindGripAndRearEnd = new Dictionary<string, float>();
         private Transform singleHandedTransform;
         private Transform originalTransform;
         private Quaternion offsetFromPointingDir; // The rotation offset of this transform relative to the direction the weapon is pointing at.
         private Vector3 estimatedLocalWeaponPointingDir = Vector3.forward;
+        private float distanceBetweenGripAndRearEnd = 0.1f;
 
         public WeaponWield Initialize(ItemDrop.ItemData item, string itemName)
         {
@@ -42,7 +46,25 @@ namespace ValheimVRMod.Scripts
             MeshFilter weaponMeshFilter = gameObject.GetComponentInChildren<MeshFilter>();
             if (weaponMeshFilter != null)
             {
-                estimatedLocalWeaponPointingDir = transform.InverseTransformDirection(WeaponUtils.EstimateWeaponPointingDirection(weaponMeshFilter, transform.parent.position));
+                if (EstimatedWeaponLocalPointingDirections.ContainsKey(itemName) &&
+                    DistancesBehindGripAndRearEnd.ContainsKey(itemName))
+                {
+                    estimatedLocalWeaponPointingDir = EstimatedWeaponLocalPointingDirections[itemName];
+                    distanceBetweenGripAndRearEnd = DistancesBehindGripAndRearEnd[itemName];
+                }
+                else
+                {
+                    Vector3 handleAllowanceBehindGrip =
+                        WeaponUtils.EstimateHandleAllowanceBehindGrip(weaponMeshFilter, handPosition: transform.parent.position);
+                    EstimatedWeaponLocalPointingDirections.Add(
+                        itemName,
+                        estimatedLocalWeaponPointingDir =
+                            transform.InverseTransformVector(-handleAllowanceBehindGrip).normalized);
+                    DistancesBehindGripAndRearEnd.Add(
+                        itemName,
+                        distanceBetweenGripAndRearEnd = handleAllowanceBehindGrip.magnitude);
+                    LogUtils.LogDebug("Registered " + itemName + " local pointing direction: " + estimatedLocalWeaponPointingDir + " distance between rear end and grip: " + distanceBetweenGripAndRearEnd);
+                }
             }
 
             offsetFromPointingDir = Quaternion.Inverse(Quaternion.LookRotation(GetWeaponPointingDir(), transform.up)) * transform.rotation;
@@ -98,16 +120,18 @@ namespace ValheimVRMod.Scripts
             bool rearHandIsDominant = (IsPlayerLeftHanded() == (twoHandedState == TwoHandedState.LeftHandBehind));
             if (rearHandIsDominant)
             {
-                return -0.1f;
+                // Anchor the grip of the weapon in the rear/dominant hand.
+                return -HAND_CENTER_OFFSET;
             }
-            else if (handDist > 0.15f)
+            else if (handDist > distanceBetweenGripAndRearEnd)
             {
-                return 0.05f;
+                // Anchor the rear end of the weapon in the rear/non-dominant hand.
+                return distanceBetweenGripAndRearEnd - HAND_CENTER_OFFSET;
             }
             else
             {
-                // Anchor the weapon in the front/dominant hand instead.
-                return handDist - 0.1f;
+                // Anchor the grip of the weapon in the front/dominant hand instead.
+                return handDist - HAND_CENTER_OFFSET;
             }
         }
 

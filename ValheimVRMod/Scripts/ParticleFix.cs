@@ -26,7 +26,10 @@ namespace ValheimVRMod.Scripts {
 
         void OnDestroy()
         {
-            Destroy(origin.gameObject);
+            if (origin)
+            {
+                Destroy(origin.gameObject);
+            }
         }
 
         public static void maybeFix(GameObject target) {

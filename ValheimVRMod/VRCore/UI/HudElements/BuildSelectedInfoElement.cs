@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -57,8 +57,8 @@ namespace ValheimVRMod.VRCore.UI.HudElements
             public GameObject Root => selectedInfoRoot;
 
             public GameObject selectedInfoRoot;
-            public Text buildSelection;
-            public Text pieceDescription;
+            public TMPro.TMP_Text buildSelection;
+            public TMPro.TMP_Text pieceDescription;
             public Image buildIcon;
             public GameObject[] requirementItems;
 
@@ -138,8 +138,8 @@ namespace ValheimVRMod.VRCore.UI.HudElements
                 LogError("Invalid root object while caching SelectedInfo");
             }
             cache.selectedInfoRoot = root;
-            cache.buildSelection = root.transform.Find("selected_piece/piece_name").GetComponent<Text>();
-            cache.pieceDescription = root.transform.Find("selected_piece/piece_description").GetComponent<Text>();
+            cache.buildSelection = root.transform.Find("selected_piece/piece_name").GetComponent<TMPro.TMP_Text>();
+            cache.pieceDescription = root.transform.Find("selected_piece/piece_description").GetComponent<TMPro.TMP_Text>();
             cache.buildIcon = root.transform.Find("selected_piece/piece_icon").GetComponent<Image>();
             var requirementLength = Hud.instance.m_requirementItems.Length;
             cache.requirementItems = new GameObject[requirementLength];

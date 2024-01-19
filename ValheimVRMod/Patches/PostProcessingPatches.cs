@@ -125,6 +125,10 @@ namespace ValheimVRMod.Patches
         [HarmonyPatch(typeof(Ship), "Start")]
         static void PostfixShipStart(Ship __instance)
         {
+            if (VHVRConfig.NonVrPlayer())
+            {
+                return;
+            }
             EnableCameraMotionVectors(__instance.gameObject);
         }
 
@@ -132,6 +136,10 @@ namespace ValheimVRMod.Patches
         [HarmonyPatch(typeof(PostProcessingBehaviour), "OnPreRender")]
         static void PrefixPostProcessingBehaviorPreRender(PostProcessingBehaviour __instance)
         {
+            if (VHVRConfig.NonVrPlayer())
+            {
+                return;
+            }
             __instance.profile.bloom.m_Settings.lensDirt.intensity = 0f;
         }
     }

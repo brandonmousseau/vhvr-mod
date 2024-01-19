@@ -10,7 +10,7 @@ using static ValheimVRMod.Utilities.LogUtils;
 
 namespace ValheimVRMod
 {
-    [BepInPlugin("org.bepinex.plugins.valheimvrmod", "ValheimVR Mod", "0.9.6")]
+    [BepInPlugin("org.bepinex.plugins.valheimvrmod", "ValheimVR Mod", "0.9.15")]
     public class ValheimVRMod : BaseUnityPlugin
     {
 
@@ -24,6 +24,7 @@ namespace ValheimVRMod
         void Awake() {
             _version = Info.Metadata.Version;
             VHVRConfig.InitializeConfiguration(Config);
+            LogInfo("Pre-release VHVR");
             if (!VHVRConfig.ModEnabled())
             {
                 LogInfo("ValheimVRMod is disabled via configuration.");

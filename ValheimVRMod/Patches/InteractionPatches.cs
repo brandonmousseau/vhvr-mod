@@ -17,7 +17,15 @@ namespace ValheimVRMod.Patches
     {
         
         private static MethodInfo setupVisEquipmentMethod = AccessTools.Method(typeof(Humanoid), "SetupVisEquipment");
-        
+        private static bool allowHidingDominantHandItem = true;
+        private static bool allowHidingNonDominantHandItem = true;
+
+        public static void HideLocalPlayerHandItem(bool isDominantHand) {
+            allowHidingDominantHandItem = isDominantHand;
+            allowHidingNonDominantHandItem = !isDominantHand;
+            Player.m_localPlayer.HideHandItems();
+        }
+
         static bool Prefix(ref Humanoid __instance,
             ref ItemDrop.ItemData ___m_leftItem, ref ItemDrop.ItemData ___m_rightItem, 
             ref ItemDrop.ItemData ___m_hiddenLeftItem, ref ItemDrop.ItemData ___m_hiddenRightItem, 
@@ -27,23 +35,23 @@ namespace ValheimVRMod.Patches
                 return true;
             }
             
-            bool leftHand = Pose.toggleShowLeftHand;
-            bool rightHand = Pose.toggleShowRightHand;
-            
-            Pose.toggleShowRightHand = true;
-            Pose.toggleShowLeftHand = true;
+            bool hideDominantHandItem = allowHidingDominantHandItem;
+            bool hidingNonDominantHandItem = allowHidingNonDominantHandItem;
+
+            allowHidingDominantHandItem = true;
+            allowHidingNonDominantHandItem = true;
     
             if (___m_leftItem == null && ___m_rightItem == null) {
                 return false;   
             }
     
-            if (leftHand) {
+            if (hidingNonDominantHandItem) {
                 ItemDrop.ItemData leftItem = ___m_leftItem;
                 __instance.UnequipItem(___m_leftItem);
                 ___m_hiddenLeftItem = leftItem;
             }
     
-            if (rightHand) {
+            if (hideDominantHandItem) {
                 ItemDrop.ItemData rightItem = ___m_rightItem;
                 __instance.UnequipItem(___m_rightItem);
                 ___m_hiddenRightItem = rightItem;                
@@ -60,7 +68,16 @@ namespace ValheimVRMod.Patches
     [HarmonyPatch(typeof(Humanoid), "ShowHandItems")]
     class PatchShowHandItems
     {
-    
+        private static bool allowShowingDominantHandItem = true;
+        private static bool allowShowingNonDominantHandItem = true;
+
+        public static void ShowLocalPlayerHandItem(bool isDominantHand)
+        {
+            allowShowingDominantHandItem = isDominantHand;
+            allowShowingNonDominantHandItem = !isDominantHand;
+            Player.m_localPlayer.ShowHandItems();
+        }
+
         static bool Prefix(ref Humanoid __instance,
             ref ItemDrop.ItemData ___m_hiddenLeftItem, ref ItemDrop.ItemData ___m_hiddenRightItem,
             ref ZSyncAnimation ___m_zanim)
@@ -70,17 +87,17 @@ namespace ValheimVRMod.Patches
                 return true;
             }
     
-            bool leftHand = Pose.toggleShowLeftHand;
-            bool rightHand = Pose.toggleShowRightHand;
-            
-            Pose.toggleShowRightHand = true;
-            Pose.toggleShowLeftHand = true;
+            bool showDominantHandItem = allowShowingDominantHandItem;
+            bool showNonDominantHandItem = allowShowingNonDominantHandItem;
+
+            allowShowingDominantHandItem = true;
+            allowShowingNonDominantHandItem = true;
             
             if (___m_hiddenLeftItem == null && ___m_hiddenRightItem == null) {
                 return false;   
             }
     
-            if (leftHand) {
+            if (showNonDominantHandItem) {
                 ItemDrop.ItemData hiddenLeftItem =___m_hiddenLeftItem;
                 ___m_hiddenLeftItem = null;
                 if (hiddenLeftItem != null) {
@@ -91,7 +108,7 @@ namespace ValheimVRMod.Patches
                 }
             }
     
-            if (rightHand)
+            if (showDominantHandItem)
             {
                 ItemDrop.ItemData hiddenRightItem = ___m_hiddenRightItem;
                 ___m_hiddenRightItem = null;
@@ -230,8 +247,9 @@ namespace ValheimVRMod.Patches
 
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
-            if (VHVRConfig.UseVrControls())
+            if (VHVRConfig.UseVrControls() || VHVRConfig.NonVrPlayer())
             {
+                LogUtils.LogDebug("Skipping KBandMouse_FindHoverObjectPatch patch.");
                 return instructions;
             }
             var original = new List<CodeInstruction>(instructions);

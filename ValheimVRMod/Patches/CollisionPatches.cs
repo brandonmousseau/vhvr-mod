@@ -11,7 +11,7 @@ namespace ValheimVRMod.Patches {
     class PatchAreaAttack {
 
         static bool Prefix(ref Transform __result,  ref Humanoid ___m_character) {
-            if (___m_character != Player.m_localPlayer || ! VHVRConfig.UseVrControls()) {
+            if (___m_character != Player.m_localPlayer || !VHVRConfig.UseVrControls()) {
                 return true;
             }
              
@@ -189,10 +189,10 @@ namespace ValheimVRMod.Patches {
                 }
 
                 HitData hitData = new HitData();
-                hitData.m_toolTier = ___m_weapon.m_shared.m_toolTier;
-                hitData.m_statusEffect = ___m_weapon.m_shared.m_attackStatusEffect
-                    ? ___m_weapon.m_shared.m_attackStatusEffect.name
-                    : "";
+                hitData.m_toolTier = (short) ___m_weapon.m_shared.m_toolTier;
+                hitData.m_statusEffectHash = ___m_weapon.m_shared.m_attackStatusEffect
+                    ? ___m_weapon.m_shared.m_attackStatusEffect.NameHash()
+                    : 0;
                 hitData.m_pushForce = ___m_weapon.m_shared.m_attackForce * randomSkillFactor * ___m_forceMultiplier;
                 hitData.m_backstabBonus = ___m_weapon.m_shared.m_backstabBonus;
                 hitData.m_staggerMultiplier = ___m_staggerMultiplier;

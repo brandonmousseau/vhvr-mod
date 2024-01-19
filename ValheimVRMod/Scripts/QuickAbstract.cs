@@ -99,7 +99,7 @@ namespace ValheimVRMod.Scripts
                     };
                 }
 
-                transform.GetChild(1).gameObject.SetActive(item.m_equiped || item.m_durability == 0);
+                transform.GetChild(1).gameObject.SetActive(item.m_equipped || item.m_durability == 0);
                 if (item.m_durability == 0)
                 {
                     transform.GetChild(1).GetComponent<SpriteRenderer>().color = Color.red;

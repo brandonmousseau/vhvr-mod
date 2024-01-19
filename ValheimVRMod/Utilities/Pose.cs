@@ -1,4 +1,5 @@
 using UnityEngine;
+using ValheimVRMod.Patches;
 using ValheimVRMod.Scripts;
 using ValheimVRMod.VRCore;
 using ValheimVRMod.VRCore.UI;
@@ -7,29 +8,26 @@ using Valve.VR.InteractionSystem;
 
 namespace ValheimVRMod.Utilities {
     public static class Pose {
-        public const bool ALWAYS_USE_UNPRESS_SHEATH = true;
-        public static bool toggleShowLeftHand = true;
-        public static bool toggleShowRightHand = true;
-        public static bool justUnsheathed;
+        private const bool ALWAYS_USE_UNPRESS_SHEATH = true;
+
+        private static bool justUnsheathed;
 
         public static void checkInteractions()
         {
-            
             if (Player.m_localPlayer == null || !VRControls.mainControlsActive)
             {
                 return;
             }
 
-            checkHandOverShoulder(true, ref toggleShowLeftHand);
-            checkHandOverShoulder(false, ref toggleShowRightHand);
-
+            checkHandOverShoulder(isDominantHand: true);
+            checkHandOverShoulder(isDominantHand: false);
         }
         
-        private static void checkHandOverShoulder(bool isRightHand, ref bool toggleShowHand)
+        private static void checkHandOverShoulder(bool isDominantHand)
         {
-            var isMainHand = isRightHand ^ VHVRConfig.LeftHanded();
-            var inputSource = isMainHand ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand;
-            var hand = isMainHand ? VRPlayer.rightHand : VRPlayer.leftHand;
+            var isRightHand = isDominantHand ^ VHVRConfig.LeftHanded();
+            var inputSource = isRightHand ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand;
+            var hand = isRightHand ? VRPlayer.rightHand : VRPlayer.leftHand;
             
             var camera = CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform;
             var action = SteamVR_Actions.valheim_Grab;
@@ -40,38 +38,39 @@ namespace ValheimVRMod.Utilities {
                 if (action.GetStateDown(inputSource))
                 {
 
-                    if(isRightHand && isHoldingItem(isRightHand) && isUnpressSheath()) {
+                    if(isDominantHand && isHoldingItem(isDominantHand) && isUnpressSheath()) {
                         return;
                     } 
                  
-                    toggleShowHand = false;
                     hand.hapticAction.Execute(0, 0.2f, 100, 0.3f, inputSource);
                     
-                    if (isRightHand && EquipScript.getLeft() == EquipType.Bow) {
+                    if (isDominantHand && EquipScript.getLeft() == EquipType.Bow) {
                         BowLocalManager.instance.toggleArrow();
-                    } else if (isHoldingItem(isRightHand)) {
-                        Player.m_localPlayer.HideHandItems();
+                    } else if (isDominantHand && EquipScript.getLeft() == EquipType.Crossbow) {
+                        CrossbowMorphManager.instance.toggleBolt();
+                    } else if (isHoldingItem(isDominantHand)) {
+                        PatchHideHandItems.HideLocalPlayerHandItem(isDominantHand);
                     } else {
-                        Player.m_localPlayer.ShowHandItems();
+                        PatchShowHandItems.ShowLocalPlayerHandItem(isDominantHand);
                         justUnsheathed = true;
                     }
                 }
-                else if (!justUnsheathed && isRightHand && action.GetStateUp(inputSource)) {
-                    if (isHoldingItem(isRightHand) && isUnpressSheath()) {
-                        Player.m_localPlayer.HideHandItems();
+                else if (!justUnsheathed && isDominantHand && action.GetStateUp(inputSource)) {
+                    if (isHoldingItem(isDominantHand) && isUnpressSheath()) {
+                        PatchHideHandItems.HideLocalPlayerHandItem(isDominantHand);
                     }
                 }
             }
-            if (justUnsheathed && isRightHand && action.GetStateUp(inputSource)&& isUnpressSheath()) {
+            if (justUnsheathed && isDominantHand && action.GetStateUp(inputSource) && isUnpressSheath()) {
                 justUnsheathed = false;
             }
         }
         
-        private static bool isHoldingItem(bool isRightHand) {
-            return isRightHand && Player.m_localPlayer.GetRightItem() != null
-                   || !isRightHand && Player.m_localPlayer.GetLeftItem() != null;
+        private static bool isHoldingItem(bool isDominantHand) {
+            return isDominantHand && Player.m_localPlayer.GetRightItem() != null
+                   || !isDominantHand && Player.m_localPlayer.GetLeftItem() != null;
         }
-        
+
         private static bool isUnpressSheath() {
             // TODO: remove this method and clean up if it always returns true.
             return ALWAYS_USE_UNPRESS_SHEATH

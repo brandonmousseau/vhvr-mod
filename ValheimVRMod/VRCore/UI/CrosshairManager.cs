@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.Patches;
 using UnityEngine.SceneManagement;
@@ -14,6 +14,7 @@ namespace ValheimVRMod.VRCore.UI
     {
         private static readonly float CROSSHAIR_SCALAR = 0.1f;
         private static readonly float MIN_CROSSHAIR_DISTANCE = 0.5f;
+        public static readonly float WEAPON_CROSSHAIR_DISTANCE = 128f;
 
         public static int crosshairDepth = 1;
 
@@ -59,6 +60,32 @@ namespace ValheimVRMod.VRCore.UI
         private GameObject _hoverNameCanvasParentLeft;
         private Canvas _hoverNameCanvasLeft;
 
+        // Weapon crosshair objects
+        private GameObject _crosshairCloneForWeapon;
+        private GameObject _weaponCrosshair;
+        public GameObject weaponCrosshair { get {
+                if (_weaponCrosshair == null)
+                {
+                    _weaponCrosshair = new GameObject("WeaponCrosshair");
+                    _weaponCrosshair.layer = LayerUtils.getWorldspaceUiLayer();
+                    Canvas canvas = _weaponCrosshair.AddComponent<Canvas>();
+                    canvas.renderMode = RenderMode.WorldSpace;
+                    float canvasWidth = canvas.GetComponent<RectTransform>().rect.width;
+                    float scaleFactor = CROSSHAIR_SCALAR * VHVRConfig.CrosshairScalar() / canvasWidth;
+                    _weaponCrosshair.transform.localScale = Vector3.one * scaleFactor * WEAPON_CROSSHAIR_DISTANCE;
+                }
+                if (_crosshairCloneForWeapon == null)
+                {
+                    _crosshairCloneForWeapon = GameObject.Instantiate(_crosshairClone);
+                }
+                if (_crosshairCloneForWeapon != null)
+                {
+                    _crosshairCloneForWeapon.transform.SetParent(_weaponCrosshair.GetComponent<Canvas>().GetComponent<RectTransform>(), false);
+                }
+                return _weaponCrosshair;
+            }
+        }
+
         public void maybeReparentCrosshair()
         {
             if (SceneManager.GetActiveScene().name != "main" || guiCanvas == null || !ensureCrosshairCanvas() || !ensureCrosshairCamera())
@@ -79,8 +106,9 @@ namespace ValheimVRMod.VRCore.UI
             }
             if (Player.m_localPlayer && Player.m_localPlayer.IsAttachedToShip() && Player.m_localPlayer.GetControlledShip())
             {
-                _hoverNameCanvasParentLeft.SetActive(false);
-                _hoverNameCanvasParent.SetActive(false);
+                // TODO: check if these should simply be skipped when motion control is disabled.
+                _hoverNameCanvasParentLeft?.SetActive(false);
+                _hoverNameCanvasParent?.SetActive(false);
                 return;
             }
             if ((_canvasCrosshairRoot == null || _canvasCrosshairRootClone == null)
@@ -96,7 +124,8 @@ namespace ValheimVRMod.VRCore.UI
             _canvasCrosshairRoot.SetActive(false); // Disable the original crosshairs
             _canvasCrosshairRootClone.SetActive(VRPlayer.attachedToPlayer);
             _canvasCrosshairRootClone.transform.SetParent(_crosshairCanvas.transform, false);
-            _crosshairClone.SetActive(VHVRConfig.ShowStaticCrosshair());
+            // Vanilla game has control of isActive state of _crosshairClone, so only disabling its Image component can hide it.
+            _crosshairClone.GetComponent<Image>().enabled = VHVRConfig.ShowStaticCrosshair();
             if (crosshairCloneLeftHand)
             {
                 crosshairCloneLeftHand.SetActive(VHVRConfig.ShowStaticCrosshair());

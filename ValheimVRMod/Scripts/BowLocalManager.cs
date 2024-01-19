@@ -76,6 +76,11 @@ namespace ValheimVRMod.Scripts {
             Destroy(drawIndicator);
         }
 
+        protected override bool OnlyUseDominantHand()
+        {
+            return VHVRConfig.OneHandedBow();
+        }
+
         private void destroyArrow() {
             if (arrow != null) {
                 arrow.GetComponent<ZNetView>().Destroy();
@@ -123,13 +128,17 @@ namespace ValheimVRMod.Scripts {
             var bowHand = VHVRConfig.LeftHanded() ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand;
 
             // Enable using the bow hand orientation alone for aiming if the bow hand is holding down both the grip and the trigger.
-            oneHandedAiming = SteamVR_Actions.valheim_Grab.GetState(bowHand) && (SteamVR_Actions.valheim_Use.GetState(bowHand) || SteamVR_Actions.valheim_UseLeft.GetState(bowHand));
+            bowHandAiming = SteamVR_Actions.valheim_Grab.GetState(bowHand) && (SteamVR_Actions.valheim_Use.GetState(bowHand) || SteamVR_Actions.valheim_UseLeft.GetState(bowHand));
 
-            if (SteamVR_Actions.valheim_Grab.GetState(arrowHand)) {
+            if (SteamVR_Actions.valheim_Use.GetState(arrowHand) ||
+                SteamVR_Actions.valheim_UseLeft.GetState(arrowHand) ||
+                SteamVR_Actions.valheim_Grab.GetState(arrowHand)) {
                 handlePulling();
             }
 
-            if (SteamVR_Actions.valheim_Grab.GetStateUp(arrowHand)) {
+            if (SteamVR_Actions.valheim_Use.GetStateUp(arrowHand) ||
+                SteamVR_Actions.valheim_UseLeft.GetStateUp(arrowHand) ||
+                SteamVR_Actions.valheim_Grab.GetStateUp(arrowHand)) {
                 releaseString();
             }
 
@@ -147,13 +156,18 @@ namespace ValheimVRMod.Scripts {
             }
         }
 
-        protected override float getPullLenghtRestriction()
+        protected override float getPullLengthRestriction(float? drawPercentage = null)
         {
+
+            if (drawPercentage == null && VHVRConfig.RestrictBowDrawSpeed() == "Full")
+            {
+                drawPercentage = Player.m_localPlayer.GetAttackDrawPercentage();
+            }
             // If RestrictBowDrawSpeed is enabled, limit the vr pull length by the square root of the current attack draw percentage to simulate the resistance.
             return
-                VHVRConfig.RestrictBowDrawSpeed() == "Full" ?
-                    Mathf.Lerp(GetBraceHeight(), fullDrawLength, Math.Max(Mathf.Sqrt(Player.m_localPlayer.GetAttackDrawPercentage()), 0.01f)) :
-                    fullDrawLength + 0.05f;
+                drawPercentage == null ?
+                fullDrawLength + 0.05f :
+                Mathf.Lerp(GetBraceHeight(), fullDrawLength, Math.Max(Mathf.Sqrt((float) drawPercentage), 0.01f));
         }
 
         private void updateOutline() {
@@ -232,7 +246,7 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            realLifePullPercentage = oneHandedAiming ? 1 : Mathf.Pow(Math.Min(Math.Max(pullStart.localPosition.z - pullObj.transform.localPosition.z, 0) / (fullDrawLength - GetBraceHeight()), 1), 2);
+            realLifePullPercentage = bowHandAiming || OnlyUseDominantHand() ? 1 : Mathf.Pow(Math.Min(Math.Max(pullStart.localPosition.z - pullObj.transform.localPosition.z, 0) / (fullDrawLength - GetBraceHeight()), 1), 2);
          
             //bHaptics
             if (!BhapticsTactsuit.suitDisabled && realLifePullPercentage != 0)
@@ -245,6 +259,12 @@ namespace ValheimVRMod.Scripts {
             }
 
             VrikCreator.GetLocalPlayerDominantHandConnector().position = pullObj.transform.position;
+            if (OnlyUseDominantHand())
+            {
+                // TODO: Fix the bow hand connector position since it is slightly lower than where it should be.
+                VrikCreator.GetLocalPlayerNonDominantHandConnector().position = pushObj.transform.position;
+            }
+
             arrowAttach.transform.SetPositionAndRotation(pullObj.transform.position, pushObj.transform.rotation);
             spawnPoint = getArrowRestPosition();
             aimDir = getAimDir();
@@ -272,6 +292,8 @@ namespace ValheimVRMod.Scripts {
             }
 
             VrikCreator.ResetHandConnectors();
+
+            bowOrientation.transform.localPosition = Vector3.zero;
 
             predictionLine.enabled = false;
             pulling = isPulling = false;
@@ -304,8 +326,13 @@ namespace ValheimVRMod.Scripts {
         }
 
         private bool checkHandNearString() {
-            if (Vector3.Distance(mainHand.position, pullStart.position) > attachRange) {
+            if (!OnlyUseDominantHand() && Vector3.Distance(mainHand.position, pullStart.position) > attachRange) {
                 return false;
+            }
+
+            if (OnlyUseDominantHand() && arrow == null)
+            {
+                toggleArrow();
             }
 
             if (arrow != null) {
@@ -329,19 +356,15 @@ namespace ValheimVRMod.Scripts {
                 }
                 return;
             }
-            
-            var ammoItem = Player.m_localPlayer.GetAmmoItem();
 
-            if (ammoItem == null || ammoItem.m_shared.m_itemType != ItemDrop.ItemData.ItemType.Ammo) {
-                // out of ammo
-                if (!Attack.HaveAmmo(Player.m_localPlayer, item))
-                {
-                    return;
-                }
-                Attack.EquipAmmoItem(Player.m_localPlayer, item);
+            ItemDrop.ItemData ammoItem = EquipScript.equipAmmo();
+            if (ammoItem == null)
+            {
+                // Out of ammo
+                return;
             }
 
-            switch (Player.m_localPlayer.GetAmmoItem().m_shared.m_name)
+            switch (ammoItem.m_shared.m_name)
             {
                 case "$item_arrow_needle":
                 case "$item_arrow_carapace":

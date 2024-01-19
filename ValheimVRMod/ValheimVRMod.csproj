@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -14,7 +14,7 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CommonDir>C:\Program Files (x86)\Steam\steamapps\common\</CommonDir>
-    <UnityDir>C:\Program Files (x86)\Hub\Editor\2020.3.33f1\</UnityDir>
+    <UnityDir>C:\Program Files (x86)\Hub\Editor\2020.3.45f1\</UnityDir>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -58,10 +58,10 @@
     <ErrorReport>prompt</ErrorReport>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="BepInEx.Core" Version="5.4.19" />
+    <PackageReference Include="BepInEx.Core" Version="5.4.21" />
     <PackageReference Include="NDesk.Options" Version="0.2.1" />
-    <PackageReference Include="UnityEngine.Modules" Version="2020.3.33" />
-    <PackageReference Include="ValheimGameLibs" Version="0.214.2" />
+    <PackageReference Include="UnityEngine.Modules" Version="2020.3.45" />
+    <PackageReference Include="ValheimGameLibs" Version="0.217.38" />
 	<PackageReference Include="Bhaptics.Tac" Version="1.4.16" />
   </ItemGroup>
   <ItemGroup>
@@ -90,10 +90,6 @@
     <Reference Include="UnityEngine.UI, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\Unity\build\ValheimVR_Data\Managed\UnityEngine.UI.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Runtime, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\Unity\build\ValheimVR_Data\Managed\netstandard.dll</HintPath>
     </Reference>
     <Reference Include="final_ik.dll">
       <HintPath>..\Unity\build\ValheimVR_Data\Managed\final_ik.dll</HintPath>

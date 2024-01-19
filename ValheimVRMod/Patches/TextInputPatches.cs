@@ -1,9 +1,11 @@
 using System.Text;
 using System.Threading;
+using Fishlabs;
 using HarmonyLib;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
+using ValheimVRMod.Patches;
 using ValheimVRMod.Utilities;
 using Valve.VR;
 using TMPro;
@@ -20,7 +22,8 @@ namespace ValheimVRMod.Patches {
                 instance = __instance;
                 if (VHVRConfig.AutoOpenKeyboardOnInteract() || instance.m_topic.text == "ChatText")
                 {
-                    InputManager.start(instance.m_textField, instance.m_textFieldTMP, true, OnClose);
+                    InputManager.start(
+                        null, null, instance.m_inputField, returnOnClose: instance.m_topic.text != "ChatText", OnClose);
                 }
             }
         }
@@ -37,7 +40,7 @@ namespace ValheimVRMod.Patches {
         {
             if (VHVRConfig.UseVrControls())
             {
-                InputManager.start(__instance, null);
+                InputManager.start(__instance, null, null);
             }
         }
     }
@@ -46,49 +49,46 @@ namespace ValheimVRMod.Patches {
     class PatchInputFieldTmpClick {
         public static void Postfix(TMP_InputField __instance) {
             if (VHVRConfig.UseVrControls()) {
-                InputManager.start(null, __instance);
+                InputManager.start(null, __instance, null);
             }
         }
     }
 
-    [HarmonyPatch(typeof(InputField), "OnFocus")]
+
+    [HarmonyPatch(typeof(TMP_InputField), "OnFocus")]
     class PatchPasswordFieldFocus
     {
-        public static void Postfix(InputField __instance)
+        static private TMP_InputField passwordInputField;
+        public static void Postfix(TMP_InputField __instance)
         {
-            if (VHVRConfig.UseVrControls() && __instance.inputType == InputField.InputType.Password)
+            if (VHVRConfig.UseVrControls() && __instance.inputType == TMP_InputField.InputType.Password)
             {
-                InputManager.start(__instance, null, true);
-            }
-        }
-    }
-    
-    [HarmonyPatch(typeof(Minimap), "ShowPinNameInput")]
-    class PatchMinimap {
-        private static Minimap instance;
-        public static bool pendingInputEnter { get; private set; }
-
-        public static void Postfix(Minimap __instance) {
-            if (VHVRConfig.UseVrControls()) {
-                instance = __instance;
-                InputManager.start(__instance.m_nameInput, null, true, OnClose);
-            }
-        }
-
-        public static void maybeClearPendingInputEnter()
-        {
-            if (instance.m_namePin == null)
-            {
-                pendingInputEnter = false;
+                InputManager.start(null, __instance, null, false, OnClose);
+                passwordInputField = __instance;
             }
         }
 
         private static void OnClose()
         {
-            pendingInputEnter = true;
+            passwordInputField.OnSubmit(null);
+        }
+
+    }
+
+    [HarmonyPatch(typeof(Minimap), "ShowPinNameInput")]
+    class PatchMinimap {
+        public static void Postfix(Minimap __instance) {
+            if (VHVRConfig.UseVrControls()) {
+                InputManager.start(null, null, __instance.m_nameInput, returnOnClose: false, OnClose);
+            }
+        }
+
+        private static void OnClose()
+        {
+            Minimap.m_instance.m_nameInput.OnSubmit(null);
         }
     }
-    
+
     [HarmonyPatch(typeof(Player), "Interact")]
     class PatchPlayerInteract {
         public static bool Prefix() {
@@ -116,15 +116,17 @@ namespace ValheimVRMod.Patches {
         private static bool initialized;
         private static InputField _inputField;
         private static TMP_InputField _inputFieldTmp;
+        private static GuiInputField _inputFieldGui; 
         private static UnityAction _closedAction;
         private static bool _returnOnClose;
         
         public static float closeTime;
         public static bool triggerReturn;
 
-        public static void start(InputField inputField, TMP_InputField inputFieldTmp, bool returnOnClose = false, UnityAction closedAction = null) {
-
+        public static void start(InputField inputField, TMP_InputField inputFieldTmp, GuiInputField inputFieldGui, bool returnOnClose = false, UnityAction closedAction = null) {
+            // TODO: consider enforcing the check that one and only one among inputField, inputFieldGui, and inputFieldTmp is non-null.
             _inputField = inputField;
+            _inputFieldGui = inputFieldGui;
             _inputFieldTmp = inputFieldTmp;
             _returnOnClose = returnOnClose;
             _closedAction = closedAction;
@@ -133,8 +135,13 @@ namespace ValheimVRMod.Patches {
                 _inputField.text = "";
             }
 
-            if (_inputFieldTmp != null && _inputFieldTmp.text == "...") {
+            if (_inputFieldTmp != null && _inputFieldTmp.text == "...")
+            {
                 _inputFieldTmp.text = "";
+            }
+
+            if (_inputFieldGui != null && _inputFieldGui.text == "...") {
+                _inputFieldGui.text = "";
             }
 
             if (!initialized) {
@@ -142,7 +149,7 @@ namespace ValheimVRMod.Patches {
                 initialized = true;
             }
             
-            SteamVR.instance.overlay.ShowKeyboard(0, 0, 0, "TextInput", 256, _inputField != null ? _inputField.text : _inputFieldTmp.text, 1);
+            SteamVR.instance.overlay.ShowKeyboard(0, 0, 0, "TextInput", 256, _inputField != null ? _inputField.text : _inputFieldTmp != null ? _inputFieldTmp.text : _inputFieldGui.text, 1);
         }
 
         private static void OnKeyboardClosed(VREvent_t args) {
@@ -157,10 +164,16 @@ namespace ValheimVRMod.Patches {
                 _inputField.text = text;
             }
 
-            if (_inputFieldTmp )
+            if (_inputFieldTmp)
             {
                 _inputFieldTmp.caretPosition = caretPosition;
                 _inputFieldTmp.text = text;
+            }
+
+            if (_inputFieldGui)
+            {
+                _inputFieldGui.caretPosition = caretPosition;
+                _inputFieldGui.text = text;
             }
 
             if (Scripts.QuickAbstract.shouldStartChat)
@@ -187,6 +200,12 @@ namespace ValheimVRMod.Patches {
             Scripts.QuickAbstract.shouldStartChat = false;
 
             triggerReturn = _returnOnClose;
+
+            // If return is to be triggered, we will wait until then to fire close action.
+            if (!_returnOnClose)
+            {
+                _closedAction?.Invoke();
+            }
         }
 
         public static bool handleReturnKeyInput(ref bool result, KeyCode key) {

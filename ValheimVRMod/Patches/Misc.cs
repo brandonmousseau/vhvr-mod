@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Reflection.Emit;
 using System.Reflection;
 using System.IO;
@@ -7,6 +7,7 @@ using Unity.XR.OpenVR;
 using HarmonyLib;
 using Valve.VR;
 using UnityEngine;
+using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
 using UnityEngine.Rendering;
 
@@ -55,7 +56,7 @@ namespace ValheimVRMod.Patches
     }
 
     // This patch just forces IsUsingSteamVRInput to always return true.
-    // Without this, there seems to be some problem with how the DLL namespacest
+    // Without this, there seems to be some problem with how the DLL namespaces
     // are loaded when using certain other mods. Normally this method will result
     // in a call to the Assembly.GetTypes method, but for whatever reason, this
     // ends up throwing an exception and crashes the mod. The mod I know that causes
@@ -83,6 +84,10 @@ namespace ValheimVRMod.Patches
     {
         public static bool Prefix()
         {
+            if (VHVRConfig.NonVrPlayer())
+            {
+                return true;
+            }
             return false;
         }
     }
@@ -113,6 +118,10 @@ namespace ValheimVRMod.Patches
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
             var original = new List<CodeInstruction>(instructions);
+            if (VHVRConfig.NonVrPlayer())
+            {
+                return original;
+            }
             for (int i = 0; i < original.Count; i++)
             {
                 if (i + 4 < original.Count)
@@ -173,6 +182,10 @@ namespace ValheimVRMod.Patches
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
             var original = new List<CodeInstruction>(instructions);
+            if (VHVRConfig.NonVrPlayer())
+            {
+                return original;
+            }
             var patched = new List<CodeInstruction>();
             for (int i = 0; i < original.Count; i++)
             {
@@ -258,77 +271,138 @@ namespace ValheimVRMod.Patches
         }
     }
 
-    //Supposedly only update on Start, but somehow it doesnt work on some mobs (eg. fuling/goblin), so its using fixedupdate for now
-    [HarmonyPatch(typeof(Character),nameof(Character.FixedUpdate))]
+    // Supposedly only update on Start, but somehow it doesnt work on some mobs (eg. fuling/goblin), so its using fixedupdate for now
+    [HarmonyPatch(typeof(Character), nameof(Character.CustomFixedUpdate))]
     class CharacterSetLodGroupSize
     {
-        private static Dictionary<String, float> creatures = new Dictionary<string, float>();
+        private static Dictionary<String, float> originalLodGroupSizes = new Dictionary<string, float>();
+
         public static void Postfix(Character __instance)
         {
-            if (VHVRConfig.NonVrPlayer())
-            {
-                return;
-            }
-            //return in case no lod group
-            if (!__instance.m_lodGroup)
+            if (VHVRConfig.NonVrPlayer() || __instance == Player.m_localPlayer || !__instance.m_lodGroup)
             {
                 return;
             }
 
-            //add new creature on list if its not in yet
-            if (!creatures.ContainsKey(__instance.m_name)) 
+            UpdateRenderDistance(__instance.name, __instance.m_lodGroup, restoreOriginalRenderDistance: __instance.m_tamed);
+        }
+
+        public static void UpdateRenderDistance(string key, LODGroup lodGroup, bool restoreOriginalRenderDistance)
+        {
+            if (!originalLodGroupSizes.ContainsKey(key))
             {
-                creatures[__instance.m_name] = __instance.m_lodGroup.size;
+                LogUtils.LogDebug("Registering original LOD group size " + lodGroup.size  + " of " + key);
+                originalLodGroupSizes[key] = lodGroup.size;
             }
 
-            if(__instance.m_tamed && __instance.m_lodGroup.size != creatures[__instance.m_name])
+            Camera vrCamera = CameraUtils.getCamera(CameraUtils.VR_CAMERA);
+
+            float desiredLodGroupSize =
+                restoreOriginalRenderDistance || vrCamera == null ?
+                originalLodGroupSizes[key] :
+                Mathf.Max(originalLodGroupSizes[key], GetDesiredLodGroupSize(lodGroup, VHVRConfig.GetEnemyRenderDistanceValue(), vrCamera));
+
+            if (lodGroup.size != desiredLodGroupSize)
             {
-                __instance.m_lodGroup.size = creatures[__instance.m_name];
+                lodGroup.size = desiredLodGroupSize;
             }
-            else
+        }
+
+        private static float GetDesiredLodGroupSize(LODGroup lODGroup, float desiredRenderDistance, Camera camera)
+        {
+            float cullingHeight = 1;
+            foreach (LOD lOD in lODGroup.GetLODs())
             {
-                if(creatures[__instance.m_name] < VHVRConfig.GetEnemyRenderDistanceValue() && __instance.m_lodGroup.size != VHVRConfig.GetEnemyRenderDistanceValue())
+                if (lOD.screenRelativeTransitionHeight < cullingHeight)
                 {
-                    __instance.m_lodGroup.size = VHVRConfig.GetEnemyRenderDistanceValue();
+                    cullingHeight = lOD.screenRelativeTransitionHeight;
                 }
-                else if (creatures[__instance.m_name] > VHVRConfig.GetEnemyRenderDistanceValue() && __instance.m_lodGroup.size != creatures[__instance.m_name])
-                {
-                    __instance.m_lodGroup.size = creatures[__instance.m_name];
-                }
-                
             }
+
+            Vector3 scale = lODGroup.transform.localScale;
+            float dimension = Math.Min(Math.Min(scale.x, scale.y), scale.z);
+
+            return camera.fieldOfView * Mathf.PI / 180 * cullingHeight * desiredRenderDistance / dimension;
         }
     }
 
-    // Pass correct camera to Graphics.DrawMesh
-    [HarmonyPatch(typeof(Heightmap), nameof(Heightmap.Render))]
-    class HeightMapRenderPatch
+    // These patches just remove a warning log that was very spammy under some circumstances
+    // and resulted in poor performance. (Something to do with spiky fish...)
+    [HarmonyPatch(typeof(Aoe), nameof(Aoe.OnCollisionEnter))]
+    class AoeOnCollisionEnterPatch
     {
-        static bool Prefix(Heightmap __instance)
+        public static bool Prefix(Aoe __instance, ref Collision collision)
         {
-            if (VHVRConfig.NonVrPlayer())
+           
+            if (!__instance.m_triggerEnterOnly)
             {
-                return true;
+                return false;
             }
-            ShadowCastingMode shadowCastingMode;
-            bool flag;
-            if (__instance.m_renderMesh)
+            if (!__instance.m_useTriggers)
             {
-                if (!__instance.m_isDistantLod)
-                {
-                    shadowCastingMode = (Heightmap.EnableDistantTerrainShadows ? ShadowCastingMode.On : ShadowCastingMode.TwoSided);
-                    flag = true;
-                }
-                else
-                {
-                    shadowCastingMode = (Heightmap.EnableDistantTerrainShadows ? ShadowCastingMode.On : ShadowCastingMode.Off);
-                    flag = false;
-                }
-                Matrix4x4 matrix4x4 = Matrix4x4.TRS(__instance.gameObject.transform.position, Quaternion.identity, Vector3.one);
-                Graphics.DrawMesh(__instance.m_renderMesh, matrix4x4, __instance.m_materialInstance, __instance.gameObject.layer, Utils.GetMainCamera(), 0, new MaterialPropertyBlock(), shadowCastingMode, flag);
+                return false;
             }
+            if (__instance.m_nview != null && (!__instance.m_nview.IsValid() || !__instance.m_nview.IsOwner()))
+            {
+                return false;
+            }
+            __instance.OnHit(collision.collider, collision.collider.transform.position);
             return false;
         }
     }
 
+    [HarmonyPatch(typeof(Aoe), nameof(Aoe.OnCollisionStay))]
+    class AoeOnCollisionStayPatch
+    {
+        public static bool Prefix(Aoe __instance, ref Collision collision)
+        {
+            if (__instance.m_triggerEnterOnly)
+            {
+                return false;
+            }
+            if (!__instance.m_useTriggers)
+            {
+                return false;
+            }
+            if (__instance.m_nview != null && (!__instance.m_nview.IsValid() || !__instance.m_nview.IsOwner()))
+            {
+                return false;
+            }
+            __instance.OnHit(collision.collider, collision.collider.transform.position);
+            return false;
+        }
+    }
+
+    [HarmonyPatch(typeof(WaterVolume), nameof(WaterVolume.Awake))]
+    class WaterSurfaceVisiblityPatch
+    {
+        public static void Postfix(WaterVolume __instance)
+        {
+            if (VHVRConfig.NonVrPlayer())
+            {
+                return;
+            }
+
+            __instance.gameObject.AddComponent<WaterSurfaceVisibiltyUpdater>().Init(__instance);
+        }
+
+        private class WaterSurfaceVisibiltyUpdater : MonoBehaviour
+        {
+            private WaterVolume waterVolume;
+
+            public void Init(WaterVolume waterVolume)
+            {
+                this.waterVolume = waterVolume;
+            }
+
+            void FixedUpdate()
+            {
+                if (!waterVolume)
+                {
+                    return;
+                }
+                waterVolume.m_waterSurface.shadowCastingMode = UnderwaterEffectsUpdater.UsingUnderwaterEffects ? ShadowCastingMode.ShadowsOnly : ShadowCastingMode.On;
+            }
+        }
+    }
 }
