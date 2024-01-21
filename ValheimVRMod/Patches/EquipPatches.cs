@@ -236,10 +236,7 @@ namespace ValheimVRMod.Patches {
 
             foreach (GameObject itemInstance in ___m_chestItemInstances)
             {
-                if (EquipBoundingBoxFix.ARMOR_NAMES.Contains(___m_chestItem))
-                {
-                    EquipBoundingBoxFix.GetInstanceForPlayer(player)?.RequestBoundingBoxFix(itemInstance);
-                }
+                EquipBoundingBoxFix.GetInstanceForPlayer(player)?.RequestArmorBoundingBoxFixIfNeeded(itemInstance, ___m_chestItem);
             }
         }
     }
