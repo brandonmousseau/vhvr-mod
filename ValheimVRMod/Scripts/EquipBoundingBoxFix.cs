@@ -71,14 +71,9 @@ namespace ValheimVRMod.Scripts
 
         public void RequestArmorBoundingBoxFixIfNeeded(GameObject itemInstance, string itemName)
         {
-            if (!ARMOR_NAMES.Contains(itemName))
+            if (ARMOR_NAMES.Contains(itemName))
             {
-                return;
-            }
-
-            foreach (SkinnedMeshRenderer renderer in itemInstance.GetComponentsInChildren<SkinnedMeshRenderer>())
-            {
-                pendingRenderersToFix.Add(renderer);
+                RequestBoundingBoxFix(itemInstance);
             }
         }
 
