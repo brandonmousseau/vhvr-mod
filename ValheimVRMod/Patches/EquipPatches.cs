@@ -24,7 +24,7 @@ namespace ValheimVRMod.Patches {
 
             if (player == Player.m_localPlayer && !VHVRConfig.NonVrPlayer())
             {
-                EquipBoundingBoxFix.GetInstanceForPlayer(player)?.RequestBoundingBoxFix(___m_rightItem, ___m_rightItemInstance);
+                EquipBoundingBoxFix.GetInstanceForPlayer(player)?.RequestBoundingBoxFix(___m_rightItemInstance);
             }
 
             MeshFilter meshFilter = ___m_rightItemInstance.GetComponentInChildren<MeshFilter>();
@@ -115,7 +115,7 @@ namespace ValheimVRMod.Patches {
 
             if (player == Player.m_localPlayer && !VHVRConfig.NonVrPlayer())
             {
-                EquipBoundingBoxFix.GetInstanceForPlayer(player)?.RequestBoundingBoxFix(___m_leftItem, ___m_leftItemInstance);
+                EquipBoundingBoxFix.GetInstanceForPlayer(player)?.RequestBoundingBoxFix(___m_leftItemInstance);
             }
 
             MeshFilter meshFilter = ___m_leftItemInstance.GetComponentInChildren<MeshFilter>();
@@ -233,10 +233,10 @@ namespace ValheimVRMod.Patches {
             {
                 return;
             }
-             
+
             foreach (GameObject itemInstance in ___m_chestItemInstances)
             {
-                EquipBoundingBoxFix.GetInstanceForPlayer(player)?.RequestBoundingBoxFix(___m_chestItem, itemInstance);
+                EquipBoundingBoxFix.GetInstanceForPlayer(player)?.RequestArmorBoundingBoxFixIfNeeded(itemInstance, ___m_chestItem);
             }
         }
     }
