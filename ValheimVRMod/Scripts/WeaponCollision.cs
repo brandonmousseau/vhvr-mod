@@ -17,7 +17,7 @@ namespace ValheimVRMod.Scripts
         private const float MIN_STAB_SPEED = 1f;
         private const float MAX_STAB_ANGLE = 30f;
         private const float MAX_STAB_ANGLE_TWOHAND = 40f;
-        private const bool ENABLE_DEBUG_COLLIDER_INDICATOR = false;
+        private const bool ENABLE_DEBUG_COLLIDER_INDICATOR = true; //leaving it on for visual debugging for now
 
         private bool scriptActive;
         private GameObject colliderParent;
@@ -37,6 +37,7 @@ namespace ValheimVRMod.Scripts
         public static bool isDrinking;
         public LocalWeaponWield weaponWield;
         public static bool isLastHitOnTerrain;
+        private bool isCustom = false;
 
         private static readonly int[] ignoreLayers = {
             LayerUtils.WATERVOLUME_LAYER,
@@ -246,6 +247,14 @@ namespace ValheimVRMod.Scripts
             transform.localPosition = Vector3.zero;
             transform.localScale = Vector3.one;
             transform.SetParent(Player.m_localPlayer.transform, true);
+
+            //Late update since the weapon position and rotation isnt the same at awake (need more later update)
+            if (isCustom)
+            {
+                colliderParent.transform.LookAt(colliderParent.transform.position + LocalWeaponWield.weaponForward,VRPlayer.dominantHandRayDirection);
+                colliderParent.transform.position = VRPlayer.dominantHand.transform.position + (LocalWeaponWield.weaponForward * item.m_shared.m_attack.m_attackRange * 0.25f);
+                isCustom = false;
+            }
         }
 
         public void setColliderParent(Transform obj, string name, bool rightHand)
@@ -280,12 +289,28 @@ namespace ValheimVRMod.Scripts
                 colliderParent.transform.localPosition = colliderData.pos;
                 colliderParent.transform.localRotation = Quaternion.Euler(colliderData.euler);
                 colliderParent.transform.localScale = colliderData.scale;
+                isCustom = false;
                 setScriptActive(true);
             }
             catch (InvalidEnumArgumentException)
             {
                 LogUtils.LogWarning($"Collider not found for: {name}");
-                setScriptActive(false);
+                try
+                {
+                    WeaponColData colliderData = WeaponUtils.CreateNewCollision(item);
+                    colliderParent.transform.parent = null;
+                    colliderParent.transform.localScale = colliderData.scale;
+                    colliderParent.transform.SetParent(obj, true);
+                    colliderParent.transform.LookAt(colliderParent.transform.position + LocalWeaponWield.weaponForward, VRPlayer.dominantHandRayDirection);
+                    colliderParent.transform.position = VRPlayer.dominantHand.transform.position + (LocalWeaponWield.weaponForward * item.m_shared.m_attack.m_attackRange * 0.25f);
+                    isCustom = true;
+                    setScriptActive(true);
+                }
+                catch (InvalidEnumArgumentException)
+                {
+                    LogUtils.LogWarning($"item not found for: {name}");
+                    setScriptActive(false);
+                }
             }
         }
 
