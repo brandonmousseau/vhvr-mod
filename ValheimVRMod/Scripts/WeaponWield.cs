@@ -56,10 +56,15 @@ namespace ValheimVRMod.Scripts
                 {
                     Vector3 handleAllowanceBehindGrip =
                         WeaponUtils.EstimateHandleAllowanceBehindGrip(weaponMeshFilter, handPosition: transform.parent.position);
-                    EstimatedWeaponLocalPointingDirections.Add(
-                        itemName,
-                        estimatedLocalWeaponPointingDir =
-                            transform.InverseTransformVector(-handleAllowanceBehindGrip).normalized);
+
+                    estimatedLocalWeaponPointingDir = transform.InverseTransformVector(-handleAllowanceBehindGrip);
+                    if(estimatedLocalWeaponPointingDir.z < 0)
+                    {
+                        estimatedLocalWeaponPointingDir = (Quaternion.AngleAxis(180, Vector3.right) * estimatedLocalWeaponPointingDir);
+                    }
+                    estimatedLocalWeaponPointingDir.Normalize();
+
+                    EstimatedWeaponLocalPointingDirections.Add(itemName, estimatedLocalWeaponPointingDir);
                     DistancesBehindGripAndRearEnd.Add(
                         itemName,
                         distanceBetweenGripAndRearEnd = handleAllowanceBehindGrip.magnitude);
