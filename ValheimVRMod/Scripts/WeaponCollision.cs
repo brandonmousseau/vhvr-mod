@@ -37,7 +37,7 @@ namespace ValheimVRMod.Scripts
         public static bool isDrinking;
         public LocalWeaponWield weaponWield;
         public static bool isLastHitOnTerrain;
-        private bool isCustom = false;
+        private float isCustom = 0;
 
         private static readonly int[] ignoreLayers = {
             LayerUtils.WATERVOLUME_LAYER,
@@ -249,11 +249,14 @@ namespace ValheimVRMod.Scripts
             transform.SetParent(Player.m_localPlayer.transform, true);
 
             //Late update since the weapon position and rotation isnt the same at awake (need more later update)
-            if (isCustom)
+            if (isCustom == 50)
             {
-                colliderParent.transform.LookAt(colliderParent.transform.position + LocalWeaponWield.weaponForward,VRPlayer.dominantHandRayDirection);
-                colliderParent.transform.position = VRPlayer.dominantHand.transform.position + (LocalWeaponWield.weaponForward * item.m_shared.m_attack.m_attackRange * 0.25f);
-                isCustom = false;
+                isCustom = -100;
+            }
+            else if (isCustom >= 0)
+            {
+                UpdateCustomHitBox();
+                isCustom += 1;
             }
         }
 
@@ -289,7 +292,7 @@ namespace ValheimVRMod.Scripts
                 colliderParent.transform.localPosition = colliderData.pos;
                 colliderParent.transform.localRotation = Quaternion.Euler(colliderData.euler);
                 colliderParent.transform.localScale = colliderData.scale;
-                isCustom = false;
+                isCustom = -100;
                 setScriptActive(true);
             }
             catch (InvalidEnumArgumentException)
@@ -298,12 +301,11 @@ namespace ValheimVRMod.Scripts
                 try
                 {
                     WeaponColData colliderData = WeaponUtils.CreateNewCollision(item);
-                    colliderParent.transform.parent = null;
+                    colliderParent.transform.SetParent(null);
                     colliderParent.transform.localScale = colliderData.scale;
                     colliderParent.transform.SetParent(obj, true);
-                    colliderParent.transform.LookAt(colliderParent.transform.position + LocalWeaponWield.weaponForward, VRPlayer.dominantHandRayDirection);
-                    colliderParent.transform.position = VRPlayer.dominantHand.transform.position + (LocalWeaponWield.weaponForward * item.m_shared.m_attack.m_attackRange * 0.25f);
-                    isCustom = true;
+                    UpdateCustomHitBox();
+                    isCustom = 0;
                     setScriptActive(true);
                 }
                 catch (InvalidEnumArgumentException)
@@ -314,6 +316,11 @@ namespace ValheimVRMod.Scripts
             }
         }
 
+        private void UpdateCustomHitBox()
+        {
+            colliderParent.transform.LookAt(colliderParent.transform.position + LocalWeaponWield.weaponForward, VRPlayer.dominantHandRayDirection);
+            colliderParent.transform.position = VRPlayer.dominantHand.transform.position + (LocalWeaponWield.weaponForward * item.m_shared.m_attack.m_attackRange * 0.25f);
+        }
         private void Update()
         {
 
