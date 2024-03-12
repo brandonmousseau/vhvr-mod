@@ -827,7 +827,7 @@ namespace ValheimVRMod.VRCore
             {
                 return CROUCH_HEIGHT_ADJUST;
             }
-            return 0f;
+            return VHVRConfig.PlayerHeightAdjust();
         }
 
         private void updateVrik()
