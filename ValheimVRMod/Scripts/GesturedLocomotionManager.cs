@@ -331,7 +331,9 @@ namespace ValheimVRMod.Scripts
             {
                 if (!SteamVR_Actions.valheim_StopGesturedLocomotion.activeBinding)
                 {
-                    return false;
+                    // If the steam action has not been set, disable gestured walk because there will be
+                    // otherwise no way to stop it.
+                    return true;
                 }
                 return SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(inputSource);
             }
