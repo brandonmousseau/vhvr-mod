@@ -107,6 +107,8 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> roomScaleSneakHeight;
         private static ConfigEntry<bool> exclusiveRoomScaleSneak;
         private static ConfigEntry<string> gesturedLocomotion;
+        private static ConfigEntry<float> gesturedJumpPreparationHeight;
+        private static ConfigEntry<float> gesturedJumpMinSpeed;
         private static ConfigEntry<float> swingSpeedRequirement;
         private static ConfigEntry<float> altPieceRotationDelay;
         private static ConfigEntry<bool> runIsToggled;
@@ -624,6 +626,16 @@ namespace ValheimVRMod.Utilities
                                              new ConfigDescription(
                                                  "Enables using arm movements to swim, walk, run, and jump",
                                                  new AcceptableValueList<string>(new string[] { "None", "SwimOnly", "Full" })));
+            gesturedJumpPreparationHeight = config.Bind("Controls",
+                                          "GesturedJumpPreparationHeight",
+                                          0.95f,
+                                          new ConfigDescription("The max height you need to squat at to jump",
+                                           new AcceptableValueRange<float>(0.25f, 1f)));
+            gesturedJumpMinSpeed = config.Bind("Controls",
+                                          "GesturedJumpMinSpeed",
+                                          0.75f,
+                                          new ConfigDescription("The minimum vertical head speed to trigger a jump",
+                                          new AcceptableValueRange<float>(0.25f, 3f)));
             dominantHand = config.Bind("Controls",
                                         "DominantHand",
                                         "Right",
@@ -1253,6 +1265,16 @@ namespace ValheimVRMod.Utilities
         public static bool IsGesturedWalkRunEnabled()
         {
             return gesturedLocomotion.Value == "Full";
+        }
+
+        public static float GesturedJumpPreparationHeight()
+        {
+            return gesturedJumpPreparationHeight.Value;
+        }
+
+        public static float GesturedJumpMinSpeed()
+        {
+            return gesturedJumpMinSpeed.Value;
         }
 
         public static float GetNearClipPlane()

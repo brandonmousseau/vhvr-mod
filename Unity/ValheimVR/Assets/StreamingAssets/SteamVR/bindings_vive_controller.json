@@ -333,6 +333,9 @@
                   },
                   "position" : {
                      "output" : "/actions/valheim/in/pitchandyaw"
+                  },
+                  "touch" : {
+                     "output" : "/actions/valheim/in/stopgesturedlocomotion"
                   }
                },
                "mode" : "trackpad",
@@ -345,6 +348,9 @@
                   },
                   "position" : {
                      "output" : "/actions/valheim/in/walk"
+                  },
+                  "touch" : {
+                     "output" : "/actions/valheim/in/stopgesturedlocomotion"
                   }
                },
                "mode" : "trackpad",
@@ -367,6 +373,42 @@
                },
                "mode" : "button",
                "path" : "/user/hand/right/input/application_menu"
+            },
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/valheim/in/stopgesturedlocomotion"
+                  }
+               },
+               "mode" : "button",
+               "path" : "/user/hand/left/input/grip"
+            },
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/valheim/in/stopgesturedlocomotion"
+                  }
+               },
+               "mode" : "button",
+               "path" : "/user/hand/left/input/trigger"
+            },
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/valheim/in/stopgesturedlocomotion"
+                  }
+               },
+               "mode" : "button",
+               "path" : "/user/hand/right/input/grip"
+            },
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/valheim/in/stopgesturedlocomotion"
+                  }
+               },
+               "mode" : "button",
+               "path" : "/user/hand/right/input/trigger"
             }
          ]
       }
