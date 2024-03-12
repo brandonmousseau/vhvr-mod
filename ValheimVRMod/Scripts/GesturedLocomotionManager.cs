@@ -259,6 +259,7 @@ namespace ValheimVRMod.Scripts
             private const float HEAD_TILT_STRAFE_WEIGHT = 2f;
             private const float MIN_ACTIVATION_HAND_DISTANCE = 0.375f;
 
+            private Camera vrCam;
             private bool isWalkingOrRunningUsingGestures = false;
 
             protected abstract SteamVR_Input_Sources inputSource { get; }
@@ -307,9 +308,16 @@ namespace ValheimVRMod.Scripts
 
             private Vector3 ApplyHeadTiltStrafe(Vector3 walkDirection)
             {
-                var hmd = Valve.VR.InteractionSystem.Player.instance.hmdTransform;
-                var heading = Vector3.ProjectOnPlane(hmd.forward, upDirection);
-                var strafe = Vector3.ProjectOnPlane(Vector3.ProjectOnPlane(hmd.up, heading) - upDirection, upDirection);
+                if (vrCam == null)
+                {
+                    vrCam = CameraUtils.getCamera(CameraUtils.VR_CAMERA);
+                    if (vrCam == null)
+                    {
+                        return walkDirection;
+                    }
+                }
+                var heading = Vector3.ProjectOnPlane(vrCam.transform.forward, upDirection);
+                var strafe = Vector3.ProjectOnPlane(Vector3.ProjectOnPlane(vrCam.transform.up, heading) - upDirection, upDirection);
                 var strafeAmount = strafe.magnitude;
                 if (strafeAmount < HEAD_TILT_STRAFE_DEADZONE)
                 {
