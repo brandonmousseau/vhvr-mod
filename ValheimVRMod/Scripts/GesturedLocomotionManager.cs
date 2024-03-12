@@ -59,7 +59,6 @@ namespace ValheimVRMod.Scripts
             gesturedLocomotionVelocity =
                 Vector3.Lerp(gesturedLocomotionVelocity, targetVelocity, deltaTime / damper);
 
-            float previousHorizontalSpeed = horizontalSpeed;
             horizontalSpeed = Vector3.ProjectOnPlane(gesturedLocomotionVelocity, vrCameraRig.up).magnitude;
 
             if (localPlayer.IsSwimming() && horizontalSpeed < MIN_WATER_SPEED)
@@ -284,7 +283,7 @@ namespace ValheimVRMod.Scripts
                 Vector3 clampedHandVelocity = handSpeed > 1 ? handVelocity / handSpeed : handVelocity;
 
                 // Use both hand pointing direction and hand movement direction to decide walk direction
-                Vector3 walkDirection = handTransform.forward;
+                Vector3 walkDirection = handTransform.forward * 2;
                 walkDirection += (Vector3.Dot(walkDirection, clampedHandVelocity) > 0 ? clampedHandVelocity : -clampedHandVelocity);
                 walkDirection = Vector3.ProjectOnPlane(walkDirection, upDirection).normalized;
                
@@ -330,6 +329,10 @@ namespace ValheimVRMod.Scripts
 
             private bool isStoppingWalkRunByButton()
             {
+                if (!SteamVR_Actions.valheim_StopGesturedLocomotion.activeBinding)
+                {
+                    return false;
+                }
                 return SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(inputSource);
             }
 
