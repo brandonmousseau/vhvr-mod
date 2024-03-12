@@ -633,7 +633,7 @@ namespace ValheimVRMod.Utilities
                                            new AcceptableValueRange<float>(0.25f, 1f)));
             gesturedJumpMinSpeed = config.Bind("Controls",
                                           "GesturedJumpMinSpeed",
-                                          0.5f,
+                                          0.75f,
                                           new ConfigDescription("The minimum vertical head speed to trigger a jump",
                                           new AcceptableValueRange<float>(0.25f, 3f)));
             dominantHand = config.Bind("Controls",
