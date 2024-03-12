@@ -23,6 +23,7 @@ namespace ValheimVRMod.Utilities
 
         // General Settings
         private static ConfigEntry<string> mirrorMode;
+        private static ConfigEntry<float> playerHeightAdjust;
         private static ConfigEntry<float> headOffsetX;
         private static ConfigEntry<float> headOffsetZ;
         private static ConfigEntry<float> headOffsetY;
@@ -301,6 +302,13 @@ namespace ValheimVRMod.Utilities
                                      " mirror mode causes some issue that requires SteamVR to be restarted after closing the game, so unless you" +
                                      " need it for some specific reason, I recommend using another mirror mode or None.",
                                      new AcceptableValueList<string>(new string[] { "Right", "Left", "OpenVR", "None" })));
+            playerHeightAdjust = config.Bind("General",
+                              "PlayerHeightAdjust",
+                              0f,
+                              new ConfigDescription("The height difference between the real world player and the game character",
+                              new AcceptableValueRange<float>(-0.25f, 0.25f)));
+
+
             headOffsetX = config.Bind("General",
                                       "FirstPersonHeadOffsetX",
                                       0.0f,
@@ -927,6 +935,11 @@ namespace ValheimVRMod.Utilities
                 LogUtils.LogWarning("Invalid mirror mode setting. Defaulting to None");
                 return OpenVRSettings.MirrorViewModes.None;
             }
+        }
+
+        public static float PlayerHeightAdjust()
+        {
+            return playerHeightAdjust.Value;
         }
 
         public static bool GetUseOverlayGui()
