@@ -9,7 +9,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using UnityEngine.UI;
-using Fishlabs.Valheim;
+using Valheim.SettingsGui;
 using ValheimVRMod.VRCore.UI;
 using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
