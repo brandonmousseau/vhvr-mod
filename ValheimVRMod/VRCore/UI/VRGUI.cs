@@ -156,10 +156,13 @@ namespace ValheimVRMod.VRCore.UI
         // mouse cursors interacting with UI).
         private void disableVanillaInputSystemUiInputModule()
         {
-            if (EventSystem.current.gameObject)
+            if (EventSystem.current && EventSystem.current.gameObject)
             {
-                var inputUiModule = EventSystem.current.GetComponent<InputSystemUIInputModule>();
-                inputUiModule.enabled = false;
+                var inputUiModule = EventSystem.current?.GetComponent<InputSystemUIInputModule>();
+                if (inputUiModule)
+                {
+                    inputUiModule.enabled = false;
+                }
             }
         }
 
