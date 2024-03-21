@@ -325,9 +325,22 @@ namespace ValheimVRMod.Utilities
             if (colliders.ContainsKey(name)) {
                 return colliders[name];
             }
-            if (item != null && compatibilityColliders.ContainsKey(EquipScript.getEquippedItem(item)))
+            //Supposedly works for pickaxe, but some pickaxe still isnt accurate
+            //if (item != null && compatibilityColliders.ContainsKey(EquipScript.getEquippedItem(item)))
+            //{
+            //    return compatibilityColliders[EquipScript.getEquippedItem(item)];
+            //}
+            throw new InvalidEnumArgumentException();
+        }
+        public static WeaponColData CreateNewCollision(ItemDrop.ItemData item)
+        {
+            if(item != null)
             {
-                return compatibilityColliders[EquipScript.getEquippedItem(item)];
+                return WeaponColData.create(
+                    0, 2.158f, 0,
+                    0, 0, 0,
+                    0.05382534f, 0.1101757f, item.m_shared.m_attack.m_attackRange * 0.65f
+                );
             }
             throw new InvalidEnumArgumentException();
         }
