@@ -230,7 +230,11 @@ namespace ValheimVRMod.Patches {
             ___m_hitTerrainEffect.Create(pos, Quaternion.identity);
 
             if (___m_weapon.m_shared.m_spawnOnHitTerrain && WeaponCollision.isLastHitOnTerrain) {
-                __instance.SpawnOnHitTerrain(pos, ___m_weapon.m_shared.m_spawnOnHitTerrain);
+                Attack.SpawnOnHitTerrain(
+                    pos,
+                    ___m_weapon.m_shared.m_spawnOnHitTerrain,
+                    __instance.m_character,
+                    __instance.m_attackHitNoise, __instance.m_weapon, __instance.m_lastUsedAmmo);
                 WeaponCollision.isLastHitOnTerrain = false;
             }
 
