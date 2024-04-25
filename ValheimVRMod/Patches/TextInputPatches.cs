@@ -1,6 +1,6 @@
 using System.Text;
 using System.Threading;
-using Fishlabs;
+using GUIFramework;
 using HarmonyLib;
 using UnityEngine;
 using UnityEngine.Events;
