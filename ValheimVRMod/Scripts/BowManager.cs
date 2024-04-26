@@ -260,7 +260,7 @@ namespace ValheimVRMod.Scripts {
         }
 
         private Material GetBowBendingMaterial(Material vanillaMaterial) {
-            Material bowBendingMaterial = Instantiate(VRAssetManager.GetAsset<Material>("BowBendingMaterial")); ;
+            Material bowBendingMaterial = Instantiate(VRAssetManager.GetAsset<Material>("BowBendingMaterial"));
             bowBendingMaterial.color = vanillaMaterial.color;
             bowBendingMaterial.mainTexture = vanillaMaterial.mainTexture;
             bowBendingMaterial.SetTexture("_BumpMap", vanillaMaterial.GetTexture("_BumpMap"));
@@ -327,6 +327,7 @@ namespace ValheimVRMod.Scripts {
             lineRenderer.widthMultiplier = 0.006f;
             lineRenderer.positionCount = 3;
             updateStringRenderer();
+            lineRenderer.material = Instantiate(VRAssetManager.GetAsset<Material>("StandardClone"));
             lineRenderer.material.color = new Color(0.703125f, 0.48828125f, 0.28515625f); // just a random brown color
         }
 
