@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.UI;
@@ -208,7 +208,7 @@ namespace ValheimVRMod.Scripts
             snapLine.gameObject.layer = LayerMask.GetMask("WORLDSPACE_UI_LAYER");
             snapLine.widthMultiplier = 0.005f;
             snapLine.positionCount = 3;
-            snapLine.material = new Material(Shader.Find("Unlit/Color"));
+            snapLine.material = Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
             snapLine.enabled = false;
             snapLine.receiveShadows = false;
             snapLine.shadowCastingMode = ShadowCastingMode.Off;
@@ -233,7 +233,7 @@ namespace ValheimVRMod.Scripts
             var lightbox = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             lightbox.transform.localScale = new Vector3(0.12f, 0.13f, 0.12f);
             lightbox.transform.SetParent(buildRefPointer.transform);
-            lightbox.GetComponent<MeshRenderer>().material = new Material(Shader.Find("Unlit/Color"));
+            lightbox.GetComponent<MeshRenderer>().material = Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
             lightbox.GetComponent<MeshRenderer>().material.color = Color.green * 0.6f;
             lightbox.transform.localPosition = Vector3.up * 0.6f;
             Destroy(lightbox.GetComponent<Collider>());
@@ -242,7 +242,7 @@ namespace ValheimVRMod.Scripts
         {
             buildRefPointer2 = Instantiate(VRAssetManager.GetAsset<GameObject>("GizmoRing"));
             var child = buildRefPointer2.transform.GetChild(0);
-            child.GetComponent<MeshRenderer>().material = new Material(Shader.Find("Unlit/Color"));
+            child.GetComponent<MeshRenderer>().material = Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
             child.GetComponent<MeshRenderer>().material.color = Color.green * 0.6f;
             buildRefPointer2.transform.SetParent(buildRefPointer.transform);
             buildRefPointer2.transform.localPosition = Vector3.up * 0.6f;
@@ -256,8 +256,7 @@ namespace ValheimVRMod.Scripts
             var lightbox = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             lightbox.transform.localScale = new Vector3(0.12f, 0.13f, 0.12f);
             lightbox.transform.SetParent(snapPointer.transform);
-            Material newMaterial = new Material(Shader.Find("Unlit/Color"));
-            lightbox.GetComponent<MeshRenderer>().material = newMaterial;
+            lightbox.GetComponent<MeshRenderer>().material = Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
             lightbox.GetComponent<MeshRenderer>().material.color = Color.yellow * 0.6f;
             lightbox.transform.localPosition = Vector3.up * 0.6f;
             Destroy(lightbox.GetComponent<Collider>());
@@ -292,7 +291,7 @@ namespace ValheimVRMod.Scripts
             freeModeAxisParent.transform.localPosition = Vector3.up * 0.45f;
             freeModeAxisParent.transform.rotation = this.gameObject.transform.rotation;
             freeModeAxis = freeModeAxisParent.transform.GetChild(0).gameObject;
-            freeModeAxis.GetComponent<MeshRenderer>().material = new Material(Shader.Find("Standard"));
+            freeModeAxis.GetComponent<MeshRenderer>().material = Instantiate(VRAssetManager.GetAsset<Material>("StandardClone"));
             freeModeAxis.GetComponent<MeshRenderer>().material.color = Color.blue;
             freeModeAxis.transform.localScale = new Vector3(1, 5, 1);
             freeModeAxis.transform.localScale *= 0.3f;
@@ -334,7 +333,7 @@ namespace ValheimVRMod.Scripts
             var axisX = Instantiate(VRAssetManager.GetAsset<GameObject>("GizmoRing"), rotationAxisParent.transform);
             axisX.transform.localPosition = Vector3.zero;
             var childX = axisX.transform.GetChild(0);
-            childX.GetComponent<MeshRenderer>().material = new Material(Shader.Find("Standard"));
+            childX.GetComponent<MeshRenderer>().material = Instantiate(VRAssetManager.GetAsset<Material>("StandardClone"));
             childX.GetComponent<MeshRenderer>().material.color = Color.red;
             childX.transform.localScale *= 0.196f;
             axisX.transform.Rotate(0, 0, 90);
@@ -342,14 +341,14 @@ namespace ValheimVRMod.Scripts
             var axisY = Instantiate(VRAssetManager.GetAsset<GameObject>("GizmoRing"), rotationAxisParent.transform);
             axisY.transform.localPosition = Vector3.zero;
             var childY = axisY.transform.GetChild(0);
-            childY.GetComponent<MeshRenderer>().material = new Material(Shader.Find("Standard"));
+            childY.GetComponent<MeshRenderer>().material = Instantiate(VRAssetManager.GetAsset<Material>("StandardClone"));
             childY.GetComponent<MeshRenderer>().material.color = Color.green;
             childY.transform.localScale *= 0.20f;
 
             var axisZ = Instantiate(VRAssetManager.GetAsset<GameObject>("GizmoRing"), rotationAxisParent.transform);
             axisZ.transform.localPosition = Vector3.zero;
             var childZ = axisZ.transform.GetChild(0);
-            childZ.GetComponent<MeshRenderer>().material = new Material(Shader.Find("Standard"));
+            childZ.GetComponent<MeshRenderer>().material = Instantiate(VRAssetManager.GetAsset<Material>("StandardClone"));
             childZ.GetComponent<MeshRenderer>().material.color = Color.blue;
             childZ.transform.localScale *= 0.198f;
             axisZ.transform.Rotate(90, 0, 0);
@@ -360,7 +359,7 @@ namespace ValheimVRMod.Scripts
             rotationLine = new GameObject().AddComponent<LineRenderer>();
             rotationLine.widthMultiplier = 0.005f;
             rotationLine.positionCount = 2;
-            rotationLine.material = new Material(Shader.Find("Unlit/Color"));
+            rotationLine.material = Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
             rotationLine.enabled = false;
             rotationLine.receiveShadows = false;
             rotationLine.shadowCastingMode = ShadowCastingMode.Off;
@@ -380,7 +379,7 @@ namespace ValheimVRMod.Scripts
             rotationChangeAxisIndicator.transform.localPosition = Vector3.up * -0.3f;
             rotationChangeAxisIndicator.transform.rotation = this.gameObject.transform.rotation;
             rotationChangeAxisColor = rotationChangeAxisIndicator.transform.GetChild(0).gameObject;
-            rotationChangeAxisColor.GetComponent<MeshRenderer>().material = new Material(Shader.Find("Standard"));
+            rotationChangeAxisColor.GetComponent<MeshRenderer>().material = Instantiate(VRAssetManager.GetAsset<Material>("StandardClone"));
             rotationChangeAxisColor.GetComponent<MeshRenderer>().material.color = Color.yellow;
             rotationChangeAxisColor.transform.localScale = new Vector3(1.2f, 5, 1.2f);
             rotationChangeAxisColor.transform.localScale *= 0.3f;
