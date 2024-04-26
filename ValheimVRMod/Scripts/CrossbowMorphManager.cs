@@ -205,6 +205,7 @@ namespace ValheimVRMod.Scripts
             stringRenderer.useWorldSpace = true;
             stringRenderer.widthMultiplier = 0.006f;
             stringRenderer.positionCount = 3;
+            stringRenderer.material = Instantiate(VRAssetManager.GetAsset<Material>("StandardClone"));
             stringRenderer.material.color = new Color(0.4f, 0.33f, 0.31f);
             stringRenderer.material.SetFloat("_Glossiness", 0);
             stringRenderer.material.SetFloat("_Smoothness", 0);
