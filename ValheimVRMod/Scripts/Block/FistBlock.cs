@@ -164,7 +164,7 @@ namespace ValheimVRMod.Scripts.Block {
         {
             hitIndicator = GameObject.CreatePrimitive(PrimitiveType.Sphere).GetComponent<MeshRenderer>();
             GameObject.Destroy(hitIndicator.gameObject.GetComponent<Collider>());
-            Material material = Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
+            Material material = Instantiate(VRAssetManager.GetAsset<Material>("StandardClone"));
             material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
             material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
             material.SetInt("_ZWrite", 0);
