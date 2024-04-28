@@ -14,7 +14,7 @@ namespace ValheimVRMod.Utilities
         Shield, Tankard, Claws, Magic, Crossbow
         ,
         //Melee Weapon
-        Sword, Axe, Knife, Pickaxe, Club, Polearms, DualKnives
+        Sword, Axe, Knife, Pickaxe, Club, Polearms, DualKnives, DualAxes
         ,
         //utility
         Lantern
@@ -151,6 +151,8 @@ namespace ValheimVRMod.Utilities
                     return EquipType.ThrowObject;
                 case "dual_knives":
                     return EquipType.DualKnives;
+                case "dualaxes":
+                    return EquipType.DualAxes;
                 case "knife_stab":
                     return EquipType.Knife;
                 case "swing_hammer":
