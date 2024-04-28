@@ -8,6 +8,9 @@ namespace ValheimVRMod.Utilities
     {
         private static readonly Vector3[] BASE = new Vector3[] { Vector3.right, Vector3.up, Vector3.forward };
 
+        // TODO: consider use different default weapon collider lenght proportion for different weapon types.
+        private const float DEFAULT_WEAPON_COLLIDER_LENGTH_PROPORTION = 0.75f;
+
         private static readonly Dictionary<string, WeaponColData> colliders = new Dictionary<string, WeaponColData>
         {
             {           // AXES
@@ -280,9 +283,6 @@ namespace ValheimVRMod.Utilities
                     2.865605f,  0.1f, 0.1f
             )}
         };
-
-        // TODO: consider use different default weapon collider lenght proportion for different weapon types.
-        private const float DEFAULT_WEAPON_COLLIDER_LENGTH_PROPORTION = 0.5f;
 
         private static readonly Dictionary<string, WeaponColData> estimatedColliders = new Dictionary<string, WeaponColData>();
 
