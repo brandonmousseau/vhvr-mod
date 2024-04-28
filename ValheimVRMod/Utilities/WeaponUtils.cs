@@ -446,7 +446,7 @@ namespace ValheimVRMod.Utilities
             return false;
         }
 
-        public static GameObject createDebugBox(Transform parent)
+        public static GameObject CreateDebugBox(Transform parent)
         {
             var box = GameObject.CreatePrimitive(PrimitiveType.Cube);
             box.transform.parent = parent;
