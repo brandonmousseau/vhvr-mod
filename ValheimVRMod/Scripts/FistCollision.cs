@@ -29,7 +29,6 @@ namespace ValheimVRMod.Scripts
             LayerUtils.CHARARCTER_TRIGGER
         };
 
-
         private GameObject debugColliderIndicator;
 
         private void Awake()
@@ -72,7 +71,7 @@ namespace ValheimVRMod.Scripts
             }
 
             bool isCurrentlySecondaryAttack = LocalPlayerSecondaryAttackCooldown <= 0 && RoomscaleSecondaryAttackUtils.IsSecondaryAttack(physicsEstimator, physicsEstimator);
-            bool usingWeapon = usingDualWieldingWeapon();
+            bool usingWeapon = hasDualWieldingWeaponEquipped();
             var item = usingWeapon ? Player.m_localPlayer.GetRightItem() : Player.m_localPlayer.m_unarmedWeapon.m_itemData;
             Attack primaryAttack = item.m_shared.m_attack;
             Attack attack = isCurrentlySecondaryAttack ? item.m_shared.m_secondaryAttack : primaryAttack;
@@ -170,7 +169,7 @@ namespace ValheimVRMod.Scripts
                 && SteamVR_Actions.valheim_Grab.GetState(inputSource);
 
             var isEquippedWithFistGesture =
-                usingDualWieldingWeapon() && SteamVR_Actions.valheim_Grab.GetState(inputSource);
+                hasDualWieldingWeaponEquipped() && SteamVR_Actions.valheim_Grab.GetState(inputSource);
 
             return VRPlayer.inFirstPerson && colliderParent != null &&
                    (isEquippedWithFistGesture || isUnequipedWithFistGesture);
@@ -182,9 +181,19 @@ namespace ValheimVRMod.Scripts
             return physicsEstimator.GetVelocity().magnitude >= MIN_SPEED * VHVRConfig.SwingSpeedRequirement();
         }
 
-        public bool usingDualWieldingWeapon()
+        public bool hasDualWieldingWeaponEquipped()
         {
-            return usingClaws() || usingDualKnives();
+            return hasClawsEquipped() || hasDualKnivesEquipped();
+        }
+
+        public bool hasClawsEquipped()
+        {
+            return EquipScript.getRight().Equals(EquipType.Claws);
+        }
+
+        public bool hasDualKnivesEquipped()
+        {
+            return EquipScript.getRight().Equals(EquipType.DualKnives);
         }
 
         public bool usingFistWeapon()
@@ -205,18 +214,9 @@ namespace ValheimVRMod.Scripts
                 && SteamVR_Actions.valheim_Grab.GetState(inputSource);
 
             var isEquippedWithFistGesture =
-                usingDualWieldingWeapon() && SteamVR_Actions.valheim_Grab.GetState(inputSource);
+                hasDualWieldingWeaponEquipped() && SteamVR_Actions.valheim_Grab.GetState(inputSource);
 
             return (isEquippedWithFistGesture || isUnequipedWithFistGesture);
-        }
-
-        public bool usingClaws()
-        {
-            return EquipScript.getRight().Equals(EquipType.Claws);
-        }
-        public bool usingDualKnives()
-        {
-            return EquipScript.getRight().Equals(EquipType.DualKnives);
         }
     }
 }
