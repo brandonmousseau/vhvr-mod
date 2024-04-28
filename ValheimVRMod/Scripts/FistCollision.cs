@@ -132,10 +132,21 @@ namespace ValheimVRMod.Scripts
         {
             transform.SetParent(colliderParent.transform);
 
-            // TODO: consider adjusting collider by weapon type.
             transform.localRotation = Quaternion.identity;
-            transform.localPosition = Vector3.zero;
             transform.localScale = Vector3.one;
+            if (hasDualAxesEquipped())
+            {
+                transform.localPosition = new Vector3(isRightHand ? -1f : 1f, 0, 0);
+            }
+            else if (hasDualKnivesEquipped())
+            {
+                // TODO: refine collider position.
+                transform.localPosition = new Vector3(isRightHand ? -0.25f : 0.25f, 0, 0);
+            }
+            else
+            {
+                transform.localPosition = Vector3.zero;
+            }
 
             transform.SetParent(Player.m_localPlayer.transform, true);
         }
@@ -185,7 +196,7 @@ namespace ValheimVRMod.Scripts
 
         public bool hasDualWieldingWeaponEquipped()
         {
-            return hasClawsEquipped() || hasDualKnivesEquipped();
+            return hasClawsEquipped() || hasDualKnivesEquipped() || hasDualAxesEquipped();
         }
 
         public bool hasClawsEquipped()
@@ -196,6 +207,11 @@ namespace ValheimVRMod.Scripts
         public bool hasDualKnivesEquipped()
         {
             return EquipScript.getRight().Equals(EquipType.DualKnives);
+        }
+
+        public bool hasDualAxesEquipped()
+        {
+            return EquipScript.getRight().Equals(EquipType.DualAxes);
         }
 
         public bool usingFistWeapon()
