@@ -38,7 +38,7 @@ namespace ValheimVRMod.Scripts
             instance = this;
             if (ENABLE_DEBUG_COLLIDER_INDICATOR)
             {
-                debugColliderIndicator = WeaponUtils.createDebugBox(transform);
+                debugColliderIndicator = WeaponUtils.CreateDebugBox(transform);
             }
         }
 
