@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace ValheimVRMod.Utilities
 {
@@ -443,6 +444,22 @@ namespace ValheimVRMod.Utilities
             }
 
             return false;
+        }
+
+        public static GameObject CreateDebugBox(Transform parent)
+        {
+            var box = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            box.transform.parent = parent;
+            box.transform.localScale = Vector3.one;
+            box.transform.localPosition = Vector3.zero;
+            box.transform.localRotation = Quaternion.identity;
+            box.GetComponent<MeshRenderer>().material = Object.Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
+            box.GetComponent<MeshRenderer>().material.color = new Vector4(0.5f, 0, 0, 0.5f);
+            box.GetComponent<MeshRenderer>().receiveShadows = false;
+            box.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
+            box.GetComponent<MeshRenderer>().reflectionProbeUsage = ReflectionProbeUsage.Off;
+            Object.Destroy(box.GetComponent<Collider>());
+            return box;
         }
 
         private static WeaponColData EstimateWeaponCollider(MeshFilter meshFilter, Vector3 handPosition)
