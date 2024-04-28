@@ -414,11 +414,13 @@ namespace ValheimVRMod.Scripts {
             chargeIndicator.transform.localRotation = Quaternion.Euler(90, 0, 0);
             chargeIndicator.layer = LayerUtils.getWorldspaceUiLayer();
             chargeIndicator.SetActive(false);
-            chargeIndicator.GetComponent<MeshRenderer>().material.color = new Vector4(0.5f, 0.5f, 0, 0.5f);
-            chargeIndicator.GetComponent<MeshRenderer>().receiveShadows = false;
-            chargeIndicator.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
-            chargeIndicator.GetComponent<MeshRenderer>().lightProbeUsage = LightProbeUsage.Off;
-            chargeIndicator.GetComponent<MeshRenderer>().reflectionProbeUsage = ReflectionProbeUsage.Off;
+            var chargeIndicatorRendrer = chargeIndicator.GetComponent<MeshRenderer>();
+            chargeIndicatorRendrer.material = Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
+            chargeIndicatorRendrer.material.color = new Vector4(0.5f, 0.5f, 0, 0.5f);
+            chargeIndicatorRendrer.receiveShadows = false;
+            chargeIndicatorRendrer.shadowCastingMode = ShadowCastingMode.Off;
+            chargeIndicatorRendrer.lightProbeUsage = LightProbeUsage.Off;
+            chargeIndicatorRendrer.reflectionProbeUsage = ReflectionProbeUsage.Off;
 
             Destroy(chargeIndicator.GetComponent<Collider>());
 
@@ -428,11 +430,13 @@ namespace ValheimVRMod.Scripts {
             drawIndicator.transform.localRotation = Quaternion.Euler(90, 0, 0);
             drawIndicator.layer = LayerUtils.getWorldspaceUiLayer();
             drawIndicator.SetActive(false);
-            drawIndicator.GetComponent<MeshRenderer>().material.color = new Vector4(0.5f, 0.5f, 0, 0.5f);
-            drawIndicator.GetComponent<MeshRenderer>().receiveShadows = false;
-            drawIndicator.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
-            drawIndicator.GetComponent<MeshRenderer>().lightProbeUsage = LightProbeUsage.Off;
-            drawIndicator.GetComponent<MeshRenderer>().reflectionProbeUsage = ReflectionProbeUsage.Off;
+            var drawIndicatorRendrer = drawIndicator.GetComponent<MeshRenderer>();
+            drawIndicatorRendrer.material = Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
+            drawIndicatorRendrer.material.color = new Vector4(0.5f, 0.5f, 0, 0.5f);
+            drawIndicatorRendrer.receiveShadows = false;
+            drawIndicatorRendrer.shadowCastingMode = ShadowCastingMode.Off;
+            drawIndicatorRendrer.lightProbeUsage = LightProbeUsage.Off;
+            drawIndicatorRendrer.reflectionProbeUsage = ReflectionProbeUsage.Off;
 
             Destroy(drawIndicator.GetComponent<Collider>());
         }

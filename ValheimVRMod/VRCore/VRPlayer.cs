@@ -62,7 +62,7 @@ namespace ValheimVRMod.VRCore
         public static VRIK vrikRef { get { return _vrik; } }
         private static VRIK _vrik;
 
-        private static float referencePlayerHeight;
+        public static float referencePlayerHeight { get; private set; }
         public static bool isRoomscaleSneaking { get { return _isRoomscaleSneaking; } }
         private static bool _isRoomscaleSneaking = false;
 
@@ -145,6 +145,23 @@ namespace ValheimVRMod.VRCore
                     value = rightHand.gameObject.AddComponent<PhysicsEstimator>();
                     value.UseVrHandControllerPhysics(rightHand);
                     value.refTransform = CameraUtils.getCamera(CameraUtils.VR_CAMERA)?.transform.parent;
+                }
+                return value;
+            }
+        }
+
+
+        public static PhysicsEstimator headPhysicsEstimator
+        {
+            get
+            {
+                var camera = CameraUtils.getCamera(CameraUtils.VR_CAMERA);
+                if (camera == null) return null;
+                PhysicsEstimator value = camera.GetComponent<PhysicsEstimator>();
+                if (value == null && attachedToPlayer)
+                {
+                    value = camera.gameObject.AddComponent<PhysicsEstimator>();
+                    value.refTransform = camera.transform.parent;
                 }
                 return value;
             }
@@ -810,7 +827,7 @@ namespace ValheimVRMod.VRCore
             {
                 return CROUCH_HEIGHT_ADJUST;
             }
-            return 0f;
+            return VHVRConfig.PlayerHeightAdjust();
         }
 
         private void updateVrik()

@@ -164,17 +164,7 @@ namespace ValheimVRMod.Scripts.Block {
         {
             hitIndicator = GameObject.CreatePrimitive(PrimitiveType.Sphere).GetComponent<MeshRenderer>();
             GameObject.Destroy(hitIndicator.gameObject.GetComponent<Collider>());
-            Material material = hitIndicator.material;
-            material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
-            material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-            material.SetInt("_ZWrite", 0);
-            material.SetFloat("_Glossiness", 0);
-            material.SetFloat("_Metallic", 0);
-            material.DisableKeyword("_ALPHATEST_ON");
-            material.DisableKeyword("_ALPHABLEND_ON");
-            material.EnableKeyword("_ALPHAPREMULTIPLY_ON");
-            material.renderQueue = (int) RenderQueue.Overlay;
-            hitIndicator.material = material;
+            hitIndicator.material = Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
             hitIndicator.gameObject.layer = LayerUtils.getWorldspaceUiLayer();
             hitIndicator.receiveShadows = false;
             hitIndicator.shadowCastingMode = ShadowCastingMode.Off;
