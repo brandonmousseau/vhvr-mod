@@ -148,6 +148,7 @@ namespace ValheimVRMod.Scripts
             colliderParent = new GameObject();
             colliderParent.transform.parent = obj;
             colliderParent.transform.localPosition = new Vector3(0, 0.003f, 0.00016f);
+            colliderParent.transform.localRotation = Quaternion.identity;
             colliderParent.transform.localScale *= 0.45f;
         }
 
