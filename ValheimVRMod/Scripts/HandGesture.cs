@@ -52,7 +52,7 @@ namespace ValheimVRMod.Scripts {
                 return false;
             }
 
-            if (FistCollision.instance.usingClaws() || FistCollision.instance.usingDualKnives()) {
+            if (FistCollision.instance.usingDualWieldingWeapon()) {
                 return true;
             }
             
