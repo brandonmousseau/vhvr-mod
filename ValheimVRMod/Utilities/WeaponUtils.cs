@@ -281,6 +281,11 @@ namespace ValheimVRMod.Utilities
             )}
         };
 
+        // TODO: consider use different default weapon collider lenght proportion for different weapon types.
+        private const float DEFAULT_WEAPON_COLLIDER_LENGTH_PROPORTION = 0.5f;
+
+        private static readonly Dictionary<string, WeaponColData> estimatedColliders = new Dictionary<string, WeaponColData>();
+
         private static readonly Dictionary<string, float> ATTACK_DURATIONS = new Dictionary<string, float>
         {
             { "atgeir_attack", 0.81f },
@@ -319,16 +324,33 @@ namespace ValheimVRMod.Utilities
             return TWO_HANDED_MULTITARGET_SWIPE_NAMES.Contains(attack.m_attackAnimation);
         }
 
-        public static WeaponColData getForName(string name,ItemDrop.ItemData item)
+        public static WeaponColData GetColliderData(string name, ItemDrop.ItemData item, MeshFilter meshFilter, Vector3 handPosition)
         {
 
             if (colliders.ContainsKey(name)) {
                 return colliders[name];
             }
+
+            if (estimatedColliders.ContainsKey(name))
+            {
+                return estimatedColliders[name];
+            }
+
+            if (meshFilter != null && handPosition != null)
+            {
+                var estimatedCollider = EstimateWeaponCollider(meshFilter, handPosition);
+                estimatedColliders[name] = estimatedCollider;
+                LogUtils.LogDebug(
+                    "Estimated and registered collider for unknown weapon " + name + ": position " + estimatedCollider.pos + " scale " + estimatedCollider.scale);
+                return estimatedCollider;
+            }
+
             if (item != null && compatibilityColliders.ContainsKey(EquipScript.getEquippedItem(item)))
             {
+                // TODO: consider removing compatibility colliders.
                 return compatibilityColliders[EquipScript.getEquippedItem(item)];
             }
+
             throw new InvalidEnumArgumentException();
         }
 
@@ -421,6 +443,21 @@ namespace ValheimVRMod.Utilities
             }
 
             return false;
-        }        
+        }
+
+        private static WeaponColData EstimateWeaponCollider(MeshFilter meshFilter, Vector3 handPosition)
+        {
+            var weaponPointing =
+                -meshFilter.transform.InverseTransformDirection(EstimateHandleAllowanceBehindGrip(meshFilter, handPosition)).normalized;
+            var handLocalPosition = meshFilter.transform.InverseTransformPoint(handPosition);
+            var bounds = meshFilter.mesh.bounds;
+            var weaponTip = bounds.center + weaponPointing * Mathf.Abs(Vector3.Dot(bounds.extents, weaponPointing));
+            var colliderLength = Vector3.Distance(weaponTip, handLocalPosition) * DEFAULT_WEAPON_COLLIDER_LENGTH_PROPORTION;
+            var colliderCenter = weaponTip - weaponPointing * (colliderLength * 0.5f);
+            var colliderOffset = colliderCenter - bounds.center;
+            var colliderSize =
+                bounds.size - (new Vector3(Mathf.Abs(colliderOffset.x), Mathf.Abs(colliderOffset.y), Mathf.Abs(colliderOffset.z))) * 2;
+            return new WeaponColData(colliderCenter, Vector3.zero, colliderSize);
+        }
     }
 }
