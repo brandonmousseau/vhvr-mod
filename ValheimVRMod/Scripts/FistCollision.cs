@@ -210,12 +210,11 @@ namespace ValheimVRMod.Scripts
             return (isEquippedWithFistGesture || isUnequipedWithFistGesture);
         }
 
-        private bool usingClaws()
+        public bool usingClaws()
         {
             return EquipScript.getRight().Equals(EquipType.Claws);
         }
-
-        private bool usingDualKnives()
+        public bool usingDualKnives()
         {
             return EquipScript.getRight().Equals(EquipType.DualKnives);
         }
