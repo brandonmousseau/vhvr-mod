@@ -72,7 +72,7 @@ namespace ValheimVRMod.Scripts.Block {
                 bool blockedWithLeftHand = WeaponUtils.LineIntersectsWithBounds(leftBlockBounds, leftHandBlockBox.transform.InverseTransformPoint(hitData.m_point), leftHandBlockBox.transform.InverseTransformDirection(hitData.m_dir));
                 bool blockedWithRightHand = WeaponUtils.LineIntersectsWithBounds(rightBlockBounds, rightHandBlockBox.transform.InverseTransformPoint(hitData.m_point), rightHandBlockBox.transform.InverseTransformDirection(hitData.m_dir));
 
-                if (!FistCollision.instance.usingDualKnives() && !FistCollision.instance.usingFistWeapon())
+                if (!FistCollision.instance.hasDualKnivesEquipped() && !FistCollision.instance.usingFistWeapon())
                 {
                     _blocking = false;
                 }
@@ -83,7 +83,7 @@ namespace ValheimVRMod.Scripts.Block {
 
                 CheckParryMotion(hitData.m_dir, blockedWithLeftHand, blockedWithRightHand);
             }
-            else if (FistCollision.instance.usingDualKnives())
+            else if (FistCollision.instance.hasDualKnivesEquipped())
             {
                 var leftAngle = Vector3.Dot(hitData.m_dir, offhand.TransformDirection(handUp));
                 var rightAngle = Vector3.Dot(hitData.m_dir, hand.TransformDirection(handUp));
