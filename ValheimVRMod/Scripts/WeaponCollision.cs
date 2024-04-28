@@ -53,17 +53,7 @@ namespace ValheimVRMod.Scripts
 
             if (ENABLE_DEBUG_COLLIDER_INDICATOR)
             {
-                debugColliderIndicator = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                debugColliderIndicator.transform.parent = transform;
-                debugColliderIndicator.transform.localScale = Vector3.one;
-                debugColliderIndicator.transform.localPosition = Vector3.zero;
-                debugColliderIndicator.transform.localRotation = Quaternion.identity;
-                debugColliderIndicator.GetComponent<MeshRenderer>().material = Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
-                debugColliderIndicator.GetComponent<MeshRenderer>().material.color = new Vector4(0.5f, 0, 0, 0.5f);
-                debugColliderIndicator.GetComponent<MeshRenderer>().receiveShadows = false;
-                debugColliderIndicator.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
-                debugColliderIndicator.GetComponent<MeshRenderer>().reflectionProbeUsage = ReflectionProbeUsage.Off;
-                Destroy(debugColliderIndicator.GetComponent<Collider>());
+                debugColliderIndicator = WeaponUtils.createDebugBox(transform);
             }
         }
 
