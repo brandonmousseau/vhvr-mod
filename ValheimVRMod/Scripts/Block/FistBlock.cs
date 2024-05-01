@@ -119,6 +119,16 @@ namespace ValheimVRMod.Scripts.Block {
 
         public void updateBlockBoxShape()
         {
+            if (FistCollision.hasDualAxesEquipped())
+            {
+                leftHandBlockBox.transform.localRotation = Quaternion.Euler(45, 0, 0);
+                leftHandBlockBox.transform.localPosition = new Vector3(0, 0.1f, 0.1f);
+                leftHandBlockBox.transform.localScale = new Vector3(0.3f, 1f, 0.35f);
+                rightHandBlockBox.transform.localRotation = Quaternion.Euler(45, 0, 0);
+                rightHandBlockBox.transform.localPosition = new Vector3(0, 0.1f, 0.1f);
+                rightHandBlockBox.transform.localScale = new Vector3(0.3f, 1, 0.35f);
+                return;
+            }
             if (FistCollision.hasDualKnivesEquipped())
             {
                 leftHandBlockBox.transform.localRotation = Quaternion.Euler(45, 0, 0);
