@@ -220,4 +220,3 @@ namespace ValheimVRMod.Scripts
         }
     }
 }
-
