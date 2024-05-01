@@ -41,6 +41,7 @@ namespace ValheimVRMod.Scripts
             directionLine = new GameObject().AddComponent<LineRenderer>();
             directionLine.widthMultiplier = 0.03f;
             directionLine.positionCount = 2;
+            directionLine.material = Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
             directionLine.material.color = Color.white;
             directionLine.enabled = false;
             directionLine.receiveShadows = false;
