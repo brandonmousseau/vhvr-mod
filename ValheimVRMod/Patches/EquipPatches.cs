@@ -220,6 +220,32 @@ namespace ValheimVRMod.Patches {
         }
     }
 
+    [HarmonyPatch(typeof(VisEquipment), nameof(VisEquipment.SetShoulderEquipped))]
+    class PatchBack
+    {
+        static void Postfix(bool __result, List<GameObject> ___m_shoulderItemInstances)
+        {
+
+            if (!__result || !VHVRConfig.UseVrControls() || ___m_shoulderItemInstances == null)
+            {
+                return;
+            }
+
+            if (Player.m_localPlayer?.m_shoulderItem == null)
+            {
+                return;
+            }
+
+            if (Player.m_localPlayer.m_shoulderItem.m_shared.m_name == "$item_cape_ash")
+            {
+                foreach (var item in ___m_shoulderItemInstances)
+                {
+                    item.AddComponent<HeadEquipVisibiltiyUpdater>();
+                }
+            }
+        }
+    }
+
     [HarmonyPatch(typeof(VisEquipment), nameof(VisEquipment.SetChestEquipped))]
     class PatchSetChestEquiped
     {
