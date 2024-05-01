@@ -14,7 +14,6 @@ namespace ValheimVRMod.Scripts
         private const float MIN_SPEED = 5f;
         private const bool ENABLE_DEBUG_COLLIDER_INDICATOR = false;
 
-        public static FistCollision instance;
         private GameObject colliderParent = null;
         private bool isRightHand;
         private HandGesture handGesture;
@@ -34,7 +33,6 @@ namespace ValheimVRMod.Scripts
         private void Awake()
         {
             colliderParent = new GameObject();
-            instance = this;
             if (ENABLE_DEBUG_COLLIDER_INDICATOR)
             {
                 debugColliderIndicator = WeaponUtils.CreateDebugBox(transform);
@@ -53,7 +51,7 @@ namespace ValheimVRMod.Scripts
 
         private void OnTriggerEnter(Collider collider)
         {
-            if (!isCollisionAllowed())
+            if (!canAttackWithCollision())
             {
                 return;
             }
@@ -152,29 +150,25 @@ namespace ValheimVRMod.Scripts
             colliderParent.transform.localScale *= 0.45f;
         }
 
-        private bool isCollisionAllowed()
+        private bool canAttackWithCollision()
         {
-
-            SteamVR_Input_Sources inputSource;
-
-            if (isRightHand)
+            if (!VRPlayer.inFirstPerson || colliderParent == null)
             {
-                inputSource = SteamVR_Input_Sources.RightHand;
-            }
-            else
-            {
-                inputSource = SteamVR_Input_Sources.LeftHand;
+                return false;
             }
 
-            var isUnequipedWithFistGesture =
-                handGesture.isUnequiped()
-                && SteamVR_Actions.valheim_Grab.GetState(inputSource);
+            if (hasDualKnivesEquipped())
+            {
+                return true;
+            }
 
-            var isEquippedWithFistGesture =
-                hasDualWieldingWeaponEquipped() && SteamVR_Actions.valheim_Grab.GetState(inputSource);
+            if (handGesture.isUnequiped() || hasClawsEquipped())
+            {
+                SteamVR_Input_Sources inputSource = isRightHand ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand;
+                return SteamVR_Actions.valheim_Grab.GetState(inputSource);
+            }
 
-            return VRPlayer.inFirstPerson && colliderParent != null &&
-                   (isEquippedWithFistGesture || isUnequipedWithFistGesture);
+            return false;
         }
 
 
@@ -183,42 +177,31 @@ namespace ValheimVRMod.Scripts
             return physicsEstimator.GetVelocity().magnitude >= MIN_SPEED * VHVRConfig.SwingSpeedRequirement();
         }
 
-        public bool hasDualWieldingWeaponEquipped()
+        public static bool hasDualWieldingWeaponEquipped()
         {
             return hasClawsEquipped() || hasDualKnivesEquipped();
         }
 
-        public bool hasClawsEquipped()
+        public static bool hasClawsEquipped()
         {
             return EquipScript.getRight().Equals(EquipType.Claws);
         }
 
-        public bool hasDualKnivesEquipped()
+        public static bool hasDualKnivesEquipped()
         {
             return EquipScript.getRight().Equals(EquipType.DualKnives);
         }
 
-        public bool usingFistWeapon()
+        public bool blockingWithFist()
         {
-            SteamVR_Input_Sources inputSource;
-
-            if (isRightHand)
+            if (!handGesture.isUnequiped() && !hasDualWieldingWeaponEquipped())
             {
-                inputSource = SteamVR_Input_Sources.RightHand;
-            }
-            else
-            {
-                inputSource = SteamVR_Input_Sources.LeftHand;
+                return false;
             }
 
-            var isUnequipedWithFistGesture =
-                handGesture.isUnequiped()
-                && SteamVR_Actions.valheim_Grab.GetState(inputSource);
+            SteamVR_Input_Sources inputSource = isRightHand ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand;
 
-            var isEquippedWithFistGesture =
-                hasDualWieldingWeaponEquipped() && SteamVR_Actions.valheim_Grab.GetState(inputSource);
-
-            return (isEquippedWithFistGesture || isUnequipedWithFistGesture);
+            return SteamVR_Actions.valheim_Grab.GetState(inputSource);
         }
     }
 }
