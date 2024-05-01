@@ -12,6 +12,8 @@ namespace ValheimVRMod.Patches {
     [HarmonyPatch(typeof(VisEquipment), nameof(VisEquipment.SetRightHandEquipped))]
     class PatchSetRightHandEquipped {
         static void Postfix(bool __result, string ___m_rightItem, ref GameObject ___m_rightItemInstance) {
+            FistBlock.instance?.updateBlockBoxShape();
+
             if (!__result || !___m_rightItemInstance) {
                 return;
             }
