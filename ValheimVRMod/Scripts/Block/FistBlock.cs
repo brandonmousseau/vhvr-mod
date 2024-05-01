@@ -17,7 +17,7 @@ namespace ValheimVRMod.Scripts.Block {
         private void OnDisable() {
             instance = null;
         }
-        
+
         protected override void Awake() {
             base.Awake();
             _meshCooldown = gameObject.AddComponent<MeshCooldown>();
@@ -69,21 +69,21 @@ namespace ValheimVRMod.Scripts.Block {
                 (leftBlockBounds = new Bounds(leftBlockBounds.center, leftBlockBounds.size)).Expand(blockTolerance);
                 Bounds rightBlockBounds = rightHandBlockBox.GetComponent<MeshFilter>().sharedMesh.bounds;
                 (rightBlockBounds = new Bounds(rightBlockBounds.center, rightBlockBounds.size)).Expand(blockTolerance);
-                bool blockedWithLeftHand = WeaponUtils.LineIntersectsWithBounds(leftBlockBounds, leftHandBlockBox.transform.InverseTransformPoint(hitData.m_point), leftHandBlockBox.transform.InverseTransformDirection(hitData.m_dir));
-                bool blockedWithRightHand = WeaponUtils.LineIntersectsWithBounds(rightBlockBounds, rightHandBlockBox.transform.InverseTransformPoint(hitData.m_point), rightHandBlockBox.transform.InverseTransformDirection(hitData.m_dir));
+                bool blockedWithLeftHand =
+                    StaticObjects.leftFist().blockingWithFist() &&
+                    WeaponUtils.LineIntersectsWithBounds(leftBlockBounds, leftHandBlockBox.transform.InverseTransformPoint(hitData.m_point), leftHandBlockBox.transform.InverseTransformDirection(hitData.m_dir));
+                bool blockedWithRightHand =
+                    StaticObjects.rightFist().blockingWithFist() &&
+                    WeaponUtils.LineIntersectsWithBounds(rightBlockBounds, rightHandBlockBox.transform.InverseTransformPoint(hitData.m_point), rightHandBlockBox.transform.InverseTransformDirection(hitData.m_dir));
 
-                if (!FistCollision.instance.hasDualKnivesEquipped() && !FistCollision.instance.usingFistWeapon())
-                {
-                    _blocking = false;
-                }
-                else if (blockedWithLeftHand || blockedWithRightHand)
+                if (blockedWithLeftHand || blockedWithRightHand)
                 {
                     _blocking = true;
                 }
 
                 CheckParryMotion(hitData.m_dir, blockedWithLeftHand, blockedWithRightHand);
             }
-            else if (FistCollision.instance.hasDualKnivesEquipped())
+            else if (FistCollision.hasDualKnivesEquipped())
             {
                 var leftAngle = Vector3.Dot(hitData.m_dir, offhand.TransformDirection(handUp));
                 var rightAngle = Vector3.Dot(hitData.m_dir, hand.TransformDirection(handUp));
@@ -92,7 +92,7 @@ namespace ValheimVRMod.Scripts.Block {
                 _blocking = leftHandBlock && rightHandBlock;
                 CheckParryMotion(hitData.m_dir, true, true);
             }
-            else if (FistCollision.instance.usingFistWeapon())
+            else if (StaticObjects.leftFist().blockingWithFist() && StaticObjects.rightFist().blockingWithFist())
             {
                 var leftHandDir = VRPlayer.leftPointer.rayDirection * Vector3.forward;
                 var rightHandDir = VRPlayer.rightPointer.rayDirection * Vector3.forward;
@@ -117,21 +117,37 @@ namespace ValheimVRMod.Scripts.Block {
             }
         }
 
-        private void CheckParryMotion(Vector3 hitDir, bool blockedWithLeftHand, bool blockedWithRightHand)
+        public void updateBlockBoxShape()
         {
-            if (!FistCollision.instance.usingFistWeapon()) {
+            if (FistCollision.hasDualKnivesEquipped())
+            {
+                leftHandBlockBox.transform.localRotation = Quaternion.Euler(45, 0, 0);
+                leftHandBlockBox.transform.localPosition = new Vector3(0, 0.1f, 0.1f);
+                leftHandBlockBox.transform.localScale = new Vector3(0.3f, 0.5f, 0.5f);
+                rightHandBlockBox.transform.localRotation = Quaternion.Euler(45, 0, 0);
+                rightHandBlockBox.transform.localPosition = new Vector3(0, 0.1f, 0.1f);
+                rightHandBlockBox.transform.localScale = new Vector3(0.3f, 0.5f, 0.5f);
                 return;
             }
+            leftHandBlockBox.transform.localRotation = Quaternion.Euler(45, 0, 0);
+            leftHandBlockBox.transform.localPosition = new Vector3(0, 0.15f, -0.2f);
+            leftHandBlockBox.transform.localScale = new Vector3(0.3f, 0.3f, 0.85f);
+            rightHandBlockBox.transform.localRotation = Quaternion.Euler(45, 0, 0);
+            rightHandBlockBox.transform.localPosition = new Vector3(0, 0.15f, -0.2f);
+            rightHandBlockBox.transform.localScale = new Vector3(0.3f, 0.3f, 0.85f);
+        }
 
+        private void CheckParryMotion(Vector3 hitDir, bool blockedWithLeftHand, bool blockedWithRightHand)
+        {
             // Only consider the component of the velocity perpendicular to the hit direction as parrying speed.
             float leftHandParrySpeed = Vector3.ProjectOnPlane(VRPlayer.leftHandPhysicsEstimator.GetVelocity(), hitDir).magnitude;
             float rightHandParrySpeed = Vector3.ProjectOnPlane(VRPlayer.rightHandPhysicsEstimator.GetVelocity(), hitDir).magnitude;
 
-            if (blockedWithLeftHand && leftHandParrySpeed > MIN_PARRY_SPEED)
+            if (blockedWithLeftHand && leftHandParrySpeed > MIN_PARRY_SPEED && StaticObjects.leftFist().blockingWithFist())
             {
                 blockTimer = blockTimerParry;
             }
-            else if (blockedWithRightHand && rightHandParrySpeed > MIN_PARRY_SPEED)
+            else if (blockedWithRightHand && rightHandParrySpeed > MIN_PARRY_SPEED && StaticObjects.rightFist().blockingWithFist())
             {
                 blockTimer = blockTimerParry;
             }
@@ -145,18 +161,18 @@ namespace ValheimVRMod.Scripts.Block {
         {
             leftHandBlockBox = GameObject.CreatePrimitive(PrimitiveType.Cube);
             leftHandBlockBox.transform.parent = VRPlayer.leftHand.transform;
-            leftHandBlockBox.transform.localRotation = Quaternion.Euler(45, 0, 0);
-            leftHandBlockBox.transform.localPosition = new Vector3(0, 0.15f, -0.2f);
-            leftHandBlockBox.transform.localScale = new Vector3(0.3f, 0.3f, 0.85f);
-            leftHandBlockBox.GetComponent<MeshRenderer>().enabled = false;
+            var leftHandBlockBoxRenderer = leftHandBlockBox.GetComponent<MeshRenderer>();
+            leftHandBlockBoxRenderer.material = Object.Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
+            leftHandBlockBoxRenderer.material.color = new Vector4(0.5f, 0.25f, 0, 0.5f);
+            leftHandBlockBoxRenderer.enabled = false;
             Destroy(leftHandBlockBox.GetComponent<Collider>());
 
             rightHandBlockBox = GameObject.CreatePrimitive(PrimitiveType.Cube);
             rightHandBlockBox.transform.parent = VRPlayer.rightHand.transform;
-            rightHandBlockBox.transform.localRotation = Quaternion.Euler(45, 0, 0);
-            rightHandBlockBox.transform.localPosition = new Vector3(0, 0.15f, -0.2f);
-            rightHandBlockBox.transform.localScale = new Vector3(0.3f, 0.3f, 0.85f);
-            rightHandBlockBox.GetComponent<MeshRenderer>().enabled = false;
+            var rightHandBlockBoxRenderer = rightHandBlockBox.GetComponent<MeshRenderer>();
+            rightHandBlockBoxRenderer.material = Object.Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
+            rightHandBlockBoxRenderer.material.color = new Vector4(0.5f, 0.25f, 0, 0.5f);
+            rightHandBlockBoxRenderer.enabled = false;
             Destroy(rightHandBlockBox.GetComponent<Collider>());
         }
 
