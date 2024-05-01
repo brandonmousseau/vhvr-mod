@@ -130,10 +130,16 @@ namespace ValheimVRMod.Scripts
         {
             transform.SetParent(colliderParent.transform);
 
-            // TODO: consider adjusting collider by weapon type.
             transform.localRotation = Quaternion.identity;
-            transform.localPosition = Vector3.zero;
             transform.localScale = Vector3.one;
+            if (hasDualKnivesEquipped())
+            {
+                transform.localPosition = new Vector3(isRightHand ? -0.5f : 0.5f, 0, 0);
+            }
+            else
+            {
+                transform.localPosition = Vector3.zero;
+            }
 
             transform.SetParent(Player.m_localPlayer.transform, true);
         }
