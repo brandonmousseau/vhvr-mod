@@ -6,7 +6,7 @@ namespace ValheimVRMod.Utilities
     public readonly struct WeaponColData
     {
 
-        private WeaponColData(Vector3 pos, Vector3 euler, Vector3 scale)
+        public WeaponColData(Vector3 pos, Vector3 euler, Vector3 scale)
         {
             this.pos = pos;
             this.euler = euler;

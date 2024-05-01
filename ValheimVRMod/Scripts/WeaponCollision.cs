@@ -53,16 +53,7 @@ namespace ValheimVRMod.Scripts
 
             if (ENABLE_DEBUG_COLLIDER_INDICATOR)
             {
-                debugColliderIndicator = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                debugColliderIndicator.transform.parent = transform;
-                debugColliderIndicator.transform.localScale = Vector3.one;
-                debugColliderIndicator.transform.localPosition = Vector3.zero;
-                debugColliderIndicator.transform.localRotation = Quaternion.identity;
-                debugColliderIndicator.GetComponent<MeshRenderer>().material.color = new Vector4(0.5f, 0, 0, 0.5f);
-                debugColliderIndicator.GetComponent<MeshRenderer>().receiveShadows = false;
-                debugColliderIndicator.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
-                debugColliderIndicator.GetComponent<MeshRenderer>().reflectionProbeUsage = ReflectionProbeUsage.Off;
-                Destroy(debugColliderIndicator.GetComponent<Collider>());
+                debugColliderIndicator = WeaponUtils.CreateDebugBox(transform);
             }
         }
 
@@ -248,9 +239,10 @@ namespace ValheimVRMod.Scripts
             transform.SetParent(Player.m_localPlayer.transform, true);
         }
 
-        public void setColliderParent(Transform obj, string name, bool rightHand)
+        public void setColliderParent(MeshFilter meshFilter, Vector3 handPosition, string name, bool rightHand)
         {
-            outline = obj.parent.gameObject.AddComponent<Outline>();
+            var meshTranform = meshFilter.transform;
+            outline = meshTranform.parent.gameObject.AddComponent<Outline>();
             outline.OutlineMode = Outline.Mode.OutlineVisible;
 
             isRightHand = rightHand;
@@ -275,8 +267,8 @@ namespace ValheimVRMod.Scripts
 
             try
             {
-                WeaponColData colliderData = WeaponUtils.getForName(name, item);
-                colliderParent.transform.parent = obj;
+                WeaponColData colliderData = WeaponUtils.GetColliderData(name, item, meshFilter, handPosition);
+                colliderParent.transform.parent = meshTranform;
                 colliderParent.transform.localPosition = colliderData.pos;
                 colliderParent.transform.localRotation = Quaternion.Euler(colliderData.euler);
                 colliderParent.transform.localScale = colliderData.scale;

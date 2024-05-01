@@ -91,7 +91,8 @@ namespace ValheimVRMod.Patches {
             }
 
             var weaponCol = StaticObjects.rightWeaponCollider().GetComponent<WeaponCollision>();
-            weaponCol.setColliderParent(meshFilter.transform, ___m_rightItem, true);
+            weaponCol.setColliderParent(
+                meshFilter, handPosition: ___m_rightItemInstance.transform.parent.position, ___m_rightItem, rightHand: true);
             weaponCol.weaponWield = weaponWield;
             meshFilter.gameObject.AddComponent<ButtonSecondaryAttackManager>().Initialize(meshFilter.transform, ___m_rightItem, true);
             meshFilter.gameObject.AddComponent<WeaponBlock>().weaponWield = weaponWield;

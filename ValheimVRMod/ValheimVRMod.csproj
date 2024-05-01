@@ -76,6 +76,9 @@
     <Reference Include="Unity.TextMeshPro">
       <HintPath>$(CommonDir)Valheim\valheim_Data\Managed\Unity.TextMeshPro.dll</HintPath>
     </Reference>
+    <Reference Include="gui_framework, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>$(CommonDir)Valheim\valheim_Data\Managed\gui_framework.dll</HintPath>
+    </Reference>
     <Reference Include="Unity.XR.Management, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\Unity\build\ValheimVR_Data\Managed\Unity.XR.Management.dll</HintPath>

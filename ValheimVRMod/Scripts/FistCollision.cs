@@ -11,15 +11,15 @@ namespace ValheimVRMod.Scripts
 {
     public class FistCollision : MonoBehaviour
     {
-        public static FistCollision instance;
         private const float MIN_SPEED = 5f;
+        private const bool ENABLE_DEBUG_COLLIDER_INDICATOR = false;
+
+        public static FistCollision instance;
         private GameObject colliderParent = null;
         private bool isRightHand;
         private HandGesture handGesture;
-        private Hand thisHand { get { return isRightHand ? VRPlayer.rightHand : VRPlayer.leftHand; } }
         private PhysicsEstimator physicsEstimator { get { return isRightHand ? VRPlayer.rightHandPhysicsEstimator : VRPlayer.leftHandPhysicsEstimator; } }
 
-        private float fistRotation = 0;
         private static float LocalPlayerSecondaryAttackCooldown = 0;
 
         private static readonly int[] ignoreLayers = {
@@ -29,10 +29,16 @@ namespace ValheimVRMod.Scripts
             LayerUtils.CHARARCTER_TRIGGER
         };
 
+        private GameObject debugColliderIndicator;
+
         private void Awake()
         {
             colliderParent = new GameObject();
             instance = this;
+            if (ENABLE_DEBUG_COLLIDER_INDICATOR)
+            {
+                debugColliderIndicator = WeaponUtils.CreateDebugBox(transform);
+            }
         }
 
         void FixedUpdate()
@@ -65,7 +71,7 @@ namespace ValheimVRMod.Scripts
             }
 
             bool isCurrentlySecondaryAttack = LocalPlayerSecondaryAttackCooldown <= 0 && RoomscaleSecondaryAttackUtils.IsSecondaryAttack(physicsEstimator, physicsEstimator);
-            bool usingWeapon = usingClaws() || usingDualKnives();
+            bool usingWeapon = hasDualWieldingWeaponEquipped();
             var item = usingWeapon ? Player.m_localPlayer.GetRightItem() : Player.m_localPlayer.m_unarmedWeapon.m_itemData;
             Attack primaryAttack = item.m_shared.m_attack;
             Attack attack = isCurrentlySecondaryAttack ? item.m_shared.m_secondaryAttack : primaryAttack;
@@ -125,9 +131,12 @@ namespace ValheimVRMod.Scripts
         private void OnRenderObject()
         {
             transform.SetParent(colliderParent.transform);
+
+            // TODO: consider adjusting collider by weapon type.
             transform.localRotation = Quaternion.identity;
             transform.localPosition = Vector3.zero;
             transform.localScale = Vector3.one;
+
             transform.SetParent(Player.m_localPlayer.transform, true);
         }
 
@@ -139,6 +148,7 @@ namespace ValheimVRMod.Scripts
             colliderParent = new GameObject();
             colliderParent.transform.parent = obj;
             colliderParent.transform.localPosition = new Vector3(0, 0.003f, 0.00016f);
+            colliderParent.transform.localRotation = Quaternion.identity;
             colliderParent.transform.localScale *= 0.45f;
         }
 
@@ -161,7 +171,7 @@ namespace ValheimVRMod.Scripts
                 && SteamVR_Actions.valheim_Grab.GetState(inputSource);
 
             var isEquippedWithFistGesture =
-                (usingClaws() || usingDualKnives()) && SteamVR_Actions.valheim_Grab.GetState(inputSource);
+                hasDualWieldingWeaponEquipped() && SteamVR_Actions.valheim_Grab.GetState(inputSource);
 
             return VRPlayer.inFirstPerson && colliderParent != null &&
                    (isEquippedWithFistGesture || isUnequipedWithFistGesture);
@@ -173,24 +183,19 @@ namespace ValheimVRMod.Scripts
             return physicsEstimator.GetVelocity().magnitude >= MIN_SPEED * VHVRConfig.SwingSpeedRequirement();
         }
 
-        public bool usingClaws()
+        public bool hasDualWieldingWeaponEquipped()
         {
-            var item = EquipScript.getRight();
-            return item.Equals(EquipType.Claws) || item.Equals(EquipType.DualKnives);
+            return hasClawsEquipped() || hasDualKnivesEquipped();
         }
 
-        public bool usingDualKnives()
+        public bool hasClawsEquipped()
         {
-            var item = EquipScript.getRight();
-            if (item.Equals(EquipType.DualKnives))
-            {
-                transform.transform.localRotation = Quaternion.Euler(new Vector3(fistRotation, 0, 0));
-            }
-            else
-            {
-                transform.transform.localRotation = Quaternion.identity;
-            }
-            return item.Equals(EquipType.DualKnives);
+            return EquipScript.getRight().Equals(EquipType.Claws);
+        }
+
+        public bool hasDualKnivesEquipped()
+        {
+            return EquipScript.getRight().Equals(EquipType.DualKnives);
         }
 
         public bool usingFistWeapon()
@@ -211,7 +216,7 @@ namespace ValheimVRMod.Scripts
                 && SteamVR_Actions.valheim_Grab.GetState(inputSource);
 
             var isEquippedWithFistGesture =
-                (usingClaws() || usingDualKnives()) && SteamVR_Actions.valheim_Grab.GetState(inputSource);
+                hasDualWieldingWeaponEquipped() && SteamVR_Actions.valheim_Grab.GetState(inputSource);
 
             return (isEquippedWithFistGesture || isUnequipedWithFistGesture);
         }

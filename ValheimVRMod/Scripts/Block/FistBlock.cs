@@ -72,7 +72,7 @@ namespace ValheimVRMod.Scripts.Block {
                 bool blockedWithLeftHand = WeaponUtils.LineIntersectsWithBounds(leftBlockBounds, leftHandBlockBox.transform.InverseTransformPoint(hitData.m_point), leftHandBlockBox.transform.InverseTransformDirection(hitData.m_dir));
                 bool blockedWithRightHand = WeaponUtils.LineIntersectsWithBounds(rightBlockBounds, rightHandBlockBox.transform.InverseTransformPoint(hitData.m_point), rightHandBlockBox.transform.InverseTransformDirection(hitData.m_dir));
 
-                if (!FistCollision.instance.usingDualKnives() && !FistCollision.instance.usingFistWeapon())
+                if (!FistCollision.instance.hasDualKnivesEquipped() && !FistCollision.instance.usingFistWeapon())
                 {
                     _blocking = false;
                 }
@@ -83,7 +83,7 @@ namespace ValheimVRMod.Scripts.Block {
 
                 CheckParryMotion(hitData.m_dir, blockedWithLeftHand, blockedWithRightHand);
             }
-            else if (FistCollision.instance.usingDualKnives())
+            else if (FistCollision.instance.hasDualKnivesEquipped())
             {
                 var leftAngle = Vector3.Dot(hitData.m_dir, offhand.TransformDirection(handUp));
                 var rightAngle = Vector3.Dot(hitData.m_dir, hand.TransformDirection(handUp));
@@ -164,17 +164,7 @@ namespace ValheimVRMod.Scripts.Block {
         {
             hitIndicator = GameObject.CreatePrimitive(PrimitiveType.Sphere).GetComponent<MeshRenderer>();
             GameObject.Destroy(hitIndicator.gameObject.GetComponent<Collider>());
-            Material material = Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
-            material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
-            material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-            material.SetInt("_ZWrite", 0);
-            material.SetFloat("_Glossiness", 0);
-            material.SetFloat("_Metallic", 0);
-            material.DisableKeyword("_ALPHATEST_ON");
-            material.DisableKeyword("_ALPHABLEND_ON");
-            material.EnableKeyword("_ALPHAPREMULTIPLY_ON");
-            material.renderQueue = (int) RenderQueue.Overlay;
-            hitIndicator.material = material;
+            hitIndicator.material = Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
             hitIndicator.gameObject.layer = LayerUtils.getWorldspaceUiLayer();
             hitIndicator.receiveShadows = false;
             hitIndicator.shadowCastingMode = ShadowCastingMode.Off;
