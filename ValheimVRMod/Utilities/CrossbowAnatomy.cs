@@ -37,13 +37,13 @@ namespace ValheimVRMod.Utilities {
                 new CrossbowAnatomy(
                     /* hardLimbLeft= */ new Vector3(-0.15f, 1.475f, 0),
                     /* hardLimbRight= */ new Vector3(0.15f, 1.475f, 0),
-                    /* restingStringLeft= */ new Vector3(-0.625f, 1.19f, -0.055f),
-                    /* restingStringRight= */ new Vector3(0.625f, 1.19f, -0.055f),
-                    /* restingNockingPoint= */ new Vector3(0, 1.19f, -0.055f),
+                    /* restingStringLeft= */ new Vector3(-0.625f, 1.19f, -0.0525f),
+                    /* restingStringRight= */ new Vector3(0.625f, 1.19f, -0.0525f),
+                    /* restingNockingPoint= */ new Vector3(0, 1.19f, -0.0525f),
                     /* anchorPoint= */  new Vector3(0, 0.69f, -0.05f),
                     /* maxBendAngleRadians= */ 0.28f,
                     /* softLimbHeight= */ 0.01f,
-                    /* stringRadius= */ 0.005f,
+                    /* stringRadius= */ 0.0075f,
                     /* boltCenterToTailDistance= */ 0.51f)
             },
             {
@@ -52,13 +52,13 @@ namespace ValheimVRMod.Utilities {
                 new CrossbowAnatomy(
                     /* hardLimbLeft= */ new Vector3(-0.15f, 1.475f, 0),
                     /* hardLimbRight= */ new Vector3(0.15f, 1.475f, 0),
-                    /* restingStringLeft= */ new Vector3(-0.625f, 1.19f, -0.055f),
-                    /* restingStringRight= */ new Vector3(0.625f, 1.19f, -0.055f),
-                    /* restingNockingPoint= */ new Vector3(0, 1.19f, -0.055f),
+                    /* restingStringLeft= */ new Vector3(-0.625f, 1.19f, -0.0525f),
+                    /* restingStringRight= */ new Vector3(0.625f, 1.19f, -0.0525f),
+                    /* restingNockingPoint= */ new Vector3(0, 1.19f, -0.0525f),
                     /* anchorPoint= */  new Vector3(0, 0.69f, -0.05f),
                     /* maxBendAngleRadians= */ 0.28f,
                     /* softLimbHeight= */ 0.01f,
-                    /* stringRadius= */ 0.005f,
+                    /* stringRadius= */ 0.0075f,
                     /* boltCenterToTailDistance= */ 0.51f)
             },
             {
@@ -67,13 +67,13 @@ namespace ValheimVRMod.Utilities {
                 new CrossbowAnatomy(
                     /* hardLimbLeft= */ new Vector3(-0.15f, 1.475f, 0),
                     /* hardLimbRight= */ new Vector3(0.15f, 1.475f, 0),
-                    /* restingStringLeft= */ new Vector3(-0.625f, 1.19f, -0.055f),
-                    /* restingStringRight= */ new Vector3(0.625f, 1.19f, -0.055f),
-                    /* restingNockingPoint= */ new Vector3(0, 1.19f, -0.055f),
+                    /* restingStringLeft= */ new Vector3(-0.625f, 1.19f, -0.0525f),
+                    /* restingStringRight= */ new Vector3(0.625f, 1.19f, -0.0525f),
+                    /* restingNockingPoint= */ new Vector3(0, 1.19f, -0.0525f),
                     /* anchorPoint= */  new Vector3(0, 0.69f, -0.05f),
                     /* maxBendAngleRadians= */ 0.28f,
                     /* softLimbHeight= */ 0.01f,
-                    /* stringRadius= */ 0.005f,
+                    /* stringRadius= */ 0.0075f,
                     /* boltCenterToTailDistance= */ 0.51f)
             },
             {
@@ -82,13 +82,13 @@ namespace ValheimVRMod.Utilities {
                 new CrossbowAnatomy(
                     /* hardLimbLeft= */ new Vector3(-0.15f, 1.475f, 0),
                     /* hardLimbRight= */ new Vector3(0.15f, 1.475f, 0),
-                    /* restingStringLeft= */ new Vector3(-0.625f, 1.18f, -0.055f),
-                    /* restingStringRight= */ new Vector3(0.625f, 1.18f, -0.055f),
-                    /* restingNockingPoint= */ new Vector3(0, 1.18f, -0.055f),
+                    /* restingStringLeft= */ new Vector3(-0.625f, 1.19f, -0.0525f),
+                    /* restingStringRight= */ new Vector3(0.625f, 1.19f, -0.0525f),
+                    /* restingNockingPoint= */ new Vector3(0, 1.19f, -0.0525f),
                     /* anchorPoint= */  new Vector3(0, 0.69f, -0.05f),
                     /* maxBendAngleRadians= */ 0.28f,
                     /* softLimbHeight= */ 0.01f,
-                    /* stringRadius= */ 0.005f,
+                    /* stringRadius= */ 0.0075f,
                     /* boltCenterToTailDistance= */ 0.51f)
             }
         };
