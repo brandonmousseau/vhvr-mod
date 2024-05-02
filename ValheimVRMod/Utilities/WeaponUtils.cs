@@ -133,6 +133,26 @@ namespace ValheimVRMod.Utilities
                     0,  0, 0,
                     0.07756059f,  1.025059f, 0.02554126f
                 )}, {
+                "SpearSplitner", WeaponColData.create(
+                    0,  1.77f, 0,
+                    0,  0, 0,
+                    0.1f,  1.3f, 0.1f
+                )}, {
+                "SpearSplitner_Blood", WeaponColData.create(
+                    0,  1.77f, 0,
+                    0,  0, 0,
+                    0.1f,  1.3f, 0.1f
+                )}, {
+                "SpearSplitner_Lightning", WeaponColData.create(
+                    0,  1.77f, 0,
+                    0,  0, 0,
+                    0.1f,  1.3f, 0.1f
+                )}, {
+                "SpearSplitner_Nature", WeaponColData.create(
+                    0,  1.77f, 0,
+                    0,  0, 0,
+                    0.1f,  1.3f, 0.1f
+                )}, {
                 "SledgeStagbreaker", WeaponColData.create(
                     0,  2.064f, 0,
                     0,  0, 0,
