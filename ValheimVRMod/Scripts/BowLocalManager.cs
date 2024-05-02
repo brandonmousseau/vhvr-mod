@@ -47,6 +47,7 @@ namespace ValheimVRMod.Scripts {
             predictionLine = new GameObject().AddComponent<LineRenderer>();
             predictionLine.widthMultiplier = 0.03f;
             predictionLine.positionCount = 20;
+            predictionLine.material = Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
             predictionLine.material.color = Color.white;
             predictionLine.enabled = false;
             predictionLine.receiveShadows = false;

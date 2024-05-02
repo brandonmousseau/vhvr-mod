@@ -138,9 +138,11 @@ namespace ValheimVRMod.Utilities
                 return thrust.magnitude >= MIN_THRUST_DISTANCE;
             },
 
-            delegate (PhysicsEstimator collisionPhysicsEstimator, PhysicsEstimator handPhysicsEstimator) // Fist and dual knife check
+            delegate (PhysicsEstimator collisionPhysicsEstimator, PhysicsEstimator handPhysicsEstimator) // Fist and claw check
             {
-                if (EquipScript.getRight() != EquipType.DualKnives && (EquipScript.getLeft() != EquipType.None || EquipScript.getRight() != EquipType.None))
+                var leftEquipType = EquipScript.getLeft();
+                var rightEquipType = EquipScript.getRight();
+                if (!(leftEquipType == EquipType.None && rightEquipType == EquipType.None) && rightEquipType != EquipType.Claws)
                 {
                     return false;
                 }
@@ -153,6 +155,40 @@ namespace ValheimVRMod.Utilities
                 }
                 Vector3 thrust = handPhysicsEstimator.GetLongestLocomotion(1f);
                 return Vector3.Dot(thrust, v.normalized) >= MIN_HOOK_DISTANCE && Vector3.Angle(thrust, v) <= MAX_HOOK_ALIGNMENT_ANGLE;
+            },
+
+            delegate (PhysicsEstimator collisionPhysicsEstimator, PhysicsEstimator handPhysicsEstimator) // Dual knife check
+            {
+                var equipType = EquipScript.getRight();
+                if (equipType != EquipType.DualKnives)
+                {
+                    return false;
+                }
+
+                const float MIN_HEW_SPEED = 1f;
+                const float MIN_TOTAL_HEW_SPEED = 4f;
+                const float MAX_BLADE_DISTANCE = 0.75f;
+
+                var leftHandHewSpeed =
+                    Vector3.Dot(VRPlayer.leftHandPhysicsEstimator.GetAverageVelocityInSnapshots(), VRPlayer.leftHand.transform.forward);
+                if (leftHandHewSpeed < MIN_HEW_SPEED)
+                {
+                    return false;
+                }
+
+                var rightHandHewSpeed =
+                    Vector3.Dot(VRPlayer.rightHandPhysicsEstimator.GetAverageVelocityInSnapshots(), VRPlayer.rightHand.transform.forward);
+                if (rightHandHewSpeed < MIN_HEW_SPEED)
+                {
+                    return false;
+                }
+
+                if (leftHandHewSpeed + rightHandHewSpeed < MIN_TOTAL_HEW_SPEED)
+                {
+                    return false;
+                }
+
+                return Vector3.Distance(StaticObjects.leftFist().transform.position, StaticObjects.rightFist().transform.position) < MAX_BLADE_DISTANCE;
             }
         };
 
