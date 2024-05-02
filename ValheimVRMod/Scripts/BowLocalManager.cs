@@ -32,13 +32,12 @@ namespace ValheimVRMod.Scripts {
         public static Vector3 aimDir;
         public static float realLifePullPercentage { get; private set; }
 
-        public static bool isPulling;
-        public static bool startedPulling;
+        public static bool isPullingArrow;
+        public static bool startedPullingArrow;
         public static bool aborting;
         public static bool finishedPulling;
 
         private GameObject arrowAttach;
-
 
         private void Start() {
             instance = this;
@@ -64,7 +63,6 @@ namespace ValheimVRMod.Scripts {
             if (item != null) {
                 attack = item.m_shared.m_attack.Clone();
             }
-
         }
 
         protected new void OnDestroy() {
@@ -151,7 +149,7 @@ namespace ValheimVRMod.Scripts {
             updateChargeIndicator();
 
             //bHaptics
-            if (!BhapticsTactsuit.suitDisabled && !isPulling)
+            if (!BhapticsTactsuit.suitDisabled && !pulling)
             {
                 BhapticsTactsuit.StopThreadHaptic(VHVRConfig.LeftHanded() ? "BowStringLeft" : "BowStringRight");
             }
@@ -297,7 +295,7 @@ namespace ValheimVRMod.Scripts {
             bowOrientation.transform.localPosition = Vector3.zero;
 
             predictionLine.enabled = false;
-            pulling = isPulling = false;
+            pulling = isPullingArrow = false;
             finishedPulling = false;
             attackDrawPercentage = pullPercentage();
             currentMaxDrawPercentage = 0;
@@ -337,8 +335,8 @@ namespace ValheimVRMod.Scripts {
             }
 
             if (arrow != null) {
-                startedPulling = true;
-                isPulling = true;
+                startedPullingArrow = true;
+                isPullingArrow = true;
                 predictionLine.enabled = VHVRConfig.UseArrowPredictionGraphic();
                 attackDrawPercentage = 0;
             }
