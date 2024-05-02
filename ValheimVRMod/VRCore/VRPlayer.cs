@@ -1150,23 +1150,30 @@ namespace ValheimVRMod.VRCore
 
         private void CheckSneakRoomscale()
         {
-            if (VHVRConfig.RoomScaleSneakEnabled())
+            if (!VHVRConfig.RoomScaleSneakEnabled())
             {
-                float height = Valve.VR.InteractionSystem.Player.instance.eyeHeight;
-                float heightThreshold = referencePlayerHeight * VHVRConfig.RoomScaleSneakHeight();
-                    if (height < heightThreshold && !getPlayerCharacter().IsSitting())
-                {
-                    _isRoomscaleSneaking = true;
-                }
-                else if (height > heightThreshold + heightThreshold * 0.05f)
-                {
-                    _isRoomscaleSneaking = false;
-                }
+                _isRoomscaleSneaking = false;
+                return;
             }
-            else
+
+            var player = getPlayerCharacter();
+            if (player == null)
+            {
+                _isRoomscaleSneaking = false;
+                return;
+            }
+
+            float height = Valve.VR.InteractionSystem.Player.instance.eyeHeight;
+            float heightThreshold = referencePlayerHeight * VHVRConfig.RoomScaleSneakHeight();
+            if (height < heightThreshold && player.IsSitting())
+            {
+                _isRoomscaleSneaking = true;
+            }
+            else if (height > heightThreshold + heightThreshold * 0.05f)
             {
                 _isRoomscaleSneaking = false;
             }
+
         }
 
         /// <summary>
