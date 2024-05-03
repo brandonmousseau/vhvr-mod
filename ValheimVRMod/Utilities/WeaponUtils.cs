@@ -466,6 +466,13 @@ namespace ValheimVRMod.Utilities
             return false;
         }
 
+        private const float MAX_STAB_ANGLE_TWO_HAND = 40;
+        private const float MAX_STAB_ANGLE = 30;
+        public static bool IsStab(Vector3 velocity, Vector3 weaponPointing, bool isTwoHanded)
+        {
+            return Vector3.Angle(velocity, weaponPointing) < (isTwoHanded ? MAX_STAB_ANGLE_TWO_HAND : MAX_STAB_ANGLE);
+        }
+
         public static GameObject CreateDebugBox(Transform parent)
         {
             var box = GameObject.CreatePrimitive(PrimitiveType.Cube);

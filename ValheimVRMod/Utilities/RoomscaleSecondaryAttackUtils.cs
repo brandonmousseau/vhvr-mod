@@ -22,8 +22,6 @@ namespace ValheimVRMod.Utilities
 
         private delegate bool SecondaryAttackCheck(PhysicsEstimator collisionPhysicsEstimator, PhysicsEstimator handPhysicsEstimator);
 
-        private const float MAX_STAB_ANGLE = 30;
-
         private static SecondaryAttackCheck[] secondaryAttackChecks = new SecondaryAttackCheck[] {
 
             delegate(PhysicsEstimator collisionPhysicsEstimator, PhysicsEstimator handPhysicsEstimator) // Sword check
@@ -33,7 +31,7 @@ namespace ValheimVRMod.Utilities
                     return false;
                 }
 
-                const float MIN_STAB_SPEED = 6f;
+                const float MIN_STAB_SPEED = 5f;
                 const float MIN_THRUST_DISTANCE = 1f;
 
                 if (!IsStab(handPhysicsEstimator))
@@ -204,7 +202,10 @@ namespace ValheimVRMod.Utilities
 
         private static bool IsStab(PhysicsEstimator physicsEstimator)
         {
-            return Vector3.Angle(physicsEstimator.GetAverageVelocityInSnapshots(), LocalWeaponWield.weaponForward) < MAX_STAB_ANGLE;
+            return WeaponUtils.IsStab(
+                physicsEstimator.GetAverageVelocityInSnapshots(),
+                LocalWeaponWield.weaponForward,
+                LocalWeaponWield.isCurrentlyTwoHanded());
         }
 
         private static Vector3 GetSagittalComponent(Vector3 v)

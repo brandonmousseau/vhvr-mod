@@ -378,17 +378,17 @@ namespace ValheimVRMod.Scripts
         {
             Vector3 attackVelocity = mainHandPhysicsEstimator == null ? Vector3.zero : mainHandPhysicsEstimator.GetAverageVelocityInSnapshots();
 
-            if (Vector3.Angle(LocalWeaponWield.weaponForward, attackVelocity) > (LocalWeaponWield.isCurrentlyTwoHanded() ? MAX_STAB_ANGLE_TWOHAND : MAX_STAB_ANGLE))
-            {
+            if (!WeaponUtils.IsStab(attackVelocity, LocalWeaponWield.weaponForward, LocalWeaponWield.isCurrentlyTwoHanded())) {
                 return false;
             }
 
-            if (Vector3.Dot(attackVelocity, LocalWeaponWield.weaponForward) > MIN_STAB_SPEED * VHVRConfig.SwingSpeedRequirement())
+            if (Vector3.Dot(attackVelocity, LocalWeaponWield.weaponForward) < MIN_STAB_SPEED * VHVRConfig.SwingSpeedRequirement())
             {
-                LogUtils.LogDebug("VHVR: stab detected on weapon direction: " + LocalWeaponWield.weaponForward);
-                return true;
+                return false;
             }
-            return false;
+               
+            LogUtils.LogDebug("VHVR: stab detected on weapon direction: " + LocalWeaponWield.weaponForward);
+            return true;
         }
     }
 }
