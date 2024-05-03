@@ -626,20 +626,20 @@ namespace ValheimVRMod.Patches {
                     blockHold = true;
                     BowLocalManager.aborting = false;
                 }
-                else if (BowLocalManager.startedPulling) {
+                else if (BowLocalManager.startedPullingArrow) {
                     if (Player.m_localPlayer.GetLeftItem().m_shared.m_attack.m_bowDraw)
                         attack = true;
-                    BowLocalManager.startedPulling = false;
+                    BowLocalManager.startedPullingArrow = false;
                 }
                 else {
                     if (Player.m_localPlayer.GetLeftItem().m_shared.m_attack.m_bowDraw)
                     {
-                        attackHold = BowLocalManager.isPulling;
+                        attackHold = BowLocalManager.isPullingArrow;
                     }
                     else
                     {
                         
-                        if (BowLocalManager.isPulling && SteamVR_Actions.valheim_Use.state && timer >= timeEnd)
+                        if (BowLocalManager.isPullingArrow && SteamVR_Actions.valheim_Use.state && timer >= timeEnd)
                         {
                             timeEnd = 2f;
                             timer = 0f;
@@ -650,7 +650,7 @@ namespace ValheimVRMod.Patches {
                         else
                         {
                             attack = false;
-                            attackHold = false ;
+                            attackHold = false;
                         }
                         var currentAnimatorClip = Player.m_localPlayer.m_animator.GetCurrentAnimatorClipInfo(0)?[0].clip;
                         if (currentAnimatorClip?.name == "Bow Aim Recoil")
