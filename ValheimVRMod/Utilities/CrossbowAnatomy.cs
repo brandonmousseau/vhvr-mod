@@ -35,8 +35,8 @@ namespace ValheimVRMod.Utilities {
                 // TODO: refine anatomy data
                 "$item_crossbow_ripper",     
                 new CrossbowAnatomy(
-                    /* hardLimbLeft= */ new Vector3(-0.15f, 1.475f, 0),
-                    /* hardLimbRight= */ new Vector3(0.15f, 1.475f, 0),
+                    /* hardLimbLeft= */ new Vector3(-0.2f, 1.475f, 0),
+                    /* hardLimbRight= */ new Vector3(0.2f, 1.475f, 0),
                     /* restingStringLeft= */ new Vector3(-0.625f, 1.19f, -0.0525f),
                     /* restingStringRight= */ new Vector3(0.625f, 1.19f, -0.0525f),
                     /* restingNockingPoint= */ new Vector3(0, 1.19f, -0.0525f),
@@ -50,8 +50,8 @@ namespace ValheimVRMod.Utilities {
                 // TODO: refine anatomy data
                 "$item_crossbow_ripper_blood",
                 new CrossbowAnatomy(
-                    /* hardLimbLeft= */ new Vector3(-0.15f, 1.475f, 0),
-                    /* hardLimbRight= */ new Vector3(0.15f, 1.475f, 0),
+                    /* hardLimbLeft= */ new Vector3(-0.2f, 1.475f, 0),
+                    /* hardLimbRight= */ new Vector3(0.2f, 1.475f, 0),
                     /* restingStringLeft= */ new Vector3(-0.625f, 1.19f, -0.0525f),
                     /* restingStringRight= */ new Vector3(0.625f, 1.19f, -0.0525f),
                     /* restingNockingPoint= */ new Vector3(0, 1.19f, -0.0525f),
@@ -65,8 +65,8 @@ namespace ValheimVRMod.Utilities {
                 // TODO: refine anatomy data
                 "$item_crossbow_ripper_lightning",
                 new CrossbowAnatomy(
-                    /* hardLimbLeft= */ new Vector3(-0.15f, 1.475f, 0),
-                    /* hardLimbRight= */ new Vector3(0.15f, 1.475f, 0),
+                    /* hardLimbLeft= */ new Vector3(-0.2f, 1.475f, 0),
+                    /* hardLimbRight= */ new Vector3(0.2f, 1.475f, 0),
                     /* restingStringLeft= */ new Vector3(-0.625f, 1.19f, -0.0525f),
                     /* restingStringRight= */ new Vector3(0.625f, 1.19f, -0.0525f),
                     /* restingNockingPoint= */ new Vector3(0, 1.19f, -0.0525f),
@@ -80,8 +80,8 @@ namespace ValheimVRMod.Utilities {
                 // TODO: refine anatomy data
                 "$item_crossbow_ripper_nature",
                 new CrossbowAnatomy(
-                    /* hardLimbLeft= */ new Vector3(-0.15f, 1.475f, 0),
-                    /* hardLimbRight= */ new Vector3(0.15f, 1.475f, 0),
+                    /* hardLimbLeft= */ new Vector3(-0.2f, 1.475f, 0),
+                    /* hardLimbRight= */ new Vector3(0.2f, 1.475f, 0),
                     /* restingStringLeft= */ new Vector3(-0.625f, 1.19f, -0.0525f),
                     /* restingStringRight= */ new Vector3(0.625f, 1.19f, -0.0525f),
                     /* restingNockingPoint= */ new Vector3(0, 1.19f, -0.0525f),
