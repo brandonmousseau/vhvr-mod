@@ -1,4 +1,4 @@
-﻿using BepInEx;
+using BepInEx;
 using UnityEngine;
 using ValheimVRMod.VRCore;
 using ValheimVRMod.VRCore.UI;
@@ -66,6 +66,7 @@ namespace ValheimVRMod
             HarmonyPatcher.DoPatching();
             
             if (VHVRConfig.NonVrPlayer()) {
+                VRAssetManager.Initialize();
                 LogDebug("Non VR Mode Patching Complete.");
                 return;
             }
