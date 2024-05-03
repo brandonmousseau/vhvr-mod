@@ -1,68 +1,100 @@
+using System.Collections.Generic;
 using UnityEngine;
 using ValheimVRMod.Utilities;
-using ValheimVRMod.VRCore;
-using Valve.VR;
 
 namespace ValheimVRMod.Scripts
 {
     class SpearWield : LocalWeaponWield
     {
-        private float harpoonHidingTimer = 0;
-        private Vector3 defaultMeshFilterLocalPosition;
-        // Local position of mesh filter shifted forward to better single-handed melee wield.
-        private Vector3 shiftedMeshFilterLocalPosition;
-        private MeshFilter meshFilter;
+        private class MeshFilterRepositioner
+        {
+            private Transform transform;
+            private Quaternion defaultLocalRotation;
+            private Vector3 defaultLocalPosition;
+            private Vector3 shiftedLocalPosition;
 
+            public MeshFilterRepositioner(Transform transform, Vector3 weaponPointing, bool shouldInvertSpear)
+            {
+                this.transform = transform;
+
+                if (shouldInvertSpear)
+                {
+                    transform.localPosition = Quaternion.AngleAxis(180, Vector3.right) * transform.localPosition;
+                    transform.localRotation *= Quaternion.AngleAxis(180, Vector3.right);
+                    defaultLocalPosition = transform.localPosition;
+                    transform.position = transform.position + weaponPointing * 0.5f;
+                } 
+                else
+                {
+                    defaultLocalPosition = transform.localPosition;
+                }
+
+                defaultLocalRotation = transform.localRotation;
+                shiftedLocalPosition = transform.localPosition;
+            }
+
+            public void reposition(bool shoudShift, ThrowableManager throwableManager)
+            {
+
+                if (ThrowableManager.isAiming)
+                {
+                    if (transform.GetComponentInChildren<ThrowableManager>() == null && throwableManager != null)
+                    {
+                        // If this mesh filter has no throwable manager on it, we need to explicitly update
+                        // its rotation here to match the throwing direction.
+                        transform.SetPositionAndRotation(throwableManager.transform.position, throwableManager.transform.rotation);
+                    }
+                }
+                else
+                {
+                    transform.localRotation = defaultLocalRotation;
+                    transform.localPosition = shoudShift ? shiftedLocalPosition : defaultLocalPosition;
+                }
+            }
+        }
+
+        private float harpoonHidingTimer = 0;
+        // Local position of mesh filter shifted forward to better single-handed melee wield.
+        private List<MeshFilterRepositioner> meshFilterRepositioners = new List<MeshFilterRepositioner>();
 
         protected override void Awake()
         {
             base.Awake();
-            meshFilter = gameObject.GetComponentInChildren<MeshFilter>();
-            if (EquipScript.isSpearEquippedRadialForward())
+            bool shouldInvertSpear = EquipScript.isSpearEquippedRadialForward();
+            Vector3 weaponPointing = GetWeaponPointingDir();
+            foreach (Transform childTransform in gameObject.transform)
             {
-                meshFilter.gameObject.transform.localPosition = Quaternion.AngleAxis(180, Vector3.right) * meshFilter.gameObject.transform.localPosition;
-                meshFilter.gameObject.transform.localRotation *= Quaternion.AngleAxis(180, Vector3.right);
-                defaultMeshFilterLocalPosition = meshFilter.transform.localPosition;
-                meshFilter.gameObject.transform.position = meshFilter.gameObject.transform.position + GetWeaponPointingDir() * 0.5f;
-                shiftedMeshFilterLocalPosition = meshFilter.transform.localPosition;
+                if (childTransform.GetComponentInChildren<MeshFilter>() != null)
+                {
+                    meshFilterRepositioners.Add(
+                        new MeshFilterRepositioner(childTransform, weaponPointing, shouldInvertSpear));
+                }
             }
-            else
-            {
-                defaultMeshFilterLocalPosition = shiftedMeshFilterLocalPosition = meshFilter.transform.localPosition;
-            }
-        }
-
-        protected override void OnRenderObject()
-        {
-            base.OnRenderObject();
-            bool shiftMeshFilter = false;
-            if (ThrowableManager.isThrowing) {
-                harpoonHidingTimer = 1;
-            }
-            else if (ThrowableManager.isAiming)
-            {
-                harpoonHidingTimer = 0;
-            }
-            else if (!isCurrentlyTwoHanded())
-            {
-                shiftMeshFilter = true;
-            }
-
-            meshFilter.transform.localPosition =
-                shiftMeshFilter ? shiftedMeshFilterLocalPosition : defaultMeshFilterLocalPosition;
         }
 
         void FixedUpdate()
         {
-            if (harpoonHidingTimer > 0)
+
+            bool shouldShiftMeshFilter = !isCurrentlyTwoHanded();
+            var throwableManager = GetComponentInChildren<ThrowableManager>();
+            foreach (var repositioner in meshFilterRepositioners)
+            {
+                repositioner.reposition(shouldShiftMeshFilter, throwableManager);
+            }
+
+            if (ThrowableManager.isAiming)
+            {
+                harpoonHidingTimer = 1;
+            } 
+            else if (harpoonHidingTimer > 0)
             {
                 harpoonHidingTimer -= Time.fixedDeltaTime;
             }
 
             if (EquipScript.getRight() == EquipType.SpearChitin)
             {
-                MeshRenderer spearRenderer = gameObject.GetComponentInChildren<ThrowableManager>().gameObject.GetComponent<MeshRenderer>();
-                spearRenderer.shadowCastingMode = harpoonHidingTimer > 0 ? UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly : UnityEngine.Rendering.ShadowCastingMode.On;
+                MeshRenderer spearRenderer = throwableManager.GetComponent<MeshRenderer>();
+                spearRenderer.shadowCastingMode = (harpoonHidingTimer > 0 && !ThrowableManager.isAiming) ? UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly : UnityEngine.Rendering.ShadowCastingMode.On;
             }
         }
 
