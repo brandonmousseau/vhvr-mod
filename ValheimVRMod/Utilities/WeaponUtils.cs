@@ -466,6 +466,29 @@ namespace ValheimVRMod.Utilities
             return false;
         }
 
+        // Find the mesh renderer of the glow on a bow or crossbow if that mesh renderer should be hidden
+        // when it is bending. We can only bend the bow/crossbow not its glow, so it looks better with the
+        // glow removed.
+        public static MeshRenderer GetHideableBowGlowMeshRenderer(Transform bowTransform, string bowName)
+        {
+            // TODO: consider explicitly adding a list of the names of the bows and crossbows here instead
+            // of calling string#Contains().
+            if (!bowName.Contains("blood") && !bowName.Contains("storm") && !bowName.Contains("root") &&
+                !bowName.Contains("lightning") && !bowName.Contains("nature"))
+            {
+                return null;
+            }
+            for (int i = 0; i < bowTransform.childCount; i++)
+            {
+                var meshRenderer = bowTransform.GetChild(i).GetComponent<MeshRenderer>();
+                if (meshRenderer != null)
+                {
+                    return meshRenderer;
+                }
+            }
+            return null;
+        }
+
         private const float MAX_STAB_ANGLE_TWO_HAND = 40;
         private const float MAX_STAB_ANGLE = 30;
         public static bool IsStab(Vector3 velocity, Vector3 weaponPointing, bool isTwoHanded)
