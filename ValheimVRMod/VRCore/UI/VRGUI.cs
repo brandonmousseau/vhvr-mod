@@ -156,11 +156,19 @@ namespace ValheimVRMod.VRCore.UI
         // mouse cursors interacting with UI).
         private void disableVanillaInputSystemUiInputModule()
         {
-            if (EventSystem.current.gameObject)
+            if (EventSystem.current?.gameObject == null)
             {
-                var inputUiModule = EventSystem.current.GetComponent<InputSystemUIInputModule>();
-                inputUiModule.enabled = false;
+                return;
             }
+
+            var inputUiModule = EventSystem.current.GetComponent<InputSystemUIInputModule>();
+
+            if (inputUiModule == null)
+            {
+                return;
+            }
+            
+            inputUiModule.enabled = true;
         }
 
         public void LateUpdate()
@@ -371,7 +379,7 @@ namespace ValheimVRMod.VRCore.UI
                 // PointerEventArgs#buttonStateLeft does not give valid state of the trigger, so we need check the action states explicitly.
                 // Note: when the laser pointer action set is active, it takes priority over the Valheim action set so SteamVR_Actions.valheim_Use are SteamVR_Actions.valheim_UseLeft are unused.
                 // TODO: update click modifier to use grab buttons and left click to use both controller's triggers in laser action set and update this method accordingly.
-                LogUtils.LogWarning("Left hand: " + SteamVR_Actions.valheim_UseLeft.state + " " + SteamVR_Actions.LaserPointers.ClickModifier.GetState(SteamVR_Input_Sources.LeftHand));
+                // LogUtils.LogWarning("Left hand: " + SteamVR_Actions.valheim_UseLeft.state + " " + SteamVR_Actions.LaserPointers.ClickModifier.GetState(SteamVR_Input_Sources.LeftHand));
                 _inputModule.UpdateButtonStates(
                     SteamVR_Actions.LaserPointers.ClickModifier.GetState(SteamVR_Input_Sources.LeftHand) || SteamVR_Actions.LaserPointers.LeftClick.GetState(SteamVR_Input_Sources.LeftHand),
                     SteamVR_Actions.valheim_QuickActions.GetState(SteamVR_Input_Sources.LeftHand),

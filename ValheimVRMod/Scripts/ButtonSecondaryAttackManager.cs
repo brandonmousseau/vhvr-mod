@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -53,7 +53,7 @@ namespace ValheimVRMod.Scripts
             slashLine = new GameObject("VHVRSecondaryAttackLine").AddComponent<LineRenderer>();
             slashLine.widthMultiplier = 0.02f;
             slashLine.positionCount = 5;
-            slashLine.material = new Material(Shader.Find("Custom/AlphaParticle"));
+            slashLine.material = Instantiate(VRAssetManager.GetAsset<Material>("Slash"));
             slashLine.material.color = slashColor;
 
             circleCurve = new AnimationCurve();
@@ -75,7 +75,7 @@ namespace ValheimVRMod.Scripts
 
             slashTrail = new GameObject("VHVRSecondaryAttackTrail").AddComponent<TrailRenderer>();
             slashTrail.widthMultiplier = 0f;
-            slashTrail.material = new Material(Shader.Find("Custom/AlphaParticle"));
+            slashTrail.material = Instantiate(VRAssetManager.GetAsset<Material>("Slash"));
             slashTrail.material.color = Color.clear;
             slashTrail.numCapVertices = 3;
             slashTrail.receiveShadows = false;

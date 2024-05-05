@@ -143,6 +143,10 @@
       "requirement": "mandatory"
     },
     {
+      "name": "/actions/Valheim/in/StopGesturedLocomotion",
+      "type": "boolean"
+    },
+    {
       "name": "/actions/Valheim/out/Haptic",
       "type": "vibration",
       "requirement": "mandatory"
@@ -252,7 +256,8 @@
       "/actions/default/in/SkeletonLeftHand": "Skeleton (Left)",
       "/actions/default/in/SkeletonRightHand": "Skeleton (Right)",
       "/actions/default/in/Teleport": "Teleport",
-      "/actions/default/out/Haptic": "Haptic"
+      "/actions/default/out/Haptic": "Haptic",
+      "/actions/Valheim/in/StopGesturedLocomotion": "Stop gestured locomotion"
     }
   ]
 }

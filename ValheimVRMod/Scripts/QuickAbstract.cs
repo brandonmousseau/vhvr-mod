@@ -230,6 +230,7 @@ namespace ValheimVRMod.Scripts
             sphere.transform.SetParent(transform);
             sphere.transform.localScale *= 0.02f;
             sphere.layer = LayerUtils.getWorldspaceUiLayer();
+            sphere.GetComponent<MeshRenderer>().material = Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
             sphere.GetComponent<MeshRenderer>().material.color = Color.red;
             Destroy(sphere.GetComponent<Collider>());
         }

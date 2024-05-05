@@ -32,13 +32,12 @@ namespace ValheimVRMod.Scripts {
         public static Vector3 aimDir;
         public static float realLifePullPercentage { get; private set; }
 
-        public static bool isPulling;
-        public static bool startedPulling;
+        public static bool isPullingArrow;
+        public static bool startedPullingArrow;
         public static bool aborting;
         public static bool finishedPulling;
 
         private GameObject arrowAttach;
-
 
         private void Start() {
             instance = this;
@@ -47,6 +46,7 @@ namespace ValheimVRMod.Scripts {
             predictionLine = new GameObject().AddComponent<LineRenderer>();
             predictionLine.widthMultiplier = 0.03f;
             predictionLine.positionCount = 20;
+            predictionLine.material = Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
             predictionLine.material.color = Color.white;
             predictionLine.enabled = false;
             predictionLine.receiveShadows = false;
@@ -63,7 +63,6 @@ namespace ValheimVRMod.Scripts {
             if (item != null) {
                 attack = item.m_shared.m_attack.Clone();
             }
-
         }
 
         protected new void OnDestroy() {
@@ -150,7 +149,7 @@ namespace ValheimVRMod.Scripts {
             updateChargeIndicator();
 
             //bHaptics
-            if (!BhapticsTactsuit.suitDisabled && !isPulling)
+            if (!BhapticsTactsuit.suitDisabled && !pulling)
             {
                 BhapticsTactsuit.StopThreadHaptic(VHVRConfig.LeftHanded() ? "BowStringLeft" : "BowStringRight");
             }
@@ -296,7 +295,7 @@ namespace ValheimVRMod.Scripts {
             bowOrientation.transform.localPosition = Vector3.zero;
 
             predictionLine.enabled = false;
-            pulling = isPulling = false;
+            pulling = isPullingArrow = false;
             finishedPulling = false;
             attackDrawPercentage = pullPercentage();
             currentMaxDrawPercentage = 0;
@@ -336,8 +335,8 @@ namespace ValheimVRMod.Scripts {
             }
 
             if (arrow != null) {
-                startedPulling = true;
-                isPulling = true;
+                startedPullingArrow = true;
+                isPullingArrow = true;
                 predictionLine.enabled = VHVRConfig.UseArrowPredictionGraphic();
                 attackDrawPercentage = 0;
             }
@@ -414,11 +413,13 @@ namespace ValheimVRMod.Scripts {
             chargeIndicator.transform.localRotation = Quaternion.Euler(90, 0, 0);
             chargeIndicator.layer = LayerUtils.getWorldspaceUiLayer();
             chargeIndicator.SetActive(false);
-            chargeIndicator.GetComponent<MeshRenderer>().material.color = new Vector4(0.5f, 0.5f, 0, 0.5f);
-            chargeIndicator.GetComponent<MeshRenderer>().receiveShadows = false;
-            chargeIndicator.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
-            chargeIndicator.GetComponent<MeshRenderer>().lightProbeUsage = LightProbeUsage.Off;
-            chargeIndicator.GetComponent<MeshRenderer>().reflectionProbeUsage = ReflectionProbeUsage.Off;
+            var chargeIndicatorRendrer = chargeIndicator.GetComponent<MeshRenderer>();
+            chargeIndicatorRendrer.material = Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
+            chargeIndicatorRendrer.material.color = new Vector4(0.5f, 0.5f, 0, 0.5f);
+            chargeIndicatorRendrer.receiveShadows = false;
+            chargeIndicatorRendrer.shadowCastingMode = ShadowCastingMode.Off;
+            chargeIndicatorRendrer.lightProbeUsage = LightProbeUsage.Off;
+            chargeIndicatorRendrer.reflectionProbeUsage = ReflectionProbeUsage.Off;
 
             Destroy(chargeIndicator.GetComponent<Collider>());
 
@@ -428,11 +429,13 @@ namespace ValheimVRMod.Scripts {
             drawIndicator.transform.localRotation = Quaternion.Euler(90, 0, 0);
             drawIndicator.layer = LayerUtils.getWorldspaceUiLayer();
             drawIndicator.SetActive(false);
-            drawIndicator.GetComponent<MeshRenderer>().material.color = new Vector4(0.5f, 0.5f, 0, 0.5f);
-            drawIndicator.GetComponent<MeshRenderer>().receiveShadows = false;
-            drawIndicator.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
-            drawIndicator.GetComponent<MeshRenderer>().lightProbeUsage = LightProbeUsage.Off;
-            drawIndicator.GetComponent<MeshRenderer>().reflectionProbeUsage = ReflectionProbeUsage.Off;
+            var drawIndicatorRendrer = drawIndicator.GetComponent<MeshRenderer>();
+            drawIndicatorRendrer.material = Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
+            drawIndicatorRendrer.material.color = new Vector4(0.5f, 0.5f, 0, 0.5f);
+            drawIndicatorRendrer.receiveShadows = false;
+            drawIndicatorRendrer.shadowCastingMode = ShadowCastingMode.Off;
+            drawIndicatorRendrer.lightProbeUsage = LightProbeUsage.Off;
+            drawIndicatorRendrer.reflectionProbeUsage = ReflectionProbeUsage.Off;
 
             Destroy(drawIndicator.GetComponent<Collider>());
         }
