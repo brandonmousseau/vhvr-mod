@@ -26,6 +26,7 @@ namespace ValheimVRMod.Scripts.Block {
         public bool wasResetTimer = false;
         public bool wasGetHit = false;
         private Transform lastRenderedTransform;
+        private Collider blockCollider;
         protected PhysicsEstimator physicsEstimator;
 
         protected virtual void Awake()
@@ -59,6 +60,12 @@ namespace ValheimVRMod.Scripts.Block {
                 _meshCooldown.tryTrigger(cooldown);
                 wasGetHit = false;
             }
+        }
+
+        protected virtual void OnDestroy()
+        {
+            Destroy(blockCollider.gameObject);
+            Destroy(lastRenderedTransform.gameObject);
         }
 
         public abstract void setBlocking(HitData hitData);
@@ -127,25 +134,81 @@ namespace ValheimVRMod.Scripts.Block {
         }
 
         protected bool hitIntersectsBlockBox(HitData hitData) {
+            return hitIntersectsBlockBox(hitData, EnsureBlockCollider());
+        }
+
+        protected static bool hitIntersectsBlockBox(HitData hitData, Collider blockCollider)
+        {
+            if (blockCollider == null)
+            {
+                return true;
+            }
+
+            var hitStart = hitData.m_point;
+            var hitEnd =
+                hitStart +
+                Vector3.Project(
+                    Player.m_localPlayer.transform.position - hitStart,
+                    hitData.m_dir);
+            var hitSource = hitData.GetAttacker()?.transform?.position ?? hitStart;
+            var hitVector = Vector3.Project(hitEnd - hitSource, hitData.m_dir);
+            var hitRadius = GetBlockTolerance(hitData.m_damage, hitData.m_pushForce);
+            var hits =
+                Physics.SphereCastAll(
+                    hitEnd - hitVector.normalized * hitRadius,
+                    hitRadius,
+                    -hitVector,
+                    maxDistance: hitVector.magnitude * 2);
+            
+            foreach (var hit in hits)
+            {
+                if (hit.collider == blockCollider)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        protected static float GetBlockTolerance(HitData.DamageTypes damageTypes, float pushForce) {
+            // Adjust for block tolerance radius: blunt damage and push force increases tolerance raidus whereas pierce damage decreases tolerance radius.
+            return 0.5f * Mathf.Log(1 + damageTypes.m_blunt * 0.1f + pushForce * 0.01f) * (0.5f + 1f / Mathf.Log(8 + damageTypes.m_pierce * 0.1f));
+        }
+
+        private Collider EnsureBlockCollider()
+        {
+            if (blockCollider != null)
+            {
+                return blockCollider;
+            }
+
             Mesh mesh = gameObject.GetComponent<MeshFilter>()?.sharedMesh;
             if (mesh == null)
             {
                 // Cannot find mesh bounds, abort calculation.
-                return true;
+                return null;
             }
 
-            Bounds blockBounds = new Bounds(mesh.bounds.center, mesh.bounds.size);
-            blockBounds.Expand(GetBlockTolerance(hitData.m_damage, hitData.m_pushForce));
+            blockCollider = GameObject.CreatePrimitive(PrimitiveType.Cube).GetComponent<Collider>();
+            var renderer = blockCollider.GetComponent<MeshRenderer>();
+            if (VHVRConfig.ShowDebugColliders())
+            {
+                renderer.material = Object.Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
+                renderer.material.color = new Vector4(0.5f, 0.25f, 0, 0.5f);
+            }
+            else
+            {
+                Destroy(renderer);
+            }
 
-            return WeaponUtils.LineIntersectsWithBounds(
-                blockBounds,
-                lastRenderedTransform.InverseTransformPoint(hitData.m_point),
-                lastRenderedTransform.InverseTransformDirection(hitData.m_dir));
-        }
+            blockCollider.isTrigger = true;
+            blockCollider.transform.parent = lastRenderedTransform;
+            blockCollider.transform.localPosition = mesh.bounds.center;
+            blockCollider.transform.localRotation = Quaternion.identity;
+            blockCollider.transform.localScale = mesh.bounds.size;
 
-        protected float GetBlockTolerance(HitData.DamageTypes damageTypes, float pushForce) {
-            // Adjust for block tolerance radius: blunt damage and push force increases tolerance raidus whereas pierce damage decreases tolerance radius.
-            return 0.5f * Mathf.Log(1 + damageTypes.m_blunt * 0.1f + pushForce * 0.01f) * (0.5f + 1f / Mathf.Log(8 + damageTypes.m_pierce * 0.1f));
+            return blockCollider;
         }
     }
 }
