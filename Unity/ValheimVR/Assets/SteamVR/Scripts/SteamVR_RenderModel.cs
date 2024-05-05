@@ -455,7 +455,7 @@ namespace Valve.VR
 #if UNITY_URP
                     material = new Material(shader != null ? shader : Shader.Find("Universal Render Pipeline/Lit"));
 #else
-                    material = new Material(shader != null ? shader : Shader.Find("Standard"));
+                    material = new Material(shader != null ? shader : ShaderLoader.GetShader("Custom/SteamVR_ClearAll"));
 #endif
 
                     material.mainTexture = texture;
