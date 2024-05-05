@@ -43,10 +43,10 @@ namespace ValheimVRMod.Scripts {
             }
         }
 
-        public static bool IsSummoning()
+        public static bool IsSummoning(Player player)
         {
-            var attack = Player.m_localPlayer?.m_currentAttack;
-            return attack != null && Player.m_localPlayer.InAttack() && attack.m_attackAnimation.Contains("summon");
+            var attack = player.m_currentAttack;
+            return player.InAttack() && attack != null && attack.m_attackAnimation.Contains("summon");
         }
 
         public static bool ShouldSkipAttackAnimation()
