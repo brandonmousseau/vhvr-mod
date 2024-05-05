@@ -94,7 +94,7 @@ namespace Valve.VR.Extras
                     Object.Destroy(collider);
                 }
             }
-            Material newMaterial = new Material(ShaderLoader.GetShader("Unlit/Color"));
+            Material newMaterial = new Material(ShaderLoader.GetShader("Custom/SteamVR_ClearAll"));
             newMaterial.SetColor("_Color", color);
             pointer.GetComponent<MeshRenderer>().material = newMaterial;
         }
