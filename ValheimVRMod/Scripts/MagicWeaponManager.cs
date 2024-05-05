@@ -49,7 +49,20 @@ namespace ValheimVRMod.Scripts {
 
         public static Vector3 GetProjectileSpawnPoint(Attack attack) 
         {
-            return WeaponHandPointer.rayStartingPosition + LocalWeaponWield.weaponForward * (new Vector3(attack.m_attackOffset, attack.m_attackRange, attack.m_attackHeight)).magnitude * 0.6f;
+            var offsetDirection = LocalWeaponWield.weaponForward;
+            var offsetAmount =
+                (new Vector3(attack.m_attackOffset, attack.m_attackRange, attack.m_attackHeight)).magnitude;
+            if (!IsSwingLaunchEnabled() && attack.m_attackAnimation.Contains("summon"))
+            {
+                // Summon distance should not depend on the tilt of pointing direction.
+                offsetDirection.y = 0;
+                offsetDirection = offsetDirection.normalized;
+            }
+            else
+            {
+                offsetAmount *= 0.6f;
+            }
+            return WeaponHandPointer.rayStartingPosition + offsetDirection * offsetAmount;
         }
 
         private static bool UseSwingForCurrentAttack()
