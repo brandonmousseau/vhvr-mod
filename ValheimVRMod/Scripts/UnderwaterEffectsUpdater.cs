@@ -28,13 +28,15 @@ namespace ValheimVRMod.Scripts
             underwaterPostProcessingProfile.colorGrading.m_Settings.channelMixer.green.x = -0.125f;
 
             underwaterLightBlocker = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            underwaterLightBlocker.layer = LayerUtils.WATER;
+            underwaterLightBlocker.layer = LayerUtils.WATERVOLUME_LAYER;
             underwaterLightBlocker.transform.localScale = new Vector3(1024, 0.000001f, 1024);
             underwaterLightBlocker.SetActive(false);
-            underwaterLightBlocker.GetComponent<MeshRenderer>().material.color = new Vector4(0.5f, 0.5f, 0.75f, 1);
-            underwaterLightBlocker.GetComponent<MeshRenderer>().receiveShadows = false;
-            underwaterLightBlocker.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
-            underwaterLightBlocker.GetComponent<MeshRenderer>().reflectionProbeUsage = ReflectionProbeUsage.Off;
+            var renderer = underwaterLightBlocker.GetComponent<MeshRenderer>();
+            renderer.material = Instantiate(VRAssetManager.GetAsset<Material>("StandardClone"));
+            renderer.material.color = new Vector4(0.5f, 0.5f, 0.75f, 1);
+            renderer.receiveShadows = false;
+            renderer.shadowCastingMode = ShadowCastingMode.Off;
+            renderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
             Destroy(underwaterLightBlocker.GetComponent<Collider>());
 
             initialized = true;
