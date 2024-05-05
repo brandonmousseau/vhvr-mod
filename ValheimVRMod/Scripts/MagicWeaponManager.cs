@@ -12,6 +12,7 @@ namespace ValheimVRMod.Scripts {
     class MagicWeaponManager {
 
         private static readonly HashSet<string> SWING_LAUNCH_MAGIC_STAFF_NAMES = new HashSet<string>(new string[] { "$item_stafffireball" });
+
         private static bool IsMagicWeaponEquipped { get { return EquipScript.getLeft() == EquipType.Magic || EquipScript.getRight() == EquipType.Magic;  } }
         // Right-handed weapons in vanilla game is treated as domininant hand weapon in VHVR.
         private static bool IsDominantHandWeapon { get { return EquipScript.getRight() == EquipType.Magic; } }       
@@ -40,6 +41,12 @@ namespace ValheimVRMod.Scripts {
                 }
                 return UseSwingForCurrentAttack() ? SwingLaunchManager.isThrowing : AttackTriggerAction.state;
             }
+        }
+
+        public static bool IsSummoning()
+        {
+            var attack = Player.m_localPlayer?.m_currentAttack;
+            return attack != null && Player.m_localPlayer.InAttack() && attack.m_attackAnimation.Contains("summon");
         }
 
         public static bool ShouldSkipAttackAnimation()
