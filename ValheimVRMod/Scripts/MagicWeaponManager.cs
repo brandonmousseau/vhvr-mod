@@ -52,7 +52,7 @@ namespace ValheimVRMod.Scripts {
             var offsetDirection = LocalWeaponWield.weaponForward;
             var offsetAmount =
                 (new Vector3(attack.m_attackOffset, attack.m_attackRange, attack.m_attackHeight)).magnitude;
-            if (!IsSwingLaunchEnabled() && attack.m_attackAnimation.Contains("summon"))
+            if (attack.m_attackAnimation.Contains("summon"))
             {
                 // Summon distance should not depend on the tilt of pointing direction.
                 offsetDirection.y = 0;
