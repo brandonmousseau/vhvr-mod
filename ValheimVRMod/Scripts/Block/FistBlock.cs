@@ -8,13 +8,14 @@ namespace ValheimVRMod.Scripts.Block {
         private const float MIN_PARRY_SPEED = 1f;
         private readonly Vector3 handUp = new Vector3(0, -0.15f, -0.85f);
 
-        private GameObject leftHandBlockBox;
-        private GameObject rightHandBlockBox;
+        private Collider leftHandBlockBox;
+        private Collider rightHandBlockBox;
         private MeshRenderer hitIndicator; // Renderer of disk indicating the position, direction, and block tolerance of an attack.
 
         public static FistBlock instance;
 
-        private void OnDisable() {
+        protected void OnDisable()
+        {
             instance = null;
         }
 
@@ -47,8 +48,9 @@ namespace ValheimVRMod.Scripts.Block {
             hitIndicator.material.color = new Color(color.r, color.g, color.b, color.a * (1 - Time.fixedDeltaTime * 3));
         }
 
-        void OnDestroy()
+        protected override void OnDestroy()
         {
+            base.OnDestroy();
             if (hitIndicator?.gameObject)
             {
                 Destroy(hitIndicator.gameObject);
@@ -59,22 +61,16 @@ namespace ValheimVRMod.Scripts.Block {
             if (VHVRConfig.BlockingType() == "Realistic")
             {
                 float blockTolerance = GetBlockTolerance(hitData.m_damage, hitData.m_pushForce);
-
                 hitIndicator.gameObject.SetActive(true);
-                hitIndicator.transform.SetPositionAndRotation(hitData.m_point, Quaternion.LookRotation(hitData.m_dir));
-                hitIndicator.transform.localScale = new Vector3(blockTolerance * 2, blockTolerance * 2, 0.001f);
+                hitIndicator.transform.SetPositionAndRotation(
+                    hitData.m_point, Quaternion.LookRotation(hitData.m_dir) * Quaternion.Euler(90, 0, 0));
+                hitIndicator.transform.localScale = new Vector3(blockTolerance * 2, 0.001f, blockTolerance * 2);
                 hitIndicator.material.color = new Color(1, 0, 0, 0.75f);
 
-                Bounds leftBlockBounds = leftHandBlockBox.GetComponent<MeshFilter>().sharedMesh.bounds;
-                (leftBlockBounds = new Bounds(leftBlockBounds.center, leftBlockBounds.size)).Expand(blockTolerance);
-                Bounds rightBlockBounds = rightHandBlockBox.GetComponent<MeshFilter>().sharedMesh.bounds;
-                (rightBlockBounds = new Bounds(rightBlockBounds.center, rightBlockBounds.size)).Expand(blockTolerance);
                 bool blockedWithLeftHand =
-                    StaticObjects.leftFist().blockingWithFist() &&
-                    WeaponUtils.LineIntersectsWithBounds(leftBlockBounds, leftHandBlockBox.transform.InverseTransformPoint(hitData.m_point), leftHandBlockBox.transform.InverseTransformDirection(hitData.m_dir));
+                    StaticObjects.leftFist().blockingWithFist() && hitIntersectsBlockBox(hitData, leftHandBlockBox);
                 bool blockedWithRightHand =
-                    StaticObjects.rightFist().blockingWithFist() &&
-                    WeaponUtils.LineIntersectsWithBounds(rightBlockBounds, rightHandBlockBox.transform.InverseTransformPoint(hitData.m_point), rightHandBlockBox.transform.InverseTransformDirection(hitData.m_dir));
+                    StaticObjects.rightFist().blockingWithFist() && hitIntersectsBlockBox(hitData, rightHandBlockBox);
 
                 if (blockedWithLeftHand || blockedWithRightHand)
                 {
@@ -169,26 +165,33 @@ namespace ValheimVRMod.Scripts.Block {
         
         private void CreateBlockBoxes()
         {
-            leftHandBlockBox = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            leftHandBlockBox = GameObject.CreatePrimitive(PrimitiveType.Cube).GetComponent<Collider>();
             leftHandBlockBox.transform.parent = VRPlayer.leftHand.transform;
-            var leftHandBlockBoxRenderer = leftHandBlockBox.GetComponent<MeshRenderer>();
-            leftHandBlockBoxRenderer.material = Object.Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
-            leftHandBlockBoxRenderer.material.color = new Vector4(0.5f, 0.25f, 0, 0.5f);
-            leftHandBlockBoxRenderer.enabled = false;
-            Destroy(leftHandBlockBox.GetComponent<Collider>());
-
-            rightHandBlockBox = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            leftHandBlockBox.isTrigger = true;
+            rightHandBlockBox = GameObject.CreatePrimitive(PrimitiveType.Cube).GetComponent<Collider>();
             rightHandBlockBox.transform.parent = VRPlayer.rightHand.transform;
+            rightHandBlockBox.isTrigger = true;
+
+            var leftHandBlockBoxRenderer = leftHandBlockBox.GetComponent<MeshRenderer>();
             var rightHandBlockBoxRenderer = rightHandBlockBox.GetComponent<MeshRenderer>();
-            rightHandBlockBoxRenderer.material = Object.Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
-            rightHandBlockBoxRenderer.material.color = new Vector4(0.5f, 0.25f, 0, 0.5f);
-            rightHandBlockBoxRenderer.enabled = false;
-            Destroy(rightHandBlockBox.GetComponent<Collider>());
+            if (VHVRConfig.ShowDebugColliders())
+            {
+                leftHandBlockBoxRenderer.material = Object.Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
+                leftHandBlockBoxRenderer.material.color = new Vector4(0.5f, 0.25f, 0, 0.5f);
+                rightHandBlockBoxRenderer.material = Object.Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
+                rightHandBlockBoxRenderer.material.color = new Vector4(0.5f, 0.25f, 0, 0.5f);
+            }
+            else
+            {
+                Destroy(leftHandBlockBoxRenderer);
+                Destroy(rightHandBlockBoxRenderer);
+
+            }
         }
 
         private void CreateHitIndicator()
         {
-            hitIndicator = GameObject.CreatePrimitive(PrimitiveType.Sphere).GetComponent<MeshRenderer>();
+            hitIndicator = GameObject.CreatePrimitive(PrimitiveType.Cylinder).GetComponent<MeshRenderer>();
             GameObject.Destroy(hitIndicator.gameObject.GetComponent<Collider>());
             hitIndicator.material = Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
             hitIndicator.gameObject.layer = LayerUtils.getWorldspaceUiLayer();

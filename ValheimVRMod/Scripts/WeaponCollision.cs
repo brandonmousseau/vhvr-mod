@@ -1,10 +1,6 @@
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.Rendering;
-using ValheimVRMod.Scripts.Block;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using Valve.VR;
@@ -15,9 +11,6 @@ namespace ValheimVRMod.Scripts
     {
         private const float MIN_SPEED = 3f;
         private const float MIN_STAB_SPEED = 1f;
-        private const float MAX_STAB_ANGLE = 30f;
-        private const float MAX_STAB_ANGLE_TWOHAND = 40f;
-        private const bool ENABLE_DEBUG_COLLIDER_INDICATOR = false;
 
         private bool scriptActive;
         private GameObject colliderParent;
@@ -51,7 +44,7 @@ namespace ValheimVRMod.Scripts
             physicsEstimator = gameObject.AddComponent<PhysicsEstimator>();
             physicsEstimator.refTransform = CameraUtils.getCamera(CameraUtils.VR_CAMERA)?.transform.parent;
 
-            if (ENABLE_DEBUG_COLLIDER_INDICATOR)
+            if (VHVRConfig.ShowDebugColliders())
             {
                 debugColliderIndicator = WeaponUtils.CreateDebugBox(transform);
             }

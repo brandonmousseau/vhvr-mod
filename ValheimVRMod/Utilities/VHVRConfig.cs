@@ -20,6 +20,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> useOverlayGui;
         private static ConfigEntry<string> pluginVersion;
         private static ConfigEntry<bool> bhapticsEnabled;
+        private static ConfigEntry<bool> showDebugColliders;
 
         // General Settings
         private static ConfigEntry<string> mirrorMode;
@@ -247,6 +248,10 @@ namespace ValheimVRMod.Utilities
                 "bhapticsEnabled",
                 false,
                 "Enables bhaptics feedback. Only usable if vrModEnabled true AND nonVrPlayer false.");
+            showDebugColliders = createImmutableSettingWithOverride("Immutable",
+                "showDebugColliders",
+                false,
+                "Visualizes motion control colliders (e. g. weapon colliders and block colliders) for debug purposes.");
         }
 
         private static ConfigEntry<bool> createImmutableSettingWithOverride(
@@ -1568,6 +1573,19 @@ namespace ValheimVRMod.Utilities
                 bhapticsEnabledValue = commandLineOverrides[bhapticsEnabled.GetHashCode()];
             }
             return bhapticsEnabledValue && !NonVrPlayer();
+        }
+
+        public static bool ShowDebugColliders()
+        {
+            if (!UseVrControls())
+            {
+                return false;
+            }
+            if (commandLineOverrides.ContainsKey(showDebugColliders.GetHashCode()))
+            {
+                return commandLineOverrides[showDebugColliders.GetHashCode()];
+            }
+            return showDebugColliders.Value;
         }
 
         public static bool BowAccuracyIgnoresDrawLength()
