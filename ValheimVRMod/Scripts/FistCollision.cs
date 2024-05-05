@@ -12,7 +12,6 @@ namespace ValheimVRMod.Scripts
     public class FistCollision : MonoBehaviour
     {
         private const float MIN_SPEED = 5f;
-        private const bool ENABLE_DEBUG_COLLIDER_INDICATOR = false;
 
         private GameObject colliderParent = null;
         private bool isRightHand;
@@ -33,7 +32,7 @@ namespace ValheimVRMod.Scripts
         private void Awake()
         {
             colliderParent = new GameObject();
-            if (ENABLE_DEBUG_COLLIDER_INDICATOR)
+            if (VHVRConfig.ShowDebugColliders())
             {
                 debugColliderIndicator = WeaponUtils.CreateDebugBox(transform);
             }
