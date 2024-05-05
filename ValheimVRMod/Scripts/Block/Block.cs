@@ -64,8 +64,15 @@ namespace ValheimVRMod.Scripts.Block {
 
         protected virtual void OnDestroy()
         {
-            Destroy(blockCollider.gameObject);
-            Destroy(lastRenderedTransform.gameObject);
+            if (blockCollider?.gameObject != null)
+            {
+                Destroy(blockCollider.gameObject);
+            }
+
+            if (lastRenderedTransform?.gameObject != null)
+            {
+                Destroy(lastRenderedTransform.gameObject);
+            }
         }
 
         public abstract void setBlocking(HitData hitData);
