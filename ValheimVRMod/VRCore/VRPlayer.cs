@@ -89,9 +89,7 @@ namespace ValheimVRMod.VRCore
         public static Vector3 roomscaleMovement { get; private set; }
         public static GesturedLocomotionManager gesturedLocomotionManager { get; private set; } = null;
 
-        private static Hand _leftHand;
         private static SteamVR_LaserPointer _leftPointer;
-        private static Hand _rightHand;
         private static SteamVR_LaserPointer _rightPointer;
         private string _preferredHand;
 
@@ -102,8 +100,15 @@ namespace ValheimVRMod.VRCore
 
         private float timerLeft;
         private float timerRight;
-        public static Hand leftHand { get { return _leftHand; } }
-        public static Hand rightHand { get { return _rightHand; } }
+        public static Hand leftHand { get; private set; }
+        public static Hand rightHand { get; private set; }
+
+        // Objects that are parented to the VR controllers but rotated and positioned like the character's hand bones.
+        // They have the advantage of being in sync with the VR controller transform all the time without being
+        // affect by vanilla game character animation while having a more intuitive orientation like the that of the
+        // character's hand bones as opposed to that of the VR controllers.
+        public static Transform leftHandBone { get; private set; }
+        public static Transform rightHandBone { get; private set; }
         public static Hand dominantHand { get { return VHVRConfig.LeftHanded() ? leftHand : rightHand; } }
         public static bool ShouldPauseMovement { get { return PlayerCustomizaton.IsBarberGuiVisible() || (Menu.IsVisible() && !VHVRConfig.AllowMovementWhenInMenu()); } }
         public static bool IsClickableGuiOpen
@@ -174,7 +179,7 @@ namespace ValheimVRMod.VRCore
         {
             get
             {
-                return handIsActive(_leftHand, _leftPointer) && handIsActive(_rightHand, _rightPointer);
+                return handIsActive(leftHand, _leftPointer) && handIsActive(rightHand, _rightPointer);
             }
         }
 
@@ -292,6 +297,18 @@ namespace ValheimVRMod.VRCore
             {
                 timerRight -= Time.deltaTime;
                 rightHand.hapticAction.Execute(0f, 0.1f, 20f, 0.1f, SteamVR_Input_Sources.RightHand);
+            }
+        }
+
+        void OnRenderObject()
+        {
+            if (leftHandBone && _vrik?.references?.leftHand)
+            {
+                leftHandBone.SetPositionAndRotation(_vrik.references.leftHand.position, _vrik.references.leftHand.rotation);
+            }
+            if (rightHandBone && _vrik?.references?.rightHand)
+            {
+                rightHandBone.SetPositionAndRotation(_vrik.references.rightHand.position, _vrik.references.rightHand.rotation);
             }
         }
 
@@ -414,19 +431,19 @@ namespace ValheimVRMod.VRCore
         private void checkAndSetHandsAndPointers()
         {
             tryInitializeHands();
-            if (_leftHand != null)
+            if (leftHand != null)
             {
-                _leftHand.enabled = VHVRConfig.UseVrControls();
-                _leftHand.SetVisibility(_leftHand.enabled && !vrikEnabled());
+                leftHand.enabled = VHVRConfig.UseVrControls();
+                leftHand.SetVisibility(leftHand.enabled && !vrikEnabled());
             }
-            if (_rightHand != null)
+            if (rightHand != null)
             {
-                _rightHand.enabled = VHVRConfig.UseVrControls();
-                _rightHand.SetVisibility(_rightHand.enabled && !vrikEnabled());
+                rightHand.enabled = VHVRConfig.UseVrControls();
+                rightHand.SetVisibility(rightHand.enabled && !vrikEnabled());
             }
             // Next check whether the hands are active, and enable the appropriate pointer based
             // on what is available and what the options set as preferred. Disable the inactive pointer(s).
-            if (handIsActive(_leftHand, _leftPointer) && handIsActive(_rightHand, _rightPointer))
+            if (handIsActive(leftHand, _leftPointer) && handIsActive(rightHand, _rightPointer))
             {
                 // Both hands active, so choose preferred hand
                 if (_preferredHand == LEFT_HAND)
@@ -440,12 +457,12 @@ namespace ValheimVRMod.VRCore
                     setPointerActive(_leftPointer, false);
                 }
             }
-            else if (handIsActive(_rightHand, _rightPointer))
+            else if (handIsActive(rightHand, _rightPointer))
             {
                 setPointerActive(_rightPointer, true);
                 setPointerActive(_leftPointer, false);
             }
-            else if (handIsActive(_leftHand, _leftPointer))
+            else if (handIsActive(leftHand, _leftPointer))
             {
                 setPointerActive(_leftPointer, true);
                 setPointerActive(_rightPointer, false);
@@ -460,24 +477,26 @@ namespace ValheimVRMod.VRCore
         private void tryInitializeHands()
         {
             // First try and initialize both hands and pointer scripts
-            if (_leftHand == null || _leftPointer == null)
+            if (leftHand == null || _leftPointer == null)
             {
-                _leftHand = getHand(LEFT_HAND, _instance);
-                if (_leftHand != null)
+                leftHand = getHand(LEFT_HAND, _instance);
+                if (leftHand != null)
                 {
-                    _leftPointer = _leftHand.GetComponent<SteamVR_LaserPointer>();
+                    (leftHandBone = new GameObject().transform).parent = leftHand.transform;
+                    _leftPointer = leftHand.GetComponent<SteamVR_LaserPointer>();
                     if (_leftPointer != null)
                     {
                         _leftPointer.raycastLayerMask = LayerUtils.UI_PANEL_LAYER_MASK;
                     }
                 }
             }
-            if (_rightHand == null || _rightPointer == null)
+            if (rightHand == null || _rightPointer == null)
             {
-                _rightHand = getHand(RIGHT_HAND, _instance);
-                if (_rightHand != null)
+                rightHand = getHand(RIGHT_HAND, _instance);
+                if (rightHand != null)
                 {
-                    _rightPointer = _rightHand.GetComponent<SteamVR_LaserPointer>();
+                    (rightHandBone = new GameObject().transform).parent = rightHand.transform;
+                    _rightPointer = rightHand.GetComponent<SteamVR_LaserPointer>();
                     if (_rightPointer != null)
                     {
                         _rightPointer.raycastLayerMask = LayerUtils.UI_PANEL_LAYER_MASK;
@@ -930,10 +949,12 @@ namespace ValheimVRMod.VRCore
             vrPlayerSync.leftHand = _vrik.solver.leftArm.target.parent.gameObject;
             vrPlayerSync.rightHand = _vrik.solver.rightArm.target.parent.gameObject;
             VrikCreator.resetVrikHandTransform(player);
-            _vrik.references.leftHand.gameObject.AddComponent<HandGesture>().sourceHand = leftHand;
-            _vrik.references.rightHand.gameObject.AddComponent<HandGesture>().sourceHand = rightHand;
-            StaticObjects.leftFist().setColliderParent(_vrik.references.leftHand, false);
-            StaticObjects.rightFist().setColliderParent(_vrik.references.rightHand, true);
+            var leftHandGesture = _vrik.references.leftHand.gameObject.AddComponent<HandGesture>();
+            var rightHandGesture = _vrik.references.rightHand.gameObject.AddComponent<HandGesture>();
+            leftHandGesture.sourceHand = leftHand;
+            rightHandGesture.sourceHand = rightHand;
+            StaticObjects.leftFist().setColliderParent(leftHandBone, leftHandGesture, false);
+            StaticObjects.rightFist().setColliderParent(rightHandBone, rightHandGesture, true);
             Player.m_localPlayer.gameObject.AddComponent<FistBlock>();
             StaticObjects.mouthCollider(cam.transform);
             StaticObjects.addQuickMenus();
