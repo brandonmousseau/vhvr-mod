@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace ValheimVRMod.Utilities
 {
@@ -284,6 +285,22 @@ namespace ValheimVRMod.Utilities
             )}
         };
 
+        private static readonly Dictionary<EquipType, WeaponColData> DUAL_WIELD_COLLIDERS = new Dictionary<EquipType, WeaponColData>
+        {
+            {
+                EquipType.DualKnives, WeaponColData.create(
+                    0.225f,  0.2f, 0.016f,
+                    0,  0, 0,
+                    0.45f,  0.45f, 0.45f
+            )},
+            {
+                EquipType.None, WeaponColData.create( // fists
+                    0,  0.2f, 0.016f,
+                    0,  0, 0,
+                    0.45f,  0.45f, 0.45f
+            )},
+        };
+
         private static readonly Dictionary<string, WeaponColData> estimatedColliders = new Dictionary<string, WeaponColData>();
 
         private static readonly Dictionary<string, float> ATTACK_DURATIONS = new Dictionary<string, float>
@@ -324,9 +341,8 @@ namespace ValheimVRMod.Utilities
             return TWO_HANDED_MULTITARGET_SWIPE_NAMES.Contains(attack.m_attackAnimation);
         }
 
-        public static WeaponColData GetColliderData(string name, ItemDrop.ItemData item, MeshFilter meshFilter, Vector3 handPosition)
+        public static WeaponColData GetColliderData(string name, ItemDrop.ItemData item, MeshFilter meshFilter, Vector3? handPosition)
         {
-
             if (colliders.ContainsKey(name)) {
                 return colliders[name];
             }
@@ -338,7 +354,7 @@ namespace ValheimVRMod.Utilities
 
             if (meshFilter != null && handPosition != null)
             {
-                var estimatedCollider = EstimateWeaponCollider(meshFilter, handPosition);
+                var estimatedCollider = EstimateWeaponCollider(meshFilter, (Vector3) handPosition);
                 estimatedColliders[name] = estimatedCollider;
                 LogUtils.LogDebug(
                     "Estimated and registered collider for unknown weapon " + name + ": position " + estimatedCollider.pos + " scale " + estimatedCollider.scale);
@@ -352,6 +368,16 @@ namespace ValheimVRMod.Utilities
             }
 
             throw new InvalidEnumArgumentException();
+        }
+
+        public static WeaponColData GetDualWieldLeftHandColliderData(ItemDrop.ItemData item)
+        {
+            var equipType = EquipScript.getEquippedItem(item);
+            if (!DUAL_WIELD_COLLIDERS.ContainsKey(equipType))
+            {
+                equipType = EquipType.None;
+            }
+            return DUAL_WIELD_COLLIDERS[equipType];
         }
 
         // Estimates the direction and length of weapon handle behind the grip by identifying the dimension on which its mesh bounds is offset the farthest.
@@ -390,6 +416,8 @@ namespace ValheimVRMod.Utilities
         // Whether the straight line (t -> p + t * v) intersects with the given bounds.
         public static bool LineIntersectsWithBounds(Bounds bounds, Vector3 p, Vector3 v)
         {
+            // TODO: Consider removing this method since it is not used anywhere.
+            
             // Center the bound and the line around the original bounds center to simplify calculation.
             Bounds centeredBounds = new Bounds(Vector3.zero, bounds.size);
             Vector3 p0 = p - bounds.center;
@@ -443,6 +471,52 @@ namespace ValheimVRMod.Utilities
             }
 
             return false;
+        }
+
+        // Find the mesh renderer of the glow on a bow or crossbow if that mesh renderer should be hidden
+        // when it is bending. We can only bend the bow/crossbow not its glow, so it looks better with the
+        // glow removed.
+        public static MeshRenderer GetHideableBowGlowMeshRenderer(Transform bowTransform, string bowName)
+        {
+            // TODO: consider explicitly adding a list of the names of the bows and crossbows here instead
+            // of calling string#Contains().
+            if (!bowName.Contains("blood") && !bowName.Contains("storm") && !bowName.Contains("root") &&
+                !bowName.Contains("lightning") && !bowName.Contains("nature"))
+            {
+                return null;
+            }
+            for (int i = 0; i < bowTransform.childCount; i++)
+            {
+                var meshRenderer = bowTransform.GetChild(i).GetComponent<MeshRenderer>();
+                if (meshRenderer != null)
+                {
+                    return meshRenderer;
+                }
+            }
+            return null;
+        }
+
+        private const float MAX_STAB_ANGLE_TWO_HAND = 40;
+        private const float MAX_STAB_ANGLE = 30;
+        public static bool IsStab(Vector3 velocity, Vector3 weaponPointing, bool isTwoHanded)
+        {
+            return Vector3.Angle(velocity, weaponPointing) < (isTwoHanded ? MAX_STAB_ANGLE_TWO_HAND : MAX_STAB_ANGLE);
+        }
+
+        public static GameObject CreateDebugBox(Transform parent)
+        {
+            var box = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            box.transform.parent = parent;
+            box.transform.localScale = Vector3.one;
+            box.transform.localPosition = Vector3.zero;
+            box.transform.localRotation = Quaternion.identity;
+            box.GetComponent<MeshRenderer>().material = Object.Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
+            box.GetComponent<MeshRenderer>().material.color = new Vector4(0.5f, 0, 0, 0.5f);
+            box.GetComponent<MeshRenderer>().receiveShadows = false;
+            box.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
+            box.GetComponent<MeshRenderer>().reflectionProbeUsage = ReflectionProbeUsage.Off;
+            Object.Destroy(box.GetComponent<Collider>());
+            return box;
         }
 
         private static WeaponColData EstimateWeaponCollider(MeshFilter meshFilter, Vector3 handPosition)

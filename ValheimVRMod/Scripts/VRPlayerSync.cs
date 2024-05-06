@@ -53,6 +53,8 @@ namespace ValheimVRMod.Scripts {
 
         public int remotePlayerNonDominantHandItemHash;
         public int remotePlayerDominantHandItemHash;
+        public bool hasReceivedData { get; private set; }
+
 
         private void Awake() {
             camera = new GameObject();
@@ -167,6 +169,8 @@ namespace ValheimVRMod.Scripts {
 
         private void syncPositionAndRotation(ZDO zdo, float dt)
         {
+            hasReceivedData = (zdo != null);
+
             if (zdo == null)
             {
                 return;
@@ -206,16 +210,13 @@ namespace ValheimVRMod.Scripts {
         }
 
         private void maybePullBow(bool pulling) {
-
             if (bowManager == null) {
                 if (!pulling || currentLeftWeapon == null) {
                     return;
-                }
-                
+                }                
                 bowManager = currentLeftWeapon.AddComponent<BowManager>();
                 bowManager.mainHand = isLeftHanded ? leftHand.transform : rightHand.transform;
             }
-
             bowManager.pulling = pulling;
         }
 

@@ -1,10 +1,6 @@
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.Rendering;
-using ValheimVRMod.Scripts.Block;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using Valve.VR;
@@ -15,16 +11,13 @@ namespace ValheimVRMod.Scripts
     {
         private const float MIN_SPEED = 3f;
         private const float MIN_STAB_SPEED = 1f;
-        private const float MAX_STAB_ANGLE = 30f;
-        private const float MAX_STAB_ANGLE_TWOHAND = 40f;
-        private const bool ENABLE_DEBUG_COLLIDER_INDICATOR = false;
 
         private bool scriptActive;
         private GameObject colliderParent;
         private ItemDrop.ItemData item;
         private Attack attack;
         private Attack secondaryAttack;
-        private bool isRightHand;
+        private bool isDominantHand;
         private Outline outline;
         private bool hasDrunk;
         private float postSecondaryAttackCountdown;
@@ -51,19 +44,9 @@ namespace ValheimVRMod.Scripts
             physicsEstimator = gameObject.AddComponent<PhysicsEstimator>();
             physicsEstimator.refTransform = CameraUtils.getCamera(CameraUtils.VR_CAMERA)?.transform.parent;
 
-            if (ENABLE_DEBUG_COLLIDER_INDICATOR)
+            if (VHVRConfig.ShowDebugColliders())
             {
-                debugColliderIndicator = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                debugColliderIndicator.transform.parent = transform;
-                debugColliderIndicator.transform.localScale = Vector3.one;
-                debugColliderIndicator.transform.localPosition = Vector3.zero;
-                debugColliderIndicator.transform.localRotation = Quaternion.identity;
-                debugColliderIndicator.GetComponent<MeshRenderer>().material = Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
-                debugColliderIndicator.GetComponent<MeshRenderer>().material.color = new Vector4(0.5f, 0, 0, 0.5f);
-                debugColliderIndicator.GetComponent<MeshRenderer>().receiveShadows = false;
-                debugColliderIndicator.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
-                debugColliderIndicator.GetComponent<MeshRenderer>().reflectionProbeUsage = ReflectionProbeUsage.Off;
-                Destroy(debugColliderIndicator.GetComponent<Collider>());
+                debugColliderIndicator = WeaponUtils.CreateDebugBox(transform);
             }
         }
 
@@ -81,7 +64,7 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            if (!isRightHand || EquipScript.getRight() != EquipType.Tankard || collider.name != "MouthCollider" || hasDrunk)
+            if (!isDominantHand || EquipScript.getRight() != EquipType.Tankard || collider.name != "MouthCollider" || hasDrunk)
             {
                 return;
             }
@@ -103,7 +86,7 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            if (isRightHand && EquipScript.getRight() == EquipType.Tankard)
+            if (isDominantHand && EquipScript.getRight() == EquipType.Tankard)
             {
                 if (collider.name == "MouthCollider" && hasDrunk)
                 {
@@ -157,13 +140,13 @@ namespace ValheimVRMod.Scripts
                         Player.m_localPlayer.m_animEvent,
                         null, item, null, 0.0f, 0.0f))
             {
-                if (isRightHand)
+                if (isDominantHand)
                 {
-                    VRPlayer.rightHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, SteamVR_Input_Sources.RightHand);
+                    VRPlayer.dominantHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, VRPlayer.dominantHandInputSource);
                 }
                 else
                 {
-                    VRPlayer.leftHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, SteamVR_Input_Sources.LeftHand);
+                    VRPlayer.dominantHand.otherHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, VRPlayer.nonDominantHandInputSource);
                 }
                 //bHaptics
                 if (!BhapticsTactsuit.suitDisabled)
@@ -249,21 +232,14 @@ namespace ValheimVRMod.Scripts
             transform.SetParent(Player.m_localPlayer.transform, true);
         }
 
-        public void setColliderParent(MeshFilter meshFilter, Vector3 handPosition, string name, bool rightHand)
+        public void setColliderParent(MeshFilter meshFilter, Vector3 handPosition, string name, bool isDominantHand)
         {
             var meshTranform = meshFilter.transform;
             outline = meshTranform.parent.gameObject.AddComponent<Outline>();
             outline.OutlineMode = Outline.Mode.OutlineVisible;
 
-            isRightHand = rightHand;
-            if (isRightHand)
-            {
-                item = Player.m_localPlayer.GetRightItem();
-            }
-            else
-            {
-                item = Player.m_localPlayer.GetLeftItem();
-            }
+            this.isDominantHand = isDominantHand;
+            item = isDominantHand ? Player.m_localPlayer.GetRightItem() : Player.m_localPlayer.GetLeftItem();
 
             attack = item.m_shared.m_attack.Clone();
             secondaryAttack = item.m_shared.m_secondaryAttack.Clone();
@@ -388,17 +364,17 @@ namespace ValheimVRMod.Scripts
         {
             Vector3 attackVelocity = mainHandPhysicsEstimator == null ? Vector3.zero : mainHandPhysicsEstimator.GetAverageVelocityInSnapshots();
 
-            if (Vector3.Angle(LocalWeaponWield.weaponForward, attackVelocity) > (LocalWeaponWield.isCurrentlyTwoHanded() ? MAX_STAB_ANGLE_TWOHAND : MAX_STAB_ANGLE))
-            {
+            if (!WeaponUtils.IsStab(attackVelocity, LocalWeaponWield.weaponForward, LocalWeaponWield.isCurrentlyTwoHanded())) {
                 return false;
             }
 
-            if (Vector3.Dot(attackVelocity, LocalWeaponWield.weaponForward) > MIN_STAB_SPEED * VHVRConfig.SwingSpeedRequirement())
+            if (Vector3.Dot(attackVelocity, LocalWeaponWield.weaponForward) < MIN_STAB_SPEED * VHVRConfig.SwingSpeedRequirement())
             {
-                LogUtils.LogDebug("VHVR: stab detected on weapon direction: " + LocalWeaponWield.weaponForward);
-                return true;
+                return false;
             }
-            return false;
+               
+            LogUtils.LogDebug("VHVR: stab detected on weapon direction: " + LocalWeaponWield.weaponForward);
+            return true;
         }
     }
 }
