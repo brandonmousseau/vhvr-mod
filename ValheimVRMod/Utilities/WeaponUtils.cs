@@ -308,6 +308,12 @@ namespace ValheimVRMod.Utilities
         private static readonly Dictionary<EquipType, WeaponColData> DUAL_WIELD_COLLIDERS = new Dictionary<EquipType, WeaponColData>
         {
             {
+                EquipType.DualAxes, WeaponColData.create(
+                    0.45f,  0.2f, 0.016f,
+                    0,  0, 0,
+                    0.45f,  0.45f, 0.45f
+            )},
+            {
                 EquipType.DualKnives, WeaponColData.create(
                     0.225f,  0.2f, 0.016f,
                     0,  0, 0,
