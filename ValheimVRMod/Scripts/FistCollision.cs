@@ -179,7 +179,7 @@ namespace ValheimVRMod.Scripts
                 return false;
             }
 
-            if (hasDualKnivesEquipped())
+            if (hasDualKnivesEquipped() || hasDualAxesEquipped())
             {
                 return true;
             }
@@ -200,7 +200,7 @@ namespace ValheimVRMod.Scripts
 
         public static bool hasDualWieldingWeaponEquipped()
         {
-            return hasClawsEquipped() || hasDualKnivesEquipped();
+            return hasClawsEquipped() || hasDualKnivesEquipped() || hasDualAxesEquipped();
         }
 
         public static bool hasClawsEquipped()
@@ -211,6 +211,11 @@ namespace ValheimVRMod.Scripts
         public static bool hasDualKnivesEquipped()
         {
             return EquipScript.getRight().Equals(EquipType.DualKnives);
+        }
+
+        public static bool hasDualAxesEquipped()
+        {
+            return EquipScript.getRight().Equals(EquipType.DualAxes);
         }
 
         public bool blockingWithFist()
