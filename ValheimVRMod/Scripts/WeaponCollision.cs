@@ -17,7 +17,7 @@ namespace ValheimVRMod.Scripts
         private ItemDrop.ItemData item;
         private Attack attack;
         private Attack secondaryAttack;
-        private bool isRightHand;
+        private bool isDominantHand;
         private Outline outline;
         private bool hasDrunk;
         private float postSecondaryAttackCountdown;
@@ -64,7 +64,7 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            if (!isRightHand || EquipScript.getRight() != EquipType.Tankard || collider.name != "MouthCollider" || hasDrunk)
+            if (!isDominantHand || EquipScript.getRight() != EquipType.Tankard || collider.name != "MouthCollider" || hasDrunk)
             {
                 return;
             }
@@ -86,7 +86,7 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            if (isRightHand && EquipScript.getRight() == EquipType.Tankard)
+            if (isDominantHand && EquipScript.getRight() == EquipType.Tankard)
             {
                 if (collider.name == "MouthCollider" && hasDrunk)
                 {
@@ -140,13 +140,13 @@ namespace ValheimVRMod.Scripts
                         Player.m_localPlayer.m_animEvent,
                         null, item, null, 0.0f, 0.0f))
             {
-                if (isRightHand)
+                if (isDominantHand)
                 {
-                    VRPlayer.rightHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, SteamVR_Input_Sources.RightHand);
+                    VRPlayer.dominantHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, VRPlayer.dominantHandInputSource);
                 }
                 else
                 {
-                    VRPlayer.leftHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, SteamVR_Input_Sources.LeftHand);
+                    VRPlayer.dominantHand.otherHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, VRPlayer.nonDominantHandInputSource);
                 }
                 //bHaptics
                 if (!BhapticsTactsuit.suitDisabled)
@@ -238,15 +238,8 @@ namespace ValheimVRMod.Scripts
             outline = meshTranform.parent.gameObject.AddComponent<Outline>();
             outline.OutlineMode = Outline.Mode.OutlineVisible;
 
-            isRightHand = rightHand;
-            if (isRightHand)
-            {
-                item = Player.m_localPlayer.GetRightItem();
-            }
-            else
-            {
-                item = Player.m_localPlayer.GetLeftItem();
-            }
+            isDominantHand = rightHand;
+            item = isDominantHand ? Player.m_localPlayer.GetRightItem() : Player.m_localPlayer.GetLeftItem();
 
             attack = item.m_shared.m_attack.Clone();
             secondaryAttack = item.m_shared.m_secondaryAttack.Clone();
