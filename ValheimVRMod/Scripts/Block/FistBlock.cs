@@ -80,7 +80,7 @@ namespace ValheimVRMod.Scripts.Block {
 
                 CheckParryMotion(hitData.m_dir, blockedWithLeftHand, blockedWithRightHand);
             }
-            else if (FistCollision.hasDualKnivesEquipped())
+            else if (FistCollision.hasDualWieldingWeaponEquipped() && !FistCollision.hasClawsEquipped())
             {
                 var leftAngle = Vector3.Dot(hitData.m_dir, offhand.TransformDirection(handUp));
                 var rightAngle = Vector3.Dot(hitData.m_dir, hand.TransformDirection(handUp));
