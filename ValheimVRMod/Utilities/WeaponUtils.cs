@@ -305,6 +305,22 @@ namespace ValheimVRMod.Utilities
             )}
         };
 
+        private static readonly Dictionary<EquipType, WeaponColData> DUAL_WIELD_COLLIDERS = new Dictionary<EquipType, WeaponColData>
+        {
+            {
+                EquipType.DualKnives, WeaponColData.create(
+                    0.225f,  0.2f, 0.016f,
+                    0,  0, 0,
+                    0.45f,  0.45f, 0.45f
+            )},
+            {
+                EquipType.None, WeaponColData.create( // fists
+                    0,  0.2f, 0.016f,
+                    0,  0, 0,
+                    0.45f,  0.45f, 0.45f
+            )},
+        };
+
         private static readonly Dictionary<string, WeaponColData> estimatedColliders = new Dictionary<string, WeaponColData>();
 
         private static readonly Dictionary<string, float> ATTACK_DURATIONS = new Dictionary<string, float>
@@ -345,9 +361,8 @@ namespace ValheimVRMod.Utilities
             return TWO_HANDED_MULTITARGET_SWIPE_NAMES.Contains(attack.m_attackAnimation);
         }
 
-        public static WeaponColData GetColliderData(string name, ItemDrop.ItemData item, MeshFilter meshFilter, Vector3 handPosition)
+        public static WeaponColData GetColliderData(string name, ItemDrop.ItemData item, MeshFilter meshFilter, Vector3? handPosition)
         {
-
             if (colliders.ContainsKey(name)) {
                 return colliders[name];
             }
@@ -359,7 +374,7 @@ namespace ValheimVRMod.Utilities
 
             if (meshFilter != null && handPosition != null)
             {
-                var estimatedCollider = EstimateWeaponCollider(meshFilter, handPosition);
+                var estimatedCollider = EstimateWeaponCollider(meshFilter, (Vector3) handPosition);
                 estimatedColliders[name] = estimatedCollider;
                 LogUtils.LogDebug(
                     "Estimated and registered collider for unknown weapon " + name + ": position " + estimatedCollider.pos + " scale " + estimatedCollider.scale);
@@ -373,6 +388,16 @@ namespace ValheimVRMod.Utilities
             }
 
             throw new InvalidEnumArgumentException();
+        }
+
+        public static WeaponColData GetDualWieldLeftHandColliderData(ItemDrop.ItemData item)
+        {
+            var equipType = EquipScript.getEquippedItem(item);
+            if (!DUAL_WIELD_COLLIDERS.ContainsKey(equipType))
+            {
+                equipType = EquipType.None;
+            }
+            return DUAL_WIELD_COLLIDERS[equipType];
         }
 
         // Estimates the direction and length of weapon handle behind the grip by identifying the dimension on which its mesh bounds is offset the farthest.
