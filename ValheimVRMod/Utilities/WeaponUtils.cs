@@ -296,7 +296,7 @@ namespace ValheimVRMod.Utilities
                 )},
                 {
                     EquipType.DualKnives, WeaponColData.create(
-                        0.225f,  0.2f, 0.016f,
+                        0.225f,  0.15f, 0.05f,
                         0,  0, 0,
                         0.45f,  0.45f, 0.45f
                 )},
@@ -313,13 +313,13 @@ namespace ValheimVRMod.Utilities
             {
                 {
                     EquipType.Claws, WeaponColData.create(
-                        0,  0.25f, 0.016f,
+                        0,  0.05f, 0.016f,
                         0,  0, 0,
                         0.3f,  0.9f, 0.3f
                 )},
                 {
                     EquipType.DualKnives, WeaponColData.create(
-                        0.15f,  0.2f, 0.016f,
+                        0.15f,  0.15f, 0.016f,
                         0,  0, 0,
                         0.5f, 0.5f, 0.3f
                 )},
