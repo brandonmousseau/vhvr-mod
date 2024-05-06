@@ -187,17 +187,12 @@ namespace ValheimVRMod.Scripts
 
         public static bool hasDualWieldingWeaponEquipped()
         {
-            return hasClawsEquipped() || hasDualKnivesEquipped();
+            return hasClawsEquipped() || EquipScript.getRight().Equals(EquipType.DualKnives);
         }
 
         public static bool hasClawsEquipped()
         {
             return EquipScript.getRight().Equals(EquipType.Claws);
-        }
-
-        public static bool hasDualKnivesEquipped()
-        {
-            return EquipScript.getRight().Equals(EquipType.DualKnives);
         }
 
         public bool blockingWithFist()
