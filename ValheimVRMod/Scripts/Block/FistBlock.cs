@@ -11,6 +11,7 @@ namespace ValheimVRMod.Scripts.Block {
         private Collider leftHandBlockBox;
         private Collider rightHandBlockBox;
         private MeshRenderer hitIndicator; // Renderer of disk indicating the position, direction, and block tolerance of an attack.
+        private EquipType? currentEquipType = null;
 
         public static FistBlock instance;
 
@@ -115,32 +116,21 @@ namespace ValheimVRMod.Scripts.Block {
 
         public void updateBlockBoxShape()
         {
-            if (FistCollision.hasDualAxesEquipped())
+            if (EquipScript.getRight() == currentEquipType)
             {
-                leftHandBlockBox.transform.localRotation = Quaternion.Euler(45, 0, 0);
-                leftHandBlockBox.transform.localPosition = new Vector3(0, 0.1f, 0.1f);
-                leftHandBlockBox.transform.localScale = new Vector3(0.3f, 1f, 0.35f);
-                rightHandBlockBox.transform.localRotation = Quaternion.Euler(45, 0, 0);
-                rightHandBlockBox.transform.localPosition = new Vector3(0, 0.1f, 0.1f);
-                rightHandBlockBox.transform.localScale = new Vector3(0.3f, 1, 0.35f);
                 return;
             }
-            if (FistCollision.hasDualKnivesEquipped())
-            {
-                leftHandBlockBox.transform.localRotation = Quaternion.Euler(45, 0, 0);
-                leftHandBlockBox.transform.localPosition = new Vector3(0, 0.1f, 0.1f);
-                leftHandBlockBox.transform.localScale = new Vector3(0.3f, 0.5f, 0.5f);
-                rightHandBlockBox.transform.localRotation = Quaternion.Euler(45, 0, 0);
-                rightHandBlockBox.transform.localPosition = new Vector3(0, 0.1f, 0.1f);
-                rightHandBlockBox.transform.localScale = new Vector3(0.3f, 0.5f, 0.5f);
-                return;
-            }
-            leftHandBlockBox.transform.localRotation = Quaternion.Euler(45, 0, 0);
-            leftHandBlockBox.transform.localPosition = new Vector3(0, 0.15f, -0.2f);
-            leftHandBlockBox.transform.localScale = new Vector3(0.3f, 0.3f, 0.85f);
-            rightHandBlockBox.transform.localRotation = Quaternion.Euler(45, 0, 0);
-            rightHandBlockBox.transform.localPosition = new Vector3(0, 0.15f, -0.2f);
-            rightHandBlockBox.transform.localScale = new Vector3(0.3f, 0.3f, 0.85f);
+
+            currentEquipType = EquipScript.getRight();
+
+            var colliderData = WeaponUtils.GetDualWieldLeftHandBlockingColliderData(Player.m_localPlayer?.GetRightItem());
+
+            leftHandBlockBox.transform.localPosition = colliderData.pos;
+            rightHandBlockBox.transform.localPosition = Vector3.Reflect(colliderData.pos, Vector3.right);
+            leftHandBlockBox.transform.localRotation = rightHandBlockBox.transform.localRotation =
+                Quaternion.Euler(colliderData.euler);
+            leftHandBlockBox.transform.localScale = rightHandBlockBox.transform.localScale =
+                colliderData.scale;
         }
 
         private void CheckParryMotion(Vector3 hitDir, bool blockedWithLeftHand, bool blockedWithRightHand)
@@ -166,10 +156,10 @@ namespace ValheimVRMod.Scripts.Block {
         private void CreateBlockBoxes()
         {
             leftHandBlockBox = GameObject.CreatePrimitive(PrimitiveType.Cube).GetComponent<Collider>();
-            leftHandBlockBox.transform.parent = VRPlayer.leftHand.transform;
+            leftHandBlockBox.transform.parent = VRPlayer.leftHandBone;
             leftHandBlockBox.isTrigger = true;
             rightHandBlockBox = GameObject.CreatePrimitive(PrimitiveType.Cube).GetComponent<Collider>();
-            rightHandBlockBox.transform.parent = VRPlayer.rightHand.transform;
+            rightHandBlockBox.transform.parent = VRPlayer.rightHandBone;
             rightHandBlockBox.isTrigger = true;
 
             var leftHandBlockBoxRenderer = leftHandBlockBox.GetComponent<MeshRenderer>();
@@ -185,7 +175,6 @@ namespace ValheimVRMod.Scripts.Block {
             {
                 Destroy(leftHandBlockBoxRenderer);
                 Destroy(rightHandBlockBoxRenderer);
-
             }
         }
 
