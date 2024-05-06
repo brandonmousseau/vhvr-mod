@@ -285,23 +285,51 @@ namespace ValheimVRMod.Utilities
             )}
         };
 
-        private static readonly Dictionary<EquipType, WeaponColData> DUAL_WIELD_COLLIDERS = new Dictionary<EquipType, WeaponColData>
-        {
+        private static readonly Dictionary<EquipType, WeaponColData> DUAL_WIELD_COLLIDERS =
+            new Dictionary<EquipType, WeaponColData>
             {
-                EquipType.DualKnives, WeaponColData.create(
-                    0.225f,  0.2f, 0.016f,
-                    0,  0, 0,
-                    0.45f,  0.45f, 0.45f
-            )},
-            {
-                EquipType.None, WeaponColData.create( // fists
-                    0,  0.2f, 0.016f,
-                    0,  0, 0,
-                    0.45f,  0.45f, 0.45f
-            )},
-        };
+                {
+                    EquipType.Claws, WeaponColData.create(
+                        0,  0.25f, 0.016f,
+                        0,  0, 0,
+                        0.45f,  0.5f, 0.45f
+                )},
+                {
+                    EquipType.DualKnives, WeaponColData.create(
+                        0.225f,  0.2f, 0.016f,
+                        0,  0, 0,
+                        0.45f,  0.45f, 0.45f
+                )},
+                {
+                    EquipType.None, WeaponColData.create( // fists
+                        0,  0.2f, 0.016f,
+                        0,  0, 0,
+                        0.45f,  0.45f, 0.45f
+                )},
+            };
 
-        private static readonly Dictionary<string, WeaponColData> estimatedColliders = new Dictionary<string, WeaponColData>();
+        private static readonly Dictionary<EquipType, WeaponColData> DUAL_WIELD_BLOCKING_COLLIDERS =
+            new Dictionary<EquipType, WeaponColData>
+            {
+                {
+                    EquipType.Claws, WeaponColData.create(
+                        0,  0.25f, 0.016f,
+                        0,  0, 0,
+                        0.3f,  0.9f, 0.3f
+                )},
+                {
+                    EquipType.DualKnives, WeaponColData.create(
+                        0.15f,  0.2f, 0.016f,
+                        0,  0, 0,
+                        0.5f, 0.5f, 0.3f
+                )},
+                {
+                    EquipType.None, WeaponColData.create( // fists
+                        0,  0, 0.016f,
+                        0,  0, 0,
+                        0.3f,  0.85f, 0.3f
+                )},
+            };
 
         private static readonly Dictionary<string, float> ATTACK_DURATIONS = new Dictionary<string, float>
         {
@@ -330,6 +358,8 @@ namespace ValheimVRMod.Utilities
 
         private static readonly HashSet<string> TWO_HANDED_MULTITARGET_SWIPE_NAMES =
             new HashSet<string>(new string[] { "battleaxe_attack", "atgeir_secondary" });
+
+        private static readonly Dictionary<string, WeaponColData> estimatedColliders = new Dictionary<string, WeaponColData>();
 
         public static float GetAttackDuration(Attack attack)
         {
@@ -378,6 +408,16 @@ namespace ValheimVRMod.Utilities
                 equipType = EquipType.None;
             }
             return DUAL_WIELD_COLLIDERS[equipType];
+        }
+
+        public static WeaponColData GetDualWieldLeftHandBlockingColliderData(ItemDrop.ItemData item)
+        {
+            var equipType = EquipScript.getEquippedItem(item);
+            if (!DUAL_WIELD_BLOCKING_COLLIDERS.ContainsKey(equipType))
+            {
+                equipType = EquipType.None;
+            }
+            return DUAL_WIELD_BLOCKING_COLLIDERS[equipType];
         }
 
         // Estimates the direction and length of weapon handle behind the grip by identifying the dimension on which its mesh bounds is offset the farthest.
@@ -503,20 +543,33 @@ namespace ValheimVRMod.Utilities
             return Vector3.Angle(velocity, weaponPointing) < (isTwoHanded ? MAX_STAB_ANGLE_TWO_HAND : MAX_STAB_ANGLE);
         }
 
+        public static GameObject CreateDebugSphere(Transform parent)
+        {
+            var sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            PrepareDebugGameObject(sphere, parent);
+            return sphere;
+        }
+
+
         public static GameObject CreateDebugBox(Transform parent)
         {
             var box = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            box.transform.parent = parent;
-            box.transform.localScale = Vector3.one;
-            box.transform.localPosition = Vector3.zero;
-            box.transform.localRotation = Quaternion.identity;
-            box.GetComponent<MeshRenderer>().material = Object.Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
-            box.GetComponent<MeshRenderer>().material.color = new Vector4(0.5f, 0, 0, 0.5f);
-            box.GetComponent<MeshRenderer>().receiveShadows = false;
-            box.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
-            box.GetComponent<MeshRenderer>().reflectionProbeUsage = ReflectionProbeUsage.Off;
-            Object.Destroy(box.GetComponent<Collider>());
+            PrepareDebugGameObject(box, parent);
             return box;
+        }
+
+        private static void PrepareDebugGameObject(GameObject gameObject, Transform parent)
+        {
+            gameObject.transform.parent = parent;
+            gameObject.transform.localScale = Vector3.one;
+            gameObject.transform.localPosition = Vector3.zero;
+            gameObject.transform.localRotation = Quaternion.identity;
+            gameObject.GetComponent<MeshRenderer>().material = Object.Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
+            gameObject.GetComponent<MeshRenderer>().material.color = new Vector4(0.5f, 0, 0, 0.5f);
+            gameObject.GetComponent<MeshRenderer>().receiveShadows = false;
+            gameObject.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
+            gameObject.GetComponent<MeshRenderer>().reflectionProbeUsage = ReflectionProbeUsage.Off;
+            Object.Destroy(gameObject.GetComponent<Collider>());
         }
 
         private static WeaponColData EstimateWeaponCollider(MeshFilter meshFilter, Vector3 handPosition)
