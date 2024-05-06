@@ -14,6 +14,8 @@ namespace ValheimVRMod.Scripts
         private const float MIN_SPEED = 5f;
 
         private GameObject colliderParent = null;
+        private Transform colliderPositioner;
+        private EquipType? currentEquipType = null;
         private bool isRightHand;
         private HandGesture handGesture;
         private PhysicsEstimator physicsEstimator { get { return isRightHand ? VRPlayer.rightHandPhysicsEstimator : VRPlayer.leftHandPhysicsEstimator; } }
@@ -127,36 +129,47 @@ namespace ValheimVRMod.Scripts
 
         private void OnRenderObject()
         {
-            transform.SetParent(colliderParent.transform);
+            refreshColliderShape();
+
+            transform.SetParent(colliderPositioner);
 
             transform.localRotation = Quaternion.identity;
             transform.localScale = Vector3.one;
-            if (hasDualAxesEquipped())
-            {
-                transform.localPosition = new Vector3(isRightHand ? -1f : 1f, 0, 0);
-            }
-            else if (hasDualKnivesEquipped())
-            {
-                transform.localPosition = new Vector3(isRightHand ? -0.5f : 0.5f, 0, 0);
-            }
-            else
-            {
-                transform.localPosition = Vector3.zero;
-            }
+            transform.localPosition = Vector3.zero;
 
             transform.SetParent(Player.m_localPlayer.transform, true);
         }
 
         public void setColliderParent(Transform obj, bool rightHand)
         {
-
             isRightHand = rightHand;
             handGesture = obj.GetComponent<HandGesture>();
             colliderParent = new GameObject();
             colliderParent.transform.parent = obj;
-            colliderParent.transform.localPosition = new Vector3(0, 0.003f, 0.00016f);
+            colliderParent.transform.localPosition = Vector3.zero;
             colliderParent.transform.localRotation = Quaternion.identity;
-            colliderParent.transform.localScale *= 0.45f;
+            colliderPositioner = new GameObject().transform;
+            colliderPositioner.parent = colliderParent.transform;
+        }
+
+        public void refreshColliderShape()
+        {
+            if (EquipScript.getRight() == currentEquipType)
+            {
+                return;
+            }
+
+            currentEquipType = EquipScript.getRight();
+
+            var colliderData =
+                WeaponUtils.GetDualWieldLeftHandColliderData(Player.m_localPlayer?.GetRightItem());
+
+            colliderPositioner.localPosition =
+                isRightHand ?
+                Vector3.Reflect(colliderData.pos, Vector3.right) :
+                colliderData.pos;
+            colliderPositioner.localRotation = Quaternion.Euler(colliderData.euler);
+            colliderPositioner.localScale = colliderData.scale;
         }
 
         private bool canAttackWithCollision()
@@ -166,7 +179,7 @@ namespace ValheimVRMod.Scripts
                 return false;
             }
 
-            if (hasDualKnivesEquipped() || hasDualAxesEquipped())
+            if (hasDualKnivesEquipped())
             {
                 return true;
             }
@@ -180,7 +193,6 @@ namespace ValheimVRMod.Scripts
             return false;
         }
 
-
         public bool hasMomentum()
         {
             return physicsEstimator.GetVelocity().magnitude >= MIN_SPEED * VHVRConfig.SwingSpeedRequirement();
@@ -188,7 +200,7 @@ namespace ValheimVRMod.Scripts
 
         public static bool hasDualWieldingWeaponEquipped()
         {
-            return hasClawsEquipped() || hasDualKnivesEquipped() || hasDualAxesEquipped();
+            return hasClawsEquipped() || hasDualKnivesEquipped();
         }
 
         public static bool hasClawsEquipped()
@@ -199,11 +211,6 @@ namespace ValheimVRMod.Scripts
         public static bool hasDualKnivesEquipped()
         {
             return EquipScript.getRight().Equals(EquipType.DualKnives);
-        }
-
-        public static bool hasDualAxesEquipped()
-        {
-            return EquipScript.getRight().Equals(EquipType.DualAxes);
         }
 
         public bool blockingWithFist()
