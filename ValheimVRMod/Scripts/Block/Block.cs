@@ -69,7 +69,7 @@ namespace ValheimVRMod.Scripts.Block {
                 Destroy(blockCollider.gameObject);
             }
 
-            if (lastRenderedTransform?.gameObject != null)
+            if (lastRenderedTransform != null)
             {
                 Destroy(lastRenderedTransform.gameObject);
             }

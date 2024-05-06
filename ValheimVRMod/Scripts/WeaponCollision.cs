@@ -19,7 +19,7 @@ namespace ValheimVRMod.Scripts
         private Attack secondaryAttack;
         private bool isDominantHand;
         private Outline outline;
-        private bool hasDrunk;
+        private bool readyToDrink;
         private float postSecondaryAttackCountdown;
         private GameObject debugColliderIndicator;
 
@@ -56,27 +56,27 @@ namespace ValheimVRMod.Scripts
             if (debugColliderIndicator) Destroy(debugColliderIndicator);
         }
 
-        private void OnTriggerStay(Collider collider)
+        private bool CheckDrinking(Collider collider)
         {
-
-            if (!isCollisionAllowed())
+            if (!isDominantHand || EquipScript.getRight() != EquipType.Tankard || collider.name != "MouthCollider" || !readyToDrink)
             {
-                return;
+                return false;
             }
 
-            if (!isDominantHand || EquipScript.getRight() != EquipType.Tankard || collider.name != "MouthCollider" || hasDrunk)
+            isDrinking = weaponWield.mainHand.transform.rotation.eulerAngles.x > 0 && weaponWield.mainHand.transform.rotation.eulerAngles.x < 90;
+            if (!isDrinking)
             {
-                return;
+                return false;
             }
+            
+            readyToDrink = false;
 
-            isDrinking = hasDrunk = weaponWield.mainHand.transform.rotation.eulerAngles.x > 0 && weaponWield.mainHand.transform.rotation.eulerAngles.x < 90;
-
-            //bHaptics
-            if (isDrinking && !BhapticsTactsuit.suitDisabled)
+            if (!BhapticsTactsuit.suitDisabled)
             {
                 BhapticsTactsuit.PlaybackHaptics("Drinking");
             }
 
+            return true;
         }
 
         private void OnTriggerEnter(Collider collider)
@@ -86,26 +86,68 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            if (isDominantHand && EquipScript.getRight() == EquipType.Tankard)
+            if (isDominantHand &&
+                EquipScript.getRight() == EquipType.Tankard &&
+                collider.name == "MouthCollider")
             {
-                if (collider.name == "MouthCollider" && hasDrunk)
+                readyToDrink = true;
+            }
+
+            MaybeAttackCollider(collider, requireStab: false);
+        }
+
+        private void OnTriggerStay(Collider collider)
+        {
+            if (!isCollisionAllowed())
+            {
+                return;
+            }
+
+            if (CheckDrinking(collider)) {
+                return;
+            }
+
+            // Allow triggering a stab on a character target after contact.
+            // This allows stabbing with long weapons that are likely to have been overlapping with the target before attacking. 
+            MaybeStabCharacter(collider);
+        }
+
+        private void MaybeStabCharacter(Collider collider) {
+
+            var targetCharacter = collider.GetComponentInParent<Character>();
+            if (targetCharacter == null)
+            {
+                return;
+            }
+
+            var cooldown = targetCharacter.GetComponent<AttackTargetMeshCooldown>();
+            if (cooldown != null && cooldown.inCoolDown())
+            {
+                return;
+            }
+
+            MaybeAttackCollider(collider, requireStab: true);
+        }
+
+        private void MaybeAttackCollider(Collider collider, bool requireStab) {
+
+            if (Player.m_localPlayer != null &&
+                Player.m_localPlayer == collider.GetComponentInParent<Player>())
+            {
+                return;
+            }
+
+            if (item == null && !itemIsTool)
+            {
+                return;
+            }
+
+            if (!isStab())
+            {
+                if (requireStab || !hasMomentum())
                 {
-                    hasDrunk = false;
+                    return;
                 }
-
-                return;
-            }
-
-            var maybePlayer = collider.GetComponentInParent<Player>();
-
-            if (maybePlayer != null && maybePlayer == Player.m_localPlayer)
-            {
-                return;
-            }
-
-            if (item == null && !itemIsTool || !hasMomentum())
-            {
-                return;
             }
 
             bool isSecondaryAttack = postSecondaryAttackCountdown <= 0 && RoomscaleSecondaryAttackUtils.IsSecondaryAttack(this.physicsEstimator, this.mainHandPhysicsEstimator);
@@ -158,7 +200,6 @@ namespace ValheimVRMod.Scripts
 
         private bool tryHitTarget(GameObject target, bool isSecondaryAttack)
         {
-
             // ignore certain Layers
             if (ignoreLayers.Contains(target.layer))
             {
@@ -186,26 +227,27 @@ namespace ValheimVRMod.Scripts
 
             isLastHitOnTerrain = false;
 
-            if (target.GetComponentInParent<MineRock5>() != null)
-            {
-                target = target.transform.parent.gameObject;
-            }
-
-            if (target.GetComponent<Heightmap>() != null)
+            if (target.GetComponentInParent<MineRock5>() != null &&
+                target.transform.parent.GetComponent<Heightmap>() != null)
             {
                 isLastHitOnTerrain = true;
             }
 
-            var character = target.GetComponentInParent<Character>();
-            if (character != null)
-            {
-                target = character.gameObject;
-            }
-
-            var attackTargetMeshCooldown = target.GetComponent<AttackTargetMeshCooldown>();
+            AttackTargetMeshCooldown attackTargetMeshCooldown = target.GetComponentInParent<AttackTargetMeshCooldown>();
             if (attackTargetMeshCooldown == null)
             {
-                attackTargetMeshCooldown = target.AddComponent<AttackTargetMeshCooldown>();
+                var cooldownObject = target;
+                var character = target.GetComponentInParent<Character>();
+                if (character != null)
+                {
+                    cooldownObject = character.gameObject;
+                }
+                else if (target.GetComponentInParent<MineRock5>() != null)
+                {
+                    cooldownObject = target.transform.parent.gameObject;
+                }
+
+                attackTargetMeshCooldown = cooldownObject.AddComponent<AttackTargetMeshCooldown>();
             }
 
             if (isSecondaryAttack)
@@ -239,7 +281,7 @@ namespace ValheimVRMod.Scripts
             outline.OutlineMode = Outline.Mode.OutlineVisible;
 
             this.isDominantHand = isDominantHand;
-            item = isDominantHand ? Player.m_localPlayer.GetRightItem() : Player.m_localPlayer.GetLeftItem();
+            item = this.isDominantHand ? Player.m_localPlayer.GetRightItem() : Player.m_localPlayer.GetLeftItem();
 
             attack = item.m_shared.m_attack.Clone();
             secondaryAttack = item.m_shared.m_secondaryAttack.Clone();
@@ -269,7 +311,6 @@ namespace ValheimVRMod.Scripts
 
         private void Update()
         {
-
             if (!outline || ButtonSecondaryAttackManager.isSecondaryAttackStarted)
             {
                 return;
@@ -334,13 +375,8 @@ namespace ValheimVRMod.Scripts
             }
         }
 
-        public bool hasMomentum()
+        private bool hasMomentum()
         {
-            if (isStab())
-            {
-                return true;
-            }
-
             float handSpeed;
             if (weaponWield.twoHandedState == WeaponWield.TwoHandedState.SingleHanded)
             {
