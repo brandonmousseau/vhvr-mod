@@ -232,13 +232,13 @@ namespace ValheimVRMod.Scripts
             transform.SetParent(Player.m_localPlayer.transform, true);
         }
 
-        public void setColliderParent(MeshFilter meshFilter, Vector3 handPosition, string name, bool rightHand)
+        public void setColliderParent(MeshFilter meshFilter, Vector3 handPosition, string name, bool isDominantHand)
         {
             var meshTranform = meshFilter.transform;
             outline = meshTranform.parent.gameObject.AddComponent<Outline>();
             outline.OutlineMode = Outline.Mode.OutlineVisible;
 
-            isDominantHand = rightHand;
+            this.isDominantHand = isDominantHand;
             item = isDominantHand ? Player.m_localPlayer.GetRightItem() : Player.m_localPlayer.GetLeftItem();
 
             attack = item.m_shared.m_attack.Clone();
