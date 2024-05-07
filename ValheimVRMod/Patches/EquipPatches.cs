@@ -165,6 +165,11 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
+            if (MagicWeaponManager.CanSummonWithOppositeHand())
+            {
+                ___m_leftItemInstance.AddComponent<MagicWeaponManager.UpwardHandSummonManager>();
+            }
+
             if (StaticObjects.rightHandQuickMenu != null) {
                 StaticObjects.rightHandQuickMenu.GetComponent<RightHandQuickMenu>().refreshItems();
                 StaticObjects.leftHandQuickMenu.GetComponent<LeftHandQuickMenu>().refreshItems();
