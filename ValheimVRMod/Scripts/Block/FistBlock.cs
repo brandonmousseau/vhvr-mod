@@ -52,7 +52,7 @@ namespace ValheimVRMod.Scripts.Block {
         protected override void OnDestroy()
         {
             base.OnDestroy();
-            if (hitIndicator?.gameObject)
+            if (hitIndicator != null)
             {
                 Destroy(hitIndicator.gameObject);
             }
@@ -80,7 +80,7 @@ namespace ValheimVRMod.Scripts.Block {
 
                 CheckParryMotion(hitData.m_dir, blockedWithLeftHand, blockedWithRightHand);
             }
-            else if (FistCollision.hasDualWieldingWeaponEquipped() && !FistCollision.hasClawsEquipped())
+            else if (FistCollision.hasDualWieldingWeaponEquipped() && EquipScript.getRight() != EquipType.Claws)
             {
                 var leftAngle = Vector3.Dot(hitData.m_dir, offhand.TransformDirection(handUp));
                 var rightAngle = Vector3.Dot(hitData.m_dir, hand.TransformDirection(handUp));
