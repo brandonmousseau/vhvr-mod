@@ -575,6 +575,17 @@ namespace ValheimVRMod.Utilities
             return Vector3.Angle(velocity, weaponPointing) < (isTwoHanded ? MAX_STAB_ANGLE_TWO_HAND : MAX_STAB_ANGLE);
         }
 
+        public static void AlignLoadedMeshToUnloadedMesh(GameObject loaded, GameObject unloaded)
+        {
+            var loadedMeshFilter = loaded.GetComponentInChildren<MeshFilter>();
+            var unloadedMeshFilter = unloaded.GetComponentInChildren<MeshFilter>();
+            var loadedMeshCenter = loadedMeshFilter.transform.TransformPoint(loadedMeshFilter.sharedMesh.bounds.center);
+            var unloadedMeshCenter = unloadedMeshFilter.transform.TransformPoint(unloadedMeshFilter.sharedMesh.bounds.center);
+
+            loaded.transform.position += (unloadedMeshCenter - loadedMeshCenter);
+        }
+
+
         public static GameObject CreateDebugSphere(Transform parent)
         {
             var sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
