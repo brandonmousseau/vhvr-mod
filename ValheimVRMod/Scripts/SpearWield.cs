@@ -31,14 +31,14 @@ namespace ValheimVRMod.Scripts
             harpoonHidingTimer = 1;
         }
 
-        protected override Vector3 GetSingleHandedPosition(Vector3 originalPosition)
+        protected override Vector3 GetDesiredSingleHandedPosition(Vector3 originalPosition)
         {
             return VHVRConfig.SpearInverseWield() && !ThrowableManager.isAiming ?
                 originalPosition + 0.5f * GetWeaponPointingDir() :
-                base.GetSingleHandedPosition(originalPosition);
+                base.GetDesiredSingleHandedPosition(originalPosition);
         }
 
-        protected override Quaternion GetSingleHandedRotation(Quaternion originalRotation)
+        protected override Quaternion GetDesiredSingleHandedRotation(Quaternion originalRotation)
         {
             if (ThrowableManager.isAiming)
             {
