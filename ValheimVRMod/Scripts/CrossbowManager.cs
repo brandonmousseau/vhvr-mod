@@ -43,7 +43,7 @@ namespace ValheimVRMod.Scripts {
             if (!isAiming)
             {
                 transform.localPosition = Vector3.zero;
-                transform.rotation = GetSingleHandedRotation(GetOriginalRotation());
+                transform.rotation = GetDesiredSingleHandedRotation(GetOriginalRotation());
                 VrikCreator.ResetHandConnectors();
                 return;
             }
@@ -87,7 +87,7 @@ namespace ValheimVRMod.Scripts {
             return transform.forward;
         }        
 
-        protected override Quaternion GetSingleHandedRotation(Quaternion originalRotation)
+        protected override Quaternion GetDesiredSingleHandedRotation(Quaternion originalRotation)
         {
             // Make sure the top of the bow is facing up when holding it one-handed.
             return VHVRConfig.LeftHanded() ? originalRotation * Quaternion.AngleAxis(180, Vector3.forward) : originalRotation;
