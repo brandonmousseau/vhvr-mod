@@ -8,9 +8,13 @@ namespace ValheimVRMod.Scripts
     class SpearWield : LocalWeaponWield
     {
         private float harpoonHidingTimer = 0;
+        private Vector3 lastFixedUpdatedAimDir;
 
         void FixedUpdate()
         {
+            // Record the aiming direction here instead of querying it whenever so that when OnRenderObject() is called
+            // for two eyes in the same frame the value would not be different.
+            lastFixedUpdatedAimDir = ThrowableManager.aimDir;
 
             var throwableManager = GetComponentInChildren<ThrowableManager>();
 
@@ -42,11 +46,11 @@ namespace ValheimVRMod.Scripts
         {
             if (ThrowableManager.isAiming)
             {
-                var pointing = ThrowableManager.aimDir.normalized;
+                var pointing = lastFixedUpdatedAimDir.normalized;
 
                 if (VHVRConfig.SpearThrowType() != "Classic")
                 {
-                    return PointAtWeaponAtDirection(pointing);
+                    return PointWeaponAtDirection(pointing);
                 }
 
                 Vector3 staticPointing =
@@ -65,7 +69,7 @@ namespace ValheimVRMod.Scripts
                 }
 
                 // Use a weight to avoid direction flickering when the hand speed 
-                return PointAtWeaponAtDirection(
+                return PointWeaponAtDirection(
                     Vector3.RotateTowards(staticPointing, pointing, Mathf.Max(weight * 8 - 1, 0), Mathf.Infinity));
 
             }
