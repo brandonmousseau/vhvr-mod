@@ -23,7 +23,8 @@ namespace ValheimVRMod.Scripts
             this.twoHandedStateSync = twoHandedStateSync;
             this.leftHandTransform = leftHandTransform;
             this.rightHandTransform = rightHandTransform;
-            base.Initialize(item, itemName);
+            // TODO: figure out a better way to detect crossbow.
+            base.Initialize(item, itemName, forceUsingCrossbowGeometry: !isDominantHandWeapon);
         }
 
         protected override bool IsPlayerLeftHanded()
@@ -44,28 +45,6 @@ namespace ValheimVRMod.Scripts
         protected override TwoHandedState GetDesiredTwoHandedState(bool wasTwoHanded)
         {
             return twoHandedStateSync.GetTwoHandedState();
-        }
-
-        protected override Vector3 GetWeaponPointingDir()
-        {
-            if (!isDominantHandWeapon)
-            {
-                // This check is for crossbow.
-                // TODO: figure out a better way to detect crossbow and adjust weapon up direction and dist accordingly.
-                return transform.forward;
-            }
-            return base.GetWeaponPointingDir();
-        }
-
-        protected override Vector3 GetPreferredTwoHandedWeaponUp()
-        {
-            if (!isDominantHandWeapon)
-            {
-                // This check is for crossbow.
-                // TODO: figure out a better way to detect crossbow and adjust weapon up direction and dist accordingly.
-                return rearHandTransform.up;
-            }
-            return base.GetPreferredTwoHandedWeaponUp();
         }
 
         protected override void OnRenderObject()
