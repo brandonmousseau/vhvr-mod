@@ -6,7 +6,7 @@ using Valve.VR;
 namespace ValheimVRMod.Scripts {
     class CrossbowManager : LocalWeaponWield
     {
-        private const float INTERGRIP_DISTANCE = 0.35f;
+        public const float INTERGRIP_DISTANCE = 0.35f;
         private static CrossbowManager instance;
         private static readonly Quaternion frontGripRotationForLeftHand = Quaternion.Euler(0, -15, 90);
         private static readonly Quaternion frontGripRotationForRightHand = Quaternion.Euler(0, 0, -120);
@@ -55,8 +55,8 @@ namespace ValheimVRMod.Scripts {
             bool isAiming = VHVRConfig.LeftHanded() ? SteamVR_Actions.valheim_UseLeft.state : SteamVR_Actions.valheim_Use.state;
             if (!isAiming)
             {
-                transform.localPosition = Vector3.zero;
-                transform.rotation = GetDesiredSingleHandedRotation(GetOriginalRotation());
+                transform.localPosition = geometryProvider.GetDesiredSingleHandedPosition(this);
+                transform.rotation = geometryProvider.GetDesiredSingleHandedRotation(this);
                 VrikCreator.ResetHandConnectors();
                 return;
             }
@@ -83,7 +83,7 @@ namespace ValheimVRMod.Scripts {
         }
 
         protected override void RotateHandsForTwoHandedWield(Vector3 weaponPointingDir) {
-            Quaternion lookRotation = Quaternion.LookRotation(weaponPointingDir, GetPreferredTwoHandedWeaponUp());
+            Quaternion lookRotation = Quaternion.LookRotation(weaponPointingDir, geometryProvider.GetPreferredTwoHandedWeaponUp(this));
             switch (twoHandedState)
             {
                 case TwoHandedState.LeftHandBehind:
@@ -93,40 +93,6 @@ namespace ValheimVRMod.Scripts {
                     VrikCreator.localPlayerLeftHandConnector.rotation = lookRotation * frontGripRotationForLeftHand;
                     break;
             }
-        }
-        
-        protected override Vector3 GetWeaponPointingDir()
-        {
-            return transform.forward;
-        }        
-
-        protected override Quaternion GetDesiredSingleHandedRotation(Quaternion originalRotation)
-        {
-            // Make sure the top of the bow is facing up when holding it one-handed.
-            return VHVRConfig.LeftHanded() ? originalRotation * Quaternion.AngleAxis(180, Vector3.forward) : originalRotation;
-        }
-
-        protected override Vector3 GetPreferredTwoHandedWeaponUp()
-        {
-            Vector3 rearHandleUp = Vector3.Cross(frontHandTransform.position - rearHandTransform.position, rearHandTransform.right).normalized;
-            switch (VHVRConfig.CrossbowSaggitalRotationSource())
-            {
-                case "RearHand":
-                    return rearHandleUp;
-                case "BothHands":
-                    Vector3 frontHandPalmar = twoHandedState == TwoHandedState.LeftHandBehind ? -frontHandTransform.right : frontHandTransform.right;
-                    Vector3 frontHandRadial = frontHandTransform.up;
-                    Vector3 frontHandleUp = (frontHandPalmar * 1.73f + frontHandRadial).normalized;
-                    return frontHandleUp + rearHandleUp;
-                default:
-                    LogUtils.LogWarning("WeaponWield: unknown CrossbowSaggitalRotationSource");
-                    return rearHandleUp;
-            }
-        }
-
-        protected override float GetPreferredOffsetFromRearHand(float handDist)
-        {
-            return INTERGRIP_DISTANCE;
         }
 
         protected override bool TemporaryDisableTwoHandedWield()
