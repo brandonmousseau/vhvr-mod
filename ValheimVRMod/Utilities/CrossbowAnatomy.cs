@@ -41,7 +41,7 @@ namespace ValheimVRMod.Utilities {
                     /* restingStringRight= */ new Vector3(0.625f, 1.19f, -0.0525f),
                     /* restingNockingPoint= */ new Vector3(0, 1.19f, -0.0525f),
                     /* anchorPoint= */  new Vector3(0, 0.69f, -0.05f),
-                    /* maxBendAngleRadians= */ 0.28f,
+                    /* maxBendAngleRadians= */ 0.31f,
                     /* softLimbHeight= */ 0.01f,
                     /* stringRadius= */ 0.0075f,
                     /* boltCenterToTailDistance= */ 0.51f)
@@ -56,7 +56,7 @@ namespace ValheimVRMod.Utilities {
                     /* restingStringRight= */ new Vector3(0.625f, 1.19f, -0.0525f),
                     /* restingNockingPoint= */ new Vector3(0, 1.19f, -0.0525f),
                     /* anchorPoint= */  new Vector3(0, 0.69f, -0.05f),
-                    /* maxBendAngleRadians= */ 0.28f,
+                    /* maxBendAngleRadians= */ 0.4f,
                     /* softLimbHeight= */ 0.01f,
                     /* stringRadius= */ 0.0075f,
                     /* boltCenterToTailDistance= */ 0.51f)
@@ -71,7 +71,7 @@ namespace ValheimVRMod.Utilities {
                     /* restingStringRight= */ new Vector3(0.625f, 1.19f, -0.0525f),
                     /* restingNockingPoint= */ new Vector3(0, 1.19f, -0.0525f),
                     /* anchorPoint= */  new Vector3(0, 0.69f, -0.05f),
-                    /* maxBendAngleRadians= */ 0.28f,
+                    /* maxBendAngleRadians= */ 0.31f,
                     /* softLimbHeight= */ 0.01f,
                     /* stringRadius= */ 0.0075f,
                     /* boltCenterToTailDistance= */ 0.51f)
@@ -86,7 +86,7 @@ namespace ValheimVRMod.Utilities {
                     /* restingStringRight= */ new Vector3(0.625f, 1.19f, -0.0525f),
                     /* restingNockingPoint= */ new Vector3(0, 1.19f, -0.0525f),
                     /* anchorPoint= */  new Vector3(0, 0.69f, -0.05f),
-                    /* maxBendAngleRadians= */ 0.28f,
+                    /* maxBendAngleRadians= */ 0.31f,
                     /* softLimbHeight= */ 0.01f,
                     /* stringRadius= */ 0.0075f,
                     /* boltCenterToTailDistance= */ 0.51f)
