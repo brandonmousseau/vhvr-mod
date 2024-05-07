@@ -84,7 +84,11 @@ namespace ValheimVRMod.Scripts
                 InitializeRedDot();
             }
 
-            if (EquipScript.getLeft() == EquipType.Crossbow && VHVRConfig.OneHandedBow())
+            if (IsHandGunMode())
+            {
+                isAiming = true;
+            }
+            else if (EquipScript.getLeft() == EquipType.Crossbow && VHVRConfig.OneHandedBow())
             {
                 isAiming = true;
             }
