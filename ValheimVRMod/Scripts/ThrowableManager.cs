@@ -33,16 +33,10 @@ namespace ValheimVRMod.Scripts
 
         private void Awake()
         {
-            rotSave = new GameObject();
-            rotSave.transform.SetParent(transform.parent);
-            rotSave.transform.position = transform.position;
-            rotSave.transform.localRotation = transform.localRotation;
-
             directionLine = new GameObject().AddComponent<LineRenderer>();
             directionLine.widthMultiplier = 0.03f;
             directionLine.positionCount = 2;
             directionLine.material = Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
-            directionLine.material.color = Color.white;
             directionLine.enabled = false;
             directionLine.receiveShadows = false;
             directionLine.shadowCastingMode = ShadowCastingMode.Off;
@@ -108,6 +102,12 @@ namespace ValheimVRMod.Scripts
             if (!VHVRConfig.UseSpearDirectionGraphic())
             {
                 return;
+            }
+
+            if (directionLine.enabled)
+            {
+                directionLine.material.color =
+                    isAiming ? Color.white : new Color(1, 1, 1, directionCooldown / TOTAL_DIRECTION_LINE_COOL_DOWN);
             }
 
             if (directionCooldown <= 0 || LocalWeaponWield.isCurrentlyTwoHanded())
@@ -184,21 +184,7 @@ namespace ValheimVRMod.Scripts
 
             if (isAiming)
             {
-
-                if (VHVRConfig.SpearThrowType() == "Classic")
-                {
-                    // Since classic throw type calculates spear pointing solely based on hand velocity,
-                    // avoid responding to it too much at low velocity so that the spear direction does not flicker.
-                    Vector3 defaultDirection =
-                        Quaternion.AngleAxis(-30, VRPlayer.dominantHand.transform.right) * (VHVRConfig.SpearInverseWield() ? -LocalWeaponWield.weaponForward : LocalWeaponWield.weaponForward);
-                    float aligning = Vector3.Dot(defaultDirection, direction.normalized) * handPhysicsEstimator.GetVelocity().magnitude;
-                    Vector3 aligningDirection = aligning > 0 ? direction.normalized : -direction.normalized;
-                    Vector3 spearPointing = Vector3.RotateTowards(defaultDirection, aligningDirection, Mathf.Atan(Mathf.Abs(aligning) * 0.5f), Mathf.Infinity);
-                    UpdateSpearThrowModel(spearPointing);
-                }
-                else {
-                    UpdateSpearThrowModel(direction.normalized);
-                }
+                aimDir = direction;
                 UpdateDirectionLine(
                     VRPlayer.dominantHand.transform.position - direction.normalized,
                     VRPlayer.dominantHand.transform.position + direction.normalized * 50);
@@ -225,30 +211,17 @@ namespace ValheimVRMod.Scripts
             if (throwing.Distance > minDist)
             {
                 isThrowing = true;
+                if (EquipScript.getRight() == EquipType.SpearChitin)
+                {
+                    GetComponentInParent<SpearWield>().HideHarpoon();
+                }
+
             }
 
             if (useAction.GetStateUp(VRPlayer.dominantHandInputSource) && throwing.Distance <= minDist)
             {
                 startAim = Vector3.zero;
                 ResetSpearOffset();
-            }
-        }
-
-        private void UpdateSpearThrowModel(Vector3 inversePosition)
-        {
-            if (!EquipScript.isSpearEquipped())
-            {
-                return;
-            }
-
-            var offsetPos = Vector3.Distance(VRPlayer.dominantHand.transform.position, rotSave.transform.position);
-            transform.position = VRPlayer.dominantHand.transform.position - Vector3.ClampMagnitude(inversePosition, offsetPos);
-            transform.LookAt(VRPlayer.dominantHand.transform.position + inversePosition);
-            transform.localRotation *= rotSave.transform.localRotation;
-
-            if (!VHVRConfig.SpearInverseWield())
-            {
-                transform.localRotation *= Quaternion.AngleAxis(180, Vector3.right);
             }
         }
 
@@ -261,9 +234,6 @@ namespace ValheimVRMod.Scripts
             {
                 return;
             }
-
-            transform.position = rotSave.transform.position;
-            transform.localRotation = rotSave.transform.localRotation;
         }
 
         private void UpdateDirectionLine(Vector3 pos1, Vector3 pos2)

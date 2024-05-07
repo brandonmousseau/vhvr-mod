@@ -24,7 +24,6 @@ namespace ValheimVRMod.Scripts
 
         private static Dictionary<string, Vector3> EstimatedWeaponLocalPointingDirections = new Dictionary<string, Vector3>();
         private static Dictionary<string, float> DistancesBehindGripAndRearEnd = new Dictionary<string, float>();
-        private Transform singleHandedTransform;
         private Transform originalTransform;
         private Quaternion offsetFromPointingDir; // The rotation offset of this transform relative to the direction the weapon is pointing at.
         private Vector3 estimatedLocalWeaponPointingDir = Vector3.forward;
@@ -37,11 +36,11 @@ namespace ValheimVRMod.Scripts
             attackAnimation = item?.m_shared.m_attack?.m_attackAnimation?? "";
 
             originalTransform = new GameObject().transform;
-            singleHandedTransform = new GameObject().transform;
-            originalTransform.parent = singleHandedTransform.parent = transform.parent;
-            originalTransform.position = singleHandedTransform.position = transform.position;
+            originalTransform.parent = transform.parent;
+            originalTransform.position = transform.position;
             originalTransform.rotation = transform.rotation;
-            transform.rotation = singleHandedTransform.rotation = GetSingleHandedRotation(originalTransform.rotation);
+            transform.position = GetDesiredSingleHandedPosition(originalTransform.position);
+            transform.rotation = GetDesiredSingleHandedRotation(originalTransform.rotation);
 
             MeshFilter weaponMeshFilter = gameObject.GetComponentInChildren<MeshFilter>();
             if (weaponMeshFilter != null)
@@ -80,7 +79,6 @@ namespace ValheimVRMod.Scripts
         protected virtual void OnDestroy()
         {
             Destroy(originalTransform.gameObject);
-            Destroy(singleHandedTransform.gameObject);
         }
 
         protected virtual void OnRenderObject()
@@ -94,9 +92,14 @@ namespace ValheimVRMod.Scripts
             return transform.TransformDirection(estimatedLocalWeaponPointingDir);
         }
 
+        protected virtual Vector3 GetDesiredSingleHandedPosition(Vector3 originalPosition)
+        {
+            return originalPosition;
+        }
+
         // Calculates the correct rotation of this game object for single-handed mode using the original rotation.
         // This should be the same as the original rotation in most cases but there are exceptions.
-        protected virtual Quaternion GetSingleHandedRotation(Quaternion originalRotation)
+        protected virtual Quaternion GetDesiredSingleHandedRotation(Quaternion originalRotation)
         {
             switch (attackAnimation)
             {
@@ -111,7 +114,7 @@ namespace ValheimVRMod.Scripts
         // The preferred up direction used to determine the weapon's rotation around it longitudinal axis during two-handed wield.
         protected virtual Vector3 GetPreferredTwoHandedWeaponUp()
         {
-            return singleHandedTransform.up;
+            return originalTransform.up;
         }
 
         // The preferred forward offset amount of the weapon's position from the rear hand during two-handed wield.
@@ -138,28 +141,36 @@ namespace ValheimVRMod.Scripts
         // Updates weapon position and rotation and returns the new direction that the weapon is pointing toward.
         protected virtual Vector3 UpdateTwoHandedWield()
         {
-            bool wasTwoHanded = (twoHandedState != TwoHandedState.SingleHanded);
+            var wasTwoHanded = (twoHandedState != TwoHandedState.SingleHanded);
             twoHandedState = GetDesiredTwoHandedState(wasTwoHanded);
-            if (twoHandedState != TwoHandedState.SingleHanded)
-            {
-                rearHandTransform = twoHandedState == TwoHandedState.LeftHandBehind ? GetLeftHandTransform() : GetRightHandTransform();
-                frontHandTransform = twoHandedState == TwoHandedState.LeftHandBehind ? GetRightHandTransform() : GetLeftHandTransform();
 
-                Vector3 frontHandCenter = getHandCenter(frontHandTransform);
-                Vector3 rearHandCenter = getHandCenter(rearHandTransform);
-                Vector3 weaponPointingDir = (frontHandCenter - rearHandCenter).normalized;
-
-                //weapon pos&rotation
-                transform.position = rearHandCenter + weaponPointingDir * (HAND_CENTER_OFFSET + GetPreferredOffsetFromRearHand(Vector3.Distance(frontHandCenter, rearHandCenter)));
-                transform.rotation = Quaternion.LookRotation(weaponPointingDir, GetPreferredTwoHandedWeaponUp()) * offsetFromPointingDir;
-                return weaponPointingDir;
-            }
-            else if (wasTwoHanded)
+            if (twoHandedState == TwoHandedState.SingleHanded)
             {
-                ReturnToSingleHanded();
+                if (wasTwoHanded)
+                {
+                    SetSingleHandedPositionAndRotation();
+                }
+                return GetWeaponPointingDir();
             }
 
-            return GetWeaponPointingDir();
+            rearHandTransform = twoHandedState == TwoHandedState.LeftHandBehind ? GetLeftHandTransform() : GetRightHandTransform();
+            frontHandTransform = twoHandedState == TwoHandedState.LeftHandBehind ? GetRightHandTransform() : GetLeftHandTransform();
+
+            Vector3 frontHandCenter = getHandCenter(frontHandTransform);
+            Vector3 rearHandCenter = getHandCenter(rearHandTransform);
+            Vector3 weaponPointingDir = (frontHandCenter - rearHandCenter).normalized;
+
+            //weapon pos&rotation
+            transform.position = rearHandCenter + weaponPointingDir * (HAND_CENTER_OFFSET + GetPreferredOffsetFromRearHand(Vector3.Distance(frontHandCenter, rearHandCenter)));
+            transform.rotation = PointWeaponAtDirection(weaponPointingDir);
+            return weaponPointingDir;
+        }
+
+        protected void SetSingleHandedPositionAndRotation()
+        {
+            transform.SetPositionAndRotation(
+                GetDesiredSingleHandedPosition(originalTransform.position),
+                GetDesiredSingleHandedRotation(originalTransform.rotation));
         }
 
         protected Quaternion GetOriginalRotation()
@@ -167,15 +178,14 @@ namespace ValheimVRMod.Scripts
             return originalTransform.rotation;
         }
 
+        protected Quaternion PointWeaponAtDirection(Vector3 direction)
+        {
+            return Quaternion.LookRotation(direction, GetPreferredTwoHandedWeaponUp()) * offsetFromPointingDir;
+        }
+
         protected abstract bool IsPlayerLeftHanded();
         protected abstract Transform GetLeftHandTransform();
         protected abstract Transform GetRightHandTransform();
         protected abstract TwoHandedState GetDesiredTwoHandedState(bool wasTwoHanded);
-
-        private void ReturnToSingleHanded()
-        {
-            transform.position = singleHandedTransform.position;
-            transform.localRotation = singleHandedTransform.localRotation;
-        }
     }
 }
