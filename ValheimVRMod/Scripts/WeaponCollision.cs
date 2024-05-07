@@ -286,11 +286,17 @@ namespace ValheimVRMod.Scripts
             attack = item.m_shared.m_attack.Clone();
             secondaryAttack = item.m_shared.m_secondaryAttack.Clone();
 
-            itemIsTool = name == "Hammer";
+            itemIsTool = (name == "Hammer");
 
             if (colliderParent == null)
             {
                 colliderParent = new GameObject();
+            }
+
+            if (name == "SpearChitin" || EquipScript.getRight() == EquipType.Fishing)
+            {
+                setScriptActive(false);
+                return;
             }
 
             try

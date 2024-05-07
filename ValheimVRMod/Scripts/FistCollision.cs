@@ -146,7 +146,7 @@ namespace ValheimVRMod.Scripts
 
         private void refreshColliderData()
         {
-            if (EquipScript.getRight() == currentEquipType)
+            if (!Player.m_localPlayer || EquipScript.getRight() == currentEquipType)
             {
                 return;
             }
@@ -171,7 +171,7 @@ namespace ValheimVRMod.Scripts
                 return false;
             }
 
-            if (handGesture.isUnequiped() || hasClawsEquipped())
+            if (handGesture.areHandsFree())
             {
                 SteamVR_Input_Sources inputSource = isRightHand ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand;
                 return SteamVR_Actions.valheim_Grab.GetState(inputSource);
@@ -187,17 +187,14 @@ namespace ValheimVRMod.Scripts
 
         public static bool hasDualWieldingWeaponEquipped()
         {
-            return hasClawsEquipped() || EquipScript.getRight().Equals(EquipType.DualKnives);
-        }
-
-        public static bool hasClawsEquipped()
-        {
-            return EquipScript.getRight().Equals(EquipType.Claws);
+            var equipType = EquipScript.getRight();
+            return equipType.Equals(EquipType.Claws) ||
+                equipType.Equals(EquipType.DualKnives);
         }
 
         public bool blockingWithFist()
         {
-            if (!handGesture.isUnequiped() && !hasDualWieldingWeaponEquipped())
+            if (!handGesture.areHandsFree() && !hasDualWieldingWeaponEquipped())
             {
                 return false;
             }
@@ -208,4 +205,3 @@ namespace ValheimVRMod.Scripts
         }
     }
 }
-
