@@ -1,4 +1,3 @@
-using Fishlabs.Valheim;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -9,6 +8,7 @@ using HarmonyLib;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
+using Valheim.SettingsGui;
 using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
 using Object = UnityEngine.Object;
@@ -36,18 +36,20 @@ namespace ValheimVRMod.VRCore.UI {
         private static Transform menuList;
         private static Transform menuParent;
         private static ConfigComponent tmpComfigComponent;
+        private static bool enableTransformButtons;
         private static int tabCounter;
         public static bool doSave;
         public static GameObject toolTip;
 
         public static KeyboardMouseSettings keyboardMouseSettings;
 
-        public static void instantiate(Transform mList, Transform mParent, GameObject sPrefab) {
+        public static void instantiate(Transform mList, Transform mParent, GameObject sPrefab, bool enableTransformButtons) {
             menuList = mList.transform.Find("MenuEntries").transform;
             menuParent = mParent;
             settingsPrefab = sPrefab;
             createMenuEntry();
             generatePrefabs();
+            ConfigSettings.enableTransformButtons = enableTransformButtons;
         }
 
 
@@ -538,7 +540,7 @@ namespace ValheimVRMod.VRCore.UI {
             label.text = configValue.Key;
 
             var setButton = transformButton.transform.Find("SetButton").GetComponent<Button>();
-            if (menuList.name != "MenuEntries") {
+            if (!enableTransformButtons) {
                 setButton.enabled = false;
             }
             setButton.onClick.AddListener(() => {
@@ -572,7 +574,7 @@ namespace ValheimVRMod.VRCore.UI {
             // This button will just reset the position and rotation back to the default values.
             var resetButton = transformButton.transform.Find("ResetButton").GetComponent<Button>();
        
-            if (menuList.name != "MenuEntries")
+            if (!enableTransformButtons)
             {
                 resetButton.enabled = false;
                 return;

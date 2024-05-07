@@ -61,7 +61,7 @@
     <PackageReference Include="BepInEx.Core" Version="5.4.21" />
     <PackageReference Include="NDesk.Options" Version="0.2.1" />
     <PackageReference Include="UnityEngine.Modules" Version="2020.3.45" />
-    <PackageReference Include="ValheimGameLibs" Version="0.217.38" />
+    <PackageReference Include="ValheimGameLibs" Version="0.217.46" />
 	<PackageReference Include="Bhaptics.Tac" Version="1.4.16" />
   </ItemGroup>
   <ItemGroup>
@@ -75,6 +75,9 @@
     </Reference>
     <Reference Include="Unity.TextMeshPro">
       <HintPath>$(CommonDir)Valheim\valheim_Data\Managed\Unity.TextMeshPro.dll</HintPath>
+    </Reference>
+    <Reference Include="gui_framework, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>$(CommonDir)Valheim\valheim_Data\Managed\gui_framework.dll</HintPath>
     </Reference>
     <Reference Include="Unity.XR.Management, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>

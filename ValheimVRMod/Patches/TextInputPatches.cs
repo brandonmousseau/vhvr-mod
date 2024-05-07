@@ -1,6 +1,6 @@
 using System.Text;
 using System.Threading;
-using Fishlabs;
+using GUIFramework;
 using HarmonyLib;
 using UnityEngine;
 using UnityEngine.Events;
@@ -22,7 +22,8 @@ namespace ValheimVRMod.Patches {
                 instance = __instance;
                 if (VHVRConfig.AutoOpenKeyboardOnInteract() || instance.m_topic.text == "ChatText")
                 {
-                    InputManager.start(null, null, instance.m_inputField, true, OnClose);
+                    InputManager.start(
+                        null, null, instance.m_inputField, returnOnClose: instance.m_topic.text != "ChatText", OnClose);
                 }
             }
         }

@@ -20,9 +20,11 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> useOverlayGui;
         private static ConfigEntry<string> pluginVersion;
         private static ConfigEntry<bool> bhapticsEnabled;
+        private static ConfigEntry<bool> showDebugColliders;
 
         // General Settings
         private static ConfigEntry<string> mirrorMode;
+        private static ConfigEntry<float> playerHeightAdjust;
         private static ConfigEntry<float> headOffsetX;
         private static ConfigEntry<float> headOffsetZ;
         private static ConfigEntry<float> headOffsetY;
@@ -107,6 +109,8 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> roomScaleSneakHeight;
         private static ConfigEntry<bool> exclusiveRoomScaleSneak;
         private static ConfigEntry<string> gesturedLocomotion;
+        private static ConfigEntry<float> gesturedJumpPreparationHeight;
+        private static ConfigEntry<float> gesturedJumpMinSpeed;
         private static ConfigEntry<float> swingSpeedRequirement;
         private static ConfigEntry<float> altPieceRotationDelay;
         private static ConfigEntry<bool> runIsToggled;
@@ -244,6 +248,10 @@ namespace ValheimVRMod.Utilities
                 "bhapticsEnabled",
                 false,
                 "Enables bhaptics feedback. Only usable if vrModEnabled true AND nonVrPlayer false.");
+            showDebugColliders = createImmutableSettingWithOverride("Immutable",
+                "showDebugColliders",
+                false,
+                "Visualizes motion control colliders (e. g. weapon colliders and block colliders) for debug purposes.");
         }
 
         private static ConfigEntry<bool> createImmutableSettingWithOverride(
@@ -299,6 +307,13 @@ namespace ValheimVRMod.Utilities
                                      " mirror mode causes some issue that requires SteamVR to be restarted after closing the game, so unless you" +
                                      " need it for some specific reason, I recommend using another mirror mode or None.",
                                      new AcceptableValueList<string>(new string[] { "Right", "Left", "OpenVR", "None" })));
+            playerHeightAdjust = config.Bind("General",
+                              "PlayerHeightAdjust",
+                              0f,
+                              new ConfigDescription("The height difference between the real world player and the game character",
+                              new AcceptableValueRange<float>(-0.25f, 0.25f)));
+
+
             headOffsetX = config.Bind("General",
                                       "FirstPersonHeadOffsetX",
                                       0.0f,
@@ -624,6 +639,16 @@ namespace ValheimVRMod.Utilities
                                              new ConfigDescription(
                                                  "Enables using arm movements to swim, walk, run, and jump",
                                                  new AcceptableValueList<string>(new string[] { "None", "SwimOnly", "Full" })));
+            gesturedJumpPreparationHeight = config.Bind("Controls",
+                                          "GesturedJumpPreparationHeight",
+                                          0.95f,
+                                          new ConfigDescription("The max height you need to squat at to jump",
+                                           new AcceptableValueRange<float>(0.25f, 1f)));
+            gesturedJumpMinSpeed = config.Bind("Controls",
+                                          "GesturedJumpMinSpeed",
+                                          0.75f,
+                                          new ConfigDescription("The minimum vertical head speed to trigger a jump",
+                                          new AcceptableValueRange<float>(0.25f, 3f)));
             dominantHand = config.Bind("Controls",
                                         "DominantHand",
                                         "Right",
@@ -915,6 +940,11 @@ namespace ValheimVRMod.Utilities
                 LogUtils.LogWarning("Invalid mirror mode setting. Defaulting to None");
                 return OpenVRSettings.MirrorViewModes.None;
             }
+        }
+
+        public static float PlayerHeightAdjust()
+        {
+            return playerHeightAdjust.Value;
         }
 
         public static bool GetUseOverlayGui()
@@ -1255,6 +1285,16 @@ namespace ValheimVRMod.Utilities
             return gesturedLocomotion.Value == "Full";
         }
 
+        public static float GesturedJumpPreparationHeight()
+        {
+            return gesturedJumpPreparationHeight.Value;
+        }
+
+        public static float GesturedJumpMinSpeed()
+        {
+            return gesturedJumpMinSpeed.Value;
+        }
+
         public static float GetNearClipPlane()
         {
             return nearClipPlane.Value;
@@ -1533,6 +1573,19 @@ namespace ValheimVRMod.Utilities
                 bhapticsEnabledValue = commandLineOverrides[bhapticsEnabled.GetHashCode()];
             }
             return bhapticsEnabledValue && !NonVrPlayer();
+        }
+
+        public static bool ShowDebugColliders()
+        {
+            if (!UseVrControls())
+            {
+                return false;
+            }
+            if (commandLineOverrides.ContainsKey(showDebugColliders.GetHashCode()))
+            {
+                return commandLineOverrides[showDebugColliders.GetHashCode()];
+            }
+            return showDebugColliders.Value;
         }
 
         public static bool BowAccuracyIgnoresDrawLength()

@@ -205,6 +205,7 @@ namespace ValheimVRMod.Scripts
             stringRenderer.useWorldSpace = true;
             stringRenderer.widthMultiplier = 0.006f;
             stringRenderer.positionCount = 3;
+            stringRenderer.material = Instantiate(VRAssetManager.GetAsset<Material>("StandardClone"));
             stringRenderer.material.color = new Color(0.4f, 0.33f, 0.31f);
             stringRenderer.material.SetFloat("_Glossiness", 0);
             stringRenderer.material.SetFloat("_Smoothness", 0);
@@ -309,12 +310,12 @@ namespace ValheimVRMod.Scripts
             bowBendingMaterial.SetVector("_HandleVector", Vector3.right);
             bowBendingMaterial.SetFloat("_HandleTopHeight", anatomy.hardLimbRight.x);
             bowBendingMaterial.SetFloat("_HandleBottomHeight", anatomy.hardLimbLeft.x);
-            bowBendingMaterial.SetFloat("_SoftLimbHeight", 0.01f);
+            bowBendingMaterial.SetFloat("_SoftLimbHeight", anatomy.softLimbHeight);
 
             bowBendingMaterial.SetVector("_StringTop", new Vector4(anatomy.restingStringRight.x, anatomy.restingStringRight.y, anatomy.restingStringRight.z, 1));
             bowBendingMaterial.SetVector("_StringTopToBottomDirection", new Vector4(-1, 0, 0, 0));
             bowBendingMaterial.SetFloat("_StringLength", Vector3.Distance(anatomy.restingStringLeft, anatomy.restingStringRight));
-            bowBendingMaterial.SetFloat("_StringRadius", 0.005f);
+            bowBendingMaterial.SetFloat("_StringRadius", anatomy.stringRadius);
 
             return bowBendingMaterial;
         }

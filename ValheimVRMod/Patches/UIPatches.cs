@@ -9,7 +9,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using UnityEngine.UI;
-using Fishlabs.Valheim;
+using Valheim.SettingsGui;
 using ValheimVRMod.VRCore.UI;
 using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
@@ -771,7 +771,7 @@ namespace ValheimVRMod.Patches
             if (VHVRConfig.NonVrPlayer()) {
                 return;
             }
-            ConfigSettings.instantiate(__instance.m_mainMenu.transform.Find("MenuList"), __instance.m_mainMenu.transform, __instance.m_settingsPrefab);
+            ConfigSettings.instantiate(__instance.m_mainMenu.transform.Find("MenuList"), __instance.m_mainMenu.transform, __instance.m_settingsPrefab, enableTransformButtons: false);
         }
     }
     
@@ -781,7 +781,7 @@ namespace ValheimVRMod.Patches
             if (VHVRConfig.NonVrPlayer()) {
                 return;
             }
-            ConfigSettings.instantiate(__instance.m_menuDialog, __instance.transform, __instance.m_settingsPrefab);
+            ConfigSettings.instantiate(__instance.m_menuDialog, __instance.transform, __instance.m_settingsPrefab, enableTransformButtons: true);
         }
     }    
     

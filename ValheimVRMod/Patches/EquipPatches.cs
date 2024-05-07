@@ -12,6 +12,11 @@ namespace ValheimVRMod.Patches {
     [HarmonyPatch(typeof(VisEquipment), nameof(VisEquipment.SetRightHandEquipped))]
     class PatchSetRightHandEquipped {
         static void Postfix(bool __result, string ___m_rightItem, ref GameObject ___m_rightItemInstance) {
+            if (VHVRConfig.UseVrControls())
+            {
+                FistBlock.instance?.updateBlockBoxShape();
+            }
+
             if (!__result || !___m_rightItemInstance) {
                 return;
             }
@@ -24,7 +29,7 @@ namespace ValheimVRMod.Patches {
 
             if (player == Player.m_localPlayer && !VHVRConfig.NonVrPlayer())
             {
-                EquipBoundingBoxFix.GetInstanceForPlayer(player)?.RequestBoundingBoxFix(___m_rightItem, ___m_rightItemInstance);
+                EquipBoundingBoxFix.GetInstanceForPlayer(player)?.RequestBoundingBoxFix(___m_rightItemInstance);
             }
 
             MeshFilter meshFilter = ___m_rightItemInstance.GetComponentInChildren<MeshFilter>();
@@ -36,13 +41,14 @@ namespace ValheimVRMod.Patches {
             var vrPlayerSync = player.GetComponent<VRPlayerSync>();
             
             if (vrPlayerSync != null && meshFilter != null) {
-                if (VHVRConfig.LeftHanded()) {
-                    player.GetComponent<VRPlayerSync>().currentLeftWeapon = meshFilter.gameObject;
-                    player.GetComponent<VRPlayerSync>().currentLeftWeapon.name = ___m_rightItem;    
+                if (vrPlayerSync.IsLeftHanded()) {
+                    vrPlayerSync.currentLeftWeapon = meshFilter.gameObject;
+                    vrPlayerSync.currentLeftWeapon.name = ___m_rightItem;    
                 }
-                else {
-                    player.GetComponent<VRPlayerSync>().currentRightWeapon = meshFilter.gameObject;
-                    player.GetComponent<VRPlayerSync>().currentRightWeapon.name = ___m_rightItem;
+                else
+                {
+                    vrPlayerSync.currentRightWeapon = meshFilter.gameObject;
+                    vrPlayerSync.currentRightWeapon.name = ___m_rightItem;
                 }
                 
                 VrikCreator.resetVrikHandTransform(player);   
@@ -50,7 +56,7 @@ namespace ValheimVRMod.Patches {
 
             if (Player.m_localPlayer != player)
             {
-                if (vrPlayerSync != null)
+                if (vrPlayerSync != null && vrPlayerSync.hasReceivedData)
                 {
                     // TODO: figure out away to get item name for non-local players (GetRightItem() returns null for non-local players and ___m_rightItem is empty).
                     WeaponWieldSync weaponWieldSync = ___m_rightItemInstance.AddComponent<WeaponWieldSync>();
@@ -91,7 +97,8 @@ namespace ValheimVRMod.Patches {
             }
 
             var weaponCol = StaticObjects.rightWeaponCollider().GetComponent<WeaponCollision>();
-            weaponCol.setColliderParent(meshFilter.transform, ___m_rightItem, true);
+            weaponCol.setColliderParent(
+                meshFilter, handPosition: ___m_rightItemInstance.transform.parent.position, ___m_rightItem, true);
             weaponCol.weaponWield = weaponWield;
             meshFilter.gameObject.AddComponent<ButtonSecondaryAttackManager>().Initialize(meshFilter.transform, ___m_rightItem, true);
             meshFilter.gameObject.AddComponent<WeaponBlock>().weaponWield = weaponWield;
@@ -103,6 +110,11 @@ namespace ValheimVRMod.Patches {
     [HarmonyPatch(typeof(VisEquipment), nameof(VisEquipment.SetLeftHandEquipped))]
     class PatchSetLeftHandEquipped {
         static void Postfix(bool __result, string ___m_leftItem, GameObject ___m_leftItemInstance) {
+            if (VHVRConfig.UseVrControls())
+            {
+                FistBlock.instance?.updateBlockBoxShape();
+            }
+
             if (!__result || !___m_leftItemInstance) {
                 return;
             }
@@ -115,7 +127,7 @@ namespace ValheimVRMod.Patches {
 
             if (player == Player.m_localPlayer && !VHVRConfig.NonVrPlayer())
             {
-                EquipBoundingBoxFix.GetInstanceForPlayer(player)?.RequestBoundingBoxFix(___m_leftItem, ___m_leftItemInstance);
+                EquipBoundingBoxFix.GetInstanceForPlayer(player)?.RequestBoundingBoxFix(___m_leftItemInstance);
             }
 
             MeshFilter meshFilter = ___m_leftItemInstance.GetComponentInChildren<MeshFilter>();
@@ -126,12 +138,13 @@ namespace ValheimVRMod.Patches {
 
             var vrPlayerSync = player.GetComponent<VRPlayerSync>();
 
-            if (vrPlayerSync != null) {
-                if (VHVRConfig.LeftHanded()) {
-                    player.GetComponent<VRPlayerSync>().currentRightWeapon = meshFilter.gameObject;    
+            if (vrPlayerSync != null && vrPlayerSync.hasReceivedData) {
+                if (vrPlayerSync.IsLeftHanded()) {
+                    vrPlayerSync.currentRightWeapon = meshFilter.gameObject;    
                 }
-                else {
-                    player.GetComponent<VRPlayerSync>().currentLeftWeapon = meshFilter.gameObject;
+                else
+                {
+                    vrPlayerSync.currentLeftWeapon = meshFilter.gameObject;
                 }
                 
                 VrikCreator.resetVrikHandTransform(player);
@@ -139,7 +152,7 @@ namespace ValheimVRMod.Patches {
 
             if (Player.m_localPlayer != player)
             {
-                if (vrPlayerSync != null)
+                if (vrPlayerSync != null && vrPlayerSync.hasReceivedData)
                 {
                     // TODO: figure out away to get item name for non-local players (GetLeftItem() returns null for non-local players and ___m_leftItem is empty).
                     WeaponWieldSync weaponWieldSync = ___m_leftItemInstance.AddComponent<WeaponWieldSync>();
@@ -233,10 +246,10 @@ namespace ValheimVRMod.Patches {
             {
                 return;
             }
-             
+
             foreach (GameObject itemInstance in ___m_chestItemInstances)
             {
-                EquipBoundingBoxFix.GetInstanceForPlayer(player)?.RequestBoundingBoxFix(___m_chestItem, itemInstance);
+                EquipBoundingBoxFix.GetInstanceForPlayer(player)?.RequestArmorBoundingBoxFixIfNeeded(itemInstance, ___m_chestItem);
             }
         }
     }

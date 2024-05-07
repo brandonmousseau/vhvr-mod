@@ -1,12 +1,16 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace ValheimVRMod.Utilities
 {
     public static class WeaponUtils
     {
         private static readonly Vector3[] BASE = new Vector3[] { Vector3.right, Vector3.up, Vector3.forward };
+
+        // TODO: consider use different default weapon collider lenght proportion for different weapon types.
+        private const float DEFAULT_WEAPON_COLLIDER_LENGTH_PROPORTION = 0.75f;
 
         private static readonly Dictionary<string, WeaponColData> colliders = new Dictionary<string, WeaponColData>
         {
@@ -281,6 +285,52 @@ namespace ValheimVRMod.Utilities
             )}
         };
 
+        private static readonly Dictionary<EquipType, WeaponColData> DUAL_WIELD_COLLIDERS =
+            new Dictionary<EquipType, WeaponColData>
+            {
+                {
+                    EquipType.Claws, WeaponColData.create(
+                        0,  0.25f, 0.016f,
+                        0,  0, 0,
+                        0.45f,  0.5f, 0.45f
+                )},
+                {
+                    EquipType.DualKnives, WeaponColData.create(
+                        0.225f,  0.15f, 0.05f,
+                        0,  0, 0,
+                        0.45f,  0.45f, 0.45f
+                )},
+                {
+                    EquipType.None, WeaponColData.create( // fists
+                        0,  0.2f, 0.016f,
+                        0,  0, 0,
+                        0.45f,  0.45f, 0.45f
+                )},
+            };
+
+        private static readonly Dictionary<EquipType, WeaponColData> DUAL_WIELD_BLOCKING_COLLIDERS =
+            new Dictionary<EquipType, WeaponColData>
+            {
+                {
+                    EquipType.Claws, WeaponColData.create(
+                        0,  0.05f, 0.016f,
+                        0,  0, 0,
+                        0.3f,  0.9f, 0.3f
+                )},
+                {
+                    EquipType.DualKnives, WeaponColData.create(
+                        0.15f,  0.15f, 0.016f,
+                        0,  0, 0,
+                        0.5f, 0.5f, 0.3f
+                )},
+                {
+                    EquipType.None, WeaponColData.create( // fists
+                        0,  0, 0.016f,
+                        0,  0, 0,
+                        0.3f,  0.85f, 0.3f
+                )},
+            };
+
         private static readonly Dictionary<string, float> ATTACK_DURATIONS = new Dictionary<string, float>
         {
             { "atgeir_attack", 0.81f },
@@ -309,6 +359,8 @@ namespace ValheimVRMod.Utilities
         private static readonly HashSet<string> TWO_HANDED_MULTITARGET_SWIPE_NAMES =
             new HashSet<string>(new string[] { "battleaxe_attack", "atgeir_secondary" });
 
+        private static readonly Dictionary<string, WeaponColData> estimatedColliders = new Dictionary<string, WeaponColData>();
+
         public static float GetAttackDuration(Attack attack)
         {
             return ATTACK_DURATIONS.ContainsKey(attack.m_attackAnimation) ? ATTACK_DURATIONS[attack.m_attackAnimation] : DEFAULT_ATTACK_DURATION;
@@ -319,17 +371,53 @@ namespace ValheimVRMod.Utilities
             return TWO_HANDED_MULTITARGET_SWIPE_NAMES.Contains(attack.m_attackAnimation);
         }
 
-        public static WeaponColData getForName(string name,ItemDrop.ItemData item)
+        public static WeaponColData GetColliderData(string name, ItemDrop.ItemData item, MeshFilter meshFilter, Vector3? handPosition)
         {
-
             if (colliders.ContainsKey(name)) {
                 return colliders[name];
             }
+
+            if (estimatedColliders.ContainsKey(name))
+            {
+                return estimatedColliders[name];
+            }
+
+            if (meshFilter != null && handPosition != null)
+            {
+                var estimatedCollider = EstimateWeaponCollider(meshFilter, (Vector3) handPosition);
+                estimatedColliders[name] = estimatedCollider;
+                LogUtils.LogDebug(
+                    "Estimated and registered collider for unknown weapon " + name + ": position " + estimatedCollider.pos + " scale " + estimatedCollider.scale);
+                return estimatedCollider;
+            }
+
             if (item != null && compatibilityColliders.ContainsKey(EquipScript.getEquippedItem(item)))
             {
+                // TODO: consider removing compatibility colliders.
                 return compatibilityColliders[EquipScript.getEquippedItem(item)];
             }
+
             throw new InvalidEnumArgumentException();
+        }
+
+        public static WeaponColData GetDualWieldLeftHandColliderData(ItemDrop.ItemData item)
+        {
+            var equipType = EquipScript.getEquippedItem(item);
+            if (!DUAL_WIELD_COLLIDERS.ContainsKey(equipType))
+            {
+                equipType = EquipType.None;
+            }
+            return DUAL_WIELD_COLLIDERS[equipType];
+        }
+
+        public static WeaponColData GetDualWieldLeftHandBlockingColliderData(ItemDrop.ItemData item)
+        {
+            var equipType = EquipScript.getEquippedItem(item);
+            if (!DUAL_WIELD_BLOCKING_COLLIDERS.ContainsKey(equipType))
+            {
+                equipType = EquipType.None;
+            }
+            return DUAL_WIELD_BLOCKING_COLLIDERS[equipType];
         }
 
         // Estimates the direction and length of weapon handle behind the grip by identifying the dimension on which its mesh bounds is offset the farthest.
@@ -368,6 +456,8 @@ namespace ValheimVRMod.Utilities
         // Whether the straight line (t -> p + t * v) intersects with the given bounds.
         public static bool LineIntersectsWithBounds(Bounds bounds, Vector3 p, Vector3 v)
         {
+            // TODO: Consider removing this method since it is not used anywhere.
+            
             // Center the bound and the line around the original bounds center to simplify calculation.
             Bounds centeredBounds = new Bounds(Vector3.zero, bounds.size);
             Vector3 p0 = p - bounds.center;
@@ -421,6 +511,80 @@ namespace ValheimVRMod.Utilities
             }
 
             return false;
-        }        
+        }
+
+        // Find the mesh renderer of the glow on a bow or crossbow if that mesh renderer should be hidden
+        // when it is bending. We can only bend the bow/crossbow not its glow, so it looks better with the
+        // glow removed.
+        public static MeshRenderer GetHideableBowGlowMeshRenderer(Transform bowTransform, string bowName)
+        {
+            // TODO: consider explicitly adding a list of the names of the bows and crossbows here instead
+            // of calling string#Contains().
+            if (!bowName.Contains("blood") && !bowName.Contains("storm") && !bowName.Contains("root") &&
+                !bowName.Contains("lightning") && !bowName.Contains("nature"))
+            {
+                return null;
+            }
+            for (int i = 0; i < bowTransform.childCount; i++)
+            {
+                var meshRenderer = bowTransform.GetChild(i).GetComponent<MeshRenderer>();
+                if (meshRenderer != null)
+                {
+                    return meshRenderer;
+                }
+            }
+            return null;
+        }
+
+        private const float MAX_STAB_ANGLE_TWO_HAND = 40;
+        private const float MAX_STAB_ANGLE = 30;
+        public static bool IsStab(Vector3 velocity, Vector3 weaponPointing, bool isTwoHanded)
+        {
+            return Vector3.Angle(velocity, weaponPointing) < (isTwoHanded ? MAX_STAB_ANGLE_TWO_HAND : MAX_STAB_ANGLE);
+        }
+
+        public static GameObject CreateDebugSphere(Transform parent)
+        {
+            var sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            PrepareDebugGameObject(sphere, parent);
+            return sphere;
+        }
+
+
+        public static GameObject CreateDebugBox(Transform parent)
+        {
+            var box = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            PrepareDebugGameObject(box, parent);
+            return box;
+        }
+
+        private static void PrepareDebugGameObject(GameObject gameObject, Transform parent)
+        {
+            gameObject.transform.parent = parent;
+            gameObject.transform.localScale = Vector3.one;
+            gameObject.transform.localPosition = Vector3.zero;
+            gameObject.transform.localRotation = Quaternion.identity;
+            gameObject.GetComponent<MeshRenderer>().material = Object.Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
+            gameObject.GetComponent<MeshRenderer>().material.color = new Vector4(0.5f, 0, 0, 0.5f);
+            gameObject.GetComponent<MeshRenderer>().receiveShadows = false;
+            gameObject.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
+            gameObject.GetComponent<MeshRenderer>().reflectionProbeUsage = ReflectionProbeUsage.Off;
+            Object.Destroy(gameObject.GetComponent<Collider>());
+        }
+
+        private static WeaponColData EstimateWeaponCollider(MeshFilter meshFilter, Vector3 handPosition)
+        {
+            var weaponPointing =
+                -meshFilter.transform.InverseTransformDirection(EstimateHandleAllowanceBehindGrip(meshFilter, handPosition)).normalized;
+            var handLocalPosition = meshFilter.transform.InverseTransformPoint(handPosition);
+            var bounds = meshFilter.mesh.bounds;
+            var weaponTip = bounds.center + weaponPointing * Mathf.Abs(Vector3.Dot(bounds.extents, weaponPointing));
+            var colliderLength = Vector3.Distance(weaponTip, handLocalPosition) * DEFAULT_WEAPON_COLLIDER_LENGTH_PROPORTION;
+            var colliderCenter = weaponTip - weaponPointing * (colliderLength * 0.5f);
+            var colliderOffset = colliderCenter - bounds.center;
+            var colliderSize =
+                bounds.size - (new Vector3(Mathf.Abs(colliderOffset.x), Mathf.Abs(colliderOffset.y), Mathf.Abs(colliderOffset.z))) * 2;
+            return new WeaponColData(colliderCenter, Vector3.zero, colliderSize);
+        }
     }
 }

@@ -395,47 +395,58 @@ namespace ValheimVRMod.VRCore.UI
             }
             foreach (Transform child in _canvasCrosshairRootClone.transform)
             {
-                if (child.gameObject.name == "crosshair")
+                switch (child.gameObject.name)
                 {
-                    _crosshairClone = child.gameObject;
-                }
-                else if (child.gameObject.name == "crosshair_bow")
-                {
-                    _crosshairBowClone = child.gameObject;
-                }
-                else if (child.gameObject.name == "HoverName")
-                {
-                    _hoverNameClone = child.gameObject;
-                }
-                else if (child.gameObject.name == "Sneak_hidden")
-                {
-                    _sneakHiddenClone = child.gameObject;
-                }
-                else if (child.gameObject.name == "Sneak_detected")
-                {
-                    _sneakDetectedClone = child.gameObject;
-                }
-                else if (child.gameObject.name == "Sneak_alert")
-                {
-                    _sneakAlertClone = child.gameObject;
-                }
-                else if (child.gameObject.name == "StealthBar")
-                {
-                    _stealthBarClone = child.gameObject;
-                }
-                else if (child.gameObject.name == "PieceHealthRoot")
-                {
-                    _pieceHealthRoot = child.gameObject;
-                    foreach (Transform healthRootChild in child)
-                    {
-                        if (healthRootChild.gameObject.name == "PieceHealthBar")
+                    case "crosshair":
+                        refreshCache(ref _crosshairClone, child.gameObject);
+                        break;
+                    case "crosshair_bow":
+                        refreshCache(ref _crosshairBowClone, child.gameObject);
+                        break;
+                    case "HoverName":
+                        refreshCache(ref _hoverNameClone, child.gameObject);
+                        break;
+                    case "Sneak_hidden":
+                        refreshCache(ref _sneakHiddenClone, child.gameObject);
+                        break;
+                    case "Sneak_detected":
+                        refreshCache(ref _sneakDetectedClone, child.gameObject);
+                        break;
+                    case "Sneak_alert":
+                        refreshCache(ref _sneakAlertClone, child.gameObject);
+                        break;
+                    case "StealthBar":
+                        refreshCache(ref _stealthBarClone, child.gameObject);
+                        break;
+                    case "PieceHealthRoot":
+                        refreshCache(ref _pieceHealthRoot, child.gameObject);
+                        foreach (Transform healthRootChild in child)
                         {
-                            _pieceHealthBar = healthRootChild.gameObject;
-                            break;
+                            if (healthRootChild.gameObject.name == "PieceHealthBar")
+                            {
+                                refreshCache(ref _pieceHealthBar, healthRootChild.gameObject);
+                                break;
+                            }
                         }
-                    }
+                        break;
                 }
             }
+        }
+
+        private void refreshCache(ref GameObject cache, GameObject value)
+        {
+            if (cache == value)
+            {
+                return;
+            }
+
+            if (cache != null)
+            {
+                LogWarning("Destroying stale GameObject in cache: " + cache.name);
+                Object.Destroy(cache);
+            }
+
+            cache = value;
         }
 
         // Make sure the HUD is always pointing to our copies of the
