@@ -39,8 +39,8 @@ namespace ValheimVRMod.Scripts
             originalTransform.parent = transform.parent;
             originalTransform.position = transform.position;
             originalTransform.rotation = transform.rotation;
-            transform.position = GetSingleHandedPosition(originalTransform.position);
-            transform.rotation = GetSingleHandedRotation(originalTransform.rotation);
+            transform.position = GetDesiredSingleHandedPosition(originalTransform.position);
+            transform.rotation = GetDesiredSingleHandedRotation(originalTransform.rotation);
 
             MeshFilter weaponMeshFilter = gameObject.GetComponentInChildren<MeshFilter>();
             if (weaponMeshFilter != null)
@@ -92,14 +92,14 @@ namespace ValheimVRMod.Scripts
             return transform.TransformDirection(estimatedLocalWeaponPointingDir);
         }
 
-        protected virtual Vector3 GetSingleHandedPosition(Vector3 originalPosition)
+        protected virtual Vector3 GetDesiredSingleHandedPosition(Vector3 originalPosition)
         {
             return originalPosition;
         }
 
         // Calculates the correct rotation of this game object for single-handed mode using the original rotation.
         // This should be the same as the original rotation in most cases but there are exceptions.
-        protected virtual Quaternion GetSingleHandedRotation(Quaternion originalRotation)
+        protected virtual Quaternion GetDesiredSingleHandedRotation(Quaternion originalRotation)
         {
             switch (attackAnimation)
             {
@@ -146,8 +146,8 @@ namespace ValheimVRMod.Scripts
 
             if (twoHandedState == TwoHandedState.SingleHanded)
             {
-                transform.position = GetSingleHandedPosition(originalTransform.position);
-                transform.rotation = GetSingleHandedRotation(originalTransform.rotation);
+                transform.position = GetDesiredSingleHandedPosition(originalTransform.position);
+                transform.rotation = GetDesiredSingleHandedRotation(originalTransform.rotation);
                 return GetWeaponPointingDir();
             }
 
