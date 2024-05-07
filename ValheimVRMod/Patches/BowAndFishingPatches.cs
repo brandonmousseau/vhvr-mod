@@ -63,11 +63,15 @@ namespace ValheimVRMod.Patches {
     {
         static void Postfix(Player __instance, ItemDrop.ItemData weapon, ref float dt)
         {
-            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls() || EquipScript.getLeft() != EquipType.Crossbow || CrossbowMorphManager.instance == null)
+            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls())
             {
                 return;
             }
-            CrossbowMorphManager.instance.UpdateWeaponLoading(__instance, dt);
+            
+            if (EquipScript.getLeft() == EquipType.Crossbow && CrossbowMorphManager.instance != null)
+            {
+                CrossbowMorphManager.instance.UpdateWeaponLoading(__instance, dt);
+            }
         }
 
     }
@@ -75,13 +79,41 @@ namespace ValheimVRMod.Patches {
     [HarmonyPatch(typeof(Player), "QueueReloadAction")]
     class PatchQueueReloadAction
     {
+        static bool wasTwoHandedMagicStaff = false;
+
         static bool Prefix(Player __instance)
         {
-            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls() || EquipScript.getLeft() != EquipType.Crossbow)
+            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls()) 
             {
                 return true;
             }
-            return CrossbowManager.CanQueueReloadAction();
+                
+            if (EquipScript.getLeft() == EquipType.Crossbow)
+            {
+                return CrossbowManager.CanQueueReloadAction();
+            }
+
+            if (VHVRConfig.OneHandedBow() || !VHVRConfig.CrossbowManualReload())
+            {
+                return true;
+            }
+
+            if (EquipScript.getRight() == EquipType.Magic)
+            {
+                if (!LocalWeaponWield.isCurrentlyTwoHanded())
+                {
+                    wasTwoHandedMagicStaff = false;
+                    return false;
+                }
+                if (wasTwoHandedMagicStaff)
+                {
+                    return false;
+                }
+                wasTwoHandedMagicStaff = true;
+                return true;
+            }
+
+            return true;
         }
 
     }
@@ -295,9 +327,14 @@ namespace ValheimVRMod.Patches {
             {
                 return;
             }
-            if (__instance.m_recoilPushback > 0f && EquipScript.getLeft() == EquipType.Crossbow)
+            recoilPushback = __instance.m_recoilPushback;
+
+            if (__instance.m_recoilPushback <= 0f)
             {
-                recoilPushback = __instance.m_recoilPushback;
+                return;
+            }
+            if (EquipScript.getLeft() == EquipType.Crossbow || EquipScript.getRight() == EquipType.Magic)
+            {
                 __instance.m_recoilPushback = 0f;
             }
         }
@@ -307,9 +344,18 @@ namespace ValheimVRMod.Patches {
             {
                 return;
             }
-            if (recoilPushback > 0f && EquipScript.getLeft() == EquipType.Crossbow)
+            if (recoilPushback <= 0f)
+            {
+                return;
+            }
+            if (EquipScript.getLeft() == EquipType.Crossbow)
             {
                 __instance.m_character.ApplyPushback(-CrossbowManager.AimDir, recoilPushback);
+                recoilPushback = 0f;
+            }
+            else if (EquipScript.getRight() == EquipType.Magic)
+            {
+                __instance.m_character.ApplyPushback(-MagicWeaponManager.AimDir, recoilPushback);
                 recoilPushback = 0f;
             }
         }
