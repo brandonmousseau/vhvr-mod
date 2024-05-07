@@ -53,7 +53,9 @@ namespace ValheimVRMod.Scripts
             MeshFilter weaponMeshFilter = gameObject.GetComponentInChildren<MeshFilter>();
             if (weaponMeshFilter != null)
             {
-                if (EstimatedWeaponLocalPointingDirections.ContainsKey(itemName) &&
+                if (item != null &&
+                    itemName != "" &&
+                    EstimatedWeaponLocalPointingDirections.ContainsKey(itemName) &&
                     DistancesBehindGripAndRearEnd.ContainsKey(itemName))
                 {
                     longestLocalExtrusion = EstimatedWeaponLocalPointingDirections[itemName];
@@ -63,14 +65,13 @@ namespace ValheimVRMod.Scripts
                 {
                     Vector3 handleAllowanceBehindGrip =
                         WeaponUtils.EstimateHandleAllowanceBehindGrip(weaponMeshFilter, handPosition: transform.parent.position);
-                    EstimatedWeaponLocalPointingDirections.Add(
-                        itemName,
-                        longestLocalExtrusion =
-                            transform.InverseTransformVector(-handleAllowanceBehindGrip).normalized);
-                    DistancesBehindGripAndRearEnd.Add(
-                        itemName,
-                        distanceBetweenGripAndRearEnd = handleAllowanceBehindGrip.magnitude);
-                    LogUtils.LogDebug("Registered " + itemName + " local pointing direction: " + longestLocalExtrusion + " distance between rear end and grip: " + distanceBetweenGripAndRearEnd);
+                    longestLocalExtrusion = transform.InverseTransformVector(-handleAllowanceBehindGrip).normalized;
+                    distanceBetweenGripAndRearEnd = handleAllowanceBehindGrip.magnitude;
+                    if (item != null && itemName != "") {
+                        EstimatedWeaponLocalPointingDirections.Add(itemName, longestLocalExtrusion);
+                        DistancesBehindGripAndRearEnd.Add(itemName, distanceBetweenGripAndRearEnd);
+                        LogUtils.LogDebug("Registered " + itemName + " local pointing direction: " + longestLocalExtrusion + " distance between rear end and grip: " + distanceBetweenGripAndRearEnd);
+                    } 
                 }
             }
 
