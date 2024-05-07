@@ -864,6 +864,7 @@ namespace ValheimVRMod.VRCore
                     !player.InDodge() &&
                     !player.IsStaggering() &&
                     !player.IsSleeping() &&
+                    !MagicWeaponManager.IsSummoning(player) &&
                     validVrikAnimatorState(player.GetComponentInChildren<Animator>());
                 LeftHandQuickMenu.instance.UpdateWristBar();
                 RightHandQuickMenu.instance.UpdateWristBar();
