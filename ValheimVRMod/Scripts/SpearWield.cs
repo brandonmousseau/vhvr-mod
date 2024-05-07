@@ -1,92 +1,24 @@
 using System.Collections.Generic;
 using UnityEngine;
 using ValheimVRMod.Utilities;
+using ValheimVRMod.VRCore;
 
 namespace ValheimVRMod.Scripts
 {
     class SpearWield : LocalWeaponWield
     {
-        private class MeshFilterRepositioner
-        {
-            private Transform transform;
-            private Quaternion defaultLocalRotation;
-            private Vector3 defaultLocalPosition;
-            private Vector3 shiftedLocalPosition;
-
-            public MeshFilterRepositioner(Transform transform, Vector3 weaponPointing, bool shouldInvertSpear)
-            {
-                this.transform = transform;
-
-                if (shouldInvertSpear)
-                {
-                    transform.localPosition = Quaternion.AngleAxis(180, Vector3.right) * transform.localPosition;
-                    transform.localRotation *= Quaternion.AngleAxis(180, Vector3.right);
-                    defaultLocalPosition = transform.localPosition;
-                    transform.position = transform.position + weaponPointing * 0.5f;
-                } 
-                else
-                {
-                    defaultLocalPosition = transform.localPosition;
-                }
-
-                defaultLocalRotation = transform.localRotation;
-                shiftedLocalPosition = transform.localPosition;
-            }
-
-            public void reposition(bool shoudShift, ThrowableManager throwableManager)
-            {
-
-                if (ThrowableManager.isAiming)
-                {
-                    if (transform.GetComponentInChildren<ThrowableManager>() == null && throwableManager != null)
-                    {
-                        // If this mesh filter has no throwable manager on it, we need to explicitly update
-                        // its rotation here to match the throwing direction.
-                        transform.SetPositionAndRotation(throwableManager.transform.position, throwableManager.transform.rotation);
-                    }
-                }
-                else
-                {
-                    transform.localRotation = defaultLocalRotation;
-                    transform.localPosition = shoudShift ? shiftedLocalPosition : defaultLocalPosition;
-                }
-            }
-        }
-
         private float harpoonHidingTimer = 0;
-        // Local position of mesh filter shifted forward to better single-handed melee wield.
-        private List<MeshFilterRepositioner> meshFilterRepositioners = new List<MeshFilterRepositioner>();
-
-        protected override void Awake()
-        {
-            base.Awake();
-            bool shouldInvertSpear = EquipScript.isSpearEquippedRadialForward();
-            Vector3 weaponPointing = GetWeaponPointingDir();
-            foreach (Transform childTransform in gameObject.transform)
-            {
-                if (childTransform.GetComponentInChildren<MeshFilter>() != null)
-                {
-                    meshFilterRepositioners.Add(
-                        new MeshFilterRepositioner(childTransform, weaponPointing, shouldInvertSpear));
-                }
-            }
-        }
+        private Vector3 lastFixedUpdatedAimDir;
 
         void FixedUpdate()
         {
+            // Record the aiming direction here instead of querying it whenever so that when OnRenderObject() is called
+            // for two eyes in the same frame the value would not be different.
+            lastFixedUpdatedAimDir = ThrowableManager.aimDir;
 
-            bool shouldShiftMeshFilter = !isCurrentlyTwoHanded();
             var throwableManager = GetComponentInChildren<ThrowableManager>();
-            foreach (var repositioner in meshFilterRepositioners)
-            {
-                repositioner.reposition(shouldShiftMeshFilter, throwableManager);
-            }
 
-            if (ThrowableManager.isAiming)
-            {
-                harpoonHidingTimer = 1;
-            } 
-            else if (harpoonHidingTimer > 0)
+            if (harpoonHidingTimer > 0)
             {
                 harpoonHidingTimer -= Time.fixedDeltaTime;
             }
@@ -98,11 +30,38 @@ namespace ValheimVRMod.Scripts
             }
         }
 
-        protected override Quaternion GetSingleHandedRotation(Quaternion originalRotation)
+        protected override void OnRenderObject()
         {
-            // TODO: consider use this instead of the rotating the mesh filter for inversed spear wield:
-            // return EquipScript.isSpearEquippedUlnarForward() ? originalRotation : originalRotation * Quaternion.euler(180, 0, 0);
-            return base.GetSingleHandedRotation(originalRotation);
+            base.OnRenderObject();
+
+            if (twoHandedState == TwoHandedState.SingleHanded)
+            {
+                SetSingleHandedPositionAndRotation();
+            }
+        }
+
+
+        public void HideHarpoon()
+        {
+            harpoonHidingTimer = 1;
+        }
+
+        protected override Vector3 GetDesiredSingleHandedPosition(Vector3 originalPosition)
+        {
+            return VHVRConfig.SpearInverseWield() && !ThrowableManager.isAiming ?
+                originalPosition + 0.5f * GetWeaponPointingDir() : originalPosition;
+        }
+
+        protected override Quaternion GetDesiredSingleHandedRotation(Quaternion originalRotation)
+        {
+            if (ThrowableManager.isAiming)
+            {
+                return GetAimingRotation();
+            }
+
+            return EquipScript.isSpearEquippedUlnarForward() ?
+                originalRotation :
+                originalRotation * Quaternion.Euler(180, 0, 0);
         }
 
         protected override bool TemporaryDisableTwoHandedWield()
@@ -112,10 +71,10 @@ namespace ValheimVRMod.Scripts
 
         protected override Vector3 GetWeaponPointingDir()
         {
-            Vector3 roughDirection = EquipScript.isSpearEquippedUlnarForward() ? -transform.forward : transform.forward;
+            Vector3 roughDirection = -transform.forward;
             return Vector3.Project(roughDirection, base.GetWeaponPointingDir()).normalized;
         }
-        
+
         protected override float GetPreferredOffsetFromRearHand(float handDist)
         {
             bool rearHandIsDominant = (IsPlayerLeftHanded() == (twoHandedState == TwoHandedState.LeftHandBehind));
@@ -135,6 +94,35 @@ namespace ValheimVRMod.Scripts
                 // Anchor the center of the spear in the front/dominant hand to allow shorter attack range.
                 return handDist - HAND_CENTER_OFFSET;
             }
-        }        
+        }
+
+        private Quaternion GetAimingRotation()
+        {
+            var pointing = lastFixedUpdatedAimDir.normalized;
+
+            if (VHVRConfig.SpearThrowType() != "Classic")
+            {
+                return PointWeaponAtDirection(pointing);
+            }
+
+            Vector3 staticPointing =
+                VHVRConfig.LeftHanded() ?
+                (VRPlayer.leftHandBone.up - VRPlayer.leftHandBone.right) :
+                (VRPlayer.rightHandBone.up + VRPlayer.rightHandBone.right);
+            staticPointing = staticPointing.normalized;
+
+            Vector3 handVelocity =
+                (VHVRConfig.LeftHanded() ? VRPlayer.leftHandPhysicsEstimator : VRPlayer.rightHandPhysicsEstimator).GetVelocity();
+            float weight = Vector3.Dot(staticPointing, pointing) * handVelocity.magnitude;
+            if (weight < 0)
+            {
+                pointing = -pointing;
+                weight = -weight;
+            }
+
+            // Use a weight to avoid direction flickering when the hand speed is low.
+            return PointWeaponAtDirection(
+                Vector3.RotateTowards(staticPointing, pointing, Mathf.Max(weight * 8 - 1, 0), Mathf.Infinity));
+        }
     }
 }
