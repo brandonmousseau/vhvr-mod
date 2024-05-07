@@ -141,13 +141,15 @@ namespace ValheimVRMod.Scripts
         // Updates weapon position and rotation and returns the new direction that the weapon is pointing toward.
         protected virtual Vector3 UpdateTwoHandedWield()
         {
-            twoHandedState = GetDesiredTwoHandedState(wasTwoHanded: twoHandedState != TwoHandedState.SingleHanded);
+            var wasTwoHanded = (twoHandedState != TwoHandedState.SingleHanded);
+            twoHandedState = GetDesiredTwoHandedState(wasTwoHanded);
 
             if (twoHandedState == TwoHandedState.SingleHanded)
             {
-                transform.SetPositionAndRotation(
-                    GetDesiredSingleHandedPosition(originalTransform.position),
-                    GetDesiredSingleHandedRotation(originalTransform.rotation));
+                if (wasTwoHanded)
+                {
+                    SetSingleHandedPositionAndRotation();
+                }
                 return GetWeaponPointingDir();
             }
 
@@ -162,6 +164,13 @@ namespace ValheimVRMod.Scripts
             transform.position = rearHandCenter + weaponPointingDir * (HAND_CENTER_OFFSET + GetPreferredOffsetFromRearHand(Vector3.Distance(frontHandCenter, rearHandCenter)));
             transform.rotation = PointWeaponAtDirection(weaponPointingDir);
             return weaponPointingDir;
+        }
+
+        protected void SetSingleHandedPositionAndRotation()
+        {
+            transform.SetPositionAndRotation(
+                GetDesiredSingleHandedPosition(originalTransform.position),
+                GetDesiredSingleHandedRotation(originalTransform.rotation));
         }
 
         protected Quaternion GetOriginalRotation()
