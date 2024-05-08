@@ -75,7 +75,7 @@ namespace ValheimVRMod.Scripts
 
             public override Vector3 GetWeaponPointingDirection(Transform weaponTransform, Vector3 longestExtrusion)
             {
-                if (InverseSpear())
+                if (IsSpear())
                 {
                     return Vector3.Project(-weaponTransform.forward, longestExtrusion).normalized;
                 }
