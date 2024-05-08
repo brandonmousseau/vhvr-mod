@@ -25,6 +25,7 @@ namespace ValheimVRMod.Scripts.Block {
         protected bool wasParryStart = false;
         public bool wasResetTimer = false;
         public bool wasGetHit = false;
+        private MeshFilter meshFilter;
         private Transform lastRenderedTransform;
         private Collider blockCollider;
         protected PhysicsEstimator physicsEstimator;
@@ -34,13 +35,14 @@ namespace ValheimVRMod.Scripts.Block {
             lastRenderedTransform = new GameObject().transform;
             physicsEstimator = lastRenderedTransform.gameObject.AddComponent<PhysicsEstimator>();
             physicsEstimator.refTransform = gameObject.GetComponentInParent<Player>().transform;
+            meshFilter = gameObject.GetComponentInChildren<MeshFilter>();
         }
 
         protected virtual void OnRenderObject()
         {
             // The transform of the shield may not be valid outside OnRenderObject(), therefore we need to record its state for later use.
-            lastRenderedTransform.parent = transform;
-            lastRenderedTransform.SetPositionAndRotation(transform.position, transform.rotation);
+            lastRenderedTransform.parent = meshFilter.transform;
+            lastRenderedTransform.SetPositionAndRotation(meshFilter.transform.position, meshFilter.transform.rotation);
             lastRenderedTransform.localScale = Vector3.one;
             lastRenderedTransform.SetParent(null, true);
         }
@@ -69,7 +71,7 @@ namespace ValheimVRMod.Scripts.Block {
                 Destroy(blockCollider.gameObject);
             }
 
-            if (lastRenderedTransform?.gameObject != null)
+            if (lastRenderedTransform != null)
             {
                 Destroy(lastRenderedTransform.gameObject);
             }
@@ -190,7 +192,7 @@ namespace ValheimVRMod.Scripts.Block {
                 return blockCollider;
             }
 
-            Mesh mesh = gameObject.GetComponent<MeshFilter>()?.sharedMesh;
+            var mesh = meshFilter?.sharedMesh;
             if (mesh == null)
             {
                 // Cannot find mesh bounds, abort calculation.
