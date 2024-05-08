@@ -178,7 +178,7 @@ namespace ValheimVRMod.Scripts
                 return TwoHandedState.SingleHanded;
             }
             
-            if (isLeftHandWeapon() && EquipScript.getLeft() != EquipType.Crossbow)
+            if (nonDominantHandHasWeapon() && EquipScript.getLeft() != EquipType.Crossbow)
             {
                 return TwoHandedState.SingleHanded;
             }
@@ -253,7 +253,7 @@ namespace ValheimVRMod.Scripts
             }
         }
 
-        public bool isLeftHandWeapon()
+        public static bool nonDominantHandHasWeapon()
         {
             var player = Player.m_localPlayer;
             var leftHandItem = player?.m_leftItem?.m_shared.m_itemType;
