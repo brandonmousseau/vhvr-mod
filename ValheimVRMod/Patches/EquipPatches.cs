@@ -83,6 +83,12 @@ namespace ValheimVRMod.Patches {
                     meshFilter.gameObject.AddComponent<FishingManager>();
                     break;
             }
+            if (___m_rightItem == "StaffLightning")
+            {
+                WeaponUtils.AlignLoadedMeshToUnloadedMesh(
+                    loaded: ___m_rightItemInstance.transform.Find("Loaded").gameObject,
+                    unloaded: meshFilter.gameObject);
+            }
             LocalWeaponWield weaponWield = EquipScript.isSpearEquipped() ? ___m_rightItemInstance.AddComponent<SpearWield>() : ___m_rightItemInstance.AddComponent<LocalWeaponWield>();
             weaponWield.Initialize(Player.m_localPlayer.GetRightItem(), ___m_rightItem);
 
