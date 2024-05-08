@@ -178,7 +178,7 @@ namespace ValheimVRMod.Scripts
                 return TwoHandedState.SingleHanded;
             }
             
-            if (isLeftHandWeapon() && EquipScript.getLeft() != EquipType.Crossbow)
+            if (nonDominantHandHasWeapon() && EquipScript.getLeft() != EquipType.Crossbow)
             {
                 return TwoHandedState.SingleHanded;
             }
@@ -253,7 +253,7 @@ namespace ValheimVRMod.Scripts
             }
         }
 
-        public bool isLeftHandWeapon()
+        public static bool nonDominantHandHasWeapon()
         {
             var player = Player.m_localPlayer;
             var leftHandItem = player?.m_leftItem?.m_shared.m_itemType;
@@ -286,13 +286,8 @@ namespace ValheimVRMod.Scripts
             GameObject.Destroy(redDotRenderer.gameObject.GetComponent<Collider>());
             if (RedDotMaterial == null)
             {
-                // Since the red dot is rendered at a far distance and could be subject to strong fog effect,
-                // we need a fog-free material so that its color does not fade.
-                // TODO: consider writing a custom shader instead of borrowing the VR pointer material.
-                RedDotMaterial = new Material(VRPlayer.leftPointer.gameObject.GetComponentInChildren<Renderer>().material);
-                RedDotMaterial.color = Color.black;
-                RedDotMaterial.EnableKeyword("_EMISSION");
-                RedDotMaterial.SetColor("_EmissionColor", Color.red);
+                RedDotMaterial = Object.Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
+                RedDotMaterial.color = Color.red;
             }
 
             redDotRenderer.sharedMaterial = RedDotMaterial;

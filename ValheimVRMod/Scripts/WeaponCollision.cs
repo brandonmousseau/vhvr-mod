@@ -293,10 +293,15 @@ namespace ValheimVRMod.Scripts
                 colliderParent = new GameObject();
             }
 
-            if (name == "SpearChitin" || EquipScript.getRight() == EquipType.Fishing)
+            switch(EquipScript.getRight())
             {
-                setScriptActive(false);
-                return;
+                case EquipType.Cultivator:
+                case EquipType.Hoe:
+                case EquipType.Fishing:
+                case EquipType.Magic:
+                case EquipType.SpearChitin:
+                    setScriptActive(false);
+                    return;
             }
 
             try
@@ -387,7 +392,7 @@ namespace ValheimVRMod.Scripts
             if (weaponWield.twoHandedState == WeaponWield.TwoHandedState.SingleHanded)
             {
                 handSpeed =
-                    weaponWield.isLeftHandWeapon() ^ VHVRConfig.LeftHanded() ?
+                    VHVRConfig.LeftHanded() ?
                     VRPlayer.leftHandPhysicsEstimator.GetAverageVelocityInSnapshots().magnitude :
                     VRPlayer.rightHandPhysicsEstimator.GetAverageVelocityInSnapshots().magnitude;
             }
