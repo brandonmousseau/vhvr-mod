@@ -290,13 +290,8 @@ namespace ValheimVRMod.Scripts
             GameObject.Destroy(redDotRenderer.gameObject.GetComponent<Collider>());
             if (RedDotMaterial == null)
             {
-                // Since the red dot is rendered at a far distance and could be subject to strong fog effect,
-                // we need a fog-free material so that its color does not fade.
-                // TODO: consider writing a custom shader instead of borrowing the VR pointer material.
-                RedDotMaterial = new Material(VRPlayer.leftPointer.gameObject.GetComponentInChildren<Renderer>().material);
-                RedDotMaterial.color = Color.black;
-                RedDotMaterial.EnableKeyword("_EMISSION");
-                RedDotMaterial.SetColor("_EmissionColor", Color.red);
+                RedDotMaterial = Object.Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
+                RedDotMaterial.color = Color.red;
             }
 
             redDotRenderer.sharedMaterial = RedDotMaterial;
