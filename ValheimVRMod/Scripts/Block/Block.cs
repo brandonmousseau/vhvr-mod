@@ -40,6 +40,16 @@ namespace ValheimVRMod.Scripts.Block {
 
         protected virtual void OnRenderObject()
         {
+            if (meshFilter == null)
+            {
+                meshFilter = GetComponentInChildren<MeshFilter>(includeInactive: true);
+                if (meshFilter == null)
+                {
+                    return;
+                }
+            }
+
+
             // The transform of the shield may not be valid outside OnRenderObject(), therefore we need to record its state for later use.
             lastRenderedTransform.parent = meshFilter.transform;
             lastRenderedTransform.SetPositionAndRotation(meshFilter.transform.position, meshFilter.transform.rotation);
