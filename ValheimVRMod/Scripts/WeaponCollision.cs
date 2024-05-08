@@ -392,7 +392,7 @@ namespace ValheimVRMod.Scripts
             if (weaponWield.twoHandedState == WeaponWield.TwoHandedState.SingleHanded)
             {
                 handSpeed =
-                    weaponWield.isLeftHandWeapon() ^ VHVRConfig.LeftHanded() ?
+                    VHVRConfig.LeftHanded() ?
                     VRPlayer.leftHandPhysicsEstimator.GetAverageVelocityInSnapshots().magnitude :
                     VRPlayer.rightHandPhysicsEstimator.GetAverageVelocityInSnapshots().magnitude;
             }
