@@ -83,12 +83,7 @@ namespace ValheimVRMod.Patches {
                     meshFilter.gameObject.AddComponent<FishingManager>();
                     break;
             }
-            if (___m_rightItem == "StaffLightning")
-            {
-                WeaponUtils.AlignLoadedMeshToUnloadedMesh(
-                    loaded: ___m_rightItemInstance.transform.Find("Loaded").gameObject,
-                    unloaded: meshFilter.gameObject);
-            }
+
             LocalWeaponWield weaponWield = EquipScript.isSpearEquipped() ? ___m_rightItemInstance.AddComponent<SpearWield>() : ___m_rightItemInstance.AddComponent<LocalWeaponWield>();
             weaponWield.Initialize(Player.m_localPlayer.GetRightItem(), ___m_rightItem);
 
@@ -107,7 +102,18 @@ namespace ValheimVRMod.Patches {
                 meshFilter, handPosition: ___m_rightItemInstance.transform.parent.position, ___m_rightItem, true);
             weaponCol.weaponWield = weaponWield;
             meshFilter.gameObject.AddComponent<ButtonSecondaryAttackManager>().Initialize(meshFilter.transform, ___m_rightItem, true);
-            meshFilter.gameObject.AddComponent<WeaponBlock>().weaponWield = weaponWield;
+
+            if (___m_rightItem == "StaffLightning")
+            {
+                WeaponUtils.AlignLoadedMeshToUnloadedMesh(
+                    loaded: ___m_rightItemInstance.transform.Find("Loaded").gameObject,
+                    unloaded: meshFilter.gameObject);
+                ___m_rightItemInstance.AddComponent<WeaponBlock>().weaponWield = weaponWield;
+            }
+            else
+            {
+                meshFilter.gameObject.AddComponent<WeaponBlock>().weaponWield = weaponWield;
+            }
 
             ParticleFix.maybeFix(___m_rightItemInstance);
         }
