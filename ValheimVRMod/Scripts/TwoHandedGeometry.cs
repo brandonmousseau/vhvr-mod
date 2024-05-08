@@ -15,12 +15,12 @@ namespace ValheimVRMod.Scripts
                 this.distanceBetweenGripAndRearEnd = distanceBetweenGripAndRearEnd;
             }
 
-            public Vector3 GetWeaponPointingDirection(Transform weaponTransform, Vector3 longestLocalExtrusion)
+            public virtual Vector3 GetWeaponPointingDirection(Transform weaponTransform, Vector3 longestLocalExtrusion)
             {
                 return longestLocalExtrusion;
             }
 
-            public Vector3 GetDesiredSingleHandedPosition(WeaponWield weaponWield)
+            public virtual Vector3 GetDesiredSingleHandedPosition(WeaponWield weaponWield)
             {
                 return weaponWield.originalPosition;
             }
@@ -34,7 +34,7 @@ namespace ValheimVRMod.Scripts
                 return weaponWield.transform.up;
             }
 
-            public float GetPreferredOffsetFromRearHand(float handDist, bool rearHandIsDominant)
+            public virtual float GetPreferredOffsetFromRearHand(float handDist, bool rearHandIsDominant)
             {
                 if (rearHandIsDominant)
                 {
@@ -67,43 +67,44 @@ namespace ValheimVRMod.Scripts
             }
         }
 
-        public class LocalSpearGeometryProvider : WeaponWield.TwoHandedGeometryProvider
+        public abstract class InversibleGeometryProvider : DefaultGeometryProvider
         {
             private const float HANDLE_LENGTH_BEHIND_CENTER = 1.25f;
 
-            public Vector3 GetWeaponPointingDirection(Transform weaponTransform, Vector3 longestExtrusion)
-            {
-                return Vector3.Project(-weaponTransform.forward, longestExtrusion).normalized;
-            }
+            public InversibleGeometryProvider(float distanceBetweenGripAndRearEnd) : base(distanceBetweenGripAndRearEnd) { }
 
-            public Vector3 GetDesiredSingleHandedPosition(WeaponWield weaponWield)
+            public override Vector3 GetWeaponPointingDirection(Transform weaponTransform, Vector3 longestExtrusion)
             {
-                if (!VHVRConfig.SpearInverseWield() || ThrowableManager.isAiming)
+                if (InverseSpear())
                 {
-                    return weaponWield.originalPosition;
+                    return Vector3.Project(-weaponTransform.forward, longestExtrusion).normalized;
                 }
-                return weaponWield.originalPosition - 0.5f * (weaponWield.originalRotation * Quaternion.Inverse(weaponWield.offsetFromPointingDir) * Vector3.forward);
+                return base.GetWeaponPointingDirection(weaponTransform, longestExtrusion);
             }
 
-            public Quaternion GetDesiredSingleHandedRotation(WeaponWield weaponWield)
+            public override Vector3 GetDesiredSingleHandedPosition(WeaponWield weaponWield)
             {
-                if (ThrowableManager.isAiming)
+                if (InverseSpear())
                 {
-                    return GetAimingRotation(weaponWield);
+                    return weaponWield.originalPosition - 0.5f * (weaponWield.originalRotation * Quaternion.Inverse(weaponWield.offsetFromPointingDir) * Vector3.forward);
+                }
+                return weaponWield.originalPosition;
+            }
+
+            public override Quaternion GetDesiredSingleHandedRotation(WeaponWield weaponWield)
+            {
+                return InverseSpear() ?
+                    weaponWield.originalRotation * Quaternion.Euler(180, 0, 0) :
+                    weaponWield.originalRotation;
+            }
+
+            public override float GetPreferredOffsetFromRearHand(float handDist, bool rearHandIsDominant)
+            {
+                if (!IsSpear())
+                {
+                    return base.GetPreferredOffsetFromRearHand(handDist, rearHandIsDominant);
                 }
 
-                return EquipScript.isSpearEquippedUlnarForward() ?
-                    weaponWield.originalRotation :
-                    weaponWield.originalRotation * Quaternion.Euler(180, 0, 0);
-            }
-
-            public Vector3 GetPreferredTwoHandedWeaponUp(WeaponWield weaponWield)
-            {
-                return weaponWield.transform.up;
-            }
-
-            public float GetPreferredOffsetFromRearHand(float handDist, bool rearHandIsDominant)
-            {
                 if (rearHandIsDominant)
                 {
                     // When the dominant hand is in the back, anchor the very end of the spear handle in it to allow longer attack range.
@@ -121,13 +122,42 @@ namespace ValheimVRMod.Scripts
                 }
             }
 
-            private Quaternion GetAimingRotation(WeaponWield weaponWield)
+            protected virtual bool IsSpear()
             {
+                return InverseSpear();
+            }
+ 
+            protected abstract bool InverseSpear();
+        }
+
+        public class LocalSpearGeometryProvider : InversibleGeometryProvider
+        {
+            public LocalSpearGeometryProvider() : base(0) { }
+
+            protected override bool IsSpear()
+            {
+                return true;
+            }
+
+            protected override bool InverseSpear()
+            {
+                return VHVRConfig.SpearInverseWield() && !ThrowableManager.isAiming;
+            }
+
+            public override Quaternion GetDesiredSingleHandedRotation(WeaponWield weaponWield)
+            {
+                var staticRotation = base.GetDesiredSingleHandedRotation(weaponWield);
+
+                if (!ThrowableManager.isAiming)
+                {
+                    return staticRotation;
+                }
+
                 var pointing = SpearWield.lastFixedUpdatedAimDir.normalized;
 
                 if (VHVRConfig.SpearThrowType() != "Classic")
                 {
-                    return PointWeaponAtDirection(weaponWield, pointing);
+                    return weaponWield.getAimingRotation(pointing, GetPreferredTwoHandedWeaponUp(weaponWield));
                 }
 
                 Vector3 staticPointing =
@@ -138,6 +168,7 @@ namespace ValheimVRMod.Scripts
 
                 Vector3 handVelocity =
                     (VHVRConfig.LeftHanded() ? VRPlayer.leftHandPhysicsEstimator : VRPlayer.rightHandPhysicsEstimator).GetVelocity();
+ 
                 float weight = Vector3.Dot(staticPointing, pointing) * handVelocity.magnitude;
                 if (weight < 0)
                 {
@@ -146,13 +177,9 @@ namespace ValheimVRMod.Scripts
                 }
 
                 // Use a weight to avoid direction flickering when the hand speed is low.
-                return PointWeaponAtDirection(
-                    weaponWield, Vector3.RotateTowards(staticPointing, pointing, Mathf.Max(weight * 8 - 1, 0), Mathf.Infinity));
-            }
-
-            private Quaternion PointWeaponAtDirection(WeaponWield weaponWield, Vector3 direction)
-            {
-                return Quaternion.LookRotation(direction, GetPreferredTwoHandedWeaponUp(weaponWield)) * weaponWield.offsetFromPointingDir;
+                return weaponWield.getAimingRotation(
+                      Vector3.RotateTowards(staticPointing, pointing, Mathf.Max(weight * 8 - 1, 0), Mathf.Infinity),
+                      GetPreferredTwoHandedWeaponUp(weaponWield));
             }
         }
 
@@ -217,6 +244,29 @@ namespace ValheimVRMod.Scripts
                         LogUtils.LogWarning("WeaponWield: unknown CrossbowSaggitalRotationSource");
                         return rearHandleUp;
                 }
+            }
+        }
+
+        public class RemoteGeometryProvider : InversibleGeometryProvider
+        {
+            private WeaponWieldSync.TwoHandedStateProvider twoHandedStateProvider;
+            public RemoteGeometryProvider(float distanceBetweenGripAndRearEnd, WeaponWieldSync.TwoHandedStateProvider twoHandedStateProvider) :
+                base(distanceBetweenGripAndRearEnd) {
+                this.twoHandedStateProvider = twoHandedStateProvider;
+            }
+
+            protected override bool IsSpear()
+            {
+                // Since the item name is null for remote play, it is hard to conclusively infer whether the weapon is a spear.
+                // If it is inversed currently, we can confidently infer that it is a spear and should treat it like one.
+                // If it is not currnetly inversed, we cannot be sure but its orientation should be like a regular weapon
+                // so it is okay to treat it as a non-spear.
+                return InverseSpear();
+            }
+
+            protected override bool InverseSpear()
+            {
+                return twoHandedStateProvider.HoldingInversedSpear();
             }
         }
     }
