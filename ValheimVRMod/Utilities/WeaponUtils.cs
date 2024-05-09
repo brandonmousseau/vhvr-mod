@@ -629,5 +629,10 @@ namespace ValheimVRMod.Utilities
                 bounds.size - (new Vector3(Mathf.Abs(colliderOffset.x), Mathf.Abs(colliderOffset.y), Mathf.Abs(colliderOffset.z))) * 2;
             return new WeaponColData(colliderCenter, Vector3.zero, colliderSize);
         }
+
+        public static Vector3 GetWeaponVelocity(Vector3 handVelocity, Vector3 handAngularVelocity, Vector3 weaponOffset)
+        {
+            return handVelocity + Vector3.Cross(handAngularVelocity, weaponOffset);
+        }
     }
 }
