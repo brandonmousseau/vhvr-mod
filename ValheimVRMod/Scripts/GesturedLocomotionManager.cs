@@ -228,7 +228,8 @@ namespace ValheimVRMod.Scripts
 
         class LeftHandGesturedWalkRun : GesturedWalkRun {
 
-            public LeftHandGesturedWalkRun(Transform vrCameraRig) : base(vrCameraRig) {
+            public LeftHandGesturedWalkRun(Transform vrCameraRig) : base(vrCameraRig)
+            {
                 new GameObject("LeftHandWalkingWheel").AddComponent<WalkRunIndicator>().Init(true, this);
             }
 
@@ -341,7 +342,7 @@ namespace ValheimVRMod.Scripts
             private bool ShouldStart(Vector3 wheelDiameter, Vector3 walkDirection, float handSpeed)
             {
                 return !isStoppingWalkRunByButton() && handSpeed > MIN_HAND_SPEED &&
-                    Mathf.Abs(Vector3.Dot(wheelDiameter, walkDirection)) > MIN_ACTIVATION_HAND_DISTANCE;
+                    wheelDiameter.y < -MIN_ACTIVATION_HAND_DISTANCE;
             }
 
             private bool ShouldStop(Player player, double handSpeed)

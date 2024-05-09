@@ -41,7 +41,7 @@ namespace ValheimVRMod.Utilities
 
         public static EquipType getRight()
         {
-            if (Player.m_localPlayer.GetRightItem() != null)
+            if (Player.m_localPlayer?.GetRightItem() != null)
             {
                 return getRightEquipType(Player.m_localPlayer.GetRightItem());
             }
@@ -50,7 +50,7 @@ namespace ValheimVRMod.Utilities
 
         public static EquipType getLeft()
         {
-            if (Player.m_localPlayer.GetLeftItem() != null)
+            if (Player.m_localPlayer?.GetLeftItem() != null)
             {
                 return getLeftEquipType(Player.m_localPlayer.GetLeftItem());
             }
