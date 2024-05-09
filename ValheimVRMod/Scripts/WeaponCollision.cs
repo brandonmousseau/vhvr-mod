@@ -415,7 +415,7 @@ namespace ValheimVRMod.Scripts
                 return false;
             }
 
-            if (Vector3.Dot(attackVelocity, LocalWeaponWield.weaponForward) < MIN_STAB_SPEED * VHVRConfig.SwingSpeedRequirement())
+            if (Vector3.Dot(attackVelocity, LocalWeaponWield.weaponForward) < MIN_STAB_SPEED)
             {
                 return false;
             }
