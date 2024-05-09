@@ -24,7 +24,7 @@ namespace ValheimVRMod.Scripts
 
         public Vector3 originalPosition { get { return originalTransform.position; } }
         public Quaternion originalRotation { get { return originalTransform.rotation; } }
-        public Quaternion offsetFromPointingDir; // The rotation offset of this transform relative to the direction the weapon is pointing at.
+        public Quaternion offsetFromPointingDir { get; protected set; } // The rotation offset of this transform relative to the direction the weapon is pointing at.
         protected TwoHandedGeometryProvider geometryProvider;
 
         private static Dictionary<string, Vector3> EstimatedWeaponLocalPointingDirections = new Dictionary<string, Vector3>();
@@ -33,9 +33,12 @@ namespace ValheimVRMod.Scripts
         private Vector3 longestLocalExtrusion = Vector3.forward;
         private float distanceBetweenGripAndRearEnd = 0.1f;
         private EquipType equipType;
+        private bool isLocal;
 
-        public WeaponWield Initialize(ItemDrop.ItemData item, string itemName, bool forceUsingCrossbowGeometry = false)
+        public WeaponWield Initialize(
+            ItemDrop.ItemData item, string itemName, bool forceUsingCrossbowGeometry = false, WeaponWieldSync.TwoHandedStateProvider twoHandedStateProvider = null)
         {
+            isLocal = GetComponentInParent<Player>() == Player.m_localPlayer;
             this.itemName = itemName;
             equipType = (item == null ? EquipType.None : EquipScript.getEquippedItem(item));
             if (forceUsingCrossbowGeometry)
@@ -75,7 +78,7 @@ namespace ValheimVRMod.Scripts
                 }
             }
 
-            geometryProvider = GetGeometryProvider(longestLocalExtrusion, distanceBetweenGripAndRearEnd);
+            geometryProvider = GetGeometryProvider(longestLocalExtrusion, distanceBetweenGripAndRearEnd, twoHandedStateProvider);
 
             var weaponPointing = GetWeaponPointingDirection();
             offsetFromPointingDir =
@@ -85,6 +88,11 @@ namespace ValheimVRMod.Scripts
             transform.rotation = geometryProvider.GetDesiredSingleHandedRotation(this);
 
             return this;
+        }
+
+        public Quaternion getAimingRotation(Vector3 pointing, Vector3 upDirection)
+        {
+            return Quaternion.LookRotation(pointing, upDirection) * offsetFromPointingDir;
         }
 
         protected Vector3 GetWeaponPointingDirection()
@@ -136,8 +144,8 @@ namespace ValheimVRMod.Scripts
                 rearHandCenter + 
                 weaponPointingDir * (HAND_CENTER_OFFSET + geometryProvider.GetPreferredOffsetFromRearHand(
                     Vector3.Distance(frontHandCenter, rearHandCenter), IsPlayerLeftHanded() == (twoHandedState == TwoHandedState.LeftHandBehind)));
-            transform.rotation =
-                Quaternion.LookRotation(weaponPointingDir, geometryProvider.GetPreferredTwoHandedWeaponUp(this)) * offsetFromPointingDir;
+            transform.rotation = 
+                getAimingRotation(weaponPointingDir, geometryProvider.GetPreferredTwoHandedWeaponUp(this));
             return weaponPointingDir;
         }
 
@@ -146,15 +154,9 @@ namespace ValheimVRMod.Scripts
         protected abstract Transform GetRightHandTransform();
         protected abstract TwoHandedState GetDesiredTwoHandedState(bool wasTwoHanded);
 
-        protected bool IsDundr()
+        private TwoHandedGeometryProvider GetGeometryProvider
+            (Vector3 longestLocalExtrusion, float distanceBetweenGripAndRearEnd, WeaponWieldSync.TwoHandedStateProvider twoHandedStateProvider)
         {
-            return itemName == "StaffLightning";
-        }
-
-        private TwoHandedGeometryProvider GetGeometryProvider(Vector3 longestLocalExtrusion, float distanceBetweenGripAndRearEnd)
-        {
-            bool isLocal = GetComponentInParent<Player>() == Player.m_localPlayer;
-
             switch (equipType)
             {
                 case EquipType.Spear:
@@ -172,9 +174,9 @@ namespace ValheimVRMod.Scripts
                         new TwoHandedGeometry.CrossbowGeometryProvider(IsPlayerLeftHanded());
             }
 
-            if (IsDundr())
+            if (!isLocal && twoHandedStateProvider != null)
             {
-                return new TwoHandedGeometry.DundrGeometryProvider();
+                return new TwoHandedGeometry.RemoteGeometryProvider(distanceBetweenGripAndRearEnd, twoHandedStateProvider);
             }
 
             return new TwoHandedGeometry.DefaultGeometryProvider(distanceBetweenGripAndRearEnd);
