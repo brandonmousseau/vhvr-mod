@@ -12,6 +12,7 @@ namespace ValheimVRMod.Scripts
     public class FistCollision : MonoBehaviour
     {
         private const float MIN_SPEED = 5f;
+        private const float WEAPON_OFFSET = 0.125f;
 
         private bool isRightHand;
         private HandGesture handGesture;
@@ -182,7 +183,20 @@ namespace ValheimVRMod.Scripts
 
         public bool hasMomentum()
         {
-            return physicsEstimator.GetVelocity().magnitude >= MIN_SPEED * VHVRConfig.SwingSpeedRequirement();
+            var handVelocity = physicsEstimator.GetVelocity();
+            var minSpeed = MIN_SPEED * VHVRConfig.SwingSpeedRequirement();
+
+            if (EquipScript.getRight() == EquipType.Claws || !hasDualWieldingWeaponEquipped())
+            {
+                return handVelocity.magnitude >= minSpeed;
+            }
+
+            var weaponOffsetDirection = (transform.position - physicsEstimator.transform.position).normalized;
+            var weaponVelocity =
+                WeaponUtils.GetWeaponVelocity(
+                    handVelocity, physicsEstimator.GetAngularVelocity(), weaponOffsetDirection * WEAPON_OFFSET);
+
+            return weaponVelocity.magnitude >= minSpeed;
         }
 
         public static bool hasDualWieldingWeaponEquipped()
