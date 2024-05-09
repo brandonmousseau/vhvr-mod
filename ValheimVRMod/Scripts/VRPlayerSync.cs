@@ -20,6 +20,7 @@ namespace ValheimVRMod.Scripts {
 
         private WeaponWield.TwoHandedState twoHandedState = WeaponWield.TwoHandedState.SingleHanded;
         private bool isLeftHanded = false;
+        private bool holdingInversedSpear = true;
 
         private Player player;
         private Vector3 ownerLastPositionCamera = Vector3.zero;
@@ -92,11 +93,16 @@ namespace ValheimVRMod.Scripts {
         {
             return isLeftHanded;
         }
+
+        public bool HoldingInversedSpear()
+        {
+            return holdingInversedSpear;
+        }
         
         public bool IsVrEnabled()
         {
             return vrik != null;
-        }        
+        }
 
         private void calculateOwnerVelocities(float dt)
         {
@@ -152,6 +158,11 @@ namespace ValheimVRMod.Scripts {
             pkg.Write(BowLocalManager.instance != null && BowLocalManager.instance.pulling);
             pkg.Write(isLeftHanded = VHVRConfig.LeftHanded());
             pkg.Write((byte) (twoHandedState = LocalWeaponWield.LocalPlayerTwoHandedState));
+            pkg.Write(
+                holdingInversedSpear =
+                    EquipScript.isSpearEquipped() &&
+                    !ThrowableManager.isAiming &&
+                    (VHVRConfig.SpearInverseWield() || twoHandedState != WeaponWield.TwoHandedState.SingleHanded));
 
             GetComponent<ZNetView>().GetZDO().Set("vr_data", pkg.GetArray());
         }
@@ -207,6 +218,7 @@ namespace ValheimVRMod.Scripts {
             maybePullBow(pkg.ReadBool());
             isLeftHanded = pkg.ReadBool();
             twoHandedState = (WeaponWield.TwoHandedState) pkg.ReadByte();
+            holdingInversedSpear = pkg.ReadBool();
         }
 
         private void maybePullBow(bool pulling) {
