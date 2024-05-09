@@ -26,6 +26,7 @@ namespace ValheimVRMod.Scripts
         public PhysicsEstimator physicsEstimator { get; private set; }
         public PhysicsEstimator mainHandPhysicsEstimator { get { return weaponWield.mainHand == VRPlayer.leftHand ? VRPlayer.leftHandPhysicsEstimator : VRPlayer.rightHandPhysicsEstimator; } }
         public float twoHandedMultitargetSwipeCountdown { get; private set; } = 0;
+        public bool isTwoHandedMultitargetSwipeActive { get { return twoHandedMultitargetSwipeCountdown > 0; } }
         public bool itemIsTool;
         public static bool isDrinking;
         public LocalWeaponWield weaponWield;
