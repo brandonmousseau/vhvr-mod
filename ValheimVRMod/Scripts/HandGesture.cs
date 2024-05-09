@@ -56,7 +56,11 @@ namespace ValheimVRMod.Scripts {
             {
                 return true;
             }
-            
+            else if (FistCollision.hasDualWieldingWeaponEquipped())
+            {
+                return false;
+            }
+
             if (BowLocalManager.instance != null && BowLocalManager.instance.isHoldingArrow()) {
                 return false;
             }
