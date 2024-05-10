@@ -59,7 +59,7 @@ namespace ValheimVRMod.Scripts {
             }
 
             WeaponCollision weaponCollision = Player.m_localPlayer.gameObject.GetComponentInChildren<WeaponCollision>();
-            if (weaponCollision && weaponCollision.twoHandedMultitargetSwipeCountdown > 0)
+            if (weaponCollision && weaponCollision.isTwoHandedMultitargetSwipeActive)
             {
                 return 1;
             }
