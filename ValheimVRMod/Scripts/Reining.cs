@@ -20,7 +20,7 @@ namespace ValheimVRMod.Scripts
             {
                 {
                     "default",
-                    new Vector3(-0.375f, -0.25f, 1.25f)
+                    new Vector3(-0.375f, -0.25f, 1.5f)
                 },
                 {
                     "$enemy_lox",
@@ -226,7 +226,7 @@ namespace ValheimVRMod.Scripts
             var horizontalVelocity = v;
             horizontalVelocity.y = 0;
 
-            if (Vector3.Angle(horizontalVelocity, -handOffset) < REIN_ANGLE_TOLERANCE &&
+            if (Vector3.Angle(horizontalVelocity, -GetCurrentDirection()) < REIN_ANGLE_TOLERANCE &&
                 horizontalVelocity.magnitude > MIN_STOP_REIN_HAND_SPEED &&
                 handOffset.magnitude < MAX_STOP_REIN_DISTNACE)
             {
