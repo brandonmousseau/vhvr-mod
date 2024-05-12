@@ -113,6 +113,11 @@ namespace ValheimVRMod.Scripts
 
         public void SetReinAttach()
         {
+            if (!sadle)
+            {
+                return;
+            }
+
             var mountName = sadle.m_monsterAI.m_character.m_name;
             Vector3 offset;
             if (REIN_ATTACH_OFFSETS.ContainsKey(mountName))
