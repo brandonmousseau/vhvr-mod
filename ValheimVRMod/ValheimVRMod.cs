@@ -30,7 +30,7 @@ namespace ValheimVRMod
             {
                 LogInfo("ValheimVRMod is disabled via configuration.");
                 enabled = false;
-                return;                
+                return;
             }
             Game.isModded = true;
             LogInfo("ValheimVR Mod Awakens!");
