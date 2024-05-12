@@ -153,7 +153,7 @@ namespace ValheimVRMod.Scripts
 
             public override Vector3 GetTargetVelocityFromGestures(Player player)
             {
-                if (!VHVRConfig.IsGesturedJumpEnabled())
+                if (!VHVRConfig.IsGesturedJumpEnabled() || player.IsAttached())
                 {
                     return Vector3.zero;
                 }
@@ -269,7 +269,7 @@ namespace ValheimVRMod.Scripts
             protected abstract Transform otherHandTransform { get; }
 
             public GesturedWalkRun(Transform vrCameraRig) : base(vrCameraRig) { }
-            
+
             public Vector3 movementVerticalPlaneNormal { get; private set; }
 
             public override Vector3 GetTargetVelocityFromGestures(Player player)
@@ -287,7 +287,7 @@ namespace ValheimVRMod.Scripts
                 Vector3 walkDirection = handTransform.forward * 2;
                 walkDirection += (Vector3.Dot(walkDirection, clampedHandVelocity) > 0 ? clampedHandVelocity : -clampedHandVelocity);
                 walkDirection = Vector3.ProjectOnPlane(walkDirection, upDirection).normalized;
-               
+
                 movementVerticalPlaneNormal = Vector3.Cross(upDirection, walkDirection).normalized;
                 Vector3 wheelDiameter = Vector3.ProjectOnPlane(handTransform.position - otherHandTransform.position, movementVerticalPlaneNormal);
 
