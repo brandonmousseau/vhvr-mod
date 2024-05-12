@@ -767,28 +767,18 @@ namespace ValheimVRMod.Patches {
     {
         static void Prefix(ref Vector3 lookDir, ref bool block)
         {
-            if (!VHVRConfig.UseVrControls())
+            if (VHVRConfig.NonVrPlayer())
             {
                 return;
             }
-            block = Reining.turnInPlace;
-            if (Reining.shouldOverrideSpeedOrDirection)
+            if (VHVRConfig.UseVrControls())
             {
-                lookDir = (Vector3)Reining.targetDirection;
+                block = Reining.turnInPlace;
             }
-        }
-    }
-
-    [HarmonyPatch(typeof(Sadle), "RPC_Controls")]
-    class SadleRPCControlPatch
-    {
-        static void Prefix(ref Vector3 rideDir)
-        {
-            if (!VHVRConfig.UseVrControls() || !Reining.shouldOverrideSpeedOrDirection)
-            {
-                return;
-            }            
-            rideDir = (Vector3)Reining.targetDirection;
+            lookDir =
+                Reining.shouldOverrideSpeedOrDirection ?
+                (Vector3)Reining.targetDirection :
+                Valve.VR.InteractionSystem.Player.instance.hmdTransform.forward; // This makes the mounts try to follow the hmd eyedir
         }
     }
 
