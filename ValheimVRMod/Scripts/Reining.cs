@@ -9,11 +9,12 @@ namespace ValheimVRMod.Scripts
     public class Reining : MonoBehaviour
     {
         private const float MIN_TURNING_OFFSET = 0.25f;
-        private const float SHAKE_SPEED_THRESHOLD = -1f;
-        private const float MAX_STOP_REIN_RETRACTING_ANGLE = 30f;
-        private const float MAX_STOP_REIN_DISTNACE = 0.25f;
+        private const float SHAKE_SPEED_THRESHOLD = 1f;
+        private const float REIN_ANGLE_TOLERANCE = 30f;
+        private const float MAX_STOP_REIN_DISTNACE = 0.33f;
         private const float MIN_STOP_REIN_HAND_SPEED = 0.75f;
         private const float MIN_LEANING_DISTANCE_TO_START_GALLOPPING = 0.4f;
+        private const float RUN_CUE_TIMEOUT = 0.5f;
         private static readonly Dictionary<string, Vector3> REIN_ATTACH_OFFSETS =
             new Dictionary<string, Vector3>
             {
@@ -32,6 +33,10 @@ namespace ValheimVRMod.Scripts
         private Vector3 rightReinAttachLocalPosition;
         private LineRenderer lineRenderer;
         private bool isTurning;
+        private Sadle.Speed leftHandSlowDownResult = Sadle.Speed.Stop;
+        private Sadle.Speed rightHandSlowDownResult = Sadle.Speed.Stop;
+        private float leftRunCueCountDown = Mathf.NegativeInfinity;
+        private float rightRunCueCountDown = Mathf.NegativeInfinity;
 
         private Sadle sadle 
         { 
@@ -77,8 +82,12 @@ namespace ValheimVRMod.Scripts
                 var rightReinAttach = sadle.transform.TransformPoint(rightReinAttachLocalPosition);
                 lineRenderer.enabled = true;
                 lineRenderer.SetPosition(0, leftReinAttach);
-                lineRenderer.SetPosition(1, isLeftHandReining ? VRPlayer.leftHandBone.position : leftReinAttach);
-                lineRenderer.SetPosition(2, isRightHandReining ? VRPlayer.rightHandBone.position : rightReinAttach);
+                lineRenderer.SetPosition(
+                    1,
+                    isLeftHandReining ? VRPlayer.leftHandBone.position + VRPlayer.leftHandBone.up * 0.0625f : leftReinAttach);
+                lineRenderer.SetPosition(
+                    2,
+                    isRightHandReining ? VRPlayer.rightHandBone.position + VRPlayer.rightHandBone.up * 0.0625f : rightReinAttach);
                 lineRenderer.SetPosition(3, rightReinAttach);
             }
             else
@@ -87,6 +96,15 @@ namespace ValheimVRMod.Scripts
             }
             
             bool changeDirection = UpdateTargetDirection(isLeftHandReining, isRightHandReining);
+
+            if (leftRunCueCountDown > 0)
+            {
+                leftRunCueCountDown -= Time.deltaTime;
+            }
+            if (rightRunCueCountDown > 0)
+            {
+                rightRunCueCountDown -= Time.deltaTime;
+            }
 
             var targetSpeed = GetTargetSpeed(isLeftHandReining, isRightHandReining);
             if (targetSpeed == Sadle.Speed.Stop && changeDirection)
@@ -148,9 +166,11 @@ namespace ValheimVRMod.Scripts
             var leaning = leaningVector.magnitude;
 
             var leftHandReiningSpeed =
-                isLeftHandReining ? GetReiningSpeed(VRPlayer.leftHandPhysicsEstimator, leaning) : Sadle.Speed.NoChange;
+                 GetReiningSpeed(
+                     isLeftHandReining, VRPlayer.leftHandPhysicsEstimator, leaning, ref leftHandSlowDownResult, ref leftRunCueCountDown);
             var rightHandReiningSpeed =
-                isRightHandReining ? GetReiningSpeed(VRPlayer.rightHandPhysicsEstimator, leaning) : Sadle.Speed.NoChange;
+                 GetReiningSpeed(
+                     isRightHandReining, VRPlayer.rightHandPhysicsEstimator, leaning, ref rightHandSlowDownResult, ref rightRunCueCountDown);
 
             if (leftHandReiningSpeed == Sadle.Speed.NoChange)
             {
@@ -168,32 +188,48 @@ namespace ValheimVRMod.Scripts
             return rightHandReiningSpeed > leftHandReiningSpeed ? rightHandReiningSpeed : leftHandReiningSpeed;
         }
 
-        private Sadle.Speed GetReiningSpeed(PhysicsEstimator handPhysicsEstimator, float leaning) {
-            var v = handPhysicsEstimator.GetAverageVelocityInSnapshots();
-            if (v.y < SHAKE_SPEED_THRESHOLD)
+        private Sadle.Speed GetReiningSpeed(
+            bool isReining, PhysicsEstimator handPhysicsEstimator, float leaning, ref Sadle.Speed slowDownResult, ref float runCueCountDown) {
+            if (!isReining)
             {
-                return (leaning >= MIN_LEANING_DISTANCE_TO_START_GALLOPPING || sadle.m_speed == Sadle.Speed.Run) ?
-                    Sadle.Speed.Run :
-                    Sadle.Speed.Walk;
+                slowDownResult = Sadle.Speed.Stop;
+                runCueCountDown = Mathf.NegativeInfinity;
+                return Sadle.Speed.NoChange;
             }
 
-            var retractingVector = transform.position - handPhysicsEstimator.transform.position;
-            retractingVector.y = 0;
+            if (sadle.m_speed == Sadle.Speed.Run)
+            {
+                slowDownResult = Sadle.Speed.Walk;
+            }
+            else if (sadle.m_speed == Sadle.Speed.Stop)
+            {
+                slowDownResult = Sadle.Speed.Stop;
+            }
+
+            var v = sadle.m_attachPoint.InverseTransformVector(handPhysicsEstimator.GetAverageVelocityInSnapshots());
+            if (v.y < -SHAKE_SPEED_THRESHOLD && Vector3.Angle(v, Vector3.down) < REIN_ANGLE_TOLERANCE)
+            {
+                bool shouldRun = 
+                    (runCueCountDown > RUN_CUE_TIMEOUT || leaning >= MIN_LEANING_DISTANCE_TO_START_GALLOPPING || sadle.m_speed == Sadle.Speed.Run);
+                runCueCountDown = RUN_CUE_TIMEOUT;
+                return shouldRun ? Sadle.Speed.Run : Sadle.Speed.Walk;
+            }
+
+            if (v.y > SHAKE_SPEED_THRESHOLD && runCueCountDown > 0)
+            {
+                runCueCountDown = RUN_CUE_TIMEOUT * 2;
+            } 
+
+            var handOffset = sadle.m_attachPoint.InverseTransformPoint(handPhysicsEstimator.transform.position);
+            handOffset.y = 0;
             var horizontalVelocity = v;
             horizontalVelocity.y = 0;
-            if (Vector3.Angle(horizontalVelocity, retractingVector) < MAX_STOP_REIN_RETRACTING_ANGLE &&
-                horizontalVelocity.magnitude > MIN_STOP_REIN_HAND_SPEED)
-            {
-                if (retractingVector.magnitude < MAX_STOP_REIN_DISTNACE)
-                {
-                    return Sadle.Speed.Stop;
-                }
 
-                if (sadle.m_speed == Sadle.Speed.Run)
-                {
-                    // Slow down
-                    return Sadle.Speed.Walk;
-                } 
+            if (Vector3.Angle(horizontalVelocity, -handOffset) < REIN_ANGLE_TOLERANCE &&
+                horizontalVelocity.magnitude > MIN_STOP_REIN_HAND_SPEED &&
+                handOffset.magnitude < MAX_STOP_REIN_DISTNACE)
+            {
+                return slowDownResult;
             }
 
             return Sadle.Speed.NoChange;
@@ -248,17 +284,17 @@ namespace ValheimVRMod.Scripts
                 return currentDirection;
             }
 
-            var handOffset = hand.position - transform.position;
+            var handOffset = sadle.m_attachPoint.InverseTransformPoint(hand.position);
             handOffset.y = 0;
-            var lateralOffset = Vector3.Cross(handOffset, currentDirection).y;
-
-            if (Mathf.Abs(lateralOffset) < MIN_TURNING_OFFSET)
+            if (Mathf.Abs(handOffset.x) < MIN_TURNING_OFFSET)
             {
                 return currentDirection;
             }
 
-            turnDirection = (int)Mathf.Sign(lateralOffset);
-            return handOffset.normalized;
+            turnDirection = (int)Mathf.Sign(handOffset.x);
+            var newTargetDirection = hand.position - sadle.m_attachPoint.position;
+            newTargetDirection.y = 0;
+            return newTargetDirection;
         }
 
         private bool IsReining(HandGesture handGesture, SteamVR_Input_Sources inputSource)
@@ -268,7 +304,7 @@ namespace ValheimVRMod.Scripts
 
         private Vector3 GetCurrentDirection()
         {
-            Vector3 v = sadle.m_monsterAI.m_character.transform.forward;
+            Vector3 v = sadle.m_attachPoint.forward;
             v.y = 0;
             return v;
         }
