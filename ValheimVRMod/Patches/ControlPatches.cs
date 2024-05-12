@@ -782,19 +782,6 @@ namespace ValheimVRMod.Patches {
         }
     }
 
-    [HarmonyPatch(typeof(Sadle), "RPC_Controls")]
-    class SadleRPCControlPatch
-    {
-        static void Prefix(ref Vector3 rideDir)
-        {
-            if (!VHVRConfig.UseVrControls() || !Reining.shouldOverrideSpeedOrDirection)
-            {
-                return;
-            }            
-            rideDir = (Vector3)Reining.targetDirection;
-        }
-    }
-
     [HarmonyPatch(typeof(Player), "Update")]
     class PlayerUpdateSadleStayPatch
     {
