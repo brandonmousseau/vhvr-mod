@@ -29,8 +29,6 @@ namespace ValheimVRMod
             if (!VHVRConfig.ModEnabled())
             {
                 LogInfo("ValheimVRMod is disabled via configuration.");
-                enabled = false;
-                return;
             }
             Game.isModded = true;
             LogInfo("ValheimVR Mod Awakens!");
