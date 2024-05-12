@@ -131,12 +131,10 @@ namespace ValheimVRMod.Patches
                     {
                         __instance.Interact(leftHover, true, false);
                     }
-                } else if (leftHover)
+                }
+                else if (leftHover)
                 {
                     __instance.Interact(leftHover, false, false);
-                } else if (___m_doodadController != null)
-                {
-                    __instance.StopDoodadControl();
                 }
             }
         }
