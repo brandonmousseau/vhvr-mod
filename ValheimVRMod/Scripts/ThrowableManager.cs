@@ -210,12 +210,19 @@ namespace ValheimVRMod.Scripts
 
             if (throwing.Distance > minDist)
             {
-                isThrowing = true;
+                if (MountedAttackUtils.StartAttackIfRiding(isSecondaryAttack: EquipScript.getRight() == EquipType.Spear))
+                {
+                    ResetSpearOffset();
+                }
+                else 
+                {
+                    // Let control patches and vanilla game handle attack if the player is not riding.
+                    isThrowing = true;
+                }
                 if (EquipScript.getRight() == EquipType.SpearChitin)
                 {
                     GetComponentInParent<SpearWield>().HideHarpoon();
                 }
-
             }
 
             if (useAction.GetStateUp(VRPlayer.dominantHandInputSource) && throwing.Distance <= minDist)
