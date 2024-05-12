@@ -8,7 +8,7 @@ namespace ValheimVRMod.Scripts
 {
     public class Reining : MonoBehaviour
     {
-        private const float MIN_TURNING_OFFSET = 0.25f;
+        private const float MIN_TURNING_OFFSET = 0.33f;
         private const float SHAKE_SPEED_THRESHOLD = 1f;
         private const float REIN_ANGLE_TOLERANCE = 30f;
         private const float MAX_STOP_REIN_DISTNACE = 0.33f;
@@ -20,11 +20,11 @@ namespace ValheimVRMod.Scripts
             {
                 {
                     "default",
-                    new Vector3(-0.375f, -1.5f, -0.125f)
+                    new Vector3(-0.375f, -0.25f, 1.5f)
                 },
                 {
                     "$enemy_lox",
-                    new Vector3(-0.75f, -1f, -0.5f)
+                    new Vector3(-1, -0.5f, 1.5f)
                 }
             };
                 
@@ -59,7 +59,7 @@ namespace ValheimVRMod.Scripts
             lineRenderer = new GameObject().AddComponent<LineRenderer>();
             lineRenderer.transform.parent = transform;
             lineRenderer.useWorldSpace = true;
-            lineRenderer.positionCount = 4;
+            lineRenderer.positionCount = 5;
             lineRenderer.material = Instantiate(VRAssetManager.GetAsset<Material>("StandardClone"));
             lineRenderer.material.color = new Color(0.25f, 0.125f, 0);
             lineRenderer.widthMultiplier = 0.03f;
@@ -78,8 +78,8 @@ namespace ValheimVRMod.Scripts
             var isRightHandReining = IsReining(rightHandGesture, SteamVR_Input_Sources.RightHand);
             if (isLeftHandReining || isRightHandReining)
             {
-                var leftReinAttach = sadle.transform.TransformPoint(leftReinAttachLocalPosition);
-                var rightReinAttach = sadle.transform.TransformPoint(rightReinAttachLocalPosition);
+                var leftReinAttach = sadle.m_attachPoint.TransformPoint(leftReinAttachLocalPosition);
+                var rightReinAttach = sadle.m_attachPoint.TransformPoint(rightReinAttachLocalPosition);
                 lineRenderer.enabled = true;
                 lineRenderer.SetPosition(0, leftReinAttach);
                 lineRenderer.SetPosition(
@@ -89,6 +89,7 @@ namespace ValheimVRMod.Scripts
                     2,
                     isRightHandReining ? VRPlayer.rightHandBone.position + VRPlayer.rightHandBone.up * 0.0625f : rightReinAttach);
                 lineRenderer.SetPosition(3, rightReinAttach);
+                lineRenderer.SetPosition(4, leftReinAttach);
             }
             else
             {
@@ -151,11 +152,11 @@ namespace ValheimVRMod.Scripts
             }
 
             leftReinAttachLocalPosition =
-                sadle.transform.InverseTransformVector(
-                    sadle.transform.TransformDirection(offset.normalized) * offset.magnitude);
+                sadle.m_attachPoint.InverseTransformVector(
+                    sadle.m_attachPoint.TransformDirection(offset.normalized) * offset.magnitude);
             rightReinAttachLocalPosition =
-                sadle.transform.InverseTransformVector(
-                    sadle.transform.TransformDirection(Vector3.Reflect(offset.normalized, Vector3.right)) *
+                sadle.m_attachPoint.InverseTransformVector(
+                    sadle.m_attachPoint.TransformDirection(Vector3.Reflect(offset.normalized, Vector3.right)) *
                     offset.magnitude);
         }
 
@@ -206,7 +207,7 @@ namespace ValheimVRMod.Scripts
                 slowDownResult = Sadle.Speed.Stop;
             }
 
-            var v = sadle.m_attachPoint.InverseTransformVector(handPhysicsEstimator.GetAverageVelocityInSnapshots());
+            var v = handPhysicsEstimator.GetAverageVelocityInSnapshots();
             if (v.y < -SHAKE_SPEED_THRESHOLD && Vector3.Angle(v, Vector3.down) < REIN_ANGLE_TOLERANCE)
             {
                 bool shouldRun = 
@@ -218,14 +219,14 @@ namespace ValheimVRMod.Scripts
             if (v.y > SHAKE_SPEED_THRESHOLD && runCueCountDown > 0)
             {
                 runCueCountDown = RUN_CUE_TIMEOUT * 2;
-            } 
+            }
 
-            var handOffset = sadle.m_attachPoint.InverseTransformPoint(handPhysicsEstimator.transform.position);
+            var handOffset = handPhysicsEstimator.transform.position - sadle.m_attachPoint.position;
             handOffset.y = 0;
             var horizontalVelocity = v;
             horizontalVelocity.y = 0;
 
-            if (Vector3.Angle(horizontalVelocity, -handOffset) < REIN_ANGLE_TOLERANCE &&
+            if (Vector3.Angle(horizontalVelocity, -GetCurrentDirection()) < REIN_ANGLE_TOLERANCE &&
                 horizontalVelocity.magnitude > MIN_STOP_REIN_HAND_SPEED &&
                 handOffset.magnitude < MAX_STOP_REIN_DISTNACE)
             {
@@ -284,17 +285,16 @@ namespace ValheimVRMod.Scripts
                 return currentDirection;
             }
 
-            var handOffset = sadle.m_attachPoint.InverseTransformPoint(hand.position);
+            var handOffset = hand.position - sadle.m_attachPoint.position;
             handOffset.y = 0;
-            if (Mathf.Abs(handOffset.x) < MIN_TURNING_OFFSET)
+            var lateralOffset = Vector3.Dot(Vector3.Cross(handOffset, currentDirection), Vector3.up);
+            if (Mathf.Abs(lateralOffset) < MIN_TURNING_OFFSET)
             {
                 return currentDirection;
             }
 
-            turnDirection = (int)Mathf.Sign(handOffset.x);
-            var newTargetDirection = hand.position - sadle.m_attachPoint.position;
-            newTargetDirection.y = 0;
-            return newTargetDirection;
+            turnDirection = (int)Mathf.Sign(lateralOffset);
+            return handOffset;
         }
 
         private bool IsReining(HandGesture handGesture, SteamVR_Input_Sources inputSource)
