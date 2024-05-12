@@ -751,6 +751,40 @@ namespace ValheimVRMod.Patches {
         }
     }
 
+    [HarmonyPatch(typeof(Player), nameof(Player.StartDoodadControl))]
+    class SadleStartPatch
+    {
+        static void Postfix(Player __instance)
+        {
+            __instance.GetComponent<Reining>()?.SetReinAttach();
+        }
+    }
+
+    [HarmonyPatch(typeof(Sadle), nameof(Sadle.ApplyControlls))]
+    class SadleControlPatch
+    {
+        static void Prefix(ref Vector3 lookDir, ref bool block)
+        {
+            block = Reining.turnInPlace;
+            if (Reining.shouldOverrideSpeedOrDirection)
+            {
+                lookDir = (Vector3)Reining.targetDirection;
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(Sadle), "RPC_Controls")]
+    class SadleRPCControlPatch
+    {
+        static void Prefix(ref Vector3 rideDir)
+        {
+            if (Reining.shouldOverrideSpeedOrDirection)
+            {
+                rideDir = (Vector3)Reining.targetDirection;
+            }
+        }
+    }
+
     [HarmonyPatch(typeof(Player), "Update")]
     class PlayerUpdateSadleStayPatch
     {
