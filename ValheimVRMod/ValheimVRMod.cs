@@ -71,37 +71,42 @@ namespace ValheimVRMod
                 LogError("Problem initializing VR Assets");
                 return;
             }
-            
-            if (VHVRConfig.NonVrPlayer()) {
+        
+            bool vrInitialized = false;
+            if (!VHVRConfig.NonVrPlayer())
+            {
+                vrInitialized = VRManager.InitializeVR();
+                if (!vrInitialized)
+                {
+                    LogError("Could not initialize VR.");
+                    failedToInitializeVR = true;
+                    enabled = false;
+                    return;
+                }
+            }
+
+            if (!vrInitialized)
+            {
                 LogDebug("Non VR Mode Patching Complete.");
                 return;
             }
-            
-            if (VRManager.InitializeVR())
+
+            VRManager.StartVR();
+            vrPlayer = new GameObject("VRPlayer");
+            DontDestroyOnLoad(vrPlayer);
+            vrPlayer.AddComponent<VRPlayer>();
+            vrGui = new GameObject("VRGui");
+            DontDestroyOnLoad(vrGui);
+            vrGui.AddComponent<VRGUI>();
+            if (VHVRConfig.RecenterOnStart())
             {
-                VRManager.StartVR();
-                vrPlayer = new GameObject("VRPlayer");
-                DontDestroyOnLoad(vrPlayer);
-                vrPlayer.AddComponent<VRPlayer>();
-                vrGui = new GameObject("VRGui");
-                DontDestroyOnLoad(vrGui);
-                vrGui.AddComponent<VRGUI>();
-                if (VHVRConfig.RecenterOnStart())
-                {
-                    VRManager.tryRecenter();
-                }
-                if (VHVRConfig.BhapticsEnabled())
-                {
-                    BhapticsTactsuit = new GameObject("BhapticsTactsuit");
-                    DontDestroyOnLoad(BhapticsTactsuit);
-                    BhapticsTactsuit.AddComponent<BhapticsTactsuit>();
-                }
+                VRManager.tryRecenter();
             }
-            else
+            if (VHVRConfig.BhapticsEnabled())
             {
-                LogError("Could not initialize VR.");
-                failedToInitializeVR = true;
-                enabled = false;
+                BhapticsTactsuit = new GameObject("BhapticsTactsuit");
+                DontDestroyOnLoad(BhapticsTactsuit);
+                BhapticsTactsuit.AddComponent<BhapticsTactsuit>();
             }
         }
 
