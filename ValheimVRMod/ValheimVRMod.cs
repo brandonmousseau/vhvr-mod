@@ -80,8 +80,6 @@ namespace ValheimVRMod
                 {
                     LogError("Could not initialize VR.");
                     failedToInitializeVR = true;
-                    enabled = false;
-                    return;
                 }
             }
 
