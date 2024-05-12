@@ -16,6 +16,7 @@ namespace ValheimVRMod
 
         public static System.Version PLUGIN_VERSION { get { return _version; } }
         private static System.Version _version = null;
+        public static bool failedToInitializeVR { get; private set; } = false;
 
         private GameObject vrPlayer;
         private GameObject vrGui;
@@ -94,6 +95,7 @@ namespace ValheimVRMod
             else
             {
                 LogError("Could not initialize VR.");
+                failedToInitializeVR = true;
                 enabled = false;
             }
         }
