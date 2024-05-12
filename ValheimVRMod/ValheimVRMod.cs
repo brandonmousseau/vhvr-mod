@@ -69,6 +69,7 @@ namespace ValheimVRMod
             if (!VRAssetManager.Initialize())
             {
                 LogError("Problem initializing VR Assets");
+                return;
             }
             
             if (VHVRConfig.NonVrPlayer()) {
