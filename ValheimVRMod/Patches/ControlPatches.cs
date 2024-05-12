@@ -767,15 +767,18 @@ namespace ValheimVRMod.Patches {
     {
         static void Prefix(ref Vector3 lookDir, ref bool block)
         {
-            if (!VHVRConfig.UseVrControls())
+            if (VHVRConfig.NonVrPlayer())
             {
                 return;
             }
-            block = Reining.turnInPlace;
-            if (Reining.shouldOverrideSpeedOrDirection)
+            if (VHVRConfig.UseVrControls())
             {
-                lookDir = (Vector3)Reining.targetDirection;
+                block = Reining.turnInPlace;
             }
+            lookDir =
+                Reining.shouldOverrideSpeedOrDirection ?
+                (Vector3)Reining.targetDirection :
+                Valve.VR.InteractionSystem.Player.instance.hmdTransform.forward;
         }
     }
 
