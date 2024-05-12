@@ -50,7 +50,8 @@ namespace ValheimVRMod.Scripts
         public static bool turnInPlace { get; private set; }
 
         void Awake()
-        {   lineRenderer = new GameObject().AddComponent<LineRenderer>();
+        {
+            lineRenderer = new GameObject().AddComponent<LineRenderer>();
             lineRenderer.transform.parent = transform;
             lineRenderer.useWorldSpace = true;
             lineRenderer.positionCount = 4;
