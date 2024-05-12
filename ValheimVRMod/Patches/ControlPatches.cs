@@ -727,7 +727,6 @@ namespace ValheimVRMod.Patches {
                     }
                     break;
 
-
                 case EquipType.RuneSkyheim:
                     if (SteamVR_Actions.valheim_Use.state && SteamVR_Actions.valheim_Grab.state && timer >= timeEnd)
                     {
@@ -756,7 +755,10 @@ namespace ValheimVRMod.Patches {
     {
         static void Postfix(Player __instance)
         {
-            __instance.GetComponent<Reining>()?.SetReinAttach();
+            if (VHVRConfig.UseVrControls())
+            {
+                __instance.GetComponent<Reining>()?.SetReinAttach();
+            }
         }
     }
 
@@ -765,6 +767,10 @@ namespace ValheimVRMod.Patches {
     {
         static void Prefix(ref Vector3 lookDir, ref bool block)
         {
+            if (!VHVRConfig.UseVrControls())
+            {
+                return;
+            }
             block = Reining.turnInPlace;
             if (Reining.shouldOverrideSpeedOrDirection)
             {
@@ -778,10 +784,11 @@ namespace ValheimVRMod.Patches {
     {
         static void Prefix(ref Vector3 rideDir)
         {
-            if (Reining.shouldOverrideSpeedOrDirection)
+            if (!VHVRConfig.UseVrControls() || !Reining.shouldOverrideSpeedOrDirection)
             {
-                rideDir = (Vector3)Reining.targetDirection;
-            }
+                return;
+            }            
+            rideDir = (Vector3)Reining.targetDirection;
         }
     }
 
@@ -790,7 +797,9 @@ namespace ValheimVRMod.Patches {
     {
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
-            if (VHVRConfig.NonVrPlayer()) return instructions;
+            if (!VHVRConfig.UseVrControls()) {
+                return instructions;
+            }
 
             var original = new List<CodeInstruction>(instructions);
             for (int i = 0; i < original.Count; i++)
@@ -813,7 +822,9 @@ namespace ValheimVRMod.Patches {
     {
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
-            if (VHVRConfig.NonVrPlayer()) return instructions;
+            if (!VHVRConfig.UseVrControls()) {
+                return instructions;
+            }
 
             var original = new List<CodeInstruction>(instructions);
             for (int i = 0; i < original.Count; i++)
