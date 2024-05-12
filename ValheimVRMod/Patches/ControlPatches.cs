@@ -751,6 +751,51 @@ namespace ValheimVRMod.Patches {
         }
     }
 
+    [HarmonyPatch(typeof(Player), "Update")]
+    class PlayerUpdateSadleStayPatch
+    {
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            if (VHVRConfig.NonVrPlayer()) return instructions;
+
+            var original = new List<CodeInstruction>(instructions);
+            for (int i = 0; i < original.Count; i++)
+            {
+                if (original[i].Calls(MountedAttackUtils.stopDoodadControlMethod))
+                {
+                    // Do not let the player unmount unless jumping.
+                    // This prevents interactions such as range weapon attack from unmounting when riding.
+                    var changed = CodeInstruction.Call(typeof(MountedAttackUtils), nameof(MountedAttackUtils.UnmountIfJumping));
+                    changed.labels = original[i].labels;
+                    original[i] = changed;
+                }
+            }
+            return original;
+        }
+    }
+
+    [HarmonyPatch(typeof(Player), "SetControls")]
+    class PlayerSetControlsSadleStayPatch
+    {
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            if (VHVRConfig.NonVrPlayer()) return instructions;
+
+            var original = new List<CodeInstruction>(instructions);
+            for (int i = 0; i < original.Count; i++)
+            {
+                if (original[i].Calls(MountedAttackUtils.stopDoodadControlMethod))
+                {
+                    // Do not let the player unmount unless jumping.
+                    // This prevents interactions such as range weapon attack from unmounting when riding.
+                    var changed = CodeInstruction.Call(typeof(MountedAttackUtils), nameof(MountedAttackUtils.UnmountIfJumping));
+                    changed.labels = original[i].labels;
+                    original[i] = changed;
+                }
+            }
+            return original;
+        }
+    }
 
     // Used to make stack splitting easier
     [HarmonyPatch(typeof(InventoryGui), "Awake")]
