@@ -64,6 +64,14 @@ namespace ValheimVRMod
 
         void StartValheimVR()
         {
+            HarmonyPatcher.DoPatching();
+
+            if (!VRAssetManager.Initialize())
+            {
+                LogError("Problem initializing VR Assets");
+                return;
+            }
+
             bool vrInitialized = false;
             if (!VHVRConfig.NonVrPlayer())
             {
@@ -73,14 +81,6 @@ namespace ValheimVRMod
                     LogError("Could not initialize VR.");
                     failedToInitializeVR = true;
                 }
-            }
-
-            HarmonyPatcher.DoPatching();
-
-            if (!VRAssetManager.Initialize())
-            {
-                LogError("Problem initializing VR Assets");
-                return;
             }
 
             if (!vrInitialized)
