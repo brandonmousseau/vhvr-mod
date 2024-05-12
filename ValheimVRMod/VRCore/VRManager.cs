@@ -144,10 +144,10 @@ namespace ValheimVRMod.VRCore
             {
                 managerSettings.InitializeLoaderSync();
                 tries++;
-            } while ((managerSettings.activeLoader == null) && (tries < 10000));
+            } while ((managerSettings.activeLoader == null) && (tries < VHVRConfig.MaxVRInitializationTries()));
             if (managerSettings.activeLoader == null)
             {
-                LogError("managerSettings.activeLoader is null after 10000 tries.");
+                LogError("managerSettings.activeLoader is null after " + tries + " tries.");
                 return false;
             }
             OpenVRSettings openVrSettings = OpenVRSettings.GetSettings(false);
