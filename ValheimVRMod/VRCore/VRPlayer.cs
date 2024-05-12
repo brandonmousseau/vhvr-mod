@@ -838,7 +838,7 @@ namespace ValheimVRMod.VRCore
             {
                 // Attack animation may cause vanilla game to think that the player is standing
                 // briefly while riding but we should consider the player as sitting so that the
-                // view point does not shift suddenly when attacking.            
+                // view point does not shift suddenly when attacking.
                 return SIT_ATTACH_HEIGHT_ADJUST;
             }
 
@@ -967,6 +967,9 @@ namespace ValheimVRMod.VRCore
             StaticObjects.leftFist().setColliderParent(leftHandBone, leftHandGesture, false);
             StaticObjects.rightFist().setColliderParent(rightHandBone, rightHandGesture, true);
             Player.m_localPlayer.gameObject.AddComponent<FistBlock>();
+            var reining = Player.m_localPlayer.gameObject.AddComponent<Reining>();
+            reining.leftHandGesture = leftHandGesture;
+            reining.rightHandGesture = rightHandGesture;
             StaticObjects.mouthCollider(cam.transform);
             StaticObjects.addQuickMenus();
             LeftHandQuickMenu.instance.refreshItems();

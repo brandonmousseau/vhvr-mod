@@ -727,7 +727,6 @@ namespace ValheimVRMod.Patches {
                     }
                     break;
 
-
                 case EquipType.RuneSkyheim:
                     if (SteamVR_Actions.valheim_Use.state && SteamVR_Actions.valheim_Grab.state && timer >= timeEnd)
                     {
@@ -751,12 +750,46 @@ namespace ValheimVRMod.Patches {
         }
     }
 
+    [HarmonyPatch(typeof(Player), nameof(Player.StartDoodadControl))]
+    class SadleStartPatch
+    {
+        static void Postfix(Player __instance)
+        {
+            if (VHVRConfig.UseVrControls())
+            {
+                __instance.GetComponent<Reining>()?.SetReinAttach();
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(Sadle), nameof(Sadle.ApplyControlls))]
+    class SadleControlPatch
+    {
+        static void Prefix(ref Vector3 lookDir, ref bool block)
+        {
+            if (VHVRConfig.NonVrPlayer())
+            {
+                return;
+            }
+            if (VHVRConfig.UseVrControls())
+            {
+                block = Reining.turnInPlace;
+            }
+            lookDir =
+                Reining.shouldOverrideSpeedOrDirection ?
+                (Vector3)Reining.targetDirection :
+                Valve.VR.InteractionSystem.Player.instance.hmdTransform.forward; // This makes the mounts try to follow the hmd eyedir
+        }
+    }
+
     [HarmonyPatch(typeof(Player), "Update")]
     class PlayerUpdateSadleStayPatch
     {
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
-            if (VHVRConfig.NonVrPlayer()) return instructions;
+            if (!VHVRConfig.UseVrControls()) {
+                return instructions;
+            }
 
             var original = new List<CodeInstruction>(instructions);
             for (int i = 0; i < original.Count; i++)
@@ -779,7 +812,9 @@ namespace ValheimVRMod.Patches {
     {
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
-            if (VHVRConfig.NonVrPlayer()) return instructions;
+            if (!VHVRConfig.UseVrControls()) {
+                return instructions;
+            }
 
             var original = new List<CodeInstruction>(instructions);
             for (int i = 0; i < original.Count; i++)
