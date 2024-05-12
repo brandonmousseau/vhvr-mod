@@ -19,11 +19,6 @@ namespace ValheimVRMod.VRCore
     {
         public static bool InitializeVR()
         {
-            if (!VRAssetManager.Initialize())
-            {
-                LogError("Problem initializing VR Assets");
-                return false;
-            }
             // Need to PreInitialize actions before XRSDK
             // to ensure SteamVR_Input is enabled.
             LogDebug("PreInitializing SteamVR Actions...");

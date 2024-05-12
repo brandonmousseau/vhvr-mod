@@ -65,9 +65,14 @@ namespace ValheimVRMod
         void StartValheimVR()
         {
             HarmonyPatcher.DoPatching();
+
+            if (!VRAssetManager.Initialize())
+            {
+                LogError("Problem initializing VR Assets");
+                return;
+            }
             
             if (VHVRConfig.NonVrPlayer()) {
-                VRAssetManager.Initialize();
                 LogDebug("Non VR Mode Patching Complete.");
                 return;
             }
