@@ -96,7 +96,7 @@ namespace ValheimVRMod.Scripts {
             return WeaponHandPointer.rayStartingPosition + offsetDirection * offsetAmount;
         }
 
-        private static bool UseSwingForCurrentAttack()
+        public static bool UseSwingForCurrentAttack()
         {
             // Disable swing launch if the staff is held with two hands like a rifle
             // (dominant hand behind the other hand).
@@ -155,4 +155,3 @@ namespace ValheimVRMod.Scripts {
         }
     }
  }
-    
