@@ -29,6 +29,10 @@ namespace ValheimVRMod.Scripts {
         }
 
         public bool areHandsFree() {
+            return isHandFree();
+        }
+
+        public bool isHandFree() {
             if (EquipScript.getLeft() == EquipType.Crossbow)
             {
                 if (CrossbowMorphManager.instance != null && CrossbowMorphManager.instance.isHoldingBolt()) {
@@ -78,7 +82,7 @@ namespace ValheimVRMod.Scripts {
 
         private void Update() {
 
-            if (!areHandsFree() || Game.IsPaused() || VRPlayer.ShouldPauseMovement) {
+            if (!isHandFree() || Game.IsPaused() || VRPlayer.ShouldPauseMovement) {
                 return;
             }
 

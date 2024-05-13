@@ -223,14 +223,24 @@ namespace ValheimVRMod.Scripts
 
             var handOffset = handPhysicsEstimator.transform.position - sadle.m_attachPoint.position;
             handOffset.y = 0;
-            var horizontalVelocity = v;
-            horizontalVelocity.y = 0;
+            var handOffsetAmount = handOffset.magnitude;
+            var handHorizontalVelocity = v;
+            handHorizontalVelocity.y = 0;
+            var handHorizontalSpped = handHorizontalVelocity.magnitude;
 
-            if (Vector3.Angle(horizontalVelocity, -GetCurrentDirection()) < REIN_ANGLE_TOLERANCE &&
-                horizontalVelocity.magnitude > MIN_STOP_REIN_HAND_SPEED &&
-                handOffset.magnitude < MAX_STOP_REIN_DISTNACE)
+            if (Vector3.Angle(handHorizontalVelocity, -GetCurrentDirection()) < REIN_ANGLE_TOLERANCE &&
+                handHorizontalSpped > MIN_STOP_REIN_HAND_SPEED &&
+                handOffsetAmount < MAX_STOP_REIN_DISTNACE)
             {
                 return slowDownResult;
+            }
+
+            if (handHorizontalSpped < MIN_STOP_REIN_HAND_SPEED)
+            {
+                if (sadle.m_speed != Sadle.Speed.Run)
+                {
+                    slowDownResult = Sadle.Speed.Stop;
+                }
             }
 
             return Sadle.Speed.NoChange;
@@ -299,7 +309,7 @@ namespace ValheimVRMod.Scripts
 
         private bool IsReining(HandGesture handGesture, SteamVR_Input_Sources inputSource)
         {
-            return handGesture.areHandsFree() && SteamVR_Actions.valheim_Grab.GetState(inputSource);
+            return handGesture.isHandFree() && SteamVR_Actions.valheim_Grab.GetState(inputSource);
         }
 
         private Vector3 GetCurrentDirection()
