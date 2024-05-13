@@ -5,39 +5,49 @@ using ValheimVRMod.VRCore;
 using Valve.VR;
 using Valve.VR.Extras;
 
-namespace ValheimVRMod.Scripts {
-    
+namespace ValheimVRMod.Scripts
+{
+
     // Manages the manual operation and the shape change of the cross bow during pulling.
     // TODO: implement this class as a component added to the weapon object and reduce static instance and singletion usage.
-    class MagicWeaponManager {
+    class MagicWeaponManager
+    {
 
         private static readonly HashSet<string> SWING_LAUNCH_MAGIC_STAFF_NAMES =
             new HashSet<string>(new string[] {
                 "$item_stafffireball", "$item_staffgreenroots", "$item_staffclusterbomb", "$item_staffredtroll" });
         private static readonly HashSet<string> OPPOSITE_HAND_SUMMONER_NAMES =
-            new HashSet<string>(new string[] {"$item_staffskeleton" });
+            new HashSet<string>(new string[] { "$item_staffskeleton" });
 
-        private static bool IsMagicWeaponEquipped { get { return EquipScript.getLeft() == EquipType.Magic || EquipScript.getRight() == EquipType.Magic;  } }
+        private static bool IsMagicWeaponEquipped { get { return EquipScript.getLeft() == EquipType.Magic || EquipScript.getRight() == EquipType.Magic; } }
         // Right-handed weapons in vanilla game is treated as domininant hand weapon in VHVR.
-        private static bool IsDominantHandWeapon { get { return EquipScript.getRight() == EquipType.Magic; } }       
+        private static bool IsDominantHandWeapon { get { return EquipScript.getRight() == EquipType.Magic; } }
 
         private static bool IsRightHandWeapon { get { return IsDominantHandWeapon ^ VHVRConfig.LeftHanded(); } }
-        private static SteamVR_LaserPointer WeaponHandPointer { get { return IsRightHandWeapon ? VRPlayer.rightPointer : VRPlayer.leftPointer; } }
+        public static SteamVR_LaserPointer WeaponHandPointer { get { return IsRightHandWeapon ? VRPlayer.rightPointer : VRPlayer.leftPointer; } }
         protected static SteamVR_Action_Boolean AttackTriggerAction { get { return IsRightHandWeapon ? SteamVR_Actions.valheim_Use : SteamVR_Actions.valheim_UseLeft; } }
 
-        public static Vector3 AimDir {
+        public static Vector3 AimDir
+        {
             get
             {
                 if (CanSummonWithOppositeHand())
                 {
                     return VHVRConfig.LeftHanded() ? VRPlayer.leftHandBone.up : VRPlayer.rightHandBone.up;
                 }
-                return UseSwingForCurrentAttack() ? SwingLaunchManager.aimDir : LocalWeaponWield.isCurrentlyTwoHanded() ? LocalWeaponWield.weaponForward : WeaponHandPointer.rayDirection * Vector3.forward;
+                if (UseSwingForCurrentAttack())
+                {
+                    return SwingLaunchManager.aimDir;
+                }
+                return LocalWeaponWield.isCurrentlyTwoHanded() || LocalWeaponWield.isAiming ?
+                    LocalWeaponWield.weaponForward :
+                    WeaponHandPointer.rayDirection * Vector3.forward;
             }
         }
 
-        public static bool IsSwingLaunchEnabled() {
-            return SWING_LAUNCH_MAGIC_STAFF_NAMES.Contains(Player.m_localPlayer?.GetRightItem()?.m_shared?.m_name); 
+        public static bool IsSwingLaunchEnabled()
+        {
+            return SWING_LAUNCH_MAGIC_STAFF_NAMES.Contains(Player.m_localPlayer?.GetRightItem()?.m_shared?.m_name);
         }
 
         public static bool CanSummonWithOppositeHand()
@@ -46,7 +56,8 @@ namespace ValheimVRMod.Scripts {
 
         }
 
-        public static bool AttemptingAttack {
+        public static bool AttemptingAttack
+        {
             get
             {
                 if (!IsMagicWeaponEquipped)
@@ -54,9 +65,9 @@ namespace ValheimVRMod.Scripts {
                     return false;
                 }
 
-                if (CanSummonWithOppositeHand() && UpwardHandSummonManager.pendingSummon)
+                if (CanSummonWithOppositeHand() && SummonByMovingHandUpward.pendingSummon)
                 {
-                    UpwardHandSummonManager.pendingSummon = false;
+                    SummonByMovingHandUpward.pendingSummon = false;
                     return true;
                 }
 
@@ -75,12 +86,12 @@ namespace ValheimVRMod.Scripts {
             return UseSwingForCurrentAttack();
         }
 
-        public static Vector3 GetProjectileSpawnPoint(Attack attack) 
+        public static Vector3 GetProjectileSpawnPoint(Attack attack)
         {
             var offsetDirection =
                 CanSummonWithOppositeHand() ?
                 (VHVRConfig.LeftHanded() ? VRPlayer.leftHandBone.up : VRPlayer.rightHandBone.up) :
-                LocalWeaponWield.weaponForward;
+                LocalWeaponWield.weaponForward.normalized;
             var offsetAmount =
                 (new Vector3(attack.m_attackOffset, attack.m_attackRange, attack.m_attackHeight)).magnitude;
             if (attack.m_attackAnimation.Contains("summon"))
@@ -94,6 +105,8 @@ namespace ValheimVRMod.Scripts {
                 offsetAmount *= 0.6f;
             }
             return WeaponHandPointer.rayStartingPosition + offsetDirection * offsetAmount;
+
+            // return VRPlayer.dominantHand.transform.position + offsetDirection * offsetAmount;
         }
 
         public static bool UseSwingForCurrentAttack()
@@ -103,7 +116,7 @@ namespace ValheimVRMod.Scripts {
             return IsSwingLaunchEnabled() && !LocalWeaponWield.IsDominantHandBehind;
         }
 
-        public class UpwardHandSummonManager : MonoBehaviour
+        public class SummonByMovingHandUpward : MonoBehaviour
         {
             private const float MIN_SUMMONING_HAND_SPEED = 0.25f;
             private const float SUMMON_TIME = 1.5f;
@@ -112,10 +125,12 @@ namespace ValheimVRMod.Scripts {
             private bool hasSummonedInCurrentMotion = false;
 
             public static bool pendingSummon = false;
+            public bool isDominantHand = true;
 
             void FixedUpdate()
             {
-                if (SteamVR_Actions.valheim_Use.GetState(VRPlayer.dominantHandInputSource))
+                var inputSource = isDominantHand ? VRPlayer.dominantHandInputSource : VRPlayer.nonDominantHandInputSource;
+                if (SteamVR_Actions.valheim_Use.GetState(inputSource))
                 {
                     if (hasSummonedInCurrentMotion)
                     {
@@ -130,13 +145,14 @@ namespace ValheimVRMod.Scripts {
                     }
                     currentMaxHandHight = handHeight;
 
-                    var velocity =
-                        (VHVRConfig.LeftHanded() ? VRPlayer.leftHandPhysicsEstimator : VRPlayer.rightHandPhysicsEstimator).GetVelocity();
-                    if (velocity.y > MIN_SUMMONING_HAND_SPEED)
+                    var physicsEstimator =
+                        (VHVRConfig.LeftHanded() ^ isDominantHand) ?
+                        VRPlayer.rightHandPhysicsEstimator :
+                        VRPlayer.leftHandPhysicsEstimator;
+                    if (physicsEstimator.GetVelocity().y > MIN_SUMMONING_HAND_SPEED)
                     {
                         summonTimer += Time.fixedDeltaTime;
-                        VRPlayer.dominantHand.hapticAction.Execute(
-                            0, 0.1f, 50, 0.3f, VRPlayer.dominantHandInputSource);
+                        VRPlayer.dominantHand.hapticAction.Execute(0, 0.1f, 50, 0.3f, inputSource);
                     }
 
                     if (summonTimer > SUMMON_TIME)
@@ -154,4 +170,4 @@ namespace ValheimVRMod.Scripts {
             }
         }
     }
- }
+}
