@@ -28,10 +28,6 @@ namespace ValheimVRMod.Scripts {
             handFixedRotation = transform.rotation;
         }
 
-        public bool areHandsFree() {
-            return isHandFree();
-        }
-
         public bool isHandFree() {
             if (EquipScript.getLeft() == EquipType.Crossbow)
             {
