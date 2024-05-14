@@ -79,38 +79,16 @@ namespace ValheimVRMod.Patches {
     [HarmonyPatch(typeof(Player), "QueueReloadAction")]
     class PatchQueueReloadAction
     {
-        static bool wasTwoHandedMagicStaff = false;
-
         static bool Prefix(Player __instance)
         {
-            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls()) 
+            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls())
             {
                 return true;
             }
-                
+
             if (EquipScript.getLeft() == EquipType.Crossbow)
             {
                 return CrossbowManager.CanQueueReloadAction();
-            }
-
-            if (VHVRConfig.OneHandedBow() || !VHVRConfig.CrossbowManualReload())
-            {
-                return true;
-            }
-
-            if (EquipScript.getRight() == EquipType.Magic)
-            {
-                if (!LocalWeaponWield.isCurrentlyTwoHanded())
-                {
-                    wasTwoHandedMagicStaff = false;
-                    return false;
-                }
-                if (wasTwoHandedMagicStaff)
-                {
-                    return false;
-                }
-                wasTwoHandedMagicStaff = true;
-                return true;
             }
 
             return true;
@@ -327,14 +305,9 @@ namespace ValheimVRMod.Patches {
             {
                 return;
             }
-            recoilPushback = __instance.m_recoilPushback;
-
-            if (__instance.m_recoilPushback <= 0f)
+            if (__instance.m_recoilPushback > 0f && EquipScript.getLeft() == EquipType.Crossbow)
             {
-                return;
-            }
-            if (EquipScript.getLeft() == EquipType.Crossbow || EquipScript.getRight() == EquipType.Magic)
-            {
+                recoilPushback = __instance.m_recoilPushback;
                 __instance.m_recoilPushback = 0f;
             }
         }
@@ -344,18 +317,9 @@ namespace ValheimVRMod.Patches {
             {
                 return;
             }
-            if (recoilPushback <= 0f)
-            {
-                return;
-            }
-            if (EquipScript.getLeft() == EquipType.Crossbow)
+            if (recoilPushback > 0f && EquipScript.getLeft() == EquipType.Crossbow)
             {
                 __instance.m_character.ApplyPushback(-CrossbowManager.AimDir, recoilPushback);
-                recoilPushback = 0f;
-            }
-            else if (EquipScript.getRight() == EquipType.Magic)
-            {
-                __instance.m_character.ApplyPushback(-MagicWeaponManager.AimDir, recoilPushback);
                 recoilPushback = 0f;
             }
         }
