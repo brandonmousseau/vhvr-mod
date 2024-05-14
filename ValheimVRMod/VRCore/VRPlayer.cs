@@ -43,6 +43,7 @@ namespace ValheimVRMod.VRCore
         private static readonly string START_SCENE = "start";
         public static readonly string RIGHT_HAND = "RightHand";
         public static readonly string LEFT_HAND = "LeftHand";
+        private const float MAX_ROOMSCALE_MOVEMENT_SPEED = 4f; // Slightly faster than vanilla slow-run speed
         // This layer must be set in the hand model prefab in the
         // Unity AssetBundle project too. If they don't match,
         // the hands won't be rendered by the handsCam.
@@ -345,7 +346,7 @@ namespace ValheimVRMod.VRCore
                 }
                 if (inFirstPerson)
                 {
-                    DoRoomScaleMovement();
+                    DoRoomScaleMovement(Time.fixedDeltaTime);
                     gesturedLocomotionManager?.UpdateMovementFromGestures(Time.fixedDeltaTime);
                 }
                 else
@@ -1214,7 +1215,7 @@ namespace ValheimVRMod.VRCore
         /// <summary>
         /// Moves the physics player to the head position and cancels the movement of the VRCamera by moving the VRRig
         /// </summary>
-        void DoRoomScaleMovement()
+        void DoRoomScaleMovement(float deltaTime)
         {
             var player = getPlayerCharacter();
             if (_vrCam == null || player == null || player.gameObject == null || player.IsAttached())
@@ -1223,16 +1224,24 @@ namespace ValheimVRMod.VRCore
             }
             Vector3 deltaPosition = _vrCam.transform.localPosition - _lastCamPosition;
             deltaPosition.y = 0;
+
             bool shouldMove = deltaPosition.magnitude > 0.005f;
             if (shouldMove)
             {
-                //Check for motion discrepancies
+                float maxMovement = deltaTime * MAX_ROOMSCALE_MOVEMENT_SPEED;
+                if (deltaPosition.magnitude > maxMovement)
+                {
+                    // Clamp fast movement to prevent it from allowing going through walls
+                    deltaPosition = deltaPosition.normalized * maxMovement;
+                }
+
+                // Check for motion discrepancies
                 if (VHVRConfig.RoomscaleFadeToBlack() && !_fadeManager.IsFadingToBlack)
                 {
                     var lastDeltaMovement = player.m_body.position - _lastPlayerPosition;
                     if (player.m_lastAttachBody && _lastPlayerAttachmentPosition != Vector3.zero)
                     {
-                        //Account for ships, and moving attachments
+                        // Account for ships, and moving attachments
                         lastDeltaMovement -= (player.m_lastAttachBody.position - _lastPlayerAttachmentPosition);
                     }
                     lastDeltaMovement.y = 0;
@@ -1245,12 +1254,14 @@ namespace ValheimVRMod.VRCore
 
                     _lastPlayerPosition = player.m_body.position;
                     _lastPlayerAttachmentPosition = player.m_lastAttachBody ? player.m_lastAttachBody.position : Vector3.zero;
+
                 }
 
-                //Calculate new postion
-                _lastCamPosition = _vrCam.transform.localPosition;
+                // Calculate new postion
+                _lastCamPosition += deltaPosition;
                 var globalDeltaPosition = _instance.transform.TransformVector(deltaPosition);
                 globalDeltaPosition.y = 0;
+
                 roomscaleMovement = globalDeltaPosition;
                 _vrCameraRig.localPosition -= deltaPosition; // Since we move the VR camera rig with the player character elsewhere, we counteract that here to prevent it from moving.
             }
