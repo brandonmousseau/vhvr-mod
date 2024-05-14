@@ -81,11 +81,17 @@ namespace ValheimVRMod.Patches {
     {
         static bool Prefix(Player __instance)
         {
-            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls() || EquipScript.getLeft() != EquipType.Crossbow)
+            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls())
             {
                 return true;
             }
-            return CrossbowManager.CanQueueReloadAction();
+
+            if (EquipScript.getLeft() == EquipType.Crossbow)
+            {
+                return CrossbowManager.CanQueueReloadAction();
+            }
+
+            return true;
         }
 
     }
