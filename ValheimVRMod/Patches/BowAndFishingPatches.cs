@@ -79,8 +79,6 @@ namespace ValheimVRMod.Patches {
     [HarmonyPatch(typeof(Player), "QueueReloadAction")]
     class PatchQueueReloadAction
     {
-        static bool hasReloadedDundrDuringCurrentTwoHandedWield = false;
-
         static bool Prefix(Player __instance)
         {
             if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls())
@@ -91,28 +89,6 @@ namespace ValheimVRMod.Patches {
             if (EquipScript.getLeft() == EquipType.Crossbow)
             {
                 return CrossbowManager.CanQueueReloadAction();
-            }
-
-            if (VHVRConfig.OneHandedBow() || !VHVRConfig.CrossbowManualReload())
-            {
-                return true;
-            }
-
-            if (EquipScript.isDundrEquipped())
-            {
-                if (!LocalWeaponWield.isCurrentlyTwoHanded())
-                {
-                    hasReloadedDundrDuringCurrentTwoHandedWield = false;
-                    // Do not charge Dundr if holding it with only one hand.
-                    return false;
-                }
-                if (hasReloadedDundrDuringCurrentTwoHandedWield)
-                {
-                    // Do not charge Dundr if it has already been charged once during current two-handed wield.
-                    return false;
-                }
-                hasReloadedDundrDuringCurrentTwoHandedWield = true;
-                return true;
             }
 
             return true;
@@ -329,39 +305,21 @@ namespace ValheimVRMod.Patches {
             {
                 return;
             }
- 
-            if (__instance.m_recoilPushback <= 0f)
-            {
-                return;
-            }
-
-            if (EquipScript.getLeft() == EquipType.Crossbow || EquipScript.isDundrEquipped())
+            if (__instance.m_recoilPushback > 0f && EquipScript.getLeft() == EquipType.Crossbow)
             {
                 recoilPushback = __instance.m_recoilPushback;
                 __instance.m_recoilPushback = 0f;
             }
         }
-
         public static void Postfix(Attack __instance)
         {
             if (__instance.m_character != Player.m_localPlayer || !VHVRConfig.UseVrControls())
             {
                 return;
             }
-
-            if (recoilPushback <= 0f)
-            {
-                return;
-            }
-
-            if (EquipScript.getLeft() == EquipType.Crossbow)
+            if (recoilPushback > 0f && EquipScript.getLeft() == EquipType.Crossbow)
             {
                 __instance.m_character.ApplyPushback(-CrossbowManager.AimDir, recoilPushback);
-                recoilPushback = 0f;
-            }
-            else if (EquipScript.isDundrEquipped())
-            {
-                __instance.m_character.ApplyPushback(-MagicWeaponManager.AimDir, recoilPushback);
                 recoilPushback = 0f;
             }
         }
