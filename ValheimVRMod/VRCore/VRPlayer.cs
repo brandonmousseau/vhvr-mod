@@ -1225,7 +1225,8 @@ namespace ValheimVRMod.VRCore
             Vector3 deltaPosition = _vrCam.transform.localPosition - _lastCamPosition;
             deltaPosition.y = 0;
 
-            bool shouldMove = deltaPosition.magnitude > 0.005f;
+            // Allow leaning during gestured locomotion
+            bool shouldMove = deltaPosition.magnitude > (GesturedLocomotionManager.isInUse ? 1f : 0.005f);
             if (shouldMove)
             {
                 float maxMovement = deltaTime * MAX_ROOMSCALE_MOVEMENT_SPEED;
