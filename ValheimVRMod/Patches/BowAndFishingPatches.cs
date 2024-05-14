@@ -63,11 +63,15 @@ namespace ValheimVRMod.Patches {
     {
         static void Postfix(Player __instance, ItemDrop.ItemData weapon, ref float dt)
         {
-            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls() || EquipScript.getLeft() != EquipType.Crossbow || CrossbowMorphManager.instance == null)
+            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls())
             {
                 return;
             }
-            CrossbowMorphManager.instance.UpdateWeaponLoading(__instance, dt);
+            
+            if (EquipScript.getLeft() == EquipType.Crossbow && CrossbowMorphManager.instance != null)
+            {
+                CrossbowMorphManager.instance.UpdateWeaponLoading(__instance, dt);
+            }
         }
 
     }
