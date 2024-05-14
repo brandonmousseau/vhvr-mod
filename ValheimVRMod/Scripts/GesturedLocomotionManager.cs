@@ -23,6 +23,13 @@ namespace ValheimVRMod.Scripts
         private Vector3 gesturedLocomotionVelocity = Vector3.zero;
         private float horizontalSpeed = 0;
 
+        public static bool IsActive()
+        {
+            return SteamVR_Actions.valheim_StopGesturedLocomotion.activeBinding &&
+                !SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.Any);
+
+        }
+
         public GesturedLocomotionManager(Transform vrCameraRig)
         {
             this.vrCameraRig = vrCameraRig;
