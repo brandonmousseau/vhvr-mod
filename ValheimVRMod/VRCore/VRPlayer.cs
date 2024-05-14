@@ -1226,11 +1226,7 @@ namespace ValheimVRMod.VRCore
             deltaPosition.y = 0;
 
             // Allow leaning during gestured locomotion
-            bool shouldMove = deltaPosition.magnitude > (GesturedLocomotionManager.IsActive() ? 1f : 0.005f);
-            {
-                shouldMove = false;
-            }
- 
+            bool shouldMove = deltaPosition.magnitude > (GesturedLocomotionManager.isInUse ? 1f : 0.005f);
             if (shouldMove)
             {
                 float maxMovement = deltaTime * MAX_ROOMSCALE_MOVEMENT_SPEED;
