@@ -237,13 +237,8 @@ namespace ValheimVRMod.Scripts
                 return false;
             }
 
-            isLastHitOnTerrain = false;
-
-            if (target.GetComponentInParent<MineRock5>() != null &&
-                target.transform.parent.GetComponent<Heightmap>() != null)
-            {
-                isLastHitOnTerrain = true;
-            }
+            isLastHitOnTerrain =
+                (target.GetComponentInParent<MineRock5>() == null ? target : target.transform.parent.gameObject).GetComponent<Heightmap>() != null;
 
             AttackTargetMeshCooldown attackTargetMeshCooldown = target.GetComponentInParent<AttackTargetMeshCooldown>();
             if (attackTargetMeshCooldown == null)
