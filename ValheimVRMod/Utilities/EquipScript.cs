@@ -259,6 +259,11 @@ namespace ValheimVRMod.Utilities
             return isSpearEquipped() && VHVRConfig.SpearInverseWield();
         }
 
+        public static bool isDundrEquipped()
+        {
+            return Player.m_localPlayer?.GetRightItem()?.m_shared?.m_name == "$item_staff_lightning";
+        }
+
         public static bool isTwoHandedAxeEquiped()
         {
             return getRight() == EquipType.Axe && Player.m_localPlayer.GetRightItem().m_shared.m_itemType == ItemDrop.ItemData.ItemType.TwoHandedWeapon;
