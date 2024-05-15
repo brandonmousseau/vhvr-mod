@@ -8,7 +8,7 @@ namespace ValheimVRMod.Scripts
 {
     public class Reining : MonoBehaviour
     {
-        private const float MIN_TURNING_OFFSET = 0.33f;
+        private const float MIN_TURNING_OFFSET = 0.25f;
         private const float SHAKE_SPEED_THRESHOLD = 1f;
         private const float REIN_ANGLE_TOLERANCE = 30f;
         private const float MAX_STOP_REIN_DISTNACE = 0.33f;
@@ -95,8 +95,11 @@ namespace ValheimVRMod.Scripts
             {
                 lineRenderer.enabled = false;
             }
-            
-            bool changeDirection = UpdateTargetDirection(isLeftHandReining, isRightHandReining);
+
+            var wasTurning = isTurning;
+            targetDirection =
+                GetCuedTargetDirection(isLeftHandReining, isRightHandReining, out isTurning, out bool areHandsPullingInOppositeDirections);
+            var shouldOverrideDirection = (wasTurning || isTurning);
 
             if (leftRunCueCountDown > 0)
             {
@@ -107,13 +110,22 @@ namespace ValheimVRMod.Scripts
                 rightRunCueCountDown -= Time.deltaTime;
             }
 
-            var targetSpeed = GetTargetSpeed(isLeftHandReining, isRightHandReining);
-            if (targetSpeed == Sadle.Speed.Stop && changeDirection)
+            var targetSpeed = GetCuedTargetSpeed(isLeftHandReining, isRightHandReining);
+            if (areHandsPullingInOppositeDirections)
+            {
+                targetSpeed = Sadle.Speed.Stop;
+            }
+            if (shouldOverrideDirection && targetSpeed == Sadle.Speed.Stop)
             {
                 targetSpeed = Sadle.Speed.Turn;
             }
-   
-            shouldOverrideSpeedOrDirection = changeDirection || (targetSpeed != Sadle.Speed.NoChange && targetSpeed != sadle.m_speed);
+            else if (!shouldOverrideDirection && targetSpeed == Sadle.Speed.Turn)
+            {
+                targetSpeed = Sadle.Speed.Stop;
+            }
+
+            shouldOverrideSpeedOrDirection =
+                shouldOverrideDirection || (targetSpeed != Sadle.Speed.NoChange && targetSpeed != sadle.m_speed);
             turnInPlace = (targetSpeed == Sadle.Speed.Turn);
             
             if (!shouldOverrideSpeedOrDirection)
@@ -160,36 +172,49 @@ namespace ValheimVRMod.Scripts
                     offset.magnitude);
         }
 
-        private Sadle.Speed GetTargetSpeed(bool isLeftHandReining, bool isRightHandReining)
+        private Sadle.Speed GetCuedTargetSpeed(bool isLeftHandReining, bool isRightHandReining)
         {
             var leaningVector = CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform.position - sadle.m_attachPoint.position;
             leaningVector.y = 0;
             var leaning = leaningVector.magnitude;
 
-            var leftHandReiningSpeed =
-                 GetReiningSpeed(
+            var leftHandCuedSpeed =
+                 GetCuedTargetSpeed(
                      isLeftHandReining, VRPlayer.leftHandPhysicsEstimator, leaning, ref leftHandSlowDownResult, ref leftRunCueCountDown);
-            var rightHandReiningSpeed =
-                 GetReiningSpeed(
+            var rightHandCuedSpeed =
+                 GetCuedTargetSpeed(
                      isRightHandReining, VRPlayer.rightHandPhysicsEstimator, leaning, ref rightHandSlowDownResult, ref rightRunCueCountDown);
 
-            if (leftHandReiningSpeed == Sadle.Speed.NoChange)
+            if (isLeftHandReining && isRightHandReining)
             {
-                if (rightHandReiningSpeed != Sadle.Speed.NoChange)
+                var bothHandsAreCuingStop =
+                    (leftHandCuedSpeed == Sadle.Speed.Stop && rightHandCuedSpeed == Sadle.Speed.Stop);
+                // During two-handed reining, do not stop unless both hands are cueing stop.
+                if (!bothHandsAreCuingStop && leftHandCuedSpeed == Sadle.Speed.Stop)
                 {
-                    return rightHandReiningSpeed;
+                    leftHandCuedSpeed = Sadle.Speed.NoChange;
                 }
-                return sadle.m_speed == Sadle.Speed.Turn ? Sadle.Speed.Stop : sadle.m_speed;
+                if (!bothHandsAreCuingStop && rightHandCuedSpeed == Sadle.Speed.Stop)
+                {
+                    rightHandCuedSpeed = Sadle.Speed.NoChange;
+                }
             }
-            else if (rightHandReiningSpeed == Sadle.Speed.NoChange)
+            
+            if (leftHandCuedSpeed == Sadle.Speed.NoChange)
             {
-                return leftHandReiningSpeed;
+                leftHandCuedSpeed = rightHandCuedSpeed;
+            }
+            else if (rightHandCuedSpeed == Sadle.Speed.NoChange)
+            {
+                rightHandCuedSpeed = leftHandCuedSpeed;
             }
 
-            return rightHandReiningSpeed > leftHandReiningSpeed ? rightHandReiningSpeed : leftHandReiningSpeed;
+            var cuedSpeed = rightHandCuedSpeed > leftHandCuedSpeed ? rightHandCuedSpeed : leftHandCuedSpeed;
+
+            return cuedSpeed == Sadle.Speed.NoChange ? sadle.m_speed : cuedSpeed;
         }
 
-        private Sadle.Speed GetReiningSpeed(
+        private Sadle.Speed GetCuedTargetSpeed(
             bool isReining, PhysicsEstimator handPhysicsEstimator, float leaning, ref Sadle.Speed slowDownResult, ref float runCueCountDown) {
             if (!isReining)
             {
@@ -207,8 +232,12 @@ namespace ValheimVRMod.Scripts
                 slowDownResult = Sadle.Speed.Stop;
             }
 
+            var handOffset = handPhysicsEstimator.transform.position - sadle.m_attachPoint.position;
+            handOffset.y = 0;
+            var handOffsetAmount = handOffset.magnitude;
+
             var v = handPhysicsEstimator.GetAverageVelocityInSnapshots();
-            if (v.y < -SHAKE_SPEED_THRESHOLD && Vector3.Angle(v, Vector3.down) < REIN_ANGLE_TOLERANCE)
+            if (v.y < -SHAKE_SPEED_THRESHOLD && Vector3.Angle(v, Vector3.down) < REIN_ANGLE_TOLERANCE && handOffsetAmount > MAX_STOP_REIN_DISTNACE)
             {
                 bool shouldRun = 
                     (runCueCountDown > RUN_CUE_TIMEOUT || leaning >= MIN_LEANING_DISTANCE_TO_START_GALLOPPING || sadle.m_speed == Sadle.Speed.Run);
@@ -221,9 +250,6 @@ namespace ValheimVRMod.Scripts
                 runCueCountDown = RUN_CUE_TIMEOUT * 2;
             }
 
-            var handOffset = handPhysicsEstimator.transform.position - sadle.m_attachPoint.position;
-            handOffset.y = 0;
-            var handOffsetAmount = handOffset.magnitude;
             var handHorizontalVelocity = v;
             handHorizontalVelocity.y = 0;
             var handHorizontalSpped = handHorizontalVelocity.magnitude;
@@ -242,69 +268,68 @@ namespace ValheimVRMod.Scripts
                     slowDownResult = Sadle.Speed.Stop;
                 }
             }
-
             return Sadle.Speed.NoChange;
         }
 
-
-        private bool UpdateTargetDirection(bool isLeftHandReining, bool isRightHandReining)
+        private Vector3 GetCuedTargetDirection(
+            bool isLeftHandReining, bool isRightHandReining, out bool shouldTurn, out bool areHandsPullingInOppositeDirections)
         {
             var currentDirection = GetCurrentDirection();
-            var leftHandReiningDirection = GetReiningDirection(VRPlayer.leftHand.transform, isLeftHandReining, out int leftReinTurning);
-            var rightHandReiningDirection = GetReiningDirection(VRPlayer.rightHand.transform, isRightHandReining, out int rightReinTurning);
+            areHandsPullingInOppositeDirections = false;
 
-            var wasTurning = isTurning;
-            if (leftReinTurning + rightReinTurning == 0)
+            if (!isLeftHandReining && !isRightHandReining)
             {
-                targetDirection = currentDirection;
-                isTurning = false;
-                return wasTurning;
+                shouldTurn = false;
+                return currentDirection;
             }
 
-            isTurning = true;
+            int turnDirection = 0;
+            Vector3 cuedTargetDirection = Vector3.zero;
 
-            if (rightReinTurning == 0)
+            if (isLeftHandReining && isRightHandReining)
             {
-                targetDirection = leftHandReiningDirection;
-            }
-            else if (leftReinTurning == 0)
-            {
-                targetDirection = rightHandReiningDirection;
-            }
-            else
-            {
-                targetDirection = Vector3.Lerp(leftHandReiningDirection, rightHandReiningDirection, 0.5f);
+                var handSpan = VRPlayer.rightHand.transform.position - VRPlayer.leftHand.transform.position;
+                handSpan.y = 0;
+                cuedTargetDirection = Vector3.Cross(handSpan, Vector3.up) * 0.5f;
+                turnDirection = GetTurnDirection(currentDirection, cuedTargetDirection);
             }
 
-            return true;
+            if (turnDirection == 0)
+            {
+                var leftHandCuedTargetDirection =
+                    GetOneHandedCuedTargetDirection(VRPlayer.leftHandBone, currentDirection, isLeftHandReining);
+                var rightHandCuedTargetDirection =
+                    GetOneHandedCuedTargetDirection(VRPlayer.rightHandBone, currentDirection, isRightHandReining);
+                int leftHandCuedTurn = GetTurnDirection(currentDirection, leftHandCuedTargetDirection);
+                int rightHandCuedTurn = GetTurnDirection(currentDirection, rightHandCuedTargetDirection);
+                areHandsPullingInOppositeDirections = (leftHandCuedTurn * rightHandCuedTurn < 0);
+                turnDirection = leftHandCuedTurn + rightHandCuedTurn;
+                if (turnDirection != 0)
+                {
+                    cuedTargetDirection = Vector3.Lerp(leftHandCuedTargetDirection, rightHandCuedTargetDirection, rightHandCuedTurn / turnDirection);
+                }
+            }
+
+            shouldTurn = (turnDirection != 0);
+            return shouldTurn ? cuedTargetDirection.normalized : currentDirection;
         }
 
-        private Vector3 GetReiningDirection(Transform hand, bool isReining, out int turnDirection)
+        private Vector3 GetOneHandedCuedTargetDirection(Transform hand, Vector3 currentDirection, bool isReining)
         {
-            turnDirection = 0;
-
-            if (!sadle)
-            {
-                return Vector3.zero;
-            }
-
-            var currentDirection = GetCurrentDirection();
-
             if (!isReining)
             {
                 return currentDirection;
             }
+            var cuedTargetDirection = hand.position - sadle.m_attachPoint.position;
+            cuedTargetDirection.y = 0;
+            return cuedTargetDirection;
+        }
 
-            var handOffset = hand.position - sadle.m_attachPoint.position;
-            handOffset.y = 0;
-            var lateralOffset = Vector3.Dot(Vector3.Cross(handOffset, currentDirection), Vector3.up);
-            if (Mathf.Abs(lateralOffset) < MIN_TURNING_OFFSET)
-            {
-                return currentDirection;
-            }
-
-            turnDirection = (int)Mathf.Sign(lateralOffset);
-            return handOffset;
+        // Returns -1 if turning left, 0 if not turning, 1, if turning right.
+        private static int GetTurnDirection(Vector3 currentDirection, Vector3 targetDirection)
+        {
+            var lateralOffset = Vector3.Dot(Vector3.Cross(targetDirection, currentDirection), Vector3.up);
+            return lateralOffset <= -MIN_TURNING_OFFSET ? -1 : (lateralOffset < MIN_TURNING_OFFSET ? 0 : 1);
         }
 
         private bool IsReining(HandGesture handGesture, SteamVR_Input_Sources inputSource)
