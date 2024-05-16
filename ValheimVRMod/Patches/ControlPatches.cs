@@ -1153,7 +1153,7 @@ namespace ValheimVRMod.Patches {
 
             if (__instance.m_queuedDodgeTimer > 0f && __instance.IsOnGround() && !__instance.IsDead() && !__instance.InAttack() && !__instance.IsEncumbered() && !__instance.InDodge() && !__instance.IsStaggering())
             {
-                float num = __instance.m_dodgeStaminaUsage - __instance.m_dodgeStaminaUsage * __instance.m_equipmentMovementModifier;
+                float num = __instance.m_dodgeStaminaUsage - __instance.m_dodgeStaminaUsage * __instance.GetEquipmentDodgeStaminaModifier();
                 if (__instance.HaveStamina(num))
                 {
                     __instance.ClearActionQueue();

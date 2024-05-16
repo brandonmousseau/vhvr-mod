@@ -11,7 +11,10 @@ namespace ValheimVRMod.Scripts {
     // TODO: implement this class as a component added to the weapon object and reduce static instance and singletion usage.
     class MagicWeaponManager {
 
-        private static readonly HashSet<string> SWING_LAUNCH_MAGIC_STAFF_NAMES = new HashSet<string>(new string[] { "$item_stafffireball" });
+        private static readonly HashSet<string> SWING_LAUNCH_MAGIC_STAFF_NAMES =
+            new HashSet<string>(new string[] {
+                "$item_stafffireball", "$item_staffgreenroots", "$item_staffclusterbomb", "$item_staffredtroll" });
+
         private static bool IsMagicWeaponEquipped { get { return EquipScript.getLeft() == EquipType.Magic || EquipScript.getRight() == EquipType.Magic;  } }
         // Right-handed weapons in vanilla game is treated as domininant hand weapon in VHVR.
         private static bool IsDominantHandWeapon { get { return EquipScript.getRight() == EquipType.Magic; } }       

@@ -42,6 +42,8 @@ namespace ValheimVRMod.Scripts
             }
         }
 
+        private MeshRenderer hideableGlowMeshRenderer;
+
         public bool isPulling { get; private set; }
         public bool shouldAutoReload { get { return anatomy == null || !VHVRConfig.CrossbowManualReload(); } } // If crossbow anatomy data is not available, fallback to the vanilla auto-reload logic.
 
@@ -81,6 +83,7 @@ namespace ValheimVRMod.Scripts
             meshRenderer.material = GetBowBendingMaterial(meshRenderer.material);
             createBones();
             createNewString();
+            hideableGlowMeshRenderer = WeaponUtils.GetHideableBowGlowMeshRenderer(transform, Player.m_localPlayer.GetLeftItem().m_shared.m_name);
             initialized = true;
         }
 
@@ -113,6 +116,11 @@ namespace ValheimVRMod.Scripts
             {
                 // We use string position to calcualte bolt position so it can only be updated after updating the string.
                 attachBoltToCrossbow();
+            }
+
+            if (hideableGlowMeshRenderer)
+            {
+                hideableGlowMeshRenderer.enabled = !isPulling;
             }
         }
 

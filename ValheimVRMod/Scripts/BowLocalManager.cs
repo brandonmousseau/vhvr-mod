@@ -39,6 +39,8 @@ namespace ValheimVRMod.Scripts {
 
         private GameObject arrowAttach;
 
+        private MeshRenderer hideableGlowMeshRenderer;
+
         private void Start() {
             instance = this;
             arrowAttach = new GameObject();
@@ -63,6 +65,8 @@ namespace ValheimVRMod.Scripts {
             if (item != null) {
                 attack = item.m_shared.m_attack.Clone();
             }
+
+            hideableGlowMeshRenderer = WeaponUtils.GetHideableBowGlowMeshRenderer(transform, item.m_shared.m_name);
         }
 
         protected new void OnDestroy() {
@@ -152,6 +156,11 @@ namespace ValheimVRMod.Scripts {
             if (!BhapticsTactsuit.suitDisabled && !pulling)
             {
                 BhapticsTactsuit.StopThreadHaptic(VHVRConfig.LeftHanded() ? "BowStringLeft" : "BowStringRight");
+            }
+
+            if (hideableGlowMeshRenderer)
+            {
+                hideableGlowMeshRenderer.enabled = !pulling;
             }
         }
 

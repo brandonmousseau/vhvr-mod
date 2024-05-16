@@ -21,9 +21,17 @@ namespace ValheimVRMod.Scripts {
         protected override void Awake()
         {
             base.Awake();
+
+            var loaded = transform.Find("Loaded").gameObject;
+            var unloaded = transform.Find("Unloaded").gameObject;
+
             // The mesh for the unloaded bow and and the mesh for the loaded bow are in two different child game objects.
             // We only need to use our custom bending animation on the unloaded one.
-            crossbowMorphManager = transform.Find("Unloaded").gameObject.AddComponent<CrossbowMorphManager>();
+            crossbowMorphManager = unloaded.AddComponent<CrossbowMorphManager>();
+
+            // Some crossbows' vanilla loaded model is not completely aligned with the vanilla unloaded model,
+            // Fix it here so that the crossbow stays in place when loading.
+            WeaponUtils.AlignLoadedMeshToUnloadedMesh(loaded, unloaded);
         }
 
         protected override void OnRenderObject()

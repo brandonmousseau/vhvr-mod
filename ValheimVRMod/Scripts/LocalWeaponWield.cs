@@ -88,6 +88,10 @@ namespace ValheimVRMod.Scripts
             {
                 isAiming = true;
             }
+            else if (IsDundr())
+            {
+                isAiming = true;
+            }
             else if (EquipScript.getLeft() == EquipType.Crossbow || EquipScript.getRight() == EquipType.Magic)
             {
                 isAiming = isCurrentlyTwoHanded();

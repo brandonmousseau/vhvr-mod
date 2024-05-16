@@ -210,6 +210,7 @@ namespace ValheimVRMod.Scripts
         {
             var equipType = EquipScript.getRight();
             return equipType.Equals(EquipType.Claws) ||
+                equipType.Equals(EquipType.DualAxes) ||
                 equipType.Equals(EquipType.DualKnives);
         }
 
