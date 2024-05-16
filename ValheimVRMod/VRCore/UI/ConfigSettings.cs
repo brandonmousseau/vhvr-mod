@@ -137,7 +137,7 @@ namespace ValheimVRMod.VRCore.UI {
             // text.resizeTextForBestFit = false;
             text.fontSize = 20;
             text.alignment = TextAlignmentOptions.MidlineLeft;
-            text.rectTransform.anchoredPosition = new Vector2(454, 4);
+            text.rectTransform.anchoredPosition = new Vector2(454, 0);
             toolTip.SetActive(false);
         }
 
