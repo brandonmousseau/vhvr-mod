@@ -83,6 +83,7 @@ namespace ValheimVRMod.Patches {
                     meshFilter.gameObject.AddComponent<FishingManager>();
                     break;
             }
+
             LocalWeaponWield weaponWield = EquipScript.isSpearEquipped() ? ___m_rightItemInstance.AddComponent<SpearWield>() : ___m_rightItemInstance.AddComponent<LocalWeaponWield>();
             weaponWield.Initialize(Player.m_localPlayer.GetRightItem(), ___m_rightItem);
 
@@ -101,7 +102,18 @@ namespace ValheimVRMod.Patches {
                 meshFilter, handPosition: ___m_rightItemInstance.transform.parent.position, ___m_rightItem, true);
             weaponCol.weaponWield = weaponWield;
             meshFilter.gameObject.AddComponent<ButtonSecondaryAttackManager>().Initialize(meshFilter.transform, ___m_rightItem, true);
-            meshFilter.gameObject.AddComponent<WeaponBlock>().weaponWield = weaponWield;
+
+            if (___m_rightItem == "StaffLightning")
+            {
+                WeaponUtils.AlignLoadedMeshToUnloadedMesh(
+                    loaded: ___m_rightItemInstance.transform.Find("Loaded").gameObject,
+                    unloaded: meshFilter.gameObject);
+                ___m_rightItemInstance.AddComponent<WeaponBlock>().weaponWield = weaponWield;
+            }
+            else
+            {
+                meshFilter.gameObject.AddComponent<WeaponBlock>().weaponWield = weaponWield;
+            }
 
             ParticleFix.maybeFix(___m_rightItemInstance);
         }
@@ -227,6 +239,32 @@ namespace ValheimVRMod.Patches {
             }
             
             ___m_beardItemInstance.AddComponent<HeadEquipVisibiltiyUpdater>();
+        }
+    }
+
+    [HarmonyPatch(typeof(VisEquipment), nameof(VisEquipment.SetShoulderEquipped))]
+    class PatchBack
+    {
+        static void Postfix(bool __result, List<GameObject> ___m_shoulderItemInstances)
+        {
+
+            if (!__result || !VHVRConfig.UseVrControls() || ___m_shoulderItemInstances == null)
+            {
+                return;
+            }
+
+            if (Player.m_localPlayer?.m_shoulderItem == null)
+            {
+                return;
+            }
+
+            if (Player.m_localPlayer.m_shoulderItem.m_shared.m_name == "$item_cape_ash")
+            {
+                foreach (var item in ___m_shoulderItemInstances)
+                {
+                    item.AddComponent<HeadEquipVisibiltiyUpdater>();
+                }
+            }
         }
     }
 

@@ -154,6 +154,11 @@ namespace ValheimVRMod.Scripts
         protected abstract Transform GetRightHandTransform();
         protected abstract TwoHandedState GetDesiredTwoHandedState(bool wasTwoHanded);
 
+        protected bool IsDundr()
+        {
+            return itemName == "StaffLightning";
+        }
+
         private TwoHandedGeometryProvider GetGeometryProvider
             (Vector3 longestLocalExtrusion, float distanceBetweenGripAndRearEnd, WeaponWieldSync.TwoHandedStateProvider twoHandedStateProvider)
         {
@@ -172,6 +177,11 @@ namespace ValheimVRMod.Scripts
                     return isLocal ?
                         new TwoHandedGeometry.LocalCrossbowGeometryProvider() :
                         new TwoHandedGeometry.CrossbowGeometryProvider(IsPlayerLeftHanded());
+            }
+
+            if (IsDundr())
+            {
+                return new TwoHandedGeometry.DundrGeometryProvider();
             }
 
             if (!isLocal && twoHandedStateProvider != null)
