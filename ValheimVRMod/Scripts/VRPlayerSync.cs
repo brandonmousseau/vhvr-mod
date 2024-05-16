@@ -20,7 +20,7 @@ namespace ValheimVRMod.Scripts {
 
         private WeaponWield.TwoHandedState twoHandedState = WeaponWield.TwoHandedState.SingleHanded;
         private bool isLeftHanded = false;
-        private bool holdingInversedSpear = true;
+        private bool holdingInversedSpear = false;
 
         private Player player;
         private Vector3 ownerLastPositionCamera = Vector3.zero;
@@ -189,8 +189,6 @@ namespace ValheimVRMod.Scripts {
 
         private void syncPositionAndRotation(ZDO zdo, float dt)
         {
-            hasReceivedData = (zdo != null);
-
             if (zdo == null)
             {
                 return;
@@ -200,6 +198,7 @@ namespace ValheimVRMod.Scripts {
             {
                 return;
             }
+            hasReceivedData = true;
             ZPackage pkg = new ZPackage(vr_data);
             var currentDataRevision = zdo.DataRevision;
             if (currentDataRevision != lastDataRevision)
