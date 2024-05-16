@@ -124,8 +124,6 @@ namespace ValheimVRMod.VRCore.UI {
         }
 
         private static void createToolTip(Transform settings) {
-            var padding = 4;
-            var width = 375;
             toolTip = new GameObject();
             toolTip.transform.SetParent(settings, false);
             var bkgImage = toolTip.AddComponent<Image>();
@@ -134,11 +132,12 @@ namespace ValheimVRMod.VRCore.UI {
             var textObj = Object.Instantiate(togglePrefab.GetComponentInChildren<TMP_Text>().gameObject, toolTip.transform);
             TMP_Text text = textObj.GetComponent<TMP_Text>();
             text.rectTransform.anchorMin = text.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
-            text.rectTransform.sizeDelta = new Vector2(width, 300);
+            text.rectTransform.sizeDelta = new Vector2(375, 125);
+
             // text.resizeTextForBestFit = false;
             text.fontSize = 20;
             text.alignment = TextAlignmentOptions.MidlineLeft;
-            text.rectTransform.anchoredPosition = new Vector2(padding, padding);
+            text.rectTransform.anchoredPosition = new Vector2(4, 4);
             toolTip.SetActive(false);
         }
 
