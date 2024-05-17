@@ -272,14 +272,25 @@ namespace ValheimVRMod.Scripts
 
         private ThrowCalculate CalculateThrowAndDistance(Vector3 direction)
         {
-            var throwSpeed = 1f;
-            if (VHVRConfig.FullThrowSpeed() > 0.0625f)
+            var throwSpeed =
+                Vector3.Dot(
+                    direction.normalized,
+                    WeaponUtils.GetWeaponVelocity(
+                        handPhysicsEstimator.GetAverageVelocityInSnapshots(),
+                        handPhysicsEstimator.GetAngularVelocity(),
+                        (VHVRConfig.LeftHanded() ? VRPlayer.leftHandBone.up : VRPlayer.rightHandBone.up) * 0.125f));
+
+            if (throwSpeed >= VHVRConfig.FullThrowSpeed())
             {
-                throwSpeed =
-                    Vector3.Dot(handPhysicsEstimator.GetAverageVelocityInSnapshots(), direction.normalized) / VHVRConfig.FullThrowSpeed();
+                var normalizer = Mathf.Max(VHVRConfig.FullThrowSpeed(), 1);
+                // Allow the throwable to travel faster than vanilla full speed if it is thrown fast enough.
+                throwSpeed = throwSpeed > normalizer ? throwSpeed / normalizer : 1;
+            }
+            else
+            {
+                throwSpeed /= VHVRConfig.FullThrowSpeed();
                 // Apply some non-linear damping otherwise the spear flies too fast even if thrown at low speed.
                 throwSpeed *= Mathf.Clamp(throwSpeed, 0.5f, 1f);
-
             }
             return new ThrowCalculate(throwSpeed, handPhysicsEstimator.GetLongestLocomotion(Mathf.Min(0.4f, aimingDuration)).magnitude);
         }
