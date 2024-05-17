@@ -352,7 +352,8 @@ namespace ValheimVRMod.Scripts {
         }
 
         private bool checkHandNearString() {
-            if (!OnlyUseDominantHand() && Vector3.Distance(mainHand.position, pullStart.position) > attachRange) {
+            var nock = pullStart.position + bowOrientation.TransformVector(Vector3.up * VHVRConfig.ArrowRestElevation());
+            if (!OnlyUseDominantHand() && Vector3.Distance(mainHand.position, nock) > attachRange) {
                 return false;
             }
 
@@ -390,17 +391,42 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            try {
+            try
+            {
                 gravity = ammoItem.m_shared.m_attack.m_attackProjectile.GetComponent<Projectile>().m_gravity;
-                arrow = Instantiate(ammoItem.m_dropPrefab, arrowAttach.transform);
+
+                if (ammoItem.m_shared.m_name == "$item_arrow_fire")
+                {
+                    // Use projectile prefab instead of drop prefab to have fired rendered.
+                    arrow = Instantiate(ammoItem.m_shared.m_attack.m_attackProjectile, arrowAttach.transform);
+                    Destroy(arrow.GetComponent<Projectile>()); // Do not let the arrow automatically launch from hand
+                    Destroy(findTrail(arrow.transform));
+                    var visual = arrow.transform.GetChild(0);
+                    visual.localPosition = -0.11f * Vector3.forward;
+                    visual.localScale = Vector3.one * 0.6f;
+                }
+                else 
+                {
+                    arrow = Instantiate(ammoItem.m_dropPrefab, arrowAttach.transform);
+                    var meshTransform = arrow.GetComponentInChildren<MeshRenderer>().transform;
+                    var p = meshTransform.localPosition;
+                    p.y = 0;
+                    meshTransform.localPosition = p;
+                    Destroy(arrow.GetComponent<ParticleSystemRenderer>()); // Do not display the particles indicating a pickable item
+                    Destroy(arrow.GetComponent<ParticleSystem>());
+                    Destroy(arrow.GetComponent<ItemDrop>()); // Do not let the object drop form hand
+                    Destroy(arrow.GetComponent<Rigidbody>());
+                }
             }
-            catch {
+            catch (Exception e) {
+                LogUtils.LogError(e.Message);
                 return;
             }
 
             switch (ammoItem.m_shared.m_name)
             {
                 case "$item_arrow_charred":
+                case "$item_arrow_fire":
                 case "$item_arrow_frost":
                 case "$item_arrow_needle":
                 case "$item_arrow_poison":
@@ -429,10 +455,12 @@ namespace ValheimVRMod.Scripts {
                     "UnholsterArrowLeftShoulder" : "UnholsterArrowRightShoulder");
             }
 
-            if (findTrail(arrow.transform)) Destroy(findTrail(arrow.transform));
-            if (arrow.GetComponentInChildren<Collider>()) Destroy(arrow.GetComponentInChildren<Collider>());
-            Destroy(arrow.GetComponent<ItemDrop>());
-            Destroy(arrow.GetComponent<Rigidbody>());
+            var collider = arrow.GetComponentInChildren<Collider>();
+            if (collider)
+            {
+                Destroy(collider);
+            }
+
             arrow.transform.localRotation = Quaternion.identity;
             arrow.transform.localPosition = new Vector3(0, 0, centerToTailDistance);
             foreach (ParticleSystem particleSystem in arrow.GetComponentsInChildren<ParticleSystem>()) {
