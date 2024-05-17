@@ -54,6 +54,58 @@ namespace ValheimVRMod.Utilities
                     /* fallbackStringBottom= */ new Vector3(0, -0.75f, -0.325f),
                     /* fallbackHandleTop= */ new Vector3(0, 0.26f, 0),
                     /* fallbackHandleBottom= */ new Vector3(0, -0.26f, 0))
+            },
+            {
+                "$item_bow_ashlands",
+                new BowAnatomy(
+                    /* handleHeight= */ 0.75f,
+                    /* softLimbHeight= */ 0.15f,
+                    /* stringRadius= */ 0.01f,
+                    /* bowBendingImpl= */ BowBendingImplType.Auto,
+                    /* fallbackHandleWidth= */ 0.0625f,
+                    /* fallbackStringTop= */ new Vector3(0.01f, 0.75f, -0.25f),
+                    /* fallbackStringBottom= */ new Vector3(0.01f, -0.75f, -0.25f),
+                    /* fallbackHandleTop= */ new Vector3(0, 0.375f, 0),
+                    /* fallbackHandleBottom= */ new Vector3(0, -0.375f, 0))
+            },
+            {
+                "$item_bow_ashlandsblood",
+                new BowAnatomy(
+                    /* handleHeight= */ 0.7f,
+                    /* softLimbHeight= */ 0.1f,
+                    /* stringRadius= */ 0.01f,
+                    /* bowBendingImpl= */ BowBendingImplType.Auto,
+                    /* fallbackHandleWidth= */ 0.0625f,
+                    /* fallbackStringTop= */ new Vector3(0, 0.75f, -0.245f),
+                    /* fallbackStringBottom= */ new Vector3(0, -0.75f, -0.245f),
+                    /* fallbackHandleTop= */ new Vector3(0, 0.35f, 0),
+                    /* fallbackHandleBottom= */ new Vector3(0, -0.35f, 0))
+            },
+            {
+                "$item_bow_ashlandsstorm",
+                new BowAnatomy(
+                    /* handleHeight= */ 0.75f,
+                    /* softLimbHeight= */ 0.1f,
+                    /* stringRadius= */ 0.01f,
+                    /* bowBendingImpl= */ BowBendingImplType.Auto,
+                    /* fallbackHandleWidth= */ 0.0625f,
+                    /* fallbackStringTop= */ new Vector3(0, 0.8f, -0.24f),
+                    /* fallbackStringBottom= */ new Vector3(0, -0.8f, -0.24f),
+                    /* fallbackHandleTop= */ new Vector3(0, 0.375f, 0),
+                    /* fallbackHandleBottom= */ new Vector3(0, -0.375f, 0))
+            },
+            {
+                "$item_bow_ashlandsroot",
+                new BowAnatomy(
+                    /* handleHeight= */ 0.8f,
+                    /* softLimbHeight= */ 0.1f,
+                    /* stringRadius= */ 0.01f,
+                    /* bowBendingImpl= */ BowBendingImplType.Auto,
+                    /* fallbackHandleWidth= */ 0.0625f,
+                    /* fallbackStringTop= */ new Vector3(0.005f, 0.75f, -0.25f),
+                    /* fallbackStringBottom= */ new Vector3(0.005f, -0.75f, -0.25f),
+                    /* fallbackHandleTop= */ new Vector3(0, 0.4f, 0),
+                    /* fallbackHandleBottom= */ new Vector3(0, -0.4f, 0))
             }
         };
 

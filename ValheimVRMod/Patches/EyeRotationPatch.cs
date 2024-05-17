@@ -298,17 +298,17 @@ namespace ValheimVRMod.Patches
                 if (!player.IsAttached())
                 {
                     var ship = player.GetStandingOnShip();
-                    var moveableBase = player.transform.parent;
-                    if (ship || (moveableBase && moveableBase?.name == "MoveableBase"))
+                    var movableBase = player.transform.parent;
+                    if (ship || (movableBase && movableBase?.name == "MovableBase"))
                     {
                         Transform referenceUp = null;
                         if (ship)
                         {
                             referenceUp = ship.transform;
                         }
-                        else if (moveableBase && moveableBase?.name == "MoveableBase")
+                        else if (movableBase && movableBase?.name == "MovableBase")
                         {
-                            referenceUp = moveableBase.transform;
+                            referenceUp = movableBase.transform;
                         }
 
                         if (referenceUp == null)
@@ -434,25 +434,6 @@ namespace ValheimVRMod.Patches
                         patched.Add(instruction);
                 }
                 return patched;
-            }
-        }
-
-        /// <summary>
-        /// This makes the mounts try to follow the hmd eyedir
-        /// </summary>
-        [HarmonyPatch(typeof(Sadle), nameof(Sadle.ApplyControlls))]
-
-        class Sadle_ApplyControlls_Patch
-        {
-            static void Prefix(ref Vector3 lookDir)
-            {
-                if (VHVRConfig.NonVrPlayer())
-                {
-                    return;
-                }
-
-                //Recenter player on body
-                lookDir = Valve.VR.InteractionSystem.Player.instance.hmdTransform.forward;
             }
         }
     }

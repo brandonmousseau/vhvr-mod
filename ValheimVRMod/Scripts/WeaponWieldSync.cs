@@ -10,12 +10,15 @@ namespace ValheimVRMod.Scripts
             TwoHandedState GetTwoHandedState();
             bool IsLeftHanded();
             bool IsVrEnabled();
+
+            bool HoldingInversedSpear();
         }
 
         private bool isDominantHandWeapon;
         private TwoHandedStateProvider twoHandedStateSync;
         private Transform leftHandTransform;
         private Transform rightHandTransform;
+        private bool recalculatedDirectionOffset = false;
 
         public void Initialize(ItemDrop.ItemData item, string itemName, bool isDominantHandWeapon, TwoHandedStateProvider twoHandedStateSync, Transform leftHandTransform, Transform rightHandTransform)
         {
@@ -23,7 +26,8 @@ namespace ValheimVRMod.Scripts
             this.twoHandedStateSync = twoHandedStateSync;
             this.leftHandTransform = leftHandTransform;
             this.rightHandTransform = rightHandTransform;
-            base.Initialize(item, itemName);
+            // TODO: figure out a better way to detect crossbow.
+            base.Initialize(item, itemName, forceUsingCrossbowGeometry: !isDominantHandWeapon, twoHandedStateSync);
         }
 
         protected override bool IsPlayerLeftHanded()
@@ -46,33 +50,28 @@ namespace ValheimVRMod.Scripts
             return twoHandedStateSync.GetTwoHandedState();
         }
 
-        protected override Vector3 GetWeaponPointingDir()
-        {
-            if (!isDominantHandWeapon)
-            {
-                // This check is for crossbow.
-                // TODO: figure out a better way to detect crossbow and adjust weapon up direction and dist accordingly.
-                return transform.forward;
-            }
-            return base.GetWeaponPointingDir();
-        }
-
-        protected override Vector3 GetPreferredTwoHandedWeaponUp()
-        {
-            if (!isDominantHandWeapon)
-            {
-                // This check is for crossbow.
-                // TODO: figure out a better way to detect crossbow and adjust weapon up direction and dist accordingly.
-                return rearHandTransform.up;
-            }
-            return base.GetPreferredTwoHandedWeaponUp();
-        }
-
         protected override void OnRenderObject()
         {
-            if (twoHandedStateSync.IsVrEnabled())
+            if (!twoHandedStateSync.IsVrEnabled())
             {
-                base.OnRenderObject();
+                return;
+            }
+
+            if (!recalculatedDirectionOffset && twoHandedStateSync.HoldingInversedSpear())
+            {
+                // The offset might have been calculated not knowing the weapon is a spear so it can be stale and needs to be recalculated
+                offsetFromPointingDir =
+                    Quaternion.Inverse(Quaternion.LookRotation(GetWeaponPointingDirection(), transform.up)) *
+                    transform.rotation;
+                recalculatedDirectionOffset = true;
+            }
+            base.OnRenderObject();
+
+            if (twoHandedState == TwoHandedState.SingleHanded)
+            {
+                transform.SetPositionAndRotation(
+                    geometryProvider.GetDesiredSingleHandedPosition(this),
+                    geometryProvider.GetDesiredSingleHandedRotation(this));
             }
         }
     }

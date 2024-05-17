@@ -148,6 +148,9 @@
                "inputs" : {
                   "click" : {
                      "output" : "/actions/valheim/in/togglemenu"
+                  },
+                  "touch" : {
+                     "output" : "/actions/valheim/in/stopgesturedlocomotion"
                   }
                },
                "mode" : "button",
@@ -161,6 +164,9 @@
                "inputs" : {
                   "click" : {
                      "output" : "/actions/valheim/in/toggleinventory"
+                  },
+                  "touch" : {
+                     "output" : "/actions/valheim/in/stopgesturedlocomotion"
                   }
                },
                "mode" : "button",
@@ -174,6 +180,9 @@
                "inputs" : {
                   "position" : {
                      "output" : "/actions/valheim/in/pitchandyaw"
+                  },
+                  "touch" : {
+                     "output" : "/actions/valheim/in/stopgesturedlocomotion"
                   }
                },
                "mode" : "joystick",
@@ -183,6 +192,9 @@
                "inputs" : {
                   "click" : {
                      "output" : "/actions/valheim/in/quickswitch"
+                  },
+                  "touch" : {
+                     "output" : "/actions/valheim/in/stopgesturedlocomotion"
                   }
                },
                "mode" : "button",
@@ -192,6 +204,9 @@
                "inputs" : {
                   "click" : {
                      "output" : "/actions/valheim/in/jump"
+                  },
+                  "touch" : {
+                     "output" : "/actions/valheim/in/stopgesturedlocomotion"
                   }
                },
                "mode" : "button",
@@ -239,6 +254,9 @@
                "inputs" : {
                   "position" : {
                      "output" : "/actions/valheim/in/walk"
+                  },
+                  "touch" : {
+                     "output" : "/actions/valheim/in/stopgesturedlocomotion"
                   }
                },
                "mode" : "joystick",
@@ -248,6 +266,9 @@
                "inputs" : {
                   "click" : {
                      "output" : "/actions/valheim/in/quickactions"
+                  },
+                  "touch" : {
+                     "output" : "/actions/valheim/in/stopgesturedlocomotion"
                   }
                },
                "mode" : "button",
@@ -266,6 +287,9 @@
                "inputs" : {
                   "click" : {
                      "output" : "/actions/valheim/in/togglemap"
+                  },
+                  "touch" : {
+                     "output" : "/actions/valheim/in/stopgesturedlocomotion"
                   }
                },
                "mode" : "button",
@@ -279,6 +303,42 @@
                },
                "mode" : "scroll",
                "path" : "/user/hand/left/input/trackpad"
+            },
+            {
+               "inputs" : {
+                  "touch" : {
+                     "output" : "/actions/valheim/in/stopgesturedlocomotion"
+                  }
+               },
+               "mode" : "button",
+               "path" : "/user/hand/left/input/system"
+            },
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/valheim/in/stopgesturedlocomotion"
+                  }
+               },
+               "mode" : "button",
+               "path" : "/user/hand/left/input/trigger"
+            },
+            {
+               "inputs" : {
+                  "touch" : {
+                     "output" : "/actions/valheim/in/stopgesturedlocomotion"
+                  }
+               },
+               "mode" : "button",
+               "path" : "/user/hand/right/input/system"
+            },
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/valheim/in/stopgesturedlocomotion"
+                  }
+               },
+               "mode" : "button",
+               "path" : "/user/hand/right/input/trigger"
             }
          ]
       }

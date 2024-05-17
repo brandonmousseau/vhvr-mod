@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using Valve.VR.InteractionSystem;
 
 namespace ValheimVRMod.Utilities
 {
@@ -16,6 +17,7 @@ namespace ValheimVRMod.Utilities
         private List<Vector3> sparseSnapshots = new List<Vector3>(); // Sparsely snapshotted positions for estimating longest locomotion in a time span.
         private Vector3? cachedAverageVelocityInSnapshots = null;
         private LineRenderer debugVelocityLine;
+        private Hand hand = null;
 
         private int sparseSnapshotTicker = 0;
 
@@ -42,6 +44,11 @@ namespace ValheimVRMod.Utilities
         }
 
         public bool renderDebugVelocityLine = false;
+
+        public void UseVrHandControllerPhysics(Hand hand)
+        {
+            this.hand = hand;
+        }
 
         private void Awake()
         {
@@ -93,26 +100,47 @@ namespace ValheimVRMod.Utilities
             Destroy(debugVelocityLine.gameObject);
         }
 
-        public Vector3 GetVelocity()
+        public Vector3 GetVelocity(Vector3? position = null)
         {
-            // TODO: migrate the calculation of swinging, stabbbing, throwing, and parrying to use this class.
+            if (hand)
+            {
+                if (position == null)
+                {
+                    return hand.GetTrackedObjectVelocity();
+                }
+                return hand.GetTrackedObjectVelocity() + Vector3.Cross(hand.GetTrackedObjectAngularVelocity(), (Vector3)position - transform.position);
+            }
+          
             if (velocitySnapshots.Count == 0)
             {
                 return Vector3.zero;
             }
-            return refTransform == null ? velocitySnapshots[0] : refTransform.TransformVector(velocitySnapshots[0]);
+
+            Vector3 v = velocitySnapshots[velocitySnapshots.Count - 1];
+            if (position != null && rotationSnapshots.Count > 1)
+            {
+                Vector3 localPosition = transform.InverseTransformPoint((Vector3) position);
+                Vector3 shiftDueToRotation = rotationSnapshots[rotationSnapshots.Count - 1] * localPosition - rotationSnapshots[0] * localPosition;
+                v += shiftDueToRotation / Time.fixedDeltaTime / (rotationSnapshots.Count - 1);
+            }
+            return refTransform == null ? v : refTransform.TransformVector(v);
         }
 
-        public Quaternion GetAngularVelocity()
+        public Vector3 GetAngularVelocity()
         {
+            if (hand)
+            {
+                return hand.GetTrackedObjectAngularVelocity();
+            }
             if (rotationSnapshots.Count <= 1)
             {
-                return Quaternion.identity;
+                return Vector3.zero;
             }
             Quaternion deltaRotation = Quaternion.Inverse(rotationSnapshots[0]) * rotationSnapshots[rotationSnapshots.Count - 1];
             float deltaT = (rotationSnapshots.Count - 1) * Time.fixedDeltaTime;
-            Quaternion w = Quaternion.SlerpUnclamped(Quaternion.identity, deltaRotation, 1 / deltaT);
-            return refTransform == null ? w : refTransform.rotation * w * Quaternion.Inverse(refTransform.rotation);
+            Quaternion.SlerpUnclamped(Quaternion.identity, deltaRotation, 1 / deltaT).ToAngleAxis(out float angle, out Vector3 axis);
+            var angularVelocity = angle * axis * Mathf.PI / 180;
+            return refTransform == null ? angularVelocity : refTransform.TransformVector(angularVelocity);
         }
             
         public Vector3 GetAcceleration() {
@@ -125,18 +153,8 @@ namespace ValheimVRMod.Utilities
 
         public Vector3 GetVelocityOfPoint(Vector3 pos)
         {
-            if (velocitySnapshots.Count == 0)
-            {
-                return Vector3.zero;
-            }
-            Vector3 v = velocitySnapshots[0];
-            if (rotationSnapshots.Count > 1)
-            {
-                Vector3 localPos = transform.InverseTransformPoint(pos);
-                Vector3 shiftDueToRotation = rotationSnapshots[rotationSnapshots.Count - 1] * localPos - rotationSnapshots[0] * localPos;
-                v += shiftDueToRotation / Time.fixedDeltaTime / (rotationSnapshots.Count - 1);
-            }
-            return refTransform == null ? v : refTransform.TransformVector(v);
+            // TODO: remove GetVelocityOfPoint()
+            return GetVelocity(pos);
         }
 
         public Vector3 GetAverageVelocityInSnapshots()

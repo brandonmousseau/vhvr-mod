@@ -11,7 +11,10 @@ namespace ValheimVRMod.Scripts {
     // TODO: implement this class as a component added to the weapon object and reduce static instance and singletion usage.
     class MagicWeaponManager {
 
-        private static readonly HashSet<string> SWING_LAUNCH_MAGIC_STAFF_NAMES = new HashSet<string>(new string[] { "$item_stafffireball" });
+        private static readonly HashSet<string> SWING_LAUNCH_MAGIC_STAFF_NAMES =
+            new HashSet<string>(new string[] {
+                "$item_stafffireball", "$item_staffgreenroots", "$item_staffclusterbomb", "$item_staffredtroll" });
+
         private static bool IsMagicWeaponEquipped { get { return EquipScript.getLeft() == EquipType.Magic || EquipScript.getRight() == EquipType.Magic;  } }
         // Right-handed weapons in vanilla game is treated as domininant hand weapon in VHVR.
         private static bool IsDominantHandWeapon { get { return EquipScript.getRight() == EquipType.Magic; } }       
@@ -49,10 +52,23 @@ namespace ValheimVRMod.Scripts {
 
         public static Vector3 GetProjectileSpawnPoint(Attack attack) 
         {
-            return WeaponHandPointer.rayStartingPosition + LocalWeaponWield.weaponForward * (new Vector3(attack.m_attackOffset, attack.m_attackRange, attack.m_attackHeight)).magnitude * 0.6f;
+            var offsetDirection = LocalWeaponWield.weaponForward;
+            var offsetAmount =
+                (new Vector3(attack.m_attackOffset, attack.m_attackRange, attack.m_attackHeight)).magnitude;
+            if (attack.m_attackAnimation.Contains("summon"))
+            {
+                // Summon distance should not depend on the tilt of pointing direction.
+                offsetDirection.y = 0;
+                offsetDirection = offsetDirection.normalized;
+            }
+            else
+            {
+                offsetAmount *= 0.6f;
+            }
+            return WeaponHandPointer.rayStartingPosition + offsetDirection * offsetAmount;
         }
 
-        private static bool UseSwingForCurrentAttack()
+        public static bool UseSwingForCurrentAttack()
         {
             // Disable swing launch if the staff is held with two hands like a rifle
             // (dominant hand behind the other hand).
@@ -60,4 +76,3 @@ namespace ValheimVRMod.Scripts {
         }
     }
  }
-    

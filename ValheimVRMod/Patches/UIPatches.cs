@@ -1,4 +1,3 @@
-using ValheimVRMod.VRCore.UI;
 using HarmonyLib;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -7,13 +6,15 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Reflection.Emit;
 using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
+using UnityEngine.UI;
+using Valheim.SettingsGui;
+using ValheimVRMod.VRCore.UI;
 using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
 
 using static ValheimVRMod.Utilities.LogUtils;
-using System.Runtime.CompilerServices;
-using System.Text.RegularExpressions;
-using UnityEngine.UI;
 
 namespace ValheimVRMod.Patches
 {
@@ -422,7 +423,7 @@ namespace ValheimVRMod.Patches
             private static MethodInfo enemyHudRemoveMethod =
                 AccessTools.Method(AccessTools.Field(typeof(EnemyHud), nameof(EnemyHud.m_huds)).FieldType, "Remove", new Type[] { typeof(Character) });
             private static MethodInfo worldToScreenPointMethod =
-                AccessTools.Method(typeof(Camera), nameof(Camera.WorldToScreenPoint), new Type[] { typeof(Vector3) });
+                AccessTools.Method(typeof(Utils), nameof(Utils.WorldToScreenPointScaled), new Type[] { typeof(Camera), typeof(Vector3) });
 
             private static bool patchedSetActiveTrue = false;
             private static bool patchedSetActiveFalse = false;
@@ -770,7 +771,7 @@ namespace ValheimVRMod.Patches
             if (VHVRConfig.NonVrPlayer()) {
                 return;
             }
-            ConfigSettings.instantiate(__instance.m_mainMenu.transform.Find("MenuList"), __instance.m_mainMenu.transform, __instance.m_settingsPrefab);
+            ConfigSettings.instantiate(__instance.m_mainMenu.transform.Find("MenuList"), __instance.m_mainMenu.transform, __instance.m_settingsPrefab, enableTransformButtons: false);
         }
     }
     
@@ -780,13 +781,14 @@ namespace ValheimVRMod.Patches
             if (VHVRConfig.NonVrPlayer()) {
                 return;
             }
-            ConfigSettings.instantiate(__instance.m_menuDialog, __instance.transform, __instance.m_settingsPrefab);
+            ConfigSettings.instantiate(__instance.m_menuDialog, __instance.transform, __instance.m_settingsPrefab, enableTransformButtons: true);
         }
     }    
     
-    [HarmonyPatch(typeof(Settings), "UpdateBindings")]
+    [HarmonyPatch(typeof(KeyboardMouseSettings), "UpdateBindings")]
     class PatchEndBindKey {
-        public static void Postfix() {
+        public static void Postfix(KeyboardMouseSettings __instance) {
+            ConfigSettings.keyboardMouseSettings = __instance;
             if (VHVRConfig.NonVrPlayer()) {
                 return;
             }
@@ -979,6 +981,24 @@ namespace ValheimVRMod.Patches
             }
             mousePos = SoftwareCursor.ScaledMouseVector();
             return;
+        }
+    }
+
+    [HarmonyPatch(typeof(Minimap), "GetMaskColor")]
+    class MinimapMaskColorPatch
+    {
+        static void Postfix(Minimap __instance, Heightmap.Biome biome, ref Color __result)
+        {
+            if (VHVRConfig.NonVrPlayer())
+            {
+                return;
+            }
+            if (biome == Heightmap.Biome.Mistlands)
+            {
+                // For some reason, bright mask colors makes Mistland completely transparent and hard to see on the large map in VR,
+                // so we need to dim it to prevent that from happening.
+                __result /= 2f;
+            }
         }
     }
 

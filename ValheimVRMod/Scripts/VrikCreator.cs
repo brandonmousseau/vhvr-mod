@@ -145,6 +145,10 @@ namespace ValheimVRMod.Scripts {
             return VHVRConfig.LeftHanded() ? VrikCreator.localPlayerLeftHandConnector : VrikCreator.localPlayerRightHandConnector;
         }
 
+        public static Transform GetLocalPlayerNonDominantHandConnector()
+        {
+            return VHVRConfig.LeftHanded() ? VrikCreator.localPlayerRightHandConnector : VrikCreator.localPlayerLeftHandConnector;
+        }
         public static void ResetHandConnectors()
         {
             localPlayerLeftHandConnector.localPosition = Vector3.zero;

@@ -1,10 +1,12 @@
+using System;
 using UnityEngine;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using Valve.VR;
 
-namespace ValheimVRMod.Scripts {
-    
+namespace ValheimVRMod.Scripts
+{
+
     // Manages the manual operation and the shape change of the cross bow during pulling.
     class CrossbowMorphManager : MonoBehaviour
     {
@@ -27,17 +29,22 @@ namespace ValheimVRMod.Scripts {
         private ItemDrop.ItemData weapon;
         private GameObject bolt;
         private GameObject boltAttach;
-        
+        private bool useBowBendingShader;
+
         public bool isBoltLoaded = false;
 
         // Note: we make draw length proportional to the square root of reload progress.
         private float vanillaDrawPercentageRestriction; // Draw percentage restriction due to the vanilla reload animation progress.
         private float realLifeDrawPercentage;
-        private float drawPercentage {
-            get {
+        private float drawPercentage
+        {
+            get
+            {
                 return shouldAutoReload ? vanillaDrawPercentageRestriction : Mathf.Min(vanillaDrawPercentageRestriction, realLifeDrawPercentage);
             }
         }
+
+        private MeshRenderer hideableGlowMeshRenderer;
 
         public bool isPulling { get; private set; }
         public bool shouldAutoReload { get { return anatomy == null || !VHVRConfig.CrossbowManualReload(); } } // If crossbow anatomy data is not available, fallback to the vanilla auto-reload logic.
@@ -51,7 +58,8 @@ namespace ValheimVRMod.Scripts {
             weapon = Player.m_localPlayer.GetLeftItem();
         }
 
-        public void UpdateWeaponLoading(Player player, float dt) {
+        public void UpdateWeaponLoading(Player player, float dt)
+        {
             if (player != Player.m_localPlayer || anatomy == null)
             {
                 return;
@@ -70,12 +78,23 @@ namespace ValheimVRMod.Scripts {
             anatomy = CrossbowAnatomy.getAnatomy(Player.m_localPlayer.GetLeftItem().m_shared.m_name);
             if (anatomy == null)
             {
+                isBoltLoaded = true;
                 return;
             }
             MeshRenderer meshRenderer = gameObject.GetComponent<MeshRenderer>();
-            meshRenderer.material = GetBowBendingMaterial(meshRenderer.material);
+            try
+            {
+                meshRenderer.material = GetBowBendingMaterial(meshRenderer.material);
+                useBowBendingShader = true;
+            }
+            catch (Exception e)
+            {
+                LogUtils.LogError("Bow bending material not found!");
+                useBowBendingShader = false;
+            }
             createBones();
             createNewString();
+            hideableGlowMeshRenderer = WeaponUtils.GetHideableBowGlowMeshRenderer(transform, Player.m_localPlayer.GetLeftItem().m_shared.m_name);
             initialized = true;
         }
 
@@ -103,11 +122,17 @@ namespace ValheimVRMod.Scripts {
             }
 
             MorphBow();
+            updateStringRenderer();
 
-            if (isPulling)
+            if (isPulling || shouldAutoReload)
             {
                 // We use string position to calcualte bolt position so it can only be updated after updating the string.
                 attachBoltToCrossbow();
+            }
+
+            if (hideableGlowMeshRenderer)
+            {
+                hideableGlowMeshRenderer.enabled = !isPulling;
             }
         }
 
@@ -125,7 +150,8 @@ namespace ValheimVRMod.Scripts {
             }
         }
 
-        void OnDestroy() {
+        void OnDestroy()
+        {
             if (!initialized)
             {
                 return;
@@ -178,7 +204,8 @@ namespace ValheimVRMod.Scripts {
             rightLimbBone.rotation = Quaternion.identity;
         }
 
-        private void createNewString() {
+        private void createNewString()
+        {
             stringLeft = new GameObject().transform;
             stringLeft.parent = transform;
             stringLeft.localPosition = anatomy.restingStringLeft;
@@ -198,6 +225,7 @@ namespace ValheimVRMod.Scripts {
             stringRenderer.useWorldSpace = true;
             stringRenderer.widthMultiplier = 0.006f;
             stringRenderer.positionCount = 3;
+            stringRenderer.material = Instantiate(VRAssetManager.GetAsset<Material>("StandardClone"));
             stringRenderer.material.color = new Color(0.4f, 0.33f, 0.31f);
             stringRenderer.material.SetFloat("_Glossiness", 0);
             stringRenderer.material.SetFloat("_Smoothness", 0);
@@ -207,18 +235,16 @@ namespace ValheimVRMod.Scripts {
 
         public bool IsHandClosePullStart()
         {
-            return !CrossbowManager.isCurrentlyTwoHanded() && Vector3.Distance(mainHand.position, pullStart.position) <= MaxNockingDistance;
+            return !CrossbowManager.isCurrentlyTwoHanded() && anatomy != null && Vector3.Distance(mainHand.position, pullStart.position) <= MaxNockingDistance;
         }
 
         private void UpdatePullStatus()
         {
             if (shouldAutoReload)
             {
-                attachBoltToCrossbow();
-
                 if (bolt == null)
                 {
-                    isBoltLoaded = createBolt();   
+                    isBoltLoaded = createBolt();
                 }
                 return;
             }
@@ -235,7 +261,7 @@ namespace ValheimVRMod.Scripts {
                     Player.m_localPlayer.QueueReloadAction();
                 }
                 VrikCreator.GetLocalPlayerDominantHandConnector().position = stringRenderer.GetPosition(1);
-                
+
                 isBoltLoaded = bolt != null;
 
             }
@@ -258,9 +284,14 @@ namespace ValheimVRMod.Scripts {
             stringRenderer.SetPosition(1, transform.TransformPoint(Vector3.Lerp(anatomy.restingNockingPoint, anatomy.anchorPoint, drawPercentage)));
             stringRenderer.SetPosition(2, stringRight.position);
         }
-         
-         private void MorphBow()
-         {
+
+        private void MorphBow()
+        {
+            if (!useBowBendingShader)
+            {
+                return;
+            }
+
             // Just a heuristic and simplified approximation for the bend angle.
             float bendAngleDegrees = Mathf.Asin(drawPercentage * Mathf.Sin(anatomy.maxBendAngleRadians)) * 180 / Mathf.PI;
 
@@ -280,18 +311,16 @@ namespace ValheimVRMod.Scripts {
             rightLimbBone.localRotation = Quaternion.Euler(0, 0, -bendAngleDegrees);
             Quaternion leftLimbRotation = Quaternion.AngleAxis(bendAngleDegrees, Vector3.forward);
             Quaternion rightLimbRotation = Quaternion.AngleAxis(-bendAngleDegrees, Vector3.forward);
-            Matrix4x4 leftLimbTransform = Matrix4x4.TRS(anatomy.hardLimbLeft - leftLimbRotation * anatomy.hardLimbLeft, leftLimbRotation, Vector3.one);            
+            Matrix4x4 leftLimbTransform = Matrix4x4.TRS(anatomy.hardLimbLeft - leftLimbRotation * anatomy.hardLimbLeft, leftLimbRotation, Vector3.one);
             Matrix4x4 rightLimbTransform = Matrix4x4.TRS(anatomy.hardLimbRight - rightLimbRotation * anatomy.hardLimbRight, rightLimbRotation, Vector3.one);
             gameObject.GetComponent<MeshRenderer>().material.SetMatrix("_UpperLimbTransform", rightLimbTransform);
             gameObject.GetComponent<MeshRenderer>().material.SetMatrix("_LowerLimbTransform", leftLimbTransform);
-
-            updateStringRenderer();
         }
 
         private Material GetBowBendingMaterial(Material vanillaMaterial)
         {
             // TODO: Consider share this method with BowManager.
-            Material bowBendingMaterial = Instantiate(VRAssetManager.GetAsset<Material>("BowBendingMaterial")); ;
+            Material bowBendingMaterial = Instantiate(VRAssetManager.GetAsset<Material>("BowBendingMaterial"));
             bowBendingMaterial.color = vanillaMaterial.color;
             bowBendingMaterial.mainTexture = vanillaMaterial.mainTexture;
             bowBendingMaterial.SetTexture("_BumpMap", vanillaMaterial.GetTexture("_BumpMap"));
@@ -304,31 +333,35 @@ namespace ValheimVRMod.Scripts {
             bowBendingMaterial.SetVector("_HandleVector", Vector3.right);
             bowBendingMaterial.SetFloat("_HandleTopHeight", anatomy.hardLimbRight.x);
             bowBendingMaterial.SetFloat("_HandleBottomHeight", anatomy.hardLimbLeft.x);
-            bowBendingMaterial.SetFloat("_SoftLimbHeight", 0.01f);
+            bowBendingMaterial.SetFloat("_SoftLimbHeight", anatomy.softLimbHeight);
 
             bowBendingMaterial.SetVector("_StringTop", new Vector4(anatomy.restingStringRight.x, anatomy.restingStringRight.y, anatomy.restingStringRight.z, 1));
             bowBendingMaterial.SetVector("_StringTopToBottomDirection", new Vector4(-1, 0, 0, 0));
             bowBendingMaterial.SetFloat("_StringLength", Vector3.Distance(anatomy.restingStringLeft, anatomy.restingStringRight));
-            bowBendingMaterial.SetFloat("_StringRadius", 0.005f);
+            bowBendingMaterial.SetFloat("_StringRadius", anatomy.stringRadius);
 
             return bowBendingMaterial;
         }
-        
-        public void destroyBolt() {
-            if (bolt != null) {
+
+        public void destroyBolt()
+        {
+            if (bolt != null)
+            {
                 bolt.GetComponent<ZNetView>().Destroy();
             }
             isBoltLoaded = false;
         }
-        
-         public void toggleBolt() {
 
-             if (isBoltLoaded || shouldAutoReload)
-             {
-                 return;
-             }
-             
-            if (bolt != null) {
+        public void toggleBolt()
+        {
+
+            if (isBoltLoaded || shouldAutoReload)
+            {
+                return;
+            }
+
+            if (bolt != null)
+            {
                 destroyBolt();
                 //bHaptics
                 if (!BhapticsTactsuit.suitDisabled)
@@ -338,7 +371,7 @@ namespace ValheimVRMod.Scripts {
                 }
                 return;
             }
-            
+
             boltAttach.transform.SetParent(mainHand);
             boltAttach.transform.localRotation = Quaternion.identity;
             boltAttach.transform.localPosition = Vector3.zero;
@@ -347,17 +380,17 @@ namespace ValheimVRMod.Scripts {
             {
                 return;
             }
-            
+
             //bHaptics
             if (!BhapticsTactsuit.suitDisabled)
             {
                 BhapticsTactsuit.PlaybackHaptics(VHVRConfig.LeftHanded() ?
                     "UnholsterArrowLeftShoulder" : "UnholsterArrowRightShoulder");
             }
-         }
-         
-         private bool createBolt()
-         {
+        }
+
+        private bool createBolt()
+        {
             ItemDrop.ItemData ammoItem = EquipScript.equipAmmo();
             if (ammoItem == null)
             {
@@ -366,58 +399,64 @@ namespace ValheimVRMod.Scripts {
             }
 
             bolt = Instantiate(ammoItem.m_shared.m_attack.m_attackProjectile, boltAttach.transform);
-             // we need to disable the Projectile Component, else the arrow will shoot out of the hands like a New Year rocket
-             bolt.GetComponent<Projectile>().enabled = false;
-             // also Destroy the Trail, as this produces particles when moving with arrow in hand
-             Destroy(findTrail(bolt.transform));
-             Destroy(bolt.GetComponentInChildren<Collider>());
-             bolt.transform.localRotation = Quaternion.identity;
-             bolt.transform.localPosition = new Vector3(0, 0, anatomy.boltCenterToTailDistance);
-             foreach (ParticleSystem particleSystem in bolt.GetComponentsInChildren<ParticleSystem>()) {
-                 particleSystem.transform.localScale *= VHVRConfig.ArrowParticleSize();
-             }
-             boltAttach.transform.localRotation = Quaternion.identity;
-             boltAttach.transform.localPosition = Vector3.zero;
-             return true;
-         }
+            // we need to disable the Projectile Component, else the arrow will shoot out of the hands like a New Year rocket
+            bolt.GetComponent<Projectile>().enabled = false;
+            // also Destroy the Trail, as this produces particles when moving with arrow in hand
+            Destroy(findTrail(bolt.transform));
+            Destroy(bolt.GetComponentInChildren<Collider>());
+            bolt.transform.localRotation = Quaternion.identity;
+            bolt.transform.localPosition = new Vector3(0, 0, anatomy.boltCenterToTailDistance);
+            foreach (ParticleSystem particleSystem in bolt.GetComponentsInChildren<ParticleSystem>())
+            {
+                particleSystem.transform.localScale *= VHVRConfig.ArrowParticleSize();
+            }
+            boltAttach.transform.localRotation = Quaternion.identity;
+            boltAttach.transform.localPosition = Vector3.zero;
 
-         private GameObject findTrail(Transform transform) {
+            return true;
+        }
 
-             foreach (ParticleSystem p in transform.GetComponentsInChildren<ParticleSystem>()) {
-                 var go = p.gameObject;
-                 if (go.name == "trail") {
-                     return go;
-                 }
-             }
+        private GameObject findTrail(Transform transform)
+        {
 
-             return null;
-         }
-         
-         public bool isHoldingBolt() {
-             return bolt != null && !isBoltLoaded;
-         }
-         
-         public void loadBoltIfBoltinHandIsNearAnchor()
-         {
-             var anchorpoint = new Vector3(0, 0.082f, -0.29f);
+            foreach (ParticleSystem p in transform.GetComponentsInChildren<ParticleSystem>())
+            {
+                var go = p.gameObject;
+                if (go.name == "trail")
+                {
+                    return go;
+                }
+            }
 
-             if (
-                 !CrossbowManager.isCurrentlyTwoHanded() &&
-                 isHoldingBolt() &&
-                 Player.m_localPlayer.IsWeaponLoaded() &&
-                 Vector3.Distance(mainHand.transform.position, transform.TransformPoint(anatomy.anchorPoint)) <= 0.2f)
-             {
-                 boltAttach.transform.SetParent(transform.parent, false);
-                 instance.boltAttach.transform.localPosition = anchorpoint;
-                 instance.isBoltLoaded = true;
-             }
-         }
-         
-         private void attachBoltToCrossbow()
-         {
-             boltAttach.transform.SetParent(transform.parent);
-             boltAttach.transform.position = stringRenderer.GetPosition(1);
-             boltAttach.transform.localRotation = Quaternion.identity;
-         }
+            return null;
+        }
+
+        public bool isHoldingBolt()
+        {
+            return bolt != null && !isBoltLoaded;
+        }
+
+        public void loadBoltIfBoltInHandIsNearAnchor()
+        {
+            var anchorpoint = new Vector3(0, 0.082f, -0.29f);
+
+            if (
+                !CrossbowManager.isCurrentlyTwoHanded() &&
+                isHoldingBolt() &&
+                Player.m_localPlayer.IsWeaponLoaded() &&
+                Vector3.Distance(mainHand.transform.position, transform.TransformPoint(anatomy.anchorPoint)) <= 0.2f)
+            {
+                boltAttach.transform.SetParent(transform.parent, false);
+                instance.boltAttach.transform.localPosition = anchorpoint;
+                instance.isBoltLoaded = true;
+            }
+        }
+
+        private void attachBoltToCrossbow()
+        {
+            boltAttach.transform.SetParent(transform.parent);
+            boltAttach.transform.position = stringRenderer.GetPosition(1);
+            boltAttach.transform.localRotation = Quaternion.identity;
+        }
     }
 }

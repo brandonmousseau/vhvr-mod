@@ -1,4 +1,4 @@
-﻿using BepInEx;
+using BepInEx;
 using UnityEngine;
 using ValheimVRMod.VRCore;
 using ValheimVRMod.VRCore.UI;
@@ -10,12 +10,13 @@ using static ValheimVRMod.Utilities.LogUtils;
 
 namespace ValheimVRMod
 {
-    [BepInPlugin("org.bepinex.plugins.valheimvrmod", "ValheimVR Mod", "0.9.10")]
+    [BepInPlugin("org.bepinex.plugins.valheimvrmod", "ValheimVR Mod", "0.9.16")]
     public class ValheimVRMod : BaseUnityPlugin
     {
 
         public static System.Version PLUGIN_VERSION { get { return _version; } }
         private static System.Version _version = null;
+        public static bool failedToInitializeVR { get; private set; } = false;
 
         private GameObject vrPlayer;
         private GameObject vrGui;
@@ -24,6 +25,7 @@ namespace ValheimVRMod
         void Awake() {
             _version = Info.Metadata.Version;
             VHVRConfig.InitializeConfiguration(Config);
+            LogInfo("Pre-release VHVR");
             if (!VHVRConfig.ModEnabled())
             {
                 LogInfo("ValheimVRMod is disabled via configuration.");
@@ -62,37 +64,47 @@ namespace ValheimVRMod
 
         void StartValheimVR()
         {
+            bool vrInitialized = false;
+            if (!VHVRConfig.NonVrPlayer())
+            {
+                vrInitialized = VRManager.InitializeVR();
+                if (!vrInitialized)
+                {
+                    LogError("Could not initialize VR.");
+                    failedToInitializeVR = true;
+                }
+            }
+
             HarmonyPatcher.DoPatching();
-            
-            if (VHVRConfig.NonVrPlayer()) {
+
+            if (!VRAssetManager.Initialize())
+            {
+                LogError("Problem initializing VR Assets");
+                vrInitialized = false;
+            }
+
+            if (!vrInitialized)
+            {
                 LogDebug("Non VR Mode Patching Complete.");
                 return;
             }
-            
-            if (VRManager.InitializeVR())
+
+            VRManager.StartVR();
+            vrPlayer = new GameObject("VRPlayer");
+            DontDestroyOnLoad(vrPlayer);
+            vrPlayer.AddComponent<VRPlayer>();
+            vrGui = new GameObject("VRGui");
+            DontDestroyOnLoad(vrGui);
+            vrGui.AddComponent<VRGUI>();
+            if (VHVRConfig.RecenterOnStart())
             {
-                VRManager.StartVR();
-                vrPlayer = new GameObject("VRPlayer");
-                DontDestroyOnLoad(vrPlayer);
-                vrPlayer.AddComponent<VRPlayer>();
-                vrGui = new GameObject("VRGui");
-                DontDestroyOnLoad(vrGui);
-                vrGui.AddComponent<VRGUI>();
-                if (VHVRConfig.RecenterOnStart())
-                {
-                    VRManager.tryRecenter();
-                }
-                if (VHVRConfig.BhapticsEnabled())
-                {
-                    BhapticsTactsuit = new GameObject("BhapticsTactsuit");
-                    DontDestroyOnLoad(BhapticsTactsuit);
-                    BhapticsTactsuit.AddComponent<BhapticsTactsuit>();
-                }
+                VRManager.tryRecenter();
             }
-            else
+            if (VHVRConfig.BhapticsEnabled())
             {
-                LogError("Could not initialize VR.");
-                enabled = false;
+                BhapticsTactsuit = new GameObject("BhapticsTactsuit");
+                DontDestroyOnLoad(BhapticsTactsuit);
+                BhapticsTactsuit.AddComponent<BhapticsTactsuit>();
             }
         }
 
@@ -106,5 +118,4 @@ namespace ValheimVRMod
         }
 #endif
     }
-
 }
