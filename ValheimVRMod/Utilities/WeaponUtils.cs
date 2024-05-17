@@ -632,7 +632,7 @@ namespace ValheimVRMod.Utilities
 
         public static Vector3 GetWeaponVelocity(Vector3 handVelocity, Vector3 handAngularVelocity, Vector3 weaponOffset)
         {
-            return handVelocity + Vector3.Cross(handAngularVelocity, weaponOffset);
+            return handVelocity + Vector3.Cross(weaponOffset, handAngularVelocity);
         }
     }
 }
