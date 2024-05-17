@@ -320,7 +320,7 @@ namespace ValheimVRMod.Scripts
         private Material GetBowBendingMaterial(Material vanillaMaterial)
         {
             // TODO: Consider share this method with BowManager.
-            Material bowBendingMaterial = Instantiate(VRAssetManager.GetAsset<Material>("BowBendingMaterial")); ;
+            Material bowBendingMaterial = Instantiate(VRAssetManager.GetAsset<Material>("BowBendingMaterial"));
             bowBendingMaterial.color = vanillaMaterial.color;
             bowBendingMaterial.mainTexture = vanillaMaterial.mainTexture;
             bowBendingMaterial.SetTexture("_BumpMap", vanillaMaterial.GetTexture("_BumpMap"));
