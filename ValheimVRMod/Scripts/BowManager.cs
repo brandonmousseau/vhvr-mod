@@ -300,9 +300,18 @@ namespace ValheimVRMod.Scripts {
             MeshRenderer originalMeshRenderer = gameObject.GetComponent<MeshRenderer>();
             Material vanillaMaterial = originalMeshRenderer.material;
             if (useCustomShader) {
-                // Use custom shader to animate bow bending.
-                originalMeshRenderer.material = GetBowBendingMaterial(vanillaMaterial);
-            } else if (canAccessMesh) {
+                try
+                {
+                    // Use custom shader to animate bow bending.
+                    originalMeshRenderer.material = GetBowBendingMaterial(vanillaMaterial);
+                }
+                catch (Exception e)
+                {
+                    LogUtils.LogError("Bow bending material not found!");
+                    useCustomShader = false;
+                }
+            }
+            if (!useCustomShader && canAccessMesh) {
                 // Use skinned mesh to animate bow bending.
                 SkinnedMeshRenderer skinnedMeshRenderer = gameObject.AddComponent<SkinnedMeshRenderer>();
                 Mesh mesh = gameObject.GetComponent<MeshFilter>().mesh;
