@@ -10,10 +10,9 @@ using Valve.VR.InteractionSystem;
 namespace ValheimVRMod.Scripts {
     public class BowLocalManager : BowManager {
         private const float attachRange = 0.2f;
-        private const float legacyArrowCenterToTailDistance = 1.25f;
-        private const float shortArrowCenterToTailDistance = 0.78f;
-
+        private const float centerToTailDistance = 0.5f;
         private GameObject arrow;
+        private float gravity;
         private GameObject pausedCosmeticArrow; // An arrow shown on the bow when player movment is paused even after the actual arrow is shot for cosmetic purposes.
         private GameObject chargeIndicator;
         private GameObject drawIndicator;
@@ -25,7 +24,6 @@ namespace ValheimVRMod.Scripts {
         private Attack attack;
         private float attackDrawPercentage;
         private float currentMaxDrawPercentage;
-        private float centerToTailDistance = legacyArrowCenterToTailDistance;
 
         public static BowLocalManager instance;
         public static Vector3 spawnPoint;
@@ -248,7 +246,7 @@ namespace ValheimVRMod.Scripts {
 
             for (int i = 0; i < stepSize; i++) {
                 pointList.Add(pos);
-                vel += Vector3.down * arrow.GetComponent<Projectile>().m_gravity * stepLength;
+                vel += Vector3.down * gravity * stepLength;
                 pos += vel * stepLength;
             }
 
@@ -392,22 +390,37 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            switch (ammoItem.m_shared.m_name)
-            {
-                case "$item_arrow_needle":
-                case "$item_arrow_carapace":
-                    centerToTailDistance = shortArrowCenterToTailDistance;
-                    break;
-                default:
-                    centerToTailDistance = legacyArrowCenterToTailDistance;
-                    break;
-            }
-
             try {
-                arrow = Instantiate(ammoItem.m_shared.m_attack.m_attackProjectile, arrowAttach.transform);
-            } catch {
+                gravity = ammoItem.m_shared.m_attack.m_attackProjectile.GetComponent<Projectile>().m_gravity;
+                arrow = Instantiate(ammoItem.m_dropPrefab, arrowAttach.transform);
+            }
+            catch {
                 return;
             }
+
+            switch (ammoItem.m_shared.m_name)
+            {
+                case "$item_arrow_charred":
+                case "$item_arrow_frost":
+                case "$item_arrow_needle":
+                case "$item_arrow_poison":
+                    break;
+                case "$item_arrow_carapace":
+                    var offset = VHVRConfig.ArrowRestHorizontalOffsetMultiplier();
+                    if (offset > 0)
+                    {
+                        arrow.GetComponentInChildren<MeshFilter>().transform.rotation *=  Quaternion.Euler(0, -45, 0);
+                    }
+                    else if (offset < 0)
+                    {
+                        arrow.GetComponentInChildren<MeshFilter>().transform.rotation *= Quaternion.Euler(0, 45, 0);
+                    }
+                    break;
+                default:
+                    arrow.GetComponentInChildren<MeshFilter>().transform.rotation *= Quaternion.Euler(180, 0, 0);
+                    break;
+            }
+            arrow.transform.localScale = Vector3.one * 1.3f;
 
             //bHaptics
             if (!BhapticsTactsuit.suitDisabled)
@@ -416,11 +429,10 @@ namespace ValheimVRMod.Scripts {
                     "UnholsterArrowLeftShoulder" : "UnholsterArrowRightShoulder");
             }
 
-            // we need to disable the Projectile Component, else the arrow will shoot out of the hands like a New Year rocket
-            arrow.GetComponent<Projectile>().enabled = false;
-            // also Destroy the Trail, as this produces particles when moving with arrow in hand
-            Destroy(findTrail(arrow.transform));
-            Destroy(arrow.GetComponentInChildren<Collider>());
+            if (findTrail(arrow.transform)) Destroy(findTrail(arrow.transform));
+            if (arrow.GetComponentInChildren<Collider>()) Destroy(arrow.GetComponentInChildren<Collider>());
+            Destroy(arrow.GetComponent<ItemDrop>());
+            Destroy(arrow.GetComponent<Rigidbody>());
             arrow.transform.localRotation = Quaternion.identity;
             arrow.transform.localPosition = new Vector3(0, 0, centerToTailDistance);
             foreach (ParticleSystem particleSystem in arrow.GetComponentsInChildren<ParticleSystem>()) {

@@ -1,12 +1,12 @@
 ManifestFileVersion: 0
-CRC: 2822903934
+CRC: 1247473552
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: c6dec5937206322ec5300264a12e0394
+    Hash: d81e8e342c182fffab81a25c9bee8ec3
   TypeTreeHash:
     serializedVersion: 2
-    Hash: 8995e20d9dbfedb457e8f8f0314db52f
+    Hash: 1f80238c1da7d2a84b77324c1132cf4f
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -33,10 +33,6 @@ ClassTypes:
   Script: {instanceID: 0}
 - Class: 81
   Script: {instanceID: 0}
-- Class: 82
-  Script: {instanceID: 0}
-- Class: 83
-  Script: {instanceID: 0}
 - Class: 84
   Script: {instanceID: 0}
 - Class: 90
@@ -45,8 +41,6 @@ ClassTypes:
   Script: {instanceID: 0}
 - Class: 95
   Script: {instanceID: 0}
-- Class: 114
-  Script: {fileID: 11500000, guid: dc42784cf147c0c48a680349fa168899, type: 3}
 - Class: 114
   Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
 - Class: 114
@@ -80,8 +74,6 @@ ClassTypes:
 - Class: 114
   Script: {fileID: 11500000, guid: c30a2316e98e1dc4b97e432a1301f85c, type: 3}
 - Class: 114
-  Script: {fileID: 11500000, guid: 7434e43635fb2924583f5e0f2fb6ed3a, type: 3}
-- Class: 114
   Script: {fileID: 11500000, guid: 8ca2cc563cc33f542a5d9f8f661184ba, type: 3}
 - Class: 114
   Script: {fileID: 11500000, guid: ea1001a6626353541ab4d4b39f4c3569, type: 3}
@@ -107,6 +99,8 @@ ClassTypes:
   Script: {fileID: 11500000, guid: 46fe9e0b23166454c8cb73040321d78c, type: 3}
 - Class: 114
   Script: {fileID: 11500000, guid: 6f3bba2c36dd79242b3157dbcd876bf2, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: dc42784cf147c0c48a680349fa168899, type: 3}
 - Class: 114
   Script: {fileID: 11500000, guid: e7418c7dd8f977d4e969202d3fa7e926, type: 3}
 - Class: 114
@@ -149,7 +143,6 @@ Assets:
 - Assets/SteamVR/InteractionSystem/Poses/longbowPose.asset
 - Assets/SteamVR/Models/vr_glove_graspPoses.controller
 - Assets/SteamVR/Models/Materials/Abyss.mat
-- Assets/SteamVR/Prefabs/vr_glove_right_model_slim.prefab
 - Assets/SteamVR/InteractionSystem/Poses/fallback_fist.asset
 - Assets/SteamVR/InteractionSystem/Core/Prefabs/RightRenderModel.prefab
 - Assets/SteamVR/InteractionSystem/Poses/CubePose small.asset
@@ -157,48 +150,34 @@ Assets:
 - Assets/SteamVR/InteractionSystem/Core/Materials/FallbackHandIndicator.mat
 - Assets/SteamVR/InteractionSystem/Core/Icons/vr_interaction_system_feet.png
 - Assets/SteamVR/InteractionSystem/Core/Prefabs/LeftRenderModel Alien.prefab
-- Assets/SteamVR/Prefabs/vr_hand_alien_left.prefab
 - Assets/SteamVR/Models/Materials/AlienHand.mat
 - Assets/SteamVR/InteractionSystem/Core/Icons/vr_interaction_system_right_hand.png
 - Assets/SteamVR/InteractionSystem/Core/Icons/vr_interaction_system_unknown_hand.png
 - Assets/SteamVR/InteractionSystem/Poses/SquishyBase.asset
 - Assets/SteamVR/InteractionSystem/Core/Materials/SteamVRControllerModel.mat
 - Assets/SteamVR/InteractionSystem/Core/Prefabs/RightRenderModelFloppy.prefab
-- Assets/SteamVR/Prefabs/vr_hand_alien_right.prefab
 - Assets/SteamVR/Models/Materials/knuckles_right.mat
-- Assets/SteamVR/Models/vr_hand_grabposes.fbx
 - Assets/SteamVR/Prefabs/[SteamVR].prefab
 - Assets/SteamVR/InteractionSystem/Poses/HappyBallPose.asset
-- Assets/SteamVR/Prefabs/vr_hand_floppy_right.prefab
 - Assets/SteamVR/Models/Materials/floppyHand Emit.png
-- Assets/SteamVR/Models/vr_floppyHand.fbx
 - Assets/SteamVR/Models/Materials/No Name.mat
 - Assets/SteamVR/InteractionSystem/Core/Prefabs/ValheimVRPlayer.prefab
 - Assets/SteamVR/InteractionSystem/Core/Icons/vr_interaction_system.png
 - Assets/SteamVR/Prefabs/[Status].prefab
-- Assets/SteamVR/Models/vr_glove_model.fbx
-- Assets/SteamVR/Prefabs/vr_glove_right.prefab
 - Assets/SteamVR/InteractionSystem/Poses/SquishySqueeze.asset
-- Assets/SteamVR/Prefabs/vr_glove_left.prefab
-- Assets/SteamVR/Models/Materials/vr_glove_color_red.mat
 - Assets/SteamVR/InteractionSystem/Poses/fallback_point.asset
 - Assets/SteamVR/Models/Materials/AlienHand_MetallicSmoothness.png
 - Assets/SteamVR/InteractionSystem/Poses/sphereSmallPose.asset
 - Assets/SteamVR/Models/handFingers.mask
-- Assets/SteamVR/Models/Materials/vr_glove_color.jpg
 - Assets/SteamVR/Models/Materials/AlienHand_Normal.png
-- Assets/SteamVR/Prefabs/vr_glove_left_model_slim.prefab
 - Assets/SteamVR/InteractionSystem/Poses/fallback_relaxed.asset
 - Assets/SteamVR/InteractionSystem/Core/Icons/vr_interaction_system_left_hand_question.png
-- Assets/SteamVR/Prefabs/vr_hand_floppy_left.prefab
 - Assets/SteamVR/Models/vr_glove_left_model_slim.fbx
 - Assets/SteamVR/Models/Materials/floppyHand.mat
 - Assets/SteamVR/InteractionSystem/Poses/GrenadePose.asset
-- Assets/SteamVR/Models/Materials/vr_glove_color.mat
 - Assets/SteamVR/InteractionSystem/Poses/spherePose.asset
 - Assets/SteamVR/Models/Materials/AlienHand_AlbedoTransparency.png
 - Assets/SteamVR/InteractionSystem/Poses/GrenadePose_pinch.asset
-- Assets/SteamVR/Models/Materials/vr_glove_color_red.jpg
 - Assets/SteamVR/InteractionSystem/Poses/CubePose.asset
 - Assets/SteamVR/Prefabs/controller.prefab
 - Assets/SteamVR/InteractionSystem/Poses/HappyBallPoseSqueezed.asset
@@ -218,5 +197,4 @@ Assets:
 - Assets/SteamVR/Models/Materials/models_hands_vr_glove.vmat.mat
 - Assets/SteamVR/InteractionSystem/Core/Prefabs/HandColliderRight.prefab
 - Assets/SteamVR/InteractionSystem/Core/Icons/vr_interaction_system_left_hand.png
-- Assets/SteamVR/Models/vr_alien_hand.fbx
 Dependencies: []

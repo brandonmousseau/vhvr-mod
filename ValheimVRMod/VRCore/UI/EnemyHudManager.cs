@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -233,6 +233,12 @@ namespace ValheimVRMod.VRCore.UI
                 character = c,
                 gui = Object.Instantiate(baseHud, canvas.transform)
             };
+
+            // Hide the vanilla HUD since now we have duplicate it in VR.
+            baseHud.transform.localScale = Vector3.zero;
+            // Make sure the HUD in VR is not hidden as a side effect of hiding a vanilla HUD from earlier. 
+            data.gui.transform.localScale = Vector3.one;
+
             updateGuiLayers(data.gui.transform);
             data.gui.SetActive(true);
             data.hudCanvasRoot = canvasRoot;
