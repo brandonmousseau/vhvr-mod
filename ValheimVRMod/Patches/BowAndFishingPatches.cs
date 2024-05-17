@@ -159,7 +159,7 @@ namespace ValheimVRMod.Patches {
                 case EquipType.SpearChitin:
                 case EquipType.ThrowObject:
                     spawnPoint = ThrowableManager.spawnPoint;
-                    aimDir = ThrowableManager.aimDir;
+                    aimDir = ThrowableManager.aimDir.normalized * ThrowableManager.throwSpeed;
                     return false;
                 case EquipType.Magic:
                     spawnPoint = MagicWeaponManager.GetProjectileSpawnPoint(__instance);
