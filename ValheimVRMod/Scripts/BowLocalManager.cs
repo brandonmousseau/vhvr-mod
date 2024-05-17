@@ -39,6 +39,8 @@ namespace ValheimVRMod.Scripts {
 
         private GameObject arrowAttach;
 
+        private MeshRenderer hideableGlowMeshRenderer;
+
         private void Start() {
             instance = this;
             arrowAttach = new GameObject();
@@ -63,6 +65,8 @@ namespace ValheimVRMod.Scripts {
             if (item != null) {
                 attack = item.m_shared.m_attack.Clone();
             }
+
+            hideableGlowMeshRenderer = WeaponUtils.GetHideableBowGlowMeshRenderer(transform, item.m_shared.m_name);
         }
 
         protected new void OnDestroy() {
@@ -153,12 +157,29 @@ namespace ValheimVRMod.Scripts {
             {
                 BhapticsTactsuit.StopThreadHaptic(VHVRConfig.LeftHanded() ? "BowStringLeft" : "BowStringRight");
             }
+
+            if (hideableGlowMeshRenderer)
+            {
+                hideableGlowMeshRenderer.enabled = !pulling;
+            }
         }
+
+        void FixedUpdate()
+        {
+            if (!pulling || !MountedAttackUtils.IsRiding())
+            {
+                return;
+            }
+
+            // Vanilla game do no support attacking while riding so we need to explicitly apply stamina drain here.
+            Player.m_localPlayer.UseStamina(Player.m_localPlayer.GetCurrentWeapon().GetDrawStaminaDrain() * Time.fixedDeltaTime);
+        }
+
 
         protected override float getPullLengthRestriction(float? drawPercentage = null)
         {
 
-            if (drawPercentage == null && VHVRConfig.RestrictBowDrawSpeed() == "Full")
+            if (drawPercentage == null && RestrictBowDrawSpeed() && VHVRConfig.RestrictBowDrawSpeed() == "Full")
             {
                 drawPercentage = Player.m_localPlayer.GetAttackDrawPercentage();
             }
@@ -182,7 +203,7 @@ namespace ValheimVRMod.Scripts {
 
         private void updateChargeIndicator() {
             var drawPercent = Player.m_localPlayer.GetAttackDrawPercentage();
-            if (VHVRConfig.RestrictBowDrawSpeed() != "None" && pulling && drawPercent < 1 && drawPercent > 0) {
+            if (RestrictBowDrawSpeed() && pulling && drawPercent < 1 && drawPercent > 0) {
                 chargeIndicator.transform.localScale = new Vector3(0.05f * (1 - drawPercent), 0.0001f, 0.05f * (1 - drawPercent));
                 chargeIndicator.GetComponent<MeshRenderer>().material.color = new Vector4(1, drawPercent, 0, 1);
                 chargeIndicator.SetActive(true);
@@ -273,10 +294,12 @@ namespace ValheimVRMod.Scripts {
             }
             var currDrawPercentage = pullPercentage();
             currentMaxDrawPercentage = Math.Max(currDrawPercentage, currentMaxDrawPercentage);
-            if (arrow != null && currentMaxDrawPercentage > attackDrawPercentage && VHVRConfig.RestrictBowDrawSpeed() == "None") {
+
+            if (arrow != null && currentMaxDrawPercentage > attackDrawPercentage && !RestrictBowDrawSpeed()) {
                 float additionalStaminaDrain = 15;
                 Player.m_localPlayer.UseStamina((currentMaxDrawPercentage - attackDrawPercentage) * additionalStaminaDrain * VHVRConfig.GetBowStaminaScalar());
             }
+
             attackDrawPercentage = currentMaxDrawPercentage;
             if (attackDrawPercentage == 1 && !finishedPulling) 
             {
@@ -302,6 +325,12 @@ namespace ValheimVRMod.Scripts {
             spawnPoint = getArrowRestPosition();
             aimDir = getAimDir();
 
+            if (!withoutShoot && arrow)
+            {
+                // Force starting attack here since vanilla game does not support attacking while riding.
+                MountedAttackUtils.StartAttackIfRiding(isSecondaryAttack: false, realLifePullPercentage);
+            }
+
             if (withoutShoot || arrow == null || attackDrawPercentage <= 0.0f) {
                 if (arrow) {
                     arrowAttach.transform.localRotation = Quaternion.identity;
@@ -321,7 +350,7 @@ namespace ValheimVRMod.Scripts {
         }
 
         private float pullPercentage() {
-            return VHVRConfig.RestrictBowDrawSpeed() != "None" ? Math.Min(realLifePullPercentage, Player.m_localPlayer.GetAttackDrawPercentage()) : realLifePullPercentage;
+            return RestrictBowDrawSpeed() ? Math.Min(realLifePullPercentage, Player.m_localPlayer.GetAttackDrawPercentage()) : realLifePullPercentage;
         }
 
         private bool checkHandNearString() {
@@ -459,9 +488,16 @@ namespace ValheimVRMod.Scripts {
         public bool isHoldingArrow() {
             return arrow != null;
         }
+
         public float GetAttackPercentage()
         {
             return attackDrawPercentage;
+        }
+
+        private bool RestrictBowDrawSpeed() 
+        {
+            // When riding, vanilla bow draw is restricted to zero so we have to force bypassing it.
+            return VHVRConfig.RestrictBowDrawSpeed() != "None" && !MountedAttackUtils.IsRiding(); 
         }
     }
 }

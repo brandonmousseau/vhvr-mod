@@ -28,7 +28,7 @@ namespace ValheimVRMod.Scripts {
             handFixedRotation = transform.rotation;
         }
 
-        public bool areHandsFree() {
+        public bool isHandFree() {
             if (EquipScript.getLeft() == EquipType.Crossbow)
             {
                 if (CrossbowMorphManager.instance != null && CrossbowMorphManager.instance.isHoldingBolt()) {
@@ -56,7 +56,11 @@ namespace ValheimVRMod.Scripts {
             {
                 return true;
             }
-            
+            else if (FistCollision.hasDualWieldingWeaponEquipped())
+            {
+                return false;
+            }
+
             if (BowLocalManager.instance != null && BowLocalManager.instance.isHoldingArrow()) {
                 return false;
             }
@@ -74,7 +78,7 @@ namespace ValheimVRMod.Scripts {
 
         private void Update() {
 
-            if (!areHandsFree() || Game.IsPaused() || VRPlayer.ShouldPauseMovement) {
+            if (!isHandFree() || Game.IsPaused() || VRPlayer.ShouldPauseMovement) {
                 return;
             }
 

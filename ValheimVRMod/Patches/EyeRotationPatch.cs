@@ -436,24 +436,5 @@ namespace ValheimVRMod.Patches
                 return patched;
             }
         }
-
-        /// <summary>
-        /// This makes the mounts try to follow the hmd eyedir
-        /// </summary>
-        [HarmonyPatch(typeof(Sadle), nameof(Sadle.ApplyControlls))]
-
-        class Sadle_ApplyControlls_Patch
-        {
-            static void Prefix(ref Vector3 lookDir)
-            {
-                if (VHVRConfig.NonVrPlayer())
-                {
-                    return;
-                }
-
-                //Recenter player on body
-                lookDir = Valve.VR.InteractionSystem.Player.instance.hmdTransform.forward;
-            }
-        }
     }
 }

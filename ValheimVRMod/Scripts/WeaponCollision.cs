@@ -9,8 +9,12 @@ namespace ValheimVRMod.Scripts
 {
     public class WeaponCollision : MonoBehaviour
     {
-        private const float MIN_SPEED = 3f;
+        private const float MIN_SPEED = 4f;
         private const float MIN_STAB_SPEED = 1f;
+        // The offset amount of the point on the weapon relative to the hand to calculate the speed of.
+        // This is intentionally made much smaller than the possible full length of the weapon so that
+        // small wrist rotation will not acccidentally trigger an attack when holding a long weapon.
+        private const float WEAPON_ANGULAR_WEIGHT_OFFSET = 0.125f;
 
         private bool scriptActive;
         private GameObject colliderParent;
@@ -21,15 +25,17 @@ namespace ValheimVRMod.Scripts
         private Outline outline;
         private bool readyToDrink;
         private float postSecondaryAttackCountdown;
+        private float twoHandedMultitargetSwipeCountdown = 0;
+        private float twoHandedMultitargetSwipeDuration;
         private GameObject debugColliderIndicator;
 
         public PhysicsEstimator physicsEstimator { get; private set; }
         public PhysicsEstimator mainHandPhysicsEstimator { get { return weaponWield.mainHand == VRPlayer.leftHand ? VRPlayer.leftHandPhysicsEstimator : VRPlayer.rightHandPhysicsEstimator; } }
-        public float twoHandedMultitargetSwipeCountdown { get; private set; } = 0;
         public bool itemIsTool;
         public static bool isDrinking;
         public LocalWeaponWield weaponWield;
         public static bool isLastHitOnTerrain;
+        public bool isTwoHandedMultitargetSwipeActive { get { return twoHandedMultitargetSwipeCountdown > twoHandedMultitargetSwipeDuration * 0.5f; } }
 
         private static readonly int[] ignoreLayers = {
             LayerUtils.WATERVOLUME_LAYER,
@@ -142,19 +148,25 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            if (!isStab())
+            if (!hasMomentum(out bool isStab))
             {
-                if (requireStab || !hasMomentum())
-                {
-                    return;
-                }
+                return;
             }
 
-            bool isSecondaryAttack = postSecondaryAttackCountdown <= 0 && RoomscaleSecondaryAttackUtils.IsSecondaryAttack(this.physicsEstimator, this.mainHandPhysicsEstimator);
-            if (EquipScript.getRight() == EquipType.Polearms)
+            if (requireStab && !isStab)
             {
-                // Allow continuing an ongoing atgeir secondary attack (multitarget swipe) until cooldown finishes.
-                isSecondaryAttack = postSecondaryAttackCountdown > 0 || isSecondaryAttack;
+                return;
+            }
+
+            bool isSecondaryAttack;
+            if (postSecondaryAttackCountdown <= 0)
+            {
+                isSecondaryAttack = RoomscaleSecondaryAttackUtils.IsSecondaryAttack(this.physicsEstimator, this.mainHandPhysicsEstimator);
+            }
+            else
+            {
+                // Allow continuing an ongoing atgeir secondary attack (multitarget swipe) until swipe timer finishes.
+                isSecondaryAttack = (isTwoHandedMultitargetSwipeActive && EquipScript.getRight() == EquipType.Polearms);
             }
 
             if (!tryHitTarget(collider.gameObject, isSecondaryAttack))
@@ -171,7 +183,7 @@ namespace ValheimVRMod.Scripts
 
             if (WeaponUtils.IsTwoHandedMultitargetSwipe(currentAttack) && twoHandedMultitargetSwipeCountdown <= 0)
             {
-                twoHandedMultitargetSwipeCountdown = WeaponUtils.GetAttackDuration(currentAttack);
+                twoHandedMultitargetSwipeCountdown = twoHandedMultitargetSwipeDuration = WeaponUtils.GetAttackDuration(currentAttack);
             }
 
             StaticObjects.lastHitPoint = transform.position;
@@ -225,13 +237,8 @@ namespace ValheimVRMod.Scripts
                 return false;
             }
 
-            isLastHitOnTerrain = false;
-
-            if (target.GetComponentInParent<MineRock5>() != null &&
-                target.transform.parent.GetComponent<Heightmap>() != null)
-            {
-                isLastHitOnTerrain = true;
-            }
+            isLastHitOnTerrain =
+                (target.GetComponentInParent<MineRock5>() == null ? target : target.transform.parent.gameObject).GetComponent<Heightmap>() != null;
 
             AttackTargetMeshCooldown attackTargetMeshCooldown = target.GetComponentInParent<AttackTargetMeshCooldown>();
             if (attackTargetMeshCooldown == null)
@@ -386,36 +393,38 @@ namespace ValheimVRMod.Scripts
             }
         }
 
-        private bool hasMomentum()
+        private bool hasMomentum(out bool isStab)
         {
-            float handSpeed;
+            float minSpeed = MIN_SPEED * VHVRConfig.SwingSpeedRequirement();
+
             if (weaponWield.twoHandedState == WeaponWield.TwoHandedState.SingleHanded)
             {
-                handSpeed =
-                    VHVRConfig.LeftHanded() ?
-                    VRPlayer.leftHandPhysicsEstimator.GetAverageVelocityInSnapshots().magnitude :
-                    VRPlayer.rightHandPhysicsEstimator.GetAverageVelocityInSnapshots().magnitude;
-            }
-            else
-            {
-                handSpeed =
-                    Mathf.Max(
-                        VRPlayer.leftHandPhysicsEstimator.GetAverageVelocityInSnapshots().magnitude,
-                        VRPlayer.rightHandPhysicsEstimator.GetAverageVelocityInSnapshots().magnitude);
+                var velocity =
+                    WeaponUtils.GetWeaponVelocity(
+                        mainHandPhysicsEstimator.GetAverageVelocityInSnapshots(),
+                        mainHandPhysicsEstimator.GetAngularVelocity(),
+                        LocalWeaponWield.weaponForward.normalized * WEAPON_ANGULAR_WEIGHT_OFFSET);
+                isStab = WeaponCollision.isStab(velocity);
+                return isStab || velocity.magnitude > minSpeed;
             }
 
-            return handSpeed >= MIN_SPEED * VHVRConfig.SwingSpeedRequirement();
+            isStab = WeaponCollision.isStab(mainHandPhysicsEstimator.GetAverageVelocityInSnapshots());
+            if (isStab)
+            {
+                return true;
+            }
+
+            return VRPlayer.leftHandPhysicsEstimator.GetAverageVelocityInSnapshots().magnitude > minSpeed ||
+                VRPlayer.rightHandPhysicsEstimator.GetAverageVelocityInSnapshots().magnitude > minSpeed;
         }
 
-        private bool isStab()
+        private static bool isStab(Vector3 velocity)
         {
-            Vector3 attackVelocity = mainHandPhysicsEstimator == null ? Vector3.zero : mainHandPhysicsEstimator.GetAverageVelocityInSnapshots();
-
-            if (!WeaponUtils.IsStab(attackVelocity, LocalWeaponWield.weaponForward, LocalWeaponWield.isCurrentlyTwoHanded())) {
+            if (!WeaponUtils.IsStab(velocity, LocalWeaponWield.weaponForward, LocalWeaponWield.isCurrentlyTwoHanded())) {
                 return false;
             }
 
-            if (Vector3.Dot(attackVelocity, LocalWeaponWield.weaponForward) < MIN_STAB_SPEED * VHVRConfig.SwingSpeedRequirement())
+            if (Vector3.Dot(velocity, LocalWeaponWield.weaponForward) < MIN_STAB_SPEED)
             {
                 return false;
             }

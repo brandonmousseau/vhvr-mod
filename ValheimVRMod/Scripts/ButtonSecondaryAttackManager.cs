@@ -99,7 +99,10 @@ namespace ValheimVRMod.Scripts
             firstPos = Vector3.zero;
             lastPos = Vector3.zero;
             secondaryHitList = new List<Attack.HitPoint>();
-            slashLine.enabled = false;
+            if (slashLine != null)
+            {
+                slashLine.enabled = false;
+            }
             isSecondaryAttackStarted = false;
             isSecondaryAttackTriggered = true;
         }

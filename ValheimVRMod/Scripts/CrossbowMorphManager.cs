@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
@@ -28,6 +29,7 @@ namespace ValheimVRMod.Scripts
         private ItemDrop.ItemData weapon;
         private GameObject bolt;
         private GameObject boltAttach;
+        private bool useBowBendingShader;
 
         public bool isBoltLoaded = false;
 
@@ -41,6 +43,8 @@ namespace ValheimVRMod.Scripts
                 return shouldAutoReload ? vanillaDrawPercentageRestriction : Mathf.Min(vanillaDrawPercentageRestriction, realLifeDrawPercentage);
             }
         }
+
+        private MeshRenderer hideableGlowMeshRenderer;
 
         public bool isPulling { get; private set; }
         public bool shouldAutoReload { get { return anatomy == null || !VHVRConfig.CrossbowManualReload(); } } // If crossbow anatomy data is not available, fallback to the vanilla auto-reload logic.
@@ -78,9 +82,19 @@ namespace ValheimVRMod.Scripts
                 return;
             }
             MeshRenderer meshRenderer = gameObject.GetComponent<MeshRenderer>();
-            meshRenderer.material = GetBowBendingMaterial(meshRenderer.material);
+            try
+            {
+                meshRenderer.material = GetBowBendingMaterial(meshRenderer.material);
+                useBowBendingShader = true;
+            }
+            catch (Exception e)
+            {
+                LogUtils.LogError("Bow bending material not found!");
+                useBowBendingShader = false;
+            }
             createBones();
             createNewString();
+            hideableGlowMeshRenderer = WeaponUtils.GetHideableBowGlowMeshRenderer(transform, Player.m_localPlayer.GetLeftItem().m_shared.m_name);
             initialized = true;
         }
 
@@ -108,11 +122,17 @@ namespace ValheimVRMod.Scripts
             }
 
             MorphBow();
+            updateStringRenderer();
 
             if (isPulling || shouldAutoReload)
             {
                 // We use string position to calcualte bolt position so it can only be updated after updating the string.
                 attachBoltToCrossbow();
+            }
+
+            if (hideableGlowMeshRenderer)
+            {
+                hideableGlowMeshRenderer.enabled = !isPulling;
             }
         }
 
@@ -267,6 +287,11 @@ namespace ValheimVRMod.Scripts
 
         private void MorphBow()
         {
+            if (!useBowBendingShader)
+            {
+                return;
+            }
+
             // Just a heuristic and simplified approximation for the bend angle.
             float bendAngleDegrees = Mathf.Asin(drawPercentage * Mathf.Sin(anatomy.maxBendAngleRadians)) * 180 / Mathf.PI;
 
@@ -290,8 +315,6 @@ namespace ValheimVRMod.Scripts
             Matrix4x4 rightLimbTransform = Matrix4x4.TRS(anatomy.hardLimbRight - rightLimbRotation * anatomy.hardLimbRight, rightLimbRotation, Vector3.one);
             gameObject.GetComponent<MeshRenderer>().material.SetMatrix("_UpperLimbTransform", rightLimbTransform);
             gameObject.GetComponent<MeshRenderer>().material.SetMatrix("_LowerLimbTransform", leftLimbTransform);
-
-            updateStringRenderer();
         }
 
         private Material GetBowBendingMaterial(Material vanillaMaterial)

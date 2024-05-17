@@ -17,6 +17,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> vrModEnabled;
         private static ConfigEntry<bool> nonVrPlayer;
         private static ConfigEntry<bool> useVrControls;
+        private static ConfigEntry<int> maxVRInitializationTries;
         private static ConfigEntry<bool> useOverlayGui;
         private static ConfigEntry<string> pluginVersion;
         private static ConfigEntry<bool> bhapticsEnabled;
@@ -232,6 +233,12 @@ namespace ValheimVRMod.Utilities
                 true,
                 "This setting enables the use of the VR motion controllers as input (Only Oculus Touch and Valve Index supported)." +
                 "This setting, if true, will also force UseOverlayGui to be false as this setting Overlay GUI is not compatible with VR laser pointer inputs.");
+            maxVRInitializationTries = config.Bind("Immutable",
+                "MaxVRInitializationTries",
+                6,
+                new ConfigDescription("The maximum number of attempts at initialization VR before falling back to flatscreen mode",
+                new AcceptableValueRange<int>(1, 1024)));
+
             useOverlayGui = createImmutableSettingWithOverride("Immutable",
                 "UseOverlayGui",
                 false,
@@ -1162,6 +1169,11 @@ namespace ValheimVRMod.Utilities
             return useVrControlsValue && !NonVrPlayer();
         }
 
+        public static int MaxVRInitializationTries()
+        {
+            return maxVRInitializationTries.Value;
+        }
+
         public static bool UseArrowPredictionGraphic()
         {
             return useArrowPredictionGraphic.Value;
@@ -1191,6 +1203,10 @@ namespace ValheimVRMod.Utilities
 
         public static bool NonVrPlayer()
         {
+            if (ValheimVRMod.failedToInitializeVR)
+            {
+                return true;
+            }
             if (commandLineOverrides.ContainsKey(nonVrPlayer.GetHashCode()))
             {
                 return commandLineOverrides[nonVrPlayer.GetHashCode()];

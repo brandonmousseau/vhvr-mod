@@ -22,6 +22,14 @@ namespace ValheimVRMod.Scripts
         private readonly GesturedLocomotion[] gesturedLocomotions;
         private Vector3 gesturedLocomotionVelocity = Vector3.zero;
         private float horizontalSpeed = 0;
+        public static bool isInUse
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_StopGesturedLocomotion.activeBinding &&
+              !SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.Any);
+            }
+        }
 
         public GesturedLocomotionManager(Transform vrCameraRig)
         {
@@ -153,7 +161,7 @@ namespace ValheimVRMod.Scripts
 
             public override Vector3 GetTargetVelocityFromGestures(Player player)
             {
-                if (!VHVRConfig.IsGesturedJumpEnabled())
+                if (!VHVRConfig.IsGesturedJumpEnabled() || player.IsAttached())
                 {
                     return Vector3.zero;
                 }
@@ -228,7 +236,8 @@ namespace ValheimVRMod.Scripts
 
         class LeftHandGesturedWalkRun : GesturedWalkRun {
 
-            public LeftHandGesturedWalkRun(Transform vrCameraRig) : base(vrCameraRig) {
+            public LeftHandGesturedWalkRun(Transform vrCameraRig) : base(vrCameraRig)
+            {
                 new GameObject("LeftHandWalkingWheel").AddComponent<WalkRunIndicator>().Init(true, this);
             }
 
@@ -268,7 +277,7 @@ namespace ValheimVRMod.Scripts
             protected abstract Transform otherHandTransform { get; }
 
             public GesturedWalkRun(Transform vrCameraRig) : base(vrCameraRig) { }
-            
+
             public Vector3 movementVerticalPlaneNormal { get; private set; }
 
             public override Vector3 GetTargetVelocityFromGestures(Player player)
@@ -286,7 +295,7 @@ namespace ValheimVRMod.Scripts
                 Vector3 walkDirection = handTransform.forward * 2;
                 walkDirection += (Vector3.Dot(walkDirection, clampedHandVelocity) > 0 ? clampedHandVelocity : -clampedHandVelocity);
                 walkDirection = Vector3.ProjectOnPlane(walkDirection, upDirection).normalized;
-               
+
                 movementVerticalPlaneNormal = Vector3.Cross(upDirection, walkDirection).normalized;
                 Vector3 wheelDiameter = Vector3.ProjectOnPlane(handTransform.position - otherHandTransform.position, movementVerticalPlaneNormal);
 
@@ -341,7 +350,7 @@ namespace ValheimVRMod.Scripts
             private bool ShouldStart(Vector3 wheelDiameter, Vector3 walkDirection, float handSpeed)
             {
                 return !isStoppingWalkRunByButton() && handSpeed > MIN_HAND_SPEED &&
-                    Mathf.Abs(Vector3.Dot(wheelDiameter, walkDirection)) > MIN_ACTIVATION_HAND_DISTANCE;
+                    wheelDiameter.y < -MIN_ACTIVATION_HAND_DISTANCE;
             }
 
             private bool ShouldStop(Player player, double handSpeed)

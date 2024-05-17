@@ -277,7 +277,7 @@ namespace ValheimVRMod.Scripts
             translateAxisX.transform.Rotate(0, 0, 90);
             Destroy(translateAxisX.GetComponent<Collider>());
 
-            translateAxisZ.GetComponent<MeshRenderer>().material = Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
+            translateAxisY.GetComponent<MeshRenderer>().material = Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
             translateAxisY.GetComponent<MeshRenderer>().material.color = Color.green;
             Destroy(translateAxisY.GetComponent<Collider>());
 
