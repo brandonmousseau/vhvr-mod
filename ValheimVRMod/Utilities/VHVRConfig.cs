@@ -135,7 +135,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> arrowParticleSize;
         private static ConfigEntry<string> spearThrowingType;
         private static ConfigEntry<bool> useSpearDirectionGraphic;
-        private static ConfigEntry<bool> spearThrowSpeedDynamic;
+        private static ConfigEntry<float> fullThrowSpeed;
         private static ConfigEntry<bool> spearInverseWield;
         private static ConfigEntry<bool> twoHandedWield;
         private static ConfigEntry<bool> twoHandedWithShield;
@@ -811,10 +811,12 @@ namespace ValheimVRMod.Utilities
                                             "TwoStagedThrowing - Throw aim is based on first grab and then aim is locked after pressing trigger" +
                                             "SecondHandAiming - Throw aim is based from your head to your left hand in a straight line",
                                             new AcceptableValueList<string>(new string[] { "Classic", "DartType", "TwoStagedThrowing", "SecondHandAiming" })));
-            spearThrowSpeedDynamic = config.Bind("Motion Control",
-                                                "SpearThrowSpeedDynamic",
-                                                true,
-                                                "Determine whether or not your throw power depends on swing speed, setting to false make the throw always on fixed speed.");
+            fullThrowSpeed = config.Bind(
+                "Motion Control",
+                "FullThrowSpeed",
+                2.0f,
+                new ConfigDescription("The hand movement speed required for a throwable to reach its max speed in game. Setting to 0 makes the throwable always launch at max speed in game.",
+                new AcceptableValueRange<float>(0, 5f)));
             spearInverseWield = config.Bind("Motion Control",
                                                 "SpearInverseWield",
                                                 true,
@@ -1350,9 +1352,9 @@ namespace ValheimVRMod.Utilities
         {
             return arrowParticleSize.Value;
         }
-        public static bool SpearThrowSpeedDynamic()
+        public static float FullThrowSpeed()
         {
-            return spearThrowSpeedDynamic.Value;
+            return fullThrowSpeed.Value;
         }
         public static bool SpearInverseWield()
         {
