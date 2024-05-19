@@ -902,14 +902,19 @@ namespace ValheimVRMod.VRCore
             {
                 if (attachedToPlayer && VHVRConfig.ImmersiveDodgeRoll())
                 {
-                    _instance.transform.SetPositionAndRotation(nonDodgingHead.position, nonDodgingHead.rotation);
+                    _instance.transform.position = nonDodgingHead.position;
                     _vrCameraRig.rotation = roomRotationBeforeDodge;
-                    var facing = Valve.VR.InteractionSystem.Player.instance.hmdTransform.forward;
+                    var facing = _vrCam.transform.forward;
                     facing.y = 0;
                     player.m_lookDir = facing.normalized;
                     player.FaceLookDirection();
-                    _vrCameraRig.rotation = Quaternion.Euler(0, roomRotationBeforeDodge.eulerAngles.y, 0);
+                    _vrCameraRig.localRotation = Quaternion.identity;
+                    _instance.transform.localRotation = Quaternion.Euler(0f, -_vrCam.transform.localRotation.eulerAngles.y, 0f);
                     _vrCam.nearClipPlane = VHVRConfig.GetNearClipPlane();
+                    _instance.transform.localPosition = new Vector3(0, _instance.transform.localPosition.y, 0);
+                    _vrCameraRig.position += Vector3.ProjectOnPlane(player.transform.position - _vrCam.transform.position, Vector3.up);
+                    _lastCamPosition = _vrCam.transform.localPosition;
+                    roomscaleMovement = Vector3.zero;
                 }
                 wasDodging = false;
             }
@@ -924,8 +929,8 @@ namespace ValheimVRMod.VRCore
 
             if (!wasDodging)
             {
-                nonDodgingHead.parent = getPlayerCharacter().transform;
-                nonDodgingHead.SetPositionAndRotation(_instance.transform.position, _instance.transform.rotation);
+                nonDodgingHead.parent = _instance.transform.parent;
+                nonDodgingHead.SetPositionAndRotation(_instance.transform.position, _instance.transform.parent.rotation);
                 dodgingHead.parent = dodgingRoom.parent = getHeadBone();
                 dodgingHead.SetPositionAndRotation(_instance.transform.position, _instance.transform.rotation);
                 dodgingRoom.SetPositionAndRotation(_vrCameraRig.transform.position, _vrCameraRig.transform.rotation);
