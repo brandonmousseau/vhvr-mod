@@ -70,8 +70,6 @@ namespace ValheimVRMod.Scripts
             var horizontalVelocity = Vector3.ProjectOnPlane(gesturedLocomotionVelocity, vrCameraRig.up);
             horizontalSpeed = horizontalVelocity.magnitude;
 
-            horizontalSpeed = Vector3.ProjectOnPlane(gesturedLocomotionVelocity, vrCameraRig.up).magnitude;
-
             if (localPlayer.IsSwimming() && horizontalSpeed < MIN_WATER_SPEED)
             {
                 stickOutputX = stickOutputY = 0;
