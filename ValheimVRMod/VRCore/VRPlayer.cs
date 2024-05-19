@@ -95,13 +95,11 @@ namespace ValheimVRMod.VRCore
         private static SteamVR_LaserPointer _rightPointer;
         private string _preferredHand;
 
-        private Quaternion roomRotationBeforeDodge;
-        private Transform _nonDodgingHead;
-        private Transform _dodgingHead;
-        private Transform _dodgingRoom;
-        private Transform nonDodgingHead { get { return _nonDodgingHead ?? (_nonDodgingHead = new GameObject().transform); } }
-        private Transform dodgingHead { get { return _dodgingHead ?? (_dodgingHead = new GameObject().transform); } }
-        private Transform dodgingRoom { get { return _dodgingRoom ?? (_dodgingRoom = new GameObject().transform); } }
+        private Quaternion rotationBeforeDodge;
+        private Transform _nonDodgingTransform;
+        private Transform _dodgingTransform;
+        private Transform nonDodgingTransform { get { return _nonDodgingTransform ?? (_nonDodgingTransform = new GameObject().transform); } }
+        private Transform dodgingTransform { get { return _dodgingTransform ?? (_dodgingTransform = new GameObject().transform); } }
         private bool pausedMovement = false;
 
         private float timerLeft;
@@ -323,17 +321,13 @@ namespace ValheimVRMod.VRCore
 
         void OnDestroy()
         {
-            if (_nonDodgingHead != null)
+            if (_nonDodgingTransform != null)
             {
-                Destroy(_nonDodgingHead.gameObject);
+                Destroy(_nonDodgingTransform.gameObject);
             }
-            if (_dodgingHead != null)
+            if (_dodgingTransform != null)
             {
-                Destroy(_dodgingHead.gameObject);
-            }
-            if (_dodgingRoom != null)
-            {
-                Destroy(_dodgingRoom.gameObject);
+                Destroy(_dodgingTransform.gameObject);
             }
         }
 
@@ -902,16 +896,13 @@ namespace ValheimVRMod.VRCore
             {
                 if (attachedToPlayer && VHVRConfig.ImmersiveDodgeRoll())
                 {
-                    _instance.transform.position = nonDodgingHead.position;
-                    _vrCameraRig.rotation = roomRotationBeforeDodge;
                     var facing = _vrCam.transform.forward;
                     facing.y = 0;
                     player.m_lookDir = facing.normalized;
                     player.FaceLookDirection();
-                    _vrCameraRig.localRotation = Quaternion.identity;
                     _instance.transform.localRotation = Quaternion.Euler(0f, -_vrCam.transform.localRotation.eulerAngles.y, 0f);
                     _vrCam.nearClipPlane = VHVRConfig.GetNearClipPlane();
-                    _instance.transform.localPosition = new Vector3(0, _instance.transform.localPosition.y, 0);
+                    _instance.transform.position = nonDodgingTransform.position;
                     _vrCameraRig.position += Vector3.ProjectOnPlane(player.transform.position - _vrCam.transform.position, Vector3.up);
                     _lastCamPosition = _vrCam.transform.localPosition;
                     roomscaleMovement = Vector3.zero;
@@ -929,12 +920,10 @@ namespace ValheimVRMod.VRCore
 
             if (!wasDodging)
             {
-                nonDodgingHead.parent = _instance.transform.parent;
-                nonDodgingHead.SetPositionAndRotation(_instance.transform.position, _instance.transform.parent.rotation);
-                dodgingHead.parent = dodgingRoom.parent = getHeadBone();
-                dodgingHead.SetPositionAndRotation(_instance.transform.position, _instance.transform.rotation);
-                dodgingRoom.SetPositionAndRotation(_vrCameraRig.transform.position, _vrCameraRig.transform.rotation);
-                roomRotationBeforeDodge = _vrCameraRig.rotation;
+                rotationBeforeDodge = _instance.transform.rotation;
+                dodgingTransform.parent = getHeadBone();
+                dodgingTransform.SetPositionAndRotation(_instance.transform.position, _instance.transform.rotation);
+                rotationBeforeDodge = _vrCameraRig.rotation;
                 _vrCam.nearClipPlane = 0.3f;
                 wasDodging = true;
             }
@@ -943,8 +932,8 @@ namespace ValheimVRMod.VRCore
                 float smoothener = GetDodgeExitSmoothener();
 
                 // Head bone and Player#m_head has different scales than the player, therefore directly parenting the camera to them should be avoided lest it changes the appeared scale of the world.
-                _instance.transform.position = Vector3.Lerp(dodgingHead.position, nonDodgingHead.position, smoothener);
-                _vrCameraRig.transform.rotation = Quaternion.Slerp(dodgingRoom.rotation, roomRotationBeforeDodge, smoothener);
+                _instance.transform.position = Vector3.Lerp(dodgingTransform.position, nonDodgingTransform.position, smoothener);
+                _instance.transform.rotation = Quaternion.Slerp(dodgingTransform.rotation, rotationBeforeDodge, smoothener);
             }
         }
 
@@ -1011,28 +1000,33 @@ namespace ValheimVRMod.VRCore
 
         private void maybeInitHeadPosition(Player playerCharacter)
         {
-            if (!headPositionInitialized && inFirstPerson && !playerCharacter.InDodge())
+            if (headPositionInitialized || !inFirstPerson || playerCharacter.InDodge())
             {
-                // First set the position without any adjustment
-                Vector3 desiredPosition = getDesiredPosition(playerCharacter);
-                _instance.transform.localPosition = desiredPosition - playerCharacter.transform.position;
+                return;
+            }
 
-                if (_headZoomLevel != HeadZoomLevel.FirstPerson)
-                    _instance.transform.localPosition += getHeadOffset(_headZoomLevel);
-                else
-                    setPlayerVisualsOffset(playerCharacter.transform, -getHeadOffset(_headZoomLevel));
+            // First set the position without any adjustment
+            Vector3 desiredPosition = getDesiredPosition(playerCharacter);
+            _instance.transform.localPosition = desiredPosition - playerCharacter.transform.position;
 
-                var hmd = Valve.VR.InteractionSystem.Player.instance.hmdTransform;
-                // Measure the distance between HMD and desires location, and save it.
-                FIRST_PERSON_HEIGHT_OFFSET = desiredPosition.y - hmd.position.y;
-                if (VHVRConfig.UseLookLocomotion())
-                {
-                    _instance.transform.localRotation = Quaternion.Euler(0f, -hmd.localRotation.eulerAngles.y, 0f);
-                }
-                headPositionInitialized = true;
+            if (_headZoomLevel != HeadZoomLevel.FirstPerson)
+                _instance.transform.localPosition += getHeadOffset(_headZoomLevel);
+            else
+                setPlayerVisualsOffset(playerCharacter.transform, -getHeadOffset(_headZoomLevel));
 
-                referencePlayerHeight = Valve.VR.InteractionSystem.Player.instance.eyeHeight;
-            } 
+            var hmd = Valve.VR.InteractionSystem.Player.instance.hmdTransform;
+            // Measure the distance between HMD and desires location, and save it.
+            FIRST_PERSON_HEIGHT_OFFSET = desiredPosition.y - hmd.position.y;
+            if (VHVRConfig.UseLookLocomotion())
+            {
+                _instance.transform.localRotation = Quaternion.Euler(0f, -hmd.localRotation.eulerAngles.y, 0f);
+            }
+            headPositionInitialized = true;
+
+            referencePlayerHeight = Valve.VR.InteractionSystem.Player.instance.eyeHeight;
+
+            nonDodgingTransform.parent = _instance.transform.parent;
+            nonDodgingTransform.SetPositionAndRotation(instance.transform.position, instance.transform.rotation);
         }
 
         private static Vector3 getDesiredPosition(Player playerCharacter)
