@@ -67,6 +67,7 @@ namespace ValheimVRMod.Scripts
 
             gesturedLocomotionVelocity =
                 Vector3.Lerp(gesturedLocomotionVelocity, targetVelocity, deltaTime / damper);
+
             var horizontalVelocity = Vector3.ProjectOnPlane(gesturedLocomotionVelocity, vrCameraRig.up);
             horizontalSpeed = horizontalVelocity.magnitude;
 
@@ -155,16 +156,12 @@ namespace ValheimVRMod.Scripts
 
         class GesturedJump : GesturedLocomotion
         {
-            private const float HORIZONTAL_SPEED_DEADZONE_FACTOR = 0.125f;
-
             private bool isPreparingJump = false;
-            private Vector3 jumpVelocity = Vector3.zero;
-
             public GesturedJump(Transform vrCameraRig) : base(vrCameraRig) { }
 
             public override Vector3 GetTargetVelocityFromGestures(Player player)
             {
-                if (!VHVRConfig.IsGesturedJumpEnabled() || player.IsAttached())
+                if (!VHVRConfig.IsGesturedJumpEnabled() || player.IsAttached() || IsInAir(player))
                 {
                     return Vector3.zero;
                 }
@@ -175,40 +172,19 @@ namespace ValheimVRMod.Scripts
 
                 isPreparingJump = height < VRPlayer.referencePlayerHeight * VHVRConfig.GesturedJumpPreparationHeight();
 
-                if (IsInAir(player))
-                {
-                    return Vector3.ProjectOnPlane(jumpVelocity, upDirection);
-                }
-
                 bool attemptingJump =
                     wasPreparingJump && !isPreparingJump && player.IsOnGround() &&
-                    (!SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.LeftHand) ||
-                        !SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.RightHand));
+                    !SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.LeftHand) &&
+                    !SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.RightHand);
 
-                if (attemptingJump)
+                if (!attemptingJump)
                 {
-                    Vector3 velocity = VRPlayer.headPhysicsEstimator.GetVelocity();
-                    Vector3 verticalVelocty = Vector3.Project(velocity, upDirection);
-                    float verticalSpeed = verticalVelocty.magnitude;
-                    Vector3 horizontalVelocity = Vector3.ProjectOnPlane(velocity, upDirection);
-                    float horizontalSpeed = horizontalVelocity.magnitude;
-                    float horizontalSpeedDeadzone = verticalSpeed * HORIZONTAL_SPEED_DEADZONE_FACTOR;
-                    if (horizontalSpeed > horizontalSpeedDeadzone)
-                    {
-                        horizontalVelocity *= (horizontalSpeed - horizontalSpeedDeadzone) / horizontalSpeed;
-                    }
-                    else
-                    {
-                        horizontalVelocity = Vector3.zero;
-                    }
-                    jumpVelocity = horizontalVelocity + verticalVelocty;
-                }
-                else
-                {
-                    jumpVelocity = Vector3.zero;
+                    return Vector3.zero;
                 }
 
-                return jumpVelocity;
+                Vector3 velocity = VRPlayer.headPhysicsEstimator.GetVelocity();
+                float verticalSpeed = Mathf.Max(Vector3.Dot(velocity, upDirection), 0);
+                return upDirection * verticalSpeed;
             }
 
             private static bool IsInAir(Player player)
@@ -517,6 +493,6 @@ namespace ValheimVRMod.Scripts
                 return handPhyicsEstimator.GetVelocity().magnitude > MIN_HAND_SPEED &&
                     Vector3.Dot(handPhyicsEstimator.transform.position - vrCam.transform.position, upDirection) > MIN_HAND_HEIGHT_RELATIVE_TO_EYE;               
             }
-        }        
+        }
     }
 }
