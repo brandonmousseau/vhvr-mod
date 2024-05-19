@@ -1140,6 +1140,11 @@ namespace ValheimVRMod.Patches {
                 {
                     return;
                 }
+                dir = __instance.GetMoveDir();
+                if (dir == Vector3.zero)
+                {
+                    return;
+                }
             }
 
             if (__instance.m_stamina < __instance.m_dodgeStaminaUsage)
@@ -1170,7 +1175,7 @@ namespace ValheimVRMod.Patches {
             __instance.m_queuedDodgeTimer -= dt;
             currdodgetimer -= dt;
 
-            if (__instance.m_queuedDodgeTimer > 0f && __instance.IsOnGround() && !__instance.IsDead() && !__instance.InAttack() && !__instance.IsEncumbered() && !__instance.InDodge() && !__instance.IsStaggering())
+            if (__instance.m_queuedDodgeTimer > 0f && __instance.IsOnGround() && !__instance.IsDead() && !__instance.InAttack() && !__instance.IsEncumbered() && !__instance.InDodge() && !__instance.IsStaggering() && !VRPlayer.vrPlayerInstance.wasDodging)
             {
                 float num = __instance.m_dodgeStaminaUsage - __instance.m_dodgeStaminaUsage * __instance.GetEquipmentDodgeStaminaModifier();
                 if (__instance.HaveStamina(num))
@@ -1180,12 +1185,11 @@ namespace ValheimVRMod.Patches {
                     currdodgetimer = 0.8f;
                     if (VHVRConfig.ImmersiveDodgeRoll())
                     {
-                        var vrCamRig = CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform.parent;
-                        var roomPosition = vrCamRig.position;
-                        var roomRotation = vrCamRig.rotation;
+                        var roomPosition = VRPlayer.instance.transform.position;
+                        var roomRotation = VRPlayer.instance.transform.rotation;
                         __instance.transform.rotation = Quaternion.LookRotation(__instance.m_queuedDodgeDir);
                         __instance.m_body.rotation = __instance.transform.rotation;
-                        vrCamRig.SetPositionAndRotation(roomPosition, roomRotation);
+                        VRPlayer.instance.transform.SetPositionAndRotation(roomPosition, roomRotation);
                     }
                     currDodgeDir = __instance.transform.forward;
                     __instance.m_dodgeInvincible = true;
