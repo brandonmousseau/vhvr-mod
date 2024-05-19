@@ -1118,6 +1118,12 @@ namespace ValheimVRMod.Patches {
             if (VHVRConfig.NonVrPlayer())
                 return;
 
+            if (VRPlayer.vrPlayerInstance.wasDodging)
+            {
+                // Give VRPlayer a chance to reset camera position and rotation after immersive dodge roll.
+                return;
+            }
+
             Vector3? dir;
             if (SteamVR_Actions.valheim_UseLeft.state && SteamVR_Actions.valheim_Jump.stateDown)
             {
@@ -1172,6 +1178,15 @@ namespace ValheimVRMod.Patches {
                     __instance.ClearActionQueue();
                     __instance.m_queuedDodgeTimer = 0f;
                     currdodgetimer = 0.8f;
+                    if (VHVRConfig.ImmersiveDodgeRoll())
+                    {
+                        var vrCamRig = CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform.parent;
+                        var roomPosition = vrCamRig.position;
+                        var roomRotation = vrCamRig.rotation;
+                        __instance.transform.rotation = Quaternion.LookRotation(__instance.m_queuedDodgeDir);
+                        __instance.m_body.rotation = __instance.transform.rotation;
+                        vrCamRig.SetPositionAndRotation(roomPosition, roomRotation);
+                    }
                     currDodgeDir = __instance.transform.forward;
                     __instance.m_dodgeInvincible = true;
                     __instance.m_zanim.SetTrigger("dodge");
