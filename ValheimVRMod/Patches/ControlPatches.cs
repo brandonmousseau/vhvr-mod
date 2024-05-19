@@ -1118,21 +1118,34 @@ namespace ValheimVRMod.Patches {
             if (VHVRConfig.NonVrPlayer())
                 return;
 
-            Vector3 dir = __instance.GetMoveDir();
-            if (dir == Vector3.zero)
-                return;
-
+            Vector3? dir;
             if (SteamVR_Actions.valheim_UseLeft.state && SteamVR_Actions.valheim_Jump.stateDown)
             {
-                if (__instance.m_stamina < __instance.m_dodgeStaminaUsage)
+                dir = __instance.GetMoveDir();
+                if (dir == Vector3.zero)
                 {
-                    // FIXME: Mystlands probably changed this from StaminaBarNoStaminaFlash
-                    Hud.instance.StaminaBarEmptyFlash();
                     return;
                 }
-                __instance.Dodge(dir);
-                wasDodging = true;
             }
+            else
+            {
+                dir = VRPlayer.gesturedLocomotionManager?.dodgeDirection;
+                if (dir == null)
+                {
+                    return;
+                }
+            }
+
+            if (__instance.m_stamina < __instance.m_dodgeStaminaUsage)
+            {
+                // FIXME: Mystlands probably changed this from StaminaBarNoStaminaFlash
+                Hud.instance.StaminaBarEmptyFlash();
+                return;
+            }
+
+            __instance.Dodge(dir.Value);
+
+            wasDodging = true;
         }
     }
 
