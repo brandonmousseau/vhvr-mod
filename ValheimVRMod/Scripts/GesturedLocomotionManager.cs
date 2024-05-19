@@ -509,8 +509,6 @@ namespace ValheimVRMod.Scripts
                     return Vector3.zero;
                 }
 
-                LogUtils.LogWarning("Sneaking when dodging: " + player.IsSneaking());
-
                 return (tiltDirection - upDirection) * 16f; 
             }
 
