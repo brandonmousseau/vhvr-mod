@@ -61,7 +61,7 @@ namespace ValheimVRMod.Patches
                 {
                     // Rotate VRPlayer together with delta ship rotation
 
-                    if (VHVRConfig.IsShipImmersiveCamera() && !__instance.IsRiding())
+                    if (VHVRConfig.IsShipImmersiveCamera() && !__instance.IsRiding() && !VRPlayer.inImmersiveDodge)
                     {
                         headLookRef.transform.SetParent(__instance.m_attachPoint);
                         if (!wasAttached)
