@@ -816,7 +816,7 @@ namespace ValheimVRMod.Utilities
                 "FullThrowSpeed",
                 2.0f,
                 new ConfigDescription("The hand movement speed required for a throwable to reach its max speed in game. Setting to 0 makes the throwable always launch at max speed in game.",
-                new AcceptableValueRange<float>(0, 5f)));
+                new AcceptableValueRange<float>(0, 10f)));
             spearInverseWield = config.Bind("Motion Control",
                                                 "SpearInverseWield",
                                                 true,
