@@ -452,11 +452,12 @@ namespace ValheimVRMod.Utilities
             return DUAL_WIELD_BLOCKING_COLLIDERS[equipType];
         }
 
-        // Estimates the direction and length of weapon handle behind the grip by identifying the dimension on which its mesh bounds is offset the farthest.
+        // Estimates the direction and length of a weapon by identifying the dimension on which its mesh bounds is offset the farthest.
         // This estimation therefore assumes:
         //   1. The weapon pointing direction is parallel to the x, y, or z axis of the mesh; and
         //   2. The offset of tip of the weapon is larger than its lateral, dorsal, and ventral expanse.
-        public static Vector3 EstimateHandleAllowanceBehindGrip(MeshFilter weaponMeshFilter, Vector3 handPosition)
+        public static Vector3 EstimateWeaponDirectionAndLength(
+            MeshFilter weaponMeshFilter, Vector3 handPosition, out float handleAllowanceBehindGrip)
         {
             Bounds weaponLocalBounds = weaponMeshFilter.sharedMesh.bounds;
             Vector3 centerOffset = weaponLocalBounds.center - weaponMeshFilter.transform.InverseTransformPoint(handPosition);
@@ -481,8 +482,13 @@ namespace ValheimVRMod.Utilities
                 }
             }
 
-            float handleAllowanceLengthBehindGrip = weaponLength - longestExtrusion;
-            return weaponMeshFilter.transform.TransformVector(-weaponPointingDirection * handleAllowanceLengthBehindGrip);
+            if (weaponLength < longestExtrusion)
+            {
+                weaponLength = longestExtrusion;
+                LogUtils.LogWarning("Weapon mesh is off hand, weapon direction and length estimation might be inaccurate.");
+            }
+            handleAllowanceBehindGrip = weaponLength - longestExtrusion;
+            return weaponMeshFilter.transform.TransformVector(weaponPointingDirection * weaponLength);
         }
 
         // Whether the straight line (t -> p + t * v) intersects with the given bounds.
@@ -618,7 +624,8 @@ namespace ValheimVRMod.Utilities
         private static WeaponColData EstimateWeaponCollider(MeshFilter meshFilter, Vector3 handPosition)
         {
             var weaponPointing =
-                -meshFilter.transform.InverseTransformDirection(EstimateHandleAllowanceBehindGrip(meshFilter, handPosition)).normalized;
+                meshFilter.transform.InverseTransformDirection(
+                    EstimateWeaponDirectionAndLength(meshFilter, handPosition, out float handleAllowanceBehindGrip)).normalized;
             var handLocalPosition = meshFilter.transform.InverseTransformPoint(handPosition);
             var bounds = meshFilter.mesh.bounds;
             var weaponTip = bounds.center + weaponPointing * Mathf.Abs(Vector3.Dot(bounds.extents, weaponPointing));
