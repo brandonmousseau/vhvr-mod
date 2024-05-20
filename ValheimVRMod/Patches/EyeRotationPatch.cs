@@ -61,7 +61,7 @@ namespace ValheimVRMod.Patches
                 {
                     // Rotate VRPlayer together with delta ship rotation
 
-                    if (VHVRConfig.IsShipImmersiveCamera() && !__instance.IsRiding())
+                    if (VHVRConfig.IsShipImmersiveCamera() && !__instance.IsRiding() && !VRPlayer.inImmersiveDodge)
                     {
                         headLookRef.transform.SetParent(__instance.m_attachPoint);
                         if (!wasAttached)
@@ -108,7 +108,7 @@ namespace ValheimVRMod.Patches
                 wasAttached = false;
             }
 
-            if (Player.m_localPlayer.InDodge())
+            if (Player.m_localPlayer.InDodge() && !VHVRConfig.ImmersiveDodgeRoll())
             {
                 return;
             }
@@ -229,8 +229,7 @@ namespace ValheimVRMod.Patches
         static bool ShouldFaceLookDirection(Player player)
         {
             // TODO: Consider disabling face-look-direction patch whenever VRPlayer.attachedToPlayer is false as opposed to just when PlayerCustomizaton.IsBarberGuiVisible().
-
-            return !VHVRConfig.NonVrPlayer() && player == Player.m_localPlayer && !PlayerCustomizaton.IsBarberGuiVisible();
+            return !VHVRConfig.NonVrPlayer() && player == Player.m_localPlayer && !PlayerCustomizaton.IsBarberGuiVisible() && !VRPlayer.inImmersiveDodge;
         }
 
 
