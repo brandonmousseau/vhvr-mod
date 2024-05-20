@@ -110,6 +110,7 @@ namespace ValheimVRMod.Scripts
                 targetSpeed = Sadle.Speed.Stop;
             }
 
+            turnInPlace = (targetSpeed == Sadle.Speed.Turn);
 
             shouldOverrideSpeedOrDirection = (wasTurning || isLeftHandReining || isRightHandReining);
             if (!shouldOverrideSpeedOrDirection)
