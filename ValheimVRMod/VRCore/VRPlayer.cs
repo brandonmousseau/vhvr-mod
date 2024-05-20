@@ -1311,8 +1311,22 @@ namespace ValheimVRMod.VRCore
             Vector3 deltaPosition = _vrCam.transform.localPosition - _lastCamPosition;
             deltaPosition.y = 0;
 
-            // Allow leaning during gestured locomotion
-            bool shouldMove = deltaPosition.magnitude > (GesturedLocomotionManager.isInUse ? 1f : 0.005f);
+            float moveThreshold = 0.005f;
+            switch (EquipScript.getRight()) {
+                case EquipType.Claws:
+                case EquipType.DualKnives:
+                case EquipType.Hammer:
+                case EquipType.Knife:
+                case EquipType.None:
+                    if (GesturedLocomotionManager.isInUse || SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.Any))
+                    {
+                        // Allow leaning when holding small weapons are bare-handed.
+                        moveThreshold = 1f;
+                    }
+                    break;
+            }
+
+            bool shouldMove = deltaPosition.magnitude > moveThreshold;
             if (shouldMove)
             {
                 float maxMovement = deltaTime * MAX_ROOMSCALE_MOVEMENT_SPEED;
