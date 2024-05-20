@@ -119,7 +119,7 @@ namespace ValheimVRMod.Scripts
         public class SummonByMovingHandUpward : MonoBehaviour
         {
             private const float MIN_SUMMONING_HAND_SPEED = 0.25f;
-            private const float SUMMON_TIME = 1.5f;
+            private const float SUMMON_TIME = 1;
             private float currentMaxHandHight = Mathf.NegativeInfinity;
             private float summonTimer = 0;
             private bool hasSummonedInCurrentMotion = false;
