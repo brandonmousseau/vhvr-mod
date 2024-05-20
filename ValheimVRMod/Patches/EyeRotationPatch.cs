@@ -229,13 +229,7 @@ namespace ValheimVRMod.Patches
         static bool ShouldFaceLookDirection(Player player)
         {
             // TODO: Consider disabling face-look-direction patch whenever VRPlayer.attachedToPlayer is false as opposed to just when PlayerCustomizaton.IsBarberGuiVisible().
-
-            if (VHVRConfig.ImmersiveDodgeRoll() && player.InDodge())
-            {
-                return false;
-            }
-
-            return !VHVRConfig.NonVrPlayer() && player == Player.m_localPlayer && !PlayerCustomizaton.IsBarberGuiVisible();
+            return !VHVRConfig.NonVrPlayer() && player == Player.m_localPlayer && !PlayerCustomizaton.IsBarberGuiVisible() && !VRPlayer.inImmersiveDodge;
         }
 
 
