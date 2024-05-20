@@ -279,7 +279,7 @@ namespace ValheimVRMod.Patches
 
         public static void Postfix(Character __instance)
         {
-            if (VHVRConfig.NonVrPlayer() || __instance == Player.m_localPlayer || !__instance.m_lodGroup)
+            if (VHVRConfig.NonVrPlayer() || __instance.IsPlayer() || !__instance.m_lodGroup)
             {
                 return;
             }

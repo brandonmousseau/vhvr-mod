@@ -1,10 +1,6 @@
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.Rendering;
-using ValheimVRMod.Scripts.Block;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using Valve.VR;
@@ -13,30 +9,34 @@ namespace ValheimVRMod.Scripts
 {
     public class WeaponCollision : MonoBehaviour
     {
-        private const float MIN_SPEED = 3f;
+        private const float MIN_SPEED = 4f;
         private const float MIN_STAB_SPEED = 1f;
-        private const float MAX_STAB_ANGLE = 30f;
-        private const float MAX_STAB_ANGLE_TWOHAND = 40f;
-        private const bool ENABLE_DEBUG_COLLIDER_INDICATOR = false;
+        // The offset amount of the point on the weapon relative to the hand to calculate the speed of.
+        // This is intentionally made much smaller than the possible full length of the weapon so that
+        // small wrist rotation will not acccidentally trigger an attack when holding a long weapon.
+        private const float WEAPON_ANGULAR_WEIGHT_OFFSET = 0.125f;
 
         private bool scriptActive;
         private GameObject colliderParent;
         private ItemDrop.ItemData item;
         private Attack attack;
         private Attack secondaryAttack;
-        private bool isRightHand;
+        private bool isDominantHand;
         private Outline outline;
-        private bool hasDrunk;
+        private bool readyToDrink;
         private float postSecondaryAttackCountdown;
+        private float twoHandedMultitargetSwipeCountdown = 0;
+        private float twoHandedMultitargetSwipeDuration;
         private GameObject debugColliderIndicator;
 
         public PhysicsEstimator physicsEstimator { get; private set; }
         public PhysicsEstimator mainHandPhysicsEstimator { get { return weaponWield.mainHand == VRPlayer.leftHand ? VRPlayer.leftHandPhysicsEstimator : VRPlayer.rightHandPhysicsEstimator; } }
-        public float twoHandedMultitargetSwipeCountdown { get; private set; } = 0;
-        public bool itemIsTool;
+        private bool itemIsTool;
+        public static bool hasPendingToolUsageOutput;
         public static bool isDrinking;
         public LocalWeaponWield weaponWield;
         public static bool isLastHitOnTerrain;
+        public bool isTwoHandedMultitargetSwipeActive { get { return twoHandedMultitargetSwipeCountdown > twoHandedMultitargetSwipeDuration * 0.5f; } }
 
         private static readonly int[] ignoreLayers = {
             LayerUtils.WATERVOLUME_LAYER,
@@ -51,18 +51,9 @@ namespace ValheimVRMod.Scripts
             physicsEstimator = gameObject.AddComponent<PhysicsEstimator>();
             physicsEstimator.refTransform = CameraUtils.getCamera(CameraUtils.VR_CAMERA)?.transform.parent;
 
-            if (ENABLE_DEBUG_COLLIDER_INDICATOR)
+            if (VHVRConfig.ShowDebugColliders())
             {
-                debugColliderIndicator = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                debugColliderIndicator.transform.parent = transform;
-                debugColliderIndicator.transform.localScale = Vector3.one;
-                debugColliderIndicator.transform.localPosition = Vector3.zero;
-                debugColliderIndicator.transform.localRotation = Quaternion.identity;
-                debugColliderIndicator.GetComponent<MeshRenderer>().material.color = new Vector4(0.5f, 0, 0, 0.5f);
-                debugColliderIndicator.GetComponent<MeshRenderer>().receiveShadows = false;
-                debugColliderIndicator.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
-                debugColliderIndicator.GetComponent<MeshRenderer>().reflectionProbeUsage = ReflectionProbeUsage.Off;
-                Destroy(debugColliderIndicator.GetComponent<Collider>());
+                debugColliderIndicator = WeaponUtils.CreateDebugBox(transform);
             }
         }
 
@@ -72,27 +63,27 @@ namespace ValheimVRMod.Scripts
             if (debugColliderIndicator) Destroy(debugColliderIndicator);
         }
 
-        private void OnTriggerStay(Collider collider)
+        private bool CheckDrinking(Collider collider)
         {
-
-            if (!isCollisionAllowed())
+            if (!isDominantHand || EquipScript.getRight() != EquipType.Tankard || collider.name != "MouthCollider" || !readyToDrink)
             {
-                return;
+                return false;
             }
 
-            if (!isRightHand || EquipScript.getRight() != EquipType.Tankard || collider.name != "MouthCollider" || hasDrunk)
+            isDrinking = weaponWield.mainHand.transform.rotation.eulerAngles.x > 0 && weaponWield.mainHand.transform.rotation.eulerAngles.x < 90;
+            if (!isDrinking)
             {
-                return;
+                return false;
             }
+            
+            readyToDrink = false;
 
-            isDrinking = hasDrunk = weaponWield.mainHand.transform.rotation.eulerAngles.x > 0 && weaponWield.mainHand.transform.rotation.eulerAngles.x < 90;
-
-            //bHaptics
-            if (isDrinking && !BhapticsTactsuit.suitDisabled)
+            if (!BhapticsTactsuit.suitDisabled)
             {
                 BhapticsTactsuit.PlaybackHaptics("Drinking");
             }
 
+            return true;
         }
 
         private void OnTriggerEnter(Collider collider)
@@ -102,33 +93,112 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            if (isRightHand && EquipScript.getRight() == EquipType.Tankard)
+            if (isDominantHand &&
+                EquipScript.getRight() == EquipType.Tankard &&
+                collider.name == "MouthCollider")
             {
-                if (collider.name == "MouthCollider" && hasDrunk)
+                readyToDrink = true;
+            }
+
+            MaybeAttackCollider(collider, requireStab: false);
+        }
+
+        private void OnTriggerStay(Collider collider)
+        {
+            if (!isCollisionAllowed())
+            {
+                return;
+            }
+
+            if (CheckDrinking(collider)) {
+                return;
+            }
+
+            if (itemIsTool)
+            {
+                switch(EquipScript.getRight())
                 {
-                    hasDrunk = false;
+                    case EquipType.Cultivator:
+                    case EquipType.Hoe:
+                        if (isTerrain(collider.gameObject))
+                        {
+                            MaybeAttackCollider(collider, requireStab: false);
+                        }
+                        return;
                 }
-
                 return;
             }
 
-            var maybePlayer = collider.GetComponentInParent<Player>();
+            // Allow triggering a stab on a character target after contact.
+            // This allows stabbing with long weapons that are likely to have been overlapping with the target before attacking. 
+            MaybeStabCharacter(collider);
+        }
 
-            if (maybePlayer != null && maybePlayer == Player.m_localPlayer)
+        private void MaybeStabCharacter(Collider collider) {
+
+            var targetCharacter = collider.GetComponentInParent<Character>();
+            if (targetCharacter == null)
             {
                 return;
             }
 
-            if (item == null && !itemIsTool || !hasMomentum())
+            var cooldown = targetCharacter.GetComponent<AttackTargetMeshCooldown>();
+            if (cooldown != null && cooldown.inCoolDown())
             {
                 return;
             }
 
-            bool isSecondaryAttack = postSecondaryAttackCountdown <= 0 && RoomscaleSecondaryAttackUtils.IsSecondaryAttack(this.physicsEstimator, this.mainHandPhysicsEstimator);
-            if (EquipScript.getRight() == EquipType.Polearms)
+            MaybeAttackCollider(collider, requireStab: true);
+        }
+
+        private void MaybeAttackCollider(Collider collider, bool requireStab) {
+
+            if (Player.m_localPlayer != null &&
+                Player.m_localPlayer == collider.GetComponentInParent<Player>())
             {
-                // Allow continuing an ongoing atgeir secondary attack (multitarget swipe) until cooldown finishes.
-                isSecondaryAttack = postSecondaryAttackCountdown > 0 || isSecondaryAttack;
+                return;
+            }
+
+            if (item == null && !itemIsTool)
+            {
+                return;
+            }
+
+            if (!hasMomentum(out bool isStab))
+            {
+                return;
+            }
+
+            if (requireStab && !isStab)
+            {
+                return;
+            }
+
+            if (itemIsTool)
+            {
+                switch (EquipScript.getRight())
+                {
+                    case EquipType.Cultivator:
+                    case EquipType.Hoe:
+                        hasPendingToolUsageOutput = LocalWeaponWield.isCurrentlyTwoHanded();
+                        return;
+                    case EquipType.Hammer:
+                        hasPendingToolUsageOutput = Player.m_localPlayer.InRepairMode();
+                        return;
+                    default:
+                        return;
+                }
+            }
+
+            bool isSecondaryAttack;
+            if (postSecondaryAttackCountdown <= 0)
+            {
+                isSecondaryAttack = RoomscaleSecondaryAttackUtils.IsSecondaryAttack(this.physicsEstimator, this.mainHandPhysicsEstimator);
+            }
+            else
+            {
+                // Allow continuing an ongoing atgeir secondary attack (multitarget swipe) until swipe timer finishes.
+                isSecondaryAttack = (isTwoHandedMultitargetSwipeActive && EquipScript.getRight() == EquipType.Polearms);
             }
 
             if (!tryHitTarget(collider.gameObject, isSecondaryAttack))
@@ -145,7 +215,7 @@ namespace ValheimVRMod.Scripts
 
             if (WeaponUtils.IsTwoHandedMultitargetSwipe(currentAttack) && twoHandedMultitargetSwipeCountdown <= 0)
             {
-                twoHandedMultitargetSwipeCountdown = WeaponUtils.GetAttackDuration(currentAttack);
+                twoHandedMultitargetSwipeCountdown = twoHandedMultitargetSwipeDuration = WeaponUtils.GetAttackDuration(currentAttack);
             }
 
             StaticObjects.lastHitPoint = transform.position;
@@ -156,13 +226,13 @@ namespace ValheimVRMod.Scripts
                         Player.m_localPlayer.m_animEvent,
                         null, item, null, 0.0f, 0.0f))
             {
-                if (isRightHand)
+                if (isDominantHand)
                 {
-                    VRPlayer.rightHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, SteamVR_Input_Sources.RightHand);
+                    VRPlayer.dominantHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, VRPlayer.dominantHandInputSource);
                 }
                 else
                 {
-                    VRPlayer.leftHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, SteamVR_Input_Sources.LeftHand);
+                    VRPlayer.dominantHand.otherHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, VRPlayer.nonDominantHandInputSource);
                 }
                 //bHaptics
                 if (!BhapticsTactsuit.suitDisabled)
@@ -174,7 +244,6 @@ namespace ValheimVRMod.Scripts
 
         private bool tryHitTarget(GameObject target, bool isSecondaryAttack)
         {
-
             // ignore certain Layers
             if (ignoreLayers.Contains(target.layer))
             {
@@ -200,28 +269,23 @@ namespace ValheimVRMod.Scripts
                 return false;
             }
 
-            isLastHitOnTerrain = false;
+            isLastHitOnTerrain = isTerrain(target);
 
-            if (target.GetComponentInParent<MineRock5>() != null)
-            {
-                target = target.transform.parent.gameObject;
-            }
-
-            if (target.GetComponent<Heightmap>() != null)
-            {
-                isLastHitOnTerrain = true;
-            }
-
-            var character = target.GetComponentInParent<Character>();
-            if (character != null)
-            {
-                target = character.gameObject;
-            }
-
-            var attackTargetMeshCooldown = target.GetComponent<AttackTargetMeshCooldown>();
+            AttackTargetMeshCooldown attackTargetMeshCooldown = target.GetComponentInParent<AttackTargetMeshCooldown>();
             if (attackTargetMeshCooldown == null)
             {
-                attackTargetMeshCooldown = target.AddComponent<AttackTargetMeshCooldown>();
+                var cooldownObject = target;
+                var character = target.GetComponentInParent<Character>();
+                if (character != null)
+                {
+                    cooldownObject = character.gameObject;
+                }
+                else if (target.GetComponentInParent<MineRock5>() != null)
+                {
+                    cooldownObject = target.transform.parent.gameObject;
+                }
+
+                attackTargetMeshCooldown = cooldownObject.AddComponent<AttackTargetMeshCooldown>();
             }
 
             if (isSecondaryAttack)
@@ -248,35 +312,38 @@ namespace ValheimVRMod.Scripts
             transform.SetParent(Player.m_localPlayer.transform, true);
         }
 
-        public void setColliderParent(Transform obj, string name, bool rightHand)
+        public void setColliderParent(MeshFilter meshFilter, Vector3 handPosition, string name, bool isDominantHand)
         {
-            outline = obj.parent.gameObject.AddComponent<Outline>();
+            var meshTranform = meshFilter.transform;
+            outline = meshTranform.parent.gameObject.AddComponent<Outline>();
             outline.OutlineMode = Outline.Mode.OutlineVisible;
 
-            isRightHand = rightHand;
-            if (isRightHand)
-            {
-                item = Player.m_localPlayer.GetRightItem();
-            }
-            else
-            {
-                item = Player.m_localPlayer.GetLeftItem();
-            }
+            this.isDominantHand = isDominantHand;
+            item = this.isDominantHand ? Player.m_localPlayer.GetRightItem() : Player.m_localPlayer.GetLeftItem();
 
             attack = item.m_shared.m_attack.Clone();
             secondaryAttack = item.m_shared.m_secondaryAttack.Clone();
 
-            itemIsTool = name == "Hammer";
+            itemIsTool = (name == "Hammer" || EquipScript.getRight() == EquipType.Hoe || EquipScript.getRight() == EquipType.Cultivator);
 
             if (colliderParent == null)
             {
                 colliderParent = new GameObject();
             }
 
+            switch(EquipScript.getRight())
+            {
+                case EquipType.Fishing:
+                case EquipType.Magic:
+                case EquipType.SpearChitin:
+                    setScriptActive(false);
+                    return;
+            }
+
             try
             {
-                WeaponColData colliderData = WeaponUtils.getForName(name, item);
-                colliderParent.transform.parent = obj;
+                WeaponColData colliderData = WeaponUtils.GetColliderData(name, item, meshFilter, handPosition);
+                colliderParent.transform.parent = meshTranform;
                 colliderParent.transform.localPosition = colliderData.pos;
                 colliderParent.transform.localRotation = Quaternion.Euler(colliderData.euler);
                 colliderParent.transform.localScale = colliderData.scale;
@@ -291,7 +358,6 @@ namespace ValheimVRMod.Scripts
 
         private void Update()
         {
-
             if (!outline || ButtonSecondaryAttackManager.isSecondaryAttackStarted)
             {
                 return;
@@ -356,47 +422,73 @@ namespace ValheimVRMod.Scripts
             }
         }
 
-        public bool hasMomentum()
+        private bool hasMomentum(out bool isStab)
         {
-            if (isStab())
-            {
-                return true;
-            }
-
-            float handSpeed;
+            Vector3 velocity;
+            float speed;
             if (weaponWield.twoHandedState == WeaponWield.TwoHandedState.SingleHanded)
             {
-                handSpeed =
-                    weaponWield.isLeftHandWeapon() ^ VHVRConfig.LeftHanded() ?
-                    VRPlayer.leftHandPhysicsEstimator.GetAverageVelocityInSnapshots().magnitude :
-                    VRPlayer.rightHandPhysicsEstimator.GetAverageVelocityInSnapshots().magnitude;
+                velocity =
+                    WeaponUtils.GetWeaponVelocity(
+                        mainHandPhysicsEstimator.GetAverageVelocityInSnapshots(),
+                        mainHandPhysicsEstimator.GetAngularVelocity(),
+                        LocalWeaponWield.weaponForward.normalized * WEAPON_ANGULAR_WEIGHT_OFFSET);
+                speed = velocity.magnitude;
             }
             else
             {
-                handSpeed =
-                    Mathf.Max(
-                        VRPlayer.leftHandPhysicsEstimator.GetAverageVelocityInSnapshots().magnitude,
-                        VRPlayer.rightHandPhysicsEstimator.GetAverageVelocityInSnapshots().magnitude);
+                var leftHandVelocity = VRPlayer.rightHandPhysicsEstimator.GetAverageVelocityInSnapshots();
+                var rightHandVelocity = VRPlayer.rightHandPhysicsEstimator.GetAverageVelocityInSnapshots();
+                var leftHandSpeed = leftHandVelocity.magnitude;
+                var rightHandSpeed = rightHandVelocity.magnitude;
+                if (leftHandSpeed < rightHandSpeed)
+                {
+                    velocity = rightHandVelocity;
+                    speed = rightHandSpeed;
+                }
+                else
+                {
+                    velocity = leftHandVelocity;
+                    speed = leftHandSpeed;
+                }
             }
 
-            return handSpeed >= MIN_SPEED * VHVRConfig.SwingSpeedRequirement();
+            isStab = WeaponCollision.isStab(velocity);
+
+            return isStab || speed > GetMinSpeed();
         }
 
-        private bool isStab()
+        private float GetMinSpeed()
         {
-            Vector3 attackVelocity = mainHandPhysicsEstimator == null ? Vector3.zero : mainHandPhysicsEstimator.GetAverageVelocityInSnapshots();
-
-            if (Vector3.Angle(LocalWeaponWield.weaponForward, attackVelocity) > (LocalWeaponWield.isCurrentlyTwoHanded() ? MAX_STAB_ANGLE_TWOHAND : MAX_STAB_ANGLE))
+            if (EquipScript.getRight() == EquipType.Hammer)
             {
+                return 0.75f;
+            }
+            if (itemIsTool)
+            {
+                return 1.5f;
+            }
+            return MIN_SPEED * VHVRConfig.SwingSpeedRequirement();
+        }
+
+        private static bool isStab(Vector3 velocity)
+        {
+            if (!WeaponUtils.IsStab(velocity, LocalWeaponWield.weaponForward, LocalWeaponWield.isCurrentlyTwoHanded())) {
                 return false;
             }
 
-            if (Vector3.Dot(attackVelocity, LocalWeaponWield.weaponForward) > MIN_STAB_SPEED * VHVRConfig.SwingSpeedRequirement())
+            if (Vector3.Dot(velocity, LocalWeaponWield.weaponForward) < MIN_STAB_SPEED)
             {
-                LogUtils.LogDebug("VHVR: stab detected on weapon direction: " + LocalWeaponWield.weaponForward);
-                return true;
+                return false;
             }
-            return false;
+               
+            LogUtils.LogDebug("VHVR: stab detected on weapon direction: " + LocalWeaponWield.weaponForward);
+            return true;
+        }
+
+        private static bool isTerrain(GameObject target)
+        {
+            return (target.GetComponentInParent<MineRock5>() == null ? target.transform : target.transform.parent).GetComponent<Heightmap>() != null;
         }
     }
 }

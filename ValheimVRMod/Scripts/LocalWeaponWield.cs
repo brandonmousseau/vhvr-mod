@@ -15,6 +15,8 @@ namespace ValheimVRMod.Scripts
         public static Vector3 weaponForward;
         public static TwoHandedState LocalPlayerTwoHandedState { get; private set; }
         public static bool IsDominantHandBehind { get { return isCurrentlyTwoHanded() && (LocalPlayerTwoHandedState == TwoHandedState.RightHandBehind ^ VHVRConfig.LeftHanded()); } }
+        public static bool isAiming { get; private set; }  
+        public static Vector3 localWeaponTip { get; private set; }
 
         protected bool isRedDotVisible { set { redDotRenderer.enabled = value; } }
 
@@ -75,12 +77,29 @@ namespace ValheimVRMod.Scripts
             if (attackAnimation == "knife_stab")
             {
                 KnifeWield();
-                weaponForward = GetWeaponPointingDir();
+                weaponForward = GetWeaponPointingDirection();
             }
 
             if (!redDotRenderer)
             {
                 InitializeRedDot();
+            }
+
+            if (EquipScript.getLeft() == EquipType.Crossbow && VHVRConfig.OneHandedBow())
+            {
+                isAiming = true;
+            }
+            else if (IsDundr())
+            {
+                isAiming = true;
+            }
+            else if (EquipScript.getLeft() == EquipType.Crossbow || EquipScript.getRight() == EquipType.Magic)
+            {
+                isAiming = isCurrentlyTwoHanded();
+            }
+            else
+            {
+                isAiming = false;
             }
 
             updateCrosshair();
@@ -113,6 +132,7 @@ namespace ValheimVRMod.Scripts
             lastRenderedTransform.SetPositionAndRotation(transform.position, transform.rotation);
             lastRenderedTransform.localScale = Vector3.one;
             lastRenderedTransform.SetParent(null, true);
+            localWeaponTip = transform.position + (weaponLength - distanceBetweenGripAndRearEnd) * weaponForward;
 
             return weaponForward;
         }
@@ -150,9 +170,7 @@ namespace ValheimVRMod.Scripts
             
             switch (itemName)
             {
-                case "Hoe":
                 case "Hammer":
-                case "Cultivator":
                     return TwoHandedState.SingleHanded;
                 case "FishingRod":
                     if (FishingManager.instance && FishingManager.instance.reelGrabbed)
@@ -164,7 +182,7 @@ namespace ValheimVRMod.Scripts
                 return TwoHandedState.SingleHanded;
             }
             
-            if (isLeftHandWeapon() && EquipScript.getLeft() != EquipType.Crossbow)
+            if (nonDominantHandHasWeapon() && EquipScript.getLeft() != EquipType.Crossbow)
             {
                 return TwoHandedState.SingleHanded;
             }
@@ -184,7 +202,7 @@ namespace ValheimVRMod.Scripts
 
             // Enter two-handed wield as needed.
             Vector3 rightHandToLeftHand = getHandCenter(GetLeftHandTransform()) - getHandCenter(GetRightHandTransform());
-            float wieldingAngle = Vector3.Angle(rightHandToLeftHand, GetWeaponPointingDir());
+            float wieldingAngle = Vector3.Angle(rightHandToLeftHand, GetWeaponPointingDirection());
             if (wieldingAngle < 60)
             {
                 return TwoHandedState.RightHandBehind;
@@ -210,12 +228,12 @@ namespace ValheimVRMod.Scripts
             if (SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource))
             {
                 // Reverse grip
-                transform.rotation = GetOriginalRotation() * Quaternion.AngleAxis(180, Vector3.right);
+                transform.rotation = originalRotation * Quaternion.AngleAxis(180, Vector3.right);
                 knifeReverseHold = true;
             }
             else if (knifeReverseHold)
             {
-                transform.rotation = GetOriginalRotation();
+                transform.rotation = originalRotation;
                 knifeReverseHold = false;
             }
         }
@@ -239,7 +257,7 @@ namespace ValheimVRMod.Scripts
             }
         }
 
-        public bool isLeftHandWeapon()
+        public static bool nonDominantHandHasWeapon()
         {
             var player = Player.m_localPlayer;
             var leftHandItem = player?.m_leftItem?.m_shared.m_itemType;
@@ -260,11 +278,6 @@ namespace ValheimVRMod.Scripts
             crosshair.transform.SetParent(transform, false);
             crosshair.transform.position = transform.position + CrosshairManager.WEAPON_CROSSHAIR_DISTANCE * weaponForward;
             crosshair.transform.localRotation = Quaternion.identity;
-            bool isAiming = (EquipScript.getLeft() == EquipType.Crossbow || EquipScript.getRight() == EquipType.Magic) && isCurrentlyTwoHanded();
-            if (EquipScript.getLeft() == EquipType.Crossbow && VHVRConfig.OneHandedBow())
-            {
-                isAiming = true;
-            }
             crosshair.SetActive(isAiming);
         }
 
@@ -277,13 +290,8 @@ namespace ValheimVRMod.Scripts
             GameObject.Destroy(redDotRenderer.gameObject.GetComponent<Collider>());
             if (RedDotMaterial == null)
             {
-                // Since the red dot is rendered at a far distance and could be subject to strong fog effect,
-                // we need a fog-free material so that its color does not fade.
-                // TODO: consider writing a custom shader instead of borrowing the VR pointer material.
-                RedDotMaterial = new Material(VRPlayer.leftPointer.gameObject.GetComponentInChildren<Renderer>().material);
-                RedDotMaterial.color = Color.black;
-                RedDotMaterial.EnableKeyword("_EMISSION");
-                RedDotMaterial.SetColor("_EmissionColor", Color.red);
+                RedDotMaterial = Object.Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
+                RedDotMaterial.color = Color.red;
             }
 
             redDotRenderer.sharedMaterial = RedDotMaterial;

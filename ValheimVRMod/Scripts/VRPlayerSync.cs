@@ -20,6 +20,7 @@ namespace ValheimVRMod.Scripts {
 
         private WeaponWield.TwoHandedState twoHandedState = WeaponWield.TwoHandedState.SingleHanded;
         private bool isLeftHanded = false;
+        private bool holdingInversedSpear = false;
 
         private Player player;
         private Vector3 ownerLastPositionCamera = Vector3.zero;
@@ -53,6 +54,8 @@ namespace ValheimVRMod.Scripts {
 
         public int remotePlayerNonDominantHandItemHash;
         public int remotePlayerDominantHandItemHash;
+        public bool hasReceivedData { get; private set; }
+
 
         private void Awake() {
             camera = new GameObject();
@@ -90,11 +93,16 @@ namespace ValheimVRMod.Scripts {
         {
             return isLeftHanded;
         }
+
+        public bool HoldingInversedSpear()
+        {
+            return holdingInversedSpear;
+        }
         
         public bool IsVrEnabled()
         {
             return vrik != null;
-        }        
+        }
 
         private void calculateOwnerVelocities(float dt)
         {
@@ -150,14 +158,28 @@ namespace ValheimVRMod.Scripts {
             pkg.Write(BowLocalManager.instance != null && BowLocalManager.instance.pulling);
             pkg.Write(isLeftHanded = VHVRConfig.LeftHanded());
             pkg.Write((byte) (twoHandedState = LocalWeaponWield.LocalPlayerTwoHandedState));
+            pkg.Write(
+                holdingInversedSpear =
+                    EquipScript.isSpearEquipped() &&
+                    !ThrowableManager.isAiming &&
+                    (VHVRConfig.SpearInverseWield() || twoHandedState != WeaponWield.TwoHandedState.SingleHanded));
 
             GetComponent<ZNetView>().GetZDO().Set("vr_data", pkg.GetArray());
         }
 
+        private static readonly Quaternion DUNDR_SINGLE_HAND_ADDITIONAL_ROTATION = Quaternion.Euler(55, 0, 0);
         private void writeData(ZPackage pkg, GameObject obj, Vector3 ownerVelocity) 
         {
+            var rotation = obj.transform.rotation;
+            if (obj == rightHand ^ isLeftHanded)
+            {
+                if (!LocalWeaponWield.isCurrentlyTwoHanded() && EquipScript.isDundrEquipped())
+                {
+                    rotation *= DUNDR_SINGLE_HAND_ADDITIONAL_ROTATION;
+                }
+            }
             pkg.Write(obj.transform.position);
-            pkg.Write(obj.transform.rotation);
+            pkg.Write(rotation);
             pkg.Write(ownerVelocity);
         }
 
@@ -176,6 +198,7 @@ namespace ValheimVRMod.Scripts {
             {
                 return;
             }
+            hasReceivedData = true;
             ZPackage pkg = new ZPackage(vr_data);
             var currentDataRevision = zdo.DataRevision;
             if (currentDataRevision != lastDataRevision)
@@ -203,19 +226,17 @@ namespace ValheimVRMod.Scripts {
             maybePullBow(pkg.ReadBool());
             isLeftHanded = pkg.ReadBool();
             twoHandedState = (WeaponWield.TwoHandedState) pkg.ReadByte();
+            holdingInversedSpear = pkg.ReadBool();
         }
 
         private void maybePullBow(bool pulling) {
-
             if (bowManager == null) {
                 if (!pulling || currentLeftWeapon == null) {
                     return;
-                }
-                
+                }                
                 bowManager = currentLeftWeapon.AddComponent<BowManager>();
                 bowManager.mainHand = isLeftHanded ? leftHand.transform : rightHand.transform;
             }
-
             bowManager.pulling = pulling;
         }
 

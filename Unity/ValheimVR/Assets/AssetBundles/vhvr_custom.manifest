@@ -1,9 +1,9 @@
 ManifestFileVersion: 0
-CRC: 692029001
+CRC: 210283689
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 8c6f157f32466687bd832024678665e4
+    Hash: 4290c62e8a679e6e5fc4791670e3a5c9
   TypeTreeHash:
     serializedVersion: 2
     Hash: 1fe3abd029edb3522ae5dbbc711d0a74
@@ -30,15 +30,18 @@ ClassTypes:
 SerializeReferenceClassIdentifiers: []
 Assets:
 - Assets/CustomResources/RuneStakeCy.prefab
+- Assets/CustomResources/Materials/Unlit.mat
 - Assets/QuickOutline/Resources/Shaders/OutlineFill.shader
 - Assets/CustomResources/Textures/recenter.png
 - Assets/QuickOutline/Resources/Materials/OutlineMask.mat
+- Assets/CustomResources/Materials/StandardClone.mat
 - Assets/CustomResources/CustomObject/Reel/Reel.prefab
 - Assets/CustomResources/Textures/sit.png
 - Assets/CustomResources/Materials/OutlineMaterial.mat
 - Assets/CustomResources/Materials/BowBendingMaterial.mat
 - Assets/QuickOutline/Resources/Shaders/OutlineMask.shader
 - Assets/CustomResources/Textures/black_screen.png
+- Assets/CustomResources/Materials/Slash.mat
 - Assets/CustomResources/Materials/vr_panel_unlit.mat
 - Assets/CustomResources/GizmoRing.prefab
 - Assets/CustomResources/Textures/map.png

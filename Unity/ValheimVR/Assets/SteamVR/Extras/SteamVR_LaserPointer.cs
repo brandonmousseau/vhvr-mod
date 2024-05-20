@@ -1,4 +1,4 @@
-﻿//======= Copyright (c) Valve Corporation, Google LLC, All rights reserved. ===============
+//======= Copyright (c) Valve Corporation, Google LLC, All rights reserved. ===============
 using UnityEngine;
 using System.Collections;
 
@@ -94,7 +94,7 @@ namespace Valve.VR.Extras
                     Object.Destroy(collider);
                 }
             }
-            Material newMaterial = new Material(Shader.Find("Unlit/Color"));
+            Material newMaterial = new Material(ShaderLoader.GetShader("Custom/SteamVR_ClearAll"));
             newMaterial.SetColor("_Color", color);
             pointer.GetComponent<MeshRenderer>().material = newMaterial;
         }

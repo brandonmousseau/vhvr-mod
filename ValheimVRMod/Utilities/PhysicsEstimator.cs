@@ -126,21 +126,21 @@ namespace ValheimVRMod.Utilities
             return refTransform == null ? v : refTransform.TransformVector(v);
         }
 
-        public Quaternion GetAngularVelocity()
+        public Vector3 GetAngularVelocity()
         {
             if (hand)
             {
-                Vector3 angularVelocity = hand.GetTrackedObjectAngularVelocity();
-                return Quaternion.AngleAxis(angularVelocity.magnitude * 180 / Mathf.PI, angularVelocity);
+                return hand.GetTrackedObjectAngularVelocity();
             }
             if (rotationSnapshots.Count <= 1)
             {
-                return Quaternion.identity;
+                return Vector3.zero;
             }
             Quaternion deltaRotation = Quaternion.Inverse(rotationSnapshots[0]) * rotationSnapshots[rotationSnapshots.Count - 1];
             float deltaT = (rotationSnapshots.Count - 1) * Time.fixedDeltaTime;
-            Quaternion w = Quaternion.SlerpUnclamped(Quaternion.identity, deltaRotation, 1 / deltaT);
-            return refTransform == null ? w : refTransform.rotation * w * Quaternion.Inverse(refTransform.rotation);
+            Quaternion.SlerpUnclamped(Quaternion.identity, deltaRotation, 1 / deltaT).ToAngleAxis(out float angle, out Vector3 axis);
+            var angularVelocity = angle * axis * Mathf.PI / 180;
+            return refTransform == null ? angularVelocity : refTransform.TransformVector(angularVelocity);
         }
             
         public Vector3 GetAcceleration() {

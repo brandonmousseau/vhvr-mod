@@ -41,7 +41,7 @@ namespace ValheimVRMod.Scripts.Block
                 bool blockWithSpeed = weaponVelocity.magnitude > MIN_PARRY_SPEED;
                 _blocking = (blockWithAngle || blockWithSpeed) && hitIntersectsBlockBox(hitData) && SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource);
             }
-            else if (weaponWield.isLeftHandWeapon() && EquipScript.getLeft() != EquipType.Crossbow)
+            else if (LocalWeaponWield.nonDominantHandHasWeapon() && EquipScript.getLeft() != EquipType.Crossbow)
             {
                 var leftAngle = Vector3.Dot(hitData.m_dir, offhand.TransformDirection(handUp));
                 var rightAngle = Vector3.Dot(hitData.m_dir, hand.TransformDirection(handUp));

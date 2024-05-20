@@ -1,25 +1,20 @@
-using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using ValheimVRMod.Scripts.Block;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using Valve.VR;
-using Valve.VR.InteractionSystem;
 
 namespace ValheimVRMod.Scripts
 {
     public class FistCollision : MonoBehaviour
     {
-        public static FistCollision instance;
         private const float MIN_SPEED = 5f;
-        private GameObject colliderParent = null;
+        private const float WEAPON_OFFSET = 0.125f;
+
         private bool isRightHand;
         private HandGesture handGesture;
-        private Hand thisHand { get { return isRightHand ? VRPlayer.rightHand : VRPlayer.leftHand; } }
         private PhysicsEstimator physicsEstimator { get { return isRightHand ? VRPlayer.rightHandPhysicsEstimator : VRPlayer.leftHandPhysicsEstimator; } }
 
-        private float fistRotation = 0;
         private static float LocalPlayerSecondaryAttackCooldown = 0;
 
         private static readonly int[] ignoreLayers = {
@@ -29,10 +24,16 @@ namespace ValheimVRMod.Scripts
             LayerUtils.CHARARCTER_TRIGGER
         };
 
+        private EquipType? currentEquipType = null;
+        private Vector3 desiredPosition;
+        private Quaternion desiredRotation;
+
         private void Awake()
         {
-            colliderParent = new GameObject();
-            instance = this;
+            if (VHVRConfig.ShowDebugColliders())
+            {
+                WeaponUtils.CreateDebugSphere(transform);
+            }
         }
 
         void FixedUpdate()
@@ -47,16 +48,26 @@ namespace ValheimVRMod.Scripts
 
         private void OnTriggerEnter(Collider collider)
         {
-            if (!isCollisionAllowed())
+            if (!canAttackWithCollision())
             {
                 return;
             }
 
             var maybePlayer = collider.GetComponentInParent<Player>();
-
             if (maybePlayer != null && maybePlayer == Player.m_localPlayer)
             {
                 return;
+            }
+
+            if (Player.m_localPlayer.IsRiding())
+            {
+                var targetCharacter = collider.GetComponentInChildren<Character>();
+                var doodadController = Player.m_localPlayer.GetDoodadController();
+                if (doodadController is Sadle && ((Sadle)doodadController).m_monsterAI.m_character == targetCharacter)
+                {
+                    // Do not attack the animal that the player is riding.
+                    return;
+                }
             }
 
             if (!hasMomentum())
@@ -65,7 +76,7 @@ namespace ValheimVRMod.Scripts
             }
 
             bool isCurrentlySecondaryAttack = LocalPlayerSecondaryAttackCooldown <= 0 && RoomscaleSecondaryAttackUtils.IsSecondaryAttack(physicsEstimator, physicsEstimator);
-            bool usingWeapon = usingClaws() || usingDualKnives();
+            bool usingWeapon = hasDualWieldingWeaponEquipped();
             var item = usingWeapon ? Player.m_localPlayer.GetRightItem() : Player.m_localPlayer.m_unarmedWeapon.m_itemData;
             Attack primaryAttack = item.m_shared.m_attack;
             Attack attack = isCurrentlySecondaryAttack ? item.m_shared.m_secondaryAttack : primaryAttack;
@@ -124,96 +135,95 @@ namespace ValheimVRMod.Scripts
 
         private void OnRenderObject()
         {
-            transform.SetParent(colliderParent.transform);
-            transform.localRotation = Quaternion.identity;
-            transform.localPosition = Vector3.zero;
-            transform.localScale = Vector3.one;
-            transform.SetParent(Player.m_localPlayer.transform, true);
+
+            refreshColliderData();
+
+            // The collision object is affected by physics so its position and rotaiton
+            // may need to force-updated to counteract the physics.
+            transform.localPosition = desiredPosition;
+            transform.localRotation = desiredRotation;
         }
 
-        public void setColliderParent(Transform obj, bool rightHand)
+        public void setColliderParent(Transform parent, HandGesture handGesture, bool isRightHand)
         {
-
-            isRightHand = rightHand;
-            handGesture = obj.GetComponent<HandGesture>();
-            colliderParent = new GameObject();
-            colliderParent.transform.parent = obj;
-            colliderParent.transform.localPosition = new Vector3(0, 0.003f, 0.00016f);
-            colliderParent.transform.localScale *= 0.45f;
+            transform.parent = parent;
+            this.handGesture = handGesture;
+            this.isRightHand = isRightHand;
+            currentEquipType = null;
         }
 
-        private bool isCollisionAllowed()
+        private void refreshColliderData()
         {
-
-            SteamVR_Input_Sources inputSource;
-
-            if (isRightHand)
+            if (!Player.m_localPlayer || EquipScript.getRight() == currentEquipType)
             {
-                inputSource = SteamVR_Input_Sources.RightHand;
-            }
-            else
-            {
-                inputSource = SteamVR_Input_Sources.LeftHand;
+                return;
             }
 
-            var isUnequipedWithFistGesture =
-                handGesture.isUnequiped()
-                && SteamVR_Actions.valheim_Grab.GetState(inputSource);
+            currentEquipType = EquipScript.getRight();
 
-            var isEquippedWithFistGesture =
-                (usingClaws() || usingDualKnives()) && SteamVR_Actions.valheim_Grab.GetState(inputSource);
+            var colliderData =
+                WeaponUtils.GetDualWieldLeftHandColliderData(Player.m_localPlayer?.GetRightItem());
 
-            return VRPlayer.inFirstPerson && colliderParent != null &&
-                   (isEquippedWithFistGesture || isUnequipedWithFistGesture);
+            desiredPosition =
+                isRightHand ?
+                Vector3.Reflect(colliderData.pos, Vector3.right) :
+                colliderData.pos;
+            desiredRotation = Quaternion.Euler(colliderData.euler);
+            transform.localScale = colliderData.scale;
         }
 
+        private bool canAttackWithCollision()
+        {
+            if (!VRPlayer.inFirstPerson || transform.parent == null)
+            {
+                return false;
+            }
+
+            if (handGesture.isHandFree())
+            {
+                SteamVR_Input_Sources inputSource = isRightHand ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand;
+                return SteamVR_Actions.valheim_Grab.GetState(inputSource);
+            }
+
+            return hasDualWieldingWeaponEquipped();
+        }
 
         public bool hasMomentum()
         {
-            return physicsEstimator.GetVelocity().magnitude >= MIN_SPEED * VHVRConfig.SwingSpeedRequirement();
+            var handVelocity = physicsEstimator.GetVelocity();
+            var minSpeed = MIN_SPEED * VHVRConfig.SwingSpeedRequirement();
+
+            if (EquipScript.getRight() == EquipType.Claws || !hasDualWieldingWeaponEquipped())
+            {
+                return handVelocity.magnitude >= minSpeed;
+            }
+
+            var weaponOffsetDirection = (transform.position - physicsEstimator.transform.position).normalized;
+            var weaponVelocity =
+                WeaponUtils.GetWeaponVelocity(
+                    handVelocity, physicsEstimator.GetAngularVelocity(), weaponOffsetDirection * WEAPON_OFFSET);
+
+            return weaponVelocity.magnitude >= minSpeed;
         }
 
-        public bool usingClaws()
+        public static bool hasDualWieldingWeaponEquipped()
         {
-            var item = EquipScript.getRight();
-            return item.Equals(EquipType.Claws) || item.Equals(EquipType.DualKnives);
+            var equipType = EquipScript.getRight();
+            return equipType.Equals(EquipType.Claws) ||
+                equipType.Equals(EquipType.DualAxes) ||
+                equipType.Equals(EquipType.DualKnives);
         }
 
-        public bool usingDualKnives()
+        public bool blockingWithFist()
         {
-            var item = EquipScript.getRight();
-            if (item.Equals(EquipType.DualKnives))
+            if (!handGesture.isHandFree() && !hasDualWieldingWeaponEquipped())
             {
-                transform.transform.localRotation = Quaternion.Euler(new Vector3(fistRotation, 0, 0));
-            }
-            else
-            {
-                transform.transform.localRotation = Quaternion.identity;
-            }
-            return item.Equals(EquipType.DualKnives);
-        }
-
-        public bool usingFistWeapon()
-        {
-            SteamVR_Input_Sources inputSource;
-
-            if (isRightHand)
-            {
-                inputSource = SteamVR_Input_Sources.RightHand;
-            }
-            else
-            {
-                inputSource = SteamVR_Input_Sources.LeftHand;
+                return false;
             }
 
-            var isUnequipedWithFistGesture =
-                handGesture.isUnequiped()
-                && SteamVR_Actions.valheim_Grab.GetState(inputSource);
+            SteamVR_Input_Sources inputSource = isRightHand ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand;
 
-            var isEquippedWithFistGesture =
-                (usingClaws() || usingDualKnives()) && SteamVR_Actions.valheim_Grab.GetState(inputSource);
-
-            return (isEquippedWithFistGesture || isUnequipedWithFistGesture);
+            return SteamVR_Actions.valheim_Grab.GetState(inputSource);
         }
     }
 }
