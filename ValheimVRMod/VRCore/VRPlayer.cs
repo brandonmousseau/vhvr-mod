@@ -402,6 +402,20 @@ namespace ValheimVRMod.VRCore
             {
                 if (hit.distance < distance)
                 {
+                    if (hit.collider.attachedRigidbody != null &&
+                        hit.collider.attachedRigidbody.gameObject == getPlayerCharacter().gameObject)
+                    {
+                        continue;
+                    }
+
+                    if (!(hit.collider.GetComponent<MeshRenderer>()?.enabled ?? false))
+                    {
+                        if (!(hit.collider.GetComponent<SkinnedMeshRenderer>()?.enabled ?? false))
+                        {
+                            continue;
+                        }
+                    }
+
                     distance = hit.distance;
                 }
             }
