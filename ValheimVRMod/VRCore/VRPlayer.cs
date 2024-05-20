@@ -75,6 +75,8 @@ namespace ValheimVRMod.VRCore
         private Camera _vrCam;
         private Camera _handsCam;
         private Camera _skyboxCam;
+        private Camera _followCamera;
+        private Vector3 followCameraVelocity;
 
         //Roomscale movement variables
         private Transform _vrCameraRig;
@@ -367,6 +369,52 @@ namespace ValheimVRMod.VRCore
                     roomscaleMovement = Vector3.zero;
                 }
             }
+
+            UpdateFollowCamera();
+        }
+
+        private void UpdateFollowCamera()
+        {
+            if (_followCamera == null)
+            {
+                if (!VHVRConfig.UseFollowCameraOnFlatscreen())
+                {
+                    return;
+                }
+                enableFollowCamera();
+            }
+
+            if (_followCamera == null || _vrCam == null)
+            {
+                return;
+            }
+
+            _followCamera.enabled = VHVRConfig.UseFollowCameraOnFlatscreen();
+            if (!_followCamera.enabled)
+            {
+                return;
+            }
+
+            float distance = 3;
+            var targetPosition = _vrCam.transform.position + 0.25f * Vector3.up;
+            var hits = Physics.RaycastAll(targetPosition, _followCamera.transform.position - targetPosition, distance);
+            foreach (var hit in hits)
+            {
+                if (hit.distance < distance)
+                {
+                    distance = hit.distance;
+                }
+            }
+
+            _followCamera.transform.position =
+                Vector3.SmoothDamp(
+                    _followCamera.transform.position,
+                    Vector3.MoveTowards(targetPosition, _followCamera.transform.position, Mathf.Max(0.125f, distance)),
+                    ref followCameraVelocity,
+                    0.25f);
+
+            _followCamera.transform.LookAt(_vrCam.transform);
+
         }
 
         // Fixes an issue on Pimax HMDs that causes rotation to be incorrect:
@@ -675,6 +723,26 @@ namespace ValheimVRMod.VRCore
             handsCamera.transform.SetParent(vrCam.transform);
             handsCamera.enabled = true;
             _handsCam = handsCamera;
+        }
+
+        private void enableFollowCamera()
+        {
+            Camera vrCam = CameraUtils.getCamera(CameraUtils.VR_CAMERA);
+            if (vrCam == null || vrCam.gameObject == null)
+            {
+                return;
+            }
+            LogDebug("Enabling Follow Camera");
+            _followCamera = new GameObject(CameraUtils.FOLLOW_CAMERA).AddComponent<Camera>();
+            _followCamera.CopyFrom(vrCam);
+            _followCamera.depth = 4;
+            // Borrow the UI layer to render headgears which should be hidden for the VR camera.
+            _followCamera.cullingMask |= (1 << LayerMask.NameToLayer("UI"));
+            _followCamera.transform.position = vrCam.transform.position;
+            _followCamera.stereoTargetEye = StereoTargetEyeMask.None;
+            _followCamera.enabled = true;
+            _followCamera.ResetAspect();
+            _followCamera.fieldOfView = 75;
         }
 
         // Search for the original skybox cam, if found, copy it, disable it,
