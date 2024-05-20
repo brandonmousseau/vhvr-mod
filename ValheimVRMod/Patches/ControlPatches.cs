@@ -1145,11 +1145,6 @@ namespace ValheimVRMod.Patches {
                 {
                     return;
                 }
-                dir = __instance.GetMoveDir();
-                if (dir == Vector3.zero)
-                {
-                    return;
-                }
             }
 
             if (__instance.m_stamina < __instance.m_dodgeStaminaUsage)
