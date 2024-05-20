@@ -309,11 +309,12 @@ namespace ValheimVRMod.Utilities
             mirrorMode = config.Bind("General",
                                      "MirrorMode",
                                      "Right",
-                                     new ConfigDescription("The VR mirror mode.Legal values: OpenVR, Right, Left, None. Note: OpenVR is" +
+                                     new ConfigDescription("The VR mirror mode.Legal values: OpenVR, Right, Left, Follow, None. Note: OpenVR is" +
                                      " required if you want to see the Overlay-type GUI in the mirror image. However, I've found that OpenVR" +
                                      " mirror mode causes some issue that requires SteamVR to be restarted after closing the game, so unless you" +
-                                     " need it for some specific reason, I recommend using another mirror mode or None.",
-                                     new AcceptableValueList<string>(new string[] { "Right", "Left", "OpenVR", "None" })));
+                                     " need it for some specific reason, I recommend using another mirror mode or None. Follow mode renders content" +
+                                     " from a follow camera which can cause lag.",
+                                     new AcceptableValueList<string>(new string[] { "Right", "Left", "OpenVR", "None", "Follow" })));
             playerHeightAdjust = config.Bind("General",
                               "PlayerHeightAdjust",
                               0f,
@@ -932,23 +933,25 @@ namespace ValheimVRMod.Utilities
         public static OpenVRSettings.MirrorViewModes GetMirrorViewMode()
         {
             string mode = mirrorMode.Value;
-            if (mode == "Right")
-            {
-                return OpenVRSettings.MirrorViewModes.Right;
-            } else if (mode == "Left")
-            {
-                return OpenVRSettings.MirrorViewModes.Left;
-            } else if (mode == "OpenVR")
-            {
-                return OpenVRSettings.MirrorViewModes.OpenVR;
-            } else if (mode == "None")
-            {
-                return OpenVRSettings.MirrorViewModes.None;
-            } else
-            {
-                LogUtils.LogWarning("Invalid mirror mode setting. Defaulting to None");
-                return OpenVRSettings.MirrorViewModes.None;
+            switch (mode) {
+                case "Right":
+                    return OpenVRSettings.MirrorViewModes.Right;
+                case "Left":
+                    return OpenVRSettings.MirrorViewModes.Left;
+                case "OpenVR":
+                    return OpenVRSettings.MirrorViewModes.OpenVR;
+                case "None":
+                case "Follow":
+                    return OpenVRSettings.MirrorViewModes.None;
+                default:
+                    LogUtils.LogWarning("Invalid mirror mode setting. Defaulting to None");
+                    return OpenVRSettings.MirrorViewModes.None;
             }
+        }
+
+        public static bool UseFollowCameraOnFlatscreen()
+        {
+            return mirrorMode.Value == "Follow";
         }
 
         public static float PlayerHeightAdjust()
