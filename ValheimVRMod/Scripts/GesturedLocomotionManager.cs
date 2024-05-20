@@ -428,7 +428,7 @@ namespace ValheimVRMod.Scripts
         class GesturedDodgeRoll : GesturedLocomotion
         {
             private const float MIN_DODGE_SPEED_SNEAKING = 1f;
-            private const float MIN_DODGE_SPEED = 1.5f;
+            private const float MIN_DODGE_SPEED = 1.25f;
             private const float MIN_HAND_HEIGHT_RELATIVE_TO_EYE = -0.125f;
             // private const float MIN_HEAD_HORIZONTAL_SPEED = 0.25f;
             private const float MAX_HEIGHT = 0.8f;
@@ -485,7 +485,7 @@ namespace ValheimVRMod.Scripts
                     return Vector3.zero;
                 }
 
-                return (tiltDirection - upDirection) * 16f; 
+                return (horizontalVelocity.normalized - upDirection) * 16f; 
             }
 
             private bool IsHandAssistingDodge(PhysicsEstimator handPhyicsEstimator)

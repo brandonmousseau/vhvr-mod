@@ -15,7 +15,8 @@ namespace ValheimVRMod.Scripts
         public static Vector3 weaponForward;
         public static TwoHandedState LocalPlayerTwoHandedState { get; private set; }
         public static bool IsDominantHandBehind { get { return isCurrentlyTwoHanded() && (LocalPlayerTwoHandedState == TwoHandedState.RightHandBehind ^ VHVRConfig.LeftHanded()); } }
-        public static bool isAiming { get; private set; }    
+        public static bool isAiming { get; private set; }  
+        public static Vector3 localWeaponTip { get; private set; }
 
         protected bool isRedDotVisible { set { redDotRenderer.enabled = value; } }
 
@@ -131,6 +132,7 @@ namespace ValheimVRMod.Scripts
             lastRenderedTransform.SetPositionAndRotation(transform.position, transform.rotation);
             lastRenderedTransform.localScale = Vector3.one;
             lastRenderedTransform.SetParent(null, true);
+            localWeaponTip = transform.position + (weaponLength - distanceBetweenGripAndRearEnd) * weaponForward;
 
             return weaponForward;
         }
@@ -168,9 +170,7 @@ namespace ValheimVRMod.Scripts
             
             switch (itemName)
             {
-                case "Hoe":
                 case "Hammer":
-                case "Cultivator":
                     return TwoHandedState.SingleHanded;
                 case "FishingRod":
                     if (FishingManager.instance && FishingManager.instance.reelGrabbed)

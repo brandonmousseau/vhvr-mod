@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using static ValheimVRMod.Utilities.LogUtils;
 
 using UnityEngine;
@@ -16,6 +16,7 @@ namespace ValheimVRMod.Utilities
         public const string VRSKYBOX_CAMERA = "VRSkyboxCamera";
         public const string VRGUI_SCREENSPACE_CAM = "VRGuiScreenSpace";
         public const string WORLD_SPACE_UI_CAMERA = "WorldSpaceUiCamera";
+        public const string FOLLOW_CAMERA = "FollowCamera";
 
         private static Camera _worldSpaceUiCamera;
         private static Dictionary<string, Camera> _cameraCache = new Dictionary<string, Camera>();
