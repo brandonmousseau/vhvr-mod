@@ -9,9 +9,8 @@ using ValheimVRMod.Utilities;
 
 namespace ValheimVRMod.Scripts {
     public class ConfigComponent : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler {
-
-        private static HashSet<ConfigComponent> hovered = new HashSet<ConfigComponent>();
         private static string textStr = "";
+        private static ConfigComponent currentHoveredComponent;
 
         public KeyValuePair<string, ConfigEntryBase> configValue;
         public UnityAction<string> saveAction;
@@ -21,17 +20,19 @@ namespace ValheimVRMod.Scripts {
             TMPro.TMP_Text textObj = ConfigSettings.toolTip.GetComponentInChildren<TMPro.TMP_Text>();
             textObj.text = textStr;
             ConfigSettings.toolTip.GetComponent<Image>().rectTransform.sizeDelta = new Vector2(908, textObj.preferredHeight + 8);
-            ConfigSettings.toolTip.SetActive(hovered.Count > 0);
-
         }
 
         public void OnPointerEnter(PointerEventData eventData) {
-            hovered.Add(this);
+            currentHoveredComponent = this;
             textStr = configValue.Value.Description.Description;
+            ConfigSettings.toolTip.SetActive(true);
         }
 
         public void OnPointerExit(PointerEventData eventData) {
-            hovered.Remove(this);
+            if (currentHoveredComponent == this)
+            {
+                ConfigSettings.toolTip.SetActive(false);
+            }
         }
 
         private void OnDestroy() {
