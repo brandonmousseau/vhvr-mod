@@ -407,6 +407,12 @@ namespace ValheimVRMod.Patches {
 
             private static bool ShouldTriggerBuildPlacement(string inputName)
             {
+                if (WeaponCollision.hasPendingToolUsageOutput)
+                {
+                    WeaponCollision.hasPendingToolUsageOutput = false;
+                    return true;
+                }
+
                 if (!BuildingManager.instance)
                 {
                     return ZInput.GetButtonDown(inputName);
