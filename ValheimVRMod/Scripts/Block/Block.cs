@@ -25,6 +25,7 @@ namespace ValheimVRMod.Scripts.Block {
         protected bool wasParryStart = false;
         public bool wasResetTimer = false;
         public bool wasGetHit = false;
+        private MeshFilter meshFilter;
         private Transform lastRenderedTransform;
         private Collider blockCollider;
         protected PhysicsEstimator physicsEstimator;
@@ -34,13 +35,24 @@ namespace ValheimVRMod.Scripts.Block {
             lastRenderedTransform = new GameObject().transform;
             physicsEstimator = lastRenderedTransform.gameObject.AddComponent<PhysicsEstimator>();
             physicsEstimator.refTransform = gameObject.GetComponentInParent<Player>().transform;
+            meshFilter = gameObject.GetComponentInChildren<MeshFilter>();
         }
 
         protected virtual void OnRenderObject()
         {
+            if (meshFilter == null)
+            {
+                meshFilter = GetComponentInChildren<MeshFilter>(includeInactive: true);
+                if (meshFilter == null)
+                {
+                    return;
+                }
+            }
+
+
             // The transform of the shield may not be valid outside OnRenderObject(), therefore we need to record its state for later use.
-            lastRenderedTransform.parent = transform;
-            lastRenderedTransform.SetPositionAndRotation(transform.position, transform.rotation);
+            lastRenderedTransform.parent = meshFilter.transform;
+            lastRenderedTransform.SetPositionAndRotation(meshFilter.transform.position, meshFilter.transform.rotation);
             lastRenderedTransform.localScale = Vector3.one;
             lastRenderedTransform.SetParent(null, true);
         }
@@ -69,7 +81,7 @@ namespace ValheimVRMod.Scripts.Block {
                 Destroy(blockCollider.gameObject);
             }
 
-            if (lastRenderedTransform?.gameObject != null)
+            if (lastRenderedTransform != null)
             {
                 Destroy(lastRenderedTransform.gameObject);
             }
@@ -141,7 +153,12 @@ namespace ValheimVRMod.Scripts.Block {
         }
 
         protected bool hitIntersectsBlockBox(HitData hitData) {
-            return hitIntersectsBlockBox(hitData, EnsureBlockCollider());
+            EnsureBlockCollider();
+            blockCollider.enabled = true;
+            var intersects = hitIntersectsBlockBox(hitData, EnsureBlockCollider());
+            // Disable the collider so projectiles do not get stuck in weapon.
+            blockCollider.enabled = false;
+            return intersects;
         }
 
         protected static bool hitIntersectsBlockBox(HitData hitData, Collider blockCollider)
@@ -190,7 +207,7 @@ namespace ValheimVRMod.Scripts.Block {
                 return blockCollider;
             }
 
-            Mesh mesh = gameObject.GetComponent<MeshFilter>()?.sharedMesh;
+            var mesh = meshFilter?.sharedMesh;
             if (mesh == null)
             {
                 // Cannot find mesh bounds, abort calculation.
@@ -210,10 +227,12 @@ namespace ValheimVRMod.Scripts.Block {
             }
 
             blockCollider.isTrigger = true;
+            blockCollider.gameObject.layer = LayerUtils.CHARACTER;
             blockCollider.transform.parent = lastRenderedTransform;
             blockCollider.transform.localPosition = mesh.bounds.center;
             blockCollider.transform.localRotation = Quaternion.identity;
             blockCollider.transform.localScale = mesh.bounds.size;
+            blockCollider.enabled = false;
 
             return blockCollider;
         }

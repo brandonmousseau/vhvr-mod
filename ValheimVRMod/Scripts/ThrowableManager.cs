@@ -12,12 +12,13 @@ namespace ValheimVRMod.Scripts
     {
         private static readonly Vector3 handAimOffset = new Vector3(0, -0.45f, -0.55f);
         private static readonly Vector3 handAimOffsetInverse = new Vector3(0, -0.15f, -0.85f);
-        private const float minDist = 0.16f;
+        private const float minDist = 0.0625f;
         private const float TOTAL_DIRECTION_LINE_COOL_DOWN = 2;
 
         public LocalWeaponWield weaponWield { private get; set; }
         public static Vector3 spawnPoint { get; private set; }
         public static Vector3 aimDir { get; private set; }
+        public static float throwSpeed { get; private set; }
         public static Vector3 startAim { get; private set; }
         public static bool isThrowing;
         public static bool isAiming { get; private set; }
@@ -33,16 +34,10 @@ namespace ValheimVRMod.Scripts
 
         private void Awake()
         {
-            rotSave = new GameObject();
-            rotSave.transform.SetParent(transform.parent);
-            rotSave.transform.position = transform.position;
-            rotSave.transform.localRotation = transform.localRotation;
-
             directionLine = new GameObject().AddComponent<LineRenderer>();
             directionLine.widthMultiplier = 0.03f;
             directionLine.positionCount = 2;
             directionLine.material = Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
-            directionLine.material.color = Color.white;
             directionLine.enabled = false;
             directionLine.receiveShadows = false;
             directionLine.shadowCastingMode = ShadowCastingMode.Off;
@@ -108,6 +103,12 @@ namespace ValheimVRMod.Scripts
             if (!VHVRConfig.UseSpearDirectionGraphic())
             {
                 return;
+            }
+
+            if (directionLine.enabled)
+            {
+                directionLine.material.color =
+                    isAiming ? Color.white : new Color(1, 1, 1, directionCooldown / TOTAL_DIRECTION_LINE_COOL_DOWN);
             }
 
             if (directionCooldown <= 0 || LocalWeaponWield.isCurrentlyTwoHanded())
@@ -184,21 +185,7 @@ namespace ValheimVRMod.Scripts
 
             if (isAiming)
             {
-
-                if (VHVRConfig.SpearThrowType() == "Classic")
-                {
-                    // Since classic throw type calculates spear pointing solely based on hand velocity,
-                    // avoid responding to it too much at low velocity so that the spear direction does not flicker.
-                    Vector3 defaultDirection =
-                        Quaternion.AngleAxis(-30, VRPlayer.dominantHand.transform.right) * (VHVRConfig.SpearInverseWield() ? -LocalWeaponWield.weaponForward : LocalWeaponWield.weaponForward);
-                    float aligning = Vector3.Dot(defaultDirection, direction.normalized) * handPhysicsEstimator.GetVelocity().magnitude;
-                    Vector3 aligningDirection = aligning > 0 ? direction.normalized : -direction.normalized;
-                    Vector3 spearPointing = Vector3.RotateTowards(defaultDirection, aligningDirection, Mathf.Atan(Mathf.Abs(aligning) * 0.5f), Mathf.Infinity);
-                    UpdateSpearThrowModel(spearPointing);
-                }
-                else {
-                    UpdateSpearThrowModel(direction.normalized);
-                }
+                aimDir = direction;
                 UpdateDirectionLine(
                     VRPlayer.dominantHand.transform.position - direction.normalized,
                     VRPlayer.dominantHand.transform.position + direction.normalized * 50);
@@ -220,35 +207,30 @@ namespace ValheimVRMod.Scripts
 
             spawnPoint = VRPlayer.dominantHand.transform.position;
             var throwing = CalculateThrowAndDistance(direction);
-            aimDir = direction.normalized * throwing.ThrowSpeed;
-
+            aimDir = direction;
+            throwSpeed = throwing.ThrowSpeed;
             if (throwing.Distance > minDist)
             {
-                isThrowing = true;
+                throwSpeed = throwing.ThrowSpeed;
+                if (MountedAttackUtils.StartAttackIfRiding(isSecondaryAttack: EquipScript.getRight() == EquipType.Spear))
+                {
+                    ResetSpearOffset();
+                }
+                else 
+                {
+                    // Let control patches and vanilla game handle attack if the player is not riding.
+                    isThrowing = true;
+                }
+                if (EquipScript.getRight() == EquipType.SpearChitin)
+                {
+                    GetComponentInParent<SpearWield>().HideHarpoon();
+                }
             }
 
             if (useAction.GetStateUp(VRPlayer.dominantHandInputSource) && throwing.Distance <= minDist)
             {
                 startAim = Vector3.zero;
                 ResetSpearOffset();
-            }
-        }
-
-        private void UpdateSpearThrowModel(Vector3 inversePosition)
-        {
-            if (!EquipScript.isSpearEquipped())
-            {
-                return;
-            }
-
-            var offsetPos = Vector3.Distance(VRPlayer.dominantHand.transform.position, rotSave.transform.position);
-            transform.position = VRPlayer.dominantHand.transform.position - Vector3.ClampMagnitude(inversePosition, offsetPos);
-            transform.LookAt(VRPlayer.dominantHand.transform.position + inversePosition);
-            transform.localRotation *= rotSave.transform.localRotation;
-
-            if (!VHVRConfig.SpearInverseWield())
-            {
-                transform.localRotation *= Quaternion.AngleAxis(180, Vector3.right);
             }
         }
 
@@ -261,9 +243,6 @@ namespace ValheimVRMod.Scripts
             {
                 return;
             }
-
-            transform.position = rotSave.transform.position;
-            transform.localRotation = rotSave.transform.localRotation;
         }
 
         private void UpdateDirectionLine(Vector3 pos1, Vector3 pos2)
@@ -293,13 +272,24 @@ namespace ValheimVRMod.Scripts
 
         private ThrowCalculate CalculateThrowAndDistance(Vector3 direction)
         {
-            var throwSpeed = 1f;
-            if (VHVRConfig.SpearThrowSpeedDynamic())
+            var throwSpeed =
+                Vector3.Dot(
+                    direction.normalized,
+                    WeaponUtils.GetWeaponVelocity(
+                        handPhysicsEstimator.GetVelocity(),
+                        handPhysicsEstimator.GetAngularVelocity(),
+                        (VHVRConfig.LeftHanded() ? VRPlayer.leftHandBone.up : VRPlayer.rightHandBone.up) * 0.125f));
+
+            if (throwSpeed < VHVRConfig.FullThrowSpeed())
             {
-                throwSpeed = Vector3.Dot(handPhysicsEstimator.GetAverageVelocityInSnapshots(), direction.normalized);
-                // Apply some non-linear damping otherwise the spear flies too fast even if thrown at low speed.
-                throwSpeed *= Mathf.Clamp(throwSpeed  * 0.25f, 0.25f, 0.5f);
+                throwSpeed /= VHVRConfig.FullThrowSpeed();
             }
+            else
+            {
+                var normalizer = Mathf.Max(VHVRConfig.FullThrowSpeed(), 2);
+                throwSpeed = throwSpeed > normalizer ? throwSpeed / normalizer : 1;
+            }
+
             return new ThrowCalculate(throwSpeed, handPhysicsEstimator.GetLongestLocomotion(Mathf.Min(0.4f, aimingDuration)).magnitude);
         }
     }

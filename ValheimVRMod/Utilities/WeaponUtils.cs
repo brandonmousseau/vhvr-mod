@@ -133,6 +133,26 @@ namespace ValheimVRMod.Utilities
                     0,  0, 0,
                     0.07756059f,  1.025059f, 0.02554126f
                 )}, {
+                "SpearSplitner", WeaponColData.create(
+                    0,  1.77f, 0,
+                    0,  0, 0,
+                    0.1f,  1.3f, 0.1f
+                )}, {
+                "SpearSplitner_Blood", WeaponColData.create(
+                    0,  1.77f, 0,
+                    0,  0, 0,
+                    0.1f,  1.3f, 0.1f
+                )}, {
+                "SpearSplitner_Lightning", WeaponColData.create(
+                    0,  1.77f, 0,
+                    0,  0, 0,
+                    0.1f,  1.3f, 0.1f
+                )}, {
+                "SpearSplitner_Nature", WeaponColData.create(
+                    0,  1.77f, 0,
+                    0,  0, 0,
+                    0.1f,  1.3f, 0.1f
+                )}, {
                 "SledgeStagbreaker", WeaponColData.create(
                     0,  2.064f, 0,
                     0,  0, 0,
@@ -295,6 +315,12 @@ namespace ValheimVRMod.Utilities
                         0.45f,  0.5f, 0.45f
                 )},
                 {
+                    EquipType.DualAxes, WeaponColData.create(
+                        0.45f,  0.2f, 0.05f,
+                        0,  0, 0,
+                        0.45f,  0.45f, 0.45f
+                )},
+                {
                     EquipType.DualKnives, WeaponColData.create(
                         0.225f,  0.15f, 0.05f,
                         0,  0, 0,
@@ -316,6 +342,12 @@ namespace ValheimVRMod.Utilities
                         0,  0.05f, 0.016f,
                         0,  0, 0,
                         0.3f,  0.9f, 0.3f
+                )},
+                {
+                    EquipType.DualAxes, WeaponColData.create(
+                        0.4f,  0.2f, 0.016f,
+                        0,  0, 0,
+                        0.75f, 0.35f, 0.3f
                 )},
                 {
                     EquipType.DualKnives, WeaponColData.create(
@@ -543,6 +575,17 @@ namespace ValheimVRMod.Utilities
             return Vector3.Angle(velocity, weaponPointing) < (isTwoHanded ? MAX_STAB_ANGLE_TWO_HAND : MAX_STAB_ANGLE);
         }
 
+        public static void AlignLoadedMeshToUnloadedMesh(GameObject loaded, GameObject unloaded)
+        {
+            var loadedMeshFilter = loaded.GetComponentInChildren<MeshFilter>();
+            var unloadedMeshFilter = unloaded.GetComponentInChildren<MeshFilter>();
+            var loadedMeshCenter = loadedMeshFilter.transform.TransformPoint(loadedMeshFilter.sharedMesh.bounds.center);
+            var unloadedMeshCenter = unloadedMeshFilter.transform.TransformPoint(unloadedMeshFilter.sharedMesh.bounds.center);
+
+            loaded.transform.position += (unloadedMeshCenter - loadedMeshCenter);
+        }
+
+
         public static GameObject CreateDebugSphere(Transform parent)
         {
             var sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
@@ -585,6 +628,11 @@ namespace ValheimVRMod.Utilities
             var colliderSize =
                 bounds.size - (new Vector3(Mathf.Abs(colliderOffset.x), Mathf.Abs(colliderOffset.y), Mathf.Abs(colliderOffset.z))) * 2;
             return new WeaponColData(colliderCenter, Vector3.zero, colliderSize);
+        }
+
+        public static Vector3 GetWeaponVelocity(Vector3 handVelocity, Vector3 handAngularVelocity, Vector3 weaponOffset)
+        {
+            return handVelocity + Vector3.Cross(weaponOffset, handAngularVelocity);
         }
     }
 }

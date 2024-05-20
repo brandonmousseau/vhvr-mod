@@ -144,6 +144,11 @@ namespace ValheimVRMod.Patches {
                     return;
                 }
 
+                if (VRPlayer.inImmersiveDodge)
+                {
+                    return;
+                }
+
                 // When toggling running, disable turning left or right if the the x-rotation amount of the stick is less than the y-rotation amount.
                 // This prevents unwanted accidental turning when moving the stick forward or backward.
                 // TODO: examine whether this check should be enabled for smooth-turn mode as well.
@@ -727,7 +732,6 @@ namespace ValheimVRMod.Patches {
                     }
                     break;
 
-
                 case EquipType.RuneSkyheim:
                     if (SteamVR_Actions.valheim_Use.state && SteamVR_Actions.valheim_Grab.state && timer >= timeEnd)
                     {
@@ -751,6 +755,87 @@ namespace ValheimVRMod.Patches {
         }
     }
 
+    [HarmonyPatch(typeof(Player), nameof(Player.StartDoodadControl))]
+    class SadleStartPatch
+    {
+        static void Postfix(Player __instance)
+        {
+            if (VHVRConfig.UseVrControls())
+            {
+                __instance.GetComponent<Reining>()?.SetReinAttach();
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(Sadle), nameof(Sadle.ApplyControlls))]
+    class SadleControlPatch
+    {
+        static void Prefix(ref Vector3 lookDir, ref bool block)
+        {
+            if (VHVRConfig.NonVrPlayer())
+            {
+                return;
+            }
+            if (VHVRConfig.UseVrControls())
+            {
+                block = Reining.turnInPlace;
+            }
+            lookDir =
+                Reining.shouldOverrideSpeedOrDirection ?
+                (Vector3)Reining.targetDirection :
+                Valve.VR.InteractionSystem.Player.instance.hmdTransform.forward; // This makes the mounts try to follow the hmd eyedir
+        }
+    }
+
+    [HarmonyPatch(typeof(Player), "Update")]
+    class PlayerUpdateSadleStayPatch
+    {
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            if (!VHVRConfig.UseVrControls()) {
+                return instructions;
+            }
+
+            var original = new List<CodeInstruction>(instructions);
+            for (int i = 0; i < original.Count; i++)
+            {
+                if (original[i].Calls(MountedAttackUtils.stopDoodadControlMethod))
+                {
+                    // Do not let the player unmount unless jumping.
+                    // This prevents interactions such as range weapon attack from unmounting when riding.
+                    var changed = CodeInstruction.Call(typeof(MountedAttackUtils), nameof(MountedAttackUtils.UnmountIfJumping));
+                    changed.labels = original[i].labels;
+                    original[i] = changed;
+                }
+            }
+            return original;
+        }
+    }
+
+    [HarmonyPatch(typeof(Player), "SetControls")]
+    class PlayerSetControlsSadleStayPatch
+    {
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            if (!VHVRConfig.UseVrControls()) {
+                return instructions;
+            }
+
+            var original = new List<CodeInstruction>(instructions);
+            for (int i = 0; i < original.Count; i++)
+            {
+                if (original[i].Calls(MountedAttackUtils.stopDoodadControlMethod))
+                {
+                    // Do not let the player unmount unless jumping.
+                    // This prevents interactions such as range weapon attack from unmounting when riding.
+                    var changed = CodeInstruction.Call(typeof(MountedAttackUtils), nameof(MountedAttackUtils.UnmountIfJumping));
+                    changed.labels = original[i].labels;
+                    original[i] = changed;
+                }
+            }
+            return original;
+        }
+    }
 
     // Used to make stack splitting easier
     [HarmonyPatch(typeof(InventoryGui), "Awake")]
@@ -1038,21 +1123,40 @@ namespace ValheimVRMod.Patches {
             if (VHVRConfig.NonVrPlayer())
                 return;
 
-            Vector3 dir = __instance.GetMoveDir();
-            if (dir == Vector3.zero)
+            if (VRPlayer.vrPlayerInstance.wasDodging)
+            {
+                // Give VRPlayer a chance to reset camera position and rotation after immersive dodge roll.
                 return;
+            }
 
+            Vector3? dir;
             if (SteamVR_Actions.valheim_UseLeft.state && SteamVR_Actions.valheim_Jump.stateDown)
             {
-                if (__instance.m_stamina < __instance.m_dodgeStaminaUsage)
+                dir = __instance.GetMoveDir();
+                if (dir == Vector3.zero)
                 {
-                    // FIXME: Mystlands probably changed this from StaminaBarNoStaminaFlash
-                    Hud.instance.StaminaBarEmptyFlash();
                     return;
                 }
-                __instance.Dodge(dir);
-                wasDodging = true;
             }
+            else
+            {
+                dir = VRPlayer.gesturedLocomotionManager?.dodgeDirection;
+                if (dir == null)
+                {
+                    return;
+                }
+            }
+
+            if (__instance.m_stamina < __instance.m_dodgeStaminaUsage)
+            {
+                // FIXME: Mystlands probably changed this from StaminaBarNoStaminaFlash
+                Hud.instance.StaminaBarEmptyFlash();
+                return;
+            }
+
+            __instance.Dodge(dir.Value);
+
+            wasDodging = true;
         }
     }
 
@@ -1071,14 +1175,22 @@ namespace ValheimVRMod.Patches {
             __instance.m_queuedDodgeTimer -= dt;
             currdodgetimer -= dt;
 
-            if (__instance.m_queuedDodgeTimer > 0f && __instance.IsOnGround() && !__instance.IsDead() && !__instance.InAttack() && !__instance.IsEncumbered() && !__instance.InDodge() && !__instance.IsStaggering())
+            if (__instance.m_queuedDodgeTimer > 0f && __instance.IsOnGround() && !__instance.IsDead() && !__instance.InAttack() && !__instance.IsEncumbered() && !__instance.InDodge() && !__instance.IsStaggering() && !VRPlayer.vrPlayerInstance.wasDodging)
             {
-                float num = __instance.m_dodgeStaminaUsage - __instance.m_dodgeStaminaUsage * __instance.m_equipmentMovementModifier;
+                float num = __instance.m_dodgeStaminaUsage - __instance.m_dodgeStaminaUsage * __instance.GetEquipmentDodgeStaminaModifier();
                 if (__instance.HaveStamina(num))
                 {
                     __instance.ClearActionQueue();
                     __instance.m_queuedDodgeTimer = 0f;
                     currdodgetimer = 0.8f;
+                    if (VHVRConfig.ImmersiveDodgeRoll())
+                    {
+                        var roomPosition = VRPlayer.instance.transform.position;
+                        var roomRotation = VRPlayer.instance.transform.rotation;
+                        __instance.transform.rotation = Quaternion.LookRotation(__instance.m_queuedDodgeDir);
+                        __instance.m_body.rotation = __instance.transform.rotation;
+                        VRPlayer.instance.transform.SetPositionAndRotation(roomPosition, roomRotation);
+                    }
                     currDodgeDir = __instance.transform.forward;
                     __instance.m_dodgeInvincible = true;
                     __instance.m_zanim.SetTrigger("dodge");
