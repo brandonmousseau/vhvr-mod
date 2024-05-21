@@ -5,6 +5,7 @@ namespace ValheimVRMod.Scripts {
     public class AttackTargetMeshCooldown : MeshCooldown {
         protected override Color FullOutlineColor { get { return isSecondaryAttackCooldown? Color.yellow : base.FullOutlineColor; } }
 
+        public static float speedScaledDamageFactor;
         public static float damageMultiplier;
         public static bool staminaDrained;
         public static bool durabilityDrained;
@@ -12,10 +13,23 @@ namespace ValheimVRMod.Scripts {
 
         private bool isSecondaryAttackCooldown;
 
-        public bool tryTriggerPrimaryAttack(float cd)
+        public bool tryTriggerPrimaryAttack(float cd, float speed)
         {
-            if (tryTrigger(cd))
+            float? overideMinAttackInterval;
+            if (VHVRConfig.ScaleDamageBySpeedAndWaiveCooldown() && !EquipScript.isTwoHandedClubEquiped())
             {
+                speedScaledDamageFactor = GetSpeedScaledDamageFactor(cd, speed);
+                overideMinAttackInterval = 0.25f;
+            }
+            else
+            {
+                speedScaledDamageFactor = 1;
+                overideMinAttackInterval = null;
+            }
+
+            if (tryTrigger(cd, overideMinAttackInterval))
+            {
+                LogUtils.LogWarning("Speed damp: " + speedScaledDamageFactor);
                 isSecondaryAttackCooldown = false;
                 if (primaryTargetMeshCooldown == null)
                 {
@@ -32,7 +46,8 @@ namespace ValheimVRMod.Scripts {
             if (tryTrigger(cd))
             {
                 isSecondaryAttackCooldown = true;
-                
+                speedScaledDamageFactor = 1;
+
                 if (ignorePrimaryAttackCooldown)
                 {
                     damageMultiplier = 1;
@@ -64,7 +79,7 @@ namespace ValheimVRMod.Scripts {
                 return 1;
             }
             
-            return oldDamageMultiplier;
+            return Mathf.Min(oldDamageMultiplier, speedScaledDamageFactor);
         }
 
         public static bool isPrimaryTargetInCooldown()
@@ -91,6 +106,16 @@ namespace ValheimVRMod.Scripts {
                     primaryTargetMeshCooldown = null;
                 }
             }
+        }
+
+        private static float GetSpeedScaledDamageFactor(float cd, float speed)
+        {
+            var fullDamageSpeed = 2 * cd + 3;
+            if (FistCollision.hasDualWieldingWeaponEquipped())
+            {
+                fullDamageSpeed *= 2;
+            }
+            return speed >= fullDamageSpeed ? 1 : speed / fullDamageSpeed;
         }
     }
 }
