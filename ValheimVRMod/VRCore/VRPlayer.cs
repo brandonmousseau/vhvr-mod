@@ -48,6 +48,7 @@ namespace ValheimVRMod.VRCore
         // Unity AssetBundle project too. If they don't match,
         // the hands won't be rendered by the handsCam.
         private static Vector3 FIRST_PERSON_OFFSET = Vector3.zero;
+        private static float RIDE_HEIGHT_ADJUST = -1f;
         private static float SIT_HEIGHT_ADJUST = -0.7f;
         private static float SIT_ATTACH_HEIGHT_ADJUST = -0.4f;
         private static float CROUCH_HEIGHT_ADJUST = -0.4f;
@@ -930,29 +931,24 @@ namespace ValheimVRMod.VRCore
 
         private float getHeadHeightAdjust(Player player)
         {
-            if (MountedAttackUtils.IsRiding())
+            if (player.IsRiding() || MountedAttackUtils.IsRiding())
             {
                 // Attack animation may cause vanilla game to think that the player is standing
                 // briefly while riding but we should consider the player as sitting so that the
                 // view point does not shift suddenly when attacking.
-                return SIT_ATTACH_HEIGHT_ADJUST;
+                return RIDE_HEIGHT_ADJUST;
             }
 
             if (player.IsSitting())
             {
-                if (player.IsAttached())
-                {
-                    return SIT_ATTACH_HEIGHT_ADJUST;
-                }
-                else
-                {
-                    return SIT_HEIGHT_ADJUST;
-                }
+                return player.IsAttached() ? SIT_ATTACH_HEIGHT_ADJUST : SIT_HEIGHT_ADJUST;
             }
+
             if (player.IsCrouching() && Player_SetControls_SneakPatch.isJoystickSneaking)
             {
                 return CROUCH_HEIGHT_ADJUST;
             }
+
             return VHVRConfig.PlayerHeightAdjust();
         }
 
