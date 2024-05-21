@@ -10,9 +10,9 @@ namespace ValheimVRMod.Scripts {
         private float cooldown;
         private Outline outline;
 
-        public virtual bool tryTrigger(float cd) {
+        public virtual bool tryTrigger(float cd, float? overrideMinAttackInterval = null) {
             if (inCoolDown()) {
-                return false;
+                return overrideMinAttackInterval != null && cooldownStart - cooldown > overrideMinAttackInterval.Value;
             }
 
             cooldown = cooldownStart = cd;
