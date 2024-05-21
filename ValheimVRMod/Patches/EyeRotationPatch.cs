@@ -26,7 +26,6 @@ namespace ValheimVRMod.Patches
     {
         public static float? previousHeadLocalRotation;
         public static Quaternion lastAttachRot;
-
         public static GameObject headLookRef;
         public static bool wasAttached;
 
@@ -54,12 +53,11 @@ namespace ValheimVRMod.Patches
             /* Attached to something, like boat controls */
             if (__instance.IsAttached())
             {
-                //Apply ship rotation
                 if (__instance.m_attached && __instance.m_attachPoint)
                 {
-                    // Rotate VRPlayer together with delta ship rotation
                     if (VHVRConfig.IsShipImmersiveCamera() && !__instance.IsRiding() && !VRPlayer.inImmersiveDodge)
                     {
+                        // Rotate VRPlayer together with delta ship rotation
                         headLookRef.transform.SetParent(__instance.m_attachPoint);
                         if (!wasAttached)
                         {
@@ -80,11 +78,16 @@ namespace ValheimVRMod.Patches
                             lastAttachRot = headLookRef.transform.rotation;
                         }
                     }
+                    else if (__instance.IsAttachedToShip())
+                    {
+                        var facing = VRPlayer.instance.transform.forward;
+                        facing.y = 0;
+                        VRPlayer.instance.transform.rotation = Quaternion.LookRotation(facing);
+                    }
                     else if (__instance.IsRiding() && !VHVRConfig.ViewTurnWithMountedAnimal())
                     {
                         VRPlayer.instance.transform.rotation = Player_Rotation_Patch.attachmentIndependentRoomRotation;
                     }
-
                 }
                 return;
             }
