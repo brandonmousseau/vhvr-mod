@@ -209,7 +209,7 @@ namespace ValheimVRMod.Patches {
             if (___m_character != Player.m_localPlayer || !VHVRConfig.UseVrControls()) {
                 return;
             }
-            if (!EquipScript.shouldSkipAttackAnimation() || ___m_character.IsStaggering())
+            if (!EquipScript.shouldSkipAttackAnimation() || ___m_character.IsStaggering() || PlayerCustomizaton.IsBarberGuiVisible())
             {
                 ___m_animator.speed = 1f;
                 return;

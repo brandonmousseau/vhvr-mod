@@ -52,7 +52,6 @@ namespace ValheimVRMod.VRCore
         private static float RIDE_HEIGHT_ADJUST = -1f;
         private static float SIT_ATTACH_HEIGHT_ADJUST = -0.4f;
         private static float SIT_HEIGHT_ADJUST = -0.7f;
-        private static float SIT_SHIP_HEIGHT_ADJUST = -0.8f;
         private static Vector3 THIRD_PERSON_0_OFFSET = new Vector3(0f, 1.0f, -0.6f);
         private static Vector3 THIRD_PERSON_1_OFFSET = new Vector3(0f, 1.4f, -1.5f);
         private static Vector3 THIRD_PERSON_2_OFFSET = new Vector3(0f, 1.9f, -2.6f);
@@ -398,7 +397,12 @@ namespace ValheimVRMod.VRCore
             }
 
             float distance = 3;
-            var targetPosition = _vrCam.transform.position + 0.25f * Vector3.up;
+            var targetPosition =
+                VRPlayer.inFirstPerson ?
+                _vrCam.transform.position + 0.25f * Vector3.up :
+                Player.m_localPlayer ?
+                Player.m_localPlayer.transform.position + Vector3.up * 0.5f :
+                CameraUtils.getCamera(CameraUtils.MAIN_CAMERA).transform.position;
             var hits = Physics.RaycastAll(targetPosition, _followCamera.transform.position - targetPosition, distance);
             foreach (var hit in hits)
             {
@@ -429,7 +433,18 @@ namespace ValheimVRMod.VRCore
                     ref followCameraVelocity,
                     0.25f);
 
-            _followCamera.transform.LookAt(_vrCam.transform);
+            if (VRPlayer.inFirstPerson)
+            {
+                _followCamera.transform.LookAt(_vrCam.transform);
+            }
+            else if (Player.m_localPlayer)
+            {
+                _followCamera.transform.LookAt(Player.m_localPlayer.transform.position + Vector3.up * 0.5f);
+            }
+            else
+            {
+                _followCamera.transform.rotation = CameraUtils.getCamera(CameraUtils.MAIN_CAMERA).transform.rotation;
+            }
 
         }
 
@@ -945,15 +960,11 @@ namespace ValheimVRMod.VRCore
                 // Attack animation may cause vanilla game to think that the player is standing
                 // briefly while riding but we should consider the player as sitting so that the
                 // view point does not shift suddenly when attacking.
-                return SIT_SHIP_HEIGHT_ADJUST;
+                return SIT_ATTACH_HEIGHT_ADJUST;
             }
 
             if (player.IsSitting())
             {
-                if (player.IsAttachedToShip())
-                {
-                    return SIT_SHIP_HEIGHT_ADJUST;
-                }
                 return player.IsAttached() ? SIT_ATTACH_HEIGHT_ADJUST : SIT_HEIGHT_ADJUST;
             }
 
@@ -975,7 +986,8 @@ namespace ValheimVRMod.VRCore
             maybeAddVrik(player);
             if (_vrik != null)
             {
-                _vrik.enabled = VHVRConfig.UseVrControls() &&
+                _vrik.enabled =
+                    VHVRConfig.UseVrControls() &&
                     inFirstPerson &&
                     !player.InDodge() &&
                     !player.IsStaggering() &&
