@@ -45,6 +45,15 @@ namespace ValheimVRMod.Scripts
             }
         }
 
+        private void OnTriggerStay(Collider collider)
+        {
+            if (handGesture.isHandFree())
+            {
+                OnTriggerEnter(collider);
+            }
+        }
+
+
         private void OnTriggerEnter(Collider collider)
         {
             if (!canAttackWithCollision())
@@ -69,7 +78,7 @@ namespace ValheimVRMod.Scripts
                 }
             }
 
-            if (!hasMomentum())
+            if (!hasMomentum(out float speed))
             {
                 return;
             }
@@ -86,7 +95,7 @@ namespace ValheimVRMod.Scripts
 
             // Always use the duration of the primary attack for target cooldown to allow primary attack immediately following a secondary attack.
             // The secondary attack cooldown is managed by LocalPlayerSecondaryAttackCooldown in this class instead.
-            if (!tryHitTarget(collider.gameObject, isCurrentlySecondaryAttack, WeaponUtils.GetAttackDuration(primaryAttack)))
+            if (!tryHitTarget(collider.gameObject, isCurrentlySecondaryAttack, WeaponUtils.GetAttackDuration(primaryAttack), speed))
             {
                 return;
             }
@@ -114,7 +123,7 @@ namespace ValheimVRMod.Scripts
             }
         }
 
-        private bool tryHitTarget(GameObject target, bool isSecondaryAttack, float duratrion)
+        private bool tryHitTarget(GameObject target, bool isSecondaryAttack, float duratrion, float speed)
         {
 
             // ignore certain Layers
@@ -129,7 +138,7 @@ namespace ValheimVRMod.Scripts
                 attackTargetMeshCooldown = target.AddComponent<AttackTargetMeshCooldown>();
             }
 
-            return isSecondaryAttack ? attackTargetMeshCooldown.tryTriggerSecondaryAttack(duratrion) : attackTargetMeshCooldown.tryTriggerPrimaryAttack(duratrion);
+            return isSecondaryAttack ? attackTargetMeshCooldown.tryTriggerSecondaryAttack(duratrion) : attackTargetMeshCooldown.tryTriggerPrimaryAttack(duratrion, speed);
         }
 
         private void OnRenderObject()
@@ -187,14 +196,15 @@ namespace ValheimVRMod.Scripts
             return hasDualWieldingWeaponEquipped();
         }
 
-        public bool hasMomentum()
+        public bool hasMomentum(out float speed)
         {
             var handVelocity = physicsEstimator.GetVelocity();
             var minSpeed = VHVRConfig.SwingSpeedRequirement();
 
             if (EquipScript.getRight() == EquipType.Claws || !hasDualWieldingWeaponEquipped())
             {
-                return handVelocity.magnitude >= minSpeed * 0.75f;
+                speed = handVelocity.magnitude;
+                return speed >= minSpeed * 0.75f;
             }
 
             var weaponOffsetDirection = (transform.position - physicsEstimator.transform.position).normalized;
@@ -202,7 +212,8 @@ namespace ValheimVRMod.Scripts
                 WeaponUtils.GetWeaponVelocity(
                     handVelocity, physicsEstimator.GetAngularVelocity(), weaponOffsetDirection * WEAPON_OFFSET);
 
-            return weaponVelocity.magnitude >= minSpeed;
+            speed = weaponVelocity.magnitude;
+            return speed >= minSpeed;
         }
 
         public static bool hasDualWieldingWeaponEquipped()
