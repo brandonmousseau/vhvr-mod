@@ -110,11 +110,11 @@ namespace ValheimVRMod.Scripts {
 
         private static float GetSpeedScaledDamageFactor(float cd, float speed)
         {
-            var fullDamageSpeed = 2 * cd + 3;
             if (FistCollision.hasDualWieldingWeaponEquipped())
             {
-                fullDamageSpeed *= 2;
+                cd *= 2;
             }
+            var fullDamageSpeed = 2 * cd + 4;
             return speed >= fullDamageSpeed ? 1 : speed / fullDamageSpeed;
         }
     }
