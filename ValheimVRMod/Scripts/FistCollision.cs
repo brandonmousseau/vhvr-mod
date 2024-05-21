@@ -1,17 +1,13 @@
-using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using ValheimVRMod.Scripts.Block;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using Valve.VR;
-using Valve.VR.InteractionSystem;
 
 namespace ValheimVRMod.Scripts
 {
     public class FistCollision : MonoBehaviour
     {
-        private const float MIN_SPEED = 5f;
         private const float WEAPON_OFFSET = 0.125f;
 
         private bool isRightHand;
@@ -57,10 +53,20 @@ namespace ValheimVRMod.Scripts
             }
 
             var maybePlayer = collider.GetComponentInParent<Player>();
-
             if (maybePlayer != null && maybePlayer == Player.m_localPlayer)
             {
                 return;
+            }
+
+            if (Player.m_localPlayer.IsRiding())
+            {
+                var targetCharacter = collider.GetComponentInChildren<Character>();
+                var doodadController = Player.m_localPlayer.GetDoodadController();
+                if (doodadController is Sadle && ((Sadle)doodadController).m_monsterAI.m_character == targetCharacter)
+                {
+                    // Do not attack the animal that the player is riding.
+                    return;
+                }
             }
 
             if (!hasMomentum())
@@ -172,7 +178,7 @@ namespace ValheimVRMod.Scripts
                 return false;
             }
 
-            if (handGesture.areHandsFree())
+            if (handGesture.isHandFree())
             {
                 SteamVR_Input_Sources inputSource = isRightHand ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand;
                 return SteamVR_Actions.valheim_Grab.GetState(inputSource);
@@ -184,11 +190,11 @@ namespace ValheimVRMod.Scripts
         public bool hasMomentum()
         {
             var handVelocity = physicsEstimator.GetVelocity();
-            var minSpeed = MIN_SPEED * VHVRConfig.SwingSpeedRequirement();
+            var minSpeed = VHVRConfig.SwingSpeedRequirement();
 
             if (EquipScript.getRight() == EquipType.Claws || !hasDualWieldingWeaponEquipped())
             {
-                return handVelocity.magnitude >= minSpeed;
+                return handVelocity.magnitude >= minSpeed * 0.75f;
             }
 
             var weaponOffsetDirection = (transform.position - physicsEstimator.transform.position).normalized;
@@ -203,12 +209,13 @@ namespace ValheimVRMod.Scripts
         {
             var equipType = EquipScript.getRight();
             return equipType.Equals(EquipType.Claws) ||
+                equipType.Equals(EquipType.DualAxes) ||
                 equipType.Equals(EquipType.DualKnives);
         }
 
         public bool blockingWithFist()
         {
-            if (!handGesture.areHandsFree() && !hasDualWieldingWeaponEquipped())
+            if (!handGesture.isHandFree() && !hasDualWieldingWeaponEquipped())
             {
                 return false;
             }

@@ -173,7 +173,13 @@ namespace ValheimVRMod.Scripts
                 rangeMultiplier = 2f;
                 slashTrail.time = 0.4f;
             }
-            if(secondaryAttack.m_attackAnimation == "knife_secondary")
+            if (attack.m_attackAnimation == "swing_sledge")
+            {
+                secondaryAttack = attack;
+                rangeMultiplier = 2f;
+                slashTrail.time = 0.4f;
+            }
+            if (secondaryAttack.m_attackAnimation == "knife_secondary")
             {
                 rangeMultiplier = 1.5f;
             }
@@ -556,6 +562,10 @@ namespace ValheimVRMod.Scripts
                         bool multiCollider = secondaryAttack.m_pickaxeSpecial && (hitObject.GetComponent<MineRock5>() || hitObject.GetComponent<MineRock>());
                         secondaryAttack.AddHitPoint(secondaryHitList, hitObject, raycastHit.collider, raycastHit.point, raycastHit.distance, multiCollider);
                         if (!secondaryAttack.m_hitThroughWalls && Vector3.Distance(raycastList[0].point, raycastHit.point) >= 0.3f && attack.m_attackAnimation != "swing_pickaxe")
+                        {
+                            break;
+                        }
+                        if(secondaryAttack.m_attackAnimation == "swing_sledge")
                         {
                             break;
                         }

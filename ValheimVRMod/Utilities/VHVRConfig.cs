@@ -135,7 +135,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> arrowParticleSize;
         private static ConfigEntry<string> spearThrowingType;
         private static ConfigEntry<bool> useSpearDirectionGraphic;
-        private static ConfigEntry<bool> spearThrowSpeedDynamic;
+        private static ConfigEntry<float> fullThrowSpeed;
         private static ConfigEntry<bool> spearInverseWield;
         private static ConfigEntry<bool> twoHandedWield;
         private static ConfigEntry<bool> twoHandedWithShield;
@@ -235,9 +235,9 @@ namespace ValheimVRMod.Utilities
                 "This setting, if true, will also force UseOverlayGui to be false as this setting Overlay GUI is not compatible with VR laser pointer inputs.");
             maxVRInitializationTries = config.Bind("Immutable",
                 "MaxVRInitializationTries",
-                1024,
+                6,
                 new ConfigDescription("The maximum number of attempts at initialization VR before falling back to flatscreen mode",
-                new AcceptableValueRange<int>(0, 1024)));
+                new AcceptableValueRange<int>(1, 1024)));
 
             useOverlayGui = createImmutableSettingWithOverride("Immutable",
                 "UseOverlayGui",
@@ -309,11 +309,12 @@ namespace ValheimVRMod.Utilities
             mirrorMode = config.Bind("General",
                                      "MirrorMode",
                                      "Right",
-                                     new ConfigDescription("The VR mirror mode.Legal values: OpenVR, Right, Left, None. Note: OpenVR is" +
+                                     new ConfigDescription("The VR mirror mode.Legal values: OpenVR, Right, Left, Follow, None. Note: OpenVR is" +
                                      " required if you want to see the Overlay-type GUI in the mirror image. However, I've found that OpenVR" +
                                      " mirror mode causes some issue that requires SteamVR to be restarted after closing the game, so unless you" +
-                                     " need it for some specific reason, I recommend using another mirror mode or None.",
-                                     new AcceptableValueList<string>(new string[] { "Right", "Left", "OpenVR", "None" })));
+                                     " need it for some specific reason, I recommend using another mirror mode or None. Follow mode renders content" +
+                                     " from a follow camera which can cause lag.",
+                                     new AcceptableValueList<string>(new string[] { "Right", "Left", "OpenVR", "None", "Follow" })));
             playerHeightAdjust = config.Bind("General",
                               "PlayerHeightAdjust",
                               0f,
@@ -669,10 +670,10 @@ namespace ValheimVRMod.Utilities
                 "Accessibility feature that allows operating bows and crossbows with the dominant hand alone");
             swingSpeedRequirement =
                 config.Bind(
-                    "Controls", "SwingSpeedRequirement", 1f,
+                    "Controls", "SwingSpeedRequirement", 3f,
                     new ConfigDescription(
-                        "The speed requirement level on weapon swinging for an attack to be triggered. if set to 0, single touch will already trigger hit",
-                        new AcceptableValueRange<float>(0, 1f)));
+                        "The speed requirement in m/s for weapon swinging for an attack to be triggered. if set to 0, single touch will already trigger hit",
+                        new AcceptableValueRange<float>(0, 8)));
             altPieceRotationDelay = config.Bind("Controls",
                                                 "AltPieceRotationDelay",
                                                 1f,
@@ -811,10 +812,12 @@ namespace ValheimVRMod.Utilities
                                             "TwoStagedThrowing - Throw aim is based on first grab and then aim is locked after pressing trigger" +
                                             "SecondHandAiming - Throw aim is based from your head to your left hand in a straight line",
                                             new AcceptableValueList<string>(new string[] { "Classic", "DartType", "TwoStagedThrowing", "SecondHandAiming" })));
-            spearThrowSpeedDynamic = config.Bind("Motion Control",
-                                                "SpearThrowSpeedDynamic",
-                                                true,
-                                                "Determine whether or not your throw power depends on swing speed, setting to false make the throw always on fixed speed.");
+            fullThrowSpeed = config.Bind(
+                "Motion Control",
+                "FullThrowSpeed",
+                2.0f,
+                new ConfigDescription("The hand movement speed required for a throwable to reach its max speed in game. Setting to 0 makes the throwable always launch at max speed in game.",
+                new AcceptableValueRange<float>(0, 10f)));
             spearInverseWield = config.Bind("Motion Control",
                                                 "SpearInverseWield",
                                                 true,
@@ -930,23 +933,25 @@ namespace ValheimVRMod.Utilities
         public static OpenVRSettings.MirrorViewModes GetMirrorViewMode()
         {
             string mode = mirrorMode.Value;
-            if (mode == "Right")
-            {
-                return OpenVRSettings.MirrorViewModes.Right;
-            } else if (mode == "Left")
-            {
-                return OpenVRSettings.MirrorViewModes.Left;
-            } else if (mode == "OpenVR")
-            {
-                return OpenVRSettings.MirrorViewModes.OpenVR;
-            } else if (mode == "None")
-            {
-                return OpenVRSettings.MirrorViewModes.None;
-            } else
-            {
-                LogUtils.LogWarning("Invalid mirror mode setting. Defaulting to None");
-                return OpenVRSettings.MirrorViewModes.None;
+            switch (mode) {
+                case "Right":
+                    return OpenVRSettings.MirrorViewModes.Right;
+                case "Left":
+                    return OpenVRSettings.MirrorViewModes.Left;
+                case "OpenVR":
+                    return OpenVRSettings.MirrorViewModes.OpenVR;
+                case "None":
+                case "Follow":
+                    return OpenVRSettings.MirrorViewModes.None;
+                default:
+                    LogUtils.LogWarning("Invalid mirror mode setting. Defaulting to None");
+                    return OpenVRSettings.MirrorViewModes.None;
             }
+        }
+
+        public static bool UseFollowCameraOnFlatscreen()
+        {
+            return mirrorMode.Value == "Follow";
         }
 
         public static float PlayerHeightAdjust()
@@ -1350,9 +1355,9 @@ namespace ValheimVRMod.Utilities
         {
             return arrowParticleSize.Value;
         }
-        public static bool SpearThrowSpeedDynamic()
+        public static float FullThrowSpeed()
         {
-            return spearThrowSpeedDynamic.Value;
+            return fullThrowSpeed.Value;
         }
         public static bool SpearInverseWield()
         {

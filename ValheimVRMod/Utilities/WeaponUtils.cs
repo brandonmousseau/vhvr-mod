@@ -133,6 +133,26 @@ namespace ValheimVRMod.Utilities
                     0,  0, 0,
                     0.07756059f,  1.025059f, 0.02554126f
                 )}, {
+                "SpearSplitner", WeaponColData.create(
+                    0,  1.77f, 0,
+                    0,  0, 0,
+                    0.1f,  1.3f, 0.1f
+                )}, {
+                "SpearSplitner_Blood", WeaponColData.create(
+                    0,  1.77f, 0,
+                    0,  0, 0,
+                    0.1f,  1.3f, 0.1f
+                )}, {
+                "SpearSplitner_Lightning", WeaponColData.create(
+                    0,  1.77f, 0,
+                    0,  0, 0,
+                    0.1f,  1.3f, 0.1f
+                )}, {
+                "SpearSplitner_Nature", WeaponColData.create(
+                    0,  1.77f, 0,
+                    0,  0, 0,
+                    0.1f,  1.3f, 0.1f
+                )}, {
                 "SledgeStagbreaker", WeaponColData.create(
                     0,  2.064f, 0,
                     0,  0, 0,
@@ -295,6 +315,12 @@ namespace ValheimVRMod.Utilities
                         0.45f,  0.5f, 0.45f
                 )},
                 {
+                    EquipType.DualAxes, WeaponColData.create(
+                        0.45f,  0.2f, 0.05f,
+                        0,  0, 0,
+                        0.45f,  0.45f, 0.45f
+                )},
+                {
                     EquipType.DualKnives, WeaponColData.create(
                         0.225f,  0.15f, 0.05f,
                         0,  0, 0,
@@ -316,6 +342,12 @@ namespace ValheimVRMod.Utilities
                         0,  0.05f, 0.016f,
                         0,  0, 0,
                         0.3f,  0.9f, 0.3f
+                )},
+                {
+                    EquipType.DualAxes, WeaponColData.create(
+                        0.4f,  0.2f, 0.016f,
+                        0,  0, 0,
+                        0.75f, 0.35f, 0.3f
                 )},
                 {
                     EquipType.DualKnives, WeaponColData.create(
@@ -420,11 +452,12 @@ namespace ValheimVRMod.Utilities
             return DUAL_WIELD_BLOCKING_COLLIDERS[equipType];
         }
 
-        // Estimates the direction and length of weapon handle behind the grip by identifying the dimension on which its mesh bounds is offset the farthest.
+        // Estimates the direction and length of a weapon by identifying the dimension on which its mesh bounds is offset the farthest.
         // This estimation therefore assumes:
         //   1. The weapon pointing direction is parallel to the x, y, or z axis of the mesh; and
         //   2. The offset of tip of the weapon is larger than its lateral, dorsal, and ventral expanse.
-        public static Vector3 EstimateHandleAllowanceBehindGrip(MeshFilter weaponMeshFilter, Vector3 handPosition)
+        public static Vector3 EstimateWeaponDirectionAndLength(
+            MeshFilter weaponMeshFilter, Vector3 handPosition, out float handleAllowanceBehindGrip)
         {
             Bounds weaponLocalBounds = weaponMeshFilter.sharedMesh.bounds;
             Vector3 centerOffset = weaponLocalBounds.center - weaponMeshFilter.transform.InverseTransformPoint(handPosition);
@@ -449,8 +482,13 @@ namespace ValheimVRMod.Utilities
                 }
             }
 
-            float handleAllowanceLengthBehindGrip = weaponLength - longestExtrusion;
-            return weaponMeshFilter.transform.TransformVector(-weaponPointingDirection * handleAllowanceLengthBehindGrip);
+            if (weaponLength < longestExtrusion)
+            {
+                weaponLength = longestExtrusion;
+                LogUtils.LogWarning("Weapon mesh is off hand, weapon direction and length estimation might be inaccurate.");
+            }
+            handleAllowanceBehindGrip = weaponLength - longestExtrusion;
+            return weaponMeshFilter.transform.TransformVector(weaponPointingDirection * weaponLength);
         }
 
         // Whether the straight line (t -> p + t * v) intersects with the given bounds.
@@ -543,6 +581,17 @@ namespace ValheimVRMod.Utilities
             return Vector3.Angle(velocity, weaponPointing) < (isTwoHanded ? MAX_STAB_ANGLE_TWO_HAND : MAX_STAB_ANGLE);
         }
 
+        public static void AlignLoadedMeshToUnloadedMesh(GameObject loaded, GameObject unloaded)
+        {
+            var loadedMeshFilter = loaded.GetComponentInChildren<MeshFilter>();
+            var unloadedMeshFilter = unloaded.GetComponentInChildren<MeshFilter>();
+            var loadedMeshCenter = loadedMeshFilter.transform.TransformPoint(loadedMeshFilter.sharedMesh.bounds.center);
+            var unloadedMeshCenter = unloadedMeshFilter.transform.TransformPoint(unloadedMeshFilter.sharedMesh.bounds.center);
+
+            loaded.transform.position += (unloadedMeshCenter - loadedMeshCenter);
+        }
+
+
         public static GameObject CreateDebugSphere(Transform parent)
         {
             var sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
@@ -575,7 +624,8 @@ namespace ValheimVRMod.Utilities
         private static WeaponColData EstimateWeaponCollider(MeshFilter meshFilter, Vector3 handPosition)
         {
             var weaponPointing =
-                -meshFilter.transform.InverseTransformDirection(EstimateHandleAllowanceBehindGrip(meshFilter, handPosition)).normalized;
+                meshFilter.transform.InverseTransformDirection(
+                    EstimateWeaponDirectionAndLength(meshFilter, handPosition, out float handleAllowanceBehindGrip)).normalized;
             var handLocalPosition = meshFilter.transform.InverseTransformPoint(handPosition);
             var bounds = meshFilter.mesh.bounds;
             var weaponTip = bounds.center + weaponPointing * Mathf.Abs(Vector3.Dot(bounds.extents, weaponPointing));

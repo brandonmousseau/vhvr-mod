@@ -136,6 +136,7 @@ namespace ValheimVRMod.Scripts
         {
             transform.SetParent(handTransform, false);
             transform.localPosition = Vector3.zero;
+            Camera vrCam = CameraUtils.getCamera(CameraUtils.VR_CAMERA);
 
             switch (VHVRConfig.getQuickMenuType())
             {
@@ -144,20 +145,19 @@ namespace ValheimVRMod.Scripts
                     break;
 
                 case "Full Player":
-                    transform.LookAt(transform.position + Player.m_localPlayer.transform.forward, Player.m_localPlayer.transform.up);
+                    var facing = Vector3.ProjectOnPlane(vrCam.transform.forward, vrCam.transform.parent.up);
+                    transform.LookAt(transform.position + facing, vrCam.transform.parent.up);
                     transform.localRotation *= Quaternion.Euler(VHVRConfig.getQuickMenuVerticalAngle() - 180, 0, 0);
                     break;
                 case "Hand Follow Cam":
                     //Camera Version
-                    Camera vrCam = CameraUtils.getCamera(CameraUtils.VR_CAMERA);
                     transform.LookAt(vrCam.transform.position);
                     break;
                 case "Hand-Player":
                 default:
                     transform.localRotation = Quaternion.Euler(0, 0, 0);
-                    var playerDir = Player.m_localPlayer.transform.InverseTransformDirection(transform.forward);
-                    playerDir = new Vector3(playerDir.x, -0.05f, playerDir.z);
-                    transform.LookAt(transform.position + Player.m_localPlayer.transform.TransformDirection(playerDir), Player.m_localPlayer.transform.up);
+                    var tiltedFacing = Vector3.ProjectOnPlane(transform.forward, vrCam.transform.parent.up) - vrCam.transform.parent.up * 0.05f;
+                    transform.LookAt(transform.position + tiltedFacing, vrCam.transform.parent.up);
                     transform.localRotation *= Quaternion.Euler(VHVRConfig.getQuickMenuVerticalAngle() - 180, 0, 0);
                     break;
             }

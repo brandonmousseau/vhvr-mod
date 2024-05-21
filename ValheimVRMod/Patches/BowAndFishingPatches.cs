@@ -63,11 +63,15 @@ namespace ValheimVRMod.Patches {
     {
         static void Postfix(Player __instance, ItemDrop.ItemData weapon, ref float dt)
         {
-            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls() || EquipScript.getLeft() != EquipType.Crossbow || CrossbowMorphManager.instance == null)
+            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls())
             {
                 return;
             }
-            CrossbowMorphManager.instance.UpdateWeaponLoading(__instance, dt);
+            
+            if (EquipScript.getLeft() == EquipType.Crossbow && CrossbowMorphManager.instance != null)
+            {
+                CrossbowMorphManager.instance.UpdateWeaponLoading(__instance, dt);
+            }
         }
 
     }
@@ -75,15 +79,61 @@ namespace ValheimVRMod.Patches {
     [HarmonyPatch(typeof(Player), "QueueReloadAction")]
     class PatchQueueReloadAction
     {
+        static bool hasReloadedDundrDuringCurrentTwoHandedWield = false;
+
         static bool Prefix(Player __instance)
         {
-            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls() || EquipScript.getLeft() != EquipType.Crossbow)
+            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls())
             {
                 return true;
             }
-            return CrossbowManager.CanQueueReloadAction();
-        }
 
+            if (EquipScript.getLeft() == EquipType.Crossbow)
+            {
+                return CrossbowManager.CanQueueReloadAction();
+            }
+
+            if (VHVRConfig.OneHandedBow() || !VHVRConfig.CrossbowManualReload())
+            {
+                return true;
+            }
+
+            if (EquipScript.isDundrEquipped())
+            {
+                if (!LocalWeaponWield.isCurrentlyTwoHanded())
+                {
+                    hasReloadedDundrDuringCurrentTwoHandedWield = false;
+                    // Do not charge Dundr if holding it with only one hand.
+                    return false;
+                }
+                if (hasReloadedDundrDuringCurrentTwoHandedWield)
+                {
+                    // Do not charge Dundr if it has already been charged once during current two-handed wield.
+                    return false;
+                }
+                hasReloadedDundrDuringCurrentTwoHandedWield = true;
+                return true;
+            }
+
+            return true;
+        }
+    }
+
+    [HarmonyPatch(typeof(Attack), nameof(Attack.Start))]
+    class DestoryBoltAfterCrossbowAttackPatch
+    {
+        static void Postfix(Attack __instance, bool __result)
+        {
+            if (__result &&
+                __instance.m_character == Player.m_localPlayer &&
+                VHVRConfig.UseVrControls() &&
+                EquipScript.getLeft() == EquipType.Crossbow &&
+                CrossbowMorphManager.instance != null &&
+                !CrossbowMorphManager.instance.shouldAutoReload)
+            {
+                CrossbowMorphManager.instance.destroyBolt();
+            }
+        }
     }
 
     /**
@@ -125,7 +175,7 @@ namespace ValheimVRMod.Patches {
                 case EquipType.SpearChitin:
                 case EquipType.ThrowObject:
                     spawnPoint = ThrowableManager.spawnPoint;
-                    aimDir = ThrowableManager.aimDir;
+                    aimDir = ThrowableManager.aimDir.normalized * ThrowableManager.throwSpeed;
                     return false;
                 case EquipType.Magic:
                     spawnPoint = MagicWeaponManager.GetProjectileSpawnPoint(__instance);
@@ -175,7 +225,7 @@ namespace ValheimVRMod.Patches {
             if (___m_character != Player.m_localPlayer || !VHVRConfig.UseVrControls()) {
                 return;
             }
-            if (!EquipScript.shouldSkipAttackAnimation() || ___m_character.IsStaggering())
+            if (!EquipScript.shouldSkipAttackAnimation() || ___m_character.IsStaggering() || PlayerCustomizaton.IsBarberGuiVisible())
             {
                 ___m_animator.speed = 1f;
                 return;
@@ -295,21 +345,39 @@ namespace ValheimVRMod.Patches {
             {
                 return;
             }
-            if (__instance.m_recoilPushback > 0f && EquipScript.getLeft() == EquipType.Crossbow)
+ 
+            if (__instance.m_recoilPushback <= 0f)
+            {
+                return;
+            }
+
+            if (EquipScript.getLeft() == EquipType.Crossbow || EquipScript.isDundrEquipped())
             {
                 recoilPushback = __instance.m_recoilPushback;
                 __instance.m_recoilPushback = 0f;
             }
         }
+
         public static void Postfix(Attack __instance)
         {
             if (__instance.m_character != Player.m_localPlayer || !VHVRConfig.UseVrControls())
             {
                 return;
             }
-            if (recoilPushback > 0f && EquipScript.getLeft() == EquipType.Crossbow)
+
+            if (recoilPushback <= 0f)
+            {
+                return;
+            }
+
+            if (EquipScript.getLeft() == EquipType.Crossbow)
             {
                 __instance.m_character.ApplyPushback(-CrossbowManager.AimDir, recoilPushback);
+                recoilPushback = 0f;
+            }
+            else if (EquipScript.isDundrEquipped())
+            {
+                __instance.m_character.ApplyPushback(-MagicWeaponManager.AimDir, recoilPushback);
                 recoilPushback = 0f;
             }
         }

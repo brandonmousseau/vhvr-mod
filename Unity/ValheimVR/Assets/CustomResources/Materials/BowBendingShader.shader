@@ -7,6 +7,7 @@ Shader "BowBendingShader"
         _HandleBottomHeight("Handle Bottom Height", Float) = 0
         _StringTop("String Top", Vector) = (0, 0, 0, 1) // Used to detect the vanilla string so that it can be hidden
         _StringRadius("String Radius", Float) = 0 // Used to detect the vanilla string so that it can be hidden
+        _StringNormalTolerance("String Normal Tolerance", Float) = 0.015625 // Used to detect the vanilla string so that it can be hidden
         _MainTex ("Texture", 2D) = "white" {}
         _BumpMap ("Bumpmap", 2D) = "bump" {}
         _MetallicGlossMap ("Metallic Gloss Map", 2D) = "bump" {}
@@ -36,6 +37,7 @@ Shader "BowBendingShader"
         float4 _StringTopToBottomDirection; // Must be normalized.
         float _StringLength;
         float _StringRadius;
+        float _StringNormalTolerance;
 
         sampler2D _MainTex;
         sampler2D _BumpMap;
@@ -55,10 +57,10 @@ Shader "BowBendingShader"
         void vert (inout appdata_full v)
         {
             v.color.a = 1.0;
-            if (_StringRadius > 0) {
+            if (_StringRadius > 0 && abs(dot(v.normal, _StringTopToBottomDirection.xyz)) < _StringNormalTolerance * length(v.normal)) {
                 float4 stringTopToCurrentVertex = v.vertex - _StringTop;
-                float4 projectionOnString = dot(stringTopToCurrentVertex, _StringTopToBottomDirection) * _StringTopToBottomDirection;
-                float distanceToString = length((stringTopToCurrentVertex - projectionOnString).xyz);
+                float projectionOnString = dot(stringTopToCurrentVertex, _StringTopToBottomDirection);
+                float distanceToString = length((stringTopToCurrentVertex - projectionOnString * _StringTopToBottomDirection).xyz);
                 if (distanceToString < _StringRadius) {
                    // Hide vanilla string.
                    v.color.a = 0.0;

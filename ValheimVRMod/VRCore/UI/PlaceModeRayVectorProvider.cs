@@ -1,6 +1,6 @@
-﻿using UnityEngine;
+using UnityEngine;
+using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
-using static ValheimVRMod.Utilities.LogUtils;
 
 namespace ValheimVRMod.VRCore.UI
 {
@@ -24,7 +24,7 @@ namespace ValheimVRMod.VRCore.UI
             get
             {
                 ensureInstance();
-                return _startingPosition;
+                return LocalWeaponWield.isCurrentlyTwoHanded() ? LocalWeaponWield.localWeaponTip + Vector3.up * 0.25f : _startingPosition;
             } 
         }
 
@@ -32,7 +32,7 @@ namespace ValheimVRMod.VRCore.UI
             get
             {
                 ensureInstance();
-                return _rayDirection * Vector3.forward;
+                return LocalWeaponWield.isCurrentlyTwoHanded() ? -Vector3.up : _rayDirection * Vector3.forward;
             }
         }
 

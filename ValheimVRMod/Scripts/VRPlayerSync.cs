@@ -20,7 +20,7 @@ namespace ValheimVRMod.Scripts {
 
         private WeaponWield.TwoHandedState twoHandedState = WeaponWield.TwoHandedState.SingleHanded;
         private bool isLeftHanded = false;
-        private bool holdingInversedSpear = true;
+        private bool holdingInversedSpear = false;
 
         private Player player;
         private Vector3 ownerLastPositionCamera = Vector3.zero;
@@ -167,10 +167,19 @@ namespace ValheimVRMod.Scripts {
             GetComponent<ZNetView>().GetZDO().Set("vr_data", pkg.GetArray());
         }
 
+        private static readonly Quaternion DUNDR_SINGLE_HAND_ADDITIONAL_ROTATION = Quaternion.Euler(55, 0, 0);
         private void writeData(ZPackage pkg, GameObject obj, Vector3 ownerVelocity) 
         {
+            var rotation = obj.transform.rotation;
+            if (obj == rightHand ^ isLeftHanded)
+            {
+                if (!LocalWeaponWield.isCurrentlyTwoHanded() && EquipScript.isDundrEquipped())
+                {
+                    rotation *= DUNDR_SINGLE_HAND_ADDITIONAL_ROTATION;
+                }
+            }
             pkg.Write(obj.transform.position);
-            pkg.Write(obj.transform.rotation);
+            pkg.Write(rotation);
             pkg.Write(ownerVelocity);
         }
 
@@ -180,8 +189,6 @@ namespace ValheimVRMod.Scripts {
 
         private void syncPositionAndRotation(ZDO zdo, float dt)
         {
-            hasReceivedData = (zdo != null);
-
             if (zdo == null)
             {
                 return;
@@ -191,6 +198,7 @@ namespace ValheimVRMod.Scripts {
             {
                 return;
             }
+            hasReceivedData = true;
             ZPackage pkg = new ZPackage(vr_data);
             var currentDataRevision = zdo.DataRevision;
             if (currentDataRevision != lastDataRevision)
