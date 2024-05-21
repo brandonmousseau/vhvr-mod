@@ -36,10 +36,6 @@ namespace ValheimVRMod.Utilities
             else if (EquipScript.getLeft() == EquipType.Crossbow && CrossbowManager.IsPullingTrigger())
             {
                 StartAttackIfRiding(isSecondaryAttack: false, attackDrawPercentage: 1);
-                if (CrossbowMorphManager.instance && !CrossbowMorphManager.instance.shouldAutoReload)
-                {
-                    CrossbowMorphManager.instance.destroyBolt();
-                }
             }
         }
 
