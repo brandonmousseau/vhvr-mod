@@ -80,6 +80,7 @@ namespace ValheimVRMod.Patches
                     }
                     else if (__instance.IsAttachedToShip())
                     {
+                        // Remove any tilt from the rotation.
                         var facing = VRPlayer.instance.transform.forward;
                         facing.y = 0;
                         VRPlayer.instance.transform.rotation = Quaternion.LookRotation(facing);
