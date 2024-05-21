@@ -49,7 +49,7 @@ namespace ValheimVRMod.VRCore
         // the hands won't be rendered by the handsCam.
         private static Vector3 FIRST_PERSON_OFFSET = Vector3.zero;
         private static float CROUCH_HEIGHT_ADJUST = -0.4f;
-        private static float RIDE_HEIGHT_ADJUST = -1f;
+        private static float RIDE_HEIGHT_ADJUST = -0.85f;
         private static float SIT_ATTACH_HEIGHT_ADJUST = -0.4f;
         private static float SIT_HEIGHT_ADJUST = -0.7f;
         private static Vector3 THIRD_PERSON_0_OFFSET = new Vector3(0f, 1.0f, -0.6f);
@@ -1425,12 +1425,15 @@ namespace ValheimVRMod.VRCore
 
         public void ResetRoomscaleCamera()
         {
-            if (_vrCameraRig != null)
+            if (_vrCameraRig == null)
             {
-                Vector3 vrCamPosition = _vrCam.transform.localPosition;
-                vrCamPosition.y = 0;
-                _vrCameraRig.localPosition = -vrCamPosition;
+                return;
             }
+
+            Vector3 vrCamPosition = _vrCam.transform.localPosition;
+            vrCamPosition.y = 0;
+            _vrCameraRig.localPosition = -vrCamPosition;
+            _lastCamPosition = _vrCam.transform.localPosition;
         }
 
         public void TriggerHandVibration(float time)
