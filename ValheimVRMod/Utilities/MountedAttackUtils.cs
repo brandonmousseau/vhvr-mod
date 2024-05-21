@@ -10,16 +10,11 @@ namespace ValheimVRMod.Utilities
     public class MountedAttackUtils
     {
         public static readonly MethodInfo stopDoodadControlMethod = AccessTools.Method(typeof(Player), nameof(Player.StopDoodadControl));
+        private static IDoodadController doodadController { get { return Player.m_localPlayer?.m_doodadController; } }
 
         public void UnmountIfJumping()
         {
-            var doodadController = Player.m_localPlayer.m_doodadController;
-            if (doodadController == null)
-            {
-                return;
-            }
-
-            if (!SteamVR_Actions.valheim_Jump.GetState(SteamVR_Input_Sources.Any))
+            if (doodadController == null || !SteamVR_Actions.valheim_Jump.GetState(SteamVR_Input_Sources.Any))
             {
                 return;
             }
@@ -50,7 +45,17 @@ namespace ValheimVRMod.Utilities
 
         public static bool IsRiding()
         {
-            return Player.m_localPlayer?.m_doodadController?.IsValid() ?? false;
+            return doodadController?.IsValid() ?? false;
+        }
+
+        public static bool IsRidingMount()
+        {
+            return IsRiding() && doodadController is Sadle;
+        }
+
+        public static bool IsSteering()
+        {
+            return IsRiding() && !(doodadController is Sadle);
         }
 
         // Vanilla game does not support attacking while riding and this method forces initiating attack when riding.
