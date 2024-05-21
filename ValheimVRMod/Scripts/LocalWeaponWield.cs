@@ -207,7 +207,7 @@ namespace ValheimVRMod.Scripts
             {
                 return TwoHandedState.RightHandBehind;
             }
-            else if (wieldingAngle > 60f)
+            else if (wieldingAngle > 120f)
             {
                 return TwoHandedState.LeftHandBehind;
             }
