@@ -89,19 +89,6 @@ namespace ValheimVRMod.Scripts {
                 }
             }
 
-            if (EquipScript.isDundrEquipped())
-            {
-                switch (LocalWeaponWield.LocalPlayerTwoHandedState)
-                {
-                    case WeaponWield.TwoHandedState.LeftHandBehind:
-                        return !isRightHand;
-                    case WeaponWield.TwoHandedState.RightHandBehind:
-                        return isRightHand;
-                    case WeaponWield.TwoHandedState.SingleHanded:
-                        return !isMainHand;
-                }
-            }
-
             return isHandFree();
         }
 
