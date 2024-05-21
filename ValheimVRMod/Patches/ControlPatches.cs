@@ -688,10 +688,6 @@ namespace ValheimVRMod.Patches {
             {
                 attack = true;
                 attackHold = true;
-                if (!CrossbowMorphManager.instance.shouldAutoReload)
-                {
-                    CrossbowMorphManager.instance.destroyBolt();
-                }
             }
 
             switch (EquipScript.getRight()) {
