@@ -993,6 +993,7 @@ namespace ValheimVRMod.Patches {
                 {
                     return;
                 }
+
                 if (snapTriggered && !isSmoothSnapping)
                 {
                     if (turnInputApplied(mouseLook.x))
@@ -1009,6 +1010,19 @@ namespace ValheimVRMod.Patches {
                 {
                     handleImmediateSnap(ref mouseLook);
                 }
+            }
+
+            static void Postfix(Player __instance, Vector2 mouseLook)
+            {
+                if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls() || !__instance.IsAttached())
+                {
+                    return;
+                }
+
+                // The player character cannot yaw when attached so we must yaw the VR rig explicitly.
+                var rotation = Quaternion.Euler(0f, mouseLook.x, 0f);
+                VRPlayer.instance.transform.rotation *= rotation;
+                Player_Rotation_Patch.attachmentIndependentRoomRotation *= rotation;
             }
 
             private static void handleSmoothSnap(ref Vector2 mouseLook)
