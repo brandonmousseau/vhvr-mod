@@ -1178,7 +1178,7 @@ namespace ValheimVRMod.VRCore
             var desirePosition = mainCamera.gameObject.transform.position;
             if (PlayerCustomizaton.IsBarberGuiVisible() && getPlayerCharacter())
             {
-                desirePosition.y = getPlayerCharacter().m_head.position.y;
+                desirePosition.y = getPlayerCharacter().transform.position.y;
             }
             _instance.transform.position = desirePosition;
             _instance.transform.rotation = mainCamera.gameObject.transform.rotation;
