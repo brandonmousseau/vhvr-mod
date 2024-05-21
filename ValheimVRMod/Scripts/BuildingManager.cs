@@ -1789,11 +1789,7 @@ namespace ValheimVRMod.Scripts
 
         public bool IsModdedStructure(string name)
         {
-            if(name == "MS_CustomShip(Clone)" || name == "MovableBase")
-            {
-                return true;
-            }
-            return false;
+            return name == "MS_CustomShip(Clone)" || name == "MovableBase";
         }
     }
 }
