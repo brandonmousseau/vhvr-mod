@@ -9,8 +9,9 @@ namespace ValheimVRMod.Scripts
 {
     public class WeaponCollision : MonoBehaviour
     {
-        private const float MIN_SPEED = 4f;
-        private const float MIN_STAB_SPEED = 1f;
+        private const float MIN_STAB_SPEED = 4f;
+        private const float MIN_HAMMER_SPEED = 1;
+        private const float MIN_LONG_TOOL_SPEED = 1.5f;
         // The offset amount of the point on the weapon relative to the hand to calculate the speed of.
         // This is intentionally made much smaller than the possible full length of the weapon so that
         // small wrist rotation will not acccidentally trigger an attack when holding a long weapon.
@@ -430,15 +431,15 @@ namespace ValheimVRMod.Scripts
             {
                 velocity =
                     WeaponUtils.GetWeaponVelocity(
-                        mainHandPhysicsEstimator.GetAverageVelocityInSnapshots(),
+                        mainHandPhysicsEstimator.GetVelocity(),
                         mainHandPhysicsEstimator.GetAngularVelocity(),
                         LocalWeaponWield.weaponForward.normalized * WEAPON_ANGULAR_WEIGHT_OFFSET);
                 speed = velocity.magnitude;
             }
             else
             {
-                var leftHandVelocity = VRPlayer.rightHandPhysicsEstimator.GetAverageVelocityInSnapshots();
-                var rightHandVelocity = VRPlayer.rightHandPhysicsEstimator.GetAverageVelocityInSnapshots();
+                var leftHandVelocity = VRPlayer.leftHandPhysicsEstimator.GetVelocity();
+                var rightHandVelocity = VRPlayer.rightHandPhysicsEstimator.GetVelocity();
                 var leftHandSpeed = leftHandVelocity.magnitude;
                 var rightHandSpeed = rightHandVelocity.magnitude;
                 if (leftHandSpeed < rightHandSpeed)
@@ -462,13 +463,13 @@ namespace ValheimVRMod.Scripts
         {
             if (EquipScript.getRight() == EquipType.Hammer)
             {
-                return 0.75f;
+                return MIN_HAMMER_SPEED;
             }
             if (itemIsTool)
             {
-                return 1.5f;
+                return MIN_LONG_TOOL_SPEED;
             }
-            return MIN_SPEED * VHVRConfig.SwingSpeedRequirement();
+            return VHVRConfig.SwingSpeedRequirement();
         }
 
         private static bool isStab(Vector3 velocity)

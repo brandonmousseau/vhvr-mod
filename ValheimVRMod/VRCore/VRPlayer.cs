@@ -1123,9 +1123,13 @@ namespace ValheimVRMod.VRCore
             _instance.transform.localPosition = desiredPosition - playerCharacter.transform.position;
 
             if (_headZoomLevel != HeadZoomLevel.FirstPerson)
+            {
                 _instance.transform.localPosition += getHeadOffset(_headZoomLevel);
+            }
             else
+            {
                 setPlayerVisualsOffset(playerCharacter.transform, -getHeadOffset(_headZoomLevel));
+            }
 
             var hmd = Valve.VR.InteractionSystem.Player.instance.hmdTransform;
             // Measure the distance between HMD and desires location, and save it.
@@ -1134,6 +1138,12 @@ namespace ValheimVRMod.VRCore
             {
                 _instance.transform.localRotation = Quaternion.Euler(0f, -hmd.localRotation.eulerAngles.y, 0f);
             }
+
+            if (PlayerCustomizaton.IsBarberGuiVisible())
+            {
+                _instance.transform.localRotation *= Quaternion.Euler(0, 180, 0);
+            }
+
             headPositionInitialized = true;
 
             referencePlayerHeight = Valve.VR.InteractionSystem.Player.instance.eyeHeight;
@@ -1165,7 +1175,12 @@ namespace ValheimVRMod.VRCore
             setHeadVisibility(true);
             // Orient the player with the main camera
             _instance.transform.parent = mainCamera.gameObject.transform;
-            _instance.transform.position = mainCamera.gameObject.transform.position;
+            var desirePosition = mainCamera.gameObject.transform.position;
+            if (PlayerCustomizaton.IsBarberGuiVisible() && getPlayerCharacter())
+            {
+                desirePosition.y = getPlayerCharacter().transform.position.y;
+            }
+            _instance.transform.position = desirePosition;
             _instance.transform.rotation = mainCamera.gameObject.transform.rotation;
             attachedToPlayer = false;
             headPositionInitialized = false;
