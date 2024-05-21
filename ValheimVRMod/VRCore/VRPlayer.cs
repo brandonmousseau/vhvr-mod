@@ -48,9 +48,10 @@ namespace ValheimVRMod.VRCore
         // Unity AssetBundle project too. If they don't match,
         // the hands won't be rendered by the handsCam.
         private static Vector3 FIRST_PERSON_OFFSET = Vector3.zero;
-        private static float SIT_HEIGHT_ADJUST = -0.7f;
-        private static float SIT_ATTACH_HEIGHT_ADJUST = -0.4f;
         private static float CROUCH_HEIGHT_ADJUST = -0.4f;
+        private static float RIDE_HEIGHT_ADJUST = -1f;
+        private static float SIT_ATTACH_HEIGHT_ADJUST = -0.4f;
+        private static float SIT_HEIGHT_ADJUST = -0.7f;
         private static Vector3 THIRD_PERSON_0_OFFSET = new Vector3(0f, 1.0f, -0.6f);
         private static Vector3 THIRD_PERSON_1_OFFSET = new Vector3(0f, 1.4f, -1.5f);
         private static Vector3 THIRD_PERSON_2_OFFSET = new Vector3(0f, 1.9f, -2.6f);
@@ -396,7 +397,12 @@ namespace ValheimVRMod.VRCore
             }
 
             float distance = 3;
-            var targetPosition = _vrCam.transform.position + 0.25f * Vector3.up;
+            var targetPosition =
+                VRPlayer.inFirstPerson ?
+                _vrCam.transform.position + 0.25f * Vector3.up :
+                Player.m_localPlayer ?
+                Player.m_localPlayer.transform.position + Vector3.up * 0.5f :
+                CameraUtils.getCamera(CameraUtils.MAIN_CAMERA).transform.position;
             var hits = Physics.RaycastAll(targetPosition, _followCamera.transform.position - targetPosition, distance);
             foreach (var hit in hits)
             {
@@ -427,7 +433,18 @@ namespace ValheimVRMod.VRCore
                     ref followCameraVelocity,
                     0.25f);
 
-            _followCamera.transform.LookAt(_vrCam.transform);
+            if (VRPlayer.inFirstPerson)
+            {
+                _followCamera.transform.LookAt(_vrCam.transform);
+            }
+            else if (Player.m_localPlayer)
+            {
+                _followCamera.transform.LookAt(Player.m_localPlayer.transform.position + Vector3.up * 0.5f);
+            }
+            else
+            {
+                _followCamera.transform.rotation = CameraUtils.getCamera(CameraUtils.MAIN_CAMERA).transform.rotation;
+            }
 
         }
 
@@ -930,7 +947,15 @@ namespace ValheimVRMod.VRCore
 
         private float getHeadHeightAdjust(Player player)
         {
-            if (MountedAttackUtils.IsRiding())
+            if (player.IsRiding() || MountedAttackUtils.IsRidingMount())
+            {
+                // Attack animation may cause vanilla game to think that the player is standing
+                // briefly while riding but we should consider the player as sitting so that the
+                // view point does not shift suddenly when attacking.
+                return RIDE_HEIGHT_ADJUST;
+            }
+
+            if (MountedAttackUtils.IsSteering())
             {
                 // Attack animation may cause vanilla game to think that the player is standing
                 // briefly while riding but we should consider the player as sitting so that the
@@ -940,19 +965,14 @@ namespace ValheimVRMod.VRCore
 
             if (player.IsSitting())
             {
-                if (player.IsAttached())
-                {
-                    return SIT_ATTACH_HEIGHT_ADJUST;
-                }
-                else
-                {
-                    return SIT_HEIGHT_ADJUST;
-                }
+                return player.IsAttached() ? SIT_ATTACH_HEIGHT_ADJUST : SIT_HEIGHT_ADJUST;
             }
+
             if (player.IsCrouching() && Player_SetControls_SneakPatch.isJoystickSneaking)
             {
                 return CROUCH_HEIGHT_ADJUST;
             }
+
             return VHVRConfig.PlayerHeightAdjust();
         }
 
@@ -966,7 +986,8 @@ namespace ValheimVRMod.VRCore
             maybeAddVrik(player);
             if (_vrik != null)
             {
-                _vrik.enabled = VHVRConfig.UseVrControls() &&
+                _vrik.enabled =
+                    VHVRConfig.UseVrControls() &&
                     inFirstPerson &&
                     !player.InDodge() &&
                     !player.IsStaggering() &&
@@ -1102,9 +1123,13 @@ namespace ValheimVRMod.VRCore
             _instance.transform.localPosition = desiredPosition - playerCharacter.transform.position;
 
             if (_headZoomLevel != HeadZoomLevel.FirstPerson)
+            {
                 _instance.transform.localPosition += getHeadOffset(_headZoomLevel);
+            }
             else
+            {
                 setPlayerVisualsOffset(playerCharacter.transform, -getHeadOffset(_headZoomLevel));
+            }
 
             var hmd = Valve.VR.InteractionSystem.Player.instance.hmdTransform;
             // Measure the distance between HMD and desires location, and save it.
@@ -1113,6 +1138,12 @@ namespace ValheimVRMod.VRCore
             {
                 _instance.transform.localRotation = Quaternion.Euler(0f, -hmd.localRotation.eulerAngles.y, 0f);
             }
+
+            if (PlayerCustomizaton.IsBarberGuiVisible())
+            {
+                _instance.transform.localRotation *= Quaternion.Euler(0, 180, 0);
+            }
+
             headPositionInitialized = true;
 
             referencePlayerHeight = Valve.VR.InteractionSystem.Player.instance.eyeHeight;
@@ -1144,7 +1175,12 @@ namespace ValheimVRMod.VRCore
             setHeadVisibility(true);
             // Orient the player with the main camera
             _instance.transform.parent = mainCamera.gameObject.transform;
-            _instance.transform.position = mainCamera.gameObject.transform.position;
+            var desirePosition = mainCamera.gameObject.transform.position;
+            if (PlayerCustomizaton.IsBarberGuiVisible() && getPlayerCharacter())
+            {
+                desirePosition.y = getPlayerCharacter().transform.position.y;
+            }
+            _instance.transform.position = desirePosition;
             _instance.transform.rotation = mainCamera.gameObject.transform.rotation;
             attachedToPlayer = false;
             headPositionInitialized = false;

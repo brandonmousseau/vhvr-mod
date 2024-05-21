@@ -24,9 +24,7 @@ namespace ValheimVRMod.Patches
     [HarmonyPatch(typeof(Player), nameof(Player.SetMouseLook))]
     class Player_SetMouseLook_Patch
     {
-
         public static float? previousHeadLocalRotation;
-        public static float? lastAttachmentHeading;
         public static Quaternion lastAttachRot;
 
         public static GameObject headLookRef;
@@ -54,13 +52,12 @@ namespace ValheimVRMod.Patches
                 headLookRef = new GameObject();
             }
             /* Attached to something, like boat controls */
-            if (__instance.IsAttached() && (VHVRConfig.ViewTurnWithMountedAnimal() || !__instance.IsRiding()))
+            if (__instance.IsAttached())
             {
                 //Apply ship rotation
                 if (__instance.m_attached && __instance.m_attachPoint)
                 {
                     // Rotate VRPlayer together with delta ship rotation
-
                     if (VHVRConfig.IsShipImmersiveCamera() && !__instance.IsRiding() && !VRPlayer.inImmersiveDodge)
                     {
                         headLookRef.transform.SetParent(__instance.m_attachPoint);
@@ -83,20 +80,9 @@ namespace ValheimVRMod.Patches
                             lastAttachRot = headLookRef.transform.rotation;
                         }
                     }
-                    else
+                    else if (__instance.IsRiding() && !VHVRConfig.ViewTurnWithMountedAnimal())
                     {
-                        var newPlayerHeading = __instance.m_attachPoint.forward;
-                        newPlayerHeading.y = 0;
-                        newPlayerHeading.Normalize();
-                        var upTarget = __instance.transform.up;
-                        if (__instance.IsAttachedToShip() || __instance.IsRiding())
-                        {
-                            upTarget = Vector3.up;
-                        }
-                        float newHeadingRotation = Quaternion.LookRotation(newPlayerHeading, upTarget).eulerAngles.y;
-                        if (lastAttachmentHeading.HasValue)
-                            ___m_lookYaw *= Quaternion.AngleAxis(newHeadingRotation - lastAttachmentHeading.Value, Vector3.up);
-                        lastAttachmentHeading = newHeadingRotation;
+                        VRPlayer.instance.transform.rotation = Player_Rotation_Patch.attachmentIndependentRoomRotation;
                     }
 
                 }
@@ -186,6 +172,7 @@ namespace ValheimVRMod.Patches
     // Force the Player body rotatoin to always equal the yaw.
     class Player_Rotation_Patch
     {
+        public static Quaternion attachmentIndependentRoomRotation;
 
         [HarmonyPatch(typeof(Player), nameof(Player.Update))]
         class Player_Update_RotationPatch
@@ -229,9 +216,8 @@ namespace ValheimVRMod.Patches
         static bool ShouldFaceLookDirection(Player player)
         {
             // TODO: Consider disabling face-look-direction patch whenever VRPlayer.attachedToPlayer is false as opposed to just when PlayerCustomizaton.IsBarberGuiVisible().
-            return !VHVRConfig.NonVrPlayer() && player == Player.m_localPlayer && !PlayerCustomizaton.IsBarberGuiVisible() && !VRPlayer.inImmersiveDodge;
+            return !VHVRConfig.NonVrPlayer() && player == Player.m_localPlayer && !PlayerCustomizaton.IsBarberGuiVisible() && !VRPlayer.inImmersiveDodge && !player.IsAttached();
         }
-
 
         /// <summary>
         /// When interacting with an attachment point orient player in the direction of the attachment point
@@ -240,6 +226,7 @@ namespace ValheimVRMod.Patches
 
         class Player_AttachStart_Patch
         {
+
             static void Postfix(Player __instance, Transform attachPoint)
             {
                 if (VHVRConfig.NonVrPlayer() ||
@@ -264,7 +251,7 @@ namespace ValheimVRMod.Patches
                     __instance.m_lookYaw = Quaternion.LookRotation(attachmentHeading, upTarget);
                     VRPlayer.headPositionInitialized = false;
                     VRPlayer.vrPlayerInstance?.ResetRoomscaleCamera();
-                    Player_SetMouseLook_Patch.lastAttachmentHeading = null;
+                    attachmentIndependentRoomRotation = Quaternion.Euler(0, VRPlayer.instance.transform.rotation.eulerAngles.y, 0);
                 }
             }
         }

@@ -670,10 +670,10 @@ namespace ValheimVRMod.Utilities
                 "Accessibility feature that allows operating bows and crossbows with the dominant hand alone");
             swingSpeedRequirement =
                 config.Bind(
-                    "Controls", "SwingSpeedRequirement", 1f,
+                    "Controls", "SwingSpeedRequirement", 3f,
                     new ConfigDescription(
-                        "The speed requirement level on weapon swinging for an attack to be triggered. if set to 0, single touch will already trigger hit",
-                        new AcceptableValueRange<float>(0, 1f)));
+                        "The speed requirement in m/s for weapon swinging for an attack to be triggered. if set to 0, single touch will already trigger hit",
+                        new AcceptableValueRange<float>(0, 8)));
             altPieceRotationDelay = config.Bind("Controls",
                                                 "AltPieceRotationDelay",
                                                 1f,
