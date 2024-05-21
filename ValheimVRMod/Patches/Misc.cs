@@ -284,7 +284,9 @@ namespace ValheimVRMod.Patches
                 return;
             }
 
-            UpdateRenderDistance(__instance.name, __instance.m_lodGroup, restoreOriginalRenderDistance: __instance.m_tamed);
+            var key = __instance.name + "_level_" + __instance.m_level;
+
+            UpdateRenderDistance(key, __instance.m_lodGroup, restoreOriginalRenderDistance: __instance.m_tamed);
         }
 
         public static void UpdateRenderDistance(string key, LODGroup lodGroup, bool restoreOriginalRenderDistance)
@@ -297,12 +299,18 @@ namespace ValheimVRMod.Patches
 
             Camera vrCamera = CameraUtils.getCamera(CameraUtils.VR_CAMERA);
 
-            float desiredLodGroupSize =
-                restoreOriginalRenderDistance || vrCamera == null ?
-                originalLodGroupSizes[key] :
-                Mathf.Max(originalLodGroupSizes[key], GetDesiredLodGroupSize(lodGroup, VHVRConfig.GetEnemyRenderDistanceValue(), vrCamera));
+            if (restoreOriginalRenderDistance || vrCamera == null)
+            {
+                var originalLodGroupSize = originalLodGroupSizes[key];
+                if (lodGroup.size != originalLodGroupSize) {
+                    lodGroup.size = originalLodGroupSize;
+                }
+                return;
+            }
 
-            if (lodGroup.size != desiredLodGroupSize)
+            float desiredLodGroupSize =
+                Mathf.Max(originalLodGroupSizes[key], GetDesiredLodGroupSize(lodGroup, VHVRConfig.GetEnemyRenderDistanceValue(), vrCamera));
+            if (lodGroup.size < desiredLodGroupSize)
             {
                 lodGroup.size = desiredLodGroupSize;
             }
