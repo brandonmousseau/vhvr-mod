@@ -48,10 +48,11 @@ namespace ValheimVRMod.VRCore
         // Unity AssetBundle project too. If they don't match,
         // the hands won't be rendered by the handsCam.
         private static Vector3 FIRST_PERSON_OFFSET = Vector3.zero;
-        private static float RIDE_HEIGHT_ADJUST = -1f;
-        private static float SIT_HEIGHT_ADJUST = -0.7f;
-        private static float SIT_ATTACH_HEIGHT_ADJUST = -0.4f;
         private static float CROUCH_HEIGHT_ADJUST = -0.4f;
+        private static float RIDE_HEIGHT_ADJUST = -1f;
+        private static float SIT_ATTACH_HEIGHT_ADJUST = -0.4f;
+        private static float SIT_HEIGHT_ADJUST = -0.7f;
+        private static float SIT_SHIP_HEIGHT_ADJUST = -0.8f;
         private static Vector3 THIRD_PERSON_0_OFFSET = new Vector3(0f, 1.0f, -0.6f);
         private static Vector3 THIRD_PERSON_1_OFFSET = new Vector3(0f, 1.4f, -1.5f);
         private static Vector3 THIRD_PERSON_2_OFFSET = new Vector3(0f, 1.9f, -2.6f);
@@ -931,7 +932,7 @@ namespace ValheimVRMod.VRCore
 
         private float getHeadHeightAdjust(Player player)
         {
-            if (player.IsRiding() || MountedAttackUtils.IsRiding())
+            if (player.IsRiding() || MountedAttackUtils.IsRidingMount())
             {
                 // Attack animation may cause vanilla game to think that the player is standing
                 // briefly while riding but we should consider the player as sitting so that the
@@ -939,8 +940,20 @@ namespace ValheimVRMod.VRCore
                 return RIDE_HEIGHT_ADJUST;
             }
 
+            if (MountedAttackUtils.IsSteering())
+            {
+                // Attack animation may cause vanilla game to think that the player is standing
+                // briefly while riding but we should consider the player as sitting so that the
+                // view point does not shift suddenly when attacking.
+                return SIT_SHIP_HEIGHT_ADJUST;
+            }
+
             if (player.IsSitting())
             {
+                if (player.IsAttachedToShip())
+                {
+                    return SIT_SHIP_HEIGHT_ADJUST;
+                }
                 return player.IsAttached() ? SIT_ATTACH_HEIGHT_ADJUST : SIT_HEIGHT_ADJUST;
             }
 
