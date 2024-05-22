@@ -408,7 +408,15 @@ namespace ValheimVRMod.Patches
                 {
                     return;
                 }
-                waterVolume.m_waterSurface.shadowCastingMode = UnderwaterEffectsUpdater.UsingUnderwaterEffects ? ShadowCastingMode.ShadowsOnly : ShadowCastingMode.On;
+
+                if (UnderwaterEffectsUpdater.UsingUnderwaterEffects)
+                {
+                    CameraUtils.getCamera(CameraUtils.VR_CAMERA).cullingMask &= ~(1 << LayerUtils.WATER);
+                }
+                else
+                {
+                    CameraUtils.getCamera(CameraUtils.VR_CAMERA).cullingMask |= (1 << LayerUtils.WATER);
+                }
             }
         }
     }
@@ -424,5 +432,5 @@ namespace ValheimVRMod.Patches
                 followCamera.enabled = false;
             }
         }
-    } 
+    }
 }
