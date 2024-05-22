@@ -411,6 +411,7 @@ namespace ValheimVRMod.Patches
 
                 if (UnderwaterEffectsUpdater.UsingUnderwaterEffects)
                 {
+                    // This hides the water from the VR camera but not from the follow camera
                     CameraUtils.getCamera(CameraUtils.VR_CAMERA).cullingMask &= ~(1 << LayerUtils.WATER);
                 }
                 else
@@ -429,6 +430,7 @@ namespace ValheimVRMod.Patches
             var followCamera = CameraUtils.getCamera(CameraUtils.FOLLOW_CAMERA);
             if (followCamera)
             {
+                // Disable the follow camera temporarily since it might interfere with the projection matrix of the main camera upon character death.
                 followCamera.enabled = false;
             }
         }
