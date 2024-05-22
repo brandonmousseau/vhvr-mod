@@ -77,7 +77,7 @@ namespace ValheimVRMod.Patches {
             switch (EquipScript.getRight()) {
                 case EquipType.Hammer:
                     meshFilter.gameObject.AddComponent<BuildingManager>();
-                    return;
+                    break;
                 case EquipType.Fishing:
                     meshFilter.gameObject.transform.localPosition = new Vector3(0, 0, -0.4f);
                     meshFilter.gameObject.AddComponent<FishingManager>();
@@ -175,6 +175,11 @@ namespace ValheimVRMod.Patches {
             
             if (!VHVRConfig.UseVrControls()) {
                 return;
+            }
+
+            if (MagicWeaponManager.CanSummonWithOppositeHand())
+            {
+                ___m_leftItemInstance.AddComponent<MagicWeaponManager.SummonByMovingHandUpward>();
             }
 
             if (StaticObjects.rightHandQuickMenu != null) {
@@ -367,7 +372,7 @@ namespace ValheimVRMod.Patches {
     class HeadEquipVisibiltiyUpdater : MonoBehaviour
     {
         private bool isLocalPlayer;
-
+        Dictionary<GameObject, int> originalLayers = new Dictionary<GameObject, int>();
         private bool isHidden = false;
 
         void Awake() {
@@ -382,14 +387,31 @@ namespace ValheimVRMod.Patches {
                 if (!isHidden) {
                     foreach (Renderer renderer in gameObject.GetComponentsInChildren<Renderer>())
                     {
-                        renderer.shadowCastingMode = ShadowCastingMode.ShadowsOnly;
+                        if (!originalLayers.ContainsKey(renderer.gameObject))
+                        {
+                            originalLayers.Add(renderer.gameObject, renderer.gameObject.layer);
+                        }
+                        if (VHVRConfig.UseFollowCameraOnFlatscreen())
+                        {
+                            // Borrow the UI layer to hide the equipment from the VR camera but keep them shown to the follow camera.
+                            renderer.gameObject.layer = LayerMask.NameToLayer("UI");
+                        }
+                        else
+                        {
+                            renderer.shadowCastingMode = ShadowCastingMode.ShadowsOnly;
+                        }
                     }
                     isHidden = true;
                 }
-            } else if (isHidden)
+            }
+            else if (isHidden)
             {
                 foreach (Renderer renderer in gameObject.GetComponentsInChildren<Renderer>())
                 {
+                    if (originalLayers.ContainsKey(renderer.gameObject))
+                    {
+                        renderer.gameObject.layer = originalLayers[renderer.gameObject];
+                    }
                     renderer.shadowCastingMode = ShadowCastingMode.On;
                 }
                 isHidden = false;

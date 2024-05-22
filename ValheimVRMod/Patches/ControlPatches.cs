@@ -144,6 +144,11 @@ namespace ValheimVRMod.Patches {
                     return;
                 }
 
+                if (VRPlayer.inImmersiveDodge)
+                {
+                    return;
+                }
+
                 // When toggling running, disable turning left or right if the the x-rotation amount of the stick is less than the y-rotation amount.
                 // This prevents unwanted accidental turning when moving the stick forward or backward.
                 // TODO: examine whether this check should be enabled for smooth-turn mode as well.
@@ -402,6 +407,12 @@ namespace ValheimVRMod.Patches {
 
             private static bool ShouldTriggerBuildPlacement(string inputName)
             {
+                if (WeaponCollision.hasPendingToolUsageOutput)
+                {
+                    WeaponCollision.hasPendingToolUsageOutput = false;
+                    return true;
+                }
+
                 if (!BuildingManager.instance)
                 {
                     return ZInput.GetButtonDown(inputName);
@@ -677,10 +688,6 @@ namespace ValheimVRMod.Patches {
             {
                 attack = true;
                 attackHold = true;
-                if (!CrossbowMorphManager.instance.shouldAutoReload)
-                {
-                    CrossbowMorphManager.instance.destroyBolt();
-                }
             }
 
             switch (EquipScript.getRight()) {
@@ -982,6 +989,7 @@ namespace ValheimVRMod.Patches {
                 {
                     return;
                 }
+
                 if (snapTriggered && !isSmoothSnapping)
                 {
                     if (turnInputApplied(mouseLook.x))
@@ -998,6 +1006,19 @@ namespace ValheimVRMod.Patches {
                 {
                     handleImmediateSnap(ref mouseLook);
                 }
+            }
+
+            static void Postfix(Player __instance, Vector2 mouseLook)
+            {
+                if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls() || !__instance.IsAttached())
+                {
+                    return;
+                }
+
+                // The player character cannot yaw when attached so we must yaw the VR rig explicitly.
+                var rotation = Quaternion.Euler(0f, mouseLook.x, 0f);
+                VRPlayer.instance.transform.rotation *= rotation;
+                Player_Rotation_Patch.attachmentIndependentRoomRotation *= rotation;
             }
 
             private static void handleSmoothSnap(ref Vector2 mouseLook)
@@ -1118,6 +1139,12 @@ namespace ValheimVRMod.Patches {
             if (VHVRConfig.NonVrPlayer())
                 return;
 
+            if (VRPlayer.vrPlayerInstance.wasDodging)
+            {
+                // Give VRPlayer a chance to reset camera position and rotation after immersive dodge roll.
+                return;
+            }
+
             Vector3? dir;
             if (SteamVR_Actions.valheim_UseLeft.state && SteamVR_Actions.valheim_Jump.stateDown)
             {
@@ -1164,7 +1191,7 @@ namespace ValheimVRMod.Patches {
             __instance.m_queuedDodgeTimer -= dt;
             currdodgetimer -= dt;
 
-            if (__instance.m_queuedDodgeTimer > 0f && __instance.IsOnGround() && !__instance.IsDead() && !__instance.InAttack() && !__instance.IsEncumbered() && !__instance.InDodge() && !__instance.IsStaggering())
+            if (__instance.m_queuedDodgeTimer > 0f && __instance.IsOnGround() && !__instance.IsDead() && !__instance.InAttack() && !__instance.IsEncumbered() && !__instance.InDodge() && !__instance.IsStaggering() && !VRPlayer.vrPlayerInstance.wasDodging)
             {
                 float num = __instance.m_dodgeStaminaUsage - __instance.m_dodgeStaminaUsage * __instance.GetEquipmentDodgeStaminaModifier();
                 if (__instance.HaveStamina(num))
@@ -1172,6 +1199,14 @@ namespace ValheimVRMod.Patches {
                     __instance.ClearActionQueue();
                     __instance.m_queuedDodgeTimer = 0f;
                     currdodgetimer = 0.8f;
+                    if (VHVRConfig.ImmersiveDodgeRoll())
+                    {
+                        var roomPosition = VRPlayer.instance.transform.position;
+                        var roomRotation = VRPlayer.instance.transform.rotation;
+                        __instance.transform.rotation = Quaternion.LookRotation(__instance.m_queuedDodgeDir);
+                        __instance.m_body.rotation = __instance.transform.rotation;
+                        VRPlayer.instance.transform.SetPositionAndRotation(roomPosition, roomRotation);
+                    }
                     currDodgeDir = __instance.transform.forward;
                     __instance.m_dodgeInvincible = true;
                     __instance.m_zanim.SetTrigger("dodge");

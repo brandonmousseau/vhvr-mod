@@ -92,7 +92,10 @@ namespace ValheimVRMod.Scripts {
         {
             if (pausedCosmeticArrow != null)
             {
-                Destroy(pausedCosmeticArrow);
+                pausedCosmeticArrow.GetComponent<ZNetView>()?.Destroy();
+                if (pausedCosmeticArrow != null) {
+                    Destroy(pausedCosmeticArrow);
+                }
             }
             pausedCosmeticArrow = null;
         }

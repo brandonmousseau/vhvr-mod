@@ -462,7 +462,7 @@ namespace ValheimVRMod.VRCore.UI
         }
         public int getDirectPieceRotation()
         {
-            if (!altPieceRotationControlsActive())
+            if (!altPieceRotationControlsActive() || BuildingManager.instance == null)
             {
                 return 999;
             }

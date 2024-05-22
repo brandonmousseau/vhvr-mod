@@ -9,8 +9,9 @@ namespace ValheimVRMod.Scripts
 {
     public class WeaponCollision : MonoBehaviour
     {
-        private const float MIN_SPEED = 4f;
-        private const float MIN_STAB_SPEED = 1f;
+        private const float MIN_STAB_SPEED = 4f;
+        private const float MIN_HAMMER_SPEED = 1;
+        private const float MIN_LONG_TOOL_SPEED = 1.5f;
         // The offset amount of the point on the weapon relative to the hand to calculate the speed of.
         // This is intentionally made much smaller than the possible full length of the weapon so that
         // small wrist rotation will not acccidentally trigger an attack when holding a long weapon.
@@ -31,7 +32,8 @@ namespace ValheimVRMod.Scripts
 
         public PhysicsEstimator physicsEstimator { get; private set; }
         public PhysicsEstimator mainHandPhysicsEstimator { get { return weaponWield.mainHand == VRPlayer.leftHand ? VRPlayer.leftHandPhysicsEstimator : VRPlayer.rightHandPhysicsEstimator; } }
-        public bool itemIsTool;
+        private bool itemIsTool;
+        public static bool hasPendingToolUsageOutput;
         public static bool isDrinking;
         public LocalWeaponWield weaponWield;
         public static bool isLastHitOnTerrain;
@@ -113,6 +115,21 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
+            if (itemIsTool)
+            {
+                switch(EquipScript.getRight())
+                {
+                    case EquipType.Cultivator:
+                    case EquipType.Hoe:
+                        if (isTerrain(collider.gameObject))
+                        {
+                            MaybeAttackCollider(collider, requireStab: false);
+                        }
+                        return;
+                }
+                return;
+            }
+
             // Allow triggering a stab on a character target after contact.
             // This allows stabbing with long weapons that are likely to have been overlapping with the target before attacking. 
             MaybeStabCharacter(collider);
@@ -156,6 +173,22 @@ namespace ValheimVRMod.Scripts
             if (requireStab && !isStab)
             {
                 return;
+            }
+
+            if (itemIsTool)
+            {
+                switch (EquipScript.getRight())
+                {
+                    case EquipType.Cultivator:
+                    case EquipType.Hoe:
+                        hasPendingToolUsageOutput = LocalWeaponWield.isCurrentlyTwoHanded();
+                        return;
+                    case EquipType.Hammer:
+                        hasPendingToolUsageOutput = Player.m_localPlayer.InRepairMode();
+                        return;
+                    default:
+                        return;
+                }
             }
 
             bool isSecondaryAttack;
@@ -237,8 +270,7 @@ namespace ValheimVRMod.Scripts
                 return false;
             }
 
-            isLastHitOnTerrain =
-                (target.GetComponentInParent<MineRock5>() == null ? target : target.transform.parent.gameObject).GetComponent<Heightmap>() != null;
+            isLastHitOnTerrain = isTerrain(target);
 
             AttackTargetMeshCooldown attackTargetMeshCooldown = target.GetComponentInParent<AttackTargetMeshCooldown>();
             if (attackTargetMeshCooldown == null)
@@ -293,7 +325,7 @@ namespace ValheimVRMod.Scripts
             attack = item.m_shared.m_attack.Clone();
             secondaryAttack = item.m_shared.m_secondaryAttack.Clone();
 
-            itemIsTool = (name == "Hammer");
+            itemIsTool = (name == "Hammer" || EquipScript.getRight() == EquipType.Hoe || EquipScript.getRight() == EquipType.Cultivator);
 
             if (colliderParent == null)
             {
@@ -302,8 +334,6 @@ namespace ValheimVRMod.Scripts
 
             switch(EquipScript.getRight())
             {
-                case EquipType.Cultivator:
-                case EquipType.Hoe:
                 case EquipType.Fishing:
                 case EquipType.Magic:
                 case EquipType.SpearChitin:
@@ -395,27 +425,51 @@ namespace ValheimVRMod.Scripts
 
         private bool hasMomentum(out bool isStab)
         {
-            float minSpeed = MIN_SPEED * VHVRConfig.SwingSpeedRequirement();
-
+            Vector3 velocity;
+            float speed;
             if (weaponWield.twoHandedState == WeaponWield.TwoHandedState.SingleHanded)
             {
-                var velocity =
+                velocity =
                     WeaponUtils.GetWeaponVelocity(
-                        mainHandPhysicsEstimator.GetAverageVelocityInSnapshots(),
+                        mainHandPhysicsEstimator.GetVelocity(),
                         mainHandPhysicsEstimator.GetAngularVelocity(),
                         LocalWeaponWield.weaponForward.normalized * WEAPON_ANGULAR_WEIGHT_OFFSET);
-                isStab = WeaponCollision.isStab(velocity);
-                return isStab || velocity.magnitude > minSpeed;
+                speed = velocity.magnitude;
             }
-
-            isStab = WeaponCollision.isStab(mainHandPhysicsEstimator.GetAverageVelocityInSnapshots());
-            if (isStab)
+            else
             {
-                return true;
+                var leftHandVelocity = VRPlayer.leftHandPhysicsEstimator.GetVelocity();
+                var rightHandVelocity = VRPlayer.rightHandPhysicsEstimator.GetVelocity();
+                var leftHandSpeed = leftHandVelocity.magnitude;
+                var rightHandSpeed = rightHandVelocity.magnitude;
+                if (leftHandSpeed < rightHandSpeed)
+                {
+                    velocity = rightHandVelocity;
+                    speed = rightHandSpeed;
+                }
+                else
+                {
+                    velocity = leftHandVelocity;
+                    speed = leftHandSpeed;
+                }
             }
 
-            return VRPlayer.leftHandPhysicsEstimator.GetAverageVelocityInSnapshots().magnitude > minSpeed ||
-                VRPlayer.rightHandPhysicsEstimator.GetAverageVelocityInSnapshots().magnitude > minSpeed;
+            isStab = WeaponCollision.isStab(velocity);
+
+            return isStab || speed > GetMinSpeed();
+        }
+
+        private float GetMinSpeed()
+        {
+            if (EquipScript.getRight() == EquipType.Hammer)
+            {
+                return MIN_HAMMER_SPEED;
+            }
+            if (itemIsTool)
+            {
+                return MIN_LONG_TOOL_SPEED;
+            }
+            return VHVRConfig.SwingSpeedRequirement();
         }
 
         private static bool isStab(Vector3 velocity)
@@ -431,6 +485,11 @@ namespace ValheimVRMod.Scripts
                
             LogUtils.LogDebug("VHVR: stab detected on weapon direction: " + LocalWeaponWield.weaponForward);
             return true;
+        }
+
+        private static bool isTerrain(GameObject target)
+        {
+            return (target.GetComponentInParent<MineRock5>() == null ? target.transform : target.transform.parent).GetComponent<Heightmap>() != null;
         }
     }
 }

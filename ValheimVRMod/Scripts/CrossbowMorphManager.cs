@@ -263,7 +263,6 @@ namespace ValheimVRMod.Scripts
                 VrikCreator.GetLocalPlayerDominantHandConnector().position = stringRenderer.GetPosition(1);
 
                 isBoltLoaded = bolt != null;
-
             }
             else if (wasPulling)
             {
@@ -447,8 +446,8 @@ namespace ValheimVRMod.Scripts
                 Vector3.Distance(mainHand.transform.position, transform.TransformPoint(anatomy.anchorPoint)) <= 0.2f)
             {
                 boltAttach.transform.SetParent(transform.parent, false);
-                instance.boltAttach.transform.localPosition = anchorpoint;
-                instance.isBoltLoaded = true;
+                boltAttach.transform.localPosition = anchorpoint;
+                isBoltLoaded = true;
             }
         }
 
