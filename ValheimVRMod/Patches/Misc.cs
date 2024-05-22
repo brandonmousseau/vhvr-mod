@@ -275,7 +275,7 @@ namespace ValheimVRMod.Patches
     [HarmonyPatch(typeof(Character), nameof(Character.CustomFixedUpdate))]
     class CharacterSetLodGroupSize
     {
-        private static Dictionary<String, float> originalLodGroupSizes = new Dictionary<string, float>();
+        private static Dictionary<Tuple<string, int>, float> originalLodGroupSizes = new Dictionary<Tuple<string, int>, float>();
 
         public static void Postfix(Character __instance)
         {
@@ -284,16 +284,15 @@ namespace ValheimVRMod.Patches
                 return;
             }
 
-            var key = __instance.name + "_level_" + __instance.m_level;
-
+            var key = new Tuple<string, int>(__instance.name, __instance.m_level);
             UpdateRenderDistance(key, __instance.m_lodGroup, restoreOriginalRenderDistance: __instance.m_tamed);
         }
 
-        public static void UpdateRenderDistance(string key, LODGroup lodGroup, bool restoreOriginalRenderDistance)
+        public static void UpdateRenderDistance(Tuple<string, int> key, LODGroup lodGroup, bool restoreOriginalRenderDistance)
         {
             if (!originalLodGroupSizes.ContainsKey(key))
             {
-                LogUtils.LogDebug("Registering original LOD group size " + lodGroup.size  + " of " + key);
+                LogUtils.LogDebug("Registering original LOD group size " + lodGroup.size  + " for " + key.Item1 + " of level " + key.Item2);
                 originalLodGroupSizes[key] = lodGroup.size;
             }
 
@@ -308,15 +307,15 @@ namespace ValheimVRMod.Patches
                 return;
             }
 
-            float desiredLodGroupSize =
-                Mathf.Max(originalLodGroupSizes[key], GetDesiredLodGroupSize(lodGroup, VHVRConfig.GetEnemyRenderDistanceValue(), vrCamera));
+            var desiredLodGroupSize = GetAdjustedLodGroupSize(lodGroup, VHVRConfig.GetEnemyRenderDistanceValue(), vrCamera);
+            desiredLodGroupSize = Mathf.Max(originalLodGroupSizes[key], desiredLodGroupSize);
             if (lodGroup.size < desiredLodGroupSize)
             {
                 lodGroup.size = desiredLodGroupSize;
             }
         }
 
-        private static float GetDesiredLodGroupSize(LODGroup lODGroup, float desiredRenderDistance, Camera camera)
+        private static float GetAdjustedLodGroupSize(LODGroup lODGroup, float desiredRenderDistance, Camera camera)
         {
             float cullingHeight = 1;
             foreach (LOD lOD in lODGroup.GetLODs())
@@ -327,7 +326,7 @@ namespace ValheimVRMod.Patches
                 }
             }
 
-            Vector3 scale = lODGroup.transform.localScale;
+            Vector3 scale = lODGroup.transform.lossyScale;
             float dimension = Math.Min(Math.Min(scale.x, scale.y), scale.z);
 
             return camera.fieldOfView * Mathf.PI / 180 * cullingHeight * desiredRenderDistance / dimension;
@@ -409,7 +408,28 @@ namespace ValheimVRMod.Patches
                 {
                     return;
                 }
-                waterVolume.m_waterSurface.shadowCastingMode = UnderwaterEffectsUpdater.UsingUnderwaterEffects ? ShadowCastingMode.ShadowsOnly : ShadowCastingMode.On;
+
+                if (UnderwaterEffectsUpdater.UsingUnderwaterEffects)
+                {
+                    CameraUtils.getCamera(CameraUtils.VR_CAMERA).cullingMask &= ~(1 << LayerUtils.WATER);
+                }
+                else
+                {
+                    CameraUtils.getCamera(CameraUtils.VR_CAMERA).cullingMask |= (1 << LayerUtils.WATER);
+                }
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(Player), nameof(Player.OnDeath))]
+    class DisableFollowCameraOnDeathPatch
+    {
+        public static void Prefix()
+        {
+            var followCamera = CameraUtils.getCamera(CameraUtils.FOLLOW_CAMERA);
+            if (followCamera)
+            {
+                followCamera.enabled = false;
             }
         }
     }
