@@ -36,8 +36,13 @@ namespace ValheimVRMod.Patches {
             var syncWeapon = meshFilter != null ? meshFilter.gameObject : ___m_rightItemInstance.GetComponentInChildren<SkinnedMeshRenderer>()?.gameObject;
             var vrPlayerSync = player.GetComponent<VRPlayerSync>();
             
-            if (vrPlayerSync != null && syncWeapon != null) {
-                if (vrPlayerSync.IsLeftHanded()) {
+            if (vrPlayerSync != null && syncWeapon) {
+                if (meshFilter == null)
+                {
+                    vrPlayerSync.currentDualWieldWeapon = syncWeapon;
+                    vrPlayerSync.currentDualWieldWeapon.name = ___m_rightItem;
+                }
+                else if (vrPlayerSync.IsLeftHanded()) {
                     vrPlayerSync.currentLeftWeapon = syncWeapon;
                     vrPlayerSync.currentLeftWeapon.name = ___m_rightItem;    
                 }
@@ -46,7 +51,7 @@ namespace ValheimVRMod.Patches {
                     vrPlayerSync.currentRightWeapon = syncWeapon;
                     vrPlayerSync.currentRightWeapon.name = ___m_rightItem;
                 }
-                
+
                 VrikCreator.resetVrikHandTransform(player);   
             }
 
@@ -148,7 +153,11 @@ namespace ValheimVRMod.Patches {
             var vrPlayerSync = player.GetComponent<VRPlayerSync>();
 
             if (vrPlayerSync != null && syncWeapon != null && vrPlayerSync.hasReceivedData) {
-                if (vrPlayerSync.IsLeftHanded()) {
+                if (meshFilter == null)
+                {
+                    vrPlayerSync.currentDualWieldWeapon = syncWeapon;
+                }
+                else if (vrPlayerSync.IsLeftHanded()) {
                     vrPlayerSync.currentRightWeapon = syncWeapon;    
                 }
                 else
