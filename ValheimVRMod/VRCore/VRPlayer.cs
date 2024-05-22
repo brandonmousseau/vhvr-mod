@@ -49,7 +49,7 @@ namespace ValheimVRMod.VRCore
         // the hands won't be rendered by the handsCam.
         private static Vector3 FIRST_PERSON_OFFSET = Vector3.zero;
         private static float CROUCH_HEIGHT_ADJUST = -0.4f;
-        private static float RIDE_HEIGHT_ADJUST = -1f;
+        private static float RIDE_HEIGHT_ADJUST = -0.85f;
         private static float SIT_ATTACH_HEIGHT_ADJUST = -0.4f;
         private static float SIT_HEIGHT_ADJUST = -0.7f;
         private static Vector3 THIRD_PERSON_0_OFFSET = new Vector3(0f, 1.0f, -0.6f);
@@ -915,11 +915,9 @@ namespace ValheimVRMod.VRCore
             float firstPersonAdjust = inFirstPerson ? FIRST_PERSON_HEIGHT_OFFSET : 0.0f;
             setHeadVisibility(!inFirstPerson);
             // Update the position with the first person adjustment calculated in init phase
-            Vector3 desiredPosition = getDesiredPosition(playerCharacter);
-
-            _instance.transform.localPosition = desiredPosition - playerCharacter.transform.position  // Base Positioning
-                                               + Vector3.up * getHeadHeightAdjust(playerCharacter)
-                                               + Vector3.up * firstPersonAdjust; // Offset from calibration on tracking recenter
+            _instance.transform.localPosition = getDesiredLocalPosition(playerCharacter) + // Base Positioning
+                (getHeadHeightAdjust(playerCharacter) +
+                firstPersonAdjust) * Vector3.up; // Offset from calibration on tracking recenter
 
             if (_headZoomLevel != HeadZoomLevel.FirstPerson)
             {
@@ -1119,8 +1117,10 @@ namespace ValheimVRMod.VRCore
             }
 
             // First set the position without any adjustment
-            Vector3 desiredPosition = getDesiredPosition(playerCharacter);
-            _instance.transform.localPosition = desiredPosition - playerCharacter.transform.position;
+            _instance.transform.localPosition = getDesiredLocalPosition(playerCharacter);
+            var hmd = Valve.VR.InteractionSystem.Player.instance.hmdTransform;
+            // Measure the distance between HMD and desires location, and save it.
+            FIRST_PERSON_HEIGHT_OFFSET = Vector3.Dot(_instance.transform.position - hmd.position, playerCharacter.transform.up);
 
             if (_headZoomLevel != HeadZoomLevel.FirstPerson)
             {
@@ -1131,9 +1131,6 @@ namespace ValheimVRMod.VRCore
                 setPlayerVisualsOffset(playerCharacter.transform, -getHeadOffset(_headZoomLevel));
             }
 
-            var hmd = Valve.VR.InteractionSystem.Player.instance.hmdTransform;
-            // Measure the distance between HMD and desires location, and save it.
-            FIRST_PERSON_HEIGHT_OFFSET = desiredPosition.y - hmd.position.y;
             if (VHVRConfig.UseLookLocomotion())
             {
                 _instance.transform.localRotation = Quaternion.Euler(0f, -hmd.localRotation.eulerAngles.y, 0f);
@@ -1149,14 +1146,15 @@ namespace ValheimVRMod.VRCore
             referencePlayerHeight = Valve.VR.InteractionSystem.Player.instance.eyeHeight;
         }
 
-        private static Vector3 getDesiredPosition(Player playerCharacter)
+        private static Vector3 getDesiredLocalPosition(Player playerCharacter)
         {
             if (playerCharacter == null)
             {
                 return Vector3.zero;
             }
-            return new Vector3(playerCharacter.transform.position.x,
-                    playerCharacter.GetEyePoint().y, playerCharacter.transform.position.z);
+            var desiredLocalPosition = playerCharacter.transform.InverseTransformPoint(playerCharacter.GetEyePoint());
+            desiredLocalPosition.x = desiredLocalPosition.z = 0;
+            return desiredLocalPosition;
         }
 
         private void attachVrPlayerToMainCamera()
@@ -1425,12 +1423,15 @@ namespace ValheimVRMod.VRCore
 
         public void ResetRoomscaleCamera()
         {
-            if (_vrCameraRig != null)
+            if (_vrCameraRig == null)
             {
-                Vector3 vrCamPosition = _vrCam.transform.localPosition;
-                vrCamPosition.y = 0;
-                _vrCameraRig.localPosition = -vrCamPosition;
+                return;
             }
+
+            Vector3 vrCamPosition = _vrCam.transform.localPosition;
+            vrCamPosition.y = 0;
+            _vrCameraRig.localPosition = -vrCamPosition;
+            _lastCamPosition = _vrCam.transform.localPosition;
         }
 
         public void TriggerHandVibration(float time)

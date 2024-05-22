@@ -117,7 +117,23 @@ namespace ValheimVRMod.Patches {
 
             return true;
         }
+    }
 
+    [HarmonyPatch(typeof(Attack), nameof(Attack.Start))]
+    class DestoryBoltAfterCrossbowAttackPatch
+    {
+        static void Postfix(Attack __instance, bool __result)
+        {
+            if (__result &&
+                __instance.m_character == Player.m_localPlayer &&
+                VHVRConfig.UseVrControls() &&
+                EquipScript.getLeft() == EquipType.Crossbow &&
+                CrossbowMorphManager.instance != null &&
+                !CrossbowMorphManager.instance.shouldAutoReload)
+            {
+                CrossbowMorphManager.instance.destroyBolt();
+            }
+        }
     }
 
     /**

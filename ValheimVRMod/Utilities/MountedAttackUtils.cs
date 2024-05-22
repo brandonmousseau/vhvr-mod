@@ -36,10 +36,6 @@ namespace ValheimVRMod.Utilities
             else if (EquipScript.getLeft() == EquipType.Crossbow && CrossbowManager.IsPullingTrigger())
             {
                 StartAttackIfRiding(isSecondaryAttack: false, attackDrawPercentage: 1);
-                if (CrossbowMorphManager.instance && !CrossbowMorphManager.instance.shouldAutoReload)
-                {
-                    CrossbowMorphManager.instance.destroyBolt();
-                }
             }
         }
 
@@ -75,8 +71,9 @@ namespace ValheimVRMod.Utilities
 
             Attack attack =
                 isSecondaryAttack ? weapon.m_shared.m_secondaryAttack.Clone() : weapon.m_shared.m_attack.Clone();
-            // Player.m_localPlayer.m_attack = true;
-            // Player.m_localPlayer.m_attackHold = true;
+            var playerRotation = player.transform.rotation;
+            var bodyRotation = player.m_body.rotation;
+
             // The rest is cloned from vanilla game logic.
             if (attack.Start(
                 player,
@@ -94,6 +91,9 @@ namespace ValheimVRMod.Utilities
                 player.m_currentAttack = attack;
                 player.m_currentAttackIsSecondary = false;
                 player.m_lastCombatTimer = 0f;
+                // Restore the rotation since vanilla attack logic may have changed it.
+                player.transform.rotation = playerRotation;
+                player.m_body.rotation = bodyRotation;
                 return true;
             }
 
