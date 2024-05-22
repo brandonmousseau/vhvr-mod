@@ -362,7 +362,10 @@ namespace ValheimVRMod.VRCore
                 }
                 if (inFirstPerson)
                 {
-                    DoRoomScaleMovement(Time.fixedDeltaTime);
+                    if (VHVRConfig.CharaterMovesWithHeadset())
+                    {
+                        DoRoomScaleMovement(Time.fixedDeltaTime);
+                    }
                     gesturedLocomotionManager?.UpdateMovementFromGestures(Time.fixedDeltaTime);
                 }
                 else
@@ -943,15 +946,26 @@ namespace ValheimVRMod.VRCore
             }
 
             var pelvisTarget = vrikRef?.solver?.spine?.pelvisTarget;
-            if (pelvisTarget != null && VHVRConfig.UseVrControls())
+            if (pelvisTarget != null && VHVRConfig.UseVrControls() && !pausedMovement)
             {
-                pelvisTarget.parent = playerTransform;
-                var elbowSpan =
-                    playerTransform.InverseTransformDirection(
-                        rightHandBone.TransformPoint(-Vector3.up * 0.25f) - leftHandBone.TransformPoint(-Vector3.up * 0.25f));
-                pelvisTarget.localRotation = Quaternion.LookRotation(new Vector3(-elbowSpan.z, 0, elbowSpan.x + 0.5f));
+                pelvisTarget.localRotation = getPelvisRotationRelativeToPlayer(playerTransform);
             }
         }
+
+        private Quaternion getPelvisRotationRelativeToPlayer(Transform playerTransform)
+        {
+            if (GesturedLocomotionManager.isInUse && Mathf.Abs(gesturedLocomotionManager.stickOutputY) > 0.25f)
+            {
+                return Quaternion.identity;
+            }
+
+            var elbowSpan =
+                playerTransform.InverseTransformDirection(
+                    rightHandBone.TransformPoint(-Vector3.up * 0.25f) - leftHandBone.TransformPoint(-Vector3.up * 0.25f));
+            // Rotate pelvis slightly according to forearm positions
+            return Quaternion.LookRotation(new Vector3(-elbowSpan.z, 0, elbowSpan.x + 0.5f));
+        }
+
         private float getHeadHeightAdjust(Player player)
         {
             if (player.IsRiding() || MountedAttackUtils.IsRidingMount())
@@ -1297,7 +1311,7 @@ namespace ValheimVRMod.VRCore
                 vrCamEffects.m_dofMinDistance = mainCamEffects.m_dofMinDistance;
                 vrCamEffects.m_dofMaxDistance = mainCamEffects.m_dofMaxDistance;
             }
-             vrCamera.gameObject.AddComponent<UnderwaterEffectsUpdater>().Init(postProcessingBehavior, postProcessingBehavior.profile);
+            vrCamera.gameObject.AddComponent<UnderwaterEffectsUpdater>().Init(postProcessingBehavior, postProcessingBehavior.profile);
         }
 
         private void CopyClassFields<T>(T source, ref T dest)
