@@ -39,8 +39,11 @@ namespace ValheimVRMod.Patches {
             if (vrPlayerSync != null && syncWeapon) {
                 if (meshFilter == null)
                 {
-                    vrPlayerSync.currentDualWieldWeapon = syncWeapon;
-                    vrPlayerSync.currentDualWieldWeapon.name = ___m_rightItem;
+                    // For non-local player, it is hard to know whether claw is being used.
+                    if (player != Player.m_localPlayer || EquipScript.getRight() != EquipType.Claws)
+                    {
+                        vrPlayerSync.currentDualWieldWeapon = syncWeapon;
+                    }
                 }
                 else if (vrPlayerSync.IsLeftHanded()) {
                     vrPlayerSync.currentLeftWeapon = syncWeapon;
@@ -155,7 +158,11 @@ namespace ValheimVRMod.Patches {
             if (vrPlayerSync != null && syncWeapon != null && vrPlayerSync.hasReceivedData) {
                 if (meshFilter == null)
                 {
-                    vrPlayerSync.currentDualWieldWeapon = syncWeapon;
+                    // For non-local player, it is hard to know whether claw is being used.
+                    if (player != Player.m_localPlayer || EquipScript.getRight() != EquipType.Claws)
+                    {
+                        vrPlayerSync.currentDualWieldWeapon = syncWeapon;
+                    }
                 }
                 else if (vrPlayerSync.IsLeftHanded()) {
                     vrPlayerSync.currentRightWeapon = syncWeapon;    
