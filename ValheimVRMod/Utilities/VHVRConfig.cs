@@ -106,6 +106,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<int> snapTurnAngle;
         private static ConfigEntry<bool> smoothSnapTurn;
         private static ConfigEntry<float> smoothSnapSpeed;
+        private static ConfigEntry<bool> charaterMovesWithHeadset;
         private static ConfigEntry<bool> roomScaleSneaking;
         private static ConfigEntry<float> roomScaleSneakHeight;
         private static ConfigEntry<bool> exclusiveRoomScaleSneak;
@@ -627,6 +628,10 @@ namespace ValheimVRMod.Utilities
                                           10f,
                                           new ConfigDescription("This will affect the speed that the smooth snap turns occur at.",
                                               new AcceptableValueRange<float>(5, 30)));
+            charaterMovesWithHeadset = config.Bind("Controls",
+                                          "CharaterMovesWithHeadset",
+                                          true,
+                                          "When set to true, roomscale movement of the headset controls character locomotion; when set to false, movement of the headset makes the character lean.");
             roomScaleSneaking = config.Bind("Controls",
                                           "RoomScaleSneaking",
                                           false,
@@ -749,13 +754,12 @@ namespace ValheimVRMod.Utilities
                                   "None",
                                   new ConfigDescription(
                                       "Whether the glowing effect of the bow (if any in the Vanilla game) should be enabled. Disable it if you find the glow affects you aim negatively.",
-                                      new AcceptableValueList<string>(new string[] {"None", "LightWithoutParticles", "Full"})));
+                                      new AcceptableValueList<string>(new string[] { "None", "LightWithoutParticles", "Full" })));
             enemyRenderDistance = config.Bind("Graphics",
                                         "EnemyRenderDistance",
                                         8f,
                                         new ConfigDescription("Increase the mobs render distance, does not apply to tamed creature, only raise mob render distance, not lowering them (default eg. deer render distance is around 2, neck is around 10) (also limited by default ingame draw distance option)",
                                         new AcceptableValueRange<float>(1f, 50f)));
-
         }
 
         private static void InitializeMotionControlSettings() {
@@ -1276,6 +1280,11 @@ namespace ValheimVRMod.Utilities
         public static float SwingSpeedRequirement()
         {
             return swingSpeedRequirement.Value;
+        }
+
+         public static bool CharaterMovesWithHeadset()
+        {
+            return charaterMovesWithHeadset.Value;
         }
 
         public static bool RoomScaleSneakEnabled() {
