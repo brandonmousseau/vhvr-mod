@@ -172,7 +172,7 @@ namespace ValheimVRMod.Scripts
 
             protected override bool InverseSpear()
             {
-                return VHVRConfig.SpearInverseWield() && !ThrowableManager.isAiming;
+                return VHVRConfig.SpearInverseWield() && !ThrowableManager.isAiming && !ThrowableManager.preAimingInTwoStagedThrow;
             }
 
             public override Quaternion GetDesiredSingleHandedRotation(WeaponWield weaponWield)

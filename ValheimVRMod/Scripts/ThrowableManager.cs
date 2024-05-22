@@ -22,6 +22,7 @@ namespace ValheimVRMod.Scripts
         public static Vector3 startAim { get; private set; }
         public static bool isThrowing;
         public static bool isAiming { get; private set; }
+        public static bool preAimingInTwoStagedThrow { get { return VHVRConfig.SpearThrowType() == "TwoStagedThrowing" && !isAiming && SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource); } }
 
         private GameObject rotSave;
         private LineRenderer directionLine;
@@ -123,7 +124,6 @@ namespace ValheimVRMod.Scripts
         }
         private void UpdateSecondHandAimCalculation()
         {
-
             ShieldBlock.instance?.ScaleShieldSize(0.4f);
             var direction = VRPlayer.dominantHand.otherHand.transform.position - CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform.position;
             var lineDirection = direction;
@@ -133,18 +133,20 @@ namespace ValheimVRMod.Scripts
 
         private void UpdateTwoStagedThrowCalculation()
         {
-
-            var direction = startAim;
+            var vrTransform = VRPlayer.instance.transform;
+            var direction = vrTransform.TransformDirection(startAim);
             var lineDirection = VRPlayer.dominantHand.transform.TransformDirection(VHVRConfig.SpearInverseWield() ? handAimOffsetInverse : handAimOffset);
-            var pStartAim = lineDirection.normalized;
+            var pStartAim = vrTransform.InverseTransformDirection(lineDirection.normalized);
             UpdateThrowCalculation(direction, lineDirection, pStartAim);
         }
+
         private void UpdateDartSpearThrowCalculation()
         {
-
-            var direction = Player.m_localPlayer.transform.TransformDirection(Player.m_localPlayer.transform.InverseTransformPoint(VRPlayer.dominantHand.transform.position) - startAim);
+            var vrTransform = VRPlayer.instance.transform;
+            var direction = vrTransform.TransformDirection(
+                vrTransform.InverseTransformPoint(VRPlayer.dominantHand.transform.position) - startAim);
             var lineDirection = direction;
-            var pStartAim = Player.m_localPlayer.transform.InverseTransformPoint(VRPlayer.dominantHand.transform.position);
+            var pStartAim = vrTransform.InverseTransformPoint(VRPlayer.dominantHand.transform.position);
             UpdateThrowCalculation(direction, lineDirection, pStartAim);
         }
 
@@ -152,7 +154,7 @@ namespace ValheimVRMod.Scripts
         {
             var avgDir = handPhysicsEstimator.GetAverageVelocityInSnapshots();
             var lineDirection = avgDir;
-            var pStartAim = Player.m_localPlayer.transform.InverseTransformPoint(VRPlayer.dominantHand.transform.position);
+            var pStartAim = VRPlayer.instance.transform.InverseTransformPoint(VRPlayer.dominantHand.transform.position);
             UpdateThrowCalculation(avgDir, lineDirection, pStartAim);
         }
 
@@ -272,13 +274,16 @@ namespace ValheimVRMod.Scripts
 
         private ThrowCalculate CalculateThrowAndDistance(Vector3 direction)
         {
+            direction = direction.normalized;
+            var handTipOffset = (VHVRConfig.LeftHanded() ? VRPlayer.leftHandBone.up : VRPlayer.rightHandBone.up) * 0.125f;
+            var angularVelocity = handPhysicsEstimator.GetAngularVelocity();
+
             var throwSpeed =
-                Vector3.Dot(
-                    direction.normalized,
-                    WeaponUtils.GetWeaponVelocity(
-                        handPhysicsEstimator.GetVelocity(),
-                        handPhysicsEstimator.GetAngularVelocity(),
-                        (VHVRConfig.LeftHanded() ? VRPlayer.leftHandBone.up : VRPlayer.rightHandBone.up) * 0.125f));
+                Mathf.Max(
+                    Vector3.Dot(
+                        direction, WeaponUtils.GetWeaponVelocity(handPhysicsEstimator.GetVelocity(), angularVelocity, handTipOffset)),
+                    Vector3.Dot(
+                        direction, WeaponUtils.GetWeaponVelocity(handPhysicsEstimator.GetAverageVelocityInSnapshots(), angularVelocity, handTipOffset)));
 
             if (throwSpeed < VHVRConfig.FullThrowSpeed())
             {
