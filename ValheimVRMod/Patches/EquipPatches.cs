@@ -33,25 +33,26 @@ namespace ValheimVRMod.Patches {
             }
 
             MeshFilter meshFilter = ___m_rightItemInstance.GetComponentInChildren<MeshFilter>();
-            if (meshFilter == null)
-            {
-                return;
-            }
-
+            var syncWeapon = meshFilter != null ? meshFilter.gameObject : ___m_rightItemInstance.GetComponentInChildren<SkinnedMeshRenderer>()?.gameObject;
             var vrPlayerSync = player.GetComponent<VRPlayerSync>();
             
-            if (vrPlayerSync != null && meshFilter != null) {
+            if (vrPlayerSync != null && syncWeapon != null) {
                 if (vrPlayerSync.IsLeftHanded()) {
-                    vrPlayerSync.currentLeftWeapon = meshFilter.gameObject;
+                    vrPlayerSync.currentLeftWeapon = syncWeapon;
                     vrPlayerSync.currentLeftWeapon.name = ___m_rightItem;    
                 }
                 else
                 {
-                    vrPlayerSync.currentRightWeapon = meshFilter.gameObject;
+                    vrPlayerSync.currentRightWeapon = syncWeapon;
                     vrPlayerSync.currentRightWeapon.name = ___m_rightItem;
                 }
                 
                 VrikCreator.resetVrikHandTransform(player);   
+            }
+
+            if (meshFilter == null)
+            {
+                return;
             }
 
             if (Player.m_localPlayer != player)
@@ -143,23 +144,24 @@ namespace ValheimVRMod.Patches {
             }
 
             MeshFilter meshFilter = ___m_leftItemInstance.GetComponentInChildren<MeshFilter>();
-            if (meshFilter == null)
-            {
-                return;
-            }
-
+            var syncWeapon = meshFilter != null ? meshFilter.gameObject : ___m_leftItemInstance.GetComponentInChildren<SkinnedMeshRenderer>()?.gameObject;
             var vrPlayerSync = player.GetComponent<VRPlayerSync>();
 
-            if (vrPlayerSync != null && vrPlayerSync.hasReceivedData) {
+            if (vrPlayerSync != null && syncWeapon != null && vrPlayerSync.hasReceivedData) {
                 if (vrPlayerSync.IsLeftHanded()) {
-                    vrPlayerSync.currentRightWeapon = meshFilter.gameObject;    
+                    vrPlayerSync.currentRightWeapon = syncWeapon;    
                 }
                 else
                 {
-                    vrPlayerSync.currentLeftWeapon = meshFilter.gameObject;
+                    vrPlayerSync.currentLeftWeapon = syncWeapon;
                 }
                 
                 VrikCreator.resetVrikHandTransform(player);
+            }
+
+            if (meshFilter == null)
+            {
+                return;
             }
 
             if (Player.m_localPlayer != player)
