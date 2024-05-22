@@ -10,7 +10,8 @@ namespace ValheimVRMod.Scripts
 {
     public class ThrowableManager : MonoBehaviour
     {
-        private static readonly Vector3 handAimOffset = new Vector3(0, -0.15f, -0.85f);
+        private static readonly Vector3 handAimOffset = new Vector3(0, -0.45f, -0.55f);
+        private static readonly Vector3 handAimOffsetInverse = new Vector3(0, -0.15f, -0.85f);
         private const float minDist = 0.0625f;
         private const float TOTAL_DIRECTION_LINE_COOL_DOWN = 2;
 
@@ -134,7 +135,7 @@ namespace ValheimVRMod.Scripts
         {
             var vrTransform = VRPlayer.instance.transform;
             var direction = vrTransform.TransformDirection(startAim);
-            var lineDirection = VRPlayer.dominantHand.transform.TransformDirection(handAimOffset);
+            var lineDirection = VRPlayer.dominantHand.transform.TransformDirection(VHVRConfig.SpearInverseWield() ? handAimOffsetInverse : handAimOffset);
             var pStartAim = vrTransform.InverseTransformDirection(lineDirection.normalized);
             UpdateThrowCalculation(direction, lineDirection, pStartAim);
         }
@@ -273,13 +274,16 @@ namespace ValheimVRMod.Scripts
 
         private ThrowCalculate CalculateThrowAndDistance(Vector3 direction)
         {
+            direction = direction.normalized;
+            var handTipOffset = (VHVRConfig.LeftHanded() ? VRPlayer.leftHandBone.up : VRPlayer.rightHandBone.up) * 0.125f;
+            var angularVelocity = handPhysicsEstimator.GetAngularVelocity();
+
             var throwSpeed =
-                Vector3.Dot(
-                    direction.normalized,
-                    WeaponUtils.GetWeaponVelocity(
-                        handPhysicsEstimator.GetVelocity(),
-                        handPhysicsEstimator.GetAngularVelocity(),
-                        (VHVRConfig.LeftHanded() ? VRPlayer.leftHandBone.up : VRPlayer.rightHandBone.up) * 0.125f));
+                Mathf.Max(
+                    Vector3.Dot(
+                        direction, WeaponUtils.GetWeaponVelocity(handPhysicsEstimator.GetVelocity(), angularVelocity, handTipOffset)),
+                    Vector3.Dot(
+                        direction, WeaponUtils.GetWeaponVelocity(handPhysicsEstimator.GetAverageVelocityInSnapshots(), angularVelocity, handTipOffset)));
 
             if (throwSpeed < VHVRConfig.FullThrowSpeed())
             {
