@@ -38,6 +38,7 @@ namespace ValheimVRMod.Scripts {
             vrik.solver.leftArm.target = new GameObject().transform;
             vrik.solver.rightArm.target = new GameObject().transform;
             vrik.solver.spine.headTarget = new GameObject().transform;
+            vrik.solver.spine.pelvisTarget = new GameObject().transform;
             localPlayerLeftHandConnector = new GameObject().transform;
             localPlayerRightHandConnector = new GameObject().transform;
             return vrik;
@@ -76,7 +77,7 @@ namespace ValheimVRMod.Scripts {
             //Avoid akward movements
             vrik.solver.spine.maintainPelvisPosition = 0f;
             vrik.solver.spine.pelvisPositionWeight = 0f;
-            vrik.solver.spine.pelvisRotationWeight = 0f;
+            vrik.solver.spine.pelvisRotationWeight = 1f;
             vrik.solver.spine.bodyPosStiffness = 0f;
             vrik.solver.spine.bodyRotStiffness = 0f;
             //Force head to allow more vertical headlook
