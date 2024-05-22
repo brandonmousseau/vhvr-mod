@@ -106,6 +106,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<int> snapTurnAngle;
         private static ConfigEntry<bool> smoothSnapTurn;
         private static ConfigEntry<float> smoothSnapSpeed;
+        private static ConfigEntry<bool> charaterMovesWithHeadset;
         private static ConfigEntry<bool> roomScaleSneaking;
         private static ConfigEntry<float> roomScaleSneakHeight;
         private static ConfigEntry<bool> exclusiveRoomScaleSneak;
@@ -113,7 +114,6 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> gesturedJumpPreparationHeight;
         private static ConfigEntry<float> gesturedJumpMinSpeed;
         private static ConfigEntry<float> swingSpeedRequirement;
-        private static ConfigEntry<bool> scaleDamageBySpeedAndWaiveCooldown;        
         private static ConfigEntry<float> altPieceRotationDelay;
         private static ConfigEntry<bool> runIsToggled;
         private static ConfigEntry<bool> viewTurnWithMountedAnimal;
@@ -416,7 +416,7 @@ namespace ValheimVRMod.Utilities
             uiPanelResolutionCompat = config.Bind("UI",
                                       "UIPanelResolutionCompatibility",
                                       false,
-                                      new ConfigDescription("Set UI resolution panel display compatibility mode, in case some mod have some mouse offset problem, use this setting, set panel resolution below your monitor resolution, need restart to update"));
+                                      new ConfigDescription("Set UI resolution panel display compatibility mode, in case some mod have some mouse offset problem(Jewelcrafting mod for example), use this setting, set panel resolution below your monitor resolution, need restart to main menu to update"));
             uiPanelDistance = config.Bind("UI",
                                       "UIPanelDistance",
                                       3f,
@@ -628,6 +628,10 @@ namespace ValheimVRMod.Utilities
                                           10f,
                                           new ConfigDescription("This will affect the speed that the smooth snap turns occur at.",
                                               new AcceptableValueRange<float>(5, 30)));
+            charaterMovesWithHeadset = config.Bind("Controls",
+                                          "CharaterMovesWithHeadset",
+                                          true,
+                                          "When set to true, roomscale movement of the headset controls character locomotion; when set to false, movement of the headset makes the character lean.");
             roomScaleSneaking = config.Bind("Controls",
                                           "RoomScaleSneaking",
                                           false,
@@ -675,12 +679,6 @@ namespace ValheimVRMod.Utilities
                     new ConfigDescription(
                         "The speed requirement in m/s for weapon swinging for an attack to be triggered. if set to 0, single touch will already trigger hit",
                         new AcceptableValueRange<float>(0, 8)));
-            scaleDamageBySpeedAndWaiveCooldown =
-                config.Bind(
-                    "Controls",
-                    "ScaleDamageBySpeedAndWaiveCooldown",
-                    false,
-                    "Shorten cooldown to 0.25s for all non-AOE primary attacks but reduce damage if the swing speed is not fast enough.");
             altPieceRotationDelay = config.Bind("Controls",
                                                 "AltPieceRotationDelay",
                                                 1f,
@@ -756,13 +754,12 @@ namespace ValheimVRMod.Utilities
                                   "None",
                                   new ConfigDescription(
                                       "Whether the glowing effect of the bow (if any in the Vanilla game) should be enabled. Disable it if you find the glow affects you aim negatively.",
-                                      new AcceptableValueList<string>(new string[] {"None", "LightWithoutParticles", "Full"})));
+                                      new AcceptableValueList<string>(new string[] { "None", "LightWithoutParticles", "Full" })));
             enemyRenderDistance = config.Bind("Graphics",
                                         "EnemyRenderDistance",
                                         8f,
                                         new ConfigDescription("Increase the mobs render distance, does not apply to tamed creature, only raise mob render distance, not lowering them (default eg. deer render distance is around 2, neck is around 10) (also limited by default ingame draw distance option)",
                                         new AcceptableValueRange<float>(1f, 50f)));
-
         }
 
         private static void InitializeMotionControlSettings() {
@@ -1285,9 +1282,9 @@ namespace ValheimVRMod.Utilities
             return swingSpeedRequirement.Value;
         }
 
-        public static bool ScaleDamageBySpeedAndWaiveCooldown()
+         public static bool CharaterMovesWithHeadset()
         {
-            return scaleDamageBySpeedAndWaiveCooldown.Value;
+            return charaterMovesWithHeadset.Value;
         }
 
         public static bool RoomScaleSneakEnabled() {
