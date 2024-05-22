@@ -51,6 +51,7 @@ namespace ValheimVRMod.Scripts {
         public BowManager bowManager;
         public GameObject currentLeftWeapon;
         public GameObject currentRightWeapon;
+        public GameObject currentDualWieldWeapon;
 
         public int remotePlayerNonDominantHandItemHash;
         public int remotePlayerDominantHandItemHash;
