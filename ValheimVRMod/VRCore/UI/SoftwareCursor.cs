@@ -19,7 +19,7 @@ namespace ValheimVRMod.VRCore.UI
         private static SoftwareCursor _cursorInstance;
         public RectTransform parent;
         private static Vector3 lastCursorPosition = Vector3.zero;
-        public static Vector3 firstRunScreenSize = new Vector3(Screen.width, Screen.height);
+        public static Vector3 simulatedScreenSize = new Vector3(Screen.width, Screen.height);
 
         private bool cursorVisible;
 
@@ -175,10 +175,10 @@ namespace ValheimVRMod.VRCore.UI
             var mousepos = simulatedMousePosition;
             float mousefromcenterx = mousepos.x - VRGUI.GUI_DIMENSIONS.x / 2;
             float mousefromcentery = mousepos.y - VRGUI.GUI_DIMENSIONS.y / 2;
-            float diffx = VRGUI.GUI_DIMENSIONS.x - firstRunScreenSize.x;
-            float diffy = VRGUI.GUI_DIMENSIONS.y - firstRunScreenSize.y;
-            float xconv = (mousepos.x * firstRunScreenSize.x / VRGUI.GUI_DIMENSIONS.x) + (mousefromcenterx * diffx / VRGUI.GUI_DIMENSIONS.x);
-            float yconv = (mousepos.y * firstRunScreenSize.y / VRGUI.GUI_DIMENSIONS.y) + (mousefromcentery * diffy / VRGUI.GUI_DIMENSIONS.y);
+            float diffx = VRGUI.GUI_DIMENSIONS.x - simulatedScreenSize.x;
+            float diffy = VRGUI.GUI_DIMENSIONS.y - simulatedScreenSize.y;
+            float xconv = (mousepos.x * simulatedScreenSize.x / VRGUI.GUI_DIMENSIONS.x) + (mousefromcenterx * diffx / VRGUI.GUI_DIMENSIONS.x);
+            float yconv = (mousepos.y * simulatedScreenSize.y / VRGUI.GUI_DIMENSIONS.y) + (mousefromcentery * diffy / VRGUI.GUI_DIMENSIONS.y);
             return new Vector3(xconv, yconv, mousepos.z);
         }
     }
