@@ -157,29 +157,30 @@ namespace ValheimVRMod.Patches
                 return;
             }
 
-            var vrPlayerSync = __instance.GetComponent<VRPlayerSync>();
-            
-            if (vrPlayerSync != null && (__instance != Player.m_localPlayer || VHVRConfig.UseVrControls())) {
-                if (item == ___m_leftItem) {
-                    if (VHVRConfig.LeftHanded()) {
-                        vrPlayerSync.currentRightWeapon = null;
-                    }
-                    else {
-                        vrPlayerSync.currentLeftWeapon = null;   
-                    }
-                }
-
-                if (item == ___m_rightItem) {
-                    if (VHVRConfig.LeftHanded()) {
-                        vrPlayerSync.currentLeftWeapon = null;
-                    }
-                    else {
-                        vrPlayerSync.currentRightWeapon = null;   
-                    }
-                }
-
-                VrikCreator.resetVrikHandTransform(__instance);
+            if (item != ___m_leftItem && item != ___m_rightItem) {
+                return;
             }
+
+            if (__instance == Player.m_localPlayer && !VHVRConfig.UseVrControls())
+            {
+                return;
+            }
+
+            var vrPlayerSync = __instance.GetComponent<VRPlayerSync>();
+            if (vrPlayerSync == null)
+            {
+                return;
+            }
+
+            if (item == ___m_leftItem ^ VHVRConfig.LeftHanded()) {
+                vrPlayerSync.currentLeftWeapon = null;
+            }
+            else {
+                vrPlayerSync.currentRightWeapon = null;   
+            }
+            vrPlayerSync.currentDualWieldWeapon = null;
+
+            VrikCreator.resetVrikHandTransform(__instance);
         }
 
         static void Postfix() {

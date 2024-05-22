@@ -38,6 +38,7 @@ namespace ValheimVRMod.Scripts {
             vrik.solver.leftArm.target = new GameObject().transform;
             vrik.solver.rightArm.target = new GameObject().transform;
             vrik.solver.spine.headTarget = new GameObject().transform;
+            vrik.solver.spine.pelvisTarget = new GameObject().transform;
             localPlayerLeftHandConnector = new GameObject().transform;
             localPlayerRightHandConnector = new GameObject().transform;
             return vrik;
@@ -71,12 +72,13 @@ namespace ValheimVRMod.Scripts {
             }
             head.localPosition = new Vector3(0, -0.165f, -0.09f);
             head.localRotation = Quaternion.Euler(0, 90, 20);
+            vrik.solver.spine.pelvisTarget.SetParent(Player.m_localPlayer?.transform, false);
             vrik.solver.spine.maxRootAngle = 180;
 
             //Avoid akward movements
             vrik.solver.spine.maintainPelvisPosition = 0f;
             vrik.solver.spine.pelvisPositionWeight = 0f;
-            vrik.solver.spine.pelvisRotationWeight = 0f;
+            vrik.solver.spine.pelvisRotationWeight = 1f;
             vrik.solver.spine.bodyPosStiffness = 0f;
             vrik.solver.spine.bodyRotStiffness = 0f;
             //Force head to allow more vertical headlook
@@ -100,14 +102,15 @@ namespace ValheimVRMod.Scripts {
 
         public static void resetVrikHandTransform(Humanoid player) {
             
-            VRIK vrik = player.GetComponent<VRIK>();   
-            
+            VRIK vrik = player.GetComponent<VRIK>();
+            var sync = player.GetComponent<VRPlayerSync>();
+
             if (vrik == null) {
                 return;
             }
 
-            if (player.GetComponent<VRPlayerSync>()?.currentLeftWeapon != null) {
-                if (VHVRConfig.LeftHanded() && player.GetComponent<VRPlayerSync>().currentLeftWeapon.name.StartsWith("Spear") && !VHVRConfig.SpearInverseWield()) {
+            if (sync?.currentLeftWeapon != null || sync?.currentDualWieldWeapon != null) {
+                if (VHVRConfig.LeftHanded() && sync.currentLeftWeapon.name.StartsWith("Spear") && !sync.HoldingInversedSpear()) {
                     vrik.solver.leftArm.target.localPosition = leftspearPosition;
                     vrik.solver.leftArm.target.localRotation = leftSpearRotation;
                     vrik.solver.leftArm.palmToThumbAxis = leftSpearEllbow;
@@ -123,8 +126,8 @@ namespace ValheimVRMod.Scripts {
                 vrik.solver.leftArm.palmToThumbAxis = leftUnequippedEllbow;
             }
             
-            if (player.GetComponent<VRPlayerSync>()?.currentRightWeapon != null) {
-                if (! VHVRConfig.LeftHanded() && player.GetComponent<VRPlayerSync>().currentRightWeapon.name.StartsWith("Spear") && !VHVRConfig.SpearInverseWield()) {
+            if (sync?.currentRightWeapon != null || sync?.currentDualWieldWeapon != null) {
+                if (!VHVRConfig.LeftHanded() && sync.currentRightWeapon.name.StartsWith("Spear") && !sync.HoldingInversedSpear()) {
                     vrik.solver.rightArm.target.localPosition = rightspearPosition;
                     vrik.solver.rightArm.target.localRotation = rightSpearRotation;
                     vrik.solver.rightArm.palmToThumbAxis = rightSpearEllbow;
@@ -135,6 +138,7 @@ namespace ValheimVRMod.Scripts {
                 vrik.solver.rightArm.palmToThumbAxis = rightEquippedEllbow;
                 return;
             }
+
             vrik.solver.rightArm.target.localPosition = rightUnequippedPosition;
             vrik.solver.rightArm.target.localRotation = rightUnequippedRotation;
             vrik.solver.rightArm.palmToThumbAxis = rightUnequippedEllbow;
@@ -175,6 +179,7 @@ namespace ValheimVRMod.Scripts {
             vrik.solver.leftArm.target.SetParent(camera.parent, true);
             vrik.solver.rightArm.target.SetParent(camera.parent, true);
             vrik.solver.spine.headTarget.SetParent(camera.parent, true);
+            vrik.solver.spine.pelvisTarget.SetParent(camera.parent, true);
         }
 
         public static void UnpauseLocalPlayerVrik()

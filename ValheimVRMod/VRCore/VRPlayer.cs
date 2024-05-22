@@ -57,7 +57,7 @@ namespace ValheimVRMod.VRCore
         private static Vector3 THIRD_PERSON_2_OFFSET = new Vector3(0f, 1.9f, -2.6f);
         private static Vector3 THIRD_PERSON_3_OFFSET = new Vector3(0f, 3.2f, -4.4f);
         private static Vector3 THIRD_PERSON_CONFIG_OFFSET = Vector3.zero;
-        private static float NECK_OFFSET = 0.2f;
+        private const float NECK_OFFSET = 0.2f;
         public const float ROOMSCALE_STEP_ANIMATION_SMOOTHING = 0.3f;
         public const float ROOMSCALE_ANIMATION_WEIGHT = 2f;
 
@@ -362,7 +362,10 @@ namespace ValheimVRMod.VRCore
                 }
                 if (inFirstPerson)
                 {
-                    DoRoomScaleMovement(Time.fixedDeltaTime);
+                    if (VHVRConfig.CharaterMovesWithHeadset())
+                    {
+                        DoRoomScaleMovement(Time.fixedDeltaTime);
+                    }
                     gesturedLocomotionManager?.UpdateMovementFromGestures(Time.fixedDeltaTime);
                 }
                 else
@@ -915,9 +918,9 @@ namespace ValheimVRMod.VRCore
             float firstPersonAdjust = inFirstPerson ? FIRST_PERSON_HEIGHT_OFFSET : 0.0f;
             setHeadVisibility(!inFirstPerson);
             // Update the position with the first person adjustment calculated in init phase
-            _instance.transform.localPosition = getDesiredLocalPosition(playerCharacter) + // Base Positioning
-                (getHeadHeightAdjust(playerCharacter) +
-                firstPersonAdjust) * Vector3.up; // Offset from calibration on tracking recenter
+            _instance.transform.localPosition = getDesiredLocalPosition(playerCharacter) // Base Positioning
+                + (firstPersonAdjust // Offset from calibration on tracking recenter
+                + getHeadHeightAdjust(playerCharacter)) * Vector3.up;
 
             if (_headZoomLevel != HeadZoomLevel.FirstPerson)
             {
@@ -941,6 +944,26 @@ namespace ValheimVRMod.VRCore
                 if (child == _instance.transform || child.name == "EyePos") continue;
                 playerTransform.GetChild(i).localPosition = offset;
             }
+
+            var pelvisTarget = vrikRef?.solver?.spine?.pelvisTarget;
+            if (pelvisTarget != null && VHVRConfig.UseVrControls() && !pausedMovement)
+            {
+                pelvisTarget.localRotation = getPelvisRotationRelativeToPlayer(playerTransform);
+            }
+        }
+
+        private Quaternion getPelvisRotationRelativeToPlayer(Transform playerTransform)
+        {
+            if (GesturedLocomotionManager.isInUse && Mathf.Abs(gesturedLocomotionManager.stickOutputY) > 0.25f)
+            {
+                return Quaternion.identity;
+            }
+
+            var elbowSpan =
+                playerTransform.InverseTransformDirection(
+                    rightHandBone.TransformPoint(-Vector3.up * 0.25f) - leftHandBone.TransformPoint(-Vector3.up * 0.25f));
+            // Rotate pelvis slightly according to forearm positions
+            return Quaternion.LookRotation(new Vector3(-elbowSpan.z, 0, elbowSpan.x + 0.5f));
         }
 
         private float getHeadHeightAdjust(Player player)
@@ -1288,7 +1311,7 @@ namespace ValheimVRMod.VRCore
                 vrCamEffects.m_dofMinDistance = mainCamEffects.m_dofMinDistance;
                 vrCamEffects.m_dofMaxDistance = mainCamEffects.m_dofMaxDistance;
             }
-             vrCamera.gameObject.AddComponent<UnderwaterEffectsUpdater>().Init(postProcessingBehavior, postProcessingBehavior.profile);
+            vrCamera.gameObject.AddComponent<UnderwaterEffectsUpdater>().Init(postProcessingBehavior, postProcessingBehavior.profile);
         }
 
         private void CopyClassFields<T>(T source, ref T dest)

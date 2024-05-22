@@ -33,25 +33,34 @@ namespace ValheimVRMod.Patches {
             }
 
             MeshFilter meshFilter = ___m_rightItemInstance.GetComponentInChildren<MeshFilter>();
-            if (meshFilter == null)
-            {
-                return;
-            }
-
+            var syncWeapon = meshFilter != null ? meshFilter.gameObject : ___m_rightItemInstance.GetComponentInChildren<SkinnedMeshRenderer>()?.gameObject;
             var vrPlayerSync = player.GetComponent<VRPlayerSync>();
             
-            if (vrPlayerSync != null && meshFilter != null) {
-                if (vrPlayerSync.IsLeftHanded()) {
-                    vrPlayerSync.currentLeftWeapon = meshFilter.gameObject;
+            if (vrPlayerSync != null && syncWeapon) {
+                if (meshFilter == null)
+                {
+                    // For non-local player, it is hard to know whether claw is being used.
+                    if (player != Player.m_localPlayer || EquipScript.getRight() != EquipType.Claws)
+                    {
+                        vrPlayerSync.currentDualWieldWeapon = syncWeapon;
+                    }
+                }
+                else if (vrPlayerSync.IsLeftHanded()) {
+                    vrPlayerSync.currentLeftWeapon = syncWeapon;
                     vrPlayerSync.currentLeftWeapon.name = ___m_rightItem;    
                 }
                 else
                 {
-                    vrPlayerSync.currentRightWeapon = meshFilter.gameObject;
+                    vrPlayerSync.currentRightWeapon = syncWeapon;
                     vrPlayerSync.currentRightWeapon.name = ___m_rightItem;
                 }
-                
+
                 VrikCreator.resetVrikHandTransform(player);   
+            }
+
+            if (meshFilter == null)
+            {
+                return;
             }
 
             if (Player.m_localPlayer != player)
@@ -143,23 +152,32 @@ namespace ValheimVRMod.Patches {
             }
 
             MeshFilter meshFilter = ___m_leftItemInstance.GetComponentInChildren<MeshFilter>();
-            if (meshFilter == null)
-            {
-                return;
-            }
-
+            var syncWeapon = meshFilter != null ? meshFilter.gameObject : ___m_leftItemInstance.GetComponentInChildren<SkinnedMeshRenderer>()?.gameObject;
             var vrPlayerSync = player.GetComponent<VRPlayerSync>();
 
-            if (vrPlayerSync != null && vrPlayerSync.hasReceivedData) {
-                if (vrPlayerSync.IsLeftHanded()) {
-                    vrPlayerSync.currentRightWeapon = meshFilter.gameObject;    
+            if (vrPlayerSync != null && syncWeapon != null && vrPlayerSync.hasReceivedData) {
+                if (meshFilter == null)
+                {
+                    // For non-local player, it is hard to know whether claw is being used.
+                    if (player != Player.m_localPlayer || EquipScript.getRight() != EquipType.Claws)
+                    {
+                        vrPlayerSync.currentDualWieldWeapon = syncWeapon;
+                    }
+                }
+                else if (vrPlayerSync.IsLeftHanded()) {
+                    vrPlayerSync.currentRightWeapon = syncWeapon;    
                 }
                 else
                 {
-                    vrPlayerSync.currentLeftWeapon = meshFilter.gameObject;
+                    vrPlayerSync.currentLeftWeapon = syncWeapon;
                 }
                 
                 VrikCreator.resetVrikHandTransform(player);
+            }
+
+            if (meshFilter == null)
+            {
+                return;
             }
 
             if (Player.m_localPlayer != player)
