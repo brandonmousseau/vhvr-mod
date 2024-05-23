@@ -47,14 +47,35 @@ namespace ValheimVRMod.Scripts
 
         private void OnTriggerStay(Collider collider)
         {
-            if (handGesture.isHandFree())
+            if (!handGesture.isHandFree())
             {
-                OnTriggerEnter(collider);
+                return;
             }
+
+            var targetCharacter = collider.GetComponentInParent<Character>();
+            if (targetCharacter == null)
+            {
+                return;
+            }
+
+            var cooldown = targetCharacter.GetComponent<AttackTargetMeshCooldown>();
+            if (cooldown != null && cooldown.inCoolDown())
+            {
+                return;
+            }
+
+            tryHitCollider(collider, Mathf.Max(VHVRConfig.SwingSpeedRequirement(), 4));
+        }
+
+        private void OnTriggerEnter(Collider collider)
+        {
+            tryHitCollider(
+                collider,
+                handGesture.isHandFree() ? VHVRConfig.SwingSpeedRequirement() * 0.75f : VHVRConfig.SwingSpeedRequirement());
         }
 
 
-        private void OnTriggerEnter(Collider collider)
+        private void tryHitCollider(Collider collider, float minSpeed)
         {
             if (!canAttackWithCollision())
             {
@@ -78,7 +99,7 @@ namespace ValheimVRMod.Scripts
                 }
             }
 
-            if (!hasMomentum(out float speed))
+            if (!hasMomentum(out float speed, minSpeed))
             {
                 return;
             }
@@ -196,17 +217,9 @@ namespace ValheimVRMod.Scripts
             return hasDualWieldingWeaponEquipped();
         }
 
-        public bool hasMomentum(out float speed)
+        public bool hasMomentum(out float speed, float minSpeed)
         {
             var handVelocity = physicsEstimator.GetVelocity();
-            var minSpeed = VHVRConfig.SwingSpeedRequirement();
-
-            if (EquipScript.getRight() == EquipType.Claws || !hasDualWieldingWeaponEquipped())
-            {
-                speed = handVelocity.magnitude;
-                return speed >= minSpeed * 0.75f;
-            }
-
             var weaponOffsetDirection = (transform.position - physicsEstimator.transform.position).normalized;
             var weaponVelocity =
                 WeaponUtils.GetWeaponVelocity(
