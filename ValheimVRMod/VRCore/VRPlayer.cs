@@ -727,7 +727,7 @@ namespace ValheimVRMod.VRCore
             vrCam.enabled = true;
             _vrCam = vrCam;
             _vrCameraRig = vrCam.transform.parent;
-            gesturedLocomotionManager = new GesturedLocomotionManager(_vrCameraRig);
+            gesturedLocomotionManager = new GesturedLocomotionManager();
 
             _fadeManager.OnFadeToWorld += () => {
                 //Recenter
