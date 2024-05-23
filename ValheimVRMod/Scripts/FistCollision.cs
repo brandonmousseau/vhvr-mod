@@ -47,18 +47,12 @@ namespace ValheimVRMod.Scripts
 
         private void OnTriggerStay(Collider collider)
         {
-            if (!handGesture.isHandFree())
+            if (!handGesture.isHandFree() || collider.gameObject.layer != LayerUtils.CHARACTER)
             {
                 return;
             }
 
-            var targetCharacter = collider.GetComponentInParent<Character>();
-            if (targetCharacter == null)
-            {
-                return;
-            }
-
-            var cooldown = targetCharacter.GetComponent<AttackTargetMeshCooldown>();
+            var cooldown = collider.GetComponent<AttackTargetMeshCooldown>();
             if (cooldown != null && cooldown.inCoolDown())
             {
                 return;
