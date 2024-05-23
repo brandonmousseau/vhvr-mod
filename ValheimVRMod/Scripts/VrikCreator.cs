@@ -13,7 +13,7 @@ namespace ValheimVRMod.Scripts {
         private static readonly Vector3 rightUnequippedEllbow = new Vector3(-1, 0, 0);
         
         private static readonly Vector3 leftEquippedPosition = new Vector3(-0.02f, 0.09f, -0.1f);
-        private static readonly Quaternion leftEquippedRotation = Quaternion.Euler(0, 90, -170);
+        private static readonly Quaternion leftEquippedRotation = Quaternion.Euler(0, 90, 170);
         private static readonly Vector3 leftEquippedEllbow = new Vector3(1, -3f, 0);
         private static readonly Vector3 rightEquippedPosition = new Vector3(0.02f, 0.09f, -0.1f);
         private static readonly Quaternion rightEquippedRotation = Quaternion.Euler(0, -90, -170);
