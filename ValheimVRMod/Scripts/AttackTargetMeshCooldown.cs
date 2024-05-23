@@ -18,7 +18,7 @@ namespace ValheimVRMod.Scripts {
             float? overideMinAttackInterval;
             if (VHVRConfig.ScaleDamageBySpeedAndWaiveCooldown() && !EquipScript.isTwoHandedClubEquiped())
             {
-                speedScaledDamageFactor = GetSpeedScaledDamageFactor(cd, speed);
+                speedScaledDamageFactor = Mathf.Min(GetSpeedScaledDamageFactor(cd, speed), 1 - getRemaningCooldownPercentage());
                 overideMinAttackInterval = 0.25f;
             }
             else
