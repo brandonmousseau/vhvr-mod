@@ -390,6 +390,7 @@ namespace ValheimVRMod.Patches
             {
                 // Disable the follow camera temporarily since it might interfere with the projection matrix of the main camera upon character death.
                 followCamera.enabled = false;
+                GameObject.Destroy(followCamera);
             }
         }
     }
