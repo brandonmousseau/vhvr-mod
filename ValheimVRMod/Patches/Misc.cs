@@ -380,48 +380,6 @@ namespace ValheimVRMod.Patches
         }
     }
 
-    [HarmonyPatch(typeof(WaterVolume), nameof(WaterVolume.Awake))]
-    class WaterSurfaceVisiblityPatch
-    {
-        public static void Postfix(WaterVolume __instance)
-        {
-            if (VHVRConfig.NonVrPlayer())
-            {
-                return;
-            }
-
-            __instance.gameObject.AddComponent<WaterSurfaceVisibiltyUpdater>().Init(__instance);
-        }
-
-        private class WaterSurfaceVisibiltyUpdater : MonoBehaviour
-        {
-            private WaterVolume waterVolume;
-
-            public void Init(WaterVolume waterVolume)
-            {
-                this.waterVolume = waterVolume;
-            }
-
-            void FixedUpdate()
-            {
-                if (!waterVolume)
-                {
-                    return;
-                }
-
-                if (UnderwaterEffectsUpdater.UsingUnderwaterEffects)
-                {
-                    // This hides the water from the VR camera but not from the follow camera
-                    CameraUtils.getCamera(CameraUtils.VR_CAMERA).cullingMask &= ~(1 << LayerUtils.WATER);
-                }
-                else
-                {
-                    CameraUtils.getCamera(CameraUtils.VR_CAMERA).cullingMask |= (1 << LayerUtils.WATER);
-                }
-            }
-        }
-    }
-
     [HarmonyPatch(typeof(Player), nameof(Player.OnDeath))]
     class DisableFollowCameraOnDeathPatch
     {
