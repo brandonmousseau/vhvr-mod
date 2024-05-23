@@ -25,7 +25,7 @@ namespace ValheimVRMod.Scripts {
         private static readonly Vector3 rightspearPosition = new Vector3(0.02f, 0.06f, -0.15f);
         private static readonly Quaternion rightSpearRotation = Quaternion.Euler(0, -90, -140);
         private static readonly Vector3 rightSpearEllbow = new Vector3(-1, -3f, 0);
-        
+
         public static Transform localPlayerRightHandConnector = null;
         public static Transform localPlayerLeftHandConnector = null;
         public static Transform camera;
@@ -110,7 +110,7 @@ namespace ValheimVRMod.Scripts {
             }
 
             if (sync?.currentLeftWeapon != null || sync?.currentDualWieldWeapon != null) {
-                if (VHVRConfig.LeftHanded() && sync.currentLeftWeapon.name.StartsWith("Spear") && !sync.HoldingInversedSpear()) {
+                if (sync.IsLeftHanded() && sync.currentLeftWeapon != null && sync.currentLeftWeapon.name.StartsWith("Spear") && !sync.HoldingInversedSpear()) {
                     vrik.solver.leftArm.target.localPosition = leftspearPosition;
                     vrik.solver.leftArm.target.localRotation = leftSpearRotation;
                     vrik.solver.leftArm.palmToThumbAxis = leftSpearEllbow;
@@ -127,7 +127,7 @@ namespace ValheimVRMod.Scripts {
             }
             
             if (sync?.currentRightWeapon != null || sync?.currentDualWieldWeapon != null) {
-                if (!VHVRConfig.LeftHanded() && sync.currentRightWeapon.name.StartsWith("Spear") && !sync.HoldingInversedSpear()) {
+                if (!sync.IsLeftHanded() && sync.currentRightWeapon != null && sync.currentRightWeapon.name.StartsWith("Spear") && !sync.HoldingInversedSpear()) {
                     vrik.solver.rightArm.target.localPosition = rightspearPosition;
                     vrik.solver.rightArm.target.localRotation = rightSpearRotation;
                     vrik.solver.rightArm.palmToThumbAxis = rightSpearEllbow;
