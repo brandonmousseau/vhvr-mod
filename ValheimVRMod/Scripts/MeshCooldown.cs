@@ -14,7 +14,6 @@ namespace ValheimVRMod.Scripts {
             if (inCoolDown()) {
                 return overrideMinAttackInterval != null && cooldownStart - cooldown > overrideMinAttackInterval.Value;
             }
-
             cooldown = cooldownStart = cd;
             resetOutline();
             return true;
@@ -48,6 +47,11 @@ namespace ValheimVRMod.Scripts {
 
         public bool inCoolDown() {
             return cooldown > 0;
+        }
+
+        public float getRemaningCooldownPercentage()
+        {
+            return cooldown > 0 ? cooldown / cooldownStart : 0;
         }
 
         private void resetOutline() {
