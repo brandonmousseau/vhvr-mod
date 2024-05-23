@@ -40,6 +40,16 @@ namespace ValheimVRMod.Scripts.Block {
 
         protected virtual void OnRenderObject()
         {
+            if (meshFilter == null)
+            {
+                meshFilter = GetComponentInChildren<MeshFilter>(includeInactive: true);
+                if (meshFilter == null)
+                {
+                    return;
+                }
+            }
+
+
             // The transform of the shield may not be valid outside OnRenderObject(), therefore we need to record its state for later use.
             lastRenderedTransform.parent = meshFilter.transform;
             lastRenderedTransform.SetPositionAndRotation(meshFilter.transform.position, meshFilter.transform.rotation);
@@ -143,7 +153,12 @@ namespace ValheimVRMod.Scripts.Block {
         }
 
         protected bool hitIntersectsBlockBox(HitData hitData) {
-            return hitIntersectsBlockBox(hitData, EnsureBlockCollider());
+            EnsureBlockCollider();
+            blockCollider.enabled = true;
+            var intersects = hitIntersectsBlockBox(hitData, EnsureBlockCollider());
+            // Disable the collider so projectiles do not get stuck in weapon.
+            blockCollider.enabled = false;
+            return intersects;
         }
 
         protected static bool hitIntersectsBlockBox(HitData hitData, Collider blockCollider)
@@ -212,10 +227,12 @@ namespace ValheimVRMod.Scripts.Block {
             }
 
             blockCollider.isTrigger = true;
+            blockCollider.gameObject.layer = LayerUtils.CHARACTER;
             blockCollider.transform.parent = lastRenderedTransform;
             blockCollider.transform.localPosition = mesh.bounds.center;
             blockCollider.transform.localRotation = Quaternion.identity;
             blockCollider.transform.localScale = mesh.bounds.size;
+            blockCollider.enabled = false;
 
             return blockCollider;
         }

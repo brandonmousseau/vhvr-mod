@@ -14,7 +14,7 @@ namespace ValheimVRMod.Utilities
         Shield, Tankard, Claws, Magic, Crossbow
         ,
         //Melee Weapon
-        Sword, Axe, Knife, Pickaxe, Club, Polearms, DualKnives
+        Sword, Axe, Knife, Pickaxe, Club, Polearms, DualKnives, DualAxes
         ,
         //utility
         Lantern
@@ -41,7 +41,7 @@ namespace ValheimVRMod.Utilities
 
         public static EquipType getRight()
         {
-            if (Player.m_localPlayer.GetRightItem() != null)
+            if (Player.m_localPlayer?.GetRightItem() != null)
             {
                 return getRightEquipType(Player.m_localPlayer.GetRightItem());
             }
@@ -50,7 +50,7 @@ namespace ValheimVRMod.Utilities
 
         public static EquipType getLeft()
         {
-            if (Player.m_localPlayer.GetLeftItem() != null)
+            if (Player.m_localPlayer?.GetLeftItem() != null)
             {
                 return getLeftEquipType(Player.m_localPlayer.GetLeftItem());
             }
@@ -67,6 +67,15 @@ namespace ValheimVRMod.Utilities
 
         public static EquipType getRightEquipType(ItemDrop.ItemData item)
         {
+            var attackAnim = item?.m_shared.m_attack.m_attackAnimation;
+            switch (attackAnim)
+            {
+                case "dual_knives":
+                    return EquipType.DualKnives;
+                case "dualaxes":
+                    return EquipType.DualAxes;
+            }
+
             //Right Equipment List
             switch (item?.m_shared.m_name)
             {
@@ -118,6 +127,7 @@ namespace ValheimVRMod.Utilities
                 case "Rune of Glacial Spike":
                     return EquipType.RuneSkyheim;
             }
+
             //compatibility setting 
             var skillType = item?.m_shared.m_skillType;
             switch (skillType)
@@ -142,15 +152,12 @@ namespace ValheimVRMod.Utilities
                     return EquipType.Polearms;
             }
 
-            var attackAnim = item?.m_shared.m_attack.m_attackAnimation;
             switch (attackAnim)
             {
                 case "unarmed_attack":
                     return EquipType.Claws;
                 case "throw_bomb":
                     return EquipType.ThrowObject;
-                case "dual_knives":
-                    return EquipType.DualKnives;
                 case "knife_stab":
                     return EquipType.Knife;
                 case "swing_hammer":
@@ -161,6 +168,7 @@ namespace ValheimVRMod.Utilities
 
             return EquipType.None;
         }
+
         public static EquipType getLeftEquipType(ItemDrop.ItemData item)
         {
 
@@ -201,6 +209,20 @@ namespace ValheimVRMod.Utilities
             }
 
             return EquipType.None;
+        }
+
+        public static bool isDualWeapon(ItemDrop.ItemData item)
+        {
+            var weaponType = getRightEquipType(item);
+            switch (weaponType)
+            {
+                case EquipType.Claws:
+                case EquipType.DualAxes:
+                case EquipType.DualKnives:
+                    return true;
+                default:
+                    return false;
+            }
         }
 
         public static ItemDrop.ItemData equipAmmo()
@@ -250,6 +272,11 @@ namespace ValheimVRMod.Utilities
         public static bool isSpearEquippedRadialForward()
         {
             return isSpearEquipped() && VHVRConfig.SpearInverseWield();
+        }
+
+        public static bool isDundrEquipped()
+        {
+            return Player.m_localPlayer?.GetRightItem()?.m_shared?.m_name == "$item_staff_lightning";
         }
 
         public static bool isTwoHandedAxeEquiped()

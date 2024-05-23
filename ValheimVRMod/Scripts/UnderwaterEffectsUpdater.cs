@@ -33,7 +33,7 @@ namespace ValheimVRMod.Scripts
             underwaterLightBlocker.SetActive(false);
             var renderer = underwaterLightBlocker.GetComponent<MeshRenderer>();
             renderer.material = Instantiate(VRAssetManager.GetAsset<Material>("StandardClone"));
-            renderer.material.color = new Vector4(0.5f, 0.5f, 0.75f, 1);
+            renderer.material.color = new Vector4(0.5f, 0.5f, 0.625f, 1);
             renderer.receiveShadows = false;
             renderer.shadowCastingMode = ShadowCastingMode.Off;
             renderer.reflectionProbeUsage = ReflectionProbeUsage.Off;

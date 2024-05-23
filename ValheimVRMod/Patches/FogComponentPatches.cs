@@ -3,6 +3,7 @@ using HarmonyLib;
 using UnityEngine;
 using UnityEngine.PostProcessing;
 using UnityEngine.Rendering;
+using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
 
 class FogComponentPatches
@@ -35,9 +36,9 @@ class FogComponentPatches
             FogModel.Settings settings = __instance.model.settings;
             Material material = __instance.context.materialFactory.Get("Hidden/Post FX/Fog");
             material.shaderKeywords = null;
-            Color value = (GraphicsUtils.isLinearColorSpace ? RenderSettings.fogColor.linear : RenderSettings.fogColor);
-            material.SetColor(Uniforms._FogColor, value);
-            material.SetFloat(Uniforms._Density, RenderSettings.fogDensity);
+
+            material.SetColor(Uniforms._FogColor, GraphicsUtils.isLinearColorSpace ? RenderSettings.fogColor.linear : RenderSettings.fogColor);
+            material.SetFloat(Uniforms._Density, UnderwaterEffectsUpdater.UsingUnderwaterEffects ? 0.125f : RenderSettings.fogDensity);
             material.SetFloat(Uniforms._Start, RenderSettings.fogStartDistance);
             material.SetFloat(Uniforms._End, RenderSettings.fogEndDistance);
 

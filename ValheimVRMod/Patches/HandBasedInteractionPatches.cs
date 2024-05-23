@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Reflection;
 using System.Collections.Generic;
 using HarmonyLib;
@@ -131,12 +131,10 @@ namespace ValheimVRMod.Patches
                     {
                         __instance.Interact(leftHover, true, false);
                     }
-                } else if (leftHover)
+                }
+                else if (leftHover)
                 {
                     __instance.Interact(leftHover, false, false);
-                } else if (___m_doodadController != null)
-                {
-                    __instance.StopDoodadControl();
                 }
             }
         }
@@ -172,47 +170,39 @@ namespace ValheimVRMod.Patches
                 hoverReference = null;
                 var startingPosition = pointer.rayStartingPosition;
                 var rayDirection = pointer.rayDirection;
-                RaycastHit[] raycastHitArray1 = Physics.RaycastAll(startingPosition, rayDirection * Vector3.forward, raycastDistanceLimit, mask);
-                Array.Sort(raycastHitArray1, (RaycastHit x, RaycastHit y) => x.distance.CompareTo(y.distance));
-                int num = 0;
+                var hits = Physics.RaycastAll(startingPosition, rayDirection * Vector3.forward, raycastDistanceLimit, mask);
+                
+                Array.Sort(hits, (RaycastHit x, RaycastHit y) => x.distance.CompareTo(y.distance));
                 hitPosition = startingPosition + rayDirection * Vector3.forward * raycastDistanceLimit;
-                while (num < raycastHitArray1.Length)
+                for (int i = 0; i < hits.Length; i++)
                 {
-                    RaycastHit raycastHit = raycastHitArray1[num];
-                    if (!raycastHit.collider.attachedRigidbody || !(raycastHit.collider.attachedRigidbody.gameObject == instance.gameObject))
+                    RaycastHit hit = hits[i];
+                    if (hit.collider.attachedRigidbody &&
+                        hit.collider.attachedRigidbody.gameObject == instance.gameObject)
                     {
-                        if (Vector3.Distance(instance.m_eye.position, raycastHit.point) >= instance.m_maxInteractDistance)
-                        {
-                            break;
-                        }
-                        hitPosition = raycastHit.point;
-                        if (raycastHit.collider.GetComponent<Hoverable>() != null)
-                        {
-                            hoverReference = raycastHit.collider.gameObject;
-                            return;
-                        }
-                        //MovableBase is the gameobject name for Valheim Raft Mod object
-                        if (raycastHit.collider.attachedRigidbody && raycastHit.collider.attachedRigidbody.name == "MovableBase")
-                        {
-                            hoverReference = raycastHit.collider.gameObject;
-                            return;
-                        }
-                        if (!raycastHit.collider.attachedRigidbody)
-                        {
-                            hoverReference = raycastHit.collider.gameObject;
-                            return;
-                        }
-                        hoverReference = raycastHit.collider.attachedRigidbody.gameObject;
+                        continue;
+                    }
+
+                    if (Vector3.Distance(instance.m_eye.position, hit.point) >= instance.m_maxInteractDistance)
+                    {
                         return;
+                    }
+
+                    hitPosition = hit.point;
+                    if (hit.collider.GetComponent<Hoverable>() != null ||
+                        !hit.collider.attachedRigidbody ||
+                        hit.collider.attachedRigidbody.name == "MovableBase") // MovableBase is the gameobject name for Valheim Raft Mod object
+                    {
+                        hoverReference = hit.collider.gameObject;
                     }
                     else
                     {
-                        num++;
+                        hoverReference = hit.collider.attachedRigidbody.gameObject;
                     }
+
+                    return;
                 }
             }
         }
-
-
     }
 }

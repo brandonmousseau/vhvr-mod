@@ -155,10 +155,10 @@ namespace ValheimVRMod.Utilities
                 return Vector3.Dot(thrust, v.normalized) >= MIN_HOOK_DISTANCE && Vector3.Angle(thrust, v) <= MAX_HOOK_ALIGNMENT_ANGLE;
             },
 
-            delegate (PhysicsEstimator collisionPhysicsEstimator, PhysicsEstimator handPhysicsEstimator) // Dual knife check
+            delegate (PhysicsEstimator collisionPhysicsEstimator, PhysicsEstimator handPhysicsEstimator) // Dual knife and axe check
             {
                 var equipType = EquipScript.getRight();
-                if (equipType != EquipType.DualKnives)
+                if (equipType != EquipType.DualAxes && equipType != EquipType.DualKnives)
                 {
                     return false;
                 }

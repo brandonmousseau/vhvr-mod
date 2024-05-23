@@ -893,12 +893,14 @@ namespace ValheimVRMod.Patches
             {
                 return;
             }
-            SoftwareCursor.firstRunScreenSize = new Vector3(Screen.width, Screen.height);
+            SoftwareCursor.simulatedScreenSize = new Vector3(Screen.width, Screen.height);
+            
             VRGUI.originalResolution = new Vector2(Screen.width, Screen.height);
             VRGUI.originalFullScreen = Screen.fullScreen;
             VRGUI.isResized = true;
             if (VHVRConfig.GetUiPanelResoCompatibility())
             {
+                SoftwareCursor.simulatedScreenSize = new Vector3(VHVRConfig.GetUiPanelResolution().x, VHVRConfig.GetUiPanelResolution().y);
                 Screen.SetResolution((int)VHVRConfig.GetUiPanelResolution().x, (int)VHVRConfig.GetUiPanelResolution().y, false);
             }
         }
@@ -975,7 +977,7 @@ namespace ValheimVRMod.Patches
     {
         public static void Prefix(Minimap __instance, ref Vector3 mousePos)
         {
-            if (VHVRConfig.NonVrPlayer() || __instance.m_selectedType == Minimap.PinType.Death || VHVRConfig.GetUiPanelResoCompatibility())
+            if (VHVRConfig.NonVrPlayer() || __instance.m_selectedType == Minimap.PinType.Death)
             {
                 return;
             }
@@ -1007,7 +1009,7 @@ namespace ValheimVRMod.Patches
     {
         public static bool Prefix(InventoryGui __instance, GameObject ___m_dragGo)
         {
-            if (VHVRConfig.NonVrPlayer() || VHVRConfig.GetUiPanelResoCompatibility())
+            if (VHVRConfig.NonVrPlayer())
             {
                 return true;
             }
@@ -1034,7 +1036,7 @@ namespace ValheimVRMod.Patches
     {
         public static bool Prefix(UITooltip __instance)
         {
-            if (VHVRConfig.NonVrPlayer() || VHVRConfig.GetUiPanelResoCompatibility())
+            if (VHVRConfig.NonVrPlayer())
             {
                 return true;
             }

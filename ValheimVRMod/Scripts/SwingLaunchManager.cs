@@ -80,9 +80,14 @@ namespace ValheimVRMod.Scripts
             {
                 return;
             }
-            
-            isThrowing = true;
+
+            if (!MountedAttackUtils.StartAttackIfRiding())
+            {
+                // Let control patches and vanilla game handle attack if the player is not riding.
+                isThrowing = true;
+            }
             preparingThrow = false;
+            
         }
 
         protected virtual Vector3 GetProjectileSpawnPoint()
