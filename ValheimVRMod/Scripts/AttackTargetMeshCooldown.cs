@@ -29,7 +29,6 @@ namespace ValheimVRMod.Scripts {
 
             if (tryTrigger(cd, overideMinAttackInterval))
             {
-                LogUtils.LogWarning("Speed damp: " + speedScaledDamageFactor);
                 isSecondaryAttackCooldown = false;
                 if (primaryTargetMeshCooldown == null)
                 {
@@ -114,7 +113,7 @@ namespace ValheimVRMod.Scripts {
             {
                 cd *= 2;
             }
-            var fullDamageSpeed = 2 * cd + 4;
+            var fullDamageSpeed = cd + 5;
             return speed >= fullDamageSpeed ? 1 : speed / fullDamageSpeed;
         }
     }
