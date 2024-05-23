@@ -25,7 +25,7 @@ namespace ValheimVRMod.Scripts {
         private static readonly Vector3 rightspearPosition = new Vector3(0.02f, 0.06f, -0.15f);
         private static readonly Quaternion rightSpearRotation = Quaternion.Euler(0, -90, -140);
         private static readonly Vector3 rightSpearEllbow = new Vector3(-1, -3f, 0);
-        
+
         public static Transform localPlayerRightHandConnector = null;
         public static Transform localPlayerLeftHandConnector = null;
         public static Transform camera;
@@ -108,40 +108,34 @@ namespace ValheimVRMod.Scripts {
             if (vrik == null) {
                 return;
             }
-
-            if (sync?.currentLeftWeapon != null || sync?.currentDualWieldWeapon != null) {
-                if (VHVRConfig.LeftHanded() && sync.currentLeftWeapon.name.StartsWith("Spear") && !sync.HoldingInversedSpear()) {
-                    vrik.solver.leftArm.target.localPosition = leftspearPosition;
-                    vrik.solver.leftArm.target.localRotation = leftSpearRotation;
-                    vrik.solver.leftArm.palmToThumbAxis = leftSpearEllbow;
-                    return;
-                }
+            
+            if (sync.IsLeftHanded() && sync.currentLeftWeapon != null && sync.currentLeftWeapon.name.StartsWith("Spear") && !sync.HoldingInversedSpear()) {
+                vrik.solver.leftArm.target.localPosition = leftspearPosition;
+                vrik.solver.leftArm.target.localRotation = leftSpearRotation;
+                vrik.solver.leftArm.palmToThumbAxis = leftSpearEllbow;
+            } else if (sync?.currentLeftWeapon != null || sync?.currentDualWieldWeapon != null) {
                 vrik.solver.leftArm.target.localPosition = leftEquippedPosition;
                 vrik.solver.leftArm.target.localRotation = leftEquippedRotation;
                 vrik.solver.leftArm.palmToThumbAxis = leftEquippedEllbow;
-            }
-            else {
+            } else {
                 vrik.solver.leftArm.target.localPosition = leftUnequippedPosition;
                 vrik.solver.leftArm.target.localRotation = leftUnequippedRotation;
                 vrik.solver.leftArm.palmToThumbAxis = leftUnequippedEllbow;
             }
             
-            if (sync?.currentRightWeapon != null || sync?.currentDualWieldWeapon != null) {
-                if (!VHVRConfig.LeftHanded() && sync.currentRightWeapon.name.StartsWith("Spear") && !sync.HoldingInversedSpear()) {
-                    vrik.solver.rightArm.target.localPosition = rightspearPosition;
-                    vrik.solver.rightArm.target.localRotation = rightSpearRotation;
-                    vrik.solver.rightArm.palmToThumbAxis = rightSpearEllbow;
-                    return;
-                }
+            if (!sync.IsLeftHanded() && sync.currentRightWeapon != null && sync.currentRightWeapon.name.StartsWith("Spear") && !sync.HoldingInversedSpear()) {
+                vrik.solver.rightArm.target.localPosition = rightspearPosition;
+                vrik.solver.rightArm.target.localRotation = rightSpearRotation;
+                vrik.solver.rightArm.palmToThumbAxis = rightSpearEllbow;
+            } else if (sync?.currentRightWeapon != null || sync?.currentDualWieldWeapon != null) {
                 vrik.solver.rightArm.target.localPosition = rightEquippedPosition;
                 vrik.solver.rightArm.target.localRotation = rightEquippedRotation;
                 vrik.solver.rightArm.palmToThumbAxis = rightEquippedEllbow;
-                return;
-            }
-
-            vrik.solver.rightArm.target.localPosition = rightUnequippedPosition;
-            vrik.solver.rightArm.target.localRotation = rightUnequippedRotation;
-            vrik.solver.rightArm.palmToThumbAxis = rightUnequippedEllbow;
+            } else {
+                vrik.solver.rightArm.target.localPosition = rightUnequippedPosition;
+                vrik.solver.rightArm.target.localRotation = rightUnequippedRotation;
+                vrik.solver.rightArm.palmToThumbAxis = rightUnequippedEllbow;
+             }
         }
 
         public static Transform GetLocalPlayerDominantHandConnector()
