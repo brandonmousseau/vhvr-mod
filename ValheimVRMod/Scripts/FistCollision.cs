@@ -64,18 +64,16 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            tryHitCollider(collider, Mathf.Max(VHVRConfig.SwingSpeedRequirement(), 4));
+            tryHitCollider(collider, requireJab: true);
         }
 
         private void OnTriggerEnter(Collider collider)
         {
-            tryHitCollider(
-                collider,
-                handGesture.isHandFree() ? VHVRConfig.SwingSpeedRequirement() * 0.75f : VHVRConfig.SwingSpeedRequirement());
+            tryHitCollider(collider, requireJab: false);
         }
 
 
-        private void tryHitCollider(Collider collider, float minSpeed)
+        private void tryHitCollider(Collider collider, bool requireJab)
         {
             if (!canAttackWithCollision())
             {
@@ -99,10 +97,15 @@ namespace ValheimVRMod.Scripts
                 }
             }
 
-            if (!hasMomentum(out float speed, minSpeed))
+            if (!hasMomentum(out float speed, out bool isJab))
             {
                 return;
             }
+            if (requireJab && !isJab)
+            {
+                return;
+            }
+
 
             bool isCurrentlySecondaryAttack = LocalPlayerSecondaryAttackCooldown <= 0 && RoomscaleSecondaryAttackUtils.IsSecondaryAttack(physicsEstimator, physicsEstimator);
             bool usingWeapon = hasDualWieldingWeaponEquipped();
@@ -217,16 +220,24 @@ namespace ValheimVRMod.Scripts
             return hasDualWieldingWeaponEquipped();
         }
 
-        public bool hasMomentum(out float speed, float minSpeed)
+        public bool hasMomentum(out float speed, out bool isJab)
         {
             var handVelocity = physicsEstimator.GetVelocity();
+            if (handGesture.isHandFree())
+            {
+                speed = handVelocity.magnitude;
+                isJab = Vector3.Angle(isRightHand ? VRPlayer.rightHandBone.up : VRPlayer.leftHandBone.up, handVelocity) < 30f && speed > 3f;
+                return speed > VHVRConfig.SwingSpeedRequirement() * 0.45f;
+            }
+
             var weaponOffsetDirection = (transform.position - physicsEstimator.transform.position).normalized;
             var weaponVelocity =
                 WeaponUtils.GetWeaponVelocity(
                     handVelocity, physicsEstimator.GetAngularVelocity(), weaponOffsetDirection * WEAPON_OFFSET);
 
             speed = weaponVelocity.magnitude;
-            return speed >= minSpeed;
+            isJab = false;
+            return speed >= VHVRConfig.SwingSpeedRequirement();
         }
 
         public static bool hasDualWieldingWeaponEquipped()
