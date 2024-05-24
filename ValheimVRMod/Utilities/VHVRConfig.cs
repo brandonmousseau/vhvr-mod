@@ -685,7 +685,7 @@ namespace ValheimVRMod.Utilities
                     "Controls",
                     "MomentumScalesAttackDamage",
                     false,
-                    "Allow primary attacks during cooldown (except AOE) but reduce its damage if the momentum is not big enough.");
+                    "Allow attacking during cooldown (except AOE and secondary attacks) but reduce its damage by momentum deficiency and remaining cooldown time.");
             altPieceRotationDelay = config.Bind("Controls",
                                                 "AltPieceRotationDelay",
                                                 1f,
