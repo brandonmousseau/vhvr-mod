@@ -2,11 +2,10 @@ using System;
 using System.Reflection;
 using HarmonyLib;
 using UnityEngine;
+using ValheimVRMod.Patches;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using Valve.VR;
-using Valve.VR.InteractionSystem;
-using System.Collections.Generic;
 
 namespace ValheimVRMod.Scripts
 {
@@ -193,7 +192,7 @@ namespace ValheimVRMod.Scripts
                 // Lock the quick menu's position and rotation relative to the vr cam rig so it moves and rotates with the player.
                 transform.SetPositionAndRotation(quickMenuLocker.position, quickMenuLocker.rotation);
             }
-            
+
             if (VHVRConfig.getQuickMenuType() == "Hand Follow Cam") {
                 Transform VRCamTransform = CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform;
                 // Rotate the menu around its x-axis to have it facing the current height of the player.
@@ -600,14 +599,43 @@ namespace ValheimVRMod.Scripts
                     Sprite.Create(chatTexture, new Rect(0.0f, 0.0f, chatTexture.width, chatTexture.height), new Vector2(0.5f, 0.5f), 500),
                     delegate ()
                     {
-                        shouldStartChat = true;
-                        TextInput.m_instance.Show("ChatText", "", 256);
-                        TextInput.m_instance.m_panel.gameObject.transform.localScale = new Vector3(0, 0, 0);
+                        if (shouldStartChat && Chat.instance.HasFocus())
+                        {
+                            enterChatText();
+                        }
+                        else
+                        {
+                            shouldStartChat = true;
+                            if (SteamVR_Actions.valheim_Use.GetState(SteamVR_Input_Sources.Any) ||
+                                SteamVR_Actions.valheim_UseLeft.GetState(SteamVR_Input_Sources.Any))
+                            {
+                                ZInput_GetButtonDown_Patch.EmulateButtonDown("Chat");
+                            }
+                            else
+                            {
+                                // Use SteamVR virtual keyboard to chat
+                                TextInput.m_instance.Show("ChatText", "", 256);
+                                TextInput.m_instance.m_panel.gameObject.transform.localScale = new Vector3(0, 0, 0);
+                            }
+                        }
                         return true;
                     });
             }
             extraElementCount++;
         }
+
+        public static void enterChatText()
+        {
+            Chat.instance.InputText();
+            unfocusChatWindow();
+        }
+
+        public static void unfocusChatWindow()
+        {
+            ZInput_GetKeyDown_Patch.EmulateKeyDown(KeyCode.Escape);
+            shouldStartChat = false;
+        }
+
 
         public bool selectHoveredItem()
         {

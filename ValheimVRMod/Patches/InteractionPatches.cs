@@ -2,11 +2,12 @@ using System;
 using HarmonyLib;
 using System.Reflection;
 using UnityEngine;
+using ValheimVRMod.VRCore;
 using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
+using Valve.VR;
 using System.Collections.Generic;
 using System.Reflection.Emit;
-using Pose = ValheimVRMod.Utilities.Pose;
 
 
 namespace ValheimVRMod.Patches
@@ -46,15 +47,31 @@ namespace ValheimVRMod.Patches
             }
     
             if (hidingNonDominantHandItem) {
-                ItemDrop.ItemData leftItem = ___m_leftItem;
-                __instance.UnequipItem(___m_leftItem);
-                ___m_hiddenLeftItem = leftItem;
+                if (FistCollision.hasDualWieldingWeaponEquipped())
+                {
+                    if (SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource))
+                    {
+                        var item = ___m_rightItem;
+                        __instance.UnequipItem(___m_rightItem);
+                        ___m_hiddenRightItem = item;
+                    }
+                }
+                else
+                {
+                    var item = ___m_leftItem;
+                    __instance.UnequipItem(___m_leftItem);
+                    ___m_hiddenLeftItem = item;
+                }
             }
     
             if (hideDominantHandItem) {
-                ItemDrop.ItemData rightItem = ___m_rightItem;
-                __instance.UnequipItem(___m_rightItem);
-                ___m_hiddenRightItem = rightItem;                
+                if (!FistCollision.hasDualWieldingWeaponEquipped() ||
+                    SteamVR_Actions.valheim_Grab.GetState(VRPlayer.nonDominantHandInputSource))
+                {
+                    var item = ___m_rightItem;
+                    __instance.UnequipItem(___m_rightItem);
+                    ___m_hiddenRightItem = item;
+                }
             }
             
             setupVisEquipmentMethod.Invoke(__instance, new object[]{___m_visEquipment, false});
@@ -92,30 +109,39 @@ namespace ValheimVRMod.Patches
 
             allowShowingDominantHandItem = true;
             allowShowingNonDominantHandItem = true;
-            
-            if (___m_hiddenLeftItem == null && ___m_hiddenRightItem == null) {
+
+            var hiddenLeftItem = ___m_hiddenLeftItem;
+            var hiddenRightItem = ___m_hiddenRightItem;
+
+            if (hiddenLeftItem == null && hiddenRightItem == null) {
                 return false;   
             }
     
             if (showNonDominantHandItem) {
-                ItemDrop.ItemData hiddenLeftItem =___m_hiddenLeftItem;
-                ___m_hiddenLeftItem = null;
-                if (hiddenLeftItem != null) {
-                    var item = ___m_hiddenRightItem;
+                if (___m_hiddenRightItem != null &&
+                    EquipScript.isDualWeapon(___m_hiddenRightItem) &&
+                    SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource))
+                {
+                    ___m_hiddenRightItem = null;
+                    __instance.EquipItem(hiddenRightItem);
+                    ___m_hiddenLeftItem = hiddenLeftItem;
+                    __instance.SetupVisEquipment(__instance.m_visEquipment, false);
+                }
+                else if (___m_hiddenLeftItem != null) {
+                    ___m_hiddenLeftItem = null;
                     __instance.EquipItem(hiddenLeftItem);
-                    ___m_hiddenRightItem = item;
+                    ___m_hiddenRightItem = hiddenRightItem;
                     __instance.SetupVisEquipment(__instance.m_visEquipment, false);
                 }
             }
     
-            if (showDominantHandItem)
-            {
-                ItemDrop.ItemData hiddenRightItem = ___m_hiddenRightItem;
-                ___m_hiddenRightItem = null;
-                if (hiddenRightItem != null) {
-                    var item = ___m_hiddenLeftItem;
+            if (showDominantHandItem && ___m_hiddenRightItem != null) {
+                if (!EquipScript.isDualWeapon(___m_hiddenRightItem) ||
+                    SteamVR_Actions.valheim_Grab.GetState(VRPlayer.nonDominantHandInputSource))
+                {
+                    ___m_hiddenRightItem = null;
                     __instance.EquipItem(hiddenRightItem);
-                    ___m_hiddenLeftItem = item;
+                    ___m_hiddenLeftItem = hiddenLeftItem;
                     __instance.SetupVisEquipment(__instance.m_visEquipment, false);
                 }
             }
@@ -157,29 +183,30 @@ namespace ValheimVRMod.Patches
                 return;
             }
 
-            var vrPlayerSync = __instance.GetComponent<VRPlayerSync>();
-            
-            if (vrPlayerSync != null && (__instance != Player.m_localPlayer || VHVRConfig.UseVrControls())) {
-                if (item == ___m_leftItem) {
-                    if (VHVRConfig.LeftHanded()) {
-                        vrPlayerSync.currentRightWeapon = null;
-                    }
-                    else {
-                        vrPlayerSync.currentLeftWeapon = null;   
-                    }
-                }
-
-                if (item == ___m_rightItem) {
-                    if (VHVRConfig.LeftHanded()) {
-                        vrPlayerSync.currentLeftWeapon = null;
-                    }
-                    else {
-                        vrPlayerSync.currentRightWeapon = null;   
-                    }
-                }
-
-                VrikCreator.resetVrikHandTransform(__instance);
+            if (item != ___m_leftItem && item != ___m_rightItem) {
+                return;
             }
+
+            if (__instance == Player.m_localPlayer && !VHVRConfig.UseVrControls())
+            {
+                return;
+            }
+
+            var vrPlayerSync = __instance.GetComponent<VRPlayerSync>();
+            if (vrPlayerSync == null)
+            {
+                return;
+            }
+
+            if (item == ___m_leftItem ^ VHVRConfig.LeftHanded()) {
+                vrPlayerSync.currentLeftWeapon = null;
+            }
+            else {
+                vrPlayerSync.currentRightWeapon = null;   
+            }
+            vrPlayerSync.currentDualWieldWeapon = null;
+
+            VrikCreator.resetVrikHandTransform(__instance);
         }
 
         static void Postfix() {

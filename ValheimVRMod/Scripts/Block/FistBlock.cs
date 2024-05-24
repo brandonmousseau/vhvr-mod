@@ -158,9 +158,11 @@ namespace ValheimVRMod.Scripts.Block {
             leftHandBlockBox = GameObject.CreatePrimitive(PrimitiveType.Cube).GetComponent<Collider>();
             leftHandBlockBox.transform.parent = VRPlayer.leftHandBone;
             leftHandBlockBox.isTrigger = true;
+            leftHandBlockBox.gameObject.layer = LayerUtils.CHARACTER;
             rightHandBlockBox = GameObject.CreatePrimitive(PrimitiveType.Cube).GetComponent<Collider>();
             rightHandBlockBox.transform.parent = VRPlayer.rightHandBone;
             rightHandBlockBox.isTrigger = true;
+            rightHandBlockBox.gameObject.layer = LayerUtils.CHARACTER;
 
             var leftHandBlockBoxRenderer = leftHandBlockBox.GetComponent<MeshRenderer>();
             var rightHandBlockBoxRenderer = rightHandBlockBox.GetComponent<MeshRenderer>();

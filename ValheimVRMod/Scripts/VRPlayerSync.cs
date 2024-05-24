@@ -51,6 +51,7 @@ namespace ValheimVRMod.Scripts {
         public BowManager bowManager;
         public GameObject currentLeftWeapon;
         public GameObject currentRightWeapon;
+        public GameObject currentDualWieldWeapon;
 
         public int remotePlayerNonDominantHandItemHash;
         public int remotePlayerDominantHandItemHash;
@@ -96,6 +97,13 @@ namespace ValheimVRMod.Scripts {
 
         public bool HoldingInversedSpear()
         {
+            if (isOwner())
+            {
+                holdingInversedSpear =
+                    EquipScript.isSpearEquipped() &&
+                    !ThrowableManager.isAiming &&
+                    (VHVRConfig.SpearInverseWield() || twoHandedState != WeaponWield.TwoHandedState.SingleHanded);
+            }
             return holdingInversedSpear;
         }
         
@@ -158,11 +166,7 @@ namespace ValheimVRMod.Scripts {
             pkg.Write(BowLocalManager.instance != null && BowLocalManager.instance.pulling);
             pkg.Write(isLeftHanded = VHVRConfig.LeftHanded());
             pkg.Write((byte) (twoHandedState = LocalWeaponWield.LocalPlayerTwoHandedState));
-            pkg.Write(
-                holdingInversedSpear =
-                    EquipScript.isSpearEquipped() &&
-                    !ThrowableManager.isAiming &&
-                    (VHVRConfig.SpearInverseWield() || twoHandedState != WeaponWield.TwoHandedState.SingleHanded));
+            pkg.Write(HoldingInversedSpear());
 
             GetComponent<ZNetView>().GetZDO().Set("vr_data", pkg.GetArray());
         }

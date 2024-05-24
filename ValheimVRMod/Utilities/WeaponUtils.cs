@@ -367,6 +367,8 @@ namespace ValheimVRMod.Utilities
         {
             { "atgeir_attack", 0.81f },
             { "battleaxe_attack", 0.87f },
+            { "dualaxes", 0.4f }, // TODO: Find an accurate value for dual axes
+            { "dualaxes_secondary", 1.9f },
             { "dual_knives", 0.43f },
             { "greatsword", 1.13f },
             { "knife_stab", 0.49f },

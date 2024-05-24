@@ -275,7 +275,7 @@ namespace ValheimVRMod.Patches
     [HarmonyPatch(typeof(Character), nameof(Character.CustomFixedUpdate))]
     class CharacterSetLodGroupSize
     {
-        private static Dictionary<String, float> originalLodGroupSizes = new Dictionary<string, float>();
+        private static Dictionary<Tuple<string, int>, float> originalLodGroupSizes = new Dictionary<Tuple<string, int>, float>();
 
         public static void Postfix(Character __instance)
         {
@@ -284,31 +284,38 @@ namespace ValheimVRMod.Patches
                 return;
             }
 
-            UpdateRenderDistance(__instance.name, __instance.m_lodGroup, restoreOriginalRenderDistance: __instance.m_tamed);
+            var key = new Tuple<string, int>(__instance.name, __instance.m_level);
+            UpdateRenderDistance(key, __instance.m_lodGroup, restoreOriginalRenderDistance: __instance.m_tamed);
         }
 
-        public static void UpdateRenderDistance(string key, LODGroup lodGroup, bool restoreOriginalRenderDistance)
+        public static void UpdateRenderDistance(Tuple<string, int> key, LODGroup lodGroup, bool restoreOriginalRenderDistance)
         {
             if (!originalLodGroupSizes.ContainsKey(key))
             {
-                LogUtils.LogDebug("Registering original LOD group size " + lodGroup.size  + " of " + key);
+                LogUtils.LogDebug("Registering original LOD group size " + lodGroup.size  + " for " + key.Item1 + " of level " + key.Item2);
                 originalLodGroupSizes[key] = lodGroup.size;
             }
 
             Camera vrCamera = CameraUtils.getCamera(CameraUtils.VR_CAMERA);
 
-            float desiredLodGroupSize =
-                restoreOriginalRenderDistance || vrCamera == null ?
-                originalLodGroupSizes[key] :
-                Mathf.Max(originalLodGroupSizes[key], GetDesiredLodGroupSize(lodGroup, VHVRConfig.GetEnemyRenderDistanceValue(), vrCamera));
+            if (restoreOriginalRenderDistance || vrCamera == null)
+            {
+                var originalLodGroupSize = originalLodGroupSizes[key];
+                if (lodGroup.size != originalLodGroupSize) {
+                    lodGroup.size = originalLodGroupSize;
+                }
+                return;
+            }
 
-            if (lodGroup.size != desiredLodGroupSize)
+            var desiredLodGroupSize = GetAdjustedLodGroupSize(lodGroup, VHVRConfig.GetEnemyRenderDistanceValue(), vrCamera);
+            desiredLodGroupSize = Mathf.Max(originalLodGroupSizes[key], desiredLodGroupSize);
+            if (lodGroup.size < desiredLodGroupSize)
             {
                 lodGroup.size = desiredLodGroupSize;
             }
         }
 
-        private static float GetDesiredLodGroupSize(LODGroup lODGroup, float desiredRenderDistance, Camera camera)
+        private static float GetAdjustedLodGroupSize(LODGroup lODGroup, float desiredRenderDistance, Camera camera)
         {
             float cullingHeight = 1;
             foreach (LOD lOD in lODGroup.GetLODs())
@@ -319,7 +326,7 @@ namespace ValheimVRMod.Patches
                 }
             }
 
-            Vector3 scale = lODGroup.transform.localScale;
+            Vector3 scale = lODGroup.transform.lossyScale;
             float dimension = Math.Min(Math.Min(scale.x, scale.y), scale.z);
 
             return camera.fieldOfView * Mathf.PI / 180 * cullingHeight * desiredRenderDistance / dimension;
@@ -373,35 +380,17 @@ namespace ValheimVRMod.Patches
         }
     }
 
-    [HarmonyPatch(typeof(WaterVolume), nameof(WaterVolume.Awake))]
-    class WaterSurfaceVisiblityPatch
+    [HarmonyPatch(typeof(Player), nameof(Player.OnDeath))]
+    class DisableFollowCameraOnDeathPatch
     {
-        public static void Postfix(WaterVolume __instance)
+        public static void Prefix()
         {
-            if (VHVRConfig.NonVrPlayer())
+            var followCamera = CameraUtils.getCamera(CameraUtils.FOLLOW_CAMERA);
+            if (followCamera)
             {
-                return;
-            }
-
-            __instance.gameObject.AddComponent<WaterSurfaceVisibiltyUpdater>().Init(__instance);
-        }
-
-        private class WaterSurfaceVisibiltyUpdater : MonoBehaviour
-        {
-            private WaterVolume waterVolume;
-
-            public void Init(WaterVolume waterVolume)
-            {
-                this.waterVolume = waterVolume;
-            }
-
-            void FixedUpdate()
-            {
-                if (!waterVolume)
-                {
-                    return;
-                }
-                waterVolume.m_waterSurface.shadowCastingMode = UnderwaterEffectsUpdater.UsingUnderwaterEffects ? ShadowCastingMode.ShadowsOnly : ShadowCastingMode.On;
+                // Disable the follow camera temporarily since it might interfere with the projection matrix of the main camera upon character death.
+                followCamera.enabled = false;
+                GameObject.Destroy(followCamera);
             }
         }
     }

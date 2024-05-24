@@ -11,12 +11,14 @@ namespace ValheimVRMod.Scripts
         private PostProcessingBehaviour postProcessingBehavior = null;
         private PostProcessingProfile originalPostProcessingProfile = null;
         private PostProcessingProfile underwaterPostProcessingProfile = null;
+        private Camera camera;
         private bool initialized = false;
 
         public static bool UsingUnderwaterEffects { get; private set; }
 
-        public void Init(PostProcessingBehaviour postProcessingBehaviour, PostProcessingProfile originalPostProcessingProfile)
+        public void Init(Camera camera, PostProcessingBehaviour postProcessingBehaviour, PostProcessingProfile originalPostProcessingProfile)
         {
+            this.camera = camera;
             this.postProcessingBehavior = postProcessingBehaviour;
             this.originalPostProcessingProfile = originalPostProcessingProfile;
 
@@ -33,7 +35,7 @@ namespace ValheimVRMod.Scripts
             underwaterLightBlocker.SetActive(false);
             var renderer = underwaterLightBlocker.GetComponent<MeshRenderer>();
             renderer.material = Instantiate(VRAssetManager.GetAsset<Material>("StandardClone"));
-            renderer.material.color = new Vector4(0.5f, 0.5f, 0.75f, 1);
+            renderer.material.color = new Vector4(0.5f, 0.5f, 0.625f, 1);
             renderer.receiveShadows = false;
             renderer.shadowCastingMode = ShadowCastingMode.Off;
             renderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
@@ -58,6 +60,8 @@ namespace ValheimVRMod.Scripts
                     postProcessingBehavior.profile = underwaterPostProcessingProfile;
                     underwaterLightBlocker.SetActive(true);
                     UsingUnderwaterEffects = true;
+                    // This hides the water from the VR camera but not from the follow camera
+                    camera.cullingMask &= ~(1 << LayerUtils.WATER);
                 }
                 underwaterLightBlocker.transform.position =
                     new Vector3(
@@ -70,6 +74,7 @@ namespace ValheimVRMod.Scripts
                 postProcessingBehavior.profile = originalPostProcessingProfile;
                 underwaterLightBlocker.SetActive(false);
                 UsingUnderwaterEffects = false;
+                camera.cullingMask |= (1 << LayerUtils.WATER);
             }
         }
 

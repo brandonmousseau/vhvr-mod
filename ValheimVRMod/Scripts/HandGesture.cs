@@ -55,11 +55,11 @@ namespace ValheimVRMod.Scripts {
                 }
             }
 
-            if (isMainHand && Player.m_localPlayer.GetRightItem() != null) {
+            if (isMainHand && Player.m_localPlayer?.GetRightItem() != null) {
                 return false;
             }
 
-            if (!isMainHand && Player.m_localPlayer.GetLeftItem() != null) {
+            if (!isMainHand && Player.m_localPlayer?.GetLeftItem() != null) {
                 return false;
             }
 

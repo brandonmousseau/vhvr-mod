@@ -168,6 +168,7 @@ namespace ValheimVRMod.Utilities
 
             return EquipType.None;
         }
+
         public static EquipType getLeftEquipType(ItemDrop.ItemData item)
         {
 
@@ -208,6 +209,20 @@ namespace ValheimVRMod.Utilities
             }
 
             return EquipType.None;
+        }
+
+        public static bool isDualWeapon(ItemDrop.ItemData item)
+        {
+            var weaponType = getRightEquipType(item);
+            switch (weaponType)
+            {
+                case EquipType.Claws:
+                case EquipType.DualAxes:
+                case EquipType.DualKnives:
+                    return true;
+                default:
+                    return false;
+            }
         }
 
         public static ItemDrop.ItemData equipAmmo()
