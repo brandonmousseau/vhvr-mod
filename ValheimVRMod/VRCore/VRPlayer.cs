@@ -451,6 +451,7 @@ namespace ValheimVRMod.VRCore
                 cameraDot.transform.localRotation = Quaternion.Euler(90, 0, 0);
                 cameraDot.material = Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
                 cameraDot.material.color = Color.red;
+                cameraDot.gameObject.layer = LayerUtils.getUiPanelLayer();
             }
 
             cameraDot.transform.localScale =
@@ -678,6 +679,10 @@ namespace ValheimVRMod.VRCore
         {
             if (_vrCam == null || !_vrCam.enabled)
             {
+                if (_followCamera != null)
+                {
+                    Destroy(_followCamera);
+                }
                 enableVrCamera();
             }
             else
@@ -772,6 +777,14 @@ namespace ValheimVRMod.VRCore
             {
                 return;
             }
+
+            if (DisableFollowCameraOnDeathPatch.hasCharacterDied && !attachedToPlayer)
+            {
+                // Do not enable follow camera until the VRCamera is attached to the player after character death,
+                // otherwise the projection matrix of the VRCamera might become wrong.
+                return;
+            }
+
             LogDebug("Enabling Follow Camera");
             _followCamera = new GameObject(CameraUtils.FOLLOW_CAMERA).AddComponent<Camera>();
             _followCamera.CopyFrom(vrCam);
