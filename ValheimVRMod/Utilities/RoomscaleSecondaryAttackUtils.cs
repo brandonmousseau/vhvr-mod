@@ -61,16 +61,6 @@ namespace ValheimVRMod.Utilities
                 return Vector3.Dot(thrust, LocalWeaponWield.weaponForward) >= MIN_THRUST_DISTANCE;
             },
 
-            delegate (PhysicsEstimator collisionPhysicsEstimator, PhysicsEstimator handPhysicsEstimator) // Two-handed axe check
-            {
-                if (!EquipScript.isTwoHandedAxeEquiped())
-                {
-                    return false;
-                }
-
-                return !IsTwoHandedWithDominantHandInFront() || IsStab(handPhysicsEstimator);
-            },
-
             delegate (PhysicsEstimator collisionPhysicsEstimator, PhysicsEstimator handPhysicsEstimator) // Single-handed axe and club check
             {
                 if (EquipScript.getRight() != EquipType.Axe && EquipScript.getRight() != EquipType.Club) {
@@ -109,7 +99,7 @@ namespace ValheimVRMod.Utilities
 
             delegate (PhysicsEstimator collisionPhysicsEstimator, PhysicsEstimator handPhysicsEstimator) // Polearms check
             {
-                if (EquipScript.getRight() != EquipType.Polearms) {
+                if (EquipScript.getRight() != EquipType.Polearms && !EquipScript.isTwoHandedAxeEquiped()) {
                     return false;
                 }
 
