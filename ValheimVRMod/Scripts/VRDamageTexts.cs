@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.UI;
 using ValheimVRMod.Utilities;
 
@@ -24,7 +24,7 @@ namespace ValheimVRMod.Scripts
         private void OnRenderObject()
         {
             var dt = Time.unscaledDeltaTime;
-            timer += dt/10;
+            timer += dt / 10; // TODO: Maybe move timer update to Update() or FixedUpdate();
             //LogUtils.LogDebug("timer : " + timer + " / " + textDuration);
             
             if (selfText)
@@ -33,6 +33,11 @@ namespace ValheimVRMod.Scripts
             }
             else
             {
+                if (vrCam == null)
+                {
+                    return;
+                }
+
                 var camerapos = vrCam.transform.position;
                 var range = Mathf.Min(Vector3.Distance(damageTextObject.transform.position, camerapos)/20, 0.25f)*4;
                 damageTextObject.transform.localPosition += new Vector3(0, dt * range / 30, 0);
@@ -43,6 +48,7 @@ namespace ValheimVRMod.Scripts
             colorA.a = 1f - Mathf.Pow(Mathf.Clamp01(timer / textDuration), 3f);
             currText.color = colorA;
         }
+
         public void CreateText(string text, Vector3 pos, Color color, bool myself,float textDur)
         {
             damageTextObject = transform.gameObject;
