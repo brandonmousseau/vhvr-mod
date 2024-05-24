@@ -438,6 +438,7 @@ namespace ValheimVRMod.Scripts
                     EquipScript.isTwoHandedClubEquiped() ||
                     EquipScript.getRight() == EquipType.Polearms)
                 {
+                    // Penalize momentum when wielding certain two-handed weapons with only one hand.
                     velocity *= 0.67f;
                 }
 
