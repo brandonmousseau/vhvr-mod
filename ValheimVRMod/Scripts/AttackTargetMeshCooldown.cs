@@ -3,7 +3,8 @@ using ValheimVRMod.Utilities;
 
 namespace ValheimVRMod.Scripts {
     public class AttackTargetMeshCooldown : MeshCooldown {
-        protected override Color FullOutlineColor { get { return isSecondaryAttackCooldown? Color.yellow : base.FullOutlineColor; } }
+        private float colorModifier = 1;
+        protected override Color FullOutlineColor { get { return isSecondaryAttackCooldown? Color.yellow : Color.Lerp(Color.black, base.FullOutlineColor, colorModifier); } }
 
         public static float speedScaledDamageFactor;
         public static float damageMultiplier;
@@ -16,7 +17,7 @@ namespace ValheimVRMod.Scripts {
         public bool tryTriggerPrimaryAttack(float cd, float speed)
         {
             float? overideMinAttackInterval;
-            if (VHVRConfig.ScaleDamageBySpeedAndWaiveCooldown() && !EquipScript.isTwoHandedClubEquiped())
+            if (VHVRConfig.MomentumScalesAttackDamage() && !EquipScript.isTwoHandedClubEquiped())
             {
                 speedScaledDamageFactor = Mathf.Min(GetSpeedScaledDamageFactor(cd, speed), 1 - getRemaningCooldownPercentage());
                 overideMinAttackInterval = 0.25f;
@@ -33,8 +34,14 @@ namespace ValheimVRMod.Scripts {
                 if (primaryTargetMeshCooldown == null)
                 {
                     primaryTargetMeshCooldown = this;
+                }
+                if (primaryTargetMeshCooldown == this)
+                {
                     damageMultiplier = 1;
                 }
+
+                colorModifier = Mathf.Min(speedScaledDamageFactor, damageMultiplier);
+
                 return true;
             }
             return false;
@@ -46,6 +53,7 @@ namespace ValheimVRMod.Scripts {
             {
                 isSecondaryAttackCooldown = true;
                 speedScaledDamageFactor = 1;
+                colorModifier = 1;
 
                 if (ignorePrimaryAttackCooldown)
                 {
