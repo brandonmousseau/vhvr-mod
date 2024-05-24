@@ -78,6 +78,7 @@ namespace ValheimVRMod.VRCore
         private Camera _skyboxCam;
         private Camera _followCamera;
         private Vector3 followCameraVelocity;
+        private MeshRenderer cameraDot;
 
         //Roomscale movement variables
         private Transform _vrCameraRig;
@@ -393,7 +394,7 @@ namespace ValheimVRMod.VRCore
                 return;
             }
 
-            _followCamera.enabled = VHVRConfig.UseFollowCameraOnFlatscreen();
+            _followCamera.gameObject.SetActive(_followCamera.enabled = VHVRConfig.UseFollowCameraOnFlatscreen());
             if (!_followCamera.enabled)
             {
                 return;
@@ -409,24 +410,17 @@ namespace ValheimVRMod.VRCore
             var hits = Physics.RaycastAll(targetPosition, _followCamera.transform.position - targetPosition, distance);
             foreach (var hit in hits)
             {
-                if (hit.distance < distance)
+                if (hit.distance > distance || hit.collider.gameObject.layer == LayerUtils.CHARACTER)
                 {
-                    if (hit.collider.attachedRigidbody != null &&
-                        hit.collider.attachedRigidbody.gameObject == getPlayerCharacter().gameObject)
-                    {
-                        continue;
-                    }
-
-                    if (!(hit.collider.GetComponent<MeshRenderer>()?.enabled ?? false))
-                    {
-                        if (!(hit.collider.GetComponent<SkinnedMeshRenderer>()?.enabled ?? false))
-                        {
-                            continue;
-                        }
-                    }
-
-                    distance = hit.distance;
+                    continue;
                 }
+                if (hit.collider.attachedRigidbody != null &&
+                    hit.collider.attachedRigidbody.gameObject == getPlayerCharacter().gameObject)
+                {
+                    continue;
+                }
+
+                distance = hit.distance;
             }
 
             _followCamera.transform.position =
@@ -449,6 +443,18 @@ namespace ValheimVRMod.VRCore
                 _followCamera.transform.rotation = CameraUtils.getCamera(CameraUtils.MAIN_CAMERA).transform.rotation;
             }
 
+            if (cameraDot == null)
+            {
+                cameraDot = GameObject.CreatePrimitive(PrimitiveType.Cylinder).GetComponent<MeshRenderer>();
+                cameraDot.transform.parent = _followCamera.transform;
+                cameraDot.transform.localPosition = Vector3.zero;
+                cameraDot.transform.localRotation = Quaternion.Euler(90, 0, 0);
+                cameraDot.material = Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
+                cameraDot.material.color = Color.red;
+            }
+
+            cameraDot.transform.localScale =
+                new Vector3(0.0075f, 0.001f, 0.0075f) * Vector3.Distance(_followCamera.transform.position, _vrCam.transform.position);
         }
 
         // Fixes an issue on Pimax HMDs that causes rotation to be incorrect:
