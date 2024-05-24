@@ -137,13 +137,12 @@ namespace ValheimVRMod.Scripts
 
         private void MaybeStabCharacter(Collider collider) {
 
-            var targetCharacter = collider.GetComponentInParent<Character>();
-            if (targetCharacter == null)
+            if (collider.gameObject.layer != LayerUtils.CHARACTER)
             {
                 return;
             }
 
-            var cooldown = targetCharacter.GetComponent<AttackTargetMeshCooldown>();
+            var cooldown = collider.GetComponent<AttackTargetMeshCooldown>();
             if (cooldown != null && cooldown.inCoolDown())
             {
                 return;
@@ -212,7 +211,8 @@ namespace ValheimVRMod.Scripts
                 postSecondaryAttackCountdown = WeaponUtils.GetAttackDuration(secondaryAttack);
             }
 
-            Attack currentAttack = isSecondaryAttack ? secondaryAttack : attack;
+            // Swap battle axe primary and secondary attacks since its primary attack is more powerful.
+            Attack currentAttack = isSecondaryAttack ^ EquipScript.isTwoHandedAxeEquiped() ? secondaryAttack : attack;
 
             if (WeaponUtils.IsTwoHandedMultitargetSwipe(currentAttack) && twoHandedMultitargetSwipeCountdown <= 0)
             {
@@ -433,6 +433,14 @@ namespace ValheimVRMod.Scripts
                         mainHandPhysicsEstimator.GetVelocity(),
                         mainHandPhysicsEstimator.GetAngularVelocity(),
                         LocalWeaponWield.weaponForward.normalized * WEAPON_ANGULAR_WEIGHT_OFFSET);
+
+                if (EquipScript.isTwoHandedAxeEquiped() ||
+                    EquipScript.isTwoHandedClubEquiped() ||
+                    EquipScript.getRight() == EquipType.Polearms)
+                {
+                    velocity *= 0.67f;
+                }
+
                 speed = velocity.magnitude;
             }
             else
