@@ -165,7 +165,7 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            if (!hasMomentum(out bool isStab))
+            if (!hasMomentum(out bool isStab, out float speed))
             {
                 return;
             }
@@ -202,7 +202,7 @@ namespace ValheimVRMod.Scripts
                 isSecondaryAttack = (isTwoHandedMultitargetSwipeActive && EquipScript.getRight() == EquipType.Polearms);
             }
 
-            if (!tryHitTarget(collider.gameObject, isSecondaryAttack))
+            if (!tryHitTarget(collider.gameObject, isSecondaryAttack, speed))
             {
                 return;
             }
@@ -243,7 +243,7 @@ namespace ValheimVRMod.Scripts
             }
         }
 
-        private bool tryHitTarget(GameObject target, bool isSecondaryAttack)
+        private bool tryHitTarget(GameObject target, bool isSecondaryAttack, float speed)
         {
             // ignore certain Layers
             if (ignoreLayers.Contains(target.layer))
@@ -297,7 +297,7 @@ namespace ValheimVRMod.Scripts
                 return attackTargetMeshCooldown.tryTriggerSecondaryAttack(targetCooldownTime);
             }
 
-            return attackTargetMeshCooldown.tryTriggerPrimaryAttack(WeaponUtils.GetAttackDuration(attack));
+            return attackTargetMeshCooldown.tryTriggerPrimaryAttack(WeaponUtils.GetAttackDuration(attack), speed);
         }
 
         private void OnRenderObject()
@@ -423,10 +423,9 @@ namespace ValheimVRMod.Scripts
             }
         }
 
-        private bool hasMomentum(out bool isStab)
+        private bool hasMomentum(out bool isStab, out float speed)
         {
             Vector3 velocity;
-            float speed;
             if (weaponWield.twoHandedState == WeaponWield.TwoHandedState.SingleHanded)
             {
                 velocity =

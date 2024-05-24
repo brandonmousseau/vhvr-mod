@@ -45,7 +45,29 @@ namespace ValheimVRMod.Scripts
             }
         }
 
+        private void OnTriggerStay(Collider collider)
+        {
+            if (!handGesture.isHandFree() || collider.gameObject.layer != LayerUtils.CHARACTER)
+            {
+                return;
+            }
+
+            var cooldown = collider.GetComponent<AttackTargetMeshCooldown>();
+            if (cooldown != null && cooldown.inCoolDown())
+            {
+                return;
+            }
+
+            tryHitCollider(collider, requireJab: true);
+        }
+
         private void OnTriggerEnter(Collider collider)
+        {
+            tryHitCollider(collider, requireJab: false);
+        }
+
+
+        private void tryHitCollider(Collider collider, bool requireJab)
         {
             if (!canAttackWithCollision())
             {
@@ -69,10 +91,15 @@ namespace ValheimVRMod.Scripts
                 }
             }
 
-            if (!hasMomentum())
+            if (!hasMomentum(out float speed, out bool isJab))
             {
                 return;
             }
+            if (requireJab && !isJab)
+            {
+                return;
+            }
+
 
             bool isCurrentlySecondaryAttack = LocalPlayerSecondaryAttackCooldown <= 0 && RoomscaleSecondaryAttackUtils.IsSecondaryAttack(physicsEstimator, physicsEstimator);
             bool usingWeapon = hasDualWieldingWeaponEquipped();
@@ -86,7 +113,7 @@ namespace ValheimVRMod.Scripts
 
             // Always use the duration of the primary attack for target cooldown to allow primary attack immediately following a secondary attack.
             // The secondary attack cooldown is managed by LocalPlayerSecondaryAttackCooldown in this class instead.
-            if (!tryHitTarget(collider.gameObject, isCurrentlySecondaryAttack, WeaponUtils.GetAttackDuration(primaryAttack)))
+            if (!tryHitTarget(collider.gameObject, isCurrentlySecondaryAttack, WeaponUtils.GetAttackDuration(primaryAttack), speed))
             {
                 return;
             }
@@ -114,7 +141,7 @@ namespace ValheimVRMod.Scripts
             }
         }
 
-        private bool tryHitTarget(GameObject target, bool isSecondaryAttack, float duratrion)
+        private bool tryHitTarget(GameObject target, bool isSecondaryAttack, float duratrion, float speed)
         {
 
             // ignore certain Layers
@@ -129,7 +156,7 @@ namespace ValheimVRMod.Scripts
                 attackTargetMeshCooldown = target.AddComponent<AttackTargetMeshCooldown>();
             }
 
-            return isSecondaryAttack ? attackTargetMeshCooldown.tryTriggerSecondaryAttack(duratrion) : attackTargetMeshCooldown.tryTriggerPrimaryAttack(duratrion);
+            return isSecondaryAttack ? attackTargetMeshCooldown.tryTriggerSecondaryAttack(duratrion) : attackTargetMeshCooldown.tryTriggerPrimaryAttack(duratrion, speed);
         }
 
         private void OnRenderObject()
@@ -187,14 +214,14 @@ namespace ValheimVRMod.Scripts
             return hasDualWieldingWeaponEquipped();
         }
 
-        public bool hasMomentum()
+        public bool hasMomentum(out float speed, out bool isJab)
         {
             var handVelocity = physicsEstimator.GetVelocity();
-            var minSpeed = VHVRConfig.SwingSpeedRequirement();
-
-            if (EquipScript.getRight() == EquipType.Claws || !hasDualWieldingWeaponEquipped())
+            if (handGesture.isHandFree())
             {
-                return handVelocity.magnitude >= minSpeed * 0.75f;
+                speed = handVelocity.magnitude;
+                isJab = Vector3.Angle(isRightHand ? VRPlayer.rightHandBone.up : VRPlayer.leftHandBone.up, handVelocity) < 30f && speed > 3f;
+                return speed > VHVRConfig.SwingSpeedRequirement() * 0.45f;
             }
 
             var weaponOffsetDirection = (transform.position - physicsEstimator.transform.position).normalized;
@@ -202,7 +229,9 @@ namespace ValheimVRMod.Scripts
                 WeaponUtils.GetWeaponVelocity(
                     handVelocity, physicsEstimator.GetAngularVelocity(), weaponOffsetDirection * WEAPON_OFFSET);
 
-            return weaponVelocity.magnitude >= minSpeed;
+            speed = weaponVelocity.magnitude;
+            isJab = false;
+            return speed >= VHVRConfig.SwingSpeedRequirement();
         }
 
         public static bool hasDualWieldingWeaponEquipped()

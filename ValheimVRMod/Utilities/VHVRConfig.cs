@@ -114,6 +114,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> gesturedJumpPreparationHeight;
         private static ConfigEntry<float> gesturedJumpMinSpeed;
         private static ConfigEntry<float> swingSpeedRequirement;
+        private static ConfigEntry<bool> momentumScalesAttackDamage;
         private static ConfigEntry<float> altPieceRotationDelay;
         private static ConfigEntry<bool> runIsToggled;
         private static ConfigEntry<bool> viewTurnWithMountedAnimal;
@@ -679,6 +680,12 @@ namespace ValheimVRMod.Utilities
                     new ConfigDescription(
                         "The speed requirement in m/s for weapon swinging for an attack to be triggered. if set to 0, single touch will already trigger hit",
                         new AcceptableValueRange<float>(0, 8)));
+            momentumScalesAttackDamage =
+                config.Bind(
+                    "Controls",
+                    "MomentumScalesAttackDamage",
+                    false,
+                    "Allow primary attacks during cooldown (except AOE) but reduce its damage if the momentum is not big enough.");
             altPieceRotationDelay = config.Bind("Controls",
                                                 "AltPieceRotationDelay",
                                                 1f,
@@ -1282,7 +1289,12 @@ namespace ValheimVRMod.Utilities
             return swingSpeedRequirement.Value;
         }
 
-         public static bool CharaterMovesWithHeadset()
+        public static bool MomentumScalesAttackDamage()
+        {
+            return momentumScalesAttackDamage.Value;
+        }
+
+        public static bool CharaterMovesWithHeadset()
         {
             return charaterMovesWithHeadset.Value;
         }
