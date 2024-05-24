@@ -144,7 +144,6 @@ namespace ValheimVRMod.Scripts
 
         class GesturedJump : GesturedLocomotion
         {
-            private bool isPreparingJump = false;
             public override Vector3 GetTargetVelocityFromGestures(Player player)
             {
                 if (!VHVRConfig.IsGesturedJumpEnabled() || player.IsAttached() || IsInAir(player))
@@ -153,23 +152,24 @@ namespace ValheimVRMod.Scripts
                 }
 
                 var height = Valve.VR.InteractionSystem.Player.instance.eyeHeight;
-
-                bool wasPreparingJump = isPreparingJump;
-
-                isPreparingJump = height < VRPlayer.referencePlayerHeight * VHVRConfig.GesturedJumpPreparationHeight();
-
-                bool attemptingJump =
-                    wasPreparingJump && !isPreparingJump && player.IsOnGround() &&
-                    !SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.LeftHand) &&
-                    !SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.RightHand);
-
-                if (!attemptingJump)
+                if (height < VRPlayer.referencePlayerHeight * VHVRConfig.GesturedJumpPreparationHeight())
                 {
                     return Vector3.zero;
                 }
 
-                Vector3 velocity = VRPlayer.headPhysicsEstimator.GetVelocity();
-                float verticalSpeed = Mathf.Max(Vector3.Dot(velocity, upDirection.Value), 0);
+                var verticalSpeed = Vector3.Dot(VRPlayer.headPhysicsEstimator.GetVelocity(), upDirection.Value);
+                if (verticalSpeed < VHVRConfig.GesturedJumpMinSpeed())
+                {
+                    return Vector3.zero;
+                }
+
+                var verticalAcceleration = Vector3.Dot(VRPlayer.headPhysicsEstimator.GetAcceleration(), upDirection.Value);
+                if (verticalAcceleration < VHVRConfig.GesturedJumpMinSpeed() * 8) // TODO: add an option of min acceleration.
+                {
+                    return Vector3.zero;
+                }
+
+                LogUtils.LogInfo("Gestured jump at speed " + verticalSpeed + " and acceleration " + verticalAcceleration);
                 return upDirection.Value * verticalSpeed;
             }
 
