@@ -413,13 +413,12 @@ namespace ValheimVRMod.Scripts
 
         class GesturedDodgeRoll : GesturedLocomotion
         {
-            private const float MIN_DODGE_SPEED_SNEAKING = 1f;
-            private const float MIN_DODGE_SPEED = 1.5f;
             private const float MIN_HAND_HEIGHT_RELATIVE_TO_EYE = -0.125f;
-            // private const float MIN_HEAD_HORIZONTAL_SPEED = 0.25f;
-            private const float MAX_HEIGHT = 0.75f;
+            private const float MIN_HEAD_HORIZONTAL_SPEED = 1f;
+            private const float MAX_HEAD_VERTICAL_ACCELERATION = -8f;
+            private const float MAX_HEIGHT = 0.9f;
             private const float MIN_HAND_SPEED = 1.25f;
-            private const float MIN_TILT = 20f;
+            private const float MIN_TILT = 15f;
 
             private Camera vrCam;
 
@@ -436,8 +435,8 @@ namespace ValheimVRMod.Scripts
                     return Vector3.zero;
                 }
 
-                var height = Valve.VR.InteractionSystem.Player.instance.eyeHeight;
-                if (height > MAX_HEIGHT * VRPlayer.referencePlayerHeight)
+                var isCrouching = player.IsCrouching();
+                if (!isCrouching && Valve.VR.InteractionSystem.Player.instance.eyeHeight > MAX_HEIGHT * VRPlayer.referencePlayerHeight)
                 {
                     return Vector3.zero;
                 }
@@ -452,18 +451,30 @@ namespace ValheimVRMod.Scripts
                 }
 
                 Vector3 velocity = VRPlayer.headPhysicsEstimator.GetVelocity();
-                Vector3 horizontalVelocity = Vector3.ProjectOnPlane(velocity, upDirection.Value);
-                Vector3 tiltDirection = Vector3.ProjectOnPlane(vrCam.transform.up, upDirection.Value).normalized;
-                var downwardSpeed = Mathf.Min(Vector3.Dot(velocity, upDirection.Value), 0);
-                var horizontalSpeed = Mathf.Max(0, Vector3.Dot(horizontalVelocity, tiltDirection));
-
-                if (new Vector2(downwardSpeed, horizontalSpeed).magnitude <
-                    (player.IsSneaking() ? MIN_DODGE_SPEED_SNEAKING : MIN_DODGE_SPEED))
+                if (!isCrouching && Vector3.Dot(velocity, upDirection.Value) > 0.5f)
                 {
                     return Vector3.zero;
                 }
 
-                if (!IsHandAssistingDodge(VRPlayer.leftHandPhysicsEstimator) &&
+                Vector3 horizontalVelocity = Vector3.ProjectOnPlane(velocity, upDirection.Value);
+                Vector3 tiltDirection = Vector3.ProjectOnPlane(vrCam.transform.up, upDirection.Value).normalized;
+
+                if (Vector3.Dot(horizontalVelocity, tiltDirection) < MIN_HEAD_HORIZONTAL_SPEED)
+                {
+                    return Vector3.zero;
+                }
+
+                if (!isCrouching)
+                {
+                    var verticalAcceleration = Vector3.Dot(VRPlayer.headPhysicsEstimator.GetAcceleration(), upDirection.Value);
+                    if (verticalAcceleration > MAX_HEAD_VERTICAL_ACCELERATION)
+                    {
+                        return Vector3.zero;
+                    }
+                }
+
+                if (!isCrouching &&
+                    !IsHandAssistingDodge(VRPlayer.leftHandPhysicsEstimator) &&
                     !IsHandAssistingDodge(VRPlayer.rightHandPhysicsEstimator))
                 {
                     return Vector3.zero;
