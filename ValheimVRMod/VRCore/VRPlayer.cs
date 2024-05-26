@@ -101,7 +101,7 @@ namespace ValheimVRMod.VRCore
 
         private Vector3 roomLocalPositionBeforeDodge;
         private Transform _dodgingRoom;
-        private Transform dodgingRoom { get { return _dodgingRoom ?? (_dodgingRoom = new GameObject().transform); } }
+        private Transform dodgingRoom { get { return _dodgingRoom == null ? (_dodgingRoom = new GameObject().transform) : _dodgingRoom; } }
         private bool pausedMovement = false;
 
         private float timerLeft;
