@@ -10,104 +10,45 @@ namespace ValheimVRMod.Utilities
     {
         public static bool IsSecondaryAttack(PhysicsEstimator collisionPhysicsEstimator, PhysicsEstimator handPhysicsEstimator)
         {
-            foreach (SecondaryAttackCheck check in secondaryAttackChecks)
+            switch (EquipScript.getRight())
             {
-                if (check(collisionPhysicsEstimator, handPhysicsEstimator))
-                {
-                    return true;
-                }
+                case EquipType.Axe:
+                case EquipType.Club:
+                    if (EquipScript.isTwoHandedAxeEquiped())
+                    {
+                        return IsTwoHandedWithDominantHandInFront() && !IsStab(handPhysicsEstimator);
+                    }
+                    if (EquipScript.isTwoHandedClubEquiped())
+                    {
+                        return false;
+                    }
+                    return !IsStab(handPhysicsEstimator) && IsStrongSwing(collisionPhysicsEstimator, handPhysicsEstimator);
+                case EquipType.Claws:
+                case EquipType.Hammer:
+                case EquipType.None:
+                    return IsHook(handPhysicsEstimator);
+                case EquipType.DualAxes:
+                    return IsCleaving();
+                case EquipType.DualKnives:
+                    return IsCleaving() || IsHook(handPhysicsEstimator);
+                case EquipType.Knife:
+                    if (LocalWeaponWield.isCurrentlyTwoHanded())
+                    {
+                        return IsStrongStab(handPhysicsEstimator) || IsStrongSwing(collisionPhysicsEstimator, handPhysicsEstimator);
+                    }
+                    if (TwoHandedGeometry.LocalKnifeGeometryProvider.shouldInverseHold)
+                    {
+                        return IsStrongStab(handPhysicsEstimator) || IsHook(handPhysicsEstimator);
+                    }
+                    return false;
+                case EquipType.Polearms:
+                    return IsTwoHandedWithDominantHandInFront() && !IsStab(handPhysicsEstimator);
+                case EquipType.Sword:
+                    return IsStrongStab(handPhysicsEstimator);
+                default:
+                    return false;
             }
-            return false;
         }
-
-        private delegate bool SecondaryAttackCheck(PhysicsEstimator collisionPhysicsEstimator, PhysicsEstimator handPhysicsEstimator);
-
-        private static SecondaryAttackCheck[] secondaryAttackChecks = new SecondaryAttackCheck[] {
-
-            delegate(PhysicsEstimator collisionPhysicsEstimator, PhysicsEstimator handPhysicsEstimator) // Sword check
-            {
-                if (EquipScript.getRight() != EquipType.Sword)
-                {
-                    return false;
-                }
-
-                return IsSecondaryStab(handPhysicsEstimator);
-            },
-
-            delegate (PhysicsEstimator collisionPhysicsEstimator, PhysicsEstimator handPhysicsEstimator) // Single-handed axe and club check
-            {
-                if (EquipScript.getRight() != EquipType.Axe && EquipScript.getRight() != EquipType.Club) {
-                    return false;
-                }
-                
-                if (EquipScript.isTwoHandedAxeEquiped() || EquipScript.isTwoHandedClubEquiped() || IsStab(handPhysicsEstimator))
-                {
-                    return false;
-                }
-
-                return IsSecondaryHew(collisionPhysicsEstimator, handPhysicsEstimator);
-            },
-
-            delegate (PhysicsEstimator collisionPhysicsEstimator, PhysicsEstimator handPhysicsEstimator) // Polearms check
-            {
-                if (EquipScript.getRight() != EquipType.Polearms && !EquipScript.isTwoHandedAxeEquiped()) {
-                    return false;
-                }
-
-                return IsTwoHandedWithDominantHandInFront() && !IsStab(handPhysicsEstimator);
-            },
-
-            delegate (PhysicsEstimator collisionPhysicsEstimator, PhysicsEstimator handPhysicsEstimator) // One-handed knife check
-            {
-                if (EquipScript.getRight() != EquipType.Knife) {
-                    return false;
-                }
-
-                if (LocalWeaponWield.isCurrentlyTwoHanded())
-                {
-                    return IsSecondaryStab(handPhysicsEstimator) || IsSecondaryHew(collisionPhysicsEstimator, handPhysicsEstimator);
-                }
-
-                if (TwoHandedGeometry.LocalKnifeGeometryProvider.shouldInverseHold)
-                {
-                    return IsSecondaryStab(handPhysicsEstimator) || IsHook(handPhysicsEstimator);
-                }
-
-                return false;
-            },
-
-            delegate (PhysicsEstimator collisionPhysicsEstimator, PhysicsEstimator handPhysicsEstimator) // Fist and claw check
-            {
-                var leftEquipType = EquipScript.getLeft();
-                var rightEquipType = EquipScript.getRight();
-                if (!(leftEquipType == EquipType.None && rightEquipType == EquipType.None) &&
-                    rightEquipType != EquipType.Claws)
-                {
-                    return false;
-                }
-                return IsHook(handPhysicsEstimator);
-            },
-
-            delegate (PhysicsEstimator collisionPhysicsEstimator, PhysicsEstimator handPhysicsEstimator) // Dual knife check
-            {
-                if (EquipScript.getRight() != EquipType.DualKnives)
-                {
-                    return false;
-                }
-
-                return IsHook(handPhysicsEstimator) || IsCleaving();
-            },
-
-            delegate (PhysicsEstimator collisionPhysicsEstimator, PhysicsEstimator handPhysicsEstimator) // Dual axe check
-            {
-                if (EquipScript.getRight() != EquipType.DualAxes)
-                {
-                    return false;
-                }
-
-                return IsCleaving();    
-            }
-        };
 
         private static bool IsTwoHandedWithDominantHandInFront()
         {
@@ -127,7 +68,7 @@ namespace ValheimVRMod.Utilities
                 LocalWeaponWield.isCurrentlyTwoHanded());
         }
 
-        private static bool IsSecondaryStab(PhysicsEstimator mainHandPhysicsEstimator)
+        private static bool IsStrongStab(PhysicsEstimator mainHandPhysicsEstimator)
         {
             if (!IsStab(mainHandPhysicsEstimator))
             {
@@ -145,7 +86,7 @@ namespace ValheimVRMod.Utilities
                 Vector3.Dot(mainHandPhysicsEstimator.GetLongestLocomotion(1f), LocalWeaponWield.weaponForward) >= MIN_THRUST_DISTANCE;
         }
 
-        private static bool IsSecondaryHew(PhysicsEstimator collisionPhysicsEstimator, PhysicsEstimator mainHandPhysicsEstimator)
+        private static bool IsStrongSwing(PhysicsEstimator collisionPhysicsEstimator, PhysicsEstimator mainHandPhysicsEstimator)
         {
             // When wielding with both hands, use the sum of both hands' velocities to make secondary attack easier to trigger.
             Vector3 handVelocity =
