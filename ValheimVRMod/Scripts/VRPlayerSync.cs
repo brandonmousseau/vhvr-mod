@@ -95,7 +95,7 @@ namespace ValheimVRMod.Scripts {
             return isLeftHanded;
         }
 
-        public bool HoldingInversedSpear()
+        public bool InverseHold()
         {
             if (isOwner())
             {
@@ -174,7 +174,7 @@ namespace ValheimVRMod.Scripts {
             pkg.Write(BowLocalManager.instance != null && BowLocalManager.instance.pulling);
             pkg.Write(isLeftHanded = VHVRConfig.LeftHanded());
             pkg.Write((byte) (twoHandedState = LocalWeaponWield.LocalPlayerTwoHandedState));
-            pkg.Write(HoldingInversedSpear());
+            pkg.Write(InverseHold());
 
             GetComponent<ZNetView>().GetZDO().Set("vr_data", pkg.GetArray());
         }
