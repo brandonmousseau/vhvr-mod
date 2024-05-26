@@ -313,7 +313,7 @@ namespace ValheimVRMod.Scripts
 
             protected override bool InverseHold()
             {
-                return twoHandedStateProvider.HoldingInversedSpear();
+                return twoHandedStateProvider.InverseHold();
             }
         }
     }
