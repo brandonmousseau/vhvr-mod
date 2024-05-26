@@ -110,6 +110,26 @@ namespace ValheimVRMod.VRCore.UI
 
             checkQuickItems<RightHandQuickMenu>(StaticObjects.rightHandQuickMenu, SteamVR_Actions.valheim_QuickSwitch, true);
             checkQuickItems<LeftHandQuickMenu>(StaticObjects.leftHandQuickMenu, SteamVR_Actions.valheim_QuickActions, false);
+
+            if (QuickAbstract.shouldStartChat && Chat.instance.HasFocus())
+            {
+                if (SteamVR_Actions.default_GrabGrip.GetState(SteamVR_Input_Sources.Any) ||
+                    SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.Any)) {
+                    if (SteamVR_Actions.default_InteractUI.GetStateUp(SteamVR_Input_Sources.Any) ||
+                        SteamVR_Actions.laserPointers_LeftClick.GetStateUp(SteamVR_Input_Sources.Any) ||
+                        SteamVR_Actions.valheim_Use.GetStateUp(SteamVR_Input_Sources.Any) ||
+                        SteamVR_Actions.valheim_UseLeft.GetStateUp(SteamVR_Input_Sources.Any))
+                    {
+                        QuickAbstract.enterChatText();
+                    }
+                }
+                else if (SteamVR_Actions.default_GrabGrip.GetStateUp(SteamVR_Input_Sources.Any) ||
+                    SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.Any))
+                {
+                    QuickAbstract.unfocusChatWindow();
+                }
+            }
+
         }
 
         void FixedUpdate()
