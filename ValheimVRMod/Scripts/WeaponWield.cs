@@ -135,17 +135,12 @@ namespace ValheimVRMod.Scripts
         // Updates weapon position and rotation and returns the new direction that the weapon is pointing toward.
         protected virtual Vector3 UpdateTwoHandedWield()
         {
-            var wasTwoHanded = (twoHandedState != TwoHandedState.SingleHanded);
-            twoHandedState = GetDesiredTwoHandedState(wasTwoHanded);
+            twoHandedState = GetDesiredTwoHandedState(wasTwoHanded: twoHandedState != TwoHandedState.SingleHanded);
 
             if (twoHandedState == TwoHandedState.SingleHanded)
             {
-                if (wasTwoHanded || equipType == EquipType.Spear || equipType == EquipType.SpearChitin)
-                {
-                    transform.SetPositionAndRotation(
-                        geometryProvider.GetDesiredSingleHandedPosition(this),
-                        geometryProvider.GetDesiredSingleHandedRotation(this));
-                }
+                transform.SetPositionAndRotation(
+                    geometryProvider.GetDesiredSingleHandedPosition(this), geometryProvider.GetDesiredSingleHandedRotation(this));
                 return GetWeaponPointingDirection();
             }
 
@@ -181,6 +176,18 @@ namespace ValheimVRMod.Scripts
         {
             switch (equipType)
             {
+                case EquipType.Crossbow:
+                    return isLocal ?
+                        new TwoHandedGeometry.LocalCrossbowGeometryProvider() :
+                        new TwoHandedGeometry.CrossbowGeometryProvider(IsPlayerLeftHanded());
+                case EquipType.Knife:
+                    if (isLocal)
+                    {
+                        return new TwoHandedGeometry.LocalKnifeGeometryProvider(distanceBetweenGripAndRearEnd);
+                    }
+                    break;
+                case EquipType.Polearms:
+                    return new TwoHandedGeometry.AtgeirGeometryProvider(distanceBetweenGripAndRearEnd);
                 case EquipType.Spear:
                 case EquipType.SpearChitin:
                     if (isLocal)
@@ -188,12 +195,6 @@ namespace ValheimVRMod.Scripts
                         return new TwoHandedGeometry.LocalSpearGeometryProvider();
                     }
                     break;
-                case EquipType.Polearms:
-                    return new TwoHandedGeometry.AtgeirGeometryProvider(distanceBetweenGripAndRearEnd);
-                case EquipType.Crossbow:
-                    return isLocal ?
-                        new TwoHandedGeometry.LocalCrossbowGeometryProvider() :
-                        new TwoHandedGeometry.CrossbowGeometryProvider(IsPlayerLeftHanded());
             }
 
             if (IsDundr())
