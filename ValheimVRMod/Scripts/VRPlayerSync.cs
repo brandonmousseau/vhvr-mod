@@ -20,7 +20,7 @@ namespace ValheimVRMod.Scripts {
 
         private WeaponWield.TwoHandedState twoHandedState = WeaponWield.TwoHandedState.SingleHanded;
         private bool isLeftHanded = false;
-        private bool holdingInversedSpear = false;
+        private bool inverseHold = false;
 
         private Player player;
         private Vector3 ownerLastPositionCamera = Vector3.zero;
@@ -99,12 +99,20 @@ namespace ValheimVRMod.Scripts {
         {
             if (isOwner())
             {
-                holdingInversedSpear =
-                    EquipScript.isSpearEquipped() &&
-                    !ThrowableManager.isAiming &&
-                    (VHVRConfig.SpearInverseWield() || twoHandedState != WeaponWield.TwoHandedState.SingleHanded);
+                if (EquipScript.getRight() == EquipType.Knife)
+                {
+                    inverseHold = TwoHandedGeometry.LocalKnifeGeometryProvider.shouldInverseHold;
+                }
+                else if (EquipScript.isSpearEquipped() && !ThrowableManager.isAiming)
+                {
+                    inverseHold = VHVRConfig.SpearInverseWield() || LocalWeaponWield.isCurrentlyTwoHanded();
+                }
+                else
+                {
+                    inverseHold = false;
+                }
             }
-            return holdingInversedSpear;
+            return inverseHold;
         }
         
         public bool IsVrEnabled()
@@ -230,7 +238,7 @@ namespace ValheimVRMod.Scripts {
             maybePullBow(pkg.ReadBool());
             isLeftHanded = pkg.ReadBool();
             twoHandedState = (WeaponWield.TwoHandedState) pkg.ReadByte();
-            holdingInversedSpear = pkg.ReadBool();
+            inverseHold = pkg.ReadBool();
         }
 
         private void maybePullBow(bool pulling) {
