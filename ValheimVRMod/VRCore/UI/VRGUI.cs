@@ -566,18 +566,16 @@ namespace ValheimVRMod.VRCore.UI
 
         private Vector3 getTargetGuiDirection()
         {
-            Vector3 forwardDirection = Vector3.forward;
-            if (Player.m_localPlayer != null)
+            var hmd = Valve.VR.InteractionSystem.Player.instance?.hmdTransform;
+            if (Player.m_localPlayer == null || hmd == null || USING_OVERLAY)
             {
-                if (!USING_OVERLAY)
-                {
-                    forwardDirection = Valve.VR.InteractionSystem.Player.instance.hmdTransform.forward;
-                    forwardDirection.y = 0;
-                    forwardDirection.Normalize();
-                }
+                return Vector3.forward;
             }
-            
-            return forwardDirection;
+
+            var targetGuiDirection = hmd.forward;
+            targetGuiDirection.y = 0;
+            targetGuiDirection.Normalize();
+            return targetGuiDirection;
         }
 
         private Vector3 getCurrentGuiDirection()

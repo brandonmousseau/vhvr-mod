@@ -101,7 +101,7 @@ namespace ValheimVRMod.VRCore
 
         private Vector3 roomLocalPositionBeforeDodge;
         private Transform _dodgingRoom;
-        private Transform dodgingRoom { get { return _dodgingRoom ?? (_dodgingRoom = new GameObject().transform); } }
+        private Transform dodgingRoom { get { return _dodgingRoom == null ? (_dodgingRoom = new GameObject().transform) : _dodgingRoom; } }
         private bool pausedMovement = false;
 
         private float timerLeft;
@@ -400,9 +400,9 @@ namespace ValheimVRMod.VRCore
                 return;
             }
 
-            float distance = 3;
+            float distance = PlayerCustomizaton.IsBarberGuiVisible() ? 0 : 3;
             var targetPosition =
-                VRPlayer.inFirstPerson ?
+                VRPlayer.inFirstPerson || PlayerCustomizaton.IsBarberGuiVisible() ?
                 _vrCam.transform.position + 0.25f * Vector3.up :
                 Player.m_localPlayer ?
                 Player.m_localPlayer.transform.position + Vector3.up * 0.5f :
@@ -436,7 +436,8 @@ namespace ValheimVRMod.VRCore
             }
             else if (Player.m_localPlayer)
             {
-                _followCamera.transform.LookAt(Player.m_localPlayer.transform.position + Vector3.up * 0.5f);
+                var offset = PlayerCustomizaton.IsBarberGuiVisible() ? Vector3.up : Vector3.up * 0.5f;
+                _followCamera.transform.LookAt(Player.m_localPlayer.transform.position + offset);
             }
             else
             {
@@ -451,6 +452,7 @@ namespace ValheimVRMod.VRCore
                 cameraDot.transform.localRotation = Quaternion.Euler(90, 0, 0);
                 cameraDot.material = Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
                 cameraDot.material.color = Color.red;
+                cameraDot.gameObject.layer = LayerUtils.getUiPanelLayer();
             }
 
             cameraDot.transform.localScale =
@@ -678,6 +680,10 @@ namespace ValheimVRMod.VRCore
         {
             if (_vrCam == null || !_vrCam.enabled)
             {
+                if (_followCamera != null)
+                {
+                    Destroy(_followCamera);
+                }
                 enableVrCamera();
             }
             else
@@ -772,6 +778,14 @@ namespace ValheimVRMod.VRCore
             {
                 return;
             }
+
+            if (DisableFollowCameraOnDeathPatch.hasCharacterDied && !attachedToPlayer)
+            {
+                // Do not enable follow camera until the VRCamera is attached to the player after character death,
+                // otherwise the projection matrix of the VRCamera might become wrong.
+                return;
+            }
+
             LogDebug("Enabling Follow Camera");
             _followCamera = new GameObject(CameraUtils.FOLLOW_CAMERA).AddComponent<Camera>();
             _followCamera.CopyFrom(vrCam);
@@ -955,6 +969,7 @@ namespace ValheimVRMod.VRCore
             if (pelvisTarget != null && VHVRConfig.UseVrControls() && !pausedMovement)
             {
                 pelvisTarget.localRotation = getPelvisRotationRelativeToPlayer(playerTransform);
+                vrikRef.solver.spine.maintainPelvisPosition = attachedToPlayer ? 0 : 1;
             }
         }
 
@@ -969,7 +984,7 @@ namespace ValheimVRMod.VRCore
                 playerTransform.InverseTransformDirection(
                     rightHandBone.TransformPoint(-Vector3.up * 0.25f) - leftHandBone.TransformPoint(-Vector3.up * 0.25f));
             // Rotate pelvis slightly according to forearm positions
-            return Quaternion.LookRotation(new Vector3(-elbowSpan.z, 0, elbowSpan.x + 0.5f));
+            return Quaternion.LookRotation(new Vector3(-elbowSpan.z, 0, elbowSpan.x + (getPlayerCharacter().IsAttached() ? 1 : 0.5f)));
         }
 
         private float getHeadHeightAdjust(Player player)

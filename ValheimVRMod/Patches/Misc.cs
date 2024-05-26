@@ -383,11 +383,13 @@ namespace ValheimVRMod.Patches
     [HarmonyPatch(typeof(Player), nameof(Player.OnDeath))]
     class DisableFollowCameraOnDeathPatch
     {
+        public static bool hasCharacterDied { get; private set; } = false;
         public static void Prefix()
         {
             var followCamera = CameraUtils.getCamera(CameraUtils.FOLLOW_CAMERA);
             if (followCamera)
             {
+                hasCharacterDied = true;
                 // Disable the follow camera temporarily since it might interfere with the projection matrix of the main camera upon character death.
                 followCamera.enabled = false;
                 GameObject.Destroy(followCamera);
