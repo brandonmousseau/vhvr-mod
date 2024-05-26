@@ -407,10 +407,15 @@ namespace ValheimVRMod.VRCore
                 Player.m_localPlayer ?
                 Player.m_localPlayer.transform.position + Vector3.up * 0.5f :
                 CameraUtils.getCamera(CameraUtils.MAIN_CAMERA).transform.position;
-            var hits = Physics.RaycastAll(targetPosition, _followCamera.transform.position - targetPosition, distance);
+            var hits =
+                Physics.RaycastAll(
+                    targetPosition,
+                    _followCamera.transform.position - targetPosition,
+                    distance,
+                    _followCamera.cullingMask & Physics.DefaultRaycastLayers & ~(1 << LayerUtils.CHARACTER) & ~(1 << LayerUtils.ITEM_LAYER));
             foreach (var hit in hits)
             {
-                if (hit.distance > distance || hit.collider.gameObject.layer == LayerUtils.CHARACTER)
+                if (hit.distance > distance)
                 {
                     continue;
                 }
