@@ -237,7 +237,7 @@ namespace ValheimVRMod.Scripts
             var localHandPos = VRPlayer.dominantHand.transform.position - Player.m_localPlayer.transform.position;
             var posHeight = Player.m_localPlayer.transform.InverseTransformPoint(VRPlayer.dominantHand.transform.position + localWeaponForward);
 
-            if (isMovementSecondaryAttack && movementCooldown <= 0 && !isMovementSecondaryAttackHold)
+            if (isMovementSecondaryAttack && !(movementCooldown >= 0 || isMovementSecondaryAttackHold))
             {
                 localWeaponForward = Vector3.zero;
             }
@@ -272,6 +272,11 @@ namespace ValheimVRMod.Scripts
                     slashTrail.emitting = true;
                     slashTrail.Clear();
 
+                    if (isMovementSecondaryAttack && movementCooldown >= 0 && !isMovementSecondaryAttackHold) 
+                    {
+                        isMovementSecondaryAttackHold = true;
+                    }
+
                     isSecondaryAttackStarted = true;
                     hitDir = Vector3.zero;
                 }
@@ -279,7 +284,6 @@ namespace ValheimVRMod.Scripts
                 if (firstPos != Vector3.zero && !mainHandTrigger)
                 {
                     lastPos = localHandPos + localWeaponForward;
-                    isMovementSecondaryAttackHold = false;
                 }
             }
             
@@ -394,7 +398,7 @@ namespace ValheimVRMod.Scripts
                 pointList = new List<Vector3>();
 
                 //Secondary attack raycast check
-                if (isMovementSecondaryAttack && movementCooldown <=0)
+                if (isMovementSecondaryAttack && movementCooldown <=0 && !isMovementSecondaryAttackHold)
                 {
                     var firstTrail = slashTrail.GetPosition(0);
                     var halfTrail = slashTrail.GetPosition((int)((slashTrail.positionCount - 1) * 0.5f));
@@ -404,6 +408,7 @@ namespace ValheimVRMod.Scripts
 
                     var range = (Vector3.Distance(firstTrail, halfTrail) + Vector3.Distance(halfTrail, endTrail));
                     //LogUtils.LogDebug("range : " + range);
+                    isMovementSecondaryAttackHold = false;
                     if (range < 0.2f)
                     {
                         ResetSecondaryAttack();
@@ -419,7 +424,6 @@ namespace ValheimVRMod.Scripts
 
                         var time = WeaponUtils.GetAttackDuration(secondaryAttack);
                         movementCooldown = time;
-                        isMovementSecondaryAttackHold = true;
                     }
                     else
                     {
@@ -466,7 +470,8 @@ namespace ValheimVRMod.Scripts
                     }
                     slashLine.SetPositions(pointList.ToArray());
                     slashLine.positionCount = 5;
-
+                    isMovementSecondaryAttackHold = false;
+                    movementCooldown = -1;
                     if ((Vector3.Distance(firstTrail, halfTrail) + Vector3.Distance(halfTrail, endTrail)) < secondaryAttack.m_attackRange * 0.5f)
                     {
                         ResetSecondaryAttack();
