@@ -407,10 +407,11 @@ namespace ValheimVRMod.VRCore
                 Player.m_localPlayer ?
                 Player.m_localPlayer.transform.position + Vector3.up * 0.5f :
                 CameraUtils.getCamera(CameraUtils.MAIN_CAMERA).transform.position;
+            var viewPointOffset = _followCamera.transform.position - targetPosition;
             var hits =
                 Physics.RaycastAll(
                     targetPosition,
-                    _followCamera.transform.position - targetPosition,
+                    viewPointOffset,
                     distance,
                     _followCamera.cullingMask & Physics.DefaultRaycastLayers & ~(1 << LayerUtils.CHARACTER) & ~(1 << LayerUtils.ITEM_LAYER));
             foreach (var hit in hits)
@@ -428,12 +429,10 @@ namespace ValheimVRMod.VRCore
                 distance = hit.distance;
             }
 
+            var newViewPoint =
+                targetPosition + Vector3.MoveTowards(Vector3.zero, viewPointOffset, Mathf.Max(0.125f, distance));
             _followCamera.transform.position =
-                Vector3.SmoothDamp(
-                    _followCamera.transform.position,
-                    Vector3.MoveTowards(targetPosition, _followCamera.transform.position, Mathf.Max(0.125f, distance)),
-                    ref followCameraVelocity,
-                    0.25f);
+                Vector3.SmoothDamp(_followCamera.transform.position, newViewPoint,  ref followCameraVelocity, 0.25f);
 
             if (VRPlayer.inFirstPerson)
             {
