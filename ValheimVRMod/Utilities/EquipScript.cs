@@ -9,7 +9,7 @@ namespace ValheimVRMod.Utilities
     public enum EquipType
     {
         None,
-        Fishing, Cultivator, Hammer, Hoe,
+        Fishing, Cultivator, Hammer, Hoe, Torch,
         Bow, Spear, SpearChitin, ThrowObject,
         Shield, Tankard, Claws, Magic, Crossbow
         ,
@@ -79,7 +79,6 @@ namespace ValheimVRMod.Utilities
             //Right Equipment List
             switch (item?.m_shared.m_name)
             {
-
                 //tool
                 case "$item_fishingrod":
                     return EquipType.Fishing;
@@ -128,6 +127,12 @@ namespace ValheimVRMod.Utilities
                     return EquipType.RuneSkyheim;
             }
 
+            switch (item?.m_shared.m_itemType)
+            {
+                case ItemDrop.ItemData.ItemType.Torch:
+                    return EquipType.Torch;
+            }
+
             //compatibility setting 
             var skillType = item?.m_shared.m_skillType;
             switch (skillType)
@@ -171,19 +176,17 @@ namespace ValheimVRMod.Utilities
 
         public static EquipType getLeftEquipType(ItemDrop.ItemData item)
         {
-
-
             //LeftEquipment List 
             switch (item?.m_shared.m_itemType)
             {
                 case ItemDrop.ItemData.ItemType.Bow:
-
                     if (item?.m_shared.m_ammoType == "$ammo_bolts")
                         return EquipType.Crossbow;
-
                     return EquipType.Bow;
                 case ItemDrop.ItemData.ItemType.Shield:
                     return EquipType.Shield;
+                case ItemDrop.ItemData.ItemType.Torch:
+                    return EquipType.Torch;
             }
 
             //compatibility setting 
