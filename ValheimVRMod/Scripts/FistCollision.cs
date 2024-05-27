@@ -196,15 +196,16 @@ namespace ValheimVRMod.Scripts
 
         private void refreshColliderData()
         {
-            if (!Player.m_localPlayer || EquipScript.getRight() == currentEquipType)
+            var newEquipType = holdingTorchAsNonDominantHand() ? EquipType.Torch : EquipScript.getRight();
+
+            if (!Player.m_localPlayer || newEquipType == currentEquipType)
             {
                 return;
             }
 
-            currentEquipType = EquipScript.getRight();
+            currentEquipType = newEquipType;
 
-            var colliderData =
-                WeaponUtils.GetDualWieldLeftHandColliderData(Player.m_localPlayer?.GetRightItem());
+            var colliderData = WeaponUtils.GetDualWieldLeftHandColliderData(newEquipType);
 
             desiredPosition =
                 isRightHand ?
