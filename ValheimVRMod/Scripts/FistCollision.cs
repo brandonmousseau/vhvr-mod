@@ -100,20 +100,36 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-
-            bool isCurrentlySecondaryAttack = LocalPlayerSecondaryAttackCooldown <= 0 && RoomscaleSecondaryAttackUtils.IsSecondaryAttack(physicsEstimator, physicsEstimator);
-            bool usingWeapon = hasDualWieldingWeaponEquipped();
-            var item = usingWeapon ? Player.m_localPlayer.GetRightItem() : Player.m_localPlayer.m_unarmedWeapon.m_itemData;
-            Attack primaryAttack = item.m_shared.m_attack;
-            Attack attack = isCurrentlySecondaryAttack ? item.m_shared.m_secondaryAttack : primaryAttack;
-            if (usingWeapon)
+            ItemDrop.ItemData item;
+            bool isCurrentlySecondaryAttack = false;
+            Attack attack;
+            if (holdingTorchAsNonDominantHand())
             {
-                attack = attack.Clone();
+                item = Player.m_localPlayer.GetLeftItem();
+                attack = item.m_shared.m_attack.Clone();
+            }
+            else
+            {
+                isCurrentlySecondaryAttack =
+                    LocalPlayerSecondaryAttackCooldown <= 0 &&
+                    RoomscaleSecondaryAttackUtils.IsSecondaryAttack(physicsEstimator, physicsEstimator);
+                if (hasDualWieldingWeaponEquipped())
+                {
+                    item = Player.m_localPlayer.GetRightItem();
+                    attack =
+                        (isCurrentlySecondaryAttack ? item.m_shared.m_attack : item.m_shared.m_secondaryAttack).Clone();
+                }
+                else
+                {
+                    item = Player.m_localPlayer.m_unarmedWeapon.m_itemData;
+                    attack =
+                        isCurrentlySecondaryAttack ? item.m_shared.m_attack : item.m_shared.m_secondaryAttack;
+                }
             }
 
             // Always use the duration of the primary attack for target cooldown to allow primary attack immediately following a secondary attack.
             // The secondary attack cooldown is managed by LocalPlayerSecondaryAttackCooldown in this class instead.
-            if (!tryHitTarget(collider.gameObject, isCurrentlySecondaryAttack, WeaponUtils.GetAttackDuration(primaryAttack), speed))
+            if (!tryHitTarget(collider.gameObject, isCurrentlySecondaryAttack, WeaponUtils.GetAttackDuration(item.m_shared.m_attack), speed))
             {
                 return;
             }
@@ -211,7 +227,16 @@ namespace ValheimVRMod.Scripts
                 return SteamVR_Actions.valheim_Grab.GetState(inputSource);
             }
 
-            return hasDualWieldingWeaponEquipped();
+            return hasDualWieldingWeaponEquipped() || holdingTorchAsNonDominantHand();
+        }
+
+        private bool holdingTorchAsNonDominantHand()
+        {
+            if (isRightHand ^ VHVRConfig.LeftHanded())
+            {
+                return false;
+            }
+            return EquipScript.getLeft() == EquipType.Torch;
         }
 
         public bool hasMomentum(out float speed, out bool isJab)
