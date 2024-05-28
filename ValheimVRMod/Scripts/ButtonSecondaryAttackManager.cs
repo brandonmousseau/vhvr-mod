@@ -48,6 +48,7 @@ namespace ValheimVRMod.Scripts
         private bool isMovementSecondaryAttack;
         private float movementCooldown;
         private bool isMovementSecondaryAttackHold;
+        public static bool isStaminaDrained;
 
         private void Awake()
         {
@@ -109,6 +110,7 @@ namespace ValheimVRMod.Scripts
             }
             isSecondaryAttackStarted = false;
             isSecondaryAttackTriggered = true;
+            isStaminaDrained = false;
         }
 
         public void Initialize(Transform obj, string name, bool isRightHand)
@@ -127,6 +129,7 @@ namespace ValheimVRMod.Scripts
             attack = item.m_shared.m_attack.Clone();
             secondaryAttack = item.m_shared.m_secondaryAttack.Clone();
             isMovementSecondaryAttackHold = false;
+            isStaminaDrained = false;
 
             float damage = 0;
             if (item.m_shared.m_damages.m_slash > damage)
@@ -276,6 +279,10 @@ namespace ValheimVRMod.Scripts
                     {
                         isMovementSecondaryAttackHold = true;
                     }
+                    else
+                    {
+                        isStaminaDrained = false;
+                    }
 
                     isSecondaryAttackStarted = true;
                     hitDir = Vector3.zero;
@@ -420,10 +427,11 @@ namespace ValheimVRMod.Scripts
                         direction.y = 0;
                         var clampedRange = Mathf.Clamp(range, 0.3f, 1);
                         Player.m_localPlayer.ForceJump(direction.normalized * 10 * clampedRange + (Vector3.up * 8), true);
-                        Player.m_localPlayer.UseStamina(getStaminaSecondaryAtttackUsage()/3);
+                        Player.m_localPlayer.UseStamina(getStaminaSecondaryAtttackUsage());
 
                         var time = WeaponUtils.GetAttackDuration(secondaryAttack);
                         movementCooldown = time;
+                        isStaminaDrained = true;
                     }
                     else
                     {
