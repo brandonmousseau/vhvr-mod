@@ -223,7 +223,7 @@ namespace ValheimVRMod.Scripts
                 return false;
             }
 
-            if (handGesture.isHandFree() && EquipScript.getRight() != EquipType.Tankard)
+            if (handGesture.isHandFree())
             {
                 SteamVR_Input_Sources inputSource = isRightHand ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand;
                 return SteamVR_Actions.valheim_Grab.GetState(inputSource);
