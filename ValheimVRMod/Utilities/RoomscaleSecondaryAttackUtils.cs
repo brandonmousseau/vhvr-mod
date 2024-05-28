@@ -24,11 +24,7 @@ namespace ValheimVRMod.Utilities
                     }
                     return !IsStab(handPhysicsEstimator) && IsStrongSwing(collisionPhysicsEstimator, handPhysicsEstimator);
                 case EquipType.Claws:
-                case EquipType.Cultivator:
-                case EquipType.Hammer:
-                case EquipType.Hoe:
                 case EquipType.None:
-                case EquipType.Tankard:
                     return IsHook(handPhysicsEstimator);
                 case EquipType.DualAxes:
                     return IsCleaving();
@@ -114,7 +110,7 @@ namespace ValheimVRMod.Utilities
             return GetSagittalComponent(thrust, weaponOffsetFromPlayer).magnitude >= MIN_THRUST_DISTANCE;
         }
 
-        private static bool IsHook(PhysicsEstimator physicsEstimator)
+        public static bool IsHook(PhysicsEstimator physicsEstimator)
         {
             const float MIN_HOOK_DISTANCE = 1f;
             const float MAX_HOOK_ALIGNMENT_ANGLE = 30f;
