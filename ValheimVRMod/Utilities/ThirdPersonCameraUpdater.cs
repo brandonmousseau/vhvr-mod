@@ -94,8 +94,6 @@ namespace ValheimVRMod.Utilities
                     continue;
                 }
 
-                LogUtils.LogWarning("Ob: " + hit.collider.name + " " + hit.collider.gameObject.layer);
-
                 distance = hit.distance;
             }
 
