@@ -112,7 +112,8 @@ namespace ValheimVRMod.Scripts
             {
                 isCurrentlySecondaryAttack =
                     LocalPlayerSecondaryAttackCooldown <= 0 &&
-                    RoomscaleSecondaryAttackUtils.IsSecondaryAttack(physicsEstimator, physicsEstimator);
+                    (handGesture.isHandFree() ? RoomscaleSecondaryAttackUtils.IsHook(physicsEstimator) :
+                    RoomscaleSecondaryAttackUtils.IsSecondaryAttack(physicsEstimator, physicsEstimator));
                 if (hasDualWieldingWeaponEquipped())
                 {
                     item = Player.m_localPlayer.GetRightItem();
@@ -222,7 +223,7 @@ namespace ValheimVRMod.Scripts
                 return false;
             }
 
-            if (handGesture.isHandFree())
+            if (handGesture.isHandFree() && EquipScript.getRight() != EquipType.Tankard)
             {
                 SteamVR_Input_Sources inputSource = isRightHand ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand;
                 return SteamVR_Actions.valheim_Grab.GetState(inputSource);
