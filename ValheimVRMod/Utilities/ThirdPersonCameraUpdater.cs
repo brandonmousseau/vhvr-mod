@@ -62,6 +62,7 @@ namespace ValheimVRMod.Utilities
             {
                 // Spectator mode
                 viewPoint = transform.position;
+                viewPoint.y = Mathf.Max(viewPoint.y, vrCamera.transform.position.y + 0.25f);
             }
 
             ClampViewPointToAvoidObstruction(targetPosition, maxDistance: 3, ref viewPoint);
