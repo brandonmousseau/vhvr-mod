@@ -1,22 +1,21 @@
-using static ValheimVRMod.Utilities.LogUtils;
-
 using AmplifyOcclusion;
-using System.Reflection;
 using RootMotion.FinalIK;
+using System.Reflection;
 using UnityEngine;
 using UnityEngine.PostProcessing;
 using UnityEngine.SceneManagement;
 using UnityEngine.SpatialTracking;
 using UnityStandardAssets.ImageEffects;
-using ValheimVRMod.Scripts;
 using ValheimVRMod.Patches;
+using ValheimVRMod.Scripts;
+using ValheimVRMod.Scripts.Block;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore.UI;
 using Valve.VR;
 using Valve.VR.Extras;
 using Valve.VR.InteractionSystem;
+using static ValheimVRMod.Utilities.LogUtils;
 using Pose = ValheimVRMod.Utilities.Pose;
-using ValheimVRMod.Scripts.Block;
 
 /**
  * VRPlayer manages instantiating the SteamVR Player
@@ -76,9 +75,7 @@ namespace ValheimVRMod.VRCore
         private Camera _vrCam;
         private Camera _handsCam;
         private Camera _skyboxCam;
-        private Camera _followCamera;
-        private Vector3 followCameraVelocity;
-        private MeshRenderer cameraDot;
+        private Camera _thirdPersonCamera;
 
         //Roomscale movement variables
         private Transform _vrCameraRig;
@@ -375,92 +372,21 @@ namespace ValheimVRMod.VRCore
                 }
             }
 
-            UpdateFollowCamera();
+            UpdateThirdPersonCamera();
         }
 
-        private void UpdateFollowCamera()
+        private void UpdateThirdPersonCamera()
         {
-            if (_followCamera == null)
+            if (_thirdPersonCamera == null)
             {
-                if (!VHVRConfig.UseFollowCameraOnFlatscreen())
+                if (!VHVRConfig.UseThirdPersonCameraOnFlatscreen())
                 {
                     return;
                 }
-                enableFollowCamera();
+                enableThirdPersonCamera();
             }
 
-            if (_followCamera == null || _vrCam == null)
-            {
-                return;
-            }
-
-            _followCamera.gameObject.SetActive(_followCamera.enabled = VHVRConfig.UseFollowCameraOnFlatscreen());
-            if (!_followCamera.enabled)
-            {
-                return;
-            }
-
-            float distance = PlayerCustomizaton.IsBarberGuiVisible() ? 0 : 3;
-            var targetPosition =
-                VRPlayer.inFirstPerson || PlayerCustomizaton.IsBarberGuiVisible() ?
-                _vrCam.transform.position + 0.25f * Vector3.up :
-                Player.m_localPlayer ?
-                Player.m_localPlayer.transform.position + Vector3.up * 0.5f :
-                CameraUtils.getCamera(CameraUtils.MAIN_CAMERA).transform.position;
-            var viewPointOffset = _followCamera.transform.position - targetPosition;
-            var hits =
-                Physics.RaycastAll(
-                    targetPosition,
-                    viewPointOffset,
-                    distance,
-                    _followCamera.cullingMask & Physics.DefaultRaycastLayers & ~(1 << LayerUtils.CHARACTER) & ~(1 << LayerUtils.ITEM_LAYER));
-            foreach (var hit in hits)
-            {
-                if (hit.distance > distance)
-                {
-                    continue;
-                }
-                if (hit.collider.attachedRigidbody != null &&
-                    hit.collider.attachedRigidbody.gameObject == getPlayerCharacter().gameObject)
-                {
-                    continue;
-                }
-
-                distance = hit.distance;
-            }
-
-            var newViewPoint =
-                targetPosition + Vector3.MoveTowards(Vector3.zero, viewPointOffset, Mathf.Max(0.125f, distance));
-            _followCamera.transform.position =
-                Vector3.SmoothDamp(_followCamera.transform.position, newViewPoint,  ref followCameraVelocity, 0.25f);
-
-            if (VRPlayer.inFirstPerson)
-            {
-                _followCamera.transform.LookAt(_vrCam.transform);
-            }
-            else if (Player.m_localPlayer)
-            {
-                var offset = PlayerCustomizaton.IsBarberGuiVisible() ? Vector3.up : Vector3.up * 0.5f;
-                _followCamera.transform.LookAt(Player.m_localPlayer.transform.position + offset);
-            }
-            else
-            {
-                _followCamera.transform.rotation = CameraUtils.getCamera(CameraUtils.MAIN_CAMERA).transform.rotation;
-            }
-
-            if (cameraDot == null)
-            {
-                cameraDot = GameObject.CreatePrimitive(PrimitiveType.Cylinder).GetComponent<MeshRenderer>();
-                cameraDot.transform.parent = _followCamera.transform;
-                cameraDot.transform.localPosition = Vector3.zero;
-                cameraDot.transform.localRotation = Quaternion.Euler(90, 0, 0);
-                cameraDot.material = Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
-                cameraDot.material.color = Color.red;
-                cameraDot.gameObject.layer = LayerUtils.getUiPanelLayer();
-            }
-
-            cameraDot.transform.localScale =
-                new Vector3(0.0075f, 0.001f, 0.0075f) * Vector3.Distance(_followCamera.transform.position, _vrCam.transform.position);
+            _thirdPersonCamera.gameObject.SetActive(VHVRConfig.UseThirdPersonCameraOnFlatscreen());
         }
 
         // Fixes an issue on Pimax HMDs that causes rotation to be incorrect:
@@ -684,9 +610,9 @@ namespace ValheimVRMod.VRCore
         {
             if (_vrCam == null || !_vrCam.enabled)
             {
-                if (_followCamera != null)
+                if (_thirdPersonCamera != null)
                 {
-                    Destroy(_followCamera);
+                    Destroy(_thirdPersonCamera);
                 }
                 enableVrCamera();
             }
@@ -775,7 +701,7 @@ namespace ValheimVRMod.VRCore
             _handsCam = handsCamera;
         }
 
-        private void enableFollowCamera()
+        private void enableThirdPersonCamera()
         {
             Camera vrCam = CameraUtils.getCamera(CameraUtils.VR_CAMERA);
             if (vrCam == null || vrCam.gameObject == null)
@@ -790,17 +716,18 @@ namespace ValheimVRMod.VRCore
                 return;
             }
 
-            LogDebug("Enabling Follow Camera");
-            _followCamera = new GameObject(CameraUtils.FOLLOW_CAMERA).AddComponent<Camera>();
-            _followCamera.CopyFrom(vrCam);
-            _followCamera.depth = 4;
+            LogDebug("Enabling third person camera");
+            _thirdPersonCamera = new GameObject(CameraUtils.FOLLOW_CAMERA).AddComponent<Camera>();
+            _thirdPersonCamera.CopyFrom(vrCam);
+            _thirdPersonCamera.depth = 4;
             // Borrow the UI layer to render headgears which should be hidden for the VR camera.
-            _followCamera.cullingMask |= (1 << LayerMask.NameToLayer("UI"));
-            _followCamera.transform.position = vrCam.transform.position;
-            _followCamera.stereoTargetEye = StereoTargetEyeMask.None;
-            _followCamera.enabled = true;
-            _followCamera.ResetAspect();
-            _followCamera.fieldOfView = 75;
+            _thirdPersonCamera.cullingMask |= (1 << LayerMask.NameToLayer("UI"));
+            _thirdPersonCamera.transform.position = vrCam.transform.position;
+            _thirdPersonCamera.stereoTargetEye = StereoTargetEyeMask.None;
+            _thirdPersonCamera.gameObject.AddComponent<ThirdPersonCameraUpdater>();
+            _thirdPersonCamera.enabled = true;
+            _thirdPersonCamera.ResetAspect();
+            _thirdPersonCamera.fieldOfView = 75;
         }
 
         // Search for the original skybox cam, if found, copy it, disable it,
