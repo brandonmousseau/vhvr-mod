@@ -384,6 +384,11 @@ namespace ValheimVRMod.VRCore
                     return;
                 }
                 enableThirdPersonCamera();
+
+                if (_thirdPersonCamera == null)
+                {
+                    return;
+                }
             }
 
             _thirdPersonCamera.gameObject.SetActive(VHVRConfig.UseThirdPersonCameraOnFlatscreen());
@@ -880,10 +885,17 @@ namespace ValheimVRMod.VRCore
                 setPlayerVisualsOffset(playerCharacter.transform, Vector3.zero);
             }
             else
-                setPlayerVisualsOffset(playerCharacter.transform,
-                                -getHeadOffset(_headZoomLevel) // Player controlled offset (zeroed on tracking reset)
-                                - Vector3.forward * NECK_OFFSET // Move slightly forward to position on neck
-                                );
+            {
+                var offset = -getHeadOffset(_headZoomLevel); // Player controlled offset (zeroed on tracking reset)
+                if (playerCharacter.IsSitting())
+                {
+                    offset += Vector3.forward * 0.0625f; // Move slightly backward to position on neck
+                }
+                else {
+                    offset -= Vector3.forward * NECK_OFFSET; // Move slightly forward to position on neck
+                }
+                setPlayerVisualsOffset(playerCharacter.transform, offset);
+            }
         }
 
         //Moves all the effects and the meshes that compose the player, doesn't move the Rigidbody
