@@ -101,7 +101,7 @@ namespace ValheimVRMod.Utilities
                 case "$item_bilebomb":
                     return EquipType.ThrowObject;
                 case "$item_tankard":
-                case "$item_tankard_dvergr":
+                case "item_dvergrtankard":
                 case "$item_tankard_anniversary":
                 case "$item_tankard_odin":
                     return EquipType.Tankard;
