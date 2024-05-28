@@ -5,6 +5,12 @@ namespace ValheimVRMod.Utilities
 {
     class ThirdPersonCameraUpdater : MonoBehaviour
     {
+        private readonly int VIEW_OBSTRUCTION_LAYER_MASK =
+            Physics.DefaultRaycastLayers &
+            ~(1 << LayerUtils.CHARACTER) &
+            ~(1 << LayerUtils.ITEM_LAYER) &
+            ~(1 << LayerUtils.CHARARCTER_TRIGGER) &
+            ~(1 << 31); // Smoke
         private Camera camera;
         private Camera vrCamera;
         private Vector3 velocity;
@@ -55,7 +61,6 @@ namespace ValheimVRMod.Utilities
             else
             {
                 viewPoint = transform.position;
-                viewPoint.y = targetPosition.y + 0.25f;
             }
 
             ClampViewPointToAvoidObstruction(targetPosition, maxDistance: 3, ref viewPoint);
@@ -73,7 +78,7 @@ namespace ValheimVRMod.Utilities
                     target,
                     viewPoint - target,
                     maxDistance,
-                    camera.cullingMask & Physics.DefaultRaycastLayers & ~(1 << LayerUtils.CHARACTER) & ~(1 << LayerUtils.ITEM_LAYER));
+                    camera.cullingMask & VIEW_OBSTRUCTION_LAYER_MASK);
 
             var distance = maxDistance;
             foreach (var hit in hits)
@@ -88,6 +93,8 @@ namespace ValheimVRMod.Utilities
                 {
                     continue;
                 }
+
+                LogUtils.LogWarning("Ob: " + hit.collider.name + " " + hit.collider.gameObject.layer);
 
                 distance = hit.distance;
             }
