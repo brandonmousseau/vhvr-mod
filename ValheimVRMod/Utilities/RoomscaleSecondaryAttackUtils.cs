@@ -24,8 +24,11 @@ namespace ValheimVRMod.Utilities
                     }
                     return !IsStab(handPhysicsEstimator) && IsStrongSwing(collisionPhysicsEstimator, handPhysicsEstimator);
                 case EquipType.Claws:
+                case EquipType.Cultivator:
                 case EquipType.Hammer:
+                case EquipType.Hoe:
                 case EquipType.None:
+                case EquipType.Tankard:
                     return IsHook(handPhysicsEstimator);
                 case EquipType.DualAxes:
                     return IsCleaving();
