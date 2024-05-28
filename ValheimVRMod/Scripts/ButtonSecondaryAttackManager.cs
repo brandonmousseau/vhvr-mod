@@ -195,7 +195,10 @@ namespace ValheimVRMod.Scripts
                 isSecondaryAvailable = false;
             }
             
-            if (secondaryAttack.m_attackAnimation == "knife_secondary" || secondaryAttack.m_attackAnimation == "dual_knives_secondary")
+            if (VHVRConfig.MovementSecondaryAttack()
+                && (secondaryAttack.m_attackAnimation == "knife_secondary" 
+                || secondaryAttack.m_attackAnimation == "dual_knives_secondary"
+                || secondaryAttack.m_attackAnimation == "dualaxes_secondary"))
             {
                 slashTrail.time = 1f;
                 isMovementSecondaryAttack = true;
@@ -504,7 +507,7 @@ namespace ValheimVRMod.Scripts
                 secondaryAttackTimerFull = -hitTime + secondaryAttackTimer;
 
                 //Secondary attack check target outlines and terrain hit
-                if (secondaryHitList.Count >= 1 && Player.m_localPlayer.HaveStamina(getStaminaSecondaryAtttackUsage() + 0.1f))
+                if (secondaryHitList.Count >= 1 && (Player.m_localPlayer.HaveStamina(getStaminaSecondaryAtttackUsage() + 0.1f)||isStaminaDrained))
                 {
                     var isTerrain = item.m_shared.m_spawnOnHitTerrain ? true : false;
                     foreach (var hit in secondaryHitList)
