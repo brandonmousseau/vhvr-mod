@@ -60,6 +60,7 @@ namespace ValheimVRMod.Utilities
             }
             else
             {
+                // Spectator mode
                 viewPoint = transform.position;
             }
 
