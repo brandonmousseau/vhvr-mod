@@ -29,9 +29,10 @@ namespace ValheimVRMod.Scripts
             underwaterPostProcessingProfile.colorGrading.m_Settings.channelMixer.red.x = -0.25f;
             underwaterPostProcessingProfile.colorGrading.m_Settings.channelMixer.green.x = -0.125f;
 
-            underwaterLightBlocker = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            underwaterLightBlocker = GameObject.CreatePrimitive(PrimitiveType.Cube);
             underwaterLightBlocker.layer = LayerUtils.WATERVOLUME_LAYER;
-            underwaterLightBlocker.transform.localScale = new Vector3(1024, 0.000001f, 1024);
+            // TODO: consider using a one-sided plane.
+            underwaterLightBlocker.transform.localScale = new Vector3(1024, 1024, 1024);
             underwaterLightBlocker.SetActive(false);
             var renderer = underwaterLightBlocker.GetComponent<MeshRenderer>();
             renderer.material = Instantiate(VRAssetManager.GetAsset<Material>("StandardClone"));
@@ -66,7 +67,7 @@ namespace ValheimVRMod.Scripts
                 underwaterLightBlocker.transform.position =
                     new Vector3(
                         transform.position.x,
-                        Mathf.Max(transform.position.y, Player.m_localPlayer.m_waterLevel),
+                        Player.m_localPlayer.m_waterLevel + 512,
                         transform.position.z);
             }
             else if (!shouldUseUnderWaterEffects && UsingUnderwaterEffects)

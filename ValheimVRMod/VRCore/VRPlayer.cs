@@ -661,6 +661,7 @@ namespace ValheimVRMod.VRCore
             vrCam.cullingMask &= ~(1 << LayerMask.NameToLayer("UI"));
             vrCam.cullingMask &= ~(1 << LayerUtils.getHandsLayer());
             vrCam.cullingMask &= ~(1 << LayerUtils.getWorldspaceUiLayer());
+            vrCam.cullingMask &= ~(1 << LayerUtils.CHARARCTER_TRIGGER);
             mainCamera.enabled = false;
             AudioListener mainCamListener = mainCamera.GetComponent<AudioListener>();
             if (mainCamListener != null)
@@ -725,8 +726,8 @@ namespace ValheimVRMod.VRCore
             _thirdPersonCamera = new GameObject(CameraUtils.FOLLOW_CAMERA).AddComponent<Camera>();
             _thirdPersonCamera.CopyFrom(vrCam);
             _thirdPersonCamera.depth = 4;
-            // Borrow the UI layer to render headgears which should be hidden for the VR camera.
-            _thirdPersonCamera.cullingMask |= (1 << LayerMask.NameToLayer("UI"));
+            // Borrow the character trigger layer to render headgears which should be hidden for the VR camera.
+            _thirdPersonCamera.cullingMask |= (1 << LayerUtils.CHARARCTER_TRIGGER);
             _thirdPersonCamera.transform.position = vrCam.transform.position;
             _thirdPersonCamera.stereoTargetEye = StereoTargetEyeMask.None;
             _thirdPersonCamera.gameObject.AddComponent<ThirdPersonCameraUpdater>();
@@ -1354,6 +1355,7 @@ namespace ValheimVRMod.VRCore
                 case EquipType.Hammer:
                 case EquipType.Knife:
                 case EquipType.None:
+                case EquipType.Tankard:
                     if (GesturedLocomotionManager.isInUse || SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.Any))
                     {
                         // Allow leaning when holding small weapons are bare-handed.
