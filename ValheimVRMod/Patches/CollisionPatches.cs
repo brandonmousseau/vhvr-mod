@@ -85,7 +85,7 @@ namespace ValheimVRMod.Patches {
                 ___m_attackMaskTerrain = LayerMask.GetMask("Default", "static_solid", "Default_small", "piece", "piece_nonsolid", "terrain", nameof (character), "character_net", "character_ghost", "hitbox", "character_noenv", "vehicle");
             }
             
-            if (!AttackTargetMeshCooldown.staminaDrained && !ButtonSecondaryAttackManager.isStaminaDrained) {
+            if (!(AttackTargetMeshCooldown.staminaDrained || ButtonSecondaryAttackManager.isStaminaDrained)) {
                 float staminaUsage = (float) __instance.GetAttackStamina();
                 if (staminaUsage > 0.0f && !character.HaveStamina(staminaUsage + 0.1f)) {
                     // FIXME: Mystlands probably changed this from StaminaBarNoStaminaFlash

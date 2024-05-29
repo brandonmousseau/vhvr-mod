@@ -432,7 +432,7 @@ namespace ValheimVRMod.Scripts
                         Player.m_localPlayer.ForceJump(direction.normalized * 10 * clampedRange + (Vector3.up * 8), true);
                         Player.m_localPlayer.UseStamina(getStaminaSecondaryAtttackUsage());
 
-                        var time = WeaponUtils.GetAttackDuration(secondaryAttack);
+                        var time = GetAttackDurationWithMovement(secondaryAttack);
                         movementCooldown = time;
                         isStaminaDrained = true;
                     }
@@ -502,7 +502,7 @@ namespace ValheimVRMod.Scripts
                     RaycastSecondaryAttack(tempSecondaryHitList);
                 }
 
-                var hitTime = WeaponUtils.GetAttackDuration(secondaryAttack);
+                var hitTime = GetAttackDurationWithMovement(secondaryAttack);
                 secondaryAttackTimer = Mathf.Min(hitTime / 2, 0.1f);
                 secondaryAttackTimerFull = -hitTime + secondaryAttackTimer;
 
@@ -585,7 +585,7 @@ namespace ValheimVRMod.Scripts
 
         private void ResetSecondaryAttack()
         {
-            var hitTime = WeaponUtils.GetAttackDuration(secondaryAttack);
+            var hitTime = GetAttackDurationWithMovement(secondaryAttack);
             secondaryAttackTimer = Mathf.Min(hitTime / 2, 0.3f);
             secondaryAttackTimerFull = -hitTime + secondaryAttackTimer;
             firstPos = Vector3.zero;
@@ -593,6 +593,15 @@ namespace ValheimVRMod.Scripts
             isSecondaryAttackStarted = false;
             slashTrail.emitting = false;
             lastpointList = new List<Vector3>();
+        }
+
+        private float GetAttackDurationWithMovement(Attack secondaryAttack)
+        {
+            if (isMovementSecondaryAttack && isMovementSecondaryAttackHold)
+            {
+                return 0.2f;
+            }
+            return WeaponUtils.GetAttackDuration(secondaryAttack);
         }
         private void RaycastSecondaryAttack(RaycastHit[] raycastList)
         {
