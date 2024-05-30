@@ -16,6 +16,7 @@ namespace ValheimVRMod.Scripts
         // This is intentionally made much smaller than the possible full length of the weapon so that
         // small wrist rotation will not acccidentally trigger an attack when holding a long weapon.
         private const float WEAPON_ANGULAR_WEIGHT_OFFSET = 0.125f;
+        private const string MOUTH_COLLIDER_NAME = "MouthCollider";
 
         private bool scriptActive;
         private GameObject colliderParent;
@@ -29,6 +30,7 @@ namespace ValheimVRMod.Scripts
         private float twoHandedMultitargetSwipeCountdown = 0;
         private float twoHandedMultitargetSwipeDuration;
         private GameObject debugColliderIndicator;
+        private bool isHoldingTankard { get { return isDominantHand && EquipScript.getRight() == EquipType.Tankard; } }
 
         public PhysicsEstimator physicsEstimator { get; private set; }
         public PhysicsEstimator mainHandPhysicsEstimator { get { return weaponWield.mainHand == VRPlayer.leftHand ? VRPlayer.leftHandPhysicsEstimator : VRPlayer.rightHandPhysicsEstimator; } }
@@ -64,29 +66,6 @@ namespace ValheimVRMod.Scripts
             if (debugColliderIndicator) Destroy(debugColliderIndicator);
         }
 
-        private bool CheckDrinking(Collider collider)
-        {
-            if (!isDominantHand || EquipScript.getRight() != EquipType.Tankard || collider.name != "MouthCollider" || !readyToDrink)
-            {
-                return false;
-            }
-
-            isDrinking = weaponWield.mainHand.transform.rotation.eulerAngles.x > 0 && weaponWield.mainHand.transform.rotation.eulerAngles.x < 90;
-            if (!isDrinking)
-            {
-                return false;
-            }
-            
-            readyToDrink = false;
-
-            if (!BhapticsTactsuit.suitDisabled)
-            {
-                BhapticsTactsuit.PlaybackHaptics("Drinking");
-            }
-
-            return true;
-        }
-
         private void OnTriggerEnter(Collider collider)
         {
             if (!isCollisionAllowed())
@@ -94,11 +73,13 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            if (isDominantHand &&
-                EquipScript.getRight() == EquipType.Tankard &&
-                collider.name == "MouthCollider")
+            if (isHoldingTankard)
             {
-                readyToDrink = true;
+                if (collider.name == MOUTH_COLLIDER_NAME)
+                {
+                    readyToDrink = true;
+                }
+                return;
             }
 
             MaybeAttackCollider(collider, requireStab: false);
@@ -111,7 +92,8 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            if (CheckDrinking(collider)) {
+            if (isHoldingTankard) {
+                CheckDrinking(collider);
                 return;
             }
 
@@ -135,15 +117,37 @@ namespace ValheimVRMod.Scripts
             MaybeStabCharacter(collider);
         }
 
+        private bool CheckDrinking(Collider collider)
+        {
+            if (!isHoldingTankard || collider.name != MOUTH_COLLIDER_NAME || !readyToDrink)
+            {
+                return false;
+            }
+
+            isDrinking = weaponWield.mainHand.transform.rotation.eulerAngles.x > 0 && weaponWield.mainHand.transform.rotation.eulerAngles.x < 90;
+            if (!isDrinking)
+            {
+                return false;
+            }
+
+            readyToDrink = false;
+
+            if (!BhapticsTactsuit.suitDisabled)
+            {
+                BhapticsTactsuit.PlaybackHaptics("Drinking");
+            }
+
+            return true;
+        }
+
         private void MaybeStabCharacter(Collider collider) {
 
-            var targetCharacter = collider.GetComponentInParent<Character>();
-            if (targetCharacter == null)
+            if (collider.gameObject.layer != LayerUtils.CHARACTER)
             {
                 return;
             }
 
-            var cooldown = targetCharacter.GetComponent<AttackTargetMeshCooldown>();
+            var cooldown = collider.GetComponent<AttackTargetMeshCooldown>();
             if (cooldown != null && cooldown.inCoolDown())
             {
                 return;
@@ -165,7 +169,7 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            if (!hasMomentum(out bool isStab))
+            if (!hasMomentum(out bool isStab, out float speed))
             {
                 return;
             }
@@ -202,7 +206,7 @@ namespace ValheimVRMod.Scripts
                 isSecondaryAttack = (isTwoHandedMultitargetSwipeActive && EquipScript.getRight() == EquipType.Polearms);
             }
 
-            if (!tryHitTarget(collider.gameObject, isSecondaryAttack))
+            if (!tryHitTarget(collider.gameObject, isSecondaryAttack, speed))
             {
                 return;
             }
@@ -212,7 +216,8 @@ namespace ValheimVRMod.Scripts
                 postSecondaryAttackCountdown = WeaponUtils.GetAttackDuration(secondaryAttack);
             }
 
-            Attack currentAttack = isSecondaryAttack ? secondaryAttack : attack;
+            // Swap battle axe primary and secondary attacks since its primary attack is more powerful.
+            Attack currentAttack = isSecondaryAttack ^ EquipScript.isTwoHandedAxeEquiped() ? secondaryAttack : attack;
 
             if (WeaponUtils.IsTwoHandedMultitargetSwipe(currentAttack) && twoHandedMultitargetSwipeCountdown <= 0)
             {
@@ -243,7 +248,7 @@ namespace ValheimVRMod.Scripts
             }
         }
 
-        private bool tryHitTarget(GameObject target, bool isSecondaryAttack)
+        private bool tryHitTarget(GameObject target, bool isSecondaryAttack, float speed)
         {
             // ignore certain Layers
             if (ignoreLayers.Contains(target.layer))
@@ -297,7 +302,7 @@ namespace ValheimVRMod.Scripts
                 return attackTargetMeshCooldown.tryTriggerSecondaryAttack(targetCooldownTime);
             }
 
-            return attackTargetMeshCooldown.tryTriggerPrimaryAttack(WeaponUtils.GetAttackDuration(attack));
+            return attackTargetMeshCooldown.tryTriggerPrimaryAttack(WeaponUtils.GetAttackDuration(attack), speed);
         }
 
         private void OnRenderObject()
@@ -423,10 +428,9 @@ namespace ValheimVRMod.Scripts
             }
         }
 
-        private bool hasMomentum(out bool isStab)
+        private bool hasMomentum(out bool isStab, out float speed)
         {
             Vector3 velocity;
-            float speed;
             if (weaponWield.twoHandedState == WeaponWield.TwoHandedState.SingleHanded)
             {
                 velocity =
@@ -434,6 +438,15 @@ namespace ValheimVRMod.Scripts
                         mainHandPhysicsEstimator.GetVelocity(),
                         mainHandPhysicsEstimator.GetAngularVelocity(),
                         LocalWeaponWield.weaponForward.normalized * WEAPON_ANGULAR_WEIGHT_OFFSET);
+
+                if (EquipScript.isTwoHandedAxeEquiped() ||
+                    EquipScript.isTwoHandedClubEquiped() ||
+                    EquipScript.getRight() == EquipType.Polearms)
+                {
+                    // Penalize momentum when wielding certain two-handed weapons with only one hand.
+                    velocity *= 0.67f;
+                }
+
                 speed = velocity.magnitude;
             }
             else

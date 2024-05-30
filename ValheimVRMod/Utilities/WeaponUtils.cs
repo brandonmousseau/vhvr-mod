@@ -332,6 +332,12 @@ namespace ValheimVRMod.Utilities
                         0,  0, 0,
                         0.45f,  0.45f, 0.45f
                 )},
+                {
+                    EquipType.Torch, WeaponColData.create(
+                        0.55f,  0.15f, 0.05f,
+                        0,  0, 0,
+                        0.45f,  0.45f, 0.45f
+                )},
             };
 
         private static readonly Dictionary<EquipType, WeaponColData> DUAL_WIELD_BLOCKING_COLLIDERS =
@@ -367,6 +373,8 @@ namespace ValheimVRMod.Utilities
         {
             { "atgeir_attack", 0.81f },
             { "battleaxe_attack", 0.87f },
+            { "dualaxes", 0.4f }, // TODO: Find an accurate value for dual axes
+            { "dualaxes_secondary", 1.9f },
             { "dual_knives", 0.43f },
             { "greatsword", 1.13f },
             { "knife_stab", 0.49f },
@@ -434,7 +442,11 @@ namespace ValheimVRMod.Utilities
 
         public static WeaponColData GetDualWieldLeftHandColliderData(ItemDrop.ItemData item)
         {
-            var equipType = EquipScript.getEquippedItem(item);
+            return GetDualWieldLeftHandColliderData(EquipScript.getEquippedItem(item));
+        }
+
+        public static WeaponColData GetDualWieldLeftHandColliderData(EquipType equipType)
+        {
             if (!DUAL_WIELD_COLLIDERS.ContainsKey(equipType))
             {
                 equipType = EquipType.None;

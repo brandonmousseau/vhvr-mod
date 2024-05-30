@@ -33,15 +33,18 @@ namespace ValheimVRMod.Patches {
             }
 
             MeshFilter meshFilter = ___m_rightItemInstance.GetComponentInChildren<MeshFilter>();
-            if (meshFilter == null)
-            {
-                return;
-            }
-
             var vrPlayerSync = player.GetComponent<VRPlayerSync>();
             
-            if (vrPlayerSync != null && meshFilter != null) {
-                if (vrPlayerSync.IsLeftHanded()) {
+            if (vrPlayerSync != null) {
+                if (meshFilter == null)  {
+                    // For non-local player, it is hard to know whether claw is being used.
+                    if (player != Player.m_localPlayer || EquipScript.getRight() != EquipType.Claws) {
+                        vrPlayerSync.currentDualWieldWeapon =
+                            ___m_rightItemInstance.GetComponentInChildren<SkinnedMeshRenderer>()?.gameObject;
+                    }
+                    vrPlayerSync.currentLeftWeapon = vrPlayerSync.currentRightWeapon = null;
+                }
+                else if (vrPlayerSync.IsLeftHanded()) {
                     vrPlayerSync.currentLeftWeapon = meshFilter.gameObject;
                     vrPlayerSync.currentLeftWeapon.name = ___m_rightItem;    
                 }
@@ -50,8 +53,13 @@ namespace ValheimVRMod.Patches {
                     vrPlayerSync.currentRightWeapon = meshFilter.gameObject;
                     vrPlayerSync.currentRightWeapon.name = ___m_rightItem;
                 }
-                
+
                 VrikCreator.resetVrikHandTransform(player);   
+            }
+
+            if (meshFilter == null)
+            {
+                return;
             }
 
             if (Player.m_localPlayer != player)
@@ -143,14 +151,9 @@ namespace ValheimVRMod.Patches {
             }
 
             MeshFilter meshFilter = ___m_leftItemInstance.GetComponentInChildren<MeshFilter>();
-            if (meshFilter == null)
-            {
-                return;
-            }
-
             var vrPlayerSync = player.GetComponent<VRPlayerSync>();
 
-            if (vrPlayerSync != null && vrPlayerSync.hasReceivedData) {
+            if (vrPlayerSync != null && meshFilter != null && vrPlayerSync.hasReceivedData) {
                 if (vrPlayerSync.IsLeftHanded()) {
                     vrPlayerSync.currentRightWeapon = meshFilter.gameObject;    
                 }
@@ -160,6 +163,11 @@ namespace ValheimVRMod.Patches {
                 }
                 
                 VrikCreator.resetVrikHandTransform(player);
+            }
+
+            if (meshFilter == null)
+            {
+                return;
             }
 
             if (Player.m_localPlayer != player)
@@ -391,10 +399,10 @@ namespace ValheimVRMod.Patches {
                         {
                             originalLayers.Add(renderer.gameObject, renderer.gameObject.layer);
                         }
-                        if (VHVRConfig.UseFollowCameraOnFlatscreen())
+                        if (VHVRConfig.UseThirdPersonCameraOnFlatscreen())
                         {
                             // Borrow the UI layer to hide the equipment from the VR camera but keep them shown to the follow camera.
-                            renderer.gameObject.layer = LayerMask.NameToLayer("UI");
+                            renderer.gameObject.layer = LayerUtils.CHARARCTER_TRIGGER;
                         }
                         else
                         {

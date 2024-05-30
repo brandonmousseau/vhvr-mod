@@ -1,6 +1,7 @@
 using UnityEngine;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
+using Valve.VR;
 
 namespace ValheimVRMod.Scripts
 {
@@ -8,7 +9,7 @@ namespace ValheimVRMod.Scripts
     {
         public class DefaultGeometryProvider : WeaponWield.TwoHandedGeometryProvider
         {
-            private float distanceBetweenGripAndRearEnd;
+            protected float distanceBetweenGripAndRearEnd { get; private set; }
 
             public DefaultGeometryProvider(float distanceBetweenGripAndRearEnd)
             {
@@ -115,7 +116,7 @@ namespace ValheimVRMod.Scripts
 
             public override Vector3 GetDesiredSingleHandedPosition(WeaponWield weaponWield)
             {
-                if (InverseSpear())
+                if (InverseHold() && IsSpear())
                 {
                     return weaponWield.originalPosition - 0.5f * (weaponWield.originalRotation * Quaternion.Inverse(weaponWield.offsetFromPointingDir) * Vector3.forward);
                 }
@@ -124,7 +125,7 @@ namespace ValheimVRMod.Scripts
 
             public override Quaternion GetDesiredSingleHandedRotation(WeaponWield weaponWield)
             {
-                return InverseSpear() ?
+                return InverseHold() ?
                     weaponWield.originalRotation * Quaternion.Euler(180, 0, 0) :
                     weaponWield.originalRotation;
             }
@@ -153,12 +154,8 @@ namespace ValheimVRMod.Scripts
                 }
             }
 
-            protected virtual bool IsSpear()
-            {
-                return InverseSpear();
-            }
- 
-            protected abstract bool InverseSpear();
+            protected abstract bool IsSpear();
+            protected abstract bool InverseHold();
         }
 
         public class LocalSpearGeometryProvider : InversibleGeometryProvider
@@ -170,9 +167,9 @@ namespace ValheimVRMod.Scripts
                 return true;
             }
 
-            protected override bool InverseSpear()
+            protected override bool InverseHold()
             {
-                return VHVRConfig.SpearInverseWield() && !ThrowableManager.isAiming;
+                return VHVRConfig.SpearInverseWield() && !ThrowableManager.isAiming && !ThrowableManager.preAimingInTwoStagedThrow;
             }
 
             public override Quaternion GetDesiredSingleHandedRotation(WeaponWield weaponWield)
@@ -211,6 +208,23 @@ namespace ValheimVRMod.Scripts
                 return weaponWield.getAimingRotation(
                       Vector3.RotateTowards(staticPointing, pointing, Mathf.Max(weight * 8 - 1, 0), Mathf.Infinity),
                       GetPreferredTwoHandedWeaponUp(weaponWield));
+            }
+        }
+
+        public class LocalKnifeGeometryProvider : InversibleGeometryProvider
+        {
+            public static bool shouldInverseHold { get { return SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource); } }
+
+            public LocalKnifeGeometryProvider(float distanceBetweenGripAndRearEnd) : base(distanceBetweenGripAndRearEnd) { }
+
+            protected override bool IsSpear()
+            {
+                return false;
+            }
+
+            protected override bool InverseHold()
+            {
+                return shouldInverseHold;
             }
         }
 
@@ -288,16 +302,18 @@ namespace ValheimVRMod.Scripts
 
             protected override bool IsSpear()
             {
-                // Since the item name is null for remote play, it is hard to conclusively infer whether the weapon is a spear.
-                // If it is inversed currently, we can confidently infer that it is a spear and should treat it like one.
-                // If it is not currnetly inversed, we cannot be sure but its orientation should be like a regular weapon
-                // so it is okay to treat it as a non-spear.
-                return InverseSpear();
+                // Since the item name is null for remote player's weapons,
+                // it is hard to conclusively infer whether the weapon is a spear.
+                // If it is inversed currently and its handle length is too long to be of a knife,
+                // we can confidently infer that it is a spear and should treat it like one.
+                // If it is not currently inversed, we cannot be conclusive. But if it is not currently inversed,
+                // we can treat it as a non-spear without causing any visual difference.
+                return distanceBetweenGripAndRearEnd > 0.5f && InverseHold();
             }
 
-            protected override bool InverseSpear()
+            protected override bool InverseHold()
             {
-                return twoHandedStateProvider.HoldingInversedSpear();
+                return twoHandedStateProvider.InverseHold();
             }
         }
     }

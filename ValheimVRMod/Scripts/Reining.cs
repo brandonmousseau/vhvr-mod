@@ -124,7 +124,7 @@ namespace ValheimVRMod.Scripts
                 (targetSpeed == Sadle.Speed.Stop ?  -Vector3.forward :  Vector3.forward);
 
             sadle.ApplyControlls(
-                stickOutput, (Vector3)targetDirection, targetSpeed == Sadle.Speed.Run, autoRun: false, targetSpeed == Sadle.Speed.Turn);
+                stickOutput, (Vector3)targetDirection, targetSpeed == Sadle.Speed.Run, autoRun: false, turnInPlace);
         }
 
         public void SetReinAttach()

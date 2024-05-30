@@ -106,6 +106,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<int> snapTurnAngle;
         private static ConfigEntry<bool> smoothSnapTurn;
         private static ConfigEntry<float> smoothSnapSpeed;
+        private static ConfigEntry<bool> charaterMovesWithHeadset;
         private static ConfigEntry<bool> roomScaleSneaking;
         private static ConfigEntry<float> roomScaleSneakHeight;
         private static ConfigEntry<bool> exclusiveRoomScaleSneak;
@@ -113,6 +114,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> gesturedJumpPreparationHeight;
         private static ConfigEntry<float> gesturedJumpMinSpeed;
         private static ConfigEntry<float> swingSpeedRequirement;
+        private static ConfigEntry<bool> momentumScalesAttackDamage;
         private static ConfigEntry<float> altPieceRotationDelay;
         private static ConfigEntry<bool> runIsToggled;
         private static ConfigEntry<bool> viewTurnWithMountedAnimal;
@@ -312,9 +314,9 @@ namespace ValheimVRMod.Utilities
                                      new ConfigDescription("The VR mirror mode.Legal values: OpenVR, Right, Left, Follow, None. Note: OpenVR is" +
                                      " required if you want to see the Overlay-type GUI in the mirror image. However, I've found that OpenVR" +
                                      " mirror mode causes some issue that requires SteamVR to be restarted after closing the game, so unless you" +
-                                     " need it for some specific reason, I recommend using another mirror mode or None. Follow mode renders content" +
-                                     " from a follow camera which can cause lag.",
-                                     new AcceptableValueList<string>(new string[] { "Right", "Left", "OpenVR", "None", "Follow" })));
+                                     " need it for some specific reason, I recommend using another mirror mode or None. Follow mode and spectator mode" +
+                                     " render content from a third person camera which can cause lag.",
+                                     new AcceptableValueList<string>(new string[] { "Right", "Left", "OpenVR", "None", "Follow", "Spectator" })));
             playerHeightAdjust = config.Bind("General",
                               "PlayerHeightAdjust",
                               0f,
@@ -415,7 +417,7 @@ namespace ValheimVRMod.Utilities
             uiPanelResolutionCompat = config.Bind("UI",
                                       "UIPanelResolutionCompatibility",
                                       false,
-                                      new ConfigDescription("Set UI resolution panel display compatibility mode, in case some mod have some mouse offset problem, use this setting, set panel resolution below your monitor resolution, need restart to update"));
+                                      new ConfigDescription("Set UI resolution panel display compatibility mode, in case some mod have some mouse offset problem(Jewelcrafting mod for example), use this setting, set panel resolution below your monitor resolution, need restart to main menu to update"));
             uiPanelDistance = config.Bind("UI",
                                       "UIPanelDistance",
                                       3f,
@@ -627,6 +629,10 @@ namespace ValheimVRMod.Utilities
                                           10f,
                                           new ConfigDescription("This will affect the speed that the smooth snap turns occur at.",
                                               new AcceptableValueRange<float>(5, 30)));
+            charaterMovesWithHeadset = config.Bind("Controls",
+                                          "CharaterMovesWithHeadset",
+                                          true,
+                                          "When set to true, roomscale movement of the headset controls character locomotion; when set to false, movement of the headset makes the character lean.");
             roomScaleSneaking = config.Bind("Controls",
                                           "RoomScaleSneaking",
                                           false,
@@ -674,6 +680,12 @@ namespace ValheimVRMod.Utilities
                     new ConfigDescription(
                         "The speed requirement in m/s for weapon swinging for an attack to be triggered. if set to 0, single touch will already trigger hit",
                         new AcceptableValueRange<float>(0, 8)));
+            momentumScalesAttackDamage =
+                config.Bind(
+                    "Controls",
+                    "MomentumScalesAttackDamage",
+                    false,
+                    "Allow attacking during cooldown (except AOE and secondary attacks) but reduce its damage by momentum deficiency and remaining cooldown time.");
             altPieceRotationDelay = config.Bind("Controls",
                                                 "AltPieceRotationDelay",
                                                 1f,
@@ -749,13 +761,12 @@ namespace ValheimVRMod.Utilities
                                   "None",
                                   new ConfigDescription(
                                       "Whether the glowing effect of the bow (if any in the Vanilla game) should be enabled. Disable it if you find the glow affects you aim negatively.",
-                                      new AcceptableValueList<string>(new string[] {"None", "LightWithoutParticles", "Full"})));
+                                      new AcceptableValueList<string>(new string[] { "None", "LightWithoutParticles", "Full" })));
             enemyRenderDistance = config.Bind("Graphics",
                                         "EnemyRenderDistance",
                                         8f,
                                         new ConfigDescription("Increase the mobs render distance, does not apply to tamed creature, only raise mob render distance, not lowering them (default eg. deer render distance is around 2, neck is around 10) (also limited by default ingame draw distance option)",
                                         new AcceptableValueRange<float>(1f, 50f)));
-
         }
 
         private static void InitializeMotionControlSettings() {
@@ -952,6 +963,16 @@ namespace ValheimVRMod.Utilities
         public static bool UseFollowCameraOnFlatscreen()
         {
             return mirrorMode.Value == "Follow";
+        }
+
+        public static bool UseSpectatorCameraOnFlatscreen()
+        {
+            return mirrorMode.Value == "Spectator";
+        }
+
+        public static bool UseThirdPersonCameraOnFlatscreen()
+        {
+            return UseFollowCameraOnFlatscreen() || UseSpectatorCameraOnFlatscreen();
         }
 
         public static float PlayerHeightAdjust()
@@ -1276,6 +1297,16 @@ namespace ValheimVRMod.Utilities
         public static float SwingSpeedRequirement()
         {
             return swingSpeedRequirement.Value;
+        }
+
+        public static bool MomentumScalesAttackDamage()
+        {
+            return momentumScalesAttackDamage.Value;
+        }
+
+        public static bool CharaterMovesWithHeadset()
+        {
+            return charaterMovesWithHeadset.Value;
         }
 
         public static bool RoomScaleSneakEnabled() {

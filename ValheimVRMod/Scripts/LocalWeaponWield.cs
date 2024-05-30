@@ -45,7 +45,6 @@ namespace ValheimVRMod.Scripts
         private Transform rearHandConnector { get { return twoHandedState == TwoHandedState.LeftHandBehind ? VrikCreator.localPlayerLeftHandConnector : VrikCreator.localPlayerRightHandConnector; } }
         private Transform lastRenderedTransform;
 
-        private bool knifeReverseHold;
         private float shieldSize = 1f;
 
         protected virtual void Awake()
@@ -73,12 +72,6 @@ namespace ValheimVRMod.Scripts
             bool wasTwoHanded = (LocalPlayerTwoHandedState != TwoHandedState.SingleHanded);
             weaponForward = base.UpdateTwoHandedWield();
             LocalPlayerTwoHandedState = twoHandedState;
-
-            if (attackAnimation == "knife_stab")
-            {
-                KnifeWield();
-                weaponForward = GetWeaponPointingDirection();
-            }
 
             if (!redDotRenderer)
             {
@@ -122,7 +115,7 @@ namespace ValheimVRMod.Scripts
                 shieldSize = 1f;
             }
 
-            if (!EquipScript.isSpearEquipped() && VHVRConfig.TwoHandedWithShield())
+            if (!EquipScript.isSpearEquipped() && EquipScript.getRight() != EquipType.Knife && VHVRConfig.TwoHandedWithShield())
             {
                 ShieldBlock.instance?.ScaleShieldSize(shieldSize);
             }
@@ -178,10 +171,6 @@ namespace ValheimVRMod.Scripts
                     break;
             }
 
-            if (attackAnimation == "knife_stab") {
-                return TwoHandedState.SingleHanded;
-            }
-            
             if (nonDominantHandHasWeapon() && EquipScript.getLeft() != EquipType.Crossbow)
             {
                 return TwoHandedState.SingleHanded;
@@ -202,12 +191,16 @@ namespace ValheimVRMod.Scripts
 
             // Enter two-handed wield as needed.
             Vector3 rightHandToLeftHand = getHandCenter(GetLeftHandTransform()) - getHandCenter(GetRightHandTransform());
+            if (Vector3.Project(rightHandToLeftHand, GetWeaponPointingDirection()).magnitude > weaponLength * 0.5f)
+            {
+                return TwoHandedState.SingleHanded;
+            }
             float wieldingAngle = Vector3.Angle(rightHandToLeftHand, GetWeaponPointingDirection());
             if (wieldingAngle < 60)
             {
                 return TwoHandedState.RightHandBehind;
             }
-            else if (wieldingAngle > 60f)
+            else if (wieldingAngle > 120f)
             {
                 return TwoHandedState.LeftHandBehind;
             }
@@ -221,21 +214,6 @@ namespace ValheimVRMod.Scripts
             Vector3 desiredRearHandForward = Vector3.Project(rearHandTransform.forward, Quaternion.AngleAxis(10, rearHandTransform.right) * weaponPointingDir);
             frontHandConnector.rotation = Quaternion.LookRotation(desiredFrontHandForward, frontHandTransform.up);
             rearHandConnector.rotation = Quaternion.LookRotation(desiredRearHandForward, rearHandTransform.up);
-        }
-
-        private void KnifeWield()
-        {
-            if (SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource))
-            {
-                // Reverse grip
-                transform.rotation = originalRotation * Quaternion.AngleAxis(180, Vector3.right);
-                knifeReverseHold = true;
-            }
-            else if (knifeReverseHold)
-            {
-                transform.rotation = originalRotation;
-                knifeReverseHold = false;
-            }
         }
 
         public static bool isCurrentlyTwoHanded()

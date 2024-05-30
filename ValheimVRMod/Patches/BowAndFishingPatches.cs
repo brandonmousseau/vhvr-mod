@@ -117,7 +117,23 @@ namespace ValheimVRMod.Patches {
 
             return true;
         }
+    }
 
+    [HarmonyPatch(typeof(Attack), nameof(Attack.Start))]
+    class DestoryBoltAfterCrossbowAttackPatch
+    {
+        static void Postfix(Attack __instance, bool __result)
+        {
+            if (__result &&
+                __instance.m_character == Player.m_localPlayer &&
+                VHVRConfig.UseVrControls() &&
+                EquipScript.getLeft() == EquipType.Crossbow &&
+                CrossbowMorphManager.instance != null &&
+                !CrossbowMorphManager.instance.shouldAutoReload)
+            {
+                CrossbowMorphManager.instance.destroyBolt();
+            }
+        }
     }
 
     /**
@@ -194,34 +210,7 @@ namespace ValheimVRMod.Patches {
             }
         }
     }
-    
-    /**
-     * Remove attack animation by speeding it up. It only applies to attack moves,
-     * because the original method switches it back to normal for other animations
-     */
-    [HarmonyPatch(typeof(CharacterAnimEvent), nameof(CharacterAnimEvent.CustomFixedUpdate))]
 
-    class PatchFixedUpdate {
-
-        public static float lastSpeedUp = 1f;
-        static void Prefix(Character ___m_character, ref Animator ___m_animator) {
-            
-            if (___m_character != Player.m_localPlayer || !VHVRConfig.UseVrControls()) {
-                return;
-            }
-            if (!EquipScript.shouldSkipAttackAnimation() || ___m_character.IsStaggering() || PlayerCustomizaton.IsBarberGuiVisible())
-            {
-                ___m_animator.speed = 1f;
-                return;
-            }
-            if(___m_animator.speed != 1 && ___m_animator.speed != 1000)
-            {
-                lastSpeedUp = ___m_animator.speed;
-            }
-            ___m_animator.speed = 1000f;
-        }
-    }  
-    
     /**
     * remove character facing and inaccuracy for projectile stuff
     */
