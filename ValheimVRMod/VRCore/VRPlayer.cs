@@ -914,6 +914,7 @@ namespace ValheimVRMod.VRCore
             {
                 pelvisTarget.localRotation = getPelvisRotationRelativeToPlayer(playerTransform);
                 vrikRef.solver.spine.maintainPelvisPosition = attachedToPlayer ? 0 : 1;
+                vrikRef.solver.spine.pelvisRotationWeight = attachedToPlayer ? 1 : 0; 
             }
         }
 
