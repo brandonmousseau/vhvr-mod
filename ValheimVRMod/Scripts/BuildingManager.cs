@@ -1395,14 +1395,11 @@ namespace ValheimVRMod.Scripts
                                 Player.m_localPlayer.m_placementGhost.transform.position = transformCopy.position;
                             }
                         }
-                        else
+                        else if (copyRotationTimer >= 8)
                         {
-                            if (copyRotationTimer >= 8)
-                            {
-                                Piece copyPiece = transformCopy.GetComponentInParent(typeof(Piece)) as Piece;
-                                Player.m_localPlayer.SetSelectedPiece(copyPiece);
-                                justRotatedAnalogLongPress = true;
-                            }
+                            Piece copyPiece = transformCopy.GetComponentInParent(typeof(Piece)) as Piece;
+                            Player.m_localPlayer.SetSelectedPiece(copyPiece);
+                            justRotatedAnalogLongPress = true;
                         }
                     }
                 }
