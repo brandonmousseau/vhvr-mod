@@ -150,6 +150,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<string> crossbowSaggitalRotationSource;
         private static ConfigEntry<bool> crossbowManualReload;
         private static ConfigEntry<string> blockingType;
+        private static ConfigEntry<bool> movementSecondaryAttack;
 
 #if DEBUG
         private static ConfigEntry<float> DebugPosX;
@@ -864,7 +865,10 @@ namespace ValheimVRMod.Utilities
                                         "Grab button - Block by aiming and pressing grab button, parry by timing the grab button. " +
                                         "Realistic - Block precisely where the enemy hits, swing while blocking to parry",
                                         new AcceptableValueList<string>(new string[] { "Gesture", "GrabButton", "Realistic" })));
-
+            movementSecondaryAttack = config.Bind("Motion Control",
+                                                    "KnifeMovementSecondaryAttack",
+                                                    false,
+                                                    "When enabled, Weapon that have movement secondary attack (Knife) button secondary attack will have 2 step, first trigger-release will make you leap, the second one works like usual button secondary attack. Re-equip after changing setting to update");
 
             advancedBuildMode = config.Bind("Motion Control",
                                                    "AdvancedBuildMode",
@@ -1424,6 +1428,11 @@ namespace ValheimVRMod.Utilities
         public static string BlockingType()
         {
             return blockingType.Value;
+        }
+
+        public static bool MovementSecondaryAttack()
+        {
+            return movementSecondaryAttack.Value;
         }
 
         public static bool UseLegacyHud()
