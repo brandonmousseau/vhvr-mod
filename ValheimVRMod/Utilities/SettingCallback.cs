@@ -11,12 +11,35 @@ namespace ValheimVRMod.Utilities {
         private static SteamVR_Input_Sources inputHand;
         private static SteamVR_Action_Boolean inputAction;
         private static UnityAction<Vector3, Quaternion> action;
+        private static UnityAction<Vector3> action3Axis;
         private static Transform target;
         private static Transform sourceHand;
         private static GameObject notification;
 
         public static bool configRunning;
-        
+
+
+        public static bool CameraLocked(UnityAction<Vector3> pAction)
+        {
+            action3Axis = pAction;
+            return createSettingObj3Axis(VHVRConfig.CameraLockedPos(), "Camera HUD", CameraUtils.getCamera(CameraUtils.VR_UI_CAMERA).transform);
+        }
+        public static bool CameraLockedDefault(UnityAction<Vector3> pAction)
+        {
+            pAction(VHVRConfig.DefaultCameraLockedPos());
+            return true;
+        }
+
+        public static bool CameraLocked2(UnityAction<Vector3> pAction)
+        {
+            action3Axis = pAction;
+            return createSettingObj3Axis(VHVRConfig.CameraLocked2Pos(), "Camera HUD 2", CameraUtils.getCamera(CameraUtils.VR_UI_CAMERA).transform);
+        }
+        public static bool CameraLocked2Default(UnityAction<Vector3> pAction)
+        {
+            pAction(VHVRConfig.DefaultCameraLocked2Pos());
+            return true;
+        }
         /**
          * called by ConfigSettings.createTransformButton()
          */
@@ -48,7 +71,6 @@ namespace ValheimVRMod.Utilities {
             pAction(VHVRConfig.DefaultRightWristQuickBarPos(), VHVRConfig.DefaultRightWristQuickBarRot());
             return true;
         }
-
 
         /**
          * called by ConfigSettings.createTransformButton()
@@ -102,6 +124,33 @@ namespace ValheimVRMod.Utilities {
             return true;
         }
 
+        private static bool createSettingObj3Axis(Vector3 pos, string panel, Transform targetParent)
+        {
+            if (configRunning)
+            {
+                LogUtils.LogWarning("Trying to set HUD when config is not running.");
+                return false;
+            }
+            if (!target)
+            {
+                LogUtils.LogWarning("Target does not exist");
+            }
+            inputAction = SteamVR_Actions.valheim_Use;
+            inputHand = SteamVR_Input_Sources.RightHand;
+            sourceHand = VRPlayer.rightHand.transform;
+            target = targetParent;
+
+            VHVRConfig.config.SaveOnConfigSet = false;
+            var settingObj = new GameObject();
+            settingObj.AddComponent<SettingCallback>();
+            settingObj.transform.SetParent(targetParent, false);
+            settingObj.transform.localPosition = pos;
+            configRunning = true;
+            showNotification(panel);
+
+            return true;
+        }
+
         private static void showNotification(string panel) {
             
             var rect = new Vector2(400, 70);
@@ -131,6 +180,8 @@ namespace ValheimVRMod.Utilities {
                 configRunning = false;
                 Destroy(notification);
                 Destroy(gameObject);
+                action = null;
+                action3Axis = null;
                 return;
             }
             
@@ -143,7 +194,10 @@ namespace ValheimVRMod.Utilities {
             }
             
             transform.SetParent(target);
-            action(transform.localPosition, transform.localRotation);
+            if(action != null)
+                action(transform.localPosition, transform.localRotation);
+            if(action3Axis != null)
+                action3Axis(transform.localPosition);
             transform.SetParent(sourceHand);
         }
     }

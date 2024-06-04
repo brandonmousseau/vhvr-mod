@@ -69,8 +69,8 @@ namespace ValheimVRMod.Utilities
 
         // VR Hud Settings
         private static ConfigEntry<bool> useLegacyHud;
-        private static ConfigEntry<float> cameraHudX;
-        private static ConfigEntry<float> cameraHudY;
+        private static ConfigEntry<Vector3> cameraLockedPos;
+        private static ConfigEntry<Vector3> cameraLocked2Pos;
         private static ConfigEntry<float> cameraHudScale;
         private static ConfigEntry<Vector3> leftWristPos;
         private static ConfigEntry<Quaternion> leftWristRot;
@@ -165,7 +165,7 @@ namespace ValheimVRMod.Utilities
         private static Dictionary<int, bool> commandLineOverrides = new Dictionary<int, bool>();
 
         // Common values
-        private static readonly string[] k_HudAlignmentValues = { "LeftWrist", "RightWrist", "CameraLocked", "Legacy" };
+        private static readonly string[] k_HudAlignmentValues = { "LeftWrist", "RightWrist", "CameraLocked", "CameraLocked2", "Legacy" };
 
         private const string k_arrowRestCenter = "Center";
         private const string k_arrowRestAsiatic = "Asiatic";
@@ -219,6 +219,9 @@ namespace ValheimVRMod.Utilities
             rightWristQuickBarRot.Value = (Quaternion)rightWristQuickBarRot.DefaultValue;
             leftWristQuickBarPos.Value = (Vector3)leftWristQuickBarPos.DefaultValue;
             leftWristQuickBarRot.Value = (Quaternion)leftWristQuickBarRot.DefaultValue;
+
+            cameraLockedPos.Value = (Vector3)cameraLockedPos.DefaultValue;
+            cameraLocked2Pos.Value = (Vector3)cameraLocked2Pos.DefaultValue;
         }
 
         private static void InitializeImmutableSettings()
@@ -508,16 +511,14 @@ namespace ValheimVRMod.Utilities
                                             "UseLegacyHud",
                                             false,
                                             "Disables custom VR HUD features and moves HUD elements to main UI panel.");
-            cameraHudX = config.Bind("VRHUD",
-                                            "CameraHudX",
-                                            0f,
-                                            new ConfigDescription("Offset to reposition VR health panel for Camera Position.",
-                                                new AcceptableValueRange<float>(-0.001f, 0.001f)));
-            cameraHudY = config.Bind("VRHUD",
-                                            "CameraHudY",
-                                            0f,
-                                            new ConfigDescription("Offset to reposition VR health panel for Camera Position.",
-                                                new AcceptableValueRange<float>(-0.001f, 0.001f)));
+            cameraLockedPos = config.Bind("VRHUD",
+                                           "CameraLocked",
+                                           new Vector3(-0.33f, 0.4f, 1),
+                                           "Position of CameraHUD .");
+            cameraLocked2Pos = config.Bind("VRHUD",
+                                           "CameraLocked2",
+                                           new Vector3(0, 0, 1.5f),
+                                           "Position of CameraHUD 2.");
             cameraHudScale = config.Bind("VRHUD",
                                             "CameraHudScale",
                                             1f,
@@ -1440,14 +1441,21 @@ namespace ValheimVRMod.Utilities
             return useLegacyHud.Value;
         }
 
-        public static float CameraHudX()
+        public static Vector3 CameraLockedPos()
         {
-            return cameraHudX.Value;
+            return cameraLockedPos.Value;
         }
-
-        public static float CameraHudY()
+        public static Vector3 DefaultCameraLockedPos()
         {
-            return cameraHudY.Value;
+            return (Vector3)cameraLockedPos.DefaultValue;
+        }
+        public static Vector3 CameraLocked2Pos()
+        {
+            return cameraLocked2Pos.Value;
+        }
+        public static Vector3 DefaultCameraLocked2Pos()
+        {
+            return (Vector3)cameraLocked2Pos.DefaultValue;
         }
 
         public static float CameraHudScale()

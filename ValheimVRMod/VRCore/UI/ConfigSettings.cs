@@ -527,11 +527,13 @@ namespace ValheimVRMod.VRCore.UI {
         }
 
         private static void createTransformButton(KeyValuePair<string, ConfigEntryBase> configValue, Transform parent, Vector2 pos, string sectionName) {
-            
+
+            var is3Axis = false;
             ConfigEntry<Quaternion> confRot;
             if (!VHVRConfig.config.TryGetEntry(sectionName, configValue.Key + "Rot", out confRot)) {
-                Debug.LogError(configValue.Key + "Rot not found. Please make sure a Quaternion with this name exists in section " + sectionName);
-                return;
+                //Debug.LogError(configValue.Key + "Rot not found. Please make sure a Quaternion with this name exists in section " + sectionName);
+                //return;
+                is3Axis = true;
             }
             var transformButton = GameObject.Instantiate(transformButtonPrefab, parent);
             transformButton.GetComponent<RectTransform>().anchoredPosition = pos + Vector2.left * 10;
@@ -557,7 +559,24 @@ namespace ValheimVRMod.VRCore.UI {
                     LogUtils.LogError("Cannot find method SettingCallback." + configValue.Key);
                     return;
                 }
-                if (!(bool)method.Invoke(
+
+                if (is3Axis)
+                {
+                    if (!(bool)method.Invoke(
+                    null,
+                    new UnityAction<Vector3>[] {
+                        (mPos) => {
+                            configValue.Value.SetSerializedValue(String.Format(CultureInfo.InvariantCulture,
+                                "{{\"x\":{0}, \"y\":{1}, \"z\":{2}}}", mPos.x, mPos.y, mPos.z));
+                        }
+                    }))
+                    {
+                        return;
+                    }
+                }
+                else
+                {
+                    if (!(bool)method.Invoke(
                     null,
                     new UnityAction<Vector3, Quaternion>[] {
                         (mPos, mRot) => {
@@ -567,8 +586,9 @@ namespace ValheimVRMod.VRCore.UI {
                                 "{{\"x\":{0}, \"y\":{1}, \"z\":{2}, \"w\":{3}}}", mRot.x, mRot.y, mRot.z, mRot.w));
                         }
                     }))
-                {
-                    return;
+                    {
+                        return;
+                    }
                 }
                 doSave = false;
                 GameObject.Destroy(settings);
@@ -594,7 +614,22 @@ namespace ValheimVRMod.VRCore.UI {
                     LogUtils.LogError("Cannot find method SettingCallback." + configValue.Key + "Default");
                     return;
                 }
-                if (!(bool)method.Invoke(null,
+                if (is3Axis)
+                {
+                    if (!(bool)method.Invoke(null,
+                    new UnityAction<Vector3>[] {
+                        (mPos) => {
+                            configValue.Value.SetSerializedValue(String.Format(CultureInfo.InvariantCulture,
+                                "{{\"x\":{0}, \"y\":{1}, \"z\":{2}}}", mPos.x, mPos.y, mPos.z));
+                        }
+                    }))
+                    {
+                        return;
+                    }
+                }
+                else
+                {
+                    if (!(bool)method.Invoke(null,
                     new UnityAction<Vector3, Quaternion>[] {
                         (mPos, mRot) => {
                             configValue.Value.SetSerializedValue(String.Format(CultureInfo.InvariantCulture,
@@ -603,8 +638,9 @@ namespace ValheimVRMod.VRCore.UI {
                                 "{{\"x\":{0}, \"y\":{1}, \"z\":{2}, \"w\":{3}}}", mRot.x, mRot.y, mRot.z, mRot.w));
                         }
                     }))
-                {
-                    return;
+                    {
+                        return;
+                    }
                 }
             });
         }
