@@ -18,6 +18,7 @@ namespace ValheimVRMod.Utilities
         private Vector3 velocity;
         private MeshRenderer cameraDot;
         private float cameraSpeed;
+        private float targetCameraSpeed;
 
         private Vector3 targetCurrentPosition;
         private Vector3 targetVelocity;
@@ -43,7 +44,7 @@ namespace ValheimVRMod.Utilities
                 var panel = VRCore.UI.VRGUI.getUiPanel();
                 if (panel)
                 {
-                    transform.position = panel.transform.position - panel.transform.forward * 2;
+                    transform.position = panel.transform.position - panel.transform.forward * 1.5f;
                     transform.LookAt(panel.transform.position);
                 }
                 else
@@ -68,6 +69,7 @@ namespace ValheimVRMod.Utilities
             Vector3 viewTarget = targetPosition;
             var uiPanel = VRCore.UI.VRGUI.getUiPanel();
             cameraSpeed = 0.15f;
+            targetCameraSpeed = 0.2f;
             if (PlayerCustomizaton.IsBarberGuiVisible())
             {
                 viewPoint = vrCamera.transform.position;
@@ -75,12 +77,12 @@ namespace ValheimVRMod.Utilities
             }
             else if (VHVRConfig.UseFollowCameraOnFlatscreen())
             {
-                //When sleeping
-                if (Player.m_localPlayer.IsSleeping())
+                //When sleeping and teleporting
+                if (Player.m_localPlayer.IsSleeping()||Player.m_localPlayer.IsTeleporting())
                 {
                     viewTarget = uiPanel.transform.position;
 
-                    viewPoint = uiPanel.transform.position - uiPanel.transform.forward * 2;
+                    viewPoint = uiPanel.transform.position - uiPanel.transform.forward * 1.5f;
                 }
                 //When opening UI
                 else if (VRPlayer.IsClickableGuiOpen)
@@ -93,6 +95,7 @@ namespace ValheimVRMod.Utilities
                     - vrCamera.transform.forward * 0.3f;
 
                     cameraSpeed = 0.01f;
+                    targetCameraSpeed = 0.01f;
                 }
                 // When drawing bow / throwing 
                 else if (Player.m_localPlayer.IsDrawingBow() || ThrowableManager.isAiming)
@@ -145,7 +148,7 @@ namespace ValheimVRMod.Utilities
                     viewTarget = vrCamera.transform.position + vrCamera.transform.forward * 1.5f;
 
                     viewPoint = targetPosition +
-                      Vector3.up * 2
+                      Vector3.up * 3
                     - vrCamera.transform.forward * 3.5f;
                 }
             }
@@ -159,7 +162,7 @@ namespace ValheimVRMod.Utilities
             ClampViewPointToAvoidObstruction(targetPosition, maxDistance: 3, ref viewPoint);
 
             transform.position = Vector3.SmoothDamp(transform.position, viewPoint, ref velocity, cameraSpeed);
-            targetCurrentPosition = Vector3.SmoothDamp(targetCurrentPosition, viewTarget, ref targetVelocity, cameraSpeed);
+            targetCurrentPosition = Vector3.SmoothDamp(targetCurrentPosition, viewTarget, ref targetVelocity, targetCameraSpeed);
             transform.LookAt(targetCurrentPosition);
 
             UpdateCameraDot();
