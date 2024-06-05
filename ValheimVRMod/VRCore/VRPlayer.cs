@@ -728,7 +728,8 @@ namespace ValheimVRMod.VRCore
             _thirdPersonCamera.depth = 4;
             // Borrow the character trigger layer to render headgears which should be hidden for the VR camera.
             _thirdPersonCamera.cullingMask |= (1 << LayerUtils.CHARARCTER_TRIGGER);
-            _thirdPersonCamera.cullingMask = ~0;
+            _thirdPersonCamera.cullingMask |= (1 << LayerUtils.getUiPanelLayer());
+            _thirdPersonCamera.cullingMask |= (1 << LayerUtils.getWorldspaceUiLayer());
             _thirdPersonCamera.transform.position = vrCam.transform.position;
             _thirdPersonCamera.stereoTargetEye = StereoTargetEyeMask.None;
             _thirdPersonCamera.gameObject.AddComponent<ThirdPersonCameraUpdater>();
