@@ -77,79 +77,63 @@ namespace ValheimVRMod.Utilities
             }
             else if (VHVRConfig.UseFollowCameraOnFlatscreen())
             {
-                //When sleeping and teleporting
-                if (Player.m_localPlayer.IsSleeping()||Player.m_localPlayer.IsTeleporting())
+                if (Player.m_localPlayer.IsSleeping() || Player.m_localPlayer.IsTeleporting())
                 {
                     viewTarget = uiPanel.transform.position;
-
                     viewPoint = uiPanel.transform.position - uiPanel.transform.forward * 1.5f;
                 }
-                //When opening UI
                 else if (VRPlayer.IsClickableGuiOpen)
                 {
                     viewTarget = uiPanel.transform.position;
-
-                    viewPoint = targetPosition +
-                    -uiPanel.transform.right * 0.5f
-                    + Vector3.up * 0.3f
-                    - vrCamera.transform.forward * 0.3f;
-
+                    viewPoint = targetPosition - uiPanel.transform.right * 0.5f + Vector3.up * 0.3f - vrCamera.transform.forward * 0.3f;
                     cameraSpeed = 0.01f;
                     targetCameraSpeed = 0.01f;
                 }
-                // When drawing bow / throwing 
-                else if (Player.m_localPlayer.IsDrawingBow() || ThrowableManager.isAiming)
+                else if (Player.m_localPlayer.IsDrawingBow() || ThrowableManager.isAiming || CrossbowManager.isAiming)
                 {
-
-                    viewTarget = vrCamera.transform.position 
-                        - Vector3.up * 1f 
-                        + vrCamera.transform.forward * 6f;
-
-                    viewPoint = targetPosition +
-                    -Player.m_localPlayer.transform.right * 0.7f
-                    + Vector3.up * 0.3f
-                    - vrCamera.transform.forward * 1.5f;
-
+                    viewTarget = vrCamera.transform.position - Vector3.up + vrCamera.transform.forward * 6;
+                    viewPoint =
+                        targetPosition + Vector3.up * 0.3f - vrCamera.transform.forward * 1.5f +
+                        Player.m_localPlayer.transform.right * (VHVRConfig.LeftHanded() ? 0.7f : -0.7f);
                     cameraSpeed = 0.1f;
                 }
-                // When using Ranged Weapon
                 else if (BowLocalManager.instance || CrossbowMorphManager.instance)
                 {
-                    viewTarget = vrCamera.transform.position
-                        - Vector3.up * 1f 
-                        + vrCamera.transform.forward * 3f;
+                    viewTarget = vrCamera.transform.position - Vector3.up + vrCamera.transform.forward * 3;
 
-                    viewPoint = targetPosition +
-                    -Player.m_localPlayer.transform.right * 1f
-                    + Vector3.up * 0.3f
-                    - vrCamera.transform.forward * 2f;
+                    viewPoint =
+                        targetPosition - Player.m_localPlayer.transform.right + Vector3.up * 0.3f - vrCamera.transform.forward * 2f;
 
                     cameraSpeed = 0.1f;
                 }
-                //When holding both grab, usually happens when trying to hit monster & two-handing
-                else if (LocalWeaponWield.isCurrentlyTwoHanded()||
-                    (!Player.m_localPlayer.InPlaceMode() 
-                    && SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand) 
+                // When holding both grab, usually happens when trying to hit monster & two-handing
+                else if (LocalWeaponWield.isCurrentlyTwoHanded() ||
+                    (!Player.m_localPlayer.InPlaceMode()
+                    && SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand)
                     && SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand)))
                 {
-                    viewTarget = vrCamera.transform.position
-                        - Vector3.up * 1f
-                        + vrCamera.transform.forward * 3f;
+                    var lateralOffset = Player.m_localPlayer.transform.right * 3;
+                    switch (LocalWeaponWield.LocalPlayerTwoHandedState)
+                    {
+                        case WeaponWield.TwoHandedState.LeftHandBehind:
+                            lateralOffset *= -1;
+                            break;
+                        case WeaponWield.TwoHandedState.SingleHanded:
+                            if (VHVRConfig.LeftHanded())
+                            {
+                                lateralOffset *= -1;
+                            }
+                            break;
+                    }
 
-                    viewPoint = targetPosition +
-                      Player.m_localPlayer.transform.right * 3f
-                    + Vector3.up * 2f
-                    - vrCamera.transform.forward * 3f;
-
+                    viewTarget = vrCamera.transform.position - Vector3.up + vrCamera.transform.forward * 3;
+                    viewPoint = targetPosition + lateralOffset + Vector3.up * 2f - vrCamera.transform.forward * 3f;
                     cameraSpeed = 0.1f;
                 }
                 else
                 {
                     viewTarget = vrCamera.transform.position + vrCamera.transform.forward * 1.5f;
-
-                    viewPoint = targetPosition +
-                      Vector3.up * 3
-                    - vrCamera.transform.forward * 3.5f;
+                    viewPoint = targetPosition + Vector3.up * 3 - vrCamera.transform.forward * 3.5f;
                 }
             }
             else
