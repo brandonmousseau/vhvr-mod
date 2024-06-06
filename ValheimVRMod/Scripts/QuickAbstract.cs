@@ -70,6 +70,8 @@ namespace ValheimVRMod.Scripts
             public string itemName { get; private set; }
             public delegate bool QuickMenuItemCallback();
 
+            private ItemDrop.ItemData item;
+
             private QuickMenuItemCallback callback;
             private Sprite sprite
             {
@@ -87,8 +89,9 @@ namespace ValheimVRMod.Scripts
 
             public void useAsInventoryItemAndRefreshColor(Inventory inventory, ItemDrop.ItemData item)
             {
-                if (item.GetIcon().name != itemName)
+                if (this.item != item)
                 {
+                    this.item = item;
                     itemName = item.GetIcon().name;
                     sprite = item.GetIcon();
                     callback = delegate ()
@@ -111,6 +114,7 @@ namespace ValheimVRMod.Scripts
 
             public void useAsQuickAction(string itemName, Sprite sprite, QuickMenuItemCallback callback)
             {
+                this.item = null;
                 this.itemName = itemName;
                 this.sprite = sprite;
                 this.callback = callback;
