@@ -187,11 +187,11 @@ namespace ValheimVRMod.Utilities
             {
                 cameraDot = GameObject.CreatePrimitive(PrimitiveType.Cylinder).GetComponent<MeshRenderer>();
                 cameraDot.transform.parent = transform;
-                cameraDot.transform.localPosition = Vector3.zero;
+                cameraDot.transform.localPosition = -0.01f * Vector3.forward;
                 cameraDot.transform.localRotation = Quaternion.Euler(90, 0, 0);
                 cameraDot.material = Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
                 cameraDot.material.color = Color.red;
-                cameraDot.gameObject.layer = LayerUtils.getUiPanelLayer();
+                cameraDot.gameObject.layer = LayerUtils.getWorldspaceUiLayer();
                 Destroy(cameraDot.GetComponent<Collider>());
             }
 
