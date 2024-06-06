@@ -499,8 +499,9 @@ namespace ValheimVRMod.Utilities
                 weaponLength = longestExtrusion;
                 LogUtils.LogWarning("Weapon mesh is off hand, weapon direction and length estimation might be inaccurate.");
             }
-            handleAllowanceBehindGrip = weaponLength - longestExtrusion;
-            return weaponMeshFilter.transform.TransformVector(weaponPointingDirection * weaponLength);
+            var result = weaponMeshFilter.transform.TransformVector(weaponPointingDirection * weaponLength);
+            handleAllowanceBehindGrip = result.magnitude * (1 - longestExtrusion / weaponLength);
+            return result;
         }
 
         // Whether the straight line (t -> p + t * v) intersects with the given bounds.
