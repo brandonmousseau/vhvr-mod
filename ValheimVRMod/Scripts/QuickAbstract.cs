@@ -320,7 +320,7 @@ namespace ValheimVRMod.Scripts
                     extraElements[i].gameObject.SetActive(false);
                     continue;
                 }
-                var center = Mathf.Min(extraElementCount,4);
+                var center = Mathf.Min(extraElementCount, 4);
                 var row = 0f;
                 var column = i;
                 if (i >= 4)
