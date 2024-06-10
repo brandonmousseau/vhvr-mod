@@ -14,7 +14,7 @@ namespace ValheimVRMod.Scripts
 
         private float elementDistance = 0.1f;
         protected const int MAX_ELEMENTS = 11;
-        protected const int MAX_EXTRA_ELEMENTS = 5;
+        protected const int MAX_EXTRA_ELEMENTS = 8;
 
         private Color standard = new Color(0.2f, 0.2f, 0.2f, 0.5f);
         private Color hovered = new Color(0.5f, 0.5f, 0.5f, 0.5f);
@@ -320,9 +320,17 @@ namespace ValheimVRMod.Scripts
                     extraElements[i].gameObject.SetActive(false);
                     continue;
                 }
-                var extraOffset = (i * 0.05f) - (extraElementCount / 2 * 0.05f) + (extraElementCount % 2 == 0 ? 0.025f : 0);
-                var position = new Vector2((float)extraOffset, 0);
-
+                var center = Mathf.Min(extraElementCount, 4);
+                var row = 0f;
+                var column = i;
+                if (i >= 4)
+                {
+                    row = -0.05f;
+                    center = extraElementCount - 4;
+                    column = i - 4;
+                }
+                var extraOffset = (column * 0.05f) - (center / 2 * 0.05f) + (center % 2 == 0 ? 0.025f : 0);
+                var position = new Vector2((float)extraOffset, row);
                 extraElements[i].gameObject.SetActive(true);
                 extraElements[i].transform.localPosition = position;
             }
@@ -505,10 +513,10 @@ namespace ValheimVRMod.Scripts
             {
                 return;
             }
-            for (int i = 0; i < 4; i++)
+            for (int i = 0; i < VHVRConfig.QuickBarQuantity(); i++)
             {
 
-                ItemDrop.ItemData item = inventory?.GetItemAt(i + 4, 1);
+                ItemDrop.ItemData item = inventory?.GetItemAt(i + (8- VHVRConfig.QuickBarQuantity()), 1);
 
                 if (item == null)
                 {
