@@ -90,6 +90,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<Vector3> leftWristQuickBarPos;
         private static ConfigEntry<Quaternion> leftWristQuickBarRot;
         private static ConfigEntry<bool> quickActionOnLeftHand;
+        private static ConfigEntry<int> quickBarQuantity;
 
         // Controls Settings
         private static ConfigEntry<bool> useLookLocomotion;
@@ -598,6 +599,11 @@ namespace ValheimVRMod.Utilities
                                         "QuickActionOnLeftHand",
                                         false,
                                         "Switch hand placement of Quick Action and Quick Switch Hotbar");
+            quickBarQuantity = config.Bind("VRHUD",
+                                        "QuickBarQuantity",
+                                        4,
+                                        new ConfigDescription("Number of Quick switch bar that registered, count is from the right to left, but still sorted from left to right",
+                                                new AcceptableValueRange<int>(0, 8)));
         }
 
         private static void InitializeControlsSettings()
@@ -1593,6 +1599,15 @@ namespace ValheimVRMod.Utilities
         public static bool QuickActionOnLeftHand()
         {
             return quickActionOnLeftHand.Value;
+        }
+
+        public static int QuickBarQuantity()
+        {
+            if(quickBarQuantity.Value <0 || quickBarQuantity.Value > 8)
+            {
+                return (int)quickBarQuantity.DefaultValue;
+            }
+            return quickBarQuantity.Value;
         }
 
         public static bool LockGuiWhileMenuOpen()
