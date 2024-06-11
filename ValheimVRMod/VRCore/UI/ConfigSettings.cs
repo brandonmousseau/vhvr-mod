@@ -531,8 +531,7 @@ namespace ValheimVRMod.VRCore.UI {
             var is3Axis = false;
             ConfigEntry<Quaternion> confRot;
             if (!VHVRConfig.config.TryGetEntry(sectionName, configValue.Key + "Rot", out confRot)) {
-                //Debug.LogError(configValue.Key + "Rot not found. Please make sure a Quaternion with this name exists in section " + sectionName);
-                //return;
+                Debug.LogError(configValue.Key + "Rot not found (in " + sectionName + " section), will only read Vector3 Axis");
                 is3Axis = true;
             }
             var transformButton = GameObject.Instantiate(transformButtonPrefab, parent);
