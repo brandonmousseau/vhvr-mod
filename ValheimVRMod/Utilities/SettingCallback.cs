@@ -99,17 +99,20 @@ namespace ValheimVRMod.Utilities {
                 return false;
             }
 
+            string handness = "";
             if (isRightWrist) {
                 inputAction = SteamVR_Actions.valheim_UseLeft;
                 inputHand = SteamVR_Input_Sources.LeftHand;
                 target = VRPlayer.rightHand.transform;
                 sourceHand = VRPlayer.leftHand.transform;
+                handness = "Left Hand";
             }
             else {
                 inputAction = SteamVR_Actions.valheim_Use;
                 inputHand = SteamVR_Input_Sources.RightHand;
                 target = VRPlayer.leftHand.transform;
                 sourceHand = VRPlayer.rightHand.transform;
+                handness = "Right Hand";
             }
             
             VHVRConfig.config.SaveOnConfigSet = false;
@@ -119,7 +122,7 @@ namespace ValheimVRMod.Utilities {
             settingObj.transform.localPosition = pos;
             settingObj.transform.localRotation = rot;
             configRunning = true;
-            showNotification(panel);
+            showNotification("Configuring " + panel + ". Hold " + handness + " Front Trigger to position panel, Press Jump to save.");
             
             return true;
         }
@@ -146,12 +149,12 @@ namespace ValheimVRMod.Utilities {
             settingObj.transform.SetParent(targetParent, false);
             settingObj.transform.localPosition = pos;
             configRunning = true;
-            showNotification(panel);
+            showNotification("Configuring " + panel + ". Hold Right Hand Front Trigger to position panel, Press Jump to save.");
 
             return true;
         }
 
-        private static void showNotification(string panel) {
+        private static void showNotification(string textContent) {
             
             var rect = new Vector2(400, 70);
             notification = new GameObject();
@@ -162,7 +165,7 @@ namespace ValheimVRMod.Utilities {
             image.rectTransform.sizeDelta = rect;
 
             var text = new GameObject().AddComponent<Text>();
-            text.text = "Configuring " + panel + ". Hold Front Trigger of other Hand to position panel, Press Jump to save.";
+            text.text = textContent;
             text.fontSize = 20;
             text.color = Color.red;
             text.font =  Resources.GetBuiltinResource(typeof(Font), "Arial.ttf") as Font;
