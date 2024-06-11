@@ -90,6 +90,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<Vector3> leftWristQuickBarPos;
         private static ConfigEntry<Quaternion> leftWristQuickBarRot;
         private static ConfigEntry<bool> quickActionOnLeftHand;
+        private static ConfigEntry<int> quickBarQuantity;
 
         // Controls Settings
         private static ConfigEntry<bool> useLookLocomotion;
@@ -150,6 +151,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<string> crossbowSaggitalRotationSource;
         private static ConfigEntry<bool> crossbowManualReload;
         private static ConfigEntry<string> blockingType;
+        private static ConfigEntry<bool> movementSecondaryAttack;
 
 #if DEBUG
         private static ConfigEntry<float> DebugPosX;
@@ -596,6 +598,11 @@ namespace ValheimVRMod.Utilities
                                         "QuickActionOnLeftHand",
                                         false,
                                         "Switch hand placement of Quick Action and Quick Switch Hotbar");
+            quickBarQuantity = config.Bind("VRHUD",
+                                        "QuickBarQuantity",
+                                        4,
+                                        new ConfigDescription("Number of Quick switch bar that registered, count is from the right to left, but still sorted from left to right",
+                                                new AcceptableValueRange<int>(0, 8)));
         }
 
         private static void InitializeControlsSettings()
@@ -864,7 +871,10 @@ namespace ValheimVRMod.Utilities
                                         "Grab button - Block by aiming and pressing grab button, parry by timing the grab button. " +
                                         "Realistic - Block precisely where the enemy hits, swing while blocking to parry",
                                         new AcceptableValueList<string>(new string[] { "Gesture", "GrabButton", "Realistic" })));
-
+            movementSecondaryAttack = config.Bind("Motion Control",
+                                                    "KnifeMovementSecondaryAttack",
+                                                    false,
+                                                    "When enabled, Weapon that have movement secondary attack (Knife) button secondary attack will have 2 step, first trigger-release will make you leap, the second one works like usual button secondary attack. Re-equip after changing setting to update");
 
             advancedBuildMode = config.Bind("Motion Control",
                                                    "AdvancedBuildMode",
@@ -1426,6 +1436,11 @@ namespace ValheimVRMod.Utilities
             return blockingType.Value;
         }
 
+        public static bool MovementSecondaryAttack()
+        {
+            return movementSecondaryAttack.Value;
+        }
+
         public static bool UseLegacyHud()
         {
             return useLegacyHud.Value;
@@ -1576,6 +1591,15 @@ namespace ValheimVRMod.Utilities
         public static bool QuickActionOnLeftHand()
         {
             return quickActionOnLeftHand.Value;
+        }
+
+        public static int QuickBarQuantity()
+        {
+            if(quickBarQuantity.Value <0 || quickBarQuantity.Value > 8)
+            {
+                return (int)quickBarQuantity.DefaultValue;
+            }
+            return quickBarQuantity.Value;
         }
 
         public static bool LockGuiWhileMenuOpen()

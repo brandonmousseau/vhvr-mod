@@ -78,7 +78,7 @@ namespace ValheimVRMod.Scripts {
             //Avoid akward movements
             vrik.solver.spine.maintainPelvisPosition = 0f;
             vrik.solver.spine.pelvisPositionWeight = 0f;
-            vrik.solver.spine.pelvisRotationWeight = 1f;
+            vrik.solver.spine.pelvisRotationWeight = 0f;
             vrik.solver.spine.bodyPosStiffness = 0f;
             vrik.solver.spine.bodyRotStiffness = 0f;
             //Force head to allow more vertical headlook

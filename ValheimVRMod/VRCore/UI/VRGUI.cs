@@ -66,7 +66,7 @@ namespace ValheimVRMod.VRCore.UI
         private Camera _uiPanelCamera;
         private Camera _guiCamera;
         private Canvas _guiCanvas;
-        private GameObject _uiPanel;
+        private static GameObject _uiPanel;
         private GameObject _uiPanelTransformLocker;
         private RenderTexture _guiTexture;
         private RenderTexture _overlayTexture;
@@ -662,6 +662,11 @@ namespace ValheimVRMod.VRCore.UI
             _guiCamera.farClipPlane = 5f;
             _guiCamera.nearClipPlane = 0.1f;
             _guiCamera.enabled = true;
+        }
+
+        public static GameObject getUiPanel()
+        {
+            return _uiPanel;
         }
 
         class VRGUI_InputModule : StandaloneInputModule
