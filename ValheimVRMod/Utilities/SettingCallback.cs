@@ -149,7 +149,7 @@ namespace ValheimVRMod.Utilities {
             settingObj.transform.SetParent(targetParent, false);
             settingObj.transform.localPosition = pos;
             configRunning = true;
-            showNotification("Configuring " + panel + ". Hold Right Hand Front Trigger to position panel, Press Jump to save.");
+            showNotification("Configuring " + panel + ". Hold Right Hand Front Trigger to position panel, Press Jump to save.\nMove hand forward/backward to scale it up/down, move up/down/left/right to move it around the head camera");
 
             return true;
         }
@@ -162,17 +162,17 @@ namespace ValheimVRMod.Utilities {
             Color black = Color.black;
             image.color = black;
             image.transform.SetParent(Hud.instance.m_rootObject.transform, false);
-            image.rectTransform.sizeDelta = rect;
 
             var text = new GameObject().AddComponent<Text>();
             text.text = textContent;
             text.fontSize = 20;
             text.color = Color.red;
             text.font =  Resources.GetBuiltinResource(typeof(Font), "Arial.ttf") as Font;
-            text.gameObject.AddComponent<ContentSizeFitter>();
+            var fit = text.gameObject.AddComponent<ContentSizeFitter>();
+            fit.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
             text.transform.SetParent(notification.transform, false);
             text.rectTransform.sizeDelta = rect;
-
+            image.rectTransform.sizeDelta = new Vector2(400, text.preferredHeight);
         }
         
         private void OnRenderObject() {
