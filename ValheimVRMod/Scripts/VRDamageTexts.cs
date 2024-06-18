@@ -79,7 +79,7 @@ namespace ValheimVRMod.Scripts
                     Vector3 randomPos = new Vector3(UnityEngine.Random.Range(-1f, 1f), UnityEngine.Random.Range(-1f, 1f), 0) / 100;
                     float hudDistance = 1f;
                     float hudVerticalOffset = -0.5f;
-                    damageTextObject.transform.localPosition = new Vector3(VHVRConfig.CameraHudX() * 1000, hudVerticalOffset + VHVRConfig.CameraHudY() * 1000, hudDistance) + Vector3.right * 0.05f + Vector3.up * -0.1f + randomPos;
+                    damageTextObject.transform.localPosition = new Vector3(VHVRConfig.CameraLockedPos().x, hudVerticalOffset + VHVRConfig.CameraLockedPos().y, hudDistance) + Vector3.right * 0.05f + Vector3.up * -0.1f + randomPos;
                     damageTextObject.transform.LookAt(vrCam.transform, Vector3.up);
                     damageTextObject.transform.Rotate(0, 180, 0);
                 }
