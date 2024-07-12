@@ -61,14 +61,14 @@ namespace ValheimVRMod.Patches {
             ref int ___m_attackMaskTerrain,
             ref bool __result
         ) {
-            // if character is not local player, use original Start method
-            if (character != Player.m_localPlayer || !VHVRConfig.UseVrControls() 
-                                                  || __instance.m_attackType.ToString() == "Projectile" 
-                                                  || EquipScript.getRight() == EquipType.Tankard) {
+            if (character != Player.m_localPlayer || // if character is not local player, use original Start method
+                !VHVRConfig.UseVrControls() ||
+                __instance.m_attackType.ToString() == "Projectile" ||
+                __instance.m_attackType == Attack.AttackType.None) {
                 return true;
             }
 
-            ___m_character = character;
+           ___m_character = character;
             ___m_animEvent = animEvent;
             ___m_weapon = weapon;
             attackHeight = ___m_attackHeight;
@@ -85,7 +85,7 @@ namespace ValheimVRMod.Patches {
                 ___m_attackMaskTerrain = LayerMask.GetMask("Default", "static_solid", "Default_small", "piece", "piece_nonsolid", "terrain", nameof (character), "character_net", "character_ghost", "hitbox", "character_noenv", "vehicle");
             }
             
-            if (!AttackTargetMeshCooldown.staminaDrained) {
+            if (!(AttackTargetMeshCooldown.staminaDrained || ButtonSecondaryAttackManager.isStaminaDrained)) {
                 float staminaUsage = (float) __instance.GetAttackStamina();
                 if (staminaUsage > 0.0f && !character.HaveStamina(staminaUsage + 0.1f)) {
                     // FIXME: Mystlands probably changed this from StaminaBarNoStaminaFlash
@@ -97,11 +97,12 @@ namespace ValheimVRMod.Patches {
                     ___m_attackOffset = attackOffset;
                     return false;
                 }
-            
+
                 character.UseStamina(staminaUsage);
                 AttackTargetMeshCooldown.staminaDrained = true;
             }
 
+            ButtonSecondaryAttackManager.isStaminaDrained = false;
             Collider col = StaticObjects.lastHitCollider;
             Vector3 pos = StaticObjects.lastHitPoint;
             Vector3 dir = StaticObjects.lastHitDir;

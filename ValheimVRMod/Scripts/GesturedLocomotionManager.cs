@@ -415,8 +415,8 @@ namespace ValheimVRMod.Scripts
         {
             private const float MIN_HAND_HEIGHT_RELATIVE_TO_EYE = -0.125f;
             private const float MIN_HEAD_HORIZONTAL_SPEED = 1f;
-            private const float MAX_HEAD_VERTICAL_ACCELERATION = -8f;
-            private const float MAX_HEIGHT = 0.9f;
+            private const float MAX_HEAD_VERTICAL_VELOCITY = -1.5f;
+            private const float MAX_HEIGHT = 0.8f;
             private const float MIN_HAND_SPEED = 1.25f;
             private const float MIN_TILT = 15f;
 
@@ -466,8 +466,8 @@ namespace ValheimVRMod.Scripts
 
                 if (!isCrouching)
                 {
-                    var verticalAcceleration = Vector3.Dot(VRPlayer.headPhysicsEstimator.GetAcceleration(), upDirection.Value);
-                    if (verticalAcceleration > MAX_HEAD_VERTICAL_ACCELERATION)
+                    var verticalSpeed = Vector3.Dot(VRPlayer.headPhysicsEstimator.GetVelocity(), upDirection.Value);
+                    if (verticalSpeed > MAX_HEAD_VERTICAL_VELOCITY)
                     {
                         return Vector3.zero;
                     }

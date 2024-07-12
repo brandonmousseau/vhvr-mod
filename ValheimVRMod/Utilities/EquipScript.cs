@@ -9,7 +9,7 @@ namespace ValheimVRMod.Utilities
     public enum EquipType
     {
         None,
-        Fishing, Cultivator, Hammer, Hoe,
+        Fishing, Cultivator, Hammer, Hoe, Torch,
         Bow, Spear, SpearChitin, ThrowObject,
         Shield, Tankard, Claws, Magic, Crossbow
         ,
@@ -79,7 +79,6 @@ namespace ValheimVRMod.Utilities
             //Right Equipment List
             switch (item?.m_shared.m_name)
             {
-
                 //tool
                 case "$item_fishingrod":
                     return EquipType.Fishing;
@@ -102,7 +101,7 @@ namespace ValheimVRMod.Utilities
                 case "$item_bilebomb":
                     return EquipType.ThrowObject;
                 case "$item_tankard":
-                case "$item_tankard_dvergr":
+                case "$item_dvergrtankard":
                 case "$item_tankard_anniversary":
                 case "$item_tankard_odin":
                     return EquipType.Tankard;
@@ -126,6 +125,12 @@ namespace ValheimVRMod.Utilities
                 case "Rune of Chain Lightning":
                 case "Rune of Glacial Spike":
                     return EquipType.RuneSkyheim;
+            }
+
+            switch (item?.m_shared.m_itemType)
+            {
+                case ItemDrop.ItemData.ItemType.Torch:
+                    return EquipType.Torch;
             }
 
             //compatibility setting 
@@ -171,19 +176,17 @@ namespace ValheimVRMod.Utilities
 
         public static EquipType getLeftEquipType(ItemDrop.ItemData item)
         {
-
-
             //LeftEquipment List 
             switch (item?.m_shared.m_itemType)
             {
                 case ItemDrop.ItemData.ItemType.Bow:
-
                     if (item?.m_shared.m_ammoType == "$ammo_bolts")
                         return EquipType.Crossbow;
-
                     return EquipType.Bow;
                 case ItemDrop.ItemData.ItemType.Shield:
                     return EquipType.Shield;
+                case ItemDrop.ItemData.ItemType.Torch:
+                    return EquipType.Torch;
             }
 
             //compatibility setting 

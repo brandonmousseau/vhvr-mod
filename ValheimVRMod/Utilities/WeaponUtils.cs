@@ -332,6 +332,12 @@ namespace ValheimVRMod.Utilities
                         0,  0, 0,
                         0.45f,  0.45f, 0.45f
                 )},
+                {
+                    EquipType.Torch, WeaponColData.create(
+                        0.55f,  0.15f, 0.05f,
+                        0,  0, 0,
+                        0.45f,  0.45f, 0.45f
+                )},
             };
 
         private static readonly Dictionary<EquipType, WeaponColData> DUAL_WIELD_BLOCKING_COLLIDERS =
@@ -436,7 +442,11 @@ namespace ValheimVRMod.Utilities
 
         public static WeaponColData GetDualWieldLeftHandColliderData(ItemDrop.ItemData item)
         {
-            var equipType = EquipScript.getEquippedItem(item);
+            return GetDualWieldLeftHandColliderData(EquipScript.getEquippedItem(item));
+        }
+
+        public static WeaponColData GetDualWieldLeftHandColliderData(EquipType equipType)
+        {
             if (!DUAL_WIELD_COLLIDERS.ContainsKey(equipType))
             {
                 equipType = EquipType.None;
@@ -489,8 +499,9 @@ namespace ValheimVRMod.Utilities
                 weaponLength = longestExtrusion;
                 LogUtils.LogWarning("Weapon mesh is off hand, weapon direction and length estimation might be inaccurate.");
             }
-            handleAllowanceBehindGrip = weaponLength - longestExtrusion;
-            return weaponMeshFilter.transform.TransformVector(weaponPointingDirection * weaponLength);
+            var result = weaponMeshFilter.transform.TransformVector(weaponPointingDirection * weaponLength);
+            handleAllowanceBehindGrip = result.magnitude * (1 - longestExtrusion / weaponLength);
+            return result;
         }
 
         // Whether the straight line (t -> p + t * v) intersects with the given bounds.

@@ -399,10 +399,10 @@ namespace ValheimVRMod.Patches {
                         {
                             originalLayers.Add(renderer.gameObject, renderer.gameObject.layer);
                         }
-                        if (VHVRConfig.UseFollowCameraOnFlatscreen())
+                        if (VHVRConfig.UseThirdPersonCameraOnFlatscreen())
                         {
                             // Borrow the UI layer to hide the equipment from the VR camera but keep them shown to the follow camera.
-                            renderer.gameObject.layer = LayerMask.NameToLayer("UI");
+                            renderer.gameObject.layer = LayerUtils.CHARARCTER_TRIGGER;
                         }
                         else
                         {

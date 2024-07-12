@@ -16,6 +16,7 @@ namespace ValheimVRMod.Scripts
         // This is intentionally made much smaller than the possible full length of the weapon so that
         // small wrist rotation will not acccidentally trigger an attack when holding a long weapon.
         private const float WEAPON_ANGULAR_WEIGHT_OFFSET = 0.125f;
+        private const string MOUTH_COLLIDER_NAME = "MouthCollider";
 
         private bool scriptActive;
         private GameObject colliderParent;
@@ -29,6 +30,7 @@ namespace ValheimVRMod.Scripts
         private float twoHandedMultitargetSwipeCountdown = 0;
         private float twoHandedMultitargetSwipeDuration;
         private GameObject debugColliderIndicator;
+        private bool isHoldingTankard { get { return isDominantHand && EquipScript.getRight() == EquipType.Tankard; } }
 
         public PhysicsEstimator physicsEstimator { get; private set; }
         public PhysicsEstimator mainHandPhysicsEstimator { get { return weaponWield.mainHand == VRPlayer.leftHand ? VRPlayer.leftHandPhysicsEstimator : VRPlayer.rightHandPhysicsEstimator; } }
@@ -64,29 +66,6 @@ namespace ValheimVRMod.Scripts
             if (debugColliderIndicator) Destroy(debugColliderIndicator);
         }
 
-        private bool CheckDrinking(Collider collider)
-        {
-            if (!isDominantHand || EquipScript.getRight() != EquipType.Tankard || collider.name != "MouthCollider" || !readyToDrink)
-            {
-                return false;
-            }
-
-            isDrinking = weaponWield.mainHand.transform.rotation.eulerAngles.x > 0 && weaponWield.mainHand.transform.rotation.eulerAngles.x < 90;
-            if (!isDrinking)
-            {
-                return false;
-            }
-            
-            readyToDrink = false;
-
-            if (!BhapticsTactsuit.suitDisabled)
-            {
-                BhapticsTactsuit.PlaybackHaptics("Drinking");
-            }
-
-            return true;
-        }
-
         private void OnTriggerEnter(Collider collider)
         {
             if (!isCollisionAllowed())
@@ -94,11 +73,13 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            if (isDominantHand &&
-                EquipScript.getRight() == EquipType.Tankard &&
-                collider.name == "MouthCollider")
+            if (isHoldingTankard)
             {
-                readyToDrink = true;
+                if (collider.name == MOUTH_COLLIDER_NAME)
+                {
+                    readyToDrink = true;
+                }
+                return;
             }
 
             MaybeAttackCollider(collider, requireStab: false);
@@ -111,7 +92,8 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            if (CheckDrinking(collider)) {
+            if (isHoldingTankard) {
+                CheckDrinking(collider);
                 return;
             }
 
@@ -133,6 +115,29 @@ namespace ValheimVRMod.Scripts
             // Allow triggering a stab on a character target after contact.
             // This allows stabbing with long weapons that are likely to have been overlapping with the target before attacking. 
             MaybeStabCharacter(collider);
+        }
+
+        private bool CheckDrinking(Collider collider)
+        {
+            if (!isHoldingTankard || collider.name != MOUTH_COLLIDER_NAME || !readyToDrink)
+            {
+                return false;
+            }
+
+            isDrinking = weaponWield.mainHand.transform.rotation.eulerAngles.x > 0 && weaponWield.mainHand.transform.rotation.eulerAngles.x < 90;
+            if (!isDrinking)
+            {
+                return false;
+            }
+
+            readyToDrink = false;
+
+            if (!BhapticsTactsuit.suitDisabled)
+            {
+                BhapticsTactsuit.PlaybackHaptics("Drinking");
+            }
+
+            return true;
         }
 
         private void MaybeStabCharacter(Collider collider) {
