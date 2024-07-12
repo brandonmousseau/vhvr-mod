@@ -108,16 +108,19 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> smoothSnapTurn;
         private static ConfigEntry<float> smoothSnapSpeed;
         private static ConfigEntry<bool> charaterMovesWithHeadset;
+        private static ConfigEntry<bool> roomScaleMovement;
         private static ConfigEntry<bool> roomScaleSneaking;
         private static ConfigEntry<float> roomScaleSneakHeight;
         private static ConfigEntry<bool> exclusiveRoomScaleSneak;
         private static ConfigEntry<string> gesturedLocomotion;
         private static ConfigEntry<float> gesturedJumpPreparationHeight;
         private static ConfigEntry<float> gesturedJumpMinSpeed;
+        private static ConfigEntry<float> walkSpeedSmoothener;
         private static ConfigEntry<float> swingSpeedRequirement;
         private static ConfigEntry<bool> momentumScalesAttackDamage;
         private static ConfigEntry<float> altPieceRotationDelay;
         private static ConfigEntry<bool> runIsToggled;
+        private static ConfigEntry<float> autoRunThreshold;
         private static ConfigEntry<bool> viewTurnWithMountedAnimal;
         private static ConfigEntry<bool> advancedBuildMode;
         private static ConfigEntry<bool> freePlaceAutoReturn;
@@ -641,6 +644,10 @@ namespace ValheimVRMod.Utilities
                                           "CharaterMovesWithHeadset",
                                           true,
                                           "When set to true, roomscale movement of the headset controls character locomotion; when set to false, movement of the headset makes the character lean.");
+            roomScaleMovement = config.Bind("Controls",
+                                          "RoomScaleMovement",
+                                          true,
+                                          "Enable room scale movement. Recommended to turn off when using VR treadmills");
             roomScaleSneaking = config.Bind("Controls",
                                           "RoomScaleSneaking",
                                           false,
@@ -671,6 +678,11 @@ namespace ValheimVRMod.Utilities
                                           0.75f,
                                           new ConfigDescription("The minimum vertical head speed to trigger a jump",
                                           new AcceptableValueRange<float>(0.25f, 3f)));
+            walkSpeedSmoothener = config.Bind("Controls",
+                                          "WalkSpeedSmoothener",
+                                          0f,
+                                          new ConfigDescription("Smoothener for making walk speed change more gradual. Recommnended to set to 0.5f when using VR treadmills.",
+                                          new AcceptableValueRange<float>(0f, 1f)));
             dominantHand = config.Bind("Controls",
                                         "DominantHand",
                                         "Right",
@@ -703,6 +715,11 @@ namespace ValheimVRMod.Utilities
                                        "RunIsToggled",
                                        true,
                                        "Determine whether or not you need to hold run or it is a toggle. Keep it as toggle (true) to have your thumb free when sprinting.");
+            autoRunThreshold = config.Bind("Controls",
+                                            "AutoRunThreshold",
+                                            1f,
+                                            new ConfigDescription("The threshold of stick Y-input at which run is triggered. Set to 1 to disable Y-input-triggered auto-run. Recommended to set to 0.6f when using VR treadmills.",
+                                            new AcceptableValueRange<float>(0.5f, 1f)));
             viewTurnWithMountedAnimal = config.Bind("Controls",
                                        "ViewTurnWithMountedAnimal",
                                        false,
@@ -1320,6 +1337,11 @@ namespace ValheimVRMod.Utilities
             return charaterMovesWithHeadset.Value;
         }
 
+        public static bool RoomScaleMovement()
+        {
+            return roomScaleMovement.Value;
+        }
+
         public static bool RoomScaleSneakEnabled() {
             return roomScaleSneaking.Value;
         }
@@ -1358,6 +1380,10 @@ namespace ValheimVRMod.Utilities
             return gesturedJumpMinSpeed.Value;
         }
 
+        public static float WalkSpeedSmoothener()
+        {
+            return walkSpeedSmoothener.Value;
+        }
         public static float GetNearClipPlane()
         {
             return nearClipPlane.Value;
@@ -1376,6 +1402,21 @@ namespace ValheimVRMod.Utilities
         public static bool ToggleRun()
         {
             return runIsToggled.Value;
+        }
+
+        public static float AutoRunThreshold()
+        {
+            return autoRunThreshold.Value;
+        }
+
+        public static float AutoRunActivationThreshold()
+        {
+            return autoRunThreshold.Value >= 0.99f ? Mathf.Infinity :  Mathf.Min(autoRunThreshold.Value + 0.33f, 0.99f);
+        }
+
+        public static float AutoRunDeactivationThreshold()
+        {
+            return autoRunThreshold.Value / 2;
         }
 
         public static bool LeftHanded()

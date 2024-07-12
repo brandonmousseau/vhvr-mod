@@ -81,6 +81,9 @@ namespace ValheimVRMod.VRCore.UI
             }
         }
 
+        public static float smoothWalkSpeed { get; private set; }
+        public static bool isAutoRunActive { get; private set; }
+
         public static string ToggleMiniMap { get { return "ToggleMiniMap"; } }
 
         public static VRControls instance { get { return _instance; } }
@@ -134,6 +137,30 @@ namespace ValheimVRMod.VRCore.UI
 
         void FixedUpdate()
         {
+            float joystickX = GetJoyLeftStickX();
+            float joystickY = GetJoyLeftStickY();
+            if (Time.deltaTime == 0 ||
+                smoothWalkSpeed == float.NaN ||
+                Mathf.Abs(Mathf.Abs(joystickY) - VHVRConfig.AutoRunThreshold()) < Mathf.Abs(Mathf.Abs(smoothWalkSpeed) - VHVRConfig.AutoRunThreshold()))
+            {
+                smoothWalkSpeed = joystickY;
+            }
+            else
+            {
+                smoothWalkSpeed = Mathf.MoveTowards(smoothWalkSpeed, joystickY, Time.deltaTime / VHVRConfig.WalkSpeedSmoothener());
+            }
+
+            float squareSpeed = joystickX * joystickX + VRControls.smoothWalkSpeed * VRControls.smoothWalkSpeed;
+
+            if (squareSpeed > VHVRConfig.AutoRunActivationThreshold() * VHVRConfig.AutoRunActivationThreshold())
+            {
+                isAutoRunActive = true;
+            }
+            else if (squareSpeed < VHVRConfig.AutoRunDeactivationThreshold() * VHVRConfig.AutoRunDeactivationThreshold())
+            {
+                isAutoRunActive = false;
+            }
+
             updateAltPieceRotationTimer();
             updateAltMapZoomTimer();
         }
