@@ -1344,7 +1344,7 @@ namespace ValheimVRMod.VRCore
         void DoRoomScaleMovement(float deltaTime)
         {
             var player = getPlayerCharacter();
-            if (_vrCam == null || player == null || player.gameObject == null || player.IsAttached())
+            if (_vrCam == null || player == null || player.gameObject == null || player.IsAttached() || !VHVRConfig.RoomScaleMovement())
             {
                 return;
             }
