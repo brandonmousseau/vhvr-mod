@@ -91,7 +91,7 @@ namespace ValheimVRMod.Scripts
             }
 
             var verticalSpeed = Vector3.Dot(targetVelocity, upDirection.Value);
-            dodgeDirection = verticalSpeed < -0.5f ? horizontalVelocity : (Vector3?) null;
+            dodgeDirection = verticalSpeed < -0.5f || (isRunning && VRPlayer.isRoomscaleSneaking) ? horizontalVelocity : (Vector3?) null;
             if (verticalSpeed > VHVRConfig.GesturedJumpMinSpeed() && localPlayer.IsOnGround())
             {
                 localPlayer.Jump();
