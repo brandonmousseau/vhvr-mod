@@ -103,10 +103,14 @@ namespace ValheimVRMod.Patches {
                     if (joystick > -0.3f && joystick < 0.3f)
                     {
                         __result = 0f;
-                        return;
                     }
+                    else
+                    {
+                        __result += joystick;
+                    }
+                    return;
                 }
-                __result = __result + VRControls.instance.GetJoyLeftStickX() + (VRPlayer.gesturedLocomotionManager?.stickOutputX ?? 0);
+                __result = __result + joystick / VHVRConfig.AutoRunThreshold() + (VRPlayer.gesturedLocomotionManager?.stickOutputX ?? 0);
             }
         }
     }
@@ -119,15 +123,20 @@ namespace ValheimVRMod.Patches {
                 var joystick = VRControls.instance.GetJoyLeftStickY();
 
                 //add deadzone to ship control for forward and backward so its harder to accidentally change speed
-                if (Player.m_localPlayer?.GetControlledShip())
+                if (Player.m_localPlayer.IsAttached())
                 {
                     if(joystick > -0.9f && joystick < 0.9f)
                     {
                         __result = 0f;
-                        return;
                     }
+                    else
+                    {
+                        __result += joystick;
+                    }
+                    return;
                 }
-                __result = __result + joystick + (VRPlayer.gesturedLocomotionManager?.stickOutputY?? 0);
+
+                __result = __result + VRControls.smoothWalkSpeed / VHVRConfig.AutoRunThreshold() + (VRPlayer.gesturedLocomotionManager?.stickOutputY?? 0);
             }
         }
     }
@@ -501,7 +510,7 @@ namespace ValheimVRMod.Patches {
                 run = run || ZInput_GetJoyRightStickY_Patch.holdingRun;
             }
             
-            run = run || (VRPlayer.gesturedLocomotionManager?.isRunning?? false);
+            run = run || VRControls.isAutoRunActive || (VRPlayer.gesturedLocomotionManager?.isRunning?? false);
         }
 
         private static void handleRunToggle(ref bool run)
