@@ -681,7 +681,7 @@ namespace ValheimVRMod.Utilities
             walkSpeedSmoothener = config.Bind("Controls",
                                           "WalkSpeedSmoothener",
                                           0f,
-                                          new ConfigDescription("Smoothener for making walk speed change more gradual. Recommnended to set to 0.5f when using VR treadmills.",
+                                          new ConfigDescription("Smoothener for making walk speed change more gradual. Recommnended to set to 0.25f when using VR treadmills.",
                                           new AcceptableValueRange<float>(0f, 1f)));
             dominantHand = config.Bind("Controls",
                                         "DominantHand",
@@ -718,8 +718,8 @@ namespace ValheimVRMod.Utilities
             autoRunThreshold = config.Bind("Controls",
                                             "AutoRunThreshold",
                                             1f,
-                                            new ConfigDescription("The threshold of stick Y-input at which run is triggered. Set to 1 to disable Y-input-triggered auto-run. Recommended to set to 0.6f when using VR treadmills.",
-                                            new AcceptableValueRange<float>(0.5f, 1f)));
+                                            new ConfigDescription("The threshold of stick Y-input at which run is triggered. Set to 1 to disable Y-input-triggered auto-run. Recommended to set to 0.5f when using VR treadmills.",
+                                            new AcceptableValueRange<float>(0.25f, 1f)));
             viewTurnWithMountedAnimal = config.Bind("Controls",
                                        "ViewTurnWithMountedAnimal",
                                        false,
@@ -1416,7 +1416,7 @@ namespace ValheimVRMod.Utilities
 
         public static float AutoRunDeactivationThreshold()
         {
-            return autoRunThreshold.Value / 2;
+            return autoRunThreshold.Value * 0.5f;
         }
 
         public static bool LeftHanded()
