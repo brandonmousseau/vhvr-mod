@@ -137,30 +137,8 @@ namespace ValheimVRMod.VRCore.UI
 
         void FixedUpdate()
         {
-            float joystickX = GetJoyLeftStickX();
-            float joystickY = GetJoyLeftStickY();
-            if (Time.deltaTime == 0 ||
-                smoothWalkSpeed == float.NaN ||
-                Mathf.Abs(Mathf.Abs(joystickY) - VHVRConfig.AutoRunThreshold()) < Mathf.Abs(Mathf.Abs(smoothWalkSpeed) - VHVRConfig.AutoRunThreshold()))
-            {
-                smoothWalkSpeed = joystickY;
-            }
-            else
-            {
-                smoothWalkSpeed = Mathf.MoveTowards(smoothWalkSpeed, joystickY, Time.deltaTime / VHVRConfig.WalkSpeedSmoothener());
-            }
-
-            float squareSpeed = joystickX * joystickX + VRControls.smoothWalkSpeed * VRControls.smoothWalkSpeed;
-
-            if (squareSpeed > VHVRConfig.AutoRunActivationThreshold() * VHVRConfig.AutoRunActivationThreshold())
-            {
-                isAutoRunActive = true;
-            }
-            else if (squareSpeed < VHVRConfig.AutoRunDeactivationThreshold() * VHVRConfig.AutoRunDeactivationThreshold())
-            {
-                isAutoRunActive = false;
-            }
-
+            updateSmoothWalkSpeed(Time.fixedDeltaTime);
+            updateAutoRun();
             updateAltPieceRotationTimer();
             updateAltMapZoomTimer();
         }
@@ -170,6 +148,45 @@ namespace ValheimVRMod.VRCore.UI
             // Reset this at the complete end of the update to allow for
             // both MapZoomIn and MapZoomOut to test the zoom input.
             altMapZoomTriggered = false;
+        }
+
+        private void updateSmoothWalkSpeed(float deltaTime)
+        {
+            float joystickY = GetJoyLeftStickY();
+            if (deltaTime == 0 || smoothWalkSpeed == float.NaN)
+            {
+                smoothWalkSpeed = joystickY;
+                return;
+            }
+
+            float smoothener = VHVRConfig.WalkSpeedSmoothener();
+            if (!isAutoRunActive && Mathf.Abs(joystickY) > VHVRConfig.AutoRunThreshold())
+            {
+                // Increase smoothener to avoid triggering auto-run too easily.
+                smoothener = 1;
+            }
+            smoothWalkSpeed = Mathf.MoveTowards(smoothWalkSpeed, joystickY, Time.deltaTime / smoothener);
+
+            if (Mathf.Abs(smoothWalkSpeed) < VHVRConfig.AutoRunThreshold() &&
+                Mathf.Abs(smoothWalkSpeed) < Mathf.Abs(joystickY))
+            {
+                smoothWalkSpeed = Mathf.Sign(joystickY) * Mathf.Min(VHVRConfig.AutoRunThreshold(), Mathf.Abs(joystickY));
+            }
+        }
+
+        private void updateAutoRun()
+        {
+            float joystickX = GetJoyLeftStickX();
+            float squareSpeed = joystickX * joystickX + smoothWalkSpeed * smoothWalkSpeed;
+            if (squareSpeed > VHVRConfig.AutoRunActivationThreshold() * VHVRConfig.AutoRunActivationThreshold() ||
+                (VRPlayer.gesturedLocomotionManager?.isRunning ?? false))
+            {
+                isAutoRunActive = true;
+            }
+            else if (squareSpeed < VHVRConfig.AutoRunDeactivationThreshold() * VHVRConfig.AutoRunDeactivationThreshold())
+            {
+                isAutoRunActive = false;
+            }
         }
 
         private void updateAltPieceRotationTimer()
