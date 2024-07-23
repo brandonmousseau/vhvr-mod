@@ -1433,7 +1433,7 @@ namespace ValheimVRMod.Utilities
 
         public static float AutoRunDeactivationThreshold()
         {
-            return Math.Max(autoRunThreshold.Value * 0.5f, autoRunThreshold.Value - 0.25f);
+            return autoRunThreshold.Value * 0.5f;
         }
 
         public static bool LeftHanded()
