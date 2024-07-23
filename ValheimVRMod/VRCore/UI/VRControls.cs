@@ -176,10 +176,25 @@ namespace ValheimVRMod.VRCore.UI
 
         private void updateAutoRun()
         {
+            if (VRPlayer.gesturedLocomotionManager != null && VRPlayer.gesturedLocomotionManager.isRunning)
+            {
+                isAutoRunActive = true;
+                return;
+            }
+
+
             float joystickX = GetJoyLeftStickX();
             float squareSpeed = joystickX * joystickX + smoothWalkSpeed * smoothWalkSpeed;
-            if (squareSpeed > VHVRConfig.AutoRunActivationThreshold() * VHVRConfig.AutoRunActivationThreshold() ||
-                (VRPlayer.gesturedLocomotionManager?.isRunning ?? false))
+
+            if (VHVRConfig.AutoRunThreshold() >= 0.95f && squareSpeed > VHVRConfig.AutoRunThreshold() * VHVRConfig.AutoRunThreshold())
+            {
+                if (!SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.LeftHand) ||
+                    !SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.RightHand))
+                isAutoRunActive = true;
+                return;
+            }
+
+            if (squareSpeed > VHVRConfig.AutoRunActivationThreshold() * VHVRConfig.AutoRunActivationThreshold())
             {
                 isAutoRunActive = true;
             }
