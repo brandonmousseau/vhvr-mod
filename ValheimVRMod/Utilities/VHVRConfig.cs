@@ -133,7 +133,8 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> useAmplifyOcclusion;
         private static ConfigEntry<float> taaSharpenAmmount;
         private static ConfigEntry<float> nearClipPlane;
-        private static ConfigEntry<string> bowGlow;
+        private static ConfigEntry<string> rangedWeaponGlow;
+        private static ConfigEntry<string> meleeWeaponGlow;
         private static ConfigEntry<float> enemyRenderDistance;
 
         // Motion Control Settings
@@ -781,11 +782,17 @@ namespace ValheimVRMod.Utilities
                                         new ConfigDescription("This can be used to adjust the distance where where anything inside will be clipped out and not rendered. You can try adjusting this if you experience" +
                                                               " problems where you see the nose of the player character for example.",
                                         new AcceptableValueRange<float>(0.05f, 0.5f)));
-            bowGlow = config.Bind("Graphics",
-                                  "BowGlow",
+            rangedWeaponGlow = config.Bind("Graphics",
+                                  "RangedWeaponGlow",
                                   "None",
                                   new ConfigDescription(
-                                      "Whether the glowing effect of the bow (if any in the Vanilla game) should be enabled. Disable it if you find the glow affects you aim negatively.",
+                                      "Whether the glowing effect (if any in the Vanilla game) of ranged weapons should be enabled. Disable it if you find the glow discrupts your aim",
+                                      new AcceptableValueList<string>(new string[] { "None", "LightWithoutParticles", "Full" })));
+            meleeWeaponGlow = config.Bind("Graphics",
+                                  "MeleeWeaponGlow",
+                                  "None",
+                                  new ConfigDescription(
+                                      "Whether the glowing effect of melee weapons should be enabled.",
                                       new AcceptableValueList<string>(new string[] { "None", "LightWithoutParticles", "Full" })));
             enemyRenderDistance = config.Bind("Graphics",
                                         "EnemyRenderDistance",
@@ -1075,14 +1082,24 @@ namespace ValheimVRMod.Utilities
             return useAmplifyOcclusion.Value;
         }
 
-        public static bool EnableBowGlowParticle()
+        public static bool EnableRangedWeaponGlowParticle()
         {
-            return bowGlow.Value == "Full";
+            return rangedWeaponGlow.Value == "Full";
         }
 
-        public static bool EnableBowGlowLight()
+        public static bool EnableRangedWeaponGlowLight()
         {
-            return bowGlow.Value == "Full" || bowGlow.Value == "LightWithoutParticles";
+            return rangedWeaponGlow.Value == "Full" || rangedWeaponGlow.Value == "LightWithoutParticles";
+        }
+
+        public static bool EnableMeleeWeaponGlowParticle()
+        {
+            return meleeWeaponGlow.Value == "Full";
+        }
+
+        public static bool EnableMeleeWeaponGlowLight()
+        {
+            return meleeWeaponGlow.Value == "Full" || meleeWeaponGlow.Value == "LightWithoutParticles";
         }
 
         public static float GetTaaSharpenAmmount()
@@ -1416,7 +1433,7 @@ namespace ValheimVRMod.Utilities
 
         public static float AutoRunDeactivationThreshold()
         {
-            return autoRunThreshold.Value * 0.5f;
+            return Math.Max(autoRunThreshold.Value * 0.5f, autoRunThreshold.Value - 0.25f);
         }
 
         public static bool LeftHanded()
