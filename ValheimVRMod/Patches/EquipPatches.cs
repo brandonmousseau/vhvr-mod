@@ -73,6 +73,8 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
+            ParticleFix.maybeFix(___m_rightItemInstance, isRangedWeapon: EquipScript.getRight() == EquipType.Magic);
+
             if (!VHVRConfig.UseVrControls()) {
                 return;
             }
@@ -122,8 +124,6 @@ namespace ValheimVRMod.Patches {
             {
                 meshFilter.gameObject.AddComponent<WeaponBlock>().weaponWield = weaponWield;
             }
-
-            ParticleFix.maybeFix(___m_rightItemInstance);
         }
     }
 
@@ -180,7 +180,11 @@ namespace ValheimVRMod.Patches {
                 }
                 return;
             }
-            
+
+            ParticleFix.maybeFix(
+                ___m_leftItemInstance,
+                isRangedWeapon: EquipScript.getLeft() == EquipType.Bow || EquipScript.getLeft() == EquipType.Crossbow);
+
             if (!VHVRConfig.UseVrControls()) {
                 return;
             }
@@ -215,7 +219,6 @@ namespace ValheimVRMod.Patches {
             }
 
             meshFilter.gameObject.AddComponent<ButtonSecondaryAttackManager>().Initialize(meshFilter.transform, ___m_leftItem, false);
-            ParticleFix.maybeFix(___m_leftItemInstance);
         }
     }
 

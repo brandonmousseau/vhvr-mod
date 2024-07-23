@@ -1,10 +1,12 @@
 using UnityEngine;
+using ValheimVRMod.Utilities;
 
 namespace ValheimVRMod.Scripts {
     // Fix for updating the position and rotation (e. g. Mistwalker and some modded weapons) of particle system in weapons.
     public class ParticleFix : MonoBehaviour {
 
         private Transform origin;
+        private bool shouldHide;
         
         private void Awake() {
             origin = new GameObject().transform;
@@ -21,7 +23,15 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            transform.SetPositionAndRotation(origin.position, origin.rotation);
+            if (shouldHide)
+            {
+                gameObject.SetActive(false);
+            }
+
+            if (VHVRConfig.UseVrControls())
+            {
+                transform.SetPositionAndRotation(origin.position, origin.rotation);
+            }
         }
 
         void OnDestroy()
@@ -32,12 +42,22 @@ namespace ValheimVRMod.Scripts {
             }
         }
 
-        public static void maybeFix(GameObject target) {
+        public static void maybeFix(GameObject target, bool isRangedWeapon) {
 
-            var particleSystem = target.GetComponentInChildren<ParticleSystem>();
+            var particleSystems = target.GetComponentsInChildren<ParticleSystem>(includeInactive: true);
+            var shouldHide = isRangedWeapon ? !VHVRConfig.EnableRangedWeaponGlowParticle() : !VHVRConfig.EnableMeleeWeaponGlowParticle();
 
-            if (particleSystem != null) {
-                particleSystem.gameObject.AddComponent<ParticleFix>();
+            foreach (ParticleSystem particleSystem in particleSystems) {
+                particleSystem.gameObject.AddComponent<ParticleFix>().shouldHide = shouldHide;
+            }
+
+            if (isRangedWeapon ? !VHVRConfig.EnableRangedWeaponGlowLight() : !VHVRConfig.EnableMeleeWeaponGlowLight())
+            {
+                var lights = target.GetComponentsInChildren<Light>(includeInactive: true);
+                foreach (var light in lights)
+                {
+                    light.gameObject.SetActive(false);
+                }
             }
         }
     }
