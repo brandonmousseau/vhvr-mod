@@ -6,6 +6,8 @@ namespace ValheimVRMod.Scripts
 {
     class VRDamageTexts : MonoBehaviour
     {
+        private const int MAX_INSTANCE_COUNT = 16;
+
         private GameObject damageTextObject;
         private Canvas canvasText ;
         private Text currText;
@@ -15,10 +17,12 @@ namespace ValheimVRMod.Scripts
         private bool selfText;
 
         private static Camera vrCam;
+        private static int instanceCount = 0;
 
         private void Awake()
         {
             ArialFont = (Font)Resources.GetBuiltinResource(typeof(Font), "Arial.ttf");
+            instanceCount++;
         }
 
         private void OnRenderObject()
@@ -46,6 +50,12 @@ namespace ValheimVRMod.Scripts
             }
             var colorA = currText.color;
             colorA.a = 1f - Mathf.Pow(Mathf.Clamp01(timer / textDuration), 3f);
+            if (colorA.a < 0.125f || instanceCount > MAX_INSTANCE_COUNT)
+            {
+                instanceCount--;
+                Destroy(gameObject);
+                return;
+            }
             currText.color = colorA;
         }
 
