@@ -82,7 +82,7 @@ namespace ValheimVRMod.VRCore.UI
         }
 
         public static float smoothWalkSpeed { get; private set; }
-        public static bool isAutoRunActive { get; private set; }
+        public static bool isAutoRunActive;
 
         public static string ToggleMiniMap { get { return "ToggleMiniMap"; } }
 
@@ -182,25 +182,27 @@ namespace ValheimVRMod.VRCore.UI
                 return;
             }
 
-
             float joystickX = GetJoyLeftStickX();
             float squareSpeed = joystickX * joystickX + smoothWalkSpeed * smoothWalkSpeed;
 
-            if (VHVRConfig.AutoRunThreshold() >= 0.95f && squareSpeed > VHVRConfig.AutoRunThreshold() * VHVRConfig.AutoRunThreshold())
+            if (squareSpeed < VHVRConfig.AutoRunDeactivationThreshold() * VHVRConfig.AutoRunDeactivationThreshold())
             {
-                if (!SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.LeftHand) ||
-                    !SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.RightHand))
-                isAutoRunActive = true;
+                isAutoRunActive = false;
                 return;
             }
 
-            if (squareSpeed > VHVRConfig.AutoRunActivationThreshold() * VHVRConfig.AutoRunActivationThreshold())
+            if (VHVRConfig.AutoRunThreshold() >= 0.95f &&
+                SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.LeftHand) &&
+                SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.RightHand))
+            {
+                return;
+            }
+
+            if (Player.m_localPlayer != null &&
+                !Player.m_localPlayer.IsRunning() &&
+                squareSpeed > VHVRConfig.AutoRunActivationThreshold() * VHVRConfig.AutoRunActivationThreshold())
             {
                 isAutoRunActive = true;
-            }
-            else if (squareSpeed < VHVRConfig.AutoRunDeactivationThreshold() * VHVRConfig.AutoRunDeactivationThreshold())
-            {
-                isAutoRunActive = false;
             }
         }
 
