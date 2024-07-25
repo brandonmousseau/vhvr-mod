@@ -505,9 +505,10 @@ namespace ValheimVRMod.Patches {
             {
                 handleRunToggle(ref run);
             }
-            else
+            else if (ZInput_GetJoyRightStickY_Patch.holdingRun)
             {
-                run = run || ZInput_GetJoyRightStickY_Patch.holdingRun;
+                run = true;
+                VRControls.isAutoRunActive = false;
             }
             
             run = run || VRControls.isAutoRunActive || (VRPlayer.gesturedLocomotionManager?.isRunning?? false);
@@ -524,8 +525,14 @@ namespace ValheimVRMod.Patches {
             }
             else if (runIsTriggered)
             {
-                // If the player applies sprint input this update, toggle the sprint.
-                runToggledOn = !runToggledOn;
+                if (VRControls.isAutoRunActive)
+                {
+                    VRControls.isAutoRunActive = runToggledOn = false;
+                }
+                else {
+                    // If the player applies sprint input this update, toggle the sprint.
+                    runToggledOn = !runToggledOn;
+                }
             }
             run = runToggledOn;
             lastUpdateRunInput = ZInput_GetJoyRightStickY_Patch.togglingRun;
