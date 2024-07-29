@@ -4,6 +4,7 @@ using ValheimVRMod.VRCore;
 using ValheimVRMod.Utilities;
 using System.Reflection;
 using System.Collections.Generic;
+using ValheimVRMod.Scripts;
 
 namespace ValheimVRMod.Patches
 {
@@ -289,14 +290,14 @@ namespace ValheimVRMod.Patches
                 {
                     var ship = player.GetStandingOnShip();
                     var movableBase = player.transform.parent;
-                    if (ship || (movableBase && movableBase?.name == "MovableBase"))
+                    if (ship || (movableBase && LayerUtils.IsModdedStructure(movableBase?.name)))
                     {
                         Transform referenceUp = null;
                         if (ship)
                         {
                             referenceUp = ship.transform;
                         }
-                        else if (movableBase && movableBase?.name == "MovableBase")
+                        else if (movableBase && LayerUtils.IsModdedStructure(movableBase?.name))
                         {
                             referenceUp = movableBase.transform;
                         }
