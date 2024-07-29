@@ -69,8 +69,8 @@ namespace ValheimVRMod.Utilities
 
         // VR Hud Settings
         private static ConfigEntry<bool> useLegacyHud;
-        private static ConfigEntry<float> cameraHudX;
-        private static ConfigEntry<float> cameraHudY;
+        private static ConfigEntry<Vector3> cameraLockedPos;
+        private static ConfigEntry<Vector3> cameraLocked2Pos;
         private static ConfigEntry<float> cameraHudScale;
         private static ConfigEntry<Vector3> leftWristPos;
         private static ConfigEntry<Quaternion> leftWristRot;
@@ -90,6 +90,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<Vector3> leftWristQuickBarPos;
         private static ConfigEntry<Quaternion> leftWristQuickBarRot;
         private static ConfigEntry<bool> quickActionOnLeftHand;
+        private static ConfigEntry<int> quickBarQuantity;
 
         // Controls Settings
         private static ConfigEntry<bool> useLookLocomotion;
@@ -106,15 +107,20 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<int> snapTurnAngle;
         private static ConfigEntry<bool> smoothSnapTurn;
         private static ConfigEntry<float> smoothSnapSpeed;
+        private static ConfigEntry<bool> charaterMovesWithHeadset;
+        private static ConfigEntry<bool> roomScaleMovement;
         private static ConfigEntry<bool> roomScaleSneaking;
         private static ConfigEntry<float> roomScaleSneakHeight;
         private static ConfigEntry<bool> exclusiveRoomScaleSneak;
         private static ConfigEntry<string> gesturedLocomotion;
         private static ConfigEntry<float> gesturedJumpPreparationHeight;
         private static ConfigEntry<float> gesturedJumpMinSpeed;
+        private static ConfigEntry<float> walkSpeedSmoothener;
         private static ConfigEntry<float> swingSpeedRequirement;
+        private static ConfigEntry<bool> momentumScalesAttackDamage;
         private static ConfigEntry<float> altPieceRotationDelay;
         private static ConfigEntry<bool> runIsToggled;
+        private static ConfigEntry<float> autoRunThreshold;
         private static ConfigEntry<bool> viewTurnWithMountedAnimal;
         private static ConfigEntry<bool> advancedBuildMode;
         private static ConfigEntry<bool> freePlaceAutoReturn;
@@ -127,7 +133,8 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> useAmplifyOcclusion;
         private static ConfigEntry<float> taaSharpenAmmount;
         private static ConfigEntry<float> nearClipPlane;
-        private static ConfigEntry<string> bowGlow;
+        private static ConfigEntry<string> rangedWeaponGlow;
+        private static ConfigEntry<string> meleeWeaponGlow;
         private static ConfigEntry<float> enemyRenderDistance;
 
         // Motion Control Settings
@@ -148,6 +155,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<string> crossbowSaggitalRotationSource;
         private static ConfigEntry<bool> crossbowManualReload;
         private static ConfigEntry<string> blockingType;
+        private static ConfigEntry<bool> movementSecondaryAttack;
 
 #if DEBUG
         private static ConfigEntry<float> DebugPosX;
@@ -162,7 +170,7 @@ namespace ValheimVRMod.Utilities
         private static Dictionary<int, bool> commandLineOverrides = new Dictionary<int, bool>();
 
         // Common values
-        private static readonly string[] k_HudAlignmentValues = { "LeftWrist", "RightWrist", "CameraLocked", "Legacy" };
+        private static readonly string[] k_HudAlignmentValues = { "LeftWrist", "RightWrist", "CameraLocked", "CameraLocked2", "Legacy" };
 
         private const string k_arrowRestCenter = "Center";
         private const string k_arrowRestAsiatic = "Asiatic";
@@ -216,6 +224,9 @@ namespace ValheimVRMod.Utilities
             rightWristQuickBarRot.Value = (Quaternion)rightWristQuickBarRot.DefaultValue;
             leftWristQuickBarPos.Value = (Vector3)leftWristQuickBarPos.DefaultValue;
             leftWristQuickBarRot.Value = (Quaternion)leftWristQuickBarRot.DefaultValue;
+
+            cameraLockedPos.Value = (Vector3)cameraLockedPos.DefaultValue;
+            cameraLocked2Pos.Value = (Vector3)cameraLocked2Pos.DefaultValue;
         }
 
         private static void InitializeImmutableSettings()
@@ -312,9 +323,9 @@ namespace ValheimVRMod.Utilities
                                      new ConfigDescription("The VR mirror mode.Legal values: OpenVR, Right, Left, Follow, None. Note: OpenVR is" +
                                      " required if you want to see the Overlay-type GUI in the mirror image. However, I've found that OpenVR" +
                                      " mirror mode causes some issue that requires SteamVR to be restarted after closing the game, so unless you" +
-                                     " need it for some specific reason, I recommend using another mirror mode or None. Follow mode renders content" +
-                                     " from a follow camera which can cause lag.",
-                                     new AcceptableValueList<string>(new string[] { "Right", "Left", "OpenVR", "None", "Follow" })));
+                                     " need it for some specific reason, I recommend using another mirror mode or None. Follow mode and spectator mode" +
+                                     " render content from a third person camera which can cause lag.",
+                                     new AcceptableValueList<string>(new string[] { "Right", "Left", "OpenVR", "None", "Follow", "Spectator" })));
             playerHeightAdjust = config.Bind("General",
                               "PlayerHeightAdjust",
                               0f,
@@ -415,7 +426,7 @@ namespace ValheimVRMod.Utilities
             uiPanelResolutionCompat = config.Bind("UI",
                                       "UIPanelResolutionCompatibility",
                                       false,
-                                      new ConfigDescription("Set UI resolution panel display compatibility mode, in case some mod have some mouse offset problem, use this setting, set panel resolution below your monitor resolution, need restart to update"));
+                                      new ConfigDescription("Set UI resolution panel display compatibility mode, in case some mod have some mouse offset problem(Jewelcrafting mod for example), use this setting, set panel resolution below your monitor resolution, need restart to main menu to update"));
             uiPanelDistance = config.Bind("UI",
                                       "UIPanelDistance",
                                       3f,
@@ -505,16 +516,14 @@ namespace ValheimVRMod.Utilities
                                             "UseLegacyHud",
                                             false,
                                             "Disables custom VR HUD features and moves HUD elements to main UI panel.");
-            cameraHudX = config.Bind("VRHUD",
-                                            "CameraHudX",
-                                            0f,
-                                            new ConfigDescription("Offset to reposition VR health panel for Camera Position.",
-                                                new AcceptableValueRange<float>(-0.001f, 0.001f)));
-            cameraHudY = config.Bind("VRHUD",
-                                            "CameraHudY",
-                                            0f,
-                                            new ConfigDescription("Offset to reposition VR health panel for Camera Position.",
-                                                new AcceptableValueRange<float>(-0.001f, 0.001f)));
+            cameraLockedPos = config.Bind("VRHUD",
+                                           "CameraLocked",
+                                           new Vector3(-0.33f, 0.4f, 1),
+                                           "Position of CameraHUD .");
+            cameraLocked2Pos = config.Bind("VRHUD",
+                                           "CameraLocked2",
+                                           new Vector3(0, 0, 1.5f),
+                                           "Position of CameraHUD 2.");
             cameraHudScale = config.Bind("VRHUD",
                                             "CameraHudScale",
                                             1f,
@@ -594,6 +603,11 @@ namespace ValheimVRMod.Utilities
                                         "QuickActionOnLeftHand",
                                         false,
                                         "Switch hand placement of Quick Action and Quick Switch Hotbar");
+            quickBarQuantity = config.Bind("VRHUD",
+                                        "QuickBarQuantity",
+                                        4,
+                                        new ConfigDescription("Number of Quick switch bar that registered, count is from the right to left, but still sorted from left to right",
+                                                new AcceptableValueRange<int>(0, 8)));
         }
 
         private static void InitializeControlsSettings()
@@ -627,6 +641,14 @@ namespace ValheimVRMod.Utilities
                                           10f,
                                           new ConfigDescription("This will affect the speed that the smooth snap turns occur at.",
                                               new AcceptableValueRange<float>(5, 30)));
+            charaterMovesWithHeadset = config.Bind("Controls",
+                                          "CharaterMovesWithHeadset",
+                                          true,
+                                          "When set to true, roomscale movement of the headset controls character locomotion; when set to false, movement of the headset makes the character lean.");
+            roomScaleMovement = config.Bind("Controls",
+                                          "RoomScaleMovement",
+                                          true,
+                                          "Enable room scale movement. Recommended to turn off when using VR treadmills");
             roomScaleSneaking = config.Bind("Controls",
                                           "RoomScaleSneaking",
                                           false,
@@ -657,6 +679,11 @@ namespace ValheimVRMod.Utilities
                                           0.75f,
                                           new ConfigDescription("The minimum vertical head speed to trigger a jump",
                                           new AcceptableValueRange<float>(0.25f, 3f)));
+            walkSpeedSmoothener = config.Bind("Controls",
+                                          "WalkSpeedSmoothener",
+                                          0f,
+                                          new ConfigDescription("Smoothener for making walk speed change more gradual. Recommnended to set to 0.25f when using VR treadmills.",
+                                          new AcceptableValueRange<float>(0f, 1f)));
             dominantHand = config.Bind("Controls",
                                         "DominantHand",
                                         "Right",
@@ -674,6 +701,12 @@ namespace ValheimVRMod.Utilities
                     new ConfigDescription(
                         "The speed requirement in m/s for weapon swinging for an attack to be triggered. if set to 0, single touch will already trigger hit",
                         new AcceptableValueRange<float>(0, 8)));
+            momentumScalesAttackDamage =
+                config.Bind(
+                    "Controls",
+                    "MomentumScalesAttackDamage",
+                    false,
+                    "Allow attacking during cooldown (except AOE and secondary attacks) but reduce its damage by momentum deficiency and remaining cooldown time.");
             altPieceRotationDelay = config.Bind("Controls",
                                                 "AltPieceRotationDelay",
                                                 1f,
@@ -683,6 +716,11 @@ namespace ValheimVRMod.Utilities
                                        "RunIsToggled",
                                        true,
                                        "Determine whether or not you need to hold run or it is a toggle. Keep it as toggle (true) to have your thumb free when sprinting.");
+            autoRunThreshold = config.Bind("Controls",
+                                            "AutoRunThreshold",
+                                            1f,
+                                            new ConfigDescription("The threshold of stick Y-input at which run is triggered. Set to 1 to disable Y-input-triggered auto-run. Recommended to set to 0.5f when using VR treadmills.",
+                                            new AcceptableValueRange<float>(0.25f, 1f)));
             viewTurnWithMountedAnimal = config.Bind("Controls",
                                        "ViewTurnWithMountedAnimal",
                                        false,
@@ -744,18 +782,23 @@ namespace ValheimVRMod.Utilities
                                         new ConfigDescription("This can be used to adjust the distance where where anything inside will be clipped out and not rendered. You can try adjusting this if you experience" +
                                                               " problems where you see the nose of the player character for example.",
                                         new AcceptableValueRange<float>(0.05f, 0.5f)));
-            bowGlow = config.Bind("Graphics",
-                                  "BowGlow",
+            rangedWeaponGlow = config.Bind("Graphics",
+                                  "RangedWeaponGlow",
                                   "None",
                                   new ConfigDescription(
-                                      "Whether the glowing effect of the bow (if any in the Vanilla game) should be enabled. Disable it if you find the glow affects you aim negatively.",
-                                      new AcceptableValueList<string>(new string[] {"None", "LightWithoutParticles", "Full"})));
+                                      "Whether the glowing effect (if any in the Vanilla game) of ranged weapons should be enabled. Disable it if you find the glow discrupts your aim",
+                                      new AcceptableValueList<string>(new string[] { "None", "LightWithoutParticles", "Full" })));
+            meleeWeaponGlow = config.Bind("Graphics",
+                                  "MeleeWeaponGlow",
+                                  "None",
+                                  new ConfigDescription(
+                                      "Whether the glowing effect of melee weapons should be enabled.",
+                                      new AcceptableValueList<string>(new string[] { "None", "LightWithoutParticles", "Full" })));
             enemyRenderDistance = config.Bind("Graphics",
                                         "EnemyRenderDistance",
                                         8f,
                                         new ConfigDescription("Increase the mobs render distance, does not apply to tamed creature, only raise mob render distance, not lowering them (default eg. deer render distance is around 2, neck is around 10) (also limited by default ingame draw distance option)",
                                         new AcceptableValueRange<float>(1f, 50f)));
-
         }
 
         private static void InitializeMotionControlSettings() {
@@ -853,7 +896,10 @@ namespace ValheimVRMod.Utilities
                                         "Grab button - Block by aiming and pressing grab button, parry by timing the grab button. " +
                                         "Realistic - Block precisely where the enemy hits, swing while blocking to parry",
                                         new AcceptableValueList<string>(new string[] { "Gesture", "GrabButton", "Realistic" })));
-
+            movementSecondaryAttack = config.Bind("Motion Control",
+                                                    "KnifeMovementSecondaryAttack",
+                                                    false,
+                                                    "When enabled, Weapon that have movement secondary attack (Knife) button secondary attack will have 2 step, first trigger-release will make you leap, the second one works like usual button secondary attack. Re-equip after changing setting to update");
 
             advancedBuildMode = config.Bind("Motion Control",
                                                    "AdvancedBuildMode",
@@ -954,6 +1000,16 @@ namespace ValheimVRMod.Utilities
             return mirrorMode.Value == "Follow";
         }
 
+        public static bool UseSpectatorCameraOnFlatscreen()
+        {
+            return mirrorMode.Value == "Spectator";
+        }
+
+        public static bool UseThirdPersonCameraOnFlatscreen()
+        {
+            return UseFollowCameraOnFlatscreen() || UseSpectatorCameraOnFlatscreen();
+        }
+
         public static float PlayerHeightAdjust()
         {
             return playerHeightAdjust.Value;
@@ -1026,14 +1082,24 @@ namespace ValheimVRMod.Utilities
             return useAmplifyOcclusion.Value;
         }
 
-        public static bool EnableBowGlowParticle()
+        public static bool EnableRangedWeaponGlowParticle()
         {
-            return bowGlow.Value == "Full";
+            return rangedWeaponGlow.Value == "Full";
         }
 
-        public static bool EnableBowGlowLight()
+        public static bool EnableRangedWeaponGlowLight()
         {
-            return bowGlow.Value == "Full" || bowGlow.Value == "LightWithoutParticles";
+            return rangedWeaponGlow.Value == "Full" || rangedWeaponGlow.Value == "LightWithoutParticles";
+        }
+
+        public static bool EnableMeleeWeaponGlowParticle()
+        {
+            return meleeWeaponGlow.Value == "Full";
+        }
+
+        public static bool EnableMeleeWeaponGlowLight()
+        {
+            return meleeWeaponGlow.Value == "Full" || meleeWeaponGlow.Value == "LightWithoutParticles";
         }
 
         public static float GetTaaSharpenAmmount()
@@ -1278,6 +1344,21 @@ namespace ValheimVRMod.Utilities
             return swingSpeedRequirement.Value;
         }
 
+        public static bool MomentumScalesAttackDamage()
+        {
+            return momentumScalesAttackDamage.Value;
+        }
+
+        public static bool CharaterMovesWithHeadset()
+        {
+            return charaterMovesWithHeadset.Value;
+        }
+
+        public static bool RoomScaleMovement()
+        {
+            return roomScaleMovement.Value;
+        }
+
         public static bool RoomScaleSneakEnabled() {
             return roomScaleSneaking.Value;
         }
@@ -1316,6 +1397,10 @@ namespace ValheimVRMod.Utilities
             return gesturedJumpMinSpeed.Value;
         }
 
+        public static float WalkSpeedSmoothener()
+        {
+            return walkSpeedSmoothener.Value;
+        }
         public static float GetNearClipPlane()
         {
             return nearClipPlane.Value;
@@ -1334,6 +1419,21 @@ namespace ValheimVRMod.Utilities
         public static bool ToggleRun()
         {
             return runIsToggled.Value;
+        }
+
+        public static float AutoRunThreshold()
+        {
+            return autoRunThreshold.Value;
+        }
+
+        public static float AutoRunActivationThreshold()
+        {
+            return autoRunThreshold.Value >= 0.99f ? Mathf.Infinity : Mathf.Min(autoRunThreshold.Value + 0.33f, 0.99f);
+        }
+
+        public static float AutoRunDeactivationThreshold()
+        {
+            return autoRunThreshold.Value * 0.5f;
         }
 
         public static bool LeftHanded()
@@ -1395,19 +1495,31 @@ namespace ValheimVRMod.Utilities
             return blockingType.Value;
         }
 
+        public static bool MovementSecondaryAttack()
+        {
+            return movementSecondaryAttack.Value;
+        }
+
         public static bool UseLegacyHud()
         {
             return useLegacyHud.Value;
         }
 
-        public static float CameraHudX()
+        public static Vector3 CameraLockedPos()
         {
-            return cameraHudX.Value;
+            return cameraLockedPos.Value;
         }
-
-        public static float CameraHudY()
+        public static Vector3 DefaultCameraLockedPos()
         {
-            return cameraHudY.Value;
+            return (Vector3)cameraLockedPos.DefaultValue;
+        }
+        public static Vector3 CameraLocked2Pos()
+        {
+            return cameraLocked2Pos.Value;
+        }
+        public static Vector3 DefaultCameraLocked2Pos()
+        {
+            return (Vector3)cameraLocked2Pos.DefaultValue;
         }
 
         public static float CameraHudScale()
@@ -1545,6 +1657,15 @@ namespace ValheimVRMod.Utilities
         public static bool QuickActionOnLeftHand()
         {
             return quickActionOnLeftHand.Value;
+        }
+
+        public static int QuickBarQuantity()
+        {
+            if(quickBarQuantity.Value <0 || quickBarQuantity.Value > 8)
+            {
+                return (int)quickBarQuantity.DefaultValue;
+            }
+            return quickBarQuantity.Value;
         }
 
         public static bool LockGuiWhileMenuOpen()

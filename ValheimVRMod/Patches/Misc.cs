@@ -380,35 +380,19 @@ namespace ValheimVRMod.Patches
         }
     }
 
-    [HarmonyPatch(typeof(WaterVolume), nameof(WaterVolume.Awake))]
-    class WaterSurfaceVisiblityPatch
+    [HarmonyPatch(typeof(Player), nameof(Player.OnDeath))]
+    class DisableFollowCameraOnDeathPatch
     {
-        public static void Postfix(WaterVolume __instance)
+        public static bool hasCharacterDied { get; private set; } = false;
+        public static void Prefix()
         {
-            if (VHVRConfig.NonVrPlayer())
+            var followCamera = CameraUtils.getCamera(CameraUtils.FOLLOW_CAMERA);
+            if (followCamera)
             {
-                return;
-            }
-
-            __instance.gameObject.AddComponent<WaterSurfaceVisibiltyUpdater>().Init(__instance);
-        }
-
-        private class WaterSurfaceVisibiltyUpdater : MonoBehaviour
-        {
-            private WaterVolume waterVolume;
-
-            public void Init(WaterVolume waterVolume)
-            {
-                this.waterVolume = waterVolume;
-            }
-
-            void FixedUpdate()
-            {
-                if (!waterVolume)
-                {
-                    return;
-                }
-                waterVolume.m_waterSurface.shadowCastingMode = UnderwaterEffectsUpdater.UsingUnderwaterEffects ? ShadowCastingMode.ShadowsOnly : ShadowCastingMode.On;
+                hasCharacterDied = true;
+                // Disable the follow camera temporarily since it might interfere with the projection matrix of the main camera upon character death.
+                followCamera.enabled = false;
+                GameObject.Destroy(followCamera);
             }
         }
     }

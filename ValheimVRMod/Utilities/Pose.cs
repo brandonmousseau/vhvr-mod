@@ -1,16 +1,14 @@
-using UnityEngine;
+using System.Collections.Generic;
 using ValheimVRMod.Patches;
 using ValheimVRMod.Scripts;
 using ValheimVRMod.VRCore;
 using ValheimVRMod.VRCore.UI;
 using Valve.VR;
-using Valve.VR.InteractionSystem;
 
 namespace ValheimVRMod.Utilities {
     public static class Pose {
-        private const bool ALWAYS_USE_UNPRESS_SHEATH = true;
-
-        private static bool justUnsheathed;
+        private static Dictionary<bool, bool> justUnsheathed =
+            new Dictionary<bool, bool>() { {true, false}, { false, false} };
 
         public static void checkInteractions()
         {
@@ -34,54 +32,41 @@ namespace ValheimVRMod.Utilities {
             if (camera.InverseTransformPoint(hand.transform.position).y > -0.4f &&
                 camera.InverseTransformPoint(hand.transform.position).z < 0)
             {
-
                 if (action.GetStateDown(inputSource))
                 {
 
-                    if(isDominantHand && isHoldingItem(isDominantHand) && isUnpressSheath()) {
-                        return;
-                    } 
-                 
                     hand.hapticAction.Execute(0, 0.2f, 100, 0.3f, inputSource);
                     
                     if (isDominantHand && EquipScript.getLeft() == EquipType.Bow) {
                         BowLocalManager.instance.toggleArrow();
                     } else if (isDominantHand && EquipScript.getLeft() == EquipType.Crossbow) {
                         CrossbowMorphManager.instance.toggleBolt();
-                    } else if (isHoldingItem(isDominantHand)) {
-                        PatchHideHandItems.HideLocalPlayerHandItem(isDominantHand);
-                    } else {
+                    } else if (!isHoldingItem(isDominantHand)) {
                         PatchShowHandItems.ShowLocalPlayerHandItem(isDominantHand);
-                        justUnsheathed = true;
+                        justUnsheathed[isDominantHand] = true;
                     }
                 }
-                else if (!justUnsheathed && isDominantHand && action.GetStateUp(inputSource)) {
-                    if (isHoldingItem(isDominantHand) && isUnpressSheath()) {
-                        PatchHideHandItems.HideLocalPlayerHandItem(isDominantHand);
-                    }
+                else if (!justUnsheathed[isDominantHand] && action.GetStateUp(inputSource) && isHoldingItem(isDominantHand)) {
+                     PatchHideHandItems.HideLocalPlayerHandItem(isDominantHand);
                 }
             }
-            if (justUnsheathed && isDominantHand && action.GetStateUp(inputSource) && isUnpressSheath()) {
-                justUnsheathed = false;
+            if (justUnsheathed[isDominantHand] && action.GetStateUp(inputSource)) {
+                justUnsheathed[isDominantHand] = false;
             }
         }
         
         private static bool isHoldingItem(bool isDominantHand) {
-            return isDominantHand && Player.m_localPlayer.GetRightItem() != null
-                   || !isDominantHand && Player.m_localPlayer.GetLeftItem() != null;
-        }
+            if (isDominantHand && Player.m_localPlayer.GetRightItem() != null)
+            {
+                return true;
+            }
 
-        private static bool isUnpressSheath() {
-            // TODO: remove this method and clean up if it always returns true.
-            return ALWAYS_USE_UNPRESS_SHEATH
-                   || EquipScript.getRight() == EquipType.Spear 
-                   || EquipScript.getRight() == EquipType.SpearChitin
-                   || EquipScript.getRight() == EquipType.ThrowObject
-                   || EquipScript.getRight() == EquipType.Fishing
-                   || EquipScript.getRight() == EquipType.Tankard
-                   || EquipScript.getRight() == EquipType.Hammer 
-                   || EquipScript.getRight() == EquipType.Hoe 
-                   || EquipScript.getRight() == EquipType.Cultivator;
+            if (!isDominantHand && Player.m_localPlayer.GetLeftItem() != null)
+            {
+                return true;
+            }
+
+            return FistCollision.hasDualWieldingWeaponEquipped();
         }
     }
 }

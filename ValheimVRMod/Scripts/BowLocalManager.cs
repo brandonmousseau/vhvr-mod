@@ -10,7 +10,6 @@ using Valve.VR.InteractionSystem;
 namespace ValheimVRMod.Scripts {
     public class BowLocalManager : BowManager {
         private const float attachRange = 0.2f;
-        private const float centerToTailDistance = 0.5f;
         private GameObject arrow;
         private float gravity;
         private GameObject pausedCosmeticArrow; // An arrow shown on the bow when player movment is paused even after the actual arrow is shot for cosmetic purposes.
@@ -83,21 +82,31 @@ namespace ValheimVRMod.Scripts {
         }
 
         private void destroyArrow() {
-            if (arrow != null) {
-                arrow.GetComponent<ZNetView>().Destroy();
+            if (arrow == null) {
+                return;
+            }
+            
+            arrow.GetComponentInChildren<ZNetView>().Destroy();
+            if (arrow != null)
+            {
+                Destroy(arrow);
+                arrow = null;
             }
         }
 
         private void destroyPausedCosmeticArrow()
         {
+            if (pausedCosmeticArrow == null)
+            {
+                return;
+            }
+
+            pausedCosmeticArrow.GetComponentInChildren<ZNetView>()?.Destroy();
             if (pausedCosmeticArrow != null)
             {
-                pausedCosmeticArrow.GetComponent<ZNetView>()?.Destroy();
-                if (pausedCosmeticArrow != null) {
-                    Destroy(pausedCosmeticArrow);
-                }
+                Destroy(pausedCosmeticArrow);
+                pausedCosmeticArrow = null;
             }
-            pausedCosmeticArrow = null;
         }
 
         /**
@@ -126,7 +135,6 @@ namespace ValheimVRMod.Scripts {
             {
                 destroyPausedCosmeticArrow();
             }
-
 
             var arrowHand = VHVRConfig.LeftHanded() ? SteamVR_Input_Sources.LeftHand : SteamVR_Input_Sources.RightHand;
             var bowHand = VHVRConfig.LeftHanded() ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand;
@@ -290,7 +298,7 @@ namespace ValheimVRMod.Scripts {
             spawnPoint = getArrowRestPosition();
             aimDir = getAimDir();
             if (arrow) {
-                arrow.transform.position = pullObj.transform.position + aimDir * centerToTailDistance;
+                arrow.transform.position = pullObj.transform.position;
                 arrow.transform.rotation = Quaternion.LookRotation(aimDir, bowOrientation.transform.up);
             }
             var currDrawPercentage = pullPercentage();
@@ -334,8 +342,7 @@ namespace ValheimVRMod.Scripts {
 
             if (withoutShoot || arrow == null || attackDrawPercentage <= 0.0f) {
                 if (arrow) {
-                    arrowAttach.transform.localRotation = Quaternion.identity;
-                    arrowAttach.transform.localPosition = Vector3.zero;
+                    resetArrowAttachToHand();
                     if (attackDrawPercentage <= 0.0f) {
                         aborting = true;
                     }
@@ -394,31 +401,31 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
+            arrow = new GameObject();
+            arrow.transform.parent = arrowAttach.transform;
+            GameObject arrowModel;
             try
             {
                 gravity = ammoItem.m_shared.m_attack.m_attackProjectile.GetComponent<Projectile>().m_gravity;
 
-                if (ammoItem.m_shared.m_name == "$item_arrow_fire")
+                switch (ammoItem.m_shared.m_name)
                 {
-                    // Use projectile prefab instead of drop prefab to have fired rendered.
-                    arrow = Instantiate(ammoItem.m_shared.m_attack.m_attackProjectile, arrowAttach.transform);
-                    Destroy(arrow.GetComponent<Projectile>()); // Do not let the arrow automatically launch from hand
-                    Destroy(findTrail(arrow.transform));
-                    var visual = arrow.transform.GetChild(0);
-                    visual.localPosition = -0.11f * Vector3.forward;
-                    visual.localScale = Vector3.one * 0.6f;
-                }
-                else 
-                {
-                    arrow = Instantiate(ammoItem.m_dropPrefab, arrowAttach.transform);
-                    var meshTransform = arrow.GetComponentInChildren<MeshRenderer>().transform;
-                    var p = meshTransform.localPosition;
-                    p.y = 0;
-                    meshTransform.localPosition = p;
-                    Destroy(arrow.GetComponent<ParticleSystemRenderer>()); // Do not display the particles indicating a pickable item
-                    Destroy(arrow.GetComponent<ParticleSystem>());
-                    Destroy(arrow.GetComponent<ItemDrop>()); // Do not let the object drop form hand
-                    Destroy(arrow.GetComponent<Rigidbody>());
+                    case "$item_arrow_obsidian":
+                    case "$item_arrow_charred":
+                        // The projectile prefab of these arrows are incorrect. Use the drop prefab instead.
+                        arrowModel = Instantiate(ammoItem.m_dropPrefab, arrow.transform);
+                        arrowModel.GetComponent<ZNetView>().SetLocalScale(Vector3.one * 1.3f);
+                        Destroy(arrowModel.GetComponent<ParticleSystemRenderer>()); // Do not display the particles indicating a pickable item
+                        Destroy(arrowModel.GetComponent<ParticleSystem>());
+                        Destroy(arrowModel.GetComponent<ItemDrop>()); // Do not let the object drop from hand
+                        Destroy(arrowModel.GetComponent<Rigidbody>()); // Do not let the object drop from hand
+                        break;
+                    default:
+                        arrowModel = Instantiate(ammoItem.m_shared.m_attack.m_attackProjectile, arrow.transform);
+                        Destroy(arrowModel.GetComponent<Projectile>()); // Do not let the arrow automatically launch from hand
+                        Destroy(findTrail(arrowModel.transform));
+                        arrowModel.GetComponent<ZNetView>().SetLocalScale(Vector3.one * 0.78f);
+                        break;
                 }
             }
             catch (Exception e) {
@@ -428,28 +435,32 @@ namespace ValheimVRMod.Scripts {
 
             switch (ammoItem.m_shared.m_name)
             {
-                case "$item_arrow_charred":
-                case "$item_arrow_fire":
-                case "$item_arrow_frost":
-                case "$item_arrow_needle":
-                case "$item_arrow_poison":
-                    break;
                 case "$item_arrow_carapace":
                     var offset = VHVRConfig.ArrowRestHorizontalOffsetMultiplier();
-                    if (offset > 0)
-                    {
-                        arrow.GetComponentInChildren<MeshFilter>().transform.rotation *=  Quaternion.Euler(0, -45, 0);
-                    }
-                    else if (offset < 0)
-                    {
-                        arrow.GetComponentInChildren<MeshFilter>().transform.rotation *= Quaternion.Euler(0, 45, 0);
-                    }
+                    arrowModel.transform.localRotation =  Quaternion.Euler(0, 0, offset > 0 ? 45 : (offset < 0 ? -45 : 0));
+                    arrowModel.transform.localPosition = new Vector3(0, 0, 0.605f);
+                    break;
+                case "$item_arrow_charred":
+                    arrowModel.transform.localPosition = new Vector3(0, 0, 0.49f);
+                    break;
+                case "$item_arrow_fire":
+                case "$item_arrow_poison":
+                    arrowModel.transform.localPosition = new Vector3(0, 0, 0.97f);
+                    break;
+                case "$item_arrow_frost":
+                    arrowModel.transform.localPosition = new Vector3(0, 0, 1.02f);
+                    break;
+                case "$item_arrow_needle":
+                    arrowModel.transform.localPosition = new Vector3(0, 0, 0.605f);
+                    break;
+                case "$item_arrow_obsidian":
+                    arrowModel.transform.localRotation = Quaternion.Euler(0, 180, 0);
+                    arrowModel.transform.localPosition = new Vector3(0, 0.03f, 0.5f);
                     break;
                 default:
-                    arrow.GetComponentInChildren<MeshFilter>().transform.rotation *= Quaternion.Euler(180, 0, 0);
+                    arrowModel.transform.localPosition = new Vector3(0, 0, 0.99f);
                     break;
             }
-            arrow.transform.localScale = Vector3.one * 1.3f;
 
             //bHaptics
             if (!BhapticsTactsuit.suitDisabled)
@@ -464,18 +475,23 @@ namespace ValheimVRMod.Scripts {
                 Destroy(collider);
             }
 
+            resetArrowAttachToHand();
+            arrow.transform.localPosition = Vector3.zero;
             arrow.transform.localRotation = Quaternion.identity;
-            arrow.transform.localPosition = new Vector3(0, 0, centerToTailDistance);
             foreach (ParticleSystem particleSystem in arrow.GetComponentsInChildren<ParticleSystem>()) {
                 particleSystem.transform.localScale *= VHVRConfig.ArrowParticleSize();
             }
-            arrowAttach.transform.localRotation = Quaternion.identity;
-            arrowAttach.transform.localPosition = Vector3.zero;
 
             var currentAttack = Player.m_localPlayer.GetCurrentWeapon().m_shared.m_attack;
             projectileVel = currentAttack.m_projectileVel + ammoItem.m_shared.m_attack.m_projectileVel;
             projectileVelMin = currentAttack.m_projectileVelMin + ammoItem.m_shared.m_attack.m_projectileVelMin;
             
+        }
+
+        private void resetArrowAttachToHand()
+        {
+            arrowAttach.transform.localRotation = Quaternion.identity;
+            arrowAttach.transform.localPosition = -0.05f * Vector3.forward;
         }
 
         private void createChargeIndicator() {

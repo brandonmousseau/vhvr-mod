@@ -81,6 +81,9 @@ namespace ValheimVRMod.VRCore.UI
             }
         }
 
+        public static float smoothWalkSpeed { get; private set; }
+        public static bool isAutoRunActive;
+
         public static string ToggleMiniMap { get { return "ToggleMiniMap"; } }
 
         public static VRControls instance { get { return _instance; } }
@@ -110,10 +113,32 @@ namespace ValheimVRMod.VRCore.UI
 
             checkQuickItems<RightHandQuickMenu>(StaticObjects.rightHandQuickMenu, SteamVR_Actions.valheim_QuickSwitch, true);
             checkQuickItems<LeftHandQuickMenu>(StaticObjects.leftHandQuickMenu, SteamVR_Actions.valheim_QuickActions, false);
+
+            if (QuickAbstract.shouldStartChat && Chat.instance.HasFocus())
+            {
+                if (SteamVR_Actions.default_GrabGrip.GetState(SteamVR_Input_Sources.Any) ||
+                    SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.Any)) {
+                    if (SteamVR_Actions.default_InteractUI.GetStateUp(SteamVR_Input_Sources.Any) ||
+                        SteamVR_Actions.laserPointers_LeftClick.GetStateUp(SteamVR_Input_Sources.Any) ||
+                        SteamVR_Actions.valheim_Use.GetStateUp(SteamVR_Input_Sources.Any) ||
+                        SteamVR_Actions.valheim_UseLeft.GetStateUp(SteamVR_Input_Sources.Any))
+                    {
+                        QuickAbstract.enterChatText();
+                    }
+                }
+                else if (SteamVR_Actions.default_GrabGrip.GetStateUp(SteamVR_Input_Sources.Any) ||
+                    SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.Any))
+                {
+                    QuickAbstract.unfocusChatWindow();
+                }
+            }
+
         }
 
         void FixedUpdate()
         {
+            updateSmoothWalkSpeed(Time.fixedDeltaTime);
+            updateAutoRun();
             updateAltPieceRotationTimer();
             updateAltMapZoomTimer();
         }
@@ -123,6 +148,62 @@ namespace ValheimVRMod.VRCore.UI
             // Reset this at the complete end of the update to allow for
             // both MapZoomIn and MapZoomOut to test the zoom input.
             altMapZoomTriggered = false;
+        }
+
+        private void updateSmoothWalkSpeed(float deltaTime)
+        {
+            float joystickY = GetJoyLeftStickY();
+            if (deltaTime == 0 || smoothWalkSpeed == float.NaN)
+            {
+                smoothWalkSpeed = joystickY;
+                return;
+            }
+
+            float smoothener = VHVRConfig.WalkSpeedSmoothener();
+            if (!isAutoRunActive && Mathf.Abs(joystickY) > VHVRConfig.AutoRunThreshold())
+            {
+                // Increase smoothener to avoid triggering auto-run too easily.
+                smoothener = 1;
+            }
+            smoothWalkSpeed = Mathf.MoveTowards(smoothWalkSpeed, joystickY, Time.deltaTime / smoothener);
+
+            if (Mathf.Abs(smoothWalkSpeed) < VHVRConfig.AutoRunThreshold() &&
+                Mathf.Abs(smoothWalkSpeed) < Mathf.Abs(joystickY))
+            {
+                smoothWalkSpeed = Mathf.Sign(joystickY) * Mathf.Min(VHVRConfig.AutoRunThreshold(), Mathf.Abs(joystickY));
+            }
+        }
+
+        private void updateAutoRun()
+        {
+            if (VRPlayer.gesturedLocomotionManager != null && VRPlayer.gesturedLocomotionManager.isRunning)
+            {
+                isAutoRunActive = true;
+                return;
+            }
+
+            float joystickX = GetJoyLeftStickX();
+            float squareSpeed = joystickX * joystickX + smoothWalkSpeed * smoothWalkSpeed;
+
+            if (squareSpeed < VHVRConfig.AutoRunDeactivationThreshold() * VHVRConfig.AutoRunDeactivationThreshold())
+            {
+                isAutoRunActive = false;
+                return;
+            }
+
+            if (VHVRConfig.AutoRunThreshold() >= 0.95f &&
+                SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.LeftHand) &&
+                SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.RightHand))
+            {
+                return;
+            }
+
+            if (Player.m_localPlayer != null &&
+                !Player.m_localPlayer.IsRunning() &&
+                squareSpeed > VHVRConfig.AutoRunActivationThreshold() * VHVRConfig.AutoRunActivationThreshold())
+            {
+                isAutoRunActive = true;
+            }
         }
 
         private void updateAltPieceRotationTimer()

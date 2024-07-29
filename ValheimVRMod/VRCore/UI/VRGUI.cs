@@ -66,7 +66,7 @@ namespace ValheimVRMod.VRCore.UI
         private Camera _uiPanelCamera;
         private Camera _guiCamera;
         private Canvas _guiCanvas;
-        private GameObject _uiPanel;
+        private static GameObject _uiPanel;
         private GameObject _uiPanelTransformLocker;
         private RenderTexture _guiTexture;
         private RenderTexture _overlayTexture;
@@ -566,18 +566,16 @@ namespace ValheimVRMod.VRCore.UI
 
         private Vector3 getTargetGuiDirection()
         {
-            Vector3 forwardDirection = Vector3.forward;
-            if (Player.m_localPlayer != null)
+            var hmd = Valve.VR.InteractionSystem.Player.instance?.hmdTransform;
+            if (Player.m_localPlayer == null || hmd == null || USING_OVERLAY)
             {
-                if (!USING_OVERLAY)
-                {
-                    forwardDirection = Valve.VR.InteractionSystem.Player.instance.hmdTransform.forward;
-                    forwardDirection.y = 0;
-                    forwardDirection.Normalize();
-                }
+                return Vector3.forward;
             }
-            
-            return forwardDirection;
+
+            var targetGuiDirection = hmd.forward;
+            targetGuiDirection.y = 0;
+            targetGuiDirection.Normalize();
+            return targetGuiDirection;
         }
 
         private Vector3 getCurrentGuiDirection()
@@ -664,6 +662,11 @@ namespace ValheimVRMod.VRCore.UI
             _guiCamera.farClipPlane = 5f;
             _guiCamera.nearClipPlane = 0.1f;
             _guiCamera.enabled = true;
+        }
+
+        public static GameObject getUiPanel()
+        {
+            return _uiPanel;
         }
 
         class VRGUI_InputModule : StandaloneInputModule

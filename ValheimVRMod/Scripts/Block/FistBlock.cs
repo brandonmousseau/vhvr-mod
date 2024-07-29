@@ -6,7 +6,6 @@ using ValheimVRMod.VRCore;
 namespace ValheimVRMod.Scripts.Block {
     public class FistBlock : Block {
         private const float MIN_PARRY_SPEED = 1f;
-        private readonly Vector3 handUp = new Vector3(0, -0.15f, -0.85f);
 
         private Collider leftHandBlockBox;
         private Collider rightHandBlockBox;
@@ -82,11 +81,9 @@ namespace ValheimVRMod.Scripts.Block {
             }
             else if (FistCollision.hasDualWieldingWeaponEquipped() && EquipScript.getRight() != EquipType.Claws)
             {
-                var leftAngle = Vector3.Dot(hitData.m_dir, offhand.TransformDirection(handUp));
-                var rightAngle = Vector3.Dot(hitData.m_dir, hand.TransformDirection(handUp));
-                var leftHandBlock = (leftAngle > -0.5f && leftAngle < 0.5f);
-                var rightHandBlock = (rightAngle > -0.5f && rightAngle < 0.5f);
-                _blocking = leftHandBlock && rightHandBlock;
+                var leftAngle = Vector3.Angle(hitData.m_dir, VRPlayer.leftHandBone.right);
+                var rightAngle = Vector3.Angle(hitData.m_dir, VRPlayer.rightHandBone.right);
+                _blocking = leftAngle > 60 && leftAngle < 120 && rightAngle > 60 && rightAngle < 120;
                 CheckParryMotion(hitData.m_dir, true, true);
             }
             else if (StaticObjects.leftFist().blockingWithFist() && StaticObjects.rightFist().blockingWithFist())
@@ -158,9 +155,11 @@ namespace ValheimVRMod.Scripts.Block {
             leftHandBlockBox = GameObject.CreatePrimitive(PrimitiveType.Cube).GetComponent<Collider>();
             leftHandBlockBox.transform.parent = VRPlayer.leftHandBone;
             leftHandBlockBox.isTrigger = true;
+            leftHandBlockBox.gameObject.layer = LayerUtils.CHARACTER;
             rightHandBlockBox = GameObject.CreatePrimitive(PrimitiveType.Cube).GetComponent<Collider>();
             rightHandBlockBox.transform.parent = VRPlayer.rightHandBone;
             rightHandBlockBox.isTrigger = true;
+            rightHandBlockBox.gameObject.layer = LayerUtils.CHARACTER;
 
             var leftHandBlockBoxRenderer = leftHandBlockBox.GetComponent<MeshRenderer>();
             var rightHandBlockBoxRenderer = rightHandBlockBox.GetComponent<MeshRenderer>();

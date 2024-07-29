@@ -20,7 +20,7 @@ namespace ValheimVRMod.Scripts {
 
         private WeaponWield.TwoHandedState twoHandedState = WeaponWield.TwoHandedState.SingleHanded;
         private bool isLeftHanded = false;
-        private bool holdingInversedSpear = false;
+        private bool inverseHold = false;
 
         private Player player;
         private Vector3 ownerLastPositionCamera = Vector3.zero;
@@ -51,6 +51,7 @@ namespace ValheimVRMod.Scripts {
         public BowManager bowManager;
         public GameObject currentLeftWeapon;
         public GameObject currentRightWeapon;
+        public GameObject currentDualWieldWeapon;
 
         public int remotePlayerNonDominantHandItemHash;
         public int remotePlayerDominantHandItemHash;
@@ -94,9 +95,24 @@ namespace ValheimVRMod.Scripts {
             return isLeftHanded;
         }
 
-        public bool HoldingInversedSpear()
+        public bool InverseHold()
         {
-            return holdingInversedSpear;
+            if (isOwner())
+            {
+                if (EquipScript.getRight() == EquipType.Knife)
+                {
+                    inverseHold = TwoHandedGeometry.LocalKnifeGeometryProvider.shouldInverseHold;
+                }
+                else if (EquipScript.isSpearEquipped() && !ThrowableManager.isAiming)
+                {
+                    inverseHold = VHVRConfig.SpearInverseWield() || LocalWeaponWield.isCurrentlyTwoHanded();
+                }
+                else
+                {
+                    inverseHold = false;
+                }
+            }
+            return inverseHold;
         }
         
         public bool IsVrEnabled()
@@ -158,11 +174,7 @@ namespace ValheimVRMod.Scripts {
             pkg.Write(BowLocalManager.instance != null && BowLocalManager.instance.pulling);
             pkg.Write(isLeftHanded = VHVRConfig.LeftHanded());
             pkg.Write((byte) (twoHandedState = LocalWeaponWield.LocalPlayerTwoHandedState));
-            pkg.Write(
-                holdingInversedSpear =
-                    EquipScript.isSpearEquipped() &&
-                    !ThrowableManager.isAiming &&
-                    (VHVRConfig.SpearInverseWield() || twoHandedState != WeaponWield.TwoHandedState.SingleHanded));
+            pkg.Write(InverseHold());
 
             GetComponent<ZNetView>().GetZDO().Set("vr_data", pkg.GetArray());
         }
@@ -226,7 +238,7 @@ namespace ValheimVRMod.Scripts {
             maybePullBow(pkg.ReadBool());
             isLeftHanded = pkg.ReadBool();
             twoHandedState = (WeaponWield.TwoHandedState) pkg.ReadByte();
-            holdingInversedSpear = pkg.ReadBool();
+            inverseHold = pkg.ReadBool();
         }
 
         private void maybePullBow(bool pulling) {

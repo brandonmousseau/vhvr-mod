@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using HarmonyLib;
+using UnityEngine;
+using ValheimVRMod.VRCore;
 using ValheimVRMod.Utilities;
 using Valve.VR.InteractionSystem;
 
@@ -48,6 +50,42 @@ namespace ValheimVRMod.Patches {
             // A render scale less than 1 would cause the game world disappear in VR. Force it to be 1 since we do not support any other value.
             VirtualFrameBuffer.m_global3DRenderScale = 1f;
             return false;
+        }
+    }
+
+    /**
+     * Remove attack animation by speeding it up. It only applies to attack moves,
+     * because the original method switches it back to normal for other animations
+     */
+    [HarmonyPatch(typeof(CharacterAnimEvent), nameof(CharacterAnimEvent.CustomFixedUpdate))]
+    class PatchFixedUpdate
+    {
+
+        public static float lastSpeedUp = 1f;
+        static void Prefix(Character ___m_character, ref Animator ___m_animator)
+        {
+            if (___m_character != Player.m_localPlayer || !VHVRConfig.UseVrControls())
+            {
+                return;
+            }
+
+            if (!EquipScript.shouldSkipAttackAnimation() || ___m_character.IsStaggering() || !VRPlayer.attachedToPlayer)
+            {
+                ___m_animator.speed = 1f;
+                return;
+            }
+
+            if (___m_character.IsSitting() && !___m_character.m_attack && !___m_character.m_attackHold)
+            {
+                ___m_animator.speed = 1f;
+                return;
+            }
+
+            if (___m_animator.speed != 1 && ___m_animator.speed != 1000)
+            {
+                lastSpeedUp = ___m_animator.speed;
+            }
+            ___m_animator.speed = 1000f;
         }
     }
 }

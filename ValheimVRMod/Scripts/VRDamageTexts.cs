@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.UI;
 using ValheimVRMod.Utilities;
 
@@ -24,7 +24,7 @@ namespace ValheimVRMod.Scripts
         private void OnRenderObject()
         {
             var dt = Time.unscaledDeltaTime;
-            timer += dt/10;
+            timer += dt / 10; // TODO: Maybe move timer update to Update() or FixedUpdate();
             //LogUtils.LogDebug("timer : " + timer + " / " + textDuration);
             
             if (selfText)
@@ -33,16 +33,29 @@ namespace ValheimVRMod.Scripts
             }
             else
             {
+                if (vrCam == null)
+                {
+                    return;
+                }
+
                 var camerapos = vrCam.transform.position;
                 var range = Mathf.Min(Vector3.Distance(damageTextObject.transform.position, camerapos)/20, 0.25f)*4;
                 damageTextObject.transform.localPosition += new Vector3(0, dt * range / 30, 0);
                 damageTextObject.transform.LookAt(vrCam.transform, Vector3.up);
                 damageTextObject.transform.Rotate(0, 180, 0);
             }
+
+            if (timer > textDuration)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
             var colorA = currText.color;
             colorA.a = 1f - Mathf.Pow(Mathf.Clamp01(timer / textDuration), 3f);
             currText.color = colorA;
         }
+
         public void CreateText(string text, Vector3 pos, Color color, bool myself,float textDur)
         {
             damageTextObject = transform.gameObject;
@@ -73,7 +86,7 @@ namespace ValheimVRMod.Scripts
                     Vector3 randomPos = new Vector3(UnityEngine.Random.Range(-1f, 1f), UnityEngine.Random.Range(-1f, 1f), 0) / 100;
                     float hudDistance = 1f;
                     float hudVerticalOffset = -0.5f;
-                    damageTextObject.transform.localPosition = new Vector3(VHVRConfig.CameraHudX() * 1000, hudVerticalOffset + VHVRConfig.CameraHudY() * 1000, hudDistance) + Vector3.right * 0.05f + Vector3.up * -0.1f + randomPos;
+                    damageTextObject.transform.localPosition = new Vector3(VHVRConfig.CameraLockedPos().x, hudVerticalOffset + VHVRConfig.CameraLockedPos().y, hudDistance) + Vector3.right * 0.05f + Vector3.up * -0.1f + randomPos;
                     damageTextObject.transform.LookAt(vrCam.transform, Vector3.up);
                     damageTextObject.transform.Rotate(0, 180, 0);
                 }
