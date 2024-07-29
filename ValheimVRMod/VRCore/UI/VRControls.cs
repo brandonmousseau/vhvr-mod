@@ -81,8 +81,11 @@ namespace ValheimVRMod.VRCore.UI
             }
         }
 
-        public static float smoothWalkSpeed { get; private set; }
+        public static float smoothWalkX { get { return smoothWalkVelocity.x; } }
+        public static float smoothWalkY { get { return smoothWalkVelocity.y; } }
         public static bool isAutoRunActive;
+        private static Vector2 smoothWalkVelocity;
+        private static float smoothWalkSpeed;
 
         public static string ToggleMiniMap { get { return "ToggleMiniMap"; } }
 
@@ -137,7 +140,7 @@ namespace ValheimVRMod.VRCore.UI
 
         void FixedUpdate()
         {
-            updateSmoothWalkSpeed(Time.fixedDeltaTime);
+            updateSmoothWalkVelocity(Time.fixedDeltaTime);
             updateAutoRun();
             updateAltPieceRotationTimer();
             updateAltMapZoomTimer();
@@ -150,28 +153,35 @@ namespace ValheimVRMod.VRCore.UI
             altMapZoomTriggered = false;
         }
 
-        private void updateSmoothWalkSpeed(float deltaTime)
+        private void updateSmoothWalkVelocity(float deltaTime)
         {
-            float joystickY = GetJoyLeftStickY();
-            if (deltaTime == 0 || smoothWalkSpeed == float.NaN)
+            Vector2 input = GetJoyLeftStickInput();
+            if (deltaTime == 0 || smoothWalkVelocity.x == float.NaN || smoothWalkVelocity.y == float.NaN)
             {
-                smoothWalkSpeed = joystickY;
+                smoothWalkVelocity = input;
+                smoothWalkSpeed = smoothWalkVelocity.magnitude;
                 return;
             }
 
             float smoothener = VHVRConfig.WalkSpeedSmoothener();
-            if (!isAutoRunActive && Mathf.Abs(joystickY) > VHVRConfig.AutoRunThreshold())
+            if (smoothWalkSpeed < VHVRConfig.AutoRunThreshold())
+            {
+                var inputSpeed = input.magnitude;
+                if (smoothWalkSpeed < inputSpeed)
+                {
+                    smoothWalkSpeed = Mathf.Min(VHVRConfig.AutoRunThreshold(), inputSpeed);
+                    smoothWalkVelocity = input / inputSpeed * smoothWalkSpeed;
+                    return;
+                }
+            }
+            else if (!isAutoRunActive)
             {
                 // Increase smoothener to avoid triggering auto-run too easily.
                 smoothener = 1;
             }
-            smoothWalkSpeed = Mathf.MoveTowards(smoothWalkSpeed, joystickY, Time.deltaTime / smoothener);
 
-            if (Mathf.Abs(smoothWalkSpeed) < VHVRConfig.AutoRunThreshold() &&
-                Mathf.Abs(smoothWalkSpeed) < Mathf.Abs(joystickY))
-            {
-                smoothWalkSpeed = Mathf.Sign(joystickY) * Mathf.Min(VHVRConfig.AutoRunThreshold(), Mathf.Abs(joystickY));
-            }
+            smoothWalkVelocity = Vector2.MoveTowards(smoothWalkVelocity, input, Time.deltaTime / smoothener);
+            smoothWalkSpeed = smoothWalkVelocity.magnitude;
         }
 
         private void updateAutoRun()
@@ -182,10 +192,7 @@ namespace ValheimVRMod.VRCore.UI
                 return;
             }
 
-            float joystickX = GetJoyLeftStickX();
-            float squareSpeed = joystickX * joystickX + smoothWalkSpeed * smoothWalkSpeed;
-
-            if (squareSpeed < VHVRConfig.AutoRunDeactivationThreshold() * VHVRConfig.AutoRunDeactivationThreshold())
+            if (smoothWalkSpeed < VHVRConfig.AutoRunDeactivationThreshold())
             {
                 isAutoRunActive = false;
                 return;
@@ -200,7 +207,7 @@ namespace ValheimVRMod.VRCore.UI
 
             if (Player.m_localPlayer != null &&
                 !Player.m_localPlayer.IsRunning() &&
-                squareSpeed > VHVRConfig.AutoRunActivationThreshold() * VHVRConfig.AutoRunActivationThreshold())
+                smoothWalkSpeed > VHVRConfig.AutoRunActivationThreshold())
             {
                 isAutoRunActive = true;
             }
@@ -518,6 +525,17 @@ namespace ValheimVRMod.VRCore.UI
                 return 0.0f;
             }
             return -walk.axis.y;
+        }
+
+        public Vector2 GetJoyLeftStickInput()
+        {
+            if (!mainActionSet.IsActive())
+            {
+                return Vector2.zero;
+            }
+            var input = walk.axis;
+            input.y = -input.y;
+            return input;
         }
 
         public float GetJoyRightStickX()
