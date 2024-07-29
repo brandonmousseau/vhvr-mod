@@ -81,6 +81,12 @@ namespace ValheimVRMod.VRCore.UI
             }
         }
 
+        public static float smoothWalkX { get { return smoothWalkVelocity.x; } }
+        public static float smoothWalkY { get { return smoothWalkVelocity.y; } }
+        public static bool isAutoRunActive;
+        private static Vector2 smoothWalkVelocity;
+        private static float smoothWalkSpeed;
+
         public static string ToggleMiniMap { get { return "ToggleMiniMap"; } }
 
         public static VRControls instance { get { return _instance; } }
@@ -134,6 +140,8 @@ namespace ValheimVRMod.VRCore.UI
 
         void FixedUpdate()
         {
+            updateSmoothWalkVelocity(Time.fixedDeltaTime);
+            updateAutoRun();
             updateAltPieceRotationTimer();
             updateAltMapZoomTimer();
         }
@@ -143,6 +151,66 @@ namespace ValheimVRMod.VRCore.UI
             // Reset this at the complete end of the update to allow for
             // both MapZoomIn and MapZoomOut to test the zoom input.
             altMapZoomTriggered = false;
+        }
+
+        private void updateSmoothWalkVelocity(float deltaTime)
+        {
+            Vector2 input = GetJoyLeftStickInput();
+            if (deltaTime == 0 || smoothWalkVelocity.x == float.NaN || smoothWalkVelocity.y == float.NaN)
+            {
+                smoothWalkVelocity = input;
+                smoothWalkSpeed = smoothWalkVelocity.magnitude;
+                return;
+            }
+
+            float smoothener = VHVRConfig.WalkSpeedSmoothener();
+            if (smoothWalkSpeed < VHVRConfig.AutoRunThreshold())
+            {
+                var inputSpeed = input.magnitude;
+                if (smoothWalkSpeed < inputSpeed)
+                {
+                    smoothWalkSpeed = Mathf.Min(VHVRConfig.AutoRunThreshold(), inputSpeed);
+                    smoothWalkVelocity = input / inputSpeed * smoothWalkSpeed;
+                    return;
+                }
+            }
+            else if (!isAutoRunActive)
+            {
+                // Increase smoothener to avoid triggering auto-run too easily.
+                smoothener = 1;
+            }
+
+            smoothWalkVelocity = Vector2.MoveTowards(smoothWalkVelocity, input, Time.deltaTime / smoothener);
+            smoothWalkSpeed = smoothWalkVelocity.magnitude;
+        }
+
+        private void updateAutoRun()
+        {
+            if (VRPlayer.gesturedLocomotionManager != null && VRPlayer.gesturedLocomotionManager.isRunning)
+            {
+                isAutoRunActive = true;
+                return;
+            }
+
+            if (smoothWalkSpeed < VHVRConfig.AutoRunDeactivationThreshold())
+            {
+                isAutoRunActive = false;
+                return;
+            }
+
+            if (VHVRConfig.AutoRunThreshold() >= 0.95f &&
+                SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.LeftHand) &&
+                SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.RightHand))
+            {
+                return;
+            }
+
+            if (Player.m_localPlayer != null &&
+                !Player.m_localPlayer.IsRunning() &&
+                smoothWalkSpeed > VHVRConfig.AutoRunActivationThreshold())
+            {
+                isAutoRunActive = true;
+            }
         }
 
         private void updateAltPieceRotationTimer()
@@ -457,6 +525,17 @@ namespace ValheimVRMod.VRCore.UI
                 return 0.0f;
             }
             return -walk.axis.y;
+        }
+
+        public Vector2 GetJoyLeftStickInput()
+        {
+            if (!mainActionSet.IsActive())
+            {
+                return Vector2.zero;
+            }
+            var input = walk.axis;
+            input.y = -input.y;
+            return input;
         }
 
         public float GetJoyRightStickX()
