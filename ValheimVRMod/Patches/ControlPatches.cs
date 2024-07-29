@@ -110,7 +110,7 @@ namespace ValheimVRMod.Patches {
                     }
                     return;
                 }
-                __result = __result + joystick / VHVRConfig.AutoRunThreshold() + (VRPlayer.gesturedLocomotionManager?.stickOutputX ?? 0);
+                __result = __result + VRControls.smoothWalkX / VHVRConfig.AutoRunThreshold() + (VRPlayer.gesturedLocomotionManager?.stickOutputX ?? 0);
             }
         }
     }
@@ -136,7 +136,7 @@ namespace ValheimVRMod.Patches {
                     return;
                 }
 
-                __result = __result + VRControls.smoothWalkSpeed / VHVRConfig.AutoRunThreshold() + (VRPlayer.gesturedLocomotionManager?.stickOutputY?? 0);
+                __result = __result + VRControls.smoothWalkY / VHVRConfig.AutoRunThreshold() + (VRPlayer.gesturedLocomotionManager?.stickOutputY?? 0);
             }
         }
     }
