@@ -9,7 +9,7 @@ namespace ValheimVRMod.Utilities
     public enum EquipType
     {
         None,
-        Fishing, Cultivator, Hammer, Hoe, Torch,
+        Fishing, Cultivator, Hammer, Hoe, Torch, Scythe,
         Bow, Spear, SpearChitin, ThrowObject,
         Shield, Tankard, Claws, Magic, Crossbow
         ,
@@ -67,6 +67,11 @@ namespace ValheimVRMod.Utilities
 
         public static EquipType getRightEquipType(ItemDrop.ItemData item)
         {
+            if (item?.m_shared?.m_attack?.m_harvest?? false)
+            {
+                return EquipType.Scythe;
+            }
+
             var attackAnim = item?.m_shared.m_attack.m_attackAnimation;
             switch (attackAnim)
             {
