@@ -100,6 +100,7 @@ namespace ValheimVRMod.VRCore.UI {
             }
             var tabs = settingsPrefab.transform.Find("Panel").Find("TabContent");
             controlSettingsPrefab = tabs.Find("KeyboardMouse").gameObject;
+            // TODO: try this to see if helps skipping Update() and Destroy() method: controlSettingsPrefab.GetComponent<KeyboardMouseSettings>().enabled = false;
             togglePrefab = controlSettingsPrefab.GetComponentInChildren<Toggle>().gameObject;
             if (sliderPrefab == null)
             {
@@ -108,7 +109,7 @@ namespace ValheimVRMod.VRCore.UI {
             if (keyBindingPrefab == null)
             {
                 keyBindingPrefab = createKeyBindingPrefab(
-                    controlSettingsPrefab.transform.Find("List").Find("Bindings").Find("Grid").Find("Use").gameObject);
+                    controlSettingsPrefab.transform.Find("List").Find("Bindings").Find("Viewport").Find("Grid").Find("Use").gameObject);
             }
             if (chooserPrefab == null)
             {
@@ -678,7 +679,7 @@ namespace ValheimVRMod.VRCore.UI {
             {
                 ZInput.instance.m_buttons.Remove(configValue.Key);
             }
-            ZInput.instance.AddButton(configValue.Key, ZInput.KeyCodeToKey((KeyCode)Enum.Parse(typeof(KeyCode), configValue.Value.GetSerializedValue())));
+            ZInput.instance.AddButton(configValue.Key, ZInput.KeyCodeToPath((KeyCode)Enum.Parse(typeof(KeyCode), configValue.Value.GetSerializedValue())));
         }
 
         private static void CaptureScreenshot()
@@ -708,7 +709,7 @@ namespace ValheimVRMod.VRCore.UI {
                     var buttons = AccessTools.FieldRefAccess<ZInput, Dictionary<string, ZInput.ButtonDef>>(ZInput.instance, "m_buttons");
                     ZInput.ButtonDef buttonDef;
                     buttons.TryGetValue(key.m_keyName, out buttonDef);
-                    tmpComfigComponent.value = buttonDef.m_key.ToString();
+                    tmpComfigComponent.value = buttonDef.ButtonAction.bindings[0].path;
                 }
             }
             

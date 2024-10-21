@@ -111,6 +111,8 @@ namespace ValheimVRMod.Patches {
             weaponCol.setColliderParent(
                 meshFilter, handPosition: ___m_rightItemInstance.transform.parent.position, ___m_rightItem, true);
             weaponCol.weaponWield = weaponWield;
+            // TODO: Should layer 3 be used for weapons too? Could potentially fix that weapons do not destruct hanging pieces in dungeons.
+            weaponCol.gameObject.layer = EquipScript.getRight() == EquipType.Scythe ? 3 : LayerUtils.CHARACTER;
             meshFilter.gameObject.AddComponent<ButtonSecondaryAttackManager>().Initialize(meshFilter.transform, ___m_rightItem, true);
 
             if (___m_rightItem == "StaffLightning")

@@ -108,6 +108,12 @@ namespace ValheimVRMod.Scripts
                             MaybeAttackCollider(collider, requireStab: false);
                         }
                         return;
+                    case EquipType.Scythe:
+                        if ((LayerUtils.HARVEST_RAY_MASK & (1 << collider.gameObject.layer)) != 0)
+                        {
+                            MaybeAttackCollider(collider, requireStab: false);
+                        }
+                        return;
                 }
                 return;
             }
@@ -190,6 +196,8 @@ namespace ValheimVRMod.Scripts
                     case EquipType.Hammer:
                         hasPendingToolUsageOutput = Player.m_localPlayer.InRepairMode();
                         return;
+                    case EquipType.Scythe:
+                        break;
                     default:
                         return;
                 }
@@ -330,7 +338,7 @@ namespace ValheimVRMod.Scripts
             attack = item.m_shared.m_attack.Clone();
             secondaryAttack = item.m_shared.m_secondaryAttack.Clone();
 
-            itemIsTool = (name == "Hammer" || EquipScript.getRight() == EquipType.Hoe || EquipScript.getRight() == EquipType.Cultivator);
+            itemIsTool = (name == "Hammer" || EquipScript.getRight() == EquipType.Hoe || EquipScript.getRight() == EquipType.Cultivator || EquipScript.getRight() == EquipType.Scythe);
 
             if (colliderParent == null)
             {
@@ -353,6 +361,21 @@ namespace ValheimVRMod.Scripts
                 colliderParent.transform.localPosition = colliderData.pos;
                 colliderParent.transform.localRotation = Quaternion.Euler(colliderData.euler);
                 colliderParent.transform.localScale = colliderData.scale;
+
+                if (attack.m_harvest)
+                {
+                    // Adjust collider size by farming skill level.
+                    float skillFactor = Player.m_localPlayer.GetSkillFactor(Skills.SkillType.Farming);
+                    float radius = Mathf.Lerp(attack.m_harvestRadius, attack.m_harvestRadiusMaxLevel, skillFactor);
+                    Vector3 harvestScale = colliderData.scale * radius;
+                    colliderParent.transform.localScale *= radius;
+                    Vector3 additionalOffset = (colliderParent.transform.localScale - colliderData.scale) * 0.5f;
+                    additionalOffset.x *= Mathf.Sign(colliderData.pos.x);
+                    additionalOffset.y *= Mathf.Sign(colliderData.pos.y);
+                    additionalOffset.z *= Mathf.Sign(colliderData.pos.z);
+                    colliderParent.transform.localPosition += additionalOffset;
+                }
+
                 setScriptActive(true);
             }
             catch (InvalidEnumArgumentException)

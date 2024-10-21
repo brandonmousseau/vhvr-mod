@@ -6,7 +6,7 @@ using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
 
 namespace ValheimVRMod.Patches {
-    
+
     [HarmonyPatch(typeof(Attack), nameof(Attack.GetAttackOrigin))]
     class PatchAreaAttack {
 
@@ -254,12 +254,34 @@ namespace ValheimVRMod.Patches {
             foreach (Skills.SkillType skill in skillTypeSet)
                 ___m_character.RaiseSkill(skill, flag2 ? 1.5f : 1f);
 
-            if (!___m_spawnOnTrigger)
-                return;
-            // FIXME: Setup now takes in input an additional ammo parameter, look into this
-            Object.Instantiate(___m_spawnOnTrigger, zero,
-                Quaternion.identity).GetComponent<IProjectile>()?.Setup(___m_character,
-                ___m_character.transform.forward, -1f, null, ___m_weapon, ___m_ammoItem);
+            if (___m_spawnOnTrigger)
+            {
+                // FIXME: Setup now takes in input an additional ammo parameter, look into this
+                Object.Instantiate(___m_spawnOnTrigger, zero,
+                    Quaternion.identity).GetComponent<IProjectile>()?.Setup(___m_character,
+                    ___m_character.transform.forward, -1f, null, ___m_weapon, ___m_ammoItem);
+            }
+
+            if (__instance.m_harvest && ___m_character == Player.m_localPlayer)
+            {
+                Pickable pickable = hitObject.GetComponent<Pickable>();
+                if (pickable != null && pickable.m_harvestable && pickable.CanBePicked())
+                {
+                    pickable.Interact(Player.m_localPlayer, false, false);
+                }
+                else
+                {
+                    Plant plant = hitObject.GetComponent<Plant>();
+                    if (plant != null && plant.GetStatus() != Plant.Status.Healthy)
+                    {
+                        Destructible destructible = hitObject.GetComponent<Destructible>();
+                        if (destructible != null)
+                        {
+                            destructible.Destroy(null);
+                        }
+                    }
+                }
+            }
 
             return;
         }

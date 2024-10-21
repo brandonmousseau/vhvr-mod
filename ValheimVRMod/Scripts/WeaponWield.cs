@@ -188,6 +188,8 @@ namespace ValheimVRMod.Scripts
                     break;
                 case EquipType.Polearms:
                     return new TwoHandedGeometry.AtgeirGeometryProvider(distanceBetweenGripAndRearEnd);
+                case EquipType.Scythe:
+                    return new TwoHandedGeometry.ScytheGeometryProvider(IsPlayerLeftHanded(), distanceBetweenGripAndRearEnd);
                 case EquipType.Spear:
                 case EquipType.SpearChitin:
                     if (isLocal)
