@@ -84,6 +84,7 @@ namespace ValheimVRMod.VRCore.UI
         public static float smoothWalkX { get { return smoothWalkVelocity.x; } }
         public static float smoothWalkY { get { return smoothWalkVelocity.y; } }
         public static bool isAutoRunActive;
+        public static bool isExhaustedFromRunning;
         private static Vector2 smoothWalkVelocity;
         private static float smoothWalkSpeed;
 
@@ -156,17 +157,33 @@ namespace ValheimVRMod.VRCore.UI
         private void updateSmoothWalkVelocity(float deltaTime)
         {
             Vector2 input = GetJoyLeftStickInput();
+            var inputSpeed = input.magnitude;
+
+            if (Player.m_localPlayer != null)
+            {
+                if (Player.m_localPlayer.HaveStamina())
+                {
+                    if (inputSpeed < VHVRConfig.AutoRunActivationThreshold())
+                    {
+                        isExhaustedFromRunning = false;
+                    }
+                }
+                else if (isAutoRunActive)
+                {
+                    isExhaustedFromRunning = true;                    
+                }
+            }
+
             if (deltaTime == 0 || smoothWalkVelocity.x == float.NaN || smoothWalkVelocity.y == float.NaN)
             {
                 smoothWalkVelocity = input;
-                smoothWalkSpeed = smoothWalkVelocity.magnitude;
+                smoothWalkSpeed = inputSpeed;
                 return;
             }
 
             float smoothener = VHVRConfig.WalkSpeedSmoothener();
             if (smoothWalkSpeed < VHVRConfig.AutoRunThreshold())
             {
-                var inputSpeed = input.magnitude;
                 if (smoothWalkSpeed < inputSpeed)
                 {
                     smoothWalkSpeed = Mathf.Min(VHVRConfig.AutoRunThreshold(), inputSpeed);
@@ -186,6 +203,12 @@ namespace ValheimVRMod.VRCore.UI
 
         private void updateAutoRun()
         {
+            if (isExhaustedFromRunning)
+            {
+                isAutoRunActive = false;
+                return;
+            }
+
             if (VRPlayer.gesturedLocomotionManager != null && VRPlayer.gesturedLocomotionManager.isRunning)
             {
                 isAutoRunActive = true;
