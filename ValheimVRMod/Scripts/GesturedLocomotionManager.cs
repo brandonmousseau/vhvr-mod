@@ -85,7 +85,7 @@ namespace ValheimVRMod.Scripts
             {
                 isRunning = true;
             }
-            else if (horizontalSpeed < RUN_DEACTIVATION_SPEED)
+            else if (horizontalSpeed < RUN_DEACTIVATION_SPEED || Player.m_localPlayer == null || !Player.m_localPlayer.HaveStamina())
             {
                 isRunning = false;
             }
