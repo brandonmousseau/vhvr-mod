@@ -1426,9 +1426,14 @@ namespace ValheimVRMod.Utilities
             return autoRunThreshold.Value;
         }
 
+        public static bool EnableAutoRun()
+        {
+            return autoRunThreshold.Value <= 0.99f;
+        }
+
         public static float AutoRunActivationThreshold()
         {
-            return autoRunThreshold.Value >= 0.99f ? Mathf.Infinity : Mathf.Min(autoRunThreshold.Value + 0.33f, 0.99f);
+            return EnableAutoRun() ? Mathf.Min(autoRunThreshold.Value + 0.33f, 0.99f) : Mathf.Infinity;
         }
 
         public static float AutoRunDeactivationThreshold()
