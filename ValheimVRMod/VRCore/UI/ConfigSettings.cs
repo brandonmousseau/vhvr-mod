@@ -52,7 +52,11 @@ namespace ValheimVRMod.VRCore.UI {
             ConfigSettings.enableTransformButtons = enableTransformButtons;
         }
 
-
+        public static bool isVHVRClone(KeyboardMouseSettings settings)
+        {
+            return settings.GetComponentInParent<SettingsCloneMarker>(includeInactive: true) != null;
+        }
+ 
         /// <summary>
         /// Create an Entry in the Menu 
         /// </summary>
@@ -100,7 +104,6 @@ namespace ValheimVRMod.VRCore.UI {
             }
             var tabs = settingsPrefab.transform.Find("Panel").Find("TabContent");
             controlSettingsPrefab = tabs.Find("KeyboardMouse").gameObject;
-            // TODO: try this to see if helps skipping Update() and Destroy() method: controlSettingsPrefab.GetComponent<KeyboardMouseSettings>().enabled = false;
             togglePrefab = controlSettingsPrefab.GetComponentInChildren<Toggle>().gameObject;
             if (sliderPrefab == null)
             {
@@ -152,6 +155,7 @@ namespace ValheimVRMod.VRCore.UI {
         /// </summary>
         private static void createModSettings() {
             settings = Object.Instantiate(settingsPrefab, menuParent);
+            settings.AddComponent<SettingsCloneMarker>();
             settings.transform.Find("Panel").Find("Title").GetComponent<TMP_Text>().text = MenuName;
             createToolTip(settings.transform);
             var tabButtons = settings.transform.Find("Panel").Find("TabButtons");
@@ -715,5 +719,7 @@ namespace ValheimVRMod.VRCore.UI {
             
             tmpComfigComponent = null;
         }
+
+        private class SettingsCloneMarker : MonoBehaviour { }
     }
 }
