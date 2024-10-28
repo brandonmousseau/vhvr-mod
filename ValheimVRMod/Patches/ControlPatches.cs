@@ -110,7 +110,7 @@ namespace ValheimVRMod.Patches {
                     }
                     return;
                 }
-                __result = __result + joystick / VHVRConfig.AutoRunThreshold() + (VRPlayer.gesturedLocomotionManager?.stickOutputX ?? 0);
+                __result = __result + VRControls.smoothWalkX / VHVRConfig.AutoRunThreshold() + (VRPlayer.gesturedLocomotionManager?.stickOutputX ?? 0);
             }
         }
     }
@@ -123,7 +123,7 @@ namespace ValheimVRMod.Patches {
                 var joystick = VRControls.instance.GetJoyLeftStickY();
 
                 //add deadzone to ship control for forward and backward so its harder to accidentally change speed
-                if (Player.m_localPlayer.IsAttached())
+                if (Player.m_localPlayer != null && Player.m_localPlayer.IsAttached())
                 {
                     if(joystick > -0.9f && joystick < 0.9f)
                     {
@@ -136,7 +136,7 @@ namespace ValheimVRMod.Patches {
                     return;
                 }
 
-                __result = __result + VRControls.smoothWalkSpeed / VHVRConfig.AutoRunThreshold() + (VRPlayer.gesturedLocomotionManager?.stickOutputY?? 0);
+                __result = __result + VRControls.smoothWalkY / VHVRConfig.AutoRunThreshold() + (VRPlayer.gesturedLocomotionManager?.stickOutputY?? 0);
             }
         }
     }
@@ -505,9 +505,10 @@ namespace ValheimVRMod.Patches {
             {
                 handleRunToggle(ref run);
             }
-            else
+            else if (ZInput_GetJoyRightStickY_Patch.holdingRun)
             {
-                run = run || ZInput_GetJoyRightStickY_Patch.holdingRun;
+                run = true;
+                VRControls.isAutoRunActive = false;
             }
             
             run = run || VRControls.isAutoRunActive || (VRPlayer.gesturedLocomotionManager?.isRunning?? false);
@@ -524,8 +525,14 @@ namespace ValheimVRMod.Patches {
             }
             else if (runIsTriggered)
             {
-                // If the player applies sprint input this update, toggle the sprint.
-                runToggledOn = !runToggledOn;
+                if (VRControls.isAutoRunActive)
+                {
+                    VRControls.isAutoRunActive = runToggledOn = false;
+                }
+                else {
+                    // If the player applies sprint input this update, toggle the sprint.
+                    runToggledOn = !runToggledOn;
+                }
             }
             run = runToggledOn;
             lastUpdateRunInput = ZInput_GetJoyRightStickY_Patch.togglingRun;

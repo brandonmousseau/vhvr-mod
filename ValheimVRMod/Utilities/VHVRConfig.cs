@@ -1426,14 +1426,19 @@ namespace ValheimVRMod.Utilities
             return autoRunThreshold.Value;
         }
 
+        public static bool EnableAutoRun()
+        {
+            return autoRunThreshold.Value <= 0.99f;
+        }
+
         public static float AutoRunActivationThreshold()
         {
-            return autoRunThreshold.Value >= 0.99f ? Mathf.Infinity :  Mathf.Min(autoRunThreshold.Value + 0.33f, 0.99f);
+            return EnableAutoRun() ? Mathf.Min(autoRunThreshold.Value + 0.33f, 0.99f) : Mathf.Infinity;
         }
 
         public static float AutoRunDeactivationThreshold()
         {
-            return Math.Max(autoRunThreshold.Value * 0.5f, autoRunThreshold.Value - 0.25f);
+            return autoRunThreshold.Value * 0.5f;
         }
 
         public static bool LeftHanded()

@@ -44,6 +44,13 @@ namespace ValheimVRMod.Scripts
                 damageTextObject.transform.LookAt(vrCam.transform, Vector3.up);
                 damageTextObject.transform.Rotate(0, 180, 0);
             }
+
+            if (timer > textDuration)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
             var colorA = currText.color;
             colorA.a = 1f - Mathf.Pow(Mathf.Clamp01(timer / textDuration), 3f);
             currText.color = colorA;
