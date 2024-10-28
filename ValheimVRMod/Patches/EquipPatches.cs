@@ -110,6 +110,23 @@ namespace ValheimVRMod.Patches {
             var weaponCol = StaticObjects.rightWeaponCollider().GetComponent<WeaponCollision>();
             weaponCol.setColliderParent(
                 meshFilter, handPosition: ___m_rightItemInstance.transform.parent.position, ___m_rightItem, true);
+            switch (EquipScript.getRight())
+            {
+                case EquipType.Cultivator:
+                case EquipType.Hammer:
+                case EquipType.Hoe:
+                case EquipType.Tankard:
+                    break;
+                case EquipType.Club:
+                    if (!EquipScript.isTwoHandedClubEquiped())
+                    {
+                        weaponCol.gameObject.layer = 3;
+                    }
+                    break;
+                default:
+                    weaponCol.gameObject.layer = 3;
+                    break;
+            }
             weaponCol.weaponWield = weaponWield;
             meshFilter.gameObject.AddComponent<ButtonSecondaryAttackManager>().Initialize(meshFilter.transform, ___m_rightItem, true);
 
