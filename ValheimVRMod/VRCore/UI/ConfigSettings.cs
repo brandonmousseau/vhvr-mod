@@ -52,7 +52,11 @@ namespace ValheimVRMod.VRCore.UI {
             ConfigSettings.enableTransformButtons = enableTransformButtons;
         }
 
-
+        public static bool isVHVRClone(KeyboardMouseSettings settings)
+        {
+            return settings.GetComponentInParent<SettingsCloneMarker>(includeInactive: true) != null;
+        }
+ 
         /// <summary>
         /// Create an Entry in the Menu 
         /// </summary>
@@ -108,7 +112,7 @@ namespace ValheimVRMod.VRCore.UI {
             if (keyBindingPrefab == null)
             {
                 keyBindingPrefab = createKeyBindingPrefab(
-                    controlSettingsPrefab.transform.Find("List").Find("Bindings").Find("Grid").Find("Use").gameObject);
+                    controlSettingsPrefab.transform.Find("List").Find("Bindings").Find("Viewport").Find("Grid").Find("Use").gameObject);
             }
             if (chooserPrefab == null)
             {
@@ -151,6 +155,7 @@ namespace ValheimVRMod.VRCore.UI {
         /// </summary>
         private static void createModSettings() {
             settings = Object.Instantiate(settingsPrefab, menuParent);
+            settings.AddComponent<SettingsCloneMarker>();
             settings.transform.Find("Panel").Find("Title").GetComponent<TMP_Text>().text = MenuName;
             createToolTip(settings.transform);
             var tabButtons = settings.transform.Find("Panel").Find("TabButtons");
@@ -678,7 +683,7 @@ namespace ValheimVRMod.VRCore.UI {
             {
                 ZInput.instance.m_buttons.Remove(configValue.Key);
             }
-            ZInput.instance.AddButton(configValue.Key, ZInput.KeyCodeToKey((KeyCode)Enum.Parse(typeof(KeyCode), configValue.Value.GetSerializedValue())));
+            ZInput.instance.AddButton(configValue.Key, ZInput.KeyCodeToPath((KeyCode)Enum.Parse(typeof(KeyCode), configValue.Value.GetSerializedValue())));
         }
 
         private static void CaptureScreenshot()
@@ -708,11 +713,13 @@ namespace ValheimVRMod.VRCore.UI {
                     var buttons = AccessTools.FieldRefAccess<ZInput, Dictionary<string, ZInput.ButtonDef>>(ZInput.instance, "m_buttons");
                     ZInput.ButtonDef buttonDef;
                     buttons.TryGetValue(key.m_keyName, out buttonDef);
-                    tmpComfigComponent.value = buttonDef.m_key.ToString();
+                    tmpComfigComponent.value = buttonDef.ButtonAction.bindings[0].path;
                 }
             }
             
             tmpComfigComponent = null;
         }
+
+        private class SettingsCloneMarker : MonoBehaviour { }
     }
 }

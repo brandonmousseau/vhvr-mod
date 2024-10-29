@@ -25,12 +25,13 @@ namespace ValheimVRMod.Scripts
             {
                 return weaponWield.originalPosition;
             }
+
             public virtual Quaternion GetDesiredSingleHandedRotation(WeaponWield weaponWield)
             {
                 return weaponWield.originalRotation;
             }
 
-            public Vector3 GetPreferredTwoHandedWeaponUp(WeaponWield weaponWield)
+            public virtual Vector3 GetPreferredTwoHandedWeaponUp(WeaponWield weaponWield)
             {
                 return weaponWield.transform.up;
             }
@@ -225,6 +226,33 @@ namespace ValheimVRMod.Scripts
             protected override bool InverseHold()
             {
                 return shouldInverseHold;
+            }
+        }
+
+        public class ScytheGeometryProvider : DefaultGeometryProvider
+        {
+            bool isPlayerLeftHanded;
+
+            public ScytheGeometryProvider(bool isPlayerLeftHanded, float distanceBetweenGripAndRearEnd) : base(distanceBetweenGripAndRearEnd)
+            {
+                this.isPlayerLeftHanded = isPlayerLeftHanded;
+            }
+
+            public override Vector3 GetWeaponPointingDirection(Transform weaponTransform, Vector3 longestLocalExtrusion)
+            {
+                return -longestLocalExtrusion;
+            }
+
+            public override Quaternion GetDesiredSingleHandedRotation(WeaponWield weaponWield)
+            {
+                return isPlayerLeftHanded ? weaponWield.originalRotation * Quaternion.AngleAxis(180, Vector3.forward) : weaponWield.originalRotation;
+            }
+
+            public override Vector3 GetPreferredTwoHandedWeaponUp(WeaponWield weaponWield)
+            {
+                return weaponWield.twoHandedState == WeaponWield.TwoHandedState.LeftHandBehind ?
+                    weaponWield.frontHandTransform.right:
+                    -weaponWield.frontHandTransform.right;
             }
         }
 
