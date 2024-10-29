@@ -510,8 +510,8 @@ namespace ValheimVRMod.Patches {
                 run = true;
                 VRControls.isAutoRunActive = false;
             }
-            
-            run = run || VRControls.isAutoRunActive || (VRPlayer.gesturedLocomotionManager?.isRunning?? false);
+
+            run = run || VRControls.isAutoRunActive;
         }
 
         private static void handleRunToggle(ref bool run)
