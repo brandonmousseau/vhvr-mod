@@ -115,15 +115,11 @@ namespace ValheimVRMod.Patches {
                 case EquipType.Cultivator:
                 case EquipType.Hammer:
                 case EquipType.Hoe:
+                case EquipType.Sledge:
                 case EquipType.Tankard:
                     break;
-                case EquipType.Club:
-                    if (!EquipScript.isTwoHandedClubEquiped())
-                    {
-                        weaponCol.gameObject.layer = 3;
-                    }
-                    break;
                 default:
+                    // Use this layer to make sure the weapon collides with all targets including soft building pieces and plants.
                     weaponCol.gameObject.layer = 3;
                     break;
             }
