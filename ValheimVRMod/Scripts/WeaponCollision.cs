@@ -225,7 +225,7 @@ namespace ValheimVRMod.Scripts
             }
 
             // Swap battle axe primary and secondary attacks since its primary attack is more powerful.
-            Attack currentAttack = isSecondaryAttack ^ EquipScript.isTwoHandedAxeEquiped() ? secondaryAttack : attack;
+            Attack currentAttack = isSecondaryAttack ^ EquipScript.getRight() == EquipType.BattleAxe ? secondaryAttack : attack;
 
             if (WeaponUtils.IsTwoHandedMultitargetSwipe(currentAttack) && twoHandedMultitargetSwipeCountdown <= 0)
             {
@@ -462,12 +462,16 @@ namespace ValheimVRMod.Scripts
                         mainHandPhysicsEstimator.GetAngularVelocity(),
                         LocalWeaponWield.weaponForward.normalized * WEAPON_ANGULAR_WEIGHT_OFFSET);
 
-                if (EquipScript.isTwoHandedAxeEquiped() ||
-                    EquipScript.isTwoHandedClubEquiped() ||
-                    EquipScript.getRight() == EquipType.Polearms)
+                switch (EquipScript.getRight())
                 {
-                    // Penalize momentum when wielding certain two-handed weapons with only one hand.
-                    velocity *= 0.67f;
+                    case EquipType.BattleAxe:
+                    case EquipType.Sledge:
+                    case EquipType.Polearms:
+                        // Penalize momentum when wielding certain two-handed weapons with only one hand.
+                        velocity *= 0.67f;
+                        break;
+                    default:
+                        break;
                 }
 
                 speed = velocity.magnitude;

@@ -14,7 +14,7 @@ namespace ValheimVRMod.Utilities
         Shield, Tankard, Claws, Magic, Crossbow
         ,
         //Melee Weapon
-        Sword, Axe, Knife, Pickaxe, Club, Polearms, DualKnives, DualAxes
+        Axe, BattleAxe, Club, DualKnives, DualAxes, Knife, Pickaxe, Polearms, Sledge, Sword
         ,
         //utility
         Lantern
@@ -153,11 +153,11 @@ namespace ValheimVRMod.Utilities
                 case Skills.SkillType.Swords:
                     return EquipType.Sword;
                 case Skills.SkillType.Axes:
-                    return EquipType.Axe;
+                    return item.m_shared.m_itemType == ItemDrop.ItemData.ItemType.TwoHandedWeapon ? EquipType.BattleAxe : EquipType.Axe;
                 case Skills.SkillType.Pickaxes:
                     return EquipType.Pickaxe;
                 case Skills.SkillType.Clubs:
-                    return EquipType.Club;
+                    return item.m_shared.m_itemType == ItemDrop.ItemData.ItemType.TwoHandedWeapon ? EquipType.Sledge : EquipType.Club;
                 case Skills.SkillType.Polearms:
                     return EquipType.Polearms;
             }
@@ -287,15 +287,6 @@ namespace ValheimVRMod.Utilities
             return Player.m_localPlayer?.GetRightItem()?.m_shared?.m_name == "$item_staff_lightning";
         }
 
-        public static bool isTwoHandedAxeEquiped()
-        {
-            return getRight() == EquipType.Axe && Player.m_localPlayer.GetRightItem().m_shared.m_itemType == ItemDrop.ItemData.ItemType.TwoHandedWeapon;
-        }
-
-        public static bool isTwoHandedClubEquiped()
-        {
-            return getRight() == EquipType.Club && Player.m_localPlayer.GetRightItem().m_shared.m_itemType == ItemDrop.ItemData.ItemType.TwoHandedWeapon;
-        }
 
         public static bool shouldSkipAttackAnimation()
         {
