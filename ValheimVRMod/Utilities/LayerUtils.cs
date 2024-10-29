@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -60,6 +60,12 @@ namespace ValheimVRMod.Utilities
         public static readonly int UI_PANEL_LAYER_MASK = (1 << UI_PANEL_LAYER);
         private static readonly int WORLDSPACE_UI_LAYER = 30;
         public static readonly int WORLDSPACE_UI_LAYER_MASK = (1 << WORLDSPACE_UI_LAYER);
+        public static readonly int HARVEST_RAY_MASK = LayerMask.GetMask(new string[]
+            {
+                "piece",
+                "piece_nonsolid",
+                "item"
+            });
 
         public static int getHandsLayer()
         {
