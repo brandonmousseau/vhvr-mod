@@ -14,15 +14,9 @@ namespace ValheimVRMod.Utilities
             {
                 case EquipType.Axe:
                 case EquipType.Club:
-                    if (EquipScript.isTwoHandedAxeEquiped())
-                    {
-                        return IsTwoHandedWithDominantHandInFront() && !IsStab(handPhysicsEstimator);
-                    }
-                    if (EquipScript.isTwoHandedClubEquiped())
-                    {
-                        return false;
-                    }
                     return !IsStab(handPhysicsEstimator) && IsStrongSwing(collisionPhysicsEstimator, handPhysicsEstimator);
+                case EquipType.BattleAxe:
+                    return IsTwoHandedWithDominantHandInFront() && !IsStab(handPhysicsEstimator);
                 case EquipType.Claws:
                 case EquipType.None:
                     return IsHook(handPhysicsEstimator);
@@ -42,6 +36,8 @@ namespace ValheimVRMod.Utilities
                     return false;
                 case EquipType.Polearms:
                     return IsTwoHandedWithDominantHandInFront() && !IsStab(handPhysicsEstimator);
+                case EquipType.Sledge:
+                    return false;
                 case EquipType.Sword:
                     return IsStrongStab(handPhysicsEstimator);
                 default:
