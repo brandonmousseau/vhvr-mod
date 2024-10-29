@@ -17,7 +17,7 @@ namespace ValheimVRMod.Scripts {
         public bool tryTriggerPrimaryAttack(float cd, float speed)
         {
             float? overideMinAttackInterval;
-            if (VHVRConfig.MomentumScalesAttackDamage() && !EquipScript.isTwoHandedClubEquiped())
+            if (VHVRConfig.MomentumScalesAttackDamage() && EquipScript.getRight() != EquipType.Sledge)
             {
                 speedScaledDamageFactor = Mathf.Min(GetSpeedScaledDamageFactor(cd, speed), 1 - getRemaningCooldownPercentage());
                 overideMinAttackInterval = 0.25f;
