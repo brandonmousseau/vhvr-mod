@@ -110,6 +110,19 @@ namespace ValheimVRMod.Patches {
             var weaponCol = StaticObjects.rightWeaponCollider().GetComponent<WeaponCollision>();
             weaponCol.setColliderParent(
                 meshFilter, handPosition: ___m_rightItemInstance.transform.parent.position, ___m_rightItem, true);
+            switch (EquipScript.getRight())
+            {
+                case EquipType.Cultivator:
+                case EquipType.Hammer:
+                case EquipType.Hoe:
+                case EquipType.Sledge:
+                case EquipType.Tankard:
+                    break;
+                default:
+                    // Use this layer to make sure the weapon collides with all targets including soft building pieces and plants.
+                    weaponCol.gameObject.layer = 3;
+                    break;
+            }
             weaponCol.weaponWield = weaponWield;
             // TODO: Should layer 3 be used for weapons too? Could potentially fix that weapons do not destruct hanging pieces in dungeons.
             weaponCol.gameObject.layer = EquipScript.getRight() == EquipType.Scythe ? 3 : LayerUtils.CHARACTER;

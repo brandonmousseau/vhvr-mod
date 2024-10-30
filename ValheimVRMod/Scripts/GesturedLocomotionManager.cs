@@ -81,7 +81,11 @@ namespace ValheimVRMod.Scripts
                 stickOutputY = Vector3.Dot(gesturedLocomotionVelocity, stickYDirection) * STICK_OUTPUT_WEIGHT;
             }
 
-            if (horizontalSpeed > RUN_ACITIVATION_SPEED)
+            if (SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.Any))
+            {
+                isRunning = false;
+            }
+            else if (horizontalSpeed > RUN_ACITIVATION_SPEED)
             {
                 isRunning = true;
             }

@@ -671,9 +671,9 @@ namespace ValheimVRMod.Utilities
                                                  new AcceptableValueList<string>(new string[] { "None", "SwimOnly", "Full" })));
             gesturedJumpPreparationHeight = config.Bind("Controls",
                                           "GesturedJumpPreparationHeight",
-                                          0.95f,
-                                          new ConfigDescription("The max height you need to squat at to jump",
-                                           new AcceptableValueRange<float>(0.25f, 1f)));
+                                          0.975f,
+                                          new ConfigDescription("The minium height to trigger a jump using head movement",
+                                           new AcceptableValueRange<float>(0.5f, 1.25f)));
             gesturedJumpMinSpeed = config.Bind("Controls",
                                           "GesturedJumpMinSpeed",
                                           0.75f,
