@@ -64,6 +64,7 @@ namespace ValheimVRMod.VRCore
         private static VRIK _vrik;
 
         public static float referencePlayerHeight { get; private set; }
+        public static bool sitRoomScale { get; private set; }
         public static bool isRoomscaleSneaking { get { return _isRoomscaleSneaking; } }
         private static bool _isRoomscaleSneaking = false;
 
@@ -301,6 +302,7 @@ namespace ValheimVRMod.VRCore
             maybeMoveVRPlayerDuringDodge();
             UpdateAmplifyOcclusionStatus();
             Pose.checkInteractions();
+            sitRoomScale = CheckSitRoomscale();
             CheckSneakRoomscale();
 
             // Vanilla game does not support attack when riding, so force initiate ranged attack here.
@@ -954,7 +956,14 @@ namespace ValheimVRMod.VRCore
 
             if (player.IsSitting())
             {
-                return player.IsAttached() ? SIT_ATTACH_HEIGHT_ADJUST : SIT_HEIGHT_ADJUST;
+                if (player.IsAttached())
+                {
+                    return SIT_ATTACH_HEIGHT_ADJUST;
+                }
+                if (!VHVRConfig.RoomScaleMovement())
+                {
+                    return SIT_HEIGHT_ADJUST;
+                }
             }
 
             if (player.IsCrouching() && Player_SetControls_SneakPatch.isJoystickSneaking)
@@ -1310,9 +1319,53 @@ namespace ValheimVRMod.VRCore
             }
         }
 
+        private bool CheckSitRoomscale()
+        {
+            if (!VHVRConfig.UseVrControls() || _vrCam == null || SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.Any))
+            {
+                return false;
+            }
+
+            var player = getPlayerCharacter();
+            if (player == null || player.IsAttached() || !player.IsOnGround())
+            {
+                return false;
+            }
+
+            float height = Valve.VR.InteractionSystem.Player.instance.eyeHeight;
+            float heightThreshold = referencePlayerHeight * VHVRConfig.RoomScaleSneakHeight();
+            if (height > heightThreshold - 0.1f)
+            {
+                // Head too high for sitting
+                return false;
+            }
+
+            var groundPoint = player.m_groundContactPoint;
+            if (Vector3.Dot(leftHandBone.position - groundPoint, transform.up) > 0.33f ||
+                Vector3.Dot(rightHandBone.position - groundPoint, transform.up) > 0.33f)
+            {
+                // Hands too high for sitting.
+                return false;
+            }
+
+            var heading = Vector3.ProjectOnPlane(_vrCam.transform.forward, transform.up).normalized;
+            if (Vector3.Dot(leftHandBone.position - _vrCam.transform.position, heading) > -0.33f ||
+                Vector3.Dot(rightHandBone.position - _vrCam.transform.position, heading) > -0.33f)
+            {
+                // Hands are not behind the body, do not sit.
+                return false;
+            }
+
+            if (!player.IsSitting() && !player.InEmote())
+            {
+                player.StartEmote("sit", false);
+            }
+            return true;
+        }
+
         private void CheckSneakRoomscale()
         {
-            if (!VHVRConfig.RoomScaleSneakEnabled())
+            if (!VHVRConfig.RoomScaleSneakEnabled() || sitRoomScale)
             {
                 _isRoomscaleSneaking = false;
                 return;
@@ -1335,7 +1388,6 @@ namespace ValheimVRMod.VRCore
             {
                 _isRoomscaleSneaking = false;
             }
-
         }
 
         /// <summary>
