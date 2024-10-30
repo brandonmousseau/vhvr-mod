@@ -586,7 +586,7 @@ namespace ValheimVRMod.Patches {
                 // Return immediately since we want to treat
                 // physical crouching as higher priority
                 return;
-            } else if (isCrouchToggled && !_isJoystickSneaking)
+            } else if (isCrouchToggled && !_isJoystickSneaking && !player.IsSitting() && !VRPlayer.sitRoomScale)
             {
                 // Player is not crouching physically, but game character is
                 // in crouch mode, so toggle it off
