@@ -42,22 +42,35 @@ namespace ValheimVRMod.Scripts {
             }
         }
 
-        public static void maybeFix(GameObject target, bool isRangedWeapon) {
+        public static void maybeFix(GameObject target, EquipType equipType) {
+            var isTorch = equipType == EquipType.Torch;
+            var isRangedWeapon = equipType == EquipType.Bow || equipType == EquipType.Crossbow || equipType == EquipType.Magic;
+            var shouldHideParticles = isTorch ? false : (isRangedWeapon ? !VHVRConfig.EnableRangedWeaponGlowParticle() : !VHVRConfig.EnableMeleeWeaponGlowParticle());
 
             var particleSystems = target.GetComponentsInChildren<ParticleSystem>(includeInactive: true);
-            var shouldHide = isRangedWeapon ? !VHVRConfig.EnableRangedWeaponGlowParticle() : !VHVRConfig.EnableMeleeWeaponGlowParticle();
-
             foreach (ParticleSystem particleSystem in particleSystems) {
-                particleSystem.gameObject.AddComponent<ParticleFix>().shouldHide = shouldHide;
+                particleSystem.gameObject.AddComponent<ParticleFix>().shouldHide = shouldHideParticles;
             }
 
-            if (isRangedWeapon ? !VHVRConfig.EnableRangedWeaponGlowLight() : !VHVRConfig.EnableMeleeWeaponGlowLight())
+            if (isTorch)
             {
-                var lights = target.GetComponentsInChildren<Light>(includeInactive: true);
-                foreach (var light in lights)
-                {
-                    light.gameObject.SetActive(false);
-                }
+                return;
+            }
+
+            if (isRangedWeapon && VHVRConfig.EnableRangedWeaponGlowLight())
+            {
+                return;
+            }
+
+            if (!isRangedWeapon && VHVRConfig.EnableMeleeWeaponGlowLight())
+            {
+                return;
+            }
+
+            var lights = target.GetComponentsInChildren<Light>(includeInactive: true);
+            foreach (var light in lights)
+            {
+                light.gameObject.SetActive(false);
             }
         }
     }
