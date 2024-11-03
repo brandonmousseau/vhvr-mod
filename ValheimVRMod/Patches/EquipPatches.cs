@@ -73,7 +73,7 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
-            ParticleFix.maybeFix(___m_rightItemInstance, isRangedWeapon: EquipScript.getRight() == EquipType.Magic);
+            ParticleFix.maybeFix(___m_rightItemInstance, EquipScript.getRight());
 
             if (!VHVRConfig.UseVrControls()) {
                 return;
@@ -196,9 +196,7 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
-            ParticleFix.maybeFix(
-                ___m_leftItemInstance,
-                isRangedWeapon: EquipScript.getLeft() == EquipType.Bow || EquipScript.getLeft() == EquipType.Crossbow);
+            ParticleFix.maybeFix(___m_leftItemInstance, EquipScript.getLeft());
 
             if (!VHVRConfig.UseVrControls()) {
                 return;
