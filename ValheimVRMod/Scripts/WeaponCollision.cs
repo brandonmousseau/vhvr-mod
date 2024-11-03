@@ -368,8 +368,8 @@ namespace ValheimVRMod.Scripts
                     float skillFactor = Player.m_localPlayer.GetSkillFactor(Skills.SkillType.Farming);
                     float radius = Mathf.Lerp(attack.m_harvestRadius, attack.m_harvestRadiusMaxLevel, skillFactor);
                     Vector3 harvestScale = colliderData.scale * radius;
-                    colliderParent.transform.localScale *= radius;
-                    Vector3 additionalOffset = (colliderParent.transform.localScale - colliderData.scale) * 0.5f;
+                    colliderParent.transform.localScale = harvestScale;
+                    Vector3 additionalOffset = (harvestScale - colliderData.scale) * 0.5f;
                     additionalOffset.x *= Mathf.Sign(colliderData.pos.x);
                     additionalOffset.y *= Mathf.Sign(colliderData.pos.y);
                     additionalOffset.z *= Mathf.Sign(colliderData.pos.z);
