@@ -239,9 +239,9 @@ namespace ValheimVRMod.Utilities
                     0.04f,  0.45f, 0.01f
                 )}, {
                 "Scythe", WeaponColData.create(
-                    -0.4f,  1.3f, 0,
+                    -0.3f,  1.4f, 0,
                     0,  0, 0,
-                    1,  1, 0.1f
+                    0.71f,  0.71f, 0.1f
                 )}, {
                 "Tankard", WeaponColData.create(
                     0,  0.28f, 0,
