@@ -49,12 +49,9 @@ namespace ValheimVRMod.Patches
             if (hidingNonDominantHandItem) {
                 if (FistCollision.hasDualWieldingWeaponEquipped())
                 {
-                    if (SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource))
-                    {
-                        var item = ___m_rightItem;
-                        __instance.UnequipItem(___m_rightItem);
-                        ___m_hiddenRightItem = item;
-                    }
+                    var item = ___m_rightItem;
+                    __instance.UnequipItem(___m_rightItem);
+                    ___m_hiddenRightItem = item;
                 }
                 else
                 {
@@ -65,13 +62,9 @@ namespace ValheimVRMod.Patches
             }
     
             if (hideDominantHandItem) {
-                if (!FistCollision.hasDualWieldingWeaponEquipped() ||
-                    SteamVR_Actions.valheim_Grab.GetState(VRPlayer.nonDominantHandInputSource))
-                {
-                    var item = ___m_rightItem;
-                    __instance.UnequipItem(___m_rightItem);
-                    ___m_hiddenRightItem = item;
-                }
+                var item = ___m_rightItem;
+                __instance.UnequipItem(___m_rightItem);
+                ___m_hiddenRightItem = item;
             }
             
             setupVisEquipmentMethod.Invoke(__instance, new object[]{___m_visEquipment, false});
