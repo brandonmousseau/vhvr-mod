@@ -1,6 +1,4 @@
-using System.Collections.Generic;
 using UnityEngine;
-using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using Valve.VR;
 
