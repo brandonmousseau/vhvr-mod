@@ -1088,11 +1088,10 @@ namespace ValheimVRMod.VRCore
             var rightHandGesture = _vrik.references.rightHand.gameObject.AddComponent<HandGesture>();
             leftHandGesture.sourceHand = leftHand;
             rightHandGesture.sourceHand = rightHand;
-            leftHandBone.gameObject.AddComponent<ShipSteering>().Initialize(leftHandGesture, SteamVR_Input_Sources.LeftHand, leftHandPhysicsEstimator);
-            rightHandBone.gameObject.AddComponent<ShipSteering>().Initialize(rightHandGesture, SteamVR_Input_Sources.RightHand, rightHandPhysicsEstimator);
             StaticObjects.leftFist().setColliderParent(leftHandBone, leftHandGesture, false);
             StaticObjects.rightFist().setColliderParent(rightHandBone, rightHandGesture, true);
             Player.m_localPlayer.gameObject.AddComponent<FistBlock>();
+            Player.m_localPlayer.gameObject.AddComponent<ShipSteering>().Initialize(leftHandGesture, rightHandGesture);
             var reining = Player.m_localPlayer.gameObject.AddComponent<Reining>();
             reining.leftHandGesture = leftHandGesture;
             reining.rightHandGesture = rightHandGesture;
