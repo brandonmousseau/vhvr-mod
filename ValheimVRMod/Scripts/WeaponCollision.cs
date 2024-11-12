@@ -108,6 +108,12 @@ namespace ValheimVRMod.Scripts
                             MaybeAttackCollider(collider, requireStab: false);
                         }
                         return;
+                    case EquipType.Scythe:
+                        if ((LayerUtils.HARVEST_RAY_MASK & (1 << collider.gameObject.layer)) != 0)
+                        {
+                            MaybeAttackCollider(collider, requireStab: false);
+                        }
+                        return;
                 }
                 return;
             }
@@ -190,6 +196,8 @@ namespace ValheimVRMod.Scripts
                     case EquipType.Hammer:
                         hasPendingToolUsageOutput = Player.m_localPlayer.InRepairMode();
                         return;
+                    case EquipType.Scythe:
+                        break;
                     default:
                         return;
                 }
@@ -217,7 +225,7 @@ namespace ValheimVRMod.Scripts
             }
 
             // Swap battle axe primary and secondary attacks since its primary attack is more powerful.
-            Attack currentAttack = isSecondaryAttack ^ EquipScript.isTwoHandedAxeEquiped() ? secondaryAttack : attack;
+            Attack currentAttack = isSecondaryAttack ^ EquipScript.getRight() == EquipType.BattleAxe ? secondaryAttack : attack;
 
             if (WeaponUtils.IsTwoHandedMultitargetSwipe(currentAttack) && twoHandedMultitargetSwipeCountdown <= 0)
             {
@@ -330,7 +338,7 @@ namespace ValheimVRMod.Scripts
             attack = item.m_shared.m_attack.Clone();
             secondaryAttack = item.m_shared.m_secondaryAttack.Clone();
 
-            itemIsTool = (name == "Hammer" || EquipScript.getRight() == EquipType.Hoe || EquipScript.getRight() == EquipType.Cultivator);
+            itemIsTool = (name == "Hammer" || EquipScript.getRight() == EquipType.Hoe || EquipScript.getRight() == EquipType.Cultivator || EquipScript.getRight() == EquipType.Scythe);
 
             if (colliderParent == null)
             {
@@ -353,6 +361,21 @@ namespace ValheimVRMod.Scripts
                 colliderParent.transform.localPosition = colliderData.pos;
                 colliderParent.transform.localRotation = Quaternion.Euler(colliderData.euler);
                 colliderParent.transform.localScale = colliderData.scale;
+
+                if (attack.m_harvest)
+                {
+                    // Adjust collider size by farming skill level.
+                    float skillFactor = Player.m_localPlayer.GetSkillFactor(Skills.SkillType.Farming);
+                    float radius = Mathf.Lerp(attack.m_harvestRadius, attack.m_harvestRadiusMaxLevel, skillFactor);
+                    Vector3 harvestScale = colliderData.scale * radius;
+                    colliderParent.transform.localScale = harvestScale;
+                    Vector3 additionalOffset = (harvestScale - colliderData.scale) * 0.5f;
+                    additionalOffset.x *= Mathf.Sign(colliderData.pos.x);
+                    additionalOffset.y *= Mathf.Sign(colliderData.pos.y);
+                    additionalOffset.z *= Mathf.Sign(colliderData.pos.z);
+                    colliderParent.transform.localPosition += additionalOffset;
+                }
+
                 setScriptActive(true);
             }
             catch (InvalidEnumArgumentException)
@@ -439,12 +462,16 @@ namespace ValheimVRMod.Scripts
                         mainHandPhysicsEstimator.GetAngularVelocity(),
                         LocalWeaponWield.weaponForward.normalized * WEAPON_ANGULAR_WEIGHT_OFFSET);
 
-                if (EquipScript.isTwoHandedAxeEquiped() ||
-                    EquipScript.isTwoHandedClubEquiped() ||
-                    EquipScript.getRight() == EquipType.Polearms)
+                switch (EquipScript.getRight())
                 {
-                    // Penalize momentum when wielding certain two-handed weapons with only one hand.
-                    velocity *= 0.67f;
+                    case EquipType.BattleAxe:
+                    case EquipType.Sledge:
+                    case EquipType.Polearms:
+                        // Penalize momentum when wielding certain two-handed weapons with only one hand.
+                        velocity *= 0.67f;
+                        break;
+                    default:
+                        break;
                 }
 
                 speed = velocity.magnitude;

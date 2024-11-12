@@ -76,9 +76,6 @@ namespace ValheimVRMod.Scripts
             // TODO: figure out away to get the correct bow anatomy for non-local players (GetLeftItem() returns null for non-local players).
             bowAnatomy = BowAnatomy.getBowAnatomy(GetComponentInParent<Player>()?.GetLeftItem()?.m_shared?.m_name ?? "");
 
-            gameObject.GetComponentInChildren<ParticleSystem>()?.gameObject.SetActive(VHVRConfig.EnableBowGlowParticle());
-            gameObject.GetComponentInChildren<Light>()?.gameObject.SetActive(VHVRConfig.EnableBowGlowLight());
-
             bowUpInObjectSpace = transform.InverseTransformDirection(bowOrientation.up);
             bowRightInObjectSpace = transform.InverseTransformDirection(bowOrientation.right);
             float handleTopLocalHeight = Vector3.Dot(transform.InverseTransformPoint(bowOrientation.TransformPoint(new Vector3(0, bowAnatomy.handleHeight * 0.5f, 0))), bowUpInObjectSpace);

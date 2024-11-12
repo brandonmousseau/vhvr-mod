@@ -81,17 +81,21 @@ namespace ValheimVRMod.Scripts
                 stickOutputY = Vector3.Dot(gesturedLocomotionVelocity, stickYDirection) * STICK_OUTPUT_WEIGHT;
             }
 
-            if (horizontalSpeed > RUN_ACITIVATION_SPEED)
+            if (SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.Any))
+            {
+                isRunning = false;
+            }
+            else if (horizontalSpeed > RUN_ACITIVATION_SPEED)
             {
                 isRunning = true;
             }
-            else if (horizontalSpeed < RUN_DEACTIVATION_SPEED)
+            else if (horizontalSpeed < RUN_DEACTIVATION_SPEED || Player.m_localPlayer == null || !Player.m_localPlayer.HaveStamina())
             {
                 isRunning = false;
             }
 
             var verticalSpeed = Vector3.Dot(targetVelocity, upDirection.Value);
-            dodgeDirection = verticalSpeed < -0.5f ? horizontalVelocity : (Vector3?) null;
+            dodgeDirection = verticalSpeed < -0.5f || (isRunning && VRPlayer.isRoomscaleSneaking) ? horizontalVelocity : (Vector3?) null;
             if (verticalSpeed > VHVRConfig.GesturedJumpMinSpeed() && localPlayer.IsOnGround())
             {
                 localPlayer.Jump();

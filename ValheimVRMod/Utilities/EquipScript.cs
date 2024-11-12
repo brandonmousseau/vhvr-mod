@@ -9,12 +9,12 @@ namespace ValheimVRMod.Utilities
     public enum EquipType
     {
         None,
-        Fishing, Cultivator, Hammer, Hoe, Torch,
+        Fishing, Cultivator, Hammer, Hoe, Torch, Scythe,
         Bow, Spear, SpearChitin, ThrowObject,
         Shield, Tankard, Claws, Magic, Crossbow
         ,
         //Melee Weapon
-        Sword, Axe, Knife, Pickaxe, Club, Polearms, DualKnives, DualAxes
+        Axe, BattleAxe, Club, DualKnives, DualAxes, Knife, Pickaxe, Polearms, Sledge, Sword
         ,
         //utility
         Lantern
@@ -67,6 +67,11 @@ namespace ValheimVRMod.Utilities
 
         public static EquipType getRightEquipType(ItemDrop.ItemData item)
         {
+            if (item?.m_shared?.m_attack?.m_harvest?? false)
+            {
+                return EquipType.Scythe;
+            }
+
             var attackAnim = item?.m_shared.m_attack.m_attackAnimation;
             switch (attackAnim)
             {
@@ -148,11 +153,11 @@ namespace ValheimVRMod.Utilities
                 case Skills.SkillType.Swords:
                     return EquipType.Sword;
                 case Skills.SkillType.Axes:
-                    return EquipType.Axe;
+                    return item.m_shared.m_itemType == ItemDrop.ItemData.ItemType.TwoHandedWeapon ? EquipType.BattleAxe : EquipType.Axe;
                 case Skills.SkillType.Pickaxes:
                     return EquipType.Pickaxe;
                 case Skills.SkillType.Clubs:
-                    return EquipType.Club;
+                    return item.m_shared.m_itemType == ItemDrop.ItemData.ItemType.TwoHandedWeapon ? EquipType.Sledge : EquipType.Club;
                 case Skills.SkillType.Polearms:
                     return EquipType.Polearms;
             }
@@ -212,6 +217,17 @@ namespace ValheimVRMod.Utilities
             }
 
             return EquipType.None;
+        }
+
+        public static bool localPlayerHasDualWieldingWeaponHolstered()
+        {
+            var localPlayer = Player.m_localPlayer;
+            if (localPlayer == null)
+            {
+                return false;
+            }
+            var hiddenItem = localPlayer.m_hiddenRightItem;
+            return hiddenItem != null && isDualWeapon(hiddenItem);
         }
 
         public static bool isDualWeapon(ItemDrop.ItemData item)
@@ -282,15 +298,6 @@ namespace ValheimVRMod.Utilities
             return Player.m_localPlayer?.GetRightItem()?.m_shared?.m_name == "$item_staff_lightning";
         }
 
-        public static bool isTwoHandedAxeEquiped()
-        {
-            return getRight() == EquipType.Axe && Player.m_localPlayer.GetRightItem().m_shared.m_itemType == ItemDrop.ItemData.ItemType.TwoHandedWeapon;
-        }
-
-        public static bool isTwoHandedClubEquiped()
-        {
-            return getRight() == EquipType.Club && Player.m_localPlayer.GetRightItem().m_shared.m_itemType == ItemDrop.ItemData.ItemType.TwoHandedWeapon;
-        }
 
         public static bool shouldSkipAttackAnimation()
         {

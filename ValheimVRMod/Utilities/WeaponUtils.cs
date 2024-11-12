@@ -238,6 +238,11 @@ namespace ValheimVRMod.Utilities
                     0, 0, 0,
                     0.04f,  0.45f, 0.01f
                 )}, {
+                "Scythe", WeaponColData.create(
+                    -0.3f,  1.4f, 0,
+                    0,  0, 0,
+                    0.71f,  0.71f, 0.1f
+                )}, {
                 "Tankard", WeaponColData.create(
                     0,  0.28f, 0,
                     0, 0, 0,
@@ -378,6 +383,7 @@ namespace ValheimVRMod.Utilities
             { "dual_knives", 0.43f },
             { "greatsword", 1.13f },
             { "knife_stab", 0.49f },
+            { "scything", 1.5f },
             { "swing_longsword", 0.63f },
             { "spear_poke", 0.63f },
             { "swing_pickaxe", 1.3f },

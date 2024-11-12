@@ -796,6 +796,24 @@ namespace ValheimVRMod.Patches
         }
     }
 
+    [HarmonyPatch(typeof(KeyboardMouseSettings), nameof(KeyboardMouseSettings.Update))]
+    class PatchKeyboardMouseSettingsUpdate
+    {
+        public static bool Prefix(KeyboardMouseSettings __instance)
+        {
+            return !ConfigSettings.isVHVRClone(__instance);
+        }
+    }
+
+    [HarmonyPatch(typeof(KeyboardMouseSettings), nameof(KeyboardMouseSettings.OnDestroy))]
+    class PatchKeyboardMouseSettingsDestroy
+    {
+        public static bool Prefix(KeyboardMouseSettings __instance)
+        {
+            return !ConfigSettings.isVHVRClone(__instance);
+        }
+    }
+
     [HarmonyPatch(typeof(HotkeyBar), nameof(HotkeyBar.Update))]
     class HotkeyBarHidePatch
     {

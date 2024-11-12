@@ -73,6 +73,8 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
+            ParticleFix.maybeFix(___m_rightItemInstance, EquipScript.getRight());
+
             if (!VHVRConfig.UseVrControls()) {
                 return;
             }
@@ -108,7 +110,22 @@ namespace ValheimVRMod.Patches {
             var weaponCol = StaticObjects.rightWeaponCollider().GetComponent<WeaponCollision>();
             weaponCol.setColliderParent(
                 meshFilter, handPosition: ___m_rightItemInstance.transform.parent.position, ___m_rightItem, true);
+            switch (EquipScript.getRight())
+            {
+                case EquipType.Cultivator:
+                case EquipType.Hammer:
+                case EquipType.Hoe:
+                case EquipType.Sledge:
+                case EquipType.Tankard:
+                    break;
+                default:
+                    // Use this layer to make sure the weapon collides with all targets including soft building pieces and plants.
+                    weaponCol.gameObject.layer = 3;
+                    break;
+            }
             weaponCol.weaponWield = weaponWield;
+            // TODO: Should layer 3 be used for weapons too? Could potentially fix that weapons do not destruct hanging pieces in dungeons.
+            weaponCol.gameObject.layer = EquipScript.getRight() == EquipType.Scythe ? 3 : LayerUtils.CHARACTER;
             meshFilter.gameObject.AddComponent<ButtonSecondaryAttackManager>().Initialize(meshFilter.transform, ___m_rightItem, true);
 
             if (___m_rightItem == "StaffLightning")
@@ -122,8 +139,6 @@ namespace ValheimVRMod.Patches {
             {
                 meshFilter.gameObject.AddComponent<WeaponBlock>().weaponWield = weaponWield;
             }
-
-            ParticleFix.maybeFix(___m_rightItemInstance);
         }
     }
 
@@ -180,7 +195,9 @@ namespace ValheimVRMod.Patches {
                 }
                 return;
             }
-            
+
+            ParticleFix.maybeFix(___m_leftItemInstance, EquipScript.getLeft());
+
             if (!VHVRConfig.UseVrControls()) {
                 return;
             }
@@ -215,7 +232,6 @@ namespace ValheimVRMod.Patches {
             }
 
             meshFilter.gameObject.AddComponent<ButtonSecondaryAttackManager>().Initialize(meshFilter.transform, ___m_leftItem, false);
-            ParticleFix.maybeFix(___m_leftItemInstance);
         }
     }
 
