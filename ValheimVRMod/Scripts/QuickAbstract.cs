@@ -572,7 +572,7 @@ namespace ValheimVRMod.Scripts
                         if (Player.m_localPlayer.InEmote() && Player.m_localPlayer.IsSitting())
                             stopEmote.Invoke(Player.m_localPlayer, null);
                         else
-                            Player.m_localPlayer.StartEmote("sit", false);
+                            VRPlayer.StartSit();
                         return true;
                     });
             }
