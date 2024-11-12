@@ -219,6 +219,17 @@ namespace ValheimVRMod.Utilities
             return EquipType.None;
         }
 
+        public static bool localPlayerHasDualWieldingWeaponHolstered()
+        {
+            var localPlayer = Player.m_localPlayer;
+            if (localPlayer == null)
+            {
+                return false;
+            }
+            var hiddenItem = localPlayer.m_hiddenRightItem;
+            return hiddenItem != null && isDualWeapon(hiddenItem);
+        }
+
         public static bool isDualWeapon(ItemDrop.ItemData item)
         {
             var weaponType = getRightEquipType(item);
