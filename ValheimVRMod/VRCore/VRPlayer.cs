@@ -63,6 +63,7 @@ namespace ValheimVRMod.VRCore
         public static VRIK vrikRef { get { return _vrik; } }
         private static VRIK _vrik;
 
+        public static Camera vrCam { get { return vrPlayerInstance != null ? vrPlayerInstance._vrCam : null; } }
         public static float referencePlayerHeight { get; private set; }
         public static bool startingSit { get; private set; }
         public static bool isRoomscaleSneaking { get { return _isRoomscaleSneaking; } }
