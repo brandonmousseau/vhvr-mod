@@ -7,9 +7,9 @@ namespace ValheimVRMod.Scripts
     public class ShipSteering : MonoBehaviour
     {
         private const float MIN_ROW_SPEED = 0.5f;
-        private const float MIN_RUDDER_TURN_SPEED = 0.125f;
+        private const float MIN_RUDDER_TURN_SPEED = 0.05f;
         private const float MAX_SAIL_PULL_ANGLE = 60f;
-        private const float MIN_SAIL_PULL_SPEED = 0.25f;
+        private const float MIN_SAIL_PULL_DISTANCE = 0.25f;
 
         private HandGesture leftHandGesture;
         private HandGesture rightHandGesture;
@@ -18,6 +18,8 @@ namespace ValheimVRMod.Scripts
         private bool isSteering;
         private bool isOperatingSail;
         private Ship.Speed sailOperationStartSpeed;
+        private Ship.Speed sailOperationTargetSpeed;
+        private float sailOperationStartHandHeight;
 
         private ShipControlls shipControls
         {
@@ -32,7 +34,6 @@ namespace ValheimVRMod.Scripts
         {
             this.leftHandGesture = leftHandGesture;
             this.rightHandGesture = rightHandGesture;
-
         }
 
         void FixedUpdate()
@@ -44,11 +45,10 @@ namespace ValheimVRMod.Scripts
 
             var wasSingleGrabbing = isSingleGrabbing;
             var wasDoubleGrabbing = isDoubleGrabbing;
-            var areHandsFree = leftHandGesture.isHandFree() && rightHandGesture.isHandFree();
             var isLeftGrabbing =
-                areHandsFree && SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand);
+                leftHandGesture.isHandFree() && SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand);
             var isRightGrabbing =
-                areHandsFree && SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand);
+                rightHandGesture.isHandFree() && SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand);
             isSingleGrabbing = isLeftGrabbing ^ isRightGrabbing;
             isDoubleGrabbing = isLeftGrabbing && isRightGrabbing;
 
@@ -58,21 +58,57 @@ namespace ValheimVRMod.Scripts
             }
             else if (!wasSingleGrabbing && !wasDoubleGrabbing)
             {
-                isSteering = true;
+                var isHandBehindBack = isLeftGrabbing ? Utilities.Pose.isBehindBack(VRPlayer.leftHandBone) : Utilities.Pose.isBehindBack(VRPlayer.rightHandBone);
+                if (!isHandBehindBack)
+                {
+                    isSteering = true;
+                }
             }
 
             var ship = shipControls.m_ship;
+
+            Vector3 upDirection = VRPlayer.instance != null ? VRPlayer.instance.transform.up : ship.transform.up;
 
             if (!isDoubleGrabbing)
             {
                 isOperatingSail = false;
             }
-            else if (!wasDoubleGrabbing &&
-                Vector3.Angle(VRPlayer.leftHandBone.right, ship.transform.up) < MAX_SAIL_PULL_ANGLE &&
-                Vector3.Angle(-VRPlayer.rightHandBone.right, ship.transform.up) < MAX_SAIL_PULL_ANGLE)
+            else if (!wasDoubleGrabbing)
             {
-                sailOperationStartSpeed = ship.m_speed;
-                isOperatingSail = true;
+                if (Vector3.Angle(VRPlayer.leftHandBone.right, upDirection) < MAX_SAIL_PULL_ANGLE ||
+                    Vector3.Angle(-VRPlayer.rightHandBone.right, upDirection) < MAX_SAIL_PULL_ANGLE)
+                {
+                    Vector3 handSpan = VRPlayer.rightHandBone.position - VRPlayer.leftHandBone.position;
+                    if (Vector3.Angle(handSpan, upDirection) < MAX_SAIL_PULL_ANGLE ||
+                        Vector3.Angle(-handSpan, upDirection) < MAX_SAIL_PULL_ANGLE)
+                    {
+                        sailOperationTargetSpeed = sailOperationStartSpeed = ship.m_speed;
+                        sailOperationStartHandHeight = GetHandHeight();
+                        isOperatingSail = true;
+                    }
+                }
+            }
+
+            if (isOperatingSail)
+            {
+                UpdateSailOperationTargetSpeed(upDirection);
+                ApplySpeedControl(sailOperationTargetSpeed);
+                return;
+            } 
+
+            bool isUsingSail = ship.m_speed == Ship.Speed.Full || ship.m_speed == Ship.Speed.Half;
+            if (!isUsingSail)
+            {
+                if (isDoubleGrabbing)
+                {
+                    ApplySpeedControl(GetRowingShipSpeed(upDirection));
+                    return;
+                }
+                else if (wasDoubleGrabbing)
+                {
+                    ApplySpeedControl(Ship.Speed.Stop);
+                    return;
+                }
             }
 
             if (isSteering)
@@ -82,74 +118,59 @@ namespace ValheimVRMod.Scripts
                 shipControls.m_ship.ApplyControlls(new Vector3(speed < -MIN_RUDDER_TURN_SPEED ? 1 : speed > MIN_RUDDER_TURN_SPEED ? -1 : 0, 0, 0));
                 return;
             }
-
-            if (isOperatingSail)
-            {
-                ChangeSpeed(GetSailSpeed());
-                return;
-            }
-
-            bool isUsingSail = ship.m_speed == Ship.Speed.Full || ship.m_speed == Ship.Speed.Half;
-            if (isUsingSail)
-            {
-                return;
-            }
-
-            if (isDoubleGrabbing)
-            {
-                ChangeSpeed(GetRowingShipSpeed());
-            }
-            else if (wasDoubleGrabbing)
-            {
-                ChangeSpeed(Ship.Speed.Stop);
-            }
         }
 
-        private Ship.Speed GetSailSpeed()
+        private void UpdateSailOperationTargetSpeed(Vector3 upDirection)
         {
-            var ship = shipControls.m_ship;
+            if (sailOperationTargetSpeed != sailOperationStartSpeed)
+            {
+                // Already changed speed once in the current sail operation. Do not change speed again.
+                return;
+            }
 
-            var leftHandSpeed = Vector3.Dot(VRPlayer.leftHandPhysicsEstimator.GetVelocity(), ship.transform.up);
-            var rightHandSpeed = Vector3.Dot(VRPlayer.rightHandPhysicsEstimator.GetVelocity(), ship.transform.up);
+            var handMovement = GetHandHeight() - sailOperationStartHandHeight;
 
-            if (leftHandSpeed < -MIN_SAIL_PULL_SPEED && rightHandSpeed < -MIN_SAIL_PULL_SPEED)
+            if (handMovement < -MIN_SAIL_PULL_DISTANCE)
             {
                 switch (sailOperationStartSpeed)
                 {
                     case Ship.Speed.Back:
                     case Ship.Speed.Stop:
                     case Ship.Speed.Slow:
-                        return Ship.Speed.Half;
+                        sailOperationTargetSpeed = Ship.Speed.Half;
+                        return;
                     default:
-                        return Ship.Speed.Full;
+                        sailOperationTargetSpeed = Ship.Speed.Full;
+                        return;
                 }
             }
 
-            if (leftHandSpeed > MIN_SAIL_PULL_SPEED && rightHandSpeed > MIN_SAIL_PULL_SPEED)
+            if (handMovement > MIN_SAIL_PULL_DISTANCE)
             {
                 switch (sailOperationStartSpeed)
                 {
                     case Ship.Speed.Full:
-                        return Ship.Speed.Half;
+                        sailOperationTargetSpeed = Ship.Speed.Half;
+                        return;
                     default:
-                        return Ship.Speed.Stop;
+                        sailOperationTargetSpeed = Ship.Speed.Stop;
+                        return;
                 }
             }
-
-            return shipControls.m_ship.m_speed;
         }
 
-        private Ship.Speed GetRowingShipSpeed()
+        private Ship.Speed GetRowingShipSpeed(Vector3 upDirection)
         {
             var ship = shipControls.m_ship;
+            var saggitalNormal = Vector3.Cross(upDirection, ship.transform.forward).normalized;
             Vector3 saggitalArmSpan =
-                Vector3.ProjectOnPlane(VRPlayer.rightHandBone.position - VRPlayer.leftHandBone.position, ship.transform.right);
+                Vector3.ProjectOnPlane(VRPlayer.rightHandBone.position - VRPlayer.leftHandBone.position, saggitalNormal);
             float speed =
                 Vector3.Dot(
                     Vector3.Cross(
                         saggitalArmSpan.normalized,
-                        VRPlayer.rightHandPhysicsEstimator.GetVelocity() - VRPlayer.leftHandPhysicsEstimator.GetVelocity()),
-                    ship.transform.right);
+                        VRPlayer.rightHandPhysicsEstimator.GetAverageVelocityInSnapshots() - VRPlayer.leftHandPhysicsEstimator.GetAverageVelocityInSnapshots()),
+                    saggitalNormal);
 
             if (speed < -MIN_ROW_SPEED)
             {
@@ -164,30 +185,35 @@ namespace ValheimVRMod.Scripts
             return Ship.Speed.Stop;
         }
 
-        private void ChangeSpeed(Ship.Speed desiredSpeed)
+        private void ApplySpeedControl(Ship.Speed targetSpeed)
         {
             var ship = shipControls.m_ship;
 
-            if (ship.m_speed == Ship.Speed.Stop && desiredSpeed == Ship.Speed.Back)
+            if (ship.m_speed == Ship.Speed.Stop && targetSpeed == Ship.Speed.Back)
             {
                 ship.Backward();
                 return;
             }
 
-            if (ship.m_speed == Ship.Speed.Back && desiredSpeed == Ship.Speed.Stop)
+            if (ship.m_speed == Ship.Speed.Back && targetSpeed == Ship.Speed.Stop)
             {
                 ship.Forward();
                 return;
             }
 
-            if (shipControls.m_ship.m_speed < desiredSpeed)
+            if (shipControls.m_ship.m_speed < targetSpeed)
             {
                 shipControls.m_ship.Forward();
             }
-            else if (shipControls.m_ship.m_speed > desiredSpeed)
+            else if (shipControls.m_ship.m_speed > targetSpeed)
             {
                 shipControls.m_ship.Backward();
             }
+        }
+
+        private float GetHandHeight()
+        {
+            return VRPlayer.instance.transform.InverseTransformPoint(Vector3.Lerp(VRPlayer.leftHandBone.position, VRPlayer.rightHandBone.position, 0.5f)).y;
         }
     }
 }

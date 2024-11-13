@@ -13,7 +13,7 @@ namespace ValheimVRMod.Utilities {
 
         public static void checkInteractions()
         {
-            if (Player.m_localPlayer == null || !VRControls.mainControlsActive)
+            if (Player.m_localPlayer == null || !VRControls.mainControlsActive || Player.m_localPlayer.IsSwimming())
             {
                 return;
             }
@@ -25,20 +25,30 @@ namespace ValheimVRMod.Utilities {
                 checkHandOverShoulder(isDominantHand: false, isDualWielding);
             }
         }
-        
+        public static bool isBehindBack(Transform handTransform)
+        {
+            Camera vrCam = VRPlayer.vrCam;
+            if (vrCam == null)
+            {
+                return false;
+            }
+
+            return vrCam.transform.InverseTransformPoint(handTransform.position).y > -0.4f &&
+                vrCam.transform.InverseTransformPoint(handTransform.position).z < 0;
+        }
+
         private static void checkHandOverShoulder(bool isDominantHand, bool isDualWielding)
         {
             var isRightHand = isDominantHand ^ VHVRConfig.LeftHanded();
             var inputSource = isRightHand ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand;
             var otherHandInputSource = isRightHand? SteamVR_Input_Sources.LeftHand : SteamVR_Input_Sources.RightHand;
             var hand = isRightHand ? VRPlayer.rightHand : VRPlayer.leftHand;
-            var camera = CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform;
             var action = SteamVR_Actions.valheim_Grab;
 
             var isHandBehindBack =
                 isDualWielding ?
-                isBehindBack(camera, hand.transform) && isBehindBack(camera, hand.otherHand.transform) :
-                isBehindBack(camera, hand.transform);
+                isBehindBack(hand.transform) && isBehindBack(hand.otherHand.transform) :
+                isBehindBack(hand.transform);
 
             if (isHandBehindBack)
             {
@@ -87,12 +97,6 @@ namespace ValheimVRMod.Utilities {
                     !action.GetState(inputSource);
                 isUnsheathing[isDominantHand] = !finishedUnsheathing;
             }
-        }
-
-        private static bool isBehindBack(Transform headCameraTransform, Transform handTransform)
-        {
-            return headCameraTransform.InverseTransformPoint(handTransform.position).y > -0.4f &&
-                headCameraTransform.InverseTransformPoint(handTransform.position).z < 0;
         }
         
         private static bool isHoldingItem(bool isDominantHand) {
