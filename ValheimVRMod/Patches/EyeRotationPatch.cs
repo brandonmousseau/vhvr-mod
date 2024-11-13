@@ -253,7 +253,7 @@ namespace ValheimVRMod.Patches
                         upTarget = Vector3.up;
                     }
                     __instance.m_lookYaw = Quaternion.LookRotation(attachmentHeading, upTarget);
-                    VRPlayer.headPositionInitialized = false;
+                    VRPlayer.RequestRecentering();
                     VRPlayer.vrPlayerInstance?.ResetRoomscaleCamera();
                     attachmentIndependentRoomRotation = Quaternion.Euler(0, VRPlayer.instance.transform.rotation.eulerAngles.y, 0);
                 }
@@ -391,7 +391,7 @@ namespace ValheimVRMod.Patches
                 attachmentHeading.y = 0;
                 attachmentHeading.Normalize();
                 __instance.m_lookYaw = Quaternion.LookRotation(attachmentHeading, Vector3.up);
-                VRPlayer.headPositionInitialized = false;
+                VRPlayer.RequestRecentering();
                 VRPlayer.vrPlayerInstance?.ResetRoomscaleCamera();
                 Player_SetMouseLook_Patch.previousHeadLocalRotation = null;
             }

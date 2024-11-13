@@ -46,7 +46,7 @@ namespace ValheimVRMod.VRCore
         // This layer must be set in the hand model prefab in the
         // Unity AssetBundle project too. If they don't match,
         // the hands won't be rendered by the handsCam.
-        private static Vector3 FIRST_PERSON_OFFSET = Vector3.zero;
+        private static Vector3 firstPersonOffset = Vector3.zero;
         private static float CROUCH_HEIGHT_ADJUST = -0.4f;
         private static float RIDE_HEIGHT_ADJUST = -0.85f;
         private static float SIT_ATTACH_HEIGHT_ADJUST = -0.4f;
@@ -257,23 +257,14 @@ namespace ValheimVRMod.VRCore
         public static VRPlayer vrPlayerInstance => _vrPlayerInstance;
         public static bool attachedToPlayer = false;
 
-        private static float FIRST_PERSON_HEIGHT_OFFSET = 0.0f;
-        private static bool _headPositionInitialized = false;
-        public static bool headPositionInitialized
+        private static float? firstPersonHeightOffset = null;
+        public static bool headPositionInitialized { get; private set; }
+
+        public static void RequestRecentering()
         {
-            get
-            {
-                return _headPositionInitialized;
-            }
-            set
-            {
-                _headPositionInitialized = value;
-                if (!_headPositionInitialized)
-                {
-                    FIRST_PERSON_HEIGHT_OFFSET = 0.0f;
-                    FIRST_PERSON_OFFSET = Vector3.zero;
-                }
-            }
+            headPositionInitialized = false;
+            firstPersonOffset = Vector3.zero;
+            firstPersonHeightOffset = null;
         }
 
         void Awake()
@@ -282,7 +273,7 @@ namespace ValheimVRMod.VRCore
             _prefab = VRAssetManager.GetAsset<GameObject>(PLAYER_PREFAB_NAME);
             _preferredHand = VHVRConfig.GetPreferredHand();
             headPositionInitialized = false;
-            FIRST_PERSON_OFFSET = Vector3.zero;
+            firstPersonOffset = Vector3.zero;
             THIRD_PERSON_CONFIG_OFFSET = VHVRConfig.GetThirdPersonHeadOffset();
             ensurePlayerInstance();
             gameObject.AddComponent<VRControls>();
@@ -459,7 +450,7 @@ namespace ValheimVRMod.VRCore
             }
             if (inFirstPerson)
             {
-                FIRST_PERSON_OFFSET += offset;
+                firstPersonOffset += offset;
             }
             else
             {
@@ -689,6 +680,7 @@ namespace ValheimVRMod.VRCore
             _fadeManager.OnFadeToWorld += () => {
                 //Recenter
                 VRPlayer.headPositionInitialized = false;
+                firstPersonOffset = Vector3.zero;
                 VRPlayer.vrPlayerInstance?.ResetRoomscaleCamera();
             };
         }
@@ -828,7 +820,7 @@ namespace ValheimVRMod.VRCore
             switch (headZoomLevel)
             {
                 case HeadZoomLevel.FirstPerson:
-                    return FIRST_PERSON_OFFSET;
+                    return firstPersonOffset;
                 case HeadZoomLevel.ThirdPerson0:
                     return THIRD_PERSON_0_OFFSET + THIRD_PERSON_CONFIG_OFFSET;
                 case HeadZoomLevel.ThirdPerson1:
@@ -838,7 +830,7 @@ namespace ValheimVRMod.VRCore
                 case HeadZoomLevel.ThirdPerson3:
                     return THIRD_PERSON_3_OFFSET + THIRD_PERSON_CONFIG_OFFSET;
                 default:
-                    return FIRST_PERSON_OFFSET;
+                    return firstPersonOffset;
             }
         }
 
@@ -883,7 +875,7 @@ namespace ValheimVRMod.VRCore
             maybeExitDodge();
 
             maybeInitHeadPosition(playerCharacter);
-            float firstPersonAdjust = inFirstPerson ? FIRST_PERSON_HEIGHT_OFFSET : 0.0f;
+            float firstPersonAdjust = inFirstPerson ? (float) firstPersonHeightOffset : 0.0f;
             setHeadVisibility(!inFirstPerson);
             // Update the position with the first person adjustment calculated in init phase
             _instance.transform.localPosition = getDesiredLocalPosition(playerCharacter) // Base Positioning
@@ -1127,8 +1119,11 @@ namespace ValheimVRMod.VRCore
             // First set the position without any adjustment
             _instance.transform.localPosition = getDesiredLocalPosition(playerCharacter);
             var hmd = Valve.VR.InteractionSystem.Player.instance.hmdTransform;
-            // Measure the distance between HMD and desires location, and save it.
-            FIRST_PERSON_HEIGHT_OFFSET = Vector3.Dot(_instance.transform.position - hmd.position, playerCharacter.transform.up);
+            if (firstPersonHeightOffset == null)
+            {
+                // Measure the distance between HMD and desires location, and save it.
+                firstPersonHeightOffset = Vector3.Dot(_instance.transform.position - hmd.position, playerCharacter.transform.up);
+            }
 
             if (_headZoomLevel != HeadZoomLevel.FirstPerson)
             {
@@ -1190,6 +1185,7 @@ namespace ValheimVRMod.VRCore
             _instance.transform.rotation = mainCamera.gameObject.transform.rotation;
             attachedToPlayer = false;
             headPositionInitialized = false;
+            firstPersonOffset = Vector3.zero;
         }
 
         // Used to turn off the head model when player is currently occupying it.
