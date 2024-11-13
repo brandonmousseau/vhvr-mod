@@ -1121,7 +1121,6 @@ namespace ValheimVRMod.VRCore
             var hmd = Valve.VR.InteractionSystem.Player.instance.hmdTransform;
             if (firstPersonHeightOffset == null)
             {
-                LogUtils.LogWarning("Recalculating height");
                 // Measure the distance between HMD and desires location, and save it.
                 firstPersonHeightOffset = Vector3.Dot(_instance.transform.position - hmd.position, playerCharacter.transform.up);
             }
