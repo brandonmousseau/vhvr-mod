@@ -601,9 +601,6 @@ namespace ValheimVRMod.VRCore
 
         private Hand getHand(string hand, GameObject playerInstance)
         {
-            // indicator.transform.parent = playerInstance.transform;
-            LogUtils.LogChildTree(playerInstance.transform);
-
             foreach (Hand h in playerInstance.GetComponentsInChildren<Hand>())
             {
                 if (h.gameObject.name == hand)
