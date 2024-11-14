@@ -651,10 +651,6 @@ namespace ValheimVRMod.Utilities
                                           "CharaterMovesWithHeadset",
                                           true,
                                           "When set to true, roomscale movement of the headset controls character locomotion; when set to false, movement of the headset makes the character lean.");
-            roomScaleMovement = config.Bind("Controls",
-                                          "RoomScaleMovement",
-                                          true,
-                                          "Enable room scale movement. Recommended to turn off when using VR treadmills");
             roomScaleSneaking = config.Bind("Controls",
                                           "RoomScaleSneaking",
                                           false,
@@ -1358,11 +1354,6 @@ namespace ValheimVRMod.Utilities
         public static bool CharaterMovesWithHeadset()
         {
             return charaterMovesWithHeadset.Value;
-        }
-
-        public static bool RoomScaleMovement()
-        {
-            return roomScaleMovement.Value;
         }
 
         public static bool RoomScaleSneakEnabled() {
