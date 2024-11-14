@@ -1,6 +1,7 @@
 using RootMotion.FinalIK;
 using UnityEngine;
 using ValheimVRMod.Utilities;
+using ValheimVRMod.VRCore;
 
 namespace ValheimVRMod.Scripts {
     public class VrikCreator {
@@ -72,7 +73,10 @@ namespace ValheimVRMod.Scripts {
             }
             head.localPosition = new Vector3(0, -0.165f, -0.09f);
             head.localRotation = Quaternion.Euler(0, 90, 20);
-            vrik.solver.spine.pelvisTarget.SetParent(Player.m_localPlayer?.transform, false);
+            // TODO: send hip tracking data over network in VRPlayerSync.
+            vrik.solver.spine.pelvisTarget.SetParent(
+                VHVRConfig.IsHipTrackingEnabled() && VRPlayer.pelvis != null ? VRPlayer.pelvis : Player.m_localPlayer?.transform,
+                worldPositionStays: false);
             vrik.solver.spine.maxRootAngle = 180;
 
             //Avoid akward movements
@@ -135,7 +139,13 @@ namespace ValheimVRMod.Scripts {
                 vrik.solver.rightArm.target.localPosition = rightUnequippedPosition;
                 vrik.solver.rightArm.target.localRotation = rightUnequippedRotation;
                 vrik.solver.rightArm.palmToThumbAxis = rightUnequippedEllbow;
-             }
+            }
+
+            if (player == Player.m_localPlayer && VHVRConfig.IsHipTrackingEnabled())
+            {
+                vrik.solver.spine.pelvisTarget.localPosition = Vector3.zero;
+                vrik.solver.spine.pelvisTarget.localRotation = Quaternion.identity;
+            }
         }
 
         public static Transform GetLocalPlayerDominantHandConnector()
