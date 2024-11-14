@@ -390,7 +390,7 @@ namespace ValheimVRMod.Utilities
                                           true,
                                           "Allow player character movement when the menu is open. Note that in single player this has no effect due to game pause.");
             hipTrackerIndex = config.Bind(
-                "General", "PelvisTrackerIndex", -1,
+                "General", "HipTrackerIndex", -1,
                 new ConfigDescription(
                     "The device index of the hip tracker. Setting to -1 disables hip tracking.",
                     new AcceptableValueRange<int>(-1, 16)));
