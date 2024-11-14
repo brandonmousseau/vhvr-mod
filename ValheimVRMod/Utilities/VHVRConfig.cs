@@ -40,6 +40,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<string> immersiveShipCameraStanding;
         private static ConfigEntry<bool> immersiveDodgeRoll;
         private static ConfigEntry<bool> allowMovementWhenInMenu;
+        private static ConfigEntry<int> hipTrackerIndex;
 
         // UI Settings
         private static ConfigEntry<float> overlayCurvature;
@@ -388,6 +389,11 @@ namespace ValheimVRMod.Utilities
                                           "AllowMovementWhenInMenu",
                                           true,
                                           "Allow player character movement when the menu is open. Note that in single player this has no effect due to game pause.");
+            hipTrackerIndex = config.Bind(
+                "General", "PelvisTrackerIndex", -1,
+                new ConfigDescription(
+                    "The device index of the hip tracker. Setting to -1 disables hip tracking.",
+                    new AcceptableValueRange<int>(-1, 16)));
         }
 
         private static void InitializeUISettings()
@@ -1771,6 +1777,16 @@ namespace ValheimVRMod.Utilities
         public static bool AllowMovementWhenInMenu()
         {
             return allowMovementWhenInMenu.Value;
+        }
+        
+        public static int HipTrackerIndex()
+        {
+            return hipTrackerIndex.Value;
+        }
+
+        public static bool IsHipTrackingEnabled()
+        {
+            return !NonVrPlayer() && UseVrControls() && HipTrackerIndex() >= 0;
         }
 
         public static float SmoothTurnSpeed()
