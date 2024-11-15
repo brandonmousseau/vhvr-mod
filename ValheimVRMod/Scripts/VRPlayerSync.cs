@@ -17,6 +17,7 @@ namespace ValheimVRMod.Scripts {
         public GameObject camera = null;
         public GameObject rightHand = null;
         public GameObject leftHand = null;
+        public GameObject pelvis = null;
 
         private WeaponWield.TwoHandedState twoHandedState = WeaponWield.TwoHandedState.SingleHanded;
         private bool isLeftHanded = false;
@@ -34,6 +35,7 @@ namespace ValheimVRMod.Scripts {
         private Vector3 clientTempRelPosCamera = Vector3.zero;
         private Vector3 clientTempRelPosLeft = Vector3.zero;
         private Vector3 clientTempRelPosRight = Vector3.zero;
+        private Vector3 clientTempRelPosPelvis = Vector3.zero;
 
         private uint lastDataRevision = 0;
         private float deltaTimeCounter = 0f;
@@ -62,6 +64,7 @@ namespace ValheimVRMod.Scripts {
             camera = new GameObject();
             rightHand = new GameObject();
             leftHand = new GameObject();
+            pelvis = new GameObject();
             player = GetComponent<Player>();
         }
 
@@ -171,6 +174,7 @@ namespace ValheimVRMod.Scripts {
             writeData(pkg, rightHand, ownerVelocityRight);
             writeFingers(pkg, GetComponent<VRIK>().references.leftHand);
             writeFingers(pkg, GetComponent<VRIK>().references.rightHand);
+            writeData(pkg, pelvis, ownerVelocityCamera);
             pkg.Write(BowLocalManager.instance != null && BowLocalManager.instance.pulling);
             pkg.Write(isLeftHanded = VHVRConfig.LeftHanded());
             pkg.Write((byte) (twoHandedState = LocalWeaponWield.LocalPlayerTwoHandedState));
@@ -226,6 +230,8 @@ namespace ValheimVRMod.Scripts {
             extractAndUpdate(pkg, ref camera, ref clientTempRelPosCamera, hasTempRelPos);
             extractAndUpdate(pkg, ref leftHand, ref clientTempRelPosLeft, hasTempRelPos);
             extractAndUpdate(pkg, ref rightHand, ref clientTempRelPosRight, hasTempRelPos);
+            extractAndUpdate(pkg, ref pelvis, ref clientTempRelPosPelvis, hasTempRelPos);
+
             maybeAddVrik();
             if (vrik != null)
             {
@@ -303,7 +309,7 @@ namespace ValheimVRMod.Scripts {
             }
             vrik =
                 VrikCreator.initialize(
-                    gameObject, leftHand.transform, rightHand.transform, camera.transform);
+                    gameObject, leftHand.transform, rightHand.transform, camera.transform, pelvis.transform);
             VrikCreator.resetVrikHandTransform(player);
         }
 
