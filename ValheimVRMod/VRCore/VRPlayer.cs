@@ -1016,7 +1016,7 @@ namespace ValheimVRMod.VRCore
                 vrikRef.solver.spine.maintainPelvisPosition = attachedToPlayer ? 0 : 1;
                 vrikRef.solver.spine.pelvisRotationWeight = attachedToPlayer ? 1 : 0;
                 vrikRef.solver.spine.pelvisPositionWeight =
-                    attachedToPlayer && VHVRConfig.IsHipTrackingEnabled() && !pelvisCaliberationPending && !Player.m_localPlayer.IsAttached() ? 1 : 0;
+                    attachedToPlayer && VHVRConfig.IsHipTrackingEnabled() && !pelvisCaliberationPending && !Player.m_localPlayer.IsAttached() && !Player.m_localPlayer.IsSneaking() ? 1 : 0;
             }
 
             if (VHVRConfig.IsHipTrackingEnabled())
@@ -1480,7 +1480,7 @@ namespace ValheimVRMod.VRCore
             }
 
             var heading = Vector3.ProjectOnPlane(_vrCam.transform.forward, _vrCameraRig.up).normalized;
-            if (Vector3.Dot(leftHandRelativeToHead, heading) < -0.33f && Vector3.Dot(rightHandRelativeToHead, heading) < -0.33f)
+            if (Vector3.Dot(leftHandRelativeToHead, heading) < -0.3f && Vector3.Dot(rightHandRelativeToHead, heading) < -0.3f)
             {
                 // Hands are behind back, sit.
                 startingSit = true;
@@ -1488,7 +1488,7 @@ namespace ValheimVRMod.VRCore
             }
 
             Vector3 playerRight = Vector3.Cross(_vrCameraRig.up, heading);
-            if (Vector3.Dot(leftHandRelativeToHead, playerRight) > 0.07f && Vector3.Dot(rightHandRelativeToHead, playerRight) < -0.07f)
+            if (Vector3.Dot(leftHandRelativeToHead, playerRight) > 0.05f && Vector3.Dot(rightHandRelativeToHead, playerRight) < -0.05f)
             {
                 // Hands are crosssing, sit.
                 startingSit = true;
