@@ -173,7 +173,7 @@ namespace ValheimVRMod.VRCore
 
             // Trigger recentering head position on player body
             VRPlayer.RequestRecentering();
-            VRPlayer.caliberatePelvis();
+            VRPlayer.RequestPelvisCaliberation();
             VRPlayer.vrPlayerInstance?.ResetRoomscaleCamera();
         }
 

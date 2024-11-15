@@ -45,7 +45,7 @@ namespace ValheimVRMod.Scripts {
             return vrik;
         }
 
-        private static void InitializeTargts(VRIK vrik, Transform leftController, Transform rightController, Transform camera, bool isLocalPlayer)
+        private static void InitializeTargts(VRIK vrik, Transform leftController, Transform rightController, Transform camera, Transform pelvis, bool isLocalPlayer)
         {
             vrik.AutoDetectReferences();
             vrik.references.leftThigh = null;
@@ -74,14 +74,12 @@ namespace ValheimVRMod.Scripts {
             head.localPosition = new Vector3(0, -0.165f, -0.09f);
             head.localRotation = Quaternion.Euler(0, 90, 20);
             // TODO: send hip tracking data over network in VRPlayerSync.
-            vrik.solver.spine.pelvisTarget.SetParent(
-                VHVRConfig.IsHipTrackingEnabled() && VRPlayer.pelvis != null ? VRPlayer.pelvis : Player.m_localPlayer?.transform,
-                worldPositionStays: false);
+            vrik.solver.spine.pelvisTarget.SetParent(pelvis, worldPositionStays: false);
             vrik.solver.spine.maxRootAngle = 180;
 
             //Avoid akward movements
             vrik.solver.spine.maintainPelvisPosition = 0f;
-            vrik.solver.spine.pelvisPositionWeight = 0f;
+            vrik.solver.spine.pelvisPositionWeight = isLocalPlayer ? 0 : 1;
             vrik.solver.spine.pelvisRotationWeight = 0f;
             vrik.solver.spine.bodyPosStiffness = 0f;
             vrik.solver.spine.bodyRotStiffness = 0f;
@@ -98,9 +96,9 @@ namespace ValheimVRMod.Scripts {
                 vrik.solver.spine.headTarget.parent == CameraRig;
         }
 
-        public static VRIK initialize(GameObject playerGameObject, Transform leftController, Transform rightController, Transform camera) {
+        public static VRIK initialize(GameObject playerGameObject, Transform leftController, Transform rightController, Transform camera, Transform pelvis) {
             VRIK vrik = CreateTargets(playerGameObject);
-            InitializeTargts(vrik, leftController, rightController, camera, Player.m_localPlayer != null && playerGameObject == Player.m_localPlayer.gameObject);
+            InitializeTargts(vrik, leftController, rightController, camera, pelvis, Player.m_localPlayer != null && playerGameObject == Player.m_localPlayer.gameObject);
             return vrik;
         }
 
@@ -141,7 +139,7 @@ namespace ValheimVRMod.Scripts {
                 vrik.solver.rightArm.palmToThumbAxis = rightUnequippedEllbow;
             }
 
-            if (player == Player.m_localPlayer && VHVRConfig.IsHipTrackingEnabled())
+            if (player == Player.m_localPlayer)
             {
                 vrik.solver.spine.pelvisTarget.localPosition = Vector3.zero;
                 vrik.solver.spine.pelvisTarget.localRotation = Quaternion.identity;
@@ -201,7 +199,7 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            InitializeTargts(vrik, localPlayerLeftHandConnector.parent, localPlayerRightHandConnector.parent, camera, isLocalPlayer: true);
+            InitializeTargts(vrik, localPlayerLeftHandConnector.parent, localPlayerRightHandConnector.parent, camera, VRPlayer.pelvis, isLocalPlayer: true);
             resetVrikHandTransform(Player.m_localPlayer);
         }
     }
