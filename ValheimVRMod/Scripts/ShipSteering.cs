@@ -115,11 +115,11 @@ namespace ValheimVRMod.Scripts
             {
                 float speed =
                     Vector3.Dot(
-                        isLeftGrabbing ? -VRPlayer.leftHandPhysicsEstimator.GetVelocity() : VRPlayer.rightHandPhysicsEstimator.GetVelocity(),
+                        isLeftGrabbing ? VRPlayer.leftHandPhysicsEstimator.GetVelocity() : -VRPlayer.rightHandPhysicsEstimator.GetVelocity(),
                         ship.transform.forward);
                 shipControls.m_ship.ApplyControlls(
                     new Vector3(
-                        speed < -MIN_RUDDER_TURN_SPEED ? 1 : speed > MIN_RUDDER_TURN_SPEED ? -1 : 0,
+                        speed < -MIN_RUDDER_TURN_SPEED ? -1 : speed > MIN_RUDDER_TURN_SPEED ? 1 : 0,
                         0,
                         0));
                 return;
