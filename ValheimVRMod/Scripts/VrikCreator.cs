@@ -73,14 +73,14 @@ namespace ValheimVRMod.Scripts {
             }
             head.localPosition = new Vector3(0, -0.165f, -0.09f);
             head.localRotation = Quaternion.Euler(0, 90, 20);
-            // TODO: send hip tracking data over network in VRPlayerSync.
             vrik.solver.spine.pelvisTarget.SetParent(pelvis, worldPositionStays: false);
             vrik.solver.spine.maxRootAngle = 180;
+            vrik.solver.spine.minHeadHeight = 0.5f;
 
             //Avoid akward movements
             vrik.solver.spine.maintainPelvisPosition = 0f;
             vrik.solver.spine.pelvisPositionWeight = isLocalPlayer ? 0 : 1;
-            vrik.solver.spine.pelvisRotationWeight = 0f;
+            vrik.solver.spine.pelvisRotationWeight = isLocalPlayer ? 0 : 1;
             vrik.solver.spine.bodyPosStiffness = 0f;
             vrik.solver.spine.bodyRotStiffness = 0f;
             //Force head to allow more vertical headlook
