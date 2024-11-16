@@ -1005,65 +1005,79 @@ namespace ValheimVRMod.VRCore
 
         private void updatePelvis()
         {
-            if (!ensureHipTracker() || Player.m_localPlayer == null || _vrCam == null)
+            var player = Player.m_localPlayer;
+            var pelvisTarget = vrikRef?.solver?.spine?.pelvisTarget;
+            if (!ensureHipTracker() || player == null || pelvisTarget == null || !headPositionInitialized || _vrCam == null || !VHVRConfig.UseVrControls())
             {
                 return;
             }
 
-            var pelvisTarget = vrikRef?.solver?.spine?.pelvisTarget;
-            if (pelvisTarget != null && VHVRConfig.UseVrControls() && !pausedMovement)
-            {
-                vrikRef.solver.spine.maintainPelvisPosition = attachedToPlayer ? 0 : 1;
-                vrikRef.solver.spine.pelvisRotationWeight = attachedToPlayer ? 1 : 0;
-                vrikRef.solver.spine.pelvisPositionWeight =
-                    attachedToPlayer && VHVRConfig.IsHipTrackingEnabled() && !pelvisCaliberationPending && !Player.m_localPlayer.IsAttached() && !Player.m_localPlayer.IsSneaking() ? 1 : 0;
-            }
+            vrikRef.solver.spine.maintainPelvisPosition = attachedToPlayer ? 0 : 1;
+            vrikRef.solver.spine.pelvisRotationWeight = attachedToPlayer ? 1 : 0;
 
-            if (VHVRConfig.IsHipTrackingEnabled())
-            {
-                if ((int)hipTracker.index != VHVRConfig.HipTrackerIndex())
-                {
-                    hipTracker.SetDeviceIndex(VHVRConfig.HipTrackerIndex());
-                    RequestPelvisCaliberation();
-                }
-                pelvisRenderer.enabled =
-                    Menu.IsVisible() ||
-                    (FejdStartup.m_instance != null && FejdStartup.m_instance.isActiveAndEnabled);
-                if (!Player.m_localPlayer.IsAttached())
-                {
-                    pelvis.localPosition = caliberatedPelvisLocalPosition;
-                    pelvis.localRotation = caliberatedPelvisLocalRotation;
-                    return;
-                }
-            }
-            else
+            if (!VHVRConfig.IsHipTrackingEnabled())
             {
                 hipTracker.SetDeviceIndex(-1);
                 pelvisRenderer.enabled = false;
+                vrikRef.solver.spine.pelvisPositionWeight = 0;
+                vrikRef.solver.spine.bodyPosStiffness = 0f;
+                pelvis.position = vrikRef.references.pelvis.position;
+                pelvis.rotation = Quaternion.LookRotation(inferPelvisFacingFromPlayerHeadingAndHands(player.transform, player.IsAttached()), player.transform.up);
+                return;
             }
 
+            pelvisRenderer.enabled =
+                Menu.IsVisible() ||
+                (FejdStartup.m_instance != null && FejdStartup.m_instance.isActiveAndEnabled);
 
-            pelvis.position = pelvisTarget == null ? inferPelvisPositionFromHead() : vrikRef.references.pelvis.position;
-
-            Vector3 playerUpDirection = Player.m_localPlayer.transform.up;
-            Vector3 heading = Player.m_localPlayer.transform.forward;
-            if (!GesturedLocomotionManager.isInUse || Mathf.Abs(gesturedLocomotionManager.stickOutputY) < 0.25f)
+            if ((int)hipTracker.index != VHVRConfig.HipTrackerIndex())
             {
-                Vector3 elbowSpan = rightHandBone.TransformPoint(-Vector3.up * 0.25f) - leftHandBone.TransformPoint(-Vector3.up * 0.25f);
-                Vector3 headingAdjustment = Vector3.Cross(Vector3.ProjectOnPlane(elbowSpan, playerUpDirection), playerUpDirection);
-                if (Player.m_localPlayer.IsAttached())
-                {
-                    headingAdjustment *= 0.5f;
-                }
-                // Rotate pelvis slightly according to forearm positions
-                heading += headingAdjustment;
+                hipTracker.SetDeviceIndex(VHVRConfig.HipTrackerIndex());
+                RequestPelvisCaliberation();
+                return;
             }
-            pelvis.rotation = Quaternion.LookRotation(heading, playerUpDirection);
+
+            vrikRef.solver.spine.bodyPosStiffness = player.IsSneaking() ? 0.5f : 0;
+
+            if (player.IsAttached() || player.IsSneaking() || player.IsSitting())
+            {
+                vrikRef.solver.spine.pelvisPositionWeight = 0;
+                pelvis.position = vrikRef.references.pelvis.position;
+            }
+            else
+            {
+                vrikRef.solver.spine.pelvisPositionWeight = attachedToPlayer ? 1 : 0;
+                pelvis.localPosition = caliberatedPelvisLocalPosition;
+            }
+
+            if (player.IsAttached()) {
+                pelvis.rotation =
+                    Quaternion.Lerp(player.transform.rotation, pelvis.parent.rotation * caliberatedPelvisLocalRotation, 0.25f);
+            }
+            else
+            {
+                pelvis.localPosition = caliberatedPelvisLocalPosition;
+                pelvis.localRotation = caliberatedPelvisLocalRotation;
+            }
         }
 
         private Vector3 inferPelvisPositionFromHead()
         {
             return _vrCam.transform.position - _vrCam.transform.forward * NECK_OFFSET * 0.5f - _vrCameraRig.up * UPPER_BODY_HEIGHT;
+        }
+
+        private Vector3 inferPelvisFacingFromPlayerHeadingAndHands(Transform playerTransform, bool isPlayerAttached)
+        {
+            if (GesturedLocomotionManager.isInUse && Mathf.Abs(gesturedLocomotionManager.stickOutputY) > 0.25f)
+            {
+                return playerTransform.forward;
+            }
+            
+            Vector3 elbowSpan = rightHandBone.TransformPoint(-Vector3.up * 0.25f) - leftHandBone.TransformPoint(-Vector3.up * 0.25f);
+            Vector3 adjustment = Vector3.Cross(Vector3.ProjectOnPlane(elbowSpan, playerTransform.up), playerTransform.up);
+
+            // Rotate pelvis slightly according to forearm positions
+            return isPlayerAttached ? playerTransform.forward + adjustment * 0.5f : playerTransform.forward + adjustment;
         }
 
 
@@ -1480,7 +1494,7 @@ namespace ValheimVRMod.VRCore
             }
 
             var heading = Vector3.ProjectOnPlane(_vrCam.transform.forward, _vrCameraRig.up).normalized;
-            if (Vector3.Dot(leftHandRelativeToHead, heading) < -0.3f && Vector3.Dot(rightHandRelativeToHead, heading) < -0.3f)
+            if (Vector3.Dot(leftHandRelativeToHead, heading) < -0.33f && Vector3.Dot(rightHandRelativeToHead, heading) < -0.33f)
             {
                 // Hands are behind back, sit.
                 startingSit = true;
@@ -1488,7 +1502,7 @@ namespace ValheimVRMod.VRCore
             }
 
             Vector3 playerRight = Vector3.Cross(_vrCameraRig.up, heading);
-            if (Vector3.Dot(leftHandRelativeToHead, playerRight) > 0.05f && Vector3.Dot(rightHandRelativeToHead, playerRight) < -0.05f)
+            if (Vector3.Dot(leftHandRelativeToHead, playerRight) > 0.0625f && Vector3.Dot(rightHandRelativeToHead, playerRight) < -0.0625f)
             {
                 // Hands are crosssing, sit.
                 startingSit = true;
