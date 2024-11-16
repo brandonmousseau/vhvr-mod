@@ -75,10 +75,10 @@ namespace ValheimVRMod.Scripts
             }
             else if (!wasDoubleGrabbing)
             {
-                if (Vector3.Angle(VRPlayer.leftHandBone.right, upDirection) < MAX_SAIL_PULL_ANGLE ||
-                    Vector3.Angle(-VRPlayer.rightHandBone.right, upDirection) < MAX_SAIL_PULL_ANGLE)
+                if (Vector3.Angle(VRPlayer.leftHand.transform.forward, upDirection) < MAX_SAIL_PULL_ANGLE ||
+                    Vector3.Angle(VRPlayer.rightHand.transform.forward, upDirection) < MAX_SAIL_PULL_ANGLE)
                 {
-                    Vector3 handSpan = VRPlayer.rightHandBone.position - VRPlayer.leftHandBone.position;
+                    Vector3 handSpan = VRPlayer.rightHand.transform.position - VRPlayer.leftHand.transform.position;
                     if (Vector3.Angle(handSpan, upDirection) < MAX_SAIL_PULL_ANGLE ||
                         Vector3.Angle(-handSpan, upDirection) < MAX_SAIL_PULL_ANGLE)
                     {
