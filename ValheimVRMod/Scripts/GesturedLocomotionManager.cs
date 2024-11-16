@@ -285,17 +285,17 @@ namespace ValheimVRMod.Scripts
                     isWalkingOrRunningUsingGestures = true;
                 }
 
-                return isWalkingOrRunningUsingGestures ? ApplyHeadTiltStrafe(walkDirection) * walkSpeed : Vector3.zero;
+                return isWalkingOrRunningUsingGestures ? ApplyHeadTiltStrafe(walkDirection, walkSpeed) : Vector3.zero;
             }
 
-            private Vector3 ApplyHeadTiltStrafe(Vector3 walkDirection)
+            private Vector3 ApplyHeadTiltStrafe(Vector3 walkDirection, float walkSpeed)
             {
                 if (vrCam == null)
                 {
                     vrCam = CameraUtils.getCamera(CameraUtils.VR_CAMERA);
                     if (vrCam == null)
                     {
-                        return walkDirection;
+                        return walkDirection * walkSpeed;
                     }
                 }
                 var heading = Vector3.ProjectOnPlane(vrCam.transform.forward, upDirection.Value);
@@ -305,11 +305,15 @@ namespace ValheimVRMod.Scripts
                 var strafeAmount = strafe.magnitude;
                 if (strafeAmount < HEAD_TILT_STRAFE_DEADZONE)
                 {
-                    return walkDirection;
+                    return walkDirection * walkSpeed;
                 }
 
                 strafe -= strafe * HEAD_TILT_STRAFE_DEADZONE / strafeAmount;
-                return (walkDirection + strafe * HEAD_TILT_STRAFE_WEIGHT).normalized;
+                if (walkSpeed < 0)
+                {
+                    strafe = -strafe;
+                }
+                return (walkDirection + strafe * HEAD_TILT_STRAFE_WEIGHT).normalized * walkSpeed;
             }
 
             private bool isStoppingWalkRunByButton()
