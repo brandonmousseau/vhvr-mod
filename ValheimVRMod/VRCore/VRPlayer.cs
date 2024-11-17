@@ -947,7 +947,8 @@ namespace ValheimVRMod.VRCore
                 {
                     offset += Vector3.forward * 0.0625f; // Move slightly backward to position on neck
                 }
-                else {
+                else
+                {
                     offset -= Vector3.forward * NECK_OFFSET; // Move slightly forward to position on neck
                 }
                 setPlayerVisualsOffset(playerCharacter.transform, offset);
@@ -1037,7 +1038,7 @@ namespace ValheimVRMod.VRCore
                 return;
             }
 
-            vrikRef.solver.spine.bodyPosStiffness = player.IsSneaking() ? 0.5f : 0;
+            vrikRef.solver.spine.bodyPosStiffness = player.IsSneaking() ? 0.75f : 0.25f;
 
             if (player.IsAttached() || player.IsSneaking() || player.IsSitting())
             {
