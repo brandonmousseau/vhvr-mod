@@ -1021,7 +1021,6 @@ namespace ValheimVRMod.VRCore
                 hipTracker.SetDeviceIndex(-1);
                 pelvisRenderer.enabled = false;
                 vrikRef.solver.spine.pelvisPositionWeight = 0;
-                vrikRef.solver.spine.bodyPosStiffness = 0f;
                 pelvis.position = vrikRef.references.pelvis.position;
                 pelvis.rotation = Quaternion.LookRotation(inferPelvisFacingFromPlayerHeadingAndHands(player.transform, player.IsAttached()), player.transform.up);
                 return;
@@ -1037,8 +1036,6 @@ namespace ValheimVRMod.VRCore
                 RequestPelvisCaliberation();
                 return;
             }
-
-            vrikRef.solver.spine.bodyPosStiffness = player.IsSneaking() ? 0.75f : 0.25f;
 
             if (player.IsAttached() || player.IsSneaking() || player.IsSitting())
             {
