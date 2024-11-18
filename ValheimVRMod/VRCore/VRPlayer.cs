@@ -56,8 +56,7 @@ namespace ValheimVRMod.VRCore
         private static Vector3 THIRD_PERSON_2_OFFSET = new Vector3(0f, 1.9f, -2.6f);
         private static Vector3 THIRD_PERSON_3_OFFSET = new Vector3(0f, 3.2f, -4.4f);
         private static Vector3 THIRD_PERSON_CONFIG_OFFSET = Vector3.zero;
-        private const float NECK_OFFSET = 0.2f;
-        private const float UPPER_BODY_HEIGHT = 0.9f;
+        private const float NECK_OFFSET = 0.165f;
         public const float ROOMSCALE_STEP_ANIMATION_SMOOTHING = 0.3f;
         public const float ROOMSCALE_ANIMATION_WEIGHT = 2f;
 
@@ -988,7 +987,9 @@ namespace ValheimVRMod.VRCore
             {
                 if (player.IsAttached())
                 {
-                    return SIT_ATTACH_HEIGHT_ADJUST;
+                    var chair = player.m_attachPoint?.GetComponentInParent<Chair>();
+                    var isRidingAsksvinSkeleton = chair != null && chair.m_name == "$piece_asksvinskeleton";
+                    return isRidingAsksvinSkeleton ? RIDE_HEIGHT_ADJUST : SIT_ATTACH_HEIGHT_ADJUST;
                 }
                 if (!VHVRConfig.CharaterMovesWithHeadset())
                 {
@@ -1037,7 +1038,13 @@ namespace ValheimVRMod.VRCore
                 return;
             }
 
-            if (player.IsAttached() || player.IsSneaking() || player.IsSitting())
+            bool isFreeStanding =
+                !player.IsAttached() &&
+                !player.IsSitting() &&
+                Vector3.Angle(pelvis.parent.rotation * caliberatedPelvisLocalRotation * Vector3.up, player.transform.up) < 30 &&
+                Valve.VR.InteractionSystem.Player.instance.eyeHeight > referencePlayerHeight * 0.75f;
+
+            if (player.IsAttached() || player.IsSneaking() || player.IsSitting() || isFreeStanding)
             {
                 vrikRef.solver.spine.pelvisPositionWeight = 0;
                 pelvis.position = vrikRef.references.pelvis.position;
@@ -1048,20 +1055,26 @@ namespace ValheimVRMod.VRCore
                 pelvis.localPosition = caliberatedPelvisLocalPosition;
             }
 
-            if (player.IsAttached()) {
+            if (player.IsAttached())
+            {
                 pelvis.rotation =
                     Quaternion.Lerp(player.transform.rotation, pelvis.parent.rotation * caliberatedPelvisLocalRotation, 0.25f);
             }
+            else if (isFreeStanding)
+            {
+                Vector3 caliberatedPelvisForward = pelvis.parent.rotation * caliberatedPelvisLocalRotation * Vector3.forward;
+                Vector3 pelvisFacing = Vector3.ProjectOnPlane(caliberatedPelvisForward, player.transform.up);
+                pelvis.rotation = Quaternion.LookRotation(pelvisFacing, player.transform.up);
+            }
             else
             {
-                pelvis.localPosition = caliberatedPelvisLocalPosition;
                 pelvis.localRotation = caliberatedPelvisLocalRotation;
             }
         }
 
         private Vector3 inferPelvisPositionFromHead()
         {
-            return _vrCam.transform.position - _vrCam.transform.forward * NECK_OFFSET * 0.5f - _vrCameraRig.up * UPPER_BODY_HEIGHT;
+            return _vrCam.transform.position - _vrCam.transform.forward * 0.175f - _vrCameraRig.up * 0.87f;
         }
 
         private Vector3 inferPelvisFacingFromPlayerHeadingAndHands(Transform playerTransform, bool isPlayerAttached)
@@ -1269,7 +1282,7 @@ namespace ValheimVRMod.VRCore
 
         private void caliberatePelvis()
         {
-            if (!VHVRConfig.IsHipTrackingEnabled() || vrCam == null || vrCam.transform.parent == null || !headPositionInitialized)
+            if (!VHVRConfig.IsHipTrackingEnabled() || vrCam == null || vrCam.transform.parent == null || !headPositionInitialized || vrikRef?.solver?.spine?.pelvisTarget == null)
             {
                 return;
             }
