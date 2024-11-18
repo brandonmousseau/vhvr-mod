@@ -172,9 +172,9 @@ namespace ValheimVRMod.Scripts {
             writeData(pkg, camera, ownerVelocityCamera);
             writeData(pkg, leftHand, ownerVelocityLeft);
             writeData(pkg, rightHand, ownerVelocityRight);
+            writeData(pkg, pelvis, ownerVelocityCamera);
             writeFingers(pkg, GetComponent<VRIK>().references.leftHand);
             writeFingers(pkg, GetComponent<VRIK>().references.rightHand);
-            writeData(pkg, pelvis, ownerVelocityCamera);
             pkg.Write(BowLocalManager.instance != null && BowLocalManager.instance.pulling);
             pkg.Write(isLeftHanded = VHVRConfig.LeftHanded());
             pkg.Write((byte) (twoHandedState = LocalWeaponWield.LocalPlayerTwoHandedState));
