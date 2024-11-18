@@ -20,8 +20,11 @@ namespace ValheimVRMod.Scripts
             LayerUtils.WATERVOLUME_LAYER,
             LayerUtils.WATER,
             LayerUtils.UI_PANEL_LAYER,
-            LayerUtils.CHARARCTER_TRIGGER
+            LayerUtils.CHARARCTER_TRIGGER,
+            LayerUtils.TERRAIN
         };
+
+        public bool isGrabbingEnvironment { get; private set; } = false;
 
         private EquipType? currentEquipType = null;
         private Vector3 desiredPosition;
@@ -47,6 +50,19 @@ namespace ValheimVRMod.Scripts
 
         private void OnTriggerStay(Collider collider)
         {
+            var inputSource = isRightHand ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand;
+            if (handGesture.isHandFree() && SteamVR_Actions.valheim_Grab.GetStateDown(inputSource))
+            {
+                if (collider.gameObject.layer == LayerUtils.TERRAIN || collider.gameObject.layer == LayerUtils.PIECE)
+                {
+                    isGrabbingEnvironment = true;
+                }
+            }
+            else if (!SteamVR_Actions.valheim_Grab.GetState(inputSource))
+            {
+                isGrabbingEnvironment = false;
+            }
+
             if (!handGesture.isHandFree() || collider.gameObject.layer != LayerUtils.CHARACTER)
             {
                 return;
@@ -63,6 +79,11 @@ namespace ValheimVRMod.Scripts
 
         private void OnTriggerEnter(Collider collider)
         {
+            if (collider.gameObject.layer == LayerUtils.PIECE && isGrabbingEnvironment)
+            {
+                return;
+            }
+
             tryHitCollider(collider, requireJab: false);
         }
 
