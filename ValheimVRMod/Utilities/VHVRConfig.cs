@@ -1499,11 +1499,6 @@ namespace ValheimVRMod.Utilities
             return crossbowManualReload.Value;
         }
 
-        public static string BlockingType()
-        {
-            return blockingType.Value;
-        }
-
         public static bool UseRealisticBlock()
         {
             return blockingType.Value == "Realistic";
