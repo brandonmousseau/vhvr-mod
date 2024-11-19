@@ -53,7 +53,11 @@ namespace ValheimVRMod.Scripts
             var inputSource = isRightHand ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand;
             if (handGesture.isHandFree() && SteamVR_Actions.valheim_Grab.GetStateDown(inputSource))
             {
-                if (collider.gameObject.layer == LayerUtils.TERRAIN || collider.gameObject.layer == LayerUtils.PIECE)
+                if (collider.gameObject.layer == LayerUtils.TERRAIN ||
+                    collider.gameObject.layer == LayerUtils.PIECE ||
+                    collider.gameObject.layer == LayerUtils.STATIC_SOLID ||
+                    collider.GetComponentInParent<StaticPhysics>() != null ||
+                    collider.GetComponentInParent<TreeBase>() != null)
                 {
                     isGrabbingEnvironment = true;
                 }
@@ -79,12 +83,10 @@ namespace ValheimVRMod.Scripts
 
         private void OnTriggerEnter(Collider collider)
         {
-            if (collider.gameObject.layer == LayerUtils.PIECE && isGrabbingEnvironment)
+            if (!isGrabbingEnvironment)
             {
-                return;
+                tryHitCollider(collider, requireJab: false);
             }
-
-            tryHitCollider(collider, requireJab: false);
         }
 
 
