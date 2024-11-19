@@ -189,6 +189,11 @@ namespace ValheimVRMod.Scripts
                     return Vector3.zero;
                 }
 
+                if (StaticObjects.leftFist().isGrabbingEnvironment || StaticObjects.rightFist().isGrabbingEnvironment)
+                {
+                    return Vector3.zero;
+                }
+
                 var height = Valve.VR.InteractionSystem.Player.instance.eyeHeight;
                 if (height < VRPlayer.referencePlayerHeight * VHVRConfig.GesturedJumpPreparationHeight())
                 {
@@ -202,7 +207,7 @@ namespace ValheimVRMod.Scripts
                 }
 
                 var verticalAcceleration = Vector3.Dot(VRPlayer.headPhysicsEstimator.GetAcceleration(), upDirection.Value);
-                if (verticalAcceleration < VHVRConfig.GesturedJumpMinSpeed() * 8) // TODO: add an option of min acceleration.
+                if (verticalAcceleration < VHVRConfig.GesturedJumpMinSpeed() * 8) // TODO: consider adding an option for min acceleration.
                 {
                     return Vector3.zero;
                 }
