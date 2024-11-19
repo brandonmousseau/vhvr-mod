@@ -70,6 +70,10 @@ namespace ValheimVRMod.Scripts
                 SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand))
             {
                 gesturedLocomotionVelocity = Vector3.zero;
+            } 
+            else if (IsInAir(localPlayer) && targetVelocity.magnitude > RUN_ACITIVATION_SPEED)
+            {
+                gesturedLocomotionVelocity = targetVelocity;
             }
             else
             {
@@ -105,15 +109,15 @@ namespace ValheimVRMod.Scripts
                 {
                     isRunning = false;
                 }
-                else if (Vector3.Dot(VRPlayer.leftHandBone.forward, (Vector3)upDirection) < -0.8f &&
-                    Vector3.Dot(VRPlayer.rightHandBone.forward, (Vector3)upDirection) < -0.8f) {
+                else if (Vector3.Dot(-VRPlayer.leftHand.transform.right, (Vector3)upDirection) > 0.8f &&
+                    Vector3.Dot(VRPlayer.rightHand.transform.right, (Vector3)upDirection) > 0.8f) {
                     // Both hands palms are facing down, stop running.
                     isRunning = false;
                 }
             }
             else if (horizontalSpeed > RUN_ACITIVATION_SPEED &&
-                Vector3.Dot(VRPlayer.leftHandBone.forward, (Vector3)upDirection) > -0.8f &&
-                Vector3.Dot(VRPlayer.rightHandBone.forward, (Vector3)upDirection) > -0.8f)
+                Vector3.Dot(-VRPlayer.leftHand.transform.right, (Vector3)upDirection) < 0.8f &&
+                Vector3.Dot(VRPlayer.rightHand.transform.right, (Vector3)upDirection) < 0.8f)
             {
                 isRunning = true;
             }
@@ -131,6 +135,11 @@ namespace ValheimVRMod.Scripts
                     localPlayer.Jump();
                 }
             }
+        }
+
+        private static bool IsInAir(Player player)
+        {
+            return !player.IsAttached() && !player.IsSwimming() && !player.IsOnGround();
         }
 
         abstract class GesturedLocomotion
@@ -207,11 +216,6 @@ namespace ValheimVRMod.Scripts
                 LogUtils.LogInfo("Gestured jump at speed " + verticalSpeed + " and acceleration " + verticalAcceleration);
                 return upDirection.Value * verticalSpeed;
             }
-
-            private static bool IsInAir(Player player)
-            {
-                return !player.IsAttached() && !player.IsSwimming() && !player.IsOnGround();
-            }
         }
 
         class HandGesturedJump : GesturedLocomotion
@@ -240,20 +244,16 @@ namespace ValheimVRMod.Scripts
                 }
 
                 var physicsEstimator = isRightHand ? VRPlayer.rightHandPhysicsEstimator : VRPlayer.leftHandPhysicsEstimator;
-                var propulsion = -physicsEstimator.GetVelocity();
-                if (Vector3.Dot(propulsion, (Vector3) upDirection) < 2f)
+                var handVelocity = physicsEstimator.GetVelocity();
+                if (Vector3.Dot(handVelocity, upDirection.Value) > -2f ||
+                    Vector3.Dot(physicsEstimator.GetAcceleration(), upDirection.Value) > -8f)
                 {
                     return Vector3.zero;
                 }
 
                 horizontalVelocity = Vector3.ProjectOnPlane(fistCollision.transform.position - player.transform.position, (Vector3)upDirection).normalized * 2;
 
-                return horizontalVelocity + propulsion;
-            }
-
-            private static bool IsInAir(Player player)
-            {
-                return !player.IsAttached() && !player.IsSwimming() && !player.IsOnGround();
+                return -handVelocity + horizontalVelocity;
             }
         }
 
@@ -286,8 +286,8 @@ namespace ValheimVRMod.Scripts
 
             protected override SteamVR_Input_Sources inputSource { get { return SteamVR_Input_Sources.LeftHand; } }
             protected override Vector3 handVelocity { get { return VRPlayer.leftHandPhysicsEstimator.GetVelocity(); } }
-            protected override Transform handTransform { get { return VRPlayer.leftHandBone; } }
-            protected override Transform otherHandTransform { get { return VRPlayer.rightHandBone; } }
+            protected override Transform handTransform { get { return VRPlayer.leftHand.transform; } }
+            protected override Transform otherHandTransform { get { return VRPlayer.rightHand.transform; } }
         }
 
         class RightHandGesturedWalkRun : GesturedWalkRun {
@@ -328,14 +328,31 @@ namespace ValheimVRMod.Scripts
                     return Vector3.zero;
                 }
 
+                // Use controller pointing as walking direction.
+                Vector3 walkDirection = handTransform.forward;
+
+                if (Mathf.Abs(Vector3.Dot(handTransform.right, upDirection.Value)) > 0.8f)
+                {
+                    // The palms is facing up or down, use hand pointing instead of controller pointing for walk direction.
+                    walkDirection -= handTransform.up;
+                }
+
+                walkDirection = Vector3.ProjectOnPlane(walkDirection, upDirection.Value).normalized;
+
                 Vector3 handVelocity = this.handVelocity;
                 float handSpeed = handVelocity.magnitude;
-                Vector3 clampedHandVelocity = handSpeed > 1 ? handVelocity / handSpeed : handVelocity;
+                Vector3 clampedHandVelocity = Vector3.ProjectOnPlane(handSpeed > 1 ? handVelocity / handSpeed : handVelocity, upDirection.Value);
 
-                // Use both hand pointing direction and hand movement direction to decide walk direction
-                Vector3 walkDirection = handTransform.up * 2;
-                walkDirection += (Vector3.Dot(walkDirection, clampedHandVelocity) > 0 ? clampedHandVelocity : -clampedHandVelocity);
-                walkDirection = Vector3.ProjectOnPlane(walkDirection, upDirection.Value).normalized;
+                // Use hand velocity to adjust walk direction.
+                if (Vector3.Dot(walkDirection, clampedHandVelocity) > 0) {
+                    walkDirection += clampedHandVelocity * 0.5f;
+                }
+                else
+                {
+                    walkDirection -= clampedHandVelocity * 0.5f;
+                }
+
+                walkDirection = walkDirection.normalized;
 
                 movementVerticalPlaneNormal = Vector3.Cross(upDirection.Value, walkDirection).normalized;
                 Vector3 wheelDiameter = Vector3.ProjectOnPlane(handTransform.position - otherHandTransform.position, movementVerticalPlaneNormal);
