@@ -64,14 +64,8 @@ namespace ValheimVRMod.Scripts
             }
 
 
-            if (SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.LeftHand) &&
-                SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.RightHand) &&
-                SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand) &&
+            if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand) &&
                 SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand))
-            {
-                gesturedLocomotionVelocity = Vector3.zero;
-            } 
-            else if (IsInAir(localPlayer) && targetVelocity.magnitude > RUN_ACITIVATION_SPEED)
             {
                 gesturedLocomotionVelocity = targetVelocity;
             }
