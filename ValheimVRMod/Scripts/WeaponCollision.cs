@@ -523,7 +523,7 @@ namespace ValheimVRMod.Scripts
                 return false;
             }
                
-            LogUtils.LogDebug("VHVR: stab detected on weapon direction: " + LocalWeaponWield.weaponForward);
+            // LogUtils.LogDebug("VHVR: stab detected on weapon direction: " + LocalWeaponWield.weaponForward);
             return true;
         }
 
