@@ -5,6 +5,7 @@ using ValheimVRMod.VRCore;
 
 namespace ValheimVRMod.Scripts {
     public class VrikCreator {
+        public const float ROOT_SCALE = 1;
 
         private static readonly Vector3 leftUnequippedPosition = new Vector3(-0.027f, 0.05f, -0.18f);
         private static readonly Quaternion leftUnequippedRotation = Quaternion.Euler(0, 90f, 135f);
@@ -32,7 +33,6 @@ namespace ValheimVRMod.Scripts {
         public static Transform camera;
         private static Transform CameraRig { get { return camera.parent; } }
 
-
         private static VRIK CreateTargets(GameObject playerObject)
         {
             VRIK vrik = playerObject.GetComponent<VRIK>() ?? playerObject.AddComponent<VRIK>();
@@ -56,6 +56,7 @@ namespace ValheimVRMod.Scripts {
             vrik.references.rightCalf = null;
             vrik.references.rightFoot = null;
             vrik.references.rightToes = null;
+            vrik.references.root.localScale = Vector3.one * ROOT_SCALE;
 
             Transform leftHandConnector = isLocalPlayer ? VrikCreator.localPlayerLeftHandConnector : new GameObject().transform;
             leftHandConnector.SetParent(leftController, false);
