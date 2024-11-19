@@ -251,8 +251,20 @@ namespace ValheimVRMod.Scripts
             public override Vector3 GetPreferredTwoHandedWeaponUp(WeaponWield weaponWield)
             {
                 return weaponWield.twoHandedState == WeaponWield.TwoHandedState.LeftHandBehind ?
-                    weaponWield.frontHandTransform.right:
-                    -weaponWield.frontHandTransform.right;
+                    weaponWield.frontHandTransform.up:
+                    -weaponWield.frontHandTransform.up;
+            }
+
+            public override float GetPreferredOffsetFromRearHand(float handDist, bool rearHandIsDominant)
+            {
+                if (handDist > distanceBetweenGripAndRearEnd)
+                {
+                    // Anchor the rear end of the weapon in the rear/non-dominant hand.
+                    return distanceBetweenGripAndRearEnd - WeaponWield.HAND_CENTER_OFFSET;
+                }
+
+                // Anchor the grip of the weapon in the front/dominant hand instead.
+                return handDist - WeaponWield.HAND_CENTER_OFFSET;
             }
         }
 

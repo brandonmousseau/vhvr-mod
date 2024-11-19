@@ -383,6 +383,7 @@ namespace ValheimVRMod.Utilities
             { "dual_knives", 0.43f },
             { "greatsword", 1.13f },
             { "knife_stab", 0.49f },
+            { "scything", 1.5f },
             { "swing_longsword", 0.63f },
             { "spear_poke", 0.63f },
             { "swing_pickaxe", 1.3f },

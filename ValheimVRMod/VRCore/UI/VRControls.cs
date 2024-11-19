@@ -221,6 +221,12 @@ namespace ValheimVRMod.VRCore.UI
                 return;
             }
 
+            if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand) && SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand))
+            {
+                isAutoRunActive = false;
+                return;
+            }
+
             if (VHVRConfig.AutoRunThreshold() >= 0.95f &&
                 SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.LeftHand) &&
                 SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.RightHand))
