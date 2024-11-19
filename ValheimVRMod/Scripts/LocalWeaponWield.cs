@@ -234,7 +234,7 @@ namespace ValheimVRMod.Scripts
                     else
                         return SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource);
                 default:
-                    return VHVRConfig.BlockingType() == "Gesture" ? isCurrentlyTwoHanded() : SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource);
+                    return VHVRConfig.UseGestureBlock() ? isCurrentlyTwoHanded() : SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource);
             }
         }
 
