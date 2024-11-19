@@ -53,6 +53,7 @@ namespace ValheimVRMod.Utilities
         public static readonly int TERRAIN = 11;
         public static readonly int ITEM_LAYER = 12;
         public static readonly int CHARARCTER_TRIGGER = 14;
+        public static readonly int STATIC_SOLID = 15;
         public static readonly int WATERVOLUME_LAYER = 21;
         public static readonly int WEAPON_LAYER = 22;
         // I need a layer with non-visible objects since
