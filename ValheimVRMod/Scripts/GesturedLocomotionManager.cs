@@ -118,7 +118,7 @@ namespace ValheimVRMod.Scripts
 
             var verticalSpeed = Vector3.Dot(targetVelocity, upDirection.Value);
             dodgeDirection = verticalSpeed < -0.5f || (isRunning && VRPlayer.isRoomscaleSneaking) ? horizontalVelocity : (Vector3?) null;
-            if (verticalSpeed > VHVRConfig.GesturedJumpMinSpeed() && localPlayer.IsOnGround())
+            if (verticalSpeed > VHVRConfig.GesturedJumpMinSpeed())
             {
                 if (localPlayer.IsSitting())
                 {
@@ -224,30 +224,24 @@ namespace ValheimVRMod.Scripts
 
             public override Vector3 GetTargetVelocityFromGestures(Player player)
             {
-                if (IsInAir(player))
+                var fistCollision = isRightHand ? StaticObjects.rightFist() :StaticObjects.leftFist();
+                var physicsEstimator = isRightHand ? VRPlayer.rightHandPhysicsEstimator : VRPlayer.leftHandPhysicsEstimator;
+                var isJumping = fistCollision.isGrabbingEnvironment && Vector3.Dot(physicsEstimator.GetVelocity(), upDirection.Value) < -3f;
+
+                if (isJumping)
                 {
-                    return horizontalVelocity;
+                    horizontalVelocity =
+                        Vector3.ProjectOnPlane(fistCollision.transform.position - player.transform.position, (Vector3)upDirection).normalized *
+                        (GesturedLocomotionManager.RUN_ACITIVATION_SPEED + 0.1f);
+                    return horizontalVelocity + upDirection.Value * (VHVRConfig.GesturedJumpMinSpeed() + 0.1f);
                 }
                 
-                horizontalVelocity = Vector3.zero;
-
-                var fistCollision = isRightHand ? StaticObjects.rightFist() :StaticObjects.leftFist();
-                if (!fistCollision.isGrabbingEnvironment)
+                if (!IsInAir(player))
                 {
-                    return Vector3.zero;
+                    horizontalVelocity = Vector3.zero;
                 }
 
-                var physicsEstimator = isRightHand ? VRPlayer.rightHandPhysicsEstimator : VRPlayer.leftHandPhysicsEstimator;
-                var handVelocity = physicsEstimator.GetVelocity();
-                if (Vector3.Dot(handVelocity, upDirection.Value) > -2f ||
-                    Vector3.Dot(physicsEstimator.GetAcceleration(), upDirection.Value) > -8f)
-                {
-                    return Vector3.zero;
-                }
-
-                horizontalVelocity = Vector3.ProjectOnPlane(fistCollision.transform.position - player.transform.position, (Vector3)upDirection).normalized * 2;
-
-                return -handVelocity + horizontalVelocity;
+                return horizontalVelocity;
             }
         }
 
