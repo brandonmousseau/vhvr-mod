@@ -1,5 +1,6 @@
 using AmplifyOcclusion;
 using RootMotion.FinalIK;
+using System.Diagnostics;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.PostProcessing;
@@ -269,7 +270,7 @@ namespace ValheimVRMod.VRCore
 
         private static float? firstPersonHeightOffset = null;
         public static bool headPositionInitialized { get; private set; }
-        private static bool pelvisCaliberationPending;
+        private static bool bodyTrackingCaliberationPending;
         private static Vector3 caliberatedPelvisLocalPosition = Vector3.zero;
         private static Quaternion caliberatedPelvisLocalRotation = Quaternion.identity;
         private static SteamVR_TrackedObject[] trackedObjects = new SteamVR_TrackedObject[16];
@@ -286,7 +287,7 @@ namespace ValheimVRMod.VRCore
 
         public static void RequestPelvisCaliberation()
         {
-            pelvisCaliberationPending = true;
+            bodyTrackingCaliberationPending = true;
         }
 
         void Awake()
@@ -942,7 +943,7 @@ namespace ValheimVRMod.VRCore
             maybeExitDodge();
 
             maybeInitHeadPosition(playerCharacter);
-            if (pelvisCaliberationPending)
+            if (bodyTrackingCaliberationPending)
             {
                 caliberateBodyTracking();
                 initialRoomscaleLocomotiveOffsetFromHead = roomscaleLocomotive - vrCam.transform.localPosition;
@@ -1369,9 +1370,8 @@ namespace ValheimVRMod.VRCore
             pelvis.rotation = Quaternion.LookRotation(Vector3.ProjectOnPlane(vrCam.transform.forward, roomUpDirection), roomUpDirection);
             caliberatedPelvisLocalPosition = pelvis.localPosition;
             caliberatedPelvisLocalRotation = pelvis.localRotation;
-            pelvisCaliberationPending = false;
-
             caliberateFeet();
+            bodyTrackingCaliberationPending = false;
         }
 
         private void caliberateFeet()
@@ -1445,6 +1445,10 @@ namespace ValheimVRMod.VRCore
             {
                 vrikRef.solver.leftLeg.target.SetParent(leftFoot, worldPositionStays: false);
                 vrikRef.solver.rightLeg.target.SetParent(rightFoot, worldPositionStays: false);
+                vrikRef.solver.leftLeg.target.localPosition = Vector3.zero;
+                vrikRef.solver.leftLeg.target.localRotation = Quaternion.identity;
+                vrikRef.solver.rightLeg.target.localPosition = Vector3.zero;
+                vrikRef.solver.rightLeg.target.localRotation = Quaternion.identity;
             }
         }
 
@@ -1635,16 +1639,28 @@ namespace ValheimVRMod.VRCore
                 return;
             }
 
-            if (SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.Any))
-            {
-                return;
-            }
-
             float height = Valve.VR.InteractionSystem.Player.instance.eyeHeight;
             float heightThreshold = referencePlayerHeight * VHVRConfig.RoomScaleSneakHeight();
             if (height > heightThreshold - 0.1f)
             {
                 // Head too high for sitting
+                return;
+            }
+
+            if (TRACK_FEET)
+            {
+                Vector3 pelvisFacing = Vector3.ProjectOnPlane(pelvis.forward, _vrCameraRig.up);
+                if (Vector3.Dot(leftFoot.position - pelvis.position, pelvisFacing) > 0.3f &&
+                    Vector3.Dot(rightFoot.position - pelvis.position, pelvisFacing) > 0.3f &&
+                    Vector3.Dot(_vrCam.transform.position - pelvis.position, pelvisFacing) < 0.1f)
+                {
+                    startingSit = true;
+                    return;
+                }
+            }
+
+            if (SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.Any))
+            {
                 return;
             }
 
