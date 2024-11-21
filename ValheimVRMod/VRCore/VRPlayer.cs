@@ -1129,6 +1129,10 @@ namespace ValheimVRMod.VRCore
             {
                 vrikRef.solver.leftLeg.rotationWeight = vrikRef.solver.rightLeg.rotationWeight = (attachedToPlayer ? 1 : 0);
                 vrikRef.solver.leftLeg.positionWeight = vrikRef.solver.rightLeg.positionWeight = (attachedToPlayer ? 1 : 0);
+                vrikRef.solver.leftLeg.target.localPosition = Vector3.zero;
+                vrikRef.solver.leftLeg.target.localRotation = Quaternion.identity;
+                vrikRef.solver.rightLeg.target.localPosition = Vector3.zero;
+                vrikRef.solver.rightLeg.target.localRotation = Quaternion.identity;
             }
         }
 
@@ -1636,6 +1640,14 @@ namespace ValheimVRMod.VRCore
                 {
                     player.StartEmote("sit", false);
                 }
+                return;
+            }
+
+            if (VRControls.smoothWalkX > 0.1f || VRControls.smoothWalkY > 0.1f ||
+                VRControls.smoothWalkX < -0.1f || VRControls.smoothWalkY < -0.1f ||
+                gesturedLocomotionManager.stickOutputX > 0.1f || gesturedLocomotionManager.stickOutputY > 0.1f ||
+                gesturedLocomotionManager.stickOutputX < -0.1f || gesturedLocomotionManager.stickOutputY < -0.1f)
+            {
                 return;
             }
 
