@@ -134,7 +134,7 @@ namespace ValheimVRMod.Patches {
             Collider col, Vector3 dir, GameObject ___m_spawnOnTrigger) {
             
             Vector3 zero = Vector3.zero;
-            bool flag2 = false; //rename
+            bool isHittingCharacter = false;
             HashSet<Skills.SkillType> skillTypeSet = new HashSet<Skills.SkillType>();
             bool hitOccured = false;
 
@@ -164,15 +164,21 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
-            IDestructible component = hitObject.GetComponent<IDestructible>();
+            IDestructible destructible = hitObject.GetComponent<IDestructible>();
 
-            if (component != null) {
-                DestructibleType destructibleType = component.GetDestructibleType();
+            if (destructible != null) {
+                DestructibleType destructibleType = destructible.GetDestructibleType();
                 Skills.SkillType skill = ___m_weapon.m_shared.m_skillType;
 
                 if (___m_specialHitSkill != Skills.SkillType.None &&
                     (destructibleType & ___m_specialHitType) != DestructibleType.None) {
                     skill = ___m_specialHitSkill;
+                    skillTypeSet.Add(skill);
+                }
+                else if ((destructibleType & __instance.m_skillHitType) != DestructibleType.None)
+                {
+                    skill = ___m_weapon.m_shared.m_skillType;
+                    skillTypeSet.Add(skill);
                 }
 
                 float randomSkillFactor = ___m_character.GetRandomSkillFactor(skill);
@@ -218,12 +224,9 @@ namespace ValheimVRMod.Patches {
                 }
 
                 ___m_character.GetSEMan().ModifyAttack(skill, ref hitData);
-                if (component is Character)
-                    flag2 = true;
-                component.Damage(hitData);
-                if ((destructibleType & ___m_resetChainIfHit) != DestructibleType.None)
-                    ___m_nextAttackChainLevel = 0;
-                skillTypeSet.Add(skill);
+                if (destructible is Character) isHittingCharacter = true;
+                destructible.Damage(hitData);
+                if ((destructibleType & ___m_resetChainIfHit) != DestructibleType.None) ___m_nextAttackChainLevel = 0;
             }
 
             ___m_weapon.m_shared.m_hitTerrainEffect.Create(pos,
@@ -252,7 +255,7 @@ namespace ValheimVRMod.Patches {
                         Quaternion.identity).GetComponent<IProjectile>()
                     ?.Setup(___m_character, zero, ___m_attackHitNoise, null, ___m_weapon, ___m_ammoItem);
             foreach (Skills.SkillType skill in skillTypeSet)
-                ___m_character.RaiseSkill(skill, flag2 ? 1.5f : 1f);
+                ___m_character.RaiseSkill(skill, isHittingCharacter ? 1.5f : 1f);
 
             if (___m_spawnOnTrigger)
             {
@@ -274,10 +277,10 @@ namespace ValheimVRMod.Patches {
                     Plant plant = hitObject.GetComponent<Plant>();
                     if (plant != null && plant.GetStatus() != Plant.Status.Healthy)
                     {
-                        Destructible destructible = hitObject.GetComponent<Destructible>();
-                        if (destructible != null)
+                        Destructible plantDestructible = hitObject.GetComponent<Destructible>();
+                        if (plantDestructible != null)
                         {
-                            destructible.Destroy(null);
+                            plantDestructible.Destroy(null);
                         }
                     }
                 }

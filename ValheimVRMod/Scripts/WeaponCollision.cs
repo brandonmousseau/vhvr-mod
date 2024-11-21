@@ -248,7 +248,7 @@ namespace ValheimVRMod.Scripts
                 {
                     VRPlayer.dominantHand.otherHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, VRPlayer.nonDominantHandInputSource);
                 }
-                //bHaptics
+                // bHaptics
                 if (!BhapticsTactsuit.suitDisabled)
                 {
                     BhapticsTactsuit.SwordRecoil(!VHVRConfig.LeftHanded());
@@ -264,7 +264,7 @@ namespace ValheimVRMod.Scripts
                 return false;
             }
 
-            if (Player.m_localPlayer.m_blocking && !weaponWield.allowBlocking() && VHVRConfig.BlockingType() == "GrabButton")
+            if (Player.m_localPlayer.m_blocking && !weaponWield.allowBlocking() && VHVRConfig.UseGrabButtonBlock())
             {
                 return false;
             }
@@ -283,7 +283,37 @@ namespace ValheimVRMod.Scripts
                 return false;
             }
 
-            isLastHitOnTerrain = isTerrain(target);
+            if (isTerrain(target))
+            {
+                // Prevent hitting the terrain too easily.
+                switch (EquipScript.getRight())
+                {
+                    case EquipType.BattleAxe:
+                    case EquipType.Polearms:
+                        if (!LocalWeaponWield.IsDominantHandBehind)
+                        {
+                            return false;
+                        }
+                        break;
+                    case EquipType.Axe:
+                    case EquipType.Club:
+                    case EquipType.Knife:
+                    case EquipType.Spear:
+                    case EquipType.Sword:
+                        if (!SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource))
+                        {
+                            return false;
+                        }
+                        break;
+                    default:
+                        break;
+                }
+                isLastHitOnTerrain = true;
+            }
+            else
+            {
+                isLastHitOnTerrain = false;
+            }
 
             AttackTargetMeshCooldown attackTargetMeshCooldown = target.GetComponentInParent<AttackTargetMeshCooldown>();
             if (attackTargetMeshCooldown == null)
@@ -461,19 +491,6 @@ namespace ValheimVRMod.Scripts
                         mainHandPhysicsEstimator.GetVelocity(),
                         mainHandPhysicsEstimator.GetAngularVelocity(),
                         LocalWeaponWield.weaponForward.normalized * WEAPON_ANGULAR_WEIGHT_OFFSET);
-
-                switch (EquipScript.getRight())
-                {
-                    case EquipType.BattleAxe:
-                    case EquipType.Sledge:
-                    case EquipType.Polearms:
-                        // Penalize momentum when wielding certain two-handed weapons with only one hand.
-                        velocity *= 0.67f;
-                        break;
-                    default:
-                        break;
-                }
-
                 speed = velocity.magnitude;
             }
             else
@@ -501,15 +518,19 @@ namespace ValheimVRMod.Scripts
 
         private float GetMinSpeed()
         {
-            if (EquipScript.getRight() == EquipType.Hammer)
+            switch (EquipScript.getRight())
             {
-                return MIN_HAMMER_SPEED;
+                case EquipType.Hammer:
+                    return MIN_HAMMER_SPEED;
+                case EquipType.BattleAxe:
+                case EquipType.Sledge:
+                case EquipType.Polearms:
+                    // Increase speed requirement when wielding certain two-handed weapons with only one hand.
+                    return VHVRConfig.SwingSpeedRequirement() * 1.5f;
+                default:
+                    return itemIsTool ? MIN_LONG_TOOL_SPEED : VHVRConfig.SwingSpeedRequirement();
             }
-            if (itemIsTool)
-            {
-                return MIN_LONG_TOOL_SPEED;
-            }
-            return VHVRConfig.SwingSpeedRequirement();
+            
         }
 
         private static bool isStab(Vector3 velocity)
@@ -523,7 +544,7 @@ namespace ValheimVRMod.Scripts
                 return false;
             }
                
-            LogUtils.LogDebug("VHVR: stab detected on weapon direction: " + LocalWeaponWield.weaponForward);
+            // LogUtils.LogDebug("VHVR: stab detected on weapon direction: " + LocalWeaponWield.weaponForward);
             return true;
         }
 

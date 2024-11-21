@@ -63,8 +63,8 @@ namespace ValheimVRMod.VRCore
         public static VRIK vrikRef { get { return _vrik; } }
         private static VRIK _vrik;
         private static SteamVR_TrackedObject hipTracker;
-        public static MeshRenderer pelvisRenderer { get; private set; }
-        public static Transform pelvis { get { return pelvisRenderer == null ? null : pelvisRenderer.transform; } }
+        private static MeshRenderer hipTrackerRenderer;
+        public static Transform pelvis { get; private set; }
         private Vector3 roomscaleLocomotive {
             get {
                 return VHVRConfig.IsHipTrackingEnabled() && hipTracker != null ?
@@ -168,7 +168,6 @@ namespace ValheimVRMod.VRCore
                 return value;
             }
         }
-
 
         public static PhysicsEstimator headPhysicsEstimator
         {
@@ -641,17 +640,17 @@ namespace ValheimVRMod.VRCore
                 return false;
             }
 
-            hipTracker = new GameObject().AddComponent<Valve.VR.SteamVR_TrackedObject>();
+            hipTracker = GameObject.CreatePrimitive(PrimitiveType.Cube).AddComponent<Valve.VR.SteamVR_TrackedObject>();
             hipTracker.transform.parent = _vrCam.transform.parent;
+            pelvis = new GameObject().transform;
+            pelvis.parent = hipTracker.transform;
 
-            pelvisRenderer = GameObject.CreatePrimitive(PrimitiveType.Cube).GetComponent<MeshRenderer>();
-            pelvisRenderer.transform.parent = hipTracker.transform;
-
-            pelvisRenderer.gameObject.layer = LayerUtils.getWorldspaceUiLayer();
-            pelvisRenderer.transform.localScale = new Vector3(0.125f, 0.125f, 0.125f);
-            pelvisRenderer.material = Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
-            pelvisRenderer.material.color = new Vector4(0.5f, 0.5f, 0, 0.5f);
-            pelvisRenderer.receiveShadows = false;
+            hipTrackerRenderer = hipTracker.GetComponent<MeshRenderer>();
+            hipTrackerRenderer.gameObject.layer = LayerUtils.getWorldspaceUiLayer();
+            hipTrackerRenderer.transform.localScale = new Vector3(0.125f, 0.125f, 0.125f);
+            hipTrackerRenderer.material = Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
+            hipTrackerRenderer.material.color = new Vector4(0.5f, 0.5f, 0, 0.5f);
+            hipTrackerRenderer.receiveShadows = false;
 
             RequestPelvisCaliberation();
 
@@ -917,6 +916,7 @@ namespace ValheimVRMod.VRCore
                 return;
             }
             _instance.transform.SetParent(playerCharacter.transform, false);
+            _instance.transform.localScale = Vector3.one / VrikCreator.ROOT_SCALE;
             attachedToPlayer = true;
 
             maybeExitDodge();
@@ -1020,14 +1020,14 @@ namespace ValheimVRMod.VRCore
             if (!VHVRConfig.IsHipTrackingEnabled())
             {
                 hipTracker.SetDeviceIndex(-1);
-                pelvisRenderer.enabled = false;
+                hipTrackerRenderer.enabled = false;
                 vrikRef.solver.spine.pelvisPositionWeight = 0;
                 pelvis.position = vrikRef.references.pelvis.position;
                 pelvis.rotation = Quaternion.LookRotation(inferPelvisFacingFromPlayerHeadingAndHands(player.transform, player.IsAttached()), player.transform.up);
                 return;
             }
 
-            pelvisRenderer.enabled =
+            hipTrackerRenderer.enabled =
                 Menu.IsVisible() ||
                 (FejdStartup.m_instance != null && FejdStartup.m_instance.isActiveAndEnabled);
 
@@ -1074,7 +1074,7 @@ namespace ValheimVRMod.VRCore
 
         private Vector3 inferPelvisPositionFromHead()
         {
-            return _vrCam.transform.position - _vrCam.transform.forward * 0.175f - _vrCameraRig.up * 0.87f;
+            return _vrCam.transform.position - (_vrCam.transform.forward * 0.175f + _vrCameraRig.up * 0.87f) * VrikCreator.ROOT_SCALE;
         }
 
         private Vector3 inferPelvisFacingFromPlayerHeadingAndHands(Transform playerTransform, bool isPlayerAttached)

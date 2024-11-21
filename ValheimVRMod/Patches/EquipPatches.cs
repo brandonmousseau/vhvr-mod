@@ -121,7 +121,7 @@ namespace ValheimVRMod.Patches {
                     break;
                 default:
                     // Use this layer to make sure the weapon collides with all targets including soft building pieces and plants.
-                    weaponCol.gameObject.layer = 3;
+                    weaponCol.gameObject.layer = LayerUtils.VHVR_WEAPON;
                     break;
             }
             weaponCol.weaponWield = weaponWield;

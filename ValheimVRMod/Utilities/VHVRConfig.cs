@@ -330,9 +330,9 @@ namespace ValheimVRMod.Utilities
                                      new AcceptableValueList<string>(new string[] { "Right", "Left", "OpenVR", "None", "Follow", "Spectator" })));
             playerHeightAdjust = config.Bind("General",
                               "PlayerHeightAdjust",
-                              0f,
+                              -0.2f,
                               new ConfigDescription("The height difference between the real world player and the game character",
-                              new AcceptableValueRange<float>(-0.25f, 0.25f)));
+                              new AcceptableValueRange<float>(-0.5f, 0.25f)));
 
 
             headOffsetX = config.Bind("General",
@@ -1499,9 +1499,19 @@ namespace ValheimVRMod.Utilities
             return crossbowManualReload.Value;
         }
 
-        public static string BlockingType()
+        public static bool UseRealisticBlock()
         {
-            return blockingType.Value;
+            return blockingType.Value == "Realistic";
+        }
+
+        public static bool UseGestureBlock()
+        {
+            return blockingType.Value == "Gesture";
+        }
+
+        public static bool UseGrabButtonBlock()
+        {
+            return blockingType.Value == "GrabButton";
         }
 
         public static bool MovementSecondaryAttack()
