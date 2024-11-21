@@ -66,7 +66,7 @@ namespace ValheimVRMod.Scripts
             var attack = item.m_shared.m_secondaryAttack;
 
             // Always use the duration of the primary attack for target cooldown to allow primary attack immediately following a secondary attack.
-            // The secondary attack cooldown is managed by LocalPlayerSecondaryAttackCooldown in this class instead.
+            // The secondary attack cooldown is managed by FistCollision.LocalPlayerSecondaryAttackCooldown  instead.
             if (!tryHitTarget(collider.gameObject, WeaponUtils.GetAttackDuration(item.m_shared.m_attack), speed))
             {
                 return;
