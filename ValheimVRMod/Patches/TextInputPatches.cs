@@ -22,8 +22,8 @@ namespace ValheimVRMod.Patches {
                 instance = __instance;
                 if (VHVRConfig.AutoOpenKeyboardOnInteract() || instance.m_topic.text == "ChatText")
                 {
-                    InputManager.start(
-                        null, null, instance.m_inputField, returnOnClose: instance.m_topic.text != "ChatText", OnClose);
+                    // TODO: find out why portal tag and sign text input dialog can no longer be visible after chat input is used once.
+                    InputManager.start(null, null, instance.m_inputField, returnOnClose: false, OnClose);
                 }
             }
         }

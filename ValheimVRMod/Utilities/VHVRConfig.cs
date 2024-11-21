@@ -62,6 +62,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> recenterGuiOnMove;
         private static ConfigEntry<int> guiRecenterSpeed;
         private static ConfigEntry<bool> unlockDesktopCursor;
+        private static ConfigEntry<string> QuickMenuRadialItemDistribution;
         private static ConfigEntry<string> QuickMenuType;
         private static ConfigEntry<int> QuickMenuVerticalAngle;
         private static ConfigEntry<bool> QuickMenuClassicSeperate;
@@ -329,9 +330,9 @@ namespace ValheimVRMod.Utilities
                                      new AcceptableValueList<string>(new string[] { "Right", "Left", "OpenVR", "None", "Follow", "Spectator" })));
             playerHeightAdjust = config.Bind("General",
                               "PlayerHeightAdjust",
-                              0f,
+                              -0.2f,
                               new ConfigDescription("The height difference between the real world player and the game character",
-                              new AcceptableValueRange<float>(-0.25f, 0.25f)));
+                              new AcceptableValueRange<float>(-0.5f, 0.25f)));
 
 
             headOffsetX = config.Bind("General",
@@ -501,10 +502,11 @@ namespace ValheimVRMod.Utilities
                 180,
                 new ConfigDescription("Set the quickmenu vertical angle, affects all QuickMenu type except Hand Follow Cam ",
                     new AcceptableValueRange<int>(0, 360)));
-            QuickMenuClassicSeperate = config.Bind("UI",
-                "QuickMenuClassicSeperate",
-                false,
-                new ConfigDescription("Set the quickmenu to have seperate types of item on left and right (melee weapon on one side, and shield,bow, other items on the other side)"));
+            QuickMenuRadialItemDistribution = config.Bind("UI",
+                "QuickMenuRadialItemDistribution",
+                "Duplicate",
+                new ConfigDescription("Should radial menu items appear duplicated on both hands are split between two hands?",
+                new AcceptableValueList<string>(new string[] { "Duplicate", "SplitBySlot", "SplitByWieldingHand" })));
             lockGuiWhileInventoryOpen = config.Bind("UI",
                 "LockGuiPositionWhenMenuOpen",
                 true,
@@ -1316,9 +1318,14 @@ namespace ValheimVRMod.Utilities
             return QuickMenuVerticalAngle.Value;
         }
 
-        public static bool GetQuickMenuIsSeperate()
+        public static bool SplitQuickMenuRadialItemsBySlot()
         {
-            return QuickMenuClassicSeperate.Value;
+            return QuickMenuRadialItemDistribution.Value == "SplitBySlot";
+        }
+
+        public static bool SplitQuickMenuRadialItemsByWieldingHand()
+        {
+            return QuickMenuRadialItemDistribution.Value == "SplitByWieldingHand";
         }
 
         public static float GetSnapTurnAngle()
@@ -1492,9 +1499,19 @@ namespace ValheimVRMod.Utilities
             return crossbowManualReload.Value;
         }
 
-        public static string BlockingType()
+        public static bool UseRealisticBlock()
         {
-            return blockingType.Value;
+            return blockingType.Value == "Realistic";
+        }
+
+        public static bool UseGestureBlock()
+        {
+            return blockingType.Value == "Gesture";
+        }
+
+        public static bool UseGrabButtonBlock()
+        {
+            return blockingType.Value == "GrabButton";
         }
 
         public static bool MovementSecondaryAttack()

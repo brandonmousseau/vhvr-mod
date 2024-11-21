@@ -33,8 +33,17 @@ namespace ValheimVRMod.Utilities {
                 return false;
             }
 
-            return vrCam.transform.InverseTransformPoint(handTransform.position).y > -0.4f &&
-                vrCam.transform.InverseTransformPoint(handTransform.position).z < 0;
+            Vector3 roomUp = vrCam.transform.parent.up;
+            Vector3 offset = handTransform.position - vrCam.transform.position;
+            float verticalOffset = Vector3.Dot(roomUp, offset);
+            if (verticalOffset < -0.4f || verticalOffset > 0.25f)
+            {
+                return false;
+            }
+
+            Vector3 facing = Vector3.ProjectOnPlane(vrCam.transform.forward, roomUp).normalized;
+
+            return Vector3.Dot(facing, offset) < -0.05f;
         }
 
         private static void checkHandOverShoulder(bool isDominantHand, bool isDualWielding)

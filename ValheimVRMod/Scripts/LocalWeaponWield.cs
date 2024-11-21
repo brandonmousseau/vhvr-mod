@@ -210,7 +210,10 @@ namespace ValheimVRMod.Scripts
 
         protected virtual void RotateHandsForTwoHandedWield(Vector3 weaponPointingDir)
         {
-            Vector3 desiredFrontHandForward = Vector3.Project(frontHandTransform.forward, weaponPointingDir);
+            Vector3 desiredFrontHandForward =
+                Vector3.Project(
+                    frontHandTransform.forward,
+                    EquipScript.getRight() == EquipType.Scythe ? Vector3.Cross(weaponPointingDir, frontHandTransform.up) : weaponPointingDir);
             Vector3 desiredRearHandForward = Vector3.Project(rearHandTransform.forward, Quaternion.AngleAxis(10, rearHandTransform.right) * weaponPointingDir);
             frontHandConnector.rotation = Quaternion.LookRotation(desiredFrontHandForward, frontHandTransform.up);
             rearHandConnector.rotation = Quaternion.LookRotation(desiredRearHandForward, rearHandTransform.up);
@@ -231,7 +234,7 @@ namespace ValheimVRMod.Scripts
                     else
                         return SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource);
                 default:
-                    return VHVRConfig.BlockingType() == "Gesture" ? isCurrentlyTwoHanded() : SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource);
+                    return VHVRConfig.UseGestureBlock() ? isCurrentlyTwoHanded() : SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource);
             }
         }
 

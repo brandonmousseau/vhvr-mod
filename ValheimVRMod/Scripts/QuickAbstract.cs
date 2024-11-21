@@ -482,16 +482,26 @@ namespace ValheimVRMod.Scripts
             }
             for (int i = 0; i < 8; i++)
             {
-
                 ItemDrop.ItemData item = inventory?.GetItemAt(i, 0);
 
                 if (item == null)
                 {
                     continue;
                 }
-                if (VHVRConfig.GetQuickMenuIsSeperate() && (EquipScript.IsDominantHandItem(item) ^ isDominantHand))
+                if (VHVRConfig.SplitQuickMenuRadialItemsByWieldingHand())
                 {
-                    continue;
+                    if (EquipScript.IsDominantHandItem(item) ^ isDominantHand)
+                    {
+                        continue;
+                    }
+                }
+                else if (VHVRConfig.SplitQuickMenuRadialItemsBySlot())
+                {
+                    var isRightHand = VHVRConfig.LeftHanded() ^ isDominantHand;
+                    if (i >= 4 ^ isRightHand)
+                    {
+                        continue;
+                    }
                 }
 
                 elements[elementCount].useAsInventoryItemAndRefreshColor(inventory, item);

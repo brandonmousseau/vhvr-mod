@@ -117,15 +117,14 @@ namespace ValheimVRMod.Patches {
                 case EquipType.Hoe:
                 case EquipType.Sledge:
                 case EquipType.Tankard:
+                    weaponCol.gameObject.layer = LayerUtils.CHARACTER;
                     break;
                 default:
                     // Use this layer to make sure the weapon collides with all targets including soft building pieces and plants.
-                    weaponCol.gameObject.layer = 3;
+                    weaponCol.gameObject.layer = LayerUtils.VHVR_WEAPON;
                     break;
             }
             weaponCol.weaponWield = weaponWield;
-            // TODO: Should layer 3 be used for weapons too? Could potentially fix that weapons do not destruct hanging pieces in dungeons.
-            weaponCol.gameObject.layer = EquipScript.getRight() == EquipType.Scythe ? 3 : LayerUtils.CHARACTER;
             meshFilter.gameObject.AddComponent<ButtonSecondaryAttackManager>().Initialize(meshFilter.transform, ___m_rightItem, true);
 
             if (___m_rightItem == "StaffLightning")

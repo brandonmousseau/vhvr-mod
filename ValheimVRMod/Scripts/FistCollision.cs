@@ -13,6 +13,7 @@ namespace ValheimVRMod.Scripts
         private bool isRightHand;
         private HandGesture handGesture;
         private PhysicsEstimator physicsEstimator { get { return isRightHand ? VRPlayer.rightHandPhysicsEstimator : VRPlayer.leftHandPhysicsEstimator; } }
+        private SteamVR_Input_Sources inputSource { get { return isRightHand ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand; } }
 
         private static float LocalPlayerSecondaryAttackCooldown = 0;
 
@@ -20,8 +21,10 @@ namespace ValheimVRMod.Scripts
             LayerUtils.WATERVOLUME_LAYER,
             LayerUtils.WATER,
             LayerUtils.UI_PANEL_LAYER,
-            LayerUtils.CHARARCTER_TRIGGER
+            LayerUtils.CHARARCTER_TRIGGER,
         };
+
+        public bool isGrabbingEnvironment { get; private set; } = false;
 
         private EquipType? currentEquipType = null;
         private Vector3 desiredPosition;
@@ -43,10 +46,26 @@ namespace ValheimVRMod.Scripts
             {
                 LocalPlayerSecondaryAttackCooldown -= Time.fixedDeltaTime;
             }
+
+            if (!SteamVR_Actions.valheim_Grab.GetState(inputSource) || !handGesture.isHandFree())
+            {
+                isGrabbingEnvironment = false;
+            }
         }
 
         private void OnTriggerStay(Collider collider)
         {
+            if (isGrabbingEnvironment)
+            {
+                return;
+            }
+
+            if (ShouldStartGrabbingTerrain(collider.gameObject))
+            {
+                isGrabbingEnvironment = true;
+                return;
+            }
+
             if (!handGesture.isHandFree() || collider.gameObject.layer != LayerUtils.CHARACTER)
             {
                 return;
@@ -61,16 +80,62 @@ namespace ValheimVRMod.Scripts
             tryHitCollider(collider, requireJab: true);
         }
 
-        private void OnTriggerEnter(Collider collider)
+        private bool ShouldStartGrabbingTerrain(GameObject target)
         {
-            tryHitCollider(collider, requireJab: false);
+            if (!handGesture.isHandFree() || !SteamVR_Actions.valheim_Grab.GetStateDown(inputSource))
+            {
+                return false;
+            }
+
+            if (target.layer == LayerUtils.TERRAIN ||
+                target.layer == LayerUtils.PIECE ||
+                target.layer == LayerUtils.STATIC_SOLID ||
+                target.GetComponentInParent<StaticPhysics>() != null ||
+                target.GetComponentInParent<TreeBase>() != null)
+            {
+                return true;
+            }
+
+            if (target.layer == 0)
+            {
+                var piece = target.GetComponentInParent<Piece>();
+                if (piece != null && piece.gameObject.layer == LayerUtils.PIECE)
+                {
+                    return true;
+                }
+            }
+
+            if (!VHVRConfig.IsGesturedJumpEnabled() || Valve.VR.InteractionSystem.Player.instance.eyeHeight > VRPlayer.referencePlayerHeight * 0.9f)
+            {
+                return false;
+            }
+            
+            var leftHandOffset = VRPlayer.instance.transform.InverseTransformVector(VRPlayer.leftHand.transform.position - VRPlayer.vrCam.transform.position);
+            var rightHandOffset = VRPlayer.instance.transform.InverseTransformVector(VRPlayer.rightHand.transform.position - VRPlayer.vrCam.transform.position);
+            return leftHandOffset.y > 0.25f && rightHandOffset.y > 0.25f &&
+                !Utilities.Pose.isBehindBack(VRPlayer.leftHand.transform) &&
+                !Utilities.Pose.isBehindBack(VRPlayer.rightHand.transform) &&
+                rightHandOffset.x - leftHandOffset.x < 0.15f;
         }
 
+        private void OnTriggerEnter(Collider collider)
+        {
+            if (!isGrabbingEnvironment)
+            {
+                tryHitCollider(collider, requireJab: false);
+            }
+        }
 
         private void tryHitCollider(Collider collider, bool requireJab)
         {
             if (!canAttackWithCollision())
             {
+                return;
+            }
+
+            if (collider.gameObject.layer == LayerUtils.TERRAIN && !SteamVR_Actions.valheim_Grab.GetState(inputSource))
+            {
+                // Prevent hitting terrain too easily.
                 return;
             }
 

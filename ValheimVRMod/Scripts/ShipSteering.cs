@@ -75,10 +75,10 @@ namespace ValheimVRMod.Scripts
             }
             else if (!wasDoubleGrabbing)
             {
-                if (Vector3.Angle(VRPlayer.leftHandBone.right, upDirection) < MAX_SAIL_PULL_ANGLE ||
-                    Vector3.Angle(-VRPlayer.rightHandBone.right, upDirection) < MAX_SAIL_PULL_ANGLE)
+                if (Vector3.Angle(VRPlayer.leftHand.transform.forward, upDirection) < MAX_SAIL_PULL_ANGLE ||
+                    Vector3.Angle(VRPlayer.rightHand.transform.forward, upDirection) < MAX_SAIL_PULL_ANGLE)
                 {
-                    Vector3 handSpan = VRPlayer.rightHandBone.position - VRPlayer.leftHandBone.position;
+                    Vector3 handSpan = VRPlayer.rightHand.transform.position - VRPlayer.leftHand.transform.position;
                     if (Vector3.Angle(handSpan, upDirection) < MAX_SAIL_PULL_ANGLE ||
                         Vector3.Angle(-handSpan, upDirection) < MAX_SAIL_PULL_ANGLE)
                     {
@@ -115,11 +115,11 @@ namespace ValheimVRMod.Scripts
             {
                 float speed =
                     Vector3.Dot(
-                        isLeftGrabbing ? -VRPlayer.leftHandPhysicsEstimator.GetVelocity() : VRPlayer.rightHandPhysicsEstimator.GetVelocity(),
+                        isLeftGrabbing ? VRPlayer.leftHandPhysicsEstimator.GetVelocity() : -VRPlayer.rightHandPhysicsEstimator.GetVelocity(),
                         ship.transform.forward);
                 shipControls.m_ship.ApplyControlls(
                     new Vector3(
-                        speed < -MIN_RUDDER_TURN_SPEED ? 1 : speed > MIN_RUDDER_TURN_SPEED ? -1 : 0,
+                        speed < -MIN_RUDDER_TURN_SPEED ? -1 : speed > MIN_RUDDER_TURN_SPEED ? 1 : 0,
                         0,
                         0));
                 return;

@@ -44,7 +44,8 @@ namespace ValheimVRMod.Utilities {
             var collisionObj = GameObject.CreatePrimitive(PrimitiveType.Cube);
             Object.Destroy(collisionObj.GetComponent<MeshRenderer>());
             collisionObj.GetComponent<BoxCollider>().isTrigger = true;
-            collisionObj.layer = LayerUtils.CHARACTER;
+            // Use this layer to make sure the weapon collides with all targets including soft building pieces and plants.
+            collisionObj.layer = LayerUtils.VHVR_WEAPON;
             Rigidbody rigidbody = collisionObj.AddComponent<Rigidbody>();
             rigidbody.useGravity = false;
             return collisionScript = collisionObj.AddComponent<T>();
@@ -59,7 +60,8 @@ namespace ValheimVRMod.Utilities {
             var collisionObj = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             Object.Destroy(collisionObj.GetComponent<MeshRenderer>());
             collisionObj.GetComponent<SphereCollider>().isTrigger = true;
-            collisionObj.layer = LayerUtils.CHARACTER;
+            // Use this layer to make sure the weapon collides with all targets including soft building pieces and plants.
+            collisionObj.layer = LayerUtils.VHVR_WEAPON;
             Rigidbody rigidbody = collisionObj.AddComponent<Rigidbody>();
             rigidbody.useGravity = false;
             return collisionScript = collisionObj.AddComponent<T>();
