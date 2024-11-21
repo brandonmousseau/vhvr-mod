@@ -34,16 +34,25 @@ namespace ValheimVRMod.Scripts
 
         private void OnTriggerEnter(Collider collider)
         {
+            Player player = Player.m_localPlayer;
             if (!VRPlayer.inFirstPerson ||
                 transform.parent == null ||
                 !VHVRConfig.TrackFeet() ||
                 collider.gameObject.layer == LayerUtils.TERRAIN ||
-                collider.GetComponentInParent<Player>() == Player.m_localPlayer ||
-                Player.m_localPlayer == null ||
-                Player.m_localPlayer.IsRiding())
+                collider.GetComponentInParent<Player>() == player ||
+                player == null ||
+                player.IsRiding() ||
+                player.IsSitting())
             {
                 return;
             }
+
+            Vector3 step = VRPlayer.leftFoot.position - VRPlayer.rightFoot.position;
+            if (Mathf.Abs(Vector3.Dot(step, VRPlayer.vrCam.transform.up)) < 0.125f || step.magnitude < 0.25f)
+            {
+                return;
+            }
+
 
             if (physicsEstimator == null)
             {
