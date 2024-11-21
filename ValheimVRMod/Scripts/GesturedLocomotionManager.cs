@@ -11,7 +11,8 @@ namespace ValheimVRMod.Scripts
         private const float GROUND_SPEED_CHANGE_DAMPER = 0.25f;
         private const float WATER_SPEED_CHANGE_DAMPER = 1f;
         private const float RUN_ACITIVATION_SPEED = 1.375f;
-        private const float RUN_DEACTIVATION_SPEED = 1.125f;
+        private const float GROUND_RUN_DEACTIVATION_SPEED = 1.125f;
+        private const float AIR_RUN_DEACTIVATION_SPEED = 0.125f;
         private const float MIN_WATER_SPEED = 0.0625f;
 
         public float stickOutputX { get; private set; } = 0;
@@ -88,7 +89,7 @@ namespace ValheimVRMod.Scripts
             }
             else
             {
-                Vector3 stickYDirection = Vector3.ProjectOnPlane(-localPlayer.transform.forward, upDirection.Value).normalized;
+                Vector3 stickYDirection = -Vector3.ProjectOnPlane(VRPlayer.vrCam.transform.forward, upDirection.Value).normalized;
                 Vector3 stickXDirection = Vector3.Cross(stickYDirection, upDirection.Value);
                 stickOutputX = Vector3.Dot(gesturedLocomotionVelocity, stickXDirection) * STICK_OUTPUT_WEIGHT;
                 stickOutputY = Vector3.Dot(gesturedLocomotionVelocity, stickYDirection) * STICK_OUTPUT_WEIGHT;
@@ -96,15 +97,13 @@ namespace ValheimVRMod.Scripts
 
             if (isRunning)
             {
-                if (SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.Any) ||
-                    horizontalSpeed < RUN_DEACTIVATION_SPEED ||
-                    Player.m_localPlayer == null ||
-                    !Player.m_localPlayer.HaveStamina())
+                if (!localPlayer.HaveStamina() ||
+                    horizontalSpeed < (IsInAir(localPlayer) ? AIR_RUN_DEACTIVATION_SPEED : GROUND_RUN_DEACTIVATION_SPEED))
                 {
                     isRunning = false;
                 }
-                else if (Vector3.Dot(-VRPlayer.leftHand.transform.right, (Vector3)upDirection) > 0.8f &&
-                    Vector3.Dot(VRPlayer.rightHand.transform.right, (Vector3)upDirection) > 0.8f) {
+                else if (Vector3.Dot(-VRPlayer.leftHand.transform.right, upDirection.Value) > 0.8f &&
+                    Vector3.Dot(VRPlayer.rightHand.transform.right, upDirection.Value) > 0.8f) {
                     // Both hands palms are facing down, stop running.
                     isRunning = false;
                 }
@@ -189,7 +188,7 @@ namespace ValheimVRMod.Scripts
                     return Vector3.zero;
                 }
 
-                if (StaticObjects.leftFist().isGrabbingEnvironment || StaticObjects.rightFist().isGrabbingEnvironment)
+                if (StaticObjects.leftFist().isGrabbingJumpingAid || StaticObjects.rightFist().isGrabbingJumpingAid)
                 {
                     return Vector3.zero;
                 }
@@ -231,17 +230,17 @@ namespace ValheimVRMod.Scripts
             {
                 var fistCollision = isRightHand ? StaticObjects.rightFist() :StaticObjects.leftFist();
                 var physicsEstimator = isRightHand ? VRPlayer.rightHandPhysicsEstimator : VRPlayer.leftHandPhysicsEstimator;
-                var isJumping = fistCollision.isGrabbingEnvironment && Vector3.Dot(physicsEstimator.GetVelocity(), upDirection.Value) < -3f;
+                var isJumping = fistCollision.isGrabbingJumpingAid && Vector3.Dot(physicsEstimator.GetVelocity(), upDirection.Value) < -3f;
 
                 if (isJumping)
                 {
                     horizontalVelocity =
-                        Vector3.ProjectOnPlane(fistCollision.transform.position - player.transform.position, (Vector3)upDirection).normalized *
+                        Vector3.ProjectOnPlane(fistCollision.lastGrabOffsetFromHead, upDirection.Value).normalized *
                         (GesturedLocomotionManager.RUN_ACITIVATION_SPEED + 0.1f);
                     return horizontalVelocity + upDirection.Value * (VHVRConfig.GesturedJumpMinSpeed() + 0.1f);
                 }
                 
-                if (!IsInAir(player))
+                if (!IsInAir(player) || !fistCollision.isGrabbingJumpingAid)
                 {
                     horizontalVelocity = Vector3.zero;
                 }
