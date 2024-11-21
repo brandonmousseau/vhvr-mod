@@ -311,7 +311,7 @@ namespace ValheimVRMod.VRCore
             attachVrPlayerToWorldObject();
             enableCameras();
             checkAndSetHandsAndPointers();
-            updatePelvis();
+            updateBodyTracking();
             updateVrik();
             // When dodge starts, we need to make sure that updateVrik() has been called first so that the head is no longer controlled by Vrik before doing any dodge-related camera rotation.
             maybeMoveVRPlayerDuringDodge();
@@ -1030,7 +1030,7 @@ namespace ValheimVRMod.VRCore
             return VHVRConfig.PlayerHeightAdjust();
         }
 
-        private void updatePelvis()
+        private void updateBodyTracking()
         {
             var player = Player.m_localPlayer;
             var pelvisTarget = vrikRef?.solver?.spine?.pelvisTarget;
@@ -1114,27 +1114,20 @@ namespace ValheimVRMod.VRCore
                 pelvis.localRotation = caliberatedPelvisLocalRotation;
             }
 
-            vrikRef.solver.leftLeg.rotationWeight = vrikRef.solver.rightLeg.rotationWeight = (attachedToPlayer ? 1 : 0);
-            if (player.IsAttached() || player.IsSitting() || !player.IsOnGround() ||
+            if (player.IsAttached() || !player.IsOnGround() ||
                 VRControls.smoothWalkX > 0.1f || VRControls.smoothWalkY > 0.1f ||
                 VRControls.smoothWalkX < -0.1f || VRControls.smoothWalkY < -0.1f ||
                 gesturedLocomotionManager.stickOutputX > 0.1f || gesturedLocomotionManager.stickOutputY > 0.1f ||
                 gesturedLocomotionManager.stickOutputX < -0.1f || gesturedLocomotionManager.stickOutputY < -0.1f ||
                 !TRACK_FEET)
             {
+                vrikRef.solver.leftLeg.rotationWeight = vrikRef.solver.rightLeg.rotationWeight = 0;
                 vrikRef.solver.leftLeg.positionWeight = vrikRef.solver.rightLeg.positionWeight = 0;
-                vrikRef.solver.leftLeg.target.parent.SetParent(pelvis, worldPositionStays: true);
-                vrikRef.solver.rightLeg.target.parent.SetParent(pelvis, worldPositionStays: true);
             }
             else
             {
+                vrikRef.solver.leftLeg.rotationWeight = vrikRef.solver.rightLeg.rotationWeight = (attachedToPlayer ? 1 : 0);
                 vrikRef.solver.leftLeg.positionWeight = vrikRef.solver.rightLeg.positionWeight = (attachedToPlayer ? 1 : 0);
-                vrikRef.solver.leftLeg.target.parent.SetParent(leftFoot, worldPositionStays: true);
-                vrikRef.solver.rightLeg.target.parent.SetParent(rightFoot, worldPositionStays: true);
-                vrikRef.solver.leftLeg.target.parent.localPosition = Vector3.zero;
-                vrikRef.solver.rightLeg.target.parent.localPosition = Vector3.zero;
-                vrikRef.solver.leftLeg.target.parent.localRotation = Quaternion.identity;
-                vrikRef.solver.rightLeg.target.parent.localRotation = Quaternion.identity;
             }
         }
 
@@ -1450,8 +1443,8 @@ namespace ValheimVRMod.VRCore
 
             if (vrikRef != null && leftFoot.parent != null && rightFoot.parent != null)
             {
-                vrikRef.solver.leftLeg.target.parent.SetParent(leftFoot, worldPositionStays: false);
-                vrikRef.solver.rightLeg.target.parent.SetParent(rightFoot, worldPositionStays: false);
+                vrikRef.solver.leftLeg.target.SetParent(leftFoot, worldPositionStays: false);
+                vrikRef.solver.rightLeg.target.SetParent(rightFoot, worldPositionStays: false);
             }
         }
 
