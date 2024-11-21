@@ -1382,7 +1382,7 @@ namespace ValheimVRMod.Utilities
 
         public static bool TrackFeet()
         {
-            return IsHipTrackingEnabled() && trackFeet.Value;
+            return !NonVrPlayer() && UseVrControls() && trackFeet.Value;
         }
 
         public static bool IsGesturedSwimEnabled()
@@ -1803,7 +1803,7 @@ namespace ValheimVRMod.Utilities
 
         public static bool IsHipTrackingEnabled()
         {
-            return !NonVrPlayer() && UseVrControls() && HipTrackerIndex() >= 0;
+            return !NonVrPlayer() && UseVrControls() && (HipTrackerIndex() >= 0 || TrackFeet());
         }
 
         public static float SmoothTurnSpeed()
