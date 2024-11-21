@@ -38,6 +38,8 @@ namespace ValheimVRMod.Scripts {
             VRIK vrik = playerObject.GetComponent<VRIK>() ?? playerObject.AddComponent<VRIK>();
             vrik.solver.leftArm.target = new GameObject().transform;
             vrik.solver.rightArm.target = new GameObject().transform;
+            vrik.solver.leftLeg.target = new GameObject().transform;
+            vrik.solver.rightLeg.target = new GameObject().transform;
             vrik.solver.spine.headTarget = new GameObject().transform;
             vrik.solver.spine.pelvisTarget = new GameObject().transform;
             localPlayerLeftHandConnector = new GameObject().transform;
@@ -48,13 +50,7 @@ namespace ValheimVRMod.Scripts {
         private static void InitializeTargts(VRIK vrik, Transform leftController, Transform rightController, Transform camera, Transform pelvis, bool isLocalPlayer)
         {
             vrik.AutoDetectReferences();
-            vrik.references.leftThigh = null;
-            vrik.references.leftCalf = null;
-            vrik.references.leftFoot = null;
             vrik.references.leftToes = null;
-            vrik.references.rightThigh = null;
-            vrik.references.rightCalf = null;
-            vrik.references.rightFoot = null;
             vrik.references.rightToes = null;
             vrik.references.root.localScale = Vector3.one * ROOT_SCALE;
 
@@ -86,8 +82,11 @@ namespace ValheimVRMod.Scripts {
             vrik.solver.spine.bodyRotStiffness = 0f;
             //Force head to allow more vertical headlook
             vrik.solver.spine.headClampWeight = 0f;
+            vrik.solver.leftLeg.positionWeight = vrik.solver.rightLeg.positionWeight = 0;
+            vrik.solver.leftLeg.rotationWeight = vrik.solver.rightLeg.rotationWeight = 0;
+            vrik.solver.plantFeet = false;
+            vrik.solver.locomotion.weight = 0;
         }
-
 
         private static bool IsPaused(VRIK vrik)
         {
