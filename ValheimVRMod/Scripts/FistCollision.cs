@@ -25,7 +25,7 @@ namespace ValheimVRMod.Scripts
         private SteamVR_Input_Sources inputSource { get { return isRightHand ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand; } }
         private Hand thisHand {  get { return isRightHand ? VRPlayer.rightHand : VRPlayer.leftHand; } }
 
-        private static float LocalPlayerSecondaryAttackCooldown = 0;
+        public static float LocalPlayerSecondaryAttackCooldown = 0;
 
         private static readonly int[] NONATTACKABLE_LAYERS = {
             LayerUtils.WATERVOLUME_LAYER,
