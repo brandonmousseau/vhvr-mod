@@ -1,6 +1,5 @@
 using AmplifyOcclusion;
 using RootMotion.FinalIK;
-using System.Diagnostics;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.PostProcessing;
@@ -274,8 +273,8 @@ namespace ValheimVRMod.VRCore
         private static Quaternion caliberatedPelvisLocalRotation = Quaternion.identity;
         private static SteamVR_TrackedObject[] trackedObjects = new SteamVR_TrackedObject[16];
 
-        public static Transform leftFoot = null;
-        public static Transform rightFoot = null;
+        public static Transform leftFoot { get; private set; }
+        public static Transform rightFoot { get; private set; }
 
         public static void RequestRecentering()
         {
@@ -668,7 +667,6 @@ namespace ValheimVRMod.VRCore
                 trackedObjects[i].transform.parent = _vrCameraRig;
                 var trackerRenderer = trackedObjects[i].GetComponent<MeshRenderer>();
                 trackerRenderer.gameObject.layer = LayerUtils.getWorldspaceUiLayer();
-                trackerRenderer.transform.localScale = new Vector3(0.125f, 0.125f, 0.125f);
                 trackerRenderer.enabled = false;
             }
 
@@ -1114,25 +1112,44 @@ namespace ValheimVRMod.VRCore
                 pelvis.localRotation = caliberatedPelvisLocalRotation;
             }
 
-            if (player.IsAttached() || !player.IsOnGround() ||
-                VRControls.smoothWalkX > 0.1f || VRControls.smoothWalkY > 0.1f ||
-                VRControls.smoothWalkX < -0.1f || VRControls.smoothWalkY < -0.1f ||
-                gesturedLocomotionManager.stickOutputX > 0.1f || gesturedLocomotionManager.stickOutputY > 0.1f ||
-                gesturedLocomotionManager.stickOutputX < -0.1f || gesturedLocomotionManager.stickOutputY < -0.1f ||
-                !VHVRConfig.TrackFeet())
+            if (shouldTrackFeet())
             {
-                vrikRef.solver.leftLeg.rotationWeight = vrikRef.solver.rightLeg.rotationWeight = 0;
-                vrikRef.solver.leftLeg.positionWeight = vrikRef.solver.rightLeg.positionWeight = 0;
-            }
-            else
-            {
-                vrikRef.solver.leftLeg.rotationWeight = vrikRef.solver.rightLeg.rotationWeight = (attachedToPlayer ? 1 : 0);
-                vrikRef.solver.leftLeg.positionWeight = vrikRef.solver.rightLeg.positionWeight = (attachedToPlayer ? 1 : 0);
+                vrikRef.solver.leftLeg.rotationWeight = vrikRef.solver.rightLeg.rotationWeight = 1;
+                vrikRef.solver.leftLeg.positionWeight = vrikRef.solver.rightLeg.positionWeight = 1;
                 vrikRef.solver.leftLeg.target.localPosition = Vector3.zero;
                 vrikRef.solver.leftLeg.target.localRotation = Quaternion.identity;
                 vrikRef.solver.rightLeg.target.localPosition = Vector3.zero;
                 vrikRef.solver.rightLeg.target.localRotation = Quaternion.identity;
             }
+            else
+            {
+                vrikRef.solver.leftLeg.rotationWeight = vrikRef.solver.rightLeg.rotationWeight = 0;
+                vrikRef.solver.leftLeg.positionWeight = vrikRef.solver.rightLeg.positionWeight = 0;
+            }
+        }
+
+        private bool shouldTrackFeet()
+        {
+            if (!VHVRConfig.TrackFeet() || !attachedToPlayer || Player.m_localPlayer == null || Player.m_localPlayer.IsAttached())
+            {
+                return false;
+            }
+
+            if (_vrCameraRig.InverseTransformVector(leftFoot.position - pelvis.position).y > -0.5f ||
+                _vrCameraRig.InverseTransformVector(rightFoot.position - pelvis.position).y > -0.5f)
+            {
+                return true;
+            }
+
+            if (VRControls.smoothWalkX > 0.1f || VRControls.smoothWalkY > 0.1f ||
+                VRControls.smoothWalkX < -0.1f || VRControls.smoothWalkY < -0.1f ||
+                gesturedLocomotionManager.stickOutputX > 0.1f || gesturedLocomotionManager.stickOutputY > 0.1f ||
+                gesturedLocomotionManager.stickOutputX < -0.1f || gesturedLocomotionManager.stickOutputY < -0.1f)
+            {
+                return false;
+            }
+
+            return Player.m_localPlayer.IsOnGround();
         }
 
         private Vector3 inferPelvisPositionFromHead(Vector3? upDirection = null)
@@ -1271,6 +1288,26 @@ namespace ValheimVRMod.VRCore
             rightHandGesture.sourceHand = rightHand;
             StaticObjects.leftFist().setColliderParent(leftHandBone, leftHandGesture, false);
             StaticObjects.rightFist().setColliderParent(rightHandBone, rightHandGesture, true);
+            if (leftFoot == null)
+            {
+                leftFoot = new GameObject().transform;
+            }
+            if (leftFoot.GetComponent<PhysicsEstimator>() == null)
+            {
+                leftFoot.gameObject.AddComponent<PhysicsEstimator>();
+            }
+            leftFoot.GetComponent<PhysicsEstimator>().refTransform = _vrCameraRig;
+            if (rightFoot == null)
+            {
+                rightFoot = new GameObject().transform;
+            }
+            if (rightFoot.GetComponent<PhysicsEstimator>() == null)
+            {
+                rightFoot.gameObject.AddComponent<PhysicsEstimator>();
+            }
+            rightFoot.GetComponent<PhysicsEstimator>().refTransform = _vrCameraRig;
+            StaticObjects.leftFootCollision().setColliderParent(leftFoot);
+            StaticObjects.rightFootCollision().setColliderParent(rightFoot);
             Player.m_localPlayer.gameObject.AddComponent<FistBlock>();
             Player.m_localPlayer.gameObject.AddComponent<ShipSteering>().Initialize(leftHandGesture, rightHandGesture);
             var reining = Player.m_localPlayer.gameObject.AddComponent<Reining>();
@@ -1418,9 +1455,6 @@ namespace ValheimVRMod.VRCore
                     secondFootDeviceindex = i;
                 }
             }
-
-            if (leftFoot == null) leftFoot = new GameObject().transform;
-            if (rightFoot == null) rightFoot = new GameObject().transform;
 
             if (firstFootDeviceIndex < 0 || secondFootDeviceindex < 0)
             {
