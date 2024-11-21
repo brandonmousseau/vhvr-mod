@@ -71,7 +71,7 @@ namespace ValheimVRMod.Scripts
             {
                 if (Vector3.Distance(transform.position, lastGrabbedPoint) > 0.5f)
                 {
-                    grabbed = Grabbable.NONE;
+                    lastGrabbedPickable = null;
                 }
                 else if (lastGrabbedPickable != null &&
                     Vector3.Dot(physicsEstimator.GetVelocity(), lastGrabOffsetFromHead) < -1)
