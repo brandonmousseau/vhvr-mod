@@ -59,7 +59,7 @@ namespace ValheimVRMod.VRCore
         private const float NECK_OFFSET = 0.165f;
         public const float ROOMSCALE_STEP_ANIMATION_SMOOTHING = 0.3f;
         public const float ROOMSCALE_ANIMATION_WEIGHT = 2f;
-        private const bool TRACK_FEET = false;
+        public const bool TRACK_FEET = false;
 
         public static VRIK vrikRef { get { return _vrik; } }
         private static VRIK _vrik;
@@ -1114,6 +1114,7 @@ namespace ValheimVRMod.VRCore
                 pelvis.localRotation = caliberatedPelvisLocalRotation;
             }
 
+            vrikRef.solver.leftLeg.rotationWeight = vrikRef.solver.rightLeg.rotationWeight = (attachedToPlayer ? 1 : 0);
             if (player.IsAttached() || player.IsSitting() || !player.IsOnGround() ||
                 VRControls.smoothWalkX > 0.1f || VRControls.smoothWalkY > 0.1f ||
                 VRControls.smoothWalkX < -0.1f || VRControls.smoothWalkY < -0.1f ||
@@ -1122,12 +1123,18 @@ namespace ValheimVRMod.VRCore
                 !TRACK_FEET)
             {
                 vrikRef.solver.leftLeg.positionWeight = vrikRef.solver.rightLeg.positionWeight = 0;
-                vrikRef.solver.leftLeg.rotationWeight = vrikRef.solver.rightLeg.rotationWeight = 0;
+                vrikRef.solver.leftLeg.target.parent.SetParent(pelvis, worldPositionStays: true);
+                vrikRef.solver.rightLeg.target.parent.SetParent(pelvis, worldPositionStays: true);
             }
             else
             {
                 vrikRef.solver.leftLeg.positionWeight = vrikRef.solver.rightLeg.positionWeight = (attachedToPlayer ? 1 : 0);
-                vrikRef.solver.leftLeg.rotationWeight = vrikRef.solver.rightLeg.rotationWeight = (attachedToPlayer ? 1 : 0);
+                vrikRef.solver.leftLeg.target.parent.SetParent(leftFoot, worldPositionStays: true);
+                vrikRef.solver.rightLeg.target.parent.SetParent(rightFoot, worldPositionStays: true);
+                vrikRef.solver.leftLeg.target.parent.localPosition = Vector3.zero;
+                vrikRef.solver.rightLeg.target.parent.localPosition = Vector3.zero;
+                vrikRef.solver.leftLeg.target.parent.localRotation = Quaternion.identity;
+                vrikRef.solver.rightLeg.target.parent.localRotation = Quaternion.identity;
             }
         }
 
@@ -1443,8 +1450,8 @@ namespace ValheimVRMod.VRCore
 
             if (vrikRef != null && leftFoot.parent != null && rightFoot.parent != null)
             {
-                vrikRef.solver.leftLeg.target.SetParent(leftFoot, worldPositionStays: false);
-                vrikRef.solver.rightLeg.target.SetParent(rightFoot, worldPositionStays: false);
+                vrikRef.solver.leftLeg.target.parent.SetParent(leftFoot, worldPositionStays: false);
+                vrikRef.solver.rightLeg.target.parent.SetParent(rightFoot, worldPositionStays: false);
             }
         }
 
