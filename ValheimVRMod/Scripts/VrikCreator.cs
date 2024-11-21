@@ -31,8 +31,12 @@ namespace ValheimVRMod.Scripts {
 
         public static Transform localPlayerRightHandConnector = null;
         public static Transform localPlayerLeftHandConnector = null;
-        public static Transform localPlayerRightFootConnector = null;
-        public static Transform localPlayerLeftFootConnector = null;
+        public static Transform localPlayerLeftThigh = null;
+        public static Transform localPlayerLeftCalf = null;
+        public static Transform localPlayerLeftFoot = null;
+        public static Transform localPlayerRightThigh = null;
+        public static Transform localPlayerRightCalf = null;
+        public static Transform localPlayerRightFoot = null;
 
         public static Transform camera;
         private static Transform CameraRig { get { return camera.parent; } }
@@ -50,8 +54,6 @@ namespace ValheimVRMod.Scripts {
             {
                 localPlayerLeftHandConnector = new GameObject().transform;
                 localPlayerRightHandConnector = new GameObject().transform;
-                localPlayerLeftFootConnector = new GameObject().transform;
-                localPlayerRightFootConnector = new GameObject().transform;
             }
             return vrik;
         }
@@ -59,14 +61,18 @@ namespace ValheimVRMod.Scripts {
         private static void InitializeTargts(VRIK vrik, Transform leftController, Transform rightController, Transform camera, Transform pelvis, bool isLocalPlayer)
         {
             vrik.AutoDetectReferences();
+            if (isLocalPlayer)
+            {
+                localPlayerLeftThigh = vrik.references.leftThigh;
+                localPlayerLeftCalf = vrik.references.leftCalf;
+                localPlayerLeftFoot = vrik.references.leftFoot;
+                localPlayerRightThigh = vrik.references.rightThigh;
+                localPlayerRightCalf = vrik.references.rightCalf;
+                localPlayerRightFoot = vrik.references.rightFoot;
+            }
             if (!isLocalPlayer || !VRPlayer.TRACK_FEET)
             {
-                vrik.references.leftThigh = null;
-                vrik.references.leftCalf = null;
-                vrik.references.leftFoot = null;
-                vrik.references.rightThigh = null;
-                vrik.references.rightCalf = null;
-                vrik.references.rightFoot = null;
+                DisconnectLegs(vrik);
             }
             vrik.references.leftToes = null;
             vrik.references.rightToes = null;
@@ -79,12 +85,6 @@ namespace ValheimVRMod.Scripts {
             Transform rightHandConnector = isLocalPlayer ? VrikCreator.localPlayerRightHandConnector : new GameObject().transform;
             rightHandConnector.SetParent(rightController, false);
             vrik.solver.rightArm.target.SetParent(rightHandConnector, false);
-
-            if (isLocalPlayer)
-            {
-                vrik.solver.leftLeg.target.SetParent(localPlayerLeftFootConnector, false);
-                vrik.solver.rightLeg.target.SetParent(localPlayerRightFootConnector, false);
-            }
 
             Transform head = vrik.solver.spine.headTarget;
             head.SetParent(camera);
@@ -170,6 +170,36 @@ namespace ValheimVRMod.Scripts {
             }
         }
 
+        public static void DisconnectLegs(VRIK vrik)
+        {
+            vrik.references.leftThigh = null;
+            vrik.references.leftCalf = null;
+            vrik.references.leftFoot = null;
+            vrik.references.rightThigh = null;
+            vrik.references.rightCalf = null;
+            vrik.references.rightFoot = null;
+        }
+
+        public static void ReconnectLocalPlayerLegs()
+        {
+            Player player = Player.m_localPlayer;
+            if (player == null)
+            {
+                return;
+            }
+            VRIK vrik = player.GetComponentInChildren<VRIK>();
+            if (vrik == null)
+            {
+                return;
+            }
+            vrik.references.leftThigh = localPlayerLeftThigh;
+            vrik.references.leftCalf = localPlayerLeftCalf;
+            vrik.references.leftFoot = localPlayerLeftFoot;
+            vrik.references.rightThigh = localPlayerRightThigh;
+            vrik.references.rightCalf = localPlayerRightCalf;
+            vrik.references.rightFoot = localPlayerRightFoot;
+        }
+
         public static Transform GetLocalPlayerDominantHandConnector()
         {
             return VHVRConfig.LeftHanded() ? VrikCreator.localPlayerLeftHandConnector : VrikCreator.localPlayerRightHandConnector;
@@ -206,6 +236,8 @@ namespace ValheimVRMod.Scripts {
             vrik.solver.rightArm.target.SetParent(camera.parent, true);
             vrik.solver.spine.headTarget.SetParent(camera.parent, true);
             vrik.solver.spine.pelvisTarget.SetParent(camera.parent, true);
+            vrik.solver.leftLeg.target.SetParent(camera.parent, true);
+            vrik.solver.rightLeg.target.SetParent(camera.parent, true);
         }
 
         public static void UnpauseLocalPlayerVrik()
