@@ -62,12 +62,13 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
+            var isCurrentlySecondaryAttack = FistCollision.LocalPlayerSecondaryAttackCooldown <= 0;
             var item = Player.m_localPlayer.m_unarmedWeapon.m_itemData;
-            var attack = item.m_shared.m_secondaryAttack;
+            var attack = isCurrentlySecondaryAttack ? item.m_shared.m_attack : item.m_shared.m_secondaryAttack;
 
             // Always use the duration of the primary attack for target cooldown to allow primary attack immediately following a secondary attack.
             // The secondary attack cooldown is managed by FistCollision.LocalPlayerSecondaryAttackCooldown  instead.
-            if (!tryHitTarget(collider.gameObject, WeaponUtils.GetAttackDuration(item.m_shared.m_attack), speed))
+            if (!tryHitTarget(collider.gameObject, isCurrentlySecondaryAttack, WeaponUtils.GetAttackDuration(item.m_shared.m_attack), speed))
             {
                 return;
             }
@@ -81,7 +82,7 @@ namespace ValheimVRMod.Scripts
             attack.Start(Player.m_localPlayer, null, null, Player.m_localPlayer.m_animEvent, null, item, null, 0.0f, 0.0f);
         }
 
-        private bool tryHitTarget(GameObject target, float duration, float speed)
+        private bool tryHitTarget(GameObject target, bool isSecondaryAttack, float duration, float speed)
         {
             // ignore certain Layers
             if (NONATTACKABLE_LAYERS.Contains(target.layer))
@@ -95,7 +96,7 @@ namespace ValheimVRMod.Scripts
                 attackTargetMeshCooldown = target.AddComponent<AttackTargetMeshCooldown>();
             }
 
-            return attackTargetMeshCooldown.tryTriggerSecondaryAttack(duration);
+            return isSecondaryAttack ? attackTargetMeshCooldown.tryTriggerSecondaryAttack(duration) : attackTargetMeshCooldown.tryTriggerPrimaryAttack(duration, speed);
         }
 
         public void setColliderParent(Transform parent)
