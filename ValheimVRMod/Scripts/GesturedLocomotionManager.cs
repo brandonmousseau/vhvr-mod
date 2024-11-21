@@ -235,7 +235,7 @@ namespace ValheimVRMod.Scripts
                 if (isJumping)
                 {
                     horizontalVelocity =
-                        Vector3.ProjectOnPlane(fistCollision.lastGrabOffsetFromHead, upDirection.Value).normalized *
+                        Vector3.ProjectOnPlane(fistCollision.transform.position - VRPlayer.vrCam.transform.position, upDirection.Value).normalized *
                         (GesturedLocomotionManager.RUN_ACITIVATION_SPEED + 0.1f);
                     return horizontalVelocity + upDirection.Value * (VHVRConfig.GesturedJumpMinSpeed() + 0.1f);
                 }
