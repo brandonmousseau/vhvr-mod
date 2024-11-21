@@ -1,3 +1,4 @@
+using RootMotion.Demos;
 using RootMotion.FinalIK;
 using UnityEngine;
 using ValheimVRMod.Utilities;
@@ -30,6 +31,9 @@ namespace ValheimVRMod.Scripts {
 
         public static Transform localPlayerRightHandConnector = null;
         public static Transform localPlayerLeftHandConnector = null;
+        public static Transform localPlayerRightFootConnector = null;
+        public static Transform localPlayerLeftFootConnector = null;
+
         public static Transform camera;
         private static Transform CameraRig { get { return camera.parent; } }
 
@@ -42,14 +46,28 @@ namespace ValheimVRMod.Scripts {
             vrik.solver.rightLeg.target = new GameObject().transform;
             vrik.solver.spine.headTarget = new GameObject().transform;
             vrik.solver.spine.pelvisTarget = new GameObject().transform;
-            localPlayerLeftHandConnector = new GameObject().transform;
-            localPlayerRightHandConnector = new GameObject().transform;
+            if (playerObject == Player.m_localPlayer.gameObject)
+            {
+                localPlayerLeftHandConnector = new GameObject().transform;
+                localPlayerRightHandConnector = new GameObject().transform;
+                localPlayerLeftFootConnector = new GameObject().transform;
+                localPlayerRightFootConnector = new GameObject().transform;
+            }
             return vrik;
         }
 
         private static void InitializeTargts(VRIK vrik, Transform leftController, Transform rightController, Transform camera, Transform pelvis, bool isLocalPlayer)
         {
             vrik.AutoDetectReferences();
+            if (!isLocalPlayer || !VRPlayer.TRACK_FEET)
+            {
+                vrik.references.leftThigh = null;
+                vrik.references.leftCalf = null;
+                vrik.references.leftFoot = null;
+                vrik.references.rightThigh = null;
+                vrik.references.rightCalf = null;
+                vrik.references.rightFoot = null;
+            }
             vrik.references.leftToes = null;
             vrik.references.rightToes = null;
             vrik.references.root.localScale = Vector3.one * ROOT_SCALE;
@@ -61,6 +79,12 @@ namespace ValheimVRMod.Scripts {
             Transform rightHandConnector = isLocalPlayer ? VrikCreator.localPlayerRightHandConnector : new GameObject().transform;
             rightHandConnector.SetParent(rightController, false);
             vrik.solver.rightArm.target.SetParent(rightHandConnector, false);
+
+            if (isLocalPlayer)
+            {
+                vrik.solver.leftLeg.target.SetParent(localPlayerLeftFootConnector, false);
+                vrik.solver.rightLeg.target.SetParent(localPlayerRightFootConnector, false);
+            }
 
             Transform head = vrik.solver.spine.headTarget;
             head.SetParent(camera);
