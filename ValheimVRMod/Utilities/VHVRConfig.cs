@@ -110,10 +110,10 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> smoothSnapTurn;
         private static ConfigEntry<float> smoothSnapSpeed;
         private static ConfigEntry<bool> charaterMovesWithHeadset;
-        private static ConfigEntry<bool> roomScaleMovement;
         private static ConfigEntry<bool> roomScaleSneaking;
         private static ConfigEntry<float> roomScaleSneakHeight;
         private static ConfigEntry<bool> exclusiveRoomScaleSneak;
+        private static ConfigEntry<bool> trackFeet;
         private static ConfigEntry<string> gesturedLocomotion;
         private static ConfigEntry<float> gesturedJumpPreparationHeight;
         private static ConfigEntry<float> gesturedJumpMinSpeed;
@@ -667,6 +667,10 @@ namespace ValheimVRMod.Utilities
                                           "ExclusiveRoomScaleSneak",
                                           false,
                                           "If this is set to true and Room Scale sneaking is on, Controller-based sneak inputs will be disabled. Use this if you ONLY want to sneak by phsyically crouching.");
+            trackFeet = config.Bind("Controls",
+                                          "TrackFeet",
+                                          false,
+                                          "Whether foot tracking should be enabled. May require restarting the game to take effect.");
             gesturedLocomotion = config.Bind("Controls",
                                              "Gestured Locomotion",
                                              "None",
@@ -1374,6 +1378,11 @@ namespace ValheimVRMod.Utilities
         public static bool ExlusiveRoomScaleSneak()
         {
             return exclusiveRoomScaleSneak.Value;
+        }
+
+        public static bool TrackFeet()
+        {
+            return IsHipTrackingEnabled() && trackFeet.Value;
         }
 
         public static bool IsGesturedSwimEnabled()
