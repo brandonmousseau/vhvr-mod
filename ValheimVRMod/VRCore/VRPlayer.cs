@@ -60,7 +60,6 @@ namespace ValheimVRMod.VRCore
         private const float NECK_OFFSET = 0.165f;
         public const float ROOMSCALE_STEP_ANIMATION_SMOOTHING = 0.3f;
         public const float ROOMSCALE_ANIMATION_WEIGHT = 2f;
-        public const bool TRACK_FEET = false;
 
         public static VRIK vrikRef { get { return _vrik; } }
         private static VRIK _vrik;
@@ -1120,7 +1119,7 @@ namespace ValheimVRMod.VRCore
                 VRControls.smoothWalkX < -0.1f || VRControls.smoothWalkY < -0.1f ||
                 gesturedLocomotionManager.stickOutputX > 0.1f || gesturedLocomotionManager.stickOutputY > 0.1f ||
                 gesturedLocomotionManager.stickOutputX < -0.1f || gesturedLocomotionManager.stickOutputY < -0.1f ||
-                !TRACK_FEET)
+                !VHVRConfig.TrackFeet())
             {
                 vrikRef.solver.leftLeg.rotationWeight = vrikRef.solver.rightLeg.rotationWeight = 0;
                 vrikRef.solver.leftLeg.positionWeight = vrikRef.solver.rightLeg.positionWeight = 0;
@@ -1659,7 +1658,7 @@ namespace ValheimVRMod.VRCore
                 return;
             }
 
-            if (TRACK_FEET)
+            if (VHVRConfig.TrackFeet())
             {
                 Vector3 pelvisFacing = Vector3.ProjectOnPlane(pelvis.forward, _vrCameraRig.up);
                 if (Vector3.Dot(leftFoot.position - pelvis.position, pelvisFacing) > 0.3f &&
