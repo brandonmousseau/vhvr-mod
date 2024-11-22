@@ -37,7 +37,7 @@ namespace ValheimVRMod.Scripts {
 
         private static VRIK CreateTargets(GameObject playerObject)
         {
-            VRIK vrik = playerObject.GetComponent<VRIK>() ?? playerObject.AddComponent<VRIK>();
+            VRIK vrik = playerObject.GetOrAddComponent<VRIK>();
             vrik.solver.leftArm.target = new GameObject().transform;
             vrik.solver.rightArm.target = new GameObject().transform;
             vrik.solver.leftLeg.target = new GameObject().transform;
@@ -71,11 +71,13 @@ namespace ValheimVRMod.Scripts {
             if (isLocalPlayer)
             {
                 vrik.solver.leftLeg.target.parent = VRPlayer.leftFoot;
-                vrik.solver.rightLeg.target.parent = VRPlayer.rightFoot;
                 vrik.solver.leftLeg.target.localPosition = Vector3.zero;
                 vrik.solver.leftLeg.target.localRotation = Quaternion.identity;
+                vrik.solver.leftLeg.bendToTargetWeight = 1;
+                vrik.solver.rightLeg.target.parent = VRPlayer.rightFoot;
                 vrik.solver.rightLeg.target.localPosition = Vector3.zero;
                 vrik.solver.rightLeg.target.localRotation = Quaternion.identity;
+                vrik.solver.rightLeg.bendToTargetWeight = 1;
             }
 
             Transform leftHandConnector = isLocalPlayer ? VrikCreator.localPlayerLeftHandConnector : new GameObject().transform;
