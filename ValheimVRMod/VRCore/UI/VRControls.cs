@@ -341,6 +341,12 @@ namespace ValheimVRMod.VRCore.UI
 
         private bool isInRecenterPose()
         {
+            if (SteamVR_Actions.valheim_Use.GetState(SteamVR_Input_Sources.Any) ||
+                SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.Any) ||
+                SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.Any))
+            {
+                return false;
+            }
             var hmd = VRPlayer.instance.GetComponent<Valve.VR.InteractionSystem.Player>().hmdTransform;
             var targetLocationLeft = hmd.localPosition + hmd.localRotation * RECENTER_POSE_POSITION_L;
             var targetLocationRight = hmd.localPosition + hmd.localRotation * RECENTER_POSE_POSITION_R;
