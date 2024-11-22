@@ -115,5 +115,12 @@ namespace ValheimVRMod.Utilities {
             _mouthCollider.transform.localRotation = Quaternion.identity;
             _mouthCollider.transform.localScale = new Vector3(0.06f, 0.03f, 0.06f);
         }
+
+        public static T GetOrAddComponent<T>(this GameObject gameObject) where T : Component
+        {
+            T component = gameObject.GetComponent<T>();
+            return component != null ? component : gameObject.AddComponent<T>();
+
+        }
     }
 }
