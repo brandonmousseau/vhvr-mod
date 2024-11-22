@@ -97,6 +97,8 @@ namespace ValheimVRMod.Scripts {
             head.localPosition = new Vector3(0, -0.165f, -0.09f) * ROOT_SCALE;
             head.localRotation = Quaternion.Euler(0, 90, 20);
             vrik.solver.spine.pelvisTarget.SetParent(pelvis, worldPositionStays: false);
+            vrik.solver.spine.pelvisTarget.localPosition = Vector3.zero;
+            vrik.solver.spine.pelvisTarget.localRotation = Quaternion.identity;
             vrik.solver.spine.maxRootAngle = 180;
             vrik.solver.spine.minHeadHeight = 0.25f;
 
