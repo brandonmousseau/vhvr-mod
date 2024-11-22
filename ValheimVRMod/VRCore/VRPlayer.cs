@@ -1055,7 +1055,7 @@ namespace ValheimVRMod.VRCore
                 return;
             }
 
-            if (player == null || pelvisTarget == null || !headPositionInitialized || _vrCam == null || !VHVRConfig.UseVrControls())
+            if (player == null || pelvisTarget == null || !headPositionInitialized || _vrCam == null || !VHVRConfig.UseVrControls() || pausedMovement)
             {
                 return;
             }
