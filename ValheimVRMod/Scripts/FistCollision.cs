@@ -3,28 +3,43 @@ using UnityEngine;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using Valve.VR;
+using Valve.VR.InteractionSystem;
 
 namespace ValheimVRMod.Scripts
 {
     public class FistCollision : MonoBehaviour
     {
+        private enum Grabbable
+        {
+            NONE = 0,
+            ENVIRONMENT = 1,
+            PICKABLE = 2,
+            IMAGINARY_CLIMIBNG_HOLD = 3
+        }
+
         private const float WEAPON_OFFSET = 0.125f;
 
         private bool isRightHand;
         private HandGesture handGesture;
         private PhysicsEstimator physicsEstimator { get { return isRightHand ? VRPlayer.rightHandPhysicsEstimator : VRPlayer.leftHandPhysicsEstimator; } }
         private SteamVR_Input_Sources inputSource { get { return isRightHand ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand; } }
+        private Hand thisHand {  get { return isRightHand ? VRPlayer.rightHand : VRPlayer.leftHand; } }
 
-        private static float LocalPlayerSecondaryAttackCooldown = 0;
+        public static float LocalPlayerSecondaryAttackCooldown = 0;
 
-        private static readonly int[] ignoreLayers = {
+        private static readonly int[] NONATTACKABLE_LAYERS = {
             LayerUtils.WATERVOLUME_LAYER,
             LayerUtils.WATER,
             LayerUtils.UI_PANEL_LAYER,
             LayerUtils.CHARARCTER_TRIGGER,
         };
 
-        public bool isGrabbingEnvironment { get; private set; } = false;
+        public bool isGrabbingJumpingAid { get { return lastGrabbedType == Grabbable.ENVIRONMENT || lastGrabbedType == Grabbable.IMAGINARY_CLIMIBNG_HOLD; } }
+        public Vector3 lastGrabOffsetFromHead { get; private set; }
+        private Grabbable lastGrabbedType;
+        private Pickable grabbedPickable;
+        private Vector3 lastGrabbedPoint;
+        private float lastPetTime = float.NegativeInfinity;
 
         private EquipType? currentEquipType = null;
         private Vector3 desiredPosition;
@@ -49,42 +64,135 @@ namespace ValheimVRMod.Scripts
 
             if (!SteamVR_Actions.valheim_Grab.GetState(inputSource) || !handGesture.isHandFree())
             {
-                isGrabbingEnvironment = false;
+                lastGrabbedType = Grabbable.NONE;
+            }
+
+            if (lastGrabbedType == Grabbable.PICKABLE)
+            {
+                if (Vector3.Distance(transform.position, lastGrabbedPoint) > 0.5f)
+                {
+                    grabbedPickable = null;
+                }
+                else if (grabbedPickable != null && physicsEstimator.GetVelocity().magnitude > 0.5f)
+                {
+                    grabbedPickable.Interact(Player.m_localPlayer, false, false);
+                    grabbedPickable = null;
+                }
             }
         }
 
         private void OnTriggerStay(Collider collider)
         {
-            if (isGrabbingEnvironment)
+            if (handGesture.isHandFree() && SteamVR_Actions.valheim_Grab.GetStateDown(inputSource) && VRPlayer.vrCam != null)
             {
-                return;
+                Grabbable newGrabbable = GetGrabbable(collider.gameObject);
+                if (newGrabbable != Grabbable.NONE)
+                {
+                    lastGrabbedType = newGrabbable;
+                    lastGrabbedPoint = transform.position;
+                    lastGrabOffsetFromHead = lastGrabbedPoint - VRPlayer.vrCam.transform.position;
+                    thisHand.hapticAction.Execute(0, 0.25f, 100, 0.5f, inputSource);
+                    if (lastGrabbedType == Grabbable.PICKABLE)
+                    {
+                        grabbedPickable = collider.GetComponentInParent<Pickable>();
+                    }
+                }
             }
 
-            if (ShouldStartGrabbingTerrain(collider.gameObject))
+            if (lastGrabbedType == Grabbable.NONE && handGesture.isHandFree() && collider.gameObject.layer == LayerUtils.CHARACTER)
             {
-                isGrabbingEnvironment = true;
-                return;
-            }
+                if (TryPet(collider))
+                {
+                    return;
+                }
 
-            if (!handGesture.isHandFree() || collider.gameObject.layer != LayerUtils.CHARACTER)
-            {
-                return;
-            }
+                var cooldown = collider.GetComponent<AttackTargetMeshCooldown>();
+                if (cooldown != null && cooldown.inCoolDown())
+                {
+                    return;
+                }
 
-            var cooldown = collider.GetComponent<AttackTargetMeshCooldown>();
-            if (cooldown != null && cooldown.inCoolDown())
-            {
-                return;
+                tryHitCollider(collider, requireJab: true);
             }
-
-            tryHitCollider(collider, requireJab: true);
         }
 
-        private bool ShouldStartGrabbingTerrain(GameObject target)
+        private void OnTriggerEnter(Collider collider)
+        {
+            if (canAttackWithCollision())
+            {
+                tryHitCollider(collider, requireJab: false);
+                return;
+            }
+
+            TryPushDoorOpen(collider);
+        }
+
+        private bool TryPet(Collider collider)
+        {
+            if (Player.m_localPlayer.IsRiding() || physicsEstimator.GetVelocity().magnitude < 0.5f)
+            {
+                return false;
+            }
+            
+            var character = collider.GetComponentInParent<Character>();
+            var tameable = character.GetComponent<Tameable>();
+            if (!character.m_tamed || tameable == null)
+            {
+                return false;
+            }
+            
+            thisHand.hapticAction.Execute(0, 0.25f, 100, 0.25f, inputSource);
+            if (Time.time - lastPetTime > 3f)
+            {
+                lastPetTime = Time.time;
+                tameable.m_petEffect.Create(tameable.transform.position, tameable.transform.rotation, null, 1f, -1);
+                Player.m_localPlayer.Message(MessageHud.MessageType.Center, character.GetHoverName() + " $hud_tamelove", 0, null);
+            }
+
+            return true;
+        }
+
+        private void TryPushDoorOpen(Collider collider)
+        {
+            var door = collider.GetComponentInParent<Door>();
+            if (door == null || !door.CanInteract())
+            {
+                return;
+            }
+
+            Vector3 doorPushDirection = GetDoorPushDirection(door);
+            Vector3 velocity = physicsEstimator.GetVelocity();
+            
+            if (Vector3.Angle(velocity, doorPushDirection) < 30 && Vector3.Dot(velocity, doorPushDirection) > 2f)
+            {
+                door.Interact(Player.m_localPlayer, false, false);
+            }
+        }
+
+        private Vector3 GetDoorPushDirection(Door door)
+        {
+            bool isClosed = (door.m_nview.GetZDO().GetInt(ZDOVars.s_state, 0) == 0);
+            if (isClosed)
+            {
+                return Vector3.Dot(door.transform.position - Player.m_localPlayer.transform.position, door.transform.forward) > 0 ?
+                    door.transform.forward :
+                    -door.transform.forward;
+            }
+
+            return -door.transform.right;
+        }
+
+        private Grabbable GetGrabbable(GameObject target)
         {
             if (!handGesture.isHandFree() || !SteamVR_Actions.valheim_Grab.GetStateDown(inputSource))
             {
-                return false;
+                return Grabbable.NONE;
+            }
+
+            var pickable = target.GetComponentInParent<Pickable>();
+            if (pickable != null && pickable.CanBePicked())
+            {
+                return Grabbable.PICKABLE;
             }
 
             if (target.layer == LayerUtils.TERRAIN ||
@@ -93,7 +201,7 @@ namespace ValheimVRMod.Scripts
                 target.GetComponentInParent<StaticPhysics>() != null ||
                 target.GetComponentInParent<TreeBase>() != null)
             {
-                return true;
+                return Grabbable.ENVIRONMENT;
             }
 
             if (target.layer == 0)
@@ -101,29 +209,27 @@ namespace ValheimVRMod.Scripts
                 var piece = target.GetComponentInParent<Piece>();
                 if (piece != null && piece.gameObject.layer == LayerUtils.PIECE)
                 {
-                    return true;
+                    return Grabbable.ENVIRONMENT;
                 }
             }
 
-            if (!VHVRConfig.IsGesturedJumpEnabled() || Valve.VR.InteractionSystem.Player.instance.eyeHeight > VRPlayer.referencePlayerHeight * 0.9f)
+            if (VHVRConfig.IsGesturedJumpEnabled() &&
+                target.layer == LayerUtils.CHARACTER &&
+                Valve.VR.InteractionSystem.Player.instance.eyeHeight < VRPlayer.referencePlayerHeight * 0.9f)
             {
-                return false;
+                var leftHandOffset = VRPlayer.instance.transform.InverseTransformVector(VRPlayer.leftHand.transform.position - VRPlayer.vrCam.transform.position);
+                var rightHandOffset = VRPlayer.instance.transform.InverseTransformVector(VRPlayer.rightHand.transform.position - VRPlayer.vrCam.transform.position);
+                if (leftHandOffset.y > 0.25f &&
+                    rightHandOffset.y > 0.25f &&
+                    rightHandOffset.x - leftHandOffset.x < 0.15f &&
+                    !Utilities.Pose.isBehindBack(VRPlayer.leftHand.transform) &&
+                    !Utilities.Pose.isBehindBack(VRPlayer.rightHand.transform))
+                {
+                    return Grabbable.IMAGINARY_CLIMIBNG_HOLD;
+                }
             }
-            
-            var leftHandOffset = VRPlayer.instance.transform.InverseTransformVector(VRPlayer.leftHand.transform.position - VRPlayer.vrCam.transform.position);
-            var rightHandOffset = VRPlayer.instance.transform.InverseTransformVector(VRPlayer.rightHand.transform.position - VRPlayer.vrCam.transform.position);
-            return leftHandOffset.y > 0.25f && rightHandOffset.y > 0.25f &&
-                !Utilities.Pose.isBehindBack(VRPlayer.leftHand.transform) &&
-                !Utilities.Pose.isBehindBack(VRPlayer.rightHand.transform) &&
-                rightHandOffset.x - leftHandOffset.x < 0.15f;
-        }
 
-        private void OnTriggerEnter(Collider collider)
-        {
-            if (!isGrabbingEnvironment)
-            {
-                tryHitCollider(collider, requireJab: false);
-            }
+            return Grabbable.NONE;
         }
 
         private void tryHitCollider(Collider collider, bool requireJab)
@@ -212,22 +318,14 @@ namespace ValheimVRMod.Scripts
             if (attack.Start(Player.m_localPlayer, null, null, Player.m_localPlayer.m_animEvent,
                 null, item, null, 0.0f, 0.0f))
             {
-                if (isRightHand)
-                {
-                    VRPlayer.rightHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, SteamVR_Input_Sources.RightHand);
-                }
-                else
-                {
-                    VRPlayer.leftHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, SteamVR_Input_Sources.LeftHand);
-                }
+                thisHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, inputSource);
             }
         }
 
         private bool tryHitTarget(GameObject target, bool isSecondaryAttack, float duratrion, float speed)
         {
-
             // ignore certain Layers
-            if (ignoreLayers.Contains(target.layer))
+            if (NONATTACKABLE_LAYERS.Contains(target.layer))
             {
                 return false;
             }
@@ -283,14 +381,13 @@ namespace ValheimVRMod.Scripts
 
         private bool canAttackWithCollision()
         {
-            if (!VRPlayer.inFirstPerson || transform.parent == null)
+            if (!VRPlayer.inFirstPerson || transform.parent == null || lastGrabbedType != Grabbable.NONE)
             {
                 return false;
             }
 
             if (handGesture.isHandFree())
             {
-                SteamVR_Input_Sources inputSource = isRightHand ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand;
                 return SteamVR_Actions.valheim_Grab.GetState(inputSource);
             }
 
@@ -340,8 +437,6 @@ namespace ValheimVRMod.Scripts
             {
                 return false;
             }
-
-            SteamVR_Input_Sources inputSource = isRightHand ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand;
 
             return SteamVR_Actions.valheim_Grab.GetState(inputSource);
         }

@@ -70,7 +70,7 @@ namespace ValheimVRMod.Scripts {
                 localPlayerRightCalf = vrik.references.rightCalf;
                 localPlayerRightFoot = vrik.references.rightFoot;
             }
-            if (!isLocalPlayer || !VRPlayer.TRACK_FEET)
+            if (!isLocalPlayer || !VHVRConfig.TrackFeet())
             {
                 DisconnectLegs(vrik);
             }
