@@ -1465,11 +1465,11 @@ namespace ValheimVRMod.VRCore
                 rightFoot.parent = trackedObjects[firstFootDeviceIndex].transform;
             }
 
-            leftFoot.rotation = rightFoot.rotation = Quaternion.LookRotation(roomUpDirection + pelvis.transform.forward, pelvis.transform.forward);
+            leftFoot.rotation = rightFoot.rotation = Quaternion.LookRotation(roomUpDirection + pelvis.forward, pelvis.forward);
 
             Vector3 footHeight = _vrCam.transform.position - _vrCam.transform.forward * 0.1f - (1.72f + VHVRConfig.PlayerHeightAdjust()) * roomUpDirection;
-            leftFoot.position = footHeight + Vector3.ProjectOnPlane(leftFoot.parent.position - footHeight, roomUpDirection);
-            rightFoot.position = footHeight + Vector3.ProjectOnPlane(rightFoot.parent.position - footHeight, roomUpDirection);
+            leftFoot.position = footHeight + Vector3.ProjectOnPlane(leftFoot.parent.position - footHeight, roomUpDirection) - pelvis.forward * 0.1f;
+            rightFoot.position = footHeight + Vector3.ProjectOnPlane(rightFoot.parent.position - footHeight, roomUpDirection) - pelvis.forward * 0.1f;
 
             if (vrikRef != null && leftFoot.parent != null && rightFoot.parent != null)
             {
