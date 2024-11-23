@@ -174,7 +174,7 @@ namespace ValheimVRMod.VRCore.UI
                 }
             }
 
-            if (deltaTime == 0 || smoothWalkVelocity.x == float.NaN || smoothWalkVelocity.y == float.NaN)
+            if (deltaTime == 0 || smoothWalkVelocity.x == float.NaN || smoothWalkVelocity.y == float.NaN || VHVRConfig.WalkSpeedSmoothener() == 0)
             {
                 smoothWalkVelocity = input;
                 smoothWalkSpeed = inputSpeed;
@@ -199,6 +199,11 @@ namespace ValheimVRMod.VRCore.UI
 
             smoothWalkVelocity = Vector2.MoveTowards(smoothWalkVelocity, input, Time.deltaTime / smoothener);
             smoothWalkSpeed = smoothWalkVelocity.magnitude;
+            if (smoothWalkSpeed < 0.01f && input.x == 0 && input.y == 0)
+            {
+                smoothWalkVelocity = Vector2.zero;
+                smoothWalkSpeed = 0;
+            }
         }
 
         private void updateAutoRun()
