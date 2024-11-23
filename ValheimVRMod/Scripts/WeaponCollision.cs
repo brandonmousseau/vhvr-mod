@@ -9,7 +9,7 @@ namespace ValheimVRMod.Scripts
 {
     public class WeaponCollision : MonoBehaviour
     {
-        private const float MIN_STAB_SPEED = 4f;
+        private const float MIN_STAB_SPEED = 2.5f;
         private const float MIN_HAMMER_SPEED = 1;
         private const float MIN_LONG_TOOL_SPEED = 1.5f;
         // The offset amount of the point on the weapon relative to the hand to calculate the speed of.
@@ -26,7 +26,7 @@ namespace ValheimVRMod.Scripts
         private bool isDominantHand;
         private Outline outline;
         private bool readyToDrink;
-        private float postSecondaryAttackCountdown;
+        private float postSlowAttackCountdown;
         private float twoHandedMultitargetSwipeCountdown = 0;
         private float twoHandedMultitargetSwipeDuration;
         private GameObject debugColliderIndicator;
@@ -63,7 +63,7 @@ namespace ValheimVRMod.Scripts
         void Destroy()
         {
             Destroy(colliderParent);
-            if (debugColliderIndicator) Destroy(debugColliderIndicator);
+            if (debugColliderIndicator != null) Destroy(debugColliderIndicator);
         }
 
         private void OnTriggerEnter(Collider collider)
@@ -82,7 +82,19 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            MaybeAttackCollider(collider, requireStab: false);
+            if (VHVRConfig.ShowDebugColliders())
+            {
+                if (debugColliderIndicator == null)
+                {
+                    WeaponUtils.CreateDebugBox(transform);
+                }
+            }
+            else if (debugColliderIndicator != null)
+            {
+                Destroy(debugColliderIndicator);
+            }
+
+            MaybeAttackCollider(collider, requireStab: false, requireStabOrBackSlash: false);
         }
 
         private void OnTriggerStay(Collider collider)
@@ -105,13 +117,13 @@ namespace ValheimVRMod.Scripts
                     case EquipType.Hoe:
                         if (isTerrain(collider.gameObject))
                         {
-                            MaybeAttackCollider(collider, requireStab: false);
+                            MaybeAttackCollider(collider, requireStab: false, requireStabOrBackSlash: false);
                         }
                         return;
                     case EquipType.Scythe:
                         if ((LayerUtils.HARVEST_RAY_MASK & (1 << collider.gameObject.layer)) != 0)
                         {
-                            MaybeAttackCollider(collider, requireStab: false);
+                            MaybeAttackCollider(collider, requireStab: false, requireStabOrBackSlash: false);
                         }
                         return;
                 }
@@ -159,13 +171,22 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            MaybeAttackCollider(collider, requireStab: true);
+            switch(EquipScript.getRight())
+            {
+                case EquipType.BattleAxe:
+                case EquipType.Polearms:
+                    MaybeAttackCollider(collider, requireStab: false, requireStabOrBackSlash: true);
+                    return;
+                case EquipType.Spear:
+                case EquipType.Sword:
+                    MaybeAttackCollider(collider, requireStab: true, requireStabOrBackSlash: true);
+                    return;
+            }
         }
 
-        private void MaybeAttackCollider(Collider collider, bool requireStab) {
+        private void MaybeAttackCollider(Collider collider, bool requireStab, bool requireStabOrBackSlash) {
 
-            if (Player.m_localPlayer != null &&
-                Player.m_localPlayer == collider.GetComponentInParent<Player>())
+            if (collider.GetComponentInParent<Player>() == Player.m_localPlayer)
             {
                 return;
             }
@@ -175,12 +196,17 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            if (!hasMomentum(out bool isStab, out float speed))
+            if (!hasMomentum(out bool isStab, out bool isBackSlash, out float speed))
             {
                 return;
             }
 
             if (requireStab && !isStab)
+            {
+                return;
+            }
+
+            if (requireStabOrBackSlash && !isStab && !isBackSlash)
             {
                 return;
             }
@@ -203,34 +229,42 @@ namespace ValheimVRMod.Scripts
                 }
             }
 
-            bool isSecondaryAttack;
-            if (postSecondaryAttackCountdown <= 0)
+            bool weaponHasMultitargetSwipe = EquipScript.getRight() == EquipType.BattleAxe || EquipScript.getRight() == EquipType.Polearms;
+            bool isSlowAttack;
+            if (postSlowAttackCountdown <= 0)
             {
-                isSecondaryAttack = RoomscaleSecondaryAttackUtils.IsSecondaryAttack(this.physicsEstimator, this.mainHandPhysicsEstimator);
+                isSlowAttack = RoomscaleSecondaryAttackUtils.IsSecondaryAttack(this.physicsEstimator, this.mainHandPhysicsEstimator);
             }
             else
             {
-                // Allow continuing an ongoing atgeir secondary attack (multitarget swipe) until swipe timer finishes.
-                isSecondaryAttack = (isTwoHandedMultitargetSwipeActive && EquipScript.getRight() == EquipType.Polearms);
+                // Allow continuing an ongoing atgeir or battleaxe multitarget swipe until swipe timer finishes.
+                isSlowAttack = weaponHasMultitargetSwipe && isTwoHandedMultitargetSwipeActive;
             }
 
-            if (!tryHitTarget(collider.gameObject, isSecondaryAttack, speed))
+            if (!tryHitTarget(collider.gameObject, isSlowAttack, speed))
             {
                 return;
             }
 
-            if (isSecondaryAttack && postSecondaryAttackCountdown <= 0)
+            Attack currentAttack;
+            if (EquipScript.getRight() == EquipType.BattleAxe)
             {
-                postSecondaryAttackCountdown = WeaponUtils.GetAttackDuration(secondaryAttack);
+                currentAttack = !isSlowAttack && isStab ? secondaryAttack : attack;
+            }
+            else
+            {
+                currentAttack = isSlowAttack ? secondaryAttack : attack;
             }
 
-            // Swap battle axe primary and secondary attacks since its primary attack is more powerful.
-            Attack currentAttack = isSecondaryAttack ^ EquipScript.getRight() == EquipType.BattleAxe ? secondaryAttack : attack;
-
-            if (WeaponUtils.IsTwoHandedMultitargetSwipe(currentAttack) && twoHandedMultitargetSwipeCountdown <= 0)
+            if (isSlowAttack && postSlowAttackCountdown <= 0)
+            {
+                postSlowAttackCountdown = WeaponUtils.GetAttackDuration(secondaryAttack);
+            }
+            if (weaponHasMultitargetSwipe && isSlowAttack && twoHandedMultitargetSwipeCountdown <= 0)
             {
                 twoHandedMultitargetSwipeCountdown = twoHandedMultitargetSwipeDuration = WeaponUtils.GetAttackDuration(currentAttack);
             }
+
 
             StaticObjects.lastHitPoint = transform.position;
             StaticObjects.lastHitDir = physicsEstimator.GetVelocity().normalized;
@@ -256,7 +290,7 @@ namespace ValheimVRMod.Scripts
             }
         }
 
-        private bool tryHitTarget(GameObject target, bool isSecondaryAttack, float speed)
+        private bool tryHitTarget(GameObject target, bool isSlowAttack, float speed)
         {
             // ignore certain Layers
             if (ignoreLayers.Contains(target.layer))
@@ -332,15 +366,12 @@ namespace ValheimVRMod.Scripts
                 attackTargetMeshCooldown = cooldownObject.AddComponent<AttackTargetMeshCooldown>();
             }
 
-            if (isSecondaryAttack)
-            {
-                // Use the target cooldown time of the primary attack if it is shorter to allow a primary attack immediately after secondary attack;
-                // The secondary attack cooldown time is managed by postSecondaryAttackCountdown in this class intead.
-                float targetCooldownTime = Mathf.Min(WeaponUtils.GetAttackDuration(attack), WeaponUtils.GetAttackDuration(secondaryAttack));
-                return attackTargetMeshCooldown.tryTriggerSecondaryAttack(targetCooldownTime);
-            }
-
-            return attackTargetMeshCooldown.tryTriggerPrimaryAttack(WeaponUtils.GetAttackDuration(attack), speed);
+            // Always use the target cooldown time of the fast attack to allow a fast attack immediately after a slow attack;
+            // The slow attack cooldown time is managed by postSlowAttackCountdown in this class intead.
+            float targetCooldownTime = Mathf.Min(WeaponUtils.GetAttackDuration(attack), WeaponUtils.GetAttackDuration(secondaryAttack));
+            return isSlowAttack ?
+                attackTargetMeshCooldown.tryTriggerSecondaryAttack(targetCooldownTime) :
+                attackTargetMeshCooldown.tryTriggerPrimaryAttack(targetCooldownTime, speed);
         }
 
         private void OnRenderObject()
@@ -431,10 +462,10 @@ namespace ValheimVRMod.Scripts
                 outline.OutlineColor = Color.red;
                 outline.OutlineWidth = 5;
             }
-            else if (postSecondaryAttackCountdown > 0.5f)
+            else if (postSlowAttackCountdown > 0.5f)
             {
                 outline.enabled = true;
-                outline.OutlineColor = Color.Lerp(new Color(1, 1, 0, 0), new Color(1, 1, 0, 0.5f), postSecondaryAttackCountdown - 0.5f);
+                outline.OutlineColor = Color.Lerp(new Color(1, 1, 0, 0), new Color(1, 1, 0, 0.5f), postSlowAttackCountdown - 0.5f);
                 outline.OutlineWidth = 10;
             }
             else
@@ -466,13 +497,13 @@ namespace ValheimVRMod.Scripts
 
         private void FixedUpdate()
         {
-            if (postSecondaryAttackCountdown > 0)
+            if (postSlowAttackCountdown > 0)
             {
-                postSecondaryAttackCountdown -= Time.fixedDeltaTime;
+                postSlowAttackCountdown -= Time.fixedDeltaTime;
             }
             if (twoHandedMultitargetSwipeCountdown > 0)
             {
-                postSecondaryAttackCountdown -= Time.fixedDeltaTime;
+                postSlowAttackCountdown -= Time.fixedDeltaTime;
             }
 
             if (!isCollisionAllowed())
@@ -481,7 +512,7 @@ namespace ValheimVRMod.Scripts
             }
         }
 
-        private bool hasMomentum(out bool isStab, out float speed)
+        private bool hasMomentum(out bool isStab, out bool isBackSlash, out float speed)
         {
             Vector3 velocity;
             if (weaponWield.twoHandedState == WeaponWield.TwoHandedState.SingleHanded)
@@ -511,7 +542,8 @@ namespace ValheimVRMod.Scripts
                 }
             }
 
-            isStab = WeaponCollision.isStab(velocity);
+            isBackSlash = Vector3.Angle(velocity, LocalWeaponWield.weaponForward) > 135;
+            isStab = !isBackSlash && WeaponCollision.isStab(velocity);
 
             return isStab || speed > GetMinSpeed();
         }
@@ -535,12 +567,12 @@ namespace ValheimVRMod.Scripts
 
         private static bool isStab(Vector3 velocity)
         {
-            if (!WeaponUtils.IsStab(velocity, LocalWeaponWield.weaponForward, LocalWeaponWield.isCurrentlyTwoHanded())) {
+            if (WeaponUtils.IsStab(velocity, LocalWeaponWield.weaponForward, LocalWeaponWield.isCurrentlyTwoHanded())) {
                 return false;
             }
 
             if (Vector3.Dot(velocity, LocalWeaponWield.weaponForward) < MIN_STAB_SPEED)
-            {
+            {   
                 return false;
             }
                
