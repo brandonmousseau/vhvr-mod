@@ -109,8 +109,8 @@ namespace ValheimVRMod.Scripts
                 }
             }
             else if (horizontalSpeed > RUN_ACITIVATION_SPEED &&
-                Vector3.Dot(-VRPlayer.leftHand.transform.right, (Vector3)upDirection) < 0.8f &&
-                Vector3.Dot(VRPlayer.rightHand.transform.right, (Vector3)upDirection) < 0.8f)
+                Vector3.Dot(-VRPlayer.leftHand.transform.right, (Vector3)upDirection) < 0.5f &&
+                Vector3.Dot(VRPlayer.rightHand.transform.right, (Vector3)upDirection) < 0.5f)
             {
                 isRunning = true;
             }
@@ -235,7 +235,7 @@ namespace ValheimVRMod.Scripts
                 if (isJumping)
                 {
                     horizontalVelocity =
-                        Vector3.ProjectOnPlane(fistCollision.transform.position - VRPlayer.vrCam.transform.position, upDirection.Value).normalized *
+                        Vector3.ProjectOnPlane(-physicsEstimator.GetVelocity(), upDirection.Value).normalized *
                         (GesturedLocomotionManager.RUN_ACITIVATION_SPEED + 0.1f);
                     return horizontalVelocity + upDirection.Value * (VHVRConfig.GesturedJumpMinSpeed() + 0.1f);
                 }
