@@ -21,7 +21,6 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> useOverlayGui;
         private static ConfigEntry<string> pluginVersion;
         private static ConfigEntry<bool> bhapticsEnabled;
-        private static ConfigEntry<bool> showDebugColliders;
 
         // General Settings
         private static ConfigEntry<string> mirrorMode;
@@ -40,6 +39,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<string> immersiveShipCameraStanding;
         private static ConfigEntry<bool> immersiveDodgeRoll;
         private static ConfigEntry<bool> allowMovementWhenInMenu;
+        private static ConfigEntry<bool> showDebugColliders;
         private static ConfigEntry<int> hipTrackerIndex;
 
         // UI Settings
@@ -268,10 +268,6 @@ namespace ValheimVRMod.Utilities
                 "bhapticsEnabled",
                 false,
                 "Enables bhaptics feedback. Only usable if vrModEnabled true AND nonVrPlayer false.");
-            showDebugColliders = createImmutableSettingWithOverride("Immutable",
-                "showDebugColliders",
-                false,
-                "Visualizes motion control colliders (e. g. weapon colliders and block colliders) for debug purposes.");
         }
 
         private static ConfigEntry<bool> createImmutableSettingWithOverride(
@@ -390,11 +386,19 @@ namespace ValheimVRMod.Utilities
                                           "AllowMovementWhenInMenu",
                                           true,
                                           "Allow player character movement when the menu is open. Note that in single player this has no effect due to game pause.");
+            showDebugColliders = config.Bind(
+                "General", "ShowDebugColliders", false, "Visualizes motion control colliders (e. g. weapon colliders and block colliders) for debug purposes.");
             hipTrackerIndex = config.Bind(
                 "General", "HipTrackerIndex", -1,
                 new ConfigDescription(
                     "The device index of the hip tracker. Setting to -1 disables hip tracking.",
                     new AcceptableValueRange<int>(-1, 16)));
+            hipTrackerIndex.SettingChanged += ((o, i) => VRPlayer.RequestPelvisCaliberation());
+        }
+
+        private static void HipTrackerIndex_SettingChanged(object sender, EventArgs e)
+        {
+            throw new NotImplementedException();
         }
 
         private static void InitializeUISettings()
@@ -671,6 +675,7 @@ namespace ValheimVRMod.Utilities
                                           "TrackFeet",
                                           false,
                                           "Whether foot tracking should be enabled. May require restarting the game to take effect.");
+            trackFeet.SettingChanged += ((o, i) => VRPlayer.RequestPelvisCaliberation());
             gesturedLocomotion = config.Bind("Controls",
                                              "Gestured Locomotion",
                                              "None",
