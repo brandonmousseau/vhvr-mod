@@ -44,12 +44,13 @@ namespace ValheimVRMod.Scripts
         private EquipType? currentEquipType = null;
         private Vector3 desiredPosition;
         private Quaternion desiredRotation;
+        private GameObject debugColliderIndicator;
 
         private void Awake()
         {
             if (VHVRConfig.ShowDebugColliders())
             {
-                WeaponUtils.CreateDebugSphere(transform);
+                debugColliderIndicator = WeaponUtils.CreateDebugSphere(transform);
             }
         }
 
@@ -127,6 +128,11 @@ namespace ValheimVRMod.Scripts
             TryPushDoorOpen(collider);
         }
 
+        void Destroy()
+        {
+            if (debugColliderIndicator != null) Destroy(debugColliderIndicator);
+        }
+
         private bool TryPet(Collider collider)
         {
             if (Player.m_localPlayer.IsRiding() || physicsEstimator.GetVelocity().magnitude < 0.5f)
@@ -195,23 +201,29 @@ namespace ValheimVRMod.Scripts
                 return Grabbable.PICKABLE;
             }
 
-            if (target.layer == LayerUtils.TERRAIN ||
-                target.layer == LayerUtils.PIECE ||
-                target.layer == LayerUtils.STATIC_SOLID ||
-                target.GetComponentInParent<StaticPhysics>() != null ||
-                target.GetComponentInParent<TreeBase>() != null)
+            switch (target.layer)
             {
-                return Grabbable.ENVIRONMENT;
+                case LayerUtils.TERRAIN:
+                case LayerUtils.PIECE:
+                case LayerUtils.STATIC_SOLID:
+                    return Grabbable.ENVIRONMENT;
+                case 0:
+                    Transform parent = target.transform.parent;
+                    if (parent.GetComponent<StaticPhysics>() != null ||
+                        parent.GetComponent<Piece>() != null ||
+                        parent.GetComponent<TreeBase>() != null ||
+                        parent.GetComponent<RuneStone>() != null ||
+                        parent.GetComponent<Vegvisir>() != null ||
+                        parent.GetComponent<OfferingBowl>() != null)
+                    {
+                        return Grabbable.ENVIRONMENT;
+                    }
+                    
+                    // LogUtils.LogDebug("Cannot grab " + parent.name + " on layer " + parent.gameObject.layer);
+                    // LogUtils.LogComponents(parent.transform);
+                    break;
             }
 
-            if (target.layer == 0)
-            {
-                var piece = target.GetComponentInParent<Piece>();
-                if (piece != null && piece.gameObject.layer == LayerUtils.PIECE)
-                {
-                    return Grabbable.ENVIRONMENT;
-                }
-            }
 
             if (VHVRConfig.IsGesturedJumpEnabled() &&
                 target.layer == LayerUtils.CHARACTER &&
@@ -238,15 +250,22 @@ namespace ValheimVRMod.Scripts
             {
                 return;
             }
-
+            if (NONATTACKABLE_LAYERS.Contains(collider.gameObject.layer))
+            {
+                return;
+            }
+            if (collider.gameObject.layer != LayerUtils.CHARACTER && handGesture.isHandFree() && !SteamVR_Actions.valheim_Use.GetState(inputSource))
+            {
+                // When using bare hands or claws to attack anything other than a character,
+                // require both pressing trigger and grip so that the attack does not accidentally happen too easily.
+                return;
+            }
             if (collider.gameObject.layer == LayerUtils.TERRAIN && !SteamVR_Actions.valheim_Grab.GetState(inputSource))
             {
                 // Prevent hitting terrain too easily.
                 return;
             }
-
-            var maybePlayer = collider.GetComponentInParent<Player>();
-            if (maybePlayer != null && maybePlayer == Player.m_localPlayer)
+            if (collider.GetComponentInParent<Player>() == Player.m_localPlayer)
             {
                 return;
             }
@@ -322,21 +341,15 @@ namespace ValheimVRMod.Scripts
             }
         }
 
-        private bool tryHitTarget(GameObject target, bool isSecondaryAttack, float duratrion, float speed)
+        private bool tryHitTarget(GameObject target, bool isSecondaryAttack, float duration, float speed)
         {
-            // ignore certain Layers
-            if (NONATTACKABLE_LAYERS.Contains(target.layer))
-            {
-                return false;
-            }
-
             var attackTargetMeshCooldown = target.GetComponent<AttackTargetMeshCooldown>();
             if (attackTargetMeshCooldown == null)
             {
                 attackTargetMeshCooldown = target.AddComponent<AttackTargetMeshCooldown>();
             }
 
-            return isSecondaryAttack ? attackTargetMeshCooldown.tryTriggerSecondaryAttack(duratrion) : attackTargetMeshCooldown.tryTriggerPrimaryAttack(duratrion, speed);
+            return isSecondaryAttack ? attackTargetMeshCooldown.tryTriggerSecondaryAttack(duration) : attackTargetMeshCooldown.tryTriggerPrimaryAttack(duration, speed);
         }
 
         private void OnRenderObject()
@@ -377,6 +390,18 @@ namespace ValheimVRMod.Scripts
                 colliderData.pos;
             desiredRotation = Quaternion.Euler(colliderData.euler);
             transform.localScale = colliderData.scale;
+
+            if (VHVRConfig.ShowDebugColliders())
+            {
+                if (debugColliderIndicator == null)
+                {
+                    WeaponUtils.CreateDebugSphere(transform);
+                }
+            }
+            else if (debugColliderIndicator != null)
+            {
+                Destroy(debugColliderIndicator);
+            }
         }
 
         private bool canAttackWithCollision()
@@ -409,7 +434,8 @@ namespace ValheimVRMod.Scripts
             if (handGesture.isHandFree())
             {
                 speed = handVelocity.magnitude;
-                isJab = Vector3.Angle(isRightHand ? VRPlayer.rightHandBone.up : VRPlayer.leftHandBone.up, handVelocity) < 30f && speed > 3f;
+                Transform handTransform = (isRightHand ? VRPlayer.rightHand : VRPlayer.leftHand).transform;
+                isJab = Vector3.Angle(handTransform.forward - handTransform.up, handVelocity) < 30f && speed > 3f;
                 return speed > VHVRConfig.SwingSpeedRequirement() * 0.45f;
             }
 
