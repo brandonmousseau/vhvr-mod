@@ -664,13 +664,10 @@ namespace ValheimVRMod.VRCore
             {
                 if (trackedObjects[i] == null)
                 {
-                    trackedObjects[i] = GameObject.CreatePrimitive(PrimitiveType.Cube).AddComponent<Valve.VR.SteamVR_TrackedObject>();
+                    trackedObjects[i] = new GameObject().AddComponent<Valve.VR.SteamVR_TrackedObject>();
                 }
                 trackedObjects[i].SetDeviceIndex(i);
                 trackedObjects[i].transform.parent = _vrCameraRig;
-                var trackerRenderer = trackedObjects[i].GetComponent<MeshRenderer>();
-                trackerRenderer.gameObject.layer = LayerUtils.getWorldspaceUiLayer();
-                trackerRenderer.enabled = false;
             }
 
             pelvis = new GameObject().transform;
@@ -1030,7 +1027,7 @@ namespace ValheimVRMod.VRCore
                 {
                     var chair = player.m_attachPoint?.GetComponentInParent<Chair>();
                     var isRidingAsksvinSkeleton = chair != null && chair.m_name == "$piece_asksvinskeleton";
-                    return isRidingAsksvinSkeleton ? RIDE_HEIGHT_ADJUST : SIT_ATTACH_HEIGHT_ADJUST;
+                    return isRidingAsksvinSkeleton ? -1.1f : SIT_ATTACH_HEIGHT_ADJUST;
                 }
                 if (!VHVRConfig.CharaterMovesWithHeadset())
                 {
@@ -1135,10 +1132,6 @@ namespace ValheimVRMod.VRCore
             {
                 vrikRef.solver.leftLeg.rotationWeight = vrikRef.solver.rightLeg.rotationWeight = 1;
                 vrikRef.solver.leftLeg.positionWeight = vrikRef.solver.rightLeg.positionWeight = 1;
-                vrikRef.solver.leftLeg.target.localPosition = Vector3.zero;
-                vrikRef.solver.leftLeg.target.localRotation = Quaternion.identity;
-                vrikRef.solver.rightLeg.target.localPosition = Vector3.zero;
-                vrikRef.solver.rightLeg.target.localRotation = Quaternion.identity;
                 StaticObjects.leftFootCollision().gameObject.SetActive(true);
                 StaticObjects.rightFootCollision().gameObject.SetActive(true);
             }
@@ -1403,6 +1396,7 @@ namespace ValheimVRMod.VRCore
             headPositionInitialized = true;
 
             referencePlayerHeight = Valve.VR.InteractionSystem.Player.instance.eyeHeight;
+            LogUtils.LogDebug("Reference player height: " + referencePlayerHeight);
         }
 
         private static Vector3 getDesiredLocalPosition(Player playerCharacter)
@@ -1443,15 +1437,15 @@ namespace ValheimVRMod.VRCore
             caliberatedPelvisLocalPosition = pelvis.localPosition;
             caliberatedPelvisLocalRotation = pelvis.localRotation;
             caliberateFeet();
+            if (vrikRef != null)
+            {
+                VrikCreator.ResetPelvisAndFootTransform(vrikRef);
+            }
             bodyTrackingCaliberationPending = false;
-
-            LogUtils.LogDebug("Rreference height: " + referencePlayerHeight);
         }
 
         private void caliberateFeet()
         {
-            Vector3 roomUpDirection = vrCam.transform.parent.up;
-
             int firstFootDeviceIndex = detectFootDeviceIndex(-1);
             int secondFootDeviceindex = detectFootDeviceIndex(firstFootDeviceIndex);
 
@@ -1473,20 +1467,18 @@ namespace ValheimVRMod.VRCore
                 rightFoot.parent = trackedObjects[firstFootDeviceIndex].transform;
             }
 
-            leftFoot.rotation = rightFoot.rotation = Quaternion.LookRotation(roomUpDirection + pelvis.forward, pelvis.forward);
+            leftFoot.rotation = pelvis.rotation;
+            rightFoot.rotation = pelvis.rotation;
 
+            Vector3 roomUpDirection = vrCam.transform.parent.up;
             Vector3 footHeight = _vrCam.transform.position - _vrCam.transform.forward * 0.1f - (1.7f + VHVRConfig.PlayerHeightAdjust()) * roomUpDirection;
-            leftFoot.position = footHeight + Vector3.ProjectOnPlane(leftFoot.parent.position - footHeight, roomUpDirection) - pelvis.forward * 0.1f;
-            rightFoot.position = footHeight + Vector3.ProjectOnPlane(rightFoot.parent.position - footHeight, roomUpDirection) - pelvis.forward * 0.1f;
+            leftFoot.position = footHeight + Vector3.ProjectOnPlane(leftFoot.parent.position - footHeight, roomUpDirection);
+            rightFoot.position = footHeight + Vector3.ProjectOnPlane(rightFoot.parent.position - footHeight, roomUpDirection);
 
-            if (vrikRef != null && leftFoot.parent != null && rightFoot.parent != null)
+            if (vrikRef != null)
             {
                 vrikRef.solver.leftLeg.target.SetParent(leftFoot, worldPositionStays: false);
                 vrikRef.solver.rightLeg.target.SetParent(rightFoot, worldPositionStays: false);
-                vrikRef.solver.leftLeg.target.localPosition = Vector3.zero;
-                vrikRef.solver.leftLeg.target.localRotation = Quaternion.identity;
-                vrikRef.solver.rightLeg.target.localPosition = Vector3.zero;
-                vrikRef.solver.rightLeg.target.localRotation = Quaternion.identity;
             }
         }
 
@@ -1840,7 +1832,7 @@ namespace ValheimVRMod.VRCore
                     case EquipType.Tankard:
                         if (GesturedLocomotionManager.isInUse || SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.Any))
                         {
-                            // Allow leaning when holding small weapons are bare-handed.
+                            // Allow leaning when holding small weapons or bare-handed.
                             moveThreshold = 1f;
                         }
                         break;
