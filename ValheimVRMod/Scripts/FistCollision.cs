@@ -102,8 +102,15 @@ namespace ValheimVRMod.Scripts
 
             if (lastGrabbedType == Grabbable.NONE && handGesture.isHandFree() && collider.gameObject.layer == LayerUtils.CHARACTER)
             {
-                if (TryPet(collider))
+                Character character = collider.GetComponentInParent<Character>();
+                if (character == null)
                 {
+                    return;
+                }
+
+                if (WeaponCollision.IsFriendly(character))
+                {
+                    TryPet(character);
                     return;
                 }
 
@@ -121,6 +128,19 @@ namespace ValheimVRMod.Scripts
         {
             if (canAttackWithCollision())
             {
+                // When using bare hands or claws to attack anything other than an enemy character,
+                // require both pressing trigger and grip so that the attack does not accidentally happen too easily.
+                if (handGesture.isHandFree() && !SteamVR_Actions.valheim_Use.GetState(inputSource)) {
+                    if (collider.gameObject.layer != LayerUtils.CHARACTER)
+                    {
+                        return;
+                    }
+                    Character character = collider.GetComponentInParent<Character>();
+                    if (character == null || WeaponCollision.IsFriendly(character))
+                    {
+                        return;
+                    }
+                }
                 tryHitCollider(collider, requireJab: false);
                 return;
             }
@@ -133,29 +153,27 @@ namespace ValheimVRMod.Scripts
             if (debugColliderIndicator != null) Destroy(debugColliderIndicator);
         }
 
-        private bool TryPet(Collider collider)
+        private void TryPet(Character character)
         {
             if (Player.m_localPlayer.IsRiding() || physicsEstimator.GetVelocity().magnitude < 0.5f)
             {
-                return false;
-            }
-            
-            var character = collider.GetComponentInParent<Character>();
-            var tameable = character.GetComponent<Tameable>();
-            if (!character.m_tamed || tameable == null)
-            {
-                return false;
+                return;
             }
             
             thisHand.hapticAction.Execute(0, 0.25f, 100, 0.25f, inputSource);
-            if (Time.time - lastPetTime > 3f)
+
+            if (!character.m_tamed || Time.time - lastPetTime < 3f)
             {
-                lastPetTime = Time.time;
-                tameable.m_petEffect.Create(tameable.transform.position, tameable.transform.rotation, null, 1f, -1);
-                Player.m_localPlayer.Message(MessageHud.MessageType.Center, character.GetHoverName() + " $hud_tamelove", 0, null);
+                return;
             }
 
-            return true;
+            lastPetTime = Time.time;
+            var tameable = character.GetComponent<Tameable>();
+            if (tameable != null)
+            {
+                tameable.m_petEffect.Create(tameable.transform.position, tameable.transform.rotation, null, 1f, -1);
+            }
+            Player.m_localPlayer.Message(MessageHud.MessageType.Center, character.GetHoverName() + " $hud_tamelove", 0, null);
         }
 
         private void TryPushDoorOpen(Collider collider)
@@ -252,12 +270,6 @@ namespace ValheimVRMod.Scripts
             }
             if (NONATTACKABLE_LAYERS.Contains(collider.gameObject.layer))
             {
-                return;
-            }
-            if (collider.gameObject.layer != LayerUtils.CHARACTER && handGesture.isHandFree() && !SteamVR_Actions.valheim_Use.GetState(inputSource))
-            {
-                // When using bare hands or claws to attack anything other than a character,
-                // require both pressing trigger and grip so that the attack does not accidentally happen too easily.
                 return;
             }
             if (collider.gameObject.layer == LayerUtils.TERRAIN && !SteamVR_Actions.valheim_Grab.GetState(inputSource))
