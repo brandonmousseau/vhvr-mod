@@ -1176,7 +1176,7 @@ namespace ValheimVRMod.VRCore
             {
                 upDirection = _vrCameraRig.up;
             }
-            return _vrCam.transform.position - _vrCam.transform.forward * 0.1f - upDirection.Value * 0.88f * VrikCreator.ROOT_SCALE;
+            return _vrCam.transform.position - _vrCam.transform.forward * 0.1f - upDirection.Value * 0.89f * VrikCreator.ROOT_SCALE;
         }
 
         private Vector3 inferPelvisFacingFromPlayerHeadingAndHands(Transform playerTransform, bool isPlayerAttached)
@@ -1727,56 +1727,60 @@ namespace ValheimVRMod.VRCore
                 return;
             }
 
+            if (SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.Any) || EquipScript.getRight() == EquipType.Fishing)
+            {
+                return;
+            }
+
             if (VHVRConfig.IsHipTrackingEnabled())
             {
-                Vector3 facing = Vector3.ProjectOnPlane(vrCam.transform.forward, _vrCameraRig.up);
-                if (Vector3.Dot(pelvis.position - vrCam.transform.position, facing) > 0.15f &&
-                    Vector3.Dot(pelvis.forward, _vrCameraRig.up) > 0.8f) // Laying back
+                if (VHVRConfig.TrackFeet())
                 {
-                    startingSit = true;
-                    return;
+                    Vector3 pelvisFacing = Vector3.ProjectOnPlane(pelvis.forward, _vrCameraRig.up);
+                    if (Vector3.Dot(leftFoot.position - pelvis.position, pelvisFacing) > 0.3f &&
+                        Vector3.Dot(rightFoot.position - pelvis.position, pelvisFacing) > 0.3f &&
+                        Vector3.Dot(_vrCam.transform.position - pelvis.position, pelvisFacing) < 0.1f) // Sitting with feet in front
+                    {
+                        startingSit = true;
+                        return;
+                    }
+                }
+                else
+                {
+                    Vector3 facing = Vector3.ProjectOnPlane(vrCam.transform.forward, _vrCameraRig.up);
+                    if (Vector3.Dot(pelvis.position - vrCam.transform.position, facing) > 0.15f &&
+                        Vector3.Dot(pelvis.forward, _vrCameraRig.up) > 0.8f) // Laying back
+                    {
+                        startingSit = true;
+                        return;
+                    }
                 }
             }
 
-            if (VHVRConfig.TrackFeet())
+            Vector3 leftHandRelativeToHead = leftHandBone.position - _vrCam.transform.position;
+            Vector3 rightHandRelativeToHead = rightHandBone.position - _vrCam.transform.position;
+
+            if (Vector3.Dot(leftHandRelativeToHead, _vrCameraRig.up) > -0.25f || Vector3.Dot(rightHandRelativeToHead, _vrCameraRig.up) > -0.25f)
             {
-                Vector3 pelvisFacing = Vector3.ProjectOnPlane(pelvis.forward, _vrCameraRig.up);
-                if (Vector3.Dot(leftFoot.position - pelvis.position, pelvisFacing) > 0.3f &&
-                    Vector3.Dot(rightFoot.position - pelvis.position, pelvisFacing) > 0.3f &&
-                    Vector3.Dot(_vrCam.transform.position - pelvis.position, pelvisFacing) < 0.1f) // Sitting with feet in fornt
-                {
-                    startingSit = true;
-                    return;
-                }
+                // Hands too high for sitting.
+                return;
             }
 
-            if (!SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.Any))
+            var heading = Vector3.ProjectOnPlane(_vrCam.transform.forward, _vrCameraRig.up).normalized;
+            if (Vector3.Dot(leftHandRelativeToHead, heading) < -0.33f && Vector3.Dot(rightHandRelativeToHead, heading) < -0.33f)
             {
-                Vector3 leftHandRelativeToHead = leftHandBone.position - _vrCam.transform.position;
-                Vector3 rightHandRelativeToHead = rightHandBone.position - _vrCam.transform.position;
-
-                if (Vector3.Dot(leftHandRelativeToHead, _vrCameraRig.up) > -0.25f || Vector3.Dot(rightHandRelativeToHead, _vrCameraRig.up) > -0.25f)
-                {
-                    // Hands too high for sitting.
-                    return;
-                }
-
-                var heading = Vector3.ProjectOnPlane(_vrCam.transform.forward, _vrCameraRig.up).normalized;
-                if (Vector3.Dot(leftHandRelativeToHead, heading) < -0.33f && Vector3.Dot(rightHandRelativeToHead, heading) < -0.33f)
-                {
-                    // Hands are behind back, sit.
-                    startingSit = true;
-                    return;
-                }
-
-                Vector3 playerRight = Vector3.Cross(_vrCameraRig.up, heading);
-                if (Vector3.Dot(leftHandRelativeToHead, playerRight) > 0.0625f && Vector3.Dot(rightHandRelativeToHead, playerRight) < -0.0625f)
-                {
-                    // Hands are crosssing, sit.
-                    startingSit = true;
-                }
+                // Hands are behind back, sit.
+                startingSit = true;
+                return;
             }
-        }
+
+            Vector3 playerRight = Vector3.Cross(_vrCameraRig.up, heading);
+            if (Vector3.Dot(leftHandRelativeToHead, playerRight) > 0.0625f && Vector3.Dot(rightHandRelativeToHead, playerRight) < -0.0625f)
+            {
+                // Hands are crosssing, sit.
+                startingSit = true;
+            }
+    }
 
         private void CheckSneakRoomscale()
         {
