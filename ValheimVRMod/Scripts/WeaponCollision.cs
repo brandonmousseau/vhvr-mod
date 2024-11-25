@@ -9,7 +9,7 @@ namespace ValheimVRMod.Scripts
 {
     public class WeaponCollision : MonoBehaviour
     {
-        private const float MIN_STAB_SPEED = 2.5f;
+        private const float MIN_STAB_SPEED = 3f;
         private const float MIN_HAMMER_SPEED = 1;
         private const float MIN_LONG_TOOL_SPEED = 1.5f;
         // The offset amount of the point on the weapon relative to the hand to calculate the speed of.
@@ -111,7 +111,7 @@ namespace ValheimVRMod.Scripts
 
             if (itemIsTool)
             {
-                switch(EquipScript.getRight())
+                switch (EquipScript.getRight())
                 {
                     case EquipType.Cultivator:
                     case EquipType.Hoe:
@@ -133,6 +133,21 @@ namespace ValheimVRMod.Scripts
             // Allow triggering a stab on a character target after contact.
             // This allows stabbing with long weapons that are likely to have been overlapping with the target before attacking. 
             MaybeStabCharacter(collider);
+        }
+
+        public static bool IsFriendly(Character character)
+        {
+            if (character.m_tamed || character.gameObject == Player.m_localPlayer.gameObject)
+            {
+                return true;
+            }
+
+            if (character.IsPlayer())
+            {
+                return Player.m_localPlayer == null || !Player.m_localPlayer.m_pvp || !character.GetComponent<Player>().m_pvp;
+            }
+
+            return character.m_baseAI != null && !character.m_baseAI.m_aggravated && character.m_faction == Character.Faction.Dverger;
         }
 
         private bool CheckDrinking(Collider collider)
@@ -161,6 +176,12 @@ namespace ValheimVRMod.Scripts
         private void MaybeStabCharacter(Collider collider) {
 
             if (collider.gameObject.layer != LayerUtils.CHARACTER)
+            {
+                return;
+            }
+
+            Character character = collider.GetComponentInParent<Character>();
+            if (character == null || IsFriendly(character))
             {
                 return;
             }
@@ -528,18 +549,11 @@ namespace ValheimVRMod.Scripts
             {
                 var leftHandVelocity = VRPlayer.leftHandPhysicsEstimator.GetVelocity();
                 var rightHandVelocity = VRPlayer.rightHandPhysicsEstimator.GetVelocity();
-                var leftHandSpeed = leftHandVelocity.magnitude;
-                var rightHandSpeed = rightHandVelocity.magnitude;
-                if (leftHandSpeed < rightHandSpeed)
-                {
-                    velocity = rightHandVelocity;
-                    speed = rightHandSpeed;
-                }
-                else
-                {
-                    velocity = leftHandVelocity;
-                    speed = leftHandSpeed;
-                }
+                var direction = (leftHandVelocity + rightHandVelocity).normalized;
+                var leftHandSpeed = Vector3.Dot(leftHandVelocity, direction);
+                var rightHandSpeed = Vector3.Dot(rightHandVelocity, direction);
+                speed = Mathf.Max(leftHandSpeed, rightHandSpeed);
+                velocity = direction * speed;
             }
 
             isBackSlash = Vector3.Angle(velocity, LocalWeaponWield.weaponForward) > 135;
@@ -567,7 +581,7 @@ namespace ValheimVRMod.Scripts
 
         private static bool isStab(Vector3 velocity)
         {
-            if (WeaponUtils.IsStab(velocity, LocalWeaponWield.weaponForward, LocalWeaponWield.isCurrentlyTwoHanded())) {
+            if (!WeaponUtils.IsStab(velocity, LocalWeaponWield.weaponForward, LocalWeaponWield.isCurrentlyTwoHanded())) {
                 return false;
             }
 
