@@ -184,8 +184,25 @@ namespace ValheimVRMod.Scripts
                     Vector3.Cross(saggitalArmSpanDirection, VRPlayer.rightHandPhysicsEstimator.GetAverageVelocityInSnapshots()),
                     lateral);
             float speed = leftHandSpeed + rightHandSpeed;
-            float speedDifference = speed > 0 ? leftHandSpeed - rightHandSpeed : rightHandSpeed - leftHandSpeed;
-            turnDirection = speedDifference < -1 ? -1 : speedDifference <= 1 ? 0 : 1;
+            float leftHandContribution = speed > 0 ? leftHandSpeed : -leftHandSpeed;
+            float rightHandContribution = speed > 0 ? rightHandSpeed : -rightHandSpeed;
+            if (leftHandContribution < 0.5f &&  rightHandContribution > 1)
+            {
+                turnDirection = -1;
+            } 
+            else if (leftHandContribution > 1 && rightHandContribution < 0.5f)
+            {
+                turnDirection = 1;
+            }
+            else if (leftHandContribution > 1.25f && rightHandContribution > 1.25f)
+            {
+                // Center the rudder.
+                turnDirection = ship.m_rudderValue < 0 ? 1 : ship.m_rudderValue == 0 ? 0 : -1;
+            }
+            else
+            {
+                turnDirection = 0;
+            }
 
             if (speed < -MIN_ROW_SPEED)
             {
