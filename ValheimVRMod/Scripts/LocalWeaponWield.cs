@@ -183,9 +183,21 @@ namespace ValheimVRMod.Scripts
                 return TwoHandedState.SingleHanded;
             }
 
-            if (!SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand) ||
-                !SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand) ||
-                TemporaryDisableTwoHandedWield())
+            if (TemporaryDisableTwoHandedWield())
+            {
+                return TwoHandedState.SingleHanded;
+            }
+
+            if (wasTwoHanded && VHVRConfig.StickyTwoHandedWield())
+            {
+                if (!SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource) &&
+                    SteamVR_Actions.valheim_Grab.GetStateUp(VRPlayer.nonDominantHandInputSource))
+                {
+                    return TwoHandedState.SingleHanded;
+                }
+            }
+            else if (!SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand) ||
+                    !SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand))
             {
                 return TwoHandedState.SingleHanded;
             }
@@ -249,7 +261,11 @@ namespace ValheimVRMod.Scripts
                     else
                         return SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource);
                 default:
-                    return VHVRConfig.UseGestureBlock() ? isCurrentlyTwoHanded() : SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource);
+                    if (!SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource))
+                    {
+                        return false;
+                    }
+                    return !VHVRConfig.UseGestureBlock() || isCurrentlyTwoHanded();
             }
         }
 
