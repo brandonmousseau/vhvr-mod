@@ -130,7 +130,7 @@ namespace ValheimVRMod.Scripts
             {
                 // When using bare hands or claws to attack anything other than an enemy character,
                 // require both pressing trigger and grip so that the attack does not accidentally happen too easily.
-                if (handGesture.isHandFree() && !SteamVR_Actions.valheim_Use.GetState(inputSource)) {
+                if (handGesture.isHandFree() && !SteamVR_Actions.valheim_Use.GetState(inputSource) && !SteamVR_Actions.valheim_UseLeft.GetState(inputSource)) {
                     if (collider.gameObject.layer != LayerUtils.CHARACTER)
                     {
                         return;
