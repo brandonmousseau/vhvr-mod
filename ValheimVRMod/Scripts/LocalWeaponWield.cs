@@ -109,10 +109,17 @@ namespace ValheimVRMod.Scripts
 
                 shieldSize = 0.4f;
             }
-            else if (wasTwoHanded)
+            else
             {
-                VrikCreator.ResetHandConnectors();
-                shieldSize = 1f;
+                if (wasTwoHanded)
+                {
+                    VrikCreator.ResetHandConnectors();
+                    shieldSize = 1f;
+                }
+                if (EquipScript.getRight() == EquipType.BattleAxe || EquipScript.getRight() == EquipType.Polearms)
+                {
+                    RotateHandForOneHandedPolearmWield(weaponForward);
+                }
             }
 
             if (!EquipScript.isSpearEquipped() && EquipScript.getRight() != EquipType.Knife && VHVRConfig.TwoHandedWithShield())
@@ -217,6 +224,14 @@ namespace ValheimVRMod.Scripts
             Vector3 desiredRearHandForward = Vector3.Project(rearHandTransform.forward, Quaternion.AngleAxis(10, rearHandTransform.right) * weaponPointingDir);
             frontHandConnector.rotation = Quaternion.LookRotation(desiredFrontHandForward, frontHandTransform.up);
             rearHandConnector.rotation = Quaternion.LookRotation(desiredRearHandForward, rearHandTransform.up);
+        }
+
+        private void RotateHandForOneHandedPolearmWield(Vector3 weaponPointingDir)
+        {
+            VrikCreator.GetLocalPlayerDominantHandConnector().rotation =
+                Quaternion.LookRotation(
+                    Quaternion.AngleAxis(10, mainHand.transform.right) * weaponPointingDir,
+                    mainHand.transform.up);
         }
 
         public static bool isCurrentlyTwoHanded()
