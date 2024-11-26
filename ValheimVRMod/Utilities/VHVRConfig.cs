@@ -146,7 +146,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> useSpearDirectionGraphic;
         private static ConfigEntry<float> fullThrowSpeed;
         private static ConfigEntry<bool> spearInverseWield;
-        private static ConfigEntry<bool> twoHandedWield;
+        private static ConfigEntry<string> twoHandedWield;
         private static ConfigEntry<bool> twoHandedWithShield;
         private static ConfigEntry<float> arrowRestElevation;
         private static ConfigEntry<string> arrowRestSide;
@@ -883,10 +883,11 @@ namespace ValheimVRMod.Utilities
                                                     true,
                                                     "Use this to toggle the direction line of throwing when using the spear with VR controls.");
             //Two-handed Changes
-            twoHandedWield = config.Bind("Motion Control",
-                                                    "TwoHandedWield",
-                                                    true,
-                                                    "Use this to toggle controls of two handed weapon (left & right hand grab on weapon), allow blocking and better weapon handling");
+            twoHandedWield = config.Bind(
+                "Motion Control", "TwoHandedWield", "NonSticky",
+                new ConfigDescription(
+                    "Use this to toggle controls of two handed weapon (left & right hand grab on weapon), allow blocking and better weapon handling.",
+                    new AcceptableValueList<string>(new string[] { "Disabled", "NonSticky", "Sticky" })));
             twoHandedWithShield = config.Bind("Motion Control",
                                                     "TwoHandedWithShield",
                                                     false,
@@ -1492,7 +1493,11 @@ namespace ValheimVRMod.Utilities
         }
         public static bool TwoHandedWield()
         {
-            return twoHandedWield.Value;
+            return twoHandedWield.Value != "Disabled";
+        }
+        public static bool StickyTwoHandedWield()
+        {
+            return twoHandedWield.Value == "Sticky";
         }
         public static bool TwoHandedWithShield()
         {
