@@ -291,8 +291,8 @@ namespace ValheimVRMod.Scripts
 
             protected override SteamVR_Input_Sources inputSource { get { return SteamVR_Input_Sources.RightHand; } }
             protected override Vector3 handVelocity { get { return VRPlayer.rightHandPhysicsEstimator.GetVelocity(); } }
-            protected override Transform handTransform { get { return VRPlayer.rightHandBone; } }
-            protected override Transform otherHandTransform { get { return VRPlayer.leftHandBone; } }
+            protected override Transform handTransform { get { return VRPlayer.rightHand.transform; } }
+            protected override Transform otherHandTransform { get { return VRPlayer.leftHand.transform; } }
         }
 
         abstract class GesturedWalkRun : GesturedLocomotion
@@ -321,13 +321,7 @@ namespace ValheimVRMod.Scripts
                 }
 
                 // Use controller pointing as walking direction.
-                Vector3 walkDirection = handTransform.forward;
-
-                if (Mathf.Abs(Vector3.Dot(handTransform.right, upDirection.Value)) > 0.8f)
-                {
-                    // The palms is facing up or down, use hand pointing instead of controller pointing for walk direction.
-                    walkDirection -= handTransform.up;
-                }
+                Vector3 walkDirection = handTransform.forward - handTransform.up;
 
                 walkDirection = Vector3.ProjectOnPlane(walkDirection, upDirection.Value).normalized;
 
