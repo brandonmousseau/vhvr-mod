@@ -9,7 +9,7 @@ namespace ValheimVRMod.Scripts
 {
     public class WeaponCollision : MonoBehaviour
     {
-        private const float MIN_STAB_SPEED = 3f;
+        private const float MIN_STAB_SPEED = 4f;
         private const float MIN_HAMMER_SPEED = 1;
         private const float MIN_LONG_TOOL_SPEED = 1.5f;
         // The offset amount of the point on the weapon relative to the hand to calculate the speed of.
