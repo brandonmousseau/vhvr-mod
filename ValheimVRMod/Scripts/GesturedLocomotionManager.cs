@@ -249,6 +249,47 @@ namespace ValheimVRMod.Scripts
             }
         }
 
+        class GesturedFly : GesturedLocomotion
+        {
+            private bool isRightHand;
+            private SteamVR_Input_Sources inputSource;
+
+            public GesturedFly(bool isRightHand)
+            {
+                this.isRightHand = isRightHand;
+                inputSource = isRightHand ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand;
+            }
+
+            public override Vector3 GetTargetVelocityFromGestures(Player player)
+            {
+                // TODO: find a way to check if feather fall is effective and only enable gestured fly then.
+                if (!VHVRConfig.IsGesturedWalkRunEnabled() ||
+                    SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(inputSource) ||
+                    !IsInAir(player))
+                {
+                    return Vector3.zero;
+                }
+
+                var direction = isRightHand ? VRPlayer.rightHand.transform.right : -VRPlayer.leftHand.transform.right;
+                if (direction.y < -0.87f || direction.y > -0.5f)
+                {
+                    return Vector3.zero;
+                }
+
+                var physicsEstimator = isRightHand ? VRPlayer.rightHandPhysicsEstimator : VRPlayer.leftHandPhysicsEstimator;
+                var velocity = physicsEstimator.GetVelocity();
+                if (-1 < velocity.y && velocity.y < 1)
+                {
+                    return Vector3.zero;
+                }
+
+                direction.y = 0;
+                direction.Normalize();
+
+                return velocity.y * direction * 0.25f;
+            }
+        }
+
         class MaximizingGesturedLocomotion : GesturedLocomotion
         {
 
@@ -297,10 +338,11 @@ namespace ValheimVRMod.Scripts
 
         abstract class GesturedWalkRun : GesturedLocomotion
         {
-            private const float MIN_HAND_SPEED = 0.125f;
+            private const float ACTIVATION_SPEED = 0.75f;
+            private const float DEACTIVATION_SPEED = 0.0625f;
             private const float HEAD_TILT_STRAFE_DEADZONE = 0.125f;
             private const float HEAD_TILT_STRAFE_WEIGHT = 2f;
-            private const float MIN_ACTIVATION_HAND_DISTANCE = 0.375f;
+            private const float MIN_ACTIVATION_HAND_DISTANCE = 0.5f;
 
             private Camera vrCam;
             private bool isWalkingOrRunningUsingGestures = false;
@@ -321,7 +363,7 @@ namespace ValheimVRMod.Scripts
                 }
 
                 // Use controller pointing as walking direction.
-                Vector3 walkDirection = handTransform.forward - handTransform.up;
+                Vector3 walkDirection = handTransform.forward - handTransform.up * 0.75f;
 
                 walkDirection = Vector3.ProjectOnPlane(walkDirection, upDirection.Value).normalized;
 
@@ -344,7 +386,7 @@ namespace ValheimVRMod.Scripts
                 Vector3 wheelDiameter = Vector3.ProjectOnPlane(handTransform.position - otherHandTransform.position, movementVerticalPlaneNormal);
 
                 float walkSpeed =
-                    Vector3.Dot(Vector3.Cross(wheelDiameter.normalized, handVelocity), movementVerticalPlaneNormal);
+                    Vector3.Dot(Vector3.Cross(wheelDiameter.normalized, handVelocity), movementVerticalPlaneNormal) * 0.75f;
 
                 if (ShouldStop(player, handSpeed))
                 {
@@ -399,8 +441,14 @@ namespace ValheimVRMod.Scripts
 
             private bool ShouldStart(Vector3 wheelDiameter, Vector3 walkDirection, float handSpeed)
             {
-                return !isStoppingWalkRunByButton() && handSpeed > MIN_HAND_SPEED &&
-                    wheelDiameter.y < -MIN_ACTIVATION_HAND_DISTANCE;
+                if  (isStoppingWalkRunByButton() ||
+                    handSpeed < ACTIVATION_SPEED ||
+                    Vector3.ProjectOnPlane(wheelDiameter, upDirection.Value).magnitude < MIN_ACTIVATION_HAND_DISTANCE)
+                {
+                    return false;
+                }
+                float angle = Vector3.Angle(handTransform.forward - handTransform.up, upDirection.Value);
+                return 60 < angle && angle < 120;
             }
 
             private bool ShouldStop(Player player, double handSpeed)
@@ -416,7 +464,7 @@ namespace ValheimVRMod.Scripts
                 }
 
                 // Stop gestured walking if hand movements are slow.
-                return isWalkingOrRunningUsingGestures && handSpeed < MIN_HAND_SPEED / 2;
+                return isWalkingOrRunningUsingGestures && handSpeed < DEACTIVATION_SPEED;
             }
 
             // "Hand wheels" displayed to indicate the activity and direction of gestured walking.
