@@ -9,13 +9,13 @@ namespace ValheimVRMod.Scripts {
         // Valheim characters are 2 meters tall. Scale it down to make tracking less awkward.
         public const float ROOT_SCALE = 0.9f;
 
-        private static readonly Vector3 leftUnequippedPosition = new Vector3(-0.027f, 0.05f, -0.18f);
-        private static readonly Quaternion leftUnequippedRotation = Quaternion.Euler(0, 90f, 135f);
-        private static readonly Vector3 leftUnequippedEllbow = new Vector3(1, 0, 0);
-        private static readonly Vector3 rightUnequippedPosition = new Vector3(0.027f, 0.05f, -0.18f);
-        private static readonly Quaternion rightUnequippedRotation = Quaternion.Euler(0, -90f, -135f);
-        private static readonly Vector3 rightUnequippedEllbow = new Vector3(-1, 0, 0);
-        
+        public static readonly Vector3 leftUnequippedPosition = new Vector3(-0.027f, 0.05f, -0.18f);
+        public static readonly Quaternion leftUnequippedRotation = Quaternion.Euler(0, 90f, 135f);
+        public static readonly Vector3 leftUnequippedEllbow = new Vector3(1, 0, 0);
+        public static readonly Vector3 rightUnequippedPosition = new Vector3(0.027f, 0.05f, -0.18f);
+        public static readonly Quaternion rightUnequippedRotation = Quaternion.Euler(0, -90f, -135f);
+        public static readonly Vector3 rightUnequippedEllbow = new Vector3(-1, 0, 0);
+
         private static readonly Vector3 leftEquippedPosition = new Vector3(-0.02f, 0.09f, -0.1f);
         private static readonly Quaternion leftEquippedRotation = Quaternion.Euler(0, 90, 170);
         private static readonly Vector3 leftEquippedEllbow = new Vector3(1, -3f, 0);
@@ -169,6 +169,10 @@ namespace ValheimVRMod.Scripts {
             {
                 vrik.solver.spine.pelvisTarget.localPosition = Vector3.zero;
                 vrik.solver.spine.pelvisTarget.localRotation = Quaternion.identity;
+                VRPlayer.leftHandBone.localPosition = vrik.solver.leftArm.target.localPosition;
+                VRPlayer.leftHandBone.localRotation = vrik.solver.leftArm.target.localRotation;
+                VRPlayer.rightHandBone.localPosition = vrik.solver.rightArm.target.localPosition;
+                VRPlayer.rightHandBone.localRotation = vrik.solver.rightArm.target.localRotation;
             }
         }
 
