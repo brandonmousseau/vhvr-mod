@@ -349,18 +349,6 @@ namespace ValheimVRMod.VRCore
             }
         }
 
-        void OnRenderObject()
-        {
-            if (leftHandBone && _vrik?.references?.leftHand)
-            {
-                leftHandBone.SetPositionAndRotation(_vrik.references.leftHand.position, _vrik.references.leftHand.rotation);
-            }
-            if (rightHandBone && _vrik?.references?.rightHand)
-            {
-                rightHandBone.SetPositionAndRotation(_vrik.references.rightHand.position, _vrik.references.rightHand.rotation);
-            }
-        }
-
         void OnDestroy()
         {
             if (_dodgingRoom != null)
@@ -562,6 +550,8 @@ namespace ValheimVRMod.VRCore
                 if (leftHand != null)
                 {
                     (leftHandBone = new GameObject().transform).parent = leftHand.transform;
+                    leftHandBone.localPosition = VrikCreator.leftUnequippedPosition;
+                    leftHandBone.localRotation = VrikCreator.leftUnequippedRotation;
                     _leftPointer = leftHand.GetComponent<SteamVR_LaserPointer>();
                     if (_leftPointer != null)
                     {
@@ -575,6 +565,8 @@ namespace ValheimVRMod.VRCore
                 if (rightHand != null)
                 {
                     (rightHandBone = new GameObject().transform).parent = rightHand.transform;
+                    rightHandBone.localPosition = VrikCreator.rightUnequippedPosition;
+                    rightHandBone.localRotation = VrikCreator.rightUnequippedRotation;
                     _rightPointer = rightHand.GetComponent<SteamVR_LaserPointer>();
                     if (_rightPointer != null)
                     {
@@ -954,7 +946,10 @@ namespace ValheimVRMod.VRCore
             if (bodyTrackingCaliberationPending)
             {
                 caliberateBodyTracking();
-                initialRoomscaleLocomotiveOffsetFromHead = roomscaleLocomotive - vrCam.transform.localPosition;
+                if (!bodyTrackingCaliberationPending)
+                {
+                    initialRoomscaleLocomotiveOffsetFromHead = roomscaleLocomotive - vrCam.transform.localPosition;
+                }
             }
             else
             {
@@ -1293,7 +1288,7 @@ namespace ValheimVRMod.VRCore
 
         private void maybeAddVrik(Player player)
         {
-            if (!VHVRConfig.UseVrControls() || player.gameObject.GetComponent<VRIK>() != null)
+            if (!VHVRConfig.UseVrControls() || player.gameObject.GetComponent<VRIK>() != null || !attachedToPlayer)
             {
                 return;
             }
