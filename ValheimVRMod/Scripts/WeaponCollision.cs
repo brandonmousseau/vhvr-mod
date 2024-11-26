@@ -286,7 +286,6 @@ namespace ValheimVRMod.Scripts
                 twoHandedMultitargetSwipeCountdown = twoHandedMultitargetSwipeDuration = WeaponUtils.GetAttackDuration(currentAttack);
             }
 
-
             StaticObjects.lastHitPoint = transform.position;
             StaticObjects.lastHitDir = physicsEstimator.GetVelocity().normalized;
             StaticObjects.lastHitCollider = collider;
@@ -344,6 +343,7 @@ namespace ValheimVRMod.Scripts
                 switch (EquipScript.getRight())
                 {
                     case EquipType.BattleAxe:
+                    case EquipType.Magic:
                     case EquipType.Polearms:
                         if (!LocalWeaponWield.IsDominantHandBehind)
                         {
@@ -354,6 +354,7 @@ namespace ValheimVRMod.Scripts
                     case EquipType.Club:
                     case EquipType.Knife:
                     case EquipType.Spear:
+                    case EquipType.SpearChitin:
                     case EquipType.Sword:
                         if (!SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource))
                         {
@@ -417,9 +418,6 @@ namespace ValheimVRMod.Scripts
             this.isDominantHand = isDominantHand;
             item = this.isDominantHand ? Player.m_localPlayer.GetRightItem() : Player.m_localPlayer.GetLeftItem();
 
-            attack = item.m_shared.m_attack.Clone();
-            secondaryAttack = item.m_shared.m_secondaryAttack.Clone();
-
             itemIsTool = (name == "Hammer" || EquipScript.getRight() == EquipType.Hoe || EquipScript.getRight() == EquipType.Cultivator || EquipScript.getRight() == EquipType.Scythe);
 
             if (colliderParent == null)
@@ -427,15 +425,27 @@ namespace ValheimVRMod.Scripts
                 colliderParent = new GameObject();
             }
 
-            switch(EquipScript.getRight())
+            switch (EquipScript.getRight())
             {
                 case EquipType.Fishing:
-                case EquipType.Magic:
-                case EquipType.SpearChitin:
                     setScriptActive(false);
                     return;
+                case EquipType.Magic:
+                case EquipType.SpearChitin:
+                    if (this.isDominantHand)
+                    {
+                        item = Player.m_localPlayer.m_unarmedWeapon.m_itemData;
+                        attack = secondaryAttack = Player.m_localPlayer.m_unarmedWeapon.m_itemData.m_shared.m_attack;
+                        break;
+                    }
+                    attack = item.m_shared.m_attack.Clone();
+                    secondaryAttack = item.m_shared.m_secondaryAttack.Clone();
+                    break;
+                default:
+                    attack = item.m_shared.m_attack.Clone();
+                    secondaryAttack = item.m_shared.m_secondaryAttack.Clone();
+                    break;
             }
-
             try
             {
                 WeaponColData colliderData = WeaponUtils.GetColliderData(name, item, meshFilter, handPosition);
