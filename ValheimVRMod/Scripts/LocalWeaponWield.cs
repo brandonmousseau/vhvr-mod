@@ -24,6 +24,7 @@ namespace ValheimVRMod.Scripts
         private const float RED_DOT_SIZE_RADIANS = 1f / 256f;
         private static Material RedDotMaterial = null;
         private MeshRenderer redDotRenderer; // Red dot for aiming
+        private bool preparingToUnstickTwoHandedWield = false;
 
         public Hand mainHand {
             get {
@@ -190,9 +191,17 @@ namespace ValheimVRMod.Scripts
 
             if (wasTwoHanded && VHVRConfig.StickyTwoHandedWield())
             {
-                if (!SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource) &&
-                    SteamVR_Actions.valheim_Grab.GetStateUp(VRPlayer.nonDominantHandInputSource))
+                if (SteamVR_Actions.valheim_Grab.GetStateDown(VRPlayer.dominantHandInputSource))
                 {
+                    preparingToUnstickTwoHandedWield = true;
+                }
+                if (SteamVR_Actions.valheim_Grab.GetState(VRPlayer.nonDominantHandInputSource))
+                {
+                    preparingToUnstickTwoHandedWield = false;
+                }
+                else if (preparingToUnstickTwoHandedWield && SteamVR_Actions.valheim_Grab.GetStateUp(VRPlayer.dominantHandInputSource))
+                {
+                    preparingToUnstickTwoHandedWield = false;
                     return TwoHandedState.SingleHanded;
                 }
             }
@@ -217,10 +226,12 @@ namespace ValheimVRMod.Scripts
             float wieldingAngle = Vector3.Angle(rightHandToLeftHand, GetWeaponPointingDirection());
             if (wieldingAngle < 60)
             {
+                preparingToUnstickTwoHandedWield = false;
                 return TwoHandedState.RightHandBehind;
             }
             else if (wieldingAngle > 120f)
             {
+                preparingToUnstickTwoHandedWield = false;
                 return TwoHandedState.LeftHandBehind;
             }
 
