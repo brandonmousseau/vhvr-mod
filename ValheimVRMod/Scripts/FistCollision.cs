@@ -103,7 +103,7 @@ namespace ValheimVRMod.Scripts
             if (lastGrabbedType == Grabbable.NONE && handGesture.isHandFree() && collider.gameObject.layer == LayerUtils.CHARACTER)
             {
                 Character character = collider.GetComponentInParent<Character>();
-                if (character == null)
+                if (character == null || character.gameObject == Player.m_localPlayer.gameObject)
                 {
                     return;
                 }
