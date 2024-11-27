@@ -100,28 +100,34 @@ namespace ValheimVRMod.Scripts
                 }
             }
 
-            if (lastGrabbedType == Grabbable.NONE && handGesture.isHandFree() && collider.gameObject.layer == LayerUtils.CHARACTER)
+            if (lastGrabbedType != Grabbable.NONE || !handGesture.isHandFree())
             {
-                Character character = collider.GetComponentInParent<Character>();
-                if (character == null || character.gameObject == Player.m_localPlayer.gameObject)
-                {
-                    return;
-                }
-
-                if (WeaponCollision.IsFriendly(character))
-                {
-                    TryPet(character);
-                    return;
-                }
-
-                var cooldown = collider.GetComponent<AttackTargetMeshCooldown>();
-                if (cooldown != null && cooldown.inCoolDown())
-                {
-                    return;
-                }
-
-                tryHitCollider(collider, requireJab: true);
+                return;
             }
+
+            Character character = null;
+            if (collider.gameObject.layer == LayerUtils.CHARACTER)
+            {
+                character = collider.GetComponentInParent<Character>();
+            }
+
+            if (TryPet(collider, character))
+            {
+                return;
+            }
+
+            if (character == null || character.gameObject == Player.m_localPlayer.gameObject)
+            {
+                return;
+            }
+
+            var cooldown = collider.GetComponent<AttackTargetMeshCooldown>();
+            if (cooldown != null && cooldown.inCoolDown())
+            {
+                return;
+            }
+
+            tryHitCollider(collider, requireJab: true);
         }
 
         private void OnTriggerEnter(Collider collider)
@@ -153,27 +159,69 @@ namespace ValheimVRMod.Scripts
             if (debugColliderIndicator != null) Destroy(debugColliderIndicator);
         }
 
-        private void TryPet(Character character)
+        private bool TryPet(Collider collider, Character character)
         {
+            string hoverName;
+            Transform target = collider.transform;
+            EffectList petEffect = null;
+            if (character != null &&
+                character.gameObject != Player.m_localPlayer.gameObject &&
+                WeaponCollision.IsFriendly(character) &&
+                character.m_tamed)
+            {
+                hoverName = character.GetHoverName();
+                target = character.transform; 
+                Tameable tameable = character.GetComponentInChildren<Tameable>();
+                if (tameable != null)
+                {
+                    petEffect = tameable.m_petEffect;
+                }
+            }
+            else
+            {
+                Petable petable = collider.GetComponentInParent<Petable>();
+                if (petable != null)
+                {
+                    hoverName = petable.GetHoverName();
+                    target = petable.transform;
+                    petEffect = petable.m_petEffect;
+                }
+                else
+                {
+                    Trader trader = collider.GetComponentInParent<Trader>();
+                    if (trader != null)
+                    {
+                        hoverName = trader.GetHoverName();
+                        target = trader.transform;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+            }
+
             if (Player.m_localPlayer.IsRiding() || physicsEstimator.GetVelocity().magnitude < 0.5f)
             {
-                return;
+                return true;
             }
-            
+
             thisHand.hapticAction.Execute(0, 0.25f, 100, 0.25f, inputSource);
 
-            if (!character.m_tamed || Time.time - lastPetTime < 3f)
+            if (Time.time - lastPetTime > 3f)
             {
-                return;
+                lastPetTime = Time.time;
+                if (petEffect != null)
+                {
+                    petEffect.Create(target.position, target.rotation, null, 1f, -1);
+                }
+                if (hoverName != "")
+                {
+                    Player.m_localPlayer.Message(MessageHud.MessageType.Center, hoverName + " $hud_tamelove", 0, null);
+                }
             }
 
-            lastPetTime = Time.time;
-            var tameable = character.GetComponent<Tameable>();
-            if (tameable != null)
-            {
-                tameable.m_petEffect.Create(tameable.transform.position, tameable.transform.rotation, null, 1f, -1);
-            }
-            Player.m_localPlayer.Message(MessageHud.MessageType.Center, character.GetHoverName() + " $hud_tamelove", 0, null);
+            return true;
         }
 
         private void TryPushDoorOpen(Collider collider)
@@ -227,6 +275,10 @@ namespace ValheimVRMod.Scripts
                     return Grabbable.ENVIRONMENT;
                 case 0:
                     Transform parent = target.transform.parent;
+                    if (parent == null)
+                    {
+                        break;
+                    }
                     if (parent.GetComponent<StaticPhysics>() != null ||
                         parent.GetComponent<Piece>() != null ||
                         parent.GetComponent<TreeBase>() != null ||
