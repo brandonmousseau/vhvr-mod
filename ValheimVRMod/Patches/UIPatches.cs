@@ -1096,7 +1096,7 @@ namespace ValheimVRMod.Patches
             }
 
             var lastText = __instance.m_worldTexts.Last();
-            new GameObject().AddComponent<VRDamageTexts>().CreateText(lastText.m_textField.text, pos, lastText.m_textField.color, mySelf, __instance.m_textDuration);
+            VRDamageTexts.Pool().CreateText(lastText.m_textField.text, pos, lastText.m_textField.color, mySelf, __instance.m_textDuration);
         }
     }
     [HarmonyPatch(typeof(Player), nameof(Player.OnDeath))]
