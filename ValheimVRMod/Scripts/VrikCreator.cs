@@ -56,7 +56,7 @@ namespace ValheimVRMod.Scripts {
         private static void InitializeTargts(VRIK vrik, Transform leftController, Transform rightController, Transform camera, Transform pelvis, bool isLocalPlayer)
         {
             vrik.AutoDetectReferences();
-            if (!isLocalPlayer || !VHVRConfig.TrackFeet())
+            if (!isLocalPlayer)
             {
                 vrik.references.leftThigh = null;
                 vrik.references.leftCalf = null;
