@@ -101,10 +101,14 @@ namespace ValheimVRMod.Scripts
             {
                 if (isDoubleGrabbing)
                 {
-                    ApplySpeedControl(GetRowingShipSpeed(upDirection));
+                    ApplySpeedControl(GetRowingShipSpeed(upDirection, out int turnDirection));
+                    if (turnDirection != 0)
+                    {
+                        ship.ApplyControlls(new Vector3(turnDirection, 0, 0));
+                    }
                     return;
                 }
-                else if (wasDoubleGrabbing)
+                if (wasDoubleGrabbing)
                 {
                     ApplySpeedControl(Ship.Speed.Stop);
                     return;
@@ -117,7 +121,7 @@ namespace ValheimVRMod.Scripts
                     Vector3.Dot(
                         isLeftGrabbing ? VRPlayer.leftHandPhysicsEstimator.GetVelocity() : -VRPlayer.rightHandPhysicsEstimator.GetVelocity(),
                         ship.transform.forward);
-                shipControls.m_ship.ApplyControlls(
+                ship.ApplyControlls(
                     new Vector3(
                         speed < -MIN_RUDDER_TURN_SPEED ? -1 : speed > MIN_RUDDER_TURN_SPEED ? 1 : 0,
                         0,
@@ -165,18 +169,40 @@ namespace ValheimVRMod.Scripts
             }
         }
 
-        private Ship.Speed GetRowingShipSpeed(Vector3 upDirection)
+        private Ship.Speed GetRowingShipSpeed(Vector3 upDirection, out int turnDirection)
         {
             var ship = shipControls.m_ship;
-            var saggitalNormal = Vector3.Cross(upDirection, ship.transform.forward).normalized;
-            Vector3 saggitalArmSpan =
-                Vector3.ProjectOnPlane(VRPlayer.rightHandBone.position - VRPlayer.leftHandBone.position, saggitalNormal);
-            float speed =
+            var lateral = Vector3.Cross(upDirection, ship.transform.forward).normalized;
+            Vector3 saggitalArmSpanDirection =
+                Vector3.ProjectOnPlane(VRPlayer.rightHandBone.position - VRPlayer.leftHandBone.position, lateral).normalized;
+            float leftHandSpeed =
                 Vector3.Dot(
-                    Vector3.Cross(
-                        saggitalArmSpan.normalized,
-                        VRPlayer.rightHandPhysicsEstimator.GetAverageVelocityInSnapshots() - VRPlayer.leftHandPhysicsEstimator.GetAverageVelocityInSnapshots()),
-                    saggitalNormal);
+                    Vector3.Cross(VRPlayer.leftHandPhysicsEstimator.GetAverageVelocityInSnapshots(), saggitalArmSpanDirection),
+                    lateral);
+            float rightHandSpeed =
+                Vector3.Dot(
+                    Vector3.Cross(saggitalArmSpanDirection, VRPlayer.rightHandPhysicsEstimator.GetAverageVelocityInSnapshots()),
+                    lateral);
+            float speed = leftHandSpeed + rightHandSpeed;
+            float leftHandContribution = speed > 0 ? leftHandSpeed : -leftHandSpeed;
+            float rightHandContribution = speed > 0 ? rightHandSpeed : -rightHandSpeed;
+            if (leftHandContribution < 0.5f &&  rightHandContribution > 1)
+            {
+                turnDirection = -1;
+            } 
+            else if (leftHandContribution > 1 && rightHandContribution < 0.5f)
+            {
+                turnDirection = 1;
+            }
+            else if (leftHandContribution > 1.25f && rightHandContribution > 1.25f)
+            {
+                // Center the rudder.
+                turnDirection = ship.m_rudderValue < 0 ? 1 : ship.m_rudderValue == 0 ? 0 : -1;
+            }
+            else
+            {
+                turnDirection = 0;
+            }
 
             if (speed < -MIN_ROW_SPEED)
             {

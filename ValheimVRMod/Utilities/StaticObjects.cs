@@ -10,6 +10,8 @@ namespace ValheimVRMod.Utilities {
         private static WeaponCollision _rightWeaponCollider;
         private static FistCollision _leftFist;
         private static FistCollision _rightFist;
+        private static FootCollision _leftFootCollision;
+        private static FootCollision _rightFootCollision;
         public static GameObject leftHandQuickMenu;
         public static GameObject rightHandQuickMenu;
         private static GameObject _shieldObj;
@@ -34,7 +36,17 @@ namespace ValheimVRMod.Utilities {
         public static FistCollision rightFist() {
             return getCollisionScriptSphere(ref _rightFist);
         }
-        
+
+        public static FootCollision leftFootCollision()
+        {
+            return getCollisionScriptCube(ref _leftFootCollision);
+        }
+
+        public static FootCollision rightFootCollision()
+        {
+            return getCollisionScriptCube(ref _rightFootCollision);
+        }
+
         private static T getCollisionScriptCube<T>(ref T collisionScript) where T : Component{
             
             if (collisionScript != null) {
@@ -102,6 +114,13 @@ namespace ValheimVRMod.Utilities {
             _mouthCollider.transform.localPosition = new Vector3(0,-0.06f,0.04f);
             _mouthCollider.transform.localRotation = Quaternion.identity;
             _mouthCollider.transform.localScale = new Vector3(0.06f, 0.03f, 0.06f);
+        }
+
+        public static T GetOrAddComponent<T>(this GameObject gameObject) where T : Component
+        {
+            T component = gameObject.GetComponent<T>();
+            return component != null ? component : gameObject.AddComponent<T>();
+
         }
     }
 }

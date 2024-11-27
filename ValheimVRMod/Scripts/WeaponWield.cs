@@ -174,6 +174,16 @@ namespace ValheimVRMod.Scripts
         private TwoHandedGeometryProvider GetGeometryProvider
             (Vector3 longestLocalExtrusion, float distanceBetweenGripAndRearEnd, WeaponWieldSync.TwoHandedStateProvider twoHandedStateProvider)
         {
+            if (IsDundr())
+            {
+                return new TwoHandedGeometry.DundrGeometryProvider();
+            }
+
+            if (isLocal && EquipScript.getRight() == EquipType.Magic)
+            {
+                return new TwoHandedGeometry.StaffGeometryProvider(distanceBetweenGripAndRearEnd);
+            }
+
             switch (equipType)
             {
                 case EquipType.BattleAxe:
@@ -201,11 +211,6 @@ namespace ValheimVRMod.Scripts
                         return new TwoHandedGeometry.LocalSpearGeometryProvider();
                     }
                     break;
-            }
-
-            if (IsDundr())
-            {
-                return new TwoHandedGeometry.DundrGeometryProvider();
             }
 
             if (!isLocal && twoHandedStateProvider != null)

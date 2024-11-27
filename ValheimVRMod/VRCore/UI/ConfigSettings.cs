@@ -412,7 +412,7 @@ namespace ValheimVRMod.VRCore.UI {
             var chooserPrefab = Object.Instantiate(vanillaPrefab);
             chooserPrefab.transform.Find("LabelLeft").gameObject.SetActive(true);
             var rectTransform = chooserPrefab.GetComponent<RectTransform>();
-            rectTransform.sizeDelta = new Vector2(180, 30);
+            rectTransform.sizeDelta = new Vector2(150, 30);
             rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
             rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
             Transform stepper = chooserPrefab.transform.Find("GUIStepper");
@@ -424,7 +424,7 @@ namespace ValheimVRMod.VRCore.UI {
                     case "Value":
                         child.gameObject.SetActive(true);
                         child.GetComponent<RectTransform>().sizeDelta = new Vector2(-60, -5);
-                        child.GetComponentInChildren<TMP_Text>().fontSize = 6;
+                        child.GetComponentInChildren<TMP_Text>().fontSize = 5;
                         break;
                     case "Left":
                         child.gameObject.SetActive(true);
@@ -486,7 +486,7 @@ namespace ValheimVRMod.VRCore.UI {
             };
             toggle.GetComponentInChildren<TMP_Text>().text = configValue.Key;
             toggle.GetComponent<Toggle>().isOn = configValue.Value.GetSerializedValue() == "true";
-            toggle.GetComponent<RectTransform>().anchoredPosition = pos;
+            toggle.GetComponent<RectTransform>().anchoredPosition = pos + Vector2.right * 100;
         }
 
         private static GameObject createTransformButtonPrefab(GameObject vanillaLabel, GameObject vanillaButton)
