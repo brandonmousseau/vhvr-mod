@@ -9,6 +9,8 @@ namespace ValheimVRMod.Scripts.Block {
         private Collider leftHandBlockBox;
         private Collider rightHandBlockBox;
         private EquipType? currentEquipType = null;
+        private MeshRenderer leftHandBlockBoxRenderer;
+        private MeshRenderer rightHandBlockBoxRenderer;
 
         public static FistBlock instance;
 
@@ -96,6 +98,8 @@ namespace ValheimVRMod.Scripts.Block {
                 Quaternion.Euler(colliderData.euler);
             leftHandBlockBox.transform.localScale = rightHandBlockBox.transform.localScale =
                 colliderData.scale;
+
+            RefreshDebugRenderers();
         }
 
         private void CheckParryMotion(Vector3 hitDir, bool blockedWithLeftHand, bool blockedWithRightHand)
@@ -129,19 +133,29 @@ namespace ValheimVRMod.Scripts.Block {
             rightHandBlockBox.isTrigger = true;
             rightHandBlockBox.gameObject.layer = LayerUtils.CHARACTER;
 
+            leftHandBlockBoxRenderer = leftHandBlockBox.GetComponent<MeshRenderer>();
+            rightHandBlockBoxRenderer = rightHandBlockBox.GetComponent<MeshRenderer>();
+            leftHandBlockBoxRenderer.material = Object.Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
+            leftHandBlockBoxRenderer.material.color = new Vector4(0.5f, 0.25f, 0, 0.5f);
+            rightHandBlockBoxRenderer.material = Object.Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
+            rightHandBlockBoxRenderer.material.color = new Vector4(0.5f, 0.25f, 0, 0.5f);
+
+            RefreshDebugRenderers();
+        }
+
+        private void RefreshDebugRenderers()
+        {
             var leftHandBlockBoxRenderer = leftHandBlockBox.GetComponent<MeshRenderer>();
             var rightHandBlockBoxRenderer = rightHandBlockBox.GetComponent<MeshRenderer>();
             if (VHVRConfig.ShowDebugColliders())
             {
-                leftHandBlockBoxRenderer.material = Object.Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
-                leftHandBlockBoxRenderer.material.color = new Vector4(0.5f, 0.25f, 0, 0.5f);
-                rightHandBlockBoxRenderer.material = Object.Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
-                rightHandBlockBoxRenderer.material.color = new Vector4(0.5f, 0.25f, 0, 0.5f);
+                leftHandBlockBoxRenderer.enabled = true;
+                rightHandBlockBoxRenderer.enabled = true;
             }
             else
             {
-                Destroy(leftHandBlockBoxRenderer);
-                Destroy(rightHandBlockBoxRenderer);
+                leftHandBlockBoxRenderer.enabled = false;
+                rightHandBlockBoxRenderer.enabled = false;
             }
         }
     }

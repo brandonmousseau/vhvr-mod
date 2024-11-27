@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using ValheimVRMod.Utilities;
@@ -6,7 +7,9 @@ namespace ValheimVRMod.Scripts
 {
     class VRDamageTexts : MonoBehaviour
     {
-        private GameObject damageTextObject;
+        private const int MAX_COUNT = 16;
+        private static Queue<VRDamageTexts> pool = new Queue<VRDamageTexts>();
+
         private Canvas canvasText ;
         private Text currText;
         private Font ArialFont;
@@ -16,9 +19,27 @@ namespace ValheimVRMod.Scripts
 
         private static Camera vrCam;
 
+        public static VRDamageTexts Pool()
+        {
+            VRDamageTexts member = pool.Count < MAX_COUNT ? new GameObject().AddComponent<VRDamageTexts>() : pool.Dequeue();
+            member.gameObject.SetActive(true);
+            member.enabled = true;
+            pool.Enqueue(member);
+            return member;
+        }
+
         private void Awake()
         {
             ArialFont = (Font)Resources.GetBuiltinResource(typeof(Font), "Arial.ttf");
+            canvasText = gameObject.GetOrAddComponent<Canvas>();
+            canvasText.renderMode = RenderMode.WorldSpace;
+            currText = gameObject.GetOrAddComponent<Text>();
+            currText.fontSize = 80;
+            currText.font = ArialFont;
+            currText.horizontalOverflow = HorizontalWrapMode.Overflow;
+            currText.verticalOverflow = VerticalWrapMode.Overflow;
+            currText.alignment = TextAnchor.MiddleCenter;
+            currText.enabled = true;
         }
 
         private void OnRenderObject()
@@ -29,7 +50,7 @@ namespace ValheimVRMod.Scripts
             
             if (selfText)
             {
-                damageTextObject.transform.localPosition += new Vector3(0, dt / 300, dt / 2000);
+                gameObject.transform.localPosition += new Vector3(0, dt / 300, dt / 2000);
             }
             else
             {
@@ -39,15 +60,15 @@ namespace ValheimVRMod.Scripts
                 }
 
                 var camerapos = vrCam.transform.position;
-                var range = Mathf.Min(Vector3.Distance(damageTextObject.transform.position, camerapos)/20, 0.25f)*4;
-                damageTextObject.transform.localPosition += new Vector3(0, dt * range / 30, 0);
-                damageTextObject.transform.LookAt(vrCam.transform, Vector3.up);
-                damageTextObject.transform.Rotate(0, 180, 0);
+                var range = Mathf.Min(Vector3.Distance(gameObject.transform.position, camerapos)/20, 0.25f)*4;
+                gameObject.transform.localPosition += new Vector3(0, dt * range / 30, 0);
+                gameObject.transform.LookAt(vrCam.transform, Vector3.up);
+                gameObject.transform.Rotate(0, 180, 0);
             }
 
             if (timer > textDuration)
             {
-                Destroy(gameObject);
+                base.gameObject.SetActive(false);
                 return;
             }
 
@@ -58,51 +79,42 @@ namespace ValheimVRMod.Scripts
 
         public void CreateText(string text, Vector3 pos, Color color, bool myself,float textDur)
         {
-            damageTextObject = transform.gameObject;
-            canvasText = damageTextObject.AddComponent<Canvas>();
-            canvasText.renderMode = RenderMode.WorldSpace;
-            currText = damageTextObject.AddComponent<Text>();
-            currText.fontSize = 80;
-            currText.font = ArialFont;
-            currText.horizontalOverflow = HorizontalWrapMode.Overflow;
-            currText.verticalOverflow = VerticalWrapMode.Overflow;
-            currText.alignment = TextAnchor.MiddleCenter;
-            currText.enabled = true;
+            timer = 0;
 
             vrCam = CameraUtils.getCamera(CameraUtils.VR_CAMERA);
             if (myself)
             {
-                damageTextObject.transform.localScale *= 0.0004f;
-                damageTextObject.transform.SetParent(vrCam.transform);
+                transform.localScale = Vector3.one * 0.0004f;
+                transform.SetParent(vrCam.transform);
                 if (Hud.instance.m_healthText)
                 {
-                    Vector3 randomPos = new Vector3(UnityEngine.Random.Range(-1f, 1f), UnityEngine.Random.Range(-1f, 1f), 0) / 100;
-                    damageTextObject.transform.position = Hud.instance.m_healthText.transform.position;
-                    damageTextObject.transform.localPosition += Vector3.right * 0.05f + randomPos;
-                    damageTextObject.transform.rotation = Hud.instance.m_healthText.transform.rotation;
+                    Vector3 randomPos = new Vector3(Random.Range(-1f, 1f), UnityEngine.Random.Range(-1f, 1f), 0) / 100;
+                    transform.position = Hud.instance.m_healthText.transform.position;
+                    transform.localPosition += Vector3.right * 0.05f + randomPos;
+                    transform.rotation = Hud.instance.m_healthText.transform.rotation;
                 }
                 else
                 {
-                    Vector3 randomPos = new Vector3(UnityEngine.Random.Range(-1f, 1f), UnityEngine.Random.Range(-1f, 1f), 0) / 100;
+                    Vector3 randomPos = new Vector3(Random.Range(-1f, 1f), UnityEngine.Random.Range(-1f, 1f), 0) / 100;
                     float hudDistance = 1f;
                     float hudVerticalOffset = -0.5f;
-                    damageTextObject.transform.localPosition = new Vector3(VHVRConfig.CameraLockedPos().x, hudVerticalOffset + VHVRConfig.CameraLockedPos().y, hudDistance) + Vector3.right * 0.05f + Vector3.up * -0.1f + randomPos;
-                    damageTextObject.transform.LookAt(vrCam.transform, Vector3.up);
-                    damageTextObject.transform.Rotate(0, 180, 0);
+                    transform.localPosition = new Vector3(VHVRConfig.CameraLockedPos().x, hudVerticalOffset + VHVRConfig.CameraLockedPos().y, hudDistance) + Vector3.right * 0.05f + Vector3.up * -0.1f + randomPos;
+                    transform.LookAt(vrCam.transform, Vector3.up);
+                    transform.Rotate(0, 180, 0);
                 }
             }
             else
             {
                 var camerapos = vrCam.transform.position;
-                var range = Mathf.Max(Vector3.Distance(pos, camerapos)/6.5f, 0.2f) ;
-                damageTextObject.transform.localScale *= 0.0015f * range;
+                var range = Mathf.Max(Vector3.Distance(pos, camerapos) / 6.5f, 0.2f) ;
+                transform.localScale = Vector3.one * 0.0015f * range;
                 if (text.Length > 4)
                 {
-                    damageTextObject.transform.localScale /= 1 + text.Length/10;
+                    gameObject.transform.localScale /= 1 + text.Length/10;
                 }
-                damageTextObject.transform.position = pos ;
-                damageTextObject.transform.LookAt(vrCam.transform, Vector3.up);
-                damageTextObject.transform.Rotate(0, 180, 0);
+                transform.position = pos ;
+                transform.LookAt(vrCam.transform, Vector3.up);
+                transform.Rotate(0, 180, 0);
             }
             
             currText.text = text;
@@ -111,7 +123,6 @@ namespace ValheimVRMod.Scripts
             textDuration = textDur;
             selfText = myself;
             currText.gameObject.layer = LayerUtils.getWorldspaceUiLayer();
-            GameObject.Destroy(damageTextObject, textDur);
         }
     }
 }

@@ -103,12 +103,11 @@ namespace ValheimVRMod.Patches
                 return;
             }
 
-            // Calculate the current head local rotation
-            float currentHeadLocalRotation = Valve.VR.InteractionSystem.Player.instance.hmdTransform.localRotation.eulerAngles.y;
+            float currentLocalAngle = (Quaternion.Inverse(Valve.VR.InteractionSystem.Player.instance.hmdTransform.parent.rotation) * VRPlayer.pelvis.rotation).eulerAngles.y;
             if (previousHeadLocalRotation.HasValue)
             {
                 // Find the difference between the current rotation and previous rotation
-                float deltaRotation = currentHeadLocalRotation - previousHeadLocalRotation.Value;
+                float deltaRotation = currentLocalAngle - previousHeadLocalRotation.Value;
 
                 // Rotate the look yaw by the amount the player rotated their head since last iteration
                 ___m_lookYaw *= Quaternion.AngleAxis(deltaRotation, Vector3.up);
@@ -119,7 +118,7 @@ namespace ValheimVRMod.Patches
             }
 
             // Save the current rotation for use in next iteration
-            previousHeadLocalRotation = currentHeadLocalRotation;
+            previousHeadLocalRotation = currentLocalAngle;
         }
 
         public static void Postfix(Player __instance, ref Vector3 ___m_lookDir)
@@ -221,6 +220,7 @@ namespace ValheimVRMod.Patches
         {
             // TODO: Consider disabling face-look-direction patch whenever VRPlayer.attachedToPlayer is false as opposed to just when PlayerCustomizaton.IsBarberGuiVisible().
             return !VHVRConfig.NonVrPlayer() && player == Player.m_localPlayer && !PlayerCustomizaton.IsBarberGuiVisible() && !VRPlayer.inImmersiveDodge && !player.IsAttached();
+            // return false;
         }
 
         /// <summary>

@@ -25,7 +25,6 @@ namespace ValheimVRMod.Scripts
         private Transform pullStart; // Where the hand should grab to start pulling the string.
         private LineRenderer stringRenderer;
         private LineRenderer leverRenderer;
-        private Vector3 pullDirection;
         private float maxDrawDelta;
         private Transform mainHand;
         private ItemDrop.ItemData weapon;
@@ -129,7 +128,10 @@ namespace ValheimVRMod.Scripts
             else
             {
                 Vector3 handOffsetFromPivot = transform.InverseTransformPoint(mainHand.position) - leverPivot;
-                realLifeDrawPercentage = Mathf.Clamp01(0.5f - Vector3.Dot(handOffsetFromPivot, bowForward) / Vector3.Dot(handOffsetFromPivot, bowUp) * 0.5f);
+                realLifeDrawPercentage =
+                    Mathf.Clamp01(
+                        0.5f -
+                        Vector3.Dot(handOffsetFromPivot, bowForward) / Mathf.Max(Vector3.Dot(handOffsetFromPivot, bowUp), maxDrawDelta * 0.5f) * 0.5f);
             }
 
             MorphBow();
@@ -229,7 +231,6 @@ namespace ValheimVRMod.Scripts
             pullStart.parent = transform;
             pullStart.localPosition = anatomy.restingNockingPoint;
 
-            pullDirection = (anatomy.anchorPoint - anatomy.restingNockingPoint).normalized;
             maxDrawDelta = (anatomy.anchorPoint - anatomy.restingNockingPoint).magnitude;
 
             stringRenderer = gameObject.AddComponent<LineRenderer>();

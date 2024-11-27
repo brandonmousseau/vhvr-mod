@@ -174,6 +174,16 @@ namespace ValheimVRMod.Scripts
         private TwoHandedGeometryProvider GetGeometryProvider
             (Vector3 longestLocalExtrusion, float distanceBetweenGripAndRearEnd, WeaponWieldSync.TwoHandedStateProvider twoHandedStateProvider)
         {
+            if (IsDundr())
+            {
+                return new TwoHandedGeometry.DundrGeometryProvider();
+            }
+
+            if (isLocal && EquipScript.getRight() == EquipType.Magic)
+            {
+                return new TwoHandedGeometry.StaffGeometryProvider(distanceBetweenGripAndRearEnd);
+            }
+
             switch (equipType)
             {
                 case EquipType.BattleAxe:
@@ -203,11 +213,6 @@ namespace ValheimVRMod.Scripts
                     break;
             }
 
-            if (IsDundr())
-            {
-                return new TwoHandedGeometry.DundrGeometryProvider();
-            }
-
             if (!isLocal && twoHandedStateProvider != null)
             {
                 return new TwoHandedGeometry.RemoteGeometryProvider(distanceBetweenGripAndRearEnd, twoHandedStateProvider);
@@ -225,6 +230,8 @@ namespace ValheimVRMod.Scripts
             Vector3 GetPreferredTwoHandedWeaponUp(WeaponWield weaponWield);
             // The preferred forward offset amount of the weapon's position from the rear hand during two-handed wield.
             float GetPreferredOffsetFromRearHand(float handDist, bool rearHandIsDominant);
+
+            bool ShouldRotateHandForOneHandedWield();
         }
     }
 }

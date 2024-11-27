@@ -21,7 +21,6 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> useOverlayGui;
         private static ConfigEntry<string> pluginVersion;
         private static ConfigEntry<bool> bhapticsEnabled;
-        private static ConfigEntry<bool> showDebugColliders;
 
         // General Settings
         private static ConfigEntry<string> mirrorMode;
@@ -40,6 +39,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<string> immersiveShipCameraStanding;
         private static ConfigEntry<bool> immersiveDodgeRoll;
         private static ConfigEntry<bool> allowMovementWhenInMenu;
+        private static ConfigEntry<bool> showDebugColliders;
         private static ConfigEntry<int> hipTrackerIndex;
 
         // UI Settings
@@ -95,7 +95,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<int> quickBarQuantity;
 
         // Controls Settings
-        private static ConfigEntry<bool> useLookLocomotion;
+        private static ConfigEntry<string> joystickForwardDirection;
         private static ConfigEntry<string> dominantHand;
         private static ConfigEntry<bool> oneHandedBow;
         private static ConfigEntry<KeyCode> headReposFowardKey;
@@ -146,7 +146,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> useSpearDirectionGraphic;
         private static ConfigEntry<float> fullThrowSpeed;
         private static ConfigEntry<bool> spearInverseWield;
-        private static ConfigEntry<bool> twoHandedWield;
+        private static ConfigEntry<string> twoHandedWield;
         private static ConfigEntry<bool> twoHandedWithShield;
         private static ConfigEntry<float> arrowRestElevation;
         private static ConfigEntry<string> arrowRestSide;
@@ -268,10 +268,6 @@ namespace ValheimVRMod.Utilities
                 "bhapticsEnabled",
                 false,
                 "Enables bhaptics feedback. Only usable if vrModEnabled true AND nonVrPlayer false.");
-            showDebugColliders = createImmutableSettingWithOverride("Immutable",
-                "showDebugColliders",
-                false,
-                "Visualizes motion control colliders (e. g. weapon colliders and block colliders) for debug purposes.");
         }
 
         private static ConfigEntry<bool> createImmutableSettingWithOverride(
@@ -390,11 +386,19 @@ namespace ValheimVRMod.Utilities
                                           "AllowMovementWhenInMenu",
                                           true,
                                           "Allow player character movement when the menu is open. Note that in single player this has no effect due to game pause.");
+            showDebugColliders = config.Bind(
+                "General", "ShowDebugColliders", false, "Visualizes motion control colliders (e. g. weapon colliders and block colliders) for debug purposes.");
             hipTrackerIndex = config.Bind(
                 "General", "HipTrackerIndex", -1,
                 new ConfigDescription(
                     "The device index of the hip tracker. Setting to -1 disables hip tracking.",
                     new AcceptableValueRange<int>(-1, 16)));
+            hipTrackerIndex.SettingChanged += ((o, i) => VRPlayer.RequestPelvisCaliberation());
+        }
+
+        private static void HipTrackerIndex_SettingChanged(object sender, EventArgs e)
+        {
+            throw new NotImplementedException();
         }
 
         private static void InitializeUISettings()
@@ -620,12 +624,11 @@ namespace ValheimVRMod.Utilities
 
         private static void InitializeControlsSettings()
         {
-            useLookLocomotion = config.Bind("Controls",
-                                            "UseLookLocomotion",
-                                            true,
-                                            "Setting this to true ties the direction you are looking to the walk direction while in first person mode. " +
-                                            "Set this to false if you prefer to disconnect these so you can look" +
-                                            " look by turning your head without affecting movement direction.");
+            joystickForwardDirection = config.Bind(
+                "Controls", "JoyStickForwardDirection", "LookDirection",
+                new ConfigDescription(
+                    "The direction the character should move when the joystick is pushed forward",
+                    new AcceptableValueList<string>(new string[] { "LookDirection", "LeftController", "RightController", "Body", "Original" })));
             smoothTurnSpeed = config.Bind("Controls",
                                           "SmoothTurnSpeed",
                                           1f,
@@ -671,6 +674,7 @@ namespace ValheimVRMod.Utilities
                                           "TrackFeet",
                                           false,
                                           "Whether foot tracking should be enabled. May require restarting the game to take effect.");
+            trackFeet.SettingChanged += ((o, i) => VRPlayer.RequestPelvisCaliberation());
             gesturedLocomotion = config.Bind("Controls",
                                              "Gestured Locomotion",
                                              "None",
@@ -878,10 +882,11 @@ namespace ValheimVRMod.Utilities
                                                     true,
                                                     "Use this to toggle the direction line of throwing when using the spear with VR controls.");
             //Two-handed Changes
-            twoHandedWield = config.Bind("Motion Control",
-                                                    "TwoHandedWield",
-                                                    true,
-                                                    "Use this to toggle controls of two handed weapon (left & right hand grab on weapon), allow blocking and better weapon handling");
+            twoHandedWield = config.Bind(
+                "Motion Control", "TwoHandedWield", "NonSticky",
+                new ConfigDescription(
+                    "Use this to toggle controls of two handed weapon (left & right hand grab on weapon), allow blocking and better weapon handling.",
+                    new AcceptableValueList<string>(new string[] { "NonSticky", "Sticky", "Disabled" })));
             twoHandedWithShield = config.Bind("Motion Control",
                                                     "TwoHandedWithShield",
                                                     false,
@@ -1145,7 +1150,21 @@ namespace ValheimVRMod.Utilities
 
         public static bool UseLookLocomotion()
         {
-            return useLookLocomotion.Value;
+            return joystickForwardDirection.Value != "Original";
+        }
+        public static Vector3 GetJoystickForwardDirection(Transform head, Transform leftHand, Transform rightHand, Transform pelvis, Transform player) {
+            switch (joystickForwardDirection.Value) { 
+                case "LookDirection":
+                    return head.forward;
+                case "LeftController":
+                    return leftHand.forward;
+                case "RightController":
+                    return rightHand.forward;
+                case "Pelvis":
+                    return pelvis.forward;
+                default:
+                    return player.forward;
+            }
         }
 
         public static bool ShowStaticCrosshair()
@@ -1487,7 +1506,11 @@ namespace ValheimVRMod.Utilities
         }
         public static bool TwoHandedWield()
         {
-            return twoHandedWield.Value;
+            return twoHandedWield.Value != "Disabled";
+        }
+        public static bool StickyTwoHandedWield()
+        {
+            return twoHandedWield.Value == "Sticky";
         }
         public static bool TwoHandedWithShield()
         {

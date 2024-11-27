@@ -2,6 +2,7 @@ using System.Linq;
 using UnityEngine;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
+using Valve.VR;
 
 namespace ValheimVRMod.Scripts
 {
@@ -15,21 +16,35 @@ namespace ValheimVRMod.Scripts
         };
 
         private PhysicsEstimator physicsEstimator;
+        private GameObject debugColliderIndicator;
 
         private void Awake()
         {
+            // TODO: Consider abstracting the shared logic between FootCollision and FistCollision into an abstract base class.
             if (VHVRConfig.ShowDebugColliders())
             {
-                WeaponUtils.CreateDebugSphere(transform);
+                debugColliderIndicator = WeaponUtils.CreateDebugBox(transform);
             }
         }
-
 
         private void OnRenderObject()
         {
             // The collision object is affected by physics so its position and rotaiton
             // may need to force-updated to counteract the physics.
-            transform.localPosition = Vector3.zero;
+            transform.localPosition = new Vector3(0, 0.125f, 0);
+            transform.localRotation = Quaternion.identity;
+
+            if (VHVRConfig.ShowDebugColliders())
+            {
+                if (debugColliderIndicator == null)
+                {
+                    debugColliderIndicator = WeaponUtils.CreateDebugBox(transform);
+                }
+            }
+            else if (debugColliderIndicator != null)
+            {
+                Destroy(debugColliderIndicator);
+            }
         }
 
         private void OnTriggerEnter(Collider collider)
@@ -38,21 +53,26 @@ namespace ValheimVRMod.Scripts
             if (!VRPlayer.inFirstPerson ||
                 transform.parent == null ||
                 !VHVRConfig.TrackFeet() ||
-                collider.gameObject.layer == LayerUtils.TERRAIN ||
-                collider.GetComponentInParent<Player>() == player ||
                 player == null ||
                 player.IsRiding() ||
-                player.IsSitting())
+                player.IsSitting() ||
+                NONATTACKABLE_LAYERS.Contains(collider.gameObject.layer) ||
+                collider.GetComponentInParent<Player>() == player)
             {
+                return;
+            }
+
+            if (collider.gameObject.layer != LayerUtils.CHARACTER && !SteamVR_Actions.valheim_Use.GetState(SteamVR_Input_Sources.Any))
+            {
+                // When kicking anything other than a character, require pressing the grip so that the attack does not accidentally happen too easily.
                 return;
             }
 
             Vector3 step = VRPlayer.leftFoot.position - VRPlayer.rightFoot.position;
-            if (Mathf.Abs(Vector3.Dot(step, VRPlayer.vrCam.transform.up)) < 0.125f || step.magnitude < 0.25f)
+            if (Mathf.Abs(Vector3.Dot(step, VRPlayer.vrCam.transform.up)) < 0.125f && step.magnitude < 0.3f)
             {
                 return;
             }
-
 
             if (physicsEstimator == null)
             {
@@ -91,14 +111,19 @@ namespace ValheimVRMod.Scripts
             attack.Start(Player.m_localPlayer, null, null, Player.m_localPlayer.m_animEvent, null, item, null, 0.0f, 0.0f);
         }
 
+        void Destroy()
+        {
+            if (debugColliderIndicator != null) Destroy(debugColliderIndicator);
+        }
+
+        public void setColliderParent(Transform parent)
+        {
+            transform.parent = parent;
+            transform.localScale = new Vector3(0.22f, 0.7f, 0.375f);
+        }
+
         private bool tryHitTarget(GameObject target, bool isSecondaryAttack, float duration, float speed)
         {
-            // ignore certain Layers
-            if (NONATTACKABLE_LAYERS.Contains(target.layer))
-            {
-                return false;
-            }
-
             var attackTargetMeshCooldown = target.GetComponent<AttackTargetMeshCooldown>();
             if (attackTargetMeshCooldown == null)
             {
@@ -106,12 +131,6 @@ namespace ValheimVRMod.Scripts
             }
 
             return isSecondaryAttack ? attackTargetMeshCooldown.tryTriggerSecondaryAttack(duration) : attackTargetMeshCooldown.tryTriggerPrimaryAttack(duration, speed);
-        }
-
-        public void setColliderParent(Transform parent)
-        {
-            transform.parent = parent;
-            transform.localScale = Vector3.one * 0.3f;
         }
     }
 }

@@ -44,12 +44,13 @@ namespace ValheimVRMod.Scripts
         private EquipType? currentEquipType = null;
         private Vector3 desiredPosition;
         private Quaternion desiredRotation;
+        private GameObject debugColliderIndicator;
 
         private void Awake()
         {
             if (VHVRConfig.ShowDebugColliders())
             {
-                WeaponUtils.CreateDebugSphere(transform);
+                debugColliderIndicator = WeaponUtils.CreateDebugSphere(transform);
             }
         }
 
@@ -99,27 +100,53 @@ namespace ValheimVRMod.Scripts
                 }
             }
 
-            if (lastGrabbedType == Grabbable.NONE && handGesture.isHandFree() && collider.gameObject.layer == LayerUtils.CHARACTER)
+            if (lastGrabbedType != Grabbable.NONE || !handGesture.isHandFree())
             {
-                if (TryPet(collider))
-                {
-                    return;
-                }
-
-                var cooldown = collider.GetComponent<AttackTargetMeshCooldown>();
-                if (cooldown != null && cooldown.inCoolDown())
-                {
-                    return;
-                }
-
-                tryHitCollider(collider, requireJab: true);
+                return;
             }
+
+            Character character = null;
+            if (collider.gameObject.layer == LayerUtils.CHARACTER)
+            {
+                character = collider.GetComponentInParent<Character>();
+            }
+
+            if (TryPet(collider, character))
+            {
+                return;
+            }
+
+            if (character == null || character.gameObject == Player.m_localPlayer.gameObject)
+            {
+                return;
+            }
+
+            var cooldown = collider.GetComponent<AttackTargetMeshCooldown>();
+            if (cooldown != null && cooldown.inCoolDown())
+            {
+                return;
+            }
+
+            tryHitCollider(collider, requireJab: true);
         }
 
         private void OnTriggerEnter(Collider collider)
         {
             if (canAttackWithCollision())
             {
+                // When using bare hands or claws to attack anything other than an enemy character,
+                // require both pressing trigger and grip so that the attack does not accidentally happen too easily.
+                if (handGesture.isHandFree() && !SteamVR_Actions.valheim_Use.GetState(inputSource) && !SteamVR_Actions.valheim_UseLeft.GetState(inputSource)) {
+                    if (collider.gameObject.layer != LayerUtils.CHARACTER)
+                    {
+                        return;
+                    }
+                    Character character = collider.GetComponentInParent<Character>();
+                    if (character == null || WeaponCollision.IsFriendly(character))
+                    {
+                        return;
+                    }
+                }
                 tryHitCollider(collider, requireJab: false);
                 return;
             }
@@ -127,26 +154,71 @@ namespace ValheimVRMod.Scripts
             TryPushDoorOpen(collider);
         }
 
-        private bool TryPet(Collider collider)
+        void Destroy()
         {
+            if (debugColliderIndicator != null) Destroy(debugColliderIndicator);
+        }
+
+        private bool TryPet(Collider collider, Character character)
+        {
+            string hoverName;
+            Transform target = collider.transform;
+            EffectList petEffect = null;
+            if (character != null &&
+                character.gameObject != Player.m_localPlayer.gameObject &&
+                WeaponCollision.IsFriendly(character) &&
+                character.m_tamed)
+            {
+                hoverName = character.GetHoverName();
+                target = character.transform; 
+                Tameable tameable = character.GetComponentInChildren<Tameable>();
+                if (tameable != null)
+                {
+                    petEffect = tameable.m_petEffect;
+                }
+            }
+            else
+            {
+                Petable petable = collider.GetComponentInParent<Petable>();
+                if (petable != null)
+                {
+                    hoverName = petable.GetHoverName();
+                    target = petable.transform;
+                    petEffect = petable.m_petEffect;
+                }
+                else
+                {
+                    Trader trader = collider.GetComponentInParent<Trader>();
+                    if (trader != null)
+                    {
+                        hoverName = trader.GetHoverName();
+                        target = trader.transform;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+            }
+
             if (Player.m_localPlayer.IsRiding() || physicsEstimator.GetVelocity().magnitude < 0.5f)
             {
-                return false;
+                return true;
             }
-            
-            var character = collider.GetComponentInParent<Character>();
-            var tameable = character.GetComponent<Tameable>();
-            if (!character.m_tamed || tameable == null)
-            {
-                return false;
-            }
-            
+
             thisHand.hapticAction.Execute(0, 0.25f, 100, 0.25f, inputSource);
+
             if (Time.time - lastPetTime > 3f)
             {
                 lastPetTime = Time.time;
-                tameable.m_petEffect.Create(tameable.transform.position, tameable.transform.rotation, null, 1f, -1);
-                Player.m_localPlayer.Message(MessageHud.MessageType.Center, character.GetHoverName() + " $hud_tamelove", 0, null);
+                if (petEffect != null)
+                {
+                    petEffect.Create(target.position, target.rotation, null, 1f, -1);
+                }
+                if (hoverName != "")
+                {
+                    Player.m_localPlayer.Message(MessageHud.MessageType.Center, hoverName + " $hud_tamelove", 0, null);
+                }
             }
 
             return true;
@@ -195,23 +267,33 @@ namespace ValheimVRMod.Scripts
                 return Grabbable.PICKABLE;
             }
 
-            if (target.layer == LayerUtils.TERRAIN ||
-                target.layer == LayerUtils.PIECE ||
-                target.layer == LayerUtils.STATIC_SOLID ||
-                target.GetComponentInParent<StaticPhysics>() != null ||
-                target.GetComponentInParent<TreeBase>() != null)
+            switch (target.layer)
             {
-                return Grabbable.ENVIRONMENT;
+                case LayerUtils.TERRAIN:
+                case LayerUtils.PIECE:
+                case LayerUtils.STATIC_SOLID:
+                    return Grabbable.ENVIRONMENT;
+                case 0:
+                    Transform parent = target.transform.parent;
+                    if (parent == null)
+                    {
+                        break;
+                    }
+                    if (parent.GetComponent<StaticPhysics>() != null ||
+                        parent.GetComponent<Piece>() != null ||
+                        parent.GetComponent<TreeBase>() != null ||
+                        parent.GetComponent<RuneStone>() != null ||
+                        parent.GetComponent<Vegvisir>() != null ||
+                        parent.GetComponent<OfferingBowl>() != null)
+                    {
+                        return Grabbable.ENVIRONMENT;
+                    }
+                    
+                    // LogUtils.LogDebug("Cannot grab " + parent.name + " on layer " + parent.gameObject.layer);
+                    // LogUtils.LogComponents(parent.transform);
+                    break;
             }
 
-            if (target.layer == 0)
-            {
-                var piece = target.GetComponentInParent<Piece>();
-                if (piece != null && piece.gameObject.layer == LayerUtils.PIECE)
-                {
-                    return Grabbable.ENVIRONMENT;
-                }
-            }
 
             if (VHVRConfig.IsGesturedJumpEnabled() &&
                 target.layer == LayerUtils.CHARACTER &&
@@ -238,15 +320,16 @@ namespace ValheimVRMod.Scripts
             {
                 return;
             }
-
+            if (NONATTACKABLE_LAYERS.Contains(collider.gameObject.layer))
+            {
+                return;
+            }
             if (collider.gameObject.layer == LayerUtils.TERRAIN && !SteamVR_Actions.valheim_Grab.GetState(inputSource))
             {
                 // Prevent hitting terrain too easily.
                 return;
             }
-
-            var maybePlayer = collider.GetComponentInParent<Player>();
-            if (maybePlayer != null && maybePlayer == Player.m_localPlayer)
+            if (collider.GetComponentInParent<Player>() == Player.m_localPlayer)
             {
                 return;
             }
@@ -322,21 +405,15 @@ namespace ValheimVRMod.Scripts
             }
         }
 
-        private bool tryHitTarget(GameObject target, bool isSecondaryAttack, float duratrion, float speed)
+        private bool tryHitTarget(GameObject target, bool isSecondaryAttack, float duration, float speed)
         {
-            // ignore certain Layers
-            if (NONATTACKABLE_LAYERS.Contains(target.layer))
-            {
-                return false;
-            }
-
             var attackTargetMeshCooldown = target.GetComponent<AttackTargetMeshCooldown>();
             if (attackTargetMeshCooldown == null)
             {
                 attackTargetMeshCooldown = target.AddComponent<AttackTargetMeshCooldown>();
             }
 
-            return isSecondaryAttack ? attackTargetMeshCooldown.tryTriggerSecondaryAttack(duratrion) : attackTargetMeshCooldown.tryTriggerPrimaryAttack(duratrion, speed);
+            return isSecondaryAttack ? attackTargetMeshCooldown.tryTriggerSecondaryAttack(duration) : attackTargetMeshCooldown.tryTriggerPrimaryAttack(duration, speed);
         }
 
         private void OnRenderObject()
@@ -377,6 +454,18 @@ namespace ValheimVRMod.Scripts
                 colliderData.pos;
             desiredRotation = Quaternion.Euler(colliderData.euler);
             transform.localScale = colliderData.scale;
+
+            if (VHVRConfig.ShowDebugColliders())
+            {
+                if (debugColliderIndicator == null)
+                {
+                    WeaponUtils.CreateDebugSphere(transform);
+                }
+            }
+            else if (debugColliderIndicator != null)
+            {
+                Destroy(debugColliderIndicator);
+            }
         }
 
         private bool canAttackWithCollision()
@@ -409,7 +498,8 @@ namespace ValheimVRMod.Scripts
             if (handGesture.isHandFree())
             {
                 speed = handVelocity.magnitude;
-                isJab = Vector3.Angle(isRightHand ? VRPlayer.rightHandBone.up : VRPlayer.leftHandBone.up, handVelocity) < 30f && speed > 3f;
+                Transform handTransform = (isRightHand ? VRPlayer.rightHand : VRPlayer.leftHand).transform;
+                isJab = Vector3.Angle(handTransform.forward - handTransform.up, handVelocity) < 30f && speed > 3f;
                 return speed > VHVRConfig.SwingSpeedRequirement() * 0.45f;
             }
 

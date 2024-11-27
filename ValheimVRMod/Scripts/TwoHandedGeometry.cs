@@ -54,15 +54,42 @@ namespace ValheimVRMod.Scripts
                 return handDist - WeaponWield.HAND_CENTER_OFFSET;
             }
 
+            public virtual bool ShouldRotateHandForOneHandedWield()
+            {
+                return false;
+            }
+
             protected Vector3 GetSingleHandedPointingDirection(WeaponWield weaponWield)
             {
                 return GetDesiredSingleHandedRotation(weaponWield) * Quaternion.Inverse(weaponWield.offsetFromPointingDir) * Vector3.forward;
             }
         }
 
-        public class AtgeirGeometryProvider : DefaultGeometryProvider
+        public class ArmpitAnchoredGeometryProvider : DefaultGeometryProvider
         {
-            public AtgeirGeometryProvider(float distanceBetweenGripAndRearEnd) : base(distanceBetweenGripAndRearEnd)
+            public ArmpitAnchoredGeometryProvider(float distanceBetweenGripAndRearEnd) : base(distanceBetweenGripAndRearEnd)
+            {
+            }
+
+            public override Quaternion GetDesiredSingleHandedRotation(WeaponWield weaponWield)
+            {
+                Vector3 armpitAnchor = (VHVRConfig.LeftHanded() ? VRPlayer.vrikRef.references.leftUpperArm.position : VRPlayer.vrikRef.references.rightUpperArm.position);
+                armpitAnchor -= VRPlayer.vrikRef.references.chest.up * 0.25f;
+                return Quaternion.LookRotation(VRPlayer.dominantHand.transform.position - armpitAnchor, weaponWield.originalRotation * Vector3.up);
+            }
+
+            public override bool ShouldRotateHandForOneHandedWield()
+            {
+                return true;
+            }
+        }
+
+        public class AtgeirGeometryProvider : ArmpitAnchoredGeometryProvider
+        {
+            // Atgeir wield rotation fix: the tip of the atgeir is pointing at (0.328, -0.145, 0.934) in local coordinates.
+            private static readonly Quaternion ROTATION_ADJUST = Quaternion.Euler(353, 340, 0);
+
+            public AtgeirGeometryProvider(float distanceBetweenGripAndRearEnd) : base(distanceBetweenGripAndRearEnd * 0.7f)
             {
             }
 
@@ -73,8 +100,7 @@ namespace ValheimVRMod.Scripts
 
             public override Quaternion GetDesiredSingleHandedRotation(WeaponWield weaponWield)
             {
-                // Atgeir wield rotation fix: the tip of the atgeir is pointing at (0.328, -0.145, 0.934) in local coordinates.
-                return weaponWield.originalRotation * Quaternion.AngleAxis(-20, Vector3.up) * Quaternion.AngleAxis(-7, Vector3.right);
+                return base.GetDesiredSingleHandedRotation(weaponWield) * ROTATION_ADJUST;
             }
 
             public override float GetPreferredOffsetFromRearHand(float handDist, bool rearHandIsDominant)
@@ -88,15 +114,27 @@ namespace ValheimVRMod.Scripts
             }
         }
 
-        public class BattleaxeGeometryProvider : DefaultGeometryProvider
+        public class BattleaxeGeometryProvider : ArmpitAnchoredGeometryProvider
         {
-            public BattleaxeGeometryProvider(float distanceBetweenGripAndRearEnd) : base(distanceBetweenGripAndRearEnd)
+            public BattleaxeGeometryProvider(float distanceBetweenGripAndRearEnd) : base(distanceBetweenGripAndRearEnd * 0.3f)
             {
             }
 
             public override Vector3 GetDesiredSingleHandedPosition(WeaponWield weaponWield)
             {
-                return weaponWield.originalPosition - 0.5f * GetSingleHandedPointingDirection(weaponWield);
+                return ShouldRotateHandForOneHandedWield() ?
+                    weaponWield.originalPosition - 0.37f * GetSingleHandedPointingDirection(weaponWield) :
+                    weaponWield.originalPosition - 0.63f * GetSingleHandedPointingDirection(weaponWield);
+            }
+
+            public override Quaternion GetDesiredSingleHandedRotation(WeaponWield weaponWield)
+            {
+                return ShouldRotateHandForOneHandedWield() ? base.GetDesiredSingleHandedRotation(weaponWield) : weaponWield.originalRotation;
+            }
+
+            public override bool ShouldRotateHandForOneHandedWield()
+            {
+                return !SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource);
             }
         }
 
@@ -109,6 +147,26 @@ namespace ValheimVRMod.Scripts
             public override Vector3 GetDesiredSingleHandedPosition(WeaponWield weaponWield)
             {
                 return weaponWield.originalPosition - 0.3f * GetSingleHandedPointingDirection(weaponWield);
+            }
+        }
+
+        public class StaffGeometryProvider : DefaultGeometryProvider
+        {
+            private float twoHandedGripOffset;
+            public StaffGeometryProvider(float distanceBetweenGripAndRearEnd) : base(distanceBetweenGripAndRearEnd)
+            {
+                twoHandedGripOffset = distanceBetweenGripAndRearEnd * 0.25f;
+            }
+
+            public override float GetPreferredOffsetFromRearHand(float handDist, bool rearHandIsDominant)
+            {
+                if (rearHandIsDominant)
+                {
+                    return twoHandedGripOffset - WeaponWield.HAND_CENTER_OFFSET;
+                }
+
+                return base.GetPreferredOffsetFromRearHand(handDist, rearHandIsDominant);
+
             }
         }
 
@@ -140,6 +198,11 @@ namespace ValheimVRMod.Scripts
             public float GetPreferredOffsetFromRearHand(float handDist, bool rearHandIsDominant)
             {
                 return 0;
+            }
+
+            public bool ShouldRotateHandForOneHandedWield()
+            {
+                return false;
             }
         }
 
@@ -343,6 +406,11 @@ namespace ValheimVRMod.Scripts
             public float GetPreferredOffsetFromRearHand(float handDist, bool rearHandIsDominant)
             {
                 return CrossbowManager.INTERGRIP_DISTANCE;
+            }
+
+            public bool ShouldRotateHandForOneHandedWield()
+            {
+                return false;
             }
         }
 

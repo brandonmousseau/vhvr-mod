@@ -1,8 +1,6 @@
-using System;
 using UnityEngine;
 using ValheimVRMod.Scripts;
 using ValheimVRMod.VRCore;
-using Valve.VR;
 
 namespace ValheimVRMod.Utilities
 {
@@ -16,7 +14,15 @@ namespace ValheimVRMod.Utilities
                 case EquipType.Club:
                     return !IsStab(handPhysicsEstimator) && IsStrongSwing(collisionPhysicsEstimator, handPhysicsEstimator);
                 case EquipType.BattleAxe:
-                    return IsTwoHandedWithDominantHandInFront() && !IsStab(handPhysicsEstimator);
+                case EquipType.Polearms:
+                    if (!LocalWeaponWield.isCurrentlyTwoHanded() || LocalWeaponWield.IsDominantHandBehind || VRPlayer.vrCam == null)
+                    {
+                        return false;
+                    }
+                    Vector3 swipeAxis = Vector3.Cross(LocalWeaponWield.weaponForward, VRPlayer.vrCam.transform.parent.up);
+                    var dominantHandPhysicsEstimator = VHVRConfig.LeftHanded() ? VRPlayer.leftHandPhysicsEstimator : VRPlayer.rightHandPhysicsEstimator;
+                    float angle = Vector3.Angle(dominantHandPhysicsEstimator.GetVelocity(), swipeAxis);
+                    return angle < 30 || angle > 150;
                 case EquipType.Claws:
                 case EquipType.None:
                     return IsHook(handPhysicsEstimator);
@@ -34,8 +40,6 @@ namespace ValheimVRMod.Utilities
                         return IsStrongStab(handPhysicsEstimator) || IsHook(handPhysicsEstimator);
                     }
                     return false;
-                case EquipType.Polearms:
-                    return IsTwoHandedWithDominantHandInFront() && !IsStab(handPhysicsEstimator);
                 case EquipType.Sledge:
                     return false;
                 case EquipType.Sword:
@@ -43,11 +47,6 @@ namespace ValheimVRMod.Utilities
                 default:
                     return false;
             }
-        }
-
-        private static bool IsTwoHandedWithDominantHandInFront()
-        {
-            return LocalWeaponWield.isCurrentlyTwoHanded() && !LocalWeaponWield.IsDominantHandBehind;
         }
 
         private static Vector3 GetHandVelocitySum()
