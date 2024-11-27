@@ -1176,16 +1176,18 @@ namespace ValheimVRMod.VRCore
 
         private Vector3 inferPelvisFacingFromPlayerHeadingAndHands(Transform playerTransform, bool isPlayerAttached)
         {
+            Vector3 forward = isPlayerAttached ? Player.m_localPlayer.transform.forward : Vector3.ProjectOnPlane(_vrCam.transform.forward, _vrCameraRig.up);
             if (GesturedLocomotionManager.isInUse && Mathf.Abs(gesturedLocomotionManager.stickOutputY) > 0.25f)
             {
-                return playerTransform.forward;
+                return forward;
             }
+            Vector3 up = isPlayerAttached ? playerTransform.up : _vrCameraRig.up;
            
             Vector3 elbowSpan = rightHandBone.TransformPoint(-Vector3.up * 0.25f) - leftHandBone.TransformPoint(-Vector3.up * 0.25f);
-            Vector3 adjustment = Vector3.Cross(Vector3.ProjectOnPlane(elbowSpan, playerTransform.up), playerTransform.up);
+            Vector3 adjustment = Vector3.Cross(Vector3.ProjectOnPlane(elbowSpan, up), up);
 
             // Rotate pelvis slightly according to forearm positions
-            return isPlayerAttached ? playerTransform.forward + adjustment * 0.5f : playerTransform.forward + adjustment;
+            return isPlayerAttached ? forward + adjustment * 0.5f : forward + adjustment;
         }
 
 
@@ -1417,7 +1419,7 @@ namespace ValheimVRMod.VRCore
                 Destroy(Player.m_localPlayer.GetComponent<VRIK>());
                 maybeAddVrik(Player.m_localPlayer);
             }
-
+ 
             if (!VHVRConfig.IsHipTrackingEnabled())
             {
                 return;
