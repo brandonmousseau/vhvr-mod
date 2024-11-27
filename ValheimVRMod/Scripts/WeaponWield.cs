@@ -230,6 +230,8 @@ namespace ValheimVRMod.Scripts
             Vector3 GetPreferredTwoHandedWeaponUp(WeaponWield weaponWield);
             // The preferred forward offset amount of the weapon's position from the rear hand during two-handed wield.
             float GetPreferredOffsetFromRearHand(float handDist, bool rearHandIsDominant);
+
+            bool ShouldRotateHandForOneHandedWield();
         }
     }
 }
