@@ -58,9 +58,15 @@ namespace ValheimVRMod.Scripts
         protected override void OnDestroy()
         {
             VrikCreator.ResetHandConnectors();
+            LocalPlayerTwoHandedState = TwoHandedState.SingleHanded;
             Destroy(lastRenderedTransform.gameObject);
             Destroy(redDotRenderer.gameObject);
             base.OnDestroy();
+        }
+
+        protected void OnDisable()
+        {
+            LocalPlayerTwoHandedState = TwoHandedState.SingleHanded;
         }
 
         protected override Vector3 UpdateTwoHandedWield()
@@ -272,6 +278,10 @@ namespace ValheimVRMod.Scripts
 
         public static bool isCurrentlyTwoHanded()
         {
+            if (EquipScript.getLeft() == EquipType.None && EquipScript.getRight() == EquipType.None)
+            {
+                return false;
+            }
             return LocalPlayerTwoHandedState != TwoHandedState.SingleHanded;
         }
 
