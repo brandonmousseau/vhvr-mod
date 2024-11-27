@@ -555,7 +555,7 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return 0.0f;
             }
-            return walk.axis.x;
+            return GetJoyLeftStickInput().x;
         }
 
         public float GetJoyLeftStickY()
@@ -564,7 +564,7 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return 0.0f;
             }
-            return -walk.axis.y;
+            return GetJoyLeftStickInput().y;
         }
 
         public Vector2 GetJoyLeftStickInput()
@@ -573,9 +573,26 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return Vector2.zero;
             }
-            var input = walk.axis;
-            input.y = -input.y;
-            return input;
+
+            if (!VHVRConfig.UseLookLocomotion() || Player.m_localPlayer == null || VRPlayer.vrCam == null || VRPlayer.pelvis == null)
+            {
+                var input = walk.axis;
+                input.y = -input.y;
+                return input;
+            }
+
+            Transform playerTransform = Player.m_localPlayer.transform;
+            Vector3 joystickForward =
+                VHVRConfig.GetJoystickForwardDirection(
+                    VRPlayer.vrCam.transform,
+                    VRPlayer.leftHand?.transform ?? VRPlayer.vrCam.transform,
+                    VRPlayer.rightHand?.transform ?? VRPlayer.vrCam.transform,
+                    VRPlayer.pelvis,
+                    playerTransform);
+            Vector3 heading = Vector3.ProjectOnPlane(joystickForward, playerTransform.up).normalized;
+            Vector3 right = Vector3.Cross(playerTransform.up, heading);
+            Vector3 velocity = right * walk.axis.x + heading * walk.axis.y;
+            return new Vector2(Vector3.Dot(velocity, playerTransform.right), -Vector3.Dot(velocity, playerTransform.forward));
         }
 
         public float GetJoyRightStickX()
