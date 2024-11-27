@@ -95,7 +95,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<int> quickBarQuantity;
 
         // Controls Settings
-        private static ConfigEntry<bool> useLookLocomotion;
+        private static ConfigEntry<string> joystickForwardDirection;
         private static ConfigEntry<string> dominantHand;
         private static ConfigEntry<bool> oneHandedBow;
         private static ConfigEntry<KeyCode> headReposFowardKey;
@@ -624,12 +624,11 @@ namespace ValheimVRMod.Utilities
 
         private static void InitializeControlsSettings()
         {
-            useLookLocomotion = config.Bind("Controls",
-                                            "UseLookLocomotion",
-                                            true,
-                                            "Setting this to true ties the direction you are looking to the walk direction while in first person mode. " +
-                                            "Set this to false if you prefer to disconnect these so you can look" +
-                                            " look by turning your head without affecting movement direction.");
+            joystickForwardDirection = config.Bind(
+                "Controls", "JoyStickForwardDirection", "LookDirection",
+                new ConfigDescription(
+                    "The direction the character should move when the joystick is pushed forward",
+                    new AcceptableValueList<string>(new string[] { "LookDirection", "LeftController", "RightController", "Body", "Original" })));
             smoothTurnSpeed = config.Bind("Controls",
                                           "SmoothTurnSpeed",
                                           1f,
@@ -887,7 +886,7 @@ namespace ValheimVRMod.Utilities
                 "Motion Control", "TwoHandedWield", "NonSticky",
                 new ConfigDescription(
                     "Use this to toggle controls of two handed weapon (left & right hand grab on weapon), allow blocking and better weapon handling.",
-                    new AcceptableValueList<string>(new string[] { "Disabled", "NonSticky", "Sticky" })));
+                    new AcceptableValueList<string>(new string[] { "NonSticky", "Sticky", "Disabled" })));
             twoHandedWithShield = config.Bind("Motion Control",
                                                     "TwoHandedWithShield",
                                                     false,
@@ -1151,7 +1150,21 @@ namespace ValheimVRMod.Utilities
 
         public static bool UseLookLocomotion()
         {
-            return useLookLocomotion.Value;
+            return joystickForwardDirection.Value != "Original";
+        }
+        public static Vector3 GetJoystickForwardDirection(Transform head, Transform leftHand, Transform rightHand, Transform pelvis, Transform player) {
+            switch (joystickForwardDirection.Value) { 
+                case "LookDirection":
+                    return head.forward;
+                case "LeftController":
+                    return leftHand.forward;
+                case "RightController":
+                    return rightHand.forward;
+                case "Pelvis":
+                    return pelvis.forward;
+                default:
+                    return player.forward;
+            }
         }
 
         public static bool ShowStaticCrosshair()
