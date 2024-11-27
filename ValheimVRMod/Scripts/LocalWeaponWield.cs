@@ -25,6 +25,7 @@ namespace ValheimVRMod.Scripts
         private static Material RedDotMaterial = null;
         private MeshRenderer redDotRenderer; // Red dot for aiming
         private bool preparingToUnstickTwoHandedWield = false;
+        private bool rotatingHandConnectors;
 
         public Hand mainHand {
             get {
@@ -108,6 +109,7 @@ namespace ValheimVRMod.Scripts
             {
                 //VRIK Hand rotation
                 RotateHandsForTwoHandedWield(weaponForward);
+                rotatingHandConnectors = true;
                 // Adjust the positions so that they are rotated around the hand centers which are slightly off from their local origins.
                 Vector3 frontHandCenter = getHandCenter(frontHandTransform);
                 Vector3 rearHandCenter = getHandCenter(rearHandTransform);
@@ -118,14 +120,19 @@ namespace ValheimVRMod.Scripts
             }
             else
             {
-                if (wasTwoHanded)
+                if (rotatingHandConnectors)
                 {
                     VrikCreator.ResetHandConnectors();
                     shieldSize = 1f;
                 }
-                if (EquipScript.getRight() == EquipType.BattleAxe || EquipScript.getRight() == EquipType.Polearms)
+                if (geometryProvider.ShouldRotateHandForOneHandedWield())
                 {
-                    RotateHandForOneHandedPolearmWield(weaponForward);
+                    RotateHandForOneHandedWield(weaponForward);
+                    rotatingHandConnectors = true;
+                }
+                else
+                {
+                    rotatingHandConnectors = false;
                 }
             }
 
@@ -268,7 +275,7 @@ namespace ValheimVRMod.Scripts
             rearHandConnector.rotation = Quaternion.LookRotation(desiredRearHandForward, rearHandTransform.up);
         }
 
-        private void RotateHandForOneHandedPolearmWield(Vector3 weaponPointingDir)
+        private void RotateHandForOneHandedWield(Vector3 weaponPointingDir)
         {
             VrikCreator.GetLocalPlayerDominantHandConnector().rotation =
                 Quaternion.LookRotation(
