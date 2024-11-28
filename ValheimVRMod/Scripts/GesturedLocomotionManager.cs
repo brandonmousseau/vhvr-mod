@@ -410,7 +410,7 @@ namespace ValheimVRMod.Scripts
                 {
                     isWalkingOrRunningUsingGestures = false;
                 }
-                else if (ShouldStart(wheelDiameter, walkDirection, handSpeed))
+                else if (ShouldStart(wheelDiameter, walkDirection, walkSpeed))
                 {
                     isWalkingOrRunningUsingGestures = true;
                 }
@@ -457,13 +457,13 @@ namespace ValheimVRMod.Scripts
                 return SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(inputSource);
             }
 
-            private bool ShouldStart(Vector3 wheelDiameter, Vector3 walkDirection, float handSpeed)
+            private bool ShouldStart(Vector3 wheelDiameter, Vector3 walkDirection, float walkSpeed)
             {
-                if  (isStoppingWalkRunByButton() || handSpeed < 0.75f || wheelDiameter.magnitude < 0.5f)
+                if  (isStoppingWalkRunByButton() || walkSpeed < 0.5f || wheelDiameter.magnitude < 0.5f)
                 {
                     return false;
                 }
-                if (Vector3.ProjectOnPlane(wheelDiameter, upDirection.Value).magnitude < 0.75f && handSpeed < 2)
+                if (walkSpeed < 1.5f && Vector3.ProjectOnPlane(wheelDiameter, upDirection.Value).magnitude < 0.75f)
                 {
                     return false;
                 }
