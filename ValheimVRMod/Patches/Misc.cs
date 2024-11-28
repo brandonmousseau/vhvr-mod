@@ -9,6 +9,7 @@ using Unity.XR.OpenVR;
 using UnityEngine;
 using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
+using ValheimVRMod.VRCore;
 using Valve.VR;
 
 using static ValheimVRMod.Utilities.LogUtils;
@@ -381,28 +382,30 @@ namespace ValheimVRMod.Patches
     }
 
     [HarmonyPatch(typeof(Player), nameof(Player.OnDeath))]
-    class DisableFollowCameraOnDeathPatch
+    class PlayerOnDeathPatch
     {
         public static bool hasCharacterDied { get; private set; } = false;
         public static void Prefix(Player __instance)
         {
+            if (__instance != Player.m_localPlayer)
+            {
+                VRPlayerSync sync = __instance.GetComponent<VRPlayerSync>();
+                if (sync != null)
+                {
+                    sync.DestroyVrik();
+                }
+                return;
+            }
+
+            VRPlayer.DestroyVrik();
+
             var followCamera = CameraUtils.getCamera(CameraUtils.FOLLOW_CAMERA);
-            if (followCamera)
+            if (followCamera != null)
             {
                 hasCharacterDied = true;
                 // Disable the follow camera temporarily since it might interfere with the projection matrix of the main camera upon character death.
                 followCamera.enabled = false;
                 GameObject.Destroy(followCamera);
-            }
-            VRIK vrik = __instance.GetComponent<VRIK>();
-            if (vrik != null)
-            {
-                GameObject.Destroy(vrik);
-            }
-            VRPlayerSync sync = __instance.GetComponent<VRPlayerSync>();
-            if (sync != null)
-            {
-                GameObject.Destroy(sync);
             }
         }
     }
