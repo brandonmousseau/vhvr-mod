@@ -60,8 +60,7 @@ namespace ValheimVRMod.VRCore
         public const float ROOMSCALE_STEP_ANIMATION_SMOOTHING = 0.3f;
         public const float ROOMSCALE_ANIMATION_WEIGHT = 2f;
 
-        public static VRIK vrikRef { get { return _vrik; } }
-        private static VRIK _vrik;
+        public static VRIK vrikRef { get; private set; }
         private static SteamVR_TrackedObject hipTracker { get { return trackedObjects[hipTrackerIndex]; } }
         private static MeshRenderer hipTrackerRenderer;
         public static Transform pelvis { get; private set; }
@@ -288,6 +287,19 @@ namespace ValheimVRMod.VRCore
         public static void RequestPelvisCaliberation()
         {
             bodyTrackingCaliberationPending = true;
+        }
+
+        public static void DestroyVrik()
+        {
+            if (vrikRef == null)
+            {
+                return;
+            }
+
+            Destroy(vrikRef);
+            vrikRef = null;
+
+            LogUtils.LogDebug("Destroyed local player stale VRIK");
         }
 
         void Awake()
@@ -783,7 +795,7 @@ namespace ValheimVRMod.VRCore
                 return;
             }
 
-            if (DisableFollowCameraOnDeathPatch.hasCharacterDied && !attachedToPlayer)
+            if (PlayerOnDeathPatch.hasCharacterDied && !attachedToPlayer)
             {
                 // Do not enable follow camera until the VRCamera is attached to the player after character death,
                 // otherwise the projection matrix of the VRCamera might become wrong.
@@ -1041,13 +1053,13 @@ namespace ValheimVRMod.VRCore
         private void updateBodyTracking()
         {
             var player = Player.m_localPlayer;
-            var pelvisTarget = vrikRef?.solver?.spine?.pelvisTarget;
             if (!ensureBodyTrackers())
             {
                 return;
             }
 
-            if (player == null || pelvisTarget == null || !headPositionInitialized || _vrCam == null || !VHVRConfig.UseVrControls() || pausedMovement)
+            var pelvisTarget = vrikRef?.solver?.spine?.pelvisTarget;
+            if (player == null || vrikRef == null || pelvisTarget == null || !headPositionInitialized || _vrCam == null || !VHVRConfig.UseVrControls() || pausedMovement)
             {
                 return;
             }
@@ -1199,12 +1211,12 @@ namespace ValheimVRMod.VRCore
                 return;
             }
             maybeAddVrik(player);
-            if (_vrik == null)
+            if (vrikRef == null)
             {
                 return;
             }
 
-            _vrik.enabled =
+            vrikRef.enabled =
                 VHVRConfig.UseVrControls() &&
                 inFirstPerson &&
                 !player.InDodge() &&
@@ -1297,15 +1309,15 @@ namespace ValheimVRMod.VRCore
             var cam = CameraUtils.getCamera(CameraUtils.VR_CAMERA);
             (leftFoot != null ? leftFoot : (leftFoot = new GameObject().transform)).gameObject.GetOrAddComponent<PhysicsEstimator>().refTransform = _vrCameraRig;
             (rightFoot != null ? rightFoot : (rightFoot = new GameObject().transform)).gameObject.GetOrAddComponent<PhysicsEstimator>().refTransform = _vrCameraRig;
-            _vrik = VrikCreator.initialize(player.gameObject, leftHand.transform, rightHand.transform, cam.transform, pelvis);
+            vrikRef = VrikCreator.initialize(player.gameObject, leftHand.transform, rightHand.transform, cam.transform, pelvis);
             var vrPlayerSync = player.gameObject.GetComponent<VRPlayerSync>();
             vrPlayerSync.camera = cam.gameObject;
-            vrPlayerSync.leftHand = _vrik.solver.leftArm.target.parent.gameObject;
-            vrPlayerSync.rightHand = _vrik.solver.rightArm.target.parent.gameObject;
+            vrPlayerSync.leftHand = vrikRef.solver.leftArm.target.parent.gameObject;
+            vrPlayerSync.rightHand = vrikRef.solver.rightArm.target.parent.gameObject;
             vrPlayerSync.pelvis = pelvis.gameObject;
             VrikCreator.resetVrikHandTransform(player);
-            var leftHandGesture = _vrik.references.leftHand.gameObject.GetOrAddComponent<HandGesture>();
-            var rightHandGesture = _vrik.references.rightHand.gameObject.GetOrAddComponent<HandGesture>();
+            var leftHandGesture = vrikRef.references.leftHand.gameObject.GetOrAddComponent<HandGesture>();
+            var rightHandGesture = vrikRef.references.rightHand.gameObject.GetOrAddComponent<HandGesture>();
             leftHandGesture.sourceHand = leftHand;
             rightHandGesture.sourceHand = rightHand;
             StaticObjects.leftFist().setColliderParent(leftHandBone, leftHandGesture, false);
@@ -1412,12 +1424,6 @@ namespace ValheimVRMod.VRCore
             if (vrCam == null || vrCam.transform.parent == null || !headPositionInitialized || vrikRef?.solver?.spine?.pelvisTarget == null)
             {
                 return;
-            }
-
-            if (VHVRConfig.TrackFeet() != vrikTracksFeet)
-            {
-                Destroy(Player.m_localPlayer.GetComponent<VRIK>());
-                maybeAddVrik(Player.m_localPlayer);
             }
  
             if (!VHVRConfig.IsHipTrackingEnabled())
