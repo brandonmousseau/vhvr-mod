@@ -10,7 +10,7 @@ using static ValheimVRMod.Utilities.LogUtils;
 namespace ValheimVRMod.Scripts {
     public class VRPlayerSync : MonoBehaviour, WeaponWieldSync.TwoHandedStateProvider {
 
-        private VRIK vrik;
+        private VRIK vrikSync;
         
         static readonly float MIN_CHANGE = 0.001f;
         
@@ -59,7 +59,6 @@ namespace ValheimVRMod.Scripts {
         public int remotePlayerDominantHandItemHash;
         public bool hasReceivedData { get; private set; }
 
-
         private void Awake() {
             camera = new GameObject();
             rightHand = new GameObject();
@@ -86,6 +85,17 @@ namespace ValheimVRMod.Scripts {
             if (isValid() && !isOwner()) {
                 clientSync(dt);
             }
+        }
+
+        public void DestroyVrik()
+        {
+            if (vrikSync == null)
+            {
+                return;
+            }
+
+            Destroy(vrikSync);
+            vrikSync = null;
         }
 
         public WeaponWield.TwoHandedState GetTwoHandedState()
@@ -120,7 +130,7 @@ namespace ValheimVRMod.Scripts {
         
         public bool IsVrEnabled()
         {
-            return vrik != null;
+            return vrikSync != null;
         }
 
         private void calculateOwnerVelocities(float dt)
@@ -147,24 +157,24 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
+            if (vrikSync == null)
+            {
+                return;
+            }
+
             if (!fingersUpdated) {
                 return;
             }
             
-            var vrik = GetComponent<VRIK>();
-            if (vrik == null) {
-                return;
-            }
-            
-            applyFingers(vrik.references.leftHand, leftFingerRotations);
-            applyFingers(vrik.references.rightHand, rightFingerRotations);
+            applyFingers(vrikSync.references.leftHand, leftFingerRotations);
+            applyFingers(vrikSync.references.rightHand, rightFingerRotations);
             fingersUpdated = false;
         }
 
         // Transmit position, rotation, and velocity information to server
         private void ownerSync()
         {
-            if (!VHVRConfig.UseVrControls() || VRPlayer.ShouldPauseMovement) {
+            if (!VHVRConfig.UseVrControls() || VRPlayer.ShouldPauseMovement || VRPlayer.vrikRef == null) {
                 return;
             }
 
@@ -173,8 +183,8 @@ namespace ValheimVRMod.Scripts {
             writeData(pkg, leftHand, ownerVelocityLeft);
             writeData(pkg, rightHand, ownerVelocityRight);
             writeData(pkg, pelvis, ownerVelocityCamera);
-            writeFingers(pkg, GetComponent<VRIK>().references.leftHand);
-            writeFingers(pkg, GetComponent<VRIK>().references.rightHand);
+            writeFingers(pkg, VRPlayer.vrikRef.references.leftHand);
+            writeFingers(pkg, VRPlayer.vrikRef.references.rightHand);
             pkg.Write(BowLocalManager.instance != null && BowLocalManager.instance.pulling);
             pkg.Write(isLeftHanded = VHVRConfig.LeftHanded());
             pkg.Write((byte) (twoHandedState = LocalWeaponWield.LocalPlayerTwoHandedState));
@@ -233,11 +243,11 @@ namespace ValheimVRMod.Scripts {
             extractAndUpdate(pkg, ref pelvis, ref clientTempRelPosPelvis, hasTempRelPos);
 
             maybeAddVrik();
-            if (vrik != null)
+            if (vrikSync != null)
             {
                 // TODO: Consider creating a method that does this check and can be used both here
                 // and in VRPlayer.
-                vrik.enabled = !player.InDodge() && !player.IsStaggering() && !player.IsSleeping();
+                vrikSync.enabled = !player.InDodge() && !player.IsStaggering() && !player.IsSleeping();
             }
             hasTempRelPos = true;
             readFingers(pkg);
@@ -303,11 +313,11 @@ namespace ValheimVRMod.Scripts {
         }
 
         private void maybeAddVrik() {
-            if (vrik != null)
+            if (vrikSync != null)
             {
                 return;
             }
-            vrik =
+            vrikSync =
                 VrikCreator.initialize(
                     gameObject, leftHand.transform, rightHand.transform, camera.transform, pelvis.transform);
             VrikCreator.resetVrikHandTransform(player);
