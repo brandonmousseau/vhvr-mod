@@ -404,7 +404,7 @@ namespace ValheimVRMod.Scripts
                 Vector3 wheelDiameter = Vector3.ProjectOnPlane(handTransform.position - otherHandTransform.position, movementVerticalPlaneNormal);
 
                 float walkSpeed =
-                    Vector3.Dot(Vector3.Cross(wheelDiameter.normalized, handVelocity), movementVerticalPlaneNormal) * 0.75f;
+                    Vector3.Dot(Vector3.Cross(wheelDiameter.normalized, handVelocity), movementVerticalPlaneNormal);
 
                 if (ShouldStop(player, handSpeed))
                 {
@@ -463,7 +463,7 @@ namespace ValheimVRMod.Scripts
                 {
                     return false;
                 }
-                if (Vector3.ProjectOnPlane(wheelDiameter, upDirection.Value).magnitude < 0.5f && handSpeed < 2)
+                if (Vector3.ProjectOnPlane(wheelDiameter, upDirection.Value).magnitude < 0.75f && handSpeed < 2)
                 {
                     return false;
                 }
