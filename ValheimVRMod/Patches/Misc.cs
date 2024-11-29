@@ -398,6 +398,7 @@ namespace ValheimVRMod.Patches
             }
 
             VRPlayer.DestroyVrik();
+            StaticObjects.destroyQuickMenus();
 
             var followCamera = CameraUtils.getCamera(CameraUtils.FOLLOW_CAMERA);
             if (followCamera != null)
