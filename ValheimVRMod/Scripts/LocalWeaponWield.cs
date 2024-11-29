@@ -224,12 +224,6 @@ namespace ValheimVRMod.Scripts
                         return TwoHandedState.SingleHanded;
                     }
                 }
-                if (SteamVR_Actions.valheim_Grab.GetStateUp(VRPlayer.nonDominantHandInputSource) &&
-                    Mathf.Abs(Vector3.Dot(VRPlayer.dominantHand.otherHand.transform.forward, weaponForward)) < 0.7f)
-                {
-                    preparingToUnstickTwoHandedWield = false;
-                    return TwoHandedState.SingleHanded;
-                }
             }
             else if (!SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand) ||
                     !SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand))
