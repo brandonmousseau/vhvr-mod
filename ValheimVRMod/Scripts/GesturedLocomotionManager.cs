@@ -463,7 +463,7 @@ namespace ValheimVRMod.Scripts
                 {
                     return false;
                 }
-                if (walkSpeed < 1.5f && Vector3.ProjectOnPlane(wheelDiameter, upDirection.Value).magnitude < 0.75f)
+                if (walkSpeed < 2 && Vector3.ProjectOnPlane(wheelDiameter, upDirection.Value).magnitude < 1)
                 {
                     return false;
                 }
