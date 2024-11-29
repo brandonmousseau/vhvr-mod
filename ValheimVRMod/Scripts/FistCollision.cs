@@ -63,6 +63,11 @@ namespace ValheimVRMod.Scripts
                 LocalPlayerSecondaryAttackCooldown -= Time.fixedDeltaTime;
             }
 
+            if (handGesture == null)
+            {
+                return;
+            }
+
             if (!SteamVR_Actions.valheim_Grab.GetState(inputSource) || !handGesture.isHandFree())
             {
                 lastGrabbedType = Grabbable.NONE;
@@ -84,6 +89,11 @@ namespace ValheimVRMod.Scripts
 
         private void OnTriggerStay(Collider collider)
         {
+            if (handGesture == null)
+            {
+                return;
+            }
+
             if (handGesture.isHandFree() && SteamVR_Actions.valheim_Grab.GetStateDown(inputSource) && VRPlayer.vrCam != null)
             {
                 Grabbable newGrabbable = GetGrabbable(collider.gameObject);
@@ -132,6 +142,11 @@ namespace ValheimVRMod.Scripts
 
         private void OnTriggerEnter(Collider collider)
         {
+            if (handGesture == null)
+            {
+                return;
+            }
+
             if (canAttackWithCollision())
             {
                 // When using bare hands or claws to attack anything other than an enemy character,
@@ -193,6 +208,9 @@ namespace ValheimVRMod.Scripts
                     {
                         hoverName = trader.GetHoverName();
                         target = trader.transform;
+                        if (hoverName == "") {
+                            petEffect = trader.m_randomTalkFX;
+                        }
                     }
                     else
                     {
