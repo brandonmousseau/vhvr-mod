@@ -53,9 +53,15 @@ namespace ValheimVRMod.Scripts {
             return vrik;
         }
 
-        private static void InitializeTargts(VRIK vrik, Transform leftController, Transform rightController, Transform camera, Transform pelvis, bool isLocalPlayer)
+        private static bool InitializeTargts(VRIK vrik, Transform leftController, Transform rightController, Transform camera, Transform pelvis, bool isLocalPlayer)
         {
             vrik.AutoDetectReferences();
+
+            if (vrik.references.head == null || vrik.references.leftHand == null || vrik.references.rightHand == null)
+            {
+                return false;
+            }
+
             if (!isLocalPlayer)
             {
                 vrik.references.leftThigh = null;
@@ -112,6 +118,8 @@ namespace ValheimVRMod.Scripts {
             vrik.solver.locomotion.weight = 0;
             vrik.solver.spine.maxRootAngle = 180;
             vrik.solver.spine.minHeadHeight = 0;
+
+            return true;
         }
 
         private static bool IsPaused(VRIK vrik)
@@ -124,8 +132,13 @@ namespace ValheimVRMod.Scripts {
 
         public static VRIK initialize(GameObject playerGameObject, Transform leftController, Transform rightController, Transform camera, Transform pelvis) {
             VRIK vrik = CreateTargets(playerGameObject);
-            InitializeTargts(vrik, leftController, rightController, camera, pelvis, Player.m_localPlayer != null && playerGameObject == Player.m_localPlayer.gameObject);
-            return vrik;
+            bool success = InitializeTargts(vrik, leftController, rightController, camera, pelvis, Player.m_localPlayer != null && playerGameObject == Player.m_localPlayer.gameObject);
+            if (success)
+            {
+                return vrik;
+            }
+            GameObject.Destroy(vrik);
+            return null;
         }
 
         public static void resetVrikHandTransform(Humanoid player) {
