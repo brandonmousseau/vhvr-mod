@@ -57,7 +57,7 @@ namespace ValheimVRMod.Scripts {
         {
             vrik.AutoDetectReferences();
 
-            if (vrik.references.head == null || vrik.references.leftHand == null || vrik.references.rightHand == null)
+            if (vrik == null || vrik.references.head == null || vrik.references.leftHand == null || vrik.references.rightHand == null)
             {
                 return false;
             }
