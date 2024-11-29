@@ -79,11 +79,26 @@ namespace ValheimVRMod.Utilities {
             return collisionScript = collisionObj.AddComponent<T>();
         } 
         
+        public static void destroyQuickMenus()
+        {
+            if (leftHandQuickMenu != null)
+            {
+                GameObject.Destroy(leftHandQuickMenu);
+                leftHandQuickMenu = null;
+            }
+
+            if (rightHandQuickMenu != null)
+            {
+                GameObject.Destroy(rightHandQuickMenu);
+                rightHandQuickMenu = null;
+            }
+        }
+
         public static void addQuickMenus() {
+            destroyQuickMenus();
             leftHandQuickMenu = new GameObject();
             leftHandQuickMenu.AddComponent<LeftHandQuickMenu>();
             leftHandQuickMenu.SetActive(false);
-
             rightHandQuickMenu = new GameObject();
             rightHandQuickMenu.AddComponent<RightHandQuickMenu>();
             rightHandQuickMenu.SetActive(false);
