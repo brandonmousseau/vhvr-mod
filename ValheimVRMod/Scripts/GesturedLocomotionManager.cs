@@ -11,7 +11,7 @@ namespace ValheimVRMod.Scripts
         private const float GROUND_SPEED_CHANGE_DAMPER = 0.25f;
         private const float WATER_SPEED_CHANGE_DAMPER = 1f;
         private const float AIR_SPEED_CHANGE_DAMPER = 0.25f;
-        private const float RUN_ACITIVATION_SPEED = 1.375f;
+        private const float RUN_ACITIVATION_SPEED = 1.5f;
         private const float GROUND_RUN_DEACTIVATION_SPEED = 1.125f;
         private const float AIR_RUN_DEACTIVATION_SPEED = 0.125f;
         private const float MIN_WATER_SPEED = 0.0625f;
