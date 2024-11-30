@@ -677,10 +677,10 @@ namespace ValheimVRMod.Utilities
             trackFeet.SettingChanged += ((o, i) => VRPlayer.RequestPelvisCaliberation());
             gesturedLocomotion = config.Bind("Controls",
                                              "Gestured Locomotion",
-                                             "None",
+                                             "SwimAndSteeringOnly",
                                              new ConfigDescription(
                                                  "Enables using arm movements to swim, walk, run, and jump",
-                                                 new AcceptableValueList<string>(new string[] { "None", "SwimOnly", "Full" })));
+                                                 new AcceptableValueList<string>(new string[] { "None", "SwimAndSteeringOnly", "Full" })));
             gesturedJumpPreparationHeight = config.Bind("Controls",
                                           "GesturedJumpPreparationHeight",
                                           0.975f,
@@ -1406,7 +1406,12 @@ namespace ValheimVRMod.Utilities
 
         public static bool IsGesturedSwimEnabled()
         {
-            return gesturedLocomotion.Value == "Full" || gesturedLocomotion.Value == "SwimOnly";
+            return gesturedLocomotion.Value == "Full" || gesturedLocomotion.Value == "SwimAndSteeringOnly";
+        }
+
+        public static bool IsGesturedSteeringEnabled()
+        {
+            return gesturedLocomotion.Value == "Full" || gesturedLocomotion.Value == "SwimAndSteeringOnly";
         }
 
         public static bool IsGesturedJumpEnabled()
