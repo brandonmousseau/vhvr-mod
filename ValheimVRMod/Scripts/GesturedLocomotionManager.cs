@@ -257,7 +257,7 @@ namespace ValheimVRMod.Scripts
             public override Vector3 GetTargetVelocityFromGestures(Player player)
             {
                 // TODO: find a way to check if feather fall is effective and only enable gestured fly then.
-                if (!VHVRConfig.IsGesturedSwimEnabled() || !IsInAir(player))
+                if (!VHVRConfig.IsGesturedJumpEnabled() || !IsInAir(player))
                 {
                     return lastVelocity = Vector3.zero;
                 }
