@@ -459,7 +459,8 @@ namespace ValheimVRMod.Scripts
 
             private bool ShouldStart(Vector3 wheelDiameter, Vector3 walkDirection, float walkSpeed)
             {
-                if  (isStoppingWalkRunByButton() || walkSpeed < 0.5f || wheelDiameter.magnitude < 0.5f)
+                if  (SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.Any) ||
+                    walkSpeed < 0.5f || wheelDiameter.magnitude < 0.5f)
                 {
                     return false;
                 }
