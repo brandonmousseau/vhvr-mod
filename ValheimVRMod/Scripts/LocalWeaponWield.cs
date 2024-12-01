@@ -219,7 +219,7 @@ namespace ValheimVRMod.Scripts
                         preparingToUnstickTwoHandedWield = false;
                         return TwoHandedState.SingleHanded;
                     }
-                    if (Mathf.Abs(Vector3.Dot(VRPlayer.dominantHand.transform.forward, weaponForward)) < 0.85f)
+                    if (Mathf.Abs(Vector3.Dot(VRPlayer.dominantHand.transform.forward, weaponForward)) < 0.5f)
                     {
                         return TwoHandedState.SingleHanded;
                     }
