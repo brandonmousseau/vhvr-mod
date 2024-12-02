@@ -256,7 +256,7 @@ namespace ValheimVRMod.Scripts
 
             public override Vector3 GetTargetVelocityFromGestures(Player player)
             {
-                // TODO: find a way to check if feather fall is effective and only enable gestured fly then.
+                // TODO: find a performant way to check if feather fall is effective and only enable gestured fly then.
                 if (!VHVRConfig.IsGesturedJumpEnabled() || !IsInAir(player))
                 {
                     return lastVelocity = Vector3.zero;
@@ -268,45 +268,47 @@ namespace ValheimVRMod.Scripts
                     return lastVelocity = Vector3.zero;
                 }
 
-                if (SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.Any))
+                var handSpan = VRPlayer.rightHand.transform.position - VRPlayer.leftHand.transform.position;
+                handSpan.y = 0;
+                var handHorizontalDistance = handSpan.magnitude;
+
+                if (SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.Any) || handHorizontalDistance < 0.25f)
                 {
                     return lastVelocity;
                 }
 
-                var handSpan = VRPlayer.rightHand.transform.position - VRPlayer.leftHand.transform.position;
-                handSpan.y = 0;
-
-                if (lastVelocity == Vector3.zero && handSpan.magnitude < 0.75f)
+                if (lastVelocity == Vector3.zero && handHorizontalDistance < 1)
                 {
                     return Vector3.zero;
                 }
 
-                var leftHandSpeed = VRPlayer.leftHandPhysicsEstimator.GetVelocity().y;
-                var rightHandSpeed = VRPlayer.rightHandPhysicsEstimator.GetVelocity().y;
-                if (leftHandSpeed > -0.5f || rightHandSpeed > -0.5f)
-                {
-                    if (leftHandSpeed < 0.5f || rightHandSpeed < 0.5f)
-                    {
-                        return lastVelocity;
-                    }
-                }
-
-                if (leftHandSpeed < 0)
-                {
-                    leftHandSpeed *= 2;
-                }
-
-                if (rightHandSpeed < 0)
-                {
-                    rightHandSpeed *= 2;
-                }
-
+                var leftHandVelocity = VRPlayer.leftHandPhysicsEstimator.GetVelocity();
+                var rightHandVelocity = VRPlayer.rightHandPhysicsEstimator.GetVelocity();
+                var leftHandSpeed = leftHandVelocity.magnitude;
+                var rightHandSpeed = rightHandVelocity.magnitude;
                 var leftHandPalmar = VRPlayer.leftHand.transform.right;
                 var rightHandPalmar = -VRPlayer.rightHand.transform.right;
-                var velocity =
-                    new Vector3(-leftHandPalmar.x, 0, -leftHandPalmar.z) * leftHandPalmar.y * leftHandSpeed * Mathf.Abs(leftHandSpeed) +
-                    new Vector3(-rightHandPalmar.x, 0, -rightHandPalmar.z) * rightHandPalmar.y * rightHandSpeed * Mathf.Abs(rightHandSpeed);
-                return lastVelocity = Vector3.ProjectOnPlane(velocity, handSpan) * 2;
+                var leftHandPropulsion = Vector3.Dot(leftHandVelocity, leftHandPalmar);
+                var rightHandPropulsion = Vector3.Dot(rightHandVelocity, rightHandPalmar);
+                var leftHandContribution = (Mathf.Abs(Mathf.Abs(leftHandPropulsion) * 2 - leftHandSpeed) - leftHandSpeed) * leftHandPalmar;
+                var rightHandContribution = (Mathf.Abs(Mathf.Abs(rightHandPropulsion) * 2 - rightHandSpeed) - rightHandSpeed) * rightHandPalmar;
+                if (leftHandPropulsion < 0)
+                {
+                    leftHandContribution = -leftHandContribution;
+                }
+                if (rightHandPropulsion < 0)
+                {
+                    rightHandContribution = -rightHandContribution;
+                }
+                var velocity = Vector3.ProjectOnPlane(leftHandContribution + rightHandContribution, handSpan) * 4;
+                velocity.y = 0;
+
+                if (velocity.sqrMagnitude > 0.25f)
+                {
+                    lastVelocity = velocity;
+                }
+
+                return lastVelocity;
             }
         }
 
