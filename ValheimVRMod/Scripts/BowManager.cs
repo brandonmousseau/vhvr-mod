@@ -10,6 +10,9 @@ namespace ValheimVRMod.Scripts
     {
         // Constant used for detecting string mesh in the bow mesh.
         private const float minStringSize = 0.965f;
+        private static readonly Quaternion originalRotation = new Quaternion(0.4763422f, 0.420751f, 0.5951466f, 0.4918001f); // Euler Angles: 358.1498 78.91683 99.33968
+        // A more realistic rotation of the bow relative to hand.
+        private static readonly Quaternion adjustedRotation = Quaternion.Euler(0, 120, 90);
 
         // Vertices extracted from the bow mesh
         private Vector3[] verts;
@@ -37,7 +40,6 @@ namespace ValheimVRMod.Scripts
         private Vector3 bowRightInObjectSpace;
         private float stringLength;
 
-        protected readonly Quaternion originalRotation = new Quaternion(0.4763422f, 0.420751f, 0.5951466f, 0.4918001f); // Euler Angles: 358.1498 78.91683 99.33968
         protected Transform pullStart;
         // A transform centered and the bow handle center with up vector parallel to the string and pointing upward and forward vector pointing toward the shooting direction.
         protected Transform bowOrientation;
@@ -226,6 +228,9 @@ namespace ValheimVRMod.Scripts
                 boneWeights[i].weight0 = 1;
             }
             gripLocalHalfWidth = localGripLocalHalfWidth * bowScale;
+
+            bowOrientation.localRotation = adjustedRotation;
+            transform.SetPositionAndRotation(bowTransformUpdater.position, bowTransformUpdater.rotation);
 
             initialized = true;
         }
@@ -418,7 +423,7 @@ namespace ValheimVRMod.Scripts
             {
                 wasPulling = false;
                 pullObj.transform.position = pullStart.position;
-                bowOrientation.localRotation = originalRotation;
+                bowOrientation.localRotation = adjustedRotation;
                 transform.SetPositionAndRotation(bowTransformUpdater.position, bowTransformUpdater.rotation);
             }
 
