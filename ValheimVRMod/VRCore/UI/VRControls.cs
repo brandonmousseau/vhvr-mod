@@ -45,7 +45,7 @@ namespace ValheimVRMod.VRCore.UI
         private SteamVR_Action_Vector2 walk;
         private SteamVR_Action_Vector2 pitchAndYaw;
         private SteamVR_Action_Vector2 buildPitchAndYaw; //for the same logic as zInputToBooleanAction, this is needed for controllers that have multiple actionsets using the trackpad
-        private float combinedPitchAndYawX => buildPitchAndYaw.active ? buildPitchAndYaw.axis.x : pitchAndYaw.axis.x;
+        private float combinedPitchAndYawX => (buildPitchAndYaw.active ? buildPitchAndYaw.axis.x : pitchAndYaw.axis.x)* VHVRConfig.TurnAxisModifier();
 
         private SteamVR_Action_Vector2 contextScroll;
 
