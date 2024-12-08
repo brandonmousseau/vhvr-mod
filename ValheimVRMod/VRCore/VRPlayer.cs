@@ -1302,7 +1302,7 @@ namespace ValheimVRMod.VRCore
 
         private void maybeAddVrik(Player player)
         {
-            if (!VHVRConfig.UseVrControls() || player.gameObject.GetComponent<VRIK>() != null || !attachedToPlayer)
+            if (!VHVRConfig.UseVrControls() || vrikRef != null || !attachedToPlayer)
             {
                 return;
             }
@@ -1310,6 +1310,10 @@ namespace ValheimVRMod.VRCore
             (leftFoot != null ? leftFoot : (leftFoot = new GameObject().transform)).gameObject.GetOrAddComponent<PhysicsEstimator>().refTransform = _vrCameraRig;
             (rightFoot != null ? rightFoot : (rightFoot = new GameObject().transform)).gameObject.GetOrAddComponent<PhysicsEstimator>().refTransform = _vrCameraRig;
             vrikRef = VrikCreator.initialize(player.gameObject, leftHand.transform, rightHand.transform, cam.transform, pelvis);
+            if (vrikRef == null)
+            {
+                return;
+            }
             var vrPlayerSync = player.gameObject.GetComponent<VRPlayerSync>();
             vrPlayerSync.camera = cam.gameObject;
             vrPlayerSync.leftHand = vrikRef.solver.leftArm.target.parent.gameObject;
@@ -1330,10 +1334,7 @@ namespace ValheimVRMod.VRCore
             reining.leftHandGesture = leftHandGesture;
             reining.rightHandGesture = rightHandGesture;
             StaticObjects.mouthCollider(cam.transform);
-            if (StaticObjects.leftHandQuickMenu == null || StaticObjects.rightHandQuickMenu == null)
-            {
-                StaticObjects.addQuickMenus();
-            }
+            StaticObjects.addQuickMenus();
             LeftHandQuickMenu.instance.refreshItems();
             RightHandQuickMenu.instance.refreshItems();
             vrikTracksFeet = VHVRConfig.TrackFeet();

@@ -202,7 +202,7 @@ namespace ValheimVRMod.Scripts
                 return TwoHandedState.SingleHanded;
             }
 
-            if (wasTwoHanded && VHVRConfig.StickyTwoHandedWield())
+            if (wasTwoHanded && VHVRConfig.StickyTwoHandedWield() && EquipScript.getRight() != EquipType.Crossbow)
             {
                 if (SteamVR_Actions.valheim_Grab.GetStateDown(VRPlayer.dominantHandInputSource))
                 {
@@ -219,16 +219,10 @@ namespace ValheimVRMod.Scripts
                         preparingToUnstickTwoHandedWield = false;
                         return TwoHandedState.SingleHanded;
                     }
-                    if (Mathf.Abs(Vector3.Dot(VRPlayer.dominantHand.transform.forward, weaponForward)) < 0.85f)
+                    if (Mathf.Abs(Vector3.Dot(VRPlayer.dominantHand.transform.forward, weaponForward)) < 0.5f)
                     {
                         return TwoHandedState.SingleHanded;
                     }
-                }
-                if (SteamVR_Actions.valheim_Grab.GetStateUp(VRPlayer.nonDominantHandInputSource) &&
-                    Mathf.Abs(Vector3.Dot(VRPlayer.dominantHand.otherHand.transform.forward, weaponForward)) < 0.85f)
-                {
-                    preparingToUnstickTwoHandedWield = false;
-                    return TwoHandedState.SingleHanded;
                 }
             }
             else if (!SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand) ||

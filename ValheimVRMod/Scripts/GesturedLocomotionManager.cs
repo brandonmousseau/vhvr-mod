@@ -11,7 +11,7 @@ namespace ValheimVRMod.Scripts
         private const float GROUND_SPEED_CHANGE_DAMPER = 0.25f;
         private const float WATER_SPEED_CHANGE_DAMPER = 1f;
         private const float AIR_SPEED_CHANGE_DAMPER = 0.25f;
-        private const float RUN_ACITIVATION_SPEED = 1.375f;
+        private const float RUN_ACITIVATION_SPEED = 1.75f;
         private const float GROUND_RUN_DEACTIVATION_SPEED = 1.125f;
         private const float AIR_RUN_DEACTIVATION_SPEED = 0.125f;
         private const float MIN_WATER_SPEED = 0.0625f;
@@ -256,8 +256,8 @@ namespace ValheimVRMod.Scripts
 
             public override Vector3 GetTargetVelocityFromGestures(Player player)
             {
-                // TODO: find a way to check if feather fall is effective and only enable gestured fly then.
-                if (!VHVRConfig.IsGesturedSwimEnabled() || !IsInAir(player))
+                // TODO: find a performant way to check if feather fall is effective and only enable gestured fly then.
+                if (!VHVRConfig.IsGesturedJumpEnabled() || !IsInAir(player))
                 {
                     return lastVelocity = Vector3.zero;
                 }
@@ -268,45 +268,47 @@ namespace ValheimVRMod.Scripts
                     return lastVelocity = Vector3.zero;
                 }
 
-                if (SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.Any))
+                var handSpan = VRPlayer.rightHand.transform.position - VRPlayer.leftHand.transform.position;
+                handSpan.y = 0;
+                var handHorizontalDistance = handSpan.magnitude;
+
+                if (SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.Any) || handHorizontalDistance < 0.25f)
                 {
                     return lastVelocity;
                 }
 
-                var handSpan = VRPlayer.rightHand.transform.position - VRPlayer.leftHand.transform.position;
-                handSpan.y = 0;
-
-                if (lastVelocity == Vector3.zero && handSpan.magnitude < 0.75f)
+                if (lastVelocity == Vector3.zero && handHorizontalDistance < 1)
                 {
                     return Vector3.zero;
                 }
 
-                var leftHandSpeed = VRPlayer.leftHandPhysicsEstimator.GetVelocity().y;
-                var rightHandSpeed = VRPlayer.rightHandPhysicsEstimator.GetVelocity().y;
-                if (leftHandSpeed > -0.5f || rightHandSpeed > -0.5f)
-                {
-                    if (leftHandSpeed < 0.5f || rightHandSpeed < 0.5f)
-                    {
-                        return lastVelocity;
-                    }
-                }
-
-                if (leftHandSpeed < 0)
-                {
-                    leftHandSpeed *= 2;
-                }
-
-                if (rightHandSpeed < 0)
-                {
-                    rightHandSpeed *= 2;
-                }
-
+                var leftHandVelocity = VRPlayer.leftHandPhysicsEstimator.GetVelocity();
+                var rightHandVelocity = VRPlayer.rightHandPhysicsEstimator.GetVelocity();
+                var leftHandSpeed = leftHandVelocity.magnitude;
+                var rightHandSpeed = rightHandVelocity.magnitude;
                 var leftHandPalmar = VRPlayer.leftHand.transform.right;
                 var rightHandPalmar = -VRPlayer.rightHand.transform.right;
-                var velocity =
-                    new Vector3(-leftHandPalmar.x, 0, -leftHandPalmar.z) * leftHandPalmar.y * leftHandSpeed * Mathf.Abs(leftHandSpeed) +
-                    new Vector3(-rightHandPalmar.x, 0, -rightHandPalmar.z) * rightHandPalmar.y * rightHandSpeed * Mathf.Abs(rightHandSpeed);
-                return lastVelocity = Vector3.ProjectOnPlane(velocity, handSpan) * 2;
+                var leftHandPropulsion = Vector3.Dot(leftHandVelocity, leftHandPalmar);
+                var rightHandPropulsion = Vector3.Dot(rightHandVelocity, rightHandPalmar);
+                var leftHandContribution = (Mathf.Abs(Mathf.Abs(leftHandPropulsion) * 2 - leftHandSpeed) - leftHandSpeed) * leftHandPalmar;
+                var rightHandContribution = (Mathf.Abs(Mathf.Abs(rightHandPropulsion) * 2 - rightHandSpeed) - rightHandSpeed) * rightHandPalmar;
+                if (leftHandPropulsion < 0)
+                {
+                    leftHandContribution = -leftHandContribution;
+                }
+                if (rightHandPropulsion < 0)
+                {
+                    rightHandContribution = -rightHandContribution;
+                }
+                var velocity = Vector3.ProjectOnPlane(leftHandContribution + rightHandContribution, handSpan) * 4;
+                velocity.y = 0;
+
+                if (velocity.sqrMagnitude > 0.25f)
+                {
+                    lastVelocity = velocity;
+                }
+
+                return lastVelocity;
             }
         }
 
@@ -410,7 +412,7 @@ namespace ValheimVRMod.Scripts
                 {
                     isWalkingOrRunningUsingGestures = false;
                 }
-                else if (ShouldStart(wheelDiameter, walkDirection, handSpeed))
+                else if (ShouldStart(wheelDiameter, walkDirection, walkSpeed))
                 {
                     isWalkingOrRunningUsingGestures = true;
                 }
@@ -457,13 +459,14 @@ namespace ValheimVRMod.Scripts
                 return SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(inputSource);
             }
 
-            private bool ShouldStart(Vector3 wheelDiameter, Vector3 walkDirection, float handSpeed)
+            private bool ShouldStart(Vector3 wheelDiameter, Vector3 walkDirection, float walkSpeed)
             {
-                if  (isStoppingWalkRunByButton() || handSpeed < 0.75f || wheelDiameter.magnitude < 0.5f)
+                if  (SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.Any) ||
+                    walkSpeed < 0.5f || wheelDiameter.magnitude < 0.5f)
                 {
                     return false;
                 }
-                if (Vector3.ProjectOnPlane(wheelDiameter, upDirection.Value).magnitude < 0.75f && handSpeed < 2)
+                if (walkSpeed < 2 && Vector3.ProjectOnPlane(wheelDiameter, upDirection.Value).magnitude < 1)
                 {
                     return false;
                 }

@@ -10,7 +10,7 @@ using static ValheimVRMod.Utilities.LogUtils;
 
 namespace ValheimVRMod
 {
-    [BepInPlugin("org.bepinex.plugins.valheimvrmod", "ValheimVR Mod", "0.9.18")]
+    [BepInPlugin("org.bepinex.plugins.valheimvrmod", "ValheimVR Mod", "0.9.19")]
     public class ValheimVRMod : BaseUnityPlugin
     {
 

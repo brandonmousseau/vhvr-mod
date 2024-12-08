@@ -8,7 +8,7 @@ namespace ValheimVRMod.Scripts
     class VRDamageTexts : MonoBehaviour
     {
         private const int MAX_COUNT = 16;
-        private static Queue<VRDamageTexts> pool = new Queue<VRDamageTexts>();
+        private static readonly Queue<VRDamageTexts> pool = new Queue<VRDamageTexts>();
 
         private Canvas canvasText ;
         private Text currText;
@@ -22,6 +22,10 @@ namespace ValheimVRMod.Scripts
         public static VRDamageTexts Pool()
         {
             VRDamageTexts member = pool.Count < MAX_COUNT ? new GameObject().AddComponent<VRDamageTexts>() : pool.Dequeue();
+            if (member == null || member.gameObject == null)
+            {
+                member = new GameObject().AddComponent<VRDamageTexts>();
+            }
             member.gameObject.SetActive(true);
             member.enabled = true;
             pool.Enqueue(member);

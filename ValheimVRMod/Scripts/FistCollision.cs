@@ -63,6 +63,11 @@ namespace ValheimVRMod.Scripts
                 LocalPlayerSecondaryAttackCooldown -= Time.fixedDeltaTime;
             }
 
+            if (handGesture == null)
+            {
+                return;
+            }
+
             if (!SteamVR_Actions.valheim_Grab.GetState(inputSource) || !handGesture.isHandFree())
             {
                 lastGrabbedType = Grabbable.NONE;
@@ -84,6 +89,11 @@ namespace ValheimVRMod.Scripts
 
         private void OnTriggerStay(Collider collider)
         {
+            if (handGesture == null)
+            {
+                return;
+            }
+
             if (handGesture.isHandFree() && SteamVR_Actions.valheim_Grab.GetStateDown(inputSource) && VRPlayer.vrCam != null)
             {
                 Grabbable newGrabbable = GetGrabbable(collider.gameObject);
@@ -132,6 +142,11 @@ namespace ValheimVRMod.Scripts
 
         private void OnTriggerEnter(Collider collider)
         {
+            if (handGesture == null)
+            {
+                return;
+            }
+
             if (canAttackWithCollision())
             {
                 // When using bare hands or claws to attack anything other than an enemy character,
@@ -164,11 +179,15 @@ namespace ValheimVRMod.Scripts
             string hoverName;
             Transform target = collider.transform;
             EffectList petEffect = null;
-            if (character != null &&
-                character.gameObject != Player.m_localPlayer.gameObject &&
-                WeaponCollision.IsFriendly(character) &&
-                character.m_tamed)
+            if (character != null)
             {
+                if (character.gameObject == Player.m_localPlayer.gameObject ||
+                    !character.m_tamed ||
+                    !WeaponCollision.IsFriendly(character))
+                {
+                    return false;
+                }
+
                 hoverName = character.GetHoverName();
                 target = character.transform; 
                 Tameable tameable = character.GetComponentInChildren<Tameable>();
@@ -177,22 +196,33 @@ namespace ValheimVRMod.Scripts
                     petEffect = tameable.m_petEffect;
                 }
             }
-            else
+            else if (collider.gameObject.layer != 0)
             {
-                Petable petable = collider.GetComponentInParent<Petable>();
-                if (petable != null)
+                return false;
+            }
+            else 
+            {
+                Trader trader = collider.GetComponent<Trader>();
+                if (trader != null)
                 {
-                    hoverName = petable.GetHoverName();
-                    target = petable.transform;
-                    petEffect = petable.m_petEffect;
+                    hoverName = trader.GetHoverName();
+                    target = trader.transform;
+                    if (hoverName == "")
+                    {
+                        petEffect = trader.m_randomTalkFX;
+                    }
+                }
+                else if (collider.transform.parent == null)
+                {
+                    return false;
                 }
                 else
                 {
-                    Trader trader = collider.GetComponentInParent<Trader>();
-                    if (trader != null)
+                    Petable petable = collider.transform.parent.GetComponent<Petable>();
+                    if (petable != null)
                     {
-                        hoverName = trader.GetHoverName();
-                        target = trader.transform;
+                        hoverName = petable.GetHoverName();
+                        petEffect = petable.m_petEffect;
                     }
                     else
                     {

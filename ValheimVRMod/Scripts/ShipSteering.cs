@@ -1,4 +1,5 @@
 using UnityEngine;
+using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using Valve.VR;
 
@@ -38,7 +39,7 @@ namespace ValheimVRMod.Scripts
 
         void FixedUpdate()
         {
-            if (!shipControls)
+            if (!shipControls || !VHVRConfig.IsGesturedSteeringEnabled())
             {
                 return;
             }
