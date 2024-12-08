@@ -34,36 +34,34 @@ namespace ValheimVRMod.Scripts {
                 return false;
             }
 
-            if (EquipScript.getRight() == EquipType.Claws)
+            switch (EquipScript.getRight())
             {
-                return true;
-            }
-            else if (FistCollision.hasDualWieldingWeaponEquipped())
-            {
-                return false;
-            }
-
-            if (BowLocalManager.instance != null && BowLocalManager.instance.isHoldingArrow()) {
-                return false;
-            }
-
-            if (CrossbowMorphManager.instance != null)
-            {
-                if (CrossbowMorphManager.instance.isHoldingBolt() || CrossbowMorphManager.instance.isPulling)
-                {
+                case EquipType.Bow:
+                    if (BowLocalManager.instance != null && BowLocalManager.instance.isHoldingArrow())
+                    {
+                        return false;
+                    }
+                    break;
+                case EquipType.Claws:
+                case EquipType.None:
+                    return true;
+                case EquipType.Crossbow:
+                    if (CrossbowMorphManager.instance != null)
+                    {
+                        if (CrossbowMorphManager.instance.isHoldingBolt() || CrossbowMorphManager.instance.isPulling)
+                        {
+                            return false;
+                        }
+                    }
+                    break;
+                case EquipType.DualAxes:
+                case EquipType.DualKnives:
                     return false;
-                }
             }
 
-            if (isMainHand && Player.m_localPlayer?.GetRightItem() != null) {
-                return false;
-            }
-
-            if (!isMainHand && Player.m_localPlayer?.GetLeftItem() != null) {
-                return false;
-            }
-
-            return true;
+            return isMainHand ?
+                Player.m_localPlayer?.GetRightItem() == null :
+                Player.m_localPlayer?.GetLeftItem() == null;
         }
 
         private bool areFingersFree()
