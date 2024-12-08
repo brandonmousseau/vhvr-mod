@@ -479,7 +479,7 @@ namespace ValheimVRMod.Scripts
 
         private void Update()
         {
-            if (!outline || ButtonSecondaryAttackManager.isSecondaryAttackStarted)
+            if (!outline || ButtonSecondaryAttackManager.isSecondaryAttackStarted || attack == null || item == null)
             {
                 return;
             }
@@ -507,7 +507,6 @@ namespace ValheimVRMod.Scripts
 
         private float getStaminaUsage()
         {
-
             if (attack.m_attackStamina <= 0.0)
             {
                 return 0.0f;
