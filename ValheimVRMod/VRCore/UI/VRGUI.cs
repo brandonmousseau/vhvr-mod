@@ -82,6 +82,7 @@ namespace ValheimVRMod.VRCore.UI
 
         // Native handle to OpenVR overlay
         private ulong _overlay = OpenVR.k_ulOverlayHandleInvalid;
+        private int ticker = 0;
 
         public void Awake()
         {
@@ -115,26 +116,39 @@ namespace ValheimVRMod.VRCore.UI
 
         public void FixedUpdate()
         {
-            if (ensureGuiCanvas())
+            if (!ensureGuiCanvas())
+            {
+                return;
+            }
+
+
+            if (++ticker >= 16)
             {
                 GUI_DIMENSIONS = VHVRConfig.GetUiPanelResolution();
                 _guiCanvas.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, GUI_DIMENSIONS.x);
                 _guiCanvas.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, GUI_DIMENSIONS.y);
-                CrosshairManager.instance.maybeReparentCrosshair();
-                if (VHVRConfig.ShowRepairHammer() && RepairModePositionIndicator.instance != null)
-                {
-                    RepairModePositionIndicator.instance.Update();
-                }
-                maybeTriggerGuiRecenter();
-                if (USING_OVERLAY)
-                {
-                    checkAndSetCurvatureUpdates();
-                    updateOverlay();
-                } else
-                {
-                    updateUiPanel();
-                    maybeInitializePointers();
-                }
+            }
+            CrosshairManager.instance.maybeReparentCrosshair();
+            if (VHVRConfig.ShowRepairHammer() && RepairModePositionIndicator.instance != null)
+            {
+                RepairModePositionIndicator.instance.Update();
+            }
+
+            if (ticker < 16)
+            {
+                return;
+            }
+            ticker = 0;
+
+            maybeTriggerGuiRecenter();
+            if (USING_OVERLAY)
+            {
+                checkAndSetCurvatureUpdates();
+                updateOverlay();
+            } else
+            {
+                updateUiPanel();
+                maybeInitializePointers();
             }
         }
 

@@ -180,13 +180,24 @@ namespace ValheimVRMod.Patches
         [HarmonyPatch(typeof(Player), nameof(Player.Update))]
         class Player_Update_RotationPatch
         {
+            private static int ticker;
             public static void Postfix(Player __instance)
             {
                 if (!ShouldFaceLookDirection(__instance))
                 {
                     return;
                 }
-                __instance.FaceLookDirection();
+
+                // FaceLookDirection() is too expensive to call every frame.
+                if (++ticker > 8)
+                {
+                    __instance.FaceLookDirection();
+                    ticker = 0;
+                }
+                else
+                {
+                    __instance.transform.rotation = __instance.m_lookYaw;
+                }
             }
         }
 
