@@ -139,7 +139,7 @@ namespace ValheimVRMod.Patches {
     /**
         * Manipulate Position and Direction of the Arrow SpawnPoint
         */
-    [HarmonyPatch(typeof(Attack), "GetProjectileSpawnPoint")]
+    [HarmonyPatch(typeof(Attack), nameof(Attack.GetProjectileSpawnPoint))]
     class PatchGetProjectileSpawnPoint {
         static bool Prefix(Attack __instance, out Vector3 spawnPoint, out Vector3 aimDir, Humanoid ___m_character) {
 
@@ -222,40 +222,41 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
-
-
             __instance.m_useCharacterFacing = false;
             __instance.m_launchAngle = 0;
 
-            if (VHVRConfig.RestrictBowDrawSpeed() != "None" && EquipScript.getLeft() == EquipType.Bow) {
-                if (VHVRConfig.BowAccuracyIgnoresDrawLength())
+            if (VHVRConfig.RestrictBowDrawSpeed() == "None" || EquipScript.getLeft() != EquipType.Bow)
+            {
+                __instance.m_projectileAccuracyMin = 0;
+                if (___m_ammoItem != null)
                 {
-
-                    float currentSpreadFactor = 1 - Mathf.Sqrt(BowLocalManager.instance.GetAttackPercentage());
-                    if (currentSpreadFactor <= 0)
-                    {
-                        return;
-                    }
-
-                    float desiredSpreadFactor = 1 - Mathf.Sqrt(BowLocalManager.instance.timeBasedChargePercentage);
-                    float accuracyAdjustment = desiredSpreadFactor / currentSpreadFactor;
-                    float minSpread = __instance.m_projectileAccuracy;
-
-                    // We scale the max spread (i. e. m_projectileAccuracyMin) to compensate for the difference between desiredSpreadFactor and currentSpreadFactor.
-                    __instance.m_projectileAccuracyMin = Mathf.Lerp(minSpread, __instance.m_projectileAccuracyMin, accuracyAdjustment);
-                    if (___m_ammoItem != null)
-                    {
-                        ___m_ammoItem.m_shared.m_attack.m_projectileAccuracyMin = Mathf.Lerp(___m_ammoItem.m_shared.m_attack.m_projectileAccuracy, ___m_ammoItem.m_shared.m_attack.m_projectileAccuracyMin, accuracyAdjustment);
-                    }
+                    ___m_ammoItem.m_shared.m_attack.m_projectileAccuracyMin = 0;
                 }
                 return;
             }
 
-            __instance.m_projectileAccuracyMin = 0;
-            if (___m_ammoItem != null) {
-                ___m_ammoItem.m_shared.m_attack.m_projectileAccuracyMin = 0;   
+            if (!VHVRConfig.BowAccuracyIgnoresDrawLength())
+            {
+                return;
             }
-        }
+
+            float currentSpreadFactor = 1 - Mathf.Sqrt(BowLocalManager.instance.GetAttackPercentage());
+            if (currentSpreadFactor <= 0)
+            {
+                return;
+            }
+
+            float desiredSpreadFactor = 1 - Mathf.Sqrt(BowLocalManager.instance.timeBasedChargePercentage);
+            float accuracyAdjustment = desiredSpreadFactor / currentSpreadFactor;
+            float minSpread = __instance.m_projectileAccuracy;
+
+            // We scale the max spread (i. e. m_projectileAccuracyMin) to compensate for the difference between desiredSpreadFactor and currentSpreadFactor.
+            __instance.m_projectileAccuracyMin = Mathf.Lerp(minSpread, __instance.m_projectileAccuracyMin, accuracyAdjustment);
+            if (___m_ammoItem != null)
+            {
+                ___m_ammoItem.m_shared.m_attack.m_projectileAccuracyMin = Mathf.Lerp(___m_ammoItem.m_shared.m_attack.m_projectileAccuracy, ___m_ammoItem.m_shared.m_attack.m_projectileAccuracyMin, accuracyAdjustment);
+            }
+    }
     }
     
     /**
@@ -266,8 +267,7 @@ namespace ValheimVRMod.Patches {
         
         static bool Prefix(ref Transform __result, Character owner) {
 
-            if (owner != Player.m_localPlayer
-                || FishingManager.fixedRodTop == null || !VHVRConfig.UseVrControls()) {
+            if (owner != Player.m_localPlayer || FishingManager.fixedRodTop == null || !VHVRConfig.UseVrControls()) {
                 return true;
             }
 
