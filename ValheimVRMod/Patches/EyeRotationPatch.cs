@@ -182,24 +182,35 @@ namespace ValheimVRMod.Patches
         {
             public static void Postfix(Player __instance)
             {
-                if (!ShouldFaceLookDirection(__instance))
+                if (ShouldFaceLookDirection(__instance))
                 {
-                    return;
+                    __instance.transform.rotation = __instance.m_lookYaw;
                 }
-                __instance.FaceLookDirection();
             }
         }
 
         [HarmonyPatch(typeof(Player), nameof(Player.LateUpdate))]
         class Player_LateUpdate_RotationPatch
         {
+            private static int ticker = 0;
+
             public static void Postfix(Player __instance)
             {
                 if (!ShouldFaceLookDirection(__instance))
                 {
                     return;
                 }
-                __instance.FaceLookDirection();
+
+                // FaceLookDirection() is too expensive to call every frame.
+                if (++ticker >= 16)
+                {
+                    __instance.FaceLookDirection();
+                    ticker = 0;
+                }
+                else
+                {
+                    __instance.transform.rotation = __instance.m_lookYaw;
+                }
             }
         }
 
@@ -208,11 +219,10 @@ namespace ValheimVRMod.Patches
         {
             public static void Postfix(Player __instance)
             {
-                if (!ShouldFaceLookDirection(__instance))
+                if (ShouldFaceLookDirection(__instance))
                 {
-                    return;
+                    __instance.transform.rotation = __instance.m_lookYaw;
                 }
-                __instance.FaceLookDirection();
             }
         }
 
