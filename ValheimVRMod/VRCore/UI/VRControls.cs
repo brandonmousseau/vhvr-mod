@@ -92,6 +92,10 @@ namespace ValheimVRMod.VRCore.UI
 
         public static VRControls instance { get { return _instance; } }
         private static VRControls _instance;
+
+        private int quickMenuRefreshTicker = 0;
+
+
         void Awake()
         {
             init();
@@ -113,6 +117,13 @@ namespace ValheimVRMod.VRCore.UI
                 {
                     Minimap.instance.SetMapMode(Minimap.MapMode.Small);
                 }
+            }
+
+            if (StaticObjects.rightHandQuickMenu != null && (InventoryGui.IsVisible() || ++quickMenuRefreshTicker > 16))
+            {
+                quickMenuRefreshTicker = 0;
+                StaticObjects.rightHandQuickMenu.GetComponent<RightHandQuickMenu>().refreshItems();
+                StaticObjects.leftHandQuickMenu.GetComponent<LeftHandQuickMenu>().refreshItems();
             }
 
             checkQuickItems<RightHandQuickMenu>(StaticObjects.rightHandQuickMenu, SteamVR_Actions.valheim_QuickSwitch, true);
@@ -286,11 +297,6 @@ namespace ValheimVRMod.VRCore.UI
             // and when the hammer is equipped, the bindings conflict... so we'll share the right click button
             // here to activate quick switch. This is hacky because rebinding things can break the controls, but
             // it works and allows users to use the quick select while the hammer is equipped.
-            if (StaticObjects.rightHandQuickMenu != null)
-            {
-                StaticObjects.rightHandQuickMenu.GetComponent<RightHandQuickMenu>().refreshItems();
-                StaticObjects.leftHandQuickMenu.GetComponent<LeftHandQuickMenu>().refreshItems();
-            }
             bool rightClickDown = false;
             bool rightClickUp = false;
             if (useRightClick && laserControlsActive && inPlaceMode())
