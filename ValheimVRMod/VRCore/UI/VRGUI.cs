@@ -83,7 +83,6 @@ namespace ValheimVRMod.VRCore.UI
         // Native handle to OpenVR overlay
         private ulong _overlay = OpenVR.k_ulOverlayHandleInvalid;
         private int updateTicker = 0;
-        private int renderTicker = 0;
         private int textureUpdateTicker = 0;
 
         public void Awake()
@@ -106,20 +105,11 @@ namespace ValheimVRMod.VRCore.UI
 
         public void OnRenderObject()
         {
-            if (!ensureGuiCanvas() || USING_OVERLAY)
+            if (ensureGuiCanvas() && !USING_OVERLAY)
             {
-                return;
+                updateUiPanel();
+                maybeInitializePointers();
             }
-
-            if (++renderTicker < 16)
-            {
-                return;
-            }
-
-            renderTicker = 0;
-            
-            updateUiPanel();
-            maybeInitializePointers();
         }
 
         public void FixedUpdate()
@@ -152,10 +142,6 @@ namespace ValheimVRMod.VRCore.UI
             {
                 checkAndSetCurvatureUpdates();
                 updateOverlay();
-            } else
-            {
-                updateUiPanel();
-                maybeInitializePointers();
             }
         }
 
@@ -238,10 +224,6 @@ namespace ValheimVRMod.VRCore.UI
 
         private void updateUiPanelScaleAndPosition()
         {
-            if (_uiPanel.parent == null)
-            {
-                _uiPanel.SetParent(VRPlayer.vrCam.transform, worldPositionStays: true);
-            }
             var offsetPosition = new Vector3(0f, VHVRConfig.GetUiPanelVerticalOffset(), VHVRConfig.GetUiPanelDistance());
             if (useDynamicallyPositionedGui())
             {
@@ -285,7 +267,8 @@ namespace ValheimVRMod.VRCore.UI
                     _uiPanel.position = playerInstance.transform.position + stepRotation * offsetPosition;
                     lastVrPlayerRotation = VRPlayer.instance.transform.rotation;
                     maybeResetIsRecentering(stepDirection, targetDirection);
-                } else
+                }
+                else
                 {
                     // We are not recentering, so keep the GUI in front of the player. Need to account for
                     // any rotation of the VRPlayer instance caused by mouse or joystick input since the last frame.
@@ -734,7 +717,8 @@ namespace ValheimVRMod.VRCore.UI
                 SimulateButtonState(buttonState, button);
             }
 
-            private void SimulateButtonState(PointerEventData.FramePressState state, PointerEventData.InputButton button) {
+            private void SimulateButtonState(PointerEventData.FramePressState state, PointerEventData.InputButton button)
+            {
                 MouseState mousePointerEventData = GetMousePointerEventData();
                 // Retrieve button state data for intended button
                 MouseButtonEventData buttonState = mousePointerEventData.GetButtonState(button).eventData;
