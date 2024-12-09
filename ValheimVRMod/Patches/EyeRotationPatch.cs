@@ -180,7 +180,20 @@ namespace ValheimVRMod.Patches
         [HarmonyPatch(typeof(Player), nameof(Player.Update))]
         class Player_Update_RotationPatch
         {
-            private static int ticker;
+            public static void Postfix(Player __instance)
+            {
+                if (ShouldFaceLookDirection(__instance))
+                {
+                    __instance.transform.rotation = __instance.m_lookYaw;
+                }
+            }
+        }
+
+        [HarmonyPatch(typeof(Player), nameof(Player.LateUpdate))]
+        class Player_LateUpdate_RotationPatch
+        {
+            private static int ticker = 0;
+
             public static void Postfix(Player __instance)
             {
                 if (!ShouldFaceLookDirection(__instance))
@@ -189,7 +202,7 @@ namespace ValheimVRMod.Patches
                 }
 
                 // FaceLookDirection() is too expensive to call every frame.
-                if (++ticker > 8)
+                if (++ticker >= 16)
                 {
                     __instance.FaceLookDirection();
                     ticker = 0;
@@ -201,29 +214,15 @@ namespace ValheimVRMod.Patches
             }
         }
 
-        [HarmonyPatch(typeof(Player), nameof(Player.LateUpdate))]
-        class Player_LateUpdate_RotationPatch
-        {
-            public static void Postfix(Player __instance)
-            {
-                if (!ShouldFaceLookDirection(__instance))
-                {
-                    return;
-                }
-                __instance.FaceLookDirection();
-            }
-        }
-
         [HarmonyPatch(typeof(Player), nameof(Player.FixedUpdate))]
         class Player_FixedUpdate_RotationPatch
         {
             public static void Postfix(Player __instance)
             {
-                if (!ShouldFaceLookDirection(__instance))
+                if (ShouldFaceLookDirection(__instance))
                 {
-                    return;
+                    __instance.transform.rotation = __instance.m_lookYaw;
                 }
-                __instance.FaceLookDirection();
             }
         }
 
