@@ -350,20 +350,18 @@ namespace ValheimVRMod.Patches
     {
         public static void Postfix(Piece __instance)
         {
-            LODGroup lodGroup = __instance.GetComponent<LODGroup>();
-
-            if (lodGroup == null || lodGroup.lodCount < 2 || VHVRConfig.GetBuildingPieceDetailReductionFactor() < 1.01f)
+            if (!VHVRConfig.shouldModifyPieceLodGroup)
             {
                 return;
             }
 
-            Thread thread = new Thread(() => ReduceDetails(lodGroup));
-            thread.Start();
-        }
+            LODGroup lodGroup = __instance.GetComponent<LODGroup>();
 
+            if (lodGroup == null || lodGroup.lodCount < 2)
+            {
+                return;
+            }
 
-        private static void ReduceDetails(LODGroup lodGroup)
-        {
             var lods = lodGroup.GetLODs();
 
             if (lods[0].screenRelativeTransitionHeight <= lods[1].screenRelativeTransitionHeight)
