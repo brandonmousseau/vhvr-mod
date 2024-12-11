@@ -180,6 +180,8 @@ namespace ValheimVRMod.Utilities
         private const string k_arrowRestAsiatic = "Asiatic";
         private const string k_arrowRestMediterranean = "Mediterranean";
 
+        public static bool shouldModifyPieceLodGroup { get; private set; }
+
         public static void InitializeConfiguration(ConfigFile mConfig) {
 
             config = mConfig;
@@ -822,6 +824,8 @@ namespace ValheimVRMod.Utilities
                                         1f,
                                         new ConfigDescription("Reduce the distance at which a building piece transitions between low-detail rendering and high-detail rendering.",
                                         new AcceptableValueRange<float>(1f, 16f)));
+            shouldModifyPieceLodGroup = buildingPieceDetailReductionFactor.Value > 1.01f;
+            buildingPieceDetailReductionFactor.SettingChanged += ((o, i) => shouldModifyPieceLodGroup = buildingPieceDetailReductionFactor.Value > 1.01f);
         }
 
         private static void InitializeMotionControlSettings() {
