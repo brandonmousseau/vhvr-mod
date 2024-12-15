@@ -70,7 +70,8 @@ namespace ValheimVRMod.Patches
             {
                 return;
             }
-            __instance.m_smallMarker.localRotation = Quaternion.Euler(0f, 0f, -playerRot.eulerAngles.y);
+            float angle = VHVRConfig.UseVrControls() && VRPlayer.vrCam != null ? VRPlayer.vrCam.transform.rotation.eulerAngles.y : playerRot.eulerAngles.y;
+            __instance.m_smallMarker.localRotation = Quaternion.Euler(0f, 0f, -angle);
             Ship controlledShip = player.GetControlledShip();
             if (controlledShip)
             {
