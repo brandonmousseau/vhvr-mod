@@ -24,7 +24,7 @@ namespace ValheimVRMod.Patches
     [HarmonyPatch(typeof(Player), nameof(Player.SetMouseLook))]
     class Player_SetMouseLook_Patch
     {
-        public static float? previousHeadLocalRotation;
+        public static float? previousTrackedLocalAngle;
         public static Quaternion lastAttachRot;
         public static GameObject headLookRef;
         public static bool wasAttached;
@@ -104,10 +104,10 @@ namespace ValheimVRMod.Patches
             }
 
             float currentLocalAngle = (Quaternion.Inverse(Valve.VR.InteractionSystem.Player.instance.hmdTransform.parent.rotation) * VRPlayer.pelvis.rotation).eulerAngles.y;
-            if (previousHeadLocalRotation.HasValue)
+            if (previousTrackedLocalAngle.HasValue)
             {
                 // Find the difference between the current rotation and previous rotation
-                float deltaRotation = currentLocalAngle - previousHeadLocalRotation.Value;
+                float deltaRotation = currentLocalAngle - previousTrackedLocalAngle.Value;
 
                 // Rotate the look yaw by the amount the player rotated their head since last iteration
                 ___m_lookYaw *= Quaternion.AngleAxis(deltaRotation, Vector3.up);
@@ -118,7 +118,7 @@ namespace ValheimVRMod.Patches
             }
 
             // Save the current rotation for use in next iteration
-            previousHeadLocalRotation = currentLocalAngle;
+            previousTrackedLocalAngle = currentLocalAngle;
         }
 
         public static void Postfix(Player __instance, ref Vector3 ___m_lookDir)
@@ -184,7 +184,7 @@ namespace ValheimVRMod.Patches
             {
                 if (ShouldFaceLookDirection(__instance))
                 {
-                    __instance.transform.rotation = __instance.m_lookYaw;
+                    __instance.FaceLookDirection();
                 }
             }
         }
@@ -192,22 +192,9 @@ namespace ValheimVRMod.Patches
         [HarmonyPatch(typeof(Player), nameof(Player.LateUpdate))]
         class Player_LateUpdate_RotationPatch
         {
-            private static int ticker = 0;
-
             public static void Postfix(Player __instance)
             {
-                if (!ShouldFaceLookDirection(__instance))
-                {
-                    return;
-                }
-
-                // FaceLookDirection() is too expensive to call every frame.
-                if (++ticker >= 16)
-                {
-                    __instance.FaceLookDirection();
-                    ticker = 0;
-                }
-                else
+                if (ShouldFaceLookDirection(__instance))
                 {
                     __instance.transform.rotation = __instance.m_lookYaw;
                 }
@@ -403,7 +390,7 @@ namespace ValheimVRMod.Patches
                 __instance.m_lookYaw = Quaternion.LookRotation(attachmentHeading, Vector3.up);
                 VRPlayer.RequestRecentering();
                 VRPlayer.vrPlayerInstance?.ResetRoomscaleCamera();
-                Player_SetMouseLook_Patch.previousHeadLocalRotation = null;
+                Player_SetMouseLook_Patch.previousTrackedLocalAngle = null;
             }
         }
 
