@@ -202,7 +202,7 @@ namespace ValheimVRMod.Scripts
                 return TwoHandedState.SingleHanded;
             }
 
-            if (wasTwoHanded && VHVRConfig.StickyTwoHandedWield() && EquipScript.getRight() != EquipType.Crossbow)
+            if (wasTwoHanded && VHVRConfig.StickyTwoHandedWield() && EquipScript.getLeft() != EquipType.Crossbow)
             {
                 if (SteamVR_Actions.valheim_Grab.GetStateDown(VRPlayer.dominantHandInputSource))
                 {

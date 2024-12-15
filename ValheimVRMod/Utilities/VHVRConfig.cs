@@ -139,6 +139,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<string> rangedWeaponGlow;
         private static ConfigEntry<string> meleeWeaponGlow;
         private static ConfigEntry<float> enemyRenderDistance;
+        private static ConfigEntry<float> buildingPieceDetailReductionFactor;
 
         // Motion Control Settings
         private static ConfigEntry<bool> useArrowPredictionGraphic;
@@ -178,6 +179,8 @@ namespace ValheimVRMod.Utilities
         private const string k_arrowRestCenter = "Center";
         private const string k_arrowRestAsiatic = "Asiatic";
         private const string k_arrowRestMediterranean = "Mediterranean";
+
+        public static bool shouldModifyPieceLodGroup { get; private set; }
 
         public static void InitializeConfiguration(ConfigFile mConfig) {
 
@@ -816,6 +819,13 @@ namespace ValheimVRMod.Utilities
                                         8f,
                                         new ConfigDescription("Increase the mobs render distance, does not apply to tamed creature, only raise mob render distance, not lowering them (default eg. deer render distance is around 2, neck is around 10) (also limited by default ingame draw distance option)",
                                         new AcceptableValueRange<float>(1f, 50f)));
+            buildingPieceDetailReductionFactor = config.Bind("Graphics",
+                                        "BuildingPieceDetailReductionFactor",
+                                        1f,
+                                        new ConfigDescription("Reduce the distance at which a building piece transitions between low-detail rendering and high-detail rendering.",
+                                        new AcceptableValueRange<float>(1f, 16f)));
+            shouldModifyPieceLodGroup = buildingPieceDetailReductionFactor.Value > 1.01f;
+            buildingPieceDetailReductionFactor.SettingChanged += ((o, i) => shouldModifyPieceLodGroup = buildingPieceDetailReductionFactor.Value > 1.01f);
         }
 
         private static void InitializeMotionControlSettings() {
@@ -1451,6 +1461,11 @@ namespace ValheimVRMod.Utilities
         public static float GetEnemyRenderDistanceValue()
         {
             return enemyRenderDistance.Value;
+        }
+
+        public static float GetBuildingPieceDetailReductionFactor()
+        {
+            return buildingPieceDetailReductionFactor.Value;
         }
 
         public static float AltPieceRotationDelay()

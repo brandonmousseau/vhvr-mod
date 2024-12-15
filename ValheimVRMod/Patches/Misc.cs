@@ -13,6 +13,7 @@ using ValheimVRMod.VRCore;
 using Valve.VR;
 
 using static ValheimVRMod.Utilities.LogUtils;
+using System.Threading;
 
 namespace ValheimVRMod.Patches
 {
@@ -341,6 +342,36 @@ namespace ValheimVRMod.Patches
                 }
                 return cullingHeight;
             }
+        }
+    }
+
+    [HarmonyPatch(typeof(Piece), nameof(Piece.Awake))]
+    class PieceSetLodGroupSizePatch
+    {
+        public static void Postfix(Piece __instance)
+        {
+            if (!VHVRConfig.shouldModifyPieceLodGroup)
+            {
+                return;
+            }
+
+            LODGroup lodGroup = __instance.GetComponent<LODGroup>();
+
+            if (lodGroup == null || lodGroup.lodCount < 2)
+            {
+                return;
+            }
+
+            var lods = lodGroup.GetLODs();
+
+            if (lods[0].screenRelativeTransitionHeight <= lods[1].screenRelativeTransitionHeight)
+            {
+                return;
+            }
+
+            lods[0].screenRelativeTransitionHeight = lods[0].screenRelativeTransitionHeight * VHVRConfig.GetBuildingPieceDetailReductionFactor();
+
+            lodGroup.SetLODs(lods);
         }
     }
 
