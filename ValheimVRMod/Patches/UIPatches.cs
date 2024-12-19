@@ -10,6 +10,7 @@ using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using UnityEngine.UI;
 using Valheim.SettingsGui;
+using ValheimVRMod.VRCore;
 using ValheimVRMod.VRCore.UI;
 using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
