@@ -399,6 +399,7 @@ namespace ValheimVRMod.VRCore.UI
         {
             if (!_leftPointer.pointerIsActive() && !_rightPointer.pointerIsActive())
             {
+                // Updating button states are expensive and only needs to be done when the user is using a laser pointer.
                 return;
             }
 
