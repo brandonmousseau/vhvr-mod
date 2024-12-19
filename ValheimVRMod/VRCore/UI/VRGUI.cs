@@ -397,12 +397,20 @@ namespace ValheimVRMod.VRCore.UI
 
         public void OnPointerTracking(object p, PointerEventArgs e)
         {
-            if (isUiPanel(e.target))
+            if (!_leftPointer.pointerIsActive() && !_rightPointer.pointerIsActive())
             {
-                SoftwareCursor.simulatedMousePosition =
-                    convertLocalUiPanelCoordinatesToCursorCoordinates(e.target.InverseTransformPoint(e.position));
-                _inputModule.UpdateButtonStates(e.buttonStateLeft, e.buttonStateRight, false);
+                // Updating button states are expensive and only needs to be done when the user is using a laser pointer.
+                return;
             }
+
+            if (!isUiPanel(e.target))
+            {
+                return;
+            }
+
+            SoftwareCursor.simulatedMousePosition =
+                convertLocalUiPanelCoordinatesToCursorCoordinates(e.target.InverseTransformPoint(e.position));
+            _inputModule.UpdateButtonStates(e.buttonStateLeft, e.buttonStateRight, false);
         }
 
         private Vector2 convertLocalUiPanelCoordinatesToCursorCoordinates(Vector3 localCoordinates)
