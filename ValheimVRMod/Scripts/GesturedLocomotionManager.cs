@@ -412,7 +412,7 @@ namespace ValheimVRMod.Scripts
                 {
                     isWalkingOrRunningUsingGestures = false;
                 }
-                else if (ShouldStart(wheelDiameter, walkDirection, walkSpeed))
+                else if (ShouldStart(wheelDiameter, walkDirection, Mathf.Abs(walkSpeed)))
                 {
                     isWalkingOrRunningUsingGestures = true;
                 }
