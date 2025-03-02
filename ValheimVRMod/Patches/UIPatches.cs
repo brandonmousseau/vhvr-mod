@@ -82,6 +82,30 @@ namespace ValheimVRMod.Patches
     }
 
     /**
+     * This is required because for the VRHud we move the Minimap's Canvas
+     * from the default position/rotation, so setting the absolute rotation
+     * of the wind marker doesn't work anymore. This changes it to use
+     * the local rotation instead so it'll work regardless of canvas
+     * position.
+     */
+    [HarmonyPatch(typeof(Minimap), nameof(Minimap.UpdateWindMarker))]
+    class MinimapWindMarkerPatch
+    {
+        public static bool Prefix(Minimap __instance)
+        {
+            if (VHVRConfig.NonVrPlayer())
+            {
+                return true;
+            }
+
+            Quaternion quaternion = Quaternion.LookRotation(EnvMan.instance.GetWindDir());
+            __instance.m_windMarker.localRotation = Quaternion.Euler(0f, 0f, -quaternion.eulerAngles.y);
+            return false;
+        }
+    }
+
+
+    /**
     * The purpose of this patch is to update the base
     * "mousePosition" getter, which is what all the rest of
     * the UnityEngine uses to determine current mouse
@@ -753,7 +777,7 @@ namespace ValheimVRMod.Patches
             playerRot = player.transform.rotation;
         }
     }
-    
+
     // remove stupid keyboard/mouse hints:
     // for some reason after Hearth&Home "Awake" isn't called on the cloned hud, so to be sure we destroy it in Update
     [HarmonyPatch(typeof(KeyHints), "Update")]
