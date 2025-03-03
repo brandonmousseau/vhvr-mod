@@ -57,10 +57,10 @@ namespace ValheimVRMod.VRCore.UI
         public static readonly string HUD_GUI_CANVAS_LEGACY = "LoadingGUI";
         public static readonly string CURSOR_GUI_CANVAS = "Scaled 3D Viewport";
         public static readonly string CURSOR_GUI_CANVAS_LEGACY = "LoadingGUI";
+        public static readonly string CHAT_BOX = "Chat_box";
         public static readonly string[] ADDITIONAL_GUI_CANVAS_NAMES = new string[]
         {
             "Chat",
-            // "Chat_box", // TODO: figure out how to update it correctly.
             "TextViewer",
             "JoinCodeOverlay",
             "Store_Screen",
@@ -91,6 +91,7 @@ namespace ValheimVRMod.VRCore.UI
         private List<Canvas> _guiCanvases = new List<Canvas>();
         private Canvas _cursorGuiCanvas;
         private Canvas _hudGuiCanvas;
+        private Canvas _chatBox;
         private static Transform _uiPanel;
         private Transform _uiPanelTransformLocker;
         private RenderTexture _guiTexture;
@@ -104,6 +105,7 @@ namespace ValheimVRMod.VRCore.UI
         private static bool isRecentering = false;
         private bool movingLastFrame = false;
         private Quaternion lastVrPlayerRotation = Quaternion.identity;
+        private bool showingChatBox = false;
 
         // Native handle to OpenVR overlay
         private ulong _overlay = OpenVR.k_ulOverlayHandleInvalid;
@@ -142,6 +144,15 @@ namespace ValheimVRMod.VRCore.UI
             if (!ensureGuiCanvas())
             {
                 return;
+            }
+
+            bool wasShowingChatBox = showingChatBox;
+            showingChatBox = _chatBox != null && _chatBox.isActiveAndEnabled;
+            if (!wasShowingChatBox && showingChatBox)
+            {
+                _chatBox.worldCamera = _guiCamera;
+                _chatBox.renderMode = RenderMode.WorldSpace;
+                _chatBox.GetComponent<RectTransform>().anchoredPosition = new Vector2(GUI_DIMENSIONS.x / 2, GUI_DIMENSIONS.y / 2);
             }
 
             if (++updateTicker >= 16)
@@ -521,6 +532,11 @@ namespace ValheimVRMod.VRCore.UI
                     _hudGuiCanvas = canvas;
                 }
 
+                if (canvas.name == CHAT_BOX)
+                {
+                    _chatBox = canvas;
+                }
+
                 isGui = isGui || ADDITIONAL_GUI_CANVAS_NAMES.Contains(canvas.name);
 
                 if (isGui) {
@@ -695,7 +711,7 @@ namespace ValheimVRMod.VRCore.UI
 
         private void onGuiCanvasFound()
         {
-            LogDebug("Found GUI Canvas");
+            LogDebug("Found GUI Canvases");
             SoftwareCursor.instance.GetComponent<RectTransform>().SetParent(_cursorGuiCanvas.transform, false);
             SoftwareCursor.instance.GetComponent<SoftwareCursor>().parent = _cursorGuiCanvas.GetComponent<RectTransform>();
             CrosshairManager.instance.guiCanvas = _hudGuiCanvas;
