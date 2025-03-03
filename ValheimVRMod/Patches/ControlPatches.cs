@@ -1206,6 +1206,7 @@ namespace ValheimVRMod.Patches {
 
             __instance.m_queuedDodgeTimer -= dt;
             currdodgetimer -= dt;
+            bool vrDodging = false;
 
             if (__instance.m_queuedDodgeTimer > 0f && __instance.IsOnGround() && !__instance.IsDead() && !__instance.InAttack() && !__instance.IsEncumbered() && !__instance.InDodge() && !__instance.IsStaggering() && !VRPlayer.vrPlayerInstance.wasDodging)
             {
@@ -1224,7 +1225,7 @@ namespace ValheimVRMod.Patches {
                         VRPlayer.instance.transform.SetPositionAndRotation(roomPosition, roomRotation);
                     }
                     currDodgeDir = __instance.transform.forward;
-                    __instance.m_dodgeInvincible = true;
+                    __instance.m_dodgeInvincible = vrDodging = true;
                     __instance.m_zanim.SetTrigger("dodge");
                     __instance.AddNoise(5f);
                     __instance.UseStamina(num);
@@ -1236,7 +1237,7 @@ namespace ValheimVRMod.Patches {
             AnimatorStateInfo nextAnimatorStateInfo = __instance.m_animator.GetNextAnimatorStateInfo(0);
             bool flag = __instance.m_animator.IsInTransition(0);
             bool flag2 = __instance.m_animator.GetBool("dodge") || (currentAnimatorStateInfo.tagHash == Player.s_animatorTagDodge && !flag) || (flag && nextAnimatorStateInfo.tagHash == Player.s_animatorTagDodge);
-            bool value = flag2 && __instance.m_dodgeInvincible;
+            bool value = vrDodging || (flag2 && __instance.m_dodgeInvincible);
             __instance.m_nview.GetZDO().Set("dodgeinv", value);
             __instance.m_inDodge = flag2;
             if (currdodgetimer > 0)
