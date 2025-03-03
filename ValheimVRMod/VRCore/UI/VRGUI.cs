@@ -60,6 +60,7 @@ namespace ValheimVRMod.VRCore.UI
         public static readonly string[] ADDITIONAL_GUI_CANVAS_NAMES = new string[]
         {
             "Chat",
+            // "Chat_box", // TODO: figure out how to update it correctly.
             "TextViewer",
             "JoinCodeOverlay",
             "Store_Screen",
@@ -70,7 +71,6 @@ namespace ValheimVRMod.VRCore.UI
             "TopLeftMessage",
             "TextInput",
             "HudMessage",
-            "Captions_DirectionIndicators",
             "ConnectionPanel",
             "UnifiedPopup",
             "Tutorial",
@@ -157,6 +157,7 @@ namespace ValheimVRMod.VRCore.UI
                     guiCanvas.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, GUI_DIMENSIONS.x);
                     guiCanvas.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, GUI_DIMENSIONS.y);
                 }
+
             }
             CrosshairManager.instance.maybeReparentCrosshair();
             if (VHVRConfig.ShowRepairHammer() && RepairModePositionIndicator.instance != null)
@@ -501,7 +502,7 @@ namespace ValheimVRMod.VRCore.UI
             }
 
             _guiCanvases.Clear();
-            foreach (var canvas in GameObject.FindObjectsOfType<Canvas>())
+            foreach (var canvas in GameObject.FindObjectsOfType<Canvas>(includeInactive: true))
             {
                 bool isGui = false;
                 if (canvas.name == CURSOR_GUI_CANVAS ||
