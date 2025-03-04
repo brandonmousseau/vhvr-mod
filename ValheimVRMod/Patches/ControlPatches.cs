@@ -1206,11 +1206,15 @@ namespace ValheimVRMod.Patches {
 
             __instance.m_queuedDodgeTimer -= dt;
             currdodgetimer -= dt;
+            bool vrDodging = false;
 
-            if (__instance.m_queuedDodgeTimer > 0f && __instance.IsOnGround() && !__instance.IsDead() && !__instance.InAttack() && !__instance.IsEncumbered() && !__instance.InDodge() && !__instance.IsStaggering() && !VRPlayer.vrPlayerInstance.wasDodging)
+            if (__instance.m_queuedDodgeTimer > 0f &&
+                __instance.IsOnGround() && !__instance.IsDead() && !__instance.InAttack() && !__instance.IsEncumbered() &&
+                !__instance.InDodge() && !__instance.IsStaggering() &&
+                !VRPlayer.vrPlayerInstance.wasDodging)
             {
-                float num = __instance.m_dodgeStaminaUsage - __instance.m_dodgeStaminaUsage * __instance.GetEquipmentDodgeStaminaModifier();
-                if (__instance.HaveStamina(num))
+                float staminaCost = __instance.m_dodgeStaminaUsage - __instance.m_dodgeStaminaUsage * __instance.GetEquipmentDodgeStaminaModifier();
+                if (__instance.HaveStamina(staminaCost))
                 {
                     __instance.ClearActionQueue();
                     __instance.m_queuedDodgeTimer = 0f;
@@ -1224,21 +1228,22 @@ namespace ValheimVRMod.Patches {
                         VRPlayer.instance.transform.SetPositionAndRotation(roomPosition, roomRotation);
                     }
                     currDodgeDir = __instance.transform.forward;
-                    __instance.m_dodgeInvincible = true;
+                    __instance.m_dodgeInvincible = vrDodging = true;
                     __instance.m_zanim.SetTrigger("dodge");
                     __instance.AddNoise(5f);
-                    __instance.UseStamina(num);
+                    __instance.UseStamina(staminaCost);
                     __instance.m_dodgeEffects.Create(__instance.transform.position, Quaternion.identity, __instance.transform, 2f, -1);
                 }
             }
 
-            AnimatorStateInfo currentAnimatorStateInfo = __instance.m_animator.GetCurrentAnimatorStateInfo(0);
-            AnimatorStateInfo nextAnimatorStateInfo = __instance.m_animator.GetNextAnimatorStateInfo(0);
-            bool flag = __instance.m_animator.IsInTransition(0);
-            bool flag2 = __instance.m_animator.GetBool("dodge") || (currentAnimatorStateInfo.tagHash == Player.s_animatorTagDodge && !flag) || (flag && nextAnimatorStateInfo.tagHash == Player.s_animatorTagDodge);
-            bool value = flag2 && __instance.m_dodgeInvincible;
-            __instance.m_nview.GetZDO().Set("dodgeinv", value);
-            __instance.m_inDodge = flag2;
+            bool inDodge = __instance.m_animator.GetBool(Player.s_animatorTagDodge) || __instance.GetNextOrCurrentAnimHash() == Player.s_animatorTagDodge;
+            bool dodgeInvincible = vrDodging || (inDodge && __instance.m_dodgeInvincible);
+            if (__instance.m_dodgeInvincibleCached != dodgeInvincible)
+            {
+                __instance.m_nview.GetZDO().Set(ZDOVars.s_dodgeinv, dodgeInvincible);
+            }
+            __instance.m_dodgeInvincibleCached = dodgeInvincible;
+            __instance.m_inDodge = inDodge;
             if (currdodgetimer > 0)
             {
                 __instance.m_rootMotion = (__instance.m_queuedDodgeDir.normalized / 11) - (currDodgeDir / 15);
