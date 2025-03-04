@@ -53,10 +53,9 @@ namespace ValheimVRMod.VRCore.UI
         public static bool originalFullScreen;
         public static bool isResized;
         public static readonly string MENU_GUI_CANVAS = "GUI";
+        public static readonly string IN_GAME_GUI_CANVAS_LEGACY = "LoadingGUI";
         public static readonly string HUD_GUI_CANVAS = "HUD";
-        public static readonly string HUD_GUI_CANVAS_LEGACY = "LoadingGUI";
         public static readonly string CURSOR_GUI_CANVAS = "Scaled 3D Viewport";
-        public static readonly string CURSOR_GUI_CANVAS_LEGACY = "LoadingGUI";
         public static readonly string CHAT_BOX = "Chat_box";
         public static readonly string[] ADDITIONAL_GUI_CANVAS_NAMES = new string[]
         {
@@ -162,6 +161,7 @@ namespace ValheimVRMod.VRCore.UI
                 {
                     if (guiCanvas == null)
                     {
+                        // GUI canvases must have changed, clear them to force finding them again.
                         _guiCanvases.Clear();
                         return;
                     }
@@ -515,31 +515,26 @@ namespace ValheimVRMod.VRCore.UI
             _guiCanvases.Clear();
             foreach (var canvas in GameObject.FindObjectsOfType<Canvas>(includeInactive: true))
             {
-                bool isGui = false;
-                if (canvas.name == CURSOR_GUI_CANVAS ||
-                    canvas.name == CURSOR_GUI_CANVAS_LEGACY ||
-                    canvas.name == MENU_GUI_CANVAS)
+                if (canvas.name == MENU_GUI_CANVAS || canvas.name == IN_GAME_GUI_CANVAS_LEGACY)
                 {
-                    isGui = true;
+                    _cursorGuiCanvas = _hudGuiCanvas = canvas;
+                    _guiCanvases.Add(canvas);
+                }
+                else if (canvas.name == CURSOR_GUI_CANVAS)
+                {
                     _cursorGuiCanvas = canvas;
+                    _guiCanvases.Add(canvas);
                 }
-                    
-                if (canvas.name == HUD_GUI_CANVAS ||
-                    canvas.name == HUD_GUI_CANVAS_LEGACY ||
-                    canvas.name == MENU_GUI_CANVAS)
+                else if (canvas.name == HUD_GUI_CANVAS)
                 {
-                    isGui = true;
                     _hudGuiCanvas = canvas;
-                }
-
-                if (canvas.name == CHAT_BOX)
+                    _guiCanvases.Add(canvas);
+                } 
+                else if (canvas.name == CHAT_BOX)
                 {
                     _chatBox = canvas;
                 }
-
-                isGui = isGui || ADDITIONAL_GUI_CANVAS_NAMES.Contains(canvas.name);
-
-                if (isGui) {
+                else if (ADDITIONAL_GUI_CANVAS_NAMES.Contains(canvas.name)) {
                     _guiCanvases.Add(canvas);
                 }
             }
