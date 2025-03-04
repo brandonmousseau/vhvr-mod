@@ -86,6 +86,7 @@ namespace ValheimVRMod.Patches {
         private static void OnClose()
         {
             Minimap.m_instance.m_nameInput.OnSubmit(null);
+            Minimap.m_instance.OnPinTextEntered(Minimap.m_instance.m_nameInput.text);
         }
     }
 
