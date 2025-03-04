@@ -7,6 +7,7 @@ using System.Collections.Generic;
 
 using static ValheimVRMod.Utilities.LogUtils;
 using UnityEngine.InputSystem.UI;
+using System.Linq;
 
 namespace ValheimVRMod.VRCore.UI
 {
@@ -52,7 +53,28 @@ namespace ValheimVRMod.VRCore.UI
         public static bool originalFullScreen;
         public static bool isResized;
         public static readonly string MENU_GUI_CANVAS = "GUI";
-        public static readonly string GAME_GUI_CANVAS = "LoadingGUI";
+        public static readonly string IN_GAME_GUI_CANVAS_LEGACY = "LoadingGUI";
+        public static readonly string HUD_GUI_CANVAS = "HUD";
+        public static readonly string CURSOR_GUI_CANVAS = "Scaled 3D Viewport";
+        public static readonly string CHAT_BOX = "Chat_box";
+        public static readonly string[] ADDITIONAL_GUI_CANVAS_NAMES = new string[]
+        {
+            "Chat",
+            "TextViewer",
+            "JoinCodeOverlay",
+            "Store_Screen",
+            "ClosedCaptions",
+            "Inventory_screen",
+            "Menu",
+            "MiniMap",
+            "TopLeftMessage",
+            "TextInput",
+            "HudMessage",
+            "ConnectionPanel",
+            "UnifiedPopup",
+            "Tutorial",
+            "BarberGui"
+        };
         private static readonly string OVERLAY_KEY = "VALHEIM_VR_MOD_OVERLAY";
         private static readonly string OVERLAY_NAME = "Valheim VR";
         private static readonly string UI_PANEL_NAME = "VRUIPanel";
@@ -65,7 +87,10 @@ namespace ValheimVRMod.VRCore.UI
 
         private Camera _uiPanelCamera;
         private Camera _guiCamera;
-        private Canvas _guiCanvas;
+        private List<Canvas> _guiCanvases = new List<Canvas>();
+        private Canvas _cursorGuiCanvas;
+        private Canvas _hudGuiCanvas;
+        private Canvas _chatBox;
         private static Transform _uiPanel;
         private Transform _uiPanelTransformLocker;
         private RenderTexture _guiTexture;
@@ -79,6 +104,7 @@ namespace ValheimVRMod.VRCore.UI
         private static bool isRecentering = false;
         private bool movingLastFrame = false;
         private Quaternion lastVrPlayerRotation = Quaternion.identity;
+        private bool showingChatBox = false;
 
         // Native handle to OpenVR overlay
         private ulong _overlay = OpenVR.k_ulOverlayHandleInvalid;
@@ -119,11 +145,30 @@ namespace ValheimVRMod.VRCore.UI
                 return;
             }
 
+            bool wasShowingChatBox = showingChatBox;
+            showingChatBox = _chatBox != null && _chatBox.isActiveAndEnabled;
+            if (!wasShowingChatBox && showingChatBox)
+            {
+                _chatBox.worldCamera = _guiCamera;
+                _chatBox.renderMode = RenderMode.WorldSpace;
+                _chatBox.GetComponent<RectTransform>().anchoredPosition = new Vector2(GUI_DIMENSIONS.x / 2, GUI_DIMENSIONS.y / 2);
+            }
+
             if (++updateTicker >= 16)
             {
                 GUI_DIMENSIONS = VHVRConfig.GetUiPanelResolution();
-                _guiCanvas.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, GUI_DIMENSIONS.x);
-                _guiCanvas.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, GUI_DIMENSIONS.y);
+                foreach (Canvas guiCanvas in _guiCanvases)
+                {
+                    if (guiCanvas == null)
+                    {
+                        // GUI canvases must have changed, clear them to force finding them again.
+                        _guiCanvases.Clear();
+                        return;
+                    }
+                    guiCanvas.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, GUI_DIMENSIONS.x);
+                    guiCanvas.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, GUI_DIMENSIONS.y);
+                }
+
             }
             CrosshairManager.instance.maybeReparentCrosshair();
             if (VHVRConfig.ShowRepairHammer() && RepairModePositionIndicator.instance != null)
@@ -215,7 +260,7 @@ namespace ValheimVRMod.VRCore.UI
                 createUiPanelCamera();
             }
             updateUiPanelScaleAndPosition();
-            if (_guiCanvas != null && _guiTexture != null && ++textureUpdateTicker > 128) 
+            if (_guiCanvases.Count > 0 && _guiTexture != null && ++textureUpdateTicker > 128)
             {
                 textureUpdateTicker = 0;
                 _uiPanel.GetComponent<Renderer>().material.mainTexture = _guiTexture;
@@ -462,23 +507,50 @@ namespace ValheimVRMod.VRCore.UI
 
         private bool ensureGuiCanvas()
         {
-            if (_guiCanvas == null)
-            {
-                foreach (var canvas in GameObject.FindObjectsOfType<Canvas>())
-                {
-                    if (canvas.name == GAME_GUI_CANVAS 
-                        || canvas.name == MENU_GUI_CANVAS)
-                    {
-                        _guiCanvas = canvas;
-                        onGuiCanvasFound();
-                        return true;
-                    }
-                }
-            } else
+            if (hasFoundGuiCanvas())
             {
                 return true;
             }
+
+            _guiCanvases.Clear();
+            foreach (var canvas in GameObject.FindObjectsOfType<Canvas>(includeInactive: true))
+            {
+                if (canvas.name == MENU_GUI_CANVAS || canvas.name == IN_GAME_GUI_CANVAS_LEGACY)
+                {
+                    _cursorGuiCanvas = _hudGuiCanvas = canvas;
+                    _guiCanvases.Add(canvas);
+                }
+                else if (canvas.name == CURSOR_GUI_CANVAS)
+                {
+                    _cursorGuiCanvas = canvas;
+                    _guiCanvases.Add(canvas);
+                }
+                else if (canvas.name == HUD_GUI_CANVAS)
+                {
+                    _hudGuiCanvas = canvas;
+                    _guiCanvases.Add(canvas);
+                } 
+                else if (canvas.name == CHAT_BOX)
+                {
+                    _chatBox = canvas;
+                }
+                else if (ADDITIONAL_GUI_CANVAS_NAMES.Contains(canvas.name)) {
+                    _guiCanvases.Add(canvas);
+                }
+            }
+
+            if (hasFoundGuiCanvas())
+            {
+                onGuiCanvasFound();
+                return true;
+            }
+
             return false;
+        }
+
+        private bool hasFoundGuiCanvas()
+        {
+           return _guiCanvases.Count > 0 && _cursorGuiCanvas != null && _hudGuiCanvas != null;
         }
 
         private void updateOverlay()
@@ -634,25 +706,30 @@ namespace ValheimVRMod.VRCore.UI
 
         private void onGuiCanvasFound()
         {
-            LogDebug("Found GUI Canvas");
-            SoftwareCursor.instance.GetComponent<RectTransform>().SetParent(_guiCanvas.transform, false);
-            SoftwareCursor.instance.GetComponent<SoftwareCursor>().parent = _guiCanvas.GetComponent<RectTransform>();
-            CrosshairManager.instance.guiCanvas = _guiCanvas;
-            // Need to assign the camera to enable UI interactions
-            _guiCanvas.worldCamera = _guiCamera;
-            // Originally this was using ScreenSpaceCamera, which was handy to auto-size the canvas/camera
-            // so I didn't need to worry about orthographic size or camera position. The problem
-            // is that there are certain UI elements, particularly in the minimap, that are added
-            // to the canvas using absolute pixel sizes - which when using ScreenSpaceCamera didn't translate
-            // and ended up with map icons extremely large and obscuring the entire map. By using WorldSpace
-            // for the render mode, we can keep the world coordinates equal to the screen space coordinates,
-            // i.e. 1 pixel on screen = 1 unit of world space. That way when any elements are added to the GUI
-            // at a specific pixel size, they are scaled properly.
-            _guiCanvas.renderMode = RenderMode.WorldSpace;
-            _guiCanvas.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, GUI_DIMENSIONS.x);
-            _guiCanvas.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, GUI_DIMENSIONS.y);
+            LogDebug("Found GUI Canvases");
+            SoftwareCursor.instance.GetComponent<RectTransform>().SetParent(_cursorGuiCanvas.transform, false);
+            SoftwareCursor.instance.GetComponent<SoftwareCursor>().parent = _cursorGuiCanvas.GetComponent<RectTransform>();
+            CrosshairManager.instance.guiCanvas = _hudGuiCanvas;
+
+            foreach (Canvas guiCanvas in _guiCanvases)
+            {
+                // Need to assign the camera to enable UI interactions
+                guiCanvas.worldCamera = _guiCamera;
+                // Originally this was using ScreenSpaceCamera, which was handy to auto-size the canvas/camera
+                // so I didn't need to worry about orthographic size or camera position. The problem
+                // is that there are certain UI elements, particularly in the minimap, that are added
+                // to the canvas using absolute pixel sizes - which when using ScreenSpaceCamera didn't translate
+                // and ended up with map icons extremely large and obscuring the entire map. By using WorldSpace
+                // for the render mode, we can keep the world coordinates equal to the screen space coordinates,
+                // i.e. 1 pixel on screen = 1 unit of world space. That way when any elements are added to the GUI
+                // at a specific pixel size, they are scaled properly.
+                guiCanvas.renderMode = RenderMode.WorldSpace;
+                guiCanvas.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, GUI_DIMENSIONS.x);
+                guiCanvas.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, GUI_DIMENSIONS.y);
+            }
             _guiCamera.gameObject.transform.position = new Vector3(Screen.width * 0.5f, Screen.height * 0.5f, -1);
             _guiCamera.orthographicSize = GUI_DIMENSIONS.y * 0.5f;
+            
         }
 
         private void creatGuiCamera()
