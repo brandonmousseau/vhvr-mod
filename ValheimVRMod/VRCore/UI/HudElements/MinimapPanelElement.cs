@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.UI;
 using ValheimVRMod.Utilities;
 using static ValheimVRMod.VRCore.UI.VRHud;
@@ -13,6 +13,7 @@ namespace ValheimVRMod.VRCore.UI.HudElements
         public HudOrientation Orientation => HudOrientation.Horizontal;
 
         private bool toggledOn = true;
+        private bool wasTogglingMap;
 
         //Data class to store references to the small minimap elements
         private class MinimapPanelComponents : IVRPanelComponent
@@ -62,22 +63,34 @@ namespace ValheimVRMod.VRCore.UI.HudElements
 
         public void Update()
         {
-            if (ZInput.GetButtonDown(VRControls.ToggleMiniMap))
+            if (ZInput.GetButton(VRControls.ToggleMiniMap))
             {
-                toggledOn = !toggledOn;
+                if (!wasTogglingMap)
+                {
+                    toggledOn = !toggledOn;
+                }
+                wasTogglingMap = true;
             }
+            else
+            {
+                wasTogglingMap = false;
+            }
+
             maybeCloneSmallMinimapPanelComponents();
             if (_original.mapRoot)
             {
                 _original.mapRoot.SetActive(false);
             }
+
             if (Minimap.m_instance.m_mode == Minimap.MapMode.Small)
             {
                 _clone.Root.SetActive(toggledOn);
-            } else
+            }
+            else
             {
                 _clone.Root.SetActive(false);
             }
+
             updateSmallMinimapPanelHudReferences(_clone, false);
         }
 
