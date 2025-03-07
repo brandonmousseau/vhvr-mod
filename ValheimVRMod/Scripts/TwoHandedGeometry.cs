@@ -208,7 +208,9 @@ namespace ValheimVRMod.Scripts
 
         public abstract class InversibleGeometryProvider : DefaultGeometryProvider
         {
-            private const float HANDLE_LENGTH_BEHIND_CENTER = 1.25f;
+            private const float SPEAR_HANDLE_LENGTH_BEHIND_CENTER = 1.25f;
+            private const float SPEAR_FRONT_HAND_DOMINANT_OFFSET = 0.625f;
+            private const float SPEAR_SINGLE_HAND_OFFSET = 0.5625f;
 
             public InversibleGeometryProvider(float distanceBetweenGripAndRearEnd) : base(distanceBetweenGripAndRearEnd) { }
 
@@ -223,9 +225,9 @@ namespace ValheimVRMod.Scripts
 
             public override Vector3 GetDesiredSingleHandedPosition(WeaponWield weaponWield)
             {
-                if (InverseHold() && IsSpear())
+                if (IsSpear() && !IsAiming())
                 {
-                    return weaponWield.originalPosition + 0.5f * GetSingleHandedPointingDirection(weaponWield);
+                    return weaponWield.originalPosition + SPEAR_SINGLE_HAND_OFFSET * GetSingleHandedPointingDirection(weaponWield);
                 }
                 return weaponWield.originalPosition;
             }
@@ -247,22 +249,23 @@ namespace ValheimVRMod.Scripts
                 if (rearHandIsDominant)
                 {
                     // When the dominant hand is in the back, anchor the very end of the spear handle in it to allow longer attack range.
-                    return HANDLE_LENGTH_BEHIND_CENTER - WeaponWield.HAND_CENTER_OFFSET;
+                    return SPEAR_HANDLE_LENGTH_BEHIND_CENTER - WeaponWield.HAND_CENTER_OFFSET;
                 }
-                else if (handDist > HANDLE_LENGTH_BEHIND_CENTER)
+                else if (handDist > SPEAR_HANDLE_LENGTH_BEHIND_CENTER - SPEAR_FRONT_HAND_DOMINANT_OFFSET)
                 {
                     // The hands are far away from each other, anchor the end of the spear handle in the rear/non-dominant hand.
-                    return HANDLE_LENGTH_BEHIND_CENTER - WeaponWield.HAND_CENTER_OFFSET;
+                    return SPEAR_HANDLE_LENGTH_BEHIND_CENTER - WeaponWield.HAND_CENTER_OFFSET;
                 }
                 else
                 {
                     // Anchor the center of the spear in the front/dominant hand to allow shorter attack range.
-                    return handDist - WeaponWield.HAND_CENTER_OFFSET;
+                    return handDist - WeaponWield.HAND_CENTER_OFFSET + SPEAR_FRONT_HAND_DOMINANT_OFFSET;
                 }
             }
 
             protected abstract bool IsSpear();
             protected abstract bool InverseHold();
+            protected virtual bool IsAiming() {  return false; }
         }
 
         public class LocalSpearGeometryProvider : InversibleGeometryProvider
@@ -276,7 +279,12 @@ namespace ValheimVRMod.Scripts
 
             protected override bool InverseHold()
             {
-                return VHVRConfig.SpearInverseWield() && !ThrowableManager.isAiming && !ThrowableManager.preAimingInTwoStagedThrow;
+                return SpearWield.isSingleHandedWieldCurrentlyInversed && !IsAiming();
+            }
+
+            protected override bool IsAiming()
+            {
+                return ThrowableManager.isAiming || ThrowableManager.preAimingInTwoStagedThrow;
             }
 
             public override Quaternion GetDesiredSingleHandedRotation(WeaponWield weaponWield)
