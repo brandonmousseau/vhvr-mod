@@ -118,7 +118,7 @@ namespace ValheimVRMod.Scripts {
                 }
                 else if (EquipScript.isSpearEquipped() && !ThrowableManager.isAiming)
                 {
-                    inverseHold = VHVRConfig.isSingleHandedWieldCurrentlyInversed || LocalWeaponWield.isCurrentlyTwoHanded();
+                    inverseHold = SpearWield.isSingleHandedWieldCurrentlyInversed || LocalWeaponWield.isCurrentlyTwoHanded();
                 }
                 else
                 {
