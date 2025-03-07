@@ -53,6 +53,7 @@ namespace ValheimVRMod.VRCore.UI
         public static bool originalFullScreen;
         public static bool isResized;
         public static readonly string MENU_GUI_CANVAS = "GUI";
+        public static readonly string PASSWORD_CANVAS = "Password";
         public static readonly string IN_GAME_GUI_CANVAS_LEGACY = "LoadingGUI";
         public static readonly string HUD_GUI_CANVAS = "HUD";
         public static readonly string CURSOR_GUI_CANVAS = "Scaled 3D Viewport";
@@ -164,6 +165,11 @@ namespace ValheimVRMod.VRCore.UI
                         // GUI canvases must have changed, clear them to force finding them again.
                         _guiCanvases.Clear();
                         return;
+                    }
+                    if (guiCanvas.name == PASSWORD_CANVAS)
+                    {
+                        guiCanvas.GetComponent<RectTransform>().anchoredPosition = new Vector2(GUI_DIMENSIONS.x / 2, GUI_DIMENSIONS.y / 2);
+                        continue;
                     }
                     guiCanvas.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, GUI_DIMENSIONS.x);
                     guiCanvas.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, GUI_DIMENSIONS.y);
@@ -515,7 +521,7 @@ namespace ValheimVRMod.VRCore.UI
             _guiCanvases.Clear();
             foreach (var canvas in GameObject.FindObjectsOfType<Canvas>(includeInactive: true))
             {
-                if (canvas.name == MENU_GUI_CANVAS || canvas.name == IN_GAME_GUI_CANVAS_LEGACY)
+                if (canvas.name == MENU_GUI_CANVAS || canvas.name == PASSWORD_CANVAS || canvas.name == IN_GAME_GUI_CANVAS_LEGACY)
                 {
                     _cursorGuiCanvas = _hudGuiCanvas = canvas;
                     _guiCanvases.Add(canvas);
