@@ -22,13 +22,6 @@ namespace ValheimVRMod.Scripts {
         private static readonly Quaternion rightEquippedRotation = Quaternion.Euler(0, -90, -170);
         private static readonly Vector3 rightEquippedElbow = new Vector3(-1, -3f, 0);
 
-        private static readonly Vector3 leftSpearHandPosition = new Vector3(-0.02f, 0.06f, -0.15f);
-        private static readonly Quaternion leftSpearHandRotation = Quaternion.Euler(0, 90, 140);
-        private static readonly Vector3 leftSpearElbow = new Vector3(1, -3f, 0);
-        private static readonly Vector3 rightSpearHandPosition = new Vector3(0.02f, 0.06f, -0.15f);
-        private static readonly Quaternion rightSpearHandRotation = Quaternion.Euler(0, -90, -140);
-        private static readonly Vector3 rightSpearElbow = new Vector3(-1, -3f, 0);
-
         private static Transform localPlayerCamera;
         private static Transform CameraRig { get { return localPlayerCamera.parent; } }
 
@@ -149,13 +142,7 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            if (sync.IsLeftHanded() && sync.currentLeftWeapon != null && sync.currentLeftWeapon.name.StartsWith("Spear") && !sync.InverseHold())
-            {
-                vrik.solver.leftArm.target.localPosition = leftSpearHandPosition;
-                vrik.solver.leftArm.target.localRotation = leftSpearHandRotation;
-                vrik.solver.leftArm.palmToThumbAxis = leftSpearElbow;
-            }
-            else if ((sync?.currentLeftWeapon != null && !IsHoldingBowInLeftHandAsLocalPlayer(player.gameObject)) || sync?.currentDualWieldWeapon != null)
+            if ((sync?.currentLeftWeapon != null && !IsHoldingBowInLeftHandAsLocalPlayer(player.gameObject)) || sync?.currentDualWieldWeapon != null)
             {
                 vrik.solver.leftArm.target.localPosition = leftEquippedPosition;
                 vrik.solver.leftArm.target.localRotation = leftEquippedRotation;
@@ -168,13 +155,7 @@ namespace ValheimVRMod.Scripts {
                 vrik.solver.leftArm.palmToThumbAxis = leftUnequippedElbow;
             }
             
-            if (!sync.IsLeftHanded() && sync.currentRightWeapon != null && sync.currentRightWeapon.name.StartsWith("Spear") && !sync.InverseHold())
-            {
-                vrik.solver.rightArm.target.localPosition = rightSpearHandPosition;
-                vrik.solver.rightArm.target.localRotation = rightSpearHandRotation;
-                vrik.solver.rightArm.palmToThumbAxis = rightSpearElbow;
-            }
-            else if ((sync?.currentRightWeapon != null && !IsHoldingBowInRightHandAsLocalPlayer(player.gameObject)) || sync?.currentDualWieldWeapon != null)
+            if ((sync?.currentRightWeapon != null && !IsHoldingBowInRightHandAsLocalPlayer(player.gameObject)) || sync?.currentDualWieldWeapon != null)
             {
                 vrik.solver.rightArm.target.localPosition = rightEquippedPosition;
                 vrik.solver.rightArm.target.localRotation = rightEquippedRotation;
