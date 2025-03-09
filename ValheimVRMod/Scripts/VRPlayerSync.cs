@@ -204,7 +204,7 @@ namespace ValheimVRMod.Scripts {
                     rotation *= DUNDR_SINGLE_HAND_ADDITIONAL_ROTATION;
                 }
             }
-            pkg.Write(obj.transform.position);
+            pkg.Write(player.m_attached ? obj.transform.position - player.m_attachPoint.position : obj.transform.position);
             pkg.Write(rotation);
             pkg.Write(ownerVelocity);
         }
@@ -274,9 +274,16 @@ namespace ValheimVRMod.Scripts {
             var position = pkg.ReadVector3();
             var rotation = pkg.ReadQuaternion();
             var velocity = pkg.ReadVector3();
-            
-            // Update position based on last written position, velocity, and elapsed time since last data revision
-            position += velocity * deltaTimeCounter;
+
+            if (player.m_attached)
+            {
+                position += player.m_attachPoint.transform.position;
+            }
+            else
+            {
+                // Update position based on last written position, velocity, and elapsed time since last data revision
+                position += velocity * deltaTimeCounter;
+            }
             
             if (!hasTempRelPos)
             {
