@@ -275,8 +275,11 @@ namespace ValheimVRMod.Scripts {
             var rotation = pkg.ReadQuaternion();
             var velocity = pkg.ReadVector3();
 
-            // Update position based on last written position, velocity, and elapsed time since last data revision
-            position += velocity * deltaTimeCounter;
+            if (!player.m_attached)
+            {
+                // Update position based on last written position, velocity, and elapsed time since last data revision
+                position += velocity * deltaTimeCounter;
+            }
             
             if (!hasTempRelPos)
             {
