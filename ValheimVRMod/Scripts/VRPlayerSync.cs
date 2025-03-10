@@ -1,3 +1,4 @@
+using System.Diagnostics.Eventing.Reader;
 using System.Linq;
 using RootMotion.FinalIK;
 using UnityEngine;
@@ -114,15 +115,15 @@ namespace ValheimVRMod.Scripts {
             {
                 if (EquipScript.getRight() == EquipType.Knife)
                 {
-                    inverseHold = TwoHandedGeometry.LocalKnifeGeometryProvider.shouldInverseHold;
+                    inverseHold = LocalWeaponWield.IsDominantHandHoldInversed;
                 }
-                else if (EquipScript.isSpearEquipped() && !ThrowableManager.isAiming)
+                else if (EquipScript.isSpearEquipped())
                 {
-                    inverseHold = SpearWield.isSingleHandedWieldCurrentlyInversed || LocalWeaponWield.isCurrentlyTwoHanded();
+                    inverseHold = LocalWeaponWield.IsDominantHandHoldInversed || LocalWeaponWield.isCurrentlyTwoHanded();
                 }
                 else
                 {
-                    inverseHold = false;
+                    inverseHold = LocalWeaponWield.IsDominantHandHoldInversed && !LocalWeaponWield.isCurrentlyTwoHanded();
                 }
             }
             return inverseHold;
@@ -274,7 +275,7 @@ namespace ValheimVRMod.Scripts {
             var position = pkg.ReadVector3();
             var rotation = pkg.ReadQuaternion();
             var velocity = pkg.ReadVector3();
-            
+
             // Update position based on last written position, velocity, and elapsed time since last data revision
             position += velocity * deltaTimeCounter;
             
