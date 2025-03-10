@@ -35,7 +35,7 @@ namespace ValheimVRMod.Utilities
                     {
                         return IsStrongStab(handPhysicsEstimator) || IsStrongSwing(collisionPhysicsEstimator, handPhysicsEstimator);
                     }
-                    if (TwoHandedGeometry.LocalKnifeGeometryProvider.shouldInverseHold)
+                    if (LocalWeaponWield.IsDominantHandHoldInversed)
                     {
                         return IsStrongStab(handPhysicsEstimator) || IsHook(handPhysicsEstimator);
                     }
