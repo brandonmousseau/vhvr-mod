@@ -6,7 +6,7 @@ using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
 
 namespace ValheimVRMod.Patches {
-    
+
     [HarmonyPatch(typeof(Attack), nameof(Attack.GetAttackOrigin))]
     class PatchAreaAttack {
 
@@ -61,14 +61,14 @@ namespace ValheimVRMod.Patches {
             ref int ___m_attackMaskTerrain,
             ref bool __result
         ) {
-            // if character is not local player, use original Start method
-            if (character != Player.m_localPlayer || !VHVRConfig.UseVrControls() 
-                                                  || __instance.m_attackType.ToString() == "Projectile" 
-                                                  || EquipScript.getRight() == EquipType.Tankard) {
+            if (character != Player.m_localPlayer || // if character is not local player, use original Start method
+                !VHVRConfig.UseVrControls() ||
+                __instance.m_attackType.ToString() == "Projectile" ||
+                __instance.m_attackType == Attack.AttackType.None) {
                 return true;
             }
 
-            ___m_character = character;
+           ___m_character = character;
             ___m_animEvent = animEvent;
             ___m_weapon = weapon;
             attackHeight = ___m_attackHeight;
@@ -85,7 +85,7 @@ namespace ValheimVRMod.Patches {
                 ___m_attackMaskTerrain = LayerMask.GetMask("Default", "static_solid", "Default_small", "piece", "piece_nonsolid", "terrain", nameof (character), "character_net", "character_ghost", "hitbox", "character_noenv", "vehicle");
             }
             
-            if (!AttackTargetMeshCooldown.staminaDrained) {
+            if (!(AttackTargetMeshCooldown.staminaDrained || ButtonSecondaryAttackManager.isStaminaDrained)) {
                 float staminaUsage = (float) __instance.GetAttackStamina();
                 if (staminaUsage > 0.0f && !character.HaveStamina(staminaUsage + 0.1f)) {
                     // FIXME: Mystlands probably changed this from StaminaBarNoStaminaFlash
@@ -97,11 +97,12 @@ namespace ValheimVRMod.Patches {
                     ___m_attackOffset = attackOffset;
                     return false;
                 }
-            
+
                 character.UseStamina(staminaUsage);
                 AttackTargetMeshCooldown.staminaDrained = true;
             }
 
+            ButtonSecondaryAttackManager.isStaminaDrained = false;
             Collider col = StaticObjects.lastHitCollider;
             Vector3 pos = StaticObjects.lastHitPoint;
             Vector3 dir = StaticObjects.lastHitDir;
@@ -133,7 +134,7 @@ namespace ValheimVRMod.Patches {
             Collider col, Vector3 dir, GameObject ___m_spawnOnTrigger) {
             
             Vector3 zero = Vector3.zero;
-            bool flag2 = false; //rename
+            bool isHittingCharacter = false;
             HashSet<Skills.SkillType> skillTypeSet = new HashSet<Skills.SkillType>();
             bool hitOccured = false;
 
@@ -163,15 +164,21 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
-            IDestructible component = hitObject.GetComponent<IDestructible>();
+            IDestructible destructible = hitObject.GetComponent<IDestructible>();
 
-            if (component != null) {
-                DestructibleType destructibleType = component.GetDestructibleType();
+            if (destructible != null) {
+                DestructibleType destructibleType = destructible.GetDestructibleType();
                 Skills.SkillType skill = ___m_weapon.m_shared.m_skillType;
 
                 if (___m_specialHitSkill != Skills.SkillType.None &&
                     (destructibleType & ___m_specialHitType) != DestructibleType.None) {
                     skill = ___m_specialHitSkill;
+                    skillTypeSet.Add(skill);
+                }
+                else if ((destructibleType & __instance.m_skillHitType) != DestructibleType.None)
+                {
+                    skill = ___m_weapon.m_shared.m_skillType;
+                    skillTypeSet.Add(skill);
                 }
 
                 float randomSkillFactor = ___m_character.GetRandomSkillFactor(skill);
@@ -217,12 +224,9 @@ namespace ValheimVRMod.Patches {
                 }
 
                 ___m_character.GetSEMan().ModifyAttack(skill, ref hitData);
-                if (component is Character)
-                    flag2 = true;
-                component.Damage(hitData);
-                if ((destructibleType & ___m_resetChainIfHit) != DestructibleType.None)
-                    ___m_nextAttackChainLevel = 0;
-                skillTypeSet.Add(skill);
+                if (destructible is Character) isHittingCharacter = true;
+                destructible.Damage(hitData);
+                if ((destructibleType & ___m_resetChainIfHit) != DestructibleType.None) ___m_nextAttackChainLevel = 0;
             }
 
             ___m_weapon.m_shared.m_hitTerrainEffect.Create(pos,
@@ -251,14 +255,36 @@ namespace ValheimVRMod.Patches {
                         Quaternion.identity).GetComponent<IProjectile>()
                     ?.Setup(___m_character, zero, ___m_attackHitNoise, null, ___m_weapon, ___m_ammoItem);
             foreach (Skills.SkillType skill in skillTypeSet)
-                ___m_character.RaiseSkill(skill, flag2 ? 1.5f : 1f);
+                ___m_character.RaiseSkill(skill, isHittingCharacter ? 1.5f : 1f);
 
-            if (!___m_spawnOnTrigger)
-                return;
-            // FIXME: Setup now takes in input an additional ammo parameter, look into this
-            Object.Instantiate(___m_spawnOnTrigger, zero,
-                Quaternion.identity).GetComponent<IProjectile>()?.Setup(___m_character,
-                ___m_character.transform.forward, -1f, null, ___m_weapon, ___m_ammoItem);
+            if (___m_spawnOnTrigger)
+            {
+                // FIXME: Setup now takes in input an additional ammo parameter, look into this
+                Object.Instantiate(___m_spawnOnTrigger, zero,
+                    Quaternion.identity).GetComponent<IProjectile>()?.Setup(___m_character,
+                    ___m_character.transform.forward, -1f, null, ___m_weapon, ___m_ammoItem);
+            }
+
+            if (__instance.m_harvest && ___m_character == Player.m_localPlayer)
+            {
+                Pickable pickable = hitObject.GetComponent<Pickable>();
+                if (pickable != null && pickable.m_harvestable && pickable.CanBePicked())
+                {
+                    pickable.Interact(Player.m_localPlayer, false, false);
+                }
+                else
+                {
+                    Plant plant = hitObject.GetComponent<Plant>();
+                    if (plant != null && plant.GetStatus() != Plant.Status.Healthy)
+                    {
+                        Destructible plantDestructible = hitObject.GetComponent<Destructible>();
+                        if (plantDestructible != null)
+                        {
+                            plantDestructible.Destroy(null);
+                        }
+                    }
+                }
+            }
 
             return;
         }

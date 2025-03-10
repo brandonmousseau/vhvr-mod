@@ -10,6 +10,8 @@ namespace ValheimVRMod.Utilities {
         private static WeaponCollision _rightWeaponCollider;
         private static FistCollision _leftFist;
         private static FistCollision _rightFist;
+        private static FootCollision _leftFootCollision;
+        private static FootCollision _rightFootCollision;
         public static GameObject leftHandQuickMenu;
         public static GameObject rightHandQuickMenu;
         private static GameObject _shieldObj;
@@ -34,7 +36,17 @@ namespace ValheimVRMod.Utilities {
         public static FistCollision rightFist() {
             return getCollisionScriptSphere(ref _rightFist);
         }
-        
+
+        public static FootCollision leftFootCollision()
+        {
+            return getCollisionScriptCube(ref _leftFootCollision);
+        }
+
+        public static FootCollision rightFootCollision()
+        {
+            return getCollisionScriptCube(ref _rightFootCollision);
+        }
+
         private static T getCollisionScriptCube<T>(ref T collisionScript) where T : Component{
             
             if (collisionScript != null) {
@@ -44,7 +56,8 @@ namespace ValheimVRMod.Utilities {
             var collisionObj = GameObject.CreatePrimitive(PrimitiveType.Cube);
             Object.Destroy(collisionObj.GetComponent<MeshRenderer>());
             collisionObj.GetComponent<BoxCollider>().isTrigger = true;
-            collisionObj.layer = LayerUtils.CHARACTER;
+            // Use this layer to make sure the weapon collides with all targets including soft building pieces and plants.
+            collisionObj.layer = LayerUtils.VHVR_WEAPON;
             Rigidbody rigidbody = collisionObj.AddComponent<Rigidbody>();
             rigidbody.useGravity = false;
             return collisionScript = collisionObj.AddComponent<T>();
@@ -59,17 +72,33 @@ namespace ValheimVRMod.Utilities {
             var collisionObj = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             Object.Destroy(collisionObj.GetComponent<MeshRenderer>());
             collisionObj.GetComponent<SphereCollider>().isTrigger = true;
-            collisionObj.layer = LayerUtils.CHARACTER;
+            // Use this layer to make sure the weapon collides with all targets including soft building pieces and plants.
+            collisionObj.layer = LayerUtils.VHVR_WEAPON;
             Rigidbody rigidbody = collisionObj.AddComponent<Rigidbody>();
             rigidbody.useGravity = false;
             return collisionScript = collisionObj.AddComponent<T>();
         } 
         
+        public static void destroyQuickMenus()
+        {
+            if (leftHandQuickMenu != null)
+            {
+                GameObject.Destroy(leftHandQuickMenu);
+                leftHandQuickMenu = null;
+            }
+
+            if (rightHandQuickMenu != null)
+            {
+                GameObject.Destroy(rightHandQuickMenu);
+                rightHandQuickMenu = null;
+            }
+        }
+
         public static void addQuickMenus() {
+            destroyQuickMenus();
             leftHandQuickMenu = new GameObject();
             leftHandQuickMenu.AddComponent<LeftHandQuickMenu>();
             leftHandQuickMenu.SetActive(false);
-
             rightHandQuickMenu = new GameObject();
             rightHandQuickMenu.AddComponent<RightHandQuickMenu>();
             rightHandQuickMenu.SetActive(false);
@@ -100,6 +129,13 @@ namespace ValheimVRMod.Utilities {
             _mouthCollider.transform.localPosition = new Vector3(0,-0.06f,0.04f);
             _mouthCollider.transform.localRotation = Quaternion.identity;
             _mouthCollider.transform.localScale = new Vector3(0.06f, 0.03f, 0.06f);
+        }
+
+        public static T GetOrAddComponent<T>(this GameObject gameObject) where T : Component
+        {
+            T component = gameObject.GetComponent<T>();
+            return component != null ? component : gameObject.AddComponent<T>();
+
         }
     }
 }

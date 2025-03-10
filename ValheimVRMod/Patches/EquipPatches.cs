@@ -33,15 +33,18 @@ namespace ValheimVRMod.Patches {
             }
 
             MeshFilter meshFilter = ___m_rightItemInstance.GetComponentInChildren<MeshFilter>();
-            if (meshFilter == null)
-            {
-                return;
-            }
-
             var vrPlayerSync = player.GetComponent<VRPlayerSync>();
             
-            if (vrPlayerSync != null && meshFilter != null) {
-                if (vrPlayerSync.IsLeftHanded()) {
+            if (vrPlayerSync != null) {
+                if (meshFilter == null)  {
+                    // For non-local player, it is hard to know whether claw is being used.
+                    if (player != Player.m_localPlayer || EquipScript.getRight() != EquipType.Claws) {
+                        vrPlayerSync.currentDualWieldWeapon =
+                            ___m_rightItemInstance.GetComponentInChildren<SkinnedMeshRenderer>()?.gameObject;
+                    }
+                    vrPlayerSync.currentLeftWeapon = vrPlayerSync.currentRightWeapon = null;
+                }
+                else if (vrPlayerSync.IsLeftHanded()) {
                     vrPlayerSync.currentLeftWeapon = meshFilter.gameObject;
                     vrPlayerSync.currentLeftWeapon.name = ___m_rightItem;    
                 }
@@ -50,8 +53,13 @@ namespace ValheimVRMod.Patches {
                     vrPlayerSync.currentRightWeapon = meshFilter.gameObject;
                     vrPlayerSync.currentRightWeapon.name = ___m_rightItem;
                 }
-                
+
                 VrikCreator.resetVrikHandTransform(player);   
+            }
+
+            if (meshFilter == null)
+            {
+                return;
             }
 
             if (Player.m_localPlayer != player)
@@ -65,6 +73,8 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
+            ParticleFix.maybeFix(___m_rightItemInstance, EquipScript.getRight());
+
             if (!VHVRConfig.UseVrControls()) {
                 return;
             }
@@ -77,7 +87,7 @@ namespace ValheimVRMod.Patches {
             switch (EquipScript.getRight()) {
                 case EquipType.Hammer:
                     meshFilter.gameObject.AddComponent<BuildingManager>();
-                    return;
+                    break;
                 case EquipType.Fishing:
                     meshFilter.gameObject.transform.localPosition = new Vector3(0, 0, -0.4f);
                     meshFilter.gameObject.AddComponent<FishingManager>();
@@ -100,6 +110,20 @@ namespace ValheimVRMod.Patches {
             var weaponCol = StaticObjects.rightWeaponCollider().GetComponent<WeaponCollision>();
             weaponCol.setColliderParent(
                 meshFilter, handPosition: ___m_rightItemInstance.transform.parent.position, ___m_rightItem, true);
+            switch (EquipScript.getRight())
+            {
+                case EquipType.Cultivator:
+                case EquipType.Hammer:
+                case EquipType.Hoe:
+                case EquipType.Sledge:
+                case EquipType.Tankard:
+                    weaponCol.gameObject.layer = LayerUtils.CHARACTER;
+                    break;
+                default:
+                    // Use this layer to make sure the weapon collides with all targets including soft building pieces and plants.
+                    weaponCol.gameObject.layer = LayerUtils.VHVR_WEAPON;
+                    break;
+            }
             weaponCol.weaponWield = weaponWield;
             meshFilter.gameObject.AddComponent<ButtonSecondaryAttackManager>().Initialize(meshFilter.transform, ___m_rightItem, true);
 
@@ -114,8 +138,6 @@ namespace ValheimVRMod.Patches {
             {
                 meshFilter.gameObject.AddComponent<WeaponBlock>().weaponWield = weaponWield;
             }
-
-            ParticleFix.maybeFix(___m_rightItemInstance);
         }
     }
 
@@ -143,14 +165,9 @@ namespace ValheimVRMod.Patches {
             }
 
             MeshFilter meshFilter = ___m_leftItemInstance.GetComponentInChildren<MeshFilter>();
-            if (meshFilter == null)
-            {
-                return;
-            }
-
             var vrPlayerSync = player.GetComponent<VRPlayerSync>();
 
-            if (vrPlayerSync != null && vrPlayerSync.hasReceivedData) {
+            if (vrPlayerSync != null && meshFilter != null && vrPlayerSync.hasReceivedData) {
                 if (vrPlayerSync.IsLeftHanded()) {
                     vrPlayerSync.currentRightWeapon = meshFilter.gameObject;    
                 }
@@ -160,6 +177,11 @@ namespace ValheimVRMod.Patches {
                 }
                 
                 VrikCreator.resetVrikHandTransform(player);
+            }
+
+            if (meshFilter == null)
+            {
+                return;
             }
 
             if (Player.m_localPlayer != player)
@@ -172,9 +194,16 @@ namespace ValheimVRMod.Patches {
                 }
                 return;
             }
-            
+
+            ParticleFix.maybeFix(___m_leftItemInstance, EquipScript.getLeft());
+
             if (!VHVRConfig.UseVrControls()) {
                 return;
+            }
+
+            if (MagicWeaponManager.CanSummonWithOppositeHand())
+            {
+                ___m_leftItemInstance.AddComponent<MagicWeaponManager.SummonByMovingHandUpward>();
             }
 
             if (StaticObjects.rightHandQuickMenu != null) {
@@ -202,7 +231,6 @@ namespace ValheimVRMod.Patches {
             }
 
             meshFilter.gameObject.AddComponent<ButtonSecondaryAttackManager>().Initialize(meshFilter.transform, ___m_leftItem, false);
-            ParticleFix.maybeFix(___m_leftItemInstance);
         }
     }
 
@@ -367,7 +395,7 @@ namespace ValheimVRMod.Patches {
     class HeadEquipVisibiltiyUpdater : MonoBehaviour
     {
         private bool isLocalPlayer;
-
+        Dictionary<GameObject, int> originalLayers = new Dictionary<GameObject, int>();
         private bool isHidden = false;
 
         void Awake() {
@@ -382,14 +410,31 @@ namespace ValheimVRMod.Patches {
                 if (!isHidden) {
                     foreach (Renderer renderer in gameObject.GetComponentsInChildren<Renderer>())
                     {
-                        renderer.shadowCastingMode = ShadowCastingMode.ShadowsOnly;
+                        if (!originalLayers.ContainsKey(renderer.gameObject))
+                        {
+                            originalLayers.Add(renderer.gameObject, renderer.gameObject.layer);
+                        }
+                        if (VHVRConfig.UseThirdPersonCameraOnFlatscreen())
+                        {
+                            // Borrow the UI layer to hide the equipment from the VR camera but keep them shown to the follow camera.
+                            renderer.gameObject.layer = LayerUtils.CHARARCTER_TRIGGER;
+                        }
+                        else
+                        {
+                            renderer.shadowCastingMode = ShadowCastingMode.ShadowsOnly;
+                        }
                     }
                     isHidden = true;
                 }
-            } else if (isHidden)
+            }
+            else if (isHidden)
             {
                 foreach (Renderer renderer in gameObject.GetComponentsInChildren<Renderer>())
                 {
+                    if (originalLayers.ContainsKey(renderer.gameObject))
+                    {
+                        renderer.gameObject.layer = originalLayers[renderer.gameObject];
+                    }
                     renderer.shadowCastingMode = ShadowCastingMode.On;
                 }
                 isHidden = false;

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 
 using static ValheimVRMod.Utilities.LogUtils;
 using UnityEngine.InputSystem.UI;
+using System.Linq;
 
 namespace ValheimVRMod.VRCore.UI
 {
@@ -52,7 +53,29 @@ namespace ValheimVRMod.VRCore.UI
         public static bool originalFullScreen;
         public static bool isResized;
         public static readonly string MENU_GUI_CANVAS = "GUI";
-        public static readonly string GAME_GUI_CANVAS = "LoadingGUI";
+        public static readonly string PASSWORD_CANVAS = "Password";
+        public static readonly string IN_GAME_GUI_CANVAS_LEGACY = "LoadingGUI";
+        public static readonly string HUD_GUI_CANVAS = "HUD";
+        public static readonly string CURSOR_GUI_CANVAS = "Scaled 3D Viewport";
+        public static readonly string CHAT_BOX = "Chat_box";
+        public static readonly string[] ADDITIONAL_GUI_CANVAS_NAMES = new string[]
+        {
+            "Chat",
+            "TextViewer",
+            "JoinCodeOverlay",
+            "Store_Screen",
+            "ClosedCaptions",
+            "Inventory_screen",
+            "Menu",
+            "MiniMap",
+            "TopLeftMessage",
+            "TextInput",
+            "HudMessage",
+            "ConnectionPanel",
+            "UnifiedPopup",
+            "Tutorial",
+            "BarberGui"
+        };
         private static readonly string OVERLAY_KEY = "VALHEIM_VR_MOD_OVERLAY";
         private static readonly string OVERLAY_NAME = "Valheim VR";
         private static readonly string UI_PANEL_NAME = "VRUIPanel";
@@ -65,9 +88,12 @@ namespace ValheimVRMod.VRCore.UI
 
         private Camera _uiPanelCamera;
         private Camera _guiCamera;
-        private Canvas _guiCanvas;
-        private GameObject _uiPanel;
-        private GameObject _uiPanelTransformLocker;
+        private List<Canvas> _guiCanvases = new List<Canvas>();
+        private Canvas _cursorGuiCanvas;
+        private Canvas _hudGuiCanvas;
+        private Canvas _chatBox;
+        private static Transform _uiPanel;
+        private Transform _uiPanelTransformLocker;
         private RenderTexture _guiTexture;
         private RenderTexture _overlayTexture;
 
@@ -79,9 +105,12 @@ namespace ValheimVRMod.VRCore.UI
         private static bool isRecentering = false;
         private bool movingLastFrame = false;
         private Quaternion lastVrPlayerRotation = Quaternion.identity;
+        private bool showingChatBox = false;
 
         // Native handle to OpenVR overlay
         private ulong _overlay = OpenVR.k_ulOverlayHandleInvalid;
+        private int updateTicker = 0;
+        private int textureUpdateTicker = 0;
 
         public void Awake()
         {
@@ -103,38 +132,67 @@ namespace ValheimVRMod.VRCore.UI
 
         public void OnRenderObject()
         {
-            if (ensureGuiCanvas())
+            if (ensureGuiCanvas() && !USING_OVERLAY)
             {
-                if (!USING_OVERLAY)
-                {
-                    updateUiPanel();
-                    maybeInitializePointers();
-                }
+                updateUiPanel();
+                maybeInitializePointers();
             }
         }
 
         public void FixedUpdate()
         {
-            if (ensureGuiCanvas())
+            if (!ensureGuiCanvas())
+            {
+                return;
+            }
+
+            bool wasShowingChatBox = showingChatBox;
+            showingChatBox = _chatBox != null && _chatBox.isActiveAndEnabled;
+            if (!wasShowingChatBox && showingChatBox)
+            {
+                _chatBox.worldCamera = _guiCamera;
+                _chatBox.renderMode = RenderMode.WorldSpace;
+                _chatBox.GetComponent<RectTransform>().anchoredPosition = new Vector2(GUI_DIMENSIONS.x / 2, GUI_DIMENSIONS.y / 2);
+            }
+
+            if (++updateTicker >= 16)
             {
                 GUI_DIMENSIONS = VHVRConfig.GetUiPanelResolution();
-                _guiCanvas.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, GUI_DIMENSIONS.x);
-                _guiCanvas.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, GUI_DIMENSIONS.y);
-                CrosshairManager.instance.maybeReparentCrosshair();
-                if (VHVRConfig.ShowRepairHammer() && RepairModePositionIndicator.instance != null)
+                foreach (Canvas guiCanvas in _guiCanvases)
                 {
-                    RepairModePositionIndicator.instance.Update();
+                    if (guiCanvas == null)
+                    {
+                        // GUI canvases must have changed, clear them to force finding them again.
+                        _guiCanvases.Clear();
+                        return;
+                    }
+                    if (guiCanvas.name == PASSWORD_CANVAS)
+                    {
+                        guiCanvas.GetComponent<RectTransform>().anchoredPosition = new Vector2(GUI_DIMENSIONS.x / 2, GUI_DIMENSIONS.y / 2);
+                        continue;
+                    }
+                    guiCanvas.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, GUI_DIMENSIONS.x);
+                    guiCanvas.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, GUI_DIMENSIONS.y);
                 }
-                maybeTriggerGuiRecenter();
-                if (USING_OVERLAY)
-                {
-                    checkAndSetCurvatureUpdates();
-                    updateOverlay();
-                } else
-                {
-                    updateUiPanel();
-                    maybeInitializePointers();
-                }
+
+            }
+            CrosshairManager.instance.maybeReparentCrosshair();
+            if (VHVRConfig.ShowRepairHammer() && RepairModePositionIndicator.instance != null)
+            {
+                RepairModePositionIndicator.instance.Update();
+            }
+
+            if (updateTicker < 16)
+            {
+                return;
+            }
+            updateTicker = 0;
+
+            maybeTriggerGuiRecenter();
+            if (USING_OVERLAY)
+            {
+                checkAndSetCurvatureUpdates();
+                updateOverlay();
             }
         }
 
@@ -208,8 +266,9 @@ namespace ValheimVRMod.VRCore.UI
                 createUiPanelCamera();
             }
             updateUiPanelScaleAndPosition();
-            if (_guiCanvas != null && _guiTexture != null) 
+            if (_guiCanvases.Count > 0 && _guiTexture != null && ++textureUpdateTicker > 128)
             {
+                textureUpdateTicker = 0;
                 _uiPanel.GetComponent<Renderer>().material.mainTexture = _guiTexture;
             }
         }
@@ -222,30 +281,30 @@ namespace ValheimVRMod.VRCore.UI
                 if (shouldLockDynamicGuiPosition())
                 {
                     // Restore the locked position and rotation of GUI's relative to the VR camera rig.
-                    _uiPanel.transform.SetPositionAndRotation(_uiPanelTransformLocker.transform.position, _uiPanelTransformLocker.transform.rotation);
+                    _uiPanel.SetPositionAndRotation(_uiPanelTransformLocker.position, _uiPanelTransformLocker.rotation);
                     isRecentering = false;
                     return;
                 }
                 // Record the GUI's transform in case it will be locked in that position and rotation.
-                _uiPanelTransformLocker.transform.SetPositionAndRotation(_uiPanel.transform.position, _uiPanel.transform.rotation);
+                _uiPanelTransformLocker.SetPositionAndRotation(_uiPanel.position, _uiPanel.rotation);
 
                 var playerInstance = Player.m_localPlayer;
 
                 if (playerInstance.IsAttachedToShip())
                 {
                     // Always lock the UI to the forward direction of ship when sailing.
-                    var upTarget = Vector3.up;
-                    if (VHVRConfig.IsShipImmersiveCamera())
-                    {
-                        upTarget = VRPlayer.instance.transform.up;
-                    }
-                    Vector3 forwardDirection = Vector3.ProjectOnPlane(Player.m_localPlayer.m_attachPoint.forward, upTarget).normalized;
-                    _uiPanel.transform.rotation = Quaternion.LookRotation(forwardDirection, VRPlayer.instance.transform.up);
-                    _uiPanel.transform.position = playerInstance.transform.position + _uiPanel.transform.rotation * offsetPosition;
+                    Vector3 shipForward = Player.m_localPlayer.m_attachPoint.forward;
+                    Vector3 roomUp = VRPlayer.instance.transform.up;
+                    Vector3 forwardDirection = Vector3.ProjectOnPlane(shipForward, roomUp).normalized;
+                    _uiPanel.rotation = Quaternion.LookRotation(forwardDirection, roomUp);
+                    _uiPanel.position = VRPlayer.instance.transform.position + _uiPanel.rotation * offsetPosition;
                     return;
                 }
-                _uiPanel.transform.localScale = new Vector3(VHVRConfig.GetUiPanelSize() * GUI_DIMENSIONS.x / GUI_DIMENSIONS.y,
-                                                        VHVRConfig.GetUiPanelSize(), 0.00001f);
+                _uiPanel.transform.localScale =
+                    new Vector3(
+                        VHVRConfig.GetUiPanelSize() * GUI_DIMENSIONS.x / GUI_DIMENSIONS.y,
+                        VHVRConfig.GetUiPanelSize(),
+                        0.00001f);
                 var currentDirection = getCurrentGuiDirection();
                 if (isRecentering)
                 {
@@ -255,11 +314,12 @@ namespace ValheimVRMod.VRCore.UI
                     var targetDirection = getTargetGuiDirection();
                     var stepDirection = Vector3.Slerp(currentDirection, targetDirection, VHVRConfig.GuiRecenterSpeed() * Mathf.Deg2Rad * Time.unscaledDeltaTime);
                     var stepRotation = Quaternion.LookRotation(stepDirection, VRPlayer.instance.transform.up);
-                    _uiPanel.transform.rotation = stepRotation;
-                    _uiPanel.transform.position = playerInstance.transform.position + stepRotation * offsetPosition;
+                    _uiPanel.rotation = stepRotation;
+                    _uiPanel.position = playerInstance.transform.position + stepRotation * offsetPosition;
                     lastVrPlayerRotation = VRPlayer.instance.transform.rotation;
                     maybeResetIsRecentering(stepDirection, targetDirection);
-                } else
+                }
+                else
                 {
                     // We are not recentering, so keep the GUI in front of the player. Need to account for
                     // any rotation of the VRPlayer instance caused by mouse or joystick input since the last frame.
@@ -267,18 +327,17 @@ namespace ValheimVRMod.VRCore.UI
                     lastVrPlayerRotation = VRPlayer.instance.transform.rotation;
                     var newRotation = Quaternion.LookRotation(currentDirection, VRPlayer.instance.transform.up);
                     newRotation *= Quaternion.AngleAxis(rotationDelta, Vector3.up);
-                    _uiPanel.transform.rotation = newRotation;
-                    _uiPanel.transform.position = playerInstance.transform.position + newRotation * offsetPosition;
+                    _uiPanel.rotation = newRotation;
+                    _uiPanel.position = playerInstance.transform.position + newRotation * offsetPosition;
                 }
             }
             else
             {
-                _uiPanel.transform.rotation = VRPlayer.instance.transform.rotation;
-                _uiPanel.transform.position = VRPlayer.instance.transform.position + VRPlayer.instance.transform.rotation * offsetPosition;
+                _uiPanel.rotation = VRPlayer.instance.transform.rotation;
+                _uiPanel.position = VRPlayer.instance.transform.position + VRPlayer.instance.transform.rotation * offsetPosition;
             }
             float ratio = (float)GUI_DIMENSIONS.x / (float)GUI_DIMENSIONS.y;
-            _uiPanel.transform.localScale = new Vector3(VHVRConfig.GetUiPanelSize() * ratio,
-                                                        VHVRConfig.GetUiPanelSize(), 0.00001f);
+            _uiPanel.localScale = new Vector3(VHVRConfig.GetUiPanelSize() * ratio, VHVRConfig.GetUiPanelSize(), 0.00001f);
         }
 
         private bool shouldLockDynamicGuiPosition()
@@ -288,7 +347,7 @@ namespace ValheimVRMod.VRCore.UI
 
         private bool menuIsOpen()
         {
-            return StoreGui.IsVisible() || InventoryGui.IsVisible() || Menu.IsVisible() || (TextViewer.instance && TextViewer.instance.IsVisible()) || Minimap.IsOpen();
+            return StoreGui.IsVisible() || InventoryGui.IsVisible() || Menu.IsVisible() || Minimap.IsOpen();
         }
 
         private bool ensureUIPanel()
@@ -308,9 +367,9 @@ namespace ValheimVRMod.VRCore.UI
 
             if (_uiPanel == null)
             {
-                _uiPanel = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                _uiPanel = GameObject.CreatePrimitive(PrimitiveType.Quad).transform;
                 _uiPanel.name = UI_PANEL_NAME;
-                _uiPanel.layer = LayerUtils.getUiPanelLayer();
+                _uiPanel.gameObject.layer = LayerUtils.getUiPanelLayer();
                 Material mat = VRAssetManager.GetAsset<Material>("vr_panel_unlit");
                 _uiPanel.GetComponent<Renderer>().material = mat;
                 _uiPanel.GetComponent<Renderer>().material.mainTexture = _guiTexture;
@@ -320,9 +379,9 @@ namespace ValheimVRMod.VRCore.UI
 
             if (_uiPanelTransformLocker == null)
             {
-                _uiPanelTransformLocker = new GameObject();
+                _uiPanelTransformLocker = new GameObject().transform;
                 // The locker should move with the vr camera rig in case we need to use it to lock the UI panel in place.
-                _uiPanelTransformLocker.transform.SetParent(vrCam.transform.parent, false);
+                _uiPanelTransformLocker.SetParent(vrCam.transform.parent, false);
             }
 
             return _uiPanel != null && _uiPanelTransformLocker != null;
@@ -389,12 +448,20 @@ namespace ValheimVRMod.VRCore.UI
 
         public void OnPointerTracking(object p, PointerEventArgs e)
         {
-            if (isUiPanel(e.target))
+            if (!_leftPointer.pointerIsActive() && !_rightPointer.pointerIsActive())
             {
-                SoftwareCursor.simulatedMousePosition =
-                    convertLocalUiPanelCoordinatesToCursorCoordinates(e.target.InverseTransformPoint(e.position));
-                _inputModule.UpdateButtonStates(e.buttonStateLeft, e.buttonStateRight, false);
+                // Updating button states are expensive and only needs to be done when the user is using a laser pointer.
+                return;
             }
+
+            if (!isUiPanel(e.target))
+            {
+                return;
+            }
+
+            SoftwareCursor.simulatedMousePosition =
+                convertLocalUiPanelCoordinatesToCursorCoordinates(e.target.InverseTransformPoint(e.position));
+            _inputModule.UpdateButtonStates(e.buttonStateLeft, e.buttonStateRight, false);
         }
 
         private Vector2 convertLocalUiPanelCoordinatesToCursorCoordinates(Vector3 localCoordinates)
@@ -446,23 +513,50 @@ namespace ValheimVRMod.VRCore.UI
 
         private bool ensureGuiCanvas()
         {
-            if (_guiCanvas == null)
-            {
-                foreach (var canvas in GameObject.FindObjectsOfType<Canvas>())
-                {
-                    if (canvas.name == GAME_GUI_CANVAS 
-                        || canvas.name == MENU_GUI_CANVAS)
-                    {
-                        _guiCanvas = canvas;
-                        onGuiCanvasFound();
-                        return true;
-                    }
-                }
-            } else
+            if (hasFoundGuiCanvas())
             {
                 return true;
             }
+
+            _guiCanvases.Clear();
+            foreach (var canvas in GameObject.FindObjectsOfType<Canvas>(includeInactive: true))
+            {
+                if (canvas.name == MENU_GUI_CANVAS || canvas.name == PASSWORD_CANVAS || canvas.name == IN_GAME_GUI_CANVAS_LEGACY)
+                {
+                    _cursorGuiCanvas = _hudGuiCanvas = canvas;
+                    _guiCanvases.Add(canvas);
+                }
+                else if (canvas.name == CURSOR_GUI_CANVAS)
+                {
+                    _cursorGuiCanvas = canvas;
+                    _guiCanvases.Add(canvas);
+                }
+                else if (canvas.name == HUD_GUI_CANVAS)
+                {
+                    _hudGuiCanvas = canvas;
+                    _guiCanvases.Add(canvas);
+                } 
+                else if (canvas.name == CHAT_BOX)
+                {
+                    _chatBox = canvas;
+                }
+                else if (ADDITIONAL_GUI_CANVAS_NAMES.Contains(canvas.name)) {
+                    _guiCanvases.Add(canvas);
+                }
+            }
+
+            if (hasFoundGuiCanvas())
+            {
+                onGuiCanvasFound();
+                return true;
+            }
+
             return false;
+        }
+
+        private bool hasFoundGuiCanvas()
+        {
+           return _guiCanvases.Count > 0 && _cursorGuiCanvas != null && _hudGuiCanvas != null;
         }
 
         private void updateOverlay()
@@ -566,18 +660,16 @@ namespace ValheimVRMod.VRCore.UI
 
         private Vector3 getTargetGuiDirection()
         {
-            Vector3 forwardDirection = Vector3.forward;
-            if (Player.m_localPlayer != null)
+            var hmd = Valve.VR.InteractionSystem.Player.instance?.hmdTransform;
+            if (Player.m_localPlayer == null || hmd == null || USING_OVERLAY)
             {
-                if (!USING_OVERLAY)
-                {
-                    forwardDirection = Valve.VR.InteractionSystem.Player.instance.hmdTransform.forward;
-                    forwardDirection.y = 0;
-                    forwardDirection.Normalize();
-                }
+                return Vector3.forward;
             }
-            
-            return forwardDirection;
+
+            var targetGuiDirection = hmd.forward;
+            targetGuiDirection.y = 0;
+            targetGuiDirection.Normalize();
+            return targetGuiDirection;
         }
 
         private Vector3 getCurrentGuiDirection()
@@ -620,25 +712,30 @@ namespace ValheimVRMod.VRCore.UI
 
         private void onGuiCanvasFound()
         {
-            LogDebug("Found GUI Canvas");
-            SoftwareCursor.instance.GetComponent<RectTransform>().SetParent(_guiCanvas.transform, false);
-            SoftwareCursor.instance.GetComponent<SoftwareCursor>().parent = _guiCanvas.GetComponent<RectTransform>();
-            CrosshairManager.instance.guiCanvas = _guiCanvas;
-            // Need to assign the camera to enable UI interactions
-            _guiCanvas.worldCamera = _guiCamera;
-            // Originally this was using ScreenSpaceCamera, which was handy to auto-size the canvas/camera
-            // so I didn't need to worry about orthographic size or camera position. The problem
-            // is that there are certain UI elements, particularly in the minimap, that are added
-            // to the canvas using absolute pixel sizes - which when using ScreenSpaceCamera didn't translate
-            // and ended up with map icons extremely large and obscuring the entire map. By using WorldSpace
-            // for the render mode, we can keep the world coordinates equal to the screen space coordinates,
-            // i.e. 1 pixel on screen = 1 unit of world space. That way when any elements are added to the GUI
-            // at a specific pixel size, they are scaled properly.
-            _guiCanvas.renderMode = RenderMode.WorldSpace;
-            _guiCanvas.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, GUI_DIMENSIONS.x);
-            _guiCanvas.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, GUI_DIMENSIONS.y);
+            LogDebug("Found GUI Canvases");
+            SoftwareCursor.instance.GetComponent<RectTransform>().SetParent(_cursorGuiCanvas.transform, false);
+            SoftwareCursor.instance.GetComponent<SoftwareCursor>().parent = _cursorGuiCanvas.GetComponent<RectTransform>();
+            CrosshairManager.instance.guiCanvas = _hudGuiCanvas;
+
+            foreach (Canvas guiCanvas in _guiCanvases)
+            {
+                // Need to assign the camera to enable UI interactions
+                guiCanvas.worldCamera = _guiCamera;
+                // Originally this was using ScreenSpaceCamera, which was handy to auto-size the canvas/camera
+                // so I didn't need to worry about orthographic size or camera position. The problem
+                // is that there are certain UI elements, particularly in the minimap, that are added
+                // to the canvas using absolute pixel sizes - which when using ScreenSpaceCamera didn't translate
+                // and ended up with map icons extremely large and obscuring the entire map. By using WorldSpace
+                // for the render mode, we can keep the world coordinates equal to the screen space coordinates,
+                // i.e. 1 pixel on screen = 1 unit of world space. That way when any elements are added to the GUI
+                // at a specific pixel size, they are scaled properly.
+                guiCanvas.renderMode = RenderMode.WorldSpace;
+                guiCanvas.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, GUI_DIMENSIONS.x);
+                guiCanvas.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, GUI_DIMENSIONS.y);
+            }
             _guiCamera.gameObject.transform.position = new Vector3(Screen.width * 0.5f, Screen.height * 0.5f, -1);
             _guiCamera.orthographicSize = GUI_DIMENSIONS.y * 0.5f;
+            
         }
 
         private void creatGuiCamera()
@@ -664,6 +761,11 @@ namespace ValheimVRMod.VRCore.UI
             _guiCamera.farClipPlane = 5f;
             _guiCamera.nearClipPlane = 0.1f;
             _guiCamera.enabled = true;
+        }
+
+        public static GameObject getUiPanel()
+        {
+            return _uiPanel.gameObject;
         }
 
         class VRGUI_InputModule : StandaloneInputModule
@@ -706,7 +808,8 @@ namespace ValheimVRMod.VRCore.UI
                 SimulateButtonState(buttonState, button);
             }
 
-            private void SimulateButtonState(PointerEventData.FramePressState state, PointerEventData.InputButton button) {
+            private void SimulateButtonState(PointerEventData.FramePressState state, PointerEventData.InputButton button)
+            {
                 MouseState mousePointerEventData = GetMousePointerEventData();
                 // Retrieve button state data for intended button
                 MouseButtonEventData buttonState = mousePointerEventData.GetButtonState(button).eventData;

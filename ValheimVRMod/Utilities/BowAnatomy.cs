@@ -56,7 +56,6 @@ namespace ValheimVRMod.Utilities
                     /* fallbackHandleBottom= */ new Vector3(0, -0.26f, 0))
             },
             {
-                // TODO: refine anatomy data
                 "$item_bow_ashlands",
                 new BowAnatomy(
                     /* handleHeight= */ 0.75f,
@@ -70,11 +69,10 @@ namespace ValheimVRMod.Utilities
                     /* fallbackHandleBottom= */ new Vector3(0, -0.375f, 0))
             },
             {
-                // TODO: refine anatomy data
                 "$item_bow_ashlandsblood",
                 new BowAnatomy(
                     /* handleHeight= */ 0.7f,
-                    /* softLimbHeight= */ 0.2f,
+                    /* softLimbHeight= */ 0.1f,
                     /* stringRadius= */ 0.01f,
                     /* bowBendingImpl= */ BowBendingImplType.Auto,
                     /* fallbackHandleWidth= */ 0.0625f,
@@ -84,7 +82,6 @@ namespace ValheimVRMod.Utilities
                     /* fallbackHandleBottom= */ new Vector3(0, -0.35f, 0))
             },
             {
-                // TODO: refine anatomy data
                 "$item_bow_ashlandsstorm",
                 new BowAnatomy(
                     /* handleHeight= */ 0.75f,
@@ -98,7 +95,6 @@ namespace ValheimVRMod.Utilities
                     /* fallbackHandleBottom= */ new Vector3(0, -0.375f, 0))
             },
             {
-                // TODO: refine anatomy data
                 "$item_bow_ashlandsroot",
                 new BowAnatomy(
                     /* handleHeight= */ 0.8f,

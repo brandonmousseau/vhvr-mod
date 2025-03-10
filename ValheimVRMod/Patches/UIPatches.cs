@@ -10,6 +10,7 @@ using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using UnityEngine.UI;
 using Valheim.SettingsGui;
+using ValheimVRMod.VRCore;
 using ValheimVRMod.VRCore.UI;
 using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
@@ -70,7 +71,8 @@ namespace ValheimVRMod.Patches
             {
                 return;
             }
-            __instance.m_smallMarker.localRotation = Quaternion.Euler(0f, 0f, -playerRot.eulerAngles.y);
+            float angle = VHVRConfig.UseVrControls() && VRPlayer.vrCam != null ? VRPlayer.vrCam.transform.rotation.eulerAngles.y : playerRot.eulerAngles.y;
+            __instance.m_smallMarker.localRotation = Quaternion.Euler(0f, 0f, -angle);
             Ship controlledShip = player.GetControlledShip();
             if (controlledShip)
             {
@@ -78,6 +80,30 @@ namespace ValheimVRMod.Patches
             }
         }
     }
+
+    /**
+     * This is required because for the VRHud we move the Minimap's Canvas
+     * from the default position/rotation, so setting the absolute rotation
+     * of the wind marker doesn't work anymore. This changes it to use
+     * the local rotation instead so it'll work regardless of canvas
+     * position.
+     */
+    [HarmonyPatch(typeof(Minimap), nameof(Minimap.UpdateWindMarker))]
+    class MinimapWindMarkerPatch
+    {
+        public static bool Prefix(Minimap __instance)
+        {
+            if (VHVRConfig.NonVrPlayer())
+            {
+                return true;
+            }
+
+            Quaternion quaternion = Quaternion.LookRotation(EnvMan.instance.GetWindDir());
+            __instance.m_windMarker.localRotation = Quaternion.Euler(0f, 0f, -quaternion.eulerAngles.y);
+            return false;
+        }
+    }
+
 
     /**
     * The purpose of this patch is to update the base
@@ -751,7 +777,7 @@ namespace ValheimVRMod.Patches
             playerRot = player.transform.rotation;
         }
     }
-    
+
     // remove stupid keyboard/mouse hints:
     // for some reason after Hearth&Home "Awake" isn't called on the cloned hud, so to be sure we destroy it in Update
     [HarmonyPatch(typeof(KeyHints), "Update")]
@@ -793,6 +819,24 @@ namespace ValheimVRMod.Patches
                 return;
             }
             ConfigSettings.updateBindings();
+        }
+    }
+
+    [HarmonyPatch(typeof(KeyboardMouseSettings), nameof(KeyboardMouseSettings.Update))]
+    class PatchKeyboardMouseSettingsUpdate
+    {
+        public static bool Prefix(KeyboardMouseSettings __instance)
+        {
+            return !ConfigSettings.isVHVRClone(__instance);
+        }
+    }
+
+    [HarmonyPatch(typeof(KeyboardMouseSettings), nameof(KeyboardMouseSettings.OnDestroy))]
+    class PatchKeyboardMouseSettingsDestroy
+    {
+        public static bool Prefix(KeyboardMouseSettings __instance)
+        {
+            return !ConfigSettings.isVHVRClone(__instance);
         }
     }
 
@@ -893,12 +937,14 @@ namespace ValheimVRMod.Patches
             {
                 return;
             }
-            SoftwareCursor.firstRunScreenSize = new Vector3(Screen.width, Screen.height);
+            SoftwareCursor.simulatedScreenSize = new Vector3(Screen.width, Screen.height);
+            
             VRGUI.originalResolution = new Vector2(Screen.width, Screen.height);
             VRGUI.originalFullScreen = Screen.fullScreen;
             VRGUI.isResized = true;
             if (VHVRConfig.GetUiPanelResoCompatibility())
             {
+                SoftwareCursor.simulatedScreenSize = new Vector3(VHVRConfig.GetUiPanelResolution().x, VHVRConfig.GetUiPanelResolution().y);
                 Screen.SetResolution((int)VHVRConfig.GetUiPanelResolution().x, (int)VHVRConfig.GetUiPanelResolution().y, false);
             }
         }
@@ -975,7 +1021,7 @@ namespace ValheimVRMod.Patches
     {
         public static void Prefix(Minimap __instance, ref Vector3 mousePos)
         {
-            if (VHVRConfig.NonVrPlayer() || __instance.m_selectedType == Minimap.PinType.Death || VHVRConfig.GetUiPanelResoCompatibility())
+            if (VHVRConfig.NonVrPlayer() || __instance.m_selectedType == Minimap.PinType.Death)
             {
                 return;
             }
@@ -1007,7 +1053,7 @@ namespace ValheimVRMod.Patches
     {
         public static bool Prefix(InventoryGui __instance, GameObject ___m_dragGo)
         {
-            if (VHVRConfig.NonVrPlayer() || VHVRConfig.GetUiPanelResoCompatibility())
+            if (VHVRConfig.NonVrPlayer())
             {
                 return true;
             }
@@ -1034,7 +1080,7 @@ namespace ValheimVRMod.Patches
     {
         public static bool Prefix(UITooltip __instance)
         {
-            if (VHVRConfig.NonVrPlayer() || VHVRConfig.GetUiPanelResoCompatibility())
+            if (VHVRConfig.NonVrPlayer())
             {
                 return true;
             }
@@ -1076,7 +1122,7 @@ namespace ValheimVRMod.Patches
             }
 
             var lastText = __instance.m_worldTexts.Last();
-            new GameObject().AddComponent<VRDamageTexts>().CreateText(lastText.m_textField.text, pos, lastText.m_textField.color, mySelf, __instance.m_textDuration);
+            VRDamageTexts.Pool().CreateText(lastText.m_textField.text, pos, lastText.m_textField.color, mySelf, __instance.m_textDuration);
         }
     }
     [HarmonyPatch(typeof(Player), nameof(Player.OnDeath))]

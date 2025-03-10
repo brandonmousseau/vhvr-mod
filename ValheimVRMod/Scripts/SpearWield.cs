@@ -9,6 +9,13 @@ namespace ValheimVRMod.Scripts
     {
         private float harpoonHidingTimer = 0;
         public static Vector3 lastFixedUpdatedAimDir { get; private set; }
+        public static bool isSingleHandedWieldCurrentlyInversed { get; private set; }
+
+        protected override void Awake()
+        {
+            isSingleHandedWieldCurrentlyInversed = VHVRConfig.SpearInverseWield();
+            base.Awake();
+        }
 
         void FixedUpdate()
         {
@@ -33,6 +40,26 @@ namespace ValheimVRMod.Scripts
         public void HideHarpoon()
         {
             harpoonHidingTimer = 1;
+        }
+
+        protected override Vector3 UpdateTwoHandedWield()
+        {
+            if (twoHandedState == TwoHandedState.SingleHanded)
+            {
+                return base.UpdateTwoHandedWield();
+            }
+
+            Vector3 lastDominantHandForward = VRPlayer.dominantHand.transform.forward;
+            Vector3 lastWeaponForward = weaponForward;
+
+            Vector3 result = base.UpdateTwoHandedWield();
+
+            if (twoHandedState == TwoHandedState.SingleHanded)
+            {
+                isSingleHandedWieldCurrentlyInversed = (Vector3.Dot(lastWeaponForward, lastDominantHandForward) > 0);
+            }
+
+            return result;
         }
 
         protected override bool TemporaryDisableTwoHandedWield()

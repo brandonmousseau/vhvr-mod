@@ -1,8 +1,6 @@
-using System;
 using UnityEngine;
 using ValheimVRMod.Scripts;
 using ValheimVRMod.VRCore;
-using Valve.VR;
 
 namespace ValheimVRMod.Utilities
 {
@@ -10,194 +8,50 @@ namespace ValheimVRMod.Utilities
     {
         public static bool IsSecondaryAttack(PhysicsEstimator collisionPhysicsEstimator, PhysicsEstimator handPhysicsEstimator)
         {
-            foreach (SecondaryAttackCheck check in secondaryAttackChecks)
+            switch (EquipScript.getRight())
             {
-                if (check(collisionPhysicsEstimator, handPhysicsEstimator))
-                {
-                    return true;
-                }
+                case EquipType.Axe:
+                case EquipType.Club:
+                    return !IsStab(handPhysicsEstimator) && IsStrongSwing(collisionPhysicsEstimator, handPhysicsEstimator);
+                case EquipType.BattleAxe:
+                case EquipType.Polearms:
+                    if (!LocalWeaponWield.isCurrentlyTwoHanded() || LocalWeaponWield.IsDominantHandBehind || VRPlayer.vrCam == null)
+                    {
+                        return false;
+                    }
+                    Vector3 swipeAxis = Vector3.Cross(LocalWeaponWield.weaponForward, VRPlayer.vrCam.transform.parent.up);
+                    var dominantHandPhysicsEstimator = VHVRConfig.LeftHanded() ? VRPlayer.leftHandPhysicsEstimator : VRPlayer.rightHandPhysicsEstimator;
+                    float angle = Vector3.Angle(dominantHandPhysicsEstimator.GetVelocity(), swipeAxis);
+                    return angle < 30 || angle > 150;
+                case EquipType.Claws:
+                case EquipType.None:
+                    return IsHook(handPhysicsEstimator);
+                case EquipType.DualAxes:
+                    return IsCleaving();
+                case EquipType.DualKnives:
+                    return IsCleaving() || IsHook(handPhysicsEstimator);
+                case EquipType.Knife:
+                    if (LocalWeaponWield.isCurrentlyTwoHanded())
+                    {
+                        return IsStrongStab(handPhysicsEstimator) || IsStrongSwing(collisionPhysicsEstimator, handPhysicsEstimator);
+                    }
+                    if (TwoHandedGeometry.LocalKnifeGeometryProvider.shouldInverseHold)
+                    {
+                        return IsStrongStab(handPhysicsEstimator) || IsHook(handPhysicsEstimator);
+                    }
+                    return false;
+                case EquipType.Sledge:
+                    return false;
+                case EquipType.Sword:
+                    return IsStrongStab(handPhysicsEstimator);
+                default:
+                    return false;
             }
-            return false;
-        }
-
-        private delegate bool SecondaryAttackCheck(PhysicsEstimator collisionPhysicsEstimator, PhysicsEstimator handPhysicsEstimator);
-
-        private static SecondaryAttackCheck[] secondaryAttackChecks = new SecondaryAttackCheck[] {
-
-            delegate(PhysicsEstimator collisionPhysicsEstimator, PhysicsEstimator handPhysicsEstimator) // Sword check
-            {
-                if (EquipScript.getRight() != EquipType.Sword)
-                {
-                    return false;
-                }
-
-                const float MIN_STAB_SPEED = 5f;
-                const float MIN_THRUST_DISTANCE = 1f;
-
-                if (!IsStab(handPhysicsEstimator))
-                {
-                    return false;
-                }
-
-                // When wielding with both hands, use the sum of both hands' velocities to make secondary attack easier to trigger.
-                Vector3 handVelocity =
-                    LocalWeaponWield.isCurrentlyTwoHanded() ?
-                    GetHandVelocitySum() :
-                    handPhysicsEstimator.GetAverageVelocityInSnapshots();
-
-                float stabSpeed = Vector3.Dot(handVelocity, LocalWeaponWield.weaponForward);
-                if (stabSpeed < MIN_STAB_SPEED)
-                {
-                    return false;
-                }
-
-                if (LocalWeaponWield.isCurrentlyTwoHanded())
-                {
-                    // When holding sword with both hands, waive requirement on thrust distance.
-                    return true;
-                }
-
-                Vector3 thrust = handPhysicsEstimator == null ? Vector3.zero : handPhysicsEstimator.GetLongestLocomotion(1f);
-                return Vector3.Dot(thrust, LocalWeaponWield.weaponForward) >= MIN_THRUST_DISTANCE;
-            },
-
-            delegate (PhysicsEstimator collisionPhysicsEstimator, PhysicsEstimator handPhysicsEstimator) // Two-handed axe check
-            {
-                if (!EquipScript.isTwoHandedAxeEquiped())
-                {
-                    return false;
-                }
-
-                return !IsTwoHandedWithDominantHandInFront() || IsStab(handPhysicsEstimator);
-            },
-
-            delegate (PhysicsEstimator collisionPhysicsEstimator, PhysicsEstimator handPhysicsEstimator) // Single-handed axe and club check
-            {
-                if (EquipScript.getRight() != EquipType.Axe && EquipScript.getRight() != EquipType.Club) {
-                    return false;
-                }
-                
-                if (EquipScript.isTwoHandedAxeEquiped() || EquipScript.isTwoHandedClubEquiped() || IsStab(handPhysicsEstimator))
-                {
-                    return false;
-                }
-
-                // TODO: consider adjusting these constants to account for weapon length variation.
-                const float MIN_SPEED = 8f;
-                const float MIN_THRUST_DISTANCE = 1.5f;
-         
-                // When wielding with both hands, use the sum of both hands' velocities to make secondary attack easier to trigger.
-                Vector3 handVelocity =
-                    LocalWeaponWield.isCurrentlyTwoHanded() ?
-                    GetHandVelocitySum() :
-                    handPhysicsEstimator.GetAverageVelocityInSnapshots();
-
-                if (GetSagittalComponent(handVelocity).magnitude < MIN_SPEED)
-                {
-                    return false;
-                }
-
-                if (LocalWeaponWield.isCurrentlyTwoHanded())
-                {
-                    // When holding the weapon with both hands, waive requirement on thrust distance.
-                    return true;
-                }
-
-                Vector3 thrust = collisionPhysicsEstimator.GetLongestLocomotion(0.5f);
-                return GetSagittalComponent(thrust).magnitude >= MIN_THRUST_DISTANCE;
-            },
-
-            delegate (PhysicsEstimator collisionPhysicsEstimator, PhysicsEstimator handPhysicsEstimator) // Polearms check
-            {
-                if (EquipScript.getRight() != EquipType.Polearms) {
-                    return false;
-                }
-
-                return IsTwoHandedWithDominantHandInFront() && !IsStab(handPhysicsEstimator);
-            },
-
-            delegate (PhysicsEstimator collisionPhysicsEstimator, PhysicsEstimator handPhysicsEstimator) // One-handed knife check
-            {
-                if (EquipScript.getRight() != EquipType.Knife || !SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource)) {
-                    return false;
-                }
-
-                const float MIN_SPEED = 6f;
-                const float MIN_THRUST_DISTANCE = 1f;
-
-                Vector3 velocity = handPhysicsEstimator.GetAverageVelocityInSnapshots();
-                if (velocity.magnitude < MIN_SPEED)
-                {
-                    return false;
-                }
-
-                Vector3 thrust = handPhysicsEstimator.GetLongestLocomotion(0.5f);
-
-                return thrust.magnitude >= MIN_THRUST_DISTANCE;
-            },
-
-            delegate (PhysicsEstimator collisionPhysicsEstimator, PhysicsEstimator handPhysicsEstimator) // Fist and claw check
-            {
-                var leftEquipType = EquipScript.getLeft();
-                var rightEquipType = EquipScript.getRight();
-                if (!(leftEquipType == EquipType.None && rightEquipType == EquipType.None) && rightEquipType != EquipType.Claws)
-                {
-                    return false;
-                }
-                const float MIN_HOOK_SPEED = 6f;
-                const float MIN_HOOK_DISTANCE = 1f;
-                const float MAX_HOOK_ALIGNMENT_ANGLE = 30f;
-                Vector3 v = handPhysicsEstimator.GetAverageVelocityInSnapshots();
-                if (v.magnitude < MIN_HOOK_SPEED) {
-                    return false;
-                }
-                Vector3 thrust = handPhysicsEstimator.GetLongestLocomotion(1f);
-                return Vector3.Dot(thrust, v.normalized) >= MIN_HOOK_DISTANCE && Vector3.Angle(thrust, v) <= MAX_HOOK_ALIGNMENT_ANGLE;
-            },
-
-            delegate (PhysicsEstimator collisionPhysicsEstimator, PhysicsEstimator handPhysicsEstimator) // Dual knife and axe check
-            {
-                var equipType = EquipScript.getRight();
-                if (equipType != EquipType.DualAxes && equipType != EquipType.DualKnives)
-                {
-                    return false;
-                }
-
-                const float MIN_HEW_SPEED = 1f;
-                const float MIN_TOTAL_HEW_SPEED = 4f;
-                const float MAX_BLADE_DISTANCE = 0.75f;
-
-                var leftHandHewSpeed =
-                    Vector3.Dot(VRPlayer.leftHandPhysicsEstimator.GetAverageVelocityInSnapshots(), VRPlayer.leftHand.transform.forward);
-                if (leftHandHewSpeed < MIN_HEW_SPEED)
-                {
-                    return false;
-                }
-
-                var rightHandHewSpeed =
-                    Vector3.Dot(VRPlayer.rightHandPhysicsEstimator.GetAverageVelocityInSnapshots(), VRPlayer.rightHand.transform.forward);
-                if (rightHandHewSpeed < MIN_HEW_SPEED)
-                {
-                    return false;
-                }
-
-                if (leftHandHewSpeed + rightHandHewSpeed < MIN_TOTAL_HEW_SPEED)
-                {
-                    return false;
-                }
-
-                return Vector3.Distance(StaticObjects.leftFist().transform.position, StaticObjects.rightFist().transform.position) < MAX_BLADE_DISTANCE;
-            }
-        };
-
-        private static bool IsTwoHandedWithDominantHandInFront()
-        {
-            return LocalWeaponWield.isCurrentlyTwoHanded() && !LocalWeaponWield.IsDominantHandBehind;
         }
 
         private static Vector3 GetHandVelocitySum()
         {
-            return VRPlayer.leftHandPhysicsEstimator.GetAverageVelocityInSnapshots() + VRPlayer.rightHandPhysicsEstimator.GetAverageVelocityInSnapshots();
+            return VRPlayer.leftHandPhysicsEstimator.GetVelocity() + VRPlayer.rightHandPhysicsEstimator.GetVelocity();
         }
 
         private static bool IsStab(PhysicsEstimator physicsEstimator)
@@ -208,9 +62,100 @@ namespace ValheimVRMod.Utilities
                 LocalWeaponWield.isCurrentlyTwoHanded());
         }
 
-        private static Vector3 GetSagittalComponent(Vector3 v)
+        private static bool IsStrongStab(PhysicsEstimator mainHandPhysicsEstimator)
         {
-            return Vector3.ProjectOnPlane(v, Player.m_localPlayer.transform.right);
+            if (!IsStab(mainHandPhysicsEstimator))
+            {
+                return false;
+            }
+
+            var minStabSpeed = Mathf.Max(VHVRConfig.SwingSpeedRequirement(), 3);
+            if (LocalWeaponWield.isCurrentlyTwoHanded() && Vector3.Dot(GetHandVelocitySum(), LocalWeaponWield.weaponForward) > minStabSpeed)
+            {
+                return true;
+            }
+
+            const float MIN_THRUST_DISTANCE = 1f;
+            return Vector3.Dot(mainHandPhysicsEstimator.GetVelocity(), LocalWeaponWield.weaponForward) > minStabSpeed &&
+                Vector3.Dot(mainHandPhysicsEstimator.GetLongestLocomotion(1f), LocalWeaponWield.weaponForward) >= MIN_THRUST_DISTANCE;
+        }
+
+        private static bool IsStrongSwing(PhysicsEstimator collisionPhysicsEstimator, PhysicsEstimator mainHandPhysicsEstimator)
+        {
+            // When wielding with both hands, use the sum of both hands' velocities to make secondary attack easier to trigger.
+            Vector3 handVelocity =
+                LocalWeaponWield.isCurrentlyTwoHanded() ? GetHandVelocitySum() : mainHandPhysicsEstimator.GetVelocity();
+
+            var weaponOffsetFromPlayer = mainHandPhysicsEstimator.transform.position - Player.m_localPlayer.transform.position;
+            var saggitalSpeed = GetSagittalComponent(handVelocity, weaponOffsetFromPlayer).magnitude;
+            var minSpeed = GetMinSecondarySwingSpeed();
+            if (LocalWeaponWield.isCurrentlyTwoHanded() &&
+                GetSagittalComponent(GetHandVelocitySum(), weaponOffsetFromPlayer).magnitude > minSpeed)
+            {
+                return true;
+            }
+
+            if (GetSagittalComponent(mainHandPhysicsEstimator.GetVelocity(), weaponOffsetFromPlayer).magnitude < minSpeed)
+            {
+                return false;
+            }
+
+            const float MIN_THRUST_DISTANCE = 1.5f;
+            Vector3 thrust = collisionPhysicsEstimator.GetLongestLocomotion(0.5f);
+            return GetSagittalComponent(thrust, weaponOffsetFromPlayer).magnitude >= MIN_THRUST_DISTANCE;
+        }
+
+        public static bool IsHook(PhysicsEstimator physicsEstimator)
+        {
+            const float MIN_HOOK_DISTANCE = 1f;
+            const float MAX_HOOK_ALIGNMENT_ANGLE = 30f;
+            var minHookSpeed = Mathf.Clamp(VHVRConfig.SwingSpeedRequirement() * 1.25f, 3, 9);
+            var velocity = physicsEstimator.GetAverageVelocityInSnapshots();
+            var distance = physicsEstimator.GetLongestLocomotion(1f);
+            if (velocity.magnitude < minHookSpeed)
+            {
+                return false;
+            }
+            return Vector3.Dot(distance, velocity.normalized) >= MIN_HOOK_DISTANCE && Vector3.Angle(distance, velocity) <= MAX_HOOK_ALIGNMENT_ANGLE;
+        }
+
+        private static bool IsCleaving()
+        {
+            const float MIN_HEW_SPEED = 1f;
+            const float MIN_TOTAL_HEW_SPEED = 4f;
+            const float MAX_BLADE_DISTANCE = 0.75f;
+
+            var leftHandHewSpeed =
+                Vector3.Dot(VRPlayer.leftHandPhysicsEstimator.GetAverageVelocityInSnapshots(), VRPlayer.leftHand.transform.forward);
+            if (leftHandHewSpeed < MIN_HEW_SPEED)
+            {
+                return false;
+            }
+
+            var rightHandHewSpeed =
+                Vector3.Dot(VRPlayer.rightHandPhysicsEstimator.GetAverageVelocityInSnapshots(), VRPlayer.rightHand.transform.forward);
+            if (rightHandHewSpeed < MIN_HEW_SPEED)
+            {
+                return false;
+            }
+
+            if (leftHandHewSpeed + rightHandHewSpeed < MIN_TOTAL_HEW_SPEED)
+            {
+                return false;
+            }
+
+            return Vector3.Distance(StaticObjects.leftFist().transform.position, StaticObjects.rightFist().transform.position) < MAX_BLADE_DISTANCE;
+        }
+
+        private static Vector3 GetSagittalComponent(Vector3 v, Vector3 weaponOffsetFromPlayer)
+        {
+            var lateral = Vector3.Cross(VRPlayer.instance.transform.up, weaponOffsetFromPlayer);
+            return Vector3.ProjectOnPlane(v, lateral);
+        }
+
+        private static float GetMinSecondarySwingSpeed()
+        {
+            return Mathf.Clamp(VHVRConfig.SwingSpeedRequirement() * 1.5f, 3, 9);
         }
     }
 }

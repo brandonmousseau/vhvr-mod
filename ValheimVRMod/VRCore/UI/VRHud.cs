@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.UI;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore.UI.HudElements;
@@ -19,10 +19,13 @@ namespace ValheimVRMod.VRCore.UI
         public const string RIGHT_WRIST = "RightWrist";
         public const string BUILD = "Build";
         public const string CAMERA_LOCKED = "CameraLocked";
+        public const string CAMERA_LOCKED_2 = "CameraLocked2";
         public const string LEGACY = "Legacy";
 
         private const float FULL_ALPHA_ANGLE = 5f;
         private const float ZERO_ALPHA_ANGLE = 90f;
+
+        private int updateTicker = 0;
 
         public static VRHud instance
         {
@@ -70,7 +73,12 @@ namespace ValheimVRMod.VRCore.UI
         private Canvas cameraHudCanvas;
         private CanvasGroup cameraHudCanvasGroup;
         private GameObject cameraHudCanvasParent;
-        
+
+        // Camera Canvas 2
+        private Canvas cameraHudCanvas2;
+        private CanvasGroup cameraHudCanvasGroup2;
+        private GameObject cameraHudCanvasParent2;
+
         // Left Wrist Canvas
         private Canvas leftHudCanvas;
         private CanvasGroup leftHudCanvasGroup;
@@ -142,6 +150,14 @@ namespace ValheimVRMod.VRCore.UI
                 LogError("Problem getting HUD camera.");
                 return;
             }
+
+            if (++updateTicker < 16)
+            {
+                return;
+            }
+
+            updateTicker = 0;
+
             foreach (var hudElement in VRHudElements)
             {
                 //Only update elements that aren't on the legacy hud
@@ -168,6 +184,11 @@ namespace ValheimVRMod.VRCore.UI
                 cameraHudCanvasGroup = null;
                 GameObject.Destroy(cameraHudCanvasParent);
                 cameraHudCanvasParent = null;
+
+                cameraHudCanvas2 = null;
+                cameraHudCanvasGroup2 = null;
+                GameObject.Destroy(cameraHudCanvasParent2);
+                cameraHudCanvasParent2 = null;
 
                 leftHudCanvas = null;
                 leftHudCanvasGroup = null;
@@ -210,7 +231,9 @@ namespace ValheimVRMod.VRCore.UI
             VRHudElements.ForEach(x => placePanelToHud(x.Placement, x));
 
             setCameraHudPosition();
-            
+            setCameraHud2Position();
+
+
             var vrik = VRPlayer.vrikRef;
             
             if (vrik == null)
@@ -252,6 +275,9 @@ namespace ValheimVRMod.VRCore.UI
                 case CAMERA_LOCKED:
                     panelElement.Clone.Root.transform.SetParent(cameraHudCanvas.GetComponent<RectTransform>(), false);
                     break;
+                case CAMERA_LOCKED_2:
+                    panelElement.Clone.Root.transform.SetParent(cameraHudCanvas2.GetComponent<RectTransform>(), false);
+                    break;
 
                 case LEGACY:
                     if (panelElement.Clone.Root) panelElement.Reset();
@@ -272,11 +298,27 @@ namespace ValheimVRMod.VRCore.UI
             cameraHudCanvasParent.transform.position = VRPlayer.instance.transform.position;
             float hudDistance = 1f;
             float hudVerticalOffset = -0.5f;
-            cameraHudCanvasParent.transform.localPosition = new Vector3(VHVRConfig.CameraHudX() * 1000, hudVerticalOffset + VHVRConfig.CameraHudY() * 1000, hudDistance);
-            cameraHudCanvas.GetComponent<RectTransform>().localScale = Vector3.one * scaleFactor * hudDistance;
+            cameraHudCanvasParent.transform.localPosition = new Vector3(VHVRConfig.CameraLockedPos().x, hudVerticalOffset + VHVRConfig.CameraLockedPos().y, hudDistance);
+            cameraHudCanvas.GetComponent<RectTransform>().localScale = Vector3.one * scaleFactor * hudDistance * VHVRConfig.CameraLockedPos().z;
             cameraHudCanvasParent.transform.localRotation = Quaternion.Euler(Vector3.zero);
             cameraHudCanvasGroup.alpha = 1f;
             
+        }
+
+        private void setCameraHud2Position()
+        {
+
+            float canvasWidth = cameraHudCanvas2.GetComponent<RectTransform>().rect.width;
+            float scaleFactor = 0.1f / canvasWidth * VHVRConfig.CameraHudScale();
+            cameraHudCanvasParent2.transform.SetParent(hudCamera.gameObject.transform, false);
+            cameraHudCanvasParent2.transform.position = VRPlayer.instance.transform.position;
+            float hudDistance = 1f;
+            float hudVerticalOffset = -0.5f;
+            cameraHudCanvasParent2.transform.localPosition = new Vector3(VHVRConfig.CameraLocked2Pos().x, hudVerticalOffset + VHVRConfig.CameraLocked2Pos().y, hudDistance);
+            cameraHudCanvas2.GetComponent<RectTransform>().localScale = Vector3.one * scaleFactor * hudDistance * VHVRConfig.CameraLocked2Pos().z;
+            cameraHudCanvasParent2.transform.localRotation = Quaternion.Euler(Vector3.zero);
+            cameraHudCanvasGroup2.alpha = 1f;
+
         }
 
         private void setWristPosition(GameObject hCanvasParent, Canvas hCanvas, Transform hand, Vector3 pos, Quaternion rot)
@@ -316,6 +358,12 @@ namespace ValheimVRMod.VRCore.UI
                 cameraHudCanvasParent.layer = LayerUtils.getWorldspaceUiLayer();
                 GameObject.DontDestroyOnLoad(cameraHudCanvasParent);
             }
+            if (!cameraHudCanvasParent2)
+            {
+                cameraHudCanvasParent2 = new GameObject("CameraHudCanvasParent2");
+                cameraHudCanvasParent2.layer = LayerUtils.getWorldspaceUiLayer();
+                GameObject.DontDestroyOnLoad(cameraHudCanvasParent2);
+            }
             if (!leftHudCanvasParent)
             {
                 leftHudCanvasParent = new GameObject("LeftHudCanvasParent");
@@ -350,7 +398,19 @@ namespace ValheimVRMod.VRCore.UI
             cameraHudCanvas.transform.localPosition = Vector3.zero;
             cameraHudCanvas.transform.localRotation = Quaternion.identity;
             cameraHudCanvas.worldCamera = hudCamera;
-            
+
+            cameraHudCanvas2 = cameraHudCanvasParent2.AddComponent<Canvas>();
+            cameraHudCanvasGroup2 = cameraHudCanvasParent2.AddComponent<CanvasGroup>();
+            cameraHudCanvasGroup2.interactable = false;
+            cameraHudCanvasGroup2.blocksRaycasts = false;
+            cameraHudCanvasGroup2.alpha = 1f;
+            cameraHudCanvas2.renderMode = RenderMode.WorldSpace;
+            cameraHudCanvas2.transform.position = cameraHudCanvasParent2.transform.position;
+            cameraHudCanvas2.transform.rotation = cameraHudCanvasParent2.transform.rotation;
+            cameraHudCanvas2.transform.localPosition = Vector3.zero;
+            cameraHudCanvas2.transform.localRotation = Quaternion.identity;
+            cameraHudCanvas2.worldCamera = hudCamera;
+
             leftHudCanvas = leftHudCanvasParent.AddComponent<Canvas>();
             leftHudCanvasGroup = leftHudCanvasParent.AddComponent<CanvasGroup>();
             leftHudCanvasGroup.interactable = false;

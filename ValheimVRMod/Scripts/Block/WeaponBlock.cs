@@ -35,7 +35,7 @@ namespace ValheimVRMod.Scripts.Block
             Vector3 hitPointAlongWeapon = weaponWield.physicsEstimator.transform.position + Vector3.Project(hitData.m_point - weaponWield.physicsEstimator.transform.position, LocalWeaponWield.weaponForward);
             Vector3 weaponVelocity = weaponWield.physicsEstimator.GetVelocityOfPoint(hitPointAlongWeapon);
 
-            if (VHVRConfig.BlockingType() == "Realistic")
+            if (VHVRConfig.UseRealisticBlock())
             {
                 bool blockWithAngle = 15 < angle && angle < 165;
                 bool blockWithSpeed = weaponVelocity.magnitude > MIN_PARRY_SPEED;
@@ -49,7 +49,7 @@ namespace ValheimVRMod.Scripts.Block
                 var rightHandBlock = (rightAngle > 60 && rightAngle < 120f);
                 _blocking = leftHandBlock && rightHandBlock;
             }
-            else if (VHVRConfig.BlockingType() == "GrabButton")
+            else if (VHVRConfig.UseGrabButtonBlock())
             {
                 bool isShieldorWeaponBlock = (EquipScript.getLeft() != EquipType.Shield) || (EquipScript.getLeft() == EquipType.Shield && weaponWield.allowBlocking());
                 _blocking = isShieldorWeaponBlock && angle > 60 && angle < 120;

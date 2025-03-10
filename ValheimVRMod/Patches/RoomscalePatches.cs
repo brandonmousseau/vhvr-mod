@@ -1,10 +1,7 @@
-using System.Reflection.Emit;
 using HarmonyLib;
 using UnityEngine;
 using ValheimVRMod.VRCore;
 using ValheimVRMod.Utilities;
-using System.Collections.Generic;
-using System;
 
 namespace ValheimVRMod.Patches
 {
@@ -57,8 +54,7 @@ namespace ValheimVRMod.Patches
     {
         private static void Prefix(Character __instance)
         {
-            
-            if(VHVRConfig.NonVrPlayer() ||
+            if (VHVRConfig.NonVrPlayer() ||
                 __instance != Player.m_localPlayer ||
                 !VRPlayer.inFirstPerson)
             {

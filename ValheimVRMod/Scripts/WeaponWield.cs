@@ -26,12 +26,13 @@ namespace ValheimVRMod.Scripts
         public Quaternion originalRotation { get { return originalTransform.rotation; } }
         public Quaternion offsetFromPointingDir { get; protected set; } // The rotation offset of this transform relative to the direction the weapon is pointing at.
         protected TwoHandedGeometryProvider geometryProvider;
-
-        private static Dictionary<string, Vector3> EstimatedWeaponLocalPointingDirections = new Dictionary<string, Vector3>();
+        protected float weaponLength { get; private set; }
+        protected float distanceBetweenGripAndRearEnd { get; private set; } = 0.1f;
+        private static Dictionary<string, Vector3> EstimatedWeaponLocalDirectionsAndLengths = new Dictionary<string, Vector3>();
         private static Dictionary<string, float> DistancesBehindGripAndRearEnd = new Dictionary<string, float>();
         private Transform originalTransform;
         private Vector3 longestLocalExtrusion = Vector3.forward;
-        private float distanceBetweenGripAndRearEnd = 0.1f;
+
         private EquipType equipType;
         private bool isLocal;
 
@@ -54,24 +55,40 @@ namespace ValheimVRMod.Scripts
             originalTransform.rotation = transform.rotation;
 
             MeshFilter weaponMeshFilter = gameObject.GetComponentInChildren<MeshFilter>();
+            if (itemName == "Hoe") {
+                var meshFilters = gameObject.GetComponentsInChildren<MeshFilter>();
+                foreach (var meshFilter in meshFilters)
+                {
+                    if (meshFilter.name == "handle")
+                    {
+                        weaponMeshFilter = meshFilter;
+                    }
+                }
+            }
+
             if (weaponMeshFilter != null)
             {
                 if (item != null &&
                     itemName != "" &&
-                    EstimatedWeaponLocalPointingDirections.ContainsKey(itemName) &&
+                    EstimatedWeaponLocalDirectionsAndLengths.ContainsKey(itemName) &&
                     DistancesBehindGripAndRearEnd.ContainsKey(itemName))
                 {
-                    longestLocalExtrusion = EstimatedWeaponLocalPointingDirections[itemName];
+                    var weaponDirectionAndLength = EstimatedWeaponLocalDirectionsAndLengths[itemName];
+                    longestLocalExtrusion = weaponDirectionAndLength.normalized;
+                    weaponLength = weaponDirectionAndLength.magnitude;
                     distanceBetweenGripAndRearEnd = DistancesBehindGripAndRearEnd[itemName];
                 }
                 else
                 {
-                    Vector3 handleAllowanceBehindGrip =
-                        WeaponUtils.EstimateHandleAllowanceBehindGrip(weaponMeshFilter, handPosition: transform.parent.position);
-                    longestLocalExtrusion = transform.InverseTransformVector(-handleAllowanceBehindGrip).normalized;
-                    distanceBetweenGripAndRearEnd = handleAllowanceBehindGrip.magnitude;
+                    Vector3 weaponDirectionAndLength =
+                        transform.InverseTransformDirection(
+                            WeaponUtils.EstimateWeaponDirectionAndLength(
+                                weaponMeshFilter, handPosition: transform.parent.position, out float distanceBetweenGripAndRearEnd));
+                    this.distanceBetweenGripAndRearEnd = distanceBetweenGripAndRearEnd;
+                    longestLocalExtrusion = weaponDirectionAndLength.normalized;
+                    weaponLength = weaponDirectionAndLength.magnitude;
                     if (item != null && itemName != "") {
-                        EstimatedWeaponLocalPointingDirections.Add(itemName, longestLocalExtrusion);
+                        EstimatedWeaponLocalDirectionsAndLengths.Add(itemName, weaponDirectionAndLength);
                         DistancesBehindGripAndRearEnd.Add(itemName, distanceBetweenGripAndRearEnd);
                         LogUtils.LogDebug("Registered " + itemName + " local pointing direction: " + longestLocalExtrusion + " distance between rear end and grip: " + distanceBetweenGripAndRearEnd);
                     } 
@@ -118,17 +135,12 @@ namespace ValheimVRMod.Scripts
         // Updates weapon position and rotation and returns the new direction that the weapon is pointing toward.
         protected virtual Vector3 UpdateTwoHandedWield()
         {
-            var wasTwoHanded = (twoHandedState != TwoHandedState.SingleHanded);
-            twoHandedState = GetDesiredTwoHandedState(wasTwoHanded);
+            twoHandedState = GetDesiredTwoHandedState(wasTwoHanded: twoHandedState != TwoHandedState.SingleHanded);
 
             if (twoHandedState == TwoHandedState.SingleHanded)
             {
-                if (wasTwoHanded || equipType == EquipType.Spear || equipType == EquipType.SpearChitin)
-                {
-                    transform.SetPositionAndRotation(
-                        geometryProvider.GetDesiredSingleHandedPosition(this),
-                        geometryProvider.GetDesiredSingleHandedRotation(this));
-                }
+                transform.SetPositionAndRotation(
+                    geometryProvider.GetDesiredSingleHandedPosition(this), geometryProvider.GetDesiredSingleHandedRotation(this));
                 return GetWeaponPointingDirection();
             }
 
@@ -162,8 +174,36 @@ namespace ValheimVRMod.Scripts
         private TwoHandedGeometryProvider GetGeometryProvider
             (Vector3 longestLocalExtrusion, float distanceBetweenGripAndRearEnd, WeaponWieldSync.TwoHandedStateProvider twoHandedStateProvider)
         {
+            if (IsDundr())
+            {
+                return new TwoHandedGeometry.DundrGeometryProvider();
+            }
+
+            if (isLocal && EquipScript.getRight() == EquipType.Magic)
+            {
+                return new TwoHandedGeometry.StaffGeometryProvider(distanceBetweenGripAndRearEnd);
+            }
+
             switch (equipType)
             {
+                case EquipType.BattleAxe:
+                    return new TwoHandedGeometry.BattleaxeGeometryProvider(distanceBetweenGripAndRearEnd);
+                case EquipType.Crossbow:
+                    return isLocal ?
+                        new TwoHandedGeometry.LocalCrossbowGeometryProvider() :
+                        new TwoHandedGeometry.CrossbowGeometryProvider(IsPlayerLeftHanded());
+                case EquipType.Knife:
+                    if (isLocal)
+                    {
+                        return new TwoHandedGeometry.LocalKnifeGeometryProvider(distanceBetweenGripAndRearEnd);
+                    }
+                    break;
+                case EquipType.Polearms:
+                    return new TwoHandedGeometry.AtgeirGeometryProvider(distanceBetweenGripAndRearEnd);
+                case EquipType.Scythe:
+                    return new TwoHandedGeometry.ScytheGeometryProvider(IsPlayerLeftHanded(), distanceBetweenGripAndRearEnd);
+                case EquipType.Sledge:
+                    return new TwoHandedGeometry.SledgeGeometryProvider(distanceBetweenGripAndRearEnd);
                 case EquipType.Spear:
                 case EquipType.SpearChitin:
                     if (isLocal)
@@ -171,17 +211,6 @@ namespace ValheimVRMod.Scripts
                         return new TwoHandedGeometry.LocalSpearGeometryProvider();
                     }
                     break;
-                case EquipType.Polearms:
-                    return new TwoHandedGeometry.AtgeirGeometryProvider(distanceBetweenGripAndRearEnd);
-                case EquipType.Crossbow:
-                    return isLocal ?
-                        new TwoHandedGeometry.LocalCrossbowGeometryProvider() :
-                        new TwoHandedGeometry.CrossbowGeometryProvider(IsPlayerLeftHanded());
-            }
-
-            if (IsDundr())
-            {
-                return new TwoHandedGeometry.DundrGeometryProvider();
             }
 
             if (!isLocal && twoHandedStateProvider != null)
@@ -201,6 +230,8 @@ namespace ValheimVRMod.Scripts
             Vector3 GetPreferredTwoHandedWeaponUp(WeaponWield weaponWield);
             // The preferred forward offset amount of the weapon's position from the rear hand during two-handed wield.
             float GetPreferredOffsetFromRearHand(float handDist, bool rearHandIsDominant);
+
+            bool ShouldRotateHandForOneHandedWield();
         }
     }
 }

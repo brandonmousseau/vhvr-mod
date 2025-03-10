@@ -170,9 +170,10 @@ namespace ValheimVRMod.VRCore
                 LogDebug("Recentering Input Subsystem: " + subsystem);
                 subsystem.TryRecenter();
             }
-            
+
             // Trigger recentering head position on player body
-            VRPlayer.headPositionInitialized = false;
+            VRPlayer.RequestRecentering();
+            VRPlayer.RequestPelvisCaliberation();
             VRPlayer.vrPlayerInstance?.ResetRoomscaleCamera();
         }
 
