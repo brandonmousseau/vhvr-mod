@@ -17,6 +17,8 @@ namespace ValheimVRMod.Scripts
         public static bool IsDominantHandBehind { get { return isCurrentlyTwoHanded() && (LocalPlayerTwoHandedState == TwoHandedState.RightHandBehind ^ VHVRConfig.LeftHanded()); } }
         public static bool isAiming { get; private set; }  
         public static Vector3 localWeaponTip { get; private set; }
+        public static bool IsWeaponPointingUlnar { get; private set; }
+        public static bool IsDominantHandHoldInversed { get; private set; }
 
         protected bool isRedDotVisible { set { redDotRenderer.enabled = value; } }
 
@@ -51,6 +53,7 @@ namespace ValheimVRMod.Scripts
 
         protected virtual void Awake()
         {
+            IsWeaponPointingUlnar = EquipScript.isSpearEquipped() && !VHVRConfig.SpearInverseWield();
             lastRenderedTransform = new GameObject().transform;
             physicsEstimator = lastRenderedTransform.gameObject.AddComponent<PhysicsEstimator>();
             physicsEstimator.refTransform = CameraUtils.getCamera(CameraUtils.VR_CAMERA)?.transform.parent;
@@ -60,6 +63,7 @@ namespace ValheimVRMod.Scripts
         {
             VrikCreator.ResetHandConnectors();
             LocalPlayerTwoHandedState = TwoHandedState.SingleHanded;
+            IsWeaponPointingUlnar = false;
             Destroy(lastRenderedTransform.gameObject);
             Destroy(redDotRenderer.gameObject);
             base.OnDestroy();
@@ -68,6 +72,7 @@ namespace ValheimVRMod.Scripts
         protected void OnDisable()
         {
             LocalPlayerTwoHandedState = TwoHandedState.SingleHanded;
+            IsWeaponPointingUlnar = false;
         }
 
         protected override Vector3 UpdateTwoHandedWield()
@@ -78,8 +83,22 @@ namespace ValheimVRMod.Scripts
             }
 
             bool wasTwoHanded = (LocalPlayerTwoHandedState != TwoHandedState.SingleHanded);
-            weaponForward = base.UpdateTwoHandedWield();
+            if (wasTwoHanded)
+            {
+                IsWeaponPointingUlnar = Vector3.Dot(VRPlayer.dominantHand.transform.forward, weaponForward) < 0;
+                weaponForward = base.UpdateTwoHandedWield();
+                if (twoHandedState == TwoHandedState.SingleHanded)
+                {
+                    IsWeaponPointingUlnar = Vector3.Dot(VRPlayer.dominantHand.transform.forward, weaponForward) < 0;
+                }
+            }
+            else
+            {
+                weaponForward = base.UpdateTwoHandedWield();
+            }
+
             LocalPlayerTwoHandedState = twoHandedState;
+            IsDominantHandHoldInversed = geometryProvider.InverseHoldForDominantHand();
 
             if (!redDotRenderer)
             {
