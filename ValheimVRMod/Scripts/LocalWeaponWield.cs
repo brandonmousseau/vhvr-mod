@@ -17,11 +17,13 @@ namespace ValheimVRMod.Scripts
         public static bool IsDominantHandBehind { get { return isCurrentlyTwoHanded() && (LocalPlayerTwoHandedState == TwoHandedState.RightHandBehind ^ VHVRConfig.LeftHanded()); } }
         public static bool isAiming { get; private set; }  
         public static Vector3 localWeaponTip { get; private set; }
+        public static bool CurrentTwoHandedWieldStartedWithLongGrip { get; private set; }
         public static bool IsWeaponPointingUlnar { get; private set; }
         public static bool IsDominantHandHoldInversed { get; private set; }
 
         protected bool isRedDotVisible { set { redDotRenderer.enabled = value; } }
 
+        private const float MIN_LONG_GRIP = 0.375f;
         private const float RED_DOT_DISTANCE = 256;
         private const float RED_DOT_SIZE_RADIANS = 1f / 256f;
         private static Material RedDotMaterial = null;
@@ -95,6 +97,11 @@ namespace ValheimVRMod.Scripts
             else
             {
                 weaponForward = base.UpdateTwoHandedWield();
+                if (twoHandedState != TwoHandedState.SingleHanded)
+                {
+                    CurrentTwoHandedWieldStartedWithLongGrip =
+                        MIN_LONG_GRIP < Vector3.Distance(VRPlayer.dominantHand.transform.position, VRPlayer.dominantHand.otherHand.transform.position);
+                }
             }
 
             LocalPlayerTwoHandedState = twoHandedState;
