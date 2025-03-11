@@ -187,7 +187,9 @@ namespace ValheimVRMod.Scripts
             switch (equipType)
             {
                 case EquipType.BattleAxe:
-                    return new TwoHandedGeometry.BattleaxeGeometryProvider(distanceBetweenGripAndRearEnd);
+                    return isLocal ?
+                        new TwoHandedGeometry.LocalBattleaxeGeometryProvider(distanceBetweenGripAndRearEnd) :
+                        new TwoHandedGeometry.BattleaxeGeometryProvider(distanceBetweenGripAndRearEnd);
                 case EquipType.Crossbow:
                     return isLocal ?
                         new TwoHandedGeometry.LocalCrossbowGeometryProvider() :
@@ -199,11 +201,19 @@ namespace ValheimVRMod.Scripts
                     }
                     break;
                 case EquipType.Polearms:
-                    return new TwoHandedGeometry.AtgeirGeometryProvider(distanceBetweenGripAndRearEnd);
+                    return isLocal ?
+                        new TwoHandedGeometry.LocalAtgeirGeometryProvider(distanceBetweenGripAndRearEnd) :
+                        new TwoHandedGeometry.AtgeirGeometryProvider(distanceBetweenGripAndRearEnd);
                 case EquipType.Scythe:
                     return new TwoHandedGeometry.ScytheGeometryProvider(IsPlayerLeftHanded(), distanceBetweenGripAndRearEnd);
                 case EquipType.Sledge:
                     return new TwoHandedGeometry.SledgeGeometryProvider(distanceBetweenGripAndRearEnd);
+                case EquipType.Sword:
+                    if (isLocal)
+                    {
+                        return new TwoHandedGeometry.LocalSwordGeometryProvider();
+                    }
+                    break;
                 case EquipType.Spear:
                 case EquipType.SpearChitin:
                     if (isLocal)
@@ -230,7 +240,7 @@ namespace ValheimVRMod.Scripts
             Vector3 GetPreferredTwoHandedWeaponUp(WeaponWield weaponWield);
             // The preferred forward offset amount of the weapon's position from the rear hand during two-handed wield.
             float GetPreferredOffsetFromRearHand(float handDist, bool rearHandIsDominant);
-
+            bool InverseHoldForDominantHand();
             bool ShouldRotateHandForOneHandedWield();
         }
     }

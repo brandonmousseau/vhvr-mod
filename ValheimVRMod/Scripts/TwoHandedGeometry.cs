@@ -28,7 +28,9 @@ namespace ValheimVRMod.Scripts
 
             public virtual Quaternion GetDesiredSingleHandedRotation(WeaponWield weaponWield)
             {
-                return weaponWield.originalRotation;
+                return InverseHoldForDominantHand() ?
+                    weaponWield.originalRotation * Quaternion.Euler(180, 0, 0) :
+                    weaponWield.originalRotation;
             }
 
             public virtual Vector3 GetPreferredTwoHandedWeaponUp(WeaponWield weaponWield)
@@ -52,6 +54,11 @@ namespace ValheimVRMod.Scripts
 
                 // Anchor the grip of the weapon in the front/dominant hand instead.
                 return handDist - WeaponWield.HAND_CENTER_OFFSET;
+            }
+
+            public virtual bool InverseHoldForDominantHand()
+            {
+                return false;
             }
 
             public virtual bool ShouldRotateHandForOneHandedWield()
@@ -109,8 +116,37 @@ namespace ValheimVRMod.Scripts
                 {
                     return distanceBetweenGripAndRearEnd * 0.5f - WeaponWield.HAND_CENTER_OFFSET;
                 }
-
                 return base.GetPreferredOffsetFromRearHand(handDist, rearHandIsDominant);
+            }
+        }
+
+        public class LocalAtgeirGeometryProvider : AtgeirGeometryProvider
+        {
+            private const float SHORT_GRIP_REAR_HAND_DOMINANT_OFFSET = 0.2f;
+            private const float SHORT_GRIP_FRONT_HAND_DOMINANT_OFFSET = 1.125f;
+
+            public LocalAtgeirGeometryProvider(float distanceBetweenGripAndRearEnd) : base(distanceBetweenGripAndRearEnd)
+            {
+            }
+            public override float GetPreferredOffsetFromRearHand(float handDist, bool rearHandIsDominant)
+            {
+                if (LocalWeaponWield.CurrentTwoHandedWieldStartedWithLongGrip)
+                {
+                    return base.GetPreferredOffsetFromRearHand(handDist, rearHandIsDominant);
+                }
+
+                if (rearHandIsDominant)
+                {
+                    return -SHORT_GRIP_REAR_HAND_DOMINANT_OFFSET - WeaponWield.HAND_CENTER_OFFSET;
+                }
+
+                if (handDist > SHORT_GRIP_FRONT_HAND_DOMINANT_OFFSET)
+                {
+                    return distanceBetweenGripAndRearEnd - WeaponWield.HAND_CENTER_OFFSET;
+                }
+
+                // Anchor the center of the spear in the front/dominant hand
+                return handDist - SHORT_GRIP_FRONT_HAND_DOMINANT_OFFSET + distanceBetweenGripAndRearEnd - WeaponWield.HAND_CENTER_OFFSET;
             }
         }
 
@@ -135,6 +171,37 @@ namespace ValheimVRMod.Scripts
             public override bool ShouldRotateHandForOneHandedWield()
             {
                 return !SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource);
+            }
+        }
+
+        public class LocalBattleaxeGeometryProvider : BattleaxeGeometryProvider
+        {
+            private const float SHORT_GRIP_REAR_HAND_DOMINANT_OFFSET = 0.3f;
+            private const float SHORT_GRIP_FRONT_HAND_DOMINANT_OFFSET = 0.7f;
+
+            public LocalBattleaxeGeometryProvider(float distanceBetweenGripAndRearEnd) : base(distanceBetweenGripAndRearEnd)
+            {
+            }
+
+            public override float GetPreferredOffsetFromRearHand(float handDist, bool rearHandIsDominant)
+            {
+                if (LocalWeaponWield.CurrentTwoHandedWieldStartedWithLongGrip)
+                {
+                    return base.GetPreferredOffsetFromRearHand(handDist, rearHandIsDominant);
+                }
+
+                if (rearHandIsDominant)
+                {
+                    return -SHORT_GRIP_REAR_HAND_DOMINANT_OFFSET - WeaponWield.HAND_CENTER_OFFSET;
+                }
+
+                if (handDist > SHORT_GRIP_FRONT_HAND_DOMINANT_OFFSET)
+                {
+                    return distanceBetweenGripAndRearEnd - WeaponWield.HAND_CENTER_OFFSET;
+                }
+
+                // Anchor the center of the spear in the front/dominant hand
+                return handDist - SHORT_GRIP_FRONT_HAND_DOMINANT_OFFSET + distanceBetweenGripAndRearEnd - WeaponWield.HAND_CENTER_OFFSET;
             }
         }
 
@@ -200,19 +267,23 @@ namespace ValheimVRMod.Scripts
                 return 0;
             }
 
+            public bool InverseHoldForDominantHand()
+            {
+                return false;
+            }
+
             public bool ShouldRotateHandForOneHandedWield()
             {
                 return false;
             }
         }
 
-        public abstract class InversibleGeometryProvider : DefaultGeometryProvider
+        public abstract class SpearCompatibleGeometryProvider : DefaultGeometryProvider
         {
-            private const float SPEAR_HANDLE_LENGTH_BEHIND_CENTER = 1.25f;
-            private const float SPEAR_FRONT_HAND_DOMINANT_OFFSET = 0.625f;
+            protected const float SPEAR_HANDLE_LENGTH_BEHIND_CENTER = 1.25f;
             private const float SPEAR_SINGLE_HAND_OFFSET = 0.5625f;
 
-            public InversibleGeometryProvider(float distanceBetweenGripAndRearEnd) : base(distanceBetweenGripAndRearEnd) { }
+            public SpearCompatibleGeometryProvider(float distanceBetweenGripAndRearEnd) : base(distanceBetweenGripAndRearEnd) { }
 
             public override Vector3 GetWeaponPointingDirection(Transform weaponTransform, Vector3 longestExtrusion)
             {
@@ -225,66 +296,45 @@ namespace ValheimVRMod.Scripts
 
             public override Vector3 GetDesiredSingleHandedPosition(WeaponWield weaponWield)
             {
-                if (IsSpear() && !IsAiming())
-                {
-                    return weaponWield.originalPosition + SPEAR_SINGLE_HAND_OFFSET * GetSingleHandedPointingDirection(weaponWield);
-                }
-                return weaponWield.originalPosition;
-            }
-
-            public override Quaternion GetDesiredSingleHandedRotation(WeaponWield weaponWield)
-            {
-                return InverseHold() ?
-                    weaponWield.originalRotation * Quaternion.Euler(180, 0, 0) :
-                    weaponWield.originalRotation;
+                return IsSpear() ?
+                    weaponWield.originalPosition + SPEAR_SINGLE_HAND_OFFSET * GetSingleHandedPointingDirection(weaponWield) :
+                    weaponWield.originalPosition;
             }
 
             public override float GetPreferredOffsetFromRearHand(float handDist, bool rearHandIsDominant)
             {
-                if (!IsSpear())
-                {
-                    return base.GetPreferredOffsetFromRearHand(handDist, rearHandIsDominant);
-                }
-
-                if (rearHandIsDominant)
+                if (IsSpear())
                 {
                     // When the dominant hand is in the back, anchor the very end of the spear handle in it to allow longer attack range.
                     return SPEAR_HANDLE_LENGTH_BEHIND_CENTER - WeaponWield.HAND_CENTER_OFFSET;
                 }
-                else if (handDist > SPEAR_HANDLE_LENGTH_BEHIND_CENTER - SPEAR_FRONT_HAND_DOMINANT_OFFSET)
-                {
-                    // The hands are far away from each other, anchor the end of the spear handle in the rear/non-dominant hand.
-                    return SPEAR_HANDLE_LENGTH_BEHIND_CENTER - WeaponWield.HAND_CENTER_OFFSET;
-                }
-                else
-                {
-                    // Anchor the center of the spear in the front/dominant hand to allow shorter attack range.
-                    return handDist - WeaponWield.HAND_CENTER_OFFSET + SPEAR_FRONT_HAND_DOMINANT_OFFSET;
-                }
+
+                return base.GetPreferredOffsetFromRearHand(handDist, rearHandIsDominant);
             }
 
             protected abstract bool IsSpear();
-            protected abstract bool InverseHold();
-            protected virtual bool IsAiming() {  return false; }
         }
 
-        public class LocalSpearGeometryProvider : InversibleGeometryProvider
+        public class LocalSpearGeometryProvider : SpearCompatibleGeometryProvider
         {
+            private const float SHORT_GRIP_REAR_HAND_DOMINANT_OFFSET = -0.625f;
+            private const float SHORT_GRIP_FRONT_HAND_DOMINANT_OFFSET = 1f;
+
             public LocalSpearGeometryProvider() : base(0) { }
+
+            public override bool InverseHoldForDominantHand()
+            {
+                return !SpearWield.IsWeaponPointingUlnar && !IsAiming();
+            }
 
             protected override bool IsSpear()
             {
                 return true;
             }
 
-            protected override bool InverseHold()
+            public override Vector3 GetDesiredSingleHandedPosition(WeaponWield weaponWield)
             {
-                return SpearWield.isSingleHandedWieldCurrentlyInversed && !IsAiming();
-            }
-
-            protected override bool IsAiming()
-            {
-                return ThrowableManager.isAiming || ThrowableManager.preAimingInTwoStagedThrow;
+                return IsAiming() ? weaponWield.originalPosition : base.GetDesiredSingleHandedPosition(weaponWield);
             }
 
             public override Quaternion GetDesiredSingleHandedRotation(WeaponWield weaponWield)
@@ -324,22 +374,52 @@ namespace ValheimVRMod.Scripts
                       Vector3.RotateTowards(staticPointing, pointing, Mathf.Max(weight * 8 - 1, 0), Mathf.Infinity),
                       GetPreferredTwoHandedWeaponUp(weaponWield));
             }
-        }
 
-        public class LocalKnifeGeometryProvider : InversibleGeometryProvider
-        {
-            public static bool shouldInverseHold { get { return SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource); } }
-
-            public LocalKnifeGeometryProvider(float distanceBetweenGripAndRearEnd) : base(distanceBetweenGripAndRearEnd) { }
-
-            protected override bool IsSpear()
+            public override float GetPreferredOffsetFromRearHand(float handDist, bool rearHandIsDominant)
             {
-                return false;
+                if (LocalWeaponWield.CurrentTwoHandedWieldStartedWithLongGrip)
+                {
+                    return base.GetPreferredOffsetFromRearHand(handDist, rearHandIsDominant);
+                }
+
+                if (rearHandIsDominant)
+                {
+                    return -SHORT_GRIP_REAR_HAND_DOMINANT_OFFSET - WeaponWield.HAND_CENTER_OFFSET;
+                }
+
+                if (handDist > SHORT_GRIP_FRONT_HAND_DOMINANT_OFFSET)
+                {
+                    // The hands are far away from each other, anchor the end of the spear handle in the rear/non-dominant hand.
+                    return SPEAR_HANDLE_LENGTH_BEHIND_CENTER - WeaponWield.HAND_CENTER_OFFSET;
+                }
+
+                // Anchor the center of the spear in the front/dominant hand to allow shorter attack range.
+                return handDist - SHORT_GRIP_FRONT_HAND_DOMINANT_OFFSET + SPEAR_HANDLE_LENGTH_BEHIND_CENTER - WeaponWield.HAND_CENTER_OFFSET;
             }
 
-            protected override bool InverseHold()
+            private bool IsAiming()
             {
-                return shouldInverseHold;
+                return ThrowableManager.isAiming || ThrowableManager.preAimingInTwoStagedThrow;
+            }
+        }
+
+        public class LocalKnifeGeometryProvider : DefaultGeometryProvider
+        {
+            public LocalKnifeGeometryProvider(float distanceBetweenGripAndRearEnd) : base(distanceBetweenGripAndRearEnd) { }
+
+            public override bool InverseHoldForDominantHand()
+            {
+                return SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource);
+            }
+        }
+
+        public class LocalSwordGeometryProvider : DefaultGeometryProvider
+        {
+            public LocalSwordGeometryProvider() : base(0) { }
+
+            public override bool InverseHoldForDominantHand()
+            {
+                return LocalWeaponWield.IsWeaponPointingUlnar;
             }
         }
 
@@ -416,6 +496,11 @@ namespace ValheimVRMod.Scripts
                 return CrossbowManager.INTERGRIP_DISTANCE;
             }
 
+            public bool InverseHoldForDominantHand()
+            {
+                return false;
+            }
+
             public bool ShouldRotateHandForOneHandedWield()
             {
                 return false;
@@ -451,7 +536,7 @@ namespace ValheimVRMod.Scripts
             }
         }
 
-        public class RemoteGeometryProvider : InversibleGeometryProvider
+        public class RemoteGeometryProvider : SpearCompatibleGeometryProvider
         {
             private WeaponWieldSync.TwoHandedStateProvider twoHandedStateProvider;
             public RemoteGeometryProvider(float distanceBetweenGripAndRearEnd, WeaponWieldSync.TwoHandedStateProvider twoHandedStateProvider) :
@@ -467,10 +552,10 @@ namespace ValheimVRMod.Scripts
                 // we can confidently infer that it is a spear and should treat it like one.
                 // If it is not currently inversed, we cannot be conclusive. But if it is not currently inversed,
                 // we can treat it as a non-spear without causing any visual difference.
-                return distanceBetweenGripAndRearEnd > 0.5f && InverseHold();
+                return distanceBetweenGripAndRearEnd > 0.5f && InverseHoldForDominantHand();
             }
 
-            protected override bool InverseHold()
+            public override bool InverseHoldForDominantHand()
             {
                 return twoHandedStateProvider.InverseHold();
             }
