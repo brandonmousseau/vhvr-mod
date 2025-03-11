@@ -1,7 +1,6 @@
 using System.Linq;
 using RootMotion.FinalIK;
 using UnityEngine;
-using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 
@@ -114,15 +113,15 @@ namespace ValheimVRMod.Scripts {
             {
                 if (EquipScript.getRight() == EquipType.Knife)
                 {
-                    inverseHold = TwoHandedGeometry.LocalKnifeGeometryProvider.shouldInverseHold;
+                    inverseHold = LocalWeaponWield.IsDominantHandHoldInversed;
                 }
-                else if (EquipScript.isSpearEquipped() && !ThrowableManager.isAiming)
+                else if (EquipScript.isSpearEquipped())
                 {
-                    inverseHold = SpearWield.isSingleHandedWieldCurrentlyInversed || LocalWeaponWield.isCurrentlyTwoHanded();
+                    inverseHold = LocalWeaponWield.IsDominantHandHoldInversed || LocalWeaponWield.isCurrentlyTwoHanded();
                 }
                 else
                 {
-                    inverseHold = false;
+                    inverseHold = LocalWeaponWield.IsDominantHandHoldInversed && !LocalWeaponWield.isCurrentlyTwoHanded();
                 }
             }
             return inverseHold;
@@ -271,16 +270,10 @@ namespace ValheimVRMod.Scripts {
         private void extractAndUpdate(ZPackage pkg, ref GameObject obj, ref Vector3 tempRelPos, bool hasTempRelPos)
         {
             // Extract package data
-            var position = pkg.ReadVector3() + player.transform.position;
+            var position = pkg.ReadVector3();
             var rotation = pkg.ReadQuaternion();
             var velocity = pkg.ReadVector3();
 
-            if (!player.m_attached)
-            {
-                // Update position based on last written position, velocity, and elapsed time since last data revision
-                position += velocity * deltaTimeCounter;
-            }
-            
             if (!hasTempRelPos)
             {
                 tempRelPos = position;
@@ -293,7 +286,7 @@ namespace ValheimVRMod.Scripts {
             }
 
             // Update the object position with new calculated position
-            updatePosition(obj, position);
+            updatePosition(obj, position + player.transform.position);
             
             // Update the rotation
             updateRotation(obj, rotation);
