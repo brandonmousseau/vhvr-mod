@@ -8,14 +8,18 @@ namespace ValheimVRMod.Utilities
     {
         public static bool IsSecondaryAttack(PhysicsEstimator collisionPhysicsEstimator, PhysicsEstimator handPhysicsEstimator)
         {
-            switch (EquipScript.getRight())
+            var rightEquipType = EquipScript.getRight();
+            switch (rightEquipType)
             {
                 case EquipType.Axe:
                 case EquipType.Club:
                     return !IsStab(handPhysicsEstimator) && IsStrongSwing(collisionPhysicsEstimator, handPhysicsEstimator);
                 case EquipType.BattleAxe:
                 case EquipType.Polearms:
-                    if (!LocalWeaponWield.isCurrentlyTwoHanded() || LocalWeaponWield.IsDominantHandBehind || VRPlayer.vrCam == null)
+                    if (!LocalWeaponWield.isCurrentlyTwoHanded() ||
+                        LocalWeaponWield.IsDominantHandBehind ||
+                        !LocalWeaponWield.CurrentTwoHandedWieldStartedWithLongGrip ||
+                        VRPlayer.vrCam == null)
                     {
                         return false;
                     }
