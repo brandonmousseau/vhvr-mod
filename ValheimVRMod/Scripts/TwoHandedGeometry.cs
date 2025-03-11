@@ -112,11 +112,7 @@ namespace ValheimVRMod.Scripts
 
             public override float GetPreferredOffsetFromRearHand(float handDist, bool rearHandIsDominant)
             {
-                if (rearHandIsDominant)
-                {
-                    return distanceBetweenGripAndRearEnd * 0.5f - WeaponWield.HAND_CENTER_OFFSET;
-                }
-                return base.GetPreferredOffsetFromRearHand(handDist, rearHandIsDominant);
+                return distanceBetweenGripAndRearEnd * 0.5f - WeaponWield.HAND_CENTER_OFFSET;
             }
         }
 
