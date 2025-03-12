@@ -6,8 +6,6 @@ namespace ValheimVRMod.Scripts
 {
     public abstract class WeaponWield : MonoBehaviour
     {
-        private const float GRIP_ALLOWANCE = 0.0625f;
-
         public enum TwoHandedState
         {
             SingleHanded = 0,
@@ -37,17 +35,15 @@ namespace ValheimVRMod.Scripts
 
         private EquipType equipType;
         private bool isLocal;
+        private bool isDominantHandWeapon;
 
         public WeaponWield Initialize(
-            ItemDrop.ItemData item, string itemName, bool forceUsingCrossbowGeometry = false, WeaponWieldSync.TwoHandedStateProvider twoHandedStateProvider = null)
+            ItemDrop.ItemData item, string itemName, bool isDominantHandWeapon, WeaponWieldSync.TwoHandedStateProvider twoHandedStateProvider = null)
         {
             isLocal = GetComponentInParent<Player>() == Player.m_localPlayer;
+            this.isDominantHandWeapon = isDominantHandWeapon;
             this.itemName = itemName;
             equipType = (item == null ? EquipType.None : EquipScript.getEquippedItem(item));
-            if (forceUsingCrossbowGeometry)
-            {
-                equipType = EquipType.Crossbow;
-            }
 
             attackAnimation = item?.m_shared.m_attack?.m_attackAnimation ?? "";
 
@@ -92,8 +88,12 @@ namespace ValheimVRMod.Scripts
                     if (item != null && itemName != "") {
                         EstimatedWeaponLocalDirectionsAndLengths.Add(itemName, weaponDirectionAndLength);
                         DistancesBehindGripAndRearEnd.Add(itemName, distanceBetweenGripAndRearEnd);
-                        LogUtils.LogDebug("Registered " + itemName + " local pointing direction: " + longestLocalExtrusion + " distance between rear end and grip: " + distanceBetweenGripAndRearEnd);
-                    } 
+                        LogUtils.LogDebug("Registered " + itemName + " local pointing direction and length: " + weaponDirectionAndLength + " distance between rear end and grip: " + distanceBetweenGripAndRearEnd);
+                    }
+                    else if (!isLocal)
+                    {
+                        equipType = WeaponUtils.GuesstEquipTypeFromShape(weaponLength, distanceBetweenGripAndRearEnd, isDominantHandWeapon);
+                    }
                 }
             }
 
@@ -181,20 +181,19 @@ namespace ValheimVRMod.Scripts
                 return new TwoHandedGeometry.DundrGeometryProvider();
             }
 
-            if (isLocal && EquipScript.getRight() == EquipType.Magic)
-            {
-                return new TwoHandedGeometry.StaffGeometryProvider(distanceBetweenGripAndRearEnd);
-            }
-
             switch (equipType)
             {
                 case EquipType.Axe:
                 case EquipType.Club:
+                case EquipType.Cultivator:
+                case EquipType.Fishing:
+                case EquipType.Hoe:
+                case EquipType.Torch:
                     return new TwoHandedGeometry.DefaultGeometryProvider(distanceBetweenGripAndRearEnd: 0);
                 case EquipType.BattleAxe:
-                    return isLocal ?
-                        new TwoHandedGeometry.LocalBattleaxeGeometryProvider(distanceBetweenGripAndRearEnd) :
-                        new TwoHandedGeometry.BattleaxeGeometryProvider(distanceBetweenGripAndRearEnd);
+                    return isLocal ? 
+                        (TwoHandedGeometryProvider) new TwoHandedGeometry.LocalBattleaxeGeometryProvider(distanceBetweenGripAndRearEnd * 0.3f) :
+                        (TwoHandedGeometryProvider) new TwoHandedGeometry.RemoteBattleaxeGeometryProvider(distanceBetweenGripAndRearEnd * 0.3f);
                 case EquipType.Crossbow:
                     return isLocal ?
                         new TwoHandedGeometry.LocalCrossbowGeometryProvider() :
@@ -205,10 +204,18 @@ namespace ValheimVRMod.Scripts
                         return new TwoHandedGeometry.LocalKnifeGeometryProvider(distanceBetweenGripAndRearEnd);
                     }
                     break;
+                case EquipType.Magic:
+                    if (isDominantHandWeapon)
+                    {
+                        return new TwoHandedGeometry.StaffGeometryProvider(distanceBetweenGripAndRearEnd);
+                    }
+                    break;
+                case EquipType.Pickaxe:
+                    return new TwoHandedGeometry.DefaultGeometryProvider(distanceBetweenGripAndRearEnd * 0.75f);
                 case EquipType.Polearms:
                     return isLocal ?
-                        new TwoHandedGeometry.LocalAtgeirGeometryProvider(distanceBetweenGripAndRearEnd) :
-                        new TwoHandedGeometry.AtgeirGeometryProvider(distanceBetweenGripAndRearEnd);
+                        (TwoHandedGeometryProvider) new TwoHandedGeometry.LocalAtgeirGeometryProvider(distanceBetweenGripAndRearEnd * 0.7f) :
+                        (TwoHandedGeometryProvider) new TwoHandedGeometry.RemoteAtgeirGeometryProvider(distanceBetweenGripAndRearEnd * 0.7f);
                 case EquipType.Scythe:
                     return new TwoHandedGeometry.ScytheGeometryProvider(IsPlayerLeftHanded(), distanceBetweenGripAndRearEnd);
                 case EquipType.Sledge:
@@ -225,6 +232,10 @@ namespace ValheimVRMod.Scripts
                     {
                         return new TwoHandedGeometry.LocalSpearGeometryProvider();
                     }
+                    else if (twoHandedStateProvider != null)
+                    {
+                        return new TwoHandedGeometry.RemoteSpearGeometryProvider(twoHandedStateProvider);
+                    }
                     break;
             }
 
@@ -233,7 +244,7 @@ namespace ValheimVRMod.Scripts
                 return new TwoHandedGeometry.RemoteGeometryProvider(distanceBetweenGripAndRearEnd, twoHandedStateProvider);
             }
             
-            return new TwoHandedGeometry.DefaultGeometryProvider(Mathf.Max(distanceBetweenGripAndRearEnd - GRIP_ALLOWANCE, 0));
+            return new TwoHandedGeometry.DefaultGeometryProvider(distanceBetweenGripAndRearEnd);
         }
 
         public interface TwoHandedGeometryProvider {

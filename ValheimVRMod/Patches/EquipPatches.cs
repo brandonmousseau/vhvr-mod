@@ -95,7 +95,7 @@ namespace ValheimVRMod.Patches {
             }
 
             LocalWeaponWield weaponWield = EquipScript.isSpearEquipped() ? ___m_rightItemInstance.AddComponent<SpearWield>() : ___m_rightItemInstance.AddComponent<LocalWeaponWield>();
-            weaponWield.Initialize(Player.m_localPlayer.GetRightItem(), ___m_rightItem);
+            weaponWield.Initialize(Player.m_localPlayer.GetRightItem(), ___m_rightItem, isDominantHandWeapon: true);
 
             if (MagicWeaponManager.IsSwingLaunchEnabled())
             {
@@ -218,7 +218,7 @@ namespace ValheimVRMod.Patches {
                     return;
                 case EquipType.Crossbow:
                     CrossbowManager crossbowManager = ___m_leftItemInstance.AddComponent<CrossbowManager>();
-                    crossbowManager.Initialize(Player.m_localPlayer.GetLeftItem(), ___m_leftItem);
+                    crossbowManager.Initialize(Player.m_localPlayer.GetLeftItem(), ___m_leftItem, isDominantHandWeapon: false);
                     crossbowManager.gameObject.AddComponent<WeaponBlock>().weaponWield = crossbowManager;
                     EquipScript.equipAmmo();
                     return;
