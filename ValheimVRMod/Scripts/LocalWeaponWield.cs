@@ -100,7 +100,8 @@ namespace ValheimVRMod.Scripts
                 if (twoHandedState != TwoHandedState.SingleHanded)
                 {
                     CurrentTwoHandedWieldStartedWithLongGrip =
-                        MIN_LONG_GRIP < Vector3.Distance(VRPlayer.dominantHand.transform.position, VRPlayer.dominantHand.otherHand.transform.position);
+                        MIN_LONG_GRIP < Vector3.Distance(VRPlayer.dominantHand.transform.position, VRPlayer.dominantHand.otherHand.transform.position) &&
+                        Vector3.Dot(VRPlayer.dominantHand.transform.forward, VRPlayer.dominantHand.otherHand.transform.forward) > 0;
                 }
             }
 
