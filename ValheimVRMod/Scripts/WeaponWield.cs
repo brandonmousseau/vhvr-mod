@@ -6,6 +6,9 @@ namespace ValheimVRMod.Scripts
 {
     public abstract class WeaponWield : MonoBehaviour
     {
+        private const float ONE_HANDED_WEAPON_GRIP_ALLOWANCE = 0.25f;
+        private const float ONE_HANDED_WEAPON_MIN_GRIP_LENGTH = 1 / 32f;
+
         public enum TwoHandedState
         {
             SingleHanded = 0,
@@ -186,6 +189,14 @@ namespace ValheimVRMod.Scripts
 
             switch (equipType)
             {
+                case EquipType.Axe:
+                case EquipType.Club:
+                    if (distanceBetweenGripAndRearEnd > ONE_HANDED_WEAPON_MIN_GRIP_LENGTH)
+                    {
+                        return new TwoHandedGeometry.DefaultGeometryProvider(
+                            Mathf.Max(distanceBetweenGripAndRearEnd - ONE_HANDED_WEAPON_GRIP_ALLOWANCE, ONE_HANDED_WEAPON_MIN_GRIP_LENGTH));
+                    }
+                    break;
                 case EquipType.BattleAxe:
                     return isLocal ?
                         new TwoHandedGeometry.LocalBattleaxeGeometryProvider(distanceBetweenGripAndRearEnd) :
@@ -211,7 +222,7 @@ namespace ValheimVRMod.Scripts
                 case EquipType.Sword:
                     if (isLocal)
                     {
-                        return new TwoHandedGeometry.LocalSwordGeometryProvider();
+                        return new TwoHandedGeometry.LocalSwordGeometryProvider(distanceBetweenGripAndRearEnd);
                     }
                     break;
                 case EquipType.Spear:
