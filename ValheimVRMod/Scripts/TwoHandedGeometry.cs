@@ -411,7 +411,7 @@ namespace ValheimVRMod.Scripts
 
         public class LocalSwordGeometryProvider : DefaultGeometryProvider
         {
-            public LocalSwordGeometryProvider() : base(0) { }
+            public LocalSwordGeometryProvider(float distanceBetweenGripAndRearEnd) : base(distanceBetweenGripAndRearEnd) { }
 
             public override bool InverseHoldForDominantHand()
             {
