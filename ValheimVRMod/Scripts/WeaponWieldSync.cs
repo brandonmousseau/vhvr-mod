@@ -27,7 +27,7 @@ namespace ValheimVRMod.Scripts
             this.leftHandTransform = leftHandTransform;
             this.rightHandTransform = rightHandTransform;
             // TODO: figure out a better way to detect crossbow.
-            base.Initialize(item, itemName, forceUsingCrossbowGeometry: !isDominantHandWeapon, twoHandedStateSync);
+            base.Initialize(item, itemName, isDominantHandWeapon, twoHandedStateSync);
         }
 
         protected override bool IsPlayerLeftHanded()
