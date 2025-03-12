@@ -238,6 +238,11 @@ namespace ValheimVRMod.Utilities
                     0, 0, 0,
                     0.04f,  0.45f, 0.01f
                 )}, {
+                "Scythe", WeaponColData.create(
+                    -0.3f,  1.4f, 0,
+                    0,  0, 0,
+                    0.71f,  0.71f, 0.1f
+                )}, {
                 "Tankard", WeaponColData.create(
                     0,  0.28f, 0,
                     0, 0, 0,
@@ -332,6 +337,12 @@ namespace ValheimVRMod.Utilities
                         0,  0, 0,
                         0.45f,  0.45f, 0.45f
                 )},
+                {
+                    EquipType.Torch, WeaponColData.create(
+                        0.55f,  0.15f, 0.05f,
+                        0,  0, 0,
+                        0.45f,  0.45f, 0.45f
+                )},
             };
 
         private static readonly Dictionary<EquipType, WeaponColData> DUAL_WIELD_BLOCKING_COLLIDERS =
@@ -367,9 +378,12 @@ namespace ValheimVRMod.Utilities
         {
             { "atgeir_attack", 0.81f },
             { "battleaxe_attack", 0.87f },
+            { "dualaxes", 0.4f }, // TODO: Find an accurate value for dual axes
+            { "dualaxes_secondary", 1.9f },
             { "dual_knives", 0.43f },
             { "greatsword", 1.13f },
             { "knife_stab", 0.49f },
+            { "scything", 1.5f },
             { "swing_longsword", 0.63f },
             { "spear_poke", 0.63f },
             { "swing_pickaxe", 1.3f },
@@ -434,7 +448,11 @@ namespace ValheimVRMod.Utilities
 
         public static WeaponColData GetDualWieldLeftHandColliderData(ItemDrop.ItemData item)
         {
-            var equipType = EquipScript.getEquippedItem(item);
+            return GetDualWieldLeftHandColliderData(EquipScript.getEquippedItem(item));
+        }
+
+        public static WeaponColData GetDualWieldLeftHandColliderData(EquipType equipType)
+        {
             if (!DUAL_WIELD_COLLIDERS.ContainsKey(equipType))
             {
                 equipType = EquipType.None;
@@ -487,8 +505,9 @@ namespace ValheimVRMod.Utilities
                 weaponLength = longestExtrusion;
                 LogUtils.LogWarning("Weapon mesh is off hand, weapon direction and length estimation might be inaccurate.");
             }
-            handleAllowanceBehindGrip = weaponLength - longestExtrusion;
-            return weaponMeshFilter.transform.TransformVector(weaponPointingDirection * weaponLength);
+            var result = weaponMeshFilter.transform.TransformVector(weaponPointingDirection * weaponLength);
+            handleAllowanceBehindGrip = result.magnitude * (1 - longestExtrusion / weaponLength);
+            return result;
         }
 
         // Whether the straight line (t -> p + t * v) intersects with the given bounds.
@@ -639,7 +658,7 @@ namespace ValheimVRMod.Utilities
 
         public static Vector3 GetWeaponVelocity(Vector3 handVelocity, Vector3 handAngularVelocity, Vector3 weaponOffset)
         {
-            return handVelocity + Vector3.Cross(weaponOffset, handAngularVelocity);
+            return handVelocity + Vector3.Cross(handAngularVelocity, weaponOffset);
         }
     }
 }

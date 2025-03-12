@@ -3,8 +3,10 @@ using ValheimVRMod.Utilities;
 
 namespace ValheimVRMod.Scripts {
     public class AttackTargetMeshCooldown : MeshCooldown {
-        protected override Color FullOutlineColor { get { return isSecondaryAttackCooldown? Color.yellow : base.FullOutlineColor; } }
+        private float colorModifier = 1;
+        protected override Color FullOutlineColor { get { return isSecondaryAttackCooldown? Color.yellow : Color.Lerp(Color.black, base.FullOutlineColor, colorModifier); } }
 
+        public static float speedScaledDamageFactor;
         public static float damageMultiplier;
         public static bool staminaDrained;
         public static bool durabilityDrained;
@@ -12,16 +14,34 @@ namespace ValheimVRMod.Scripts {
 
         private bool isSecondaryAttackCooldown;
 
-        public bool tryTriggerPrimaryAttack(float cd)
+        public bool tryTriggerPrimaryAttack(float cd, float speed)
         {
-            if (tryTrigger(cd))
+            float? overideMinAttackInterval;
+            if (VHVRConfig.MomentumScalesAttackDamage() && EquipScript.getRight() != EquipType.Sledge)
+            {
+                speedScaledDamageFactor = Mathf.Min(GetSpeedScaledDamageFactor(cd, speed), 1 - getRemaningCooldownPercentage());
+                overideMinAttackInterval = 0.25f;
+            }
+            else
+            {
+                speedScaledDamageFactor = 1;
+                overideMinAttackInterval = null;
+            }
+
+            if (tryTrigger(cd, overideMinAttackInterval))
             {
                 isSecondaryAttackCooldown = false;
                 if (primaryTargetMeshCooldown == null)
                 {
                     primaryTargetMeshCooldown = this;
+                }
+                if (primaryTargetMeshCooldown == this)
+                {
                     damageMultiplier = 1;
                 }
+
+                colorModifier = Mathf.Min(speedScaledDamageFactor, damageMultiplier);
+
                 return true;
             }
             return false;
@@ -32,7 +52,9 @@ namespace ValheimVRMod.Scripts {
             if (tryTrigger(cd))
             {
                 isSecondaryAttackCooldown = true;
-                
+                speedScaledDamageFactor = 1;
+                colorModifier = 1;
+
                 if (ignorePrimaryAttackCooldown)
                 {
                     damageMultiplier = 1;
@@ -64,7 +86,7 @@ namespace ValheimVRMod.Scripts {
                 return 1;
             }
             
-            return oldDamageMultiplier;
+            return Mathf.Min(oldDamageMultiplier, speedScaledDamageFactor);
         }
 
         public static bool isPrimaryTargetInCooldown()
@@ -91,6 +113,16 @@ namespace ValheimVRMod.Scripts {
                     primaryTargetMeshCooldown = null;
                 }
             }
+        }
+
+        private static float GetSpeedScaledDamageFactor(float cd, float speed)
+        {
+            if (FistCollision.hasDualWieldingWeaponEquipped())
+            {
+                cd *= 2;
+            }
+            var fullDamageSpeed = cd + 5;
+            return speed >= fullDamageSpeed ? 1 : speed / fullDamageSpeed;
         }
     }
 }

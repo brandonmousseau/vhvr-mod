@@ -65,6 +65,17 @@ namespace ValheimVRMod.Scripts
                     return false;
                 }
 
+                if (EquipScript.isDundrEquipped())
+                {
+                    switch (LocalWeaponWield.LocalPlayerTwoHandedState)
+                    {
+                        case WeaponWield.TwoHandedState.LeftHandBehind:
+                            return SteamVR_Actions.valheim_UseLeft.stateDown;
+                        case WeaponWield.TwoHandedState.RightHandBehind:
+                            return SteamVR_Actions.valheim_Use.stateDown;
+                    }
+                }
+
                 if (CanSummonWithOppositeHand() && SummonByMovingHandUpward.pendingSummon)
                 {
                     SummonByMovingHandUpward.pendingSummon = false;

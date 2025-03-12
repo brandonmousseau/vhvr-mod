@@ -8,24 +8,10 @@ namespace ValheimVRMod.Scripts.Block {
 
         public string itemName;
         private const float MIN_PARRY_ENTRY_SPEED = 1.5f;
-        private const float MIN_PARRY_SWING_DIST = 0.5f;
         private const float MAX_PARRY_ANGLE = 150f;
         private const float PARRY_EXIT_SPEED = 0.2f;
         private const int PARRY_CHECK_INTERVAL = 3;
-        private static float PARRY_WINDOW_EASING_FACTOR {
-            get
-            {
-                switch (VHVRConfig.BlockingType())
-                {
-                    case "Realistic":
-                        return 0.5f;
-                    case "Gesture":
-                        return 0.75f;
-                    default:
-                        return 1;
-                }
-            }
-        }
+        private static float PARRY_WINDOW_EASING_FACTOR { get { return VHVRConfig.UseRealisticBlock() ? 0.5f : VHVRConfig.UseGestureBlock() ? 0.75f : 1; } }
 
         private float scaling = 1f;
         private Vector3 posRef;
@@ -70,11 +56,11 @@ namespace ValheimVRMod.Scripts.Block {
         }
 
         public override void setBlocking(HitData hitData) {
-            if (VHVRConfig.BlockingType() == "GrabButton")
+            if (VHVRConfig.UseGrabButtonBlock())
             {
                 _blocking = SteamVR_Actions.valheim_Grab.GetState(VRPlayer.nonDominantHandInputSource);
             }
-            else if (VHVRConfig.BlockingType() == "Realistic")
+            else if (VHVRConfig.UseRealisticBlock())
             {
                 _blocking = Vector3.Dot(hitData.m_dir, shieldFacing) < -0.25f && hitIntersectsBlockBox(hitData);
                 CheckParryMotion();

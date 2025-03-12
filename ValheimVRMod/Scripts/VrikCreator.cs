@@ -1,65 +1,77 @@
 using RootMotion.FinalIK;
 using UnityEngine;
 using ValheimVRMod.Utilities;
+using ValheimVRMod.VRCore;
 
 namespace ValheimVRMod.Scripts {
     public class VrikCreator {
+        // Valheim characters are 2 meters tall. Scale it down to make tracking less awkward.
+        public const float ROOT_SCALE = 0.9f;
 
-        private static readonly Vector3 leftUnequippedPosition = new Vector3(-0.027f, 0.05f, -0.18f);
-        private static readonly Quaternion leftUnequippedRotation = Quaternion.Euler(0, 90f, 135f);
-        private static readonly Vector3 leftUnequippedEllbow = new Vector3(1, 0, 0);
-        private static readonly Vector3 rightUnequippedPosition = new Vector3(0.027f, 0.05f, -0.18f);
-        private static readonly Quaternion rightUnequippedRotation = Quaternion.Euler(0, -90f, -135f);
-        private static readonly Vector3 rightUnequippedEllbow = new Vector3(-1, 0, 0);
-        
+        public static readonly Vector3 leftUnequippedPosition = new Vector3(-0.027f, 0.05f, -0.18f);
+        public static readonly Quaternion leftUnequippedRotation = Quaternion.Euler(0, 90f, 135f);
+        private static readonly Vector3 leftUnequippedElbow = new Vector3(1, 0, 0);
+        public static readonly Vector3 rightUnequippedPosition = new Vector3(0.027f, 0.05f, -0.18f);
+        public static readonly Quaternion rightUnequippedRotation = Quaternion.Euler(0, -90f, -135f);
+        private static readonly Vector3 rightUnequippedElbow = new Vector3(-1, 0, 0);
+
         private static readonly Vector3 leftEquippedPosition = new Vector3(-0.02f, 0.09f, -0.1f);
-        private static readonly Quaternion leftEquippedRotation = Quaternion.Euler(0, 90, -170);
-        private static readonly Vector3 leftEquippedEllbow = new Vector3(1, -3f, 0);
+        private static readonly Quaternion leftEquippedRotation = Quaternion.Euler(0, 90, 170);
+        private static readonly Vector3 leftEquippedElbow = new Vector3(1, -3f, 0);
         private static readonly Vector3 rightEquippedPosition = new Vector3(0.02f, 0.09f, -0.1f);
         private static readonly Quaternion rightEquippedRotation = Quaternion.Euler(0, -90, -170);
-        private static readonly Vector3 rightEquippedEllbow = new Vector3(-1, -3f, 0);
+        private static readonly Vector3 rightEquippedElbow = new Vector3(-1, -3f, 0);
 
-        private static readonly Vector3 leftspearPosition = new Vector3(-0.02f, 0.06f, -0.15f);
-        private static readonly Quaternion leftSpearRotation = Quaternion.Euler(0, 90, 140);
-        private static readonly Vector3 leftSpearEllbow = new Vector3(1, -3f, 0);
-        private static readonly Vector3 rightspearPosition = new Vector3(0.02f, 0.06f, -0.15f);
-        private static readonly Quaternion rightSpearRotation = Quaternion.Euler(0, -90, -140);
-        private static readonly Vector3 rightSpearEllbow = new Vector3(-1, -3f, 0);
-        
+        private static Transform localPlayerCamera;
+        private static Transform CameraRig { get { return localPlayerCamera.parent; } }
+
         public static Transform localPlayerRightHandConnector = null;
         public static Transform localPlayerLeftHandConnector = null;
-        public static Transform camera;
-        private static Transform CameraRig { get { return camera.parent; } }
-
 
         private static VRIK CreateTargets(GameObject playerObject)
         {
-            VRIK vrik = playerObject.GetComponent<VRIK>() ?? playerObject.AddComponent<VRIK>();
+            VRIK vrik = playerObject.GetOrAddComponent<VRIK>();
             vrik.solver.leftArm.target = new GameObject().transform;
             vrik.solver.rightArm.target = new GameObject().transform;
+            vrik.solver.leftLeg.target = new GameObject().transform;
+            vrik.solver.rightLeg.target = new GameObject().transform;
             vrik.solver.spine.headTarget = new GameObject().transform;
-            localPlayerLeftHandConnector = new GameObject().transform;
-            localPlayerRightHandConnector = new GameObject().transform;
+            vrik.solver.spine.pelvisTarget = new GameObject().transform;
+            if (playerObject == Player.m_localPlayer.gameObject)
+            {
+                localPlayerLeftHandConnector = new GameObject().transform;
+                localPlayerRightHandConnector = new GameObject().transform;
+            }
             return vrik;
         }
 
-        private static void InitializeTargts(VRIK vrik, Transform leftController, Transform rightController, Transform camera, bool isLocalPlayer)
+        private static bool InitializeTargts(VRIK vrik, Transform leftController, Transform rightController, Transform camera, Transform pelvis, bool isLocalPlayer)
         {
             vrik.AutoDetectReferences();
-            vrik.references.leftThigh = null;
-            vrik.references.leftCalf = null;
-            vrik.references.leftFoot = null;
-            vrik.references.leftToes = null;
-            vrik.references.rightThigh = null;
-            vrik.references.rightCalf = null;
-            vrik.references.rightFoot = null;
-            vrik.references.rightToes = null;
 
-            Transform leftHandConnector = isLocalPlayer ? VrikCreator.localPlayerLeftHandConnector : new GameObject().transform;
+            if (vrik == null || vrik.references.head == null || vrik.references.leftHand == null || vrik.references.rightHand == null)
+            {
+                return false;
+            }
+
+            if (!isLocalPlayer)
+            {
+                vrik.references.leftThigh = null;
+                vrik.references.leftCalf = null;
+                vrik.references.leftFoot = null;
+                vrik.references.rightThigh = null;
+                vrik.references.rightCalf = null;
+                vrik.references.rightFoot = null;
+            }
+            vrik.references.leftToes = null;
+            vrik.references.rightToes = null;
+            vrik.references.root.localScale = Vector3.one * ROOT_SCALE;
+
+            Transform leftHandConnector = isLocalPlayer ? localPlayerLeftHandConnector : new GameObject().transform;
             leftHandConnector.SetParent(leftController, false);
             vrik.solver.leftArm.target.SetParent(leftHandConnector, false);
 
-            Transform rightHandConnector = isLocalPlayer ? VrikCreator.localPlayerRightHandConnector : new GameObject().transform;
+            Transform rightHandConnector = isLocalPlayer ? localPlayerRightHandConnector : new GameObject().transform;
             rightHandConnector.SetParent(rightController, false);
             vrik.solver.rightArm.target.SetParent(rightHandConnector, false);
 
@@ -67,22 +79,40 @@ namespace ValheimVRMod.Scripts {
             head.SetParent(camera);
             if (isLocalPlayer)
             {
-                VrikCreator.camera = camera;
+                VrikCreator.localPlayerCamera = camera;
             }
-            head.localPosition = new Vector3(0, -0.165f, -0.09f);
+            head.localPosition = new Vector3(0, -0.165f, -0.09f) * ROOT_SCALE;
             head.localRotation = Quaternion.Euler(0, 90, 20);
-            vrik.solver.spine.maxRootAngle = 180;
 
-            //Avoid akward movements
+            vrik.solver.spine.pelvisTarget.SetParent(pelvis, worldPositionStays: false);
+            vrik.solver.spine.pelvisTarget.localPosition = Vector3.zero;
+            vrik.solver.spine.pelvisTarget.localRotation = Quaternion.identity;
+            if (isLocalPlayer)
+            {
+                vrik.solver.leftLeg.target.parent = VRPlayer.leftFoot;
+                vrik.solver.leftLeg.bendToTargetWeight = 1;
+                vrik.solver.rightLeg.target.parent = VRPlayer.rightFoot;
+                vrik.solver.rightLeg.bendToTargetWeight = 1;
+            }
+            ResetPelvisAndFootTransform(vrik);
+
+            // Avoid akward movements
             vrik.solver.spine.maintainPelvisPosition = 0f;
-            vrik.solver.spine.pelvisPositionWeight = 0f;
-            vrik.solver.spine.pelvisRotationWeight = 0f;
+            vrik.solver.spine.pelvisPositionWeight = isLocalPlayer ? 0 : 1;
+            vrik.solver.spine.pelvisRotationWeight = isLocalPlayer ? 0 : 1;
             vrik.solver.spine.bodyPosStiffness = 0f;
             vrik.solver.spine.bodyRotStiffness = 0f;
-            //Force head to allow more vertical headlook
+            // Force head to allow more vertical headlook
             vrik.solver.spine.headClampWeight = 0f;
-        }
+            vrik.solver.leftLeg.positionWeight = vrik.solver.rightLeg.positionWeight = 0;
+            vrik.solver.leftLeg.rotationWeight = vrik.solver.rightLeg.rotationWeight = 0;
+            vrik.solver.plantFeet = false;
+            vrik.solver.locomotion.weight = 0;
+            vrik.solver.spine.maxRootAngle = 180;
+            vrik.solver.spine.minHeadHeight = 0;
 
+            return true;
+        }
 
         private static bool IsPaused(VRIK vrik)
         {
@@ -92,52 +122,75 @@ namespace ValheimVRMod.Scripts {
                 vrik.solver.spine.headTarget.parent == CameraRig;
         }
 
-        public static VRIK initialize(GameObject playerGameObject, Transform leftController, Transform rightController, Transform camera) {
+        public static VRIK initialize(GameObject playerGameObject, Transform leftController, Transform rightController, Transform camera, Transform pelvis) {
             VRIK vrik = CreateTargets(playerGameObject);
-            InitializeTargts(vrik, leftController, rightController, camera, Player.m_localPlayer != null && playerGameObject == Player.m_localPlayer.gameObject);
-            return vrik;
+            bool success = InitializeTargts(vrik, leftController, rightController, camera, pelvis, Player.m_localPlayer != null && playerGameObject == Player.m_localPlayer.gameObject);
+            if (success)
+            {
+                return vrik;
+            }
+            GameObject.Destroy(vrik);
+            return null;
         }
 
         public static void resetVrikHandTransform(Humanoid player) {
             
-            VRIK vrik = player.GetComponent<VRIK>();   
-            
+            VRIK vrik = player.GetComponent<VRIK>();
+            var sync = player.GetComponent<VRPlayerSync>();
+
             if (vrik == null) {
                 return;
             }
 
-            if (player.GetComponent<VRPlayerSync>()?.currentLeftWeapon != null) {
-                if (VHVRConfig.LeftHanded() && player.GetComponent<VRPlayerSync>().currentLeftWeapon.name.StartsWith("Spear") && !VHVRConfig.SpearInverseWield()) {
-                    vrik.solver.leftArm.target.localPosition = leftspearPosition;
-                    vrik.solver.leftArm.target.localRotation = leftSpearRotation;
-                    vrik.solver.leftArm.palmToThumbAxis = leftSpearEllbow;
-                    return;
-                }
+            if ((sync?.currentLeftWeapon != null && !IsHoldingBowInLeftHandAsLocalPlayer(player.gameObject)) || sync?.currentDualWieldWeapon != null)
+            {
                 vrik.solver.leftArm.target.localPosition = leftEquippedPosition;
                 vrik.solver.leftArm.target.localRotation = leftEquippedRotation;
-                vrik.solver.leftArm.palmToThumbAxis = leftEquippedEllbow;
+                vrik.solver.leftArm.palmToThumbAxis = leftEquippedElbow;
             }
-            else {
+            else
+            {
                 vrik.solver.leftArm.target.localPosition = leftUnequippedPosition;
                 vrik.solver.leftArm.target.localRotation = leftUnequippedRotation;
-                vrik.solver.leftArm.palmToThumbAxis = leftUnequippedEllbow;
+                vrik.solver.leftArm.palmToThumbAxis = leftUnequippedElbow;
             }
             
-            if (player.GetComponent<VRPlayerSync>()?.currentRightWeapon != null) {
-                if (! VHVRConfig.LeftHanded() && player.GetComponent<VRPlayerSync>().currentRightWeapon.name.StartsWith("Spear") && !VHVRConfig.SpearInverseWield()) {
-                    vrik.solver.rightArm.target.localPosition = rightspearPosition;
-                    vrik.solver.rightArm.target.localRotation = rightSpearRotation;
-                    vrik.solver.rightArm.palmToThumbAxis = rightSpearEllbow;
-                    return;
-                }
+            if ((sync?.currentRightWeapon != null && !IsHoldingBowInRightHandAsLocalPlayer(player.gameObject)) || sync?.currentDualWieldWeapon != null)
+            {
                 vrik.solver.rightArm.target.localPosition = rightEquippedPosition;
                 vrik.solver.rightArm.target.localRotation = rightEquippedRotation;
-                vrik.solver.rightArm.palmToThumbAxis = rightEquippedEllbow;
+                vrik.solver.rightArm.palmToThumbAxis = rightEquippedElbow;
+            }
+            else
+            {
+                vrik.solver.rightArm.target.localPosition = rightUnequippedPosition;
+                vrik.solver.rightArm.target.localRotation = rightUnequippedRotation;
+                vrik.solver.rightArm.palmToThumbAxis = rightUnequippedElbow;
+            }
+
+            if (player == Player.m_localPlayer)
+            {
+                vrik.solver.spine.pelvisTarget.localPosition = Vector3.zero;
+                vrik.solver.spine.pelvisTarget.localRotation = Quaternion.identity;
+                VRPlayer.leftHandBone.localPosition = vrik.solver.leftArm.target.localPosition;
+                VRPlayer.leftHandBone.localRotation = vrik.solver.leftArm.target.localRotation;
+                VRPlayer.rightHandBone.localPosition = vrik.solver.rightArm.target.localPosition;
+                VRPlayer.rightHandBone.localRotation = vrik.solver.rightArm.target.localRotation;
+            }
+        }
+
+        public static void ResetPelvisAndFootTransform(VRIK vrik)
+        {
+            vrik.solver.spine.pelvisTarget.localPosition = Vector3.zero;
+            vrik.solver.spine.pelvisTarget.localRotation = Quaternion.identity;
+            if (vrik.references.rightFoot == null)
+            {
                 return;
             }
-            vrik.solver.rightArm.target.localPosition = rightUnequippedPosition;
-            vrik.solver.rightArm.target.localRotation = rightUnequippedRotation;
-            vrik.solver.rightArm.palmToThumbAxis = rightUnequippedEllbow;
+            vrik.solver.leftLeg.target.localPosition = new Vector3(0, 0, -0.1f);
+            vrik.solver.leftLeg.target.localRotation = Quaternion.Euler(315, 0, 180);
+            vrik.solver.rightLeg.target.localPosition = new Vector3(0, 0, -0.1f);
+            vrik.solver.rightLeg.target.localRotation = Quaternion.Euler(315, 0, 180);
         }
 
         public static Transform GetLocalPlayerDominantHandConnector()
@@ -157,7 +210,6 @@ namespace ValheimVRMod.Scripts {
             localPlayerRightHandConnector.localRotation = Quaternion.identity;
         }
 
-
         public static void PauseLocalPlayerVrik() {
             VRIK vrik = Player.m_localPlayer?.GetComponent<VRIK>();
 
@@ -172,9 +224,12 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            vrik.solver.leftArm.target.SetParent(camera.parent, true);
-            vrik.solver.rightArm.target.SetParent(camera.parent, true);
-            vrik.solver.spine.headTarget.SetParent(camera.parent, true);
+            vrik.solver.leftArm.target.SetParent(localPlayerCamera.parent, true);
+            vrik.solver.rightArm.target.SetParent(localPlayerCamera.parent, true);
+            vrik.solver.spine.headTarget.SetParent(localPlayerCamera.parent, true);
+            vrik.solver.spine.pelvisTarget.SetParent(localPlayerCamera.parent, true);
+            vrik.solver.leftLeg.target.SetParent(localPlayerCamera.parent, true);
+            vrik.solver.rightLeg.target.SetParent(localPlayerCamera.parent, true);
         }
 
         public static void UnpauseLocalPlayerVrik()
@@ -192,8 +247,18 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            InitializeTargts(vrik, localPlayerLeftHandConnector.parent, localPlayerRightHandConnector.parent, camera, isLocalPlayer: true);
+            InitializeTargts(vrik, localPlayerLeftHandConnector.parent, localPlayerRightHandConnector.parent, localPlayerCamera, VRPlayer.pelvis, isLocalPlayer: true);
             resetVrikHandTransform(Player.m_localPlayer);
+        }
+
+        private static bool IsHoldingBowInLeftHandAsLocalPlayer(GameObject player)
+        {
+            return !VHVRConfig.LeftHanded() && player == Player.m_localPlayer.gameObject && EquipScript.getLeft() == EquipType.Bow;
+        }
+
+        private static bool IsHoldingBowInRightHandAsLocalPlayer(GameObject player)
+        {
+            return VHVRConfig.LeftHanded() && player == Player.m_localPlayer.gameObject && EquipScript.getLeft() == EquipType.Bow;
         }
     }
 }

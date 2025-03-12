@@ -10,6 +10,7 @@ namespace ValheimVRMod.Scripts
         private float harpoonHidingTimer = 0;
         public static Vector3 lastFixedUpdatedAimDir { get; private set; }
 
+
         void FixedUpdate()
         {
             // Record the aiming direction here instead of querying it whenever so that when OnRenderObject() is called

@@ -45,7 +45,7 @@ namespace ValheimVRMod.VRCore.UI
         private SteamVR_Action_Vector2 walk;
         private SteamVR_Action_Vector2 pitchAndYaw;
         private SteamVR_Action_Vector2 buildPitchAndYaw; //for the same logic as zInputToBooleanAction, this is needed for controllers that have multiple actionsets using the trackpad
-        private float combinedPitchAndYawX => buildPitchAndYaw.active ? buildPitchAndYaw.axis.x : pitchAndYaw.axis.x;
+        private float combinedPitchAndYawX => (buildPitchAndYaw.active ? buildPitchAndYaw.axis.x : pitchAndYaw.axis.x)* VHVRConfig.TurnAxisModifier();
 
         private SteamVR_Action_Vector2 contextScroll;
 
@@ -81,10 +81,21 @@ namespace ValheimVRMod.VRCore.UI
             }
         }
 
+        public static float smoothWalkX { get { return smoothWalkVelocity.x; } }
+        public static float smoothWalkY { get { return smoothWalkVelocity.y; } }
+        public static bool isAutoRunActive;
+        public static bool isExhaustedFromRunning;
+        private static Vector2 smoothWalkVelocity;
+        private static float smoothWalkSpeed;
+
         public static string ToggleMiniMap { get { return "ToggleMiniMap"; } }
 
         public static VRControls instance { get { return _instance; } }
         private static VRControls _instance;
+
+        private int quickMenuRefreshTicker = 0;
+
+
         void Awake()
         {
             init();
@@ -108,12 +119,41 @@ namespace ValheimVRMod.VRCore.UI
                 }
             }
 
+            if (StaticObjects.rightHandQuickMenu != null && (InventoryGui.IsVisible() || ++quickMenuRefreshTicker > 16))
+            {
+                quickMenuRefreshTicker = 0;
+                StaticObjects.rightHandQuickMenu.GetComponent<RightHandQuickMenu>().refreshItems();
+                StaticObjects.leftHandQuickMenu.GetComponent<LeftHandQuickMenu>().refreshItems();
+            }
+
             checkQuickItems<RightHandQuickMenu>(StaticObjects.rightHandQuickMenu, SteamVR_Actions.valheim_QuickSwitch, true);
             checkQuickItems<LeftHandQuickMenu>(StaticObjects.leftHandQuickMenu, SteamVR_Actions.valheim_QuickActions, false);
+
+            if (QuickAbstract.shouldStartChat && Chat.instance.HasFocus())
+            {
+                if (SteamVR_Actions.default_GrabGrip.GetState(SteamVR_Input_Sources.Any) ||
+                    SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.Any)) {
+                    if (SteamVR_Actions.default_InteractUI.GetStateUp(SteamVR_Input_Sources.Any) ||
+                        SteamVR_Actions.laserPointers_LeftClick.GetStateUp(SteamVR_Input_Sources.Any) ||
+                        SteamVR_Actions.valheim_Use.GetStateUp(SteamVR_Input_Sources.Any) ||
+                        SteamVR_Actions.valheim_UseLeft.GetStateUp(SteamVR_Input_Sources.Any))
+                    {
+                        QuickAbstract.enterChatText();
+                    }
+                }
+                else if (SteamVR_Actions.default_GrabGrip.GetStateUp(SteamVR_Input_Sources.Any) ||
+                    SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.Any))
+                {
+                    QuickAbstract.unfocusChatWindow();
+                }
+            }
+
         }
 
         void FixedUpdate()
         {
+            updateSmoothWalkVelocity(Time.fixedDeltaTime);
+            updateAutoRun();
             updateAltPieceRotationTimer();
             updateAltMapZoomTimer();
         }
@@ -123,6 +163,99 @@ namespace ValheimVRMod.VRCore.UI
             // Reset this at the complete end of the update to allow for
             // both MapZoomIn and MapZoomOut to test the zoom input.
             altMapZoomTriggered = false;
+        }
+
+        private void updateSmoothWalkVelocity(float deltaTime)
+        {
+            Vector2 input = GetJoyLeftStickInput();
+            var inputSpeed = input.magnitude;
+
+            if (Player.m_localPlayer != null)
+            {
+                if (Player.m_localPlayer.HaveStamina())
+                {
+                    if (inputSpeed < VHVRConfig.AutoRunActivationThreshold())
+                    {
+                        isExhaustedFromRunning = false;
+                    }
+                }
+                else if (isAutoRunActive)
+                {
+                    isExhaustedFromRunning = true;                    
+                }
+            }
+
+            if (deltaTime == 0 || smoothWalkVelocity.x == float.NaN || smoothWalkVelocity.y == float.NaN || VHVRConfig.WalkSpeedSmoothener() == 0)
+            {
+                smoothWalkVelocity = input;
+                smoothWalkSpeed = inputSpeed;
+                return;
+            }
+
+            float smoothener = VHVRConfig.WalkSpeedSmoothener();
+            if (smoothWalkSpeed < VHVRConfig.AutoRunThreshold())
+            {
+                if (smoothWalkSpeed < inputSpeed)
+                {
+                    smoothWalkSpeed = Mathf.Min(VHVRConfig.AutoRunThreshold(), inputSpeed);
+                    smoothWalkVelocity = input / inputSpeed * smoothWalkSpeed;
+                    return;
+                }
+            }
+            else if (!isAutoRunActive)
+            {
+                // Increase smoothener to avoid triggering auto-run too easily.
+                smoothener = 1;
+            }
+
+            smoothWalkVelocity = Vector2.MoveTowards(smoothWalkVelocity, input, Time.deltaTime / smoothener);
+            smoothWalkSpeed = smoothWalkVelocity.magnitude;
+            if (smoothWalkSpeed < 0.01f && input.x == 0 && input.y == 0)
+            {
+                smoothWalkVelocity = Vector2.zero;
+                smoothWalkSpeed = 0;
+            }
+        }
+
+        private void updateAutoRun()
+        {
+            if (isExhaustedFromRunning)
+            {
+                isAutoRunActive = false;
+                return;
+            }
+
+            if (VRPlayer.gesturedLocomotionManager != null && VRPlayer.gesturedLocomotionManager.isRunning)
+            {
+                isAutoRunActive = true;
+                return;
+            }
+
+            if (smoothWalkSpeed < VHVRConfig.AutoRunDeactivationThreshold())
+            {
+                isAutoRunActive = false;
+                return;
+            }
+
+            if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand) && SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand))
+            {
+                isAutoRunActive = false;
+                return;
+            }
+
+            if (VHVRConfig.AutoRunThreshold() >= 0.95f &&
+                SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.LeftHand) &&
+                SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.RightHand))
+            {
+                return;
+            }
+
+            if (Player.m_localPlayer != null &&
+                !Player.m_localPlayer.IsRunning() &&
+                smoothWalkSpeed > VHVRConfig.AutoRunActivationThreshold())
+            {
+                isAutoRunActive = true;
+            }
         }
 
         private void updateAltPieceRotationTimer()
@@ -164,11 +297,6 @@ namespace ValheimVRMod.VRCore.UI
             // and when the hammer is equipped, the bindings conflict... so we'll share the right click button
             // here to activate quick switch. This is hacky because rebinding things can break the controls, but
             // it works and allows users to use the quick select while the hammer is equipped.
-            if (StaticObjects.rightHandQuickMenu != null)
-            {
-                StaticObjects.rightHandQuickMenu.GetComponent<RightHandQuickMenu>().refreshItems();
-                StaticObjects.leftHandQuickMenu.GetComponent<LeftHandQuickMenu>().refreshItems();
-            }
             bool rightClickDown = false;
             bool rightClickUp = false;
             if (useRightClick && laserControlsActive && inPlaceMode())
@@ -224,6 +352,12 @@ namespace ValheimVRMod.VRCore.UI
 
         private bool isInRecenterPose()
         {
+            if (SteamVR_Actions.valheim_Use.GetState(SteamVR_Input_Sources.Any) ||
+                SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.Any) ||
+                SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.Any))
+            {
+                return false;
+            }
             var hmd = VRPlayer.instance.GetComponent<Valve.VR.InteractionSystem.Player>().hmdTransform;
             var targetLocationLeft = hmd.localPosition + hmd.localRotation * RECENTER_POSE_POSITION_L;
             var targetLocationRight = hmd.localPosition + hmd.localRotation * RECENTER_POSE_POSITION_R;
@@ -427,7 +561,7 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return 0.0f;
             }
-            return walk.axis.x;
+            return GetJoyLeftStickInput().x;
         }
 
         public float GetJoyLeftStickY()
@@ -436,7 +570,35 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return 0.0f;
             }
-            return -walk.axis.y;
+            return GetJoyLeftStickInput().y;
+        }
+
+        public Vector2 GetJoyLeftStickInput()
+        {
+            if (!mainActionSet.IsActive())
+            {
+                return Vector2.zero;
+            }
+
+            if (!VHVRConfig.UseLookLocomotion() || Player.m_localPlayer == null || VRPlayer.vrCam == null || VRPlayer.pelvis == null)
+            {
+                var input = walk.axis;
+                input.y = -input.y;
+                return input;
+            }
+
+            Transform playerTransform = Player.m_localPlayer.transform;
+            Vector3 joystickForward =
+                VHVRConfig.GetJoystickForwardDirection(
+                    VRPlayer.vrCam.transform,
+                    VRPlayer.leftHand?.transform ?? VRPlayer.vrCam.transform,
+                    VRPlayer.rightHand?.transform ?? VRPlayer.vrCam.transform,
+                    VRPlayer.pelvis,
+                    playerTransform);
+            Vector3 heading = Vector3.ProjectOnPlane(joystickForward, playerTransform.up).normalized;
+            Vector3 right = Vector3.Cross(playerTransform.up, heading);
+            Vector3 velocity = right * walk.axis.x + heading * walk.axis.y;
+            return new Vector2(Vector3.Dot(velocity, playerTransform.right), -Vector3.Dot(velocity, playerTransform.forward));
         }
 
         public float GetJoyRightStickX()

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -45,21 +45,34 @@ namespace ValheimVRMod.Utilities
 {
     static class LayerUtils
     {
+        // A layer that collides with most other layers, borrowing it for VR weapon collsion.
+        public const int VHVR_WEAPON = 3;
+        public const int WATER = 4;
+        public const int CHARACTER = 9;
+        public const int PIECE = 10;
+        public const int TERRAIN = 11;
+        public const int ITEM_LAYER = 12;
+        public const int CHARARCTER_TRIGGER = 14;
+        public const int STATIC_SOLID = 15;
+        public const int PIECE_NONSOLID = 10;
+        public const int WATERVOLUME_LAYER = 21;
+        public const int WEAPON_LAYER = 22;
         // I need a layer with non-visible objects since
         // layers are short supply, so re-using 23. Must be
         // in sync with what is in the prefab in Unity Editor.
-        public static readonly int WATER = 4;
-        public static readonly int CHARACTER = 9;
-        public static readonly int ITEM_LAYER = 12;
-        public static readonly int CHARARCTER_TRIGGER = 14;
-        public static readonly int WATERVOLUME_LAYER = 21;
-        public static readonly int WEAPON_LAYER = 22;
-        private static readonly int HANDS_LAYER = 23;
-        public static readonly int HANDS_LAYER_MASK = (1 << HANDS_LAYER);
-        public static readonly int UI_PANEL_LAYER = 29;
-        public static readonly int UI_PANEL_LAYER_MASK = (1 << UI_PANEL_LAYER);
-        private static readonly int WORLDSPACE_UI_LAYER = 30;
-        public static readonly int WORLDSPACE_UI_LAYER_MASK = (1 << WORLDSPACE_UI_LAYER);
+        private const int HANDS_LAYER = 23;
+        public const int HANDS_LAYER_MASK = (1 << HANDS_LAYER);
+        public const int UI_PANEL_LAYER = 29;
+        public const int UI_PANEL_LAYER_MASK = (1 << UI_PANEL_LAYER);
+        private const int WORLDSPACE_UI_LAYER = 30;
+        public const int WORLDSPACE_UI_LAYER_MASK = (1 << WORLDSPACE_UI_LAYER);
+        // TODO: Use const instead? (1 << PIECE) | (1 << PIECE_NONSOLID) | (1 << ITEM_LAYER)
+        public static readonly int HARVEST_RAY_MASK = LayerMask.GetMask(new string[]
+            {
+                "piece",
+                "piece_nonsolid",
+                "item"
+            });
 
         public static int getHandsLayer()
         {

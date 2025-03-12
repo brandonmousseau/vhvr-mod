@@ -22,8 +22,8 @@ namespace ValheimVRMod.Patches {
                 instance = __instance;
                 if (VHVRConfig.AutoOpenKeyboardOnInteract() || instance.m_topic.text == "ChatText")
                 {
-                    InputManager.start(
-                        null, null, instance.m_inputField, returnOnClose: instance.m_topic.text != "ChatText", OnClose);
+                    // TODO: find out why portal tag and sign text input dialog can no longer be visible after chat input is used once.
+                    InputManager.start(null, null, instance.m_inputField, returnOnClose: false, OnClose);
                 }
             }
         }
@@ -58,19 +58,24 @@ namespace ValheimVRMod.Patches {
     [HarmonyPatch(typeof(TMP_InputField), "OnFocus")]
     class PatchPasswordFieldFocus
     {
-        static private TMP_InputField passwordInputField;
+        static private GuiInputField passwordInputField;
         public static void Postfix(TMP_InputField __instance)
         {
-            if (VHVRConfig.UseVrControls() && __instance.inputType == TMP_InputField.InputType.Password)
+            if (!VHVRConfig.UseVrControls() || __instance.inputType != TMP_InputField.InputType.Password)
             {
-                InputManager.start(null, __instance, null, false, OnClose);
-                passwordInputField = __instance;
+                return;
+            }
+
+            passwordInputField = __instance.GetComponent<GuiInputField>();
+
+            if (passwordInputField != null) {
+                InputManager.start(null, null, passwordInputField, returnOnClose: false, OnClose);
             }
         }
 
         private static void OnClose()
         {
-            passwordInputField.OnSubmit(null);
+            passwordInputField.OnInputSubmit.Invoke(passwordInputField.text);
         }
 
     }
@@ -85,7 +90,7 @@ namespace ValheimVRMod.Patches {
 
         private static void OnClose()
         {
-            Minimap.m_instance.m_nameInput.OnSubmit(null);
+            Minimap.m_instance.m_nameInput.OnInputSubmit.Invoke(Minimap.m_instance.m_nameInput.text);
         }
     }
 

@@ -1,3 +1,4 @@
+using System.Diagnostics.Eventing.Reader;
 using System.Linq;
 using RootMotion.FinalIK;
 using UnityEngine;
@@ -10,17 +11,18 @@ using static ValheimVRMod.Utilities.LogUtils;
 namespace ValheimVRMod.Scripts {
     public class VRPlayerSync : MonoBehaviour, WeaponWieldSync.TwoHandedStateProvider {
 
-        private VRIK vrik;
+        private VRIK vrikSync;
         
         static readonly float MIN_CHANGE = 0.001f;
         
         public GameObject camera = null;
         public GameObject rightHand = null;
         public GameObject leftHand = null;
+        public GameObject pelvis = null;
 
         private WeaponWield.TwoHandedState twoHandedState = WeaponWield.TwoHandedState.SingleHanded;
         private bool isLeftHanded = false;
-        private bool holdingInversedSpear = false;
+        private bool inverseHold = false;
 
         private Player player;
         private Vector3 ownerLastPositionCamera = Vector3.zero;
@@ -34,6 +36,7 @@ namespace ValheimVRMod.Scripts {
         private Vector3 clientTempRelPosCamera = Vector3.zero;
         private Vector3 clientTempRelPosLeft = Vector3.zero;
         private Vector3 clientTempRelPosRight = Vector3.zero;
+        private Vector3 clientTempRelPosPelvis = Vector3.zero;
 
         private uint lastDataRevision = 0;
         private float deltaTimeCounter = 0f;
@@ -51,16 +54,17 @@ namespace ValheimVRMod.Scripts {
         public BowManager bowManager;
         public GameObject currentLeftWeapon;
         public GameObject currentRightWeapon;
+        public GameObject currentDualWieldWeapon;
 
         public int remotePlayerNonDominantHandItemHash;
         public int remotePlayerDominantHandItemHash;
         public bool hasReceivedData { get; private set; }
 
-
         private void Awake() {
             camera = new GameObject();
             rightHand = new GameObject();
             leftHand = new GameObject();
+            pelvis = new GameObject();
             player = GetComponent<Player>();
         }
 
@@ -84,6 +88,17 @@ namespace ValheimVRMod.Scripts {
             }
         }
 
+        public void DestroyVrik()
+        {
+            if (vrikSync == null)
+            {
+                return;
+            }
+
+            Destroy(vrikSync);
+            vrikSync = null;
+        }
+
         public WeaponWield.TwoHandedState GetTwoHandedState()
         {
             return twoHandedState;
@@ -94,14 +109,29 @@ namespace ValheimVRMod.Scripts {
             return isLeftHanded;
         }
 
-        public bool HoldingInversedSpear()
+        public bool InverseHold()
         {
-            return holdingInversedSpear;
+            if (isOwner())
+            {
+                if (EquipScript.getRight() == EquipType.Knife)
+                {
+                    inverseHold = LocalWeaponWield.IsDominantHandHoldInversed;
+                }
+                else if (EquipScript.isSpearEquipped())
+                {
+                    inverseHold = LocalWeaponWield.IsDominantHandHoldInversed || LocalWeaponWield.isCurrentlyTwoHanded();
+                }
+                else
+                {
+                    inverseHold = LocalWeaponWield.IsDominantHandHoldInversed && !LocalWeaponWield.isCurrentlyTwoHanded();
+                }
+            }
+            return inverseHold;
         }
         
         public bool IsVrEnabled()
         {
-            return vrik != null;
+            return vrikSync != null;
         }
 
         private void calculateOwnerVelocities(float dt)
@@ -128,24 +158,24 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
+            if (vrikSync == null)
+            {
+                return;
+            }
+
             if (!fingersUpdated) {
                 return;
             }
             
-            var vrik = GetComponent<VRIK>();
-            if (vrik == null) {
-                return;
-            }
-            
-            applyFingers(vrik.references.leftHand, leftFingerRotations);
-            applyFingers(vrik.references.rightHand, rightFingerRotations);
+            applyFingers(vrikSync.references.leftHand, leftFingerRotations);
+            applyFingers(vrikSync.references.rightHand, rightFingerRotations);
             fingersUpdated = false;
         }
 
         // Transmit position, rotation, and velocity information to server
         private void ownerSync()
         {
-            if (!VHVRConfig.UseVrControls() || VRPlayer.ShouldPauseMovement) {
+            if (!VHVRConfig.UseVrControls() || VRPlayer.ShouldPauseMovement || VRPlayer.vrikRef == null) {
                 return;
             }
 
@@ -153,16 +183,13 @@ namespace ValheimVRMod.Scripts {
             writeData(pkg, camera, ownerVelocityCamera);
             writeData(pkg, leftHand, ownerVelocityLeft);
             writeData(pkg, rightHand, ownerVelocityRight);
-            writeFingers(pkg, GetComponent<VRIK>().references.leftHand);
-            writeFingers(pkg, GetComponent<VRIK>().references.rightHand);
+            writeData(pkg, pelvis, ownerVelocityCamera);
+            writeFingers(pkg, VRPlayer.vrikRef.references.leftHand);
+            writeFingers(pkg, VRPlayer.vrikRef.references.rightHand);
             pkg.Write(BowLocalManager.instance != null && BowLocalManager.instance.pulling);
             pkg.Write(isLeftHanded = VHVRConfig.LeftHanded());
             pkg.Write((byte) (twoHandedState = LocalWeaponWield.LocalPlayerTwoHandedState));
-            pkg.Write(
-                holdingInversedSpear =
-                    EquipScript.isSpearEquipped() &&
-                    !ThrowableManager.isAiming &&
-                    (VHVRConfig.SpearInverseWield() || twoHandedState != WeaponWield.TwoHandedState.SingleHanded));
+            pkg.Write(InverseHold());
 
             GetComponent<ZNetView>().GetZDO().Set("vr_data", pkg.GetArray());
         }
@@ -214,19 +241,21 @@ namespace ValheimVRMod.Scripts {
             extractAndUpdate(pkg, ref camera, ref clientTempRelPosCamera, hasTempRelPos);
             extractAndUpdate(pkg, ref leftHand, ref clientTempRelPosLeft, hasTempRelPos);
             extractAndUpdate(pkg, ref rightHand, ref clientTempRelPosRight, hasTempRelPos);
+            extractAndUpdate(pkg, ref pelvis, ref clientTempRelPosPelvis, hasTempRelPos);
+
             maybeAddVrik();
-            if (vrik != null)
+            if (vrikSync != null)
             {
                 // TODO: Consider creating a method that does this check and can be used both here
                 // and in VRPlayer.
-                vrik.enabled = !player.InDodge() && !player.IsStaggering() && !player.IsSleeping();
+                vrikSync.enabled = !player.InDodge() && !player.IsStaggering() && !player.IsSleeping();
             }
             hasTempRelPos = true;
             readFingers(pkg);
             maybePullBow(pkg.ReadBool());
             isLeftHanded = pkg.ReadBool();
             twoHandedState = (WeaponWield.TwoHandedState) pkg.ReadByte();
-            holdingInversedSpear = pkg.ReadBool();
+            inverseHold = pkg.ReadBool();
         }
 
         private void maybePullBow(bool pulling) {
@@ -246,7 +275,7 @@ namespace ValheimVRMod.Scripts {
             var position = pkg.ReadVector3();
             var rotation = pkg.ReadQuaternion();
             var velocity = pkg.ReadVector3();
-            
+
             // Update position based on last written position, velocity, and elapsed time since last data revision
             position += velocity * deltaTimeCounter;
             
@@ -285,13 +314,13 @@ namespace ValheimVRMod.Scripts {
         }
 
         private void maybeAddVrik() {
-            if (vrik != null)
+            if (vrikSync != null)
             {
                 return;
             }
-            vrik =
+            vrikSync =
                 VrikCreator.initialize(
-                    gameObject, leftHand.transform, rightHand.transform, camera.transform);
+                    gameObject, leftHand.transform, rightHand.transform, camera.transform, pelvis.transform);
             VrikCreator.resetVrikHandTransform(player);
         }
 

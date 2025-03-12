@@ -52,7 +52,11 @@ namespace ValheimVRMod.VRCore.UI {
             ConfigSettings.enableTransformButtons = enableTransformButtons;
         }
 
-
+        public static bool isVHVRClone(KeyboardMouseSettings settings)
+        {
+            return settings.GetComponentInParent<SettingsCloneMarker>(includeInactive: true) != null;
+        }
+ 
         /// <summary>
         /// Create an Entry in the Menu 
         /// </summary>
@@ -108,7 +112,7 @@ namespace ValheimVRMod.VRCore.UI {
             if (keyBindingPrefab == null)
             {
                 keyBindingPrefab = createKeyBindingPrefab(
-                    controlSettingsPrefab.transform.Find("List").Find("Bindings").Find("Grid").Find("Use").gameObject);
+                    controlSettingsPrefab.transform.Find("List").Find("Bindings").Find("Viewport").Find("Grid").Find("Use").gameObject);
             }
             if (chooserPrefab == null)
             {
@@ -151,6 +155,7 @@ namespace ValheimVRMod.VRCore.UI {
         /// </summary>
         private static void createModSettings() {
             settings = Object.Instantiate(settingsPrefab, menuParent);
+            settings.AddComponent<SettingsCloneMarker>();
             settings.transform.Find("Panel").Find("Title").GetComponent<TMP_Text>().text = MenuName;
             createToolTip(settings.transform);
             var tabButtons = settings.transform.Find("Panel").Find("TabButtons");
@@ -407,7 +412,7 @@ namespace ValheimVRMod.VRCore.UI {
             var chooserPrefab = Object.Instantiate(vanillaPrefab);
             chooserPrefab.transform.Find("LabelLeft").gameObject.SetActive(true);
             var rectTransform = chooserPrefab.GetComponent<RectTransform>();
-            rectTransform.sizeDelta = new Vector2(180, 30);
+            rectTransform.sizeDelta = new Vector2(150, 30);
             rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
             rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
             Transform stepper = chooserPrefab.transform.Find("GUIStepper");
@@ -419,7 +424,7 @@ namespace ValheimVRMod.VRCore.UI {
                     case "Value":
                         child.gameObject.SetActive(true);
                         child.GetComponent<RectTransform>().sizeDelta = new Vector2(-60, -5);
-                        child.GetComponentInChildren<TMP_Text>().fontSize = 6;
+                        child.GetComponentInChildren<TMP_Text>().fontSize = 5;
                         break;
                     case "Left":
                         child.gameObject.SetActive(true);
@@ -481,7 +486,7 @@ namespace ValheimVRMod.VRCore.UI {
             };
             toggle.GetComponentInChildren<TMP_Text>().text = configValue.Key;
             toggle.GetComponent<Toggle>().isOn = configValue.Value.GetSerializedValue() == "true";
-            toggle.GetComponent<RectTransform>().anchoredPosition = pos;
+            toggle.GetComponent<RectTransform>().anchoredPosition = pos + Vector2.right * 100;
         }
 
         private static GameObject createTransformButtonPrefab(GameObject vanillaLabel, GameObject vanillaButton)
@@ -527,11 +532,12 @@ namespace ValheimVRMod.VRCore.UI {
         }
 
         private static void createTransformButton(KeyValuePair<string, ConfigEntryBase> configValue, Transform parent, Vector2 pos, string sectionName) {
-            
+
+            var is3Axis = false;
             ConfigEntry<Quaternion> confRot;
             if (!VHVRConfig.config.TryGetEntry(sectionName, configValue.Key + "Rot", out confRot)) {
-                Debug.LogError(configValue.Key + "Rot not found. Please make sure a Quaternion with this name exists in section " + sectionName);
-                return;
+                Debug.LogError(configValue.Key + "Rot not found (in " + sectionName + " section), will only read Vector3 Axis");
+                is3Axis = true;
             }
             var transformButton = GameObject.Instantiate(transformButtonPrefab, parent);
             transformButton.GetComponent<RectTransform>().anchoredPosition = pos + Vector2.left * 10;
@@ -557,7 +563,24 @@ namespace ValheimVRMod.VRCore.UI {
                     LogUtils.LogError("Cannot find method SettingCallback." + configValue.Key);
                     return;
                 }
-                if (!(bool)method.Invoke(
+
+                if (is3Axis)
+                {
+                    if (!(bool)method.Invoke(
+                    null,
+                    new UnityAction<Vector3>[] {
+                        (mPos) => {
+                            configValue.Value.SetSerializedValue(String.Format(CultureInfo.InvariantCulture,
+                                "{{\"x\":{0}, \"y\":{1}, \"z\":{2}}}", mPos.x, mPos.y, mPos.z));
+                        }
+                    }))
+                    {
+                        return;
+                    }
+                }
+                else
+                {
+                    if (!(bool)method.Invoke(
                     null,
                     new UnityAction<Vector3, Quaternion>[] {
                         (mPos, mRot) => {
@@ -567,8 +590,9 @@ namespace ValheimVRMod.VRCore.UI {
                                 "{{\"x\":{0}, \"y\":{1}, \"z\":{2}, \"w\":{3}}}", mRot.x, mRot.y, mRot.z, mRot.w));
                         }
                     }))
-                {
-                    return;
+                    {
+                        return;
+                    }
                 }
                 doSave = false;
                 GameObject.Destroy(settings);
@@ -594,7 +618,22 @@ namespace ValheimVRMod.VRCore.UI {
                     LogUtils.LogError("Cannot find method SettingCallback." + configValue.Key + "Default");
                     return;
                 }
-                if (!(bool)method.Invoke(null,
+                if (is3Axis)
+                {
+                    if (!(bool)method.Invoke(null,
+                    new UnityAction<Vector3>[] {
+                        (mPos) => {
+                            configValue.Value.SetSerializedValue(String.Format(CultureInfo.InvariantCulture,
+                                "{{\"x\":{0}, \"y\":{1}, \"z\":{2}}}", mPos.x, mPos.y, mPos.z));
+                        }
+                    }))
+                    {
+                        return;
+                    }
+                }
+                else
+                {
+                    if (!(bool)method.Invoke(null,
                     new UnityAction<Vector3, Quaternion>[] {
                         (mPos, mRot) => {
                             configValue.Value.SetSerializedValue(String.Format(CultureInfo.InvariantCulture,
@@ -603,8 +642,9 @@ namespace ValheimVRMod.VRCore.UI {
                                 "{{\"x\":{0}, \"y\":{1}, \"z\":{2}, \"w\":{3}}}", mRot.x, mRot.y, mRot.z, mRot.w));
                         }
                     }))
-                {
-                    return;
+                    {
+                        return;
+                    }
                 }
             });
         }
@@ -643,7 +683,7 @@ namespace ValheimVRMod.VRCore.UI {
             {
                 ZInput.instance.m_buttons.Remove(configValue.Key);
             }
-            ZInput.instance.AddButton(configValue.Key, ZInput.KeyCodeToKey((KeyCode)Enum.Parse(typeof(KeyCode), configValue.Value.GetSerializedValue())));
+            ZInput.instance.AddButton(configValue.Key, ZInput.KeyCodeToPath((KeyCode)Enum.Parse(typeof(KeyCode), configValue.Value.GetSerializedValue())));
         }
 
         private static void CaptureScreenshot()
@@ -673,11 +713,13 @@ namespace ValheimVRMod.VRCore.UI {
                     var buttons = AccessTools.FieldRefAccess<ZInput, Dictionary<string, ZInput.ButtonDef>>(ZInput.instance, "m_buttons");
                     ZInput.ButtonDef buttonDef;
                     buttons.TryGetValue(key.m_keyName, out buttonDef);
-                    tmpComfigComponent.value = buttonDef.m_key.ToString();
+                    tmpComfigComponent.value = buttonDef.ButtonAction.bindings[0].path;
                 }
             }
             
             tmpComfigComponent = null;
         }
+
+        private class SettingsCloneMarker : MonoBehaviour { }
     }
 }
