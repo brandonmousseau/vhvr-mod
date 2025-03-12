@@ -510,6 +510,61 @@ namespace ValheimVRMod.Utilities
             return result;
         }
 
+        public static EquipType GuesstEquipTypeFromShape(float weaponLength, float distanceBetweenGripAndRearEnd, bool isDominantHandWeapon)
+        {
+            if (!isDominantHandWeapon)
+            {
+                return weaponLength > 0.5F && distanceBetweenGripAndRearEnd > 0.5f ? EquipType.Crossbow : EquipType.None;
+            }
+
+            if (weaponLength > 2f && distanceBetweenGripAndRearEnd > 0.95f)
+            {
+                return EquipType.Spear;
+            }
+
+            if (weaponLength > 2.5f && distanceBetweenGripAndRearEnd > 0.7f)
+            {
+                return EquipType.Polearms;
+            }
+
+            if (weaponLength > 3 && distanceBetweenGripAndRearEnd > 0.3f)
+            {
+                return EquipType.Fishing;
+            }
+
+            if (weaponLength > 1.8f && distanceBetweenGripAndRearEnd > 0.85f)
+            {
+                return EquipType.Magic;
+            }
+
+            if (weaponLength > 1.5f && distanceBetweenGripAndRearEnd > 0.8f)
+            {
+                return EquipType.Scythe;
+            }
+
+            if (weaponLength > 1.9f && distanceBetweenGripAndRearEnd > 0.28f)
+            {
+                return EquipType.Sword;
+            }
+
+            if (weaponLength > 1.69f && distanceBetweenGripAndRearEnd > 0.25f && distanceBetweenGripAndRearEnd < 0.35f)
+            {
+                return EquipType.BattleAxe;
+            }
+
+            if (weaponLength > 1 && distanceBetweenGripAndRearEnd > 0.45f)
+            {
+                return EquipType.Magic;
+            }
+
+            if (weaponLength < 0.7f && distanceBetweenGripAndRearEnd < 0.1f)
+            {
+                return EquipType.Knife;
+            }
+
+            return EquipType.Club;
+        }
+
         // Whether the straight line (t -> p + t * v) intersects with the given bounds.
         public static bool LineIntersectsWithBounds(Bounds bounds, Vector3 p, Vector3 v)
         {
