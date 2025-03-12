@@ -6,8 +6,7 @@ namespace ValheimVRMod.Scripts
 {
     public abstract class WeaponWield : MonoBehaviour
     {
-        private const float ONE_HANDED_WEAPON_GRIP_ALLOWANCE = 0.25f;
-        private const float ONE_HANDED_WEAPON_MIN_GRIP_LENGTH = 1 / 32f;
+        private const float GRIP_ALLOWANCE = 0.0625f;
 
         public enum TwoHandedState
         {
@@ -191,12 +190,7 @@ namespace ValheimVRMod.Scripts
             {
                 case EquipType.Axe:
                 case EquipType.Club:
-                    if (distanceBetweenGripAndRearEnd > ONE_HANDED_WEAPON_MIN_GRIP_LENGTH)
-                    {
-                        return new TwoHandedGeometry.DefaultGeometryProvider(
-                            Mathf.Max(distanceBetweenGripAndRearEnd - ONE_HANDED_WEAPON_GRIP_ALLOWANCE, ONE_HANDED_WEAPON_MIN_GRIP_LENGTH));
-                    }
-                    break;
+                    return new TwoHandedGeometry.DefaultGeometryProvider(distanceBetweenGripAndRearEnd: 0);
                 case EquipType.BattleAxe:
                     return isLocal ?
                         new TwoHandedGeometry.LocalBattleaxeGeometryProvider(distanceBetweenGripAndRearEnd) :
@@ -238,8 +232,8 @@ namespace ValheimVRMod.Scripts
             {
                 return new TwoHandedGeometry.RemoteGeometryProvider(distanceBetweenGripAndRearEnd, twoHandedStateProvider);
             }
-
-            return new TwoHandedGeometry.DefaultGeometryProvider(distanceBetweenGripAndRearEnd);
+            
+            return new TwoHandedGeometry.DefaultGeometryProvider(Mathf.Max(distanceBetweenGripAndRearEnd - GRIP_ALLOWANCE, 0));
         }
 
         public interface TwoHandedGeometryProvider {
