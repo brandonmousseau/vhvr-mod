@@ -1,8 +1,6 @@
-using System.Diagnostics.Eventing.Reader;
 using System.Linq;
 using RootMotion.FinalIK;
 using UnityEngine;
-using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 
@@ -205,7 +203,7 @@ namespace ValheimVRMod.Scripts {
                     rotation *= DUNDR_SINGLE_HAND_ADDITIONAL_ROTATION;
                 }
             }
-            pkg.Write(obj.transform.position);
+            pkg.Write(obj.transform.position - player.transform.position);
             pkg.Write(rotation);
             pkg.Write(ownerVelocity);
         }
@@ -276,9 +274,6 @@ namespace ValheimVRMod.Scripts {
             var rotation = pkg.ReadQuaternion();
             var velocity = pkg.ReadVector3();
 
-            // Update position based on last written position, velocity, and elapsed time since last data revision
-            position += velocity * deltaTimeCounter;
-            
             if (!hasTempRelPos)
             {
                 tempRelPos = position;
@@ -291,7 +286,7 @@ namespace ValheimVRMod.Scripts {
             }
 
             // Update the object position with new calculated position
-            updatePosition(obj, position);
+            updatePosition(obj, position + player.transform.position);
             
             // Update the rotation
             updateRotation(obj, rotation);
