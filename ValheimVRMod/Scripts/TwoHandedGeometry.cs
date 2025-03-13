@@ -2,12 +2,13 @@ using UnityEngine;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using Valve.VR;
+using static ValheimVRMod.Scripts.WeaponWield;
 
 namespace ValheimVRMod.Scripts
 {
     public static class TwoHandedGeometry
     {
-        public class DefaultGeometryProvider : WeaponWield.TwoHandedGeometryProvider
+        public class DefaultGeometryProvider : TwoHandedGeometryProvider
         {
             protected float distanceBetweenGripAndRearEnd { get; private set; }
 
@@ -70,36 +71,34 @@ namespace ValheimVRMod.Scripts
             {
                 return GetDesiredSingleHandedRotation(weaponWield) * Quaternion.Inverse(weaponWield.offsetFromPointingDir) * Vector3.forward;
             }
-        }
 
-        public class ArmpitAnchoredGeometryProvider : DefaultGeometryProvider
-        {
-            public ArmpitAnchoredGeometryProvider(float distanceBetweenGripAndRearEnd) : base(distanceBetweenGripAndRearEnd)
-            {
-            }
-
-            public override Quaternion GetDesiredSingleHandedRotation(WeaponWield weaponWield)
+            protected static Quaternion GetArmpitAnchoredDominantHandedRotation(WeaponWield weaponWield)
             {
                 Vector3 armpitAnchor = (VHVRConfig.LeftHanded() ? VRPlayer.vrikRef.references.leftUpperArm.position : VRPlayer.vrikRef.references.rightUpperArm.position);
                 armpitAnchor -= VRPlayer.vrikRef.references.chest.up * 0.25f;
                 return Quaternion.LookRotation(VRPlayer.dominantHand.transform.position - armpitAnchor, weaponWield.originalRotation * Vector3.up);
             }
 
-            public override bool ShouldRotateHandForOneHandedWield()
-            {
-                return true;
-            }
         }
 
-        public class LocalAtgeirGeometryProvider : ArmpitAnchoredGeometryProvider
+        public class AtgeirGeometryProvider : DefaultGeometryProvider
         {
-            public static readonly Quaternion ROTATION_ADJUST = Quaternion.Euler(353, 340, 0);
-            private const float SHORT_GRIP_REAR_HAND_DOMINANT_OFFSET = 0.2f;
-            private const float SHORT_GRIP_FRONT_HAND_DOMINANT_OFFSET = 1.125f;
             // Atgeir wield rotation fix: the tip of the atgeir is pointing at (0.328, -0.145, 0.934) in local coordinates.
+            protected static readonly Quaternion ROTATION_ADJUST = Quaternion.Euler(353, 340, 0);
 
-            public LocalAtgeirGeometryProvider(float distanceBetweenGripAndRearEnd) : base(distanceBetweenGripAndRearEnd)
+            private const float SHORT_GRIP_REAR_HAND_DOMINANT_OFFSET = 0.2f;
+            private const float SHORT_GRIP_FRONT_HAND_DOMINANT_OFFSET = 1.2f;
+
+            private LongGripStateProvider longGripStateProvider;
+            private float longGripOffset;
+            private float shortGripMaxOffset;
+
+            public AtgeirGeometryProvider(float distanceBetweenGripAndRearEnd, LongGripStateProvider longGripStateProvider) :
+                base(distanceBetweenGripAndRearEnd)
             {
+                this.longGripStateProvider = longGripStateProvider;
+                longGripOffset = distanceBetweenGripAndRearEnd * 0.375f - WeaponWield.HAND_CENTER_OFFSET;
+                shortGripMaxOffset = distanceBetweenGripAndRearEnd * 0.75f - WeaponWield.HAND_CENTER_OFFSET;
             }
 
             public override Vector3 GetDesiredSingleHandedPosition(WeaponWield weaponWield)
@@ -114,9 +113,9 @@ namespace ValheimVRMod.Scripts
 
             public override float GetPreferredOffsetFromRearHand(float handDist, bool rearHandIsDominant)
             {
-                if (LocalWeaponWield.CurrentTwoHandedWieldStartedWithLongGrip)
+                if (longGripStateProvider.ShouldUseLongGrip())
                 {
-                    return distanceBetweenGripAndRearEnd * 0.5f - WeaponWield.HAND_CENTER_OFFSET;
+                    return longGripOffset;
                 }
 
                 if (rearHandIsDominant)
@@ -126,43 +125,51 @@ namespace ValheimVRMod.Scripts
 
                 if (handDist > SHORT_GRIP_FRONT_HAND_DOMINANT_OFFSET)
                 {
-                    return distanceBetweenGripAndRearEnd - WeaponWield.HAND_CENTER_OFFSET;
+                    return shortGripMaxOffset;
                 }
 
                 // Anchor the center of the spear in the front/dominant hand
-                return handDist - SHORT_GRIP_FRONT_HAND_DOMINANT_OFFSET + distanceBetweenGripAndRearEnd - WeaponWield.HAND_CENTER_OFFSET;
+                return handDist - SHORT_GRIP_FRONT_HAND_DOMINANT_OFFSET + shortGripMaxOffset;
             }
         }
 
-        public class LocalBattleaxeGeometryProvider : ArmpitAnchoredGeometryProvider
+        public class LocalAtgeirGeometryProvider : AtgeirGeometryProvider
         {
-            private const float SHORT_GRIP_REAR_HAND_DOMINANT_OFFSET = 0.3f;
-            private const float SHORT_GRIP_FRONT_HAND_DOMINANT_OFFSET = 0.7f;
-
-            public LocalBattleaxeGeometryProvider(float distanceBetweenGripAndRearEnd) : base(distanceBetweenGripAndRearEnd)
-            {
-            }
-
-            public override Vector3 GetDesiredSingleHandedPosition(WeaponWield weaponWield)
-            {
-                return ShouldRotateHandForOneHandedWield() ?
-                    weaponWield.originalPosition - 0.37f * GetSingleHandedPointingDirection(weaponWield) :
-                    weaponWield.originalPosition - 0.63f * GetSingleHandedPointingDirection(weaponWield);
-            }
+            public LocalAtgeirGeometryProvider(float distanceBetweenGripAndRearEnd, LongGripStateProvider longGripStateProvider) :
+                base(distanceBetweenGripAndRearEnd, longGripStateProvider) { }
 
             public override Quaternion GetDesiredSingleHandedRotation(WeaponWield weaponWield)
             {
-                return ShouldRotateHandForOneHandedWield() ? base.GetDesiredSingleHandedRotation(weaponWield) : weaponWield.originalRotation;
+                return GetArmpitAnchoredDominantHandedRotation(weaponWield) * ROTATION_ADJUST;
             }
 
             public override bool ShouldRotateHandForOneHandedWield()
             {
-                return !SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource);
+                return true;
+            }
+        }
+
+        public class BattleaxeGeometryProvider : DefaultGeometryProvider
+        {
+            private const float SHORT_GRIP_REAR_HAND_DOMINANT_OFFSET = 0.3f;
+            private const float SHORT_GRIP_FRONT_HAND_DOMINANT_OFFSET = 0.7f;
+
+            private LongGripStateProvider longGripStateProvider;
+
+            public BattleaxeGeometryProvider(float distanceBetweenGripAndRearEnd, LongGripStateProvider longGripStateProvider) :
+                base(distanceBetweenGripAndRearEnd)
+            {
+                this.longGripStateProvider = longGripStateProvider;
+            }
+
+            public override Vector3 GetDesiredSingleHandedPosition(WeaponWield weaponWield)
+            {
+                return weaponWield.originalPosition - 0.4f * GetSingleHandedPointingDirection(weaponWield);
             }
 
             public override float GetPreferredOffsetFromRearHand(float handDist, bool rearHandIsDominant)
             {
-                if (LocalWeaponWield.CurrentTwoHandedWieldStartedWithLongGrip)
+                if (longGripStateProvider.ShouldUseLongGrip())
                 {
                     return base.GetPreferredOffsetFromRearHand(handDist, rearHandIsDominant);
                 }
@@ -179,6 +186,29 @@ namespace ValheimVRMod.Scripts
 
                 // Anchor the center of the spear in the front/dominant hand
                 return handDist - SHORT_GRIP_FRONT_HAND_DOMINANT_OFFSET + distanceBetweenGripAndRearEnd - WeaponWield.HAND_CENTER_OFFSET;
+            }
+        }
+
+        public class LocalBattleaxeGeometryProvider : BattleaxeGeometryProvider
+        {
+            public LocalBattleaxeGeometryProvider(float distanceBetweenGripAndRearEnd, LongGripStateProvider longGripStateProvider) :
+                base(distanceBetweenGripAndRearEnd, longGripStateProvider) { }
+
+            public override Vector3 GetDesiredSingleHandedPosition(WeaponWield weaponWield)
+            {
+                return ShouldRotateHandForOneHandedWield() ?
+                    weaponWield.originalPosition - 0.37f * GetSingleHandedPointingDirection(weaponWield) :
+                    weaponWield.originalPosition - 0.63f * GetSingleHandedPointingDirection(weaponWield);
+            }
+
+            public override Quaternion GetDesiredSingleHandedRotation(WeaponWield weaponWield)
+            {
+                return ShouldRotateHandForOneHandedWield() ? GetArmpitAnchoredDominantHandedRotation(weaponWield) : weaponWield.originalRotation;
+            }
+
+            public override bool ShouldRotateHandForOneHandedWield()
+            {
+                return !SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource);
             }
         }
 
@@ -214,7 +244,7 @@ namespace ValheimVRMod.Scripts
             }
         }
 
-        public class DundrGeometryProvider : WeaponWield.TwoHandedGeometryProvider
+        public class DundrGeometryProvider : TwoHandedGeometryProvider
         {
             private static readonly Vector3 DUNDR_OFFSET = new Vector3(-0.1f, 0, 0.2f);
             private static readonly Quaternion DUNDR_OFFSET_ANGLE = Quaternion.Euler(0, 55f, 0);
@@ -257,10 +287,16 @@ namespace ValheimVRMod.Scripts
 
         public abstract class SpearGeometryProvider : DefaultGeometryProvider
         {
-            protected const float SPEAR_HANDLE_LENGTH_BEHIND_CENTER = 1.25f;
+            private const float SPEAR_HANDLE_LENGTH_BEHIND_CENTER = 1.25f;
             private const float SPEAR_SINGLE_HAND_OFFSET = 0.5625f;
+            private const float SHORT_GRIP_REAR_HAND_DOMINANT_OFFSET = -0.625f;
+            private const float SHORT_GRIP_FRONT_HAND_DOMINANT_OFFSET = 1f;
 
-            public SpearGeometryProvider(float distanceBetweenGripAndRearEnd) : base(distanceBetweenGripAndRearEnd) { }
+            private LongGripStateProvider longGripStateProvider;
+
+            public SpearGeometryProvider(LongGripStateProvider longGripStateProvider) : base(0) {
+                this.longGripStateProvider = longGripStateProvider;
+            }
 
             public override Vector3 GetWeaponPointingDirection(Transform weaponTransform, Vector3 longestExtrusion)
             {
@@ -274,17 +310,32 @@ namespace ValheimVRMod.Scripts
 
             public override float GetPreferredOffsetFromRearHand(float handDist, bool rearHandIsDominant)
             {
-                // When the dominant hand is in the back, anchor the very end of the spear handle in it to allow longer attack range.
-                return SPEAR_HANDLE_LENGTH_BEHIND_CENTER - WeaponWield.HAND_CENTER_OFFSET;
+                if (longGripStateProvider.ShouldUseLongGrip())
+                {
+                    // Anchor the very end of the spear handle in it to allow longer attack range.
+                    return SPEAR_HANDLE_LENGTH_BEHIND_CENTER - WeaponWield.HAND_CENTER_OFFSET;
+                }
+
+                if (rearHandIsDominant)
+                {
+                    return -SHORT_GRIP_REAR_HAND_DOMINANT_OFFSET - WeaponWield.HAND_CENTER_OFFSET;
+                }
+
+                if (handDist > SHORT_GRIP_FRONT_HAND_DOMINANT_OFFSET)
+                {
+                    // The hands are far away from each other, anchor the end of the spear handle in the rear/non-dominant hand.
+                    return SPEAR_HANDLE_LENGTH_BEHIND_CENTER - WeaponWield.HAND_CENTER_OFFSET;
+                }
+
+                // Anchor the center of the spear in the front/dominant hand to allow shorter attack range.
+                return handDist - SHORT_GRIP_FRONT_HAND_DOMINANT_OFFSET + SPEAR_HANDLE_LENGTH_BEHIND_CENTER - WeaponWield.HAND_CENTER_OFFSET;
             }
+
         }
 
         public class LocalSpearGeometryProvider : SpearGeometryProvider
         {
-            private const float SHORT_GRIP_REAR_HAND_DOMINANT_OFFSET = -0.625f;
-            private const float SHORT_GRIP_FRONT_HAND_DOMINANT_OFFSET = 1f;
-
-            public LocalSpearGeometryProvider() : base(0) { }
+            public LocalSpearGeometryProvider(LongGripStateProvider longGripStateProvider) : base(longGripStateProvider) { }
 
             public override bool InverseHoldForDominantHand()
             {
@@ -332,28 +383,6 @@ namespace ValheimVRMod.Scripts
                 return weaponWield.getAimingRotation(
                       Vector3.RotateTowards(staticPointing, pointing, Mathf.Max(weight * 8 - 1, 0), Mathf.Infinity),
                       GetPreferredTwoHandedWeaponUp(weaponWield));
-            }
-
-            public override float GetPreferredOffsetFromRearHand(float handDist, bool rearHandIsDominant)
-            {
-                if (LocalWeaponWield.CurrentTwoHandedWieldStartedWithLongGrip)
-                {
-                    return base.GetPreferredOffsetFromRearHand(handDist, rearHandIsDominant);
-                }
-
-                if (rearHandIsDominant)
-                {
-                    return -SHORT_GRIP_REAR_HAND_DOMINANT_OFFSET - WeaponWield.HAND_CENTER_OFFSET;
-                }
-
-                if (handDist > SHORT_GRIP_FRONT_HAND_DOMINANT_OFFSET)
-                {
-                    // The hands are far away from each other, anchor the end of the spear handle in the rear/non-dominant hand.
-                    return SPEAR_HANDLE_LENGTH_BEHIND_CENTER - WeaponWield.HAND_CENTER_OFFSET;
-                }
-
-                // Anchor the center of the spear in the front/dominant hand to allow shorter attack range.
-                return handDist - SHORT_GRIP_FRONT_HAND_DOMINANT_OFFSET + SPEAR_HANDLE_LENGTH_BEHIND_CENTER - WeaponWield.HAND_CENTER_OFFSET;
             }
 
             private bool IsAiming()
@@ -419,7 +448,7 @@ namespace ValheimVRMod.Scripts
             }
         }
 
-        public class CrossbowGeometryProvider : WeaponWield.TwoHandedGeometryProvider
+        public class CrossbowGeometryProvider : TwoHandedGeometryProvider
         {
             bool isPlayerLeftHanded;
 
@@ -510,7 +539,8 @@ namespace ValheimVRMod.Scripts
         public class RemoteSpearGeometryProvider : SpearGeometryProvider
         {
             private WeaponWieldSync.TwoHandedStateProvider twoHandedStateProvider;
-            public RemoteSpearGeometryProvider(WeaponWieldSync.TwoHandedStateProvider twoHandedStateProvider) : base(0)
+            public RemoteSpearGeometryProvider(WeaponWieldSync.TwoHandedStateProvider twoHandedStateProvider, LongGripStateProvider longGripStateProvider) :
+                base(longGripStateProvider)
             {
                 this.twoHandedStateProvider = twoHandedStateProvider;
             }
@@ -518,40 +548,6 @@ namespace ValheimVRMod.Scripts
             public override bool InverseHoldForDominantHand()
             {
                 return twoHandedStateProvider.InverseHold();
-            }
-        }
-
-        public class RemoteAtgeirGeometryProvider : DefaultGeometryProvider
-        {
-            public RemoteAtgeirGeometryProvider(float distanceBetweenGripAndRearEnd) : base(distanceBetweenGripAndRearEnd)
-            {
-            }
-
-            public override Vector3 GetDesiredSingleHandedPosition(WeaponWield weaponWield)
-            {
-                return weaponWield.originalPosition - distanceBetweenGripAndRearEnd * GetSingleHandedPointingDirection(weaponWield);
-            }
-
-            public override Quaternion GetDesiredSingleHandedRotation(WeaponWield weaponWield)
-            {
-                return base.GetDesiredSingleHandedRotation(weaponWield) * LocalAtgeirGeometryProvider.ROTATION_ADJUST;
-            }
-
-            public override float GetPreferredOffsetFromRearHand(float handDist, bool rearHandIsDominant)
-            {
-                return distanceBetweenGripAndRearEnd * 0.5f - WeaponWield.HAND_CENTER_OFFSET;
-            }
-        }
-
-        public class RemoteBattleaxeGeometryProvider : DefaultGeometryProvider
-        {
-            public RemoteBattleaxeGeometryProvider(float distanceBetweenGripAndRearEnd) : base(distanceBetweenGripAndRearEnd)
-            {
-            }
-
-            public override Vector3 GetDesiredSingleHandedPosition(WeaponWield weaponWield)
-            {
-                return weaponWield.originalPosition - 0.4f * GetSingleHandedPointingDirection(weaponWield);
             }
         }
     }
