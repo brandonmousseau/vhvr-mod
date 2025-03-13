@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 using ValheimVRMod.Utilities;
-using static ValheimVRMod.Scripts.WeaponWield;
 
 namespace ValheimVRMod.Scripts
 {
