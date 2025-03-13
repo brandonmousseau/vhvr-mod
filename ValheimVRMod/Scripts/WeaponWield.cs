@@ -4,7 +4,7 @@ using ValheimVRMod.Utilities;
 
 namespace ValheimVRMod.Scripts
 {
-    public abstract class WeaponWield : MonoBehaviour, LongGripStateProvider
+    public abstract class WeaponWield : MonoBehaviour, WeaponWield.LongGripStateProvider
     {
         protected bool currentTwoHandedWieldStartedWithLongGrip { get; private set; }
 
