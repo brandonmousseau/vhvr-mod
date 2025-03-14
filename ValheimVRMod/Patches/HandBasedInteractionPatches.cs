@@ -170,7 +170,8 @@ namespace ValheimVRMod.Patches
                 hoverReference = null;
                 var startingPosition = pointer.rayStartingPosition;
                 var rayDirection = pointer.rayDirection;
-                var hits = Physics.RaycastAll(startingPosition, rayDirection * Vector3.forward, raycastDistanceLimit, mask);
+                var hits = FindGrabbableHits(instance, startingPosition, rayDirection * Vector3.forward, mask);
+                hits = hits.AddRangeToArray(Physics.RaycastAll(startingPosition, rayDirection * Vector3.forward, raycastDistanceLimit, mask));
                 
                 Array.Sort(hits, (RaycastHit x, RaycastHit y) => x.distance.CompareTo(y.distance));
                 hitPosition = startingPosition + rayDirection * Vector3.forward * raycastDistanceLimit;
@@ -179,6 +180,11 @@ namespace ValheimVRMod.Patches
                     RaycastHit hit = hits[i];
                     if (hit.collider.attachedRigidbody &&
                         hit.collider.attachedRigidbody.gameObject == instance.gameObject)
+                    {
+                        continue;
+                    }
+
+                    if (hit.collider.GetComponentInParent<Player>() == instance)
                     {
                         continue;
                     }
@@ -202,6 +208,25 @@ namespace ValheimVRMod.Patches
 
                     return;
                 }
+            }
+
+            private static RaycastHit[] FindGrabbableHits(
+                Player player, Vector3 startingPosition, Vector3 rayForward, int mask)
+            {
+                RaycastHit[] hits =
+                    Physics.SphereCastAll(startingPosition, 0.125f, rayForward, maxDistance: 0.01f, mask);
+                for (int i = 0; i < hits.Length; i++)
+                {
+                    if (hits[i].collider.attachedRigidbody?.gameObject == player.gameObject)
+                    {
+                        continue;
+                    }
+
+                    // SphereCastAll does not compute colliding point, it must be explicitly calculated here.
+                    hits[i].point = hits[i].collider.ClosestPoint(startingPosition);
+                    hits[i].distance = Vector3.Distance(hits[i].point, startingPosition);
+                }
+                return hits;
             }
         }
     }
