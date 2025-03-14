@@ -16,16 +16,19 @@ namespace ValheimVRMod.Utilities
                     return !IsStab(handPhysicsEstimator) && IsStrongSwing(collisionPhysicsEstimator, handPhysicsEstimator);
                 case EquipType.BattleAxe:
                 case EquipType.Polearms:
-                    if (!LocalWeaponWield.isCurrentlyTwoHanded() ||
-                        LocalWeaponWield.IsDominantHandBehind ||
-                        !LocalWeaponWield.CurrentTwoHandedWieldStartedWithLongGrip ||
-                        VRPlayer.vrCam == null)
+                    if (!LocalWeaponWield.isCurrentlyTwoHanded() || LocalWeaponWield.IsDominantHandBehind || VRPlayer.vrCam == null)
                     {
                         return false;
                     }
+
+                    var velocity = VHVRConfig.LeftHanded() ? VRPlayer.leftHandPhysicsEstimator.GetVelocity() : VRPlayer.rightHandPhysicsEstimator.GetVelocity();
+                    if (!LocalWeaponWield.CurrentTwoHandedWieldStartedWithLongGrip && velocity.magnitude < GetMinSecondarySwingSpeed())
+                    {
+                        return false;
+                    }
+
                     Vector3 swipeAxis = Vector3.Cross(LocalWeaponWield.weaponForward, VRPlayer.vrCam.transform.parent.up);
-                    var dominantHandPhysicsEstimator = VHVRConfig.LeftHanded() ? VRPlayer.leftHandPhysicsEstimator : VRPlayer.rightHandPhysicsEstimator;
-                    float angle = Vector3.Angle(dominantHandPhysicsEstimator.GetVelocity(), swipeAxis);
+                    float angle = Vector3.Angle(velocity, swipeAxis);
                     return angle < 30 || angle > 150;
                 case EquipType.Claws:
                 case EquipType.None:
