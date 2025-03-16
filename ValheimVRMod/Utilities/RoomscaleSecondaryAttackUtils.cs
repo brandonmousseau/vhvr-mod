@@ -22,17 +22,12 @@ namespace ValheimVRMod.Utilities
                     }
 
                     var velocity = VHVRConfig.LeftHanded() ? VRPlayer.leftHandPhysicsEstimator.GetVelocity() : VRPlayer.rightHandPhysicsEstimator.GetVelocity();
-                    if (!LocalWeaponWield.CurrentTwoHandedWieldStartedWithLongGrip && velocity.magnitude < GetMinSecondarySwingSpeed())
-                    {
-                        return false;
-                    }
-
                     Vector3 swipeAxis = Vector3.Cross(LocalWeaponWield.weaponForward, VRPlayer.vrCam.transform.parent.up);
                     float angle = Vector3.Angle(velocity, swipeAxis);
 
                     return LocalWeaponWield.CurrentTwoHandedWieldStartedWithLongGrip ?
                         (angle < 45 || angle > 135) :
-                        (angle < 30 || angle > 150);
+                        Mathf.Abs(Vector3.Dot(velocity, swipeAxis)) > GetMinSecondarySwingSpeed();
                 case EquipType.Claws:
                 case EquipType.None:
                     return IsHook(handPhysicsEstimator);
