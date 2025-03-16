@@ -29,7 +29,10 @@ namespace ValheimVRMod.Utilities
 
                     Vector3 swipeAxis = Vector3.Cross(LocalWeaponWield.weaponForward, VRPlayer.vrCam.transform.parent.up);
                     float angle = Vector3.Angle(velocity, swipeAxis);
-                    return angle < 30 || angle > 150;
+
+                    return LocalWeaponWield.CurrentTwoHandedWieldStartedWithLongGrip ?
+                        (angle < 45 || angle > 135) :
+                        (angle < 30 || angle > 150);
                 case EquipType.Claws:
                 case EquipType.None:
                     return IsHook(handPhysicsEstimator);
