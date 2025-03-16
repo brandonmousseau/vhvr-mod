@@ -11,7 +11,7 @@ namespace ValheimVRMod.Scripts {
 
         private VRIK vrikSync;
         
-        static readonly float MIN_CHANGE = 0.001f;
+        const float MIN_CHANGE = 0.001f;
         
         public GameObject camera = null;
         public GameObject rightHand = null;
@@ -134,18 +134,18 @@ namespace ValheimVRMod.Scripts {
 
         private void calculateOwnerVelocities(float dt)
         {
-            ownerVelocityCamera = (camera.transform.position - ownerLastPositionCamera) / dt;
-            ownerVelocityLeft = (leftHand.transform.position - ownerLastPositionLeft) / dt;
-            ownerVelocityRight = (rightHand.transform.position - ownerLastPositionRight) / dt;
+            ownerVelocityCamera = (camera.transform.position - player.transform.position - ownerLastPositionCamera) / dt;
+            ownerVelocityLeft = (leftHand.transform.position - player.transform.position - ownerLastPositionLeft) / dt;
+            ownerVelocityRight = (rightHand.transform.position - player.transform.position - ownerLastPositionRight) / dt;
             // Update "last" position for next cycle velocity calculation
             updateOwnerLastPositions();
         }
 
         private void updateOwnerLastPositions()
         {
-            ownerLastPositionCamera = camera.transform.position;
-            ownerLastPositionLeft = leftHand.transform.position;
-            ownerLastPositionRight = rightHand.transform.position;
+            ownerLastPositionCamera = camera.transform.position - player.transform.position;
+            ownerLastPositionLeft = leftHand.transform.position - player.transform.position;
+            ownerLastPositionRight = rightHand.transform.position - player.transform.position;
         }
 
         private void LateUpdate()
