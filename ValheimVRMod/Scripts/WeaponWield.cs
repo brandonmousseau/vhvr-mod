@@ -241,7 +241,9 @@ namespace ValheimVRMod.Scripts
                 case EquipType.Scythe:
                     return new TwoHandedGeometry.ScytheGeometryProvider(IsPlayerLeftHanded(), distanceBetweenGripAndRearEnd);
                 case EquipType.Sledge:
-                    return new TwoHandedGeometry.SledgeGeometryProvider(distanceBetweenGripAndRearEnd);
+                    return isLocal ?
+                        new TwoHandedGeometry.LocalSledgeGeometryProvider(distanceBetweenGripAndRearEnd) :
+                        new TwoHandedGeometry.SledgeGeometryProvider(distanceBetweenGripAndRearEnd);
                 case EquipType.Sword:
                     if (isLocal)
                     {
