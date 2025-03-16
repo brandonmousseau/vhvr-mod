@@ -224,6 +224,47 @@ namespace ValheimVRMod.Scripts
             }
         }
 
+        public class LocalSledgeGeometryProvider : SledgeGeometryProvider
+        {
+            private const float MIN_SWING_SPEED = 1;
+            private const float SWING_SPEED_CAP = 4;
+
+            public LocalSledgeGeometryProvider(float distanceBetweenGripAndRearEnd) : base(distanceBetweenGripAndRearEnd)
+            {
+            }
+
+            public override Vector3 GetDesiredSingleHandedPosition(WeaponWield weaponWield)
+            {
+                if (SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource))
+                {
+                    return base.GetDesiredSingleHandedPosition(weaponWield);
+                }
+
+                if (!VHVRConfig.TwoHandedWield())
+                {
+                    return weaponWield.originalPosition;
+                }
+
+                var physicsEstimator = VHVRConfig.LeftHanded() ? VRPlayer.leftHandPhysicsEstimator : VRPlayer.rightHandPhysicsEstimator;
+                var speed = physicsEstimator.GetVelocity().magnitude;
+
+                if (speed > SWING_SPEED_CAP)
+                {
+                    return weaponWield.originalPosition;
+                }
+
+                if (speed < MIN_SWING_SPEED)
+                {
+                    return base.GetDesiredSingleHandedPosition(weaponWield);
+                }
+
+                return Vector3.Lerp(
+                    base.GetDesiredSingleHandedPosition(weaponWield), 
+                    weaponWield.originalPosition,
+                    Mathf.InverseLerp(MIN_SWING_SPEED, SWING_SPEED_CAP, speed));
+            }
+        }
+
         public class StaffGeometryProvider : DefaultGeometryProvider
         {
             private float twoHandedGripOffset;
