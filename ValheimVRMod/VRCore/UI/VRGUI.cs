@@ -61,6 +61,7 @@ namespace ValheimVRMod.VRCore.UI
         public static readonly string[] ADDITIONAL_GUI_CANVAS_NAMES = new string[]
         {
             "Chat",
+            "Connecting",
             "TextViewer",
             "JoinCodeOverlay",
             "Store_Screen",
