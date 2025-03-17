@@ -180,7 +180,15 @@ namespace ValheimVRMod.VRCore.UI
 
         private bool shouldUpdateRayVectors()
         {
-            if ((Chat.instance != null && Chat.instance.HasFocus()) || Console.IsVisible() || TextInput.IsVisible())
+            if (FejdStartup.instance != null && FejdStartup.instance.isActiveAndEnabled)
+            {
+                return false;
+            }
+            if (Chat.instance != null && Chat.instance.HasFocus())
+            {
+                return false;
+            }
+            if (Console.IsVisible() || TextInput.IsVisible())
             {
                 return false;
             }
