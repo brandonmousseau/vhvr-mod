@@ -33,6 +33,7 @@ namespace ValheimVRMod.Scripts.Block {
 
         protected override void FixedUpdate() {
             base.FixedUpdate();
+            RotateColliderForSecondaryWeapon();
             // TODO: maybe move this to VRPlayer.FixedUpdate()
             fadeHitIndicator(Time.fixedDeltaTime);
         }
@@ -91,7 +92,6 @@ namespace ValheimVRMod.Scripts.Block {
 
             if (newLeftEquipmentType == currentLeftEquipType && newRightEquipmentType == currentRightEquipType)
             {
-                RotateColliderForSecondaryWeapon();
                 return;
             }
 
@@ -176,7 +176,7 @@ namespace ValheimVRMod.Scripts.Block {
 
         private void RotateColliderForSecondaryWeapon()
         {
-            if (EquipScript.getLeft() != EquipType.Knife)
+            if (EquipScript.getLeft() != EquipType.Knife || leftHandBlockBox == null || rightHandBlockBox == null)
             {
                 return;
             }
