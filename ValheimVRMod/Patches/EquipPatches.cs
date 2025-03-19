@@ -9,6 +9,107 @@ using ValheimVRMod.Utilities;
 
 namespace ValheimVRMod.Patches {
 
+    [HarmonyPatch(typeof(Humanoid), nameof(Humanoid.EquipItem))]
+    class PatchEquipItem
+    {
+        private static bool wasUsingKnife = false;
+        private static ItemDrop.ItemData knife;
+
+        static bool Prefix(Humanoid __instance, ItemDrop.ItemData item, bool triggerEquipEffects) {
+            if (Player.m_localPlayer == null || __instance.gameObject != Player.m_localPlayer.gameObject || !VHVRConfig.UseVrControls())
+            {
+                return true;
+            }
+
+            if (EquipScript.getLeft() == EquipType.Knife && __instance.m_leftItem != null)
+            {
+                if (item.m_shared.m_itemType == ItemDrop.ItemData.ItemType.OneHandedWeapon ||
+                    (item.m_shared.m_itemType == ItemDrop.ItemData.ItemType.Torch && __instance.m_rightItem == null))
+                {
+                    knife = __instance.m_leftItem;
+                    __instance.UnequipItem(__instance.m_leftItem, triggerEquipEffects);
+                    wasUsingKnife = true;
+                }
+                else
+                {
+                    wasUsingKnife = false;
+                }
+                return true;
+            }
+
+            if (item.m_shared.m_attack.m_attackAnimation == "knife_stab")
+            {
+                if (__instance.m_leftItem != null)
+                {
+                    wasUsingKnife = false;
+                    return true;
+                }
+                switch (EquipScript.getRight())
+                {
+                    case EquipType.Axe:
+                    case EquipType.Club:
+                    case EquipType.Knife:
+                    case EquipType.Sword:
+                        __instance.m_leftItem = item;
+                        __instance.m_leftItem.m_equipped = true;
+                        __instance.m_visEquipment.SetLeftItem(item.m_dropPrefab.name, item.m_variant);
+                        if (triggerEquipEffects)
+                        {
+                            __instance.TriggerEquipEffect(item);
+                        }
+                        wasUsingKnife = false;
+                        return false;
+                    case EquipType.Torch:
+                        wasUsingKnife = false;
+                        return true;
+                    default:
+                        break;
+                }
+            }
+
+            if (EquipScript.getRight() == EquipType.Knife && __instance.m_leftItem == null)
+            {
+                if (item.m_shared.m_itemType == ItemDrop.ItemData.ItemType.OneHandedWeapon)
+                {
+                    knife = __instance.m_rightItem;
+                    __instance.UnequipItem(__instance.m_rightItem, triggerEquipEffects);
+                    wasUsingKnife = true;
+                }
+                else
+                {
+                    wasUsingKnife = false;
+                }
+            }
+            return true;
+        }
+
+        static void Postfix(Humanoid __instance, ItemDrop.ItemData item) {
+            if (Player.m_localPlayer == null || __instance.gameObject != Player.m_localPlayer.gameObject)
+            {
+                return;
+            }
+            if (!wasUsingKnife) { 
+                return;
+            }
+            wasUsingKnife = false;
+            switch (EquipScript.getRight())
+            {
+                case EquipType.Axe:
+                case EquipType.Club:
+                case EquipType.Knife:
+                case EquipType.Sword:
+                case EquipType.Torch:
+                    __instance.m_leftItem = knife;
+                    __instance.m_leftItem.m_equipped = true;
+                    __instance.m_visEquipment.SetLeftItem(knife.m_dropPrefab.name, knife.m_variant);
+                    break;
+                default:
+                    return;
+            }
+        } 
+    }
+
+
     [HarmonyPatch(typeof(VisEquipment), nameof(VisEquipment.SetRightHandEquipped))]
     class PatchSetRightHandEquipped {
         static void Postfix(VisEquipment __instance, bool __result, string ___m_rightItem, ref GameObject ___m_rightItemInstance) {
