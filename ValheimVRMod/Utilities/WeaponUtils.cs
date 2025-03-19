@@ -315,39 +315,45 @@ namespace ValheimVRMod.Utilities
             {
                 {
                     EquipType.Claws, WeaponColData.create(
-                        0,  0.25f, 0.016f,
-                        0,  0, 0,
-                        0.45f,  0.5f, 0.45f
+                        0, 0.25f, 0.016f,
+                        0, 0, 0,
+                        0.45f, 0.5f, 0.45f
                 )},
                 {
                     EquipType.DualAxes, WeaponColData.create(
-                        0.45f,  0.2f, 0.05f,
+                        0.45f, 0.2f, 0.05f,
                         0,  0, 0,
-                        0.45f,  0.45f, 0.45f
+                        0.45f, 0.45f, 0.45f
                 )},
                 {
                     EquipType.DualKnives, WeaponColData.create(
-                        0.225f,  0.15f, 0.05f,
+                        0.225f, 0.15f, 0.05f,
                         0,  0, 0,
-                        0.45f,  0.45f, 0.45f
+                        0.45f, 0.45f, 0.45f
                 )},
                 {
                     EquipType.None, WeaponColData.create( // fists
-                        0,  0.2f, 0.016f,
-                        0,  0, 0,
-                        0.45f,  0.45f, 0.45f
+                        0, 0.2f, 0.016f,
+                        0, 0, 0,
+                        0.45f, 0.45f, 0.45f
                 )},
                 {
                     EquipType.Torch, WeaponColData.create(
-                        0.55f,  0.15f, 0.05f,
-                        0,  0, 0,
-                        0.45f,  0.45f, 0.45f
+                        0.55f, 0.15f, 0.05f,
+                        0, 0, 0,
+                        0.45f, 0.45f, 0.45f
                 )},
                 {
                     EquipType.Knife, WeaponColData.create(
-                        0.33f,  0.2f, 0.01f,
-                        0,  0, 0,
+                        0.33f, 0.2f, 0.01f,
+                        0, 0, 0,
                         0.45f,  0.45f, 0.45f
+                )},
+                {
+                    EquipType.Shield, WeaponColData.create(
+                        0f, 0.125f, -0.0625f,
+                        22.5f, 0, 0,
+                        0.625f, 0.625f, 0.25f
                 )},
             };
 
