@@ -151,38 +151,6 @@ namespace ValheimVRMod.Patches
     [HarmonyPatch(typeof(Humanoid), "UnequipItem")]
     class PatchUnEquipItem {
 
-        static void Prefix(Humanoid __instance, ItemDrop.ItemData item, ItemDrop.ItemData ___m_leftItem, ItemDrop.ItemData ___m_rightItem) {
-
-            if (__instance.GetType() != typeof(Player)) {
-                return;
-            }
-
-            if (item != ___m_leftItem && item != ___m_rightItem) {
-                return;
-            }
-
-            if (__instance == Player.m_localPlayer && !VHVRConfig.UseVrControls())
-            {
-                return;
-            }
-
-            var vrPlayerSync = __instance.GetComponent<VRPlayerSync>();
-            if (vrPlayerSync == null)
-            {
-                return;
-            }
-
-            if (item == ___m_leftItem ^ VHVRConfig.LeftHanded()) {
-                vrPlayerSync.currentLeftWeapon = null;
-            }
-            else {
-                vrPlayerSync.currentRightWeapon = null;   
-            }
-            vrPlayerSync.currentDualWieldWeapon = null;
-
-            VrikCreator.resetVrikHandTransform(__instance);
-        }
-
         static void Postfix() {
             if (StaticObjects.rightHandQuickMenu != null) {
                 StaticObjects.rightHandQuickMenu.GetComponent<RightHandQuickMenu>().refreshItems();
