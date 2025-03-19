@@ -91,6 +91,7 @@ namespace ValheimVRMod.Scripts.Block {
 
             if (newLeftEquipmentType == currentLeftEquipType && newRightEquipmentType == currentRightEquipType)
             {
+                RotateColliderForSecondaryWeapon();
                 return;
             }
 
@@ -170,6 +171,25 @@ namespace ValheimVRMod.Scripts.Block {
             {
                 leftHandBlockBoxRenderer.enabled = false;
                 rightHandBlockBoxRenderer.enabled = false;
+            }
+        }
+
+        private void RotateColliderForSecondaryWeapon()
+        {
+            if (EquipScript.getLeft() != EquipType.Knife)
+            {
+                return;
+            }
+
+            if (VHVRConfig.LeftHanded())
+            {
+                rightHandBlockBox.transform.localPosition =
+                    FistCollision.ShouldSecondaryKnifeHoldInverse ? rightColliderData.pos : Vector3.Reflect(rightColliderData.pos, Vector3.right);
+            }
+            else
+            {
+                leftHandBlockBox.transform.localPosition =
+                    FistCollision.ShouldSecondaryKnifeHoldInverse ? Vector3.Reflect(leftColliderData.pos, Vector3.right) : leftColliderData.pos;
             }
         }
     }
