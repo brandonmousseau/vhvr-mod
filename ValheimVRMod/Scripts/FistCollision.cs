@@ -391,7 +391,16 @@ namespace ValheimVRMod.Scripts
             Attack attack;
             if (holdingSecondaryWeapon())
             {
-                item = Player.m_localPlayer.GetLeftItem();
+                if (EquipScript.getLeft() != EquipType.Torch &&
+                    EquipScript.getRight() != EquipType.Torch &&
+                    EquipScript.getRight() != EquipType.None)
+                {
+                    item = Player.m_localPlayer.GetRightItem();
+                }
+                else
+                {
+                    item = Player.m_localPlayer.GetLeftItem();
+                }
                 attack = item.m_shared.m_attack.Clone();
             }
             else
@@ -511,7 +520,7 @@ namespace ValheimVRMod.Scripts
                 return false;
             }
 
-            if (handGesture.isHandFree())
+            if (handGesture.isHandFree() || holdingShield())
             {
                 return SteamVR_Actions.valheim_Grab.GetState(inputSource);
             }
@@ -526,6 +535,15 @@ namespace ValheimVRMod.Scripts
                 return false;
             }
             return EquipScript.getLeft() == EquipType.Torch || EquipScript.getLeft() == EquipType.Knife;
+        }
+
+        private bool holdingShield()
+        {
+            if (isRightHand ^ VHVRConfig.LeftHanded())
+            {
+                return false;
+            }
+            return EquipScript.getLeft() == EquipType.Shield;
         }
 
         public bool hasMomentum(out float speed, out bool isJab)
