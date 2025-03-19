@@ -26,6 +26,7 @@ namespace ValheimVRMod.Scripts
         private Hand thisHand {  get { return isRightHand ? VRPlayer.rightHand : VRPlayer.leftHand; } }
 
         public static float LocalPlayerSecondaryAttackCooldown = 0;
+        public static bool ShouldSecondaryKnifeHoldInverse { get { return SteamVR_Actions.valheim_Grab.GetState(VRPlayer.nonDominantHandInputSource); } }
 
         private static readonly int[] NONATTACKABLE_LAYERS = {
             LayerUtils.WATERVOLUME_LAYER,
@@ -45,6 +46,7 @@ namespace ValheimVRMod.Scripts
         private Vector3 desiredPosition;
         private Quaternion desiredRotation;
         private GameObject debugColliderIndicator;
+        private WeaponColData colliderData;
 
         private void Awake()
         {
@@ -474,12 +476,13 @@ namespace ValheimVRMod.Scripts
 
             if (!Player.m_localPlayer || newEquipType == currentEquipType)
             {
+                RotateColliderForSecondaryWeapon();
                 return;
             }
 
             currentEquipType = newEquipType;
 
-            var colliderData = WeaponUtils.GetDualWieldLeftHandColliderData(newEquipType);
+            colliderData = WeaponUtils.GetDualWieldLeftHandColliderData(newEquipType);
 
             desiredPosition =
                 isRightHand ?
@@ -522,7 +525,7 @@ namespace ValheimVRMod.Scripts
             {
                 return false;
             }
-            return EquipScript.getLeft() == EquipType.Torch;
+            return EquipScript.getLeft() == EquipType.Torch || EquipScript.getLeft() == EquipType.Knife;
         }
 
         public bool hasMomentum(out float speed, out bool isJab)
@@ -562,6 +565,24 @@ namespace ValheimVRMod.Scripts
             }
 
             return SteamVR_Actions.valheim_Grab.GetState(inputSource);
+        }
+
+        private void RotateColliderForSecondaryWeapon()
+        {
+            if (isRightHand ^ VHVRConfig.LeftHanded())
+            {
+                return;
+            }
+
+            if (EquipScript.getLeft() != EquipType.Knife)
+            {
+                return;
+            }
+
+            desiredPosition =
+                isRightHand ^ ShouldSecondaryKnifeHoldInverse ?
+                Vector3.Reflect(colliderData.pos, Vector3.right) :
+                colliderData.pos;
         }
     }
 }
