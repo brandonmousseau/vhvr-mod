@@ -12,6 +12,8 @@ namespace ValheimVRMod.Scripts.Block {
         private EquipType? currentRightEquipType = null;
         private MeshRenderer leftHandBlockBoxRenderer;
         private MeshRenderer rightHandBlockBoxRenderer;
+        private WeaponColData leftColliderData;
+        private WeaponColData rightColliderData;
 
         public static FistBlock instance;
 
@@ -95,11 +97,14 @@ namespace ValheimVRMod.Scripts.Block {
             currentLeftEquipType = newLeftEquipmentType;
             currentRightEquipType = newRightEquipmentType;
 
-            var rightColliderData = WeaponUtils.GetDualWieldLeftHandBlockingColliderData(Player.m_localPlayer?.GetRightItem());
-            var leftColliderData = 
+            rightColliderData =
+                WeaponUtils.GetDualWieldLeftHandBlockingColliderData(
+                    VHVRConfig.LeftHanded() ? Player.m_localPlayer?.GetLeftItem() : Player.m_localPlayer?.GetRightItem());
+            leftColliderData = 
                 FistCollision.hasDualWieldingWeaponEquipped() ?
                 rightColliderData :
-                WeaponUtils.GetDualWieldLeftHandBlockingColliderData(Player.m_localPlayer?.GetLeftItem());
+                WeaponUtils.GetDualWieldLeftHandBlockingColliderData(
+                    VHVRConfig.LeftHanded() ? Player.m_localPlayer?.GetRightItem() : Player.m_localPlayer?.GetLeftItem());
 
             leftHandBlockBox.transform.localPosition = leftColliderData.pos;
             rightHandBlockBox.transform.localPosition = Vector3.Reflect(rightColliderData.pos, Vector3.right);
