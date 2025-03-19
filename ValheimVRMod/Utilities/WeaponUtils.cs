@@ -343,6 +343,12 @@ namespace ValheimVRMod.Utilities
                         0,  0, 0,
                         0.45f,  0.45f, 0.45f
                 )},
+                {
+                    EquipType.Knife, WeaponColData.create(
+                        0.35f,  0.1f, 0.05f,
+                        0,  0, 0,
+                        0.45f,  0.45f, 0.45f
+                )},
             };
 
         private static readonly Dictionary<EquipType, WeaponColData> DUAL_WIELD_BLOCKING_COLLIDERS =
@@ -365,6 +371,18 @@ namespace ValheimVRMod.Utilities
                         0.15f,  0.15f, 0.016f,
                         0,  0, 0,
                         0.5f, 0.5f, 0.3f
+                )},
+                {
+                    EquipType.Knife, WeaponColData.create(
+                        0.4f,  0.2f, 0.016f,
+                        0,  0, 0,
+                        0.6f, 0.35f, 0.35f
+                )},
+                {
+                    EquipType.Torch, WeaponColData.create(
+                        0.4f,  0.2f, 0.016f,
+                        0,  0, 0,
+                        0.75f, 0.35f, 0.3f
                 )},
                 {
                     EquipType.None, WeaponColData.create( // fists
