@@ -43,7 +43,6 @@ namespace ValheimVRMod.Scripts {
                     }
                     break;
                 case EquipType.Claws:
-                case EquipType.None:
                     return true;
                 case EquipType.Crossbow:
                     if (CrossbowMorphManager.instance != null)
