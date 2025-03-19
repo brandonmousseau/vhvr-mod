@@ -20,6 +20,23 @@ namespace ValheimVRMod.Patches {
             {
                 return true;
             }
+
+            if (EquipScript.getLeft() == EquipType.Knife && __instance.m_leftItem != null)
+            {
+                if (item.m_shared.m_itemType == ItemDrop.ItemData.ItemType.OneHandedWeapon ||
+                    (item.m_shared.m_itemType == ItemDrop.ItemData.ItemType.Torch && __instance.m_rightItem == null))
+                {
+                    knife = __instance.m_leftItem;
+                    __instance.UnequipItem(__instance.m_leftItem, triggerEquipEffects);
+                    wasUsingKnife = true;
+                }
+                else
+                {
+                    wasUsingKnife = false;
+                }
+                return true;
+            }
+
             if (item.m_shared.m_attack.m_attackAnimation == "knife_stab")
             {
                 if (__instance.m_leftItem != null)
@@ -31,6 +48,7 @@ namespace ValheimVRMod.Patches {
                 {
                     case EquipType.Axe:
                     case EquipType.Club:
+                    case EquipType.Knife:
                     case EquipType.Sword:
                         __instance.m_leftItem = item;
                         __instance.m_leftItem.m_equipped = true;
@@ -41,23 +59,20 @@ namespace ValheimVRMod.Patches {
                         }
                         wasUsingKnife = false;
                         return false;
+                    case EquipType.Torch:
+                        wasUsingKnife = false;
+                        return true;
                     default:
                         break;
                 }
             }
+
             if (EquipScript.getRight() == EquipType.Knife && __instance.m_leftItem == null)
             {
-                knife = __instance.m_rightItem;
-                __instance.UnequipItem(__instance.m_rightItem, triggerEquipEffects);
-                wasUsingKnife = true;
-            }
-            if (EquipScript.getLeft() == EquipType.Knife && __instance.m_leftItem != null)
-            {
-                if (item.m_shared.m_itemType == ItemDrop.ItemData.ItemType.OneHandedWeapon ||
-                    (item.m_shared.m_itemType == ItemDrop.ItemData.ItemType.Torch && __instance.m_rightItem == null))
+                if (item.m_shared.m_itemType == ItemDrop.ItemData.ItemType.OneHandedWeapon)
                 {
-                    knife = __instance.m_leftItem;
-                    __instance.UnequipItem(__instance.m_leftItem, triggerEquipEffects);
+                    knife = __instance.m_rightItem;
+                    __instance.UnequipItem(__instance.m_rightItem, triggerEquipEffects);
                     wasUsingKnife = true;
                 }
                 else
@@ -81,6 +96,7 @@ namespace ValheimVRMod.Patches {
             {
                 case EquipType.Axe:
                 case EquipType.Club:
+                case EquipType.Knife:
                 case EquipType.Sword:
                 case EquipType.Torch:
                     __instance.m_leftItem = knife;
@@ -90,7 +106,7 @@ namespace ValheimVRMod.Patches {
                 default:
                     return;
             }
-        }
+        } 
     }
 
 
