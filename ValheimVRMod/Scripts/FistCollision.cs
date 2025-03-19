@@ -387,7 +387,7 @@ namespace ValheimVRMod.Scripts
             ItemDrop.ItemData item;
             bool isCurrentlySecondaryAttack = false;
             Attack attack;
-            if (holdingTorchAsNonDominantHand())
+            if (holdingSecondaryWeapon())
             {
                 item = Player.m_localPlayer.GetLeftItem();
                 attack = item.m_shared.m_attack.Clone();
@@ -467,7 +467,10 @@ namespace ValheimVRMod.Scripts
 
         private void refreshColliderData()
         {
-            var newEquipType = holdingTorchAsNonDominantHand() ? EquipType.Torch : EquipScript.getRight();
+            var newEquipType =
+                hasDualWieldingWeaponEquipped() || (isRightHand ^ VHVRConfig.LeftHanded()) ?
+                EquipScript.getRight() :
+                EquipScript.getLeft();
 
             if (!Player.m_localPlayer || newEquipType == currentEquipType)
             {
@@ -510,10 +513,10 @@ namespace ValheimVRMod.Scripts
                 return SteamVR_Actions.valheim_Grab.GetState(inputSource);
             }
 
-            return hasDualWieldingWeaponEquipped() || holdingTorchAsNonDominantHand();
+            return hasDualWieldingWeaponEquipped() || holdingSecondaryWeapon();
         }
 
-        private bool holdingTorchAsNonDominantHand()
+        private bool holdingSecondaryWeapon()
         {
             if (isRightHand ^ VHVRConfig.LeftHanded())
             {
@@ -553,7 +556,7 @@ namespace ValheimVRMod.Scripts
 
         public bool blockingWithFist()
         {
-            if (!handGesture.isHandFree() && !hasDualWieldingWeaponEquipped())
+            if (!handGesture.isHandFree() && !hasDualWieldingWeaponEquipped() && !holdingSecondaryWeapon())
             {
                 return false;
             }
