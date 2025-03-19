@@ -8,7 +8,8 @@ namespace ValheimVRMod.Scripts.Block {
 
         private Collider leftHandBlockBox;
         private Collider rightHandBlockBox;
-        private EquipType? currentEquipType = null;
+        private EquipType? currentLeftEquipType = null;
+        private EquipType? currentRightEquipType = null;
         private MeshRenderer leftHandBlockBoxRenderer;
         private MeshRenderer rightHandBlockBoxRenderer;
 
@@ -83,21 +84,29 @@ namespace ValheimVRMod.Scripts.Block {
 
         public void updateBlockBoxShape()
         {
-            if (EquipScript.getRight() == currentEquipType)
+            var newLeftEquipmentType = EquipScript.getLeft();
+            var newRightEquipmentType = EquipScript.getRight();
+
+            if (newLeftEquipmentType == currentLeftEquipType && newRightEquipmentType == currentRightEquipType)
             {
                 return;
             }
 
-            currentEquipType = EquipScript.getRight();
+            currentLeftEquipType = newLeftEquipmentType;
+            currentRightEquipType = newRightEquipmentType;
 
-            var colliderData = WeaponUtils.GetDualWieldLeftHandBlockingColliderData(Player.m_localPlayer?.GetRightItem());
+            var rightColliderData = WeaponUtils.GetDualWieldLeftHandBlockingColliderData(Player.m_localPlayer?.GetRightItem());
+            var leftColliderData = 
+                FistCollision.hasDualWieldingWeaponEquipped() ?
+                rightColliderData :
+                WeaponUtils.GetDualWieldLeftHandBlockingColliderData(Player.m_localPlayer?.GetLeftItem());
 
-            leftHandBlockBox.transform.localPosition = colliderData.pos;
-            rightHandBlockBox.transform.localPosition = Vector3.Reflect(colliderData.pos, Vector3.right);
-            leftHandBlockBox.transform.localRotation = rightHandBlockBox.transform.localRotation =
-                Quaternion.Euler(colliderData.euler);
-            leftHandBlockBox.transform.localScale = rightHandBlockBox.transform.localScale =
-                colliderData.scale;
+            leftHandBlockBox.transform.localPosition = leftColliderData.pos;
+            rightHandBlockBox.transform.localPosition = Vector3.Reflect(rightColliderData.pos, Vector3.right);
+            leftHandBlockBox.transform.localRotation = Quaternion.Euler(leftColliderData.euler);
+            rightHandBlockBox.transform.localRotation = Quaternion.Euler(rightColliderData.euler);
+            leftHandBlockBox.transform.localScale = leftColliderData.scale; ;
+            rightHandBlockBox.transform.localScale = rightColliderData.scale;
 
             RefreshDebugRenderers();
         }
