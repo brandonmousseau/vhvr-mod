@@ -345,7 +345,7 @@ namespace ValheimVRMod.Utilities
                 )},
                 {
                     EquipType.Knife, WeaponColData.create(
-                        0.35f,  0.1f, 0.05f,
+                        0.33f,  0.2f, 0.01f,
                         0,  0, 0,
                         0.45f,  0.45f, 0.45f
                 )},
