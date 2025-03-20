@@ -147,7 +147,7 @@ namespace ValheimVRMod.Patches
 
             private static float raycastDistanceLimit = 50f;
 
-            static void Postfix(Player __instance, ref GameObject hover, int ___m_interactMask)
+            static void Postfix(Player __instance, ref GameObject hover, ref Character hoverCreature, int ___m_interactMask)
             {
                 if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls())
                 {
@@ -155,12 +155,13 @@ namespace ValheimVRMod.Patches
                     currentHitPositionLeft = Vector3.zero;
                     return;
                 }
-                UpdateHoverObject(__instance, ref hover, ___m_interactMask, VRPlayer.rightPointer, ref currentHitPositionRight);
-                UpdateHoverObject(__instance, ref leftHover, ___m_interactMask, VRPlayer.leftPointer, ref currentHitPositionLeft);
+                UpdateHoverObject(__instance, ref hover, ref hoverCreature, ___m_interactMask, VRPlayer.rightPointer, ref currentHitPositionRight);
+                UpdateHoverObject(__instance, ref leftHover, ref hoverCreature, ___m_interactMask, VRPlayer.leftPointer, ref currentHitPositionLeft);
             }
 
 
-            private static void UpdateHoverObject(Player instance, ref GameObject hoverReference, int mask, Valve.VR.Extras.SteamVR_LaserPointer pointer, ref Vector3 hitPosition)
+            private static void UpdateHoverObject(
+                Player instance, ref GameObject hoverReference, ref Character hoverCreature, int mask, Valve.VR.Extras.SteamVR_LaserPointer pointer, ref Vector3 hitPosition)
             {
                 if (pointer == null)
                 {
@@ -186,6 +187,17 @@ namespace ValheimVRMod.Patches
                     if (Vector3.Distance(instance.m_eye.position, hit.point) >= instance.m_maxInteractDistance)
                     {
                         return;
+                    }
+
+                    if (hoverCreature == null)
+                    {
+                        Character character = hit.collider.attachedRigidbody ? hit.collider.attachedRigidbody.GetComponent<Character>() : hit.collider.GetComponent<Character>();
+                        if (character != null &&
+                            (!character.GetBaseAI() || !character.GetBaseAI().IsSleeping()) &&
+                            !ParticleMist.IsMistBlocked(instance.GetCenterPoint(), character.GetCenterPoint()))
+                        {
+                            hoverCreature = character;
+                        }
                     }
 
                     hitPosition = hit.point;
