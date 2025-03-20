@@ -1152,8 +1152,15 @@ namespace ValheimVRMod.Patches {
         public static bool wasDodging = false;
         static void Postfix(Player __instance)
         {
-            if (VHVRConfig.NonVrPlayer())
+            if (VHVRConfig.NonVrPlayer() || __instance != Player.m_localPlayer)
+            {
                 return;
+            }
+
+            if (VRPlayer.vrPlayerInstance == null)
+            {
+                return;
+            }
 
             if (VRPlayer.vrPlayerInstance.wasDodging)
             {
