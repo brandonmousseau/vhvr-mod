@@ -184,11 +184,6 @@ namespace ValheimVRMod.Patches
                         continue;
                     }
 
-                    if (Vector3.Distance(instance.m_eye.position, hit.point) >= instance.m_maxInteractDistance)
-                    {
-                        return;
-                    }
-
                     if (hoverCreature == null)
                     {
                         Character character = hit.collider.attachedRigidbody ? hit.collider.attachedRigidbody.GetComponent<Character>() : hit.collider.GetComponent<Character>();
@@ -201,6 +196,12 @@ namespace ValheimVRMod.Patches
                     }
 
                     hitPosition = hit.point;
+
+                    if (Vector3.Distance(instance.m_eye.position, hitPosition) >= instance.m_maxInteractDistance)
+                    {
+                        return;
+                    }
+
                     if (hit.collider.GetComponent<Hoverable>() != null ||
                         !hit.collider.attachedRigidbody ||
                         hit.collider.attachedRigidbody.name == "MovableBase") // MovableBase is the gameobject name for Valheim Raft Mod object
