@@ -109,6 +109,30 @@ namespace ValheimVRMod.Patches {
         } 
     }
 
+    [HarmonyPatch(typeof(Humanoid), nameof(Humanoid.GetCurrentBlocker))]
+    class PatchGetCurrentBlocker
+    {
+        static void Postfix(Humanoid __instance, ref ItemDrop.ItemData __result)
+        {
+            if (Player.m_localPlayer == null || __instance.gameObject != Player.m_localPlayer.gameObject || !VHVRConfig.UseVrControls())
+            {
+                return;
+            }
+
+            if (__result == null)
+            {
+                return;
+            }
+
+            if (EquipScript.getLeft() == EquipType.Knife) {
+                var currentWeapon = __instance.GetCurrentWeapon();
+                if (currentWeapon != null)
+                {
+                    __result = currentWeapon;
+                }
+            }
+        }
+    }
 
     [HarmonyPatch(typeof(VisEquipment), nameof(VisEquipment.SetRightHandEquipped))]
     class PatchSetRightHandEquipped {
