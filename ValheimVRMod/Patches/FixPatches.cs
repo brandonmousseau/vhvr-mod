@@ -53,6 +53,53 @@ namespace ValheimVRMod.Patches {
         }
     }
 
+    [HarmonyPatch(typeof(WaterVolume), nameof(WaterVolume.OnDestroy))]
+    class WaterVolumeOnDestroyPatch
+    {
+        public static void Prefix(WaterVolume __instance, List<IWaterInteractable> ___m_inWater)
+        {
+            if (Player.m_localPlayer == null || VHVRConfig.NonVrPlayer())
+            {
+                return;
+            }
+
+            if (!___m_inWater.Contains((IWaterInteractable) Player.m_localPlayer)) {
+                return;
+            }
+
+            // Make sure the player is removed from the water in VR mode
+            // TODO: find out why this vanilla game logic is failing in VR sometimes and the player is stuck in swimming state in dungeons.
+            if (Player.m_localPlayer.Decrement(LiquidType.Water) == 0)
+            {
+                Player.m_localPlayer.SetLiquidLevel(-10000f, LiquidType.Water, __instance);
+            }
+            ___m_inWater.Remove((IWaterInteractable)Player.m_localPlayer);
+        }
+    }
+
+    [HarmonyPatch(typeof(Character), nameof(Character.SetLiquidLevel))]
+    class LiquidLevelReporter
+    {
+        public static void Postfix(Character __instance, float level, LiquidType type, Component liquidObj)
+        {
+            if (Player.m_localPlayer == null)
+            {
+                return;
+            }
+
+            if (__instance == null)
+            {
+                LogUtils.LogError("Setting liquid level " + level + " " + type + " on null character");
+                return;
+            }
+
+            if (__instance.gameObject != Player.m_localPlayer.gameObject)
+            {
+                return;
+            }
+        }
+    }
+
     /**
      * Remove attack animation by speeding it up. It only applies to attack moves,
      * because the original method switches it back to normal for other animations
