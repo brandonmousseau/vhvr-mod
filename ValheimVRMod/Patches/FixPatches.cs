@@ -53,49 +53,35 @@ namespace ValheimVRMod.Patches {
         }
     }
 
-    [HarmonyPatch(typeof(WaterVolume), nameof(WaterVolume.OnDestroy))]
-    class WaterVolumeOnDestroyPatch
+    [HarmonyPatch(typeof(Player), nameof(Player.TeleportTo))]
+    class WaterLevelFixPatch
     {
-        public static void Prefix(WaterVolume __instance, List<IWaterInteractable> ___m_inWater)
+        public static void Postfix(Player __instance, bool __result)
         {
-            if (Player.m_localPlayer == null || VHVRConfig.NonVrPlayer())
+            if (Player.m_localPlayer != __instance || VHVRConfig.NonVrPlayer() || !__result)
             {
                 return;
             }
 
-            if (!___m_inWater.Contains((IWaterInteractable) Player.m_localPlayer)) {
-                return;
-            }
-
-            // Make sure the player is removed from the water in VR mode
-            // TODO: find out why this vanilla game logic is failing in VR sometimes and the player is stuck in swimming state in dungeons.
-            if (Player.m_localPlayer.Decrement(LiquidType.Water) == 0)
-            {
-                Player.m_localPlayer.SetLiquidLevel(-10000f, LiquidType.Water, __instance);
-            }
-            ___m_inWater.Remove((IWaterInteractable)Player.m_localPlayer);
+            __instance.m_liquids[(int)LiquidType.Water] = 0;
+            __instance.SetLiquidLevel(-10000, LiquidType.Water, null);
         }
     }
 
-    [HarmonyPatch(typeof(Character), nameof(Character.SetLiquidLevel))]
-    class LiquidLevelReporter
+    [HarmonyPatch(typeof(Character), nameof(Character.Decrement))]
+    class CharacterDecrementPatch
     {
-        public static void Postfix(Character __instance, float level, LiquidType type, Component liquidObj)
+        public static void Postfix(Character __instance, ref int __result, LiquidType type)
         {
-            if (Player.m_localPlayer == null)
+            if ((Character) Player.m_localPlayer != __instance || VHVRConfig.NonVrPlayer())
             {
                 return;
             }
 
-            if (__instance == null)
+            if (__result < 0 && type == LiquidType.Water)
             {
-                LogUtils.LogError("Setting liquid level " + level + " " + type + " on null character");
-                return;
-            }
-
-            if (__instance.gameObject != Player.m_localPlayer.gameObject)
-            {
-                return;
+                __instance.m_liquids[(int)LiquidType.Water] = 0;
+                __result = 0;
             }
         }
     }
