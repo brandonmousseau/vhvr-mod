@@ -239,6 +239,11 @@ namespace ValheimVRMod.Patches {
                     break;
             }
 
+            if (EquipScript.getLeft() == EquipType.None && EquipScript.getRight() == EquipType.None)
+            {
+                return;
+            }
+
             LocalWeaponWield weaponWield = EquipScript.isSpearEquipped() ? ___m_rightItemInstance.AddComponent<SpearWield>() : ___m_rightItemInstance.AddComponent<LocalWeaponWield>();
             weaponWield.Initialize(Player.m_localPlayer.GetRightItem(), ___m_rightItem, isDominantHandWeapon: true);
 
