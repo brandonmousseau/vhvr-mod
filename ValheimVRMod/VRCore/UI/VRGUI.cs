@@ -62,6 +62,7 @@ namespace ValheimVRMod.VRCore.UI
         {
             "Chat",
             "Connecting",
+            "EnemyHud",
             "TextViewer",
             "JoinCodeOverlay",
             "Store_Screen",
