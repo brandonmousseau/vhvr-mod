@@ -1779,7 +1779,7 @@ namespace ValheimVRMod.Utilities
         public static float[] BuildAngleSnap()
         {
             //"22.5, 15, 10, 5, 2.5, 1, 0.5"
-            float[] snapList = Array.ConvertAll(buildAngleSnap.Value.Split(','), float.Parse);
+            float[] snapList = Array.ConvertAll(buildAngleSnap.Value.Split(','), s => float.Parse(s.Trim(), System.Globalization.CultureInfo.InvariantCulture));
             return snapList;
         }
 
