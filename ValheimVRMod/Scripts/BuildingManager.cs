@@ -6,6 +6,7 @@ using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using ValheimVRMod.VRCore.UI;
 using Valve.VR;
+using System.Globalization;
 
 namespace ValheimVRMod.Scripts
 {
