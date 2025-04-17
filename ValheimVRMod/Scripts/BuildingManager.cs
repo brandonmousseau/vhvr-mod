@@ -6,7 +6,6 @@ using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using ValheimVRMod.VRCore.UI;
 using Valve.VR;
-using System.Globalization;
 
 namespace ValheimVRMod.Scripts
 {
@@ -1537,7 +1536,7 @@ namespace ValheimVRMod.Scripts
                 var ceaX = Mathf.Round(currentEulerAngle.x * 100) / 100;
                 var ceaY = Mathf.Round(currentEulerAngle.y * 100) / 100;
                 var ceaZ = Mathf.Round(currentEulerAngle.z * 100) / 100;
-                var rotSnapAngleText = rotate ? snapAngleMultiplier.ToString("0.##", CultureInfo.InvariantCulture).Replace('.', ',') : "-";
+                var rotSnapAngleText = rotate ? snapAngleMultiplier.ToString() : "-";
                 rotationText.text = "X "+ ceaX + "|Y "+ ceaY + "|Z " + ceaZ 
                                 + "\n" +dir.ToUpper() + " " + rotateAngle 
                                 + "\n Snap Angle : " + rotSnapAngleText;
