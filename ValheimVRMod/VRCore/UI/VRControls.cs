@@ -22,6 +22,8 @@ namespace ValheimVRMod.VRCore.UI
         // when using the alt piece rotation mode (ie, context scroll is not bound).
         private static readonly float ALT_PIECE_ROTATION_TIME_DELAY = 0.250f;
         private static readonly float ALT_MAP_ZOOM_TIME_DELAY = 0.125f;
+        private const float AUTORUN_ACTIVATION_DELAY = 0.125f;
+        private const float AUTORUN_DEACTIVATION_DELAY = 0.25f;
 
         private float altPieceRotationElapsedTime = 0f;
         private bool altPieceTriggered = false;
@@ -86,7 +88,6 @@ namespace ValheimVRMod.VRCore.UI
         public static bool isAutoRunActive;
         public static bool isExhaustedFromRunning;
         private static Vector2 smoothWalkVelocity;
-        private static float smoothWalkSpeed;
 
         public static string ToggleMiniMap { get { return "ToggleMiniMap"; } }
 
@@ -94,7 +95,8 @@ namespace ValheimVRMod.VRCore.UI
         private static VRControls _instance;
 
         private int quickMenuRefreshTicker = 0;
-
+        private float autorunActivationCountdown = 1;
+        private float autorunDeactivationCountdown = 1;
 
         void Awake()
         {
@@ -152,8 +154,7 @@ namespace ValheimVRMod.VRCore.UI
 
         void FixedUpdate()
         {
-            updateSmoothWalkVelocity(Time.fixedDeltaTime);
-            updateAutoRun();
+            updateSmoothWalk(Time.fixedDeltaTime);
             updateAltPieceRotationTimer();
             updateAltMapZoomTimer();
         }
@@ -165,7 +166,7 @@ namespace ValheimVRMod.VRCore.UI
             altMapZoomTriggered = false;
         }
 
-        private void updateSmoothWalkVelocity(float deltaTime)
+        private void updateSmoothWalk(float deltaTime)
         {
             Vector2 input = GetJoyLeftStickInput();
             var inputSpeed = input.magnitude;
@@ -181,40 +182,44 @@ namespace ValheimVRMod.VRCore.UI
                 }
                 else if (isAutoRunActive)
                 {
-                    isExhaustedFromRunning = true;                    
+                    isExhaustedFromRunning = true;   
                 }
+            }
+
+            if (autorunActivationCountdown >= 0)
+            {
+                autorunActivationCountdown -= deltaTime;
+            }
+            if (autorunDeactivationCountdown >= 0)
+            {
+                autorunDeactivationCountdown -= deltaTime;
+            }
+
+            if (inputSpeed < VHVRConfig.AutoRunActivationThreshold())
+            {
+                autorunActivationCountdown = AUTORUN_ACTIVATION_DELAY;
+            }
+
+            if (inputSpeed > VHVRConfig.AutoRunDeactivationThreshold())
+            {
+                autorunDeactivationCountdown = AUTORUN_DEACTIVATION_DELAY;
             }
 
             if (deltaTime == 0 || smoothWalkVelocity.x == float.NaN || smoothWalkVelocity.y == float.NaN || VHVRConfig.WalkSpeedSmoothener() == 0)
             {
                 smoothWalkVelocity = input;
-                smoothWalkSpeed = inputSpeed;
-                return;
             }
-
-            float smoothener = VHVRConfig.WalkSpeedSmoothener();
-            if (smoothWalkSpeed < VHVRConfig.AutoRunThreshold())
+            else
             {
-                if (smoothWalkSpeed < inputSpeed)
+                float smoothener = VHVRConfig.WalkSpeedSmoothener();
+                smoothWalkVelocity = Vector2.MoveTowards(smoothWalkVelocity, input, Time.deltaTime / smoothener);
+                if (Mathf.Abs(smoothWalkVelocity.x) < 0.01f && Mathf.Abs(smoothWalkVelocity.y) < 0.01f && input.x == 0 && input.y == 0)
                 {
-                    smoothWalkSpeed = Mathf.Min(VHVRConfig.AutoRunThreshold(), inputSpeed);
-                    smoothWalkVelocity = input / inputSpeed * smoothWalkSpeed;
-                    return;
+                    smoothWalkVelocity = Vector2.zero;
                 }
             }
-            else if (!isAutoRunActive)
-            {
-                // Increase smoothener to avoid triggering auto-run too easily.
-                smoothener = 1;
-            }
 
-            smoothWalkVelocity = Vector2.MoveTowards(smoothWalkVelocity, input, Time.deltaTime / smoothener);
-            smoothWalkSpeed = smoothWalkVelocity.magnitude;
-            if (smoothWalkSpeed < 0.01f && input.x == 0 && input.y == 0)
-            {
-                smoothWalkVelocity = Vector2.zero;
-                smoothWalkSpeed = 0;
-            }
+            updateAutoRun();
         }
 
         private void updateAutoRun()
@@ -231,7 +236,7 @@ namespace ValheimVRMod.VRCore.UI
                 return;
             }
 
-            if (smoothWalkSpeed < VHVRConfig.AutoRunDeactivationThreshold())
+            if (autorunDeactivationCountdown <= 0)
             {
                 isAutoRunActive = false;
                 return;
@@ -243,16 +248,15 @@ namespace ValheimVRMod.VRCore.UI
                 return;
             }
 
-            if (VHVRConfig.AutoRunThreshold() >= 0.95f &&
+            if (VHVRConfig.AutoRunThreshold() >= 0.75f &&
                 SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.LeftHand) &&
                 SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.RightHand))
             {
+                autorunActivationCountdown = AUTORUN_ACTIVATION_DELAY;
                 return;
             }
 
-            if (Player.m_localPlayer != null &&
-                !Player.m_localPlayer.IsRunning() &&
-                smoothWalkSpeed > VHVRConfig.AutoRunActivationThreshold())
+            if (Player.m_localPlayer != null && !Player.m_localPlayer.IsRunning() && autorunActivationCountdown <= 0)
             {
                 isAutoRunActive = true;
             }
