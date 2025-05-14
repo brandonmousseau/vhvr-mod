@@ -22,7 +22,7 @@ namespace ValheimVRMod.VRCore.UI
         // when using the alt piece rotation mode (ie, context scroll is not bound).
         private static readonly float ALT_PIECE_ROTATION_TIME_DELAY = 0.250f;
         private static readonly float ALT_MAP_ZOOM_TIME_DELAY = 0.125f;
-        private const float AUTORUN_ACTIVATION_DELAY = 0.125f;
+        private const float AUTORUN_ACTIVATION_DELAY =  0.0625f;
         private const float AUTORUN_DEACTIVATION_DELAY = 0.25f;
 
         private float altPieceRotationElapsedTime = 0f;
