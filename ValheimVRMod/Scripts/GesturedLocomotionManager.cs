@@ -16,6 +16,7 @@ namespace ValheimVRMod.Scripts
         private const float AIR_RUN_DEACTIVATION_SPEED = 0.125f;
         private const float MIN_WATER_SPEED = 0.0625f;
 
+        public static float distanceTraveled { get; private set; } = 0;
         public float stickOutputX { get; private set; } = 0;
         public float stickOutputY { get; private set; } = 0;
         public bool isRunning { get; private set; } = false;
@@ -94,6 +95,7 @@ namespace ValheimVRMod.Scripts
                 Vector3 stickXDirection = Vector3.Cross(stickYDirection, upDirection.Value);
                 stickOutputX = Vector3.Dot(gesturedLocomotionVelocity, stickXDirection) * STICK_OUTPUT_WEIGHT;
                 stickOutputY = Vector3.Dot(gesturedLocomotionVelocity, stickYDirection) * STICK_OUTPUT_WEIGHT;
+                distanceTraveled += targetVelocity.magnitude * deltaTime;
             }
 
             if (isRunning)
