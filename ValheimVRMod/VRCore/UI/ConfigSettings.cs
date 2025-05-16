@@ -455,8 +455,19 @@ namespace ValheimVRMod.VRCore.UI {
 
             var configComponent = chooserObj.AddComponent<ConfigComponent>();
             configComponent.configValue = configValue;
-            chooserObj.transform.Find("LabelLeft").GetComponent<TMP_Text>().text = configValue.Key;
-
+            var configKeyText = chooserObj.transform.Find("LabelLeft").GetComponent<TMP_Text>();
+            configKeyText.text = configValue.Key;
+            if (configValue.Key == VHVRConfig.GesturedLocomotionLabel())
+            {
+                var distance = GesturedLocomotionManager.distanceTraveled;
+                if (distance > 1000)
+                {
+                    configKeyText.text += "(s=" + (distance / 1000).ToString("F1") + "k)";
+                } else if (distance > 10)
+                {
+                    configKeyText.text += "(s=" + distance.ToString("F0") + ")";
+                }
+            }
             Transform stepper = chooserObj.transform.Find("GUIStepper");
             var valueList = (string[])type.GetProperty("AcceptableValues").GetValue(acceptableValues);
             var currentIndex = Array.IndexOf(valueList, configValue.Value.GetSerializedValue());
