@@ -680,7 +680,7 @@ namespace ValheimVRMod.Utilities
                                           "Whether foot tracking should be enabled. May require restarting the game to take effect.");
             trackFeet.SettingChanged += ((o, i) => VRPlayer.RequestPelvisCaliberation());
             gesturedLocomotion = config.Bind("Controls",
-                                             "Gestured Locomotion",
+                                             "GesturedLocomotion",
                                              "SwimAndSteering",
                                              new ConfigDescription(
                                                  "Enables using arm movements to swim, walk, run, and jump",
@@ -1417,6 +1417,11 @@ namespace ValheimVRMod.Utilities
         public static bool TrackFeet()
         {
             return !NonVrPlayer() && UseVrControls() && trackFeet.Value;
+        }
+
+        public static string GesturedLocomotionLabel()
+        {
+            return gesturedLocomotion.Definition.Key;
         }
 
         public static bool IsGesturedSwimEnabled()
