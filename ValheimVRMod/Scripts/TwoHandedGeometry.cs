@@ -41,12 +41,6 @@ namespace ValheimVRMod.Scripts
 
             public virtual float GetPreferredOffsetFromRearHand(float handDist, bool rearHandIsDominant)
             {
-                if (rearHandIsDominant)
-                {
-                    // Anchor the grip of the weapon in the rear/dominant hand.
-                    return -WeaponWield.HAND_CENTER_OFFSET;
-                }
-
                 if (handDist > distanceBetweenGripAndRearEnd)
                 {
                     // Anchor the rear end of the weapon in the rear/non-dominant hand.
@@ -80,6 +74,7 @@ namespace ValheimVRMod.Scripts
             }
 
         }
+
 
         public class AtgeirGeometryProvider : DefaultGeometryProvider
         {
