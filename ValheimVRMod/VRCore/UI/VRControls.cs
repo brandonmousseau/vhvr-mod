@@ -23,7 +23,7 @@ namespace ValheimVRMod.VRCore.UI
         private static readonly float ALT_PIECE_ROTATION_TIME_DELAY = 0.250f;
         private static readonly float ALT_MAP_ZOOM_TIME_DELAY = 0.125f;
         private const float AUTORUN_ACTIVATION_DELAY =  0.0625f;
-        private const float AUTORUN_DEACTIVATION_DELAY = 0.25f;
+        private const float AUTORUN_DEACTIVATION_DELAY = 0.375f;
 
         private float altPieceRotationElapsedTime = 0f;
         private bool altPieceTriggered = false;
@@ -175,7 +175,7 @@ namespace ValheimVRMod.VRCore.UI
             {
                 if (Player.m_localPlayer.HaveStamina())
                 {
-                    if (inputSpeed < VHVRConfig.AutoRunActivationThreshold())
+                    if (isExhaustedFromRunning && inputSpeed < GetAutoRunActiavtionThreshold())
                     {
                         isExhaustedFromRunning = false;
                     }
@@ -195,12 +195,12 @@ namespace ValheimVRMod.VRCore.UI
                 autorunDeactivationCountdown -= deltaTime;
             }
 
-            if (inputSpeed < VHVRConfig.AutoRunActivationThreshold())
+            if (inputSpeed < GetAutoRunActiavtionThreshold())
             {
                 autorunActivationCountdown = AUTORUN_ACTIVATION_DELAY;
             }
 
-            if (inputSpeed > VHVRConfig.AutoRunDeactivationThreshold())
+            if (inputSpeed > GetAutoRunDeactiavtionThreshold())
             {
                 autorunDeactivationCountdown = AUTORUN_DEACTIVATION_DELAY;
             }
@@ -248,18 +248,48 @@ namespace ValheimVRMod.VRCore.UI
                 return;
             }
 
-            if (VHVRConfig.AutoRunThreshold() >= 0.75f &&
-                SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.LeftHand) &&
-                SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.RightHand))
-            {
-                autorunActivationCountdown = AUTORUN_ACTIVATION_DELAY;
-                return;
-            }
-
             if (Player.m_localPlayer != null && !Player.m_localPlayer.IsRunning() && autorunActivationCountdown <= 0)
             {
                 isAutoRunActive = true;
             }
+        }
+
+        private float GetAutoRunActiavtionThreshold()
+        {
+            float threshold = VHVRConfig.AutoRunThreshold();
+
+            if (threshold > 0.99f)
+            {
+                return Mathf.Infinity;
+            }
+
+            if (GesturedLocomotionManager.isInUse)
+            {
+                return threshold;
+            }
+
+            if (threshold >= 0.75f &
+                SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.LeftHand) &&
+                SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.RightHand))
+            {
+                return Mathf.Infinity;
+            }
+
+            return Mathf.Lerp(threshold, 1, 0.5f);
+        }
+
+        private float GetAutoRunDeactiavtionThreshold()
+        {
+            float threshold = VHVRConfig.AutoRunThreshold();
+            if (Player.m_localPlayer != null && !Player.m_localPlayer.IsOnGround())
+            {
+                return threshold * 0.25f;
+            }
+            if (GesturedLocomotionManager.isInUse)
+            {
+                return threshold * 0.5f;
+            }
+            return threshold;
         }
 
         private void updateAltPieceRotationTimer()
