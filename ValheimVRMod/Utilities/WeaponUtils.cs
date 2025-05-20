@@ -2,6 +2,8 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using UnityEngine;
 using UnityEngine.Rendering;
+using ValheimVRMod.VRCore;
+using Valve.VR;
 
 namespace ValheimVRMod.Utilities
 {
@@ -443,7 +445,8 @@ namespace ValheimVRMod.Utilities
 
         public static WeaponColData GetColliderData(string name, ItemDrop.ItemData item, MeshFilter meshFilter, Vector3? handPosition)
         {
-            if (colliders.ContainsKey(name)) {
+            if (colliders.ContainsKey(name))
+            {
                 return colliders[name];
             }
 
@@ -454,7 +457,7 @@ namespace ValheimVRMod.Utilities
 
             if (meshFilter != null && handPosition != null)
             {
-                var estimatedCollider = EstimateWeaponCollider(meshFilter, (Vector3) handPosition);
+                var estimatedCollider = EstimateWeaponCollider(meshFilter, (Vector3)handPosition);
                 estimatedColliders[name] = estimatedCollider;
                 LogUtils.LogDebug(
                     "Estimated and registered collider for unknown weapon " + name + ": position " + estimatedCollider.pos + " scale " + estimatedCollider.scale);
@@ -511,7 +514,8 @@ namespace ValheimVRMod.Utilities
             float longestExtrusion = 0;
             Vector3 weaponPointingDirection = Vector3.zero;
             float weaponLength = 0;
-            for (int i = 0; i < 3; i++) {
+            for (int i = 0; i < 3; i++)
+            {
                 foreach (Vector3 corner in corners)
                 {
                     float extrusion = corner[i];
@@ -593,7 +597,7 @@ namespace ValheimVRMod.Utilities
         public static bool LineIntersectsWithBounds(Bounds bounds, Vector3 p, Vector3 v)
         {
             // TODO: Consider removing this method since it is not used anywhere.
-            
+
             // Center the bound and the line around the original bounds center to simplify calculation.
             Bounds centeredBounds = new Bounds(Vector3.zero, bounds.size);
             Vector3 p0 = p - bounds.center;
@@ -738,6 +742,33 @@ namespace ValheimVRMod.Utilities
         public static Vector3 GetWeaponVelocity(Vector3 handVelocity, Vector3 handAngularVelocity, Vector3 weaponOffset)
         {
             return handVelocity + Vector3.Cross(handAngularVelocity, weaponOffset);
+        }
+
+        // Update the holding direction of the knife based button press and hand angular momentum.
+        public static bool MaybeFlipKnife(bool isKnifeCurrentlyUlnarPointing, bool isLeftHand)
+        {
+            var inputSource = isLeftHand ? SteamVR_Input_Sources.LeftHand : SteamVR_Input_Sources.RightHand;
+            var isReleasing = SteamVR_Actions.valheim_Grab.GetStateUp(inputSource);
+            if (!isReleasing) {
+                var isCatching = SteamVR_Actions.valheim_Grab.GetStateDown(inputSource);
+                if (!isCatching)
+                {
+                    // Neither releasing or catching the knife, do not change current orientation.
+                    return isKnifeCurrentlyUlnarPointing;
+                }
+            }
+
+            var physicsEstimator = isLeftHand ? VRPlayer.leftHandPhysicsEstimator : VRPlayer.rightHandPhysicsEstimator;
+            var rotationSpeed = Vector3.Dot(physicsEstimator.GetAngularVelocity(), physicsEstimator.transform.up);
+
+            if (-8 < rotationSpeed && rotationSpeed < 8)
+            {
+                // Hand rotating too slow, do not change current orientation.
+                return isKnifeCurrentlyUlnarPointing;
+            }
+
+            // Update orientation based on hand rotation direction, handedness, and catching/releasing.
+            return rotationSpeed > 0 ^ (isLeftHand ^ isReleasing);
         }
     }
 }
