@@ -26,7 +26,7 @@ namespace ValheimVRMod.Scripts
         private Hand thisHand {  get { return isRightHand ? VRPlayer.rightHand : VRPlayer.leftHand; } }
 
         public static float LocalPlayerSecondaryAttackCooldown = 0;
-        public static bool ShouldSecondaryKnifeHoldInverse { get { return SteamVR_Actions.valheim_Grab.GetState(VRPlayer.nonDominantHandInputSource); } }
+        public static bool ShouldSecondaryKnifeHoldInverse { get; private set; }
 
         private static readonly int[] NONATTACKABLE_LAYERS = {
             LayerUtils.WATERVOLUME_LAYER,
@@ -594,8 +594,11 @@ namespace ValheimVRMod.Scripts
 
             if (EquipScript.getLeft() != EquipType.Knife)
             {
+                ShouldSecondaryKnifeHoldInverse = false;
                 return;
             }
+
+            ShouldSecondaryKnifeHoldInverse = WeaponUtils.MaybeFlipKnife(ShouldSecondaryKnifeHoldInverse, !isRightHand);
 
             desiredPosition =
                 isRightHand ^ ShouldSecondaryKnifeHoldInverse ?
