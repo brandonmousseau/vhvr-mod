@@ -97,6 +97,10 @@ namespace ValheimVRMod.Scripts
             {
                 weaponForward = base.UpdateTwoHandedWield();
                 CurrentTwoHandedWieldStartedWithLongGrip = ShouldUseLongGrip();
+                if (twoHandedState == TwoHandedState.SingleHanded && EquipScript.getRight() == EquipType.Knife)
+                {
+                    IsWeaponPointingUlnar = WeaponUtils.MaybeFlipKnife(IsWeaponPointingUlnar, VHVRConfig.LeftHanded());
+                }
             }
 
             LocalPlayerTwoHandedState = twoHandedState;
