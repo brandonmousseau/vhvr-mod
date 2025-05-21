@@ -29,56 +29,69 @@ namespace ValheimVRMod.Scripts {
         }
 
         public bool isHandFree() {
+            if (LocalWeaponWield.isCurrentlyTwoHanded())
+            {
+                return false;
+            }
+
+            switch (EquipScript.getRight())
+            {
+                case EquipType.Bow:
+                    if (BowLocalManager.instance != null && BowLocalManager.instance.isHoldingArrow())
+                    {
+                        return false;
+                    }
+                    break;
+                case EquipType.Claws:
+                    return true;
+                case EquipType.Crossbow:
+                    if (CrossbowMorphManager.instance != null)
+                    {
+                        if (CrossbowMorphManager.instance.isHoldingBolt() || CrossbowMorphManager.instance.isPulling)
+                        {
+                            return false;
+                        }
+                    }
+                    break;
+                case EquipType.DualAxes:
+                case EquipType.DualKnives:
+                    return false;
+            }
+
+            return isMainHand ?
+                Player.m_localPlayer?.GetRightItem() == null :
+                Player.m_localPlayer?.GetLeftItem() == null;
+        }
+
+        private bool areFingersFree()
+        {
             if (EquipScript.getLeft() == EquipType.Crossbow)
             {
-                if (CrossbowMorphManager.instance != null && CrossbowMorphManager.instance.isHoldingBolt()) {
-                    return false;
-                }
-                
-                if (CrossbowManager.LocalPlayerTwoHandedState == LocalWeaponWield.TwoHandedState.LeftHandBehind)
+                if (CrossbowMorphManager.instance != null)
                 {
-                    return !isRightHand;
+                    if (CrossbowMorphManager.instance.isHoldingBolt() || CrossbowMorphManager.instance.isPulling)
+                    {
+                        return false;
+                    }
                 }
-                if (CrossbowManager.LocalPlayerTwoHandedState == LocalWeaponWield.TwoHandedState.RightHandBehind) {
-                    return isRightHand;
-                }
-                if (CrossbowManager.LocalPlayerTwoHandedState == LocalWeaponWield.TwoHandedState.SingleHanded)
+
+                switch (LocalWeaponWield.LocalPlayerTwoHandedState)
                 {
-                    return isMainHand;
+                    case WeaponWield.TwoHandedState.LeftHandBehind:
+                        return !isRightHand;
+                    case WeaponWield.TwoHandedState.RightHandBehind:
+                        return isRightHand;
+                    case WeaponWield.TwoHandedState.SingleHanded:
+                        return isMainHand;
                 }
             }
-            else if (LocalWeaponWield.isCurrentlyTwoHanded())
-            {
-                return false;
-            }
 
-            if (EquipScript.getRight() == EquipType.Claws)
-            {
-                return true;
-            }
-            else if (FistCollision.hasDualWieldingWeaponEquipped())
-            {
-                return false;
-            }
-
-            if (BowLocalManager.instance != null && BowLocalManager.instance.isHoldingArrow()) {
-                return false;
-            }
-                
-            if (isMainHand && Player.m_localPlayer.GetRightItem() != null) {
-                return false;
-            }
-
-            if (!isMainHand && Player.m_localPlayer.GetLeftItem() != null) {
-                return false;
-            }
-
-            return true;
+            return isHandFree();
         }
 
         private void Update() {
 
-            if (!isHandFree() || Game.IsPaused() || VRPlayer.ShouldPauseMovement) {
+            if (!areFingersFree() || Game.IsPaused() || VRPlayer.ShouldPauseMovement) {
                 return;
             }
 

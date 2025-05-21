@@ -38,7 +38,7 @@ namespace ValheimVRMod.Scripts {
         {
             base.OnRenderObject();
             isRedDotVisible = VHVRConfig.UseArrowPredictionGraphic() && twoHandedState != TwoHandedState.SingleHanded;
-            CrossbowMorphManager.instance.loadBoltIfBoltInHandIsNearAnchor();
+            crossbowMorphManager.loadBoltIfBoltInHandIsNearAnchor();
             if (twoHandedState == TwoHandedState.SingleHanded && VHVRConfig.OneHandedBow())
             {
                 UpdateDominantHandAiming();
@@ -127,7 +127,7 @@ namespace ValheimVRMod.Scripts {
                     break;
             }
 
-            if (isPullingTrigger && !CrossbowMorphManager.instance.isBoltLoaded)
+            if (isPullingTrigger && !instance.crossbowMorphManager.isBoltLoaded)
             {
                 Player.m_localPlayer.ResetLoadedWeapon();
                 return false;

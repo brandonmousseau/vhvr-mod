@@ -1,17 +1,19 @@
+using RootMotion.FinalIK;
 using System.Collections.Generic;
 using System.Reflection.Emit;
 using System.Reflection;
 using System.IO;
 using System;
-using Unity.XR.OpenVR;
 using HarmonyLib;
-using Valve.VR;
+using Unity.XR.OpenVR;
 using UnityEngine;
 using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
-using UnityEngine.Rendering;
+using ValheimVRMod.VRCore;
+using Valve.VR;
 
 using static ValheimVRMod.Utilities.LogUtils;
+using System.Threading;
 
 namespace ValheimVRMod.Patches
 {
@@ -271,58 +273,105 @@ namespace ValheimVRMod.Patches
         }
     }
 
-    // Supposedly only update on Start, but somehow it doesnt work on some mobs (eg. fuling/goblin), so its using fixedupdate for now
-    [HarmonyPatch(typeof(Character), nameof(Character.CustomFixedUpdate))]
+    [HarmonyPatch(typeof(Character), nameof(Character.Start))]
     class CharacterSetLodGroupSize
     {
-        private static Dictionary<String, float> originalLodGroupSizes = new Dictionary<string, float>();
-
         public static void Postfix(Character __instance)
         {
-            if (VHVRConfig.NonVrPlayer() || __instance.IsPlayer() || !__instance.m_lodGroup)
+            if (VHVRConfig.NonVrPlayer() || __instance.IsPlayer() || !__instance.m_lodGroup || VRPlayer.vrCam == null)
             {
                 return;
             }
 
-            UpdateRenderDistance(__instance.name, __instance.m_lodGroup, restoreOriginalRenderDistance: __instance.m_tamed);
+            __instance.gameObject.AddComponent<LodGroupUpdater>();
         }
 
-        public static void UpdateRenderDistance(string key, LODGroup lodGroup, bool restoreOriginalRenderDistance)
+        private class LodGroupUpdater : MonoBehaviour
         {
-            if (!originalLodGroupSizes.ContainsKey(key))
+            private Character character;
+            private bool isTamed;
+            private float originalLodGroupSize;
+            private float desiredLogGroupSize;
+
+            void Awake()
             {
-                LogUtils.LogDebug("Registering original LOD group size " + lodGroup.size  + " of " + key);
-                originalLodGroupSizes[key] = lodGroup.size;
+                character = GetComponent<Character>();
+                isTamed = character.m_tamed;
+                originalLodGroupSize = character.m_lodGroup.size;
+
+                float cullingHeight = GetCullingHeight(character.m_lodGroup);
+                Vector3 scale = character.m_lodGroup.transform.lossyScale;
+                float dimension = Math.Min(Math.Min(scale.x, scale.y), scale.z);
+
+                desiredLogGroupSize =
+                    Mathf.Max(
+                        originalLodGroupSize,
+                        VRPlayer.vrCam.fieldOfView * Mathf.PI / 180 * cullingHeight * VHVRConfig.GetEnemyRenderDistanceValue() / dimension);
             }
 
-            Camera vrCamera = CameraUtils.getCamera(CameraUtils.VR_CAMERA);
-
-            float desiredLodGroupSize =
-                restoreOriginalRenderDistance || vrCamera == null ?
-                originalLodGroupSizes[key] :
-                Mathf.Max(originalLodGroupSizes[key], GetDesiredLodGroupSize(lodGroup, VHVRConfig.GetEnemyRenderDistanceValue(), vrCamera));
-
-            if (lodGroup.size != desiredLodGroupSize)
+            // Supposedly only update on Start, but somehow it doesnt work on some mobs (eg. fuling/goblin), so its using Update() for now
+            void Update()
             {
-                lodGroup.size = desiredLodGroupSize;
-            }
-        }
-
-        private static float GetDesiredLodGroupSize(LODGroup lODGroup, float desiredRenderDistance, Camera camera)
-        {
-            float cullingHeight = 1;
-            foreach (LOD lOD in lODGroup.GetLODs())
-            {
-                if (lOD.screenRelativeTransitionHeight < cullingHeight)
+                bool wasTamed = isTamed;
+                isTamed = character.m_tamed;
+                if (isTamed)
                 {
-                    cullingHeight = lOD.screenRelativeTransitionHeight;
+                    if (!wasTamed)
+                    {
+                        character.m_lodGroup.size = originalLodGroupSize;
+                    }
+                    return;
+                }
+
+                if (character.m_lodGroup.size < desiredLogGroupSize)
+                {
+                    character.m_lodGroup.size = desiredLogGroupSize;
                 }
             }
 
-            Vector3 scale = lODGroup.transform.localScale;
-            float dimension = Math.Min(Math.Min(scale.x, scale.y), scale.z);
+            private float GetCullingHeight(LODGroup lodGroup)
+            {
+                LOD[] lods = lodGroup.GetLODs();
+                float cullingHeight = 1;
+                foreach (LOD lOD in lods)
+                {
+                    if (lOD.screenRelativeTransitionHeight < cullingHeight)
+                    {
+                        cullingHeight = lOD.screenRelativeTransitionHeight;
+                    }
+                }
+                return cullingHeight;
+            }
+        }
+    }
 
-            return camera.fieldOfView * Mathf.PI / 180 * cullingHeight * desiredRenderDistance / dimension;
+    [HarmonyPatch(typeof(Piece), nameof(Piece.Awake))]
+    class PieceSetLodGroupSizePatch
+    {
+        public static void Postfix(Piece __instance)
+        {
+            if (!VHVRConfig.shouldModifyPieceLodGroup)
+            {
+                return;
+            }
+
+            LODGroup lodGroup = __instance.GetComponent<LODGroup>();
+
+            if (lodGroup == null || lodGroup.lodCount < 2)
+            {
+                return;
+            }
+
+            var lods = lodGroup.GetLODs();
+
+            if (lods[0].screenRelativeTransitionHeight <= lods[1].screenRelativeTransitionHeight)
+            {
+                return;
+            }
+
+            lods[0].screenRelativeTransitionHeight = lods[0].screenRelativeTransitionHeight * VHVRConfig.GetBuildingPieceDetailReductionFactor();
+
+            lodGroup.SetLODs(lods);
         }
     }
 
@@ -373,35 +422,32 @@ namespace ValheimVRMod.Patches
         }
     }
 
-    [HarmonyPatch(typeof(WaterVolume), nameof(WaterVolume.Awake))]
-    class WaterSurfaceVisiblityPatch
+    [HarmonyPatch(typeof(Player), nameof(Player.OnDeath))]
+    class PlayerOnDeathPatch
     {
-        public static void Postfix(WaterVolume __instance)
+        public static bool hasCharacterDied { get; private set; } = false;
+        public static void Prefix(Player __instance)
         {
-            if (VHVRConfig.NonVrPlayer())
+            if (__instance != Player.m_localPlayer)
             {
+                VRPlayerSync sync = __instance.GetComponent<VRPlayerSync>();
+                if (sync != null)
+                {
+                    sync.DestroyVrik();
+                }
                 return;
             }
 
-            __instance.gameObject.AddComponent<WaterSurfaceVisibiltyUpdater>().Init(__instance);
-        }
+            VRPlayer.DestroyVrik();
+            StaticObjects.destroyQuickMenus();
 
-        private class WaterSurfaceVisibiltyUpdater : MonoBehaviour
-        {
-            private WaterVolume waterVolume;
-
-            public void Init(WaterVolume waterVolume)
+            var followCamera = CameraUtils.getCamera(CameraUtils.FOLLOW_CAMERA);
+            if (followCamera != null)
             {
-                this.waterVolume = waterVolume;
-            }
-
-            void FixedUpdate()
-            {
-                if (!waterVolume)
-                {
-                    return;
-                }
-                waterVolume.m_waterSurface.shadowCastingMode = UnderwaterEffectsUpdater.UsingUnderwaterEffects ? ShadowCastingMode.ShadowsOnly : ShadowCastingMode.On;
+                hasCharacterDied = true;
+                // Disable the follow camera temporarily since it might interfere with the projection matrix of the main camera upon character death.
+                followCamera.enabled = false;
+                GameObject.Destroy(followCamera);
             }
         }
     }

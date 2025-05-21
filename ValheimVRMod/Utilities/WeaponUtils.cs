@@ -2,6 +2,8 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using UnityEngine;
 using UnityEngine.Rendering;
+using ValheimVRMod.VRCore;
+using Valve.VR;
 
 namespace ValheimVRMod.Utilities
 {
@@ -238,6 +240,11 @@ namespace ValheimVRMod.Utilities
                     0, 0, 0,
                     0.04f,  0.45f, 0.01f
                 )}, {
+                "Scythe", WeaponColData.create(
+                    -0.3f,  1.4f, 0,
+                    0,  0, 0,
+                    0.71f,  0.71f, 0.1f
+                )}, {
                 "Tankard", WeaponColData.create(
                     0,  0.28f, 0,
                     0, 0, 0,
@@ -310,27 +317,45 @@ namespace ValheimVRMod.Utilities
             {
                 {
                     EquipType.Claws, WeaponColData.create(
-                        0,  0.25f, 0.016f,
-                        0,  0, 0,
-                        0.45f,  0.5f, 0.45f
+                        0, 0.25f, 0.016f,
+                        0, 0, 0,
+                        0.45f, 0.5f, 0.45f
                 )},
                 {
                     EquipType.DualAxes, WeaponColData.create(
-                        0.45f,  0.2f, 0.05f,
+                        0.45f, 0.2f, 0.05f,
                         0,  0, 0,
-                        0.45f,  0.45f, 0.45f
+                        0.45f, 0.45f, 0.45f
                 )},
                 {
                     EquipType.DualKnives, WeaponColData.create(
-                        0.225f,  0.15f, 0.05f,
+                        0.225f, 0.15f, 0.05f,
                         0,  0, 0,
-                        0.45f,  0.45f, 0.45f
+                        0.45f, 0.45f, 0.45f
                 )},
                 {
                     EquipType.None, WeaponColData.create( // fists
-                        0,  0.2f, 0.016f,
-                        0,  0, 0,
+                        0, 0.2f, 0.016f,
+                        0, 0, 0,
+                        0.45f, 0.45f, 0.45f
+                )},
+                {
+                    EquipType.Torch, WeaponColData.create(
+                        0.55f, 0.15f, 0.05f,
+                        0, 0, 0,
+                        0.45f, 0.45f, 0.45f
+                )},
+                {
+                    EquipType.Knife, WeaponColData.create(
+                        0.33f, 0.2f, 0.01f,
+                        0, 0, 0,
                         0.45f,  0.45f, 0.45f
+                )},
+                {
+                    EquipType.Shield, WeaponColData.create(
+                        0f, 0.125f, -0.0625f,
+                        22.5f, 0, 0,
+                        0.625f, 0.625f, 0.25f
                 )},
             };
 
@@ -356,6 +381,18 @@ namespace ValheimVRMod.Utilities
                         0.5f, 0.5f, 0.3f
                 )},
                 {
+                    EquipType.Knife, WeaponColData.create(
+                        0.4f,  0.2f, 0.016f,
+                        0,  0, 0,
+                        0.6f, 0.35f, 0.35f
+                )},
+                {
+                    EquipType.Torch, WeaponColData.create(
+                        0.4f,  0.2f, 0.016f,
+                        0,  0, 0,
+                        0.75f, 0.35f, 0.3f
+                )},
+                {
                     EquipType.None, WeaponColData.create( // fists
                         0,  0, 0.016f,
                         0,  0, 0,
@@ -367,9 +404,12 @@ namespace ValheimVRMod.Utilities
         {
             { "atgeir_attack", 0.81f },
             { "battleaxe_attack", 0.87f },
+            { "dualaxes", 0.4f }, // TODO: Find an accurate value for dual axes
+            { "dualaxes_secondary", 1.9f },
             { "dual_knives", 0.43f },
             { "greatsword", 1.13f },
             { "knife_stab", 0.49f },
+            { "scything", 1.5f },
             { "swing_longsword", 0.63f },
             { "spear_poke", 0.63f },
             { "swing_pickaxe", 1.3f },
@@ -405,7 +445,8 @@ namespace ValheimVRMod.Utilities
 
         public static WeaponColData GetColliderData(string name, ItemDrop.ItemData item, MeshFilter meshFilter, Vector3? handPosition)
         {
-            if (colliders.ContainsKey(name)) {
+            if (colliders.ContainsKey(name))
+            {
                 return colliders[name];
             }
 
@@ -416,7 +457,7 @@ namespace ValheimVRMod.Utilities
 
             if (meshFilter != null && handPosition != null)
             {
-                var estimatedCollider = EstimateWeaponCollider(meshFilter, (Vector3) handPosition);
+                var estimatedCollider = EstimateWeaponCollider(meshFilter, (Vector3)handPosition);
                 estimatedColliders[name] = estimatedCollider;
                 LogUtils.LogDebug(
                     "Estimated and registered collider for unknown weapon " + name + ": position " + estimatedCollider.pos + " scale " + estimatedCollider.scale);
@@ -434,7 +475,11 @@ namespace ValheimVRMod.Utilities
 
         public static WeaponColData GetDualWieldLeftHandColliderData(ItemDrop.ItemData item)
         {
-            var equipType = EquipScript.getEquippedItem(item);
+            return GetDualWieldLeftHandColliderData(EquipScript.getEquippedItem(item));
+        }
+
+        public static WeaponColData GetDualWieldLeftHandColliderData(EquipType equipType)
+        {
             if (!DUAL_WIELD_COLLIDERS.ContainsKey(equipType))
             {
                 equipType = EquipType.None;
@@ -452,11 +497,12 @@ namespace ValheimVRMod.Utilities
             return DUAL_WIELD_BLOCKING_COLLIDERS[equipType];
         }
 
-        // Estimates the direction and length of weapon handle behind the grip by identifying the dimension on which its mesh bounds is offset the farthest.
+        // Estimates the direction and length of a weapon by identifying the dimension on which its mesh bounds is offset the farthest.
         // This estimation therefore assumes:
         //   1. The weapon pointing direction is parallel to the x, y, or z axis of the mesh; and
         //   2. The offset of tip of the weapon is larger than its lateral, dorsal, and ventral expanse.
-        public static Vector3 EstimateHandleAllowanceBehindGrip(MeshFilter weaponMeshFilter, Vector3 handPosition)
+        public static Vector3 EstimateWeaponDirectionAndLength(
+            MeshFilter weaponMeshFilter, Vector3 handPosition, out float handleAllowanceBehindGrip)
         {
             Bounds weaponLocalBounds = weaponMeshFilter.sharedMesh.bounds;
             Vector3 centerOffset = weaponLocalBounds.center - weaponMeshFilter.transform.InverseTransformPoint(handPosition);
@@ -468,7 +514,8 @@ namespace ValheimVRMod.Utilities
             float longestExtrusion = 0;
             Vector3 weaponPointingDirection = Vector3.zero;
             float weaponLength = 0;
-            for (int i = 0; i < 3; i++) {
+            for (int i = 0; i < 3; i++)
+            {
                 foreach (Vector3 corner in corners)
                 {
                     float extrusion = corner[i];
@@ -481,15 +528,76 @@ namespace ValheimVRMod.Utilities
                 }
             }
 
-            float handleAllowanceLengthBehindGrip = weaponLength - longestExtrusion;
-            return weaponMeshFilter.transform.TransformVector(-weaponPointingDirection * handleAllowanceLengthBehindGrip);
+            if (weaponLength < longestExtrusion)
+            {
+                weaponLength = longestExtrusion;
+                LogUtils.LogWarning("Weapon mesh is off hand, weapon direction and length estimation might be inaccurate.");
+            }
+            var result = weaponMeshFilter.transform.TransformVector(weaponPointingDirection * weaponLength);
+            handleAllowanceBehindGrip = result.magnitude * (1 - longestExtrusion / weaponLength);
+            return result;
+        }
+
+        public static EquipType GuesstEquipTypeFromShape(float weaponLength, float distanceBetweenGripAndRearEnd, bool isDominantHandWeapon)
+        {
+            if (!isDominantHandWeapon)
+            {
+                return weaponLength > 0.5F && distanceBetweenGripAndRearEnd > 0.5f ? EquipType.Crossbow : EquipType.None;
+            }
+
+            if (weaponLength > 2f && distanceBetweenGripAndRearEnd > 0.95f)
+            {
+                return EquipType.Spear;
+            }
+
+            if (weaponLength > 2.5f && distanceBetweenGripAndRearEnd > 0.7f)
+            {
+                return EquipType.Polearms;
+            }
+
+            if (weaponLength > 3 && distanceBetweenGripAndRearEnd > 0.3f)
+            {
+                return EquipType.Fishing;
+            }
+
+            if (weaponLength > 1.8f && distanceBetweenGripAndRearEnd > 0.85f)
+            {
+                return EquipType.Magic;
+            }
+
+            if (weaponLength > 1.5f && distanceBetweenGripAndRearEnd > 0.8f)
+            {
+                return EquipType.Scythe;
+            }
+
+            if (weaponLength > 1.9f && distanceBetweenGripAndRearEnd > 0.28f)
+            {
+                return EquipType.Sword;
+            }
+
+            if (weaponLength > 1.69f && distanceBetweenGripAndRearEnd > 0.25f && distanceBetweenGripAndRearEnd < 0.35f)
+            {
+                return EquipType.BattleAxe;
+            }
+
+            if (weaponLength > 1 && distanceBetweenGripAndRearEnd > 0.45f)
+            {
+                return EquipType.Magic;
+            }
+
+            if (weaponLength < 0.7f && distanceBetweenGripAndRearEnd < 0.1f)
+            {
+                return EquipType.Knife;
+            }
+
+            return EquipType.Club;
         }
 
         // Whether the straight line (t -> p + t * v) intersects with the given bounds.
         public static bool LineIntersectsWithBounds(Bounds bounds, Vector3 p, Vector3 v)
         {
             // TODO: Consider removing this method since it is not used anywhere.
-            
+
             // Center the bound and the line around the original bounds center to simplify calculation.
             Bounds centeredBounds = new Bounds(Vector3.zero, bounds.size);
             Vector3 p0 = p - bounds.center;
@@ -618,7 +726,8 @@ namespace ValheimVRMod.Utilities
         private static WeaponColData EstimateWeaponCollider(MeshFilter meshFilter, Vector3 handPosition)
         {
             var weaponPointing =
-                -meshFilter.transform.InverseTransformDirection(EstimateHandleAllowanceBehindGrip(meshFilter, handPosition)).normalized;
+                meshFilter.transform.InverseTransformDirection(
+                    EstimateWeaponDirectionAndLength(meshFilter, handPosition, out float handleAllowanceBehindGrip)).normalized;
             var handLocalPosition = meshFilter.transform.InverseTransformPoint(handPosition);
             var bounds = meshFilter.mesh.bounds;
             var weaponTip = bounds.center + weaponPointing * Mathf.Abs(Vector3.Dot(bounds.extents, weaponPointing));
@@ -632,7 +741,34 @@ namespace ValheimVRMod.Utilities
 
         public static Vector3 GetWeaponVelocity(Vector3 handVelocity, Vector3 handAngularVelocity, Vector3 weaponOffset)
         {
-            return handVelocity + Vector3.Cross(weaponOffset, handAngularVelocity);
+            return handVelocity + Vector3.Cross(handAngularVelocity, weaponOffset);
+        }
+
+        // Update the holding direction of the knife based button press and hand angular momentum.
+        public static bool MaybeFlipKnife(bool isKnifeCurrentlyUlnarPointing, bool isLeftHand)
+        {
+            var inputSource = isLeftHand ? SteamVR_Input_Sources.LeftHand : SteamVR_Input_Sources.RightHand;
+            var isReleasing = SteamVR_Actions.valheim_Grab.GetStateUp(inputSource);
+            if (!isReleasing) {
+                var isCatching = SteamVR_Actions.valheim_Grab.GetStateDown(inputSource);
+                if (!isCatching)
+                {
+                    // Neither releasing or catching the knife, do not change current orientation.
+                    return isKnifeCurrentlyUlnarPointing;
+                }
+            }
+
+            var physicsEstimator = isLeftHand ? VRPlayer.leftHandPhysicsEstimator : VRPlayer.rightHandPhysicsEstimator;
+            var rotationSpeed = Vector3.Dot(physicsEstimator.GetAngularVelocity(), physicsEstimator.transform.up);
+
+            if (-8 < rotationSpeed && rotationSpeed < 8)
+            {
+                // Hand rotating too slow, do not change current orientation.
+                return isKnifeCurrentlyUlnarPointing;
+            }
+
+            // Update orientation based on hand rotation direction, handedness, and catching/releasing.
+            return rotationSpeed > 0 ^ (isLeftHand ^ isReleasing);
         }
     }
 }

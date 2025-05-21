@@ -9,19 +9,139 @@ using ValheimVRMod.Utilities;
 
 namespace ValheimVRMod.Patches {
 
-    [HarmonyPatch(typeof(VisEquipment), nameof(VisEquipment.SetRightHandEquipped))]
-    class PatchSetRightHandEquipped {
-        static void Postfix(bool __result, string ___m_rightItem, ref GameObject ___m_rightItemInstance) {
-            if (VHVRConfig.UseVrControls())
+    [HarmonyPatch(typeof(Humanoid), nameof(Humanoid.EquipItem))]
+    class PatchEquipItem
+    {
+        private static bool wasUsingKnife = false;
+        private static ItemDrop.ItemData knife;
+
+        static bool Prefix(Humanoid __instance, ItemDrop.ItemData item, bool triggerEquipEffects) {
+            if (Player.m_localPlayer == null || __instance.gameObject != Player.m_localPlayer.gameObject || !VHVRConfig.UseVrControls())
             {
-                FistBlock.instance?.updateBlockBoxShape();
+                return true;
             }
 
-            if (!__result || !___m_rightItemInstance) {
+            if (EquipScript.getLeft() == EquipType.Knife && __instance.m_leftItem != null)
+            {
+                if (item.m_shared.m_itemType == ItemDrop.ItemData.ItemType.OneHandedWeapon ||
+                    (item.m_shared.m_itemType == ItemDrop.ItemData.ItemType.Torch && __instance.m_rightItem == null))
+                {
+                    knife = __instance.m_leftItem;
+                    __instance.UnequipItem(__instance.m_leftItem, triggerEquipEffects);
+                    wasUsingKnife = true;
+                }
+                else
+                {
+                    wasUsingKnife = false;
+                }
+                return true;
+            }
+
+            if (item.m_shared.m_attack.m_attackAnimation == "knife_stab")
+            {
+                if (__instance.m_leftItem != null)
+                {
+                    wasUsingKnife = false;
+                    return true;
+                }
+                switch (EquipScript.getRight())
+                {
+                    case EquipType.Axe:
+                    case EquipType.Club:
+                    case EquipType.Knife:
+                    case EquipType.Sword:
+                        __instance.m_leftItem = item;
+                        __instance.m_leftItem.m_equipped = true;
+                        __instance.m_visEquipment.SetLeftItem(item.m_dropPrefab.name, item.m_variant);
+                        if (triggerEquipEffects)
+                        {
+                            __instance.TriggerEquipEffect(item);
+                        }
+                        wasUsingKnife = false;
+                        return false;
+                    case EquipType.Torch:
+                        wasUsingKnife = false;
+                        return true;
+                    default:
+                        break;
+                }
+            }
+
+            if (EquipScript.getRight() == EquipType.Knife && __instance.m_leftItem == null)
+            {
+                if (item.m_shared.m_itemType == ItemDrop.ItemData.ItemType.OneHandedWeapon)
+                {
+                    knife = __instance.m_rightItem;
+                    __instance.UnequipItem(__instance.m_rightItem, triggerEquipEffects);
+                    wasUsingKnife = true;
+                }
+                else
+                {
+                    wasUsingKnife = false;
+                }
+            }
+            return true;
+        }
+
+        static void Postfix(Humanoid __instance, ItemDrop.ItemData item) {
+            if (Player.m_localPlayer == null || __instance.gameObject != Player.m_localPlayer.gameObject)
+            {
+                return;
+            }
+            if (!wasUsingKnife) { 
+                return;
+            }
+            wasUsingKnife = false;
+            switch (EquipScript.getRight())
+            {
+                case EquipType.Axe:
+                case EquipType.Club:
+                case EquipType.Knife:
+                case EquipType.Sword:
+                case EquipType.Torch:
+                    __instance.m_leftItem = knife;
+                    __instance.m_leftItem.m_equipped = true;
+                    __instance.m_visEquipment.SetLeftItem(knife.m_dropPrefab.name, knife.m_variant);
+                    break;
+                default:
+                    return;
+            }
+        } 
+    }
+
+    [HarmonyPatch(typeof(Humanoid), nameof(Humanoid.GetCurrentBlocker))]
+    class PatchGetCurrentBlocker
+    {
+        static void Postfix(Humanoid __instance, ref ItemDrop.ItemData __result)
+        {
+            if (Player.m_localPlayer == null || __instance.gameObject != Player.m_localPlayer.gameObject || !VHVRConfig.UseVrControls())
+            {
                 return;
             }
 
-            Player player = ___m_rightItemInstance.GetComponentInParent<Player>();
+            if (__result == null)
+            {
+                return;
+            }
+
+            if (EquipScript.getLeft() == EquipType.Knife) {
+                var currentWeapon = __instance.GetCurrentWeapon();
+                if (currentWeapon != null)
+                {
+                    __result = currentWeapon;
+                }
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(VisEquipment), nameof(VisEquipment.SetRightHandEquipped))]
+    class PatchSetRightHandEquipped {
+        static void Postfix(VisEquipment __instance, bool __result, string ___m_rightItem, ref GameObject ___m_rightItemInstance) {
+            if (!__result) {
+                return;
+            }
+
+            Player player = __instance.GetComponentInParent<Player>();
             
             if (player == null) {
                 return;
@@ -29,29 +149,62 @@ namespace ValheimVRMod.Patches {
 
             if (player == Player.m_localPlayer && !VHVRConfig.NonVrPlayer())
             {
-                EquipBoundingBoxFix.GetInstanceForPlayer(player)?.RequestBoundingBoxFix(___m_rightItemInstance);
+                if (VHVRConfig.UseVrControls())
+                {
+                    FistBlock.instance?.updateBlockBoxShape();
+                }
+                if (___m_rightItemInstance)
+                {
+                    EquipBoundingBoxFix.GetInstanceForPlayer(player)?.RequestBoundingBoxFix(___m_rightItemInstance);
+                }
             }
 
-            MeshFilter meshFilter = ___m_rightItemInstance.GetComponentInChildren<MeshFilter>();
-            if (meshFilter == null)
-            {
-                return;
-            }
-
+            MeshFilter meshFilter = ___m_rightItemInstance == null ? null : ___m_rightItemInstance.GetComponentInChildren<MeshFilter>();
             var vrPlayerSync = player.GetComponent<VRPlayerSync>();
             
-            if (vrPlayerSync != null && meshFilter != null) {
-                if (vrPlayerSync.IsLeftHanded()) {
-                    vrPlayerSync.currentLeftWeapon = meshFilter.gameObject;
-                    vrPlayerSync.currentLeftWeapon.name = ___m_rightItem;    
+            if (vrPlayerSync != null) {
+                if (___m_rightItemInstance != null && meshFilter == null)  {
+                    // For non-local player, it is hard to know whether claw is being used.
+                    if (player != Player.m_localPlayer || EquipScript.getRight() != EquipType.Claws) {
+                        vrPlayerSync.currentDualWieldWeapon =
+                            ___m_rightItemInstance.GetComponentInChildren<SkinnedMeshRenderer>()?.gameObject;
+                    }
+                }
+                if (vrPlayerSync.currentDualWieldWeapon != null)
+                {
+                    vrPlayerSync.currentLeftWeapon = vrPlayerSync.currentRightWeapon = null;
+
+                }
+                else if (vrPlayerSync.IsLeftHanded()) {
+                    if (meshFilter == null)
+                    {
+                        vrPlayerSync.currentLeftWeapon = null;
+                    }
+                    else
+                    {
+                        vrPlayerSync.currentLeftWeapon = meshFilter.gameObject;
+                        vrPlayerSync.currentLeftWeapon.name = ___m_rightItem;
+                    }
                 }
                 else
                 {
-                    vrPlayerSync.currentRightWeapon = meshFilter.gameObject;
-                    vrPlayerSync.currentRightWeapon.name = ___m_rightItem;
+                    if (meshFilter == null)
+                    {
+                        vrPlayerSync.currentRightWeapon = null;
+                    }
+                    else
+                    {
+                        vrPlayerSync.currentRightWeapon = meshFilter.gameObject;
+                        vrPlayerSync.currentRightWeapon.name = ___m_rightItem;
+                    }
                 }
-                
+
                 VrikCreator.resetVrikHandTransform(player);   
+            }
+
+            if (!___m_rightItemInstance || meshFilter == null)
+            {
+                return;
             }
 
             if (Player.m_localPlayer != player)
@@ -65,6 +218,8 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
+            ParticleFix.maybeFix(___m_rightItemInstance, EquipScript.getRight());
+
             if (!VHVRConfig.UseVrControls()) {
                 return;
             }
@@ -77,15 +232,20 @@ namespace ValheimVRMod.Patches {
             switch (EquipScript.getRight()) {
                 case EquipType.Hammer:
                     meshFilter.gameObject.AddComponent<BuildingManager>();
-                    return;
+                    break;
                 case EquipType.Fishing:
                     meshFilter.gameObject.transform.localPosition = new Vector3(0, 0, -0.4f);
                     meshFilter.gameObject.AddComponent<FishingManager>();
                     break;
             }
 
+            if (EquipScript.getLeft() == EquipType.None && EquipScript.getRight() == EquipType.None)
+            {
+                return;
+            }
+
             LocalWeaponWield weaponWield = EquipScript.isSpearEquipped() ? ___m_rightItemInstance.AddComponent<SpearWield>() : ___m_rightItemInstance.AddComponent<LocalWeaponWield>();
-            weaponWield.Initialize(Player.m_localPlayer.GetRightItem(), ___m_rightItem);
+            weaponWield.Initialize(Player.m_localPlayer.GetRightItem(), ___m_rightItem, isDominantHandWeapon: true);
 
             if (MagicWeaponManager.IsSwingLaunchEnabled())
             {
@@ -100,6 +260,20 @@ namespace ValheimVRMod.Patches {
             var weaponCol = StaticObjects.rightWeaponCollider().GetComponent<WeaponCollision>();
             weaponCol.setColliderParent(
                 meshFilter, handPosition: ___m_rightItemInstance.transform.parent.position, ___m_rightItem, true);
+            switch (EquipScript.getRight())
+            {
+                case EquipType.Cultivator:
+                case EquipType.Hammer:
+                case EquipType.Hoe:
+                case EquipType.Sledge:
+                case EquipType.Tankard:
+                    weaponCol.gameObject.layer = LayerUtils.CHARACTER;
+                    break;
+                default:
+                    // Use this layer to make sure the weapon collides with all targets including soft building pieces and plants.
+                    weaponCol.gameObject.layer = LayerUtils.VHVR_WEAPON;
+                    break;
+            }
             weaponCol.weaponWield = weaponWield;
             meshFilter.gameObject.AddComponent<ButtonSecondaryAttackManager>().Initialize(meshFilter.transform, ___m_rightItem, true);
 
@@ -114,52 +288,57 @@ namespace ValheimVRMod.Patches {
             {
                 meshFilter.gameObject.AddComponent<WeaponBlock>().weaponWield = weaponWield;
             }
-
-            ParticleFix.maybeFix(___m_rightItemInstance);
         }
     }
 
     [HarmonyPatch(typeof(VisEquipment), nameof(VisEquipment.SetLeftHandEquipped))]
     class PatchSetLeftHandEquipped {
-        static void Postfix(bool __result, string ___m_leftItem, GameObject ___m_leftItemInstance) {
-            if (VHVRConfig.UseVrControls())
+        static void Postfix(VisEquipment __instance, bool __result, string ___m_leftItem, GameObject ___m_leftItemInstance) {
+            if (!__result)
             {
-                FistBlock.instance?.updateBlockBoxShape();
-            }
-
-            if (!__result || !___m_leftItemInstance) {
                 return;
             }
 
-            Player player = ___m_leftItemInstance.GetComponentInParent<Player>();
-            
+            Player player = __instance.GetComponentInParent<Player>();
+
             if (player == null) {
                 return;
             }
 
             if (player == Player.m_localPlayer && !VHVRConfig.NonVrPlayer())
             {
-                EquipBoundingBoxFix.GetInstanceForPlayer(player)?.RequestBoundingBoxFix(___m_leftItemInstance);
+                if (VHVRConfig.UseVrControls())
+                {
+                    FistBlock.instance?.updateBlockBoxShape();
+                }
+                if (__result && ___m_leftItemInstance != null)
+                {
+                    EquipBoundingBoxFix.GetInstanceForPlayer(player)?.RequestBoundingBoxFix(___m_leftItemInstance);
+                }
             }
 
-            MeshFilter meshFilter = ___m_leftItemInstance.GetComponentInChildren<MeshFilter>();
-            if (meshFilter == null)
+            MeshFilter meshFilter = ___m_leftItemInstance == null ? null : ___m_leftItemInstance.GetComponentInChildren<MeshFilter>();
+            var vrPlayerSync = player.GetComponent<VRPlayerSync>();
+            if (vrPlayerSync != null)
+            {
+                if (vrPlayerSync.hasReceivedData || (Player.m_localPlayer == player && VHVRConfig.UseVrControls()))
+                {
+                    if (vrPlayerSync.IsLeftHanded())
+                    {
+                        vrPlayerSync.currentRightWeapon = meshFilter == null ? null : meshFilter.gameObject;
+                    }
+                    else
+                    {
+                        vrPlayerSync.currentLeftWeapon = meshFilter == null ? null : meshFilter.gameObject;
+                    }
+
+                    VrikCreator.resetVrikHandTransform(player);
+                }
+            }
+
+            if (!___m_leftItemInstance || meshFilter == null)
             {
                 return;
-            }
-
-            var vrPlayerSync = player.GetComponent<VRPlayerSync>();
-
-            if (vrPlayerSync != null && vrPlayerSync.hasReceivedData) {
-                if (vrPlayerSync.IsLeftHanded()) {
-                    vrPlayerSync.currentRightWeapon = meshFilter.gameObject;    
-                }
-                else
-                {
-                    vrPlayerSync.currentLeftWeapon = meshFilter.gameObject;
-                }
-                
-                VrikCreator.resetVrikHandTransform(player);
             }
 
             if (Player.m_localPlayer != player)
@@ -172,9 +351,16 @@ namespace ValheimVRMod.Patches {
                 }
                 return;
             }
-            
+
+            ParticleFix.maybeFix(___m_leftItemInstance, EquipScript.getLeft());
+
             if (!VHVRConfig.UseVrControls()) {
                 return;
+            }
+
+            if (MagicWeaponManager.CanSummonWithOppositeHand())
+            {
+                ___m_leftItemInstance.AddComponent<MagicWeaponManager.SummonByMovingHandUpward>();
             }
 
             if (StaticObjects.rightHandQuickMenu != null) {
@@ -189,10 +375,13 @@ namespace ValheimVRMod.Patches {
                     return;
                 case EquipType.Crossbow:
                     CrossbowManager crossbowManager = ___m_leftItemInstance.AddComponent<CrossbowManager>();
-                    crossbowManager.Initialize(Player.m_localPlayer.GetLeftItem(), ___m_leftItem);
+                    crossbowManager.Initialize(Player.m_localPlayer.GetLeftItem(), ___m_leftItem, isDominantHandWeapon: false);
                     crossbowManager.gameObject.AddComponent<WeaponBlock>().weaponWield = crossbowManager;
                     EquipScript.equipAmmo();
                     return;
+                case EquipType.Knife:
+                    ___m_leftItemInstance.AddComponent<SecondaryWeaponRotator>();
+                    break;
                 case EquipType.Lantern:
                     // TODO: implement a component that makes dverger lantern hangs downward regardless of hand orientation.
                     return;
@@ -202,9 +391,26 @@ namespace ValheimVRMod.Patches {
             }
 
             meshFilter.gameObject.AddComponent<ButtonSecondaryAttackManager>().Initialize(meshFilter.transform, ___m_leftItem, false);
-            ParticleFix.maybeFix(___m_leftItemInstance);
         }
     }
+
+    class SecondaryWeaponRotator : MonoBehaviour
+    {
+        private Quaternion originalRotation;
+        private Quaternion inversedRotation;
+
+        void Awake()
+        {
+            originalRotation = transform.localRotation;
+            inversedRotation = transform.localRotation * Quaternion.Euler(180, 0, 0);
+        }
+
+        void Update()
+        {
+            transform.localRotation = FistCollision.ShouldSecondaryKnifeHoldInverse ? inversedRotation : originalRotation;
+        }
+    }
+
 
     [HarmonyPatch(typeof(VisEquipment), nameof(VisEquipment.SetHelmetEquipped))]
     class PatchHelmet {
@@ -367,7 +573,7 @@ namespace ValheimVRMod.Patches {
     class HeadEquipVisibiltiyUpdater : MonoBehaviour
     {
         private bool isLocalPlayer;
-
+        Dictionary<GameObject, int> originalLayers = new Dictionary<GameObject, int>();
         private bool isHidden = false;
 
         void Awake() {
@@ -382,14 +588,31 @@ namespace ValheimVRMod.Patches {
                 if (!isHidden) {
                     foreach (Renderer renderer in gameObject.GetComponentsInChildren<Renderer>())
                     {
-                        renderer.shadowCastingMode = ShadowCastingMode.ShadowsOnly;
+                        if (!originalLayers.ContainsKey(renderer.gameObject))
+                        {
+                            originalLayers.Add(renderer.gameObject, renderer.gameObject.layer);
+                        }
+                        if (VHVRConfig.UseThirdPersonCameraOnFlatscreen())
+                        {
+                            // Borrow the UI layer to hide the equipment from the VR camera but keep them shown to the follow camera.
+                            renderer.gameObject.layer = LayerUtils.CHARARCTER_TRIGGER;
+                        }
+                        else
+                        {
+                            renderer.shadowCastingMode = ShadowCastingMode.ShadowsOnly;
+                        }
                     }
                     isHidden = true;
                 }
-            } else if (isHidden)
+            }
+            else if (isHidden)
             {
                 foreach (Renderer renderer in gameObject.GetComponentsInChildren<Renderer>())
                 {
+                    if (originalLayers.ContainsKey(renderer.gameObject))
+                    {
+                        renderer.gameObject.layer = originalLayers[renderer.gameObject];
+                    }
                     renderer.shadowCastingMode = ShadowCastingMode.On;
                 }
                 isHidden = false;

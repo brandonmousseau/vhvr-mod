@@ -11,7 +11,7 @@ namespace ValheimVRMod.Scripts
             bool IsLeftHanded();
             bool IsVrEnabled();
 
-            bool HoldingInversedSpear();
+            bool InverseHold();
         }
 
         private bool isDominantHandWeapon;
@@ -27,7 +27,7 @@ namespace ValheimVRMod.Scripts
             this.leftHandTransform = leftHandTransform;
             this.rightHandTransform = rightHandTransform;
             // TODO: figure out a better way to detect crossbow.
-            base.Initialize(item, itemName, forceUsingCrossbowGeometry: !isDominantHandWeapon, twoHandedStateSync);
+            base.Initialize(item, itemName, isDominantHandWeapon, twoHandedStateSync);
         }
 
         protected override bool IsPlayerLeftHanded()
@@ -57,7 +57,7 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            if (!recalculatedDirectionOffset && twoHandedStateSync.HoldingInversedSpear())
+            if (!recalculatedDirectionOffset && twoHandedStateSync.InverseHold())
             {
                 // The offset might have been calculated not knowing the weapon is a spear so it can be stale and needs to be recalculated
                 offsetFromPointingDir =
