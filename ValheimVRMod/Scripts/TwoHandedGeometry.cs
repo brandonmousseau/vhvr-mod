@@ -441,7 +441,7 @@ namespace ValheimVRMod.Scripts
 
             public override bool InverseHoldForDominantHand()
             {
-                return SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource);
+                return LocalWeaponWield.IsWeaponPointingUlnar;
             }
         }
 
