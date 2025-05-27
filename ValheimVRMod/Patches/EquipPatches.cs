@@ -163,39 +163,32 @@ namespace ValheimVRMod.Patches {
             var vrPlayerSync = player.GetComponent<VRPlayerSync>();
             
             if (vrPlayerSync != null) {
-                if (___m_rightItemInstance != null && meshFilter == null)  {
-                    // For non-local player, it is hard to know whether claw is being used.
-                    if (player != Player.m_localPlayer || EquipScript.getRight() != EquipType.Claws) {
-                        vrPlayerSync.currentDualWieldWeapon =
-                            ___m_rightItemInstance.GetComponentInChildren<SkinnedMeshRenderer>()?.gameObject;
-                    }
-                }
-                if (vrPlayerSync.currentDualWieldWeapon != null)
+                UpdateDualWieldWeapon(vrPlayerSync, ___m_rightItemInstance, meshFilter, player == Player.m_localPlayer);
+                if (vrPlayerSync.currentDualWieldWeapon == null)
                 {
-                    vrPlayerSync.currentLeftWeapon = vrPlayerSync.currentRightWeapon = null;
-
-                }
-                else if (vrPlayerSync.IsLeftHanded()) {
-                    if (meshFilter == null)
+                    if (vrPlayerSync.IsLeftHanded())
                     {
-                        vrPlayerSync.currentLeftWeapon = null;
+                        if (meshFilter == null)
+                        {
+                            vrPlayerSync.currentLeftWeapon = null;
+                        }
+                        else
+                        {
+                            vrPlayerSync.currentLeftWeapon = meshFilter.gameObject;
+                            vrPlayerSync.currentLeftWeapon.name = ___m_rightItem;
+                        }
                     }
                     else
                     {
-                        vrPlayerSync.currentLeftWeapon = meshFilter.gameObject;
-                        vrPlayerSync.currentLeftWeapon.name = ___m_rightItem;
-                    }
-                }
-                else
-                {
-                    if (meshFilter == null)
-                    {
-                        vrPlayerSync.currentRightWeapon = null;
-                    }
-                    else
-                    {
-                        vrPlayerSync.currentRightWeapon = meshFilter.gameObject;
-                        vrPlayerSync.currentRightWeapon.name = ___m_rightItem;
+                        if (meshFilter == null)
+                        {
+                            vrPlayerSync.currentRightWeapon = null;
+                        }
+                        else
+                        {
+                            vrPlayerSync.currentRightWeapon = meshFilter.gameObject;
+                            vrPlayerSync.currentRightWeapon.name = ___m_rightItem;
+                        }
                     }
                 }
 
@@ -288,6 +281,41 @@ namespace ValheimVRMod.Patches {
             {
                 meshFilter.gameObject.AddComponent<WeaponBlock>().weaponWield = weaponWield;
             }
+        }
+
+        private static void UpdateDualWieldWeapon(VRPlayerSync sync, GameObject itemInstance, MeshFilter meshFilter, bool isLocalPlayer)
+        {
+            if (itemInstance == null)
+            {
+                sync.currentDualWieldWeapon = null;
+                return;
+            }
+
+            // Dual wield weapon has to be a skinned mesh as opposed to a mesh filter.
+            if (meshFilter != null)
+            {
+                sync.currentDualWieldWeapon = null;
+                return;
+            }
+
+            if (isLocalPlayer && EquipScript.getRight() == EquipType.Claws)
+            {
+                // For the local player, do not consider claw as a dual wielding weapon for synchronization purposes.
+                // For remote users, it is hard to know whether the item is claws.
+                sync.currentLeftWeapon = sync.currentRightWeapon = sync.currentDualWieldWeapon = null;
+                return;
+            }
+
+            SkinnedMeshRenderer skinnedMeshRenderer = itemInstance.GetComponentInChildren<SkinnedMeshRenderer>();
+            if (skinnedMeshRenderer == null)
+            {
+                // Dual wield weapon has to be a skinned mesh.
+                sync.currentDualWieldWeapon = null;
+                return;
+            }
+
+            sync.currentLeftWeapon = sync.currentRightWeapon = null;
+            sync.currentDualWieldWeapon = skinnedMeshRenderer.gameObject;
         }
     }
 
