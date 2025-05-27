@@ -23,7 +23,7 @@ namespace ValheimVRMod.VRCore.UI
         private static readonly float ALT_PIECE_ROTATION_TIME_DELAY = 0.250f;
         private static readonly float ALT_MAP_ZOOM_TIME_DELAY = 0.125f;
         private const float AUTORUN_ACTIVATION_DELAY =  0.0625f;
-        private const float AUTORUN_DEACTIVATION_DELAY = 0.375f;
+        private const float AUTORUN_DEACTIVATION_DELAY = 0.5f;
 
         private float altPieceRotationElapsedTime = 0f;
         private bool altPieceTriggered = false;
@@ -182,7 +182,7 @@ namespace ValheimVRMod.VRCore.UI
                 }
                 else if (isAutoRunActive)
                 {
-                    isExhaustedFromRunning = true;   
+                    isExhaustedFromRunning = true;
                 }
             }
 
@@ -205,17 +205,26 @@ namespace ValheimVRMod.VRCore.UI
                 autorunDeactivationCountdown = AUTORUN_DEACTIVATION_DELAY;
             }
 
-            if (deltaTime == 0 || smoothWalkVelocity.x == float.NaN || smoothWalkVelocity.y == float.NaN || VHVRConfig.WalkSpeedSmoothener() == 0)
+            if (deltaTime == 0 ||
+                smoothWalkVelocity.x == float.NaN ||
+                smoothWalkVelocity.y == float.NaN ||
+                VHVRConfig.WalkSpeedSmoothener() == 0 ||
+                SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.Any))
             {
                 smoothWalkVelocity = input;
             }
             else
             {
-                float smoothener = VHVRConfig.WalkSpeedSmoothener();
-                smoothWalkVelocity = Vector2.MoveTowards(smoothWalkVelocity, input, Time.deltaTime / smoothener);
-                if (Mathf.Abs(smoothWalkVelocity.x) < 0.01f && Mathf.Abs(smoothWalkVelocity.y) < 0.01f && input.x == 0 && input.y == 0)
+                float relative = Vector2.Dot(input, smoothWalkVelocity) / smoothWalkVelocity.sqrMagnitude;
+                if (relative < -0.5 || relative > 1)
                 {
-                    smoothWalkVelocity = Vector2.zero;
+                    // The input is either opposite to or larger than the current velocity, update instantly instead of smoothening the velocity.
+                    smoothWalkVelocity = input;
+                }
+                else
+                {
+                    smoothWalkVelocity =
+                        Vector2.MoveTowards(smoothWalkVelocity, input, Time.deltaTime / VHVRConfig.WalkSpeedSmoothener());
                 }
             }
 
