@@ -69,7 +69,7 @@ namespace ValheimVRMod.Scripts
             }
 
             Vector3 step = VRPlayer.leftFoot.position - VRPlayer.rightFoot.position;
-            if (Mathf.Abs(Vector3.Dot(step, VRPlayer.vrCam.transform.up)) < 0.125f && step.magnitude < 0.3f)
+            if (Mathf.Abs(Vector3.Dot(step, VRPlayer.vrCam.transform.up)) < 0.125f && step.magnitude < 0.25f)
             {
                 return;
             }
@@ -86,7 +86,7 @@ namespace ValheimVRMod.Scripts
                 clampedLocalVelocity.y = 0;
             }
             var speed = clampedLocalVelocity.magnitude;
-            if (speed < 6f)
+            if (speed < 1 || speed < VHVRConfig.SwingSpeedRequirement())
             {
                 return;
             }
