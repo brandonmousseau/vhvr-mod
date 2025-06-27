@@ -49,6 +49,32 @@ namespace ValheimVRMod.Scripts
 
         private void OnTriggerEnter(Collider collider)
         {
+            TryHit(collider);
+        }
+
+        private void OnTriggerStay(Collider collider)
+        {
+            Character character = null;
+            if (collider.gameObject.layer == LayerUtils.CHARACTER)
+            {
+                character = collider.GetComponentInParent<Character>();
+            }
+
+            if (character == null || character.gameObject == Player.m_localPlayer.gameObject || character.m_tamed)
+            {
+                return;
+            }
+
+            var cooldown = collider.GetComponent<AttackTargetMeshCooldown>();
+            if (cooldown != null && cooldown.inCoolDown())
+            {
+                return;
+            }
+
+            TryHit(collider);
+        }
+
+        private void TryHit(Collider collider) {
             Player player = Player.m_localPlayer;
             if (!VRPlayer.inFirstPerson ||
                 transform.parent == null ||
