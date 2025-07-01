@@ -463,17 +463,47 @@ namespace ValheimVRMod.Scripts
 
             private bool ShouldStart(Vector3 wheelDiameter, Vector3 walkDirection, float walkSpeed)
             {
-                if  (SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.Any) ||
-                    walkSpeed < 0.5f || wheelDiameter.magnitude < 0.5f)
+                if  (SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.Any))
                 {
                     return false;
                 }
-                if (walkSpeed < 2 && Vector3.ProjectOnPlane(wheelDiameter, upDirection.Value).magnitude < 1)
+                if (walkSpeed < 0.5f || wheelDiameter.magnitude < 0.5f)
+                {
+                    return false;
+                }
+                if (!IsStepping() && walkSpeed < 2 && Vector3.ProjectOnPlane(wheelDiameter, upDirection.Value).magnitude < 1)
                 {
                     return false;
                 }
                 float angle = Vector3.Angle(handTransform.forward - handTransform.up, upDirection.Value);
                 return 60 < angle && angle < 120;
+            }
+
+            private bool IsStepping()
+            {
+                if (!VHVRConfig.TrackFeet())
+                {
+                    return false;
+                }
+                Vector3 footStep = VRPlayer.leftFoot.position - VRPlayer.rightFoot.position;
+                if (Mathf.Abs(Vector3.Dot(footStep, upDirection.Value)) > 0.25f)
+                {
+                    return true;
+                }
+
+                if (VRPlayer.leftFootPhysicsEstimator != null &&
+                    Mathf.Abs(Vector3.Dot(VRPlayer.leftFootPhysicsEstimator.GetVelocity(), upDirection.Value)) > 2)
+                {
+                    return true;
+                }
+
+                if (VRPlayer.rightFootPhysicsEstimator != null &&
+                    Mathf.Abs(Vector3.Dot(VRPlayer.rightFootPhysicsEstimator.GetVelocity(), upDirection.Value)) > 2)
+                {
+                    return true;
+                }
+
+                return false;
             }
 
             private bool ShouldStop(Player player, double handSpeed)
