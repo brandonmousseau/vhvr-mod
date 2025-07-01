@@ -111,7 +111,6 @@ namespace ValheimVRMod.VRCore
         private Transform _dodgingRoom;
         private Transform dodgingRoom { get { return _dodgingRoom == null ? (_dodgingRoom = new GameObject().transform) : _dodgingRoom; } }
         private bool pausedMovement = false;
-        private bool vrikTracksFeet = false;
 
         private float timerLeft;
         private float timerRight;
@@ -185,6 +184,9 @@ namespace ValheimVRMod.VRCore
                 return value;
             }
         }
+
+        public static PhysicsEstimator leftFootPhysicsEstimator { get; private set; }
+        public static PhysicsEstimator rightFootPhysicsEstimator { get; private set; }
 
         public static SteamVR_Input_Sources dominantHandInputSource { get { return VHVRConfig.LeftHanded() ? SteamVR_Input_Sources.LeftHand : SteamVR_Input_Sources.RightHand; } }
         public static SteamVR_Input_Sources nonDominantHandInputSource { get { return VHVRConfig.LeftHanded() ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand; } }
@@ -271,7 +273,7 @@ namespace ValheimVRMod.VRCore
         private static bool bodyTrackingCaliberationPending;
         private static Vector3 caliberatedPelvisLocalPosition = Vector3.zero;
         private static Quaternion caliberatedPelvisLocalRotation = Quaternion.identity;
-        private static SteamVR_TrackedObject[] trackedObjects = new SteamVR_TrackedObject[16];
+        private static SteamVR_TrackedObject[] trackedObjects = new SteamVR_TrackedObject[32];
         private static int hipTrackerIndex = 0;
 
         public static Transform leftFoot { get; private set; }
@@ -664,7 +666,7 @@ namespace ValheimVRMod.VRCore
                 return false;
             }
 
-            for (int i = 0; i < 16; i++)
+            for (int i = 0; i < trackedObjects.Length; i++)
             {
                 if (trackedObjects[i] == null)
                 {
@@ -1307,8 +1309,11 @@ namespace ValheimVRMod.VRCore
                 return;
             }
             var cam = CameraUtils.getCamera(CameraUtils.VR_CAMERA);
-            (leftFoot != null ? leftFoot : (leftFoot = new GameObject().transform)).gameObject.GetOrAddComponent<PhysicsEstimator>().refTransform = _vrCameraRig;
-            (rightFoot != null ? rightFoot : (rightFoot = new GameObject().transform)).gameObject.GetOrAddComponent<PhysicsEstimator>().refTransform = _vrCameraRig;
+            leftFootPhysicsEstimator =
+                (leftFoot != null ? leftFoot : (leftFoot = new GameObject().transform)).gameObject.GetOrAddComponent<PhysicsEstimator>();
+            rightFootPhysicsEstimator =
+                (rightFoot != null ? rightFoot : (rightFoot = new GameObject().transform)).gameObject.GetOrAddComponent<PhysicsEstimator>();
+            leftFootPhysicsEstimator.refTransform = rightFootPhysicsEstimator.refTransform = _vrCameraRig;
             vrikRef = VrikCreator.initialize(player.gameObject, leftHand.transform, rightHand.transform, cam.transform, pelvis);
             if (vrikRef == null)
             {
@@ -1337,7 +1342,6 @@ namespace ValheimVRMod.VRCore
             StaticObjects.addQuickMenus();
             LeftHandQuickMenu.instance.refreshItems();
             RightHandQuickMenu.instance.refreshItems();
-            vrikTracksFeet = VHVRConfig.TrackFeet();
         }
 
         private bool vrikEnabled()
@@ -1450,8 +1454,17 @@ namespace ValheimVRMod.VRCore
 
         private void caliberateFeet()
         {
-            int firstFootDeviceIndex = detectFootDeviceIndex(-1);
-            int secondFootDeviceindex = detectFootDeviceIndex(firstFootDeviceIndex);
+            int firstFootDeviceIndex = VHVRConfig.LeftFootTrackerIndex();
+            int secondFootDeviceindex = VHVRConfig.RightFootTrackerIndex();
+
+            if (firstFootDeviceIndex <= 0)
+            {
+                firstFootDeviceIndex = detectFootDeviceIndex(-1);
+            }
+            if (secondFootDeviceindex <= 0)
+            {
+                secondFootDeviceindex = detectFootDeviceIndex(firstFootDeviceIndex);
+            }
 
             if (firstFootDeviceIndex < 0 || secondFootDeviceindex < 0)
             {
@@ -1459,7 +1472,8 @@ namespace ValheimVRMod.VRCore
                 rightFoot.parent = null;
                 return;
             }
-            else if (vrCam.transform.InverseTransformPoint(trackedObjects[firstFootDeviceIndex].transform.position).x <
+
+            if (vrCam.transform.InverseTransformPoint(trackedObjects[firstFootDeviceIndex].transform.position).x <
                 vrCam.transform.InverseTransformPoint(trackedObjects[secondFootDeviceindex].transform.position).x)
             {
                 leftFoot.parent = trackedObjects[firstFootDeviceIndex].transform;
@@ -1489,7 +1503,7 @@ namespace ValheimVRMod.VRCore
         private int detectHipDeviceIndex()
         {
             int deviceIndex = 0;
-            for (int i = 1; i < 16; i++)
+            for (int i = 1; i < trackedObjects.Length; i++)
             {
                 if (!trackedObjects[i].isValid || trackedObjects[i].transform.localPosition.y - _vrCam.transform.localPosition.y < -0.8f)
                 {
@@ -1507,7 +1521,7 @@ namespace ValheimVRMod.VRCore
         private int detectFootDeviceIndex(int otherFootDeviceIndex)
         {
             int deviceIndex = -1;
-            for (int i = 0; i < 16; i++)
+            for (int i = 0; i < trackedObjects.Length; i++)
             {
                 if (!trackedObjects[i].isValid ||
                     i == otherFootDeviceIndex ||
