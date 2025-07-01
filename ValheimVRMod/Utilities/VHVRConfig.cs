@@ -41,6 +41,8 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> allowMovementWhenInMenu;
         private static ConfigEntry<bool> showDebugColliders;
         private static ConfigEntry<int> hipTrackerIndex;
+        private static ConfigEntry<int> leftFootTrackerIndex;
+        private static ConfigEntry<int> rightFootTrackerIndex;
 
         // UI Settings
         private static ConfigEntry<float> overlayCurvature;
@@ -396,8 +398,24 @@ namespace ValheimVRMod.Utilities
                 "General", "HipTrackerIndex", -1,
                 new ConfigDescription(
                     "The device index of the hip tracker. Setting to -1 disables hip tracking.",
-                    new AcceptableValueRange<int>(-1, 16)));
+                    new AcceptableValueRange<int>(-1, 20)));
             hipTrackerIndex.SettingChanged += ((o, i) => VRPlayer.RequestPelvisCaliberation());
+
+            leftFootTrackerIndex = config.Bind(
+                "General", "LeftFootTrackerIndex", -1,
+                new ConfigDescription(
+                    "The device index of the left foot tracker. Set to -1 to disable and 0 to auto-detect.",
+                    new AcceptableValueRange<int>(-1, 20)));
+            leftFootTrackerIndex.SettingChanged += ((o, i) => VRPlayer.RequestPelvisCaliberation());
+
+            rightFootTrackerIndex = config.Bind(
+                "General", "RightFootTrackerIndex", -1,
+                new ConfigDescription(
+                    "The device index of the right foot tracker. Set to -1 to disable and 0 to auto-detect.",
+                    new AcceptableValueRange<int>(-1, 20)));
+            rightFootTrackerIndex.SettingChanged += ((o, i) => VRPlayer.RequestPelvisCaliberation());
+
+
         }
 
         private static void HipTrackerIndex_SettingChanged(object sender, EventArgs e)
@@ -674,11 +692,6 @@ namespace ValheimVRMod.Utilities
                                           "ExclusiveRoomScaleSneak",
                                           false,
                                           "If this is set to true and Room Scale sneaking is on, Controller-based sneak inputs will be disabled. Use this if you ONLY want to sneak by phsyically crouching.");
-            trackFeet = config.Bind("Controls",
-                                          "TrackFeet",
-                                          false,
-                                          "Whether foot tracking should be enabled. May require restarting the game to take effect.");
-            trackFeet.SettingChanged += ((o, i) => VRPlayer.RequestPelvisCaliberation());
             gesturedLocomotion = config.Bind("Controls",
                                              "GesturedLocomotion",
                                              "SwimAndSteering",
@@ -1416,7 +1429,7 @@ namespace ValheimVRMod.Utilities
 
         public static bool TrackFeet()
         {
-            return !NonVrPlayer() && UseVrControls() && trackFeet.Value;
+            return !NonVrPlayer() && UseVrControls() && (leftFootTrackerIndex.Value >= 0 || rightFootTrackerIndex.Value >= 0);
         }
 
         public static string GesturedLocomotionLabel()
@@ -1837,6 +1850,16 @@ namespace ValheimVRMod.Utilities
         public static int HipTrackerIndex()
         {
             return hipTrackerIndex.Value;
+        }
+
+        public static int LeftFootTrackerIndex()
+        {
+            return leftFootTrackerIndex.Value;
+        }
+
+        public static int RightFootTrackerIndex()
+        {
+            return rightFootTrackerIndex.Value;
         }
 
         public static bool IsHipTrackingEnabled()
