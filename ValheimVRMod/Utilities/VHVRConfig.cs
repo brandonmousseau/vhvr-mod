@@ -142,6 +142,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<string> meleeWeaponGlow;
         private static ConfigEntry<float> enemyRenderDistance;
         private static ConfigEntry<float> buildingPieceDetailReductionFactor;
+        private static ConfigEntry<bool> showDamageText;
 
         // Motion Control Settings
         private static ConfigEntry<bool> useArrowPredictionGraphic;
@@ -839,6 +840,10 @@ namespace ValheimVRMod.Utilities
                                         new AcceptableValueRange<float>(1f, 16f)));
             shouldModifyPieceLodGroup = buildingPieceDetailReductionFactor.Value > 1.01f;
             buildingPieceDetailReductionFactor.SettingChanged += ((o, i) => shouldModifyPieceLodGroup = buildingPieceDetailReductionFactor.Value > 1.01f);
+            showDamageText = config.Bind("Graphics",
+                                              "ShowDamageText",
+                                              true,
+                                              "Show damage text in VR?");
         }
 
         private static void InitializeMotionControlSettings() {
@@ -1484,6 +1489,11 @@ namespace ValheimVRMod.Utilities
         public static float GetBuildingPieceDetailReductionFactor()
         {
             return buildingPieceDetailReductionFactor.Value;
+        }
+
+        public static bool ShowDamageText()
+        {
+            return showDamageText.Value;
         }
 
         public static float AltPieceRotationDelay()
