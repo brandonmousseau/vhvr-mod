@@ -115,7 +115,6 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> roomScaleSneaking;
         private static ConfigEntry<float> roomScaleSneakHeight;
         private static ConfigEntry<bool> exclusiveRoomScaleSneak;
-        private static ConfigEntry<bool> trackFeet;
         private static ConfigEntry<string> gesturedLocomotion;
         private static ConfigEntry<float> gesturedJumpPreparationHeight;
         private static ConfigEntry<float> gesturedJumpMinSpeed;
@@ -916,10 +915,11 @@ namespace ValheimVRMod.Utilities
                                                     "Use this to toggle the direction line of throwing when using the spear with VR controls.");
             //Two-handed Changes
             twoHandedWield = config.Bind(
-                "Motion Control", "TwoHandedWield", "NonSticky",
+                "Motion Control", "TwoHandedWield", "PolearmSticky",
                 new ConfigDescription(
                     "Use this to toggle controls of two handed weapon (left & right hand grab on weapon), allow blocking and better weapon handling.",
-                    new AcceptableValueList<string>(new string[] { "NonSticky", "Sticky", "Disabled" })));
+                    new AcceptableValueList<string>(new string[] { "NonSticky", "PolearmSticky", "Sticky", "Disabled" })));
+
             twoHandedWithShield = config.Bind("Motion Control",
                                                     "TwoHandedWithShield",
                                                     false,
@@ -1546,9 +1546,9 @@ namespace ValheimVRMod.Utilities
         {
             return twoHandedWield.Value != "Disabled";
         }
-        public static bool StickyTwoHandedWield()
+        public static bool StickyTwoHandedWield(bool isPolearm)
         {
-            return twoHandedWield.Value == "Sticky";
+            return twoHandedWield.Value == "Sticky" || (isPolearm && twoHandedWield.Value == "PolearmSticky");
         }
         public static bool TwoHandedWithShield()
         {
