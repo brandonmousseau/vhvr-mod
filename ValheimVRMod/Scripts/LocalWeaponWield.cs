@@ -322,7 +322,7 @@ namespace ValheimVRMod.Scripts
             if (wieldingAngle < 60)
             {
                 preparingToUnstickTwoHandedWield = false;
-                handOrderAlongRadialDirection =
+                polearmHandOrderAlongRadialDirection =
                     Vector3.Dot(VRPlayer.dominantHand.transform.forward, rightHandToLeftHand) > 0 ?
                     TwoHandedState.RightHandBehind : TwoHandedState.LeftHandBehind;
                 return TwoHandedState.RightHandBehind;
@@ -330,7 +330,7 @@ namespace ValheimVRMod.Scripts
             else if (wieldingAngle > 120f)
             {
                 preparingToUnstickTwoHandedWield = false;
-                handOrderAlongRadialDirection =
+                polearmHandOrderAlongRadialDirection =
                     Vector3.Dot(VRPlayer.dominantHand.transform.forward, rightHandToLeftHand) > 0 ?
                     TwoHandedState.RightHandBehind :
                     TwoHandedState.LeftHandBehind;
