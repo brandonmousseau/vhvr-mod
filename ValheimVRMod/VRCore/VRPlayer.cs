@@ -188,6 +188,18 @@ namespace ValheimVRMod.VRCore
         public static PhysicsEstimator leftFootPhysicsEstimator { get; private set; }
         public static PhysicsEstimator rightFootPhysicsEstimator { get; private set; }
 
+        public static float leftFootElevation
+        {
+            get { return leftFoot.parent == null || vrPlayerInstance == null ? 0 : vrPlayerInstance._vrCameraRig.InverseTransformPoint(leftFoot.position).y - baseFootHeight; }
+        }
+        public static float rightFootElevation
+        {
+            get { return rightFoot.parent == null || vrPlayerInstance == null ? 0 : vrPlayerInstance._vrCameraRig.InverseTransformPoint(rightFoot.position).y - baseFootHeight; }
+        }
+
+        private static float baseFootHeight;
+        
+
         public static SteamVR_Input_Sources dominantHandInputSource { get { return VHVRConfig.LeftHanded() ? SteamVR_Input_Sources.LeftHand : SteamVR_Input_Sources.RightHand; } }
         public static SteamVR_Input_Sources nonDominantHandInputSource { get { return VHVRConfig.LeftHanded() ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand; } }
 
@@ -1160,6 +1172,11 @@ namespace ValheimVRMod.VRCore
                 return false;
             }
 
+            if (GesturedLocomotionManager.IsWalkingInPlace)
+            {
+                return true;
+            }
+
             float standingHeadHeight = _vrCam.transform.localPosition.y - Valve.VR.InteractionSystem.Player.instance.eyeHeight + referencePlayerHeight;
             if (_vrCameraRig.InverseTransformPoint(leftFoot.position).y > standingHeadHeight - 1.5f - VHVRConfig.PlayerHeightAdjust() ||
                 _vrCameraRig.InverseTransformPoint(rightFoot.position).y > standingHeadHeight - 1.5f - VHVRConfig.PlayerHeightAdjust() ||
@@ -1492,6 +1509,7 @@ namespace ValheimVRMod.VRCore
             Vector3 footHeight = _vrCam.transform.position - _vrCam.transform.forward * 0.1f - (1.7f + VHVRConfig.PlayerHeightAdjust()) * roomUpDirection;
             leftFoot.position = footHeight + Vector3.ProjectOnPlane(leftFoot.parent.position - footHeight, roomUpDirection);
             rightFoot.position = footHeight + Vector3.ProjectOnPlane(rightFoot.parent.position - footHeight, roomUpDirection);
+            baseFootHeight = _vrCameraRig.InverseTransformPoint(footHeight).y;
 
             if (vrikRef != null)
             {
