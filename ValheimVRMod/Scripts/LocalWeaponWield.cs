@@ -293,11 +293,11 @@ namespace ValheimVRMod.Scripts
                         {
                             polearmHandOrderAlongRadialDirection = TwoHandedState.RightHandBehind;
                         }
-                        else if (leftHandRadialProjection < -0.25f &&  rightHandRadialProjection < -0.25f)
+                        else if (leftHandRadialProjection < -0.25f && rightHandRadialProjection < -0.25f)
                         {
                             polearmHandOrderAlongRadialDirection = TwoHandedState.LeftHandBehind;
                         }
-                        if (previousHandRadialSuggestedHold != polearmHandOrderAlongRadialDirection && handDistance < 0.33f)
+                        if (previousHandRadialSuggestedHold != polearmHandOrderAlongRadialDirection && handDistance < 0.3f)
                         {
                             // When the hands are close to each other and the hand order along the radial axis is flipped,
                             // flip the weapon so that the weapon is pointing the radial direction of the hands.
