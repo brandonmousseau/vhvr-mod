@@ -631,7 +631,7 @@ namespace ValheimVRMod.Scripts
 
                 Vector3 leftFootVelocity = VRPlayer.leftFootPhysicsEstimator.GetVelocity();
                 Vector3 rightFootVelocity = VRPlayer.rightFootPhysicsEstimator.GetVelocity();
-                float walkSpeed = (leftFootVelocity.magnitude + rightFootVelocity.magnitude) * 0.8f;
+                float walkSpeed = leftFootVelocity.magnitude + rightFootVelocity.magnitude;
                 float leftFootElevation = VRPlayer.leftFootElevation;
                 float rightFootElevation = VRPlayer.rightFootElevation;
 
