@@ -44,6 +44,7 @@ namespace ValheimVRMod.Scripts
                     new MaximizingGesturedLocomotion(
                         new LeftHandGesturedWalkRun(), new RightHandGesturedWalkRun()),
                     new WalkInPlace(),
+                    new SlideInPlace(),
                     new HandGesturedJump(isRightHand: true),
                     new HandGesturedJump(isRightHand: false),
                     new GesturedGlide(),
@@ -208,7 +209,7 @@ namespace ValheimVRMod.Scripts
                     velocity += -rightHandVelocity.normalized * rightHandPropulsion;
                 }
                 velocity = Vector3.ProjectOnPlane(velocity, upDirection.Value);
-                return velocity.magnitude >= MIN_SWIM_SPEED ? velocity : Vector3.zero;
+                return velocity.magnitude >= MIN_SWIM_SPEED ? velocity * 2 : Vector3.zero;
             }
         }
 
@@ -629,8 +630,8 @@ namespace ValheimVRMod.Scripts
                 }
 
                 Vector3 leftFootVelocity = VRPlayer.leftFootPhysicsEstimator.GetVelocity();
-                Vector3 rightFootVelocity = VRPlayer.leftFootPhysicsEstimator.GetVelocity();
-                float walkSpeed = leftFootVelocity.magnitude + rightFootVelocity.magnitude;
+                Vector3 rightFootVelocity = VRPlayer.rightFootPhysicsEstimator.GetVelocity();
+                float walkSpeed = (leftFootVelocity.magnitude + rightFootVelocity.magnitude) * 0.8f;
                 float leftFootElevation = VRPlayer.leftFootElevation;
                 float rightFootElevation = VRPlayer.rightFootElevation;
 
@@ -638,7 +639,7 @@ namespace ValheimVRMod.Scripts
                 {
                     IsWalkingInPlace = false;
                 }
-                else if (ShouldStart(walkSpeed, leftFootElevation, rightFootElevation))
+                else if (ShouldStart(leftFootVelocity, rightFootVelocity, leftFootElevation, rightFootElevation))
                 {
                     IsWalkingInPlace = true;
                 }
@@ -673,20 +674,20 @@ namespace ValheimVRMod.Scripts
                 return ApplyHeadTiltStrafe(vrCam, walkDirection.normalized, walkSpeed);
             }
 
-            private bool ShouldStart(float speed, float leftFootElevation, float rightFootElevation)
+            private bool ShouldStart(Vector3 leftFootVelocity, Vector3 rightFootVelocity, float leftFootElevation, float rightFootElevation)
             {
                 if (SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.Any))
                 {
                     return false;
                 }
-                if (speed < 0.375f)
+                if (leftFootElevation < 0.2f && rightFootElevation < 0.2f)
                 {
                     return false;
                 }
-                return leftFootElevation > 0.2f || rightFootElevation > 0.2f;
+                return Vector3.Dot(leftFootVelocity, upDirection.Value) < -0.25f || Vector3.Dot(rightFootVelocity, upDirection.Value) < -0.25f;
             }
 
-            private bool ShouldStop(double speed, float leftFootElevation, float rightFootElevation)
+            private bool ShouldStop(float walkSpeed, float leftFootElevation, float rightFootElevation)
             {
                 if (Player.m_localPlayer.m_attached)
                 {
@@ -699,7 +700,52 @@ namespace ValheimVRMod.Scripts
                     return true;
                 }
 
-                return leftFootElevation < 0.125f && rightFootElevation < 0.125f && speed < 0.0625f;
+                return leftFootElevation < 0.125f && rightFootElevation < 0.125f && walkSpeed < 0.0625f;
+            }
+        }
+
+        public static bool IsSlidingInPlace { get; private set; } = false;
+        class SlideInPlace : GesturedLocomotion
+        {
+            public override Vector3 GetTargetVelocityFromGestures(Player player)
+            {
+                if (!VHVRConfig.IsGesturedWalkRunEnabled() || !VHVRConfig.TrackFeet() || !SteamVR_Actions.valheim_StopGesturedLocomotion.activeBinding)
+                {
+                    return Vector3.zero;
+                }
+
+                Vector3 leftFootVelocity = VRPlayer.leftFootPhysicsEstimator.GetVelocity();
+                Vector3 rightFootVelocity = VRPlayer.rightFootPhysicsEstimator.GetVelocity();
+                float leftFootVerticalSpeed = Vector3.Dot(leftFootVelocity, upDirection.Value);
+                float rightFootVerticalSpeed = Vector3.Dot(rightFootVelocity, upDirection.Value);
+                if (leftFootVerticalSpeed > 0.05f ||
+                    rightFootVerticalSpeed > 0.05f ||
+                    SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.Any) ||
+                    Player.m_localPlayer.m_attached ||
+                    VRPlayer.leftFootElevation > 0.03 ||
+                    VRPlayer.rightFootElevation > 0.03)
+                {
+                    IsSlidingInPlace = false;
+                    return Vector3.zero;
+                }
+
+                Vector3 horizontalVelocity = leftFootVelocity + rightFootVelocity - upDirection.Value * (leftFootVerticalSpeed + rightFootVerticalSpeed);
+                float slideSpeed = horizontalVelocity.magnitude;
+
+                if (slideSpeed < 0.0625f)
+                {
+                    IsSlidingInPlace = false;
+                }
+                else if (slideSpeed > 0.25f)
+                {
+                    IsSlidingInPlace = true;
+                    if (slideSpeed > 1)
+                    {
+                        horizontalVelocity = horizontalVelocity / slideSpeed;
+                    }
+                }
+
+                return IsSlidingInPlace ? -horizontalVelocity : Vector3.zero;
             }
         }
 
