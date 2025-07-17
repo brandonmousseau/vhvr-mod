@@ -667,11 +667,22 @@ namespace ValheimVRMod.Scripts
                 }
 
                 Vector3 walkDirection =
-                    Vector3.ProjectOnPlane(
-                        VRPlayer.leftFoot.forward + VRPlayer.rightFoot.forward + VRPlayer.pelvis.forward,
-                        upDirection.Value);
+                    Vector3.ProjectOnPlane(VRPlayer.leftFoot.forward + VRPlayer.rightFoot.forward, upDirection.Value).normalized;
+
+                Vector3 headToPelvis = VRPlayer.pelvis.position - vrCam.transform.position;
+                float leanBack = Vector3.Dot(headToPelvis.normalized, walkDirection);
+                if (leanBack < -0.06f)
+                {
+                    // Walking backward
+                    walkDirection = -walkDirection;
+                    walkSpeed = Mathf.Max(walkSpeed, 1f);
+                }
+                else if (leanBack < -0.03f)
+                {
+                    return Vector3.zero;
+                }
                 
-                return ApplyHeadTiltStrafe(vrCam, walkDirection.normalized, walkSpeed);
+                return ApplyHeadTiltStrafe(vrCam, walkDirection, walkSpeed);
             }
 
             private bool ShouldStart(Vector3 leftFootVelocity, Vector3 rightFootVelocity, float leftFootElevation, float rightFootElevation)
