@@ -369,12 +369,13 @@ namespace ValheimVRMod.Scripts
             switch (EquipScript.getRight())
             {
                 case EquipType.BattleAxe:
-                case EquipType.Spear:
-                case EquipType.SpearChitin:
                 case EquipType.Polearms:
                     return VHVRConfig.StickyTwoHandedWield(isPolearm: true);
+                case EquipType.Spear:
+                case EquipType.SpearChitin:
+                    return EquipScript.getLeft() == EquipType.None && VHVRConfig.StickyTwoHandedWield(isPolearm: true);
                 default:
-                    return VHVRConfig.StickyTwoHandedWield(isPolearm: false);
+                    return EquipScript.getLeft() == EquipType.None && VHVRConfig.StickyTwoHandedWield(isPolearm: false);
             }
         }
 
