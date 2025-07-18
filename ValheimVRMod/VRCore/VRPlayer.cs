@@ -1172,7 +1172,7 @@ namespace ValheimVRMod.VRCore
                 return false;
             }
 
-            if (GesturedLocomotionManager.IsWalkingInPlace || GesturedLocomotionManager.IsSlidingInPlace)
+            if (GesturedLocomotionManager.isUsingFootTracking)
             {
                 return true;
             }
