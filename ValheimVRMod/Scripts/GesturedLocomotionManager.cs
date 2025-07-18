@@ -285,33 +285,32 @@ namespace ValheimVRMod.Scripts
 
         class GesturedGlide : GesturedLocomotion
         {
-            private Vector3 lastVelocity = Vector3.zero;
+            public static bool isGlideActive = false;
 
             public override Vector3 GetTargetVelocityFromGestures(Player player, float deltaTime)
             {
-                // TODO: find a performant way to check if feather fall is effective and only enable gestured fly then.
-                if (!VHVRConfig.IsGesturedJumpEnabled() || !IsInAir(player))
+                if (!SteamVR_Actions.valheim_StopGesturedLocomotion.activeBinding ||
+                    !VHVRConfig.IsGesturedJumpEnabled() ||
+                    (player.IsSwimming() && !player.IsOnGround()))
                 {
-                    return lastVelocity = Vector3.zero;
+                    isGlideActive = false;
+                    return Vector3.zero;
                 }
 
                 if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand) &&
                     SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand))
                 {
-                    return lastVelocity = Vector3.zero;
+                    isGlideActive = false;
+                    return Vector3.zero;
                 }
 
                 var handSpan = VRPlayer.rightHand.transform.position - VRPlayer.leftHand.transform.position;
                 handSpan.y = 0;
                 var handHorizontalDistance = handSpan.magnitude;
 
-                if (SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.Any) || handHorizontalDistance < 0.25f)
+                if (handHorizontalDistance < 0.125f)
                 {
-                    return lastVelocity;
-                }
-
-                if (lastVelocity == Vector3.zero && handHorizontalDistance < 1)
-                {
+                    isGlideActive = false;
                     return Vector3.zero;
                 }
 
@@ -336,12 +335,20 @@ namespace ValheimVRMod.Scripts
                 var velocity = Vector3.ProjectOnPlane(leftHandContribution + rightHandContribution, handSpan) * 4;
                 velocity.y = 0;
 
-                if (velocity.sqrMagnitude > 0.25f)
+                if (!isGlideActive &&
+                    !SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.Any) &&
+                    handHorizontalDistance > 1.4f &&
+                    velocity.sqrMagnitude > 1f)
                 {
-                    lastVelocity = velocity;
+                    isGlideActive = true;
                 }
 
-                return lastVelocity;
+                if (!isGlideActive)
+                {
+                    return Vector3.zero;
+                }
+
+                return velocity;
             }
         }
 
@@ -446,6 +453,7 @@ namespace ValheimVRMod.Scripts
                 else if (ShouldStart(wheelDiameter, walkDirection, Mathf.Abs(walkSpeed)))
                 {
                     isWalkingOrRunningUsingGestures = true;
+                    GesturedGlide.isGlideActive = false;
                 }
 
                 if (vrCam == null)
