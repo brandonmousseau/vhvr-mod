@@ -48,7 +48,7 @@ namespace ValheimVRMod.Scripts
                     new SlideInPlace(),
                     new HandGesturedJump(isRightHand: true),
                     new HandGesturedJump(isRightHand: false),
-                    new GesturedGlide(),
+                    new GesturedFly(),
                     new GesturedDodgeRoll()};
         }
 
@@ -78,7 +78,7 @@ namespace ValheimVRMod.Scripts
             else
             {
                 float damper =
-                    localPlayer.IsSwimming() ? WATER_SPEED_CHANGE_DAMPER : IsInAir(localPlayer) ? AIR_SPEED_CHANGE_DAMPER : GROUND_SPEED_CHANGE_DAMPER;
+                    localPlayer.IsSwimming() ? WATER_SPEED_CHANGE_DAMPER : GesturedFly.isFlyActive || IsInAir(localPlayer) ? AIR_SPEED_CHANGE_DAMPER : GROUND_SPEED_CHANGE_DAMPER;
 
                 gesturedLocomotionVelocity =
                     Vector3.Lerp(gesturedLocomotionVelocity, targetVelocity, deltaTime / damper);
@@ -283,9 +283,9 @@ namespace ValheimVRMod.Scripts
             }
         }
 
-        class GesturedGlide : GesturedLocomotion
+        class GesturedFly : GesturedLocomotion
         {
-            public static bool isGlideActive = false;
+            public static bool isFlyActive = false;
 
             public override Vector3 GetTargetVelocityFromGestures(Player player, float deltaTime)
             {
@@ -293,14 +293,14 @@ namespace ValheimVRMod.Scripts
                     !VHVRConfig.IsGesturedJumpEnabled() ||
                     (player.IsSwimming() && !player.IsOnGround()))
                 {
-                    isGlideActive = false;
+                    isFlyActive = false;
                     return Vector3.zero;
                 }
 
                 if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand) &&
                     SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand))
                 {
-                    isGlideActive = false;
+                    isFlyActive = false;
                     return Vector3.zero;
                 }
 
@@ -310,7 +310,7 @@ namespace ValheimVRMod.Scripts
 
                 if (handHorizontalDistance < 0.125f)
                 {
-                    isGlideActive = false;
+                    isFlyActive = false;
                     return Vector3.zero;
                 }
 
@@ -335,15 +335,15 @@ namespace ValheimVRMod.Scripts
                 var velocity = Vector3.ProjectOnPlane(leftHandContribution + rightHandContribution, handSpan) * 4;
                 velocity.y = 0;
 
-                if (!isGlideActive &&
+                if (!isFlyActive &&
                     !SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.Any) &&
                     handHorizontalDistance > 1.5f &&
                     velocity.sqrMagnitude > 10f)
                 {
-                    isGlideActive = true;
+                    isFlyActive = true;
                 }
 
-                if (!isGlideActive)
+                if (!isFlyActive)
                 {
                     return Vector3.zero;
                 }
@@ -458,7 +458,7 @@ namespace ValheimVRMod.Scripts
                 else if (ShouldStart(armSpan, wheelDiameter, walkDirection, Mathf.Abs(walkSpeed)))
                 {
                     isWalkingOrRunningUsingGestures = true;
-                    GesturedGlide.isGlideActive = false;
+                    GesturedFly.isFlyActive = false;
                 }
 
                 if (vrCam == null)
