@@ -258,13 +258,17 @@ namespace ValheimVRMod.Scripts
                     return TwoHandedState.SingleHanded;
                 }
 
-                if (isReleasing ||
-                    (!isGrabbingWithBothHands && SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource))) { 
-                    // Check if the hand orientation aligns with two-handed wield. If not, exit sticky two-handed hold.
-                    if (Mathf.Abs(Vector3.Dot(VRPlayer.dominantHand.transform.forward, weaponForward)) < 0.5f)
+                if (!isPolearm())
+                {
+                    if (isReleasing ||
+                        (!isGrabbingWithBothHands && SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource)))
                     {
-                        preparingToUnstickTwoHandedWield = false;
-                        return TwoHandedState.SingleHanded;
+                        // Check if the hand orientation aligns with two-handed wield. If not, exit sticky two-handed hold.
+                        if (Mathf.Abs(Vector3.Dot(VRPlayer.dominantHand.transform.forward, weaponForward)) < 0.5f)
+                        {
+                            preparingToUnstickTwoHandedWield = false;
+                            return TwoHandedState.SingleHanded;
+                        }
                     }
                 }
             }
@@ -277,35 +281,28 @@ namespace ValheimVRMod.Scripts
             Vector3 rightHandToLeftHand;
             if (wasTwoHanded)
             {
-                switch (EquipScript.getRight())
+                if (isPolearm())
                 {
-                    case EquipType.BattleAxe:
-                    case EquipType.Spear:
-                    case EquipType.SpearChitin:
-                    case EquipType.Polearms:
-                        rightHandToLeftHand = getHandCenter(GetLeftHandTransform()) - getHandCenter(GetRightHandTransform());
-                        float handDistance = rightHandToLeftHand.magnitude;
-                        rightHandToLeftHand = rightHandToLeftHand / handDistance;
-                        float leftHandRadialProjection = Vector3.Dot(GetLeftHandTransform().forward, rightHandToLeftHand);
-                        float rightHandRadialProjection = Vector3.Dot(GetRightHandTransform().forward, rightHandToLeftHand);
-                        var previousHandRadialSuggestedHold = polearmHandOrderAlongRadialDirection;
-                        if (leftHandRadialProjection > 0.25f && rightHandRadialProjection > 0.25f)
-                        {
-                            polearmHandOrderAlongRadialDirection = TwoHandedState.RightHandBehind;
-                        }
-                        else if (leftHandRadialProjection < -0.25f && rightHandRadialProjection < -0.25f)
-                        {
-                            polearmHandOrderAlongRadialDirection = TwoHandedState.LeftHandBehind;
-                        }
-                        if (previousHandRadialSuggestedHold != polearmHandOrderAlongRadialDirection && handDistance < 0.3f)
-                        {
-                            // When the hands are close to each other and the hand order along the radial axis is flipped,
-                            // flip the weapon so that the weapon is pointing the radial direction of the hands.
-                            return polearmHandOrderAlongRadialDirection;
-                        }
-                        break;
-                    default:
-                        break;
+                    rightHandToLeftHand = getHandCenter(GetLeftHandTransform()) - getHandCenter(GetRightHandTransform());
+                    float handDistance = rightHandToLeftHand.magnitude;
+                    rightHandToLeftHand = rightHandToLeftHand / handDistance;
+                    float leftHandRadialProjection = Vector3.Dot(GetLeftHandTransform().forward, rightHandToLeftHand);
+                    float rightHandRadialProjection = Vector3.Dot(GetRightHandTransform().forward, rightHandToLeftHand);
+                    var previousHandRadialSuggestedHold = polearmHandOrderAlongRadialDirection;
+                    if (leftHandRadialProjection > 0.25f && rightHandRadialProjection > 0.25f)
+                    {
+                        polearmHandOrderAlongRadialDirection = TwoHandedState.RightHandBehind;
+                    }
+                    else if (leftHandRadialProjection < -0.25f && rightHandRadialProjection < -0.25f)
+                    {
+                        polearmHandOrderAlongRadialDirection = TwoHandedState.LeftHandBehind;
+                    }
+                    if (previousHandRadialSuggestedHold != polearmHandOrderAlongRadialDirection && handDistance < 0.3f)
+                    {
+                        // When the hands are close to each other and the hand order along the radial axis is flipped,
+                        // flip the weapon so that the weapon is pointing the radial direction of the hands.
+                        return polearmHandOrderAlongRadialDirection;
+                    }
                 }
 
                 // Stay in current two-handed mode since both hands are grabbing.
@@ -386,6 +383,24 @@ namespace ValheimVRMod.Scripts
                 return false;
             }
             return LocalPlayerTwoHandedState != TwoHandedState.SingleHanded;
+        }
+
+        private bool isPolearm()
+        {
+            if (!isDominantHandWeapon)
+            {
+                return false;
+            }
+            switch (EquipScript.getRight())
+            {
+                case EquipType.BattleAxe:
+                case EquipType.Spear:
+                case EquipType.SpearChitin:
+                case EquipType.Polearms:
+                    return true;
+                default:
+                    return false;
+            }
         }
 
         public bool allowBlocking()
