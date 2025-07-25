@@ -147,6 +147,15 @@
       "type": "boolean"
     },
     {
+      "name": "/actions/Valheim/in/ToggleRun",
+      "type": "boolean",
+      "requirement": "mandatory"
+    },
+    {
+      "name": "/actions/Valheim/in/HoldRun",
+      "type": "boolean"
+    },
+    {
       "name": "/actions/Valheim/out/Haptic",
       "type": "vibration",
       "requirement": "mandatory"

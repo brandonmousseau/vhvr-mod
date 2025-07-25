@@ -169,6 +169,30 @@ namespace Valve.VR
             }
         }
         
+        public virtual SteamVR_Action_Boolean StopGesturedLocomotion
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_StopGesturedLocomotion;
+            }
+        }
+        
+        public virtual SteamVR_Action_Boolean ToggleRun
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_ToggleRun;
+            }
+        }
+        
+        public virtual SteamVR_Action_Boolean HoldRun
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_HoldRun;
+            }
+        }
+        
         public virtual SteamVR_Action_Vibration Haptic
         {
             get
