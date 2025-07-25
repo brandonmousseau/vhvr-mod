@@ -1172,7 +1172,7 @@ namespace ValheimVRMod.VRCore
                 return false;
             }
 
-            if (GesturedLocomotionManager.IsWalkingInPlace)
+            if (GesturedLocomotionManager.isUsingFootTracking)
             {
                 return true;
             }
@@ -1523,7 +1523,9 @@ namespace ValheimVRMod.VRCore
             int deviceIndex = 0;
             for (int i = 1; i < trackedObjects.Length; i++)
             {
-                if (!trackedObjects[i].isValid || trackedObjects[i].transform.localPosition.y - _vrCam.transform.localPosition.y < -0.8f)
+                if (!trackedObjects[i].isValid ||
+                    trackedObjects[i].transform.localPosition.y - _vrCam.transform.localPosition.y < -0.8f ||
+                    Vector3.Distance(trackedObjects[i].transform.position, _vrCam.transform.position) > 1.5f)
                 {
                     continue;
                 }

@@ -13,6 +13,7 @@ namespace ValheimVRMod.Scripts
             LayerUtils.WATER,
             LayerUtils.UI_PANEL_LAYER,
             LayerUtils.CHARARCTER_TRIGGER,
+            LayerUtils.ITEM_LAYER,
         };
 
         private PhysicsEstimator physicsEstimator;
