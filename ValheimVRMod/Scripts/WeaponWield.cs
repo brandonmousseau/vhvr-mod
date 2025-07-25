@@ -38,7 +38,7 @@ namespace ValheimVRMod.Scripts
 
         private EquipType equipType;
         private bool isLocal;
-        private bool isDominantHandWeapon;
+        protected bool isDominantHandWeapon { get; private set; }
 
         public WeaponWield Initialize(
             ItemDrop.ItemData item, string itemName, bool isDominantHandWeapon, WeaponWieldSync.TwoHandedStateProvider twoHandedStateProvider = null)
