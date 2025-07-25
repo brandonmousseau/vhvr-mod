@@ -701,7 +701,7 @@ namespace ValheimVRMod.Scripts
                         walkSpeed = Mathf.Min(walkSpeed, 1);
                         break;
                     case Pace.RUN:
-                        walkSpeed = Mathf.Max(walkSpeed, 1f);
+                        walkSpeed *= 2;
                         break;
                 }
 
@@ -839,9 +839,20 @@ namespace ValheimVRMod.Scripts
                     return Vector3.zero;
                 }
 
-                Vector3 horizontalVelocity = leftFootVelocity + rightFootVelocity - upDirection.Value * (leftFootVerticalSpeed + rightFootVerticalSpeed);
-                float slideSpeed = horizontalVelocity.magnitude;
-                Vector3 movementDirection = -horizontalVelocity.normalized;
+                leftFootVelocity = leftFootVelocity - upDirection.Value * leftFootVerticalSpeed;
+                rightFootVelocity = rightFootVelocity - upDirection.Value * rightFootVerticalSpeed;
+                if (Vector3.Dot(leftFootVelocity, VRPlayer.leftFoot.position - VRPlayer.vrCam.transform.position) < 0)
+                {
+                    leftFootVelocity = Vector3.zero;
+                }
+                if (Vector3.Dot(rightFootVelocity, VRPlayer.rightFoot.position - VRPlayer.vrCam.transform.position) < 0)
+                {
+                    rightFootVelocity = Vector3.zero;
+                }
+
+                Vector3 footSlide = leftFootVelocity + rightFootVelocity;
+                float slideSpeed = footSlide.magnitude;
+                Vector3 movementDirection = -footSlide.normalized;
 
                 if (slideSpeed < 0.03f)
                 {
@@ -859,7 +870,7 @@ namespace ValheimVRMod.Scripts
 
                 float headSlide = Vector3.Dot(VRPlayer.headPhysicsEstimator.GetVelocity(), movementDirection);
 
-                if (headSlide < 0.5f)
+                if (headSlide < 0.125f)
                 {
                     return Vector3.zero;
                 }
