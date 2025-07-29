@@ -1453,7 +1453,7 @@ namespace ValheimVRMod.VRCore
                 return;
             }
 
-            hipTrackerIndex = VHVRConfig.HipTrackerIndex() < 0 ? detectHipDeviceIndex(): VHVRConfig.HipTrackerIndex();
+            hipTrackerIndex = VHVRConfig.HipTrackerIndex() <= 0 ? detectHipDeviceIndex(): VHVRConfig.HipTrackerIndex();
 
             Vector3 roomUpDirection = vrCam.transform.parent.up;
             pelvis.parent = hipTracker.transform;
@@ -1554,7 +1554,9 @@ namespace ValheimVRMod.VRCore
                 {
                     deviceIndex = i;
                 }
-                else if (trackedObjects[i].transform.localPosition.y < trackedObjects[deviceIndex].transform.localPosition.y)
+                else if (
+                    Vector3.Distance(trackedObjects[i].transform.localPosition, hipTracker.transform.localPosition) < 2 &&
+                    trackedObjects[i].transform.localPosition.y < trackedObjects[deviceIndex].transform.localPosition.y)
                 {
                     deviceIndex = i;
                 }
