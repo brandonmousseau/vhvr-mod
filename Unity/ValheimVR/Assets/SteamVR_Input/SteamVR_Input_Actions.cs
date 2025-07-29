@@ -77,6 +77,10 @@ namespace Valve.VR
         
         private static SteamVR_Action_Boolean p_valheim_StopGesturedLocomotion;
         
+        private static SteamVR_Action_Boolean p_valheim_ToggleRun;
+        
+        private static SteamVR_Action_Boolean p_valheim_HoldRun;
+        
         private static SteamVR_Action_Vibration p_valheim_Haptic;
         
         private static SteamVR_Action_Boolean p_laserPointers_LeftClick;
@@ -329,6 +333,22 @@ namespace Valve.VR
             }
         }
         
+        public static SteamVR_Action_Boolean valheim_ToggleRun
+        {
+            get
+            {
+                return SteamVR_Actions.p_valheim_ToggleRun.GetCopy<SteamVR_Action_Boolean>();
+            }
+        }
+        
+        public static SteamVR_Action_Boolean valheim_HoldRun
+        {
+            get
+            {
+                return SteamVR_Actions.p_valheim_HoldRun.GetCopy<SteamVR_Action_Boolean>();
+            }
+        }
+        
         public static SteamVR_Action_Vibration valheim_Haptic
         {
             get
@@ -410,6 +430,8 @@ namespace Valve.VR
                     SteamVR_Actions.valheim_UseLeft,
                     SteamVR_Actions.valheim_QuickActions,
                     SteamVR_Actions.valheim_StopGesturedLocomotion,
+                    SteamVR_Actions.valheim_ToggleRun,
+                    SteamVR_Actions.valheim_HoldRun,
                     SteamVR_Actions.valheim_Haptic,
                     SteamVR_Actions.laserPointers_LeftClick,
                     SteamVR_Actions.laserPointers_RightClick,
@@ -446,6 +468,8 @@ namespace Valve.VR
                     SteamVR_Actions.valheim_UseLeft,
                     SteamVR_Actions.valheim_QuickActions,
                     SteamVR_Actions.valheim_StopGesturedLocomotion,
+                    SteamVR_Actions.valheim_ToggleRun,
+                    SteamVR_Actions.valheim_HoldRun,
                     SteamVR_Actions.laserPointers_LeftClick,
                     SteamVR_Actions.laserPointers_RightClick,
                     SteamVR_Actions.laserPointers_ClickModifier,
@@ -481,6 +505,8 @@ namespace Valve.VR
                     SteamVR_Actions.valheim_UseLeft,
                     SteamVR_Actions.valheim_QuickActions,
                     SteamVR_Actions.valheim_StopGesturedLocomotion,
+                    SteamVR_Actions.valheim_ToggleRun,
+                    SteamVR_Actions.valheim_HoldRun,
                     SteamVR_Actions.laserPointers_LeftClick,
                     SteamVR_Actions.laserPointers_RightClick,
                     SteamVR_Actions.laserPointers_ClickModifier,
@@ -522,6 +548,8 @@ namespace Valve.VR
                     SteamVR_Actions.valheim_UseLeft,
                     SteamVR_Actions.valheim_QuickActions,
                     SteamVR_Actions.valheim_StopGesturedLocomotion,
+                    SteamVR_Actions.valheim_ToggleRun,
+                    SteamVR_Actions.valheim_HoldRun,
                     SteamVR_Actions.laserPointers_LeftClick,
                     SteamVR_Actions.laserPointers_RightClick,
                     SteamVR_Actions.laserPointers_ClickModifier,
@@ -561,6 +589,8 @@ namespace Valve.VR
             SteamVR_Actions.p_valheim_UseLeft = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/Valheim/in/UseLeft")));
             SteamVR_Actions.p_valheim_QuickActions = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/Valheim/in/QuickActions")));
             SteamVR_Actions.p_valheim_StopGesturedLocomotion = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/Valheim/in/StopGesturedLocomotion")));
+            SteamVR_Actions.p_valheim_ToggleRun = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/Valheim/in/ToggleRun")));
+            SteamVR_Actions.p_valheim_HoldRun = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/Valheim/in/HoldRun")));
             SteamVR_Actions.p_valheim_Haptic = ((SteamVR_Action_Vibration)(SteamVR_Action.Create<SteamVR_Action_Vibration>("/actions/Valheim/out/Haptic")));
             SteamVR_Actions.p_laserPointers_LeftClick = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/LaserPointers/in/LeftClick")));
             SteamVR_Actions.p_laserPointers_RightClick = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/LaserPointers/in/RightClick")));
