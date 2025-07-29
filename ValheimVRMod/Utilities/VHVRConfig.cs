@@ -397,7 +397,7 @@ namespace ValheimVRMod.Utilities
             hipTrackerIndex = config.Bind(
                 "General", "HipTrackerIndex", -1,
                 new ConfigDescription(
-                    "The device index of the hip tracker. Setting to -1 disables hip tracking.",
+                    "The device index of the hip tracker. Set to -1 disables hip tracking and 0 to auto-detect.",
                     new AcceptableValueRange<int>(-1, 20)));
             hipTrackerIndex.SettingChanged += ((o, i) => VRPlayer.RequestPelvisCaliberation());
 
