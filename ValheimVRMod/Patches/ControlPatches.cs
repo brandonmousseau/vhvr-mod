@@ -184,16 +184,19 @@ namespace ValheimVRMod.Patches {
         public static bool isCrouching { get; private set; }
 
         static void Postfix(ref float __result) {
-            if (VRControls.mainControlsActive) {
-                var joystick = VRControls.instance.GetJoyRightStickY();
-
-                togglingRun = joystick < TOGGLE_RUN_SENSITIVITY;
-                holdingRun = joystick < NON_TOGGLE_RUN_SENSITIVITY;
-                hasRunInput = VHVRConfig.ToggleRun() ? togglingRun : holdingRun;
-                isCrouching = joystick > CROUCH_SENSITIVITY;
-
-                __result = __result + joystick;
+            if (!VRControls.mainControlsActive)
+            {
+                return;
             }
+
+            var joystick = VRControls.instance.GetJoyRightStickY();
+
+            togglingRun = joystick < TOGGLE_RUN_SENSITIVITY;
+            holdingRun = joystick < NON_TOGGLE_RUN_SENSITIVITY;
+            hasRunInput = VHVRConfig.ToggleRun() ? togglingRun : holdingRun;
+            isCrouching = joystick > CROUCH_SENSITIVITY;
+
+            __result = __result + joystick;
         }
     }
 
@@ -485,7 +488,7 @@ namespace ValheimVRMod.Patches {
     class Player_SetControls_RunPatch
     {
 
-        private static bool lastUpdateRunInput = false;
+        private static bool lastToggleRunInput = false;
         private static bool runToggledOn = false;
 
         static void Prefix(Player __instance, ref bool run)
@@ -497,18 +500,19 @@ namespace ValheimVRMod.Patches {
 
             if (__instance.IsRiding())
             {
-                run = run || ZInput_GetJoyRightStickY_Patch.togglingRun;
+                run = run || toggleRun();
                 return;
             }
 
-            if (VHVRConfig.ToggleRun())
-            {
-                handleRunToggle(ref run);
-            }
-            else if (ZInput_GetJoyRightStickY_Patch.holdingRun)
+            if (holdRun())
             {
                 run = true;
+                runToggledOn = lastToggleRunInput = false;
                 VRControls.isAutoRunActive = false;
+            }
+            else
+            {
+                handleRunToggle(ref run);
             }
 
             run = run || VRControls.isAutoRunActive;
@@ -516,7 +520,8 @@ namespace ValheimVRMod.Patches {
 
         private static void handleRunToggle(ref bool run)
         {
-            bool runIsTriggered = ZInput_GetJoyRightStickY_Patch.togglingRun && !lastUpdateRunInput;
+            bool togglingRun = toggleRun();
+            bool runIsTriggered = toggleRun() && !lastToggleRunInput;
             bool crouchApplied = ZInput_GetJoyRightStickY_Patch.isCrouching;
             if (crouchApplied || !VRPlayer.isMoving || Player.m_localPlayer.m_stamina < 1)
             {
@@ -529,13 +534,32 @@ namespace ValheimVRMod.Patches {
                 {
                     VRControls.isAutoRunActive = runToggledOn = false;
                 }
-                else {
+                else
+                {
                     // If the player applies sprint input this update, toggle the sprint.
                     runToggledOn = !runToggledOn;
                 }
             }
             run = runToggledOn;
-            lastUpdateRunInput = ZInput_GetJoyRightStickY_Patch.togglingRun;
+            lastToggleRunInput = togglingRun;
+        }
+
+        private static bool toggleRun()
+        {
+            if (SteamVR_Actions.valheim_HoldRun.GetState(SteamVR_Input_Sources.Any))
+            {
+                return false;
+            }
+            return SteamVR_Actions.valheim_ToggleRun.activeBinding ?
+                SteamVR_Actions.valheim_ToggleRun.GetState(SteamVR_Input_Sources.Any) :
+                (VHVRConfig.ToggleRun() && ZInput_GetJoyRightStickY_Patch.togglingRun);
+        }
+
+        private static bool holdRun()
+        {
+            return SteamVR_Actions.valheim_HoldRun.activeBinding ?
+                SteamVR_Actions.valheim_HoldRun.GetState(SteamVR_Input_Sources.Any) :
+                (!VHVRConfig.ToggleRun() && ZInput_GetJoyRightStickY_Patch.holdingRun);
         }
     }
 
