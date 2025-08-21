@@ -457,7 +457,7 @@ namespace ValheimVRMod.Utilities
 
             if (meshFilter != null && handPosition != null)
             {
-                var estimatedCollider = EstimateWeaponCollider(meshFilter, (Vector3)handPosition);
+                var estimatedCollider = EstimateWeaponCollider(meshFilter, (Vector3)handPosition, EquipScript.getEquippedItem(item));
                 estimatedColliders[name] = estimatedCollider;
                 LogUtils.LogDebug(
                     "Estimated and registered collider for unknown weapon " + name + ": position " + estimatedCollider.pos + " scale " + estimatedCollider.scale);
@@ -723,7 +723,7 @@ namespace ValheimVRMod.Utilities
             Object.Destroy(gameObject.GetComponent<Collider>());
         }
 
-        private static WeaponColData EstimateWeaponCollider(MeshFilter meshFilter, Vector3 handPosition)
+        private static WeaponColData EstimateWeaponCollider(MeshFilter meshFilter, Vector3 handPosition, EquipType type)
         {
             var weaponPointing =
                 meshFilter.transform.InverseTransformDirection(
@@ -731,12 +731,30 @@ namespace ValheimVRMod.Utilities
             var handLocalPosition = meshFilter.transform.InverseTransformPoint(handPosition);
             var bounds = meshFilter.mesh.bounds;
             var weaponTip = bounds.center + weaponPointing * Mathf.Abs(Vector3.Dot(bounds.extents, weaponPointing));
-            var colliderLength = Vector3.Distance(weaponTip, handLocalPosition) * DEFAULT_WEAPON_COLLIDER_LENGTH_PROPORTION;
+            var colliderLength = EstimateColliderLength(Vector3.Distance(weaponTip, handLocalPosition), type);
             var colliderCenter = weaponTip - weaponPointing * (colliderLength * 0.5f);
             var colliderOffset = colliderCenter - bounds.center;
             var colliderSize =
                 bounds.size - (new Vector3(Mathf.Abs(colliderOffset.x), Mathf.Abs(colliderOffset.y), Mathf.Abs(colliderOffset.z))) * 2;
             return new WeaponColData(colliderCenter, Vector3.zero, colliderSize);
+        }
+
+        private static float EstimateColliderLength(float weaponTipDistanceFromHand, EquipType type)
+        {
+            switch (type)
+            {
+                case EquipType.Axe:
+                case EquipType.BattleAxe:
+                case EquipType.Club:
+                case EquipType.Sledge:
+                    return weaponTipDistanceFromHand * 0.375f;
+                case EquipType.Spear:
+                    return weaponTipDistanceFromHand * 0.875f;
+                case EquipType.Sword:
+                    return Mathf.Max(0.125f, weaponTipDistanceFromHand - 0.15f);
+                default:
+                    return weaponTipDistanceFromHand * 0.75f;
+            }
         }
 
         public static Vector3 GetWeaponVelocity(Vector3 handVelocity, Vector3 handAngularVelocity, Vector3 weaponOffset)
