@@ -1228,7 +1228,7 @@ namespace ValheimVRMod.Patches {
     {
         public static float currdodgetimer { get; private set; } = 0f;
         static Vector3 currDodgeDir;
-        static bool Prefix(Player __instance, float dt)
+        static bool Prefix(Player __instance, float dt, ref bool ___m_beenHitWhileDodging)
         {
             if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls())
             {
@@ -1244,7 +1244,10 @@ namespace ValheimVRMod.Patches {
                 !__instance.InDodge() && !__instance.IsStaggering() &&
                 !VRPlayer.vrPlayerInstance.wasDodging)
             {
-                float staminaCost = __instance.m_dodgeStaminaUsage - __instance.m_dodgeStaminaUsage * __instance.GetEquipmentDodgeStaminaModifier();
+                float staminaCost =
+                    __instance.m_dodgeStaminaUsage * (1 + __instance.GetEquipmentDodgeStaminaModifier()) - __instance.m_dodgeStaminaUsage * __instance.GetEquipmentDodgeStaminaModifier();
+                __instance.m_seman.ModifyDodgeStaminaUsage(staminaCost, ref staminaCost, true);
+                staminaCost *= Mathf.Lerp(1f, 0.5f, __instance.m_skills.GetSkillFactor(Skills.SkillType.Dodge));
                 if (__instance.HaveStamina(staminaCost))
                 {
                     __instance.ClearActionQueue();
@@ -1274,6 +1277,10 @@ namespace ValheimVRMod.Patches {
                 __instance.m_nview.GetZDO().Set(ZDOVars.s_dodgeinv, dodgeInvincible);
             }
             __instance.m_dodgeInvincibleCached = dodgeInvincible;
+            if (!__instance.m_inDodge)
+            {
+                ___m_beenHitWhileDodging = false;
+            }
             __instance.m_inDodge = inDodge;
             if (currdodgetimer > 0)
             {
