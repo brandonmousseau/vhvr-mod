@@ -201,7 +201,7 @@ namespace ValheimVRMod.Scripts
             {
                 return ShouldRotateHandForOneHandedWield() ?
                     weaponWield.originalPosition + (distanceBetweenGripAndRearEnd - 0.67f) * GetSingleHandedPointingDirection(weaponWield):
-                    weaponWield.originalPosition + (distanceBetweenGripAndRearEnd * 0.5f - 0.78f) * GetSingleHandedPointingDirection(weaponWield);
+                    weaponWield.originalPosition + (distanceBetweenGripAndRearEnd * 0.5f - 0.67f) * GetSingleHandedPointingDirection(weaponWield);
             }
 
             public override Quaternion GetDesiredSingleHandedRotation(WeaponWield weaponWield)
