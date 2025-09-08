@@ -36,7 +36,7 @@ namespace ValheimVRMod.Scripts
 
             public virtual Vector3 GetPreferredTwoHandedWeaponUp(WeaponWield weaponWield)
             {
-                return weaponWield.transform.up;
+                return weaponWield.originalRotation * Vector3.up;
             }
 
             public virtual float GetPreferredOffsetFromRearHand(float handDist, bool rearHandIsDominant)
