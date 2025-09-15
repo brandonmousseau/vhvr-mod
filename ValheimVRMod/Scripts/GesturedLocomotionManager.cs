@@ -881,12 +881,10 @@ namespace ValheimVRMod.Scripts
 
         class GesturedDodgeRoll : GesturedLocomotion
         {
-            private const float MIN_HAND_HEIGHT_RELATIVE_TO_EYE = -0.125f;
-            private const float MIN_HEAD_HORIZONTAL_SPEED = 1f;
+            private const float MIN_HAND_ELEVATION = -0.125f;
             private const float MAX_HEAD_VERTICAL_VELOCITY = -1.5f;
-            private const float MAX_HEIGHT = 0.8f;
-            private const float MIN_HAND_SPEED = 1.25f;
-            private const float MIN_TILT = 15f;
+            private const float MAX_HEIGHT = 0.875f;
+            private const float MIN_HAND_SPEED = 2;
 
             private Camera vrCam;
 
@@ -913,48 +911,46 @@ namespace ValheimVRMod.Scripts
                 {
                     vrCam = CameraUtils.getCamera(CameraUtils.VR_CAMERA);
                 }
-                if (vrCam == null || Vector3.Angle(upDirection.Value, vrCam.transform.up) < MIN_TILT)
+
+                if (vrCam == null)
                 {
                     return Vector3.zero;
                 }
 
-                Vector3 velocity = VRPlayer.headPhysicsEstimator.GetVelocity();
-                if (!isCrouching && Vector3.Dot(velocity, upDirection.Value) > 0.5f)
+                Vector3 rollDirection = Vector3.ProjectOnPlane(vrCam.transform.up, upDirection.Value);
+                if (rollDirection.sqrMagnitude < 0.0625f)
                 {
-                    return Vector3.zero;
+                    rollDirection = Vector3.ProjectOnPlane(-vrCam.transform.forward, upDirection.Value);
                 }
-
-                Vector3 horizontalVelocity = Vector3.ProjectOnPlane(velocity, upDirection.Value);
-                Vector3 tiltDirection = Vector3.ProjectOnPlane(vrCam.transform.up, upDirection.Value).normalized;
-
-                if (Vector3.Dot(horizontalVelocity, tiltDirection) < MIN_HEAD_HORIZONTAL_SPEED)
+                
+                var verticalSpeed = Vector3.Dot(VRPlayer.headPhysicsEstimator.GetVelocity(), upDirection.Value);
+                if (verticalSpeed > MAX_HEAD_VERTICAL_VELOCITY)
                 {
-                    return Vector3.zero;
-                }
-
-                if (!isCrouching)
-                {
-                    var verticalSpeed = Vector3.Dot(VRPlayer.headPhysicsEstimator.GetVelocity(), upDirection.Value);
-                    if (verticalSpeed > MAX_HEAD_VERTICAL_VELOCITY)
+                    if (!isCrouching ||
+                        GetHandAssistance(VRPlayer.leftHandPhysicsEstimator) < MIN_HAND_SPEED ||
+                        GetHandAssistance(VRPlayer.rightHandPhysicsEstimator) < MIN_HAND_SPEED)
                     {
                         return Vector3.zero;
                     }
                 }
-
-                if (!isCrouching &&
-                    !IsHandAssistingDodge(VRPlayer.leftHandPhysicsEstimator) &&
-                    !IsHandAssistingDodge(VRPlayer.rightHandPhysicsEstimator))
+                else if (GetHandAssistance(VRPlayer.leftHandPhysicsEstimator) + GetHandAssistance(VRPlayer.rightHandPhysicsEstimator) < MIN_HAND_SPEED)
                 {
                     return Vector3.zero;
                 }
 
-                return (horizontalVelocity.normalized - upDirection.Value) * 16f; 
+                return (rollDirection.normalized - upDirection.Value) * 16f;
             }
 
-            private bool IsHandAssistingDodge(PhysicsEstimator handPhyicsEstimator)
+            private float GetHandAssistance(PhysicsEstimator handPhyicsEstimator)
             {
-                return handPhyicsEstimator.GetVelocity().magnitude > MIN_HAND_SPEED &&
-                    Vector3.Dot(handPhyicsEstimator.transform.position - vrCam.transform.position, upDirection.Value) > MIN_HAND_HEIGHT_RELATIVE_TO_EYE;               
+                var headToHand = handPhyicsEstimator.transform.position - vrCam.transform.position;
+                var handElevationAboveHead = Vector3.Dot(headToHand, upDirection.Value);
+                if (handElevationAboveHead < MIN_HAND_ELEVATION)
+                {
+                    return 0;
+                }
+                var headToHandHorizontalDirection = (headToHand - upDirection.Value * handElevationAboveHead).normalized;
+                return Vector3.Dot(handPhyicsEstimator.GetVelocity(), headToHandHorizontalDirection);
             }
         }
     }
