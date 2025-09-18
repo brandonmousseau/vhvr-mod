@@ -50,6 +50,7 @@
                   }
                },
                "mode" : "button",
+               "parameters" : {},
                "path" : "/user/hand/left/input/trigger"
             },
             {
@@ -86,6 +87,7 @@
                   }
                },
                "mode" : "button",
+               "parameters" : {},
                "path" : "/user/hand/right/input/trigger"
             },
             {
@@ -149,6 +151,7 @@
                   }
                },
                "mode" : "trigger",
+               "parameters" : {},
                "path" : "/user/hand/left/input/grip"
             },
             {
@@ -158,6 +161,7 @@
                   }
                },
                "mode" : "trigger",
+               "parameters" : {},
                "path" : "/user/hand/right/input/grip"
             }
          ]
@@ -175,6 +179,7 @@
                   }
                },
                "mode" : "trigger",
+               "parameters" : {},
                "path" : "/user/hand/right/input/trigger"
             },
             {
@@ -184,6 +189,7 @@
                   }
                },
                "mode" : "button",
+               "parameters" : {},
                "path" : "/user/hand/right/input/y"
             },
             {
@@ -193,6 +199,7 @@
                   }
                },
                "mode" : "button",
+               "parameters" : {},
                "path" : "/user/hand/right/input/b"
             },
             {
@@ -202,6 +209,7 @@
                   }
                },
                "mode" : "button",
+               "parameters" : {},
                "path" : "/user/hand/left/input/trigger"
             }
          ]
@@ -214,7 +222,15 @@
          "sources" : []
       },
       "/actions/valheim" : {
-         "chords" : [],
+         "chords" : [
+            {
+               "inputs" : [
+                  [ "/user/hand/left/input/trigger", "click" ],
+                  [ "/user/hand/right/input/a", "single" ]
+               ],
+               "output" : "/actions/valheim/in/dodge"
+            }
+         ],
          "haptics" : [
             {
                "output" : "/actions/valheim/out/haptic",
@@ -250,6 +266,7 @@
                   }
                },
                "mode" : "joystick",
+               "parameters" : {},
                "path" : "/user/hand/left/input/joystick"
             },
             {
@@ -265,29 +282,33 @@
                   }
                },
                "mode" : "joystick",
+               "parameters" : {},
                "path" : "/user/hand/right/input/joystick"
             },
             {
                "inputs" : {
-                  "click": {
-                    "output": "/actions/valheim/in/jump"
+                  "click" : {
+                     "output" : "/actions/valheim/in/jump"
                   },
                   "touch" : {
                      "output" : "/actions/valheim/in/stopgesturedlocomotion"
                   }
                },
                "mode" : "button",
+               "parameters" : {},
                "path" : "/user/hand/right/input/a"
             },
             {
                "inputs" : {
-                  "click" : {                     "output" : "/actions/valheim/in/quickactions"
+                  "click" : {
+                     "output" : "/actions/valheim/in/quickactions"
                   },
                   "touch" : {
                      "output" : "/actions/valheim/in/stopgesturedlocomotion"
                   }
                },
                "mode" : "button",
+               "parameters" : {},
                "path" : "/user/hand/left/input/y"
             },
             {
@@ -300,6 +321,7 @@
                   }
                },
                "mode" : "button",
+               "parameters" : {},
                "path" : "/user/hand/left/input/x"
             },
             {
@@ -309,6 +331,7 @@
                   }
                },
                "mode" : "trigger",
+               "parameters" : {},
                "path" : "/user/hand/left/input/grip"
             },
             {
@@ -321,6 +344,7 @@
                   }
                },
                "mode" : "button",
+               "parameters" : {},
                "path" : "/user/hand/right/input/b"
             },
             {
@@ -330,6 +354,7 @@
                   }
                },
                "mode" : "trigger",
+               "parameters" : {},
                "path" : "/user/hand/left/input/trigger"
             },
             {
@@ -339,6 +364,7 @@
                   }
                },
                "mode" : "trigger",
+               "parameters" : {},
                "path" : "/user/hand/right/input/trigger"
             },
             {
@@ -348,6 +374,7 @@
                   }
                },
                "mode" : "trigger",
+               "parameters" : {},
                "path" : "/user/hand/right/input/grip"
             },
             {
@@ -357,6 +384,7 @@
                   }
                },
                "mode" : "button",
+               "parameters" : {},
                "path" : "/user/hand/left/input/trigger"
             },
             {
@@ -366,6 +394,7 @@
                   }
                },
                "mode" : "button",
+               "parameters" : {},
                "path" : "/user/hand/left/input/grip"
             },
             {
@@ -375,6 +404,7 @@
                   }
                },
                "mode" : "button",
+               "parameters" : {},
                "path" : "/user/hand/right/input/trigger"
             },
             {
@@ -384,7 +414,23 @@
                   }
                },
                "mode" : "button",
+               "parameters" : {},
                "path" : "/user/hand/right/input/grip"
+            },
+            {
+               "inputs" : {
+                  "north" : {
+                     "output" : "/actions/valheim/in/togglerun"
+                  },
+                  "south" : {
+                     "output" : "/actions/valheim/in/togglecrouch"
+                  }
+               },
+               "mode" : "dpad",
+               "parameters" : {
+                  "sub_mode" : "touch"
+               },
+               "path" : "/user/hand/right/input/joystick"
             }
          ]
       }
@@ -392,6 +438,7 @@
    "category" : "steamvr_input",
    "controller_type" : "oculus_touch",
    "description" : "",
+   "interaction_profile" : "",
    "name" : "Konfiguration „ValheimVR [Testing]“ für Oculus Touch gespeichert",
    "options" : {},
    "simulated_actions" : []

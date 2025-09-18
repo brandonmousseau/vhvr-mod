@@ -193,6 +193,22 @@ namespace Valve.VR
             }
         }
         
+        public virtual SteamVR_Action_Boolean ToggleCrouch
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_ToggleCrouch;
+            }
+        }
+        
+        public virtual SteamVR_Action_Boolean Dodge
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_Dodge;
+            }
+        }
+        
         public virtual SteamVR_Action_Vibration Haptic
         {
             get

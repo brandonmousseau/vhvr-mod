@@ -156,6 +156,15 @@
       "type": "boolean"
     },
     {
+      "name": "/actions/Valheim/in/ToggleCrouch",
+      "type": "boolean",
+      "requirement": "suggested"
+    },
+    {
+      "name": "/actions/Valheim/in/Dodge",
+      "type": "boolean"
+    },
+    {
       "name": "/actions/Valheim/out/Haptic",
       "type": "vibration",
       "requirement": "mandatory"
