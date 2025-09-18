@@ -124,6 +124,9 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> altPieceRotationDelay;
         private static ConfigEntry<bool> runIsToggled;
         private static ConfigEntry<float> autoRunThreshold;
+        private static ConfigEntry<bool> crouchIsHeld;
+        private static ConfigEntry<int> crouchHeldTime;
+        private static ConfigEntry<float> crouchSensitivity;
         private static ConfigEntry<bool> viewTurnWithMountedAnimal;
         private static ConfigEntry<bool> advancedBuildMode;
         private static ConfigEntry<bool> freePlaceAutoReturn;
@@ -750,6 +753,20 @@ namespace ValheimVRMod.Utilities
                                             1f,
                                             new ConfigDescription("The threshold of stick Y-input at which run is triggered. Set to 1 to disable Y-input-triggered auto-run. Recommended to set to 0.5f when using VR treadmills.",
                                             new AcceptableValueRange<float>(0.25f, 1f)));
+            crouchIsHeld = config.Bind("Controls",
+                           "CrouchIsHeld",
+                           false,
+                           "Decides whether you need to hold down for a period of time on the right analog stick to crouch. Useful if crouch is triggering randomly when using the right analog stick.");
+            crouchHeldTime = config.Bind("Controls",
+                            "CrouchHoldTime",
+                            500,
+                            new ConfigDescription("How long crouch needs to be held before a crouch actually happens (in milliseconds).",
+                                new AcceptableValueRange<int>(100, 1000)));
+            crouchSensitivity = config.Bind("Controls",
+                                "CrouchSensitivity",
+                                1f,
+                                new ConfigDescription("Sensitivity in X-axis direction to determine if crouch is actually being triggered. 100% means all of X-axis considered, 10% means only a narrow range is considered.",
+                                new AcceptableValueRange<float>(0.1f, 1f)));
             viewTurnWithMountedAnimal = config.Bind("Controls",
                                        "ViewTurnWithMountedAnimal",
                                        false,
@@ -1510,6 +1527,22 @@ namespace ValheimVRMod.Utilities
         {
             return autoRunThreshold.Value;
         }
+
+        public static bool CrouchHeld()
+        {
+            return crouchIsHeld.Value;
+        }
+
+        public static int CrouchHeldTime()
+        {
+            return crouchHeldTime.Value;
+        }
+
+        public static float CrouchSensitivity()
+        { 
+            return crouchSensitivity.Value; 
+        }
+
 
         public static bool LeftHanded()
         {

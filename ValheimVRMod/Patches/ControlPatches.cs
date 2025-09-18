@@ -189,14 +189,19 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
-            var joystick = VRControls.instance.GetJoyRightStickY();
+            var joystickXAxis = VRControls.instance.GetJoyRightStickX();
+            var joystickYAxis = VRControls.instance.GetJoyRightStickY();
 
-            togglingRun = joystick < TOGGLE_RUN_SENSITIVITY;
-            holdingRun = joystick < NON_TOGGLE_RUN_SENSITIVITY;
+            togglingRun = joystickYAxis < TOGGLE_RUN_SENSITIVITY;
+            holdingRun = joystickYAxis < NON_TOGGLE_RUN_SENSITIVITY;
             hasRunInput = VHVRConfig.ToggleRun() ? togglingRun : holdingRun;
-            isCrouching = joystick > CROUCH_SENSITIVITY;
 
-            __result = __result + joystick;
+            if (System.Math.Abs(joystickXAxis) <= VHVRConfig.CrouchSensitivity())
+            {
+                isCrouching = joystickYAxis >= CROUCH_SENSITIVITY;
+            }
+
+            __result = __result + joystickYAxis;
         }
     }
 
@@ -629,10 +634,62 @@ namespace ValheimVRMod.Patches {
             }
         }
 
+        private static bool lastUpdateCrouchStarted = false;
+        private static bool lastUpdateCrouchFinished = false;
+        private static long lastUpdateCrouchTime;
+
         static void handleControllerOnlySneak(Player player, ref bool crouch, bool isCrouchToggled)
         {
-            bool crouchToggleTriggered = ZInput_GetJoyRightStickY_Patch.isCrouching && !lastUpdateCrouchInput;
+            bool crouchToggleTriggered;
+
+            if (VHVRConfig.CrouchHeld())
+            {
+                crouchToggleTriggered = ZInput_GetJoyRightStickY_Patch.isCrouching;
+
+                if (crouchToggleTriggered)
+                {
+                    // crouch input detected, check if this input has been held down long enough
+                    long currentTime = new System.DateTimeOffset(System.DateTime.UtcNow).ToUnixTimeMilliseconds();
+                    if (!lastUpdateCrouchStarted)
+                    {
+                        lastUpdateCrouchStarted = true;
+                        lastUpdateCrouchTime = currentTime;
+
+                        // since the held just started, we don't let the crouch trigger just yet
+                        crouchToggleTriggered = false; 
+                    }
+                    else if (!lastUpdateCrouchFinished)
+                    {
+                        // if the held has happened long enough, we allow the trigger to occur
+                        if (System.Math.Abs(currentTime - lastUpdateCrouchTime) >= VHVRConfig.CrouchHeldTime())
+                        {
+                            lastUpdateCrouchFinished = true;
+                        }
+                        else
+                        {
+                            crouchToggleTriggered = false;
+                        }
+                    }
+                    else if (lastUpdateCrouchStarted && lastUpdateCrouchFinished)
+                    {
+                        // the trigger already occurred, we don't allow it to happen again until the user lets go of the input
+                        crouchToggleTriggered = false;
+                    }
+                }
+                else
+                {
+                    // the user let go of the input, reset the hold timer
+                    lastUpdateCrouchStarted = false;
+                    lastUpdateCrouchFinished = false;
+                }
+            }
+            else
+            {
+                crouchToggleTriggered = ZInput_GetJoyRightStickY_Patch.isCrouching && !lastUpdateCrouchInput;
+            }
+
             bool standupTriggered = ZInput_GetJoyRightStickY_Patch.hasRunInput;
+
             if (crouchToggleTriggered)
             {
                 crouch = true;
@@ -655,6 +712,7 @@ namespace ValheimVRMod.Patches {
                     _isJoystickSneaking = false;
                 }
             }
+
             // Save for next update
             lastUpdateCrouchInput = ZInput_GetJoyRightStickY_Patch.isCrouching;
         }
