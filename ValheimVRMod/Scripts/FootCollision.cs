@@ -156,7 +156,7 @@ namespace ValheimVRMod.Scripts
             {
                 attackTargetMeshCooldown = target.AddComponent<AttackTargetMeshCooldown>();
             }
-
+            attackTargetMeshCooldown.showOutline = VHVRConfig.ShowNonTerrainAttackOutline();
             return isSecondaryAttack ? attackTargetMeshCooldown.tryTriggerSecondaryAttack(duration) : attackTargetMeshCooldown.tryTriggerPrimaryAttack(duration, speed);
         }
     }

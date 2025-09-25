@@ -12,7 +12,6 @@ namespace ValheimVRMod.Scripts {
         public static bool durabilityDrained;
         private static AttackTargetMeshCooldown primaryTargetMeshCooldown;
 
-        public bool showOutline = true;
         private bool isSecondaryAttackCooldown;
 
         public bool tryTriggerPrimaryAttack(float cd, float speed)
@@ -93,11 +92,6 @@ namespace ValheimVRMod.Scripts {
         public static bool isPrimaryTargetInCooldown()
         {
             return primaryTargetMeshCooldown != null && primaryTargetMeshCooldown.inCoolDown();
-        }
-
-        protected override Outline.Mode activeOutlineMode()
-        {
-            return showOutline ? Outline.Mode.OutlineVisible : Outline.Mode.OutlineHidden;
         }
         
         protected override bool keepOutlineInstance()

@@ -41,7 +41,7 @@ namespace ValheimVRMod.Utilities
                     -0.608f,  2.267f, 0,
                     0,  0, 0,
                     1.000489f,  0.177166f, 0.2626824f
-                )}, {   // PICKAXES
+                )}, {
                 "PickaxeStone", WeaponColData.create(
                     -0.608f,  2.267f, 0,
                     0,  0, 0,
@@ -102,14 +102,11 @@ namespace ValheimVRMod.Utilities
                     0,  0, 0,
                     0.08946446f,  0.05617056f, 1.1811694f
                 )}, {
-                // SpearChitin currently has no melee attack, thus collider throws error.
-                // Still keeping this commented, in case it changes some day
-                //
-                // "SpearChitin", WeaponColData.create( 
-                //     0,  1.12f, 0.008f,
-                //     0,  0, 0,
-                //     0.01591795f,  0.8536723f, 0.09076092f
-                // )}, {
+                "SpearChitin", WeaponColData.create( 
+                     0,  1.12f, 0.008f,
+                     0,  0, 0,
+                     0.01591795f,  0.8536723f, 0.09076092f
+                )}, {
                 "SpearElderbark", WeaponColData.create(
                     0,  1.7915f, 0,
                     0,  0, 0,
@@ -260,11 +257,6 @@ namespace ValheimVRMod.Utilities
                     0, 0, 0,
                     0.3860153f,  0.3521031f, 0.02278163f
                 )}, {
-                "PickaxeBlackMetal", WeaponColData.create(
-                    0.048f,  0.857f, 0.001f,
-                    0, 0, -1.849f,
-                    0.6818599f,  0.06523325f, 0.02278163f
-                )}, {
                 "SledgeDemolisher", WeaponColData.create(
                     0,  1.2215f, -0.0019f,
                     0, 0, 0,
@@ -285,16 +277,6 @@ namespace ValheimVRMod.Utilities
                     0,  0, 0,
                     0.09493963f,  1.387952f, 0.01100477f
                 )}
-        };
-
-        private static readonly Dictionary<EquipType, WeaponColData> compatibilityColliders = new Dictionary<EquipType, WeaponColData>
-        {
-            {
-                EquipType.Pickaxe, WeaponColData.create(
-                    0,  1.9189f, 0,
-                    0,  0, 0,
-                    2.865605f,  0.1f, 0.1f
-            )}
         };
 
         private static readonly Dictionary<EquipType, WeaponColData> DUAL_WIELD_COLLIDERS =
@@ -447,12 +429,6 @@ namespace ValheimVRMod.Utilities
                 LogUtils.LogDebug(
                     "Estimated and registered collider for unknown weapon " + name + ": position " + estimatedCollider.pos + " scale " + estimatedCollider.scale);
                 return estimatedCollider;
-            }
-
-            if (item != null && compatibilityColliders.ContainsKey(EquipScript.getEquippedItem(item)))
-            {
-                // TODO: consider removing compatibility colliders.
-                return compatibilityColliders[EquipScript.getEquippedItem(item)];
             }
 
             throw new InvalidEnumArgumentException();
@@ -717,10 +693,12 @@ namespace ValheimVRMod.Utilities
             var bounds = meshFilter.mesh.bounds;
             var weaponTip = bounds.center + weaponPointing * Mathf.Abs(Vector3.Dot(bounds.extents, weaponPointing));
             var colliderLength = EstimateColliderLength(Vector3.Distance(weaponTip, handLocalPosition), type);
-            var colliderCenter = type == EquipType.Pickaxe ? weaponTip : weaponTip - weaponPointing * (colliderLength * 0.5f);
+            if (type == EquipType.Pickaxe) LogUtils.LogWarning("Estimated: " + colliderLength);
+            var colliderCenter = (type == EquipType.Pickaxe ? weaponTip : weaponTip - weaponPointing * (colliderLength * 0.5f));
             var colliderOffset = colliderCenter - bounds.center;
             var colliderSize =
                 bounds.size - (new Vector3(Mathf.Abs(colliderOffset.x), Mathf.Abs(colliderOffset.y), Mathf.Abs(colliderOffset.z))) * 2;
+            colliderSize = Vector3.Max(colliderSize, colliderLength * weaponPointing);
             return new WeaponColData(colliderCenter, Vector3.zero, colliderSize);
         }
 
@@ -733,6 +711,7 @@ namespace ValheimVRMod.Utilities
                 case EquipType.Club:
                 case EquipType.Sledge:
                     return weaponTipDistanceFromHand * 0.375f;
+                case EquipType.Pickaxe:
                 case EquipType.Spear:
                     return weaponTipDistanceFromHand * 0.875f;
                 case EquipType.Sword:
