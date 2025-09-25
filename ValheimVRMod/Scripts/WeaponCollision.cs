@@ -45,7 +45,8 @@ namespace ValheimVRMod.Scripts
             LayerUtils.WATERVOLUME_LAYER,
             LayerUtils.WATER,
             LayerUtils.UI_PANEL_LAYER,
-            LayerUtils.CHARARCTER_TRIGGER
+            LayerUtils.CHARARCTER_TRIGGER,
+            LayerUtils.ITEM_LAYER,
         };
 
         private void Awake()
@@ -568,6 +569,14 @@ namespace ValheimVRMod.Scripts
             isBackSlash = Vector3.Angle(velocity, LocalWeaponWield.weaponForward) > 135;
             isStab = !isBackSlash && WeaponCollision.isStab(velocity);
 
+            if (weaponWield.twoHandedState == WeaponWield.TwoHandedState.SingleHanded &&
+                EquipScript.getRight() == EquipType.Polearms &&
+                !TwoHandedGeometry.LocalAtgeirGeometryProvider.UsingArmpitAnchor)
+            {
+                // When wielding polearms with only one hand without armpit anchor, make attack harder to trigger
+                return isStab && speed > GetMinSpeed();
+            }
+
             return isStab || speed > GetMinSpeed();
         }
 
@@ -581,7 +590,7 @@ namespace ValheimVRMod.Scripts
                 case EquipType.Sledge:
                 case EquipType.Polearms:
                     // Increase speed requirement when wielding certain two-handed weapons with only one hand.
-                    return VHVRConfig.SwingSpeedRequirement() * 1.5f;
+                    return VHVRConfig.TwoHandedWield() ? VHVRConfig.SwingSpeedRequirement() * 1.5f : VHVRConfig.SwingSpeedRequirement();
                 default:
                     return itemIsTool ? MIN_LONG_TOOL_SPEED : VHVRConfig.SwingSpeedRequirement();
             }

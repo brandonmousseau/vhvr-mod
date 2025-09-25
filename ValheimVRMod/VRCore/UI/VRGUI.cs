@@ -54,13 +54,14 @@ namespace ValheimVRMod.VRCore.UI
         public static bool isResized;
         public static readonly string MENU_GUI_CANVAS = "GUI";
         public static readonly string PASSWORD_CANVAS = "Password";
-        public static readonly string IN_GAME_GUI_CANVAS_LEGACY = "LoadingGUI";
         public static readonly string HUD_GUI_CANVAS = "HUD";
-        public static readonly string CURSOR_GUI_CANVAS = "Scaled 3D Viewport";
+        public static readonly string CURSOR_GUI_CANVAS = "UnifiedPopup";
         public static readonly string CHAT_BOX = "Chat_box";
         public static readonly string[] ADDITIONAL_GUI_CANVAS_NAMES = new string[]
         {
             "Chat",
+            "Connecting",
+            "EnemyHud",
             "TextViewer",
             "JoinCodeOverlay",
             "Store_Screen",
@@ -72,9 +73,9 @@ namespace ValheimVRMod.VRCore.UI
             "TextInput",
             "HudMessage",
             "ConnectionPanel",
-            "UnifiedPopup",
             "Tutorial",
-            "BarberGui"
+            "BarberGui",
+            "Scaled 3D Viewport"
         };
         private static readonly string OVERLAY_KEY = "VALHEIM_VR_MOD_OVERLAY";
         private static readonly string OVERLAY_NAME = "Valheim VR";
@@ -521,9 +522,9 @@ namespace ValheimVRMod.VRCore.UI
             _guiCanvases.Clear();
             foreach (var canvas in GameObject.FindObjectsOfType<Canvas>(includeInactive: true))
             {
-                if (canvas.name == MENU_GUI_CANVAS || canvas.name == PASSWORD_CANVAS || canvas.name == IN_GAME_GUI_CANVAS_LEGACY)
+                if (canvas.name == MENU_GUI_CANVAS || canvas.name == PASSWORD_CANVAS)
                 {
-                    _cursorGuiCanvas = _hudGuiCanvas = canvas;
+                    _hudGuiCanvas = canvas;
                     _guiCanvases.Add(canvas);
                 }
                 else if (canvas.name == CURSOR_GUI_CANVAS)
@@ -535,7 +536,7 @@ namespace ValheimVRMod.VRCore.UI
                 {
                     _hudGuiCanvas = canvas;
                     _guiCanvases.Add(canvas);
-                } 
+                }
                 else if (canvas.name == CHAT_BOX)
                 {
                     _chatBox = canvas;

@@ -26,12 +26,14 @@ namespace ValheimVRMod.Scripts
         private Hand thisHand {  get { return isRightHand ? VRPlayer.rightHand : VRPlayer.leftHand; } }
 
         public static float LocalPlayerSecondaryAttackCooldown = 0;
+        public static bool ShouldSecondaryKnifeHoldInverse { get; private set; }
 
         private static readonly int[] NONATTACKABLE_LAYERS = {
             LayerUtils.WATERVOLUME_LAYER,
             LayerUtils.WATER,
             LayerUtils.UI_PANEL_LAYER,
             LayerUtils.CHARARCTER_TRIGGER,
+            LayerUtils.ITEM_LAYER,
         };
 
         public bool isGrabbingJumpingAid { get { return lastGrabbedType == Grabbable.ENVIRONMENT || lastGrabbedType == Grabbable.IMAGINARY_CLIMIBNG_HOLD; } }
@@ -45,6 +47,7 @@ namespace ValheimVRMod.Scripts
         private Vector3 desiredPosition;
         private Quaternion desiredRotation;
         private GameObject debugColliderIndicator;
+        private WeaponColData colliderData;
 
         private void Awake()
         {
@@ -387,9 +390,18 @@ namespace ValheimVRMod.Scripts
             ItemDrop.ItemData item;
             bool isCurrentlySecondaryAttack = false;
             Attack attack;
-            if (holdingTorchAsNonDominantHand())
+            if (holdingSecondaryWeapon())
             {
-                item = Player.m_localPlayer.GetLeftItem();
+                if (EquipScript.getLeft() != EquipType.Torch &&
+                    EquipScript.getRight() != EquipType.Torch &&
+                    EquipScript.getRight() != EquipType.None)
+                {
+                    item = Player.m_localPlayer.GetRightItem();
+                }
+                else
+                {
+                    item = Player.m_localPlayer.GetLeftItem();
+                }
                 attack = item.m_shared.m_attack.Clone();
             }
             else
@@ -467,16 +479,20 @@ namespace ValheimVRMod.Scripts
 
         private void refreshColliderData()
         {
-            var newEquipType = holdingTorchAsNonDominantHand() ? EquipType.Torch : EquipScript.getRight();
+            var newEquipType =
+                hasDualWieldingWeaponEquipped() || (isRightHand ^ VHVRConfig.LeftHanded()) ?
+                EquipScript.getRight() :
+                EquipScript.getLeft();
 
             if (!Player.m_localPlayer || newEquipType == currentEquipType)
             {
+                RotateColliderForSecondaryWeapon();
                 return;
             }
 
             currentEquipType = newEquipType;
 
-            var colliderData = WeaponUtils.GetDualWieldLeftHandColliderData(newEquipType);
+            colliderData = WeaponUtils.GetDualWieldLeftHandColliderData(newEquipType);
 
             desiredPosition =
                 isRightHand ?
@@ -505,21 +521,30 @@ namespace ValheimVRMod.Scripts
                 return false;
             }
 
-            if (handGesture.isHandFree())
+            if (handGesture.isHandFree() || holdingShield())
             {
                 return SteamVR_Actions.valheim_Grab.GetState(inputSource);
             }
 
-            return hasDualWieldingWeaponEquipped() || holdingTorchAsNonDominantHand();
+            return hasDualWieldingWeaponEquipped() || holdingSecondaryWeapon();
         }
 
-        private bool holdingTorchAsNonDominantHand()
+        private bool holdingSecondaryWeapon()
         {
             if (isRightHand ^ VHVRConfig.LeftHanded())
             {
                 return false;
             }
-            return EquipScript.getLeft() == EquipType.Torch;
+            return EquipScript.getLeft() == EquipType.Torch || EquipScript.getLeft() == EquipType.Knife;
+        }
+
+        private bool holdingShield()
+        {
+            if (isRightHand ^ VHVRConfig.LeftHanded())
+            {
+                return false;
+            }
+            return EquipScript.getLeft() == EquipType.Shield;
         }
 
         public bool hasMomentum(out float speed, out bool isJab)
@@ -553,12 +578,33 @@ namespace ValheimVRMod.Scripts
 
         public bool blockingWithFist()
         {
-            if (!handGesture.isHandFree() && !hasDualWieldingWeaponEquipped())
+            if (!handGesture.isHandFree() && !hasDualWieldingWeaponEquipped() && !holdingSecondaryWeapon())
             {
                 return false;
             }
 
             return SteamVR_Actions.valheim_Grab.GetState(inputSource);
+        }
+
+        private void RotateColliderForSecondaryWeapon()
+        {
+            if (isRightHand ^ VHVRConfig.LeftHanded())
+            {
+                return;
+            }
+
+            if (EquipScript.getLeft() != EquipType.Knife)
+            {
+                ShouldSecondaryKnifeHoldInverse = false;
+                return;
+            }
+
+            ShouldSecondaryKnifeHoldInverse = WeaponUtils.MaybeFlipKnife(ShouldSecondaryKnifeHoldInverse, !isRightHand);
+
+            desiredPosition =
+                isRightHand ^ ShouldSecondaryKnifeHoldInverse ?
+                Vector3.Reflect(colliderData.pos, Vector3.right) :
+                colliderData.pos;
         }
     }
 }

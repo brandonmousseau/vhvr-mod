@@ -53,6 +53,39 @@ namespace ValheimVRMod.Patches {
         }
     }
 
+    [HarmonyPatch(typeof(Player), nameof(Player.TeleportTo))]
+    class WaterLevelFixPatch
+    {
+        public static void Postfix(Player __instance, bool __result)
+        {
+            if (Player.m_localPlayer != __instance || VHVRConfig.NonVrPlayer() || !__result)
+            {
+                return;
+            }
+
+            __instance.m_liquids[(int)LiquidType.Water] = 0;
+            __instance.SetLiquidLevel(-10000, LiquidType.Water, null);
+        }
+    }
+
+    [HarmonyPatch(typeof(Character), nameof(Character.Decrement))]
+    class CharacterDecrementPatch
+    {
+        public static void Postfix(Character __instance, ref int __result, LiquidType type)
+        {
+            if ((Character) Player.m_localPlayer != __instance || VHVRConfig.NonVrPlayer())
+            {
+                return;
+            }
+
+            if (__result < 0 && type == LiquidType.Water)
+            {
+                __instance.m_liquids[(int)LiquidType.Water] = 0;
+                __result = 0;
+            }
+        }
+    }
+
     /**
      * Remove attack animation by speeding it up. It only applies to attack moves,
      * because the original method switches it back to normal for other animations

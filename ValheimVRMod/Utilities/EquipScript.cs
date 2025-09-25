@@ -216,6 +216,11 @@ namespace ValheimVRMod.Utilities
                     return EquipType.Lantern;
             }
 
+            if (item?.m_shared.m_attack.m_attackAnimation == "knife_stab")
+            {
+                return EquipType.Knife;
+            }
+
             return EquipType.None;
         }
 

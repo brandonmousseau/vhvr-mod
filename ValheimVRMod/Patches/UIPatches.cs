@@ -421,6 +421,19 @@ namespace ValheimVRMod.Patches
             }
         }
 
+        [HarmonyPatch(typeof(EnemyHud), "RemoveCharacterHud")]
+        class EnemyHud_RemoveCharacterHud_Patch
+        {
+            public static void Prefix(Character character)
+            {
+                if (VHVRConfig.NonVrPlayer())
+                {
+                    return;
+                }
+                EnemyHudManager.instance.RemoveEnemyHud(character);
+            }
+        }
+
         // The UpdateHuds method is responsible for updating values
         // of any active Enemy huds (ie, health, level, alert status etc) as
         // well as removing any huds that should no longer active. Rather
@@ -432,8 +445,6 @@ namespace ValheimVRMod.Patches
         class EnemyHud_UpdateHuds_Patch
         {
             private static FieldInfo guiField = AccessTools.Field(typeof(EnemyHud.HudData), nameof(EnemyHud.HudData.m_gui));
-            private static MethodInfo destroyMethod =
-                AccessTools.Method(typeof(UnityEngine.Object), "Destroy", new Type[] { typeof(UnityEngine.Object) });
             private static MethodInfo getHealthPercentageMethod =
                 AccessTools.Method(typeof(Character), nameof(Character.GetHealthPercentage));
             private static MethodInfo getLevelMethod =
@@ -463,12 +474,6 @@ namespace ValheimVRMod.Patches
             private static void AssertCharacter(Character c, [CallerMemberName] string caller = "")
             {
                 if (c is null) Debug.LogError($"ASSERT FAILED: Character c is null in {caller}");
-            }
-
-            private static void DestroyHud(Character c)
-            {
-                AssertCharacter(c);
-                EnemyHudManager.instance.DestroyHudGui(c);
             }
 
             // Some wrapper methods to use as the Transpiler's Call targets
@@ -568,8 +573,6 @@ namespace ValheimVRMod.Patches
                 var patched = new List<CodeInstruction>();
                 for (int i = 0; i < original.Count; i++) {
                     patched.Add(original[i]);
-                    // FIXME: Mystlands broke this
-                    MaybeAddDestroyHudInstructions(original, ref patched, i);
                     MaybeAddUpdateHealthInstructions(original, ref patched, i);
                     MaybeAddUpdateLevelInstructions(original, ref patched, i);
                     MaybeAddAIAlertnessUpdateInstructions(original, ref patched, i);
@@ -606,18 +609,6 @@ namespace ValheimVRMod.Patches
                     // Need to remove our mirror from the enemy hud dictionary
                     patched.Add(new CodeInstruction(OpCodes.Ldloc_3));
                     patched.Add(CodeInstruction.Call(typeof(EnemyHud_UpdateHuds_Patch), nameof(RemoveHud)));
-                }
-            }
-
-            private static void MaybeAddDestroyHudInstructions(List<CodeInstruction> original, ref List<CodeInstruction> patched, int i)
-            {
-                var instruction = original[i];
-                if (instruction.Calls(destroyMethod))
-                {
-                    // The current hud is being destroyed here so
-                    // lets destroy out mirror gui too.
-                    LoadCharacterField(ref patched);
-                    patched.Add(CodeInstruction.Call(typeof(EnemyHud_UpdateHuds_Patch), nameof(DestroyHud)));
                 }
             }
 
@@ -1116,7 +1107,7 @@ namespace ValheimVRMod.Patches
     {
         public static void Postfix(DamageText __instance, Vector3 pos, bool mySelf)
         {
-            if (VHVRConfig.NonVrPlayer())
+            if (VHVRConfig.NonVrPlayer() || !VHVRConfig.ShowDamageText())
             {
                 return;
             }

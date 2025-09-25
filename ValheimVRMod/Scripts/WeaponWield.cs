@@ -4,7 +4,7 @@ using ValheimVRMod.Utilities;
 
 namespace ValheimVRMod.Scripts
 {
-    public abstract class WeaponWield : MonoBehaviour, LongGripStateProvider
+    public abstract class WeaponWield : MonoBehaviour, WeaponWield.LongGripStateProvider
     {
         protected bool currentTwoHandedWieldStartedWithLongGrip { get; private set; }
 
@@ -38,7 +38,7 @@ namespace ValheimVRMod.Scripts
 
         private EquipType equipType;
         private bool isLocal;
-        private bool isDominantHandWeapon;
+        protected bool isDominantHandWeapon { get; private set; }
 
         public WeaponWield Initialize(
             ItemDrop.ItemData item, string itemName, bool isDominantHandWeapon, WeaponWieldSync.TwoHandedStateProvider twoHandedStateProvider = null)
@@ -206,6 +206,8 @@ namespace ValheimVRMod.Scripts
             switch (equipType)
             {
                 case EquipType.Axe:
+                case EquipType.Pickaxe:
+                    return new TwoHandedGeometry.DefaultGeometryProvider(distanceBetweenGripAndRearEnd * 0.5f);
                 case EquipType.Club:
                 case EquipType.Cultivator:
                 case EquipType.Fishing:
@@ -232,8 +234,6 @@ namespace ValheimVRMod.Scripts
                         return new TwoHandedGeometry.StaffGeometryProvider(distanceBetweenGripAndRearEnd);
                     }
                     break;
-                case EquipType.Pickaxe:
-                    return new TwoHandedGeometry.DefaultGeometryProvider(distanceBetweenGripAndRearEnd * 0.75f);
                 case EquipType.Polearms:
                     return isLocal ?
                         new TwoHandedGeometry.LocalAtgeirGeometryProvider(distanceBetweenGripAndRearEnd, this) :
@@ -241,11 +241,13 @@ namespace ValheimVRMod.Scripts
                 case EquipType.Scythe:
                     return new TwoHandedGeometry.ScytheGeometryProvider(IsPlayerLeftHanded(), distanceBetweenGripAndRearEnd);
                 case EquipType.Sledge:
-                    return new TwoHandedGeometry.SledgeGeometryProvider(distanceBetweenGripAndRearEnd);
+                    return isLocal ?
+                        new TwoHandedGeometry.LocalSledgeGeometryProvider(distanceBetweenGripAndRearEnd) :
+                        new TwoHandedGeometry.SledgeGeometryProvider(distanceBetweenGripAndRearEnd);
                 case EquipType.Sword:
                     if (isLocal)
                     {
-                        return new TwoHandedGeometry.LocalSwordGeometryProvider(distanceBetweenGripAndRearEnd);
+                        return new TwoHandedGeometry.LocalSwordGeometryProvider(Mathf.Max(distanceBetweenGripAndRearEnd * 0.75f, 0.125f));
                     }
                     break;
                 case EquipType.Spear:

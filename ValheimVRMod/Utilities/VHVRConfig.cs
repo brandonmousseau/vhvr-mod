@@ -41,6 +41,8 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> allowMovementWhenInMenu;
         private static ConfigEntry<bool> showDebugColliders;
         private static ConfigEntry<int> hipTrackerIndex;
+        private static ConfigEntry<int> leftFootTrackerIndex;
+        private static ConfigEntry<int> rightFootTrackerIndex;
 
         // UI Settings
         private static ConfigEntry<float> overlayCurvature;
@@ -110,10 +112,8 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> smoothSnapTurn;
         private static ConfigEntry<float> smoothSnapSpeed;
         private static ConfigEntry<bool> charaterMovesWithHeadset;
-        private static ConfigEntry<bool> roomScaleSneaking;
         private static ConfigEntry<float> roomScaleSneakHeight;
-        private static ConfigEntry<bool> exclusiveRoomScaleSneak;
-        private static ConfigEntry<bool> trackFeet;
+        private static ConfigEntry<string> sneakInput;
         private static ConfigEntry<string> gesturedLocomotion;
         private static ConfigEntry<float> gesturedJumpPreparationHeight;
         private static ConfigEntry<float> gesturedJumpMinSpeed;
@@ -140,6 +140,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<string> meleeWeaponGlow;
         private static ConfigEntry<float> enemyRenderDistance;
         private static ConfigEntry<float> buildingPieceDetailReductionFactor;
+        private static ConfigEntry<bool> showDamageText;
 
         // Motion Control Settings
         private static ConfigEntry<bool> useArrowPredictionGraphic;
@@ -395,9 +396,25 @@ namespace ValheimVRMod.Utilities
             hipTrackerIndex = config.Bind(
                 "General", "HipTrackerIndex", -1,
                 new ConfigDescription(
-                    "The device index of the hip tracker. Setting to -1 disables hip tracking.",
-                    new AcceptableValueRange<int>(-1, 16)));
+                    "The device index of the hip tracker. Set to -1 disables hip tracking and 0 to auto-detect.",
+                    new AcceptableValueRange<int>(-1, 20)));
             hipTrackerIndex.SettingChanged += ((o, i) => VRPlayer.RequestPelvisCaliberation());
+
+            leftFootTrackerIndex = config.Bind(
+                "General", "LeftFootTrackerIndex", -1,
+                new ConfigDescription(
+                    "The device index of the left foot tracker. Set to -1 to disable and 0 to auto-detect.",
+                    new AcceptableValueRange<int>(-1, 20)));
+            leftFootTrackerIndex.SettingChanged += ((o, i) => VRPlayer.RequestPelvisCaliberation());
+
+            rightFootTrackerIndex = config.Bind(
+                "General", "RightFootTrackerIndex", -1,
+                new ConfigDescription(
+                    "The device index of the right foot tracker. Set to -1 to disable and 0 to auto-detect.",
+                    new AcceptableValueRange<int>(-1, 20)));
+            rightFootTrackerIndex.SettingChanged += ((o, i) => VRPlayer.RequestPelvisCaliberation());
+
+
         }
 
         private static void HipTrackerIndex_SettingChanged(object sender, EventArgs e)
@@ -660,27 +677,21 @@ namespace ValheimVRMod.Utilities
                                           "CharaterMovesWithHeadset",
                                           true,
                                           "When set to true, roomscale movement of the headset controls character locomotion; when set to false, movement of the headset makes the character lean.");
-            roomScaleSneaking = config.Bind("Controls",
-                                          "RoomScaleSneaking",
-                                          false,
-                                          "Enable RoomScale Sneaking.");
+            sneakInput = config.Bind(
+                "Controls",
+                "SneakInput",
+                "CrouchingOrController",
+                new ConfigDescription(
+                    "Whether sneaking should be triggered by controller input or by physically crouching.",
+                    new AcceptableValueList<string>(new string[] { "CrouchingOnly", "ControllerOnly", "CrouchingOrController" })));
             roomScaleSneakHeight = config.Bind("Controls",
                                           "RoomScaleSneakHeight",
                                           0.7f,
                                           new ConfigDescription("This will affect the eye height that the roomscale sneak occur at.  (e.g. 0.7 means if your headset lower than 70% of your height, it will do sneak)  " +
                                            "Valid values are  0.0 - 0.95.",
                                            new AcceptableValueRange<float>(0f, 0.95f)));
-            exclusiveRoomScaleSneak = config.Bind("Controls",
-                                          "ExclusiveRoomScaleSneak",
-                                          false,
-                                          "If this is set to true and Room Scale sneaking is on, Controller-based sneak inputs will be disabled. Use this if you ONLY want to sneak by phsyically crouching.");
-            trackFeet = config.Bind("Controls",
-                                          "TrackFeet",
-                                          false,
-                                          "Whether foot tracking should be enabled. May require restarting the game to take effect.");
-            trackFeet.SettingChanged += ((o, i) => VRPlayer.RequestPelvisCaliberation());
             gesturedLocomotion = config.Bind("Controls",
-                                             "Gestured Locomotion",
+                                             "GesturedLocomotion",
                                              "SwimAndSteering",
                                              new ConfigDescription(
                                                  "Enables using arm movements to swim, walk, run, and jump",
@@ -826,6 +837,10 @@ namespace ValheimVRMod.Utilities
                                         new AcceptableValueRange<float>(1f, 16f)));
             shouldModifyPieceLodGroup = buildingPieceDetailReductionFactor.Value > 1.01f;
             buildingPieceDetailReductionFactor.SettingChanged += ((o, i) => shouldModifyPieceLodGroup = buildingPieceDetailReductionFactor.Value > 1.01f);
+            showDamageText = config.Bind("Graphics",
+                                              "ShowDamageText",
+                                              true,
+                                              "Show damage text in VR?");
         }
 
         private static void InitializeMotionControlSettings() {
@@ -898,10 +913,11 @@ namespace ValheimVRMod.Utilities
                                                     "Use this to toggle the direction line of throwing when using the spear with VR controls.");
             //Two-handed Changes
             twoHandedWield = config.Bind(
-                "Motion Control", "TwoHandedWield", "NonSticky",
+                "Motion Control", "TwoHandedWield", "PolearmSticky",
                 new ConfigDescription(
                     "Use this to toggle controls of two handed weapon (left & right hand grab on weapon), allow blocking and better weapon handling.",
-                    new AcceptableValueList<string>(new string[] { "NonSticky", "Sticky", "Disabled" })));
+                    new AcceptableValueList<string>(new string[] { "NonSticky", "PolearmSticky", "Sticky", "Disabled" })));
+
             twoHandedWithShield = config.Bind("Motion Control",
                                                     "TwoHandedWithShield",
                                                     false,
@@ -1402,7 +1418,7 @@ namespace ValheimVRMod.Utilities
         }
 
         public static bool RoomScaleSneakEnabled() {
-            return roomScaleSneaking.Value;
+            return sneakInput.Value != "ControllerOnly";
         }
 
         public static float RoomScaleSneakHeight() {
@@ -1411,12 +1427,17 @@ namespace ValheimVRMod.Utilities
 
         public static bool ExlusiveRoomScaleSneak()
         {
-            return exclusiveRoomScaleSneak.Value;
+            return sneakInput.Value == "CrouchingOnly";
         }
 
         public static bool TrackFeet()
         {
-            return !NonVrPlayer() && UseVrControls() && trackFeet.Value;
+            return !NonVrPlayer() && UseVrControls() && (leftFootTrackerIndex.Value >= 0 || rightFootTrackerIndex.Value >= 0);
+        }
+
+        public static string GesturedLocomotionLabel()
+        {
+            return gesturedLocomotion.Definition.Key;
         }
 
         public static bool IsGesturedSwimEnabled()
@@ -1468,6 +1489,11 @@ namespace ValheimVRMod.Utilities
             return buildingPieceDetailReductionFactor.Value;
         }
 
+        public static bool ShowDamageText()
+        {
+            return showDamageText.Value;
+        }
+
         public static float AltPieceRotationDelay()
         {
             return altPieceRotationDelay.Value;
@@ -1481,21 +1507,6 @@ namespace ValheimVRMod.Utilities
         public static float AutoRunThreshold()
         {
             return autoRunThreshold.Value;
-        }
-
-        public static bool EnableAutoRun()
-        {
-            return autoRunThreshold.Value <= 0.99f;
-        }
-
-        public static float AutoRunActivationThreshold()
-        {
-            return EnableAutoRun() ? Mathf.Min(autoRunThreshold.Value + 0.33f, 0.99f) : Mathf.Infinity;
-        }
-
-        public static float AutoRunDeactivationThreshold()
-        {
-            return autoRunThreshold.Value * 0.5f;
         }
 
         public static bool LeftHanded()
@@ -1533,9 +1544,9 @@ namespace ValheimVRMod.Utilities
         {
             return twoHandedWield.Value != "Disabled";
         }
-        public static bool StickyTwoHandedWield()
+        public static bool StickyTwoHandedWield(bool isPolearm)
         {
-            return twoHandedWield.Value == "Sticky";
+            return twoHandedWield.Value == "Sticky" || (isPolearm && twoHandedWield.Value == "PolearmSticky");
         }
         public static bool TwoHandedWithShield()
         {
@@ -1779,7 +1790,7 @@ namespace ValheimVRMod.Utilities
         public static float[] BuildAngleSnap()
         {
             //"22.5, 15, 10, 5, 2.5, 1, 0.5"
-            float[] snapList = Array.ConvertAll(buildAngleSnap.Value.Split(','), float.Parse);
+            float[] snapList = Array.ConvertAll(buildAngleSnap.Value.Split(','), s => float.Parse(s.Trim(), System.Globalization.CultureInfo.InvariantCulture));
             return snapList;
         }
 
@@ -1847,6 +1858,16 @@ namespace ValheimVRMod.Utilities
         public static int HipTrackerIndex()
         {
             return hipTrackerIndex.Value;
+        }
+
+        public static int LeftFootTrackerIndex()
+        {
+            return leftFootTrackerIndex.Value;
+        }
+
+        public static int RightFootTrackerIndex()
+        {
+            return rightFootTrackerIndex.Value;
         }
 
         public static bool IsHipTrackingEnabled()

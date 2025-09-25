@@ -8,9 +8,12 @@ namespace ValheimVRMod.Scripts.Block {
 
         private Collider leftHandBlockBox;
         private Collider rightHandBlockBox;
-        private EquipType? currentEquipType = null;
+        private EquipType? currentLeftEquipType = null;
+        private EquipType? currentRightEquipType = null;
         private MeshRenderer leftHandBlockBoxRenderer;
         private MeshRenderer rightHandBlockBoxRenderer;
+        private WeaponColData leftColliderData;
+        private WeaponColData rightColliderData;
 
         public static FistBlock instance;
 
@@ -26,10 +29,12 @@ namespace ValheimVRMod.Scripts.Block {
             hand = VHVRConfig.LeftHanded() ? VRPlayer.leftHand.transform : VRPlayer.rightHand.transform;
             offhand = VHVRConfig.LeftHanded() ? VRPlayer.rightHand.transform : VRPlayer.leftHand.transform;
             CreateBlockBoxes();
+            updateBlockBoxShape();
         }
 
         protected override void FixedUpdate() {
             base.FixedUpdate();
+            RotateColliderForSecondaryWeapon();
             // TODO: maybe move this to VRPlayer.FixedUpdate()
             fadeHitIndicator(Time.fixedDeltaTime);
         }
@@ -83,21 +88,32 @@ namespace ValheimVRMod.Scripts.Block {
 
         public void updateBlockBoxShape()
         {
-            if (EquipScript.getRight() == currentEquipType)
+            var newLeftEquipmentType = EquipScript.getLeft();
+            var newRightEquipmentType = EquipScript.getRight();
+
+            if (newLeftEquipmentType == currentLeftEquipType && newRightEquipmentType == currentRightEquipType)
             {
                 return;
             }
 
-            currentEquipType = EquipScript.getRight();
+            currentLeftEquipType = newLeftEquipmentType;
+            currentRightEquipType = newRightEquipmentType;
 
-            var colliderData = WeaponUtils.GetDualWieldLeftHandBlockingColliderData(Player.m_localPlayer?.GetRightItem());
+            rightColliderData =
+                WeaponUtils.GetDualWieldLeftHandBlockingColliderData(
+                    VHVRConfig.LeftHanded() ? Player.m_localPlayer?.GetLeftItem() : Player.m_localPlayer?.GetRightItem());
+            leftColliderData = 
+                FistCollision.hasDualWieldingWeaponEquipped() ?
+                rightColliderData :
+                WeaponUtils.GetDualWieldLeftHandBlockingColliderData(
+                    VHVRConfig.LeftHanded() ? Player.m_localPlayer?.GetRightItem() : Player.m_localPlayer?.GetLeftItem());
 
-            leftHandBlockBox.transform.localPosition = colliderData.pos;
-            rightHandBlockBox.transform.localPosition = Vector3.Reflect(colliderData.pos, Vector3.right);
-            leftHandBlockBox.transform.localRotation = rightHandBlockBox.transform.localRotation =
-                Quaternion.Euler(colliderData.euler);
-            leftHandBlockBox.transform.localScale = rightHandBlockBox.transform.localScale =
-                colliderData.scale;
+            leftHandBlockBox.transform.localPosition = leftColliderData.pos;
+            rightHandBlockBox.transform.localPosition = Vector3.Reflect(rightColliderData.pos, Vector3.right);
+            leftHandBlockBox.transform.localRotation = Quaternion.Euler(leftColliderData.euler);
+            rightHandBlockBox.transform.localRotation = Quaternion.Euler(rightColliderData.euler);
+            leftHandBlockBox.transform.localScale = leftColliderData.scale; ;
+            rightHandBlockBox.transform.localScale = rightColliderData.scale;
 
             RefreshDebugRenderers();
         }
@@ -156,6 +172,25 @@ namespace ValheimVRMod.Scripts.Block {
             {
                 leftHandBlockBoxRenderer.enabled = false;
                 rightHandBlockBoxRenderer.enabled = false;
+            }
+        }
+
+        private void RotateColliderForSecondaryWeapon()
+        {
+            if (EquipScript.getLeft() != EquipType.Knife || leftHandBlockBox == null || rightHandBlockBox == null)
+            {
+                return;
+            }
+
+            if (VHVRConfig.LeftHanded())
+            {
+                rightHandBlockBox.transform.localPosition =
+                    FistCollision.ShouldSecondaryKnifeHoldInverse ? rightColliderData.pos : Vector3.Reflect(rightColliderData.pos, Vector3.right);
+            }
+            else
+            {
+                leftHandBlockBox.transform.localPosition =
+                    FistCollision.ShouldSecondaryKnifeHoldInverse ? Vector3.Reflect(leftColliderData.pos, Vector3.right) : leftColliderData.pos;
             }
         }
     }

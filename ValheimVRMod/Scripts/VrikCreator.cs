@@ -90,9 +90,10 @@ namespace ValheimVRMod.Scripts {
             if (isLocalPlayer)
             {
                 vrik.solver.leftLeg.target.parent = VRPlayer.leftFoot;
-                vrik.solver.leftLeg.bendToTargetWeight = 1;
+                vrik.solver.leftLeg.bendToTargetWeight = 0.5f;
                 vrik.solver.rightLeg.target.parent = VRPlayer.rightFoot;
-                vrik.solver.rightLeg.bendToTargetWeight = 1;
+                vrik.solver.rightLeg.bendToTargetWeight = 0.5f;
+                vrik.solver.rightLeg.swivelOffset = -30;
             }
             ResetPelvisAndFootTransform(vrik);
 
