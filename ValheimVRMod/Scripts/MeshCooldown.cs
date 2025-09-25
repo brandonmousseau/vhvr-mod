@@ -28,6 +28,11 @@ namespace ValheimVRMod.Scripts {
             }
             return outline != null;
         }
+ 
+        protected virtual Outline.Mode activeOutlineMode()
+        {
+            return Outline.Mode.OutlineVisible;
+        }
 
         // Whether the outline should be kept (as opposed to destroyed) after cooldown finishes.
         protected virtual bool keepOutlineInstance()
@@ -59,7 +64,7 @@ namespace ValheimVRMod.Scripts {
             {
                 outline.OutlineWidth = 10;
                 outline.OutlineColor = FullOutlineColor;
-                outline.OutlineMode = Outline.Mode.OutlineVisible;
+                outline.OutlineMode = activeOutlineMode();
             }
         }
 

@@ -5,6 +5,7 @@ using NDesk.Options;
 using Unity.XR.OpenVR;
 using ValheimVRMod.VRCore;
 using UnityEngine;
+using XGamingRuntime;
 
 namespace ValheimVRMod.Utilities
 {
@@ -141,6 +142,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> enemyRenderDistance;
         private static ConfigEntry<float> buildingPieceDetailReductionFactor;
         private static ConfigEntry<bool> showDamageText;
+        private static ConfigEntry<string> showAttackOutline;
 
         // Motion Control Settings
         private static ConfigEntry<bool> useArrowPredictionGraphic;
@@ -841,6 +843,12 @@ namespace ValheimVRMod.Utilities
                                               "ShowDamageText",
                                               true,
                                               "Show damage text in VR?");
+            showAttackOutline = config.Bind("Graphics",
+                                  "ShowAttackOutline",
+                                  "nonTerrainOnly",
+                                  new ConfigDescription(
+                                      "Whether an outline arounnd the attack target should be shown to indicate attack cooldown",
+                                      new AcceptableValueList<string>(new string[] { "None", "nonTerrainOnly", "All" })));
         }
 
         private static void InitializeMotionControlSettings() {
@@ -1492,6 +1500,16 @@ namespace ValheimVRMod.Utilities
         public static bool ShowDamageText()
         {
             return showDamageText.Value;
+        }
+
+        public static bool ShowNonTerrainAttackOutline()
+        {
+            return showAttackOutline.Value != "None";
+        }
+
+        public static bool ShowTerrainAttackOutline()
+        {
+            return showAttackOutline.Value == "All";
         }
 
         public static float AltPieceRotationDelay()

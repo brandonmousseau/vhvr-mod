@@ -47,21 +47,6 @@ namespace ValheimVRMod.Utilities
                     0,  0, 0,
                     1.000489f,  0.177166f, 0.2626824f
                 )}, {
-                "PickaxeIron", WeaponColData.create(
-                0,  1.9189f, 0,
-                0,  0, 0,
-                2.865605f,  0.1f, 0.1f
-                )}, {
-                "PickaxeBronze", WeaponColData.create(
-                    -0.711f,  2.219f, 0,
-                    0,  0, 2.903f,
-                    1.192384f,  0.1884746f, 0.1568103f
-                )}, {
-                "PickaxeAntler", WeaponColData.create(
-                    -0.722f,  2.256f, 0,
-                    0,  0, 0,
-                    1.192384f,  0.1884746f, 0.1568103f
-                )}, {   // TOOL
                 "Hammer", WeaponColData.create(
                     0,  0.956f, 0,
                     0,  0, 0,
@@ -732,7 +717,7 @@ namespace ValheimVRMod.Utilities
             var bounds = meshFilter.mesh.bounds;
             var weaponTip = bounds.center + weaponPointing * Mathf.Abs(Vector3.Dot(bounds.extents, weaponPointing));
             var colliderLength = EstimateColliderLength(Vector3.Distance(weaponTip, handLocalPosition), type);
-            var colliderCenter = weaponTip - weaponPointing * (colliderLength * 0.5f);
+            var colliderCenter = type == EquipType.Pickaxe ? weaponTip : weaponTip - weaponPointing * (colliderLength * 0.5f);
             var colliderOffset = colliderCenter - bounds.center;
             var colliderSize =
                 bounds.size - (new Vector3(Mathf.Abs(colliderOffset.x), Mathf.Abs(colliderOffset.y), Mathf.Abs(colliderOffset.z))) * 2;

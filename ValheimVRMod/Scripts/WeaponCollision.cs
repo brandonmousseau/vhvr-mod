@@ -388,6 +388,7 @@ namespace ValheimVRMod.Scripts
 
                 attackTargetMeshCooldown = cooldownObject.AddComponent<AttackTargetMeshCooldown>();
             }
+            attackTargetMeshCooldown.showOutline = isLastHitOnTerrain ? VHVRConfig.ShowTerrainAttackOutline() : VHVRConfig.ShowNonTerrainAttackOutline();
 
             // Always use the target cooldown time of the fast attack to allow a fast attack immediately after a slow attack;
             // The slow attack cooldown time is managed by postSlowAttackCountdown in this class intead.
