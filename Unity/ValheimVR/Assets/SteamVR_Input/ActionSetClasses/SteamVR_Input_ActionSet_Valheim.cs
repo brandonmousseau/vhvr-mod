@@ -209,6 +209,14 @@ namespace Valve.VR
             }
         }
         
+        public virtual SteamVR_Action_Boolean ToggleAutoPickup
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_ToggleAutoPickup;
+            }
+        }
+        
         public virtual SteamVR_Action_Vibration Haptic
         {
             get
