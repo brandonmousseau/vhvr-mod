@@ -176,12 +176,10 @@ namespace ValheimVRMod.Patches {
 
         private const float NON_TOGGLE_RUN_SENSITIVITY = -0.3f;
         private const float TOGGLE_RUN_SENSITIVITY = -0.85f;
-        private const float CROUCH_SENSITIVITY = 0.85f;
 
         public static bool togglingRun { get; private set; }
         public static bool holdingRun { get; private set; }
         public static bool hasRunInput { get; private set; }
-        public static bool isCrouching { get; private set; }
 
         static void Postfix(ref float __result) {
             if (!VRControls.mainControlsActive)
@@ -194,7 +192,6 @@ namespace ValheimVRMod.Patches {
             togglingRun = joystick < TOGGLE_RUN_SENSITIVITY;
             holdingRun = joystick < NON_TOGGLE_RUN_SENSITIVITY;
             hasRunInput = VHVRConfig.ToggleRun() ? togglingRun : holdingRun;
-            isCrouching = joystick > CROUCH_SENSITIVITY;
 
             __result = __result + joystick;
         }
@@ -522,7 +519,7 @@ namespace ValheimVRMod.Patches {
         {
             bool togglingRun = toggleRun();
             bool runIsTriggered = toggleRun() && !lastToggleRunInput;
-            bool crouchApplied = ZInput_GetJoyRightStickY_Patch.isCrouching;
+            bool crouchApplied = SteamVR_Actions.valheim_ToggleCrouch.state;
             if (crouchApplied || !VRPlayer.isMoving || Player.m_localPlayer.m_stamina < 1)
             {
                 // If the player presses crouch or stops moving, then always stop running.
@@ -631,8 +628,12 @@ namespace ValheimVRMod.Patches {
 
         static void handleControllerOnlySneak(Player player, ref bool crouch, bool isCrouchToggled)
         {
-            bool crouchToggleTriggered = ZInput_GetJoyRightStickY_Patch.isCrouching && !lastUpdateCrouchInput;
-            bool standupTriggered = ZInput_GetJoyRightStickY_Patch.hasRunInput;
+            bool currentToggleCrouchState = SteamVR_Actions.valheim_ToggleCrouch.state;
+            bool crouchToggleTriggered = currentToggleCrouchState && !lastUpdateCrouchInput;
+            bool standupTriggered =
+                ZInput_GetJoyRightStickY_Patch.hasRunInput ||
+                SteamVR_Actions.valheim_ToggleRun.state ||
+                SteamVR_Actions.valheim_HoldRun.state;
             if (crouchToggleTriggered)
             {
                 crouch = true;
@@ -656,7 +657,7 @@ namespace ValheimVRMod.Patches {
                 }
             }
             // Save for next update
-            lastUpdateCrouchInput = ZInput_GetJoyRightStickY_Patch.isCrouching;
+            lastUpdateCrouchInput = currentToggleCrouchState;
         }
     }
 
@@ -1193,7 +1194,7 @@ namespace ValheimVRMod.Patches {
             }
 
             Vector3? dir;
-            if (SteamVR_Actions.valheim_UseLeft.state && SteamVR_Actions.valheim_Jump.stateDown)
+            if (SteamVR_Actions.valheim_Dodge.state)
             {
                 dir = __instance.GetMoveDir();
                 if (dir == Vector3.zero)
