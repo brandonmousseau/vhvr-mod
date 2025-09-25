@@ -693,11 +693,11 @@ namespace ValheimVRMod.Utilities
             var bounds = meshFilter.mesh.bounds;
             var weaponTip = bounds.center + weaponPointing * Mathf.Abs(Vector3.Dot(bounds.extents, weaponPointing));
             var colliderLength = EstimateColliderLength(Vector3.Distance(weaponTip, handLocalPosition), type);
-            if (type == EquipType.Pickaxe) LogUtils.LogWarning("Estimated: " + colliderLength);
             var colliderCenter = (type == EquipType.Pickaxe ? weaponTip : weaponTip - weaponPointing * (colliderLength * 0.5f));
             var colliderOffset = colliderCenter - bounds.center;
             var colliderSize =
                 bounds.size - (new Vector3(Mathf.Abs(colliderOffset.x), Mathf.Abs(colliderOffset.y), Mathf.Abs(colliderOffset.z))) * 2;
+            // In case the collider length exceeds the mesh bound, extend the collider size to respect the collider length
             colliderSize = Vector3.Max(colliderSize, colliderLength * weaponPointing);
             return new WeaponColData(colliderCenter, Vector3.zero, colliderSize);
         }
