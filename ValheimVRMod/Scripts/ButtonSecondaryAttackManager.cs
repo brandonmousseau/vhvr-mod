@@ -509,17 +509,17 @@ namespace ValheimVRMod.Scripts
                 //Secondary attack check target outlines and terrain hit
                 if (secondaryHitList.Count >= 1 && (Player.m_localPlayer.HaveStamina(getStaminaSecondaryAtttackUsage() + 0.1f)||isStaminaDrained))
                 {
-                    var isTerrain = item.m_shared.m_spawnOnHitTerrain ? true : false;
+                    var isLastHitTerrain = item.m_shared.m_spawnOnHitTerrain ? true : false;
                     foreach (var hit in secondaryHitList)
                     {
                         var target = hit.collider.gameObject;
-                        if (target.GetComponent<Heightmap>() == null)
-                        {
-                            isTerrain = false;
-                        }
-                        else
+                        var isTerrain = (target.GetComponent<Heightmap>() != null);
+                        if (isTerrain)
                         {
                             terrainHitCount += 1;
+                        }
+                        else {
+                            isLastHitTerrain = false;
                         }
 
                         var character = hit.collider.gameObject.GetComponentInParent<Character>();
@@ -533,9 +533,10 @@ namespace ValheimVRMod.Scripts
                         {
                             attackTargetMeshCooldown = target.AddComponent<AttackTargetMeshCooldown>();
                         }
+                        attackTargetMeshCooldown.showOutline = isTerrain ? VHVRConfig.ShowTerrainAttackOutline() : VHVRConfig.ShowNonTerrainAttackOutline();
                         attackTargetMeshCooldown.tryTriggerSecondaryAttack(hitTime,false);
                     }
-                    if (isTerrain)
+                    if (isLastHitTerrain)
                     {
                         WeaponCollision.isLastHitOnTerrain = true;
                     }
