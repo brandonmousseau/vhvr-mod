@@ -13,6 +13,7 @@ using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
 using Object = UnityEngine.Object;
 using TMPro;
+using ValheimVRMod.Patches;
 
 namespace ValheimVRMod.VRCore.UI {
     public class ConfigSettings {
@@ -73,6 +74,10 @@ namespace ValheimVRMod.VRCore.UI {
 
                     AddMenuEntry("Screenshot", menuEntry, Vector2.up * MENU_ENTRY_HEIGHT * addedMenuEntryCount, CaptureScreenshot);
                     addedMenuEntryCount++;
+
+                    AddMenuEntry("Toggle auto-pickup", menuEntry, Vector2.up * MENU_ENTRY_HEIGHT * addedMenuEntryCount, ToggleAutoPickup);
+                    addedMenuEntryCount++;
+
                 }
                 else if (addedMenuEntryCount > 0) {
                     var rectTransform = menuList.GetChild(i).GetComponent<RectTransform>();
@@ -707,6 +712,12 @@ namespace ValheimVRMod.VRCore.UI {
             string path = dir + "/vhvr_screenshot_" + System.DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".png";
             LogUtils.LogDebug("Saving screenshot to " + path);
             ScreenCapture.CaptureScreenshot(path);
+        }
+
+        private static void ToggleAutoPickup()
+        {
+            ZInput_GetButtonDown_Patch.EmulateButtonDown("JoyMenu");
+            ZInput_GetButtonDown_Patch.EmulateButtonDown("AutoPickup");
         }
 
         private static int mod(int x, int m) {
