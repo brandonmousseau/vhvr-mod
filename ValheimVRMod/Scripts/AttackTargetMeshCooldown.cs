@@ -100,14 +100,17 @@ namespace ValheimVRMod.Scripts {
         }
 
         protected override void OnDisable() {
-            primaryTargetMeshCooldown = null;
+            if (primaryTargetMeshCooldown == this)
+            {
+                primaryTargetMeshCooldown = null;
+            }
             base.OnDisable();
         }
 
         protected override void FixedUpdate() {
             base.FixedUpdate();
             if (! inCoolDown()) {
-                if (primaryTargetMeshCooldown == this) {
+                if (primaryTargetMeshCooldown == this || primaryTargetMeshCooldown == null) {
                     staminaDrained = false;
                     durabilityDrained = false;
                     primaryTargetMeshCooldown = null;
