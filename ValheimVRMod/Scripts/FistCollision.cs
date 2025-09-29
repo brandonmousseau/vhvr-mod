@@ -414,13 +414,13 @@ namespace ValheimVRMod.Scripts
                 {
                     item = Player.m_localPlayer.GetRightItem();
                     attack =
-                        (isCurrentlySecondaryAttack ? item.m_shared.m_attack : item.m_shared.m_secondaryAttack).Clone();
+                        (isCurrentlySecondaryAttack ? item.m_shared.m_secondaryAttack : item.m_shared.m_attack).Clone();
                 }
                 else
                 {
                     item = Player.m_localPlayer.m_unarmedWeapon.m_itemData;
                     attack =
-                        isCurrentlySecondaryAttack ? item.m_shared.m_attack : item.m_shared.m_secondaryAttack;
+                        isCurrentlySecondaryAttack ? item.m_shared.m_secondaryAttack : item.m_shared.m_attack;
                 }
             }
 
