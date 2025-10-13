@@ -486,6 +486,12 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
+            if (!VHVRConfig.ShowNonTerrainAttackOutline())
+            {
+                outline.enabled = false;
+                return;
+            }
+
             bool inCooldown = AttackTargetMeshCooldown.isPrimaryTargetInCooldown();
             bool canDoPrimaryAttack =
                 Player.m_localPlayer.HaveStamina(getStaminaUsage() + 0.1f) && (attack.m_attackType == Attack.AttackType.Horizontal || !inCooldown);
