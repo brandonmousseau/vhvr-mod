@@ -120,6 +120,14 @@ namespace ValheimVRMod.Scripts
                 this.callback = callback;
             }
 
+            public void useAsNoOp()
+            {
+                this.item = null;
+                this.itemName = "NoOp";
+                this.sprite = null;
+                this.callback = null;
+            }
+
             private void ResizeIcon()
             {
                 Vector3 fSize;
@@ -480,32 +488,38 @@ namespace ValheimVRMod.Scripts
             {
                 return;
             }
-            for (int i = 0; i < 8; i++)
+
+            if (VHVRConfig.SplitQuickMenuRadialItemsBySlot())
             {
-                ItemDrop.ItemData item = inventory?.GetItemAt(i, 0);
-
-                if (item == null)
+                var isRightHand = VHVRConfig.LeftHanded() ^ isDominantHand;
+                var startIndex = isRightHand ? 4 : 0;
+                elementCount = 4;
+                for (var i = 0; i < elementCount; i++)
                 {
-                    continue;
+                    ItemDrop.ItemData item = inventory?.GetItemAt(startIndex + i, 0);
+                    if (item == null)
+                    {
+                        elements[i].useAsNoOp();
+                    }
+                    else
+                    {
+                        elements[i].useAsInventoryItemAndRefreshColor(inventory, item);
+                    }
                 }
-                if (VHVRConfig.SplitQuickMenuRadialItemsByWieldingHand())
+            } else {
+                for (int i = 0; i < 8; i++)
                 {
-                    if (EquipScript.IsDominantHandItem(item) ^ isDominantHand)
+                    ItemDrop.ItemData item = inventory?.GetItemAt(i, 0);
+                    if (item == null)
                     {
                         continue;
                     }
-                }
-                else if (VHVRConfig.SplitQuickMenuRadialItemsBySlot())
-                {
-                    var isRightHand = VHVRConfig.LeftHanded() ^ isDominantHand;
-                    if (i >= 4 ^ isRightHand)
-                    {
+                    if (VHVRConfig.SplitQuickMenuRadialItemsByWieldingHand() && EquipScript.IsDominantHandItem(item) ^ isDominantHand) {
                         continue;
                     }
+                    elements[elementCount].useAsInventoryItemAndRefreshColor(inventory, item);
+                    elementCount++;
                 }
-
-                elements[elementCount].useAsInventoryItemAndRefreshColor(inventory, item);
-                elementCount++;
             }
         }
 
