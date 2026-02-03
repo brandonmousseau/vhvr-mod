@@ -1,5 +1,6 @@
 using BepInEx;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using ValheimVRMod.VRCore;
 using ValheimVRMod.VRCore.UI;
 using ValheimVRMod.Utilities;
@@ -22,6 +23,8 @@ namespace ValheimVRMod
         private GameObject vrGui;
         private GameObject BhapticsTactsuit;
 
+        private bool startVrExecuted = false;
+
         void Awake() {
             _version = Info.Metadata.Version;
             VHVRConfig.InitializeConfiguration(Config);
@@ -37,11 +40,7 @@ namespace ValheimVRMod
 #if NONVRMODE
             LogInfo("Running non-VR mode companion mod!");
 #endif
-        }
-
-        void Start()
-        {
-            StartValheimVR();
+            SceneManager.sceneLoaded += OnSceneLoaded;
         }
 
         void Update()
@@ -60,6 +59,16 @@ namespace ValheimVRMod
               //  dumpall();
             }
 #endif
+        }
+
+        void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            LogDebug("OnSceneLoaded: " + scene.name);
+            if (!startVrExecuted && scene.name.Equals("start"))
+            {
+                StartValheimVR();
+                startVrExecuted = true;
+            }
         }
 
         void StartValheimVR()
