@@ -691,7 +691,7 @@ namespace ValheimVRMod.VRCore.UI {
             keyBinding.transform.Find("Label").GetComponent<TMP_Text>().text = configValue.Key;
             keyboardMouseSettings.m_keys.Add(new KeySetting {m_keyName = configValue.Key, m_keyTransform = keyBinding.GetComponent<RectTransform>()});
             keyBinding.GetComponentInChildren<Button>().onClick.AddListener(() => {
-                keyboardMouseSettings.OnOk();
+                keyboardMouseSettings.OnOkAsync(null);
                 tmpComfigComponent = configComponent;
             });
             // TODO: create a proper key binding UI prefab instead of adjusting the position here.
