@@ -61,7 +61,7 @@
     <PackageReference Include="BepInEx.Core" Version="5.4.21" />
     <PackageReference Include="NDesk.Options" Version="0.2.1" />
     <PackageReference Include="UnityEngine.Modules" Version="2020.3.45" />
-    <PackageReference Include="ValheimGameLibs" Version="0.221.4" />
+    <PackageReference Include="ValheimGameLibs" Version="0.221.10" />
 	<PackageReference Include="Bhaptics.Tac" Version="1.4.16" />
   </ItemGroup>
   <ItemGroup>
