@@ -367,6 +367,11 @@ namespace ValheimVRMod.Scripts
      */
         private void createNewString()
         {
+            if (VHVRConfig.NonVrPlayer())
+            {
+                // Custom string is not supported on flatscreen since the material may not be available.
+                return;
+            }
             var lineRenderer = gameObject.AddComponent<LineRenderer>();
             lineRenderer.useWorldSpace = true;
             lineRenderer.widthMultiplier = 0.006f;
@@ -497,6 +502,11 @@ namespace ValheimVRMod.Scripts
 
         private void updateStringRenderer()
         {
+            if (VHVRConfig.NonVrPlayer())
+            {
+                // Custom string is not supported on flatscreen since the material may not be available.
+                return;
+            }
             gameObject.GetComponent<LineRenderer>().SetPosition(0, stringTop.position);
             gameObject.GetComponent<LineRenderer>().SetPosition(1, pulling ? pullObj.transform.position : stringTop.position);
             gameObject.GetComponent<LineRenderer>().SetPosition(2, stringBottom.position);
