@@ -211,6 +211,11 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
+            if (!VHVRConfig.NonVrPlayer())
+            {
+                return;
+            }
+
             ParticleFix.maybeFix(___m_rightItemInstance, EquipScript.getRight());
 
             if (!VHVRConfig.UseVrControls()) {
@@ -380,6 +385,11 @@ namespace ValheimVRMod.Patches {
                     WeaponWieldSync weaponWieldSync = ___m_leftItemInstance.AddComponent<WeaponWieldSync>();
                     weaponWieldSync.Initialize(player.GetLeftItem(), ___m_leftItem, isDominantHandWeapon: false, vrPlayerSync, vrPlayerSync.leftHand.transform, vrPlayerSync.rightHand.transform);
                 }
+                return;
+            }
+
+            if (!VHVRConfig.NonVrPlayer())
+            {
                 return;
             }
 
