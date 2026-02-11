@@ -211,7 +211,7 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
-            if (!VHVRConfig.NonVrPlayer())
+            if (VHVRConfig.NonVrPlayer())
             {
                 return;
             }
@@ -388,7 +388,7 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
-            if (!VHVRConfig.NonVrPlayer())
+            if (VHVRConfig.NonVrPlayer())
             {
                 return;
             }
