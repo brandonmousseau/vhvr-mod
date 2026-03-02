@@ -7,9 +7,10 @@ namespace ValheimVRMod.Scripts
 {
     /// <summary>
     /// Scripts that fades the world to black when certain events are happening (Player Death, Teleport, Player sleep, Cutscenes)
+    /// and displays red-out to indicate low health
     /// Based on SteamVR_Fade with proper material
     /// </summary>
-    public class FadeToBlackManager : MonoBehaviour
+    public class FadingManager : MonoBehaviour
     {
         public event Action OnFadeToBlack;
         public event Action OnFadeToWorld;
