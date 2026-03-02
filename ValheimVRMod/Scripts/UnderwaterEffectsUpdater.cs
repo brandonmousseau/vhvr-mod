@@ -15,6 +15,8 @@ namespace ValheimVRMod.Scripts
         private bool initialized = false;
 
         public static bool UsingUnderwaterEffects { get; private set; }
+        // A smooth blending factor for transitioning between using and not using under water effects
+        public static float Underwaterness { get; private set; }
 
         public void Init(Camera camera, PostProcessingBehaviour postProcessingBehaviour, PostProcessingProfile originalPostProcessingProfile)
         {
@@ -52,9 +54,8 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            bool shouldUseUnderWaterEffects = ShouldUseUnderWaterEffects();
-
-            if (shouldUseUnderWaterEffects)
+            Underwaterness = GetUnderwaterness();
+            if (Underwaterness > 0)
             {
                 if (!UsingUnderwaterEffects)
                 {
@@ -70,7 +71,7 @@ namespace ValheimVRMod.Scripts
                         Player.m_localPlayer.m_waterLevel + 512,
                         transform.position.z);
             }
-            else if (!shouldUseUnderWaterEffects && UsingUnderwaterEffects)
+            else if (UsingUnderwaterEffects)
             {
                 postProcessingBehavior.profile = originalPostProcessingProfile;
                 underwaterLightBlocker.SetActive(false);
@@ -79,14 +80,18 @@ namespace ValheimVRMod.Scripts
             }
         }
 
-        private bool ShouldUseUnderWaterEffects()
+        private float GetUnderwaterness()
         {
-            if (!Player.m_localPlayer || !Player.m_localPlayer.InWater())
+            var player = Player.m_localPlayer;
+            if (player == null || !player.InWater())
             {
-                return false;
+                return 0;
             }
 
-            return transform.position.y + transform.forward.y * VHVRConfig.GetNearClipPlane() < Player.m_localPlayer.m_waterLevel;
+            return Mathf.InverseLerp(
+                0.0625f,
+                -0.0625f,
+                transform.position.y + transform.forward.y * VHVRConfig.GetNearClipPlane() - player.m_waterLevel);
         }
     }
 }
