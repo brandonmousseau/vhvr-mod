@@ -45,7 +45,8 @@ namespace ValheimVRMod.Scripts
             LayerUtils.WATERVOLUME_LAYER,
             LayerUtils.WATER,
             LayerUtils.UI_PANEL_LAYER,
-            LayerUtils.CHARARCTER_TRIGGER
+            LayerUtils.CHARARCTER_TRIGGER,
+            LayerUtils.ITEM_LAYER,
         };
 
         private void Awake()
@@ -387,6 +388,7 @@ namespace ValheimVRMod.Scripts
 
                 attackTargetMeshCooldown = cooldownObject.AddComponent<AttackTargetMeshCooldown>();
             }
+            attackTargetMeshCooldown.showOutline = isLastHitOnTerrain ? VHVRConfig.ShowTerrainAttackOutline() : VHVRConfig.ShowNonTerrainAttackOutline();
 
             // Always use the target cooldown time of the fast attack to allow a fast attack immediately after a slow attack;
             // The slow attack cooldown time is managed by postSlowAttackCountdown in this class intead.
@@ -481,6 +483,12 @@ namespace ValheimVRMod.Scripts
         {
             if (!outline || ButtonSecondaryAttackManager.isSecondaryAttackStarted || attack == null || item == null)
             {
+                return;
+            }
+
+            if (!VHVRConfig.ShowNonTerrainAttackOutline())
+            {
+                outline.enabled = false;
                 return;
             }
 

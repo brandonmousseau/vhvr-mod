@@ -13,7 +13,10 @@ namespace ValheimVRMod.Scripts {
             origin.parent = transform.parent;
             origin.localPosition = transform.localPosition;
             origin.localRotation = transform.localRotation;
-            transform.SetParent(null);
+            if (VHVRConfig.UseVrControls())
+            {
+                transform.SetParent(null);
+            }
         }
         
         private void OnRenderObject() {

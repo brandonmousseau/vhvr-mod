@@ -33,6 +33,7 @@ namespace ValheimVRMod.Scripts
             LayerUtils.WATER,
             LayerUtils.UI_PANEL_LAYER,
             LayerUtils.CHARARCTER_TRIGGER,
+            LayerUtils.ITEM_LAYER,
         };
 
         public bool isGrabbingJumpingAid { get { return lastGrabbedType == Grabbable.ENVIRONMENT || lastGrabbedType == Grabbable.IMAGINARY_CLIMIBNG_HOLD; } }
@@ -413,13 +414,13 @@ namespace ValheimVRMod.Scripts
                 {
                     item = Player.m_localPlayer.GetRightItem();
                     attack =
-                        (isCurrentlySecondaryAttack ? item.m_shared.m_attack : item.m_shared.m_secondaryAttack).Clone();
+                        (isCurrentlySecondaryAttack ? item.m_shared.m_secondaryAttack : item.m_shared.m_attack).Clone();
                 }
                 else
                 {
                     item = Player.m_localPlayer.m_unarmedWeapon.m_itemData;
                     attack =
-                        isCurrentlySecondaryAttack ? item.m_shared.m_attack : item.m_shared.m_secondaryAttack;
+                        isCurrentlySecondaryAttack ? item.m_shared.m_secondaryAttack : item.m_shared.m_attack;
                 }
             }
 
@@ -453,6 +454,8 @@ namespace ValheimVRMod.Scripts
             {
                 attackTargetMeshCooldown = target.AddComponent<AttackTargetMeshCooldown>();
             }
+            attackTargetMeshCooldown.showOutline = 
+                (target.layer == LayerUtils.TERRAIN ? VHVRConfig.ShowTerrainAttackOutline() : VHVRConfig.ShowNonTerrainAttackOutline());
 
             return isSecondaryAttack ? attackTargetMeshCooldown.tryTriggerSecondaryAttack(duration) : attackTargetMeshCooldown.tryTriggerPrimaryAttack(duration, speed);
         }

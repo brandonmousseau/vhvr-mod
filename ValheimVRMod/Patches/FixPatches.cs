@@ -4,6 +4,7 @@ using UnityEngine;
 using ValheimVRMod.VRCore;
 using ValheimVRMod.Utilities;
 using Valve.VR.InteractionSystem;
+using Valheim.SettingsGui;
 
 namespace ValheimVRMod.Patches {
     [HarmonyPatch(typeof(Hand), "FixedUpdate")]
@@ -38,7 +39,7 @@ namespace ValheimVRMod.Patches {
         }
     }
 
-    [HarmonyPatch(typeof(VirtualFrameBuffer), nameof(VirtualFrameBuffer.UpdateCurrentRenderScale))]
+    [HarmonyPatch(typeof(UpscaledFrameBuffer), nameof(UpscaledFrameBuffer.UpdateCurrentRenderScale))]
     class PatchUpdateCurrentRenderScale
     {
         static bool Prefix()
@@ -47,8 +48,8 @@ namespace ValheimVRMod.Patches {
             {
                 return true;
             }
-            // A render scale less than 1 would cause the game world disappear in VR. Force it to be 1 since we do not support any other value.
-            VirtualFrameBuffer.m_global3DRenderScale = 1f;
+            // Force-disable frame scaling since it would cause the game world to disappear in VR.
+            UpscaledFrameBuffer.m_targetResolutionVertical = int.MaxValue;
             return false;
         }
     }
@@ -67,6 +68,27 @@ namespace ValheimVRMod.Patches {
             __instance.SetLiquidLevel(-10000, LiquidType.Water, null);
         }
     }
+
+    [HarmonyPatch(typeof(GraphicsSettings), nameof(GraphicsSettings.UpdateSettingAvailability))]
+    class GraphicsSettingsUpdateSettingAvailabilityPatch
+    {
+        public static bool Prefix(GraphicsSettings __instance)
+        {
+            // TODO: investigate why clicking OK on vanilla settings after opening and closing VHVR settings will result in a null instance here.
+            //Stack trace:
+            // UnityEngine.Bindings.ThrowHelper.ThrowNullReferenceException(System.Object obj)(at < 89f741081c874c65b780dbd6a0d8d33e >:0)
+            // UnityEngine.Component.get_gameObject()(at < 89f741081c874c65b780dbd6a0d8d33e >:0)
+            // Valheim.SettingsGui.GraphicsSettings.SetChangeable(System.Boolean isChangeable, UnityEngine.UI.Selectable ui)(at<f02a2207632846a3a0012c7f73401843>:0)
+            // (wrapper dynamic - method) Valheim.SettingsGui.GraphicsSettings.DMD<Valheim.SettingsGui.GraphicsSettings::UpdateSettingAvailability>(Valheim.SettingsGui.GraphicsSettings, GraphicsModeConfiguration)
+            // Valheim.SettingsGui.GraphicsSettings.UpdateUI()(at<f02a2207632846a3a0012c7f73401843>:0)
+            // GraphicsSettingsManager.ApplyGraphicsSettingsToCurrentSession()(at<f02a2207632846a3a0012c7f73401843>:0)
+            // GraphicsSettingsManager.SaveAndApplyGraphicsSettingsCustom(GraphicsSettingsState & settings)(at<f02a2207632846a3a0012c7f73401843>:0)
+            // Valheim.SettingsGui.GraphicsSettings.OnOkAsync(Valheim.SettingsGui.OkActionCompletedHandler okActionCompletedCallback)(at<f02a2207632846a3a0012c7f73401843>:0)
+            // (wrapper dynamic - method) Settings.DMD<Settings::OnOk>(Settings)
+            return __instance != null;
+        }
+    }
+
 
     [HarmonyPatch(typeof(Character), nameof(Character.Decrement))]
     class CharacterDecrementPatch

@@ -211,6 +211,11 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
+            if (VHVRConfig.NonVrPlayer())
+            {
+                return;
+            }
+
             ParticleFix.maybeFix(___m_rightItemInstance, EquipScript.getRight());
 
             if (!VHVRConfig.UseVrControls()) {
@@ -237,6 +242,12 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
+            var weaponCol = StaticObjects.rightWeaponCollider().GetComponent<WeaponCollision>();
+            // Weapon collider should be estimated before weapon wield initialization since
+            // the latter may move the weapon and interfere with collider estimation.
+            weaponCol.setColliderParent(
+                meshFilter, handPosition: ___m_rightItemInstance.transform.parent.position, ___m_rightItem, true);
+
             LocalWeaponWield weaponWield = EquipScript.isSpearEquipped() ? ___m_rightItemInstance.AddComponent<SpearWield>() : ___m_rightItemInstance.AddComponent<LocalWeaponWield>();
             weaponWield.Initialize(Player.m_localPlayer.GetRightItem(), ___m_rightItem, isDominantHandWeapon: true);
 
@@ -250,9 +261,6 @@ namespace ValheimVRMod.Patches {
                 (meshFilter.gameObject.AddComponent<ThrowableManager>()).weaponWield = weaponWield;
             }
 
-            var weaponCol = StaticObjects.rightWeaponCollider().GetComponent<WeaponCollision>();
-            weaponCol.setColliderParent(
-                meshFilter, handPosition: ___m_rightItemInstance.transform.parent.position, ___m_rightItem, true);
             switch (EquipScript.getRight())
             {
                 case EquipType.Cultivator:
@@ -377,6 +385,11 @@ namespace ValheimVRMod.Patches {
                     WeaponWieldSync weaponWieldSync = ___m_leftItemInstance.AddComponent<WeaponWieldSync>();
                     weaponWieldSync.Initialize(player.GetLeftItem(), ___m_leftItem, isDominantHandWeapon: false, vrPlayerSync, vrPlayerSync.leftHand.transform, vrPlayerSync.rightHand.transform);
                 }
+                return;
+            }
+
+            if (VHVRConfig.NonVrPlayer())
+            {
                 return;
             }
 
