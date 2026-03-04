@@ -60,6 +60,7 @@ namespace ValheimVRMod.VRCore
         public const float ROOMSCALE_STEP_ANIMATION_SMOOTHING = 0.3f;
         public const float ROOMSCALE_ANIMATION_WEIGHT = 2f;
 
+        public static float MainCameraFarClipPlane { get; private set; }
         public static VRIK vrikRef { get; private set; }
         private static SteamVR_TrackedObject hipTracker { get { return trackedObjects[hipTrackerIndex]; } }
         private static MeshRenderer hipTrackerRenderer;
@@ -747,6 +748,7 @@ namespace ValheimVRMod.VRCore
             maybeAddAmplifyOcclusion(vrCam);
             // Prevent visibility of the head
             vrCam.nearClipPlane = VHVRConfig.GetNearClipPlane();
+            MainCameraFarClipPlane = mainCamera.farClipPlane;
             // Turn off rendering the UI panel layer. We need to capture
             // it in a camera of higher depth so that it
             // is rendered on top of everything else. (except hands)
