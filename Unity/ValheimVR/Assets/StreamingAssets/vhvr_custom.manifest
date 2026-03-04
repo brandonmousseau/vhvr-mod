@@ -1,9 +1,9 @@
 ManifestFileVersion: 0
-CRC: 1573209640
+CRC: 515853678
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: f12737c6da6a6019f67fb2920bff9c48
+    Hash: 0247dbcd16eabff76d1ce4eb961db0e7
   TypeTreeHash:
     serializedVersion: 2
     Hash: 1fe3abd029edb3522ae5dbbc711d0a74
@@ -34,12 +34,12 @@ Assets:
 - Assets/QuickOutline/Resources/Shaders/OutlineFill.shader
 - Assets/CustomResources/Textures/recenter.png
 - Assets/QuickOutline/Resources/Materials/OutlineMask.mat
+- Assets/CustomResources/Materials/VHVRMultiply.mat
 - Assets/CustomResources/Materials/StandardClone.mat
-- Assets/CustomResources/Materials/VHVRMultiply.shader
 - Assets/CustomResources/CustomObject/Reel/Reel.prefab
+- Assets/CustomResources/Materials/VHVRMultiply.shader
 - Assets/CustomResources/Textures/sit.png
 - Assets/CustomResources/Materials/OutlineMaterial.mat
-- Assets/CustomResources/Materials/VHVRMultiply.mat
 - Assets/CustomResources/Materials/BowBendingMaterial.mat
 - Assets/QuickOutline/Resources/Shaders/OutlineMask.shader
 - Assets/CustomResources/Textures/black_screen.png

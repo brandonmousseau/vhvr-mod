@@ -1,19 +1,19 @@
 ManifestFileVersion: 0
-CRC: 1195516250
+CRC: 656266493
 AssetBundleManifest:
   AssetBundleInfos:
     Info_0:
       Name: steamvr_player_prefabs
       Dependencies: {}
     Info_1:
-      Name: xrmanager
+      Name: amplify_resources
       Dependencies: {}
     Info_2:
-      Name: amplify_resources
+      Name: steamvr_shaders
       Dependencies: {}
     Info_3:
       Name: vhvr_custom
       Dependencies: {}
     Info_4:
-      Name: steamvr_shaders
+      Name: xrmanager
       Dependencies: {}
