@@ -1,18 +1,19 @@
 using UnityEngine.Rendering;
 using UnityEngine;
 using ValheimVRMod.Utilities;
+using ValheimVRMod.VRCore;
 
 namespace ValheimVRMod.Scripts
 {
     class MagicBarrierVisualEffect : MonoBehaviour
     {
-        private static Material SimpleColorOverlayMaterial;
+        private static Material SimpleColorMaterial;
 
         private SE_Shield shield;
         private MeshRenderer originalRenderer;
-        private GameObject overlay;
-        private Material overlayMaterial;
-        private Color overlayColor = new Color(0.5f, 0.25f, 0.5f, 0.5f);
+        private GameObject simpleColorOverlay;
+        private GameObject fullTextureOverlay;
+        private Color overlayColor = new Color(0.25f, 0.125f, 0.5f, 0.375f);
 
         public void Show(SE_Shield shield, Character character)
         {
@@ -34,26 +35,16 @@ namespace ValheimVRMod.Scripts
             this.originalRenderer = originalRenderer;
 
             EnsureOverlay();
-            overlay.layer = originalRenderer.gameObject.layer;
-            var renderer = overlay.GetComponent<MeshRenderer>();
-            if (VHVRConfig.EnableFullTextureMagicBarrierOverlay())
+            fullTextureOverlay.layer = originalRenderer.gameObject.layer;
+            simpleColorOverlay.layer = LayerUtils.WORLDSPACE_UI_LAYER;
+            var renderer = simpleColorOverlay.GetComponent<MeshRenderer>();
+            fullTextureOverlay.GetComponent<MeshRenderer>().material = originalRenderer.material;
+            if (SimpleColorMaterial == null)
             {
-                overlayMaterial = originalRenderer.material;
+                SimpleColorMaterial = Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
             }
-            else
-            {
-                if (SimpleColorOverlayMaterial == null)
-                {
-                    SimpleColorOverlayMaterial = Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
-                }
-                overlayMaterial = SimpleColorOverlayMaterial;
-                overlayMaterial.color = overlayColor;
-            }
-            renderer.material = overlayMaterial;
-            renderer.receiveShadows = false;
-            renderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
-            renderer.shadowCastingMode = ShadowCastingMode.Off;
-            renderer.lightProbeUsage = LightProbeUsage.Off;
+            simpleColorOverlay.GetComponent<MeshRenderer>().material = SimpleColorMaterial;
+            SimpleColorMaterial.color = overlayColor;
         }
 
         void FixedUpdate()
@@ -70,34 +61,63 @@ namespace ValheimVRMod.Scripts
 
             if (VHVRConfig.EnableFullTextureMagicBarrierOverlay())
             {
+                fullTextureOverlay.SetActive(true);
+                simpleColorOverlay.SetActive(false);
                 return;
             }
 
             var t = shield.GetRemaningTime();
             var frequency = t > 16 ? 2 : (6 - t / 4);
-            overlayColor.a = (Mathf.Abs(Mathf.Sin(Time.time * frequency)) + 1) * 0.0625f;
-            overlayMaterial.color = overlayColor;
+            overlayColor.b = (Mathf.Abs(Mathf.Sin(Time.time * frequency)) + 1) * 0.25f;
+            overlayColor.a = 0.125f;
+            SimpleColorMaterial.color = overlayColor;
+
+            fullTextureOverlay.SetActive(false);
+            simpleColorOverlay.SetActive(VRPlayer.inFirstPerson);
         }
 
         private void EnsureOverlay()
         {
-            if (overlay == null)
+            if (simpleColorOverlay == null)
             {
-                overlay = GameObject.CreatePrimitive(PrimitiveType.Quad);
-                Destroy(overlay.GetComponent<Collider>());
+                simpleColorOverlay = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                Destroy(simpleColorOverlay.GetComponent<Collider>());
+                var renderer = simpleColorOverlay.GetComponent<Renderer>();
+                renderer.receiveShadows = false;
+                renderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
+                renderer.shadowCastingMode = ShadowCastingMode.Off;
+                renderer.lightProbeUsage = LightProbeUsage.Off;
+                simpleColorOverlay.SetActive(false);
             }
 
-            overlay.transform.SetParent(transform);
-            overlay.transform.localPosition = new Vector3(0, 0, 1);
-            overlay.transform.localRotation = Quaternion.identity;
-            overlay.transform.localScale = new Vector3(4, 4, 1);
+            simpleColorOverlay.transform.SetParent(transform);
+            simpleColorOverlay.transform.localPosition = new Vector3(0, 0, 0.125f);
+            simpleColorOverlay.transform.localRotation = Quaternion.identity;
+            simpleColorOverlay.transform.localScale = new Vector3(0.5f, 0.5f, 1);
+
+            if (fullTextureOverlay == null)
+            {
+                fullTextureOverlay = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                Destroy(fullTextureOverlay.GetComponent<Collider>());
+                var renderer = fullTextureOverlay.GetComponent<Renderer>();
+                renderer.receiveShadows = false;
+                renderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
+                renderer.shadowCastingMode = ShadowCastingMode.Off;
+                renderer.lightProbeUsage = LightProbeUsage.Off;
+                fullTextureOverlay.SetActive(false);
+            }
+
+            fullTextureOverlay.transform.SetParent(transform);
+            fullTextureOverlay.transform.localPosition = new Vector3(0, 0, 1);
+            fullTextureOverlay.transform.localRotation = Quaternion.identity;
+            fullTextureOverlay.transform.localScale = new Vector3(4, 4, 1);
         }
 
         private void Hide()
         {
-            if (overlay != null)
+            if (simpleColorOverlay != null)
             {
-                overlay.SetActive(false);
+                simpleColorOverlay.SetActive(false);
             }
             this.enabled = false;
         }
