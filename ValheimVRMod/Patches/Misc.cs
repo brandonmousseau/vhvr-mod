@@ -422,13 +422,12 @@ namespace ValheimVRMod.Patches
     }
 
     [HarmonyPatch(typeof(SE_Shield), nameof(SE_Shield.Setup))]
-    class SEShieldSetup
+    class SEShieldSetupPatch
     {
 
         public static void Postfix(SE_Shield __instance, Character character)
         {
             if (VHVRConfig.NonVrPlayer() ||
-                VHVRConfig.UseThirdPersonCameraOnFlatscreen() ||
                 !VHVRConfig.EnableMagicBarrierOverlay() ||
                 character != Player.m_localPlayer ||
                 character == null)
