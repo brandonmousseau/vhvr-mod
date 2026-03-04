@@ -13,7 +13,6 @@ using ValheimVRMod.VRCore;
 using Valve.VR;
 
 using static ValheimVRMod.Utilities.LogUtils;
-using System.Threading;
 
 namespace ValheimVRMod.Patches
 {
@@ -419,6 +418,31 @@ namespace ValheimVRMod.Patches
             }
             __instance.OnHit(collision.collider, collision.collider.transform.position);
             return false;
+        }
+    }
+
+    [HarmonyPatch(typeof(SE_Shield), nameof(SE_Shield.Setup))]
+    class SEShieldSetup
+    {
+
+        public static void Postfix(SE_Shield __instance, Character character)
+        {
+            if (VHVRConfig.NonVrPlayer() ||
+                VHVRConfig.UseThirdPersonCameraOnFlatscreen() ||
+                !VHVRConfig.EnableMagicBarrierOverlay() ||
+                character != Player.m_localPlayer ||
+                character == null)
+            {
+                return;
+            }
+
+            var vrCam = VRPlayer.vrCam;
+            if (vrCam == null)
+            {
+                return;
+            }
+
+            vrCam.gameObject.GetOrAddComponent<MagicBarrierVisualEffect>().Show(__instance, character);
         }
     }
 
