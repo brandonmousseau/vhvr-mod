@@ -139,6 +139,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> nearClipPlane;
         private static ConfigEntry<string> rangedWeaponGlow;
         private static ConfigEntry<string> meleeWeaponGlow;
+        private static ConfigEntry<string> magicBarrierOvelay;
         private static ConfigEntry<float> enemyRenderDistance;
         private static ConfigEntry<float> buildingPieceDetailReductionFactor;
         private static ConfigEntry<bool> showDamageText;
@@ -827,6 +828,12 @@ namespace ValheimVRMod.Utilities
                                   new ConfigDescription(
                                       "Whether the glowing effect of melee weapons should be enabled.",
                                       new AcceptableValueList<string>(new string[] { "None", "LightWithoutParticles", "Full" })));
+            magicBarrierOvelay = config.Bind("Graphics",
+                                  "MagicBarrierOverlay",
+                                  "SimpleColor",
+                                  new ConfigDescription(
+                                      "What full-screen overlay should be used when the player is protected by magic barrier",
+                                      new AcceptableValueList<string>(new string[] { "None", "SimpleColor", "FullTexture" })));
             enemyRenderDistance = config.Bind("Graphics",
                                         "EnemyRenderDistance",
                                         8f,
@@ -1147,6 +1154,16 @@ namespace ValheimVRMod.Utilities
         public static bool EnableMeleeWeaponGlowParticle()
         {
             return meleeWeaponGlow.Value == "Full";
+        }
+
+        public static bool EnableMagicBarrierOverlay()
+        {
+            return magicBarrierOvelay.Value != "None";
+        }
+
+        public static bool EnableFullTextureMagicBarrierOverlay()
+        {
+            return magicBarrierOvelay.Value == "FullTexture";
         }
 
         public static bool EnableMeleeWeaponGlowLight()
