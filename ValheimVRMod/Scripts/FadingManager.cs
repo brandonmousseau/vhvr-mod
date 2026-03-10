@@ -25,10 +25,16 @@ namespace ValheimVRMod.Scripts
                                         || Player.m_localPlayer.IsTeleporting())) ||
                                         (Hud.instance?.m_loadingScreen && Hud.instance.m_loadingScreen.isActiveAndEnabled);
 
+        private bool isSeriouslyInjured = false;
         private Coroutine lowHealthPulseCoroutine;
         private bool isLowHealthPulsing;
         private float lowHealthPulseAlpha;
         private float lowHealthPulseInterval;
+
+        public void OnPlayerInjure()
+        {
+            UpdateLowHealthPulseDuringInjury();
+        }
 
         private void FixedUpdate()
         {
@@ -50,24 +56,32 @@ namespace ValheimVRMod.Scripts
                     OnFadeToWorld?.Invoke();
                     _lastShouldFadeToBlack = false;
                 }
-                UpdateLowHealthPulse();
+                if (isSeriouslyInjured)
+                {
+                    UpdateLowHealthPulseDuringInjury();
+                }
+                else
+                {
+                    StopLowHealthPulse();
+                }
             }
         }
 
-        private void UpdateLowHealthPulse() {
-            var player = Player.m_localPlayer;
+        private void UpdateLowHealthPulseDuringInjury() {
+            Player player = Player.m_localPlayer;
             if (player == null)
             {
-                StopLowHealthPulse();
+                isSeriouslyInjured = false;
                 return;
             }
 
             var maxHealth = player.GetMaxHealth();
             var currentHealth = player.GetHealth();
-            var warningHealth = Mathf.Min(maxHealth * 0.25f, 32);
+            var warningHealth = Mathf.Min(maxHealth * 0.5f, 64);
 
-            if (currentHealth > warningHealth) {
-                StopLowHealthPulse();
+            isSeriouslyInjured = (currentHealth < warningHealth);
+
+            if (!isSeriouslyInjured) {
                 return;
             }
 
