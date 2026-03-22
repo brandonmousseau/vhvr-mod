@@ -766,7 +766,7 @@ namespace ValheimVRMod.VRCore.UI
 
         public static GameObject getUiPanel()
         {
-            return _uiPanel.gameObject;
+            return _uiPanel == null ? null : _uiPanel.gameObject;
         }
 
         class VRGUI_InputModule : StandaloneInputModule
