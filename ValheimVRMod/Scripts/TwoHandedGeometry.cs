@@ -251,7 +251,8 @@ namespace ValheimVRMod.Scripts
                     return weaponWield.originalPosition;
                 }
 
-                var physicsEstimator = VHVRConfig.LeftHanded() ? VRPlayer.leftHandPhysicsEstimator : VRPlayer.rightHandPhysicsEstimator;
+                var physicsEstimator =
+                    VRPlayer.isRightHandMainWeaponHand ? VRPlayer.rightHandPhysicsEstimator : VRPlayer.leftHandPhysicsEstimator;
                 var speed = physicsEstimator.GetVelocity().magnitude;
 
                 if (speed > SWING_SPEED_CAP)
@@ -411,13 +412,13 @@ namespace ValheimVRMod.Scripts
                 }
 
                 Vector3 staticPointing =
-                    VHVRConfig.LeftHanded() ?
-                    (VRPlayer.leftHandBone.up - VRPlayer.leftHandBone.right) :
-                    (VRPlayer.rightHandBone.up + VRPlayer.rightHandBone.right);
+                    VRPlayer.isRightHandMainWeaponHand ?
+                    (VRPlayer.rightHandBone.up + VRPlayer.rightHandBone.right) :
+                    (VRPlayer.leftHandBone.up - VRPlayer.leftHandBone.right);
                 staticPointing = staticPointing.normalized;
 
                 Vector3 handVelocity =
-                    (VHVRConfig.LeftHanded() ? VRPlayer.leftHandPhysicsEstimator : VRPlayer.rightHandPhysicsEstimator).GetVelocity();
+                    (VRPlayer.isRightHandMainWeaponHand ? VRPlayer.rightHandPhysicsEstimator : VRPlayer.leftHandPhysicsEstimator).GetVelocity();
  
                 float weight = Vector3.Dot(staticPointing, pointing) * handVelocity.magnitude;
                 if (weight < 0)
@@ -542,7 +543,7 @@ namespace ValheimVRMod.Scripts
 
         public class LocalCrossbowGeometryProvider : CrossbowGeometryProvider
         {
-            public LocalCrossbowGeometryProvider() : base(VHVRConfig.LeftHanded()) { }
+            public LocalCrossbowGeometryProvider() : base(!VRPlayer.isRightHandMainWeaponHand) { }
 
             public override Vector3 GetPreferredTwoHandedWeaponUp(WeaponWield weaponWield)
             {

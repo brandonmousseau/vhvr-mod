@@ -306,7 +306,7 @@ namespace ValheimVRMod.Scripts
                 // bHaptics
                 if (!BhapticsTactsuit.suitDisabled)
                 {
-                    BhapticsTactsuit.SwordRecoil(!VHVRConfig.LeftHanded());
+                    BhapticsTactsuit.SwordRecoil(VRPlayer.isRightHandMainWeaponHand);
                 }
             }
         }

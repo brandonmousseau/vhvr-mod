@@ -23,9 +23,9 @@ namespace ValheimVRMod.Scripts
         // Right-handed weapons in vanilla game is treated as domininant hand weapon in VHVR.
         private static bool IsDominantHandWeapon { get { return EquipScript.getRight() == EquipType.Magic; } }
 
-        private static bool IsRightHandWeapon { get { return IsDominantHandWeapon ^ VHVRConfig.LeftHanded(); } }
-        public static SteamVR_LaserPointer WeaponHandPointer { get { return IsRightHandWeapon ? VRPlayer.rightPointer : VRPlayer.leftPointer; } }
-        protected static SteamVR_Action_Boolean AttackTriggerAction { get { return IsRightHandWeapon ? SteamVR_Actions.valheim_Use : SteamVR_Actions.valheim_UseLeft; } }
+        private static bool IsInRightHand { get { return IsDominantHandWeapon ^ !VRPlayer.isRightHandMainWeaponHand; } }
+        public static SteamVR_LaserPointer WeaponHandPointer { get { return IsInRightHand ? VRPlayer.rightPointer : VRPlayer.leftPointer; } }
+        protected static SteamVR_Action_Boolean AttackTriggerAction { get { return IsInRightHand ? SteamVR_Actions.valheim_Use : SteamVR_Actions.valheim_UseLeft; } }
 
         public static Vector3 AimDir
         {
@@ -33,7 +33,7 @@ namespace ValheimVRMod.Scripts
             {
                 if (CanSummonWithOppositeHand())
                 {
-                    return VHVRConfig.LeftHanded() ? VRPlayer.leftHandBone.up : VRPlayer.rightHandBone.up;
+                    return VRPlayer.isRightHandMainWeaponHand ? VRPlayer.rightHandBone.up : VRPlayer.leftHandBone.up;
                 }
                 if (UseSwingForCurrentAttack())
                 {
@@ -101,7 +101,7 @@ namespace ValheimVRMod.Scripts
         {
             var offsetDirection =
                 CanSummonWithOppositeHand() ?
-                (VHVRConfig.LeftHanded() ? VRPlayer.leftHandBone.up : VRPlayer.rightHandBone.up) :
+                (VRPlayer.isRightHandMainWeaponHand ? VRPlayer.rightHandBone.up : VRPlayer.leftHandBone.up) :
                 LocalWeaponWield.weaponForward.normalized;
             var offsetAmount =
                 (new Vector3(attack.m_attackOffset, attack.m_attackRange, attack.m_attackHeight)).magnitude;

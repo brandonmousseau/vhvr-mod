@@ -23,8 +23,8 @@ namespace ValheimVRMod.Scripts.Block
             base.Awake();
             _meshCooldown = gameObject.AddComponent<MeshCooldown>();
             instance = this;
-            hand = VHVRConfig.LeftHanded() ? VRPlayer.leftHand.transform : VRPlayer.rightHand.transform;
-            offhand = VHVRConfig.LeftHanded() ? VRPlayer.rightHand.transform : VRPlayer.leftHand.transform;
+            hand = VRPlayer.mainWeaponHand.transform;
+            offhand = VRPlayer.mainWeaponHand.otherHand.transform;
         }
 
         public override void setBlocking(HitData hitData)

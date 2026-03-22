@@ -282,7 +282,7 @@ namespace ValheimVRMod.Scripts
                     Player.m_localPlayer.ResetLoadedWeapon();
                     Player.m_localPlayer.QueueReloadAction();
                 }
-                VrikCreator.GetLocalPlayerDominantHandConnector().position =
+                VrikCreator.GetLocalPlayerArrowHandConnector().position =
                     Vector3.Lerp(leverRenderer.GetPosition(1), leverRenderer.GetPosition(2), 0.5f);
 
                 isBoltLoaded = bolt != null;
@@ -407,8 +407,10 @@ namespace ValheimVRMod.Scripts
                 //bHaptics
                 if (!BhapticsTactsuit.suitDisabled)
                 {
-                    BhapticsTactsuit.PlaybackHaptics(VHVRConfig.LeftHanded() ?
-                         "HolsterArrowLeftShoulder" : "HolsterArrowRightShoulder");
+                    BhapticsTactsuit.PlaybackHaptics(
+                        VRPlayer.isRightHandMainWeaponHand ?
+                        "HolsterArrowRightShoulder" :
+                        "HolsterArrowLeftShoulder");
                 }
                 return;
             }
@@ -425,8 +427,10 @@ namespace ValheimVRMod.Scripts
             //bHaptics
             if (!BhapticsTactsuit.suitDisabled)
             {
-                BhapticsTactsuit.PlaybackHaptics(VHVRConfig.LeftHanded() ?
-                    "UnholsterArrowLeftShoulder" : "UnholsterArrowRightShoulder");
+                BhapticsTactsuit.PlaybackHaptics(
+                    VRPlayer.isRightHandMainWeaponHand ?
+                    "UnholsterArrowRightShoulder" :
+                    "UnholsterArrowLeftShoulder");
             }
         }
 

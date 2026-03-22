@@ -118,14 +118,10 @@ namespace ValheimVRMod.Scripts
             parent = obj.parent.gameObject;
             outline = obj.parent.gameObject.GetComponent<Outline>();
             this.isRightHand = isRightHand;
-            if (isRightHand)
-            {
-                item = Player.m_localPlayer.GetRightItem();
-            }
-            else
-            {
-                item = Player.m_localPlayer.GetLeftItem();
-            }
+            item =
+                isRightHand ^ VRPlayer.isRightHandMainWeaponHand ?
+                Player.m_localPlayer.GetLeftItem() :
+                Player.m_localPlayer.GetRightItem();
             attack = item.m_shared.m_attack.Clone();
             secondaryAttack = item.m_shared.m_secondaryAttack.Clone();
             isMovementSecondaryAttackHold = false;
@@ -568,14 +564,8 @@ namespace ValheimVRMod.Scripts
                     Player.m_localPlayer.m_animEvent,
                     null, item, null, 0.0f, 0.0f))
                     {
-                        if (isRightHand)
-                        {
-                            VRPlayer.rightHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, SteamVR_Input_Sources.RightHand);
-                        }
-                        else
-                        {
-                            VRPlayer.leftHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, SteamVR_Input_Sources.LeftHand);
-                        }
+                        VRPlayer.rightHand.hapticAction.Execute(
+                            0, 0.2f, 100, 0.5f, isRightHand ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand);
                     }
                 }
                 isSecondaryAttackTriggered = true;

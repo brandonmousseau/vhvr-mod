@@ -556,27 +556,34 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
-            if (player == Player.m_localPlayer && !VHVRConfig.UseVrControls())
+            if (player == Player.m_localPlayer)
             {
-                return;
+                if (!VHVRConfig.UseVrControls() || VRPlayer.isRightHandMainWeaponHand)
+                {
+                    return;
+                }
+            }
+            else
+            {
+                VRPlayerSync vrPlayerSync = player.GetComponent<VRPlayerSync>();
+                if (vrPlayerSync == null)
+                {
+                    return;
+                }
+                // Since VisEquipment#m_leftItem and VisEquipment#m_rightItem are emtpy for remote players and
+                // Player#getLeftItem() and Player#getRightItem() return null for remote players,
+                // we need to record the item hash to figure out what items a remote player is equipped with.
+                // TODO: implement item-specific logic in WeaponWieldSync using the item hash.
+                vrPlayerSync.remotePlayerNonDominantHandItemHash = __instance.m_currentLeftItemHash;
+                vrPlayerSync.remotePlayerDominantHandItemHash = __instance.m_currentRightItemHash;
+                if (!vrPlayerSync.IsLeftHanded())
+                {
+                    LogUtils.LogDebug("Not left handed");
+                    return;
+                }
             }
 
-            VRPlayerSync vrPlayerSync = player.GetComponent<VRPlayerSync>();
-            if (vrPlayerSync == null)
-            {
-                return;
-            }
-            // Since VisEquipment#m_leftItem and VisEquipment#m_rightItem are emtpy for remote players and
-            // Player#getLeftItem() and Player#getRightItem() return null for remote players,
-            // we need to record the item hash to figure out what items a remote player is equipped with.
-            // TODO: implement item-specific logic in WeaponWieldSync using the item hash.
-            vrPlayerSync.remotePlayerNonDominantHandItemHash = __instance.m_currentLeftItemHash;
-            vrPlayerSync.remotePlayerDominantHandItemHash = __instance.m_currentRightItemHash;
-            if (!vrPlayerSync.IsLeftHanded())
-            {
-                return;
-            }
-
+            LogUtils.LogDebug("Left handed");
             if (joint == __instance.m_rightHand) {
                 joint = __instance.m_leftHand;
             }
@@ -596,7 +603,7 @@ namespace ValheimVRMod.Patches {
                 || !__result
                 || __result.GetComponentInParent<Player>() != Player.m_localPlayer
                 || !VHVRConfig.UseVrControls() 
-                || !VHVRConfig.LeftHanded()
+                || VRPlayer.isRightHandMainWeaponHand
                 || EquipScript.getLeft() != EquipType.Shield
                 && EquipScript.getRight() != EquipType.Tankard) {
                 return;

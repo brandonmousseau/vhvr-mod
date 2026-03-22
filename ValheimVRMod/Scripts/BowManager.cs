@@ -116,9 +116,14 @@ namespace ValheimVRMod.Scripts
             Destroy(lowerLimbBone.gameObject);
         }
 
-        protected Vector3 getArrowRestPosition()
+        protected Vector3 getArrowRestPosition(
+            float arrowRestHorizontalOffsetMultiplier,
+            float arrowRestElevation)
         {
-            return bowOrientation.TransformPoint(new Vector3(gripLocalHalfWidth * VHVRConfig.ArrowRestHorizontalOffsetMultiplier(), VHVRConfig.ArrowRestElevation(), 0));
+            return bowOrientation.TransformPoint(
+                new Vector3(
+                    gripLocalHalfWidth * arrowRestHorizontalOffsetMultiplier,
+                    arrowRestElevation, 0));
         }
 
         protected float GetBraceHeight()

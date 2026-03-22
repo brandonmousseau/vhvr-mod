@@ -25,12 +25,12 @@ namespace ValheimVRMod.Scripts
 
         private GameObject rotSave;
         private LineRenderer directionLine;
-        private SteamVR_Action_Boolean useAction { get { return VHVRConfig.LeftHanded() ? SteamVR_Actions.valheim_UseLeft : SteamVR_Actions.valheim_Use; } }
+        private SteamVR_Action_Boolean useAction { get { return VRPlayer.isRightHandMainWeaponHand ? SteamVR_Actions.valheim_Use : SteamVR_Actions.valheim_UseLeft; } }
 
         private float directionCooldown;
         private float aimingDuration = 0;
         private int tickCounter;
-        private PhysicsEstimator handPhysicsEstimator { get { return VHVRConfig.LeftHanded() ? VRPlayer.leftHandPhysicsEstimator : VRPlayer.rightHandPhysicsEstimator; } }
+        private PhysicsEstimator handPhysicsEstimator { get { return VRPlayer.isRightHandMainWeaponHand ? VRPlayer.rightHandPhysicsEstimator : VRPlayer.leftHandPhysicsEstimator; } }
 
         private void Awake()
         {
@@ -274,7 +274,8 @@ namespace ValheimVRMod.Scripts
         private ThrowCalculate CalculateThrowAndDistance(Vector3 direction)
         {
             direction = direction.normalized;
-            var handTipOffset = (VHVRConfig.LeftHanded() ? VRPlayer.leftHandBone.up : VRPlayer.rightHandBone.up) * 0.125f;
+            var handTipOffset =
+                (VRPlayer.isRightHandMainWeaponHand ? VRPlayer.rightHandBone.up : VRPlayer.leftHandBone.up) * 0.125f;
             var angularVelocity = handPhysicsEstimator.GetAngularVelocity();
 
             var throwSpeed =

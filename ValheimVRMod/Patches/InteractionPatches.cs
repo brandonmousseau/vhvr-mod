@@ -123,53 +123,52 @@ namespace ValheimVRMod.Patches
                 return false;
             }
 
-            bool showMainWeapon;
-            bool showSecondaryWeapon;
+            bool showVanillaRightItem;
+            bool showVanillaLeftItem;
             if (shouldPatch == HandItemPatchTarget.Both)
             {
-                showMainWeapon = showSecondaryWeapon = true;
+                showVanillaRightItem = showVanillaLeftItem = true;
             }
             else
             {
                 if (VRPlayer.isRightHandMainWeaponHand)
                 {
-                    showMainWeapon = (shouldPatch == HandItemPatchTarget.RightHand);
-                    showSecondaryWeapon = (shouldPatch == HandItemPatchTarget.LeftHand);
+                    showVanillaRightItem = (shouldPatch == HandItemPatchTarget.RightHand);
+                    showVanillaLeftItem = (shouldPatch == HandItemPatchTarget.LeftHand);
                 }
                 else
                 {
-                    showMainWeapon = (shouldPatch == HandItemPatchTarget.LeftHand);
-                    showSecondaryWeapon = (shouldPatch == HandItemPatchTarget.RightHand);
+                    showVanillaRightItem = (shouldPatch == HandItemPatchTarget.LeftHand);
+                    showVanillaLeftItem = (shouldPatch == HandItemPatchTarget.RightHand);
                 }
 
                 if (!VRPlayer.offHandWield)
                 {
-                    if (showMainWeapon && ___m_hiddenLeftItem != null && ___m_hiddenRightItem == null)
+                    if (showVanillaRightItem && ___m_hiddenLeftItem != null && ___m_hiddenRightItem == null)
                     {
-                        // Grabbing secondary weapon using dominant hand, enter temporary off-hand wield
+                        LogUtils.LogDebug("Unsheathing vanilla left item using dominant hand, entering temporary off-hand wield");
                         VRPlayer.offHandWield = true;
-                        showMainWeapon = false;
-                        showSecondaryWeapon = true;
+                        showVanillaRightItem = false;
+                        showVanillaLeftItem = true;
                     }
-                    else if (showSecondaryWeapon && ___m_hiddenLeftItem == null && ___m_hiddenRightItem != null)
+                    else if (showVanillaLeftItem && ___m_hiddenLeftItem == null && ___m_hiddenRightItem != null)
                     {
-                        // Grabbing main weapon using  non-dominant hand, enter temporary off-hand wield
+                        LogUtils.LogDebug("Unsheathing vanilla right item using non-dominant hand, entering temporary off-hand wield");
                         VRPlayer.offHandWield = true;
-                        showMainWeapon = true;
-                        showSecondaryWeapon = false;
+                        showVanillaRightItem = true;
+                        showVanillaLeftItem = false;
                     }
                 }
             }
 
-            VRPlayer.offHandWield = false;
-            if (showMainWeapon && ___m_hiddenRightItem != null)
+            if (showVanillaRightItem && ___m_hiddenRightItem != null)
             {
                 ___m_hiddenRightItem = null;
                 __instance.EquipItem(hiddenRightItem);
                 ___m_hiddenLeftItem = hiddenLeftItem;
                 __instance.SetupVisEquipment(__instance.m_visEquipment, false);
             }
-            if (showSecondaryWeapon && ___m_hiddenLeftItem != null)
+            if (showVanillaLeftItem && ___m_hiddenLeftItem != null)
             {
                 ___m_hiddenLeftItem = null;
                 __instance.EquipItem(hiddenLeftItem);

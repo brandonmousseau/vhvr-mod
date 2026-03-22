@@ -42,9 +42,8 @@ namespace ValheimVRMod.Scripts
 
         private void Awake()
         {
-            reelOffset = VHVRConfig.LeftHanded()
-                ? -0.08f
-                : 0.08f;
+            reelOffset =
+                VRPlayer.isRightHandMainWeaponHand ? 0.08f : -0.08f;
 
             rodTop = transform.parent.Find("_RodTop");
             rodTop.transform.localPosition = new Vector3(0, -0.01f, 3.3f);
@@ -146,7 +145,7 @@ namespace ValheimVRMod.Scripts
             {
                 if (fishingFloat)
                     fishingFloat.m_pullLineSpeed = 1;
-                isPulling = isFishing && dominantHandInputAction.GetState(VRPlayer.mainWeaponHandInputSource);
+                isPulling = isFishing && mainHandInputAction.GetState(VRPlayer.mainWeaponHandInputSource);
             }
 
             if (fishingFloat)

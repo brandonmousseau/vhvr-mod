@@ -107,7 +107,7 @@ namespace ValheimVRMod.Scripts
                 }
                 else if (EquipScript.getRight() == EquipType.Knife)
                 {
-                    IsWeaponPointingUlnar = WeaponUtils.MaybeFlipKnife(IsWeaponPointingUlnar, VHVRConfig.LeftHanded());
+                    IsWeaponPointingUlnar = WeaponUtils.MaybeFlipKnife(IsWeaponPointingUlnar, !VRPlayer.isRightHandMainWeaponHand);
                 }
             }
 
@@ -185,7 +185,7 @@ namespace ValheimVRMod.Scripts
         }
 
         protected override bool IsPlayerLeftHanded() {
-            return VHVRConfig.LeftHanded();
+            return !VRPlayer.isRightHandMainWeaponHand;
         }
 
         protected override Transform GetLeftHandTransform()
@@ -350,7 +350,7 @@ namespace ValheimVRMod.Scripts
 
         private void RotateHandForOneHandedWield(Vector3 weaponPointingDir)
         {
-            VrikCreator.GetLocalPlayerDominantHandConnector().rotation =
+            VrikCreator.GetLocalPlayerArrowHandConnector().rotation =
                 Quaternion.LookRotation(
                     Quaternion.AngleAxis(10, mainHand.transform.right) * weaponPointingDir,
                     mainHand.transform.up);
