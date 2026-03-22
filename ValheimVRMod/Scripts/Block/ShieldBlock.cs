@@ -58,7 +58,7 @@ namespace ValheimVRMod.Scripts.Block {
         public override void setBlocking(HitData hitData) {
             if (VHVRConfig.UseGrabButtonBlock())
             {
-                _blocking = SteamVR_Actions.valheim_Grab.GetState(VRPlayer.nonDominantHandInputSource);
+                _blocking = SteamVR_Actions.valheim_Grab.GetState(VRPlayer.secondaryWeaponHandInputSource);
             }
             else if (VHVRConfig.UseRealisticBlock())
             {

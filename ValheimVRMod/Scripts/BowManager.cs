@@ -50,7 +50,7 @@ namespace ValheimVRMod.Scripts
         protected bool initialized;
         protected bool wasInitialized;
         protected Outline outline;
-        public Transform mainHand;
+        public Transform arrowHandTransform;
 
         private bool wasPulling;
         protected bool bowHandAiming = false;
@@ -449,13 +449,13 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            float realLifeHandDistance = bowOrientation.InverseTransformPoint(mainHand.position).magnitude;
+            float realLifeHandDistance = bowOrientation.InverseTransformPoint(arrowHandTransform.position).magnitude;
 
             // The angle between the push direction and the arrow direction.
             double pushOffsetAngle = Math.Asin(VHVRConfig.ArrowRestElevation() / realLifeHandDistance);
 
             // Align the forward vector of the pushObj with the direction of the push force and determine its y-axis using the orientation of the bow hand.
-            Vector3 pushDirection = pushObj.transform.position - mainHand.position;
+            Vector3 pushDirection = pushObj.transform.position - arrowHandTransform.position;
             pushObj.transform.LookAt(pushObj.transform.position + pushDirection, worldUp: transform.parent.forward);
 
             // Assuming that the bow is perpendicular to the arrow, the angle between the y-axis of the bow and the y-axis of the pushObj should also be pushOffsetAngle.
@@ -468,9 +468,9 @@ namespace ValheimVRMod.Scripts
         {
             var dominantHandPointer = VHVRConfig.LeftHanded() ? VRPlayer.leftPointer : VRPlayer.rightPointer;
             Vector3 aimingDirection = (dominantHandPointer.rayDirection * Vector3.forward).normalized;
-            bowOrientation.LookAt(bowOrientation.position + aimingDirection, mainHand.up);
+            bowOrientation.LookAt(bowOrientation.position + aimingDirection, arrowHandTransform.up);
             bowOrientation.position =
-                mainHand.position +
+                arrowHandTransform.position +
                 bowOrientation.TransformVector(
                     new Vector3(0, -VHVRConfig.ArrowRestElevation(), getPullLengthRestriction(timeBasedChargePercentage)));
             transform.SetPositionAndRotation(bowTransformUpdater.position, bowTransformUpdater.rotation);
@@ -515,7 +515,7 @@ namespace ValheimVRMod.Scripts
         private void pullString()
         {
 
-            Vector3 pullPos = bowOrientation.InverseTransformPoint(mainHand.position);
+            Vector3 pullPos = bowOrientation.InverseTransformPoint(arrowHandTransform.position);
 
             if (bowHandAiming)
             {

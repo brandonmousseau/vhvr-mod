@@ -185,7 +185,7 @@ namespace ValheimVRMod.Scripts {
             writeFingers(pkg, VRPlayer.vrikRef.references.leftHand);
             writeFingers(pkg, VRPlayer.vrikRef.references.rightHand);
             pkg.Write(BowLocalManager.instance != null && BowLocalManager.instance.pulling);
-            pkg.Write(isLeftHanded = VHVRConfig.LeftHanded());
+            pkg.Write(isLeftHanded = !VRPlayer.isRightHandMainWeaponHand);
             pkg.Write((byte) (twoHandedState = LocalWeaponWield.LocalPlayerTwoHandedState));
             pkg.Write(InverseHold());
 
@@ -262,7 +262,7 @@ namespace ValheimVRMod.Scripts {
                     return;
                 }                
                 bowManager = currentLeftWeapon.AddComponent<BowManager>();
-                bowManager.mainHand = isLeftHanded ? leftHand.transform : rightHand.transform;
+                bowManager.arrowHandTransform = isLeftHanded ? leftHand.transform : rightHand.transform;
             }
             bowManager.pulling = pulling;
         }

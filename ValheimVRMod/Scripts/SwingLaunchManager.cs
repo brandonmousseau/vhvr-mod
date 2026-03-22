@@ -25,7 +25,7 @@ namespace ValheimVRMod.Scripts
 
         protected virtual void OnRenderObject()
         {
-            if (dominantHandInputAction.GetStateDown(VRPlayer.dominantHandInputSource))
+            if (dominantHandInputAction.GetStateDown(VRPlayer.mainWeaponHandInputSource))
             {
                 preparingThrow = true;
                 peakSpeed = 0;
@@ -76,7 +76,7 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            if (ReleaseTriggerToAttack() && !dominantHandInputAction.GetStateUp(VRPlayer.dominantHandInputSource))
+            if (ReleaseTriggerToAttack() && !dominantHandInputAction.GetStateUp(VRPlayer.mainWeaponHandInputSource))
             {
                 return;
             }

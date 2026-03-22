@@ -15,8 +15,8 @@ namespace ValheimVRMod.Patches
     enum HandItemPatchTarget
     {
         Both = 0,
-        DominantHand = 1,
-        NonDominantHand = 2
+        LeftHand = 1,
+        RightHand = 2
     }
 
     [HarmonyPatch(typeof(Humanoid), "HideHandItems")]
@@ -27,8 +27,8 @@ namespace ValheimVRMod.Patches
         
         private static HandItemPatchTarget shouldPatch;
 
-        public static void HideLocalPlayerHandItem(bool isDominantHand) {
-            shouldPatch = isDominantHand ? HandItemPatchTarget.DominantHand : HandItemPatchTarget.NonDominantHand;
+        public static void HideLocalPlayerHandItem(bool isRightHand) {
+            shouldPatch = isRightHand ? HandItemPatchTarget.RightHand : HandItemPatchTarget.LeftHand;
             Player.m_localPlayer.HideHandItems();
             shouldPatch = HandItemPatchTarget.Both;      
         }
@@ -47,18 +47,42 @@ namespace ValheimVRMod.Patches
                 return false;
             }
 
-            bool hideDominantHandItem = (shouldPatch == HandItemPatchTarget.DominantHand || shouldPatch == HandItemPatchTarget.Both);
-            bool hideNonDominantHandItem = (shouldPatch == HandItemPatchTarget.NonDominantHand || shouldPatch == HandItemPatchTarget.Both);
-
-            if (hideDominantHandItem)
+            bool hideMainWeapon;
+            bool hideSecondaryWeapon;
+            if (shouldPatch == HandItemPatchTarget.Both)
             {
+                hideMainWeapon = hideSecondaryWeapon = true;
+            }
+            else if (VRPlayer.isRightHandMainWeaponHand)
+            {
+                hideMainWeapon = (shouldPatch == HandItemPatchTarget.RightHand);
+                hideSecondaryWeapon = (shouldPatch == HandItemPatchTarget.LeftHand);
+            }
+            else
+            {
+                hideMainWeapon = (shouldPatch == HandItemPatchTarget.LeftHand);
+                hideSecondaryWeapon = (shouldPatch == HandItemPatchTarget.RightHand);
+            }
+
+            if (hideMainWeapon)
+            {
+                if (___m_leftItem == null)
+                {
+                    // Hands are empty, exit temporary off-hand wield
+                    VRPlayer.offHandWield = false;
+                }
                 var itemToHide = ___m_rightItem != null ? ___m_rightItem : ___m_hiddenRightItem;
                 __instance.UnequipItem(___m_rightItem);
                 ___m_hiddenRightItem = itemToHide;
             }
 
-            if (hideNonDominantHandItem)
+            if (hideSecondaryWeapon)
             {
+                if (___m_rightItem == null)
+                {
+                    // Hands are empty, exit temporary off-hand wield
+                    VRPlayer.offHandWield = false;
+                }
                 var itemToHide = ___m_leftItem != null ? ___m_leftItem : ___m_hiddenLeftItem;
                 __instance.UnequipItem(___m_leftItem);
                 ___m_hiddenLeftItem = itemToHide;
@@ -77,9 +101,9 @@ namespace ValheimVRMod.Patches
     {
         private static HandItemPatchTarget shouldPatch;
 
-        public static void ShowLocalPlayerHandItem(bool isDominantHand)
+        public static void ShowLocalPlayerHandItem(bool isRightHand)
         {
-            shouldPatch = isDominantHand ? HandItemPatchTarget.DominantHand : HandItemPatchTarget.NonDominantHand;
+            shouldPatch = isRightHand ? HandItemPatchTarget.RightHand : HandItemPatchTarget.LeftHand;
             Player.m_localPlayer.ShowHandItems();
             shouldPatch = HandItemPatchTarget.Both;
         }
@@ -99,18 +123,53 @@ namespace ValheimVRMod.Patches
                 return false;
             }
 
-            bool showDominantHandItem = (shouldPatch == HandItemPatchTarget.DominantHand || shouldPatch == HandItemPatchTarget.Both);
-            bool showNonDominantHandItem = (shouldPatch == HandItemPatchTarget.NonDominantHand || shouldPatch == HandItemPatchTarget.Both);
+            bool showMainWeapon;
+            bool showSecondaryWeapon;
+            if (shouldPatch == HandItemPatchTarget.Both)
+            {
+                showMainWeapon = showSecondaryWeapon = true;
+            }
+            else
+            {
+                if (VRPlayer.isRightHandMainWeaponHand)
+                {
+                    showMainWeapon = (shouldPatch == HandItemPatchTarget.RightHand);
+                    showSecondaryWeapon = (shouldPatch == HandItemPatchTarget.LeftHand);
+                }
+                else
+                {
+                    showMainWeapon = (shouldPatch == HandItemPatchTarget.LeftHand);
+                    showSecondaryWeapon = (shouldPatch == HandItemPatchTarget.RightHand);
+                }
 
-            if (showDominantHandItem && ___m_hiddenRightItem != null)
+                if (!VRPlayer.offHandWield)
+                {
+                    if (showMainWeapon && ___m_hiddenLeftItem != null && ___m_hiddenRightItem == null)
+                    {
+                        // Grabbing secondary weapon using dominant hand, enter temporary off-hand wield
+                        VRPlayer.offHandWield = true;
+                        showMainWeapon = false;
+                        showSecondaryWeapon = true;
+                    }
+                    else if (showSecondaryWeapon && ___m_hiddenLeftItem == null && ___m_hiddenRightItem != null)
+                    {
+                        // Grabbing main weapon using  non-dominant hand, enter temporary off-hand wield
+                        VRPlayer.offHandWield = true;
+                        showMainWeapon = true;
+                        showSecondaryWeapon = false;
+                    }
+                }
+            }
+
+            VRPlayer.offHandWield = false;
+            if (showMainWeapon && ___m_hiddenRightItem != null)
             {
                 ___m_hiddenRightItem = null;
                 __instance.EquipItem(hiddenRightItem);
                 ___m_hiddenLeftItem = hiddenLeftItem;
                 __instance.SetupVisEquipment(__instance.m_visEquipment, false);
             }
-
-            if (showNonDominantHandItem && ___m_hiddenLeftItem != null)
+            if (showSecondaryWeapon && ___m_hiddenLeftItem != null)
             {
                 ___m_hiddenLeftItem = null;
                 __instance.EquipItem(hiddenLeftItem);

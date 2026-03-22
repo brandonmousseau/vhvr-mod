@@ -19,10 +19,13 @@ namespace ValheimVRMod.Utilities {
             }
 
             var isDualWielding = FistCollision.hasDualWieldingWeaponEquipped() || EquipScript.localPlayerHasDualWieldingWeaponHolstered();
-            checkHandOverShoulder(isDominantHand: true, isDualWielding);
-            if (!isDualWielding)
+            if (isDualWielding)
             {
-                checkHandOverShoulder(isDominantHand: false, isDualWielding);
+                checkHandOverShoulder(isRightHand: !VHVRConfig.LeftHanded(), isDualWielding);
+            }
+            else {
+                checkHandOverShoulder(isRightHand: true, isDualWielding);
+                checkHandOverShoulder(isRightHand: false, isDualWielding);
             }
         }
         public static bool isBehindBack(Transform handTransform)
@@ -46,9 +49,8 @@ namespace ValheimVRMod.Utilities {
             return Vector3.Dot(facing, offset) < -0.05f;
         }
 
-        private static void checkHandOverShoulder(bool isDominantHand, bool isDualWielding)
+        private static void checkHandOverShoulder(bool isRightHand, bool isDualWielding)
         {
-            var isRightHand = isDominantHand ^ VHVRConfig.LeftHanded();
             var inputSource = isRightHand ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand;
             var otherHandInputSource = isRightHand? SteamVR_Input_Sources.LeftHand : SteamVR_Input_Sources.RightHand;
             var hand = isRightHand ? VRPlayer.rightHand : VRPlayer.leftHand;
@@ -76,16 +78,24 @@ namespace ValheimVRMod.Utilities {
                         hand.otherHand.hapticAction.Execute(0, 0.2f, 100, 0.3f, inputSource);
                     }
 
-                    if (isDominantHand && EquipScript.getLeft() == EquipType.Bow) {
+                    bool isBowHand = VRPlayer.isRightHandMainWeaponHand ^ isRightHand;
+
+                    if (!isBowHand && EquipScript.getLeft() == EquipType.Bow)
+                    {
                         BowLocalManager.instance.toggleArrow();
-                    } else if (isDominantHand && EquipScript.getLeft() == EquipType.Crossbow) {
+                    }
+                    else if (!isBowHand && EquipScript.getLeft() == EquipType.Crossbow)
+                    {
                         CrossbowMorphManager.instance.toggleBolt();
-                    } else if (!isHoldingItem(isDominantHand)) {
-                        PatchShowHandItems.ShowLocalPlayerHandItem(isDominantHand);
-                        isUnsheathing[isDominantHand] = true;
+                    }
+                    else if (!isHoldingItem(isRightHand))
+                    {
+                        PatchShowHandItems.ShowLocalPlayerHandItem(isRightHand);
+                        isUnsheathing[isRightHand] = true;
                     }
                 }
-                else if (!isUnsheathing[isDominantHand] && isHoldingItem(isDominantHand)) {
+                else if (!isUnsheathing[isRightHand] && isHoldingItem(isRightHand))
+                {
                     var isUngripping =
                         isDualWielding ?
                         (action.GetStateUp(inputSource) && action.GetStateUp(otherHandInputSource)) ||
@@ -94,27 +104,28 @@ namespace ValheimVRMod.Utilities {
                         action.GetStateUp(inputSource);
 
                     if (isUngripping) {
-                        PatchHideHandItems.HideLocalPlayerHandItem(isDominantHand);
+                        PatchHideHandItems.HideLocalPlayerHandItem(isRightHand);
                     }
                 }
             }
 
-            if (isUnsheathing[isDominantHand]) {
+            if (isUnsheathing[isRightHand]) {
                 var finishedUnsheathing =
                     isDualWielding ?
                     !action.GetState(inputSource) && !action.GetState(otherHandInputSource) :
                     !action.GetState(inputSource);
-                isUnsheathing[isDominantHand] = !finishedUnsheathing;
+                isUnsheathing[isRightHand] = !finishedUnsheathing;
             }
         }
-        
-        private static bool isHoldingItem(bool isDominantHand) {
-            if (isDominantHand && Player.m_localPlayer.GetRightItem() != null)
+ 
+        private static bool isHoldingItem(bool isRightHand) {
+            bool isMainWeaponHand = VRPlayer.isRightHandMainWeaponHand ^ !isRightHand;
+            if (isMainWeaponHand && Player.m_localPlayer.GetRightItem() != null)
             {
                 return true;
             }
 
-            if (!isDominantHand && Player.m_localPlayer.GetLeftItem() != null)
+            if (!isMainWeaponHand && Player.m_localPlayer.GetLeftItem() != null)
             {
                 return true;
             }

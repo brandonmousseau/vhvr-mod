@@ -276,7 +276,7 @@ namespace ValheimVRMod.Patches {
                     break;
             }
             weaponCol.weaponWield = weaponWield;
-            meshFilter.gameObject.AddComponent<ButtonSecondaryAttackManager>().Initialize(meshFilter.transform, ___m_rightItem, true);
+            meshFilter.gameObject.AddComponent<ButtonSecondaryAttackManager>().Initialize(meshFilter.transform, ___m_rightItem, VRPlayer.isRightHandMainWeaponHand);
 
             if (___m_rightItem == "StaffLightning")
             {
@@ -431,7 +431,7 @@ namespace ValheimVRMod.Patches {
                     return;
             }
 
-            meshFilter.gameObject.AddComponent<ButtonSecondaryAttackManager>().Initialize(meshFilter.transform, ___m_leftItem, false);
+            meshFilter.gameObject.AddComponent<ButtonSecondaryAttackManager>().Initialize(meshFilter.transform, ___m_leftItem, !VRPlayer.isRightHandMainWeaponHand);
         }
     }
 
@@ -556,29 +556,25 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
-            if (player == Player.m_localPlayer)
+            if (player == Player.m_localPlayer && !VHVRConfig.UseVrControls())
             {
-                if (!VHVRConfig.UseVrControls() || !VHVRConfig.LeftHanded())
-                {
-                    return;
-                }
-            } else
+                return;
+            }
+
+            VRPlayerSync vrPlayerSync = player.GetComponent<VRPlayerSync>();
+            if (vrPlayerSync == null)
             {
-                VRPlayerSync vrPlayerSync = player.GetComponent<VRPlayerSync>();
-                if (vrPlayerSync == null)
-                {
-                    return;
-                }
-                // Since VisEquipment#m_leftItem and VisEquipment#m_rightItem are emtpy for remote players and
-                // Player#getLeftItem() and Player#getRightItem() return null for remote players,
-                // we need to record the item hash to figure out what items a remote player is equipped with.
-                // TODO: implement item-specific logic in WeaponWieldSync using the item hash.
-                vrPlayerSync.remotePlayerNonDominantHandItemHash = __instance.m_currentLeftItemHash;
-                vrPlayerSync.remotePlayerDominantHandItemHash = __instance.m_currentRightItemHash;
-                if (!vrPlayerSync.IsLeftHanded())
-                {
-                    return;
-                }
+                return;
+            }
+            // Since VisEquipment#m_leftItem and VisEquipment#m_rightItem are emtpy for remote players and
+            // Player#getLeftItem() and Player#getRightItem() return null for remote players,
+            // we need to record the item hash to figure out what items a remote player is equipped with.
+            // TODO: implement item-specific logic in WeaponWieldSync using the item hash.
+            vrPlayerSync.remotePlayerNonDominantHandItemHash = __instance.m_currentLeftItemHash;
+            vrPlayerSync.remotePlayerDominantHandItemHash = __instance.m_currentRightItemHash;
+            if (!vrPlayerSync.IsLeftHanded())
+            {
+                return;
             }
 
             if (joint == __instance.m_rightHand) {

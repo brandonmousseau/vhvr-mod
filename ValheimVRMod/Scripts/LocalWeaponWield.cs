@@ -42,7 +42,7 @@ namespace ValheimVRMod.Scripts
                     case TwoHandedState.LeftHandBehind:
                         return VRPlayer.leftHand;
                     default:
-                        return VRPlayer.dominantHand;
+                        return VRPlayer.mainWeaponHand;
                 }
 
             }
@@ -89,7 +89,7 @@ namespace ValheimVRMod.Scripts
             bool wasTwoHanded = (LocalPlayerTwoHandedState != TwoHandedState.SingleHanded);
             if (wasTwoHanded)
             {
-                IsWeaponPointingUlnar = Vector3.Dot(VRPlayer.dominantHand.transform.forward, weaponForward) < 0;
+                IsWeaponPointingUlnar = Vector3.Dot(VRPlayer.mainWeaponHand.transform.forward, weaponForward) < 0;
             }
              
             weaponForward = base.UpdateTwoHandedWield();
@@ -103,7 +103,7 @@ namespace ValheimVRMod.Scripts
             {
                 if (wasTwoHanded)
                 {
-                    IsWeaponPointingUlnar = Vector3.Dot(VRPlayer.dominantHand.transform.forward, weaponForward) < 0;
+                    IsWeaponPointingUlnar = Vector3.Dot(VRPlayer.mainWeaponHand.transform.forward, weaponForward) < 0;
                 }
                 else if (EquipScript.getRight() == EquipType.Knife)
                 {
@@ -261,10 +261,10 @@ namespace ValheimVRMod.Scripts
                 if (!isPolearm())
                 {
                     if (isReleasing ||
-                        (!isGrabbingWithBothHands && SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource)))
+                        (!isGrabbingWithBothHands && SteamVR_Actions.valheim_Grab.GetState(VRPlayer.mainWeaponHandInputSource)))
                     {
                         // Check if the hand orientation aligns with two-handed wield. If not, exit sticky two-handed hold.
-                        if (Mathf.Abs(Vector3.Dot(VRPlayer.dominantHand.transform.forward, weaponForward)) < 0.5f)
+                        if (Mathf.Abs(Vector3.Dot(VRPlayer.mainWeaponHand.transform.forward, weaponForward)) < 0.5f)
                         {
                             preparingToUnstickTwoHandedWield = false;
                             return TwoHandedState.SingleHanded;
@@ -320,7 +320,7 @@ namespace ValheimVRMod.Scripts
             {
                 preparingToUnstickTwoHandedWield = false;
                 polearmHandOrderAlongRadialDirection =
-                    Vector3.Dot(VRPlayer.dominantHand.transform.forward, rightHandToLeftHand) > 0 ?
+                    Vector3.Dot(VRPlayer.mainWeaponHand.transform.forward, rightHandToLeftHand) > 0 ?
                     TwoHandedState.RightHandBehind : TwoHandedState.LeftHandBehind;
                 return TwoHandedState.RightHandBehind;
             }
@@ -328,7 +328,7 @@ namespace ValheimVRMod.Scripts
             {
                 preparingToUnstickTwoHandedWield = false;
                 polearmHandOrderAlongRadialDirection =
-                    Vector3.Dot(VRPlayer.dominantHand.transform.forward, rightHandToLeftHand) > 0 ?
+                    Vector3.Dot(VRPlayer.mainWeaponHand.transform.forward, rightHandToLeftHand) > 0 ?
                     TwoHandedState.RightHandBehind :
                     TwoHandedState.LeftHandBehind;
                 return TwoHandedState.LeftHandBehind;
@@ -408,12 +408,9 @@ namespace ValheimVRMod.Scripts
             switch (attackAnimation)
             {
                 case "knife_stab":
-                    if (EquipScript.getLeft() == EquipType.Shield)
-                        return false;
-                    else
-                        return SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource);
+                    return EquipScript.getLeft() != EquipType.Shield && SteamVR_Actions.valheim_Grab.GetState(VRPlayer.mainWeaponHandInputSource);
                 default:
-                    if (!SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource))
+                    if (!SteamVR_Actions.valheim_Grab.GetState(VRPlayer.mainWeaponHandInputSource))
                     {
                         return false;
                     }

@@ -136,11 +136,10 @@ namespace ValheimVRMod.Scripts
             private bool hasSummonedInCurrentMotion = false;
 
             public static bool pendingSummon = false;
-            public bool isDominantHand = true;
 
             void FixedUpdate()
             {
-                var inputSource = isDominantHand ? VRPlayer.dominantHandInputSource : VRPlayer.nonDominantHandInputSource;
+                var inputSource = VRPlayer.mainWeaponHandInputSource;
                 if (SteamVR_Actions.valheim_Use.GetState(inputSource))
                 {
                     if (hasSummonedInCurrentMotion)
@@ -148,7 +147,7 @@ namespace ValheimVRMod.Scripts
                         return;
                     }
 
-                    float handHeight = VRPlayer.dominantHand.transform.position.y;
+                    float handHeight = VRPlayer.mainWeaponHand.transform.position.y;
                     if (handHeight < currentMaxHandHight)
                     {
                         // Pause summoning unless the hand is moving upward.
@@ -157,13 +156,13 @@ namespace ValheimVRMod.Scripts
                     currentMaxHandHight = handHeight;
 
                     var physicsEstimator =
-                        (VHVRConfig.LeftHanded() ^ isDominantHand) ?
+                        VRPlayer.isRightHandMainWeaponHand ?
                         VRPlayer.rightHandPhysicsEstimator :
                         VRPlayer.leftHandPhysicsEstimator;
                     if (physicsEstimator.GetVelocity().y > MIN_SUMMONING_HAND_SPEED)
                     {
                         summonTimer += Time.fixedDeltaTime;
-                        VRPlayer.dominantHand.hapticAction.Execute(0, 0.1f, 50, 0.3f, inputSource);
+                        VRPlayer.mainWeaponHand.hapticAction.Execute(0, 0.1f, 50, 0.3f, inputSource);
                     }
 
                     if (summonTimer > SUMMON_TIME)

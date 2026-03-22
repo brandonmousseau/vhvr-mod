@@ -41,7 +41,7 @@ namespace ValheimVRMod.Scripts {
         private void Start() {
             instance = this;
             arrowAttach = new GameObject();
-            mainHand = VRPlayer.dominantHand.transform;
+            arrowHandTransform = VRPlayer.arrowHand.transform;
             predictionLine = new GameObject().AddComponent<LineRenderer>();
             predictionLine.widthMultiplier = 0.03f;
             predictionLine.positionCount = 20;
@@ -56,7 +56,7 @@ namespace ValheimVRMod.Scripts {
             createChargeIndicator();
             drawIndicator.transform.localPosition -= Vector3.forward * 0.001f;
 
-            arrowAttach.transform.SetParent(mainHand, false);
+            arrowAttach.transform.SetParent(arrowHandTransform, false);
 
             item = Player.m_localPlayer.GetLeftItem();
             if (item != null) {
@@ -313,7 +313,7 @@ namespace ValheimVRMod.Scripts {
             if (attackDrawPercentage == 1 && !finishedPulling) 
             {
                 finishedPulling = true;
-                VRPlayer.dominantHand.otherHand.hapticAction.Execute(0, 0.2f, 100, 0.3f, VRPlayer.nonDominantHandInputSource);
+                VRPlayer.bowHand.hapticAction.Execute(0, 0.2f, 100, 0.3f, VRPlayer.bowHandInputSource);
             }
         }
 
@@ -352,8 +352,8 @@ namespace ValheimVRMod.Scripts {
             }
 
             // SHOOTING FEEDBACK
-            VRPlayer.dominantHand.hapticAction.Execute(0, 0.1f, 75, 0.9f, VRPlayer.dominantHandInputSource);
-            VRPlayer.dominantHand.otherHand.hapticAction.Execute(0, 0.2f, 100, 0.3f, VRPlayer.nonDominantHandInputSource);
+            VRPlayer.arrowHand.hapticAction.Execute(0, 0.1f, 75, 0.9f, VRPlayer.arrowHandInputSource);
+            VRPlayer.bowHand.hapticAction.Execute(0, 0.2f, 100, 0.3f, VRPlayer.bowHandInputSource);
             destroyArrow();
         }
 
@@ -363,7 +363,7 @@ namespace ValheimVRMod.Scripts {
 
         private bool checkHandNearString() {
             var nock = pullStart.position + bowOrientation.TransformVector(Vector3.up * VHVRConfig.ArrowRestElevation());
-            if (!OnlyUseDominantHand() && Vector3.Distance(mainHand.position, nock) > attachRange) {
+            if (!OnlyUseDominantHand() && Vector3.Distance(arrowHandTransform.position, nock) > attachRange) {
                 return false;
             }
 

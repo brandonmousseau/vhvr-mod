@@ -68,9 +68,12 @@ namespace ValheimVRMod.Scripts
 
             protected static Quaternion GetArmpitAnchoredDominantHandedRotation(WeaponWield weaponWield)
             {
-                Vector3 armpitAnchor = (VHVRConfig.LeftHanded() ? VRPlayer.vrikRef.references.leftUpperArm.position : VRPlayer.vrikRef.references.rightUpperArm.position);
+                Vector3 armpitAnchor =
+                    VRPlayer.isRightHandMainWeaponHand ?
+                    VRPlayer.vrikRef.references.rightUpperArm.position :
+                    VRPlayer.vrikRef.references.leftUpperArm.position;
                 armpitAnchor -= VRPlayer.vrikRef.references.chest.up * 0.25f;
-                return Quaternion.LookRotation(VRPlayer.dominantHand.transform.position - armpitAnchor, weaponWield.originalRotation * Vector3.up);
+                return Quaternion.LookRotation(VRPlayer.mainWeaponHand.transform.position - armpitAnchor, weaponWield.originalRotation * Vector3.up);
             }
 
         }
@@ -132,7 +135,7 @@ namespace ValheimVRMod.Scripts
 
         public class LocalAtgeirGeometryProvider : AtgeirGeometryProvider
         {
-            public static bool UsingArmpitAnchor { get { return !SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource); } }
+            public static bool UsingArmpitAnchor { get { return !SteamVR_Actions.valheim_Grab.GetState(VRPlayer.mainWeaponHandInputSource); } }
 
             public LocalAtgeirGeometryProvider(float distanceBetweenGripAndRearEnd, LongGripStateProvider longGripStateProvider) :
                 base(distanceBetweenGripAndRearEnd, longGripStateProvider) { }
@@ -192,7 +195,7 @@ namespace ValheimVRMod.Scripts
 
         public class LocalBattleaxeGeometryProvider : BattleaxeGeometryProvider
         {
-            public static bool UsingArmpitAnchor { get { return !SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource); } }
+            public static bool UsingArmpitAnchor { get { return !SteamVR_Actions.valheim_Grab.GetState(VRPlayer.mainWeaponHandInputSource); } }
 
             public LocalBattleaxeGeometryProvider(float distanceBetweenGripAndRearEnd, LongGripStateProvider longGripStateProvider) :
                 base(distanceBetweenGripAndRearEnd, longGripStateProvider) { }
@@ -238,7 +241,7 @@ namespace ValheimVRMod.Scripts
 
             public override Vector3 GetDesiredSingleHandedPosition(WeaponWield weaponWield)
             {
-                if (SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource))
+                if (SteamVR_Actions.valheim_Grab.GetState(VRPlayer.mainWeaponHandInputSource))
                 {
                     return base.GetDesiredSingleHandedPosition(weaponWield);
                 }

@@ -240,8 +240,8 @@ namespace ValheimVRMod.Scripts
             var mainHandTrigger = isRightHand ? SteamVR_Actions.valheim_Use.state : SteamVR_Actions.valheim_UseLeft.state;
             var inCooldown = AttackTargetMeshCooldown.isPrimaryTargetInCooldown();
             var localWeaponForward = LocalWeaponWield.weaponForward * secondaryAttack.m_attackRange / 2;
-            var localHandPos = VRPlayer.dominantHand.transform.position - Player.m_localPlayer.transform.position;
-            var posHeight = Player.m_localPlayer.transform.InverseTransformPoint(VRPlayer.dominantHand.transform.position + localWeaponForward);
+            var localHandPos = VRPlayer.mainWeaponHand.transform.position - Player.m_localPlayer.transform.position;
+            var posHeight = Player.m_localPlayer.transform.InverseTransformPoint(VRPlayer.mainWeaponHand.transform.position + localWeaponForward);
 
             if (isMovementSecondaryAttack && !(movementCooldown >= 0 || isMovementSecondaryAttackHold))
             {
@@ -249,9 +249,9 @@ namespace ValheimVRMod.Scripts
             }
             if (LocalWeaponWield.isCurrentlyTwoHanded())
             {
-                localHandPos -= LocalWeaponWield.weaponForward * Vector3.Distance(VRPlayer.dominantHand.transform.position, VRPlayer.dominantHand.otherHand.transform.position);
+                localHandPos -= LocalWeaponWield.weaponForward * Vector3.Distance(VRPlayer.mainWeaponHand.transform.position, VRPlayer.mainWeaponHand.otherHand.transform.position);
             }
-            if (!SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource) || 
+            if (!SteamVR_Actions.valheim_Grab.GetState(VRPlayer.mainWeaponHandInputSource) || 
                 item.m_shared.m_itemType == ItemDrop.ItemData.ItemType.TwoHandedWeapon && !LocalWeaponWield.isCurrentlyTwoHanded())
             {
                 firstPos = Vector3.zero;
@@ -259,7 +259,7 @@ namespace ValheimVRMod.Scripts
             }
             
             //Input Check
-            if (SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource) && 
+            if (SteamVR_Actions.valheim_Grab.GetState(VRPlayer.mainWeaponHandInputSource) && 
                 !inCooldown && 
                 !VRPlayer.IsClickableGuiOpen && 
                 !(item.m_shared.m_itemType == ItemDrop.ItemData.ItemType.TwoHandedWeapon && !LocalWeaponWield.isCurrentlyTwoHanded()))
@@ -272,7 +272,7 @@ namespace ValheimVRMod.Scripts
                     slashLine.widthCurve = slashCurve;
                     slashLine.loop = false;
 
-                    slashTrail.transform.SetParent(VRPlayer.dominantHand.transform);
+                    slashTrail.transform.SetParent(VRPlayer.mainWeaponHand.transform);
                     slashTrail.transform.position = Player.m_localPlayer.transform.position + firstPos;
                     slashTrail.material.color = Color.clear;
                     slashTrail.emitting = true;
@@ -315,7 +315,7 @@ namespace ValheimVRMod.Scripts
                     outline.enabled = false;
                     if (!isSecondaryAttackEnded)
                     {
-                        VRPlayer.dominantHand.hapticAction.Execute(0, 0.2f, 50, 0.1f, VRPlayer.dominantHandInputSource);
+                        VRPlayer.mainWeaponHand.hapticAction.Execute(0, 0.2f, 50, 0.1f, VRPlayer.mainWeaponHandInputSource);
                         hitDir = Vector3.zero;
                         isSecondaryAttackEnded = true;
                     }

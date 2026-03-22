@@ -41,11 +41,11 @@ namespace ValheimVRMod.Scripts {
             crossbowMorphManager.loadBoltIfBoltInHandIsNearAnchor();
             if (twoHandedState == TwoHandedState.SingleHanded && VHVRConfig.OneHandedBow())
             {
-                UpdateDominantHandAiming();
+                UpdateTwoHandedAiming();
             }
         }
 
-        private void UpdateDominantHandAiming()
+        private void UpdateTwoHandedAiming()
         { 
             bool isAiming = VHVRConfig.LeftHanded() ? SteamVR_Actions.valheim_UseLeft.state : SteamVR_Actions.valheim_Use.state;
             if (!isAiming)
@@ -57,13 +57,13 @@ namespace ValheimVRMod.Scripts {
             }
 
             Vector3 aimingDirection = VRPlayer.dominantHandRayDirection;
-            transform.rotation = Quaternion.LookRotation(aimingDirection, VRPlayer.dominantHand.transform.up);
-            transform.position = VRPlayer.dominantHand.transform.position + aimingDirection * INTERGRIP_DISTANCE;
+            transform.rotation = Quaternion.LookRotation(aimingDirection, VRPlayer.arrowHand.transform.up);
+            transform.position = VRPlayer.arrowHand.transform.position + aimingDirection * INTERGRIP_DISTANCE;
 
             Quaternion frontHandRotation =
-                VHVRConfig.LeftHanded() ?
-                frontGripRotationForRightHand :
-                frontGripRotationForLeftHand;
+                VRPlayer.isRightHandMainWeaponHand ?
+                frontGripRotationForLeftHand :
+                frontGripRotationForRightHand;
             VrikCreator.GetLocalPlayerNonDominantHandConnector().SetPositionAndRotation(
                 transform.position, transform.rotation * frontHandRotation);
         }
@@ -149,10 +149,10 @@ namespace ValheimVRMod.Scripts {
         public static Vector3 GetBoltSpawnPoint(Attack attack)
         {
             if (VHVRConfig.OneHandedBow() && !isCurrentlyTwoHanded()) {
-                return VRPlayer.dominantHand.transform.position + INTERGRIP_DISTANCE * AimDir;
+                return VRPlayer.arrowHand.transform.position + INTERGRIP_DISTANCE * AimDir;
             }
 
-            return VRPlayer.dominantHand.otherHand.transform.position;
+            return VRPlayer.bowHand.transform.position;
         }
     }
 }
