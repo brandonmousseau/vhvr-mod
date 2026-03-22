@@ -104,6 +104,7 @@ namespace ValheimVRMod.Scripts {
 
         public bool IsLeftHanded()
         {
+            if (isOwner()) { isLeftHanded = !VRPlayer.isRightHandMainWeaponHand; }
             return isLeftHanded;
         }
 

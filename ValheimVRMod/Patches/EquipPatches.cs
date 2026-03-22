@@ -578,12 +578,10 @@ namespace ValheimVRMod.Patches {
                 vrPlayerSync.remotePlayerDominantHandItemHash = __instance.m_currentRightItemHash;
                 if (!vrPlayerSync.IsLeftHanded())
                 {
-                    LogUtils.LogDebug("Not left handed");
                     return;
                 }
             }
 
-            LogUtils.LogDebug("Left handed");
             if (joint == __instance.m_rightHand) {
                 joint = __instance.m_leftHand;
             }
