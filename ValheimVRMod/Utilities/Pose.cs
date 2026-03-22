@@ -21,11 +21,11 @@ namespace ValheimVRMod.Utilities {
             var isDualWielding = FistCollision.hasDualWieldingWeaponEquipped() || EquipScript.localPlayerHasDualWieldingWeaponHolstered();
             if (isDualWielding)
             {
-                checkHandOverShoulder(isRightHand: !VHVRConfig.LeftHanded(), isDualWielding);
+                checkHandOverShoulder(isRightHand: VRPlayer.isRightHandMainWeaponHand, isDualWielding: true);
             }
             else {
-                checkHandOverShoulder(isRightHand: true, isDualWielding);
-                checkHandOverShoulder(isRightHand: false, isDualWielding);
+                checkHandOverShoulder(isRightHand: true, isDualWielding: false);
+                checkHandOverShoulder(isRightHand: false, isDualWielding: false);
             }
         }
         public static bool isBehindBack(Transform handTransform)
