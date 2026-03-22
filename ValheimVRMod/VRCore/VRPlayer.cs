@@ -60,6 +60,7 @@ namespace ValheimVRMod.VRCore
         public const float ROOMSCALE_STEP_ANIMATION_SMOOTHING = 0.3f;
         public const float ROOMSCALE_ANIMATION_WEIGHT = 2f;
 
+        public static float MainCameraFarClipPlane { get; private set; }
         public static VRIK vrikRef { get; private set; }
         private static SteamVR_TrackedObject hipTracker { get { return trackedObjects[hipTrackerIndex]; } }
         private static MeshRenderer hipTrackerRenderer;
@@ -94,7 +95,7 @@ namespace ValheimVRMod.VRCore
         private Vector3 lastRoomscaleLocomotivePosition = Vector3.zero;
         private Vector3 _lastPlayerPosition = Vector3.zero;
         private Vector3 _lastPlayerAttachmentPosition = Vector3.zero;
-        private FadeToBlackManager _fadeManager;
+        private FadingManager _fadeManager;
         private float _forwardSmoothVel = 0.0f, _sideSmoothVel = 0.0f;
         private static float _roomscaleAnimationForwardSpeed = 0.0f;
         private static float _roomscaleAnimationSideSpeed = 0.0f;
@@ -754,6 +755,7 @@ namespace ValheimVRMod.VRCore
             maybeAddAmplifyOcclusion(vrCam);
             // Prevent visibility of the head
             vrCam.nearClipPlane = VHVRConfig.GetNearClipPlane();
+            MainCameraFarClipPlane = mainCamera.farClipPlane;
             // Turn off rendering the UI panel layer. We need to capture
             // it in a camera of higher depth so that it
             // is rendered on top of everything else. (except hands)
@@ -770,7 +772,7 @@ namespace ValheimVRMod.VRCore
                 DestroyImmediate(mainCamListener);
             }
             //Add fade component to camera for transition handling
-            _fadeManager = vrCam.gameObject.AddComponent<FadeToBlackManager>();
+            _fadeManager = vrCam.gameObject.AddComponent<FadingManager>();
             _instance.SetActive(true);
             vrCam.enabled = true;
             _vrCam = vrCam;
