@@ -90,7 +90,6 @@ namespace ValheimVRMod.Patches
     class PatchShowHandItems
     {
         private static HandItemPatchTarget shouldPatch;
-        public static bool IsEquipping { get; private set; }
 
         public static void ShowLocalPlayerHandItem(bool isRightHand)
         {
@@ -152,7 +151,6 @@ namespace ValheimVRMod.Patches
                 }
             }
 
-            IsEquipping = true;
             if (showVanillaRightItem && ___m_hiddenRightItem != null)
             {
                 ___m_hiddenRightItem = null;
@@ -167,7 +165,6 @@ namespace ValheimVRMod.Patches
                 ___m_hiddenRightItem = hiddenRightItem;
                 __instance.SetupVisEquipment(__instance.m_visEquipment, false);
             }
-            IsEquipping = false;
 
             ___m_zanim.SetTrigger("equip_hip");
 

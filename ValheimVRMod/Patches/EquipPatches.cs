@@ -15,6 +15,7 @@ namespace ValheimVRMod.Patches {
     {
         private static bool wasUsingKnife = false;
         private static ItemDrop.ItemData knife;
+        private static bool savedOffHandWield;
 
         static bool Prefix(Humanoid __instance, ItemDrop.ItemData item, bool triggerEquipEffects) {
             if (Player.m_localPlayer == null || __instance.gameObject != Player.m_localPlayer.gameObject || !VHVRConfig.UseVrControls())
@@ -26,6 +27,9 @@ namespace ValheimVRMod.Patches {
             {
                 VRPlayer.offHandWield = false;
             }
+            // Save off-hand wield so that it can be restored later since
+            // the character may first unequip current items which could trigger a reset of off-hand wield
+            savedOffHandWield = VRPlayer.offHandWield;
 
             if (EquipScript.getLeft() == EquipType.Knife && __instance.m_leftItem != null)
             {
@@ -94,6 +98,7 @@ namespace ValheimVRMod.Patches {
             {
                 return;
             }
+            VRPlayer.offHandWield = savedOffHandWield;
             if (!wasUsingKnife) { 
                 return;
             }
@@ -123,11 +128,6 @@ namespace ValheimVRMod.Patches {
         static void Postfix(Humanoid __instance, ItemDrop.ItemData item)
         {
             if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls())
-            {
-                return;
-            }
-
-            if (PatchShowHandItems.IsEquipping)
             {
                 return;
             }
