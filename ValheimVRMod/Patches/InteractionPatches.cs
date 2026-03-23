@@ -66,11 +66,6 @@ namespace ValheimVRMod.Patches
 
             if (hideMainWeapon)
             {
-                if (___m_leftItem == null)
-                {
-                    // Hands are empty, exit temporary off-hand wield
-                    VRPlayer.offHandWield = false;
-                }
                 var itemToHide = ___m_rightItem != null ? ___m_rightItem : ___m_hiddenRightItem;
                 __instance.UnequipItem(___m_rightItem);
                 ___m_hiddenRightItem = itemToHide;
@@ -78,11 +73,6 @@ namespace ValheimVRMod.Patches
 
             if (hideSecondaryWeapon)
             {
-                if (___m_rightItem == null)
-                {
-                    // Hands are empty, exit temporary off-hand wield
-                    VRPlayer.offHandWield = false;
-                }
                 var itemToHide = ___m_leftItem != null ? ___m_leftItem : ___m_hiddenLeftItem;
                 __instance.UnequipItem(___m_leftItem);
                 ___m_hiddenLeftItem = itemToHide;
@@ -100,6 +90,7 @@ namespace ValheimVRMod.Patches
     class PatchShowHandItems
     {
         private static HandItemPatchTarget shouldPatch;
+        public static bool IsEquipping { get; private set; }
 
         public static void ShowLocalPlayerHandItem(bool isRightHand)
         {
@@ -161,6 +152,7 @@ namespace ValheimVRMod.Patches
                 }
             }
 
+            IsEquipping = true;
             if (showVanillaRightItem && ___m_hiddenRightItem != null)
             {
                 ___m_hiddenRightItem = null;
@@ -175,6 +167,7 @@ namespace ValheimVRMod.Patches
                 ___m_hiddenRightItem = hiddenRightItem;
                 __instance.SetupVisEquipment(__instance.m_visEquipment, false);
             }
+            IsEquipping = false;
 
             ___m_zanim.SetTrigger("equip_hip");
 

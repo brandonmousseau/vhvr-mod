@@ -6,6 +6,7 @@ using ValheimVRMod.VRCore;
 using ValheimVRMod.Scripts;
 using ValheimVRMod.Scripts.Block;
 using ValheimVRMod.Utilities;
+using Mono.Cecil.Cil;
 
 namespace ValheimVRMod.Patches {
 
@@ -19,6 +20,11 @@ namespace ValheimVRMod.Patches {
             if (Player.m_localPlayer == null || __instance.gameObject != Player.m_localPlayer.gameObject || !VHVRConfig.UseVrControls())
             {
                 return true;
+            }
+
+            if (EquipScript.isDualWeapon(item))
+            {
+                VRPlayer.offHandWield = false;
             }
 
             if (EquipScript.getLeft() == EquipType.Knife && __instance.m_leftItem != null)
@@ -107,6 +113,38 @@ namespace ValheimVRMod.Patches {
                     return;
             }
         } 
+    }
+
+    [HarmonyPatch(typeof(Humanoid), nameof(Humanoid.UnequipItem))]
+    class PatchUnequipItem
+    {
+
+        // Patch to reset off-hand wield when the player is unequipped
+        static void Postfix(Humanoid __instance, ItemDrop.ItemData item)
+        {
+            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls())
+            {
+                return;
+            }
+
+            if (PatchShowHandItems.IsEquipping)
+            {
+                return;
+            }
+
+            if (__instance.m_leftItem != null && __instance.m_leftItem.m_equipped)
+            {
+                return;
+            }
+
+            if (__instance.m_rightItem != null && __instance.m_rightItem.m_equipped)
+            {
+                return;
+            }
+
+            // TODO: consider adding a timeout before resettin off-hand wield            
+            VRPlayer.offHandWield = false;
+        }
     }
 
     [HarmonyPatch(typeof(Humanoid), nameof(Humanoid.GetCurrentBlocker))]
