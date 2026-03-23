@@ -135,7 +135,7 @@ namespace ValheimVRMod.Scripts
 
         public class LocalAtgeirGeometryProvider : AtgeirGeometryProvider
         {
-            public static bool UsingArmpitAnchor { get { return !SteamVR_Actions.valheim_Grab.GetState(VRPlayer.mainWeaponHandInputSource); } }
+            public static bool UsingArmpitAnchor { get { return VRPlayer.vrikRef != null && !SteamVR_Actions.valheim_Grab.GetState(VRPlayer.mainWeaponHandInputSource); } }
 
             public LocalAtgeirGeometryProvider(float distanceBetweenGripAndRearEnd, LongGripStateProvider longGripStateProvider) :
                 base(distanceBetweenGripAndRearEnd, longGripStateProvider) { }
@@ -195,7 +195,7 @@ namespace ValheimVRMod.Scripts
 
         public class LocalBattleaxeGeometryProvider : BattleaxeGeometryProvider
         {
-            public static bool UsingArmpitAnchor { get { return !SteamVR_Actions.valheim_Grab.GetState(VRPlayer.mainWeaponHandInputSource); } }
+            public static bool UsingArmpitAnchor { get { return VRPlayer.vrikRef != null && !SteamVR_Actions.valheim_Grab.GetState(VRPlayer.mainWeaponHandInputSource); } }
 
             public LocalBattleaxeGeometryProvider(float distanceBetweenGripAndRearEnd, LongGripStateProvider longGripStateProvider) :
                 base(distanceBetweenGripAndRearEnd, longGripStateProvider) { }
