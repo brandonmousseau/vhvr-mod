@@ -72,7 +72,8 @@ namespace ValheimVRMod.Scripts.Block {
         }
 
         private void CheckParryMotion() {
-            PhysicsEstimator handPhysicsEstimator = VHVRConfig.LeftHanded() ? VRPlayer.rightHandPhysicsEstimator : VRPlayer.leftHandPhysicsEstimator;
+            PhysicsEstimator handPhysicsEstimator =
+                VRPlayer.isRightHandMainWeaponHand ? VRPlayer.leftHandPhysicsEstimator : VRPlayer.rightHandPhysicsEstimator;
             float l = handPhysicsEstimator.GetLongestLocomotion(/* deltaT= */ 0.4f).magnitude;
             if (physicsEstimator.GetVelocity().magnitude > MIN_PARRY_ENTRY_SPEED && Vector3.Angle(physicsEstimator.GetVelocity(), shieldFacing) < MAX_PARRY_ANGLE) {
                 if (!attemptingParry)
