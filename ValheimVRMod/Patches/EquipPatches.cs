@@ -6,7 +6,6 @@ using ValheimVRMod.VRCore;
 using ValheimVRMod.Scripts;
 using ValheimVRMod.Scripts.Block;
 using ValheimVRMod.Utilities;
-using Mono.Cecil.Cil;
 
 namespace ValheimVRMod.Patches {
 
