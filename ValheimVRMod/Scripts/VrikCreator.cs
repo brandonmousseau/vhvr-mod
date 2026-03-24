@@ -194,14 +194,14 @@ namespace ValheimVRMod.Scripts {
             vrik.solver.rightLeg.target.localRotation = Quaternion.Euler(315, 0, 180);
         }
 
-        public static Transform GetLocalPlayerDominantHandConnector()
+        public static Transform GetLocalPlayerArrowHandConnector()
         {
-            return VHVRConfig.LeftHanded() ? VrikCreator.localPlayerLeftHandConnector : VrikCreator.localPlayerRightHandConnector;
+            return VRPlayer.isRightHandMainWeaponHand ? VrikCreator.localPlayerRightHandConnector : VrikCreator.localPlayerLeftHandConnector;
         }
 
-        public static Transform GetLocalPlayerNonDominantHandConnector()
+        public static Transform GetLocalPlayerBowHandConnector()
         {
-            return VHVRConfig.LeftHanded() ? VrikCreator.localPlayerRightHandConnector : VrikCreator.localPlayerLeftHandConnector;
+            return VRPlayer.isRightHandMainWeaponHand ? VrikCreator.localPlayerLeftHandConnector : VrikCreator.localPlayerRightHandConnector;
         }
         public static void ResetHandConnectors()
         {
@@ -254,12 +254,12 @@ namespace ValheimVRMod.Scripts {
 
         private static bool IsHoldingBowInLeftHandAsLocalPlayer(GameObject player)
         {
-            return !VHVRConfig.LeftHanded() && player == Player.m_localPlayer.gameObject && EquipScript.getLeft() == EquipType.Bow;
+            return VRPlayer.isRightHandMainWeaponHand && player == Player.m_localPlayer.gameObject && EquipScript.getLeft() == EquipType.Bow;
         }
 
         private static bool IsHoldingBowInRightHandAsLocalPlayer(GameObject player)
         {
-            return VHVRConfig.LeftHanded() && player == Player.m_localPlayer.gameObject && EquipScript.getLeft() == EquipType.Bow;
+            return !VRPlayer.isRightHandMainWeaponHand && player == Player.m_localPlayer.gameObject && EquipScript.getLeft() == EquipType.Bow;
         }
     }
 }

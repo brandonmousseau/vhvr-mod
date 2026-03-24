@@ -18,7 +18,7 @@ namespace ValheimVRMod.Scripts.Block {
         private Vector3 scaleRef;
         private bool attemptingParry;
         private int parryCheckFixedUpateTicker = 0;
-        private Vector3 shieldFacing { get { return VHVRConfig.LeftHanded() ? VRPlayer.rightHand.transform.right : -VRPlayer.leftHand.transform.right; } }
+        private Vector3 shieldFacing { get { return VRPlayer.isRightHandMainWeaponHand ? -VRPlayer.leftHand.transform.right : VRPlayer.rightHand.transform.right; } }
 
         public static ShieldBlock instance;
 
@@ -51,14 +51,14 @@ namespace ValheimVRMod.Scripts.Block {
         {
             posRef = _meshCooldown.transform.localPosition;
             scaleRef = _meshCooldown.transform.localScale;
-            hand = VHVRConfig.LeftHanded() ? VRPlayer.rightHand.transform : VRPlayer.leftHand.transform;
-            offhand = VHVRConfig.LeftHanded() ? VRPlayer.leftHand.transform : VRPlayer.rightHand.transform;
+            hand = VRPlayer.mainWeaponHand.otherHand.transform;
+            offhand = VRPlayer.mainWeaponHand.transform;
         }
 
         public override void setBlocking(HitData hitData) {
             if (VHVRConfig.UseGrabButtonBlock())
             {
-                _blocking = SteamVR_Actions.valheim_Grab.GetState(VRPlayer.nonDominantHandInputSource);
+                _blocking = SteamVR_Actions.valheim_Grab.GetState(VRPlayer.secondaryWeaponHandInputSource);
             }
             else if (VHVRConfig.UseRealisticBlock())
             {

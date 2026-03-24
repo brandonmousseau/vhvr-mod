@@ -1338,13 +1338,13 @@ namespace ValheimVRMod.Utilities
             return arrowRestElevation.Value;
         }
 
-        public static float ArrowRestHorizontalOffsetMultiplier()
+        public static float ArrowRestHorizontalOffsetMultiplier(bool isHoldBowInLeftHand)
         {
             switch (arrowRestSide.Value) {
                 case k_arrowRestAsiatic:
-                    return LeftHanded() ? -1 : 1;
+                    return isHoldBowInLeftHand ? 1 : -1;
                 case k_arrowRestMediterranean:
-                    return LeftHanded() ? 1 : -1;
+                    return isHoldBowInLeftHand ? -1 : 1;
                 default:
                     return 0;
             }

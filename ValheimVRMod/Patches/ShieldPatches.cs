@@ -49,7 +49,7 @@ namespace ValheimVRMod.Patches {
             if (ShieldBlock.instance?.isBlocking() ?? false)
             {
                 blocking = true;
-                handHapticTrigger = VHVRConfig.LeftHanded() ? HandHapticTrigger.RightHand : HandHapticTrigger.LeftHand;
+                handHapticTrigger = VRPlayer.isRightHandMainWeaponHand ? HandHapticTrigger.LeftHand : HandHapticTrigger.RightHand;
             }
             else if (WeaponBlock.instance?.isBlocking() ?? false)
             {
