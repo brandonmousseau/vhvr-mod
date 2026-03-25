@@ -32,6 +32,8 @@ namespace ValheimVRMod.Scripts
         // The ordering of the hands along the radial axis of both hands when holding battleaxe/spear/atgeir.
         // If the radial directions of the hands are pointing opposite ways, this variable is not updated.
         private TwoHandedState polearmHandOrderAlongRadialDirection = TwoHandedState.SingleHanded;
+        private VRPlayerSync playerSync { get { return _playerSync == null ? (_playerSync = GetComponentInParent<VRPlayerSync>()) : _playerSync; } }
+        private VRPlayerSync _playerSync;
 
         public Hand mainHand {
             get {
@@ -180,6 +182,7 @@ namespace ValheimVRMod.Scripts
             lastRenderedTransform.localScale = Vector3.one;
             lastRenderedTransform.SetParent(null, true);
             localWeaponTip = transform.position + (weaponLength - distanceBetweenGripAndRearEnd) * weaponForward;
+            playerSync?.UpdateWeaponTransform(transform.position, transform.rotation);
 
             return weaponForward;
         }
