@@ -17,6 +17,8 @@ namespace ValheimVRMod.Scripts {
         public GameObject rightHand = null;
         public GameObject leftHand = null;
         public GameObject pelvis = null;
+        public GameObject weaponSync = null;
+
         public bool isLeftHanded { get { return player == Player.m_localPlayer ? !VRPlayer.isRightHandMainWeaponHand : clientIsLeftHanded; } }
         public EquipType mainHandEquipType = EquipType.None;
         public EquipType offHandEquipType = EquipType.None;
@@ -66,6 +68,7 @@ namespace ValheimVRMod.Scripts {
             leftHand = new GameObject();
             pelvis = new GameObject();
             player = GetComponent<Player>();
+            weaponSync = new GameObject();
         }
 
         void Start()
@@ -165,6 +168,11 @@ namespace ValheimVRMod.Scripts {
             return vrikSync != null;
         }
 
+        public void UpdateWeaponTransform(Vector3 position, Quaternion rotation)
+        {
+            weaponSync.transform.SetPositionAndRotation(position, rotation);
+        }
+
         private void calculateOwnerVelocities(float dt)
         {
             ownerVelocityCamera = (camera.transform.position - player.transform.position - ownerLastPositionCamera) / dt;
@@ -221,6 +229,7 @@ namespace ValheimVRMod.Scripts {
             pkg.Write(isLeftHanded);
             pkg.Write((byte) (twoHandedState = LocalWeaponWield.LocalPlayerTwoHandedState));
             pkg.Write(InverseHold());
+            writeData(pkg, weaponSync, ownerVelocityCamera);
 
             GetComponent<ZNetView>().GetZDO().Set("vr_data", pkg.GetArray());
         }
