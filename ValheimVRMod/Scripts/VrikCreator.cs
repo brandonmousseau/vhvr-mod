@@ -143,7 +143,7 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            if ((sync?.currentLeftWeapon != null && !IsHoldingBowInLeftHandAsLocalPlayer(player.gameObject)) || sync?.currentDualWieldWeapon != null)
+            if (sync != null && sync.isLeftHandWeaponEquipped && !IsHoldingBowInLeftHandAsLocalPlayer(player.gameObject))
             {
                 vrik.solver.leftArm.target.localPosition = leftEquippedPosition;
                 vrik.solver.leftArm.target.localRotation = leftEquippedRotation;
@@ -156,7 +156,7 @@ namespace ValheimVRMod.Scripts {
                 vrik.solver.leftArm.palmToThumbAxis = leftUnequippedElbow;
             }
             
-            if ((sync?.currentRightWeapon != null && !IsHoldingBowInRightHandAsLocalPlayer(player.gameObject)) || sync?.currentDualWieldWeapon != null)
+            if ((sync != null && sync.isRightHandWeaponEquipped && !IsHoldingBowInRightHandAsLocalPlayer(player.gameObject)))
             {
                 vrik.solver.rightArm.target.localPosition = rightEquippedPosition;
                 vrik.solver.rightArm.target.localRotation = rightEquippedRotation;

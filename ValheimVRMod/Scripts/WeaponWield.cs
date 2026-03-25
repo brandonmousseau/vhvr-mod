@@ -40,8 +40,7 @@ namespace ValheimVRMod.Scripts
         private bool isLocal;
         protected bool isDominantHandWeapon { get; private set; }
 
-        public WeaponWield Initialize(
-            ItemDrop.ItemData item, string itemName, bool isDominantHandWeapon, WeaponWieldSync.TwoHandedStateProvider twoHandedStateProvider = null)
+        public WeaponWield Initialize(ItemDrop.ItemData item, string itemName, bool isDominantHandWeapon)
         {
             isLocal = GetComponentInParent<Player>() == Player.m_localPlayer;
             this.isDominantHandWeapon = isDominantHandWeapon;
@@ -100,7 +99,7 @@ namespace ValheimVRMod.Scripts
                 }
             }
 
-            geometryProvider = GetGeometryProvider(longestLocalExtrusion, distanceBetweenGripAndRearEnd, twoHandedStateProvider);
+            geometryProvider = GetGeometryProvider(longestLocalExtrusion, distanceBetweenGripAndRearEnd);
 
             var weaponPointing = GetWeaponPointingDirection();
             offsetFromPointingDir =
@@ -196,7 +195,7 @@ namespace ValheimVRMod.Scripts
         }
 
         private TwoHandedGeometryProvider GetGeometryProvider
-            (Vector3 longestLocalExtrusion, float distanceBetweenGripAndRearEnd, WeaponWieldSync.TwoHandedStateProvider twoHandedStateProvider)
+            (Vector3 longestLocalExtrusion, float distanceBetweenGripAndRearEnd)
         {
             if (IsDundr())
             {
@@ -256,16 +255,8 @@ namespace ValheimVRMod.Scripts
                     {
                         return new TwoHandedGeometry.LocalSpearGeometryProvider(this);
                     }
-                    else if (twoHandedStateProvider != null)
-                    {
-                        return new TwoHandedGeometry.RemoteSpearGeometryProvider(twoHandedStateProvider, this);
-                    }
+    
                     break;
-            }
-
-            if (!isLocal && twoHandedStateProvider != null)
-            {
-                return new TwoHandedGeometry.RemoteGeometryProvider(distanceBetweenGripAndRearEnd, twoHandedStateProvider);
             }
             
             return new TwoHandedGeometry.DefaultGeometryProvider(distanceBetweenGripAndRearEnd);

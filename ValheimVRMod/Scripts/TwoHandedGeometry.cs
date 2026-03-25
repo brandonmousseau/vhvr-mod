@@ -569,34 +569,5 @@ namespace ValheimVRMod.Scripts
                 }
             }
         }
-
-        public class RemoteGeometryProvider : DefaultGeometryProvider
-        {
-            private WeaponWieldSync.TwoHandedStateProvider twoHandedStateProvider;
-            public RemoteGeometryProvider(float distanceBetweenGripAndRearEnd, WeaponWieldSync.TwoHandedStateProvider twoHandedStateProvider) :
-                base(distanceBetweenGripAndRearEnd) {
-                this.twoHandedStateProvider = twoHandedStateProvider;
-            }
-
-            public override bool InverseHoldForDominantHand()
-            {
-                return twoHandedStateProvider.InverseHold();
-            }
-        }
-
-        public class RemoteSpearGeometryProvider : SpearGeometryProvider
-        {
-            private WeaponWieldSync.TwoHandedStateProvider twoHandedStateProvider;
-            public RemoteSpearGeometryProvider(WeaponWieldSync.TwoHandedStateProvider twoHandedStateProvider, LongGripStateProvider longGripStateProvider) :
-                base(longGripStateProvider)
-            {
-                this.twoHandedStateProvider = twoHandedStateProvider;
-            }
-
-            public override bool InverseHoldForDominantHand()
-            {
-                return twoHandedStateProvider.InverseHold();
-            }
-        }
     }
 }
