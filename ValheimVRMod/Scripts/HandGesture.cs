@@ -7,7 +7,7 @@ namespace ValheimVRMod.Scripts {
     public class HandGesture : MonoBehaviour {
         
         private bool isRightHand;
-        private bool isMainHand { get { return isRightHand ^ VHVRConfig.LeftHanded(); } }
+        private bool isMainHand { get { return isRightHand ^ !VRPlayer.isRightHandMainWeaponHand; } }
         private Quaternion handFixedRotation;
         private Hand _sourceHand;
         private Transform sourceTransform;

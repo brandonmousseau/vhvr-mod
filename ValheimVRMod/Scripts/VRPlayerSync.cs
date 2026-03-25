@@ -20,7 +20,8 @@ namespace ValheimVRMod.Scripts {
         public GameObject weaponSync = null;
 
         // private WeaponWield.TwoHandedState twoHandedState = WeaponWield.TwoHandedState.SingleHanded;
-        public bool isLeftHanded { get; private set; } = false;
+        public bool isLeftHanded { get { return player == Player.m_localPlayer ? !VRPlayer.isRightHandMainWeaponHand : clientIsLeftHanded; } }
+        private bool clientIsLeftHanded = false;
         // private bool inverseHold = false;
 
         private Player player;
@@ -50,17 +51,15 @@ namespace ValheimVRMod.Scripts {
         private Quaternion[] rightFingerRotations = new Quaternion[20];
 
         private bool fingersUpdated;
-        public bool isMainHandWeaponEquipped;
-        public bool isOffHandWeaponEquipped;
 
         public BowManager bowManager;
-        public bool isRightHandWeaponEquipped { get { return isLeftHanded ? isMainHandWeaponEquipped : isOffHandWeaponEquipped; } }
-        public bool isLeftHandWeaponEquipped { get { return isLeftHanded ? isOffHandWeaponEquipped : isMainHandWeaponEquipped; } }
         public Vector3 weaponPosition { get { return weaponSync.transform.position; } }
         public Quaternion weaponRotation { get { return weaponSync.transform.rotation; } }
+        public EquipType mainHandEquipType = EquipType.None;
+        public EquipType offHandEquipType = EquipType.None;
+        public EquipType leftHandEquipType { get { return isLeftHanded ? mainHandEquipType : offHandEquipType; } }
+        public EquipType rightHandEquipType { get { return isLeftHanded ? offHandEquipType : mainHandEquipType; } }
 
-        public int remotePlayerNonDominantHandItemHash;
-        public int remotePlayerDominantHandItemHash;
         public bool hasReceivedData { get; private set; }
 
         private void Awake() {
@@ -89,6 +88,37 @@ namespace ValheimVRMod.Scripts {
             }
             if (isValid() && !isOwner()) {
                 clientSync(dt);
+            }
+
+            // Client isLeftHanded sync may happen after equipping.
+            // Force re-equip to trigger a patch with the updated isLeftHanded.
+            var mainHandItem = player.m_visEquipment.m_rightItemInstance;
+            if (player.m_visEquipment.m_currentRightItemHash != 0 && mainHandItem != null)
+            {
+                if (isLeftHanded ?
+                    mainHandItem.transform.parent == player.m_visEquipment.m_rightHand :
+                    mainHandItem.transform.parent == player.m_visEquipment.m_leftHand)
+                {
+                    LogUtils.LogDebug("Switching main hand item to the other hand");
+                    var hash = player.m_visEquipment.m_currentRightItemHash;
+                    player.m_visEquipment.SetRightHandEquipped(0);
+                    player.m_visEquipment.SetRightHandEquipped(hash);
+                }
+            }
+
+            var offHandItem = player.m_visEquipment.m_leftItemInstance;
+            if (player.m_visEquipment.m_currentLeftItemHash != 0 && offHandItem != null)
+            {
+                if (isLeftHanded ?
+                    offHandItem.transform.parent == player.m_visEquipment.m_leftHand :
+                    offHandItem.transform.parent == player.m_visEquipment.m_rightHand)
+                {
+                    LogUtils.LogDebug("Switching secondary hand item to right hand");
+                    var hash = player.m_visEquipment.m_currentLeftItemHash;
+                    var variant = player.m_visEquipment.m_currentLeftItemVariant;
+                    player.m_visEquipment.SetLeftHandEquipped(0, 0);
+                    player.m_visEquipment.SetLeftHandEquipped(hash, variant);
+                }
             }
         }
 
@@ -177,7 +207,7 @@ namespace ValheimVRMod.Scripts {
             writeFingers(pkg, VRPlayer.vrikRef.references.leftHand);
             writeFingers(pkg, VRPlayer.vrikRef.references.rightHand);
             pkg.Write(BowLocalManager.instance != null && BowLocalManager.instance.pulling);
-            pkg.Write(isLeftHanded = !VRPlayer.isRightHandMainWeaponHand);
+            pkg.Write(isLeftHanded);
             // pkg.Write((byte) (twoHandedState = LocalWeaponWield.LocalPlayerTwoHandedState));
             // pkg.Write(InverseHold());
 
@@ -237,7 +267,7 @@ namespace ValheimVRMod.Scripts {
             hasTempRelPos = true;
             readFingers(pkg);
             maybePullBow(pkg.ReadBool());
-            isLeftHanded = pkg.ReadBool();
+            clientIsLeftHanded = pkg.ReadBool();
             // twoHandedState = (WeaponWield.TwoHandedState) pkg.ReadByte();
             // inverseHold = pkg.ReadBool();
         }
@@ -246,18 +276,10 @@ namespace ValheimVRMod.Scripts {
             GameObject bow = player.m_visEquipment.m_leftItemInstance;
             if (bow == null)
             {
-                bow = player.m_visEquipment.m_rightItemInstance;
-                if (bow == null)
-                {
-                    return;
-                }
-            }
-            else if (player.m_visEquipment.m_rightItemInstance != null && isLeftHanded)
-            {
-                bow = player.m_visEquipment.m_rightItemInstance;
+                return;
             }
 
-            var bowManager = bow.GetComponent<BowManager>();
+            var bowManager = bow.GetComponentInChildren<BowManager>();
             if (bowManager == null) {
                 if (!pulling) {
                     return;
