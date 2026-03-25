@@ -143,7 +143,7 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
-            if ((sync?.currentLeftWeapon != null && !IsHoldingBowInLeftHandAsLocalPlayer(player.gameObject)) || sync?.currentDualWieldWeapon != null)
+            if (sync != null && (UseEquippedHandRotation(sync.leftHandEquipType) || UseEquippedDualWeaponHandRotation(sync.mainHandEquipType)))
             {
                 vrik.solver.leftArm.target.localPosition = leftEquippedPosition;
                 vrik.solver.leftArm.target.localRotation = leftEquippedRotation;
@@ -155,8 +155,8 @@ namespace ValheimVRMod.Scripts {
                 vrik.solver.leftArm.target.localRotation = leftUnequippedRotation;
                 vrik.solver.leftArm.palmToThumbAxis = leftUnequippedElbow;
             }
-            
-            if ((sync?.currentRightWeapon != null && !IsHoldingBowInRightHandAsLocalPlayer(player.gameObject)) || sync?.currentDualWieldWeapon != null)
+
+            if (sync != null && (UseEquippedHandRotation(sync.rightHandEquipType) || UseEquippedDualWeaponHandRotation(sync.mainHandEquipType)))
             {
                 vrik.solver.rightArm.target.localPosition = rightEquippedPosition;
                 vrik.solver.rightArm.target.localRotation = rightEquippedRotation;
@@ -252,14 +252,22 @@ namespace ValheimVRMod.Scripts {
             resetVrikHandTransform(Player.m_localPlayer);
         }
 
-        private static bool IsHoldingBowInLeftHandAsLocalPlayer(GameObject player)
+        private static bool UseEquippedHandRotation(EquipType equipType)
         {
-            return VRPlayer.isRightHandMainWeaponHand && player == Player.m_localPlayer.gameObject && EquipScript.getLeft() == EquipType.Bow;
+            switch (equipType)
+            {
+                case EquipType.None:
+                case EquipType.Claws:
+                case EquipType.Bow:
+                    return false;
+                default:
+                    return true;
+            }
         }
 
-        private static bool IsHoldingBowInRightHandAsLocalPlayer(GameObject player)
+        private static bool UseEquippedDualWeaponHandRotation(EquipType equipType)
         {
-            return !VRPlayer.isRightHandMainWeaponHand && player == Player.m_localPlayer.gameObject && EquipScript.getLeft() == EquipType.Bow;
+            return equipType == EquipType.DualAxes || equipType == EquipType.DualKnives;
         }
     }
 }

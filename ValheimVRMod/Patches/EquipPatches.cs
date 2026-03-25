@@ -177,7 +177,7 @@ namespace ValheimVRMod.Patches {
 
     [HarmonyPatch(typeof(VisEquipment), nameof(VisEquipment.SetRightHandEquipped))]
     class PatchSetRightHandEquipped {
-        static void Postfix(VisEquipment __instance, bool __result, string ___m_rightItem, ref GameObject ___m_rightItemInstance) {
+        static void Postfix(VisEquipment __instance, bool __result, string ___m_rightItem, ref GameObject ___m_rightItemInstance, int hash) {
             if (!__result) {
                 return;
             }
@@ -204,36 +204,14 @@ namespace ValheimVRMod.Patches {
             var vrPlayerSync = player.GetComponent<VRPlayerSync>();
             
             if (vrPlayerSync != null) {
-                UpdateDualWieldWeapon(vrPlayerSync, ___m_rightItemInstance, meshFilter, player == Player.m_localPlayer);
-                if (vrPlayerSync.currentDualWieldWeapon == null)
+                // Since VisEquipment#m_leftItem and VisEquipment#m_rightItem are emtpy for remote players and
+                // Player#getLeftItem() and Player#getRightItem() return null for remote players,
+                // we need to figure out the equip type purely from the item hash.
+                vrPlayerSync.mainHandEquipType = EquipScript.GetEquipTypeFromHash(hash);
+                if (vrPlayerSync.hasReceivedData || (Player.m_localPlayer == player && VHVRConfig.UseVrControls()))
                 {
-                    if (vrPlayerSync.IsLeftHanded())
-                    {
-                        if (meshFilter == null)
-                        {
-                            vrPlayerSync.currentLeftWeapon = null;
-                        }
-                        else
-                        {
-                            vrPlayerSync.currentLeftWeapon = meshFilter.gameObject;
-                            vrPlayerSync.currentLeftWeapon.name = ___m_rightItem;
-                        }
-                    }
-                    else
-                    {
-                        if (meshFilter == null)
-                        {
-                            vrPlayerSync.currentRightWeapon = null;
-                        }
-                        else
-                        {
-                            vrPlayerSync.currentRightWeapon = meshFilter.gameObject;
-                            vrPlayerSync.currentRightWeapon.name = ___m_rightItem;
-                        }
-                    }
+                    VrikCreator.resetVrikHandTransform(player);
                 }
-
-                VrikCreator.resetVrikHandTransform(player);   
             }
 
             if (!___m_rightItemInstance || meshFilter == null)
@@ -245,11 +223,30 @@ namespace ValheimVRMod.Patches {
             {
                 if (vrPlayerSync != null && vrPlayerSync.hasReceivedData)
                 {
-                    // TODO: figure out away to get item name for non-local players (GetRightItem() returns null for non-local players and ___m_rightItem is empty).
-                    WeaponWieldSync weaponWieldSync = ___m_rightItemInstance.AddComponent<WeaponWieldSync>();
-                    weaponWieldSync.Initialize(player.GetRightItem(), ___m_rightItem, isDominantHandWeapon: true, vrPlayerSync, vrPlayerSync.leftHand.transform, vrPlayerSync.rightHand.transform);
+                    switch (vrPlayerSync.mainHandEquipType)
+                    {
+                        case EquipType.Axe:
+                        case EquipType.BattleAxe:
+                        case EquipType.Club:
+                        case EquipType.Cultivator:
+                        case EquipType.Fishing:
+                        case EquipType.Hoe:
+                        case EquipType.Knife:
+                        case EquipType.Magic:
+                        case EquipType.Polearms:
+                        case EquipType.Scythe:
+                        case EquipType.Sledge:
+                        case EquipType.Spear:
+                        case EquipType.SpearChitin:
+                        case EquipType.Sword:
+                        case EquipType.Torch:
+                            WeaponWieldSync weaponWieldSync = ___m_rightItemInstance.AddComponent<WeaponWieldSync>();
+                            weaponWieldSync.Initialize(player.GetRightItem(), ___m_rightItem, isDominantHandWeapon: true, vrPlayerSync, vrPlayerSync.leftHand.transform, vrPlayerSync.rightHand.transform);
+                            return;
+                        default:
+                            return;
+                    }
                 }
-                return;
             }
 
             if (VHVRConfig.NonVrPlayer())
@@ -331,46 +328,11 @@ namespace ValheimVRMod.Patches {
                 meshFilter.gameObject.AddComponent<WeaponBlock>().weaponWield = weaponWield;
             }
         }
-
-        private static void UpdateDualWieldWeapon(VRPlayerSync sync, GameObject itemInstance, MeshFilter meshFilter, bool isLocalPlayer)
-        {
-            if (itemInstance == null)
-            {
-                sync.currentDualWieldWeapon = null;
-                return;
-            }
-
-            // Dual wield weapon has to be a skinned mesh as opposed to a mesh filter.
-            if (meshFilter != null)
-            {
-                sync.currentDualWieldWeapon = null;
-                return;
-            }
-
-            if (isLocalPlayer && EquipScript.getRight() == EquipType.Claws)
-            {
-                // For the local player, do not consider claw as a dual wielding weapon for synchronization purposes.
-                // For remote users, it is hard to know whether the item is claws.
-                sync.currentLeftWeapon = sync.currentRightWeapon = sync.currentDualWieldWeapon = null;
-                return;
-            }
-
-            SkinnedMeshRenderer skinnedMeshRenderer = itemInstance.GetComponentInChildren<SkinnedMeshRenderer>();
-            if (skinnedMeshRenderer == null)
-            {
-                // Dual wield weapon has to be a skinned mesh.
-                sync.currentDualWieldWeapon = null;
-                return;
-            }
-
-            sync.currentLeftWeapon = sync.currentRightWeapon = null;
-            sync.currentDualWieldWeapon = skinnedMeshRenderer.gameObject;
-        }
     }
 
     [HarmonyPatch(typeof(VisEquipment), nameof(VisEquipment.SetLeftHandEquipped))]
     class PatchSetLeftHandEquipped {
-        static void Postfix(VisEquipment __instance, bool __result, string ___m_leftItem, GameObject ___m_leftItemInstance) {
+        static void Postfix(VisEquipment __instance, bool __result, string ___m_leftItem, GameObject ___m_leftItemInstance, int hash) {
             if (!__result)
             {
                 return;
@@ -398,17 +360,12 @@ namespace ValheimVRMod.Patches {
             var vrPlayerSync = player.GetComponent<VRPlayerSync>();
             if (vrPlayerSync != null)
             {
+                // Since VisEquipment#m_leftItem and VisEquipment#m_rightItem are emtpy for remote players and
+                // Player#getLeftItem() and Player#getRightItem() return null for remote players,
+                // we need to figure out the equip type purely from the item hash.
+                vrPlayerSync.offHandEquipType = EquipScript.GetEquipTypeFromHash(hash);
                 if (vrPlayerSync.hasReceivedData || (Player.m_localPlayer == player && VHVRConfig.UseVrControls()))
                 {
-                    if (vrPlayerSync.IsLeftHanded())
-                    {
-                        vrPlayerSync.currentRightWeapon = meshFilter == null ? null : meshFilter.gameObject;
-                    }
-                    else
-                    {
-                        vrPlayerSync.currentLeftWeapon = meshFilter == null ? null : meshFilter.gameObject;
-                    }
-
                     VrikCreator.resetVrikHandTransform(player);
                 }
             }
@@ -420,9 +377,8 @@ namespace ValheimVRMod.Patches {
 
             if (Player.m_localPlayer != player)
             {
-                if (vrPlayerSync != null && vrPlayerSync.hasReceivedData)
+                if (vrPlayerSync != null && vrPlayerSync.hasReceivedData && vrPlayerSync.offHandEquipType == EquipType.Crossbow)
                 {
-                    // TODO: figure out away to get item name for non-local players (GetLeftItem() returns null for non-local players and ___m_leftItem is empty).
                     WeaponWieldSync weaponWieldSync = ___m_leftItemInstance.AddComponent<WeaponWieldSync>();
                     weaponWieldSync.Initialize(player.GetLeftItem(), ___m_leftItem, isDominantHandWeapon: false, vrPlayerSync, vrPlayerSync.leftHand.transform, vrPlayerSync.rightHand.transform);
                 }
@@ -607,17 +563,7 @@ namespace ValheimVRMod.Patches {
             else
             {
                 VRPlayerSync vrPlayerSync = player.GetComponent<VRPlayerSync>();
-                if (vrPlayerSync == null)
-                {
-                    return;
-                }
-                // Since VisEquipment#m_leftItem and VisEquipment#m_rightItem are emtpy for remote players and
-                // Player#getLeftItem() and Player#getRightItem() return null for remote players,
-                // we need to record the item hash to figure out what items a remote player is equipped with.
-                // TODO: implement item-specific logic in WeaponWieldSync using the item hash.
-                vrPlayerSync.remotePlayerNonDominantHandItemHash = __instance.m_currentLeftItemHash;
-                vrPlayerSync.remotePlayerDominantHandItemHash = __instance.m_currentRightItemHash;
-                if (!vrPlayerSync.IsLeftHanded())
+                if (vrPlayerSync == null || !vrPlayerSync.isLeftHanded)
                 {
                     return;
                 }
@@ -634,22 +580,25 @@ namespace ValheimVRMod.Patches {
         /// <summary>
         /// For Left Handed mode we need to mirror models of shields and tankard 
         /// </summary>
-        static void Postfix(GameObject __result)
+        static void Postfix(GameObject __result, int itemHash)
         {
-            // TODO: consider fixing orietantion for dead raiser too.
-            // TODO: figure out a way to fix oriention for non-local players (e. g. using vrPlayerSync.remotePlayerNonDominantHandItemHash).
-            if (Player.m_localPlayer == null 
-                || !__result
-                || __result.GetComponentInParent<Player>() != Player.m_localPlayer
-                || !VHVRConfig.UseVrControls() 
-                || VRPlayer.isRightHandMainWeaponHand
-                || EquipScript.getLeft() != EquipType.Shield
-                && EquipScript.getRight() != EquipType.Tankard) {
+            if (!__result)
+            {
                 return;
             }
-            
-            __result.transform.localScale = new Vector3 (__result.transform.localScale.x, __result.transform.localScale.y * -1 , __result.transform.localScale.z);
 
+            var sync = __result.GetComponentInParent<VRPlayerSync>();
+            if (sync == null || !sync.isLeftHanded)
+            {
+                return;
+            }
+
+            // TODO: consider fixing orietantion for dead raiser too.
+            var equipType = EquipScript.GetEquipTypeFromHash(itemHash);
+            if (equipType == EquipType.Shield || equipType == EquipType.Tankard)
+            {
+                __result.transform.localScale = new Vector3(__result.transform.localScale.x, __result.transform.localScale.y * -1, __result.transform.localScale.z);
+            }
         }
     }
 
