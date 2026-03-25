@@ -41,7 +41,7 @@ namespace ValheimVRMod.Scripts {
         private void Start() {
             instance = this;
             arrowAttach = new GameObject();
-            mainHand = VRPlayer.dominantHand.transform;
+            arrowHandTransform = VRPlayer.arrowHand.transform;
             predictionLine = new GameObject().AddComponent<LineRenderer>();
             predictionLine.widthMultiplier = 0.03f;
             predictionLine.positionCount = 20;
@@ -56,7 +56,7 @@ namespace ValheimVRMod.Scripts {
             createChargeIndicator();
             drawIndicator.transform.localPosition -= Vector3.forward * 0.001f;
 
-            arrowAttach.transform.SetParent(mainHand, false);
+            arrowAttach.transform.SetParent(arrowHandTransform, false);
 
             item = Player.m_localPlayer.GetLeftItem();
             if (item != null) {
@@ -136,11 +136,13 @@ namespace ValheimVRMod.Scripts {
                 destroyPausedCosmeticArrow();
             }
 
-            var arrowHand = VHVRConfig.LeftHanded() ? SteamVR_Input_Sources.LeftHand : SteamVR_Input_Sources.RightHand;
-            var bowHand = VHVRConfig.LeftHanded() ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand;
+            var bowHand = VRPlayer.bowHandInputSource;
+            var arrowHand = VRPlayer.arrowHandInputSource;
 
             // Enable using the bow hand orientation alone for aiming if the bow hand is holding down both the grip and the trigger.
-            bowHandAiming = SteamVR_Actions.valheim_Grab.GetState(bowHand) && (SteamVR_Actions.valheim_Use.GetState(bowHand) || SteamVR_Actions.valheim_UseLeft.GetState(bowHand));
+            bowHandAiming =
+                SteamVR_Actions.valheim_Grab.GetState(VRPlayer.bowHandInputSource) &&
+                (SteamVR_Actions.valheim_Use.GetState(bowHand) || SteamVR_Actions.valheim_UseLeft.GetState(bowHand));
 
             if (SteamVR_Actions.valheim_Use.GetState(arrowHand) ||
                 SteamVR_Actions.valheim_UseLeft.GetState(arrowHand) ||
@@ -164,7 +166,7 @@ namespace ValheimVRMod.Scripts {
             //bHaptics
             if (!BhapticsTactsuit.suitDisabled && !pulling)
             {
-                BhapticsTactsuit.StopThreadHaptic(VHVRConfig.LeftHanded() ? "BowStringLeft" : "BowStringRight");
+                BhapticsTactsuit.StopThreadHaptic(VRPlayer.isRightHandMainWeaponHand ? "BowStringRight" : "BowStringLeft");
             }
 
             if (hideableGlowMeshRenderer)
@@ -280,18 +282,20 @@ namespace ValheimVRMod.Scripts {
             //bHaptics
             if (!BhapticsTactsuit.suitDisabled && realLifePullPercentage != 0)
             {
-                BhapticsTactsuit.StartThreadHaptic(VHVRConfig.LeftHanded() ? "BowStringLeft" : "BowStringRight",
+                BhapticsTactsuit.StartThreadHaptic(
+                    VRPlayer.isRightHandMainWeaponHand ? "BowStringRight" : "BowStringLeft",
                     realLifePullPercentage * 1.5f, true);
                 // ARMS TACTOSY
-                BhapticsTactsuit.StartThreadHaptic(VHVRConfig.LeftHanded() ? "Recoil_L" : "Recoil_R",
+                BhapticsTactsuit.StartThreadHaptic(
+                    VRPlayer.isRightHandMainWeaponHand ? "Recoil_R" : "Recoil_L",
                     realLifePullPercentage * 1.5f, true);
             }
 
-            VrikCreator.GetLocalPlayerDominantHandConnector().position = pullObj.transform.position;
+            VrikCreator.GetLocalPlayerArrowHandConnector().position = pullObj.transform.position;
             if (OnlyUseDominantHand())
             {
                 // TODO: Fix the bow hand connector position since it is slightly lower than where it should be.
-                VrikCreator.GetLocalPlayerNonDominantHandConnector().position = pushObj.transform.position;
+                VrikCreator.GetLocalPlayerBowHandConnector().position = pushObj.transform.position;
             }
 
             arrowAttach.transform.SetPositionAndRotation(pullObj.transform.position, pushObj.transform.rotation);
@@ -313,7 +317,7 @@ namespace ValheimVRMod.Scripts {
             if (attackDrawPercentage == 1 && !finishedPulling) 
             {
                 finishedPulling = true;
-                VRPlayer.dominantHand.otherHand.hapticAction.Execute(0, 0.2f, 100, 0.3f, VRPlayer.nonDominantHandInputSource);
+                VRPlayer.bowHand.hapticAction.Execute(0, 0.2f, 100, 0.3f, VRPlayer.bowHandInputSource);
             }
         }
 
@@ -352,8 +356,8 @@ namespace ValheimVRMod.Scripts {
             }
 
             // SHOOTING FEEDBACK
-            VRPlayer.dominantHand.hapticAction.Execute(0, 0.1f, 75, 0.9f, VRPlayer.dominantHandInputSource);
-            VRPlayer.dominantHand.otherHand.hapticAction.Execute(0, 0.2f, 100, 0.3f, VRPlayer.nonDominantHandInputSource);
+            VRPlayer.arrowHand.hapticAction.Execute(0, 0.1f, 75, 0.9f, VRPlayer.arrowHandInputSource);
+            VRPlayer.bowHand.hapticAction.Execute(0, 0.2f, 100, 0.3f, VRPlayer.bowHandInputSource);
             destroyArrow();
         }
 
@@ -363,7 +367,7 @@ namespace ValheimVRMod.Scripts {
 
         private bool checkHandNearString() {
             var nock = pullStart.position + bowOrientation.TransformVector(Vector3.up * VHVRConfig.ArrowRestElevation());
-            if (!OnlyUseDominantHand() && Vector3.Distance(mainHand.position, nock) > attachRange) {
+            if (!OnlyUseDominantHand() && Vector3.Distance(arrowHandTransform.position, nock) > attachRange) {
                 return false;
             }
 
@@ -388,8 +392,10 @@ namespace ValheimVRMod.Scripts {
                 //bHaptics
                 if (!BhapticsTactsuit.suitDisabled)
                 {
-                    BhapticsTactsuit.PlaybackHaptics(VHVRConfig.LeftHanded() ?
-                         "HolsterArrowLeftShoulder" : "HolsterArrowRightShoulder");
+                    BhapticsTactsuit.PlaybackHaptics(
+                        VRPlayer.isRightHandMainWeaponHand ?
+                        "HolsterArrowRightShoulder" :
+                        "HolsterArrowLeftShoulder");
                 }
                 return;
             }
@@ -436,7 +442,7 @@ namespace ValheimVRMod.Scripts {
             switch (ammoItem.m_shared.m_name)
             {
                 case "$item_arrow_carapace":
-                    var offset = VHVRConfig.ArrowRestHorizontalOffsetMultiplier();
+                    var offset = VHVRConfig.ArrowRestHorizontalOffsetMultiplier(VRPlayer.isRightHandMainWeaponHand);
                     arrowModel.transform.localRotation =  Quaternion.Euler(0, 0, offset > 0 ? 45 : (offset < 0 ? -45 : 0));
                     arrowModel.transform.localPosition = new Vector3(0, 0, 0.605f);
                     break;
@@ -465,8 +471,10 @@ namespace ValheimVRMod.Scripts {
             //bHaptics
             if (!BhapticsTactsuit.suitDisabled)
             {
-                BhapticsTactsuit.PlaybackHaptics(VHVRConfig.LeftHanded() ?
-                    "UnholsterArrowLeftShoulder" : "UnholsterArrowRightShoulder");
+                BhapticsTactsuit.PlaybackHaptics(
+                    VRPlayer.isRightHandMainWeaponHand ?
+                    "UnholsterArrowRightShoulder" :
+                    "UnholsterArrowLeftShoulder");
             }
 
             var collider = arrow.GetComponentInChildren<Collider>();
@@ -543,6 +551,13 @@ namespace ValheimVRMod.Scripts {
         private Vector3 getAimDir() {
             return (getArrowRestPosition() - pullObj.transform.position).normalized;
         }        
+
+        private Vector3 getArrowRestPosition()
+        {
+            return getArrowRestPosition(
+                VHVRConfig.ArrowRestHorizontalOffsetMultiplier(VRPlayer.isRightHandMainWeaponHand),
+                VHVRConfig.ArrowRestElevation());
+        }
 
         public bool isHoldingArrow() {
             return arrow != null;

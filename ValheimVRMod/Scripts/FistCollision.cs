@@ -482,7 +482,7 @@ namespace ValheimVRMod.Scripts
         private void refreshColliderData()
         {
             var newEquipType =
-                hasDualWieldingWeaponEquipped() || (isRightHand ^ VHVRConfig.LeftHanded()) ?
+                hasDualWieldingWeaponEquipped() || (isRightHand ^ !VRPlayer.isRightHandMainWeaponHand) ?
                 EquipScript.getRight() :
                 EquipScript.getLeft();
 
@@ -533,7 +533,7 @@ namespace ValheimVRMod.Scripts
 
         private bool holdingSecondaryWeapon()
         {
-            if (isRightHand ^ VHVRConfig.LeftHanded())
+            if (isRightHand ^ !VRPlayer.isRightHandMainWeaponHand)
             {
                 return false;
             }
@@ -542,7 +542,7 @@ namespace ValheimVRMod.Scripts
 
         private bool holdingShield()
         {
-            if (isRightHand ^ VHVRConfig.LeftHanded())
+            if (isRightHand ^ !VRPlayer.isRightHandMainWeaponHand)
             {
                 return false;
             }
@@ -590,7 +590,7 @@ namespace ValheimVRMod.Scripts
 
         private void RotateColliderForSecondaryWeapon()
         {
-            if (isRightHand ^ VHVRConfig.LeftHanded())
+            if (isRightHand ^ !VRPlayer.isRightHandMainWeaponHand)
             {
                 return;
             }

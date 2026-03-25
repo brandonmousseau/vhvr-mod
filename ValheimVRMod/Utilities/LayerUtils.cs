@@ -67,7 +67,7 @@ namespace ValheimVRMod.Utilities
         // in sync with what is in the prefab in Unity Editor.
         private const int HANDS_LAYER = 23;
         public const int HANDS_LAYER_MASK = (1 << HANDS_LAYER);
-        private const int WORLDSPACE_UI_LAYER = 30;
+        public const int WORLDSPACE_UI_LAYER = 30;
         public const int WORLDSPACE_UI_LAYER_MASK = (1 << WORLDSPACE_UI_LAYER);
 
         // TODO: Use const instead? (1 << PIECE) | (1 << PIECE_NONSOLID) | (1 << ITEM_LAYER)

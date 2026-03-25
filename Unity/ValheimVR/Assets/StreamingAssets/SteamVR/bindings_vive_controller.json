@@ -447,6 +447,8 @@
                },
                "mode" : "dpad",
                "parameters" : {
+                  "deadzone_pct" : "25",
+                  "overlap_pct" : "0",
                   "sub_mode" : "click"
                },
                "path" : "/user/hand/right/input/trackpad"

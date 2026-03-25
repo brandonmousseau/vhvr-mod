@@ -15,8 +15,8 @@ namespace ValheimVRMod.Patches
     enum HandItemPatchTarget
     {
         Both = 0,
-        DominantHand = 1,
-        NonDominantHand = 2
+        LeftHand = 1,
+        RightHand = 2
     }
 
     [HarmonyPatch(typeof(Humanoid), "HideHandItems")]
@@ -27,8 +27,8 @@ namespace ValheimVRMod.Patches
         
         private static HandItemPatchTarget shouldPatch;
 
-        public static void HideLocalPlayerHandItem(bool isDominantHand) {
-            shouldPatch = isDominantHand ? HandItemPatchTarget.DominantHand : HandItemPatchTarget.NonDominantHand;
+        public static void HideLocalPlayerHandItem(bool isRightHand) {
+            shouldPatch = isRightHand ? HandItemPatchTarget.RightHand : HandItemPatchTarget.LeftHand;
             Player.m_localPlayer.HideHandItems();
             shouldPatch = HandItemPatchTarget.Both;      
         }
@@ -47,17 +47,31 @@ namespace ValheimVRMod.Patches
                 return false;
             }
 
-            bool hideDominantHandItem = (shouldPatch == HandItemPatchTarget.DominantHand || shouldPatch == HandItemPatchTarget.Both);
-            bool hideNonDominantHandItem = (shouldPatch == HandItemPatchTarget.NonDominantHand || shouldPatch == HandItemPatchTarget.Both);
+            bool hideMainWeapon;
+            bool hideSecondaryWeapon;
+            if (shouldPatch == HandItemPatchTarget.Both)
+            {
+                hideMainWeapon = hideSecondaryWeapon = true;
+            }
+            else if (VRPlayer.isRightHandMainWeaponHand)
+            {
+                hideMainWeapon = (shouldPatch == HandItemPatchTarget.RightHand);
+                hideSecondaryWeapon = (shouldPatch == HandItemPatchTarget.LeftHand);
+            }
+            else
+            {
+                hideMainWeapon = (shouldPatch == HandItemPatchTarget.LeftHand);
+                hideSecondaryWeapon = (shouldPatch == HandItemPatchTarget.RightHand);
+            }
 
-            if (hideDominantHandItem)
+            if (hideMainWeapon)
             {
                 var itemToHide = ___m_rightItem != null ? ___m_rightItem : ___m_hiddenRightItem;
                 __instance.UnequipItem(___m_rightItem);
                 ___m_hiddenRightItem = itemToHide;
             }
 
-            if (hideNonDominantHandItem)
+            if (hideSecondaryWeapon)
             {
                 var itemToHide = ___m_leftItem != null ? ___m_leftItem : ___m_hiddenLeftItem;
                 __instance.UnequipItem(___m_leftItem);
@@ -77,9 +91,9 @@ namespace ValheimVRMod.Patches
     {
         private static HandItemPatchTarget shouldPatch;
 
-        public static void ShowLocalPlayerHandItem(bool isDominantHand)
+        public static void ShowLocalPlayerHandItem(bool isRightHand)
         {
-            shouldPatch = isDominantHand ? HandItemPatchTarget.DominantHand : HandItemPatchTarget.NonDominantHand;
+            shouldPatch = isRightHand ? HandItemPatchTarget.RightHand : HandItemPatchTarget.LeftHand;
             Player.m_localPlayer.ShowHandItems();
             shouldPatch = HandItemPatchTarget.Both;
         }
@@ -99,18 +113,52 @@ namespace ValheimVRMod.Patches
                 return false;
             }
 
-            bool showDominantHandItem = (shouldPatch == HandItemPatchTarget.DominantHand || shouldPatch == HandItemPatchTarget.Both);
-            bool showNonDominantHandItem = (shouldPatch == HandItemPatchTarget.NonDominantHand || shouldPatch == HandItemPatchTarget.Both);
+            bool showVanillaRightItem;
+            bool showVanillaLeftItem;
+            if (shouldPatch == HandItemPatchTarget.Both)
+            {
+                showVanillaRightItem = showVanillaLeftItem = true;
+            }
+            else
+            {
+                if (VRPlayer.isRightHandMainWeaponHand)
+                {
+                    showVanillaRightItem = (shouldPatch == HandItemPatchTarget.RightHand);
+                    showVanillaLeftItem = (shouldPatch == HandItemPatchTarget.LeftHand);
+                }
+                else
+                {
+                    showVanillaRightItem = (shouldPatch == HandItemPatchTarget.LeftHand);
+                    showVanillaLeftItem = (shouldPatch == HandItemPatchTarget.RightHand);
+                }
 
-            if (showDominantHandItem && ___m_hiddenRightItem != null)
+                if (!VRPlayer.offHandWield)
+                {
+                    if (showVanillaRightItem && ___m_hiddenLeftItem != null && ___m_hiddenRightItem == null)
+                    {
+                        LogUtils.LogDebug("Unsheathing vanilla left item using dominant hand, entering temporary off-hand wield");
+                        VRPlayer.offHandWield = true;
+                        showVanillaRightItem = false;
+                        showVanillaLeftItem = true;
+                    }
+                    else if (showVanillaLeftItem && ___m_hiddenLeftItem == null && ___m_hiddenRightItem != null)
+                    {
+                        LogUtils.LogDebug("Unsheathing vanilla right item using non-dominant hand, entering temporary off-hand wield");
+                        VRPlayer.offHandWield = true;
+                        showVanillaRightItem = true;
+                        showVanillaLeftItem = false;
+                    }
+                }
+            }
+
+            if (showVanillaRightItem && ___m_hiddenRightItem != null)
             {
                 ___m_hiddenRightItem = null;
                 __instance.EquipItem(hiddenRightItem);
                 ___m_hiddenLeftItem = hiddenLeftItem;
                 __instance.SetupVisEquipment(__instance.m_visEquipment, false);
             }
-
-            if (showNonDominantHandItem && ___m_hiddenLeftItem != null)
+            if (showVanillaLeftItem && ___m_hiddenLeftItem != null)
             {
                 ___m_hiddenLeftItem = null;
                 __instance.EquipItem(hiddenLeftItem);
