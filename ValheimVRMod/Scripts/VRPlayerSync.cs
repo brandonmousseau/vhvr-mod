@@ -17,6 +17,8 @@ namespace ValheimVRMod.Scripts {
         public GameObject rightHand = null;
         public GameObject leftHand = null;
         public GameObject pelvis = null;
+        public GameObject attachedHandMainItem = null;
+        public GameObject attachedHandSecondaryItem = null;
 
         private WeaponWield.TwoHandedState twoHandedState = WeaponWield.TwoHandedState.SingleHanded;
         private bool isLeftHanded = false;
@@ -83,6 +85,37 @@ namespace ValheimVRMod.Scripts {
             }
             if (isValid() && !isOwner()) {
                 clientSync(dt);
+            }
+            
+            // Client isLeftHanded sync may happen after equipping.
+            // Force re-equip to trigger a patch with the updated isLeftHanded.
+            var mainHandItem = player.m_visEquipment.m_rightItemInstance;
+            if (player.m_visEquipment.m_currentRightItemHash != 0 && mainHandItem != null)
+            {
+                if (isLeftHanded ?
+                    mainHandItem.transform.parent == player.m_visEquipment.m_rightHand :
+                    mainHandItem.transform.parent == player.m_visEquipment.m_leftHand)
+                {
+                    LogUtils.LogDebug("Switching main hand item to the other hand");
+                    var hash = player.m_visEquipment.m_currentRightItemHash;
+                    player.m_visEquipment.SetRightHandEquipped(0);
+                    player.m_visEquipment.SetRightHandEquipped(hash);
+                }
+            }
+
+            var offHandItem = player.m_visEquipment.m_leftItemInstance;
+            if (player.m_visEquipment.m_currentLeftItemHash != 0 && offHandItem != null)
+            {
+                if (isLeftHanded ?
+                    offHandItem.transform.parent == player.m_visEquipment.m_leftHand :
+                    offHandItem.transform.parent == player.m_visEquipment.m_rightHand)
+                {
+                    LogUtils.LogDebug("Switching secondary hand item to right hand");
+                    var hash = player.m_visEquipment.m_currentLeftItemHash;
+                    var variant = player.m_visEquipment.m_currentLeftItemVariant;
+                    player.m_visEquipment.SetLeftHandEquipped(0, 0);
+                    player.m_visEquipment.SetLeftHandEquipped(hash, variant);
+                }
             }
         }
 
