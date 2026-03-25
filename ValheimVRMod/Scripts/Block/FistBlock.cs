@@ -29,6 +29,7 @@ namespace ValheimVRMod.Scripts.Block {
             hand = VHVRConfig.LeftHanded() ? VRPlayer.leftHand.transform : VRPlayer.rightHand.transform;
             offhand = VHVRConfig.LeftHanded() ? VRPlayer.rightHand.transform : VRPlayer.leftHand.transform;
             CreateBlockBoxes();
+            updateBlockBoxShape();
         }
 
         protected override void FixedUpdate() {

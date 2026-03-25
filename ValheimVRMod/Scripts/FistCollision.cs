@@ -26,13 +26,14 @@ namespace ValheimVRMod.Scripts
         private Hand thisHand {  get { return isRightHand ? VRPlayer.rightHand : VRPlayer.leftHand; } }
 
         public static float LocalPlayerSecondaryAttackCooldown = 0;
-        public static bool ShouldSecondaryKnifeHoldInverse { get { return SteamVR_Actions.valheim_Grab.GetState(VRPlayer.nonDominantHandInputSource); } }
+        public static bool ShouldSecondaryKnifeHoldInverse { get; private set; }
 
         private static readonly int[] NONATTACKABLE_LAYERS = {
             LayerUtils.WATERVOLUME_LAYER,
             LayerUtils.WATER,
             LayerUtils.UI_PANEL_LAYER,
             LayerUtils.CHARARCTER_TRIGGER,
+            LayerUtils.ITEM_LAYER,
         };
 
         public bool isGrabbingJumpingAid { get { return lastGrabbedType == Grabbable.ENVIRONMENT || lastGrabbedType == Grabbable.IMAGINARY_CLIMIBNG_HOLD; } }
@@ -413,13 +414,13 @@ namespace ValheimVRMod.Scripts
                 {
                     item = Player.m_localPlayer.GetRightItem();
                     attack =
-                        (isCurrentlySecondaryAttack ? item.m_shared.m_attack : item.m_shared.m_secondaryAttack).Clone();
+                        (isCurrentlySecondaryAttack ? item.m_shared.m_secondaryAttack : item.m_shared.m_attack).Clone();
                 }
                 else
                 {
                     item = Player.m_localPlayer.m_unarmedWeapon.m_itemData;
                     attack =
-                        isCurrentlySecondaryAttack ? item.m_shared.m_attack : item.m_shared.m_secondaryAttack;
+                        isCurrentlySecondaryAttack ? item.m_shared.m_secondaryAttack : item.m_shared.m_attack;
                 }
             }
 
@@ -453,6 +454,8 @@ namespace ValheimVRMod.Scripts
             {
                 attackTargetMeshCooldown = target.AddComponent<AttackTargetMeshCooldown>();
             }
+            attackTargetMeshCooldown.showOutline = 
+                (target.layer == LayerUtils.TERRAIN ? VHVRConfig.ShowTerrainAttackOutline() : VHVRConfig.ShowNonTerrainAttackOutline());
 
             return isSecondaryAttack ? attackTargetMeshCooldown.tryTriggerSecondaryAttack(duration) : attackTargetMeshCooldown.tryTriggerPrimaryAttack(duration, speed);
         }
@@ -479,7 +482,7 @@ namespace ValheimVRMod.Scripts
         private void refreshColliderData()
         {
             var newEquipType =
-                hasDualWieldingWeaponEquipped() || (isRightHand ^ VHVRConfig.LeftHanded()) ?
+                hasDualWieldingWeaponEquipped() || (isRightHand ^ !VRPlayer.isRightHandMainWeaponHand) ?
                 EquipScript.getRight() :
                 EquipScript.getLeft();
 
@@ -530,7 +533,7 @@ namespace ValheimVRMod.Scripts
 
         private bool holdingSecondaryWeapon()
         {
-            if (isRightHand ^ VHVRConfig.LeftHanded())
+            if (isRightHand ^ !VRPlayer.isRightHandMainWeaponHand)
             {
                 return false;
             }
@@ -539,7 +542,7 @@ namespace ValheimVRMod.Scripts
 
         private bool holdingShield()
         {
-            if (isRightHand ^ VHVRConfig.LeftHanded())
+            if (isRightHand ^ !VRPlayer.isRightHandMainWeaponHand)
             {
                 return false;
             }
@@ -587,15 +590,18 @@ namespace ValheimVRMod.Scripts
 
         private void RotateColliderForSecondaryWeapon()
         {
-            if (isRightHand ^ VHVRConfig.LeftHanded())
+            if (isRightHand ^ !VRPlayer.isRightHandMainWeaponHand)
             {
                 return;
             }
 
             if (EquipScript.getLeft() != EquipType.Knife)
             {
+                ShouldSecondaryKnifeHoldInverse = false;
                 return;
             }
+
+            ShouldSecondaryKnifeHoldInverse = WeaponUtils.MaybeFlipKnife(ShouldSecondaryKnifeHoldInverse, !isRightHand);
 
             desiredPosition =
                 isRightHand ^ ShouldSecondaryKnifeHoldInverse ?

@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 using ValheimVRMod.Utilities;
+using ValheimVRMod.VRCore;
 using Valve.VR;
 
 namespace ValheimVRMod.Scripts.Block {
@@ -20,9 +21,7 @@ namespace ValheimVRMod.Scripts.Block {
         protected Transform offhand;
         protected MeshCooldown _meshCooldown;
         public float blockTimer = blockTimerNonParry;
-        protected SteamVR_Input_Sources mainHandSource = VHVRConfig.LeftHanded() ? SteamVR_Input_Sources.LeftHand : SteamVR_Input_Sources.RightHand;
-        protected SteamVR_Input_Sources offHandSource = VHVRConfig.LeftHanded() ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand;
-        protected SteamVR_Input_Sources currhand = VHVRConfig.LeftHanded() ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand;
+        protected SteamVR_Input_Sources currentHandSource = SteamVR_Input_Sources.RightHand;
         protected bool wasParryStart = false;
         public bool wasResetTimer = false;
         public bool wasGetHit = false;
@@ -71,7 +70,7 @@ namespace ValheimVRMod.Scripts.Block {
             
             tickCounter = 0;
 
-            if(wasGetHit && !SteamVR_Actions.valheim_Grab.GetState(currhand))
+            if(wasGetHit && !SteamVR_Actions.valheim_Grab.GetState(currentHandSource))
             {
                 _meshCooldown.tryTrigger(cooldown);
                 wasGetHit = false;
@@ -143,7 +142,7 @@ namespace ValheimVRMod.Scripts.Block {
             }
             if (VHVRConfig.UseGrabButtonBlock())
             {
-                return SteamVR_Actions.valheim_Grab.GetState(currhand) && !_meshCooldown.inCoolDown() && _blocking;
+                return SteamVR_Actions.valheim_Grab.GetState(currentHandSource) && !_meshCooldown.inCoolDown() && _blocking;
             }
             else
             {
@@ -157,7 +156,7 @@ namespace ValheimVRMod.Scripts.Block {
                 return;
             }
 
-            if (SteamVR_Actions.valheim_Grab.GetState(currhand))
+            if (SteamVR_Actions.valheim_Grab.GetState(currentHandSource))
             {
                 wasGetHit = true;
             }   
@@ -169,17 +168,16 @@ namespace ValheimVRMod.Scripts.Block {
 
         public void UpdateGrabParry()
         {
-            currhand = offHandSource;
-            if (EquipScript.getLeft() != EquipType.Shield)
-            {
-                currhand = mainHandSource;
-            }
-            if (SteamVR_Actions.valheim_Grab.GetState(currhand) && !_meshCooldown.inCoolDown() && !wasParryStart)
+            currentHandSource =
+                EquipScript.getLeft() == EquipType.Shield ?
+                VRPlayer.secondaryWeaponHandInputSource :
+                VRPlayer.mainWeaponHandInputSource;
+            if (SteamVR_Actions.valheim_Grab.GetState(currentHandSource) && !_meshCooldown.inCoolDown() && !wasParryStart)
             {
                 wasParryStart = true;
                 wasResetTimer = true;
             }
-            else if (!SteamVR_Actions.valheim_Grab.GetState(currhand) && wasParryStart)
+            else if (!SteamVR_Actions.valheim_Grab.GetState(currentHandSource) && wasParryStart)
             {
                 _meshCooldown.tryTrigger(0.4f);
                 wasParryStart = false;

@@ -21,7 +21,7 @@ namespace ValheimVRMod.Utilities
                         return false;
                     }
 
-                    var velocity = VHVRConfig.LeftHanded() ? VRPlayer.leftHandPhysicsEstimator.GetVelocity() : VRPlayer.rightHandPhysicsEstimator.GetVelocity();
+                    var velocity = VRPlayer.isRightHandMainWeaponHand ? VRPlayer.rightHandPhysicsEstimator.GetVelocity() : VRPlayer.leftHandPhysicsEstimator.GetVelocity();
                     Vector3 swipeAxis = Vector3.Cross(LocalWeaponWield.weaponForward, VRPlayer.vrCam.transform.parent.up);
                     float angle = Vector3.Angle(velocity, swipeAxis);
 

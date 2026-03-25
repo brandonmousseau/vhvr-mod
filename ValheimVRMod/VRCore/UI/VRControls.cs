@@ -23,7 +23,7 @@ namespace ValheimVRMod.VRCore.UI
         private static readonly float ALT_PIECE_ROTATION_TIME_DELAY = 0.250f;
         private static readonly float ALT_MAP_ZOOM_TIME_DELAY = 0.125f;
         private const float AUTORUN_ACTIVATION_DELAY =  0.0625f;
-        private const float AUTORUN_DEACTIVATION_DELAY = 0.25f;
+        private const float AUTORUN_DEACTIVATION_DELAY = 0.5f;
 
         private float altPieceRotationElapsedTime = 0f;
         private bool altPieceTriggered = false;
@@ -175,14 +175,14 @@ namespace ValheimVRMod.VRCore.UI
             {
                 if (Player.m_localPlayer.HaveStamina())
                 {
-                    if (inputSpeed < VHVRConfig.AutoRunActivationThreshold())
+                    if (isExhaustedFromRunning && inputSpeed < GetAutoRunActiavtionThreshold())
                     {
                         isExhaustedFromRunning = false;
                     }
                 }
                 else if (isAutoRunActive)
                 {
-                    isExhaustedFromRunning = true;   
+                    isExhaustedFromRunning = true;
                 }
             }
 
@@ -195,27 +195,36 @@ namespace ValheimVRMod.VRCore.UI
                 autorunDeactivationCountdown -= deltaTime;
             }
 
-            if (inputSpeed < VHVRConfig.AutoRunActivationThreshold())
+            if (inputSpeed < GetAutoRunActiavtionThreshold())
             {
                 autorunActivationCountdown = AUTORUN_ACTIVATION_DELAY;
             }
 
-            if (inputSpeed > VHVRConfig.AutoRunDeactivationThreshold())
+            if (inputSpeed > GetAutoRunDeactiavtionThreshold())
             {
                 autorunDeactivationCountdown = AUTORUN_DEACTIVATION_DELAY;
             }
 
-            if (deltaTime == 0 || smoothWalkVelocity.x == float.NaN || smoothWalkVelocity.y == float.NaN || VHVRConfig.WalkSpeedSmoothener() == 0)
+            if (deltaTime == 0 ||
+                smoothWalkVelocity.x == float.NaN ||
+                smoothWalkVelocity.y == float.NaN ||
+                VHVRConfig.WalkSpeedSmoothener() == 0 ||
+                SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.Any))
             {
                 smoothWalkVelocity = input;
             }
             else
             {
-                float smoothener = VHVRConfig.WalkSpeedSmoothener();
-                smoothWalkVelocity = Vector2.MoveTowards(smoothWalkVelocity, input, Time.deltaTime / smoothener);
-                if (Mathf.Abs(smoothWalkVelocity.x) < 0.01f && Mathf.Abs(smoothWalkVelocity.y) < 0.01f && input.x == 0 && input.y == 0)
+                float relative = Vector2.Dot(input, smoothWalkVelocity) / smoothWalkVelocity.sqrMagnitude;
+                if (relative < -0.5 || relative > 1)
                 {
-                    smoothWalkVelocity = Vector2.zero;
+                    // The input is either opposite to or larger than the current velocity, update instantly instead of smoothening the velocity.
+                    smoothWalkVelocity = input;
+                }
+                else
+                {
+                    smoothWalkVelocity =
+                        Vector2.MoveTowards(smoothWalkVelocity, input, Time.deltaTime / VHVRConfig.WalkSpeedSmoothener());
                 }
             }
 
@@ -248,18 +257,48 @@ namespace ValheimVRMod.VRCore.UI
                 return;
             }
 
-            if (VHVRConfig.AutoRunThreshold() >= 0.75f &&
-                SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.LeftHand) &&
-                SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.RightHand))
-            {
-                autorunActivationCountdown = AUTORUN_ACTIVATION_DELAY;
-                return;
-            }
-
             if (Player.m_localPlayer != null && !Player.m_localPlayer.IsRunning() && autorunActivationCountdown <= 0)
             {
                 isAutoRunActive = true;
             }
+        }
+
+        private float GetAutoRunActiavtionThreshold()
+        {
+            float threshold = VHVRConfig.AutoRunThreshold();
+
+            if (threshold > 0.99f)
+            {
+                return Mathf.Infinity;
+            }
+
+            if (GesturedLocomotionManager.isInUse)
+            {
+                return threshold;
+            }
+
+            if (threshold >= 0.75f &
+                SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.LeftHand) &&
+                SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.RightHand))
+            {
+                return Mathf.Infinity;
+            }
+
+            return Mathf.Lerp(threshold, 1, 0.5f);
+        }
+
+        private float GetAutoRunDeactiavtionThreshold()
+        {
+            float threshold = VHVRConfig.AutoRunThreshold();
+            if (Player.m_localPlayer != null && !Player.m_localPlayer.IsOnGround())
+            {
+                return threshold * 0.25f;
+            }
+            if (GesturedLocomotionManager.isInUse)
+            {
+                return threshold * 0.5f;
+            }
+            return threshold;
         }
 
         private void updateAltPieceRotationTimer()
@@ -847,6 +886,7 @@ namespace ValheimVRMod.VRCore.UI
             zInputToBooleanAction.Add("Jump", new [] { SteamVR_Actions.valheim_Jump, SteamVR_Actions.laserPointers_Jump });
             zInputToBooleanAction.Add("Use", new[] { SteamVR_Actions.valheim_Use });
             zInputToBooleanAction.Add("Sit", new[] { SteamVR_Actions.valheim_Sit });
+            zInputToBooleanAction.Add("AutoPickup", new[] { SteamVR_Actions.valheim_ToggleAutoPickup });
             zInputToBooleanAction.Add(ToggleMiniMap, new[] { SteamVR_Actions.valheim_ToggleMap });
 
             // These placement commands re-use some of the normal game inputs
@@ -919,7 +959,6 @@ namespace ValheimVRMod.VRCore.UI
             ignoredZInputs.Add("BuildNext");
             ignoredZInputs.Add("BuildPrev");
             ignoredZInputs.Add("AltPlace");
-            ignoredZInputs.Add("AutoPickup");
             ignoredZInputs.Add("ChatUp");
             ignoredZInputs.Add("ChatDown");
             ignoredZInputs.Add("ScrollChatUp");
