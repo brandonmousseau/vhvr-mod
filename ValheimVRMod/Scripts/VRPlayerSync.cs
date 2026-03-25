@@ -245,13 +245,6 @@ namespace ValheimVRMod.Scripts {
         private void writeData(ZPackage pkg, GameObject obj, Vector3 ownerVelocity) 
         {
             var rotation = obj.transform.rotation;
-            if (obj == rightHand ^ isLeftHanded)
-            {
-                if (!LocalWeaponWield.isCurrentlyTwoHanded() && EquipScript.isDundrEquipped())
-                {
-                    rotation *= DUNDR_SINGLE_HAND_ADDITIONAL_ROTATION;
-                }
-            }
             pkg.Write(obj.transform.position - player.transform.position);
             pkg.Write(rotation);
             pkg.Write(ownerVelocity);
