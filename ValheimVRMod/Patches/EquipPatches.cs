@@ -6,7 +6,6 @@ using ValheimVRMod.VRCore;
 using ValheimVRMod.Scripts;
 using ValheimVRMod.Scripts.Block;
 using ValheimVRMod.Utilities;
-using Mono.Cecil.Cil;
 
 namespace ValheimVRMod.Patches {
 
@@ -15,10 +14,17 @@ namespace ValheimVRMod.Patches {
     {
         private static bool wasUsingKnife = false;
         private static ItemDrop.ItemData knife;
-        private static bool savedOffHandWield;
+        public static bool isLocalPlayerEquipping { get; private set; }
 
         static bool Prefix(Humanoid __instance, ItemDrop.ItemData item, bool triggerEquipEffects) {
-            if (Player.m_localPlayer == null || __instance.gameObject != Player.m_localPlayer.gameObject || !VHVRConfig.UseVrControls())
+            if (Player.m_localPlayer == null || __instance.gameObject != Player.m_localPlayer.gameObject)
+            {
+                return true;
+            }
+
+            isLocalPlayerEquipping = true;
+
+            if (!VHVRConfig.UseVrControls())
             {
                 return true;
             }
@@ -27,9 +33,6 @@ namespace ValheimVRMod.Patches {
             {
                 VRPlayer.offHandWield = false;
             }
-            // Save off-hand wield so that it can be restored later since
-            // the character may first unequip current items which could trigger a reset of off-hand wield
-            savedOffHandWield = VRPlayer.offHandWield;
 
             if (EquipScript.getLeft() == EquipType.Knife && __instance.m_leftItem != null)
             {
@@ -98,7 +101,7 @@ namespace ValheimVRMod.Patches {
             {
                 return;
             }
-            VRPlayer.offHandWield = savedOffHandWield;
+            isLocalPlayerEquipping = false;
             if (!wasUsingKnife) { 
                 return;
             }
@@ -127,7 +130,7 @@ namespace ValheimVRMod.Patches {
         // Patch to reset off-hand wield when the player is unequipped
         static void Postfix(Humanoid __instance, ItemDrop.ItemData item)
         {
-            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls())
+            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls() || PatchEquipItem.isLocalPlayerEquipping)
             {
                 return;
             }
