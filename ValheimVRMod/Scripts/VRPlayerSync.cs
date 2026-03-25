@@ -88,11 +88,15 @@ namespace ValheimVRMod.Scripts {
             if (isOwner())
             {
                 calculateOwnerVelocities(dt);
+                return;
             }
-            if (isValid() && !isOwner()) {
-                clientSync(dt);
+
+            if (!isValid()) {
+                return;
             }
-            
+
+            clientSync(dt);
+
             // Client isLeftHanded sync may happen after equipping.
             // Force re-equip to trigger a patch with the updated isLeftHanded.
             var mainHandItem = player.m_visEquipment.m_rightItemInstance;
