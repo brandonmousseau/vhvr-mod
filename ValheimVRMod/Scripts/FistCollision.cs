@@ -414,13 +414,13 @@ namespace ValheimVRMod.Scripts
                 {
                     item = Player.m_localPlayer.GetRightItem();
                     attack =
-                        (isCurrentlySecondaryAttack ? item.m_shared.m_attack : item.m_shared.m_secondaryAttack).Clone();
+                        (isCurrentlySecondaryAttack ? item.m_shared.m_secondaryAttack : item.m_shared.m_attack).Clone();
                 }
                 else
                 {
                     item = Player.m_localPlayer.m_unarmedWeapon.m_itemData;
                     attack =
-                        isCurrentlySecondaryAttack ? item.m_shared.m_attack : item.m_shared.m_secondaryAttack;
+                        isCurrentlySecondaryAttack ? item.m_shared.m_secondaryAttack : item.m_shared.m_attack;
                 }
             }
 
@@ -454,6 +454,8 @@ namespace ValheimVRMod.Scripts
             {
                 attackTargetMeshCooldown = target.AddComponent<AttackTargetMeshCooldown>();
             }
+            attackTargetMeshCooldown.showOutline = 
+                (target.layer == LayerUtils.TERRAIN ? VHVRConfig.ShowTerrainAttackOutline() : VHVRConfig.ShowNonTerrainAttackOutline());
 
             return isSecondaryAttack ? attackTargetMeshCooldown.tryTriggerSecondaryAttack(duration) : attackTargetMeshCooldown.tryTriggerPrimaryAttack(duration, speed);
         }
@@ -480,7 +482,7 @@ namespace ValheimVRMod.Scripts
         private void refreshColliderData()
         {
             var newEquipType =
-                hasDualWieldingWeaponEquipped() || (isRightHand ^ VHVRConfig.LeftHanded()) ?
+                hasDualWieldingWeaponEquipped() || (isRightHand ^ !VRPlayer.isRightHandMainWeaponHand) ?
                 EquipScript.getRight() :
                 EquipScript.getLeft();
 
@@ -531,7 +533,7 @@ namespace ValheimVRMod.Scripts
 
         private bool holdingSecondaryWeapon()
         {
-            if (isRightHand ^ VHVRConfig.LeftHanded())
+            if (isRightHand ^ !VRPlayer.isRightHandMainWeaponHand)
             {
                 return false;
             }
@@ -540,7 +542,7 @@ namespace ValheimVRMod.Scripts
 
         private bool holdingShield()
         {
-            if (isRightHand ^ VHVRConfig.LeftHanded())
+            if (isRightHand ^ !VRPlayer.isRightHandMainWeaponHand)
             {
                 return false;
             }
@@ -588,7 +590,7 @@ namespace ValheimVRMod.Scripts
 
         private void RotateColliderForSecondaryWeapon()
         {
-            if (isRightHand ^ VHVRConfig.LeftHanded())
+            if (isRightHand ^ !VRPlayer.isRightHandMainWeaponHand)
             {
                 return;
             }

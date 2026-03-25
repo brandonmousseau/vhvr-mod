@@ -35,6 +35,8 @@ namespace ValheimVRMod.Scripts
         private static Dictionary<string, float> DistancesBehindGripAndRearEnd = new Dictionary<string, float>();
         private Transform originalTransform;
         private Vector3 longestLocalExtrusion = Vector3.forward;
+        private VRPlayerSync playerSync { get { return _playerSync == null ? (_playerSync = GetComponentInParent<VRPlayerSync>()) : _playerSync; } }
+        private VRPlayerSync _playerSync;
 
         private EquipType equipType;
         private bool isLocal;
@@ -182,6 +184,7 @@ namespace ValheimVRMod.Scripts
                     Vector3.Distance(frontHandCenter, rearHandCenter), IsPlayerLeftHanded() == (twoHandedState == TwoHandedState.LeftHandBehind)));
             transform.rotation = 
                 getAimingRotation(weaponPointingDir, geometryProvider.GetPreferredTwoHandedWeaponUp(this));
+            playerSync?.UpdateWeaponTransform(transform.position, transform.rotation);
             return weaponPointingDir;
         }
 

@@ -23,14 +23,14 @@ namespace ValheimVRMod.Scripts
         private ItemDrop.ItemData item;
         private Attack attack;
         private Attack secondaryAttack;
-        private bool isDominantHand;
+        private bool isVanillaRightHandedWeapon;
         private Outline outline;
         private bool readyToDrink;
         private float postSlowAttackCountdown;
         private float twoHandedMultitargetSwipeCountdown = 0;
         private float twoHandedMultitargetSwipeDuration;
         private GameObject debugColliderIndicator;
-        private bool isHoldingTankard { get { return isDominantHand && EquipScript.getRight() == EquipType.Tankard; } }
+        private bool isHoldingTankard { get { return isVanillaRightHandedWeapon && EquipScript.getRight() == EquipType.Tankard; } }
 
         public PhysicsEstimator physicsEstimator { get; private set; }
         public PhysicsEstimator mainHandPhysicsEstimator { get { return weaponWield.mainHand == VRPlayer.leftHand ? VRPlayer.leftHandPhysicsEstimator : VRPlayer.rightHandPhysicsEstimator; } }
@@ -295,18 +295,18 @@ namespace ValheimVRMod.Scripts
                         Player.m_localPlayer.m_animEvent,
                         null, item, null, 0.0f, 0.0f))
             {
-                if (isDominantHand)
+                if (isVanillaRightHandedWeapon)
                 {
-                    VRPlayer.dominantHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, VRPlayer.dominantHandInputSource);
+                    VRPlayer.mainWeaponHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, VRPlayer.mainWeaponHandInputSource);
                 }
                 else
                 {
-                    VRPlayer.dominantHand.otherHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, VRPlayer.nonDominantHandInputSource);
+                    VRPlayer.mainWeaponHand.otherHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, VRPlayer.secondaryWeaponHandInputSource);
                 }
                 // bHaptics
                 if (!BhapticsTactsuit.suitDisabled)
                 {
-                    BhapticsTactsuit.SwordRecoil(!VHVRConfig.LeftHanded());
+                    BhapticsTactsuit.SwordRecoil(VRPlayer.isRightHandMainWeaponHand);
                 }
             }
         }
@@ -357,7 +357,7 @@ namespace ValheimVRMod.Scripts
                     case EquipType.Spear:
                     case EquipType.SpearChitin:
                     case EquipType.Sword:
-                        if (!SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource))
+                        if (!SteamVR_Actions.valheim_Grab.GetState(VRPlayer.mainWeaponHandInputSource))
                         {
                             return false;
                         }
@@ -388,6 +388,7 @@ namespace ValheimVRMod.Scripts
 
                 attackTargetMeshCooldown = cooldownObject.AddComponent<AttackTargetMeshCooldown>();
             }
+            attackTargetMeshCooldown.showOutline = isLastHitOnTerrain ? VHVRConfig.ShowTerrainAttackOutline() : VHVRConfig.ShowNonTerrainAttackOutline();
 
             // Always use the target cooldown time of the fast attack to allow a fast attack immediately after a slow attack;
             // The slow attack cooldown time is managed by postSlowAttackCountdown in this class intead.
@@ -416,8 +417,8 @@ namespace ValheimVRMod.Scripts
             outline = meshTranform.parent.gameObject.AddComponent<Outline>();
             outline.OutlineMode = Outline.Mode.OutlineVisible;
 
-            this.isDominantHand = isDominantHand;
-            item = this.isDominantHand ? Player.m_localPlayer.GetRightItem() : Player.m_localPlayer.GetLeftItem();
+            this.isVanillaRightHandedWeapon = isDominantHand;
+            item = this.isVanillaRightHandedWeapon ? Player.m_localPlayer.GetRightItem() : Player.m_localPlayer.GetLeftItem();
 
             itemIsTool = (name == "Hammer" || EquipScript.getRight() == EquipType.Hoe || EquipScript.getRight() == EquipType.Cultivator || EquipScript.getRight() == EquipType.Scythe);
 
@@ -433,7 +434,7 @@ namespace ValheimVRMod.Scripts
                     return;
                 case EquipType.Magic:
                 case EquipType.SpearChitin:
-                    if (this.isDominantHand)
+                    if (this.isVanillaRightHandedWeapon)
                     {
                         item = Player.m_localPlayer.m_unarmedWeapon.m_itemData;
                         attack = secondaryAttack = Player.m_localPlayer.m_unarmedWeapon.m_itemData.m_shared.m_attack;
@@ -482,6 +483,12 @@ namespace ValheimVRMod.Scripts
         {
             if (!outline || ButtonSecondaryAttackManager.isSecondaryAttackStarted || attack == null || item == null)
             {
+                return;
+            }
+
+            if (!VHVRConfig.ShowNonTerrainAttackOutline())
+            {
+                outline.enabled = false;
                 return;
             }
 

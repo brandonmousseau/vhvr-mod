@@ -5,6 +5,7 @@ using NDesk.Options;
 using Unity.XR.OpenVR;
 using ValheimVRMod.VRCore;
 using UnityEngine;
+using XGamingRuntime;
 
 namespace ValheimVRMod.Utilities
 {
@@ -112,9 +113,8 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> smoothSnapTurn;
         private static ConfigEntry<float> smoothSnapSpeed;
         private static ConfigEntry<bool> charaterMovesWithHeadset;
-        private static ConfigEntry<bool> roomScaleSneaking;
         private static ConfigEntry<float> roomScaleSneakHeight;
-        private static ConfigEntry<bool> exclusiveRoomScaleSneak;
+        private static ConfigEntry<string> sneakInput;
         private static ConfigEntry<string> gesturedLocomotion;
         private static ConfigEntry<float> gesturedJumpPreparationHeight;
         private static ConfigEntry<float> gesturedJumpMinSpeed;
@@ -139,9 +139,11 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> nearClipPlane;
         private static ConfigEntry<string> rangedWeaponGlow;
         private static ConfigEntry<string> meleeWeaponGlow;
+        private static ConfigEntry<string> magicBarrierOvelay;
         private static ConfigEntry<float> enemyRenderDistance;
         private static ConfigEntry<float> buildingPieceDetailReductionFactor;
         private static ConfigEntry<bool> showDamageText;
+        private static ConfigEntry<string> showAttackOutline;
 
         // Motion Control Settings
         private static ConfigEntry<bool> useArrowPredictionGraphic;
@@ -397,7 +399,7 @@ namespace ValheimVRMod.Utilities
             hipTrackerIndex = config.Bind(
                 "General", "HipTrackerIndex", -1,
                 new ConfigDescription(
-                    "The device index of the hip tracker. Setting to -1 disables hip tracking.",
+                    "The device index of the hip tracker. Set to -1 disables hip tracking and 0 to auto-detect.",
                     new AcceptableValueRange<int>(-1, 20)));
             hipTrackerIndex.SettingChanged += ((o, i) => VRPlayer.RequestPelvisCaliberation());
 
@@ -678,20 +680,19 @@ namespace ValheimVRMod.Utilities
                                           "CharaterMovesWithHeadset",
                                           true,
                                           "When set to true, roomscale movement of the headset controls character locomotion; when set to false, movement of the headset makes the character lean.");
-            roomScaleSneaking = config.Bind("Controls",
-                                          "RoomScaleSneaking",
-                                          false,
-                                          "Enable RoomScale Sneaking.");
+            sneakInput = config.Bind(
+                "Controls",
+                "SneakInput",
+                "CrouchingOrController",
+                new ConfigDescription(
+                    "Whether sneaking should be triggered by controller input or by physically crouching.",
+                    new AcceptableValueList<string>(new string[] { "CrouchingOnly", "ControllerOnly", "CrouchingOrController" })));
             roomScaleSneakHeight = config.Bind("Controls",
                                           "RoomScaleSneakHeight",
                                           0.7f,
                                           new ConfigDescription("This will affect the eye height that the roomscale sneak occur at.  (e.g. 0.7 means if your headset lower than 70% of your height, it will do sneak)  " +
                                            "Valid values are  0.0 - 0.95.",
                                            new AcceptableValueRange<float>(0f, 0.95f)));
-            exclusiveRoomScaleSneak = config.Bind("Controls",
-                                          "ExclusiveRoomScaleSneak",
-                                          false,
-                                          "If this is set to true and Room Scale sneaking is on, Controller-based sneak inputs will be disabled. Use this if you ONLY want to sneak by phsyically crouching.");
             gesturedLocomotion = config.Bind("Controls",
                                              "GesturedLocomotion",
                                              "SwimAndSteering",
@@ -827,6 +828,12 @@ namespace ValheimVRMod.Utilities
                                   new ConfigDescription(
                                       "Whether the glowing effect of melee weapons should be enabled.",
                                       new AcceptableValueList<string>(new string[] { "None", "LightWithoutParticles", "Full" })));
+            magicBarrierOvelay = config.Bind("Graphics",
+                                  "MagicBarrierOverlay",
+                                  "SimpleColor",
+                                  new ConfigDescription(
+                                      "What full-screen overlay should be used when the player is protected by magic barrier",
+                                      new AcceptableValueList<string>(new string[] { "None", "SimpleColor", "FullTexture" })));
             enemyRenderDistance = config.Bind("Graphics",
                                         "EnemyRenderDistance",
                                         8f,
@@ -843,6 +850,12 @@ namespace ValheimVRMod.Utilities
                                               "ShowDamageText",
                                               true,
                                               "Show damage text in VR?");
+            showAttackOutline = config.Bind("Graphics",
+                                  "ShowAttackOutline",
+                                  "nonTerrainOnly",
+                                  new ConfigDescription(
+                                      "Whether an outline arounnd the attack target should be shown to indicate attack cooldown",
+                                      new AcceptableValueList<string>(new string[] { "None", "nonTerrainOnly", "All" })));
         }
 
         private static void InitializeMotionControlSettings() {
@@ -1143,6 +1156,16 @@ namespace ValheimVRMod.Utilities
             return meleeWeaponGlow.Value == "Full";
         }
 
+        public static bool EnableMagicBarrierOverlay()
+        {
+            return magicBarrierOvelay.Value != "None";
+        }
+
+        public static bool EnableFullTextureMagicBarrierOverlay()
+        {
+            return magicBarrierOvelay.Value == "FullTexture";
+        }
+
         public static bool EnableMeleeWeaponGlowLight()
         {
             return meleeWeaponGlow.Value == "Full" || meleeWeaponGlow.Value == "LightWithoutParticles";
@@ -1315,13 +1338,13 @@ namespace ValheimVRMod.Utilities
             return arrowRestElevation.Value;
         }
 
-        public static float ArrowRestHorizontalOffsetMultiplier()
+        public static float ArrowRestHorizontalOffsetMultiplier(bool isHoldBowInLeftHand)
         {
             switch (arrowRestSide.Value) {
                 case k_arrowRestAsiatic:
-                    return LeftHanded() ? -1 : 1;
+                    return isHoldBowInLeftHand ? 1 : -1;
                 case k_arrowRestMediterranean:
-                    return LeftHanded() ? 1 : -1;
+                    return isHoldBowInLeftHand ? -1 : 1;
                 default:
                     return 0;
             }
@@ -1420,7 +1443,7 @@ namespace ValheimVRMod.Utilities
         }
 
         public static bool RoomScaleSneakEnabled() {
-            return roomScaleSneaking.Value;
+            return sneakInput.Value != "ControllerOnly";
         }
 
         public static float RoomScaleSneakHeight() {
@@ -1429,7 +1452,7 @@ namespace ValheimVRMod.Utilities
 
         public static bool ExlusiveRoomScaleSneak()
         {
-            return exclusiveRoomScaleSneak.Value;
+            return sneakInput.Value == "CrouchingOnly";
         }
 
         public static bool TrackFeet()
@@ -1494,6 +1517,16 @@ namespace ValheimVRMod.Utilities
         public static bool ShowDamageText()
         {
             return showDamageText.Value;
+        }
+
+        public static bool ShowNonTerrainAttackOutline()
+        {
+            return showAttackOutline.Value != "None";
+        }
+
+        public static bool ShowTerrainAttackOutline()
+        {
+            return showAttackOutline.Value == "All";
         }
 
         public static float AltPieceRotationDelay()

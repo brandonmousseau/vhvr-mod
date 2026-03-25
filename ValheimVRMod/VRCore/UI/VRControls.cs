@@ -886,6 +886,7 @@ namespace ValheimVRMod.VRCore.UI
             zInputToBooleanAction.Add("Jump", new [] { SteamVR_Actions.valheim_Jump, SteamVR_Actions.laserPointers_Jump });
             zInputToBooleanAction.Add("Use", new[] { SteamVR_Actions.valheim_Use });
             zInputToBooleanAction.Add("Sit", new[] { SteamVR_Actions.valheim_Sit });
+            zInputToBooleanAction.Add("AutoPickup", new[] { SteamVR_Actions.valheim_ToggleAutoPickup });
             zInputToBooleanAction.Add(ToggleMiniMap, new[] { SteamVR_Actions.valheim_ToggleMap });
 
             // These placement commands re-use some of the normal game inputs
@@ -958,7 +959,6 @@ namespace ValheimVRMod.VRCore.UI
             ignoredZInputs.Add("BuildNext");
             ignoredZInputs.Add("BuildPrev");
             ignoredZInputs.Add("AltPlace");
-            ignoredZInputs.Add("AutoPickup");
             ignoredZInputs.Add("ChatUp");
             ignoredZInputs.Add("ChatDown");
             ignoredZInputs.Add("ScrollChatUp");

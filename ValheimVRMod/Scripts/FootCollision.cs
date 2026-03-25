@@ -120,7 +120,7 @@ namespace ValheimVRMod.Scripts
 
             var isCurrentlySecondaryAttack = FistCollision.LocalPlayerSecondaryAttackCooldown <= 0;
             var item = Player.m_localPlayer.m_unarmedWeapon.m_itemData;
-            var attack = isCurrentlySecondaryAttack ? item.m_shared.m_attack : item.m_shared.m_secondaryAttack;
+            var attack = isCurrentlySecondaryAttack ? item.m_shared.m_secondaryAttack : item.m_shared.m_attack;
 
             // Always use the duration of the primary attack for target cooldown to allow primary attack immediately following a secondary attack.
             // The secondary attack cooldown is managed by FistCollision.LocalPlayerSecondaryAttackCooldown  instead.
@@ -156,7 +156,7 @@ namespace ValheimVRMod.Scripts
             {
                 attackTargetMeshCooldown = target.AddComponent<AttackTargetMeshCooldown>();
             }
-
+            attackTargetMeshCooldown.showOutline = VHVRConfig.ShowNonTerrainAttackOutline();
             return isSecondaryAttack ? attackTargetMeshCooldown.tryTriggerSecondaryAttack(duration) : attackTargetMeshCooldown.tryTriggerPrimaryAttack(duration, speed);
         }
     }
