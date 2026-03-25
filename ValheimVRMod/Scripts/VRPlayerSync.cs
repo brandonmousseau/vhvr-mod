@@ -17,13 +17,17 @@ namespace ValheimVRMod.Scripts {
         public GameObject rightHand = null;
         public GameObject leftHand = null;
         public GameObject pelvis = null;
-        public GameObject weaponSync = null;
+        private GameObject weaponSync = null;
 
         public bool isLeftHanded { get { return player == Player.m_localPlayer ? !VRPlayer.isRightHandMainWeaponHand : clientIsLeftHanded; } }
         public EquipType mainHandEquipType = EquipType.None;
         public EquipType offHandEquipType = EquipType.None;
         public EquipType leftHandEquipType { get { return isLeftHanded ? mainHandEquipType : offHandEquipType; } }
         public EquipType rightHandEquipType { get { return isLeftHanded ? offHandEquipType : mainHandEquipType; } }
+        public Vector3 weaponPosition { get { return weaponSync.transform.position; } }
+        public Quaternion weaponRotation { get { return weaponSync.transform.rotation; } }
+        public bool shouldSyncMainHandWeapon = false;
+        public bool shouldSyncOffHandWeapon = false;
 
         private bool clientIsLeftHanded = false; 
         private WeaponWield.TwoHandedState twoHandedState = WeaponWield.TwoHandedState.SingleHanded;
@@ -42,6 +46,7 @@ namespace ValheimVRMod.Scripts {
         private Vector3 clientTempRelPosLeft = Vector3.zero;
         private Vector3 clientTempRelPosRight = Vector3.zero;
         private Vector3 clientTempRelPosPelvis = Vector3.zero;
+        private Vector3 clientTempRelPosWeapon = Vector3.zero;
 
         private uint lastDataRevision = 0;
         private float deltaTimeCounter = 0f;
@@ -251,11 +256,7 @@ namespace ValheimVRMod.Scripts {
         }
 
         private void clientSync(float dt) {
-            syncPositionAndRotation(GetComponent<ZNetView>().GetZDO(), dt);
-        }
-
-        private void syncPositionAndRotation(ZDO zdo, float dt)
-        {
+            ZDO zdo = GetComponent<ZNetView>().GetZDO();
             if (zdo == null)
             {
                 return;
@@ -296,6 +297,38 @@ namespace ValheimVRMod.Scripts {
             clientIsLeftHanded = pkg.ReadBool();
             twoHandedState = (WeaponWield.TwoHandedState) pkg.ReadByte();
             inverseHold = pkg.ReadBool();
+            extractAndUpdate(pkg, ref weaponSync, ref clientTempRelPosWeapon, hasTempRelPos);
+
+            if (shouldSyncMainHandWeapon)
+            {
+                if (shouldSyncOffHandWeapon)
+                {
+                    LogUtils.LogWarning("Should not sync both weapons during network sync");
+                }
+                var item = player.m_visEquipment.m_rightItemInstance;
+                if (weaponSync == null)
+                {
+                    LogUtils.LogDebug("Trying to sync null main hand weapon");
+                }
+                else
+                {
+                    item.GetOrAddComponent<WeaponWieldSync>();
+                    item.transform.SetPositionAndRotation(weaponSync.transform.position, weaponSync.transform.rotation);
+                }
+            }
+            else if (shouldSyncOffHandWeapon)
+            {
+                var item = player.m_visEquipment.m_leftItemInstance;
+                if (item == null)
+                {
+                    LogUtils.LogDebug("Trying to sync null main hand weapon");
+                }
+                else
+                {
+                    item.GetOrAddComponent<WeaponWieldSync>();
+                    item.transform.SetPositionAndRotation(weaponSync.transform.position, weaponSync.transform.rotation);
+                }
+            }
         }
 
         private void maybePullBow(bool pulling) {

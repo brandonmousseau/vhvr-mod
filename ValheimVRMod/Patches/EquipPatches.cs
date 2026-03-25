@@ -221,7 +221,7 @@ namespace ValheimVRMod.Patches {
 
             if (Player.m_localPlayer != player)
             {
-                if (vrPlayerSync != null && vrPlayerSync.hasReceivedData)
+                if (vrPlayerSync != null)
                 {
                     switch (vrPlayerSync.mainHandEquipType)
                     {
@@ -240,10 +240,10 @@ namespace ValheimVRMod.Patches {
                         case EquipType.SpearChitin:
                         case EquipType.Sword:
                         case EquipType.Torch:
-                            WeaponWieldSync weaponWieldSync = ___m_rightItemInstance.AddComponent<WeaponWieldSync>();
-                            weaponWieldSync.Initialize(player.GetRightItem(), ___m_rightItem, isDominantHandWeapon: true, vrPlayerSync, vrPlayerSync.leftHand.transform, vrPlayerSync.rightHand.transform);
+                            vrPlayerSync.shouldSyncMainHandWeapon = true;
                             return;
                         default:
+                            vrPlayerSync.shouldSyncMainHandWeapon = false;
                             return;
                     }
                 }
@@ -377,10 +377,9 @@ namespace ValheimVRMod.Patches {
 
             if (Player.m_localPlayer != player)
             {
-                if (vrPlayerSync != null && vrPlayerSync.hasReceivedData && vrPlayerSync.offHandEquipType == EquipType.Crossbow)
+                if (vrPlayerSync != null)
                 {
-                    WeaponWieldSync weaponWieldSync = ___m_leftItemInstance.AddComponent<WeaponWieldSync>();
-                    weaponWieldSync.Initialize(player.GetLeftItem(), ___m_leftItem, isDominantHandWeapon: false, vrPlayerSync, vrPlayerSync.leftHand.transform, vrPlayerSync.rightHand.transform);
+                    vrPlayerSync.shouldSyncOffHandWeapon = (vrPlayerSync.offHandEquipType == EquipType.Crossbow);
                 }
                 return;
             }
