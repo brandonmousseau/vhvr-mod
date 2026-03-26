@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using RootMotion.FinalIK;
 using UnityEngine;
@@ -17,6 +18,8 @@ namespace ValheimVRMod.Scripts {
         public GameObject rightHand = null;
         public GameObject leftHand = null;
         public GameObject pelvis = null;
+        public GameObject leftFoot = null;
+        public GameObject rightFoot = null;
         public Vector3 weaponSyncLocalPosition;
         public Quaternion weaponSyncLocalRotation;
 
@@ -26,7 +29,8 @@ namespace ValheimVRMod.Scripts {
         public EquipType leftHandEquipType { get { return isLeftHanded ? mainHandEquipType : offHandEquipType; } }
         public EquipType rightHandEquipType { get { return isLeftHanded ? offHandEquipType : mainHandEquipType; } }
         public bool hasReceivedData { get; private set; }
-        
+        public bool hasFootData { get; private set; } = false;
+
         private bool hasReceivedWeaponSync = false;
         private bool clientIsLeftHanded = false; 
         private WeaponWield.TwoHandedState twoHandedState = WeaponWield.TwoHandedState.SingleHanded;
@@ -45,6 +49,8 @@ namespace ValheimVRMod.Scripts {
         private Vector3 clientTempRelPosLeft = Vector3.zero;
         private Vector3 clientTempRelPosRight = Vector3.zero;
         private Vector3 clientTempRelPosPelvis = Vector3.zero;
+        private Vector3 clientTempRelPosLeftFoot = Vector3.zero;
+        private Vector3 clientTempRelPosRightFoot = Vector3.zero;
 
         private uint lastDataRevision = 0;
         private float deltaTimeCounter = 0f;
@@ -63,9 +69,11 @@ namespace ValheimVRMod.Scripts {
 
         private void Awake() {
             camera = new GameObject();
-            rightHand = new GameObject();
             leftHand = new GameObject();
+            rightHand = new GameObject();
             pelvis = new GameObject();
+            leftFoot = new GameObject();
+            rightFoot = new GameObject();
             player = GetComponent<Player>();
         }
 
@@ -244,16 +252,24 @@ namespace ValheimVRMod.Scripts {
             pkg.Write(InverseHold());
             pkg.Write(weaponSyncLocalPosition);
             pkg.Write(weaponSyncLocalRotation);
+            if (VRPlayer.vrPlayerInstance != null && VRPlayer.vrPlayerInstance.shouldTrackFeet())
+            {
+                writeTransformRelativeToPlayer(pkg, VRPlayer.leftFoot);
+                writeTransformRelativeToPlayer(pkg, VRPlayer.rightFoot);
+            } 
 
             GetComponent<ZNetView>().GetZDO().Set("vr_data", pkg.GetArray());
         }
 
-        private static readonly Quaternion DUNDR_SINGLE_HAND_ADDITIONAL_ROTATION = Quaternion.Euler(55, 0, 0);
-        private void writeData(ZPackage pkg, GameObject obj, Vector3 ownerVelocity) 
+        private void writeTransformRelativeToPlayer(ZPackage pkg, Transform transform) 
         {
-            var rotation = obj.transform.rotation;
-            pkg.Write(obj.transform.position - player.transform.position);
-            pkg.Write(rotation);
+            pkg.Write(transform.position - player.transform.position);
+            pkg.Write(transform.rotation);
+        }
+
+        private void writeData(ZPackage pkg, GameObject obj, Vector3 ownerVelocity)
+        {
+            writeTransformRelativeToPlayer(pkg, obj.transform);
             pkg.Write(ownerVelocity);
         }
 
@@ -298,19 +314,29 @@ namespace ValheimVRMod.Scripts {
             clientIsLeftHanded = pkg.ReadBool();
             twoHandedState = (WeaponWield.TwoHandedState) pkg.ReadByte();
             inverseHold = pkg.ReadBool();
-            if (pkg.m_reader.BaseStream.Position < pkg.GetArray().Length) // TODO: remove this check once weapon sync is fully supported
+            if (hasMoreData(pkg)) // TODO: remove this check once weapon sync is fully supported
             {
-                var newLocalPosition = pkg.ReadVector3();
-                if (!hasTempRelPos)
-                {
-                    weaponSyncLocalPosition = newLocalPosition;
-                }
-                else if (Vector3.Distance(weaponSyncLocalPosition, newLocalPosition) > MIN_CHANGE)
-                {
-                    weaponSyncLocalPosition = Vector3.Lerp(weaponSyncLocalPosition, newLocalPosition, 0.2f);
-                }
+                ExtractAndSmoothUpdateVector(pkg, ref weaponSyncLocalPosition, hasTempRelPos);
                 weaponSyncLocalRotation = pkg.ReadQuaternion();
                 hasReceivedWeaponSync = true;
+            }
+            if (hasMoreData(pkg))
+            {
+                ExtractAndSmoothUpdatePositionRelativeToPlayer(pkg, ref leftFoot, ref clientTempRelPosLeftFoot, hasFootData);
+                ExtractAndSmoothUpdatePositionRelativeToPlayer(pkg, ref rightFoot, ref clientTempRelPosRightFoot, hasFootData);
+                hasFootData = true;
+                if (vrikSync != null)
+                {
+                    VrikCreator.EnableFootTracking(vrikSync);
+                }
+            }
+            else
+            {
+                hasFootData = false;
+                if (vrikSync != null)
+                {
+                    VrikCreator.DisableFootTracking(vrikSync);
+                }
             }
             hasTempRelPos = true;
         }
@@ -339,13 +365,23 @@ namespace ValheimVRMod.Scripts {
             bowManager.pulling = pulling;
         }
 
-        private void extractAndUpdate(ZPackage pkg, ref GameObject obj, ref Vector3 tempRelPos, bool hasTempRelPos)
+        private void ExtractAndSmoothUpdateVector(ZPackage pkg, ref Vector3 v, bool hasRead)
         {
-            // Extract package data
-            var position = pkg.ReadVector3();
-            var rotation = pkg.ReadQuaternion();
-            var velocity = pkg.ReadVector3();
+            var newValue = pkg.ReadVector3();
+            if (!hasRead)
+            {
+                v = newValue;
+            }
+            else if (Vector3.Distance(v, newValue) > MIN_CHANGE)
+            {
+                v = Vector3.Lerp(v, newValue, 0.2f);
+            }
+        }
 
+        private void ExtractAndSmoothUpdatePositionRelativeToPlayer(
+            ZPackage pkg, ref GameObject obj, ref Vector3 tempRelPos, bool hasTempRelPos)
+        {
+            var position = pkg.ReadVector3();
             if (!hasTempRelPos)
             {
                 tempRelPos = position;
@@ -357,11 +393,19 @@ namespace ValheimVRMod.Scripts {
                 position = tempRelPos;
             }
 
-            // Update the object position with new calculated position
             updatePosition(obj, position + player.transform.position);
-            
-            // Update the rotation
-            updateRotation(obj, rotation);
+        }
+
+        private void extractAndUpdate(ZPackage pkg, ref GameObject obj, ref Vector3 tempRelPos, bool hasTempRelPos)
+        {
+            ExtractAndSmoothUpdatePositionRelativeToPlayer(pkg, ref obj, ref tempRelPos, hasTempRelPos);
+            updateRotation(obj, pkg.ReadQuaternion());
+            var velocity = pkg.ReadVector3(); // Deprecated
+        }
+
+        private static bool hasMoreData(ZPackage pkg)
+        {
+            return pkg.m_reader.BaseStream.Position < pkg.GetArray().Length;
         }
 
         private static void updatePosition(GameObject obj, Vector3 position)
@@ -387,7 +431,7 @@ namespace ValheimVRMod.Scripts {
             }
             vrikSync =
                 VrikCreator.initialize(
-                    gameObject, leftHand.transform, rightHand.transform, camera.transform, pelvis.transform);
+                    gameObject, leftHand.transform, rightHand.transform, camera.transform, pelvis.transform, leftFoot.transform, rightFoot.transform);
             VrikCreator.resetVrikHandTransform(player);
         }
 
