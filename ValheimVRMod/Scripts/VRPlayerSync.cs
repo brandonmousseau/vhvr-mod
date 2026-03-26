@@ -26,6 +26,7 @@ namespace ValheimVRMod.Scripts {
         public EquipType rightHandEquipType { get { return isLeftHanded ? offHandEquipType : mainHandEquipType; } }
         public Vector3 weaponPosition { get { return weaponSync.transform.position; } }
         public Quaternion weaponRotation { get { return weaponSync.transform.rotation; } }
+        public bool hasReceivedData { get; private set; }
 
         private bool clientIsLeftHanded = false; 
         private WeaponWield.TwoHandedState twoHandedState = WeaponWield.TwoHandedState.SingleHanded;
@@ -58,12 +59,9 @@ namespace ValheimVRMod.Scripts {
         private Quaternion[] rightFingerRotations = new Quaternion[20];
 
         private bool fingersUpdated;
-
-        public BowManager bowManager;
-        public GameObject currentLeftWeapon;
-        public GameObject currentRightWeapon;
-        public GameObject currentDualWieldWeapon;
-        public bool hasReceivedData { get; private set; }
+        // TODO: remove this once weapon sync is fully supported
+        private bool hasReceivedWeaponSync = false;
+        
 
         private void Awake() {
             camera = new GameObject();
@@ -292,7 +290,13 @@ namespace ValheimVRMod.Scripts {
             clientIsLeftHanded = pkg.ReadBool();
             twoHandedState = (WeaponWield.TwoHandedState) pkg.ReadByte();
             inverseHold = pkg.ReadBool();
+            if (pkg.m_reader.BaseStream.Position >= pkg.GetArray().Length)
+            {
+                // TODO: remove this check once weapon sync is fully supported
+                return;
+            }
             extractAndUpdate(pkg, ref weaponSync, ref clientTempRelPosWeapon, hasTempRelPos);
+            hasReceivedWeaponSync = true;
         }
 
         private void maybePullBow(bool pulling) {

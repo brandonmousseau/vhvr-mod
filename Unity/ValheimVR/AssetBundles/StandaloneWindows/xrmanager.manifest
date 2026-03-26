@@ -1,0 +1,30 @@
+ManifestFileVersion: 0
+CRC: 1286594276
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: 328f41f21012093778615009c7268595
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: a5e45409fc24814b132efcd5d7204e1e
+HashAppended: 0
+ClassTypes:
+- Class: 114
+  Script: {fileID: 11500000, guid: d236b7d11115f2143951f1e14045df39, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 03bc68f14d65e7747a59d5ff74bd199b, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 7a32bfe54d957ec4581fa4a630f1647a, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: 5685c6ec3d77efd409c20e6da27a4c72, type: 3}
+- Class: 114
+  Script: {fileID: 11500000, guid: f4c3631f5e58749a59194e0cf6baf6d5, type: 3}
+- Class: 115
+  Script: {instanceID: 0}
+SerializeReferenceClassIdentifiers: []
+Assets:
+- Assets/XR/Loaders/Oculus Loader.asset
+- Assets/XR/Settings/Open VR Settings.asset
+- Assets/XR/Loaders/Open VR Loader.asset
+- Assets/XR/XRGeneralSettings.asset
+Dependencies: []
