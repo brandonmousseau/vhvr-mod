@@ -1,6 +1,7 @@
 using System.Linq;
 using RootMotion.FinalIK;
 using UnityEngine;
+using UnityEngine.UIElements;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 
@@ -45,7 +46,6 @@ namespace ValheimVRMod.Scripts {
         private Vector3 clientTempRelPosLeft = Vector3.zero;
         private Vector3 clientTempRelPosRight = Vector3.zero;
         private Vector3 clientTempRelPosPelvis = Vector3.zero;
-        private Vector3 clientTempRelPosWeapon = Vector3.zero;
 
         private uint lastDataRevision = 0;
         private float deltaTimeCounter = 0f;
@@ -243,8 +243,6 @@ namespace ValheimVRMod.Scripts {
             pkg.Write(isLeftHanded);
             pkg.Write((byte) (twoHandedState = LocalWeaponWield.LocalPlayerTwoHandedState));
             pkg.Write(InverseHold());
-            LogUtils.LogWarning("W? " + weaponSyncLocalRotation + " " + weaponSyncLocalPosition);
-
             pkg.Write(weaponSyncLocalPosition);
             pkg.Write(weaponSyncLocalRotation);
 
@@ -303,6 +301,15 @@ namespace ValheimVRMod.Scripts {
             inverseHold = pkg.ReadBool();
             if (pkg.m_reader.BaseStream.Position < pkg.GetArray().Length) // TODO: remove this check once weapon sync is fully supported
             {
+                var newLocalPosition = pkg.ReadVector3();
+                if (!hasTempRelPos)
+                {
+                    weaponSyncLocalPosition = newLocalPosition;
+                }
+                else if (Vector3.Distance(weaponSyncLocalPosition, newLocalPosition) > MIN_CHANGE)
+                {
+                    weaponSyncLocalPosition = Vector3.Lerp(weaponSyncLocalPosition, newLocalPosition, 0.2f);
+                }
                 weaponSyncLocalPosition = pkg.ReadVector3();
                 weaponSyncLocalRotation = pkg.ReadQuaternion();
                 hasReceivedWeaponSync = true;
