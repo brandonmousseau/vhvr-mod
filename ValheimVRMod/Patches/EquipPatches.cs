@@ -233,6 +233,7 @@ namespace ValheimVRMod.Patches {
                         case EquipType.Hoe:
                         case EquipType.Knife:
                         case EquipType.Magic:
+                        case EquipType.Pickaxe:
                         case EquipType.Polearms:
                         case EquipType.Scythe:
                         case EquipType.Sledge:
@@ -240,8 +241,12 @@ namespace ValheimVRMod.Patches {
                         case EquipType.SpearChitin:
                         case EquipType.Sword:
                         case EquipType.Torch:
-                            WeaponWieldSync weaponWieldSync = ___m_rightItemInstance.AddComponent<WeaponWieldSync>();
-                            weaponWieldSync.Initialize(player.GetRightItem(), ___m_rightItem, isDominantHandWeapon: true, vrPlayerSync, vrPlayerSync.leftHand.transform, vrPlayerSync.rightHand.transform);
+                            if (!vrPlayerSync.MaybeAddClientWeaponSync(___m_rightItemInstance))
+                            {
+                                //  TODO: remove this once weapon sync is fully supported
+                                WeaponWieldSync weaponWieldSync = ___m_rightItemInstance.AddComponent<WeaponWieldSync>();
+                                weaponWieldSync.Initialize(player.GetRightItem(), ___m_rightItem, isDominantHandWeapon: true, vrPlayerSync, vrPlayerSync.leftHand.transform, vrPlayerSync.rightHand.transform);
+                            }
                             return;
                         default:
                             return;
@@ -379,8 +384,12 @@ namespace ValheimVRMod.Patches {
             {
                 if (vrPlayerSync != null && vrPlayerSync.hasReceivedData && vrPlayerSync.offHandEquipType == EquipType.Crossbow)
                 {
-                    WeaponWieldSync weaponWieldSync = ___m_leftItemInstance.AddComponent<WeaponWieldSync>();
-                    weaponWieldSync.Initialize(player.GetLeftItem(), ___m_leftItem, isDominantHandWeapon: false, vrPlayerSync, vrPlayerSync.leftHand.transform, vrPlayerSync.rightHand.transform);
+                    if (!vrPlayerSync.MaybeAddClientWeaponSync(___m_leftItemInstance))
+                    {
+                        //  TODO: remove this once weapon sync is fully supported
+                        WeaponWieldSync weaponWieldSync = ___m_leftItemInstance.AddComponent<WeaponWieldSync>();
+                        weaponWieldSync.Initialize(player.GetLeftItem(), ___m_leftItem, isDominantHandWeapon: false, vrPlayerSync, vrPlayerSync.leftHand.transform, vrPlayerSync.rightHand.transform);
+                    }
                 }
                 return;
             }
