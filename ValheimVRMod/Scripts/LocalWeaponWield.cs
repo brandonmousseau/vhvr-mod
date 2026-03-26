@@ -182,7 +182,7 @@ namespace ValheimVRMod.Scripts
             lastRenderedTransform.localScale = Vector3.one;
             lastRenderedTransform.SetParent(null, true);
             localWeaponTip = transform.position + (weaponLength - distanceBetweenGripAndRearEnd) * weaponForward;
-            playerSync?.UpdateWeaponTransform(transform.position, transform.rotation);
+            playerSync?.UpdateWeaponTransform(transform.localPosition, transform.localRotation);
 
             return weaponForward;
         }

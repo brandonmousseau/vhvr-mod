@@ -17,15 +17,14 @@ namespace ValheimVRMod.Scripts {
         public GameObject rightHand = null;
         public GameObject leftHand = null;
         public GameObject pelvis = null;
-        private GameObject weaponSync = null;
+        public Vector3 weaponSyncLocalPosition;
+        public Quaternion weaponSyncLocalRotation;
 
         public bool isLeftHanded { get { return player == Player.m_localPlayer ? !VRPlayer.isRightHandMainWeaponHand : clientIsLeftHanded; } }
         public EquipType mainHandEquipType = EquipType.None;
         public EquipType offHandEquipType = EquipType.None;
         public EquipType leftHandEquipType { get { return isLeftHanded ? mainHandEquipType : offHandEquipType; } }
         public EquipType rightHandEquipType { get { return isLeftHanded ? offHandEquipType : mainHandEquipType; } }
-        public Vector3 weaponPosition { get { return weaponSync.transform.position; } }
-        public Quaternion weaponRotation { get { return weaponSync.transform.rotation; } }
         public bool hasReceivedData { get; private set; }
         
         private bool hasReceivedWeaponSync = false;
@@ -69,7 +68,6 @@ namespace ValheimVRMod.Scripts {
             leftHand = new GameObject();
             pelvis = new GameObject();
             player = GetComponent<Player>();
-            weaponSync = new GameObject();
         }
 
         void Start()
@@ -82,8 +80,6 @@ namespace ValheimVRMod.Scripts {
 
         private void FixedUpdate()
         {
-            UpdateWeaponSyncParent();
-
             float dt = Time.unscaledDeltaTime;
             if (isOwner())
             {
@@ -185,9 +181,10 @@ namespace ValheimVRMod.Scripts {
             return hasReceivedWeaponSync;
         }
 
-        public void UpdateWeaponTransform(Vector3 position, Quaternion rotation)
+        public void UpdateWeaponTransform(Vector3 localPosition, Quaternion localRotation)
         {
-            weaponSync.transform.SetPositionAndRotation(position, rotation);
+            weaponSyncLocalPosition = localPosition;
+            weaponSyncLocalRotation = localRotation;
         }
 
         private void calculateOwnerVelocities(float dt)
@@ -204,16 +201,6 @@ namespace ValheimVRMod.Scripts {
             ownerLastPositionCamera = camera.transform.position - player.transform.position;
             ownerLastPositionLeft = leftHand.transform.position - player.transform.position;
             ownerLastPositionRight = rightHand.transform.position - player.transform.position;
-        }
-
-        private void UpdateWeaponSyncParent()
-        {
-            bool isDominantHand = (offHandEquipType != EquipType.Crossbow);
-            var weaponSyncParent = (isDominantHand ^ isLeftHanded ? rightHand.transform : leftHand.transform);
-            if (weaponSync.transform.parent != weaponSyncParent)
-            {
-                weaponSync.transform.SetParent(weaponSyncParent, worldPositionStays: true);
-            }
         }
 
         private void LateUpdate()
@@ -256,7 +243,10 @@ namespace ValheimVRMod.Scripts {
             pkg.Write(isLeftHanded);
             pkg.Write((byte) (twoHandedState = LocalWeaponWield.LocalPlayerTwoHandedState));
             pkg.Write(InverseHold());
-            writeData(pkg, weaponSync, Vector3.zero);
+            LogUtils.LogWarning("W? " + weaponSyncLocalRotation + " " + weaponSyncLocalPosition);
+
+            pkg.Write(weaponSyncLocalPosition);
+            pkg.Write(weaponSyncLocalRotation);
 
             GetComponent<ZNetView>().GetZDO().Set("vr_data", pkg.GetArray());
         }
@@ -313,7 +303,8 @@ namespace ValheimVRMod.Scripts {
             inverseHold = pkg.ReadBool();
             if (pkg.m_reader.BaseStream.Position < pkg.GetArray().Length) // TODO: remove this check once weapon sync is fully supported
             {
-                extractAndUpdate(pkg, ref weaponSync, ref clientTempRelPosWeapon, hasTempRelPos);
+                weaponSyncLocalPosition = pkg.ReadVector3();
+                weaponSyncLocalRotation = pkg.ReadQuaternion();
                 hasReceivedWeaponSync = true;
             }
             hasTempRelPos = true;
@@ -482,7 +473,8 @@ namespace ValheimVRMod.Scripts {
             {
                 return;
             }
-            transform.SetPositionAndRotation(playerSync.weaponPosition, playerSync.weaponRotation);
+            transform.localPosition = playerSync.weaponSyncLocalPosition;
+            transform.localRotation = playerSync.weaponSyncLocalRotation;
         }
     }
 }
