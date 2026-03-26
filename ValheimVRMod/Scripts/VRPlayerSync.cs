@@ -256,7 +256,7 @@ namespace ValheimVRMod.Scripts {
             pkg.Write(isLeftHanded);
             pkg.Write((byte) (twoHandedState = LocalWeaponWield.LocalPlayerTwoHandedState));
             pkg.Write(InverseHold());
-            writeData(pkg, weaponSync, ownerVelocityCamera);
+            writeData(pkg, weaponSync, weaponSync.transform.parent == leftHand.transform ? ownerVelocityLeft : ownerVelocityRight);
 
             GetComponent<ZNetView>().GetZDO().Set("vr_data", pkg.GetArray());
         }
