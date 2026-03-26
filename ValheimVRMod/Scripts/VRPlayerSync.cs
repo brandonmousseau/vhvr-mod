@@ -1,7 +1,6 @@
 using System.Linq;
 using RootMotion.FinalIK;
 using UnityEngine;
-using UnityEngine.UIElements;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 
@@ -310,7 +309,6 @@ namespace ValheimVRMod.Scripts {
                 {
                     weaponSyncLocalPosition = Vector3.Lerp(weaponSyncLocalPosition, newLocalPosition, 0.2f);
                 }
-                weaponSyncLocalPosition = pkg.ReadVector3();
                 weaponSyncLocalRotation = pkg.ReadQuaternion();
                 hasReceivedWeaponSync = true;
             }
