@@ -1,7 +1,6 @@
 using System.Linq;
 using RootMotion.FinalIK;
 using UnityEngine;
-using UnityEngine.UIElements;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 
