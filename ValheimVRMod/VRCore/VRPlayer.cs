@@ -1097,7 +1097,7 @@ namespace ValheimVRMod.VRCore
                 StaticObjects.leftFootCollision().gameObject.SetActive(false);
                 StaticObjects.rightFootCollision().gameObject.SetActive(false);
 
-                if (player.IsAttached() || player.IsSitting() || Valve.VR.InteractionSystem.Player.instance.eyeHeight > referencePlayerHeight * 0.5f)
+                if (player.IsAttached() || player.IsSitting() || Valve.VR.InteractionSystem.Player.instance.eyeHeight > referencePlayerHeight * 0.125f)
                 {
                     vrikRef.solver.spine.pelvisPositionWeight = 0;
                     vrikRef.solver.spine.pelvisRotationWeight = 1;
@@ -1111,7 +1111,8 @@ namespace ValheimVRMod.VRCore
                     vrikRef.solver.spine.pelvisPositionWeight = 1;
                     vrikRef.solver.spine.pelvisRotationWeight = 0;
                     pelvis.position = inferPelvisPositionFromHead(_vrCam.transform.up);
-                    pelvis.rotation = vrikRef.references.pelvis.rotation;
+                    Vector3 pelvisFacing = inferPelvisFacingFromPlayerHeadingAndHands(player.transform, player.IsAttached());
+                    pelvis.rotation = Quaternion.LookRotation(pelvisFacing, _vrCam.transform.up);
                     vrikRef.solver.spine.rootHeadingOffset = 0;
                 }
 
