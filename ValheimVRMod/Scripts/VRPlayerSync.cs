@@ -10,9 +10,9 @@ namespace ValheimVRMod.Scripts {
     public class VRPlayerSync : MonoBehaviour, WeaponWieldSync.TwoHandedStateProvider {
 
         private VRIK vrikSync;
-        
+
         const float MIN_CHANGE = 0.001f;
-        
+
         public GameObject camera = null;
         public GameObject rightHand = null;
         public GameObject leftHand = null;
@@ -27,7 +27,8 @@ namespace ValheimVRMod.Scripts {
         public Vector3 weaponPosition { get { return weaponSync.transform.position; } }
         public Quaternion weaponRotation { get { return weaponSync.transform.rotation; } }
         public bool hasReceivedData { get; private set; }
-
+        
+        private bool hasReceivedWeaponSync = false;
         private bool clientIsLeftHanded = false; 
         private WeaponWield.TwoHandedState twoHandedState = WeaponWield.TwoHandedState.SingleHanded;
         private bool inverseHold = false;
@@ -60,7 +61,6 @@ namespace ValheimVRMod.Scripts {
 
         private bool fingersUpdated;
         // TODO: remove this once weapon sync is fully supported
-        private bool hasReceivedWeaponSync = false;
         
 
         private void Awake() {
@@ -82,6 +82,8 @@ namespace ValheimVRMod.Scripts {
 
         private void FixedUpdate()
         {
+            UpdateWeaponSyncParent();
+
             float dt = Time.unscaledDeltaTime;
             if (isOwner())
             {
@@ -173,6 +175,16 @@ namespace ValheimVRMod.Scripts {
             return vrikSync != null;
         }
 
+        public bool MaybeAddClientWeaponSync(GameObject item)
+        {
+            // Check hasReceivedData instead once weapon sync is fully supported
+            if (hasReceivedWeaponSync)
+            {
+                item.AddComponent<ClientWeaponSync>();
+            }
+            return hasReceivedWeaponSync;
+        }
+
         public void UpdateWeaponTransform(Vector3 position, Quaternion rotation)
         {
             weaponSync.transform.SetPositionAndRotation(position, rotation);
@@ -192,6 +204,16 @@ namespace ValheimVRMod.Scripts {
             ownerLastPositionCamera = camera.transform.position - player.transform.position;
             ownerLastPositionLeft = leftHand.transform.position - player.transform.position;
             ownerLastPositionRight = rightHand.transform.position - player.transform.position;
+        }
+
+        private void UpdateWeaponSyncParent()
+        {
+            bool isDominantHand = (offHandEquipType != EquipType.Crossbow);
+            var weaponSyncParent = (isDominantHand ^ isLeftHanded ? rightHand.transform : leftHand.transform);
+            if (weaponSync.transform.parent != weaponSyncParent)
+            {
+                weaponSync.transform.SetParent(weaponSyncParent, worldPositionStays: true);
+            }
         }
 
         private void LateUpdate()
@@ -448,6 +470,21 @@ namespace ValheimVRMod.Scripts {
             if (finger.childCount > 0) {
                 applyFinger(finger.GetChild(0), fingerRotations, ref fingerCounter);
             }
+        }
+    }
+
+    public class ClientWeaponSync : MonoBehaviour
+    {
+        private VRPlayerSync playerSync { get { return _playerSync == null ? (_playerSync = GetComponentInParent<VRPlayerSync>()) : _playerSync; } }
+        private VRPlayerSync _playerSync;
+
+        protected void OnRenderObject()
+        {
+            if (playerSync == null)
+            {
+                return;
+            }
+            transform.SetPositionAndRotation(playerSync.weaponPosition, playerSync.weaponRotation);
         }
     }
 }
