@@ -57,6 +57,23 @@ namespace ValheimVRMod.Utilities
             return EquipType.None;
         }
 
+        public static EquipType GetEquipTypeFromHash(int hash)
+        {
+            var item = ObjectDB.instance.GetItemPrefab(hash);
+            if (item == null)
+            {
+                return EquipType.None;
+            }
+
+            var itemDrop = item.GetComponentInChildren<ItemDrop>();
+            if (itemDrop == null || itemDrop.m_itemData == null)
+            {
+                return EquipType.None;
+            }
+
+            return EquipScript.getEquippedItem(itemDrop.m_itemData);
+        }
+
         public static EquipType getEquippedItem(ItemDrop.ItemData item)
         {
             var equip = getRightEquipType(item);

@@ -26,7 +26,7 @@ namespace ValheimVRMod.Scripts
         private LineRenderer stringRenderer;
         private LineRenderer leverRenderer;
         private float maxDrawDelta;
-        private Transform mainHand;
+        private Transform arrowHandTransform;
         private ItemDrop.ItemData weapon;
         private GameObject bolt;
         private GameObject boltAttach;
@@ -57,9 +57,9 @@ namespace ValheimVRMod.Scripts
         void Start()
         {
             instance = this;
-            mainHand = VRPlayer.dominantHand.transform;
+            arrowHandTransform = VRPlayer.arrowHand.transform;
             boltAttach = new GameObject();
-            boltAttach.transform.SetParent(mainHand, false);
+            boltAttach.transform.SetParent(arrowHandTransform, false);
             weapon = Player.m_localPlayer.GetLeftItem();
         }
 
@@ -127,7 +127,7 @@ namespace ValheimVRMod.Scripts
             }
             else
             {
-                Vector3 handOffsetFromPivot = transform.InverseTransformPoint(mainHand.position) - leverPivot;
+                Vector3 handOffsetFromPivot = transform.InverseTransformPoint(arrowHandTransform.position) - leverPivot;
                 realLifeDrawPercentage =
                     Mathf.Clamp01(
                         0.5f -
@@ -158,7 +158,7 @@ namespace ValheimVRMod.Scripts
                 if (Player.m_localPlayer.IsWeaponLoaded())
                 {
                     // The unloaded crossbow object is set inactive upon successful weapon reload, which is a good point to provide haptic feedback.
-                    VRPlayer.dominantHand.hapticAction.Execute(0, 0.2f, 100, 0.3f, VRPlayer.dominantHandInputSource);
+                    VRPlayer.arrowHand.hapticAction.Execute(0, 0.2f, 100, 0.3f, VRPlayer.arrowHandInputSource);
                 }
             }
         }
@@ -257,7 +257,7 @@ namespace ValheimVRMod.Scripts
 
         public bool IsHandClosePullStart()
         {
-            return !CrossbowManager.isCurrentlyTwoHanded() && anatomy != null && Vector3.Distance(mainHand.position, pullStart.position) <= MAX_NOCKING_DISTANCE;
+            return !CrossbowManager.isCurrentlyTwoHanded() && anatomy != null && Vector3.Distance(arrowHandTransform.position, pullStart.position) <= MAX_NOCKING_DISTANCE;
         }
 
         private void UpdatePullStatus()
@@ -273,7 +273,7 @@ namespace ValheimVRMod.Scripts
             bool wasPulling = isPulling;
             isPulling =
                 !Player.m_localPlayer.IsWeaponLoaded() &&
-                SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource) &&
+                SteamVR_Actions.valheim_Grab.GetState(VRPlayer.arrowHandInputSource) &&
                 (wasPulling || IsHandClosePullStart());
             if (isPulling)
             {
@@ -282,7 +282,7 @@ namespace ValheimVRMod.Scripts
                     Player.m_localPlayer.ResetLoadedWeapon();
                     Player.m_localPlayer.QueueReloadAction();
                 }
-                VrikCreator.GetLocalPlayerDominantHandConnector().position =
+                VrikCreator.GetLocalPlayerArrowHandConnector().position =
                     Vector3.Lerp(leverRenderer.GetPosition(1), leverRenderer.GetPosition(2), 0.5f);
 
                 isBoltLoaded = bolt != null;
@@ -293,7 +293,7 @@ namespace ValheimVRMod.Scripts
                 if (!Player.m_localPlayer.IsWeaponLoaded())
                 {
                     Player.m_localPlayer.CancelReloadAction();
-                    boltAttach.transform.SetParent(mainHand, false);
+                    boltAttach.transform.SetParent(arrowHandTransform, false);
                     boltAttach.transform.localPosition = Vector3.zero;
                     isBoltLoaded = false;
                 }
@@ -407,13 +407,15 @@ namespace ValheimVRMod.Scripts
                 //bHaptics
                 if (!BhapticsTactsuit.suitDisabled)
                 {
-                    BhapticsTactsuit.PlaybackHaptics(VHVRConfig.LeftHanded() ?
-                         "HolsterArrowLeftShoulder" : "HolsterArrowRightShoulder");
+                    BhapticsTactsuit.PlaybackHaptics(
+                        VRPlayer.isRightHandMainWeaponHand ?
+                        "HolsterArrowRightShoulder" :
+                        "HolsterArrowLeftShoulder");
                 }
                 return;
             }
 
-            boltAttach.transform.SetParent(mainHand);
+            boltAttach.transform.SetParent(arrowHandTransform);
             boltAttach.transform.localRotation = Quaternion.identity;
             boltAttach.transform.localPosition = Vector3.zero;
 
@@ -425,8 +427,10 @@ namespace ValheimVRMod.Scripts
             //bHaptics
             if (!BhapticsTactsuit.suitDisabled)
             {
-                BhapticsTactsuit.PlaybackHaptics(VHVRConfig.LeftHanded() ?
-                    "UnholsterArrowLeftShoulder" : "UnholsterArrowRightShoulder");
+                BhapticsTactsuit.PlaybackHaptics(
+                    VRPlayer.isRightHandMainWeaponHand ?
+                    "UnholsterArrowRightShoulder" :
+                    "UnholsterArrowLeftShoulder");
             }
         }
 
@@ -485,7 +489,7 @@ namespace ValheimVRMod.Scripts
                 !CrossbowManager.isCurrentlyTwoHanded() &&
                 isHoldingBolt() &&
                 Player.m_localPlayer.IsWeaponLoaded() &&
-                Vector3.Distance(mainHand.transform.position, transform.TransformPoint(anatomy.anchorPoint)) <= 0.2f)
+                Vector3.Distance(arrowHandTransform.transform.position, transform.TransformPoint(anatomy.anchorPoint)) <= 0.2f)
             {
                 boltAttach.transform.SetParent(transform.parent, false);
                 boltAttach.transform.localPosition = anchorpoint;

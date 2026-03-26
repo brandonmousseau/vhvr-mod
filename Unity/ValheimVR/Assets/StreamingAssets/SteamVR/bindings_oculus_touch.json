@@ -428,6 +428,8 @@
                },
                "mode" : "dpad",
                "parameters" : {
+                  "deadzone_pct" : "25",
+                  "overlap_pct" : "0",
                   "sub_mode" : "touch"
                },
                "path" : "/user/hand/right/input/joystick"
