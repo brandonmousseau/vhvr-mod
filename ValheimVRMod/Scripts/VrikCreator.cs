@@ -37,7 +37,7 @@ namespace ValheimVRMod.Scripts {
             vrik.solver.rightLeg.target = new GameObject().transform;
             vrik.solver.spine.headTarget = new GameObject().transform;
             vrik.solver.spine.pelvisTarget = new GameObject().transform;
-            if (playerObject == Player.m_localPlayer.gameObject)
+            if (Player.m_localPlayer != null && Player.m_localPlayer.gameObject == playerObject)
             {
                 localPlayerLeftHandConnector = new GameObject().transform;
                 localPlayerRightHandConnector = new GameObject().transform;
