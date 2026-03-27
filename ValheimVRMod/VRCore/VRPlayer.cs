@@ -1161,21 +1161,19 @@ namespace ValheimVRMod.VRCore
 
             if (shouldTrackFeet())
             {
-                vrikRef.solver.leftLeg.rotationWeight = vrikRef.solver.rightLeg.rotationWeight = 1;
-                vrikRef.solver.leftLeg.positionWeight = vrikRef.solver.rightLeg.positionWeight = 1;
+                VrikCreator.EnableFootTracking(vrikRef);
                 StaticObjects.leftFootCollision().gameObject.SetActive(true);
                 StaticObjects.rightFootCollision().gameObject.SetActive(true);
             }
             else
             {
-                vrikRef.solver.leftLeg.rotationWeight = vrikRef.solver.rightLeg.rotationWeight = 0;
-                vrikRef.solver.leftLeg.positionWeight = vrikRef.solver.rightLeg.positionWeight = 0;
+                VrikCreator.DisableFootTracking(vrikRef);
                 StaticObjects.leftFootCollision().gameObject.SetActive(false);
                 StaticObjects.rightFootCollision().gameObject.SetActive(false);
             }
         }
 
-        private bool shouldTrackFeet()
+        public bool shouldTrackFeet()
         {
             if (!VHVRConfig.TrackFeet() || !attachedToPlayer || Player.m_localPlayer == null || Player.m_localPlayer.IsAttached())
             {
@@ -1341,7 +1339,8 @@ namespace ValheimVRMod.VRCore
             rightFootPhysicsEstimator =
                 (rightFoot != null ? rightFoot : (rightFoot = new GameObject().transform)).gameObject.GetOrAddComponent<PhysicsEstimator>();
             leftFootPhysicsEstimator.refTransform = rightFootPhysicsEstimator.refTransform = _vrCameraRig;
-            vrikRef = VrikCreator.initialize(player.gameObject, leftHand.transform, rightHand.transform, cam.transform, pelvis);
+            vrikRef = VrikCreator.initialize(
+                player.gameObject, leftHand.transform, rightHand.transform, cam.transform, pelvis, leftFoot, rightFoot);
             if (vrikRef == null)
             {
                 return;
