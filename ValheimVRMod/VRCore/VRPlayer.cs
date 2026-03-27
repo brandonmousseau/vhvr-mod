@@ -1101,7 +1101,6 @@ namespace ValheimVRMod.VRCore
                 {
                     vrikRef.solver.spine.pelvisPositionWeight = 0;
                     vrikRef.solver.spine.pelvisRotationWeight = 1;
-                    pelvis.position = vrikRef.references.pelvis.position;
                     Vector3 pelvisFacing = inferPelvisFacingFromPlayerHeadingAndHands(player.transform, player.IsAttached());
                     pelvis.rotation = Quaternion.LookRotation(pelvisFacing, player.transform.up);
                     vrikRef.solver.spine.rootHeadingOffset = Vector3.SignedAngle(player.transform.forward, pelvisFacing, player.transform.up);
@@ -1111,8 +1110,6 @@ namespace ValheimVRMod.VRCore
                     vrikRef.solver.spine.pelvisPositionWeight = 1;
                     vrikRef.solver.spine.pelvisRotationWeight = 0;
                     pelvis.position = inferPelvisPositionFromHead(_vrCam.transform.up);
-                    Vector3 pelvisFacing = inferPelvisFacingFromPlayerHeadingAndHands(player.transform, player.IsAttached());
-                    pelvis.rotation = Quaternion.LookRotation(pelvisFacing, _vrCam.transform.up);
                     vrikRef.solver.spine.rootHeadingOffset = 0;
                 }
 
@@ -1349,7 +1346,6 @@ namespace ValheimVRMod.VRCore
             vrPlayerSync.camera = cam.gameObject;
             vrPlayerSync.leftHand = vrikRef.solver.leftArm.target.parent.gameObject;
             vrPlayerSync.rightHand = vrikRef.solver.rightArm.target.parent.gameObject;
-            vrPlayerSync.pelvis = pelvis.gameObject;
             VrikCreator.resetVrikHandTransform(player);
             var leftHandGesture = vrikRef.references.leftHand.gameObject.GetOrAddComponent<HandGesture>();
             var rightHandGesture = vrikRef.references.rightHand.gameObject.GetOrAddComponent<HandGesture>();
