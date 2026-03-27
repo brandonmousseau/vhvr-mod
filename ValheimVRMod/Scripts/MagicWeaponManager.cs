@@ -85,6 +85,19 @@ namespace ValheimVRMod.Scripts
                 return UseSwingForCurrentAttack() ? SwingLaunchManager.isThrowing : AttackTriggerAction.state;
             }
         }
+        
+        public static bool IsSecondaryAttack
+        {
+            get
+            {
+                if (!IsMagicWeaponEquipped)
+                {
+                    return false;
+                }
+                var mainHandTrigger = VRPlayer.isRightHandMainWeaponHand ? SteamVR_Actions.valheim_UseLeft.state : SteamVR_Actions.valheim_Use.state;
+                return mainHandTrigger;
+            }
+        }
 
         public static bool ShouldUseVanillaMagicAnimation(Player player)
         {

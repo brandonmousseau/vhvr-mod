@@ -723,6 +723,7 @@ namespace ValheimVRMod.Patches {
             {
                 attack = true;
                 attackHold = true;
+                secondaryAttack = MagicWeaponManager.IsSecondaryAttack;
             }
 
             if (EquipScript.getLeft() == EquipType.Crossbow && CrossbowManager.IsPullingTrigger())
@@ -772,6 +773,7 @@ namespace ValheimVRMod.Patches {
                         attack = true;
                         attackHold = true;
                         SwingLaunchManager.isThrowing = false;
+                        secondaryAttack = MagicWeaponManager.IsSecondaryAttack;
                     }
                     break;
 
