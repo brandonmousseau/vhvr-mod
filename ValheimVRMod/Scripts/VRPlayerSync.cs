@@ -236,9 +236,8 @@ namespace ValheimVRMod.Scripts {
             pkg.Write(weaponSyncLocalRotation);
             if (VRPlayer.vrPlayerInstance != null && VRPlayer.vrPlayerInstance.shouldTrackFeet())
             {
-                // TODO: make sure these work
-                // writeTransformRelativeToPlayer(pkg, VRPlayer.leftFoot);
-                // writeTransformRelativeToPlayer(pkg, VRPlayer.rightFoot);
+                writeTransformRelativeToPlayer(pkg, VRPlayer.leftFoot);
+                writeTransformRelativeToPlayer(pkg, VRPlayer.rightFoot);
             }
 
             GetComponent<ZNetView>().GetZDO().Set("vr_data", pkg.GetArray());
