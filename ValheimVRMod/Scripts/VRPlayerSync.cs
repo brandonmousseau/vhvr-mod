@@ -243,6 +243,9 @@ namespace ValheimVRMod.Scripts {
             writeData(pkg, camera, ownerVelocityCamera);
             writeData(pkg, leftHand, ownerVelocityLeft);
             writeData(pkg, rightHand, ownerVelocityRight);
+            pelvis.transform.SetPositionAndRotation(
+                VRPlayer.vrikRef.solver.spine.pelvis.solverPosition,
+                VRPlayer.vrikRef.solver.spine.pelvis.solverRotation);            
             writeData(pkg, pelvis, ownerVelocityCamera);
             writeFingers(pkg, VRPlayer.vrikRef.references.leftHand);
             writeFingers(pkg, VRPlayer.vrikRef.references.rightHand);
