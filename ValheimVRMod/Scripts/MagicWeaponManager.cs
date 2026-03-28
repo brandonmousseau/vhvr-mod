@@ -27,6 +27,8 @@ namespace ValheimVRMod.Scripts
         public static SteamVR_LaserPointer WeaponHandPointer { get { return IsInRightHand ? VRPlayer.rightPointer : VRPlayer.leftPointer; } }
         protected static SteamVR_Action_Boolean AttackTriggerAction { get { return IsInRightHand ? SteamVR_Actions.valheim_Use : SteamVR_Actions.valheim_UseLeft; } }
 
+        protected static SteamVR_Action_Boolean SecondaryTriggerAction { get { return IsInRightHand ? SteamVR_Actions.valheim_UseLeft : SteamVR_Actions.valheim_Use; } }
+
         public static Vector3 AimDir
         {
             get
@@ -83,6 +85,38 @@ namespace ValheimVRMod.Scripts
                 }
 
                 return UseSwingForCurrentAttack() ? SwingLaunchManager.isThrowing : AttackTriggerAction.state;
+            }
+        }
+        
+        public static bool IsSecondaryAttack
+        {
+            get
+            {
+                if (!IsMagicWeaponEquipped)
+                {
+                    return false;
+                }
+                //Check if there's Secondary Attack or not
+                var secondaryAttack = Player.m_localPlayer?.GetRightItem()?.m_shared.m_secondaryAttack;
+                return SecondaryTriggerAction.state && secondaryAttack.m_attackAnimation != "";
+            }
+        }
+        public static bool TrySecondaryAttack
+        {
+            get
+            {
+                if (!IsMagicWeaponEquipped)
+                {
+                    return false;
+                }
+                var secondaryAttack = Player.m_localPlayer?.GetRightItem()?.m_shared.m_secondaryAttack;
+                var isEitrEnough = false;
+                if (SecondaryTriggerAction.state && secondaryAttack.m_attackAnimation != "")
+                {
+                    //Check If eitr enough or not
+                    isEitrEnough = Player.m_localPlayer.TryUseEitr(secondaryAttack.m_attackEitr);
+                }
+                return isEitrEnough;
             }
         }
 
