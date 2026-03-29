@@ -112,6 +112,7 @@ namespace ValheimVRMod.VRCore.UI
             new HealthPanelElement(), //Vertical START
             new StaminaPanelElement(), //Horizontal START
             new EitrPanelElement(), //Horizontal START
+            new AdrenalinePanelElement(), //Horizontal START
             new StaggerPanelElement(), //Horizontal START
             new MinimapPanelElement(),
             new BuildSelectedInfoElement()

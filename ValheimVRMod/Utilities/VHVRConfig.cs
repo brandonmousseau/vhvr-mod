@@ -85,6 +85,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<string> healthPanelPlacement;
         private static ConfigEntry<string> staminaPanelPlacement;
         private static ConfigEntry<string> eitrPanelPlacement;
+        private static ConfigEntry<string> adrenalinePanelPlacement;
         private static ConfigEntry<string> staggerPanelPlacement;
         private static ConfigEntry<string> minimapPanelPlacement;
         private static ConfigEntry<bool> allowHudFade;
@@ -600,6 +601,11 @@ namespace ValheimVRMod.Utilities
                                             "EitrPanelPlacement",
                                             "CameraLocked",
                                             new ConfigDescription("Where should the eitr panel be placed?",
+                                                new AcceptableValueList<string>(k_HudAlignmentValues)));
+            adrenalinePanelPlacement = config.Bind("VRHUD",
+                                            "AdrenalinePanelPlacement",
+                                            "CameraLocked",
+                                            new ConfigDescription("Where should the Adrenaline panel be placed?",
                                                 new AcceptableValueList<string>(k_HudAlignmentValues)));
             staggerPanelPlacement = config.Bind("VRHUD",
                                             "StaggerPanelPlacement",
@@ -1701,6 +1707,10 @@ namespace ValheimVRMod.Utilities
         public static string StaminaPanelPlacement()
         {
             return staminaPanelPlacement.Value;
+        }
+        public static string AdrenalinePanelPlacement()
+        {
+            return adrenalinePanelPlacement.Value;
         }
 
         public static string EitrPanelPlacement()
