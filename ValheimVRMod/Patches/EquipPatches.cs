@@ -252,6 +252,7 @@ namespace ValheimVRMod.Patches {
                             return;
                     }
                 }
+                return;
             }
 
             if (VHVRConfig.NonVrPlayer())
