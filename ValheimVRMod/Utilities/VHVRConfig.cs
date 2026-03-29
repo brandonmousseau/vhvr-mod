@@ -6,6 +6,7 @@ using Unity.XR.OpenVR;
 using ValheimVRMod.VRCore;
 using UnityEngine;
 using XGamingRuntime;
+using ValheimVRMod.VRCore.UI;
 
 namespace ValheimVRMod.Utilities
 {
@@ -453,11 +454,12 @@ namespace ValheimVRMod.Utilities
                                       3f,
                                       new ConfigDescription("Size for the UI panel display (non-Overlay GUI).",
                                       new AcceptableValueRange<float>(0.5f, 15f)));
-
+            uiPanelSize.SettingChanged += (sender, e) => VRGUI.UpdateUIPanelSize();
             uiPanelResolution = config.Bind("UI",
                                       "UIPanelResolution",
                                       new Vector2(1920, 1080),
                                       new ConfigDescription("The resolution of the UI Panel display (non-Overlay GUI), Use above 1300 width and 940 height for no crop/clipping for vanilla ui, need restart to update"));
+            uiPanelResolution.SettingChanged += (sender, e) => VRGUI.UpdateUIPanelSize();
             uiPanelResolutionCompat = config.Bind("UI",
                                       "UIPanelResolutionCompatibility",
                                       false,
@@ -467,11 +469,13 @@ namespace ValheimVRMod.Utilities
                                       3f,
                                       new ConfigDescription("Distance to draw the UI panel at.",
                                       new AcceptableValueRange<float>(0.5f, 15f)));
+            uiPanelDistance.SettingChanged += (sender, e) => VRGUI.UpdateUIPanelSize();
             uiPanelVerticalOffset = config.Bind("UI",
                                       "UIPanelVerticalOffset",
                                       1f,
                                       new ConfigDescription("Height the UI Panel will be drawn.",
                                       new AcceptableValueRange<float>(-0.5f, 3f)));
+            uiPanelVerticalOffset.SettingChanged += (sender, e) => VRGUI.UpdateUIPanelSize();
             showStaticCrosshair = config.Bind("UI",
                                    "ShowStaticCrosshair",
                                    true,
