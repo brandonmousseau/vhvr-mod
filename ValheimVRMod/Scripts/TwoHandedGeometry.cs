@@ -295,7 +295,8 @@ namespace ValheimVRMod.Scripts
         public class DundrGeometryProvider : TwoHandedGeometryProvider
         {
             private static readonly Vector3 DUNDR_OFFSET = new Vector3(-0.1f, 0, 0.2f);
-            private static readonly Quaternion DUNDR_OFFSET_ANGLE = Quaternion.Euler(0, 55f, 0);
+            private static readonly Quaternion DUNDR_OFFSET_ANGLE_LEFT = Quaternion.Euler(-25f, 55f, 0);
+            private static readonly Quaternion DUNDR_OFFSET_ANGLE_RIGHT = Quaternion.Euler(0, 55f, 0);
 
             public Vector3 GetWeaponPointingDirection(Transform weaponTransform, Vector3 longestLocalExtrusion)
             {
@@ -304,12 +305,14 @@ namespace ValheimVRMod.Scripts
 
             public Vector3 GetDesiredSingleHandedPosition(WeaponWield weaponWield)
             {
-                return weaponWield.originalPosition + weaponWield.originalRotation * DUNDR_OFFSET_ANGLE * DUNDR_OFFSET;
+                return weaponWield.originalPosition + GetDesiredSingleHandedRotation(weaponWield) * DUNDR_OFFSET;
             }
 
             public Quaternion GetDesiredSingleHandedRotation(WeaponWield weaponWield)
             {
-                return weaponWield.originalRotation * DUNDR_OFFSET_ANGLE;
+                return VRPlayer.isRightHandMainWeaponHand ?
+                    weaponWield.originalRotation * DUNDR_OFFSET_ANGLE_RIGHT :
+                    weaponWield.originalRotation * DUNDR_OFFSET_ANGLE_LEFT;
             }
 
             public Vector3 GetPreferredTwoHandedWeaponUp(WeaponWield weaponWield)

@@ -97,6 +97,7 @@ namespace ValheimVRMod.Scripts
                     }
                     else if (!isLocal)
                     {
+                        // TODO: use EquipScript.GetEquipTypeFromHash() instead of just remove this if weapon wield will only be used locally in the future
                         equipType = WeaponUtils.GuesstEquipTypeFromShape(weaponLength, distanceBetweenGripAndRearEnd, isDominantHandWeapon);
                     }
                 }

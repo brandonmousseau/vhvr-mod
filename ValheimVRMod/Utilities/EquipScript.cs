@@ -266,6 +266,20 @@ namespace ValheimVRMod.Utilities
             }
         }
 
+        public static bool isCompatibleWithParryingKnife()
+        {
+            switch (getRight())
+            {
+                case EquipType.Axe:
+                case EquipType.Club:
+                case EquipType.Knife:
+                case EquipType.Sword:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
         public static ItemDrop.ItemData equipAmmo()
         {
             if (getLeft() != EquipType.Bow && getLeft() != EquipType.Crossbow)

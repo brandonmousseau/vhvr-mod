@@ -29,7 +29,7 @@ namespace ValheimVRMod.Scripts {
         public EquipType leftHandEquipType { get { return isLeftHanded ? mainHandEquipType : offHandEquipType; } }
         public EquipType rightHandEquipType { get { return isLeftHanded ? offHandEquipType : mainHandEquipType; } }
         public bool hasReceivedData { get; private set; }
-        public bool hasFootData { get; private set; } = false;
+        public bool receivingFootData { get; private set; } = false;
 
         private bool hasReceivedWeaponSync = false;
         private bool clientIsLeftHanded = false; 
@@ -99,37 +99,6 @@ namespace ValheimVRMod.Scripts {
             }
 
             clientSync(dt);
-
-            // Client isLeftHanded sync may happen after equipping.
-            // Force re-equip to trigger a patch with the updated isLeftHanded.
-            var mainHandItem = player.m_visEquipment.m_rightItemInstance;
-            if (player.m_visEquipment.m_currentRightItemHash != 0 && mainHandItem != null)
-            {
-                if (isLeftHanded ?
-                    mainHandItem.transform.parent == player.m_visEquipment.m_rightHand :
-                    mainHandItem.transform.parent == player.m_visEquipment.m_leftHand)
-                {
-                    LogUtils.LogDebug("Switching main hand item to the other hand");
-                    var hash = player.m_visEquipment.m_currentRightItemHash;
-                    player.m_visEquipment.SetRightHandEquipped(0);
-                    player.m_visEquipment.SetRightHandEquipped(hash);
-                }
-            }
-
-            var offHandItem = player.m_visEquipment.m_leftItemInstance;
-            if (player.m_visEquipment.m_currentLeftItemHash != 0 && offHandItem != null)
-            {
-                if (isLeftHanded ?
-                    offHandItem.transform.parent == player.m_visEquipment.m_leftHand :
-                    offHandItem.transform.parent == player.m_visEquipment.m_rightHand)
-                {
-                    LogUtils.LogDebug("Switching secondary hand item to right hand");
-                    var hash = player.m_visEquipment.m_currentLeftItemHash;
-                    var variant = player.m_visEquipment.m_currentLeftItemVariant;
-                    player.m_visEquipment.SetLeftHandEquipped(0, 0);
-                    player.m_visEquipment.SetLeftHandEquipped(hash, variant);
-                }
-            }
         }
 
         public void DestroyVrik()
@@ -240,27 +209,36 @@ namespace ValheimVRMod.Scripts {
             }
 
             ZPackage pkg = new ZPackage();
+
             writeData(pkg, camera, ownerVelocityCamera);
+            // TODO: enable this check
+            // if (!VRPlayer.vrikRef.enabled)
+            // {
+            // Stati that should temporarily disable VRIK such as sleeping/staggering/dodging are not sent over network,
+            // so we send a vr_data package short of further data to signal remote players that VRIK is temporarily disabled
+            //    GetComponent<ZNetView>().GetZDO().Set("vr_data", pkg.GetArray());
+            //    return;
+            // }
+
             writeData(pkg, leftHand, ownerVelocityLeft);
             writeData(pkg, rightHand, ownerVelocityRight);
             pelvis.transform.SetPositionAndRotation(
                 VRPlayer.vrikRef.solver.spine.pelvis.solverPosition,
-                VRPlayer.vrikRef.solver.spine.pelvis.solverRotation);            
+                VRPlayer.vrikRef.solver.spine.pelvis.solverRotation);
             writeData(pkg, pelvis, ownerVelocityCamera);
             writeFingers(pkg, VRPlayer.vrikRef.references.leftHand);
             writeFingers(pkg, VRPlayer.vrikRef.references.rightHand);
             pkg.Write(BowLocalManager.instance != null && BowLocalManager.instance.pulling);
             pkg.Write(isLeftHanded);
-            pkg.Write((byte) (twoHandedState = LocalWeaponWield.LocalPlayerTwoHandedState));
+            pkg.Write((byte)(twoHandedState = LocalWeaponWield.LocalPlayerTwoHandedState));
             pkg.Write(InverseHold());
             pkg.Write(weaponSyncLocalPosition);
             pkg.Write(weaponSyncLocalRotation);
             if (VRPlayer.vrPlayerInstance != null && VRPlayer.vrPlayerInstance.shouldTrackFeet())
             {
-                // TODO: make sure these work
-                // writeTransformRelativeToPlayer(pkg, VRPlayer.leftFoot);
-                // writeTransformRelativeToPlayer(pkg, VRPlayer.rightFoot);
-            } 
+                writeTransformRelativeToPlayer(pkg, VRPlayer.leftFoot);
+                writeTransformRelativeToPlayer(pkg, VRPlayer.rightFoot);
+            }
 
             GetComponent<ZNetView>().GetZDO().Set("vr_data", pkg.GetArray());
         }
@@ -302,6 +280,18 @@ namespace ValheimVRMod.Scripts {
             deltaTimeCounter = Mathf.Min(deltaTimeCounter, 2f);
 
             extractAndUpdate(pkg, ref camera, ref clientTempRelPosCamera, hasTempRelPos);
+
+            if (!hasMoreData(pkg))
+            {
+                // If the remote player sends a vr_data package with only camera data but nothing else,
+                // they are trying to signal that VRIK should be temporarily disabled (e. g. due to sleeping/staggering/dodging).
+                if (vrikSync != null)
+                {
+                    vrikSync.enabled = false;
+                }
+                return;
+            }
+
             extractAndUpdate(pkg, ref leftHand, ref clientTempRelPosLeft, hasTempRelPos);
             extractAndUpdate(pkg, ref rightHand, ref clientTempRelPosRight, hasTempRelPos);
             extractAndUpdate(pkg, ref pelvis, ref clientTempRelPosPelvis, hasTempRelPos);
@@ -309,9 +299,7 @@ namespace ValheimVRMod.Scripts {
             maybeAddVrik();
             if (vrikSync != null)
             {
-                // TODO: Consider creating a method that does this check and can be used both here
-                // and in VRPlayer.
-                vrikSync.enabled = !player.InDodge() && !player.IsStaggering() && !player.IsSleeping();
+                vrikSync.enabled = true;
             }
             readFingers(pkg);
             maybePullBow(pkg.ReadBool());
@@ -326,11 +314,11 @@ namespace ValheimVRMod.Scripts {
             }
             if (hasMoreData(pkg))
             {
-                ExtractAndSmoothUpdatePositionRelativeToPlayer(pkg, ref leftFoot, ref clientTempRelPosLeftFoot, hasFootData);
+                ExtractAndSmoothUpdatePositionRelativeToPlayer(pkg, ref leftFoot, ref clientTempRelPosLeftFoot, receivingFootData);
                 updateRotation(leftFoot, pkg.ReadQuaternion());
-                ExtractAndSmoothUpdatePositionRelativeToPlayer(pkg, ref rightFoot, ref clientTempRelPosRightFoot, hasFootData);
+                ExtractAndSmoothUpdatePositionRelativeToPlayer(pkg, ref rightFoot, ref clientTempRelPosRightFoot, receivingFootData);
                 updateRotation(rightFoot, pkg.ReadQuaternion());
-                hasFootData = true;
+                receivingFootData = true;
                 if (vrikSync != null)
                 {
                     VrikCreator.EnableFootTracking(vrikSync);
@@ -338,13 +326,49 @@ namespace ValheimVRMod.Scripts {
             }
             else
             {
-                hasFootData = false;
+                receivingFootData = false;
                 if (vrikSync != null)
                 {
                     VrikCreator.DisableFootTracking(vrikSync);
                 }
             }
             hasTempRelPos = true;
+
+            correctHandedness();
+        }
+
+        private void correctHandedness()
+        {
+            // Client isLeftHanded sync may happen after equipping.
+            // Force re-equip to trigger a patch with the updated isLeftHanded.
+            var mainHandItem = player.m_visEquipment.m_rightItemInstance;
+            var mainHandItemHash = player.m_visEquipment.m_currentRightItemHash;
+            if (mainHandItem != null && mainHandItemHash != 0)
+            {
+                if (isLeftHanded ?
+                    mainHandItem.transform.parent == player.m_visEquipment.m_rightHand :
+                    mainHandItem.transform.parent == player.m_visEquipment.m_leftHand)
+                {
+                    LogUtils.LogDebug("Switching main hand item to the other hand");
+                    player.m_visEquipment.SetRightHandEquipped(0);
+                    player.m_visEquipment.SetRightHandEquipped(mainHandItemHash);
+                }
+            }
+
+            var offHandItem = player.m_visEquipment.m_leftItemInstance;
+            var offHandItemHash = player.m_visEquipment.m_currentLeftItemHash;
+            if (offHandItem != null && offHandItemHash != 0)
+            {
+                if (isLeftHanded ?
+                    offHandItem.transform.parent == player.m_visEquipment.m_leftHand :
+                    offHandItem.transform.parent == player.m_visEquipment.m_rightHand)
+                {
+                    LogUtils.LogDebug("Switching secondary hand item to right hand");
+                    var variant = player.m_visEquipment.m_currentLeftItemVariant;
+                    player.m_visEquipment.SetLeftHandEquipped(0, 0);
+                    player.m_visEquipment.SetLeftHandEquipped(offHandItemHash, variant);
+                }
+            }
         }
 
         private void maybePullBow(bool pulling) {
