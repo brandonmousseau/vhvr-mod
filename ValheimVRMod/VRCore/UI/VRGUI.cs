@@ -548,9 +548,13 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return;
             }
+            
+            var localHit = _uiPanel.InverseTransformPoint(e.position);
+            var localStart = _uiPanel.InverseTransformPoint(VRPlayer.activePointer.rayStartingPosition);
+            // Improve cursor precision when player is fast moving
+            var correctedLocalHit = Vector3.LerpUnclamped(localHit, localStart, localHit.z / (localHit.z - localStart.z));
+            SoftwareCursor.simulatedMousePosition = convertLocalUiPanelCoordinatesToCursorCoordinates(correctedLocalHit);
 
-            SoftwareCursor.simulatedMousePosition =
-                convertLocalUiPanelCoordinatesToCursorCoordinates(_uiPanel.InverseTransformPoint(e.position));
             _inputModule.UpdateButtonStates(e.buttonStateLeft, e.buttonStateRight, false);
         }
 
