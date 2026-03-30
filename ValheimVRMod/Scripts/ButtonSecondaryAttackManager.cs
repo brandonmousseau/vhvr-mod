@@ -186,7 +186,9 @@ namespace ValheimVRMod.Scripts
             {
                 rangeMultiplier = 1.5f;
             }
-            if (secondaryAttack.m_attackAnimation == "" || obj.gameObject.GetComponent<ThrowableManager>() != null)
+
+            //Check if There's secondary attack animation, is not a spear throwing, and not a magic weapon
+            if (secondaryAttack.m_attackAnimation == "" || obj.gameObject.GetComponent<ThrowableManager>() != null || EquipScript.getRight() == EquipType.Magic)
             {
                 isSecondaryAvailable = false;
             }

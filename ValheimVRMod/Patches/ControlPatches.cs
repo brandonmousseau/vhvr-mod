@@ -721,8 +721,19 @@ namespace ValheimVRMod.Patches {
 
             if (EquipScript.getLeft() == EquipType.Magic && MagicWeaponManager.AttemptingAttack)
             {
-                attack = true;
-                attackHold = true;
+                //Check if there's secondary attack or not, if not, fallback to normal attack
+                if (MagicWeaponManager.IsSecondaryAttack)
+                {
+                    var canSecondaryAttack = MagicWeaponManager.TrySecondaryAttack;
+                    attack = canSecondaryAttack;
+                    attackHold = canSecondaryAttack;
+                    secondaryAttack = canSecondaryAttack;
+                }
+                else
+                {
+                    attack = true;
+                    attackHold = true;
+                }
             }
 
             if (EquipScript.getLeft() == EquipType.Crossbow && CrossbowManager.IsPullingTrigger())
@@ -769,8 +780,19 @@ namespace ValheimVRMod.Patches {
                 case EquipType.Magic:
                     if (MagicWeaponManager.AttemptingAttack)
                     {
-                        attack = true;
-                        attackHold = true;
+                        //Check if there's secondary attack or not, if not, fallback to normal attack
+                        if (MagicWeaponManager.IsSecondaryAttack)
+                        {
+                            var canSecondaryAttack = MagicWeaponManager.TrySecondaryAttack;
+                            attack = canSecondaryAttack;
+                            attackHold = canSecondaryAttack;
+                            secondaryAttack = canSecondaryAttack;
+                        }
+                        else
+                        {
+                            attack = true;
+                            attackHold = true;
+                        }
                         SwingLaunchManager.isThrowing = false;
                     }
                     break;
