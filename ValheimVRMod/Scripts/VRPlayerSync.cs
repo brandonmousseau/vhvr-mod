@@ -211,14 +211,13 @@ namespace ValheimVRMod.Scripts {
             ZPackage pkg = new ZPackage();
 
             writeData(pkg, camera, ownerVelocityCamera);
-            // TODO: enable this check
-            // if (!VRPlayer.vrikRef.enabled)
-            // {
-            // Stati that should temporarily disable VRIK such as sleeping/staggering/dodging are not sent over network,
-            // so we send a vr_data package short of further data to signal remote players that VRIK is temporarily disabled
-            //    GetComponent<ZNetView>().GetZDO().Set("vr_data", pkg.GetArray());
-            //    return;
-            // }
+            if (!VRPlayer.vrikRef.enabled)
+            {
+                // Stati that should temporarily disable VRIK such as sleeping/staggering/dodging are not sent over network,
+                // so we send a vr_data package short of further data to signal remote players that VRIK is temporarily disabled
+                GetComponent<ZNetView>().GetZDO().Set("vr_data", pkg.GetArray());
+                return;
+            }
 
             writeData(pkg, leftHand, ownerVelocityLeft);
             writeData(pkg, rightHand, ownerVelocityRight);
