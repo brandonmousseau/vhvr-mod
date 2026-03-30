@@ -347,19 +347,7 @@ namespace ValheimVRMod.VRCore.UI
 
             if (attachingInventoryToHand)
             {
-                // Use off-hand (non-dominant hand) to hold the inventory panel
-                if (VHVRConfig.LeftHanded())
-                {
-                    _uiPanel.SetPositionAndRotation(
-                        VRPlayer.rightHand.transform.TransformPoint(new Vector3(0f, 0.0625f, 0.125f)),
-                        VRPlayer.rightHand.transform.rotation * Quaternion.Euler(75, 90, 60));
-                }
-                else
-                {
-                    _uiPanel.SetPositionAndRotation(
-                        VRPlayer.leftHand.transform.TransformPoint(new Vector3(0f, 0.0625f, 0.125f)),
-                        VRPlayer.leftHand.transform.rotation * Quaternion.Euler(75, 270, 300));
-                }
+                UpdateHandAttachedTransform();
                 return;
             }
 
@@ -548,7 +536,10 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return;
             }
-            
+
+            // TODO: consider parenting _uiPanel to hand when inventory is open
+            UpdateHandAttachedTransform();
+
             var localHit = _uiPanel.InverseTransformPoint(e.position);
             var localStart = _uiPanel.InverseTransformPoint(VRPlayer.activePointer.rayStartingPosition);
             // Improve cursor precision when player is fast moving
@@ -556,6 +547,28 @@ namespace ValheimVRMod.VRCore.UI
             SoftwareCursor.simulatedMousePosition = convertLocalUiPanelCoordinatesToCursorCoordinates(correctedLocalHit);
 
             _inputModule.UpdateButtonStates(e.buttonStateLeft, e.buttonStateRight, false);
+        }
+
+        private void UpdateHandAttachedTransform()
+        {
+            if (!attachingInventoryToHand)
+            {
+                return;
+            }
+
+            // Use off-hand (non-dominant hand) to hold the inventory panel
+            if (VHVRConfig.LeftHanded())
+            {
+                _uiPanel.SetPositionAndRotation(
+                    VRPlayer.rightHand.transform.TransformPoint(new Vector3(0f, 0.0625f, 0.125f)),
+                    VRPlayer.rightHand.transform.rotation * Quaternion.Euler(75, 90, 60));
+            }
+            else
+            {
+                _uiPanel.SetPositionAndRotation(
+                    VRPlayer.leftHand.transform.TransformPoint(new Vector3(0f, 0.0625f, 0.125f)),
+                    VRPlayer.leftHand.transform.rotation * Quaternion.Euler(75, 270, 300));
+            }
         }
 
         private Vector2 convertLocalUiPanelCoordinatesToCursorCoordinates(Vector3 localCoordinates)
