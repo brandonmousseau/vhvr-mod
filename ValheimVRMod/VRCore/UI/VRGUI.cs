@@ -436,7 +436,8 @@ namespace ValheimVRMod.VRCore.UI
             return InventoryGui.instance == null ||
                 InventoryGui.instance.IsContainerOpen() ||
                 Player.m_localPlayer == null ||
-                Player.m_localPlayer.m_inCraftingStation;
+                Player.m_localPlayer.m_inCraftingStation ||
+                Player.m_localPlayer.IsAttachedToShip();
         }
 
         private bool ensureUIPanel()
@@ -549,7 +550,7 @@ namespace ValheimVRMod.VRCore.UI
             }
 
             SoftwareCursor.simulatedMousePosition =
-                convertLocalUiPanelCoordinatesToCursorCoordinates(e.target.InverseTransformPoint(e.position));
+                convertLocalUiPanelCoordinatesToCursorCoordinates(_uiPanel.InverseTransformPoint(e.position));
             _inputModule.UpdateButtonStates(e.buttonStateLeft, e.buttonStateRight, false);
         }
 
