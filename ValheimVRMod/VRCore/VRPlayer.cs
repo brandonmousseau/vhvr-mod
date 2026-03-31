@@ -125,7 +125,17 @@ namespace ValheimVRMod.VRCore
         // character's hand bones as opposed to that of the VR controllers.
         public static Transform leftHandBone { get; private set; }
         public static Transform rightHandBone { get; private set; }
+
+        public static bool isLeftHandMainWeaponHand { get { return VHVRConfig.LeftHanded() ^ offHandWield; } }
         public static bool isRightHandMainWeaponHand { get { return VHVRConfig.LeftHanded() ^ !offHandWield; } }
+        public static ItemDrop.ItemData leftHandItem {
+            get { return isRightHandMainWeaponHand ? Player.m_localPlayer.GetLeftItem() :  Player.m_localPlayer.GetRightItem(); }
+        }
+        public static ItemDrop.ItemData rightHandItem
+        {
+            get { return isRightHandMainWeaponHand ? Player.m_localPlayer.GetRightItem() : Player.m_localPlayer.GetLeftItem(); }
+        }
+
         public static Hand mainWeaponHand { get { return isRightHandMainWeaponHand ? rightHand : leftHand; } }
 
         public static Hand arrowHand { get { return VHVRConfig.LeftHanded() ^ offHandWield ? leftHand : rightHand; } }
