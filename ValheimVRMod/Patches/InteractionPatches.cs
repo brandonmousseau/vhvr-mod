@@ -72,11 +72,16 @@ namespace ValheimVRMod.Patches
     {
         private static HandItemPatchTarget shouldChange;
 
-        public static void ShowLocalPlayerHandItem(bool isMainHandItem)
+        public static bool ShowLocalPlayerHandItem(bool isMainHandItem)
         {
+            if (isMainHandItem ? Player.m_localPlayer.m_hiddenRightItem == null : Player.m_localPlayer.m_hiddenLeftItem == null)
+            {
+                return false;
+            }
             shouldChange = isMainHandItem ? HandItemPatchTarget.MainHandOnly : HandItemPatchTarget.OffHandOnly;
             Player.m_localPlayer.ShowHandItems();
             shouldChange = HandItemPatchTarget.Both;
+            return true;
         }
 
         static bool Prefix(ref Humanoid __instance,
@@ -96,7 +101,6 @@ namespace ValheimVRMod.Patches
 
             if (shouldChange != HandItemPatchTarget.OffHandOnly && ___m_hiddenRightItem != null)
             {
-                // VRPlayer.offHandWield = contralateral;
                 ___m_hiddenRightItem = null;
                 __instance.EquipItem(hiddenRightItem);
                 ___m_hiddenLeftItem = hiddenLeftItem;
