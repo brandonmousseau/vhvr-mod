@@ -63,7 +63,7 @@ namespace ValheimVRMod.VRCore.UI.HudElements
 
         public void Update()
         {
-            if (ZInput.GetButton(VRControls.ToggleMiniMap))
+            if (GetButtonPatchUtils.GetButtonPatched(VRControls.ToggleMiniMap))
             {
                 if (!wasTogglingMap)
                 {
