@@ -242,7 +242,13 @@ namespace ValheimVRMod.Scripts
                         hasPendingToolUsageOutput = LocalWeaponWield.isCurrentlyTwoHanded();
                         return;
                     case EquipType.Hammer:
-                        hasPendingToolUsageOutput = Player.m_localPlayer.InRepairMode();
+                        Piece hoveringPiece = Player.m_localPlayer.GetHoveringPiece();
+                        hasPendingToolUsageOutput =
+                            hoveringPiece != null &&
+                            Player.m_localPlayer.InRepairMode() &&
+                            collider.gameObject.layer == LayerUtils.PIECE &&
+                            (collider.GetComponent<Piece>() == hoveringPiece ||
+                             collider.GetComponentInParent<Piece>() == hoveringPiece);
                         return;
                     case EquipType.Scythe:
                         break;
