@@ -235,6 +235,53 @@ namespace ValheimVRMod.Patches {
         }
     }
 
+    [HarmonyPatch(typeof(PlayerController), "FixedUpdate")]
+    class PlayerControllerFixedUpdatePatch
+    {
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            // Necessary for "Jump" action if ZInput prefix/postfix stops working
+            return GetButtonPatchUtils.Transpiler(instructions);
+        }
+    }
+
+    [HarmonyPatch(typeof(Player), nameof(Player.Update))]
+    class PlayerUpdatePatch
+    {
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            // Necessary for "Use" action if ZInput prefix/postfix stops working
+            return GetButtonPatchUtils.Transpiler(instructions);
+        }
+    }
+
+    [HarmonyPatch(typeof(Player), nameof(Player.UpdateBuildGuiInput))]
+    class PlayerUpdateBuildGuiInputPatch
+    {
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            return GetButtonPatchUtils.Transpiler(instructions);
+        }
+    }
+
+    [HarmonyPatch(typeof(Menu), nameof(Menu.Update))]
+    class MenuUpdatePatch
+    {
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            return GetButtonPatchUtils.Transpiler(instructions);
+        }
+    }
+
+    [HarmonyPatch(typeof(Minimap), nameof(Minimap.Update))]
+    class MinimapUpdatePatch
+    {
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            return GetButtonPatchUtils.Transpiler(instructions);
+        }
+    }
+
     // Patch to enable rotation of pieces using VR control actions
     [HarmonyPatch(typeof(Player), "UpdatePlacement")]
     class Player_Update_Placement_PieceRotationPatch {
