@@ -80,6 +80,9 @@ namespace ValheimVRMod.VRCore.UI
         private static readonly string OVERLAY_KEY = "VALHEIM_VR_MOD_OVERLAY";
         private static readonly string OVERLAY_NAME = "Valheim VR";
         private static readonly string UI_PANEL_NAME = "VRUIPanel";
+        private static readonly Vector3 DESIRED_HAND_ATTACHED_LOCAL_POSITION = new Vector3(0f, 0.0625f, 0.125f);
+        private static readonly Quaternion DESIRED_ROTATION_ON_LEFT_HAND = Quaternion.Euler(75, 270, 300);
+        private static readonly Quaternion DESIRED_ROTATION_ON_RIGHT_HAND = Quaternion.Euler(75, 90, 60);
         // The angle difference that is acceptable for the GUI being
         // considered to be "centered"
         private static readonly float RECENTERED_TOLERANCE = 1f;
@@ -110,8 +113,8 @@ namespace ValheimVRMod.VRCore.UI
         private bool movingLastFrame = false;
         private Quaternion lastVrPlayerRotation = Quaternion.identity;
         private bool showingChatBox = false;
-        private bool isInventoryOpen;
-        private bool attachingInventoryToHand;
+        private bool isInventoryOrBuildMenuOpen;
+        private bool attachedToHand;
 
         // Native handle to OpenVR overlay
         private ulong _overlay = OpenVR.k_ulOverlayHandleInvalid;
@@ -203,6 +206,11 @@ namespace ValheimVRMod.VRCore.UI
 
         public void Update()
         {
+            if (SteamVR_Actions.valheim_ToggleInventory.GetStateDown(SteamVR_Input_Sources.Any))
+            {
+                tryToggleInventory();
+            }
+
             disableVanillaInputSystemUiInputModule();
             if (VHVRConfig.UseVrControls())
             {
@@ -260,6 +268,53 @@ namespace ValheimVRMod.VRCore.UI
             destroyOverlay();
         }
 
+        private void tryToggleInventory()
+        {
+            if (!canToggleInventory())
+            {
+                return;
+            }
+
+            if (InventoryGui.IsVisible())
+            {
+                InventoryGui.instance.Hide();
+                return;
+            }
+            
+            if (Minimap.instance != null && Minimap.instance.m_mode == Minimap.MapMode.Large)
+            {
+                Minimap.instance.SetMapMode(Minimap.MapMode.Small);
+            }
+
+            InventoryGui.instance.Show(null);
+        }
+
+        private bool canToggleInventory()
+        {
+            if (Chat.instance != null && Chat.instance.HasFocus())
+            {
+                return false;
+            }
+
+            if (global::Console.IsVisible() ||
+                Player.m_localPlayer == null ||
+                Player.m_localPlayer.InCutscene() ||
+                GameCamera.InFreeFly() ||
+                Menu.IsVisible())
+            {
+                return false;
+            }
+
+            if (TextViewer.instance && TextViewer.instance.IsVisible())
+            {
+                return false;
+            }
+
+            // TODO: also check this.m_craftTimer < 0f
+
+            return true;
+        }
+
         private void checkAndSetCurvatureUpdates()
         {
             if (Input.GetKeyDown(KeyCode.Minus))
@@ -302,26 +357,24 @@ namespace ValheimVRMod.VRCore.UI
                 return;
             }
 
-            bool wasInventoryOpen = isInventoryOpen;
-            isInventoryOpen = InventoryGui.IsVisible();
-            if (attachingInventoryToHand)
+            bool wasInventoryOrBuildMenuOpen = isInventoryOrBuildMenuOpen;
+            isInventoryOrBuildMenuOpen =
+                InventoryGui.IsVisible() ||
+                (Hud.instance?.m_pieceSelectionWindow != null && Hud.instance.m_pieceSelectionWindow.activeSelf);
+            if (attachedToHand)
             {
-                if (shouldInstantlyDetachInventoryFromHand())
+                if (shouldInstantlyDetachPanelFromHand())
                 {
-                    attachingInventoryToHand = false;
-                    _uiPanel.transform.localScale = desiredSize;
-                    triggerGuiRecenter();
+                    detachPanelFromHand(resetSize: true);
                 }
-                else if (!isInventoryOpen)
+                else if (!isInventoryOrBuildMenuOpen)
                 {
-                    attachingInventoryToHand = false;
-                    triggerGuiRecenter();
+                    detachPanelFromHand(resetSize: false);
                 }
             }
-            else if (!wasInventoryOpen && isInventoryOpen && !shouldInstantlyDetachInventoryFromHand())
+            else if (!wasInventoryOrBuildMenuOpen && isInventoryOrBuildMenuOpen && !shouldInstantlyDetachPanelFromHand())
             {
-                attachingInventoryToHand = true;
-                _uiPanel.transform.localScale = desiredHandAttachedSize;
+                attachPanelToHand();
             }
 
             if (shouldLockDynamicGuiPosition())
@@ -345,7 +398,7 @@ namespace ValheimVRMod.VRCore.UI
                 return;
             }
 
-            if (attachingInventoryToHand)
+            if (attachedToHand)
             {
                 UpdateHandAttachedTransform();
                 return;
@@ -411,7 +464,7 @@ namespace ValheimVRMod.VRCore.UI
 
         private bool shouldLockDynamicGuiPosition()
         {
-            return VHVRConfig.LockGuiWhileMenuOpen() && menuIsOpen() && !attachingInventoryToHand && !Player.m_localPlayer.IsAttachedToShip(); 
+            return VHVRConfig.LockGuiWhileMenuOpen() && menuIsOpen() && !attachedToHand && !Player.m_localPlayer.IsAttachedToShip(); 
         }
 
         private bool menuIsOpen()
@@ -419,13 +472,48 @@ namespace ValheimVRMod.VRCore.UI
             return StoreGui.IsVisible() || InventoryGui.IsVisible() || Menu.IsVisible() || Minimap.IsOpen();
         }
 
-        private bool shouldInstantlyDetachInventoryFromHand()
+        private bool shouldInstantlyDetachPanelFromHand()
         {
+            if (Minimap.instance != null && Minimap.instance.m_mode == Minimap.MapMode.Large)
+            {
+                return true;
+            }
+
             return InventoryGui.instance == null ||
                 InventoryGui.instance.IsContainerOpen() ||
                 Player.m_localPlayer == null ||
                 Player.m_localPlayer.m_inCraftingStation ||
                 Player.m_localPlayer.IsAttachedToShip();
+        }
+
+        private void attachPanelToHand()
+        {
+            attachedToHand = true;
+            _uiPanel.transform.localScale = desiredHandAttachedSize;
+            // if (VHVRConfig.LeftHanded())
+            // {
+            //     _uiPanel.transform.parent = VRPlayer.rightHand.transform;
+            //     _uiPanel.transform.localRotation = DESIRED_ROTATION_ON_RIGHT_HAND;
+            // }
+            // else
+            // {
+            //     _uiPanel.transform.parent = VRPlayer.leftHand.transform;
+            //     _uiPanel.transform.localRotation = DESIRED_ROTATION_ON_LEFT_HAND;
+            // }
+            //_uiPanel.localPosition = DESIRED_HAND_ATTACHED_LOCAL_POSITION;
+            //_uiPanel.gameObject.layer = LayerUtils.getUiPanelLayer();
+        }
+
+        private void detachPanelFromHand(bool resetSize)
+        {
+            attachedToHand = false;
+            if (resetSize)
+            {
+                _uiPanel.transform.localScale = desiredSize;
+            }
+            //_uiPanel.transform.parent = null;
+            //_uiPanel.gameObject.layer = LayerUtils.getUiPanelLayer();
+            triggerGuiRecenter();
         }
 
         private bool ensureUIPanel()
@@ -532,7 +620,7 @@ namespace ValheimVRMod.VRCore.UI
                 return;
             }
 
-            if (!isUiPanel(e.target))
+            if (!isUiPanel(e.target)) // && !attachingInventoryToHand)
             {
                 return;
             }
@@ -551,7 +639,7 @@ namespace ValheimVRMod.VRCore.UI
 
         private void UpdateHandAttachedTransform()
         {
-            if (!attachingInventoryToHand)
+            if (!attachedToHand)
             {
                 return;
             }
@@ -560,14 +648,14 @@ namespace ValheimVRMod.VRCore.UI
             if (VHVRConfig.LeftHanded())
             {
                 _uiPanel.SetPositionAndRotation(
-                    VRPlayer.rightHand.transform.TransformPoint(new Vector3(0f, 0.0625f, 0.125f)),
-                    VRPlayer.rightHand.transform.rotation * Quaternion.Euler(75, 90, 60));
+                    VRPlayer.rightHand.transform.TransformPoint(DESIRED_HAND_ATTACHED_LOCAL_POSITION),
+                    VRPlayer.rightHand.transform.rotation * DESIRED_ROTATION_ON_RIGHT_HAND);
             }
             else
             {
                 _uiPanel.SetPositionAndRotation(
-                    VRPlayer.leftHand.transform.TransformPoint(new Vector3(0f, 0.0625f, 0.125f)),
-                    VRPlayer.leftHand.transform.rotation * Quaternion.Euler(75, 270, 300));
+                    VRPlayer.leftHand.transform.TransformPoint(DESIRED_HAND_ATTACHED_LOCAL_POSITION),
+                    VRPlayer.leftHand.transform.rotation * DESIRED_ROTATION_ON_LEFT_HAND);
             }
         }
 

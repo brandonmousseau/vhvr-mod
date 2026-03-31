@@ -464,15 +464,13 @@ namespace ValheimVRMod.VRCore.UI
                 {
                     QuickAbstract.toggleMap = false;
                     return true;
-                } else
-                {
-                    if (VHVRConfig.MinimapPanelPlacement().Equals("Legacy"))
-                    {
-                        // Revert back to using the regular map toggle if the minimap is in legacy mode
-                        return GetButtonDown(ToggleMiniMap);
-                    }
-                    return false;
                 }
+                else if (VHVRConfig.MinimapPanelPlacement().Equals("Legacy"))
+                {
+                    // Revert back to using the regular map toggle if the minimap is in legacy mode
+                    return GetButtonDown(ToggleMiniMap);
+                }
+                return false;
             }
 
             // Handle Map zoom specially using context scroll input
@@ -882,7 +880,8 @@ namespace ValheimVRMod.VRCore.UI
         private void init()
         {
             zInputToBooleanAction.Add("JoyMenu", new[] { SteamVR_Actions.valheim_ToggleMenu });
-            zInputToBooleanAction.Add("Inventory", new[] { SteamVR_Actions.valheim_ToggleInventory });
+            // Inventory toggle is handled explicitly instead of emulating ZInput
+            // zInputToBooleanAction.Add("Inventory", new[] { SteamVR_Actions.valheim_ToggleInventory });
             zInputToBooleanAction.Add("Jump", new [] { SteamVR_Actions.valheim_Jump, SteamVR_Actions.laserPointers_Jump });
             zInputToBooleanAction.Add("Use", new[] { SteamVR_Actions.valheim_Use });
             zInputToBooleanAction.Add("Sit", new[] { SteamVR_Actions.valheim_Sit });
