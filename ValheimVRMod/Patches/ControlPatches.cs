@@ -385,100 +385,112 @@ namespace ValheimVRMod.Patches {
         }
     }
 
-    // This patch allows for optional use of releasing the trigger to build things
-    class BuildOnReleasePatches
+// We need to track when the piece selection menu was just hidden
+// as a result of the user clicking on it so that we don't
+// cause a placement right after the menu is closed and the
+// trigger is released.
+[HarmonyPatch(typeof(Hud), nameof(Hud.HidePieceSelection))]
+class BuildHudTracker
+{
+
+    public static bool buildHudJustToggledOff = false;
+
+    static void Postfix()
     {
+        buildHudJustToggledOff = true;
+    }
 
-        // We need to track when the piece selection menu was just hidden
-        // as a result of the user clicking on it so that we don't
-        // cause a placement right after the menu is closed and the
-        // trigger is released.
-        [HarmonyPatch(typeof(Hud), nameof(Hud.HidePieceSelection))]
-        class BuildHudTracker
+}
+
+[HarmonyPatch(typeof(Player), nameof(Player.UpdatePlacement))]
+class Player_UpdatePlacement_BuildInputPatch
+{
+    private static readonly string placementInput = "JoyPlace";
+
+    private static bool ShouldTriggerBuildPlacement(string inputName)
+    {
+        if (inputName != placementInput)
         {
-
-            public static bool buildHudJustToggledOff = false;
-
-            static void Postfix()
-            {
-                buildHudJustToggledOff = true;
-            }
-
+            return GetButtonPatchUtils.GetButtonDownPatched(inputName);
         }
 
-        [HarmonyPatch(typeof(Player), nameof(Player.UpdatePlacement))]
-        class Player_UpdatePlacement_BuildInputPatch
+        if (WeaponCollision.hasPendingToolUsageOutput)
         {
-            private static MethodInfo getButtonDownMethod =
-                AccessTools.Method(typeof(ZInput), nameof(ZInput.GetButtonDown), new[] { typeof(string) });
+            WeaponCollision.hasPendingToolUsageOutput = false;
+            return true;
+        }
 
-            private static readonly string placementInput = "JoyPlace";
-
-            private static bool ShouldTriggerBuildPlacement(string inputName)
+        if (!BuildingManager.instance)
+        {
+            return GetButtonPatchUtils.GetButtonDownPatched(inputName);
+        }
+        if (VHVRConfig.BuildOnRelease())
+        {
+            bool inputReceived = GetButtonPatchUtils.GetButtonUpPatched(inputName);
+            if (BuildHudTracker.buildHudJustToggledOff && inputReceived)
             {
-                if (WeaponCollision.hasPendingToolUsageOutput)
-                {
-                    WeaponCollision.hasPendingToolUsageOutput = false;
-                    return true;
-                }
-
-                if (!BuildingManager.instance)
-                {
-                    return ZInput.GetButtonDown(inputName);
-                }
-                if (VHVRConfig.BuildOnRelease())
-                {
-                    bool inputReceived = ZInput.GetButtonUp(inputName);
-                    if (BuildHudTracker.buildHudJustToggledOff && inputReceived)
-                    {
-                        // Since the build hud was just toggled off and the input was receieved,
-                        // we won't trigger the placement. Instead just reset the "buildHudJustToggledOff" flag
-                        LogUtils.LogDebug("Resetting buildHudToggledFlag");
-                        BuildHudTracker.buildHudJustToggledOff = false;
-                        return false;
-                    } else
-                    {
-                        if (inputReceived && !BuildingManager.instance.isCurrentlyMoving() && VHVRConfig.FreePlaceAutoReturn())
-                        {
-                            BuildingManager.instance.ExitPreciseMode();
-                        }
-                        if (BuildingManager.instance.isHoldingJump())
-                            return false;
-                        return inputReceived;
-                    }
-                }
-                else
-                {
-                    if (ZInput.GetButtonDown(inputName) && !BuildingManager.instance.isCurrentlyMoving() && VHVRConfig.FreePlaceAutoReturn())
-                    {
-                        BuildingManager.instance.ExitPreciseMode();
-                    }
-                    return ZInput.GetButtonDown(inputName);
-                }
-            }
-
-            static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+                // Since the build hud was just toggled off and the input was receieved,
+                // we won't trigger the placement. Instead just reset the "buildHudJustToggledOff" flag
+                LogUtils.LogDebug("Resetting buildHudToggledFlag");
+                BuildHudTracker.buildHudJustToggledOff = false;
+                return false;
+            } else
             {
-                var original = new List<CodeInstruction>(instructions);
-                var patched = new List<CodeInstruction>();
-                if (!VHVRConfig.UseVrControls())
+                if (inputReceived && !BuildingManager.instance.isCurrentlyMoving() && VHVRConfig.FreePlaceAutoReturn())
                 {
-                    return original;
+                    BuildingManager.instance.ExitPreciseMode();
                 }
-                for (int i = 0; i < original.Count; i++)
-                {
-                    var instruction = original[i];
-                    patched.Add(instruction);
-                    if (instruction.opcode == OpCodes.Ldstr && placementInput.Equals(instruction.operand) && original[i + 1].Calls(getButtonDownMethod))
-                    {
-                        i++; // skip the next instruction cause we are replacing it
-                        patched.Add(CodeInstruction.Call(typeof(Player_UpdatePlacement_BuildInputPatch),
-                            nameof(Player_UpdatePlacement_BuildInputPatch.ShouldTriggerBuildPlacement)));
-                    }
-                }
-                return patched;
+                if (BuildingManager.instance.isHoldingJump())
+                    return false;
+                return inputReceived;
             }
         }
+        else
+        {
+            if (GetButtonPatchUtils.GetButtonDownPatched(inputName) && !BuildingManager.instance.isCurrentlyMoving() && VHVRConfig.FreePlaceAutoReturn())
+            {
+                BuildingManager.instance.ExitPreciseMode();
+            }
+            return GetButtonPatchUtils.GetButtonDownPatched(inputName);
+        }
+    }
+
+    static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+    {
+        var original = new List<CodeInstruction>(instructions);
+        var patched = new List<CodeInstruction>();
+        if (!VHVRConfig.UseVrControls())
+        {
+            return original;
+        }
+        for (int i = 0; i < original.Count; i++)
+        {
+            var instruction = original[i];
+            patched.Add(instruction);
+            if (instruction.opcode != OpCodes.Ldstr)
+            {
+                continue;
+            }
+            if (original[i + 1].Calls(GetButtonPatchUtils.GetButtonDownOriginal))
+            {
+                patched.Add(
+                    CodeInstruction.Call(
+                        typeof(Player_UpdatePlacement_BuildInputPatch),
+                        nameof(ShouldTriggerBuildPlacement)));
+            }
+            else if (original[i + 1].Calls(GetButtonPatchUtils.GetButtonUpOriginal)) {
+                patched.Add(
+                    CodeInstruction.Call(
+                        typeof(GetButtonPatchUtils),
+                        nameof(GetButtonPatchUtils.GetButtonUpPatched)));
+            }
+            else
+            {
+                continue;
+            }
+            i++; // skip the next instruction cause we are replacing it
+        }
+        return patched;
     }
 
     [HarmonyPatch(typeof(Player), nameof(Player.SetControls))]
