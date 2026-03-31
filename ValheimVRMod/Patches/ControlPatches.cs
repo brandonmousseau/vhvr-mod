@@ -385,112 +385,113 @@ namespace ValheimVRMod.Patches {
         }
     }
 
-// We need to track when the piece selection menu was just hidden
-// as a result of the user clicking on it so that we don't
-// cause a placement right after the menu is closed and the
-// trigger is released.
-[HarmonyPatch(typeof(Hud), nameof(Hud.HidePieceSelection))]
-class BuildHudTracker
-{
-
-    public static bool buildHudJustToggledOff = false;
-
-    static void Postfix()
+    // We need to track when the piece selection menu was just hidden
+    // as a result of the user clicking on it so that we don't
+    // cause a placement right after the menu is closed and the
+    // trigger is released.
+    [HarmonyPatch(typeof(Hud), nameof(Hud.HidePieceSelection))]
+    class BuildHudTracker
     {
-        buildHudJustToggledOff = true;
+    
+        public static bool buildHudJustToggledOff = false;
+    
+        static void Postfix()
+        {
+            buildHudJustToggledOff = true;
+        }
+    
     }
-
-}
-
-[HarmonyPatch(typeof(Player), nameof(Player.UpdatePlacement))]
-class Player_UpdatePlacement_BuildInputPatch
-{
-    private static readonly string placementInput = "JoyPlace";
-
-    private static bool ShouldTriggerBuildPlacement(string inputName)
+    
+    [HarmonyPatch(typeof(Player), nameof(Player.UpdatePlacement))]
+    class Player_UpdatePlacement_BuildInputPatch
     {
-        if (inputName != placementInput)
+        private static readonly string placementInput = "JoyPlace";
+    
+        private static bool ShouldTriggerBuildPlacement(string inputName)
         {
-            return GetButtonPatchUtils.GetButtonDownPatched(inputName);
-        }
-
-        if (WeaponCollision.hasPendingToolUsageOutput)
-        {
-            WeaponCollision.hasPendingToolUsageOutput = false;
-            return true;
-        }
-
-        if (!BuildingManager.instance)
-        {
-            return GetButtonPatchUtils.GetButtonDownPatched(inputName);
-        }
-        if (VHVRConfig.BuildOnRelease())
-        {
-            bool inputReceived = GetButtonPatchUtils.GetButtonUpPatched(inputName);
-            if (BuildHudTracker.buildHudJustToggledOff && inputReceived)
+            if (inputName != placementInput)
             {
-                // Since the build hud was just toggled off and the input was receieved,
-                // we won't trigger the placement. Instead just reset the "buildHudJustToggledOff" flag
-                LogUtils.LogDebug("Resetting buildHudToggledFlag");
-                BuildHudTracker.buildHudJustToggledOff = false;
-                return false;
-            } else
+                return GetButtonPatchUtils.GetButtonDownPatched(inputName);
+            }
+    
+            if (WeaponCollision.hasPendingToolUsageOutput)
             {
-                if (inputReceived && !BuildingManager.instance.isCurrentlyMoving() && VHVRConfig.FreePlaceAutoReturn())
+                WeaponCollision.hasPendingToolUsageOutput = false;
+                return true;
+            }
+    
+            if (!BuildingManager.instance)
+            {
+                return GetButtonPatchUtils.GetButtonDownPatched(inputName);
+            }
+            if (VHVRConfig.BuildOnRelease())
+            {
+                bool inputReceived = GetButtonPatchUtils.GetButtonUpPatched(inputName);
+                if (BuildHudTracker.buildHudJustToggledOff && inputReceived)
                 {
-                    BuildingManager.instance.ExitPreciseMode();
-                }
-                if (BuildingManager.instance.isHoldingJump())
+                    // Since the build hud was just toggled off and the input was receieved,
+                    // we won't trigger the placement. Instead just reset the "buildHudJustToggledOff" flag
+                    LogUtils.LogDebug("Resetting buildHudToggledFlag");
+                    BuildHudTracker.buildHudJustToggledOff = false;
                     return false;
-                return inputReceived;
-            }
-        }
-        else
-        {
-            if (GetButtonPatchUtils.GetButtonDownPatched(inputName) && !BuildingManager.instance.isCurrentlyMoving() && VHVRConfig.FreePlaceAutoReturn())
-            {
-                BuildingManager.instance.ExitPreciseMode();
-            }
-            return GetButtonPatchUtils.GetButtonDownPatched(inputName);
-        }
-    }
-
-    static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
-    {
-        var original = new List<CodeInstruction>(instructions);
-        var patched = new List<CodeInstruction>();
-        if (!VHVRConfig.UseVrControls())
-        {
-            return original;
-        }
-        for (int i = 0; i < original.Count; i++)
-        {
-            var instruction = original[i];
-            patched.Add(instruction);
-            if (instruction.opcode != OpCodes.Ldstr)
-            {
-                continue;
-            }
-            if (original[i + 1].Calls(GetButtonPatchUtils.GetButtonDownOriginal))
-            {
-                patched.Add(
-                    CodeInstruction.Call(
-                        typeof(Player_UpdatePlacement_BuildInputPatch),
-                        nameof(ShouldTriggerBuildPlacement)));
-            }
-            else if (original[i + 1].Calls(GetButtonPatchUtils.GetButtonUpOriginal)) {
-                patched.Add(
-                    CodeInstruction.Call(
-                        typeof(GetButtonPatchUtils),
-                        nameof(GetButtonPatchUtils.GetButtonUpPatched)));
+                } else
+                {
+                    if (inputReceived && !BuildingManager.instance.isCurrentlyMoving() && VHVRConfig.FreePlaceAutoReturn())
+                    {
+                        BuildingManager.instance.ExitPreciseMode();
+                    }
+                    if (BuildingManager.instance.isHoldingJump())
+                        return false;
+                    return inputReceived;
+                }
             }
             else
             {
-                continue;
+                if (GetButtonPatchUtils.GetButtonDownPatched(inputName) && !BuildingManager.instance.isCurrentlyMoving() && VHVRConfig.FreePlaceAutoReturn())
+                {
+                    BuildingManager.instance.ExitPreciseMode();
+                }
+                return GetButtonPatchUtils.GetButtonDownPatched(inputName);
             }
-            i++; // skip the next instruction cause we are replacing it
         }
-        return patched;
+    
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            var original = new List<CodeInstruction>(instructions);
+            var patched = new List<CodeInstruction>();
+            if (!VHVRConfig.UseVrControls())
+            {
+                return original;
+            }
+            for (int i = 0; i < original.Count; i++)
+            {
+                var instruction = original[i];
+                patched.Add(instruction);
+                if (instruction.opcode != OpCodes.Ldstr)
+                {
+                    continue;
+                }
+                if (original[i + 1].Calls(GetButtonPatchUtils.GetButtonDownOriginal))
+                {
+                    patched.Add(
+                        CodeInstruction.Call(
+                            typeof(Player_UpdatePlacement_BuildInputPatch),
+                            nameof(ShouldTriggerBuildPlacement)));
+                }
+                else if (original[i + 1].Calls(GetButtonPatchUtils.GetButtonUpOriginal)) {
+                    patched.Add(
+                        CodeInstruction.Call(
+                            typeof(GetButtonPatchUtils),
+                            nameof(GetButtonPatchUtils.GetButtonUpPatched)));
+                }
+                else
+                {
+                    continue;
+                }
+                i++; // skip the next instruction cause we are replacing it
+            }
+            return patched;
+        }
     }
 
     [HarmonyPatch(typeof(Player), nameof(Player.SetControls))]
