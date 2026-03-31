@@ -337,11 +337,8 @@ namespace ValheimVRMod.Patches {
         }
     }
 
-    // If using VR controls, disable the joystick for the purposes
-    // of moving the map around since that will be done with
-    // simulated mouse cursor click and drag via laser pointer.
-    [HarmonyPatch(typeof(Minimap), "UpdateMap")]
-    class Minimap_UpdateMap_MapTranslationPatch {
+    [HarmonyPatch(typeof(Minimap), nameof(Minimap.UpdateMap))]
+    class Minimap_UpdateMap_Patch {
         private static MethodInfo getJoyLeftStickX =
             AccessTools.Method(typeof(ZInput), nameof(ZInput.GetJoyLeftStickX), new [] { typeof(bool) });
 
@@ -368,19 +365,27 @@ namespace ValheimVRMod.Patches {
             var original = new List<CodeInstruction>(instructions);
             var patched = new List<CodeInstruction>();
             foreach (var instruction in original) {
+                // If using VR controls, disable the joystick for the purposes
+                // of moving the map around since that will be done with
+                // simulated mouse cursor click and drag via laser pointer.
                 if (instruction.Calls(getJoyLeftStickX)) {
-                    patched.Add(CodeInstruction.Call(typeof(Minimap_UpdateMap_MapTranslationPatch),
+                    patched.Add(CodeInstruction.Call(typeof(Minimap_UpdateMap_Patch),
                         nameof(getJoyLeftStickXPatched), new[] { typeof(bool) }));
                 }
                 else if (instruction.Calls(getJoyLeftStickY)) {
-                    patched.Add(CodeInstruction.Call(typeof(Minimap_UpdateMap_MapTranslationPatch),
+                    patched.Add(CodeInstruction.Call(typeof(Minimap_UpdateMap_Patch),
                         nameof(getJoyLeftStickYPatched), new[] { typeof(bool) }));
+                }
+                else if (instruction.Calls(GetButtonPatchUtils.GetButtonOriginal))
+                {
+                    // Necessary for map zoom in case ZInput prefix/postfix stops working
+                    patched.Add(CodeInstruction.Call(typeof(GetButtonPatchUtils),
+                        nameof(GetButtonPatchUtils.GetButtonDownPatched), new[] { typeof(string) }));
                 }
                 else {
                     patched.Add(instruction);
                 }
             }
-        
             return patched;
         }
     }
