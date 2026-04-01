@@ -68,14 +68,27 @@ namespace ValheimVRMod.Utilities {
                 isLeftHandDrawingWeapon = isRightHandDrawingWeapon = true;
             }
             else {
-                checkArrowToggle(VRPlayer.isRightHandMainWeaponHand ? rightHandBackReach : leftHandBackReach);
-                if (rightHandStartsGripping && checkUnsheathingHolsteredNonDualWieldItem(isRightHand: true, rightHandBackReach))
+                if (rightHandStartsGripping)
                 {
-                    isRightHandDrawingWeapon = true;
+                    if (VRPlayer.isRightHandMainWeaponHand)
+                    {
+                        checkArrowToggle(rightHandBackReach);
+                    }
+                    if (checkUnsheathingHolsteredNonDualWieldItem(isRightHand: true, rightHandBackReach))
+                    {
+                        isRightHandDrawingWeapon = true;
+                    }
                 }
-                if (leftHandStartsGripping && checkUnsheathingHolsteredNonDualWieldItem(isRightHand: false, leftHandBackReach))
-                {   
-                    isLeftHandDrawingWeapon = true;
+                if (leftHandStartsGripping)
+                {
+                    if (VRPlayer.isLeftHandMainWeaponHand)
+                    {
+                        checkArrowToggle(leftHandBackReach);
+                    }
+                    if (checkUnsheathingHolsteredNonDualWieldItem(isRightHand: false, leftHandBackReach))
+                    {
+                        isLeftHandDrawingWeapon = true;
+                    }
                 }
             }
 
@@ -196,43 +209,10 @@ namespace ValheimVRMod.Utilities {
             return false;
         }
 
-        private static bool checkOnehandedEquipping(bool isRightHand, BackReachLocation backReachLocation)
-        {
-            // TODO: remove this method
-            if (backReachLocation == BackReachLocation.None)
-            {
-                return false;
-            }
-
-            bool isBowHand = VRPlayer.isRightHandMainWeaponHand ^ isRightHand;
-            if (!isBowHand && EquipScript.getLeft() == EquipType.Bow)
-            {
-                BowLocalManager.instance.toggleArrow();
-                return true;
-            }
-            if (!isBowHand && EquipScript.getLeft() == EquipType.Crossbow)
-            {
-                CrossbowMorphManager.instance.toggleBolt();
-                return true;
-            }
-
-            var inventorySlot =
-                isRightHand ?
-                rightHandBackReachToInventory(backReachLocation) :
-                leftHandBackReachToInventory(backReachLocation);
-
-            if (checkEquippingWeapon(inventorySlot, isRightHand))
-            {
-                return true;
-             }
-
-            return checkUnsheathingHolsteredNonDualWieldItem(isRightHand, backReachLocation);
-        }
-
         private static bool checkUnsheathingHolsteredNonDualWieldItem(
             bool isRightHand, BackReachLocation backReachLocation)
         {
-            if (!canGrabNewWeapon(isRightHand))
+            if (!canGrabNewWeapon(isRightHand) || EquipScript.localPlayerHasDualWieldingWeaponHolstered())
             {
                 return false;
             }
@@ -365,10 +345,8 @@ namespace ValheimVRMod.Utilities {
 
         private static bool checkGripDraw(BackReachLocation leftHandBackReach, BackReachLocation rightHandBackReach)
         {
-            bool leftHandGrippedBackLocation = leftHandGrabbedBackLocation != BackReachLocation.None;
-            bool rightHandGrippedBackLocation = rightHandGrabbedBackLocation != BackReachLocation.None;
-
-            if (!rightHandGrippedBackLocation && !leftHandGrippedBackLocation)
+            if (leftHandGrabbedBackLocation == BackReachLocation.None &&
+                rightHandGrabbedBackLocation == BackReachLocation.None)
             {
                 return false;
             }
@@ -376,23 +354,24 @@ namespace ValheimVRMod.Utilities {
             bool leftHandGripping = grabAction.GetState(SteamVR_Input_Sources.LeftHand);
             bool rightHandGripping = grabAction.GetState(SteamVR_Input_Sources.RightHand);
 
-            // Both hands recorded and both grips now released — dual wield equip
-            if (rightHandGrippedBackLocation && leftHandGrippedBackLocation)
+            // Check dual grip first
+            if (leftHandGrabbedBackLocation != BackReachLocation.None &&
+                rightHandGrabbedBackLocation != BackReachLocation.None)
             {
                 if (isDrawingWeapon(leftHandBackReach, VRPlayer.leftHand.transform, VRPlayer.leftFootPhysicsEstimator.GetVelocity()) ||
                     isDrawingWeapon(rightHandBackReach, VRPlayer.rightHand.transform, VRPlayer.rightHandPhysicsEstimator.GetVelocity()))
                 {
-                    var rightLocation = rightHandGrabbedBackLocation;
                     var leftLocation = leftHandGrabbedBackLocation;
-                    rightHandGrabbedBackLocation = BackReachLocation.None;
+                    var rightLocation = rightHandGrabbedBackLocation;
                     leftHandGrabbedBackLocation = BackReachLocation.None;
+                    rightHandGrabbedBackLocation = BackReachLocation.None;
                     return onDualGripDraw(leftLocation, rightLocation);
                 }
 
                 return false;
             }
 
-            if (rightHandGrippedBackLocation &&
+            if (rightHandGrabbedBackLocation != BackReachLocation.None &&
                 isDrawingWeapon(rightHandBackReach, VRPlayer.rightHand.transform, VRPlayer.rightHandPhysicsEstimator.GetVelocity()))
             {
                 var location = rightHandGrabbedBackLocation;
@@ -400,13 +379,14 @@ namespace ValheimVRMod.Utilities {
                 return onSingleGripDraw(isRightHand: true, location);
             }
 
-            if (leftHandGrippedBackLocation &&
+            if (leftHandGrabbedBackLocation != BackReachLocation.None &&
                 isDrawingWeapon(leftHandBackReach, VRPlayer.leftHand.transform, VRPlayer.leftFootPhysicsEstimator.GetVelocity()))
             {
                 var location = leftHandGrabbedBackLocation;
                 leftHandGrabbedBackLocation = BackReachLocation.None;
                 return onSingleGripDraw(isRightHand: false, location);
             }
+
             return false;
         }
 

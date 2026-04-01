@@ -397,6 +397,7 @@ namespace ValheimVRMod.VRCore.UI
             if (attachedToHand)
             {
                 UpdateHandAttachedTransform();
+                UpdateCursorPosition();
                 return;
             }
 
@@ -593,19 +594,21 @@ namespace ValheimVRMod.VRCore.UI
 
         public void OnPointerTrackingLeftHand(object p, PointerEventArgs e)
         {
-            if (isUiPanel(e.target))
+            // When the UI panel is attached to hand, improve responsiveness by updating cursor location
+            // even if the raycast hits something other than UI panel
+            if (!isUiPanel(e.target)) // && !(attachedToHand && e.distance < 1))
             {
-                SoftwareCursor.simulatedMousePosition =
-                    convertLocalUiPanelCoordinatesToCursorCoordinates(e.target.InverseTransformPoint(e.position));
-                // PointerEventArgs#buttonStateLeft does not give valid state of the trigger, so we need check the action states explicitly.
-                // Note: when the laser pointer action set is active, it takes priority over the Valheim action set so SteamVR_Actions.valheim_Use are SteamVR_Actions.valheim_UseLeft are unused.
-                // TODO: update click modifier to use grab buttons and left click to use both controller's triggers in laser action set and update this method accordingly.
-                // LogUtils.LogWarning("Left hand: " + SteamVR_Actions.valheim_UseLeft.state + " " + SteamVR_Actions.LaserPointers.ClickModifier.GetState(SteamVR_Input_Sources.LeftHand));
-                _inputModule.UpdateButtonStates(
-                    SteamVR_Actions.LaserPointers.ClickModifier.GetState(SteamVR_Input_Sources.LeftHand) || SteamVR_Actions.LaserPointers.LeftClick.GetState(SteamVR_Input_Sources.LeftHand),
-                    SteamVR_Actions.valheim_QuickActions.GetState(SteamVR_Input_Sources.LeftHand),
-                    false);
+                return;
             }
+
+            // TODO: consider parenting _uiPanel to hand when inventory is open
+            UpdateHandAttachedTransform();
+            UpdateCursorPosition();
+
+            _inputModule.UpdateButtonStates(
+                SteamVR_Actions.LaserPointers.ClickModifier.GetState(SteamVR_Input_Sources.LeftHand) || SteamVR_Actions.LaserPointers.LeftClick.GetState(SteamVR_Input_Sources.LeftHand),
+                SteamVR_Actions.valheim_QuickActions.GetState(SteamVR_Input_Sources.LeftHand),
+                false);
         }
 
         public void OnPointerTracking(object p, PointerEventArgs e)
@@ -616,21 +619,32 @@ namespace ValheimVRMod.VRCore.UI
                 return;
             }
 
-            if (!isUiPanel(e.target)) // && !attachingInventoryToHand)
+            // When the UI panel is attached to hand, improve responsiveness by updating cursor location
+            // even if the raycast hits something other than UI panel
+            if (!isUiPanel(e.target) && !(attachedToHand && e.distance < 1))
             {
                 return;
             }
 
             // TODO: consider parenting _uiPanel to hand when inventory is open
             UpdateHandAttachedTransform();
-
-            var localHit = _uiPanel.InverseTransformPoint(e.position);
-            var localStart = _uiPanel.InverseTransformPoint(VRPlayer.activePointer.rayStartingPosition);
-            // Improve cursor precision when player is fast moving
-            var correctedLocalHit = Vector3.LerpUnclamped(localHit, localStart, localHit.z / (localHit.z - localStart.z));
-            SoftwareCursor.simulatedMousePosition = convertLocalUiPanelCoordinatesToCursorCoordinates(correctedLocalHit);
+            UpdateCursorPosition();
 
             _inputModule.UpdateButtonStates(e.buttonStateLeft, e.buttonStateRight, false);
+        }
+
+        private void UpdateCursorPosition()
+        {
+            if (!_leftPointer.pointerIsActive() && !_rightPointer.pointerIsActive())
+            {
+                return;
+            }
+
+            var localDir = _uiPanel.InverseTransformVector(VRPlayer.activePointer.rayDirection * Vector3.forward);
+            var localStart = _uiPanel.InverseTransformPoint(VRPlayer.activePointer.rayStartingPosition);
+            // This is more precise than using raycast hit position especially when the player is moving fast
+            var correctedLocalHit = localStart - localDir * (localStart.z / localDir.z);
+            SoftwareCursor.simulatedMousePosition = convertLocalUiPanelCoordinatesToCursorCoordinates(correctedLocalHit);
         }
 
         private void UpdateHandAttachedTransform()
