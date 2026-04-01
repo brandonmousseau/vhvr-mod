@@ -113,7 +113,9 @@ namespace ValheimVRMod.VRCore.UI
             {
                 checkRecenterPose(Time.unscaledDeltaTime);
             }
-            if (GetButtonDown("Inventory") || GetButtonDown("JoyMenu"))
+            if ((mainControlsActive && SteamVR_Actions.valheim_ToggleInventory.GetStateDown(SteamVR_Input_Sources.Any)) ||
+                ZInput.GetButtonDown("Inventory") ||
+                GetButtonDown("JoyMenu"))
             {
                 if (Minimap.IsOpen())
                 {
