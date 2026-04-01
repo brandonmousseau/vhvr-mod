@@ -280,11 +280,6 @@ namespace ValheimVRMod.VRCore.UI
                 InventoryGui.instance.Hide();
                 return;
             }
-            
-            if (Minimap.instance != null && Minimap.instance.m_mode == Minimap.MapMode.Large)
-            {
-                Minimap.instance.SetMapMode(Minimap.MapMode.Small);
-            }
 
             InventoryGui.instance.Show(null);
         }
@@ -300,6 +295,7 @@ namespace ValheimVRMod.VRCore.UI
                 Player.m_localPlayer == null ||
                 Player.m_localPlayer.InCutscene() ||
                 GameCamera.InFreeFly() ||
+                Minimap.IsOpen() ||
                 Menu.IsVisible())
             {
                 return false;
