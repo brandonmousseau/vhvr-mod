@@ -11,6 +11,7 @@ using UnityEngine.UI;
 
 using static ValheimVRMod.Utilities.LogUtils;
 using TMPro;
+using ValheimVRMod.Scripts;
 
 namespace ValheimVRMod.Patches
 {
@@ -204,7 +205,7 @@ namespace ValheimVRMod.Patches
 
                     if (hit.collider.GetComponent<Hoverable>() != null ||
                         !hit.collider.attachedRigidbody ||
-                        hit.collider.attachedRigidbody.name == "MovableBase") // MovableBase is the gameobject name for Valheim Raft Mod object
+                        LayerUtils.IsModdedStructure(hit.collider.attachedRigidbody.name)) // Added Compatibility to Valheim Raft Mod object
                     {
                         hoverReference = hit.collider.gameObject;
                     }
