@@ -423,7 +423,7 @@ namespace ValheimVRMod.Patches {
                     patched.Add(CodeInstruction.Call(typeof(Minimap_UpdateMap_Patch),
                         nameof(getJoyLeftStickYPatched), new[] { typeof(bool) }));
                 }
-                else if (instruction.Calls(GetButtonPatchUtils.GetButtonOriginal))
+                else if (instruction.Calls(GetButtonPatchUtils.GetButtonDownOriginal))
                 {
                     // Necessary for map zoom in case ZInput prefix/postfix stops working
                     patched.Add(CodeInstruction.Call(typeof(GetButtonPatchUtils),
