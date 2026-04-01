@@ -282,6 +282,15 @@ namespace ValheimVRMod.Patches {
         }
     }
 
+    [HarmonyPatch(typeof(InventoryGui), "Update")]
+    class InventoryGuiUpdatePatch
+    {
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            return GetButtonPatchUtils.Transpiler(instructions);
+        }
+    }
+
     // Patch to enable rotation of pieces using VR control actions
     [HarmonyPatch(typeof(Player), "UpdatePlacement")]
     class Player_Update_Placement_PieceRotationPatch {

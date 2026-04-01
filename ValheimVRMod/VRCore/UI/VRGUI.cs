@@ -206,10 +206,10 @@ namespace ValheimVRMod.VRCore.UI
 
         public void Update()
         {
-            if (SteamVR_Actions.valheim_ToggleInventory.GetStateDown(SteamVR_Input_Sources.Any))
-            {
-                tryToggleInventory();
-            }
+            // if (SteamVR_Actions.valheim_ToggleInventory.GetStateDown(SteamVR_Input_Sources.Any))
+            // {
+            //    tryToggleInventory();
+            // }
 
             disableVanillaInputSystemUiInputModule();
             if (VHVRConfig.UseVrControls())
