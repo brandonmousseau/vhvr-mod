@@ -1,4 +1,3 @@
-using System.Runtime.InteropServices.WindowsRuntime;
 using UnityEngine;
 using ValheimVRMod.Patches;
 using ValheimVRMod.Scripts;
