@@ -220,23 +220,17 @@ namespace ValheimVRMod.Utilities {
             switch (backReachLocation)
             {
                 case BackReachLocation.RightShoulderRadialMedial:
-                // case BackReachLocation.RightShoulderRadialLateral:
-                // case BackReachLocation.RightShoulderRadialUp:
-                // case BackReachLocation.RightShoulderRadialDown:
-                    if (PatchShowHandItems.ShowLocalPlayerHandItem(!VHVRConfig.LeftHanded()))
+                    if (isRightHand && PatchShowHandItems.ShowLocalPlayerHandItem(!VHVRConfig.LeftHanded()))
                     {
-                        VRPlayer.offHandWield = !isRightHand;
-                        playEquippingHaptic(!isRightHand, isRightHand);
+                        VRPlayer.offHandWield = false;
+                        playEquippingHaptic(false, true);
                         return true;
                     }
                     return false;
-                // case BackReachLocation.LeftShoulderRadialUp:
-                // case BackReachLocation.LeftShoulderRadialDown:
                 case BackReachLocation.LeftShoulderRadialMedial:
-                    // case BackReachLocation.LeftShoulderRadialLateral:
-                    if (PatchShowHandItems.ShowLocalPlayerHandItem(VHVRConfig.LeftHanded())) {
-                        VRPlayer.offHandWield = isRightHand;
-                        playEquippingHaptic(!isRightHand, isRightHand);
+                    if (!isRightHand && PatchShowHandItems.ShowLocalPlayerHandItem(VHVRConfig.LeftHanded())) {
+                        VRPlayer.offHandWield = false;
+                        playEquippingHaptic(true, false);
                         return true;
                     }
                     return false;
@@ -538,100 +532,115 @@ namespace ValheimVRMod.Utilities {
                 return BackReachLocation.None;
             }
 
-            Vector3 roomUp = vrCam.transform.parent.up;
-            Vector3 playerRight = vrCam.transform.right;
-            Vector3 facing = Vector3.ProjectOnPlane(vrCam.transform.forward, roomUp).normalized;
+            bool trackPelvis = (VHVRConfig.IsHipTrackingEnabled() && VRPlayer.pelvis != null);
 
-            // Vertical offset always relative to head
+            Vector3 playerUp =
+                trackPelvis ?
+                (vrCam.transform.position - VRPlayer.pelvis.transform.position).normalized :
+                vrCam.transform.parent.up;
+
             Vector3 offsetFromHead = handTransform.position - vrCam.transform.position;
-            float verticalOffset = Vector3.Dot(roomUp, offsetFromHead);
 
-            bool reachingShoulder = verticalOffset >= -0.125f && verticalOffset <= 0.25f;
-            bool reachingWaist = verticalOffset >= -0.75f && verticalOffset < -0.25f;
+            float verticalOffset = Vector3.Dot(playerUp, offsetFromHead);
 
+            bool reachingShoulder = verticalOffset >= -0.25f && verticalOffset <= 0.25f;
+            bool reachingWaist = verticalOffset >= -0.75f && verticalOffset < -0.375f;
             if (!reachingShoulder && !reachingWaist)
             {
                 return BackReachLocation.None;
             }
 
-            float lateralOffset = Vector3.Dot(playerRight, offsetFromHead);
+            Vector3 facing =
+                Vector3.ProjectOnPlane(trackPelvis ? VRPlayer.pelvis.transform.forward : vrCam.transform.forward, playerUp).normalized;
+            Vector3 playerRight = Vector3.Cross(playerUp, facing);
+
+            float lateralOffset = Vector3.Dot(offsetFromHead, playerRight);
+            float sagittalOffset = Vector3.Dot(offsetFromHead, facing);
+
             bool reachingRight =
                 reachingShoulder ?
                 lateralOffset > 0 :
-                isRightHand ? lateralOffset > -0.1f : lateralOffset > 0.1f;
-            bool ipsilateral = (isRightHand ^ !reachingRight);
-            float sagittalOffset = Vector3.Dot(facing, offsetFromHead);
+                lateralOffset > (isRightHand ? 0.5f * sagittalOffset : -0.5f * sagittalOffset);
 
-            float behindThreshold = ipsilateral ? -0.0625f : 0.125f;
-            if (sagittalOffset >= behindThreshold)
+            bool contralateral = (isRightHand ^ reachingRight);
+
+            if (contralateral ?
+                sagittalOffset > 0.0625f :
+                sagittalOffset > (reachingShoulder ? -0.0625f : -0.125f))
             {
                 return BackReachLocation.None;
             }
 
-            if (isRightHand ? lateralOffset > 0.5f : lateralOffset < -0.5f)
+            if ((reachingShoulder || contralateral) ?
+                Mathf.Abs(lateralOffset) > 0.5f :
+                Mathf.Abs(lateralOffset) > 0.33f)
             {
                 return BackReachLocation.None;
             }
 
             if (reachingShoulder)
             {
-                if (ipsilateral)
+                if (reachingRight)
                 {
-                    bool radialPointingRight = (Vector3.Dot(handTransform.forward, playerRight) > 0);
-                    if (reachingRight)
+                    if (Vector3.Dot(handTransform.forward, playerUp + playerRight) > 0)
                     {
-                        return radialPointingRight ? BackReachLocation.RightShoulderRadialLateral : BackReachLocation.RightShoulderRadialMedial;
+                        return contralateral ?
+                            BackReachLocation.RightShoulderRadialUp :
+                            BackReachLocation.RightShoulderRadialLateral;
                     }
                     else
                     {
-                        return radialPointingRight ? BackReachLocation.LeftShoulderRadialMedial : BackReachLocation.LeftShoulderRadialLateral;
+                        return contralateral ?
+                            BackReachLocation.RightShoulderRadialDown :
+                            BackReachLocation.RightShoulderRadialMedial;
                     }
                 }
                 else
                 {
-                    if (reachingRight)
+                    if (Vector3.Dot(handTransform.forward, playerUp - playerRight) > 0)
                     {
-                        return Vector3.Dot(handTransform.forward, roomUp + playerRight) > 0 ?
-                            BackReachLocation.RightShoulderRadialUp :
-                            BackReachLocation.RightShoulderRadialDown;
+                        return contralateral ?
+                            BackReachLocation.LeftShoulderRadialUp :
+                            BackReachLocation.LeftShoulderRadialLateral;
                     }
                     else
                     {
-                        return Vector3.Dot(handTransform.forward, roomUp - playerRight) > 0 ?
-                            BackReachLocation.LeftShoulderRadialUp :
-                            BackReachLocation.LeftShoulderRadialDown;
+                        return contralateral ?
+                            BackReachLocation.LeftShoulderRadialDown :
+                            BackReachLocation.LeftShoulderRadialMedial;
                     }
                 }
             }
-            else // reaching waist
+
+            // Reaching waist
+            if (reachingRight)
             {
-                if (ipsilateral)
+                if (Vector3.Dot(handTransform.forward, facing + playerRight * 0.5f) > 0)
                 {
-                    if (reachingRight)
-                    {
-                        return
-                            Vector3.Dot(handTransform.forward, facing + playerRight) > 0 ?
-                            BackReachLocation.RightWaistRadialLateral :
-                            BackReachLocation.RightWaistRadialMedial;
-                    }
-                    else
-                    {
-                        return Vector3.Dot(handTransform.forward, facing - playerRight) > 0 ?
-                            BackReachLocation.LeftWaistRadialLateral :
-                            BackReachLocation.LeftWaistRadialMedial;
-                    }
+                    return contralateral ?
+                        BackReachLocation.RightWaistRadialForward :
+                        BackReachLocation.RightWaistRadialLateral;
                 }
                 else
                 {
-                    bool radialPointingForward = (Vector3.Dot(handTransform.forward, facing) > -0.125f);
-                    if (reachingRight)
-                    {
-                        return radialPointingForward ? BackReachLocation.RightWaistRadialForward : BackReachLocation.RightWaistRadialBackward;
-                    }
-                    else
-                    {
-                        return radialPointingForward ? BackReachLocation.LeftWaistRadialForward : BackReachLocation.LeftWaistRadialBackward;
-                    }
+                    return contralateral ?
+                        BackReachLocation.RightWaistRadialBackward :
+                        BackReachLocation.RightWaistRadialMedial;
+                }
+            }
+            else
+            {
+                if (Vector3.Dot(handTransform.forward, facing - playerRight * 0.5f) > 0)
+                {
+                    return contralateral ?
+                        BackReachLocation.LeftWaistRadialForward :
+                        BackReachLocation.LeftWaistRadialLateral;
+                }
+                else
+                {
+                    return contralateral ?
+                        BackReachLocation.LeftWaistRadialBackward :
+                        BackReachLocation.LeftWaistRadialMedial;
                 }
             }
         }
@@ -642,7 +651,9 @@ namespace ValheimVRMod.Utilities {
                 || EquipScript.getLeft() == EquipType.Crossbow
                 || EquipScript.getRight() == EquipType.Polearms
                 || EquipScript.getRight() == EquipType.BattleAxe
-                || FistCollision.hasDualWieldingWeaponEquipped())
+                || FistCollision.hasDualWieldingWeaponEquipped()
+                || Player.m_localPlayer == null
+                || Player.m_localPlayer.m_inCraftingStation)
             {
                 return false;
             }
