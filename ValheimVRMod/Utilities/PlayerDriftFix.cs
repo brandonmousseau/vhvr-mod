@@ -8,7 +8,7 @@ namespace ValheimVRMod.Utilities
     {
         private Vector3 lastKnownFixedPosition;
         private float driftRemovalTimer = 0;
-        private Player player { get { return _player != null ? _player : GetComponent<Player>(); } }
+        private Player player { get { return _player != null ? _player : (_player = GetComponent<Player>()); } }
         private Player _player;
 
         private void FixedUpdate()
@@ -53,7 +53,7 @@ namespace ValheimVRMod.Utilities
             }
 
             float distanceTolerance = deltaTime;
-            var d = Player.m_localPlayer.transform.position - lastKnownFixedPosition;
+            var d = transform.position - lastKnownFixedPosition;
             if (Mathf.Abs(d.x) > distanceTolerance ||
                 Mathf.Abs(d.y) > distanceTolerance ||
                 Mathf.Abs(d.z) > distanceTolerance)
@@ -62,7 +62,7 @@ namespace ValheimVRMod.Utilities
             }
 
             const float SPEED_TOLERANCE = 1f / 1024f;
-            var v = Player.m_localPlayer.GetVelocity();
+            var v = player.GetVelocity();
             if (Mathf.Abs(v.x) > SPEED_TOLERANCE ||
                 Mathf.Abs(v.y) > SPEED_TOLERANCE ||
                 Mathf.Abs(v.z) > SPEED_TOLERANCE)
