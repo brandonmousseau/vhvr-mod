@@ -282,6 +282,8 @@ namespace ValheimVRMod.Patches
             switch (EquipScript.getRight())
             {
                 case EquipType.Hammer:
+                case EquipType.Hoe:
+                case EquipType.Tray:
                     meshFilter.gameObject.AddComponent<BuildingManager>();
                     break;
                 case EquipType.Fishing:
