@@ -506,10 +506,6 @@ namespace ValheimVRMod.Scripts
                 EquipScript.getRight() :
                 EquipScript.getLeft();
 
-            if (Player.m_localPlayer != null && Player.m_localPlayer.m_inCraftingStation) {
-                newEquipType = EquipType.Hammer;
-            }
-
             if (!Player.m_localPlayer || newEquipType == currentEquipType)
             {
                 RotateColliderForSecondaryWeapon();
