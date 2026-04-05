@@ -9,7 +9,7 @@ namespace ValheimVRMod.Utilities
     public enum EquipType
     {
         None,
-        Fishing, Cultivator, Hammer, Hoe, Torch, Scythe,
+        Fishing, Cultivator, Hammer, Hoe, Torch, Scythe, Tray,
         Bow, Spear, SpearChitin, ThrowObject,
         Shield, Tankard, Claws, Magic, Crossbow
         ,
@@ -76,10 +76,26 @@ namespace ValheimVRMod.Utilities
 
         public static EquipType getEquippedItem(ItemDrop.ItemData item)
         {
-            var equip = getRightEquipType(item);
-            if (equip == EquipType.None)
-                equip = getLeftEquipType(item);
-            return equip;
+            if (item == null || item.m_shared ==  null) {
+                return EquipType.None;
+            }
+
+            switch (item.m_shared.m_itemType)
+            {
+                case ItemDrop.ItemData.ItemType.Shield:
+                    return EquipType.Shield;
+                case ItemDrop.ItemData.ItemType.Torch:
+                    return EquipType.Torch;
+                case ItemDrop.ItemData.ItemType.Bow:
+                case ItemDrop.ItemData.ItemType.OneHandedWeapon:
+                case ItemDrop.ItemData.ItemType.Tool:
+                case ItemDrop.ItemData.ItemType.TwoHandedWeapon:
+                case ItemDrop.ItemData.ItemType.TwoHandedWeaponLeft:
+                    var typeAsMainHandItem = getRightEquipType(item);
+                    return typeAsMainHandItem != EquipType.None ? typeAsMainHandItem : getLeftEquipType(item);
+                default:
+                    return EquipType.None;
+            }
         }
 
         public static EquipType getRightEquipType(ItemDrop.ItemData item)
@@ -110,6 +126,8 @@ namespace ValheimVRMod.Utilities
                     return EquipType.Hammer;
                 case "$item_hoe":
                     return EquipType.Hoe;
+                case "$item_feaster":
+                    return EquipType.Tray;
 
                 case "$item_spear_flint":
                 case "$item_spear_bronze":
