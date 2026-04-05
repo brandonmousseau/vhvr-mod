@@ -671,10 +671,9 @@ namespace ValheimVRMod.VRCore.UI
 
         private Vector2 convertLocalUiPanelCoordinatesToCursorCoordinates(Vector3 localCoordinates)
         {
-            float x = localCoordinates.x + 0.5f;
-            float y = localCoordinates.y + 0.5f;
-            Vector2 cursorSpace = new Vector2(GUI_DIMENSIONS.x * x, GUI_DIMENSIONS.y * y);
-            return cursorSpace;
+            float x = Mathf.Clamp01(localCoordinates.x + 0.5f);
+            float y = Mathf.Clamp01(localCoordinates.y + 0.5f);
+            return new Vector2(GUI_DIMENSIONS.x * x, GUI_DIMENSIONS.y * y);
         }
 
         private bool isUiPanel(Transform t)
