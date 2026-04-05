@@ -216,6 +216,12 @@ namespace ValheimVRMod.Utilities
 
         public static EquipType getLeftEquipType(ItemDrop.ItemData item)
         {
+            switch (item?.m_shared.m_name)
+            {
+                case "$item_lantern":
+                    return EquipType.Lantern;
+            }
+
             //LeftEquipment List 
             switch (item?.m_shared.m_itemType)
             {
@@ -245,11 +251,6 @@ namespace ValheimVRMod.Utilities
                     return EquipType.Crossbow;
             }
 
-            switch (item?.m_shared.m_name)
-            {
-                case "$item_lantern":
-                    return EquipType.Lantern;
-            }
 
             if (item?.m_shared.m_attack.m_attackAnimation == "knife_stab")
             {
