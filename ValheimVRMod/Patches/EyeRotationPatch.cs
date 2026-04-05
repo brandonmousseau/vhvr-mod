@@ -98,7 +98,7 @@ namespace ValheimVRMod.Patches
                 wasAttached = false;
             }
 
-            if (Player.m_localPlayer.InDodge() && !VHVRConfig.ImmersiveDodgeRoll())
+            if (!Player_Rotation_Patch.ShouldFaceLookDirection(__instance))
             {
                 return;
             }
@@ -177,6 +177,8 @@ namespace ValheimVRMod.Patches
     {
         public static Quaternion attachmentIndependentRoomRotation;
 
+        private static float lastPhysicsSyncAngle;
+
         [HarmonyPatch(typeof(Player), nameof(Player.Update))]
         class Player_Update_RotationPatch
         {
@@ -184,7 +186,14 @@ namespace ValheimVRMod.Patches
             {
                 if (ShouldFaceLookDirection(__instance))
                 {
-                    __instance.FaceLookDirection();
+                    __instance.transform.rotation = __instance.m_lookYaw;
+
+                    if (Player_SetMouseLook_Patch.previousTrackedLocalAngle != null &&
+                        Mathf.Abs(Player_SetMouseLook_Patch.previousTrackedLocalAngle.Value - lastPhysicsSyncAngle) > 30)
+                    {
+                        Physics.SyncTransforms();
+                        lastPhysicsSyncAngle = Player_SetMouseLook_Patch.previousTrackedLocalAngle.Value;
+                    }
                 }
             }
         }
@@ -213,11 +222,14 @@ namespace ValheimVRMod.Patches
             }
         }
 
-        static bool ShouldFaceLookDirection(Player player)
+        public static bool ShouldFaceLookDirection(Player player)
         {
             // TODO: Consider disabling face-look-direction patch whenever VRPlayer.attachedToPlayer is false as opposed to just when PlayerCustomizaton.IsBarberGuiVisible().
-            return !VHVRConfig.NonVrPlayer() && player == Player.m_localPlayer && !PlayerCustomizaton.IsBarberGuiVisible() && !VRPlayer.inImmersiveDodge && !player.IsAttached();
-            // return false;
+            return !VHVRConfig.NonVrPlayer() &&
+                player == Player.m_localPlayer &&
+                !PlayerCustomizaton.IsBarberGuiVisible() &&
+                !VRPlayer.inImmersiveDodge &&
+                !player.IsAttached();
         }
 
         /// <summary>
