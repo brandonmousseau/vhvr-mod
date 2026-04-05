@@ -71,7 +71,7 @@ namespace ValheimVRMod.Patches
                     wasUsingKnife = false;
                     return false;
                 }
-                if (EquipScript.getRight() == EquipType.Torch)
+                if (EquipScript.getRight() == EquipType.Torch || EquipScript.getRight() == EquipType.Lantern)
                 {
                     wasUsingKnife = false;
                     return true;
@@ -113,6 +113,7 @@ namespace ValheimVRMod.Patches
                 case EquipType.Knife:
                 case EquipType.Sword:
                 case EquipType.Torch:
+                case EquipType.Lantern:
                     __instance.m_leftItem = knife;
                     __instance.m_leftItem.m_equipped = true;
                     __instance.m_visEquipment.SetLeftItem(knife.m_dropPrefab.name, knife.m_variant);
@@ -297,6 +298,12 @@ namespace ValheimVRMod.Patches
                 return;
             }
 
+            if (EquipScript.getRight() == EquipType.Lantern)
+            {
+                LanternFix.FixLantern(___m_rightItemInstance, VRPlayer.mainWeaponHand.transform);
+                return;
+            }
+
             var weaponCol = StaticObjects.rightWeaponCollider().GetComponent<WeaponCollision>();
             // Weapon collider should be estimated before weapon wield initialization since
             // the latter may move the weapon and interfere with collider estimation.
@@ -448,7 +455,7 @@ namespace ValheimVRMod.Patches
                     ___m_leftItemInstance.AddComponent<SecondaryWeaponRotator>();
                     break;
                 case EquipType.Lantern:
-                    // TODO: implement a component that makes dverger lantern hangs downward regardless of hand orientation.
+                    LanternFix.FixLantern(___m_leftItemInstance, VRPlayer.mainWeaponHand.otherHand.transform);
                     return;
                 case EquipType.Shield:
                     meshFilter.gameObject.AddComponent<ShieldBlock>().itemName = ___m_leftItem;
@@ -456,6 +463,50 @@ namespace ValheimVRMod.Patches
             }
 
             meshFilter.gameObject.AddComponent<ButtonSecondaryAttackManager>().Initialize(meshFilter.transform, ___m_leftItem, !VRPlayer.isRightHandMainWeaponHand);
+        }
+    }
+
+    class LanternFix : MonoBehaviour
+    {
+        public static void FixLantern(GameObject lantern, Transform hand)
+        {
+            foreach (var c in lantern.GetComponents<Rigidbody>())
+            {
+                c.isKinematic = true;
+            }
+            foreach (var c in lantern.GetComponentsInChildren<ConfigurableJoint>())
+            {
+                // TODO: experiment with setting connected body on configurable joint to VR controller
+                // instead of setting the position and rotation directly
+                c.gameObject.AddComponent<LanternFix>().hand = hand;
+            }
+            foreach (var c in lantern.GetComponentsInChildren<LightFlicker>())
+            {
+                c.enabled = false;
+            }
+            foreach (var c in lantern.GetComponentsInChildren<LightLod>())
+            {
+                c.enabled = false;
+            }
+        }
+
+        private Transform hand;
+
+        void FixedUpdate()
+        {
+            FixTransform();
+        }
+
+        void OnRenderObject()
+        {
+            FixTransform();
+        }
+
+        // Override the effect of the rigid body with hardcoded position and rotation to avoid flickering
+        private void FixTransform()
+        {
+            transform.position = hand.position - Vector3.up * 0.3f;
+            transform.rotation = Quaternion.LookRotation(Vector3.up, hand.forward) * Quaternion.Euler(0, 0, 90);
         }
     }
 
