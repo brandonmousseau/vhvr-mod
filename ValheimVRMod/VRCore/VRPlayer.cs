@@ -107,7 +107,6 @@ namespace ValheimVRMod.VRCore
 
         private static SteamVR_LaserPointer _leftPointer;
         private static SteamVR_LaserPointer _rightPointer;
-        private string _preferredHand;
 
         private Vector3 roomLocalPositionBeforeDodge;
         private Transform _dodgingRoom;
@@ -338,7 +337,6 @@ namespace ValheimVRMod.VRCore
         {
             _vrPlayerInstance = this;
             _prefab = VRAssetManager.GetAsset<GameObject>(PLAYER_PREFAB_NAME);
-            _preferredHand = VHVRConfig.GetPreferredHand();
             headPositionInitialized = false;
             firstPersonOffset = Vector3.zero;
             THIRD_PERSON_CONFIG_OFFSET = VHVRConfig.GetThirdPersonHeadOffset();
@@ -557,7 +555,7 @@ namespace ValheimVRMod.VRCore
             if (handIsActive(leftHand, _leftPointer) && handIsActive(rightHand, _rightPointer))
             {
                 // Both hands active, so choose preferred hand
-                if (_preferredHand == LEFT_HAND)
+                if (VHVRConfig.GetPreferredHand() == LEFT_HAND)
                 {
                     setPointerActive(_leftPointer, true);
                     setPointerActive(_rightPointer, false);
