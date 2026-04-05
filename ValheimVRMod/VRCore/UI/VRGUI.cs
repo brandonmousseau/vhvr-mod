@@ -206,14 +206,13 @@ namespace ValheimVRMod.VRCore.UI
 
         public void Update()
         {
-            // if (SteamVR_Actions.valheim_ToggleInventory.GetStateDown(SteamVR_Input_Sources.Any))
-            // {
-            //    tryToggleInventory();
-            // }
-
             disableVanillaInputSystemUiInputModule();
             if (VHVRConfig.UseVrControls())
             {
+                if (attachedToHand)
+                {
+                    UpdateMouseButtonsFromLaserPointer();
+                }
                 return;
             }
             bool leftButtonPressed = Input.GetMouseButton(0);
@@ -604,11 +603,7 @@ namespace ValheimVRMod.VRCore.UI
             // TODO: consider parenting _uiPanel to hand when inventory is open
             UpdateHandAttachedTransform();
             UpdateCursorPosition();
-
-            _inputModule.UpdateButtonStates(
-                SteamVR_Actions.LaserPointers.ClickModifier.GetState(SteamVR_Input_Sources.LeftHand) || SteamVR_Actions.LaserPointers.LeftClick.GetState(SteamVR_Input_Sources.LeftHand),
-                SteamVR_Actions.valheim_QuickActions.GetState(SteamVR_Input_Sources.LeftHand),
-                false);
+            UpdateMouseButtonsFromLaserPointer();
         }
 
         public void OnPointerTracking(object p, PointerEventArgs e)
@@ -645,6 +640,26 @@ namespace ValheimVRMod.VRCore.UI
             // This is more precise than using raycast hit position especially when the player is moving fast
             var correctedLocalHit = localStart - localDir * (localStart.z / localDir.z);
             SoftwareCursor.simulatedMousePosition = convertLocalUiPanelCoordinatesToCursorCoordinates(correctedLocalHit);
+        }
+
+        private void UpdateMouseButtonsFromLaserPointer()
+        {
+            if (_leftPointer.pointerIsActive())
+            {
+                // TODO: add proper actions for left pointer click?
+                _inputModule.UpdateButtonStates(
+                    SteamVR_Actions.LaserPointers.ClickModifier.GetState(SteamVR_Input_Sources.LeftHand) ||
+                    SteamVR_Actions.LaserPointers.LeftClick.GetState(SteamVR_Input_Sources.LeftHand),
+                    SteamVR_Actions.valheim_QuickActions.GetState(SteamVR_Input_Sources.LeftHand),
+                    false);
+            }
+            if (_rightPointer.pointerIsActive())
+            {
+                _inputModule.UpdateButtonStates(
+                    SteamVR_Actions.LaserPointers.LeftClick.GetState(SteamVR_Input_Sources.RightHand),
+                    SteamVR_Actions.LaserPointers.RightClick.GetState(SteamVR_Input_Sources.RightHand),
+                    false);
+            }
         }
 
         private void UpdateHandAttachedTransform()
