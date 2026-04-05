@@ -236,7 +236,7 @@ namespace ValheimVRMod.Patches {
     }
 
     // Patch to enable rotation of pieces using VR control actions
-    [HarmonyPatch(typeof(Player), "UpdatePlacement")]
+    [HarmonyPatch(typeof(Player), nameof(Player.UpdatePlacement))]
     class Player_Update_Placement_PieceRotationPatch {
         static void Postfix(Player __instance, bool takeInput, ref int ___m_placeRotation) {
             if (!VRControls.mainControlsActive || __instance != Player.m_localPlayer || !takeInput ||
@@ -254,13 +254,18 @@ namespace ValheimVRMod.Patches {
     }
 
     //Force position nearby snap points
-    [HarmonyPatch(typeof(Player), "UpdatePlacementGhost")]
+    [HarmonyPatch(typeof(Player), nameof(Player.UpdatePlacementGhost))]
     class PlacementSnapPoint
     {
         private static bool Prefix(Player __instance, GameObject ___m_placementGhost, GameObject ___m_placementMarkerInstance)
         {
             if (!VRControls.mainControlsActive || __instance != Player.m_localPlayer || !___m_placementGhost || !___m_placementGhost.transform ||
-               !__instance.InPlaceMode() || !BuildingManager.instance)
+               !__instance.InPlaceMode())
+            {
+                return true;
+            }
+
+            if (!EnsureBuildingManager(__instance))
             {
                 return true;
             }
@@ -278,6 +283,7 @@ namespace ValheimVRMod.Patches {
             }
             return true;
         }
+
         private static void Postfix(Player __instance, GameObject ___m_placementGhost)
         {
             if (!VRControls.mainControlsActive || __instance != Player.m_localPlayer || !___m_placementGhost || !___m_placementGhost.transform ||
@@ -299,6 +305,37 @@ namespace ValheimVRMod.Patches {
             }
 
             BuildingManager.instance.ValidateBuildingPiece(___m_placementGhost);
+        }
+
+        private static bool EnsureBuildingManager(Player player)
+        {
+            if (BuildingManager.instance != null || !player.InPlaceMode() || player.m_visEquipment == null)
+            {
+                return BuildingManager.instance;
+            }
+            
+            var item = player.m_visEquipment.m_rightItemInstance;
+            if (item == null)
+            {
+                return false;
+            }
+
+            if (item.GetComponentInChildren<BuildingManager>() != null)
+            {
+                LogUtils.LogError("Found potentially leaked BuildingManager instance");
+                return false;
+            }
+
+            var meshFilter = item.GetComponentInChildren<MeshFilter>();
+            if (meshFilter == null)
+            {
+                return false;
+            }
+
+            // Add building manager in case we missed it earlier (e. g. for modded building tools)
+            meshFilter.gameObject.AddComponent<BuildingManager>();
+
+            return true;
         }
     }
     [HarmonyPatch(typeof(Player), "PieceRayTest")]
