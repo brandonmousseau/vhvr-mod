@@ -112,6 +112,8 @@ namespace ValheimVRMod.VRCore
         private Transform _dodgingRoom;
         private Transform dodgingRoom { get { return _dodgingRoom == null ? (_dodgingRoom = new GameObject().transform) : _dodgingRoom; } }
         private bool pausedMovement = false;
+        private bool isRoomScaleMovementActive;
+        private float roomScaleMovementTimeout = 0;
 
         private float timerLeft;
         private float timerRight;
@@ -1876,28 +1878,26 @@ namespace ValheimVRMod.VRCore
             Vector3 deltaPosition = roomscaleLocomotive - lastRoomscaleLocomotivePosition;
             deltaPosition.y = 0;
 
-            float moveThreshold = player.IsSitting() ? 0.5f : 0.005f;
-            if (!VHVRConfig.IsHipTrackingEnabled())
+            if (!isRoomScaleMovementActive)
             {
-                switch (EquipScript.getRight())
+                if (deltaPosition.magnitude > GetRoomscaleMovementActivationThreshold())
                 {
-                    case EquipType.Claws:
-                    case EquipType.DualKnives:
-                    case EquipType.Hammer:
-                    case EquipType.Knife:
-                    case EquipType.None:
-                    case EquipType.Tankard:
-                        if (GesturedLocomotionManager.isInUse || SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.Any))
-                        {
-                            // Allow leaning when holding small weapons or bare-handed.
-                            moveThreshold = 1f;
-                        }
-                        break;
+                    isRoomScaleMovementActive = true;
+                    roomScaleMovementTimeout = 0;
+                }
+            }
+            else if (deltaPosition.magnitude > 0.01f)
+            {
+                roomScaleMovementTimeout = 0;
+            }
+            else {
+                roomScaleMovementTimeout += deltaTime;
+                if (roomScaleMovementTimeout > 1) {
+                    isRoomScaleMovementActive = false;
                 }
             }
 
-            bool shouldMove = deltaPosition.magnitude > moveThreshold;
-            if (shouldMove)
+            if (isRoomScaleMovementActive)
             {
                 float maxMovement = deltaTime * MAX_ROOMSCALE_MOVEMENT_SPEED;
                 if (deltaPosition.magnitude > maxMovement)
@@ -1936,11 +1936,53 @@ namespace ValheimVRMod.VRCore
                 roomscaleMovement = globalDeltaPosition;
                 _vrCameraRig.localPosition -= deltaPosition; // Since we move the VR camera rig with the player character elsewhere, we counteract that here to prevent it from moving.
             }
-            else roomscaleMovement = Vector3.zero;
+            else
+            {
+                roomscaleMovement = Vector3.zero;
+            }
 
             //Set animation parameters
-            _roomscaleAnimationForwardSpeed = Mathf.SmoothDamp(_roomscaleAnimationForwardSpeed, shouldMove ? deltaPosition.z / Time.fixedDeltaTime : 0, ref _forwardSmoothVel, ROOMSCALE_STEP_ANIMATION_SMOOTHING, 99f);
-            _roomscaleAnimationSideSpeed = Mathf.SmoothDamp(_roomscaleAnimationSideSpeed, shouldMove ? deltaPosition.x / Time.fixedDeltaTime : 0, ref _sideSmoothVel, ROOMSCALE_STEP_ANIMATION_SMOOTHING, 99f);
+            _roomscaleAnimationForwardSpeed =
+                Mathf.SmoothDamp(
+                    _roomscaleAnimationForwardSpeed,
+                    isRoomScaleMovementActive ? deltaPosition.z / Time.fixedDeltaTime : 0, ref _forwardSmoothVel, ROOMSCALE_STEP_ANIMATION_SMOOTHING, 99f);
+            _roomscaleAnimationSideSpeed =
+                Mathf.SmoothDamp(
+                    _roomscaleAnimationSideSpeed,
+                    isRoomScaleMovementActive ? deltaPosition.x / Time.fixedDeltaTime : 0, ref _sideSmoothVel, ROOMSCALE_STEP_ANIMATION_SMOOTHING, 99f);
+        }
+
+        private float GetRoomscaleMovementActivationThreshold()
+        {
+            Player player = Player.m_localPlayer;
+
+            if (player == null || player.IsSitting() || player.m_inCraftingStation)
+            {
+                return 0.5f;
+            }
+
+            if (VHVRConfig.IsHipTrackingEnabled())
+            {
+                return 0.125f;
+            }
+            
+            switch (EquipScript.getRight())
+            {
+                case EquipType.Claws:
+                case EquipType.DualKnives:
+                case EquipType.Hammer:
+                case EquipType.Knife:
+                case EquipType.None:
+                case EquipType.Tankard:
+                    if (GesturedLocomotionManager.isInUse || SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.Any))
+                    {
+                        // Allow leaning when holding small weapons or bare-handed.
+                        return 1f;
+                    }
+                    break;
+            }
+
+            return 0.125f;
         }
 
         public void ResetRoomscaleCamera()
