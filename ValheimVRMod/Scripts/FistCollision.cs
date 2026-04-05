@@ -154,7 +154,10 @@ namespace ValheimVRMod.Scripts
             {
                 // When using bare hands or claws to attack anything other than an enemy character,
                 // require both pressing trigger and grip so that the attack does not accidentally happen too easily.
-                if (handGesture.isHandFree() && !SteamVR_Actions.valheim_Use.GetState(inputSource) && !SteamVR_Actions.valheim_UseLeft.GetState(inputSource)) {
+                if (handGesture.isHandFree() &&
+                    !SteamVR_Actions.valheim_Use.GetState(inputSource) &&
+                    !SteamVR_Actions.valheim_UseLeft.GetState(inputSource) &&
+                    !Player.m_localPlayer.m_inCraftingStation) {
                     if (collider.gameObject.layer != LayerUtils.CHARACTER)
                     {
                         return;
@@ -289,7 +292,10 @@ namespace ValheimVRMod.Scripts
 
         private Grabbable GetGrabbable(GameObject target)
         {
-            if (!handGesture.isHandFree() || !SteamVR_Actions.valheim_Grab.GetStateDown(inputSource))
+            if (!handGesture.isHandFree() ||
+                !SteamVR_Actions.valheim_Grab.GetStateDown(inputSource) ||
+                Player.m_localPlayer == null ||
+                Player.m_localPlayer.m_inCraftingStation)
             {
                 return Grabbable.NONE;
             }
@@ -449,6 +455,20 @@ namespace ValheimVRMod.Scripts
 
         private bool tryHitTarget(GameObject target, bool isSecondaryAttack, float duration, float speed)
         {
+
+            if (!isSecondaryAttack && Player.m_localPlayer.m_inCraftingStation &&
+                InventoryGui.IsVisible() && InventoryGui.instance != null) {
+                var craftingStation = Player.m_localPlayer.GetCurrentCraftingStation();
+                if (craftingStation != null &&
+                    (craftingStation == target.GetComponent<CraftingStation>() ||
+                    craftingStation == target.GetComponentInParent<CraftingStation>()))
+                {
+                    // Instead of attacking, repair items using the crafting station
+                    InventoryGui.instance.m_repairButton.onClick.Invoke();
+                    return false;
+                }
+            }
+
             var attackTargetMeshCooldown = target.GetComponent<AttackTargetMeshCooldown>();
             if (attackTargetMeshCooldown == null)
             {
@@ -485,6 +505,10 @@ namespace ValheimVRMod.Scripts
                 hasDualWieldingWeaponEquipped() || (isRightHand ^ !VRPlayer.isRightHandMainWeaponHand) ?
                 EquipScript.getRight() :
                 EquipScript.getLeft();
+
+            if (Player.m_localPlayer != null && Player.m_localPlayer.m_inCraftingStation) {
+                newEquipType = EquipType.Hammer;
+            }
 
             if (!Player.m_localPlayer || newEquipType == currentEquipType)
             {
