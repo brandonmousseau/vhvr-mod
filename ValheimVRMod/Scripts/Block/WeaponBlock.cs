@@ -64,6 +64,15 @@ namespace ValheimVRMod.Scripts.Block
 
         private void CheckParryMotion(Vector3 weaponVelocity, Vector3 hitDir)
         {
+            if (VHVRConfig.UseRealisticBlock() &&
+                EquipScript.getLeft() == EquipType.Shield &&
+                ShieldBlock.instance != null &&
+                ShieldBlock.instance.isBlocking())
+            {
+                // Disable weapon parry when using shield to block
+                blockTimer = blockTimerNonParry;
+                return;
+            }
             // Only consider the component of the velocity perpendicular to the hit direction as parrying speed.
             float parrySpeed = Vector3.ProjectOnPlane(weaponVelocity, hitDir).magnitude;
             blockTimer = parrySpeed > MIN_PARRY_SPEED ? blockTimerParry : blockTimer = blockTimerNonParry;
