@@ -86,12 +86,9 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
             
-            arrow.GetComponentInChildren<ZNetView>().Destroy();
-            if (arrow != null)
-            {
-                Destroy(arrow);
-                arrow = null;
-            }
+            arrow.GetComponentInChildren<ZNetView>()?.Destroy();
+            Destroy(arrow);
+            arrow = null;
         }
 
         private void destroyPausedCosmeticArrow()
@@ -137,22 +134,23 @@ namespace ValheimVRMod.Scripts {
             }
 
             var bowHand = VRPlayer.bowHandInputSource;
-            var arrowHand = VRPlayer.arrowHandInputSource;
+            var pullingSource =
+                VHVRConfig.OneHandedBow() ? VRPlayer.dominantHandInputSource : VRPlayer.arrowHandInputSource;
 
             // Enable using the bow hand orientation alone for aiming if the bow hand is holding down both the grip and the trigger.
             bowHandAiming =
                 SteamVR_Actions.valheim_Grab.GetState(VRPlayer.bowHandInputSource) &&
                 (SteamVR_Actions.valheim_Use.GetState(bowHand) || SteamVR_Actions.valheim_UseLeft.GetState(bowHand));
 
-            if (SteamVR_Actions.valheim_Use.GetState(arrowHand) ||
-                SteamVR_Actions.valheim_UseLeft.GetState(arrowHand) ||
-                SteamVR_Actions.valheim_Grab.GetState(arrowHand)) {
+            if (SteamVR_Actions.valheim_Use.GetState(pullingSource) ||
+                SteamVR_Actions.valheim_UseLeft.GetState(pullingSource) ||
+                SteamVR_Actions.valheim_Grab.GetState(pullingSource)) {
                 handlePulling();
             }
 
-            if (SteamVR_Actions.valheim_Use.GetStateUp(arrowHand) ||
-                SteamVR_Actions.valheim_UseLeft.GetStateUp(arrowHand) ||
-                SteamVR_Actions.valheim_Grab.GetStateUp(arrowHand)) {
+            if (SteamVR_Actions.valheim_Use.GetStateUp(pullingSource) ||
+                SteamVR_Actions.valheim_UseLeft.GetStateUp(pullingSource) ||
+                SteamVR_Actions.valheim_Grab.GetStateUp(pullingSource)) {
                 releaseString();
             }
 
@@ -295,7 +293,7 @@ namespace ValheimVRMod.Scripts {
             if (OnlyUseDominantHand())
             {
                 // TODO: Fix the bow hand connector position since it is slightly lower than where it should be.
-                VrikCreator.GetLocalPlayerBowHandConnector().position = pushObj.transform.position;
+                VrikCreator.GetLocalPlayerBowHandConnector().position = pushObj.transform.position + bowOrientation.up * 0.125f;
             }
 
             arrowAttach.transform.SetPositionAndRotation(pullObj.transform.position, pushObj.transform.rotation);
