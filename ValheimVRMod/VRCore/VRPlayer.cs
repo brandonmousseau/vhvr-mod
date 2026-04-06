@@ -215,8 +215,9 @@ namespace ValheimVRMod.VRCore
         }
 
         private static float baseFootHeight;
-        
 
+
+        public static SteamVR_Input_Sources dominantHandInputSource { get { return VHVRConfig.LeftHanded() ? SteamVR_Input_Sources.LeftHand : SteamVR_Input_Sources.RightHand; } }
         public static SteamVR_Input_Sources mainWeaponHandInputSource { get { return VHVRConfig.LeftHanded() ^ offHandWield ? SteamVR_Input_Sources.LeftHand : SteamVR_Input_Sources.RightHand; } }
         public static SteamVR_Input_Sources secondaryWeaponHandInputSource { get { return VHVRConfig.LeftHanded() ^ offHandWield ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand; } }
         public static SteamVR_Input_Sources arrowHandInputSource { get { return VHVRConfig.LeftHanded() ^ offHandWield ? SteamVR_Input_Sources.LeftHand : SteamVR_Input_Sources.RightHand; } }
