@@ -6,7 +6,8 @@ using ValheimVRMod.VRCore.UI;
 using Valve.VR;
 
 namespace ValheimVRMod.Utilities {
-    public static class Pose {
+    public class Pose : MonoBehaviour
+    {
         private static bool isLeftHandDrawingWeapon = false;
         private static bool isRightHandDrawingWeapon = false;
         private static BackReachLocation rightHandGrabbedBackLocation = BackReachLocation.None;
@@ -35,7 +36,7 @@ namespace ValheimVRMod.Utilities {
             RightWaistRadialLateral,     // right hand, right (same) waist
         }
 
-        public static void checkInteractions()
+        public void Update()
         {
             // TODO: consider making this class extends Monobehaviour instead of having VRPlayer call this method every frame
 
@@ -566,14 +567,18 @@ namespace ValheimVRMod.Utilities {
 
             if (contralateral ?
                 sagittalOffset > 0.0625f :
-                sagittalOffset > (reachingShoulder ? -0.0625f : -0.125f))
+                sagittalOffset > -0.0625f)
             {
                 return BackReachLocation.None;
             }
 
-            if ((reachingShoulder || contralateral) ?
-                Mathf.Abs(lateralOffset) > 0.5f :
-                Mathf.Abs(lateralOffset) > 0.33f)
+            if (!contralateral && Mathf.Abs(lateralOffset) > 0.5f)
+            {
+                return BackReachLocation.None;
+            }
+
+            if (!contralateral && reachingWaist &&
+                sagittalOffset + Mathf.Abs(lateralOffset) * 0.75f > 0)
             {
                 return BackReachLocation.None;
             }
@@ -582,33 +587,29 @@ namespace ValheimVRMod.Utilities {
             {
                 if (reachingRight)
                 {
-                    if (Vector3.Dot(handTransform.forward, playerUp + playerRight) > 0)
+                    if (contralateral)
                     {
-                        return contralateral ?
+                        return Vector3.Dot(handTransform.forward, playerRight + playerUp) > 0 ?
                             BackReachLocation.RightShoulderRadialUp :
-                            BackReachLocation.RightShoulderRadialLateral;
+                            BackReachLocation.RightShoulderRadialDown;
                     }
-                    else
-                    {
-                        return contralateral ?
-                            BackReachLocation.RightShoulderRadialDown :
-                            BackReachLocation.RightShoulderRadialMedial;
-                    }
+                    return Vector3.Dot(handTransform.forward, playerRight) > 0 &&
+                        Vector3.Dot(handTransform.forward, playerUp) > 0 ?
+                        BackReachLocation.RightShoulderRadialLateral :
+                        BackReachLocation.RightShoulderRadialMedial;
                 }
                 else
                 {
-                    if (Vector3.Dot(handTransform.forward, playerUp - playerRight) > 0)
+                    if (contralateral)
                     {
-                        return contralateral ?
+                        return Vector3.Dot(handTransform.forward, playerRight - playerUp) < 0 ?
                             BackReachLocation.LeftShoulderRadialUp :
-                            BackReachLocation.LeftShoulderRadialLateral;
+                            BackReachLocation.LeftShoulderRadialDown;
                     }
-                    else
-                    {
-                        return contralateral ?
-                            BackReachLocation.LeftShoulderRadialDown :
-                            BackReachLocation.LeftShoulderRadialMedial;
-                    }
+                    return Vector3.Dot(handTransform.forward, playerRight) < 0 &&
+                        Vector3.Dot(handTransform.forward, playerUp) > 0 ?
+                        BackReachLocation.LeftShoulderRadialLateral :
+                        BackReachLocation.LeftShoulderRadialMedial;
                 }
             }
 
@@ -647,6 +648,11 @@ namespace ValheimVRMod.Utilities {
 
         private static bool canGrabNewWeapon(bool isRightHand)
         {
+            if (EquipScript.getRight() == EquipType.Claws)
+            {
+                return true;
+            }
+
             if (EquipScript.getLeft() == EquipType.Bow
                 || EquipScript.getLeft() == EquipType.Crossbow
                 || EquipScript.getRight() == EquipType.Polearms
@@ -659,9 +665,7 @@ namespace ValheimVRMod.Utilities {
             }
 
             var item = isRightHand ? VRPlayer.rightHandItem : VRPlayer.leftHandItem;
-            return item == null ||
-                EquipScript.getEquippedItem(item) == EquipType.None ||
-                EquipScript.getEquippedItem(item) == EquipType.Hammer;
+            return item == null ||  EquipScript.getEquippedItem(item) == EquipType.None;
         }
 
         private static void playEquippingHaptic(bool leftHand, bool rightHand) {

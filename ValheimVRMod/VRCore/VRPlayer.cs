@@ -375,7 +375,6 @@ namespace ValheimVRMod.VRCore
             // When dodge starts, we need to make sure that updateVrik() has been called first so that the head is no longer controlled by Vrik before doing any dodge-related camera rotation.
             maybeMoveVRPlayerDuringDodge();
             UpdateAmplifyOcclusionStatus();
-            Pose.checkInteractions();
             CheckSitRoomscale();
             CheckSneakRoomscale();
 
@@ -680,6 +679,8 @@ namespace ValheimVRMod.VRCore
                 {
                     DisableRigidBodies(_instance);
                     UpdateTrackedPoseDriverPoseSource();
+                    gameObject.GetOrAddComponent<Pose>();
+                    gameObject.GetOrAddComponent<InterhandItemTransfer>();
                 }
             }
             return _instance != null;
