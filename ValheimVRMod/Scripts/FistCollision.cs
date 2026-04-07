@@ -26,7 +26,7 @@ namespace ValheimVRMod.Scripts
         private Hand thisHand {  get { return isRightHand ? VRPlayer.rightHand : VRPlayer.leftHand; } }
 
         public static float LocalPlayerSecondaryAttackCooldown = 0;
-        public static bool ShouldSecondaryKnifeHoldInverse { get; private set; }
+        public static bool ShouldSecondaryKnifeHoldInverse;
 
         private static readonly int[] NONATTACKABLE_LAYERS = {
             LayerUtils.WATERVOLUME_LAYER,

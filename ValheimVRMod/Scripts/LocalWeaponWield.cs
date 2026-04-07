@@ -18,7 +18,7 @@ namespace ValheimVRMod.Scripts
         public static bool isAiming { get; private set; }  
         public static Vector3 localWeaponTip { get; private set; }
         public static bool CurrentTwoHandedWieldStartedWithLongGrip { get; private set; }
-        public static bool IsWeaponPointingUlnar { get; private set; }
+        public static bool IsWeaponPointingUlnar;
         public static bool IsDominantHandHoldInversed { get; private set; }
 
         protected bool isRedDotVisible { set { redDotRenderer.enabled = value; } }
@@ -59,7 +59,9 @@ namespace ValheimVRMod.Scripts
 
         protected virtual void Awake()
         {
-            IsWeaponPointingUlnar = EquipScript.isSpearEquipped() && !VHVRConfig.SpearInverseWield();
+            if (EquipScript.isSpearEquipped()) {
+                IsWeaponPointingUlnar = !VHVRConfig.SpearInverseWield();
+            }
             lastRenderedTransform = new GameObject().transform;
             physicsEstimator = lastRenderedTransform.gameObject.AddComponent<PhysicsEstimator>();
             physicsEstimator.refTransform = CameraUtils.getCamera(CameraUtils.VR_CAMERA)?.transform.parent;
@@ -69,7 +71,7 @@ namespace ValheimVRMod.Scripts
         {
             VrikCreator.ResetHandConnectors();
             LocalPlayerTwoHandedState = TwoHandedState.SingleHanded;
-            IsWeaponPointingUlnar = false;
+            // IsWeaponPointingUlnar = false;
             Destroy(lastRenderedTransform.gameObject);
             Destroy(redDotRenderer.gameObject);
             base.OnDestroy();
