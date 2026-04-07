@@ -94,23 +94,19 @@ namespace ValheimVRMod.VRCore.UI
             }
         }
 
-        public void DestroyHudGui(Character c)
+        public void RemoveEnemyHud(Character c)
         {
             HudData data = getEnemyHud(c);
-            if (data != null && data.gui != null)
+            if (data == null)
+            {
+                return;
+            }
+            if (data.gui != null)
             {
                 Object.Destroy(data.gui);
                 Object.Destroy(data.hudCanvasRoot);
             }
-        }
-
-        public void RemoveEnemyHud(Character c)
-        {
-            HudData data = getEnemyHud(c);
-            if (data != null)
-            {
-                _enemyHuds.Remove(c);
-            }
+            _enemyHuds.Remove(c);
         }
 
         public void UpdateHealth(Player p, Character c, float health)

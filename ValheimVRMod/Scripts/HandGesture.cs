@@ -7,7 +7,7 @@ namespace ValheimVRMod.Scripts {
     public class HandGesture : MonoBehaviour {
         
         private bool isRightHand;
-        private bool isMainHand { get { return isRightHand ^ VHVRConfig.LeftHanded(); } }
+        private bool isMainHand { get { return isRightHand ^ !VRPlayer.isRightHandMainWeaponHand; } }
         private Quaternion handFixedRotation;
         private Hand _sourceHand;
         private Transform sourceTransform;
@@ -34,36 +34,33 @@ namespace ValheimVRMod.Scripts {
                 return false;
             }
 
-            if (EquipScript.getRight() == EquipType.Claws)
+            switch (EquipScript.getRight())
             {
-                return true;
-            }
-            else if (FistCollision.hasDualWieldingWeaponEquipped())
-            {
-                return false;
-            }
-
-            if (BowLocalManager.instance != null && BowLocalManager.instance.isHoldingArrow()) {
-                return false;
-            }
-
-            if (CrossbowMorphManager.instance != null)
-            {
-                if (CrossbowMorphManager.instance.isHoldingBolt() || CrossbowMorphManager.instance.isPulling)
-                {
+                case EquipType.Bow:
+                    if (BowLocalManager.instance != null && BowLocalManager.instance.isHoldingArrow())
+                    {
+                        return false;
+                    }
+                    break;
+                case EquipType.Claws:
+                    return true;
+                case EquipType.Crossbow:
+                    if (CrossbowMorphManager.instance != null)
+                    {
+                        if (CrossbowMorphManager.instance.isHoldingBolt() || CrossbowMorphManager.instance.isPulling)
+                        {
+                            return false;
+                        }
+                    }
+                    break;
+                case EquipType.DualAxes:
+                case EquipType.DualKnives:
                     return false;
-                }
             }
 
-            if (isMainHand && Player.m_localPlayer?.GetRightItem() != null) {
-                return false;
-            }
-
-            if (!isMainHand && Player.m_localPlayer?.GetLeftItem() != null) {
-                return false;
-            }
-
-            return true;
+            return isMainHand ?
+                Player.m_localPlayer?.GetRightItem() == null :
+                Player.m_localPlayer?.GetLeftItem() == null;
         }
 
         private bool areFingersFree()

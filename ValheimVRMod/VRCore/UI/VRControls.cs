@@ -22,6 +22,8 @@ namespace ValheimVRMod.VRCore.UI
         // when using the alt piece rotation mode (ie, context scroll is not bound).
         private static readonly float ALT_PIECE_ROTATION_TIME_DELAY = 0.250f;
         private static readonly float ALT_MAP_ZOOM_TIME_DELAY = 0.125f;
+        private const float AUTORUN_ACTIVATION_DELAY =  0.0625f;
+        private const float AUTORUN_DEACTIVATION_DELAY = 0.5f;
 
         private float altPieceRotationElapsedTime = 0f;
         private bool altPieceTriggered = false;
@@ -45,7 +47,7 @@ namespace ValheimVRMod.VRCore.UI
         private SteamVR_Action_Vector2 walk;
         private SteamVR_Action_Vector2 pitchAndYaw;
         private SteamVR_Action_Vector2 buildPitchAndYaw; //for the same logic as zInputToBooleanAction, this is needed for controllers that have multiple actionsets using the trackpad
-        private float combinedPitchAndYawX => buildPitchAndYaw.active ? buildPitchAndYaw.axis.x : pitchAndYaw.axis.x;
+        private float combinedPitchAndYawX => (buildPitchAndYaw.active ? buildPitchAndYaw.axis.x : pitchAndYaw.axis.x)* VHVRConfig.TurnAxisModifier();
 
         private SteamVR_Action_Vector2 contextScroll;
 
@@ -81,10 +83,21 @@ namespace ValheimVRMod.VRCore.UI
             }
         }
 
+        public static float smoothWalkX { get { return smoothWalkVelocity.x; } }
+        public static float smoothWalkY { get { return smoothWalkVelocity.y; } }
+        public static bool isAutoRunActive;
+        public static bool isExhaustedFromRunning;
+        private static Vector2 smoothWalkVelocity;
+
         public static string ToggleMiniMap { get { return "ToggleMiniMap"; } }
 
         public static VRControls instance { get { return _instance; } }
         private static VRControls _instance;
+
+        private int quickMenuRefreshTicker = 0;
+        private float autorunActivationCountdown = 1;
+        private float autorunDeactivationCountdown = 1;
+
         void Awake()
         {
             init();
@@ -100,12 +113,21 @@ namespace ValheimVRMod.VRCore.UI
             {
                 checkRecenterPose(Time.unscaledDeltaTime);
             }
-            if (GetButtonDown("Inventory") || GetButtonDown("JoyMenu"))
+            if ((mainControlsActive && SteamVR_Actions.valheim_ToggleInventory.GetStateDown(SteamVR_Input_Sources.Any)) ||
+                ZInput.GetButtonDown("Inventory") ||
+                GetButtonDown("JoyMenu"))
             {
                 if (Minimap.IsOpen())
                 {
                     Minimap.instance.SetMapMode(Minimap.MapMode.Small);
                 }
+            }
+
+            if (StaticObjects.rightHandQuickMenu != null && (InventoryGui.IsVisible() || ++quickMenuRefreshTicker > 16))
+            {
+                quickMenuRefreshTicker = 0;
+                StaticObjects.rightHandQuickMenu.GetComponent<RightHandQuickMenu>().refreshItems();
+                StaticObjects.leftHandQuickMenu.GetComponent<LeftHandQuickMenu>().refreshItems();
             }
 
             checkQuickItems<RightHandQuickMenu>(StaticObjects.rightHandQuickMenu, SteamVR_Actions.valheim_QuickSwitch, true);
@@ -134,6 +156,7 @@ namespace ValheimVRMod.VRCore.UI
 
         void FixedUpdate()
         {
+            updateSmoothWalk(Time.fixedDeltaTime);
             updateAltPieceRotationTimer();
             updateAltMapZoomTimer();
         }
@@ -143,6 +166,141 @@ namespace ValheimVRMod.VRCore.UI
             // Reset this at the complete end of the update to allow for
             // both MapZoomIn and MapZoomOut to test the zoom input.
             altMapZoomTriggered = false;
+        }
+
+        private void updateSmoothWalk(float deltaTime)
+        {
+            Vector2 input = GetJoyLeftStickInput();
+            var inputSpeed = input.magnitude;
+
+            if (Player.m_localPlayer != null)
+            {
+                if (Player.m_localPlayer.HaveStamina())
+                {
+                    if (isExhaustedFromRunning && inputSpeed < GetAutoRunActiavtionThreshold())
+                    {
+                        isExhaustedFromRunning = false;
+                    }
+                }
+                else if (isAutoRunActive)
+                {
+                    isExhaustedFromRunning = true;
+                }
+            }
+
+            if (autorunActivationCountdown >= 0)
+            {
+                autorunActivationCountdown -= deltaTime;
+            }
+            if (autorunDeactivationCountdown >= 0)
+            {
+                autorunDeactivationCountdown -= deltaTime;
+            }
+
+            if (inputSpeed < GetAutoRunActiavtionThreshold())
+            {
+                autorunActivationCountdown = AUTORUN_ACTIVATION_DELAY;
+            }
+
+            if (inputSpeed > GetAutoRunDeactiavtionThreshold())
+            {
+                autorunDeactivationCountdown = AUTORUN_DEACTIVATION_DELAY;
+            }
+
+            if (deltaTime == 0 ||
+                smoothWalkVelocity.x == float.NaN ||
+                smoothWalkVelocity.y == float.NaN ||
+                VHVRConfig.WalkSpeedSmoothener() == 0 ||
+                SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.Any))
+            {
+                smoothWalkVelocity = input;
+            }
+            else
+            {
+                float relative = Vector2.Dot(input, smoothWalkVelocity) / smoothWalkVelocity.sqrMagnitude;
+                if (relative < -0.5 || relative > 1)
+                {
+                    // The input is either opposite to or larger than the current velocity, update instantly instead of smoothening the velocity.
+                    smoothWalkVelocity = input;
+                }
+                else
+                {
+                    smoothWalkVelocity =
+                        Vector2.MoveTowards(smoothWalkVelocity, input, Time.deltaTime / VHVRConfig.WalkSpeedSmoothener());
+                }
+            }
+
+            updateAutoRun();
+        }
+
+        private void updateAutoRun()
+        {
+            if (isExhaustedFromRunning)
+            {
+                isAutoRunActive = false;
+                return;
+            }
+
+            if (VRPlayer.gesturedLocomotionManager != null && VRPlayer.gesturedLocomotionManager.isRunning)
+            {
+                isAutoRunActive = true;
+                return;
+            }
+
+            if (autorunDeactivationCountdown <= 0)
+            {
+                isAutoRunActive = false;
+                return;
+            }
+
+            if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand) && SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand))
+            {
+                isAutoRunActive = false;
+                return;
+            }
+
+            if (Player.m_localPlayer != null && !Player.m_localPlayer.IsRunning() && autorunActivationCountdown <= 0)
+            {
+                isAutoRunActive = true;
+            }
+        }
+
+        private float GetAutoRunActiavtionThreshold()
+        {
+            float threshold = VHVRConfig.AutoRunThreshold();
+
+            if (threshold > 0.99f)
+            {
+                return Mathf.Infinity;
+            }
+
+            if (GesturedLocomotionManager.isInUse)
+            {
+                return threshold;
+            }
+
+            if (threshold >= 0.75f &
+                SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.LeftHand) &&
+                SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.RightHand))
+            {
+                return Mathf.Infinity;
+            }
+
+            return Mathf.Lerp(threshold, 1, 0.5f);
+        }
+
+        private float GetAutoRunDeactiavtionThreshold()
+        {
+            float threshold = VHVRConfig.AutoRunThreshold();
+            if (Player.m_localPlayer != null && !Player.m_localPlayer.IsOnGround())
+            {
+                return threshold * 0.25f;
+            }
+            if (GesturedLocomotionManager.isInUse)
+            {
+                return threshold * 0.5f;
+            }
+            return threshold;
         }
 
         private void updateAltPieceRotationTimer()
@@ -184,11 +342,6 @@ namespace ValheimVRMod.VRCore.UI
             // and when the hammer is equipped, the bindings conflict... so we'll share the right click button
             // here to activate quick switch. This is hacky because rebinding things can break the controls, but
             // it works and allows users to use the quick select while the hammer is equipped.
-            if (StaticObjects.rightHandQuickMenu != null)
-            {
-                StaticObjects.rightHandQuickMenu.GetComponent<RightHandQuickMenu>().refreshItems();
-                StaticObjects.leftHandQuickMenu.GetComponent<LeftHandQuickMenu>().refreshItems();
-            }
             bool rightClickDown = false;
             bool rightClickUp = false;
             if (useRightClick && laserControlsActive && inPlaceMode())
@@ -244,6 +397,12 @@ namespace ValheimVRMod.VRCore.UI
 
         private bool isInRecenterPose()
         {
+            if (SteamVR_Actions.valheim_Use.GetState(SteamVR_Input_Sources.Any) ||
+                SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.Any) ||
+                SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.Any))
+            {
+                return false;
+            }
             var hmd = VRPlayer.instance.GetComponent<Valve.VR.InteractionSystem.Player>().hmdTransform;
             var targetLocationLeft = hmd.localPosition + hmd.localRotation * RECENTER_POSE_POSITION_L;
             var targetLocationRight = hmd.localPosition + hmd.localRotation * RECENTER_POSE_POSITION_R;
@@ -307,15 +466,13 @@ namespace ValheimVRMod.VRCore.UI
                 {
                     QuickAbstract.toggleMap = false;
                     return true;
-                } else
-                {
-                    if (VHVRConfig.MinimapPanelPlacement().Equals("Legacy"))
-                    {
-                        // Revert back to using the regular map toggle if the minimap is in legacy mode
-                        return GetButtonDown(ToggleMiniMap);
-                    }
-                    return false;
                 }
+                else if (VHVRConfig.MinimapPanelPlacement().Equals("Legacy"))
+                {
+                    // Revert back to using the regular map toggle if the minimap is in legacy mode
+                    return GetButtonDown(ToggleMiniMap);
+                }
+                return false;
             }
 
             // Handle Map zoom specially using context scroll input
@@ -447,7 +604,7 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return 0.0f;
             }
-            return walk.axis.x;
+            return GetJoyLeftStickInput().x;
         }
 
         public float GetJoyLeftStickY()
@@ -456,7 +613,35 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return 0.0f;
             }
-            return -walk.axis.y;
+            return GetJoyLeftStickInput().y;
+        }
+
+        public Vector2 GetJoyLeftStickInput()
+        {
+            if (!mainActionSet.IsActive())
+            {
+                return Vector2.zero;
+            }
+
+            if (!VHVRConfig.UseLookLocomotion() || Player.m_localPlayer == null || VRPlayer.vrCam == null || VRPlayer.pelvis == null)
+            {
+                var input = walk.axis;
+                input.y = -input.y;
+                return input;
+            }
+
+            Transform playerTransform = Player.m_localPlayer.transform;
+            Vector3 joystickForward =
+                VHVRConfig.GetJoystickForwardDirection(
+                    VRPlayer.vrCam.transform,
+                    VRPlayer.leftHand?.transform ?? VRPlayer.vrCam.transform,
+                    VRPlayer.rightHand?.transform ?? VRPlayer.vrCam.transform,
+                    VRPlayer.pelvis,
+                    playerTransform);
+            Vector3 heading = Vector3.ProjectOnPlane(joystickForward, playerTransform.up).normalized;
+            Vector3 right = Vector3.Cross(playerTransform.up, heading);
+            Vector3 velocity = right * walk.axis.x + heading * walk.axis.y;
+            return new Vector2(Vector3.Dot(velocity, playerTransform.right), -Vector3.Dot(velocity, playerTransform.forward));
         }
 
         public float GetJoyRightStickX()
@@ -701,6 +886,7 @@ namespace ValheimVRMod.VRCore.UI
             zInputToBooleanAction.Add("Jump", new [] { SteamVR_Actions.valheim_Jump, SteamVR_Actions.laserPointers_Jump });
             zInputToBooleanAction.Add("Use", new[] { SteamVR_Actions.valheim_Use });
             zInputToBooleanAction.Add("Sit", new[] { SteamVR_Actions.valheim_Sit });
+            zInputToBooleanAction.Add("AutoPickup", new[] { SteamVR_Actions.valheim_ToggleAutoPickup });
             zInputToBooleanAction.Add(ToggleMiniMap, new[] { SteamVR_Actions.valheim_ToggleMap });
 
             // These placement commands re-use some of the normal game inputs
@@ -773,7 +959,6 @@ namespace ValheimVRMod.VRCore.UI
             ignoredZInputs.Add("BuildNext");
             ignoredZInputs.Add("BuildPrev");
             ignoredZInputs.Add("AltPlace");
-            ignoredZInputs.Add("AutoPickup");
             ignoredZInputs.Add("ChatUp");
             ignoredZInputs.Add("ChatDown");
             ignoredZInputs.Add("ScrollChatUp");

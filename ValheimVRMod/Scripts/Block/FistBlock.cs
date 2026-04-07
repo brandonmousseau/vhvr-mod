@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.Rendering;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 
@@ -9,8 +8,12 @@ namespace ValheimVRMod.Scripts.Block {
 
         private Collider leftHandBlockBox;
         private Collider rightHandBlockBox;
-        private MeshRenderer hitIndicator; // Renderer of disk indicating the position, direction, and block tolerance of an attack.
-        private EquipType? currentEquipType = null;
+        private EquipType? currentLeftEquipType = null;
+        private EquipType? currentRightEquipType = null;
+        private MeshRenderer leftHandBlockBoxRenderer;
+        private MeshRenderer rightHandBlockBoxRenderer;
+        private WeaponColData leftColliderData;
+        private WeaponColData rightColliderData;
 
         public static FistBlock instance;
 
@@ -26,47 +29,19 @@ namespace ValheimVRMod.Scripts.Block {
             hand = VHVRConfig.LeftHanded() ? VRPlayer.leftHand.transform : VRPlayer.rightHand.transform;
             offhand = VHVRConfig.LeftHanded() ? VRPlayer.rightHand.transform : VRPlayer.leftHand.transform;
             CreateBlockBoxes();
-
-            CreateHitIndicator();
+            updateBlockBoxShape();
         }
 
         protected override void FixedUpdate() {
             base.FixedUpdate();
-            if (!hitIndicator.gameObject.activeSelf)
-            {
-                return;
-            }
-
-            Color color = hitIndicator.material.color;
-            if (color.a <= 0.05f)
-            {
-                hitIndicator.gameObject.SetActive(false);
-                return;
-            }
-
-            // Fade the hit indicator gradually.
-            hitIndicator.material.color = new Color(color.r, color.g, color.b, color.a * (1 - Time.fixedDeltaTime * 3));
-        }
-
-        protected override void OnDestroy()
-        {
-            base.OnDestroy();
-            if (hitIndicator != null)
-            {
-                Destroy(hitIndicator.gameObject);
-            }
+            RotateColliderForSecondaryWeapon();
+            // TODO: maybe move this to VRPlayer.FixedUpdate()
+            fadeHitIndicator(Time.fixedDeltaTime);
         }
 
         public override void setBlocking(HitData hitData) {
-            if (VHVRConfig.BlockingType() == "Realistic")
+            if (VHVRConfig.UseRealisticBlock())
             {
-                float blockTolerance = GetBlockTolerance(hitData.m_damage, hitData.m_pushForce);
-                hitIndicator.gameObject.SetActive(true);
-                hitIndicator.transform.SetPositionAndRotation(
-                    hitData.m_point, Quaternion.LookRotation(hitData.m_dir) * Quaternion.Euler(90, 0, 0));
-                hitIndicator.transform.localScale = new Vector3(blockTolerance * 2, 0.001f, blockTolerance * 2);
-                hitIndicator.material.color = new Color(1, 0, 0, 0.75f);
-
                 bool blockedWithLeftHand =
                     StaticObjects.leftFist().blockingWithFist() && hitIntersectsBlockBox(hitData, leftHandBlockBox);
                 bool blockedWithRightHand =
@@ -113,21 +88,34 @@ namespace ValheimVRMod.Scripts.Block {
 
         public void updateBlockBoxShape()
         {
-            if (EquipScript.getRight() == currentEquipType)
+            var newLeftEquipmentType = EquipScript.getLeft();
+            var newRightEquipmentType = EquipScript.getRight();
+
+            if (newLeftEquipmentType == currentLeftEquipType && newRightEquipmentType == currentRightEquipType)
             {
                 return;
             }
 
-            currentEquipType = EquipScript.getRight();
+            currentLeftEquipType = newLeftEquipmentType;
+            currentRightEquipType = newRightEquipmentType;
 
-            var colliderData = WeaponUtils.GetDualWieldLeftHandBlockingColliderData(Player.m_localPlayer?.GetRightItem());
+            rightColliderData =
+                WeaponUtils.GetDualWieldLeftHandBlockingColliderData(
+                    VHVRConfig.LeftHanded() ? Player.m_localPlayer?.GetLeftItem() : Player.m_localPlayer?.GetRightItem());
+            leftColliderData = 
+                FistCollision.hasDualWieldingWeaponEquipped() ?
+                rightColliderData :
+                WeaponUtils.GetDualWieldLeftHandBlockingColliderData(
+                    VHVRConfig.LeftHanded() ? Player.m_localPlayer?.GetRightItem() : Player.m_localPlayer?.GetLeftItem());
 
-            leftHandBlockBox.transform.localPosition = colliderData.pos;
-            rightHandBlockBox.transform.localPosition = Vector3.Reflect(colliderData.pos, Vector3.right);
-            leftHandBlockBox.transform.localRotation = rightHandBlockBox.transform.localRotation =
-                Quaternion.Euler(colliderData.euler);
-            leftHandBlockBox.transform.localScale = rightHandBlockBox.transform.localScale =
-                colliderData.scale;
+            leftHandBlockBox.transform.localPosition = leftColliderData.pos;
+            rightHandBlockBox.transform.localPosition = Vector3.Reflect(rightColliderData.pos, Vector3.right);
+            leftHandBlockBox.transform.localRotation = Quaternion.Euler(leftColliderData.euler);
+            rightHandBlockBox.transform.localRotation = Quaternion.Euler(rightColliderData.euler);
+            leftHandBlockBox.transform.localScale = leftColliderData.scale; ;
+            rightHandBlockBox.transform.localScale = rightColliderData.scale;
+
+            RefreshDebugRenderers();
         }
 
         private void CheckParryMotion(Vector3 hitDir, bool blockedWithLeftHand, bool blockedWithRightHand)
@@ -161,32 +149,49 @@ namespace ValheimVRMod.Scripts.Block {
             rightHandBlockBox.isTrigger = true;
             rightHandBlockBox.gameObject.layer = LayerUtils.CHARACTER;
 
+            leftHandBlockBoxRenderer = leftHandBlockBox.GetComponent<MeshRenderer>();
+            rightHandBlockBoxRenderer = rightHandBlockBox.GetComponent<MeshRenderer>();
+            leftHandBlockBoxRenderer.material = Object.Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
+            leftHandBlockBoxRenderer.material.color = new Vector4(0.5f, 0.25f, 0, 0.5f);
+            rightHandBlockBoxRenderer.material = Object.Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
+            rightHandBlockBoxRenderer.material.color = new Vector4(0.5f, 0.25f, 0, 0.5f);
+
+            RefreshDebugRenderers();
+        }
+
+        private void RefreshDebugRenderers()
+        {
             var leftHandBlockBoxRenderer = leftHandBlockBox.GetComponent<MeshRenderer>();
             var rightHandBlockBoxRenderer = rightHandBlockBox.GetComponent<MeshRenderer>();
             if (VHVRConfig.ShowDebugColliders())
             {
-                leftHandBlockBoxRenderer.material = Object.Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
-                leftHandBlockBoxRenderer.material.color = new Vector4(0.5f, 0.25f, 0, 0.5f);
-                rightHandBlockBoxRenderer.material = Object.Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
-                rightHandBlockBoxRenderer.material.color = new Vector4(0.5f, 0.25f, 0, 0.5f);
+                leftHandBlockBoxRenderer.enabled = true;
+                rightHandBlockBoxRenderer.enabled = true;
             }
             else
             {
-                Destroy(leftHandBlockBoxRenderer);
-                Destroy(rightHandBlockBoxRenderer);
+                leftHandBlockBoxRenderer.enabled = false;
+                rightHandBlockBoxRenderer.enabled = false;
             }
         }
 
-        private void CreateHitIndicator()
+        private void RotateColliderForSecondaryWeapon()
         {
-            hitIndicator = GameObject.CreatePrimitive(PrimitiveType.Cylinder).GetComponent<MeshRenderer>();
-            GameObject.Destroy(hitIndicator.gameObject.GetComponent<Collider>());
-            hitIndicator.material = Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
-            hitIndicator.gameObject.layer = LayerUtils.getWorldspaceUiLayer();
-            hitIndicator.receiveShadows = false;
-            hitIndicator.shadowCastingMode = ShadowCastingMode.Off;
-            hitIndicator.lightProbeUsage = LightProbeUsage.Off;
-            hitIndicator.reflectionProbeUsage = ReflectionProbeUsage.Off;
+            if (EquipScript.getLeft() != EquipType.Knife || leftHandBlockBox == null || rightHandBlockBox == null)
+            {
+                return;
+            }
+
+            if (VHVRConfig.LeftHanded())
+            {
+                rightHandBlockBox.transform.localPosition =
+                    FistCollision.ShouldSecondaryKnifeHoldInverse ? rightColliderData.pos : Vector3.Reflect(rightColliderData.pos, Vector3.right);
+            }
+            else
+            {
+                leftHandBlockBox.transform.localPosition =
+                    FistCollision.ShouldSecondaryKnifeHoldInverse ? Vector3.Reflect(leftColliderData.pos, Vector3.right) : leftColliderData.pos;
+            }
         }
     }
 }

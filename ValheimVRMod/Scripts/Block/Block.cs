@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering;
 using ValheimVRMod.Utilities;
+using ValheimVRMod.VRCore;
 using Valve.VR;
 
 namespace ValheimVRMod.Scripts.Block {
@@ -19,15 +21,16 @@ namespace ValheimVRMod.Scripts.Block {
         protected Transform offhand;
         protected MeshCooldown _meshCooldown;
         public float blockTimer = blockTimerNonParry;
-        protected SteamVR_Input_Sources mainHandSource = VHVRConfig.LeftHanded() ? SteamVR_Input_Sources.LeftHand : SteamVR_Input_Sources.RightHand;
-        protected SteamVR_Input_Sources offHandSource = VHVRConfig.LeftHanded() ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand;
-        protected SteamVR_Input_Sources currhand = VHVRConfig.LeftHanded() ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand;
+        protected SteamVR_Input_Sources currentHandSource = SteamVR_Input_Sources.RightHand;
         protected bool wasParryStart = false;
         public bool wasResetTimer = false;
         public bool wasGetHit = false;
         private MeshFilter meshFilter;
         private Transform lastRenderedTransform;
         private Collider blockCollider;
+        // Renderer of disk indicating the position, direction, and block tolerance of an attack.
+        private static MeshRenderer hitIndicator;
+
         protected PhysicsEstimator physicsEstimator;
 
         protected virtual void Awake()
@@ -67,7 +70,7 @@ namespace ValheimVRMod.Scripts.Block {
             
             tickCounter = 0;
 
-            if(wasGetHit && !SteamVR_Actions.valheim_Grab.GetState(currhand))
+            if(wasGetHit && !SteamVR_Actions.valheim_Grab.GetState(currentHandSource))
             {
                 _meshCooldown.tryTrigger(cooldown);
                 wasGetHit = false;
@@ -87,9 +90,41 @@ namespace ValheimVRMod.Scripts.Block {
             }
         }
 
+        public static void showHitIndicator(HitData hitData)
+        {
+            EnsureHitIndicator();
+            float blockTolerance = GetBlockTolerance(hitData.m_damage, hitData.m_pushForce);
+            hitIndicator.gameObject.SetActive(true);
+            hitIndicator.transform.SetPositionAndRotation(
+                hitData.m_point, Quaternion.LookRotation(hitData.m_dir) * Quaternion.Euler(90, 0, 0));
+            hitIndicator.transform.localScale = new Vector3(blockTolerance * 2, 0.001f, blockTolerance * 2);
+            hitIndicator.material.color = new Color(1, 0, 0, 0.75f);
+        }
+
+        public static void indicateParrying()
+        {
+            EnsureHitIndicator();
+            float alpha = hitIndicator.material.color.a;
+            hitIndicator.material.color = new Color(0.75f, 0.5f, 0, alpha);
+        }
+
+        public static void indicateBlocking()
+        {
+            EnsureHitIndicator();
+            float alpha = hitIndicator.material.color.a;
+            hitIndicator.material.color = new Color(0.25f, 0.25f, 0.5f, alpha);
+        }
+
+        public static void indicateDodgeInvicible()
+        {
+            EnsureHitIndicator();
+            float alpha = hitIndicator.material.color.a;
+            hitIndicator.material.color = new Color(0.25f, 0.75f, 0.25f, alpha);
+        }
+
         public abstract void setBlocking(HitData hitData);
         public void resetBlocking() {
-            if (VHVRConfig.BlockingType() == "GrabButton")
+            if (VHVRConfig.UseGrabButtonBlock())
             {
                 _blocking = true;
             }
@@ -105,9 +140,9 @@ namespace ValheimVRMod.Scripts.Block {
             {
                 return false;
             }
-            if (VHVRConfig.BlockingType() == "GrabButton")
+            if (VHVRConfig.UseGrabButtonBlock())
             {
-                return SteamVR_Actions.valheim_Grab.GetState(currhand) && !_meshCooldown.inCoolDown() && _blocking;
+                return SteamVR_Actions.valheim_Grab.GetState(currentHandSource) && !_meshCooldown.inCoolDown() && _blocking;
             }
             else
             {
@@ -116,32 +151,33 @@ namespace ValheimVRMod.Scripts.Block {
         }
 
         public void block() {
-            if (VHVRConfig.BlockingType() != "GrabButton")
+            if (VHVRConfig.UseGrabButtonBlock())
             {
-                if (SteamVR_Actions.valheim_Grab.GetState(currhand))
-                {
-                    wasGetHit = true;
-                }   
-                else
-                {
-                    _meshCooldown.tryTrigger(cooldown);
-                }
+                return;
+            }
+
+            if (SteamVR_Actions.valheim_Grab.GetState(currentHandSource))
+            {
+                wasGetHit = true;
+            }   
+            else
+            {
+                _meshCooldown.tryTrigger(cooldown);
             }
         }
 
         public void UpdateGrabParry()
         {
-            currhand = offHandSource;
-            if (EquipScript.getLeft() != EquipType.Shield)
-            {
-                currhand = mainHandSource;
-            }
-            if (SteamVR_Actions.valheim_Grab.GetState(currhand) && !_meshCooldown.inCoolDown() && !wasParryStart)
+            currentHandSource =
+                EquipScript.getLeft() == EquipType.Shield ?
+                VRPlayer.secondaryWeaponHandInputSource :
+                VRPlayer.mainWeaponHandInputSource;
+            if (SteamVR_Actions.valheim_Grab.GetState(currentHandSource) && !_meshCooldown.inCoolDown() && !wasParryStart)
             {
                 wasParryStart = true;
                 wasResetTimer = true;
             }
-            else if (!SteamVR_Actions.valheim_Grab.GetState(currhand) && wasParryStart)
+            else if (!SteamVR_Actions.valheim_Grab.GetState(currentHandSource) && wasParryStart)
             {
                 _meshCooldown.tryTrigger(0.4f);
                 wasParryStart = false;
@@ -195,7 +231,25 @@ namespace ValheimVRMod.Scripts.Block {
             return false;
         }
 
-        protected static float GetBlockTolerance(HitData.DamageTypes damageTypes, float pushForce) {
+        protected static void fadeHitIndicator(float deltaTime)
+        {
+            if (hitIndicator == null || !hitIndicator.gameObject.activeSelf)
+            {
+                return;
+            }
+
+            Color color = hitIndicator.material.color;
+            if (color.a <= 0.05f)
+            {
+                hitIndicator.gameObject.SetActive(false);
+                return;
+            }
+
+            // Fade the hit indicator gradually.
+            hitIndicator.material.color = new Color(color.r, color.g, color.b, color.a * (1 - deltaTime * 3));
+        }
+
+        private static float GetBlockTolerance(HitData.DamageTypes damageTypes, float pushForce) {
             // Adjust for block tolerance radius: blunt damage and push force increases tolerance raidus whereas pierce damage decreases tolerance radius.
             return 0.5f * Mathf.Log(1 + damageTypes.m_blunt * 0.1f + pushForce * 0.01f) * (0.5f + 1f / Mathf.Log(8 + damageTypes.m_pierce * 0.1f));
         }
@@ -235,6 +289,23 @@ namespace ValheimVRMod.Scripts.Block {
             blockCollider.enabled = false;
 
             return blockCollider;
+        }
+
+        private static void EnsureHitIndicator()
+        {
+            if (hitIndicator != null)
+            {
+                return;
+            }
+
+            hitIndicator = GameObject.CreatePrimitive(PrimitiveType.Cylinder).GetComponent<MeshRenderer>();
+            GameObject.Destroy(hitIndicator.gameObject.GetComponent<Collider>());
+            hitIndicator.material = Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
+            hitIndicator.gameObject.layer = LayerUtils.getWorldspaceUiLayer();
+            hitIndicator.receiveShadows = false;
+            hitIndicator.shadowCastingMode = ShadowCastingMode.Off;
+            hitIndicator.lightProbeUsage = LightProbeUsage.Off;
+            hitIndicator.reflectionProbeUsage = ReflectionProbeUsage.Off;
         }
     }
 }

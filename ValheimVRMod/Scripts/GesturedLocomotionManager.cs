@@ -10,13 +10,17 @@ namespace ValheimVRMod.Scripts
         private const float STICK_OUTPUT_WEIGHT = 1f;
         private const float GROUND_SPEED_CHANGE_DAMPER = 0.25f;
         private const float WATER_SPEED_CHANGE_DAMPER = 1f;
-        private const float RUN_ACITIVATION_SPEED = 1.375f;
-        private const float RUN_DEACTIVATION_SPEED = 1.125f;
+        private const float AIR_SPEED_CHANGE_DAMPER = 0.25f;
+        private const float RUN_ACITIVATION_SPEED = 1.75f;
+        private const float GROUND_RUN_DEACTIVATION_SPEED = 1.125f;
+        private const float AIR_RUN_DEACTIVATION_SPEED = 0.125f;
         private const float MIN_WATER_SPEED = 0.0625f;
 
+        public static float distanceTraveled { get; private set; } = 0;
         public float stickOutputX { get; private set; } = 0;
         public float stickOutputY { get; private set; } = 0;
         public bool isRunning { get; private set; } = false;
+        public static bool isUsingFootTracking {  get { return WalkInPlace.pace != WalkInPlace.Pace.STOP || SlideInPlace.IsSlidingInPlace; } }
         public Vector3? dodgeDirection { get; private set; } = null;
 
         private static Vector3? upDirection { get { return VRPlayer.instance ? VRPlayer.instance.transform.up : (Vector3?) null; } }
@@ -28,7 +32,7 @@ namespace ValheimVRMod.Scripts
             get
             {
                 return SteamVR_Actions.valheim_StopGesturedLocomotion.activeBinding &&
-              !SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.Any);
+                    !SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.Any);
             }
         }
 
@@ -40,6 +44,11 @@ namespace ValheimVRMod.Scripts
                     new GesturedJump(),
                     new MaximizingGesturedLocomotion(
                         new LeftHandGesturedWalkRun(), new RightHandGesturedWalkRun()),
+                    new WalkInPlace(),
+                    new SlideInPlace(),
+                    new HandGesturedJump(isRightHand: true),
+                    new HandGesturedJump(isRightHand: false),
+                    new GesturedFly(),
                     new GesturedDodgeRoll()};
         }
 
@@ -58,13 +67,22 @@ namespace ValheimVRMod.Scripts
             Vector3 targetVelocity = Vector3.zero;
             foreach (GesturedLocomotion locomotion in gesturedLocomotions)
             {
-                targetVelocity += locomotion.GetTargetVelocityFromGestures(localPlayer);
+                targetVelocity += locomotion.GetTargetVelocityFromGestures(localPlayer, deltaTime);
             }
 
-            float damper = localPlayer.IsSwimming() ? WATER_SPEED_CHANGE_DAMPER : GROUND_SPEED_CHANGE_DAMPER;
+            if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand) &&
+                SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand))
+            {
+                gesturedLocomotionVelocity = targetVelocity;
+            }
+            else
+            {
+                float damper =
+                    localPlayer.IsSwimming() ? WATER_SPEED_CHANGE_DAMPER : GesturedFly.isFlyActive || IsInAir(localPlayer) ? AIR_SPEED_CHANGE_DAMPER : GROUND_SPEED_CHANGE_DAMPER;
 
-            gesturedLocomotionVelocity =
-                Vector3.Lerp(gesturedLocomotionVelocity, targetVelocity, deltaTime / damper);
+                gesturedLocomotionVelocity =
+                    Vector3.Lerp(gesturedLocomotionVelocity, targetVelocity, deltaTime / damper);
+            }
 
             var horizontalVelocity = Vector3.ProjectOnPlane(gesturedLocomotionVelocity, upDirection.Value);
             horizontalSpeed = horizontalVelocity.magnitude;
@@ -75,28 +93,81 @@ namespace ValheimVRMod.Scripts
             }
             else
             {
-                Vector3 stickYDirection = Vector3.ProjectOnPlane(-localPlayer.transform.forward, upDirection.Value).normalized;
+                Vector3 stickYDirection = -Vector3.ProjectOnPlane(localPlayer.transform.forward, upDirection.Value).normalized;
                 Vector3 stickXDirection = Vector3.Cross(stickYDirection, upDirection.Value);
                 stickOutputX = Vector3.Dot(gesturedLocomotionVelocity, stickXDirection) * STICK_OUTPUT_WEIGHT;
                 stickOutputY = Vector3.Dot(gesturedLocomotionVelocity, stickYDirection) * STICK_OUTPUT_WEIGHT;
+                distanceTraveled += targetVelocity.magnitude * deltaTime;
             }
 
-            if (horizontalSpeed > RUN_ACITIVATION_SPEED)
+            if (isRunning)
+            {
+                if (!localPlayer.HaveStamina() ||
+                    horizontalSpeed < (IsInAir(localPlayer) ? AIR_RUN_DEACTIVATION_SPEED : GROUND_RUN_DEACTIVATION_SPEED))
+                {
+                    isRunning = false;
+                }
+                else if (Vector3.Dot(-VRPlayer.leftHand.transform.right, upDirection.Value) > 0.8f &&
+                    Vector3.Dot(VRPlayer.rightHand.transform.right, upDirection.Value) > 0.8f) {
+                    // Both hands palms are facing down, stop running.
+                    isRunning = false;
+                }
+            }
+            else if (horizontalSpeed > RUN_ACITIVATION_SPEED &&
+                Vector3.Dot(-VRPlayer.leftHand.transform.right, (Vector3)upDirection) < 0.5f &&
+                Vector3.Dot(VRPlayer.rightHand.transform.right, (Vector3)upDirection) < 0.5f &&
+                !SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.Any))
             {
                 isRunning = true;
             }
-            else if (horizontalSpeed < RUN_DEACTIVATION_SPEED)
-            {
-                isRunning = false;
-            }
 
             var verticalSpeed = Vector3.Dot(targetVelocity, upDirection.Value);
-            dodgeDirection = verticalSpeed < -0.5f ? horizontalVelocity : (Vector3?) null;
-            if (verticalSpeed > VHVRConfig.GesturedJumpMinSpeed() && localPlayer.IsOnGround())
+            dodgeDirection = verticalSpeed < -0.5f || (isRunning && VRPlayer.isRoomscaleSneaking) ? horizontalVelocity : (Vector3?) null;
+            if (verticalSpeed > VHVRConfig.GesturedJumpMinSpeed())
             {
-                localPlayer.Jump();
+                if (localPlayer.IsSitting())
+                {
+                    localPlayer.StopEmote();
+                }
+                else
+                {
+                    localPlayer.Jump();
+                }
             }
         }
+
+        private static bool IsInAir(Player player)
+        {
+            return !player.IsAttached() && !player.IsSwimming() && !player.IsOnGround();
+        }
+
+        private static Vector3 ApplyHeadTiltStrafe(Camera head, Vector3 walkDirection, float walkSpeed)
+        {
+            const float HEAD_TILT_STRAFE_DEADZONE = 0.125f;
+            const float HEAD_TILT_STRAFE_WEIGHT = 2f;
+
+            if (head == null)
+            {
+                return walkDirection * walkSpeed;
+            }
+            var heading = Vector3.ProjectOnPlane(head.transform.forward, upDirection.Value);
+            var strafe =
+                Vector3.ProjectOnPlane(
+                    Vector3.ProjectOnPlane(head.transform.up, heading) - upDirection.Value, upDirection.Value);
+            var strafeAmount = strafe.magnitude;
+            if (strafeAmount < HEAD_TILT_STRAFE_DEADZONE)
+            {
+                return walkDirection * walkSpeed;
+            }
+
+            strafe -= strafe * HEAD_TILT_STRAFE_DEADZONE / strafeAmount;
+            if (walkSpeed < 0)
+            {
+                strafe = -strafe;
+            }
+            return (walkDirection + strafe * HEAD_TILT_STRAFE_WEIGHT).normalized * walkSpeed;
+        }
+
 
         abstract class GesturedLocomotion
         {
@@ -105,7 +176,7 @@ namespace ValheimVRMod.Scripts
             protected Vector3 leftHandVelocity { get { return VRPlayer.leftHandPhysicsEstimator.GetVelocity(); } }
             protected Vector3 rightHandVelocity { get { return VRPlayer.rightHandPhysicsEstimator.GetVelocity(); } }
 
-            public abstract Vector3 GetTargetVelocityFromGestures(Player player);
+            public abstract Vector3 GetTargetVelocityFromGestures(Player player, float deltaTime);
         }
 
         class GesturedSwim : GesturedLocomotion
@@ -113,7 +184,7 @@ namespace ValheimVRMod.Scripts
             private float HAND_PROPULSION_DEADZONE = 0.5f;
             private float MIN_SWIM_SPEED = 0.375f;
 
-            public override Vector3 GetTargetVelocityFromGestures(Player player)
+            public override Vector3 GetTargetVelocityFromGestures(Player player, float deltaTime)
             {
                 if (!VHVRConfig.IsGesturedSwimEnabled() || !player.IsSwimming())
                 {
@@ -138,15 +209,20 @@ namespace ValheimVRMod.Scripts
                     velocity += -rightHandVelocity.normalized * rightHandPropulsion;
                 }
                 velocity = Vector3.ProjectOnPlane(velocity, upDirection.Value);
-                return velocity.magnitude >= MIN_SWIM_SPEED ? velocity : Vector3.zero;
+                return velocity.magnitude >= MIN_SWIM_SPEED ? velocity * 2 : Vector3.zero;
             }
         }
 
         class GesturedJump : GesturedLocomotion
         {
-            public override Vector3 GetTargetVelocityFromGestures(Player player)
+            public override Vector3 GetTargetVelocityFromGestures(Player player, float deltaTime)
             {
-                if (!VHVRConfig.IsGesturedJumpEnabled() || player.IsAttached() || IsInAir(player))
+                if (!VHVRConfig.IsGesturedJumpEnabled() || IsInAir(player))
+                {
+                    return Vector3.zero;
+                }
+
+                if (StaticObjects.leftFist().isGrabbingJumpingAid || StaticObjects.rightFist().isGrabbingJumpingAid)
                 {
                     return Vector3.zero;
                 }
@@ -164,7 +240,7 @@ namespace ValheimVRMod.Scripts
                 }
 
                 var verticalAcceleration = Vector3.Dot(VRPlayer.headPhysicsEstimator.GetAcceleration(), upDirection.Value);
-                if (verticalAcceleration < VHVRConfig.GesturedJumpMinSpeed() * 8) // TODO: add an option of min acceleration.
+                if (verticalAcceleration < VHVRConfig.GesturedJumpMinSpeed() * 8) // TODO: consider adding an option for min acceleration.
                 {
                     return Vector3.zero;
                 }
@@ -172,10 +248,107 @@ namespace ValheimVRMod.Scripts
                 LogUtils.LogInfo("Gestured jump at speed " + verticalSpeed + " and acceleration " + verticalAcceleration);
                 return upDirection.Value * verticalSpeed;
             }
+        }
 
-            private static bool IsInAir(Player player)
+        class HandGesturedJump : GesturedLocomotion
+        {
+            private bool isRightHand;
+            private Vector3 horizontalVelocity = Vector3.zero;
+
+            public HandGesturedJump(bool isRightHand)
             {
-                return !player.IsAttached() && !player.IsSwimming() && !player.IsOnGround();
+                this.isRightHand = isRightHand;
+            }
+
+            public override Vector3 GetTargetVelocityFromGestures(Player player, float deltaTime)
+            {
+                var fistCollision = isRightHand ? StaticObjects.rightFist() :StaticObjects.leftFist();
+                var physicsEstimator = isRightHand ? VRPlayer.rightHandPhysicsEstimator : VRPlayer.leftHandPhysicsEstimator;
+                var isJumping = fistCollision.isGrabbingJumpingAid && Vector3.Dot(physicsEstimator.GetVelocity(), upDirection.Value) < -3f;
+
+                if (isJumping)
+                {
+                    horizontalVelocity =
+                        Vector3.ProjectOnPlane(-physicsEstimator.GetVelocity(), upDirection.Value).normalized *
+                        (GesturedLocomotionManager.RUN_ACITIVATION_SPEED + 0.1f);
+                    return horizontalVelocity + upDirection.Value * (VHVRConfig.GesturedJumpMinSpeed() + 0.1f);
+                }
+                
+                if (!IsInAir(player) || !fistCollision.isGrabbingJumpingAid)
+                {
+                    horizontalVelocity = Vector3.zero;
+                }
+
+                return horizontalVelocity;
+            }
+        }
+
+        class GesturedFly : GesturedLocomotion
+        {
+            public static bool isFlyActive = false;
+
+            public override Vector3 GetTargetVelocityFromGestures(Player player, float deltaTime)
+            {
+                if (!SteamVR_Actions.valheim_StopGesturedLocomotion.activeBinding ||
+                    !VHVRConfig.IsGesturedJumpEnabled() ||
+                    (player.IsSwimming() && !player.IsOnGround()))
+                {
+                    isFlyActive = false;
+                    return Vector3.zero;
+                }
+
+                if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand) &&
+                    SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand))
+                {
+                    isFlyActive = false;
+                    return Vector3.zero;
+                }
+
+                var handSpan = VRPlayer.rightHand.transform.position - VRPlayer.leftHand.transform.position;
+                handSpan.y = 0;
+                var handHorizontalDistance = handSpan.magnitude;
+
+                if (handHorizontalDistance < 0.125f)
+                {
+                    isFlyActive = false;
+                    return Vector3.zero;
+                }
+
+                var leftHandVelocity = VRPlayer.leftHandPhysicsEstimator.GetVelocity();
+                var rightHandVelocity = VRPlayer.rightHandPhysicsEstimator.GetVelocity();
+                var leftHandSpeed = leftHandVelocity.magnitude;
+                var rightHandSpeed = rightHandVelocity.magnitude;
+                var leftHandPalmar = VRPlayer.leftHand.transform.right;
+                var rightHandPalmar = -VRPlayer.rightHand.transform.right;
+                var leftHandPropulsion = Vector3.Dot(leftHandVelocity, leftHandPalmar);
+                var rightHandPropulsion = Vector3.Dot(rightHandVelocity, rightHandPalmar);
+                var leftHandContribution = (Mathf.Abs(Mathf.Abs(leftHandPropulsion) * 2 - leftHandSpeed) - leftHandSpeed) * leftHandPalmar;
+                var rightHandContribution = (Mathf.Abs(Mathf.Abs(rightHandPropulsion) * 2 - rightHandSpeed) - rightHandSpeed) * rightHandPalmar;
+                if (leftHandPropulsion < 0)
+                {
+                    leftHandContribution = -leftHandContribution;
+                }
+                if (rightHandPropulsion < 0)
+                {
+                    rightHandContribution = -rightHandContribution;
+                }
+                var velocity = Vector3.ProjectOnPlane(leftHandContribution + rightHandContribution, handSpan) * 4;
+                velocity.y = 0;
+
+                if (!isFlyActive &&
+                    !SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.Any) &&
+                    handHorizontalDistance > 1.5f &&
+                    velocity.sqrMagnitude > 10f)
+                {
+                    isFlyActive = true;
+                }
+
+                if (!isFlyActive)
+                {
+                    return Vector3.zero;
+                }
+
+                return velocity;
             }
         }
 
@@ -191,10 +364,10 @@ namespace ValheimVRMod.Scripts
                 this.b = b;
             }
 
-            public override Vector3 GetTargetVelocityFromGestures(Player player)
+            public override Vector3 GetTargetVelocityFromGestures(Player player, float deltaTime)
             {
-                Vector3 vA = a.GetTargetVelocityFromGestures(player);
-                Vector3 vB = b.GetTargetVelocityFromGestures(player);
+                Vector3 vA = a.GetTargetVelocityFromGestures(player, deltaTime);
+                Vector3 vB = b.GetTargetVelocityFromGestures(player, deltaTime);
                 return (vA + vB).normalized * Mathf.Max(vA.magnitude, vB.magnitude);
             }
         }
@@ -210,6 +383,8 @@ namespace ValheimVRMod.Scripts
             protected override Vector3 handVelocity { get { return VRPlayer.leftHandPhysicsEstimator.GetVelocity(); } }
             protected override Transform handTransform { get { return VRPlayer.leftHand.transform; } }
             protected override Transform otherHandTransform { get { return VRPlayer.rightHand.transform; } }
+            protected override Vector3 palmar { get { return -VRPlayer.rightHand.transform.right; } }
+
         }
 
         class RightHandGesturedWalkRun : GesturedWalkRun {
@@ -223,14 +398,12 @@ namespace ValheimVRMod.Scripts
             protected override Vector3 handVelocity { get { return VRPlayer.rightHandPhysicsEstimator.GetVelocity(); } }
             protected override Transform handTransform { get { return VRPlayer.rightHand.transform; } }
             protected override Transform otherHandTransform { get { return VRPlayer.leftHand.transform; } }
+            protected override Vector3 palmar { get { return VRPlayer.leftHand.transform.right; } }
         }
 
         abstract class GesturedWalkRun : GesturedLocomotion
         {
-            private const float MIN_HAND_SPEED = 0.125f;
-            private const float HEAD_TILT_STRAFE_DEADZONE = 0.125f;
-            private const float HEAD_TILT_STRAFE_WEIGHT = 2f;
-            private const float MIN_ACTIVATION_HAND_DISTANCE = 0.375f;
+            private const float DEACTIVATION_SPEED = 0.0625f;
 
             private Camera vrCam;
             private bool isWalkingOrRunningUsingGestures = false;
@@ -240,27 +413,40 @@ namespace ValheimVRMod.Scripts
             protected abstract Transform handTransform { get; }
 
             protected abstract Transform otherHandTransform { get; }
+            protected abstract Vector3 palmar { get; }
 
             public Vector3 movementVerticalPlaneNormal { get; private set; }
 
-            public override Vector3 GetTargetVelocityFromGestures(Player player)
+            public override Vector3 GetTargetVelocityFromGestures(Player player, float deltaTime)
             {
                 if (!VHVRConfig.IsGesturedWalkRunEnabled())
                 {
                     return Vector3.zero;
                 }
 
-                Vector3 handVelocity = this.handVelocity;
-                float handSpeed = handVelocity.magnitude;
-                Vector3 clampedHandVelocity = handSpeed > 1 ? handVelocity / handSpeed : handVelocity;
+                // Use controller pointing as walking direction.
+                Vector3 walkDirection = handTransform.forward - handTransform.up * 0.75f;
 
-                // Use both hand pointing direction and hand movement direction to decide walk direction
-                Vector3 walkDirection = handTransform.forward * 2;
-                walkDirection += (Vector3.Dot(walkDirection, clampedHandVelocity) > 0 ? clampedHandVelocity : -clampedHandVelocity);
                 walkDirection = Vector3.ProjectOnPlane(walkDirection, upDirection.Value).normalized;
 
+                Vector3 handVelocity = this.handVelocity;
+                float handSpeed = handVelocity.magnitude;
+                Vector3 clampedHandVelocity = Vector3.ProjectOnPlane(handSpeed > 1 ? handVelocity / handSpeed : handVelocity, upDirection.Value);
+
+                // Use hand velocity to adjust walk direction.
+                if (Vector3.Dot(walkDirection, clampedHandVelocity) > 0) {
+                    walkDirection += clampedHandVelocity * 0.5f;
+                }
+                else
+                {
+                    walkDirection -= clampedHandVelocity * 0.5f;
+                }
+
+                walkDirection = walkDirection.normalized;
+
+                Vector3 armSpan = handTransform.position - otherHandTransform.position;
                 movementVerticalPlaneNormal = Vector3.Cross(upDirection.Value, walkDirection).normalized;
-                Vector3 wheelDiameter = Vector3.ProjectOnPlane(handTransform.position - otherHandTransform.position, movementVerticalPlaneNormal);
+                Vector3 wheelDiameter = Vector3.ProjectOnPlane(armSpan, movementVerticalPlaneNormal);
 
                 float walkSpeed =
                     Vector3.Dot(Vector3.Cross(wheelDiameter.normalized, handVelocity), movementVerticalPlaneNormal);
@@ -269,36 +455,18 @@ namespace ValheimVRMod.Scripts
                 {
                     isWalkingOrRunningUsingGestures = false;
                 }
-                else if (ShouldStart(wheelDiameter, walkDirection, handSpeed))
+                else if (ShouldStart(armSpan, wheelDiameter, walkDirection, Mathf.Abs(walkSpeed)))
                 {
                     isWalkingOrRunningUsingGestures = true;
+                    GesturedFly.isFlyActive = false;
                 }
 
-                return isWalkingOrRunningUsingGestures ? ApplyHeadTiltStrafe(walkDirection) * walkSpeed : Vector3.zero;
-            }
-
-            private Vector3 ApplyHeadTiltStrafe(Vector3 walkDirection)
-            {
                 if (vrCam == null)
                 {
                     vrCam = CameraUtils.getCamera(CameraUtils.VR_CAMERA);
-                    if (vrCam == null)
-                    {
-                        return walkDirection;
-                    }
-                }
-                var heading = Vector3.ProjectOnPlane(vrCam.transform.forward, upDirection.Value);
-                var strafe =
-                    Vector3.ProjectOnPlane(
-                        Vector3.ProjectOnPlane(vrCam.transform.up, heading) - upDirection.Value, upDirection.Value);
-                var strafeAmount = strafe.magnitude;
-                if (strafeAmount < HEAD_TILT_STRAFE_DEADZONE)
-                {
-                    return walkDirection;
                 }
 
-                strafe -= strafe * HEAD_TILT_STRAFE_DEADZONE / strafeAmount;
-                return (walkDirection + strafe * HEAD_TILT_STRAFE_WEIGHT).normalized;
+                return isWalkingOrRunningUsingGestures ? ApplyHeadTiltStrafe(vrCam, walkDirection, walkSpeed) : Vector3.zero;
             }
 
             private bool isStoppingWalkRunByButton()
@@ -312,10 +480,61 @@ namespace ValheimVRMod.Scripts
                 return SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(inputSource);
             }
 
-            private bool ShouldStart(Vector3 wheelDiameter, Vector3 walkDirection, float handSpeed)
+            private bool ShouldStart(Vector3 armSpan, Vector3 wheelDiameter, Vector3 walkDirection, float walkSpeed)
             {
-                return !isStoppingWalkRunByButton() && handSpeed > MIN_HAND_SPEED &&
-                    wheelDiameter.y < -MIN_ACTIVATION_HAND_DISTANCE;
+                if  (SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.Any))
+                {
+                    return false;
+                }
+                float wheelDiamaterLength = wheelDiameter.magnitude;
+                if (walkSpeed < 0.75f || wheelDiamaterLength < 0.5f)
+                {
+                    return false;
+                }
+                Vector3 lateralArmSpan = armSpan - wheelDiameter;
+                if (lateralArmSpan.magnitude > 0.67f)
+                {
+                    return false;
+                }
+                if (!IsStepping() && walkSpeed < 2.5f && wheelDiamaterLength < 1f)
+                {
+                    return false;
+                }
+                float palmarToUp = Vector3.Angle(palmar, upDirection.Value);
+                if (palmarToUp > 150)
+                {
+                    // Palm facing down
+                    return true;
+                }
+                // Palm facing sideways?
+                return 75 < palmarToUp && palmarToUp < 105;
+            }
+
+            private bool IsStepping()
+            {
+                if (!VHVRConfig.TrackFeet())
+                {
+                    return false;
+                }
+                Vector3 footStep = VRPlayer.leftFoot.position - VRPlayer.rightFoot.position;
+                if (Mathf.Abs(Vector3.Dot(footStep, upDirection.Value)) > 0.25f)
+                {
+                    return true;
+                }
+
+                if (VRPlayer.leftFootPhysicsEstimator != null &&
+                    Mathf.Abs(Vector3.Dot(VRPlayer.leftFootPhysicsEstimator.GetVelocity(), upDirection.Value)) > 2)
+                {
+                    return true;
+                }
+
+                if (VRPlayer.rightFootPhysicsEstimator != null &&
+                    Mathf.Abs(Vector3.Dot(VRPlayer.rightFootPhysicsEstimator.GetVelocity(), upDirection.Value)) > 2)
+                {
+                    return true;
+                }
+
+                return false;
             }
 
             private bool ShouldStop(Player player, double handSpeed)
@@ -330,8 +549,19 @@ namespace ValheimVRMod.Scripts
                     return true;
                 }
 
+                var leftHandDistal = VRPlayer.leftHand.transform.forward - VRPlayer.leftHand.transform.up;
+                var rightHandDistal = VRPlayer.rightHand.transform.forward - VRPlayer.rightHand.transform.up;
+                var handSpan = VRPlayer.rightHand.transform.position - VRPlayer.leftHand.transform.position;
+                var handDistance = handSpan.magnitude;
+                if (handDistance > 0.75f &&
+                    Vector3.Dot(leftHandDistal, handSpan) < -handDistance &&
+                    Vector3.Dot(rightHandDistal, handSpan) > handDistance)
+                {
+                    return true;
+                }
+
                 // Stop gestured walking if hand movements are slow.
-                return isWalkingOrRunningUsingGestures && handSpeed < MIN_HAND_SPEED / 2;
+                return isWalkingOrRunningUsingGestures && handSpeed < DEACTIVATION_SPEED;
             }
 
             // "Hand wheels" displayed to indicate the activity and direction of gestured walking.
@@ -411,18 +641,254 @@ namespace ValheimVRMod.Scripts
             }
         }
 
+        class WalkInPlace : GesturedLocomotion
+        {
+            public enum Pace
+            {
+                RETROGRADE = -1,
+                STOP = 0,
+                WALK = 1,
+                RUN = 2
+            }
+            private const float LEAN_THRESHOLD = 0.0625f;
+            public static Pace pace { get; private set; } = Pace.STOP;
+            private float stopWalkingCountdown = 0;
+            private Camera vrCam;
+
+            public override Vector3 GetTargetVelocityFromGestures(Player player, float deltaTime)
+            {
+                if (!VHVRConfig.IsGesturedWalkRunEnabled() || !VHVRConfig.TrackFeet() || !SteamVR_Actions.valheim_StopGesturedLocomotion.activeBinding)
+                {
+                    pace = Pace.STOP;
+                    return Vector3.zero;
+                }
+
+                Vector3 leftFootVelocity = VRPlayer.leftFootPhysicsEstimator.GetVelocity();
+                Vector3 rightFootVelocity = VRPlayer.rightFootPhysicsEstimator.GetVelocity();
+                float leftFootElevation = VRPlayer.leftFootElevation;
+                float rightFootElevation = VRPlayer.rightFootElevation;
+                float walkSpeed = leftFootVelocity.sqrMagnitude + rightFootVelocity.sqrMagnitude;
+
+                if (vrCam == null)
+                {
+                    vrCam = CameraUtils.getCamera(CameraUtils.VR_CAMERA);
+                }
+
+                Vector3 walkDirection =
+                    Vector3.ProjectOnPlane(VRPlayer.leftFoot.forward + VRPlayer.rightFoot.forward, upDirection.Value).normalized;
+
+                UpdatePace(leftFootVelocity, rightFootVelocity, leftFootElevation, rightFootElevation, walkDirection, walkSpeed, deltaTime);
+
+                if (!SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.Any) &&
+                    leftFootElevation > 0.0625f &&
+                    rightFootElevation > 0.0625f &&
+                    Vector3.Dot(leftFootVelocity, upDirection.Value) > 0.5f &&
+                    Vector3.Dot(rightFootVelocity, upDirection.Value) > 0.5f &&
+                    Vector3.Dot(VRPlayer.headPhysicsEstimator.GetVelocity(), upDirection.Value) > VHVRConfig.GesturedJumpMinSpeed()) {
+                    // Jump
+                    return upDirection.Value * 16;
+                }
+
+                switch (pace)
+                {
+                    case Pace.STOP:
+                        return Vector3.zero;
+                    case Pace.RETROGRADE:
+                        walkDirection = -walkDirection;
+                        walkSpeed = Mathf.Min(walkSpeed, 1);
+                        break;
+                    case Pace.WALK:
+                        walkSpeed = Mathf.Min(walkSpeed, 1);
+                        break;
+                    case Pace.RUN:
+                        walkSpeed *= 2;
+                        break;
+                }
+
+                return ApplyHeadTiltStrafe(vrCam, walkDirection, walkSpeed);
+            }
+
+            private void UpdatePace(
+                Vector3 leftFootVelocity, Vector3 rightFootVelocity, float leftFootElevation, float rightFootElevation, Vector3 walkDirection, float walkSpeed, float deltaTime)
+            {
+                if (ShouldStop(walkSpeed, leftFootElevation, rightFootElevation, deltaTime)) {
+                    // Stopped walking motion
+                    pace = Pace.STOP;
+                    return;
+                }
+
+                Vector3 feet = Vector3.Lerp(VRPlayer.leftFoot.position, VRPlayer.rightFoot.position, 0.5f);
+                Vector3 feetToHead = (vrCam.transform.position - feet).normalized;
+
+                if (Vector3.Dot(feetToHead, upDirection.Value) < 0.25f || 
+                    Vector3.Dot(VRPlayer.pelvis.position - feet, upDirection.Value) < 0.125f)
+                {
+                    // Supine, stop walking
+                    pace = Pace.STOP;
+                    return;
+                }
+
+                float leanForward = Vector3.Dot(feetToHead, walkDirection);
+                
+                if (pace == Pace.STOP)
+                {
+                    if (SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.Any))
+                    {
+                        return;
+                    }
+                    if (Vector3.Dot(leftFootVelocity, upDirection.Value) > -0.25f && Vector3.Dot(rightFootVelocity, upDirection.Value) > -0.25f) {
+                        return;
+                    }
+                    if (leanForward > -LEAN_THRESHOLD && leanForward < LEAN_THRESHOLD)
+                    {
+                        return;
+                    }
+                    if (leftFootElevation < 0.125f && rightFootElevation < 0.125f)
+                    {
+                        return;
+                    }
+                }
+
+                if (leanForward < -0.0625f)
+                {
+                    pace = Pace.RETROGRADE;
+                    return;
+                }
+
+                bool bothFeetOnGround = leftFootElevation < 0.03f && rightFootElevation < 0.03;
+                bool noFeetOnGround = leftFootElevation > 0.03f && rightFootElevation > 0.03f;
+
+                if (pace == Pace.RUN && bothFeetOnGround && walkSpeed < 0.5f) {
+                    pace = Pace.WALK;
+                    return;
+                }
+
+                if (noFeetOnGround)
+                {
+                    if (pace == Pace.WALK || (pace == Pace.STOP && leanForward > LEAN_THRESHOLD))
+                    {
+                        pace = Pace.RUN;
+                        return;
+                    }
+                }
+
+                if (pace != Pace.RUN && leanForward > LEAN_THRESHOLD)
+                {
+                    pace = Pace.WALK;
+                }
+            }
+
+            private bool ShouldStop(float walkSpeed, float leftFootElevation, float rightFootElevation, float deltaTime)
+            {
+                if (Player.m_localPlayer.m_attached)
+                {
+                    return true;
+                }
+
+                if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand) &&
+                    SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand))
+                {
+                    return true;
+                }
+
+                if (leftFootElevation > 0.0625f || rightFootElevation > 0.0625f || walkSpeed > 0.01f)
+                {
+                    stopWalkingCountdown = 0.5f;
+                    return false;
+                }
+
+                stopWalkingCountdown -= deltaTime;
+
+                return stopWalkingCountdown <= 0;
+            }
+        }
+
+        class SlideInPlace : GesturedLocomotion
+        {
+            public static bool IsSlidingInPlace { get; private set; } = false;
+
+            public override Vector3 GetTargetVelocityFromGestures(Player player, float deltaTime)
+            {
+                if (!VHVRConfig.IsGesturedWalkRunEnabled() ||
+                    !VHVRConfig.TrackFeet() ||
+                    !SteamVR_Actions.valheim_StopGesturedLocomotion.activeBinding ||
+                    Player.m_localPlayer.m_attached ||
+                    SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.Any))
+                {
+                    return Vector3.zero;
+                }
+
+                Vector3 leftFootVelocity = VRPlayer.leftFootPhysicsEstimator.GetVelocity();
+                Vector3 rightFootVelocity = VRPlayer.rightFootPhysicsEstimator.GetVelocity();
+                float leftFootVerticalSpeed = Vector3.Dot(leftFootVelocity, upDirection.Value);
+                float rightFootVerticalSpeed = Vector3.Dot(rightFootVelocity, upDirection.Value);
+                if (leftFootVerticalSpeed > 0.125f || rightFootVerticalSpeed > 0.125f)
+                {
+                    IsSlidingInPlace = false;
+                    return Vector3.zero;
+                }
+
+                float leftFootElevation = VRPlayer.leftFootElevation;
+                float rightFootElevation = VRPlayer.rightFootElevation;
+                float footHeightDifference = leftFootElevation - rightFootElevation;
+                if (leftFootElevation > 0.0625f ||
+                    rightFootElevation > 0.0625f ||
+                    WalkInPlace.pace != WalkInPlace.Pace.STOP)
+                {
+                    IsSlidingInPlace = false;
+                    return Vector3.zero;
+                }
+
+                leftFootVelocity = leftFootVelocity - upDirection.Value * leftFootVerticalSpeed;
+                rightFootVelocity = rightFootVelocity - upDirection.Value * rightFootVerticalSpeed;
+                if (Vector3.Dot(leftFootVelocity, VRPlayer.leftFoot.position - VRPlayer.vrCam.transform.position) < 0)
+                {
+                    leftFootVelocity = Vector3.zero;
+                }
+                if (Vector3.Dot(rightFootVelocity, VRPlayer.rightFoot.position - VRPlayer.vrCam.transform.position) < 0)
+                {
+                    rightFootVelocity = Vector3.zero;
+                }
+
+                Vector3 footSlide = leftFootVelocity + rightFootVelocity;
+                float slideSpeed = footSlide.magnitude;
+                Vector3 movementDirection = -footSlide.normalized;
+
+                if (slideSpeed < 0.03f)
+                {
+                    IsSlidingInPlace = false;
+                }
+                else if (slideSpeed > 0.25f)
+                {
+                    IsSlidingInPlace = true;
+                }
+
+                if (!IsSlidingInPlace)
+                {
+                    return Vector3.zero;
+                }
+
+                float headSlide = Vector3.Dot(VRPlayer.headPhysicsEstimator.GetVelocity(), movementDirection);
+
+                if (headSlide < 0.125f)
+                {
+                    return Vector3.zero;
+                }
+
+                return movementDirection * (slideSpeed + headSlide);
+            }
+        }
+
         class GesturedDodgeRoll : GesturedLocomotion
         {
-            private const float MIN_HAND_HEIGHT_RELATIVE_TO_EYE = -0.125f;
-            private const float MIN_HEAD_HORIZONTAL_SPEED = 1f;
+            private const float MIN_HAND_ELEVATION = -0.125f;
             private const float MAX_HEAD_VERTICAL_VELOCITY = -1.5f;
-            private const float MAX_HEIGHT = 0.8f;
-            private const float MIN_HAND_SPEED = 1.25f;
-            private const float MIN_TILT = 15f;
+            private const float MAX_HEIGHT = 0.875f;
+            private const float MIN_HAND_SPEED = 2;
 
             private Camera vrCam;
 
-            public override Vector3 GetTargetVelocityFromGestures(Player player)
+            public override Vector3 GetTargetVelocityFromGestures(Player player, float deltaTime)
             {
                 if (!VHVRConfig.IsGesturedJumpEnabled() ||
                     player.IsAttached() ||
@@ -445,48 +911,46 @@ namespace ValheimVRMod.Scripts
                 {
                     vrCam = CameraUtils.getCamera(CameraUtils.VR_CAMERA);
                 }
-                if (vrCam == null || Vector3.Angle(upDirection.Value, vrCam.transform.up) < MIN_TILT)
+
+                if (vrCam == null)
                 {
                     return Vector3.zero;
                 }
 
-                Vector3 velocity = VRPlayer.headPhysicsEstimator.GetVelocity();
-                if (!isCrouching && Vector3.Dot(velocity, upDirection.Value) > 0.5f)
+                Vector3 rollDirection = Vector3.ProjectOnPlane(vrCam.transform.up, upDirection.Value);
+                if (rollDirection.sqrMagnitude < 0.0625f)
                 {
-                    return Vector3.zero;
+                    rollDirection = Vector3.ProjectOnPlane(-vrCam.transform.forward, upDirection.Value);
                 }
-
-                Vector3 horizontalVelocity = Vector3.ProjectOnPlane(velocity, upDirection.Value);
-                Vector3 tiltDirection = Vector3.ProjectOnPlane(vrCam.transform.up, upDirection.Value).normalized;
-
-                if (Vector3.Dot(horizontalVelocity, tiltDirection) < MIN_HEAD_HORIZONTAL_SPEED)
+                
+                var verticalSpeed = Vector3.Dot(VRPlayer.headPhysicsEstimator.GetVelocity(), upDirection.Value);
+                if (verticalSpeed > MAX_HEAD_VERTICAL_VELOCITY)
                 {
-                    return Vector3.zero;
-                }
-
-                if (!isCrouching)
-                {
-                    var verticalSpeed = Vector3.Dot(VRPlayer.headPhysicsEstimator.GetVelocity(), upDirection.Value);
-                    if (verticalSpeed > MAX_HEAD_VERTICAL_VELOCITY)
+                    if (!isCrouching ||
+                        GetHandAssistance(VRPlayer.leftHandPhysicsEstimator) < MIN_HAND_SPEED ||
+                        GetHandAssistance(VRPlayer.rightHandPhysicsEstimator) < MIN_HAND_SPEED)
                     {
                         return Vector3.zero;
                     }
                 }
-
-                if (!isCrouching &&
-                    !IsHandAssistingDodge(VRPlayer.leftHandPhysicsEstimator) &&
-                    !IsHandAssistingDodge(VRPlayer.rightHandPhysicsEstimator))
+                else if (GetHandAssistance(VRPlayer.leftHandPhysicsEstimator) + GetHandAssistance(VRPlayer.rightHandPhysicsEstimator) < MIN_HAND_SPEED)
                 {
                     return Vector3.zero;
                 }
 
-                return (horizontalVelocity.normalized - upDirection.Value) * 16f; 
+                return (rollDirection.normalized - upDirection.Value) * 16f;
             }
 
-            private bool IsHandAssistingDodge(PhysicsEstimator handPhyicsEstimator)
+            private float GetHandAssistance(PhysicsEstimator handPhyicsEstimator)
             {
-                return handPhyicsEstimator.GetVelocity().magnitude > MIN_HAND_SPEED &&
-                    Vector3.Dot(handPhyicsEstimator.transform.position - vrCam.transform.position, upDirection.Value) > MIN_HAND_HEIGHT_RELATIVE_TO_EYE;               
+                var headToHand = handPhyicsEstimator.transform.position - vrCam.transform.position;
+                var handElevationAboveHead = Vector3.Dot(headToHand, upDirection.Value);
+                if (handElevationAboveHead < MIN_HAND_ELEVATION)
+                {
+                    return 0;
+                }
+                var headToHandHorizontalDirection = (headToHand - upDirection.Value * handElevationAboveHead).normalized;
+                return Vector3.Dot(handPhyicsEstimator.GetVelocity(), headToHandHorizontalDirection);
             }
         }
     }

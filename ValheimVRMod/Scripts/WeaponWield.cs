@@ -4,14 +4,17 @@ using ValheimVRMod.Utilities;
 
 namespace ValheimVRMod.Scripts
 {
-    public abstract class WeaponWield : MonoBehaviour
+    public abstract class WeaponWield : MonoBehaviour, WeaponWield.LongGripStateProvider
     {
+        protected bool currentTwoHandedWieldStartedWithLongGrip { get; private set; }
+
         public enum TwoHandedState
         {
             SingleHanded = 0,
             RightHandBehind = 1,
             LeftHandBehind = 2
         }
+
 
         public const float HAND_CENTER_OFFSET = 0.08f;
 
@@ -32,20 +35,20 @@ namespace ValheimVRMod.Scripts
         private static Dictionary<string, float> DistancesBehindGripAndRearEnd = new Dictionary<string, float>();
         private Transform originalTransform;
         private Vector3 longestLocalExtrusion = Vector3.forward;
+        private VRPlayerSync playerSync { get { return _playerSync == null ? (_playerSync = GetComponentInParent<VRPlayerSync>()) : _playerSync; } }
+        private VRPlayerSync _playerSync;
 
         private EquipType equipType;
         private bool isLocal;
+        protected bool isDominantHandWeapon { get; private set; }
 
         public WeaponWield Initialize(
-            ItemDrop.ItemData item, string itemName, bool forceUsingCrossbowGeometry = false, WeaponWieldSync.TwoHandedStateProvider twoHandedStateProvider = null)
+            ItemDrop.ItemData item, string itemName, bool isDominantHandWeapon, WeaponWieldSync.TwoHandedStateProvider twoHandedStateProvider = null)
         {
             isLocal = GetComponentInParent<Player>() == Player.m_localPlayer;
+            this.isDominantHandWeapon = isDominantHandWeapon;
             this.itemName = itemName;
             equipType = (item == null ? EquipType.None : EquipScript.getEquippedItem(item));
-            if (forceUsingCrossbowGeometry)
-            {
-                equipType = EquipType.Crossbow;
-            }
 
             attackAnimation = item?.m_shared.m_attack?.m_attackAnimation ?? "";
 
@@ -90,8 +93,13 @@ namespace ValheimVRMod.Scripts
                     if (item != null && itemName != "") {
                         EstimatedWeaponLocalDirectionsAndLengths.Add(itemName, weaponDirectionAndLength);
                         DistancesBehindGripAndRearEnd.Add(itemName, distanceBetweenGripAndRearEnd);
-                        LogUtils.LogDebug("Registered " + itemName + " local pointing direction: " + longestLocalExtrusion + " distance between rear end and grip: " + distanceBetweenGripAndRearEnd);
-                    } 
+                        LogUtils.LogDebug("Registered " + itemName + " local pointing direction and length: " + weaponDirectionAndLength + " distance between rear end and grip: " + distanceBetweenGripAndRearEnd);
+                    }
+                    else if (!isLocal)
+                    {
+                        // TODO: use EquipScript.GetEquipTypeFromHash() instead of just remove this if weapon wield will only be used locally in the future
+                        equipType = WeaponUtils.GuesstEquipTypeFromShape(weaponLength, distanceBetweenGripAndRearEnd, isDominantHandWeapon);
+                    }
                 }
             }
 
@@ -105,6 +113,11 @@ namespace ValheimVRMod.Scripts
             transform.rotation = geometryProvider.GetDesiredSingleHandedRotation(this);
 
             return this;
+        }
+
+        public bool ShouldUseLongGrip()
+        {
+            return currentTwoHandedWieldStartedWithLongGrip;
         }
 
         public Quaternion getAimingRotation(Vector3 pointing, Vector3 upDirection)
@@ -135,7 +148,9 @@ namespace ValheimVRMod.Scripts
         // Updates weapon position and rotation and returns the new direction that the weapon is pointing toward.
         protected virtual Vector3 UpdateTwoHandedWield()
         {
-            twoHandedState = GetDesiredTwoHandedState(wasTwoHanded: twoHandedState != TwoHandedState.SingleHanded);
+            bool wasTwoHanded = twoHandedState != TwoHandedState.SingleHanded;
+
+            twoHandedState = GetDesiredTwoHandedState(wasTwoHanded);
 
             if (twoHandedState == TwoHandedState.SingleHanded)
             {
@@ -146,18 +161,31 @@ namespace ValheimVRMod.Scripts
 
             rearHandTransform = twoHandedState == TwoHandedState.LeftHandBehind ? GetLeftHandTransform() : GetRightHandTransform();
             frontHandTransform = twoHandedState == TwoHandedState.LeftHandBehind ? GetRightHandTransform() : GetLeftHandTransform();
-
             Vector3 frontHandCenter = getHandCenter(frontHandTransform);
             Vector3 rearHandCenter = getHandCenter(rearHandTransform);
             Vector3 weaponPointingDir = (frontHandCenter - rearHandCenter).normalized;
 
+            if (!wasTwoHanded)
+            {
+                bool isMainHandBehind =
+                    IsPlayerLeftHanded() ^ isDominantHandWeapon ?
+                    twoHandedState == TwoHandedState.RightHandBehind :
+                    twoHandedState == TwoHandedState.LeftHandBehind;
+                Transform offHand = isMainHandBehind ? frontHandTransform : rearHandTransform;
+                currentTwoHandedWieldStartedWithLongGrip =
+                    isMainHandBehind ?
+                    Vector3.Dot(frontHandTransform.forward, rearHandTransform.forward) > 0 && Vector3.Distance(frontHandCenter, rearHandCenter) < 0.375f :
+                    Vector3.Dot(offHand.forward, weaponPointingDir) < 0 || Vector3.Distance(frontHandCenter, rearHandCenter) > 0.375f;
+            }
+
             //weapon pos&rotation
             transform.position =
-                rearHandCenter + 
+                rearHandCenter +
                 weaponPointingDir * (HAND_CENTER_OFFSET + geometryProvider.GetPreferredOffsetFromRearHand(
                     Vector3.Distance(frontHandCenter, rearHandCenter), IsPlayerLeftHanded() == (twoHandedState == TwoHandedState.LeftHandBehind)));
             transform.rotation = 
                 getAimingRotation(weaponPointingDir, geometryProvider.GetPreferredTwoHandedWeaponUp(this));
+            playerSync?.UpdateWeaponTransform(transform.position, transform.rotation);
             return weaponPointingDir;
         }
 
@@ -174,8 +202,26 @@ namespace ValheimVRMod.Scripts
         private TwoHandedGeometryProvider GetGeometryProvider
             (Vector3 longestLocalExtrusion, float distanceBetweenGripAndRearEnd, WeaponWieldSync.TwoHandedStateProvider twoHandedStateProvider)
         {
+            if (IsDundr())
+            {
+                return new TwoHandedGeometry.DundrGeometryProvider();
+            }
+
             switch (equipType)
             {
+                case EquipType.Axe:
+                case EquipType.Pickaxe:
+                    return new TwoHandedGeometry.DefaultGeometryProvider(distanceBetweenGripAndRearEnd * 0.5f);
+                case EquipType.Club:
+                case EquipType.Cultivator:
+                case EquipType.Fishing:
+                case EquipType.Hoe:
+                case EquipType.Torch:
+                    return new TwoHandedGeometry.DefaultGeometryProvider(distanceBetweenGripAndRearEnd: 0);
+                case EquipType.BattleAxe:
+                    return isLocal ? 
+                        new TwoHandedGeometry.LocalBattleaxeGeometryProvider(distanceBetweenGripAndRearEnd * 0.3f, this) :
+                        new TwoHandedGeometry.BattleaxeGeometryProvider(distanceBetweenGripAndRearEnd * 0.3f, this);
                 case EquipType.Crossbow:
                     return isLocal ?
                         new TwoHandedGeometry.LocalCrossbowGeometryProvider() :
@@ -186,27 +232,46 @@ namespace ValheimVRMod.Scripts
                         return new TwoHandedGeometry.LocalKnifeGeometryProvider(distanceBetweenGripAndRearEnd);
                     }
                     break;
+                case EquipType.Magic:
+                    if (isDominantHandWeapon)
+                    {
+                        return new TwoHandedGeometry.StaffGeometryProvider(distanceBetweenGripAndRearEnd);
+                    }
+                    break;
                 case EquipType.Polearms:
-                    return new TwoHandedGeometry.AtgeirGeometryProvider(distanceBetweenGripAndRearEnd);
+                    return isLocal ?
+                        new TwoHandedGeometry.LocalAtgeirGeometryProvider(distanceBetweenGripAndRearEnd, this) :
+                        new TwoHandedGeometry.AtgeirGeometryProvider(distanceBetweenGripAndRearEnd, this);
+                case EquipType.Scythe:
+                    return new TwoHandedGeometry.ScytheGeometryProvider(IsPlayerLeftHanded(), distanceBetweenGripAndRearEnd);
+                case EquipType.Sledge:
+                    return isLocal ?
+                        new TwoHandedGeometry.LocalSledgeGeometryProvider(distanceBetweenGripAndRearEnd) :
+                        new TwoHandedGeometry.SledgeGeometryProvider(distanceBetweenGripAndRearEnd);
+                case EquipType.Sword:
+                    if (isLocal)
+                    {
+                        return new TwoHandedGeometry.LocalSwordGeometryProvider(Mathf.Max(distanceBetweenGripAndRearEnd * 0.75f, 0.125f));
+                    }
+                    break;
                 case EquipType.Spear:
                 case EquipType.SpearChitin:
                     if (isLocal)
                     {
-                        return new TwoHandedGeometry.LocalSpearGeometryProvider();
+                        return new TwoHandedGeometry.LocalSpearGeometryProvider(this);
+                    }
+                    else if (twoHandedStateProvider != null)
+                    {
+                        return new TwoHandedGeometry.RemoteSpearGeometryProvider(twoHandedStateProvider, this);
                     }
                     break;
-            }
-
-            if (IsDundr())
-            {
-                return new TwoHandedGeometry.DundrGeometryProvider();
             }
 
             if (!isLocal && twoHandedStateProvider != null)
             {
                 return new TwoHandedGeometry.RemoteGeometryProvider(distanceBetweenGripAndRearEnd, twoHandedStateProvider);
             }
-
+            
             return new TwoHandedGeometry.DefaultGeometryProvider(distanceBetweenGripAndRearEnd);
         }
 
@@ -219,6 +284,13 @@ namespace ValheimVRMod.Scripts
             Vector3 GetPreferredTwoHandedWeaponUp(WeaponWield weaponWield);
             // The preferred forward offset amount of the weapon's position from the rear hand during two-handed wield.
             float GetPreferredOffsetFromRearHand(float handDist, bool rearHandIsDominant);
+            bool InverseHoldForDominantHand();
+            bool ShouldRotateHandForOneHandedWield();
         }
+
+        public interface LongGripStateProvider {
+            bool ShouldUseLongGrip();
+        }
+
     }
 }

@@ -13,6 +13,7 @@ using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
 using Object = UnityEngine.Object;
 using TMPro;
+using ValheimVRMod.Patches;
 
 namespace ValheimVRMod.VRCore.UI {
     public class ConfigSettings {
@@ -52,7 +53,11 @@ namespace ValheimVRMod.VRCore.UI {
             ConfigSettings.enableTransformButtons = enableTransformButtons;
         }
 
-
+        public static bool isVHVRClone(KeyboardMouseSettings settings)
+        {
+            return settings.GetComponentInParent<SettingsCloneMarker>(includeInactive: true) != null;
+        }
+ 
         /// <summary>
         /// Create an Entry in the Menu 
         /// </summary>
@@ -69,6 +74,10 @@ namespace ValheimVRMod.VRCore.UI {
 
                     AddMenuEntry("Screenshot", menuEntry, Vector2.up * MENU_ENTRY_HEIGHT * addedMenuEntryCount, CaptureScreenshot);
                     addedMenuEntryCount++;
+
+                    AddMenuEntry("Toggle auto-pickup", menuEntry, Vector2.up * MENU_ENTRY_HEIGHT * addedMenuEntryCount, ToggleAutoPickup);
+                    addedMenuEntryCount++;
+
                 }
                 else if (addedMenuEntryCount > 0) {
                     var rectTransform = menuList.GetChild(i).GetComponent<RectTransform>();
@@ -108,7 +117,7 @@ namespace ValheimVRMod.VRCore.UI {
             if (keyBindingPrefab == null)
             {
                 keyBindingPrefab = createKeyBindingPrefab(
-                    controlSettingsPrefab.transform.Find("List").Find("Bindings").Find("Grid").Find("Use").gameObject);
+                    controlSettingsPrefab.transform.Find("List").Find("Bindings").Find("Viewport").Find("Grid").Find("Use").gameObject);
             }
             if (chooserPrefab == null)
             {
@@ -151,6 +160,7 @@ namespace ValheimVRMod.VRCore.UI {
         /// </summary>
         private static void createModSettings() {
             settings = Object.Instantiate(settingsPrefab, menuParent);
+            settings.AddComponent<SettingsCloneMarker>();
             settings.transform.Find("Panel").Find("Title").GetComponent<TMP_Text>().text = MenuName;
             createToolTip(settings.transform);
             var tabButtons = settings.transform.Find("Panel").Find("TabButtons");
@@ -407,7 +417,7 @@ namespace ValheimVRMod.VRCore.UI {
             var chooserPrefab = Object.Instantiate(vanillaPrefab);
             chooserPrefab.transform.Find("LabelLeft").gameObject.SetActive(true);
             var rectTransform = chooserPrefab.GetComponent<RectTransform>();
-            rectTransform.sizeDelta = new Vector2(180, 30);
+            rectTransform.sizeDelta = new Vector2(150, 30);
             rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
             rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
             Transform stepper = chooserPrefab.transform.Find("GUIStepper");
@@ -419,7 +429,7 @@ namespace ValheimVRMod.VRCore.UI {
                     case "Value":
                         child.gameObject.SetActive(true);
                         child.GetComponent<RectTransform>().sizeDelta = new Vector2(-60, -5);
-                        child.GetComponentInChildren<TMP_Text>().fontSize = 6;
+                        child.GetComponentInChildren<TMP_Text>().fontSize = 5;
                         break;
                     case "Left":
                         child.gameObject.SetActive(true);
@@ -450,8 +460,19 @@ namespace ValheimVRMod.VRCore.UI {
 
             var configComponent = chooserObj.AddComponent<ConfigComponent>();
             configComponent.configValue = configValue;
-            chooserObj.transform.Find("LabelLeft").GetComponent<TMP_Text>().text = configValue.Key;
-
+            var configKeyText = chooserObj.transform.Find("LabelLeft").GetComponent<TMP_Text>();
+            configKeyText.text = configValue.Key;
+            if (configValue.Key == VHVRConfig.GesturedLocomotionLabel())
+            {
+                var distance = GesturedLocomotionManager.distanceTraveled;
+                if (distance > 1000)
+                {
+                    configKeyText.text += "(s=" + (distance / 1000).ToString("F1") + "k)";
+                } else if (distance > 10)
+                {
+                    configKeyText.text += "(s=" + distance.ToString("F0") + ")";
+                }
+            }
             Transform stepper = chooserObj.transform.Find("GUIStepper");
             var valueList = (string[])type.GetProperty("AcceptableValues").GetValue(acceptableValues);
             var currentIndex = Array.IndexOf(valueList, configValue.Value.GetSerializedValue());
@@ -481,7 +502,7 @@ namespace ValheimVRMod.VRCore.UI {
             };
             toggle.GetComponentInChildren<TMP_Text>().text = configValue.Key;
             toggle.GetComponent<Toggle>().isOn = configValue.Value.GetSerializedValue() == "true";
-            toggle.GetComponent<RectTransform>().anchoredPosition = pos;
+            toggle.GetComponent<RectTransform>().anchoredPosition = pos + Vector2.right * 100;
         }
 
         private static GameObject createTransformButtonPrefab(GameObject vanillaLabel, GameObject vanillaButton)
@@ -670,7 +691,7 @@ namespace ValheimVRMod.VRCore.UI {
             keyBinding.transform.Find("Label").GetComponent<TMP_Text>().text = configValue.Key;
             keyboardMouseSettings.m_keys.Add(new KeySetting {m_keyName = configValue.Key, m_keyTransform = keyBinding.GetComponent<RectTransform>()});
             keyBinding.GetComponentInChildren<Button>().onClick.AddListener(() => {
-                keyboardMouseSettings.OnOk();
+                keyboardMouseSettings.OnOkAsync(null);
                 tmpComfigComponent = configComponent;
             });
             // TODO: create a proper key binding UI prefab instead of adjusting the position here.
@@ -678,7 +699,7 @@ namespace ValheimVRMod.VRCore.UI {
             {
                 ZInput.instance.m_buttons.Remove(configValue.Key);
             }
-            ZInput.instance.AddButton(configValue.Key, ZInput.KeyCodeToKey((KeyCode)Enum.Parse(typeof(KeyCode), configValue.Value.GetSerializedValue())));
+            ZInput.instance.AddButton(configValue.Key, ZInput.KeyCodeToPath((KeyCode)Enum.Parse(typeof(KeyCode), configValue.Value.GetSerializedValue())));
         }
 
         private static void CaptureScreenshot()
@@ -691,6 +712,12 @@ namespace ValheimVRMod.VRCore.UI {
             string path = dir + "/vhvr_screenshot_" + System.DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".png";
             LogUtils.LogDebug("Saving screenshot to " + path);
             ScreenCapture.CaptureScreenshot(path);
+        }
+
+        private static void ToggleAutoPickup()
+        {
+            ZInput_GetButtonDown_Patch.EmulateButtonDown("JoyMenu");
+            ZInput_GetButtonDown_Patch.EmulateButtonDown("AutoPickup");
         }
 
         private static int mod(int x, int m) {
@@ -708,11 +735,13 @@ namespace ValheimVRMod.VRCore.UI {
                     var buttons = AccessTools.FieldRefAccess<ZInput, Dictionary<string, ZInput.ButtonDef>>(ZInput.instance, "m_buttons");
                     ZInput.ButtonDef buttonDef;
                     buttons.TryGetValue(key.m_keyName, out buttonDef);
-                    tmpComfigComponent.value = buttonDef.m_key.ToString();
+                    tmpComfigComponent.value = buttonDef.ButtonAction.bindings[0].path;
                 }
             }
             
             tmpComfigComponent = null;
         }
+
+        private class SettingsCloneMarker : MonoBehaviour { }
     }
 }

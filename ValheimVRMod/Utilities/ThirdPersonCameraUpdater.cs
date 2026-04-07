@@ -9,6 +9,7 @@ namespace ValheimVRMod.Utilities
     {
         private readonly int VIEW_OBSTRUCTION_LAYER_MASK =
             Physics.DefaultRaycastLayers &
+            ~(1 << 3) &
             ~(1 << LayerUtils.CHARACTER) &
             ~(1 << LayerUtils.ITEM_LAYER) &
             ~(1 << LayerUtils.CHARARCTER_TRIGGER) &
@@ -171,6 +172,14 @@ namespace ValheimVRMod.Utilities
                 if (Player.m_localPlayer != null &&
                     hit.collider.attachedRigidbody != null &&
                     hit.collider.attachedRigidbody.gameObject == Player.m_localPlayer.gameObject)
+                {
+                    continue;
+                }
+                if (hit.collider.GetComponent<MeshRenderer>() == null && hit.collider.GetComponent<MeshRenderer>() == null)
+                {
+                    continue;
+                }
+                if (hit.collider.GetComponentInParent<Player>() == Player.m_localPlayer && Player.m_localPlayer != null)
                 {
                     continue;
                 }

@@ -9,12 +9,12 @@ namespace ValheimVRMod.Utilities
     public enum EquipType
     {
         None,
-        Fishing, Cultivator, Hammer, Hoe, Torch,
+        Fishing, Cultivator, Hammer, Hoe, Torch, Scythe, Tray,
         Bow, Spear, SpearChitin, ThrowObject,
         Shield, Tankard, Claws, Magic, Crossbow
         ,
         //Melee Weapon
-        Sword, Axe, Knife, Pickaxe, Club, Polearms, DualKnives, DualAxes
+        Axe, BattleAxe, Club, DualKnives, DualAxes, Knife, Pickaxe, Polearms, Sledge, Sword
         ,
         //utility
         Lantern
@@ -57,16 +57,54 @@ namespace ValheimVRMod.Utilities
             return EquipType.None;
         }
 
+        public static EquipType GetEquipTypeFromHash(int hash)
+        {
+            var item = ObjectDB.instance.GetItemPrefab(hash);
+            if (item == null)
+            {
+                return EquipType.None;
+            }
+
+            var itemDrop = item.GetComponentInChildren<ItemDrop>();
+            if (itemDrop == null || itemDrop.m_itemData == null)
+            {
+                return EquipType.None;
+            }
+
+            return EquipScript.getEquippedItem(itemDrop.m_itemData);
+        }
+
         public static EquipType getEquippedItem(ItemDrop.ItemData item)
         {
-            var equip = getRightEquipType(item);
-            if (equip == EquipType.None)
-                equip = getLeftEquipType(item);
-            return equip;
+            if (item == null || item.m_shared ==  null) {
+                return EquipType.None;
+            }
+
+            switch (item.m_shared.m_itemType)
+            {
+                case ItemDrop.ItemData.ItemType.Shield:
+                    return EquipType.Shield;
+                case ItemDrop.ItemData.ItemType.Torch:
+                    return EquipType.Torch;
+                case ItemDrop.ItemData.ItemType.Bow:
+                case ItemDrop.ItemData.ItemType.OneHandedWeapon:
+                case ItemDrop.ItemData.ItemType.Tool:
+                case ItemDrop.ItemData.ItemType.TwoHandedWeapon:
+                case ItemDrop.ItemData.ItemType.TwoHandedWeaponLeft:
+                    var typeAsMainHandItem = getRightEquipType(item);
+                    return typeAsMainHandItem != EquipType.None ? typeAsMainHandItem : getLeftEquipType(item);
+                default:
+                    return EquipType.None;
+            }
         }
 
         public static EquipType getRightEquipType(ItemDrop.ItemData item)
         {
+            if (item?.m_shared?.m_attack?.m_harvest?? false)
+            {
+                return EquipType.Scythe;
+            }
+
             var attackAnim = item?.m_shared.m_attack.m_attackAnimation;
             switch (attackAnim)
             {
@@ -88,6 +126,8 @@ namespace ValheimVRMod.Utilities
                     return EquipType.Hammer;
                 case "$item_hoe":
                     return EquipType.Hoe;
+                case "$item_feaster":
+                    return EquipType.Tray;
 
                 case "$item_spear_flint":
                 case "$item_spear_bronze":
@@ -148,11 +188,11 @@ namespace ValheimVRMod.Utilities
                 case Skills.SkillType.Swords:
                     return EquipType.Sword;
                 case Skills.SkillType.Axes:
-                    return EquipType.Axe;
+                    return item.m_shared.m_itemType == ItemDrop.ItemData.ItemType.TwoHandedWeapon ? EquipType.BattleAxe : EquipType.Axe;
                 case Skills.SkillType.Pickaxes:
                     return EquipType.Pickaxe;
                 case Skills.SkillType.Clubs:
-                    return EquipType.Club;
+                    return item.m_shared.m_itemType == ItemDrop.ItemData.ItemType.TwoHandedWeapon ? EquipType.Sledge : EquipType.Club;
                 case Skills.SkillType.Polearms:
                     return EquipType.Polearms;
             }
@@ -176,6 +216,12 @@ namespace ValheimVRMod.Utilities
 
         public static EquipType getLeftEquipType(ItemDrop.ItemData item)
         {
+            switch (item?.m_shared.m_name)
+            {
+                case "$item_lantern":
+                    return EquipType.Lantern;
+            }
+
             //LeftEquipment List 
             switch (item?.m_shared.m_itemType)
             {
@@ -205,13 +251,24 @@ namespace ValheimVRMod.Utilities
                     return EquipType.Crossbow;
             }
 
-            switch (item?.m_shared.m_name)
+
+            if (item?.m_shared.m_attack.m_attackAnimation == "knife_stab")
             {
-                case "$item_lantern":
-                    return EquipType.Lantern;
+                return EquipType.Knife;
             }
 
             return EquipType.None;
+        }
+
+        public static bool localPlayerHasDualWieldingWeaponHolstered()
+        {
+            var localPlayer = Player.m_localPlayer;
+            if (localPlayer == null)
+            {
+                return false;
+            }
+            var hiddenItem = localPlayer.m_hiddenRightItem;
+            return hiddenItem != null && isDualWeapon(hiddenItem);
         }
 
         public static bool isDualWeapon(ItemDrop.ItemData item)
@@ -222,6 +279,20 @@ namespace ValheimVRMod.Utilities
                 case EquipType.Claws:
                 case EquipType.DualAxes:
                 case EquipType.DualKnives:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        public static bool isCompatibleWithParryingKnife()
+        {
+            switch (getRight())
+            {
+                case EquipType.Axe:
+                case EquipType.Club:
+                case EquipType.Knife:
+                case EquipType.Sword:
                     return true;
                 default:
                     return false;
@@ -282,15 +353,6 @@ namespace ValheimVRMod.Utilities
             return Player.m_localPlayer?.GetRightItem()?.m_shared?.m_name == "$item_staff_lightning";
         }
 
-        public static bool isTwoHandedAxeEquiped()
-        {
-            return getRight() == EquipType.Axe && Player.m_localPlayer.GetRightItem().m_shared.m_itemType == ItemDrop.ItemData.ItemType.TwoHandedWeapon;
-        }
-
-        public static bool isTwoHandedClubEquiped()
-        {
-            return getRight() == EquipType.Club && Player.m_localPlayer.GetRightItem().m_shared.m_itemType == ItemDrop.ItemData.ItemType.TwoHandedWeapon;
-        }
 
         public static bool shouldSkipAttackAnimation()
         {

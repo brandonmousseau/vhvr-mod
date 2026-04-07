@@ -2,6 +2,8 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using UnityEngine;
 using UnityEngine.Rendering;
+using ValheimVRMod.VRCore;
+using Valve.VR;
 
 namespace ValheimVRMod.Utilities
 {
@@ -39,27 +41,12 @@ namespace ValheimVRMod.Utilities
                     -0.608f,  2.267f, 0,
                     0,  0, 0,
                     1.000489f,  0.177166f, 0.2626824f
-                )}, {   // PICKAXES
+                )}, {
                 "PickaxeStone", WeaponColData.create(
                     -0.608f,  2.267f, 0,
                     0,  0, 0,
                     1.000489f,  0.177166f, 0.2626824f
                 )}, {
-                "PickaxeIron", WeaponColData.create(
-                0,  1.9189f, 0,
-                0,  0, 0,
-                2.865605f,  0.1f, 0.1f
-                )}, {
-                "PickaxeBronze", WeaponColData.create(
-                    -0.711f,  2.219f, 0,
-                    0,  0, 2.903f,
-                    1.192384f,  0.1884746f, 0.1568103f
-                )}, {
-                "PickaxeAntler", WeaponColData.create(
-                    -0.722f,  2.256f, 0,
-                    0,  0, 0,
-                    1.192384f,  0.1884746f, 0.1568103f
-                )}, {   // TOOL
                 "Hammer", WeaponColData.create(
                     0,  0.956f, 0,
                     0,  0, 0,
@@ -115,14 +102,11 @@ namespace ValheimVRMod.Utilities
                     0,  0, 0,
                     0.08946446f,  0.05617056f, 1.1811694f
                 )}, {
-                // SpearChitin currently has no melee attack, thus collider throws error.
-                // Still keeping this commented, in case it changes some day
-                //
-                // "SpearChitin", WeaponColData.create( 
-                //     0,  1.12f, 0.008f,
-                //     0,  0, 0,
-                //     0.01591795f,  0.8536723f, 0.09076092f
-                // )}, {
+                "SpearChitin", WeaponColData.create( 
+                     0,  1.12f, 0.008f,
+                     0,  0, 0,
+                     0.01591795f,  0.8536723f, 0.09076092f
+                )}, {
                 "SpearElderbark", WeaponColData.create(
                     0,  1.7915f, 0,
                     0,  0, 0,
@@ -238,6 +222,11 @@ namespace ValheimVRMod.Utilities
                     0, 0, 0,
                     0.04f,  0.45f, 0.01f
                 )}, {
+                "Scythe", WeaponColData.create(
+                    -0.3f,  1.4f, 0,
+                    0,  0, 0,
+                    0.71f,  0.71f, 0.1f
+                )}, {
                 "Tankard", WeaponColData.create(
                     0,  0.28f, 0,
                     0, 0, 0,
@@ -268,11 +257,6 @@ namespace ValheimVRMod.Utilities
                     0, 0, 0,
                     0.3860153f,  0.3521031f, 0.02278163f
                 )}, {
-                "PickaxeBlackMetal", WeaponColData.create(
-                    0.048f,  0.857f, 0.001f,
-                    0, 0, -1.849f,
-                    0.6818599f,  0.06523325f, 0.02278163f
-                )}, {
                 "SledgeDemolisher", WeaponColData.create(
                     0,  1.2215f, -0.0019f,
                     0, 0, 0,
@@ -295,48 +279,50 @@ namespace ValheimVRMod.Utilities
                 )}
         };
 
-        private static readonly Dictionary<EquipType, WeaponColData> compatibilityColliders = new Dictionary<EquipType, WeaponColData>
-        {
-            {
-                EquipType.Pickaxe, WeaponColData.create(
-                    0,  1.9189f, 0,
-                    0,  0, 0,
-                    2.865605f,  0.1f, 0.1f
-            )}
-        };
-
         private static readonly Dictionary<EquipType, WeaponColData> DUAL_WIELD_COLLIDERS =
             new Dictionary<EquipType, WeaponColData>
             {
                 {
                     EquipType.Claws, WeaponColData.create(
-                        0,  0.25f, 0.016f,
-                        0,  0, 0,
-                        0.45f,  0.5f, 0.45f
+                        0, 0.25f, 0.016f,
+                        0, 0, 0,
+                        0.45f, 0.5f, 0.45f
                 )},
                 {
                     EquipType.DualAxes, WeaponColData.create(
-                        0.45f,  0.2f, 0.05f,
+                        0.45f, 0.2f, 0.05f,
                         0,  0, 0,
-                        0.45f,  0.45f, 0.45f
+                        0.45f, 0.45f, 0.45f
                 )},
                 {
                     EquipType.DualKnives, WeaponColData.create(
-                        0.225f,  0.15f, 0.05f,
+                        0.225f, 0.15f, 0.05f,
                         0,  0, 0,
-                        0.45f,  0.45f, 0.45f
+                        0.45f, 0.45f, 0.45f
                 )},
                 {
                     EquipType.None, WeaponColData.create( // fists
-                        0,  0.2f, 0.016f,
-                        0,  0, 0,
-                        0.45f,  0.45f, 0.45f
+                        0, 0.2f, 0.016f,
+                        0, 0, 0,
+                        0.45f, 0.45f, 0.45f
                 )},
                 {
                     EquipType.Torch, WeaponColData.create(
-                        0.55f,  0.15f, 0.05f,
-                        0,  0, 0,
+                        0.55f, 0.15f, 0.05f,
+                        0, 0, 0,
+                        0.45f, 0.45f, 0.45f
+                )},
+                {
+                    EquipType.Knife, WeaponColData.create(
+                        0.33f, 0.2f, 0.01f,
+                        0, 0, 0,
                         0.45f,  0.45f, 0.45f
+                )},
+                {
+                    EquipType.Shield, WeaponColData.create(
+                        0f, 0.125f, -0.0625f,
+                        22.5f, 0, 0,
+                        0.625f, 0.625f, 0.25f
                 )},
             };
 
@@ -362,6 +348,18 @@ namespace ValheimVRMod.Utilities
                         0.5f, 0.5f, 0.3f
                 )},
                 {
+                    EquipType.Knife, WeaponColData.create(
+                        0.4f,  0.2f, 0.016f,
+                        0,  0, 0,
+                        0.6f, 0.35f, 0.35f
+                )},
+                {
+                    EquipType.Torch, WeaponColData.create(
+                        0.4f,  0.2f, 0.016f,
+                        0,  0, 0,
+                        0.75f, 0.35f, 0.3f
+                )},
+                {
                     EquipType.None, WeaponColData.create( // fists
                         0,  0, 0.016f,
                         0,  0, 0,
@@ -378,6 +376,7 @@ namespace ValheimVRMod.Utilities
             { "dual_knives", 0.43f },
             { "greatsword", 1.13f },
             { "knife_stab", 0.49f },
+            { "scything", 1.5f },
             { "swing_longsword", 0.63f },
             { "spear_poke", 0.63f },
             { "swing_pickaxe", 1.3f },
@@ -413,7 +412,8 @@ namespace ValheimVRMod.Utilities
 
         public static WeaponColData GetColliderData(string name, ItemDrop.ItemData item, MeshFilter meshFilter, Vector3? handPosition)
         {
-            if (colliders.ContainsKey(name)) {
+            if (colliders.ContainsKey(name))
+            {
                 return colliders[name];
             }
 
@@ -424,17 +424,11 @@ namespace ValheimVRMod.Utilities
 
             if (meshFilter != null && handPosition != null)
             {
-                var estimatedCollider = EstimateWeaponCollider(meshFilter, (Vector3) handPosition);
+                var estimatedCollider = EstimateWeaponCollider(meshFilter, (Vector3)handPosition, EquipScript.getEquippedItem(item));
                 estimatedColliders[name] = estimatedCollider;
                 LogUtils.LogDebug(
                     "Estimated and registered collider for unknown weapon " + name + ": position " + estimatedCollider.pos + " scale " + estimatedCollider.scale);
                 return estimatedCollider;
-            }
-
-            if (item != null && compatibilityColliders.ContainsKey(EquipScript.getEquippedItem(item)))
-            {
-                // TODO: consider removing compatibility colliders.
-                return compatibilityColliders[EquipScript.getEquippedItem(item)];
             }
 
             throw new InvalidEnumArgumentException();
@@ -481,7 +475,8 @@ namespace ValheimVRMod.Utilities
             float longestExtrusion = 0;
             Vector3 weaponPointingDirection = Vector3.zero;
             float weaponLength = 0;
-            for (int i = 0; i < 3; i++) {
+            for (int i = 0; i < 3; i++)
+            {
                 foreach (Vector3 corner in corners)
                 {
                     float extrusion = corner[i];
@@ -504,11 +499,66 @@ namespace ValheimVRMod.Utilities
             return result;
         }
 
+        public static EquipType GuesstEquipTypeFromShape(float weaponLength, float distanceBetweenGripAndRearEnd, bool isDominantHandWeapon)
+        {
+            if (!isDominantHandWeapon)
+            {
+                return weaponLength > 0.5F && distanceBetweenGripAndRearEnd > 0.5f ? EquipType.Crossbow : EquipType.None;
+            }
+
+            if (weaponLength > 2f && distanceBetweenGripAndRearEnd > 0.95f)
+            {
+                return EquipType.Spear;
+            }
+
+            if (weaponLength > 2.5f && distanceBetweenGripAndRearEnd > 0.7f)
+            {
+                return EquipType.Polearms;
+            }
+
+            if (weaponLength > 3 && distanceBetweenGripAndRearEnd > 0.3f)
+            {
+                return EquipType.Fishing;
+            }
+
+            if (weaponLength > 1.8f && distanceBetweenGripAndRearEnd > 0.85f)
+            {
+                return EquipType.Magic;
+            }
+
+            if (weaponLength > 1.5f && distanceBetweenGripAndRearEnd > 0.8f)
+            {
+                return EquipType.Scythe;
+            }
+
+            if (weaponLength > 1.9f && distanceBetweenGripAndRearEnd > 0.28f)
+            {
+                return EquipType.Sword;
+            }
+
+            if (weaponLength > 1.69f && distanceBetweenGripAndRearEnd > 0.25f && distanceBetweenGripAndRearEnd < 0.35f)
+            {
+                return EquipType.BattleAxe;
+            }
+
+            if (weaponLength > 1 && distanceBetweenGripAndRearEnd > 0.45f)
+            {
+                return EquipType.Magic;
+            }
+
+            if (weaponLength < 0.7f && distanceBetweenGripAndRearEnd < 0.1f)
+            {
+                return EquipType.Knife;
+            }
+
+            return EquipType.Club;
+        }
+
         // Whether the straight line (t -> p + t * v) intersects with the given bounds.
         public static bool LineIntersectsWithBounds(Bounds bounds, Vector3 p, Vector3 v)
         {
             // TODO: Consider removing this method since it is not used anywhere.
-            
+
             // Center the bound and the line around the original bounds center to simplify calculation.
             Bounds centeredBounds = new Bounds(Vector3.zero, bounds.size);
             Vector3 p0 = p - bounds.center;
@@ -634,7 +684,7 @@ namespace ValheimVRMod.Utilities
             Object.Destroy(gameObject.GetComponent<Collider>());
         }
 
-        private static WeaponColData EstimateWeaponCollider(MeshFilter meshFilter, Vector3 handPosition)
+        private static WeaponColData EstimateWeaponCollider(MeshFilter meshFilter, Vector3 handPosition, EquipType type)
         {
             var weaponPointing =
                 meshFilter.transform.InverseTransformDirection(
@@ -642,17 +692,65 @@ namespace ValheimVRMod.Utilities
             var handLocalPosition = meshFilter.transform.InverseTransformPoint(handPosition);
             var bounds = meshFilter.mesh.bounds;
             var weaponTip = bounds.center + weaponPointing * Mathf.Abs(Vector3.Dot(bounds.extents, weaponPointing));
-            var colliderLength = Vector3.Distance(weaponTip, handLocalPosition) * DEFAULT_WEAPON_COLLIDER_LENGTH_PROPORTION;
-            var colliderCenter = weaponTip - weaponPointing * (colliderLength * 0.5f);
+            var colliderLength = EstimateColliderLength(Vector3.Distance(weaponTip, handLocalPosition), type);
+            var colliderCenter = (type == EquipType.Pickaxe ? weaponTip : weaponTip - weaponPointing * (colliderLength * 0.5f));
             var colliderOffset = colliderCenter - bounds.center;
             var colliderSize =
                 bounds.size - (new Vector3(Mathf.Abs(colliderOffset.x), Mathf.Abs(colliderOffset.y), Mathf.Abs(colliderOffset.z))) * 2;
+            // In case the collider length exceeds the mesh bound, extend the collider size to respect the collider length
+            colliderSize = Vector3.Max(colliderSize, colliderLength * weaponPointing);
             return new WeaponColData(colliderCenter, Vector3.zero, colliderSize);
+        }
+
+        private static float EstimateColliderLength(float weaponTipDistanceFromHand, EquipType type)
+        {
+            switch (type)
+            {
+                case EquipType.Axe:
+                case EquipType.BattleAxe:
+                case EquipType.Club:
+                case EquipType.Sledge:
+                    return weaponTipDistanceFromHand * 0.375f;
+                case EquipType.Pickaxe:
+                case EquipType.Spear:
+                    return weaponTipDistanceFromHand * 0.875f;
+                case EquipType.Sword:
+                    return Mathf.Max(0.125f, weaponTipDistanceFromHand - 0.15f);
+                default:
+                    return weaponTipDistanceFromHand * 0.75f;
+            }
         }
 
         public static Vector3 GetWeaponVelocity(Vector3 handVelocity, Vector3 handAngularVelocity, Vector3 weaponOffset)
         {
             return handVelocity + Vector3.Cross(handAngularVelocity, weaponOffset);
+        }
+
+        // Update the holding direction of the knife based button press and hand angular momentum.
+        public static bool MaybeFlipKnife(bool isKnifeCurrentlyUlnarPointing, bool isLeftHand)
+        {
+            var inputSource = isLeftHand ? SteamVR_Input_Sources.LeftHand : SteamVR_Input_Sources.RightHand;
+            var isReleasing = SteamVR_Actions.valheim_Grab.GetStateUp(inputSource);
+            if (!isReleasing) {
+                var isCatching = SteamVR_Actions.valheim_Grab.GetStateDown(inputSource);
+                if (!isCatching)
+                {
+                    // Neither releasing or catching the knife, do not change current orientation.
+                    return isKnifeCurrentlyUlnarPointing;
+                }
+            }
+
+            var physicsEstimator = isLeftHand ? VRPlayer.leftHandPhysicsEstimator : VRPlayer.rightHandPhysicsEstimator;
+            var rotationSpeed = Vector3.Dot(physicsEstimator.GetAngularVelocity(), physicsEstimator.transform.up);
+
+            if (-8 < rotationSpeed && rotationSpeed < 8)
+            {
+                // Hand rotating too slow, do not change current orientation.
+                return isKnifeCurrentlyUlnarPointing;
+            }
+
+            // Update orientation based on hand rotation direction, handedness, and catching/releasing.
+            return rotationSpeed > 0 ^ (isLeftHand ^ isReleasing);
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.UI;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore.UI.HudElements;
@@ -24,6 +24,8 @@ namespace ValheimVRMod.VRCore.UI
 
         private const float FULL_ALPHA_ANGLE = 5f;
         private const float ZERO_ALPHA_ANGLE = 90f;
+
+        private int updateTicker = 0;
 
         public static VRHud instance
         {
@@ -110,6 +112,7 @@ namespace ValheimVRMod.VRCore.UI
             new HealthPanelElement(), //Vertical START
             new StaminaPanelElement(), //Horizontal START
             new EitrPanelElement(), //Horizontal START
+            new AdrenalinePanelElement(), //Horizontal START
             new StaggerPanelElement(), //Horizontal START
             new MinimapPanelElement(),
             new BuildSelectedInfoElement()
@@ -148,6 +151,14 @@ namespace ValheimVRMod.VRCore.UI
                 LogError("Problem getting HUD camera.");
                 return;
             }
+
+            if (++updateTicker < 16)
+            {
+                return;
+            }
+
+            updateTicker = 0;
+
             foreach (var hudElement in VRHudElements)
             {
                 //Only update elements that aren't on the legacy hud

@@ -25,7 +25,7 @@ namespace ValheimVRMod.Patches
     [HarmonyPatch(typeof(Player), nameof(Player.SetMouseLook))]
     class Player_SetMouseLook_Patch
     {
-        public static float? previousHeadLocalRotation;
+        public static float? previousTrackedLocalAngle;
         public static Quaternion lastAttachRot;
         public static GameObject headLookRef;
         public static bool wasAttached;
@@ -104,12 +104,11 @@ namespace ValheimVRMod.Patches
                 return;
             }
 
-            // Calculate the current head local rotation
-            float currentHeadLocalRotation = Valve.VR.InteractionSystem.Player.instance.hmdTransform.localRotation.eulerAngles.y;
-            if (previousHeadLocalRotation.HasValue)
+            float currentLocalAngle = (Quaternion.Inverse(Valve.VR.InteractionSystem.Player.instance.hmdTransform.parent.rotation) * VRPlayer.pelvis.rotation).eulerAngles.y;
+            if (previousTrackedLocalAngle.HasValue)
             {
                 // Find the difference between the current rotation and previous rotation
-                float deltaRotation = currentHeadLocalRotation - previousHeadLocalRotation.Value;
+                float deltaRotation = currentLocalAngle - previousTrackedLocalAngle.Value;
 
                 // Rotate the look yaw by the amount the player rotated their head since last iteration
                 ___m_lookYaw *= Quaternion.AngleAxis(deltaRotation, Vector3.up);
@@ -120,7 +119,7 @@ namespace ValheimVRMod.Patches
             }
 
             // Save the current rotation for use in next iteration
-            previousHeadLocalRotation = currentHeadLocalRotation;
+            previousTrackedLocalAngle = currentLocalAngle;
         }
 
         public static void Postfix(Player __instance, ref Vector3 ___m_lookDir)
@@ -184,11 +183,10 @@ namespace ValheimVRMod.Patches
         {
             public static void Postfix(Player __instance)
             {
-                if (!ShouldFaceLookDirection(__instance))
+                if (ShouldFaceLookDirection(__instance))
                 {
-                    return;
+                    __instance.FaceLookDirection();
                 }
-                __instance.FaceLookDirection();
             }
         }
 
@@ -197,11 +195,10 @@ namespace ValheimVRMod.Patches
         {
             public static void Postfix(Player __instance)
             {
-                if (!ShouldFaceLookDirection(__instance))
+                if (ShouldFaceLookDirection(__instance))
                 {
-                    return;
+                    __instance.transform.rotation = __instance.m_lookYaw;
                 }
-                __instance.FaceLookDirection();
             }
         }
 
@@ -210,11 +207,10 @@ namespace ValheimVRMod.Patches
         {
             public static void Postfix(Player __instance)
             {
-                if (!ShouldFaceLookDirection(__instance))
+                if (ShouldFaceLookDirection(__instance))
                 {
-                    return;
+                    __instance.transform.rotation = __instance.m_lookYaw;
                 }
-                __instance.FaceLookDirection();
             }
         }
 
@@ -222,6 +218,7 @@ namespace ValheimVRMod.Patches
         {
             // TODO: Consider disabling face-look-direction patch whenever VRPlayer.attachedToPlayer is false as opposed to just when PlayerCustomizaton.IsBarberGuiVisible().
             return !VHVRConfig.NonVrPlayer() && player == Player.m_localPlayer && !PlayerCustomizaton.IsBarberGuiVisible() && !VRPlayer.inImmersiveDodge && !player.IsAttached();
+            // return false;
         }
 
         /// <summary>
@@ -254,7 +251,7 @@ namespace ValheimVRMod.Patches
                         upTarget = Vector3.up;
                     }
                     __instance.m_lookYaw = Quaternion.LookRotation(attachmentHeading, upTarget);
-                    VRPlayer.headPositionInitialized = false;
+                    VRPlayer.RequestRecentering();
                     VRPlayer.vrPlayerInstance?.ResetRoomscaleCamera();
                     attachmentIndependentRoomRotation = Quaternion.Euler(0, VRPlayer.instance.transform.rotation.eulerAngles.y, 0);
                 }
@@ -392,9 +389,9 @@ namespace ValheimVRMod.Patches
                 attachmentHeading.y = 0;
                 attachmentHeading.Normalize();
                 __instance.m_lookYaw = Quaternion.LookRotation(attachmentHeading, Vector3.up);
-                VRPlayer.headPositionInitialized = false;
+                VRPlayer.RequestRecentering();
                 VRPlayer.vrPlayerInstance?.ResetRoomscaleCamera();
-                Player_SetMouseLook_Patch.previousHeadLocalRotation = null;
+                Player_SetMouseLook_Patch.previousTrackedLocalAngle = null;
             }
         }
 

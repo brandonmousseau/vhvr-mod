@@ -120,6 +120,14 @@ namespace ValheimVRMod.Scripts
                 this.callback = callback;
             }
 
+            public void useAsNoOp()
+            {
+                this.item = null;
+                this.itemName = "NoOp";
+                this.sprite = null;
+                this.callback = null;
+            }
+
             private void ResizeIcon()
             {
                 Vector3 fSize;
@@ -480,22 +488,38 @@ namespace ValheimVRMod.Scripts
             {
                 return;
             }
-            for (int i = 0; i < 8; i++)
+
+            if (VHVRConfig.SplitQuickMenuRadialItemsBySlot())
             {
-
-                ItemDrop.ItemData item = inventory?.GetItemAt(i, 0);
-
-                if (item == null)
+                var isRightHand = VHVRConfig.LeftHanded() ^ isDominantHand;
+                var startIndex = isRightHand ? 4 : 0;
+                elementCount = 4;
+                for (var i = 0; i < elementCount; i++)
                 {
-                    continue;
+                    ItemDrop.ItemData item = inventory?.GetItemAt(startIndex + i, 0);
+                    if (item == null)
+                    {
+                        elements[i].useAsNoOp();
+                    }
+                    else
+                    {
+                        elements[i].useAsInventoryItemAndRefreshColor(inventory, item);
+                    }
                 }
-                if (VHVRConfig.GetQuickMenuIsSeperate() && (EquipScript.IsDominantHandItem(item) ^ isDominantHand))
+            } else {
+                for (int i = 0; i < 8; i++)
                 {
-                    continue;
+                    ItemDrop.ItemData item = inventory?.GetItemAt(i, 0);
+                    if (item == null)
+                    {
+                        continue;
+                    }
+                    if (VHVRConfig.SplitQuickMenuRadialItemsByWieldingHand() && EquipScript.IsDominantHandItem(item) ^ isDominantHand) {
+                        continue;
+                    }
+                    elements[elementCount].useAsInventoryItemAndRefreshColor(inventory, item);
+                    elementCount++;
                 }
-
-                elements[elementCount].useAsInventoryItemAndRefreshColor(inventory, item);
-                elementCount++;
             }
         }
 
@@ -572,7 +596,7 @@ namespace ValheimVRMod.Scripts
                         if (Player.m_localPlayer.InEmote() && Player.m_localPlayer.IsSitting())
                             stopEmote.Invoke(Player.m_localPlayer, null);
                         else
-                            Player.m_localPlayer.StartEmote("sit", false);
+                            VRPlayer.StartSit();
                         return true;
                     });
             }

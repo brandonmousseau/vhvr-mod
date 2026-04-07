@@ -17,7 +17,7 @@ namespace ValheimVRMod.Scripts {
         public bool tryTriggerPrimaryAttack(float cd, float speed)
         {
             float? overideMinAttackInterval;
-            if (VHVRConfig.MomentumScalesAttackDamage() && !EquipScript.isTwoHandedClubEquiped())
+            if (VHVRConfig.MomentumScalesAttackDamage() && EquipScript.getRight() != EquipType.Sledge)
             {
                 speedScaledDamageFactor = Mathf.Min(GetSpeedScaledDamageFactor(cd, speed), 1 - getRemaningCooldownPercentage());
                 overideMinAttackInterval = 0.25f;
@@ -100,14 +100,17 @@ namespace ValheimVRMod.Scripts {
         }
 
         protected override void OnDisable() {
-            primaryTargetMeshCooldown = null;
+            if (primaryTargetMeshCooldown == this)
+            {
+                primaryTargetMeshCooldown = null;
+            }
             base.OnDisable();
         }
 
         protected override void FixedUpdate() {
             base.FixedUpdate();
             if (! inCoolDown()) {
-                if (primaryTargetMeshCooldown == this) {
+                if (primaryTargetMeshCooldown == this || primaryTargetMeshCooldown == null) {
                     staminaDrained = false;
                     durabilityDrained = false;
                     primaryTargetMeshCooldown = null;

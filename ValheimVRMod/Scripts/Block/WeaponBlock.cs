@@ -23,8 +23,8 @@ namespace ValheimVRMod.Scripts.Block
             base.Awake();
             _meshCooldown = gameObject.AddComponent<MeshCooldown>();
             instance = this;
-            hand = VHVRConfig.LeftHanded() ? VRPlayer.leftHand.transform : VRPlayer.rightHand.transform;
-            offhand = VHVRConfig.LeftHanded() ? VRPlayer.rightHand.transform : VRPlayer.leftHand.transform;
+            hand = VRPlayer.mainWeaponHand.transform;
+            offhand = VRPlayer.mainWeaponHand.otherHand.transform;
         }
 
         public override void setBlocking(HitData hitData)
@@ -35,11 +35,11 @@ namespace ValheimVRMod.Scripts.Block
             Vector3 hitPointAlongWeapon = weaponWield.physicsEstimator.transform.position + Vector3.Project(hitData.m_point - weaponWield.physicsEstimator.transform.position, LocalWeaponWield.weaponForward);
             Vector3 weaponVelocity = weaponWield.physicsEstimator.GetVelocityOfPoint(hitPointAlongWeapon);
 
-            if (VHVRConfig.BlockingType() == "Realistic")
+            if (VHVRConfig.UseRealisticBlock())
             {
                 bool blockWithAngle = 15 < angle && angle < 165;
                 bool blockWithSpeed = weaponVelocity.magnitude > MIN_PARRY_SPEED;
-                _blocking = (blockWithAngle || blockWithSpeed) && hitIntersectsBlockBox(hitData) && SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource);
+                _blocking = (blockWithAngle || blockWithSpeed) && hitIntersectsBlockBox(hitData) && SteamVR_Actions.valheim_Grab.GetState(VRPlayer.mainWeaponHandInputSource);
             }
             else if (LocalWeaponWield.nonDominantHandHasWeapon() && EquipScript.getLeft() != EquipType.Crossbow)
             {
@@ -49,7 +49,7 @@ namespace ValheimVRMod.Scripts.Block
                 var rightHandBlock = (rightAngle > 60 && rightAngle < 120f);
                 _blocking = leftHandBlock && rightHandBlock;
             }
-            else if (VHVRConfig.BlockingType() == "GrabButton")
+            else if (VHVRConfig.UseGrabButtonBlock())
             {
                 bool isShieldorWeaponBlock = (EquipScript.getLeft() != EquipType.Shield) || (EquipScript.getLeft() == EquipType.Shield && weaponWield.allowBlocking());
                 _blocking = isShieldorWeaponBlock && angle > 60 && angle < 120;
@@ -64,6 +64,15 @@ namespace ValheimVRMod.Scripts.Block
 
         private void CheckParryMotion(Vector3 weaponVelocity, Vector3 hitDir)
         {
+            if (VHVRConfig.UseRealisticBlock() &&
+                EquipScript.getLeft() == EquipType.Shield &&
+                ShieldBlock.instance != null &&
+                ShieldBlock.instance.isBlocking())
+            {
+                // Disable weapon parry when using shield to block
+                blockTimer = blockTimerNonParry;
+                return;
+            }
             // Only consider the component of the velocity perpendicular to the hit direction as parrying speed.
             float parrySpeed = Vector3.ProjectOnPlane(weaponVelocity, hitDir).magnitude;
             blockTimer = parrySpeed > MIN_PARRY_SPEED ? blockTimerParry : blockTimer = blockTimerNonParry;
