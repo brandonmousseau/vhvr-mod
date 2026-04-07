@@ -69,6 +69,21 @@ namespace ValheimVRMod.Patches {
         }
     }
 
+
+    [HarmonyPatch(typeof(Player), nameof(Player.Start))]
+    class PlayerDriftFixPatch
+    {
+        public static void Postfix(Player __instance)
+        {
+            if (Player.m_localPlayer != __instance || VHVRConfig.NonVrPlayer())
+            {
+                return;
+            }
+
+            __instance.gameObject.GetOrAddComponent<PlayerDriftFix>();
+        }
+    }
+
     [HarmonyPatch(typeof(GraphicsSettings), nameof(GraphicsSettings.UpdateSettingAvailability))]
     class GraphicsSettingsUpdateSettingAvailabilityPatch
     {
