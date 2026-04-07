@@ -106,7 +106,7 @@ namespace ValheimVRMod.Utilities
         }
         public static bool IsModdedStructure(string name)
         {
-            return name == "MS_CustomShip(Clone)" || name == "MovableBase" || name == "ValheimVehicles_WaterVehicleShip(Clone)";
+            return name == "MS_CustomShip(Clone)" || name == "MovableBase" || name.Contains("ValheimVehicles");
         }
     }
 }
