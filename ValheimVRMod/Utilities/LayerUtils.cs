@@ -104,9 +104,5 @@ namespace ValheimVRMod.Utilities
                 LogWarning("Layer " + layer + " is a named layer: " + layerString);
             }
         }
-        public static bool IsModdedStructure(string name)
-        {
-            return name == "MS_CustomShip(Clone)" || name == "MovableBase" || name.Contains("ValheimVehicles");
-        }
     }
 }

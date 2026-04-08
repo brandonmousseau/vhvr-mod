@@ -205,7 +205,7 @@ namespace ValheimVRMod.Patches
 
                     if (hit.collider.GetComponent<Hoverable>() != null ||
                         !hit.collider.attachedRigidbody ||
-                        LayerUtils.IsModdedStructure(hit.collider.attachedRigidbody.name)) // Added Compatibility to Valheim Raft Mod object
+                        BuildingManager.IsModdedStructure(hit.collider.attachedRigidbody.name)) // Added Compatibility to Valheim Raft Mod object
                     {
                         hoverReference = hit.collider.gameObject;
                     }

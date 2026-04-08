@@ -287,14 +287,14 @@ namespace ValheimVRMod.Patches
                 {
                     var ship = player.GetStandingOnShip();
                     var movableBase = player.transform.parent;
-                    if (ship || (movableBase && LayerUtils.IsModdedStructure(movableBase?.name)))
+                    if (ship || (movableBase && BuildingManager.IsModdedStructure(movableBase?.name)))
                     {
                         Transform referenceUp = null;
                         if (ship)
                         {
                             referenceUp = ship.transform;
                         }
-                        else if (movableBase && LayerUtils.IsModdedStructure(movableBase?.name))
+                        else if (movableBase && BuildingManager.IsModdedStructure(movableBase?.name))
                         {
                             referenceUp = movableBase.transform;
                         }
