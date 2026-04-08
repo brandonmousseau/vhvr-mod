@@ -65,7 +65,7 @@ namespace ValheimVRMod.Patches {
                 !VHVRConfig.UseVrControls() ||
                 __instance.m_attackType.ToString() == "Projectile" ||
                 __instance.m_attackType == Attack.AttackType.None ||
-                EquipScript.getEquippedItem(weapon) == EquipType.Magic) {
+                EquipScript.isModdedMagicStaff(__instance, EquipScript.getEquippedItem(weapon))) {
                 return true;
             }
 
