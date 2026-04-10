@@ -12,121 +12,80 @@ namespace ValheimVRMod.Scripts
         private const float HANDS_CLOSE_DISTANCE = 0.2f;
         private const float FORWARD_ALIGNMENT_TOLERANCE = 0.6f;  // dot product threshold (same or opposite)
         private const float POSITION_ALIGNMENT_TOLERANCE = 0.25f; // how far off-axis the hands can be
-        private const float HOLD_TIME_REQUIRED = 0.125f;           // seconds both must grip before transfer
 
-        private enum TransferState
-        {
-            Idle,
-            BothGripping,
-            Transferring
-        }
-
-        private TransferState state = TransferState.Idle;
-        private float bothGrippingTime = 0f;
+        private bool leftHandPreparingToTransfer;
+        private bool rightHandPreparingToTransfer;
 
         private static readonly EquipType[] TRANSFERABLE_TYPES =
         {
-            EquipType.Pickaxe,
-            EquipType.Shield,
             EquipType.Bow,
-            EquipType.Lantern,
-            EquipType.Tankard,
+            EquipType.Fishing,
+            EquipType.Hammer,
+            EquipType.Hoe,
             EquipType.Knife,
+            EquipType.Lantern,
+            EquipType.Pickaxe,
+            EquipType.Scythe,
+            EquipType.Shield,
+            EquipType.Tankard,
             EquipType.ThrowObject
         };
 
         private void Update()
         {
-            if (Player.m_localPlayer == null || !VRControls.mainControlsActive)
+            if (Player.m_localPlayer == null ||
+                !VRControls.mainControlsActive ||
+                !IsTransferableEquipped() ||
+                !HandsCloseAndAligned())
             {
-                state = TransferState.Idle;
+                leftHandPreparingToTransfer = rightHandPreparingToTransfer = false;
                 return;
             }
 
-            switch (state)
+            bool leftReleased = SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.LeftHand);
+            bool rightReleased = SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.RightHand);
+
+            if (leftReleased || rightReleased)
             {
-                case TransferState.Idle:
-                    CheckForGripStart();
-                    break;
-                case TransferState.BothGripping:
-                    CheckForTransfer();
-                    break;
-            }
-        }
-
-        private void CheckForGripStart()
-        {
-            if (!SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand)
-                || !SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand))
-                return;
-
-            if (!IsTransferableEquipped())
-                return;
-
-            if (!HandsCloseAndAligned())
-                return;
-
-            state = TransferState.BothGripping;
-            bothGrippingTime = 0f;
-        }
-
-        private void CheckForTransfer()
-        {
-            // If either hand moves too far apart, cancel
-            if (!HandsCloseAndAligned())
-            {
-                state = TransferState.Idle;
+                if (leftHandPreparingToTransfer && rightHandPreparingToTransfer)
+                {
+                    if (leftReleased && !rightReleased)
+                    {
+                        DoTransfer(toRightHand: true);
+                    }
+                    else if (!leftReleased && rightReleased)
+                    {
+                        DoTransfer(toRightHand: false);
+                    }
+                }
+                leftHandPreparingToTransfer = rightHandPreparingToTransfer = false;
                 return;
             }
 
-            var rightGrip = SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand);
-            var leftGrip = SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand);
-
-            // Both still gripping — accumulate time
-            if (rightGrip && leftGrip)
+            if (SteamVR_Actions.valheim_Grab.GetStateDown(SteamVR_Input_Sources.LeftHand))
             {
-                bothGrippingTime += Time.deltaTime;
-                return;
+                leftHandPreparingToTransfer = true;
             }
 
-            // Need to have held long enough
-            if (bothGrippingTime < HOLD_TIME_REQUIRED)
+            if (SteamVR_Actions.valheim_Grab.GetStateDown(SteamVR_Input_Sources.RightHand))
             {
-                state = TransferState.Idle;
-                return;
+                rightHandPreparingToTransfer = true;
             }
-
-            // One hand released — determine which
-            bool rightReleased = !rightGrip && leftGrip;
-            bool leftReleased = !leftGrip && rightGrip;
-
-            if (rightReleased && leftReleased)
-            {
-                // Both released simultaneously — cancel
-                state = TransferState.Idle;
-                return;
-            }
-
-            // Check receiving hand is empty
-            if (leftReleased ? 
-                (VRPlayer.leftHandItem == null || VRPlayer.rightHandItem != null) :
-                (VRPlayer.leftHandItem != null || VRPlayer.rightHandItem == null))
-            {
-                state = TransferState.Idle;
-                return;
-            }
-
-            state = TransferState.Transferring;
-            DoTransfer(leftReleased);
         }
 
         private void DoTransfer(bool toRightHand)
         {
+            if (toRightHand ?
+                (VRPlayer.leftHandItem == null || VRPlayer.rightHandItem != null) :
+                (VRPlayer.leftHandItem != null || VRPlayer.rightHandItem == null))
+            {
+                return;
+            }
+
             var player = Player.m_localPlayer;
 
             var ulnarsOpposite =
                 Vector3.Dot(VRPlayer.leftHand.transform.forward, VRPlayer.rightHand.transform.forward) < 0;
-            var newIsMainWeaponUlnar = LocalWeaponWield.IsWeaponPointingUlnar ^ ulnarsOpposite;
             var newIsSecondaryWeaponUlnar = FistCollision.ShouldSecondaryKnifeHoldInverse ^ ulnarsOpposite;
             var isTransferringMainWeapon = (EquipScript.getLeft() == EquipType.None);
             var isTransferringParryingKnife = (EquipScript.getLeft() == EquipType.Knife);
@@ -135,6 +94,12 @@ namespace ValheimVRMod.Scripts
 
             VRPlayer.rightHand.hapticAction.Execute(0, 0.3f, 100, 0.5f, SteamVR_Input_Sources.RightHand);
             VRPlayer.leftHand.hapticAction.Execute(0, 0.3f, 100, 0.5f, SteamVR_Input_Sources.LeftHand);
+
+            if (isTransferringMainWeapon)
+            {
+                LocalWeaponWield.NextWeaponHoldShouldStartPointingUlnar =
+                    LocalWeaponWield.IsWeaponPointingUlnar ^ ulnarsOpposite;
+            }
 
             // Force re-equip to apply new handedness
             var rightHash = player.m_visEquipment.m_currentRightItemHash;
@@ -152,16 +117,10 @@ namespace ValheimVRMod.Scripts
                 player.m_visEquipment.SetLeftHandEquipped(leftHash, leftVariant);
             }
 
-            if (isTransferringMainWeapon)
-            {
-                LocalWeaponWield.IsWeaponPointingUlnar = newIsMainWeaponUlnar;
-            }
-            else if (isTransferringParryingKnife)
+            if (isTransferringParryingKnife)
             {
                 FistCollision.ShouldSecondaryKnifeHoldInverse = newIsSecondaryWeaponUlnar;
             }
-
-            state = TransferState.Idle;
         }
 
         private bool HandsCloseAndAligned()
