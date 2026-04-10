@@ -104,6 +104,5 @@ namespace ValheimVRMod.Utilities
                 LogWarning("Layer " + layer + " is a named layer: " + layerString);
             }
         }
-
     }
 }
