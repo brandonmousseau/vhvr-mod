@@ -46,8 +46,8 @@ namespace ValheimVRMod.Scripts
         private Texture2D mapTexture;
         private Texture2D recenterTexture;
         private Texture2D chatTexture;
-        public static bool toggleMap;
         public static bool shouldStartChat;
+        private static float? toggleMapHoldCountdown;
 
         protected virtual void Awake()
         {
@@ -195,6 +195,16 @@ namespace ValheimVRMod.Scripts
 
         private void Update()
         {
+            if (toggleMapHoldCountdown.HasValue)
+            {
+                toggleMapHoldCountdown -= Time.deltaTime;
+                if (toggleMapHoldCountdown <= 0)
+                {
+                    toggleMapHoldCountdown = null;
+                    GetButtonPatchUtils.Release("Map");
+                }
+            }
+
             if (!quickMenuLocker)
             {
                 resetQuickMenuLocker();
@@ -609,7 +619,8 @@ namespace ValheimVRMod.Scripts
                     Sprite.Create(mapTexture, new Rect(0.0f, 0.0f, mapTexture.width, mapTexture.height), new Vector2(0.5f, 0.5f), 500),
                     delegate ()
                     {
-                        toggleMap = true;
+                        GetButtonPatchUtils.Press("Map");
+                        toggleMapHoldCountdown = 0.25f;
                         return true;
                     });
             }

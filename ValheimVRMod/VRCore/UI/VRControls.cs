@@ -449,25 +449,16 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return false;
             }
-            if (zinput == "Jump" && (shouldEnableRemove() || shouldDisableJumpRemove()))
+            if (zinput == "Jump" && !canJump())
             {
                 return false;
             }
-            if (zinput == "Remove" && (!shouldEnableRemove() || shouldDisableJumpRemove()))
-            {
-                return false;
-            }
-            if (zinput == "Jump" && shouldDisableJumpEvade())
+            if (zinput == "Remove" && !canRemovePiece())
             {
                 return false;
             }
             if (zinput == "Map") {
-                if (QuickAbstract.toggleMap)
-                {
-                    QuickAbstract.toggleMap = false;
-                    return true;
-                }
-                else if (VHVRConfig.MinimapPanelPlacement().Equals("Legacy"))
+                if (VHVRConfig.MinimapPanelPlacement().Equals("Legacy"))
                 {
                     // Revert back to using the regular map toggle if the minimap is in legacy mode
                     return GetButtonDown(ToggleMiniMap);
@@ -529,15 +520,11 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return false;
             }
-            if (zinput == "Jump" && (shouldEnableRemove() || shouldDisableJumpRemove()))
+            if (zinput == "Jump" && !canJump())
             {
                 return false;
             }
-            if (zinput == "Remove" && (!shouldEnableRemove() || shouldDisableJumpRemove()))
-            {
-                return false;
-            }
-            if (zinput == "Jump" && shouldDisableJumpEvade())
+            if (zinput == "Remove" && !canRemovePiece())
             {
                 return false;
             }
@@ -572,15 +559,11 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return false;
             }
-            if (zinput == "Jump" && (shouldEnableRemove() || shouldDisableJumpRemove()))
+            if (zinput == "Jump" && !canJump())
             {
                 return false;
             }
-            if (zinput == "Remove" && (!shouldEnableRemove() || shouldDisableJumpRemove()))
-            {
-                return false;
-            }
-            if (zinput == "Jump" && shouldDisableJumpEvade())
+            if (zinput == "Remove" && !canRemovePiece())
             {
                 return false;
             }
@@ -861,22 +844,33 @@ namespace ValheimVRMod.VRCore.UI
             return inPlaceMode() && !Hud.IsPieceSelectionVisible() && SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand);
         }
 
-        // disable Jump input under certain conditions
-        // * In placement mode
-        // * Grab Modifier is Pressed
-        private bool shouldEnableRemove()
+        private bool canRemovePiece()
         {
-            return inPlaceMode() && SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand);
+            return
+                inPlaceMode() &&
+                SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand) &&
+                BuildingManager.instance != null &&
+                !BuildingManager.instance.isCurrentlyMoving() &&
+                !BuildingManager.instance.isCurrentlyPreciseMoving() &&
+                !BuildingManager.instance.isHoldingPlace();
         }
 
-        private bool shouldDisableJumpRemove()
+        private bool canJump()
         {
-            return BuildingManager.instance && (BuildingManager.instance.isCurrentlyMoving() || BuildingManager.instance.isCurrentlyPreciseMoving() || BuildingManager.instance.isHoldingPlace());
-        }
-
-        private bool shouldDisableJumpEvade()
-        {
-            return SteamVR_Actions.valheim_UseLeft.state;
+            if (canRemovePiece() || // Removing piece takes higher priority than jump
+                SteamVR_Actions.valheim_UseLeft.state)
+            {
+                return false;
+            }
+            if (BuildingManager.instance == null)
+            {
+                return true;
+            }
+            
+            return
+                !BuildingManager.instance.isCurrentlyMoving() &&
+                !BuildingManager.instance.isCurrentlyPreciseMoving() &&
+                !BuildingManager.instance.isHoldingPlace();
         }
 
         private void init()
