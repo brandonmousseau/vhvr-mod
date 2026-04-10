@@ -84,9 +84,8 @@ namespace ValheimVRMod.Utilities
             {
                 case ItemDrop.ItemData.ItemType.Shield:
                     return EquipType.Shield;
-                case ItemDrop.ItemData.ItemType.Torch:
-                    return EquipType.Torch;
-                case ItemDrop.ItemData.ItemType.Bow:
+                case ItemDrop.ItemData.ItemType.Torch: // Need examine further to distinguish between torch and lantern
+                case ItemDrop.ItemData.ItemType.Bow: // Need examine further to distinguish between bow and crossbow
                 case ItemDrop.ItemData.ItemType.OneHandedWeapon:
                 case ItemDrop.ItemData.ItemType.Tool:
                 case ItemDrop.ItemData.ItemType.TwoHandedWeapon:
