@@ -5,7 +5,6 @@ using NDesk.Options;
 using Unity.XR.OpenVR;
 using ValheimVRMod.VRCore;
 using UnityEngine;
-using XGamingRuntime;
 using ValheimVRMod.VRCore.UI;
 
 namespace ValheimVRMod.Utilities
