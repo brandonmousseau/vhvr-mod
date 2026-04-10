@@ -897,6 +897,58 @@ namespace ValheimVRMod.VRCore.UI
             poseR = SteamVR_Actions.valheim_PoseR;
             initIgnoredZInputs();
             initQuickActionOnly();
+
+            // Patching ZInput may not be sufficient to emulate button iput in some cases
+            // since Jotunn could undo those patches. In those cases, we need to alter the
+            // actual button states in ZInput.
+            registerBooleanActionListeners();
+        }
+
+        private void registerBooleanActionListeners()
+        {
+            foreach (var entry in zInputToBooleanAction)
+            {
+                // TODO: consider listening to valheim_ToggleMap to button "Map"
+                // when VHVRConfig.MinimapPanelPlacement().Equals("Legacy")
+                var buttonName = entry.Key;
+                foreach (var action in entry.Value)
+                {
+                    // TODO: add listener of map zoom too
+                    if (buttonName == "Jump")
+                    {
+                        action.AddOnStateDownListener(
+                            (fromAction, fromSource) => {
+                                if (canJump())
+                                {
+                                    GetButtonPatchUtils.Press(buttonName);
+                                }
+
+                            },
+                            SteamVR_Input_Sources.Any);
+                    }
+                    else if (buttonName == "Remove")
+                    {
+                        action.AddOnStateDownListener(
+                            (fromAction, fromSource) => {
+                                if (canRemovePiece())
+                                {
+                                    GetButtonPatchUtils.Press(buttonName);
+                                }
+                            },
+                            SteamVR_Input_Sources.Any);
+                    }
+                    else
+                    {
+                        action.AddOnStateDownListener(
+                            (fromAction, fromSource) => GetButtonPatchUtils.Press(buttonName),
+                            SteamVR_Input_Sources.Any);
+                    }
+
+                    action.AddOnStateUpListener(
+                        (fromAction, fromSource) => GetButtonPatchUtils.Release(buttonName),
+                        SteamVR_Input_Sources.Any);
+                }
+            }
         }
 
         private void initQuickActionOnly()
