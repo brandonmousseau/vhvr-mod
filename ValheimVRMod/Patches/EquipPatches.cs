@@ -300,7 +300,6 @@ namespace ValheimVRMod.Patches
 
             if (EquipScript.getRight() == EquipType.Lantern)
             {
-                LanternFix.FixLantern(___m_rightItemInstance, VRPlayer.mainWeaponHand.transform);
                 return;
             }
 
@@ -455,7 +454,6 @@ namespace ValheimVRMod.Patches
                     ___m_leftItemInstance.AddComponent<SecondaryWeaponRotator>();
                     break;
                 case EquipType.Lantern:
-                    LanternFix.FixLantern(___m_leftItemInstance, VRPlayer.mainWeaponHand.otherHand.transform);
                     return;
                 case EquipType.Shield:
                     meshFilter.gameObject.AddComponent<ShieldBlock>().itemName = ___m_leftItem;
@@ -463,50 +461,6 @@ namespace ValheimVRMod.Patches
             }
 
             meshFilter.gameObject.AddComponent<ButtonSecondaryAttackManager>().Initialize(meshFilter.transform, ___m_leftItem, !VRPlayer.isRightHandMainWeaponHand);
-        }
-    }
-
-    class LanternFix : MonoBehaviour
-    {
-        public static void FixLantern(GameObject lantern, Transform hand)
-        {
-            foreach (var c in lantern.GetComponents<Rigidbody>())
-            {
-                c.isKinematic = true;
-            }
-            foreach (var c in lantern.GetComponentsInChildren<ConfigurableJoint>())
-            {
-                // TODO: experiment with setting connected body on configurable joint to VR controller
-                // instead of setting the position and rotation directly
-                c.gameObject.AddComponent<LanternFix>().hand = hand;
-            }
-            foreach (var c in lantern.GetComponentsInChildren<LightFlicker>())
-            {
-                c.enabled = false;
-            }
-            foreach (var c in lantern.GetComponentsInChildren<LightLod>())
-            {
-                c.enabled = false;
-            }
-        }
-
-        private Transform hand;
-
-        void FixedUpdate()
-        {
-            FixTransform();
-        }
-
-        void OnRenderObject()
-        {
-            FixTransform();
-        }
-
-        // Override the effect of the rigid body with hardcoded position and rotation to avoid flickering
-        private void FixTransform()
-        {
-            transform.position = hand.position - Vector3.up * 0.3f;
-            transform.rotation = Quaternion.LookRotation(Vector3.up, hand.forward) * Quaternion.Euler(0, 0, 90);
         }
     }
 
@@ -626,11 +580,7 @@ namespace ValheimVRMod.Patches
     [HarmonyPatch(typeof(VisEquipment), nameof(VisEquipment.AttachItem))]
     class PatchAttachItem
     {
-
-        /// <summary>
-        /// For Left Handed mode, switch left with right items
-        /// </summary>
-        static void Prefix(VisEquipment __instance, ref Transform joint)
+        static void Prefix(VisEquipment __instance, ref Transform joint, int itemHash)
         {
             if (joint == null)
             {
@@ -642,22 +592,41 @@ namespace ValheimVRMod.Patches
                 return;
             }
 
-            if (player == Player.m_localPlayer)
+            VRPlayerSync vrPlayerSync = player.GetComponent<VRPlayerSync>();
+            bool isLocalPlayer = (player == Player.m_localPlayer);
+            if (isLocalPlayer ? !VHVRConfig.UseVrControls() : vrPlayerSync == null)
             {
-                if (!VHVRConfig.UseVrControls() || VRPlayer.isRightHandMainWeaponHand)
-                {
-                    return;
-                }
-            }
-            else
-            {
-                VRPlayerSync vrPlayerSync = player.GetComponent<VRPlayerSync>();
-                if (vrPlayerSync == null || !vrPlayerSync.isLeftHanded)
-                {
-                    return;
-                }
+                // Not using VR controls
+                return;
             }
 
+            bool isLeftHanded =
+                (isLocalPlayer ? !VRPlayer.isRightHandMainWeaponHand : vrPlayerSync.isLeftHanded);
+
+            if (EquipScript.GetEquipTypeFromHash(itemHash) == EquipType.Lantern)
+            {
+                // Lantern must be reparented to the VR controller otherwise VRIK and vanilla animation fighting
+                // to set character hand position/rotation will cause lantern physics to flicker
+                // TODO: should this be applied to most weapons in general?
+                var leftController = isLocalPlayer ? VRPlayer.leftHand.transform : vrPlayerSync.leftHand.transform;
+                var rightController = isLocalPlayer ? VRPlayer.rightHand.transform : vrPlayerSync.rightHand.transform;
+                if (joint == __instance.m_rightHand)
+                {
+                    joint = isLeftHanded ? leftController : rightController;
+                }
+                else if (joint == __instance.m_leftHand)
+                {
+                    joint = isLeftHanded ? rightController : leftController;
+                }
+                return;
+            }
+
+            if (!isLeftHanded)
+            {
+                return;
+            }
+
+            /// For Left Handed mode, switch left with right items
             if (joint == __instance.m_rightHand)
             {
                 joint = __instance.m_leftHand;
