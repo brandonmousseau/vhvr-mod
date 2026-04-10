@@ -15,6 +15,7 @@ namespace ValheimVRMod.Utilities
              AccessTools.Method(typeof(ZInput), nameof(ZInput.GetButtonDown), new[] { typeof(string) });
         public static readonly MethodInfo GetButtonUpOriginal =
             AccessTools.Method(typeof(ZInput), nameof(ZInput.GetButtonUp), new[] { typeof(string) });
+        private static readonly FieldInfo ZInputButtonsField = AccessTools.Field(typeof(ZInput), "m_buttons");
 
         public static bool GetButtonPatched(string name)
         {
@@ -32,6 +33,34 @@ namespace ValheimVRMod.Utilities
         {
             return (VRControls.mainControlsActive && VRControls.instance.GetButtonUp(name)) ||
                 ZInput.GetButtonUp(name);
+        }
+
+        public static void Press(string buttonName)
+        {
+            var buttons = GetZInputButtons();
+            var held = (bool)GetButtonOriginal.Invoke(null, new object[] { buttonName });
+            if (!held && buttons != null && buttons.TryGetValue(buttonName, out ZInput.ButtonDef buttonDef))
+            {
+                buttonDef.Press();
+            }
+        }
+
+        public static void Release(string buttonName)
+        {
+            var buttons = GetZInputButtons();
+            if (buttons != null && buttons.TryGetValue(buttonName, out ZInput.ButtonDef buttonDef))
+            {
+                buttonDef.Release();
+            }
+        }
+
+        private static Dictionary<string, ZInput.ButtonDef> GetZInputButtons()
+        {
+            if (ZInput.instance == null)
+            {
+                return null;
+            }
+            return (Dictionary<string, ZInput.ButtonDef>)ZInputButtonsField.GetValue(ZInput.instance);
         }
 
         public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
