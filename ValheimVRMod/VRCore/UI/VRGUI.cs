@@ -476,6 +476,7 @@ namespace ValheimVRMod.VRCore.UI
             }
 
             return InventoryGui.instance == null ||
+                !VHVRConfig.UseVrControls() ||
                 InventoryGui.instance.IsContainerOpen() ||
                 Player.m_localPlayer == null ||
                 Player.m_localPlayer.m_inCraftingStation ||
