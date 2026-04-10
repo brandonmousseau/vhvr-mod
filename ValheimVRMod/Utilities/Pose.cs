@@ -489,9 +489,9 @@ namespace ValheimVRMod.Utilities {
                     return 2;
                 case BackReachLocation.LeftWaistRadialMedial:
                     return 1;
-                case BackReachLocation.RightShoulderRadialUp:
-                    return 4;
                 case BackReachLocation.RightShoulderRadialDown:
+                    return 4;
+                case BackReachLocation.RightShoulderRadialUp:
                     return 5;
                 case BackReachLocation.RightWaistRadialForward:
                     return 6;
