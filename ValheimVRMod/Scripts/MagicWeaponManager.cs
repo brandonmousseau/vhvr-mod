@@ -19,9 +19,9 @@ namespace ValheimVRMod.Scripts
         private static readonly HashSet<string> OPPOSITE_HAND_SUMMONER_NAMES =
             new HashSet<string>(new string[] { "$item_staffskeleton" });
 
-        private static bool IsMagicWeaponEquipped { get { return EquipScript.getLeft() == EquipType.Magic || EquipScript.getRight() == EquipType.Magic; } }
+        private static bool IsMagicWeaponEquipped { get { return EquipScript.CurrentOffHandEquipType() == EquipType.Magic || EquipScript.CurrentMainHandEquipType() == EquipType.Magic; } }
         // Right-handed weapons in vanilla game is treated as domininant hand weapon in VHVR.
-        private static bool IsDominantHandWeapon { get { return EquipScript.getRight() == EquipType.Magic; } }
+        private static bool IsDominantHandWeapon { get { return EquipScript.CurrentMainHandEquipType() == EquipType.Magic; } }
 
         private static bool IsInRightHand { get { return IsDominantHandWeapon ^ !VRPlayer.isRightHandMainWeaponHand; } }
         public static SteamVR_LaserPointer WeaponHandPointer { get { return IsInRightHand ? VRPlayer.rightPointer : VRPlayer.leftPointer; } }
@@ -67,7 +67,7 @@ namespace ValheimVRMod.Scripts
                     return false;
                 }
 
-                if (EquipScript.isDundrEquipped())
+                if (EquipScript.IsDundrEquipped())
                 {
                     switch (LocalWeaponWield.LocalPlayerTwoHandedState)
                     {

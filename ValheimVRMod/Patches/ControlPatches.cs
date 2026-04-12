@@ -727,7 +727,7 @@ namespace ValheimVRMod.Patches {
             }
             timer = timer <= timeEnd ? timer + Time.deltaTime : timeEnd;
 
-            if (EquipScript.getLeft() == EquipType.Bow) {
+            if (EquipScript.CurrentOffHandEquipType() == EquipType.Bow) {
                 if (BowLocalManager.aborting) {
                     block = true;
                     blockHold = true;
@@ -770,11 +770,11 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
-            if (EquipScript.getLeft() == EquipType.Shield) {
+            if (EquipScript.CurrentOffHandEquipType() == EquipType.Shield) {
                 blockHold = ShieldBlock.instance?.isBlocking() ?? false;
             }
 
-            if (EquipScript.getLeft() == EquipType.Magic && MagicWeaponManager.AttemptingAttack)
+            if (EquipScript.CurrentOffHandEquipType() == EquipType.Magic && MagicWeaponManager.AttemptingAttack)
             {
                 //Check if there's secondary attack or not, if not, fallback to normal attack
                 if (MagicWeaponManager.IsSecondaryAttack)
@@ -791,13 +791,13 @@ namespace ValheimVRMod.Patches {
                 }
             }
 
-            if (EquipScript.getLeft() == EquipType.Crossbow && CrossbowManager.IsPullingTrigger())
+            if (EquipScript.CurrentOffHandEquipType() == EquipType.Crossbow && CrossbowManager.IsPullingTrigger())
             {
                 attack = true;
                 attackHold = true;
             }
 
-            switch (EquipScript.getRight()) {
+            switch (EquipScript.CurrentMainHandEquipType()) {
                 case EquipType.Fishing:
                     if (FishingManager.isThrowing) {
                         attack = true;
@@ -867,7 +867,7 @@ namespace ValheimVRMod.Patches {
                     break;
             }
 
-            if (EquipScript.isThrowable(__instance.GetRightItem()) && ThrowableManager.isThrowing)
+            if (EquipScript.IsThrowable(__instance.GetRightItem()) && ThrowableManager.isThrowing)
             {
                 secondaryAttack = true;
                 ThrowableManager.isThrowing = false;

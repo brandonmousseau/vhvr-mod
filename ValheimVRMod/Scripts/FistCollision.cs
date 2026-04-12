@@ -398,9 +398,9 @@ namespace ValheimVRMod.Scripts
             Attack attack;
             if (holdingSecondaryWeapon())
             {
-                if (EquipScript.getLeft() != EquipType.Torch &&
-                    EquipScript.getRight() != EquipType.Torch &&
-                    EquipScript.getRight() != EquipType.None)
+                if (EquipScript.CurrentOffHandEquipType() != EquipType.Torch &&
+                    EquipScript.CurrentMainHandEquipType() != EquipType.Torch &&
+                    EquipScript.CurrentMainHandEquipType() != EquipType.None)
                 {
                     item = Player.m_localPlayer.GetRightItem();
                 }
@@ -503,8 +503,8 @@ namespace ValheimVRMod.Scripts
         {
             var newEquipType =
                 hasDualWieldingWeaponEquipped() || (isRightHand ^ !VRPlayer.isRightHandMainWeaponHand) ?
-                EquipScript.getRight() :
-                EquipScript.getLeft();
+                EquipScript.CurrentMainHandEquipType() :
+                EquipScript.CurrentOffHandEquipType();
 
             if (!Player.m_localPlayer || newEquipType == currentEquipType)
             {
@@ -557,7 +557,7 @@ namespace ValheimVRMod.Scripts
             {
                 return false;
             }
-            return EquipScript.getLeft() == EquipType.Torch || EquipScript.getLeft() == EquipType.Knife;
+            return EquipScript.CurrentOffHandEquipType() == EquipType.Torch || EquipScript.CurrentOffHandEquipType() == EquipType.Knife;
         }
 
         private bool holdingShield()
@@ -566,7 +566,7 @@ namespace ValheimVRMod.Scripts
             {
                 return false;
             }
-            return EquipScript.getLeft() == EquipType.Shield;
+            return EquipScript.CurrentOffHandEquipType() == EquipType.Shield;
         }
 
         public bool hasMomentum(out float speed, out bool isJab)
@@ -592,7 +592,7 @@ namespace ValheimVRMod.Scripts
 
         public static bool hasDualWieldingWeaponEquipped()
         {
-            var equipType = EquipScript.getRight();
+            var equipType = EquipScript.CurrentMainHandEquipType();
             return equipType.Equals(EquipType.Claws) ||
                 equipType.Equals(EquipType.DualAxes) ||
                 equipType.Equals(EquipType.DualKnives);
@@ -615,7 +615,7 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            if (EquipScript.getLeft() != EquipType.Knife)
+            if (EquipScript.CurrentOffHandEquipType() != EquipType.Knife)
             {
                 ShouldSecondaryKnifeHoldInverse = false;
                 return;

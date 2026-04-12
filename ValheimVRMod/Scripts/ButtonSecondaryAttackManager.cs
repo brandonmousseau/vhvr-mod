@@ -188,7 +188,7 @@ namespace ValheimVRMod.Scripts
             }
 
             //Check if There's secondary attack animation, is not a spear throwing, and not a magic weapon
-            if (secondaryAttack.m_attackAnimation == "" || obj.gameObject.GetComponent<ThrowableManager>() != null || EquipScript.getRight() == EquipType.Magic)
+            if (secondaryAttack.m_attackAnimation == "" || obj.gameObject.GetComponent<ThrowableManager>() != null || EquipScript.CurrentMainHandEquipType() == EquipType.Magic)
             {
                 isSecondaryAvailable = false;
             }

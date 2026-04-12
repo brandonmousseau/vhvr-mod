@@ -524,7 +524,7 @@ namespace ValheimVRMod.Scripts
                     {
                         continue;
                     }
-                    if (VHVRConfig.SplitQuickMenuRadialItemsByWieldingHand() && EquipScript.IsDominantHandItem(item) ^ isDominantHand) {
+                    if (VHVRConfig.SplitQuickMenuRadialItemsByWieldingHand() && EquipScript.CanUseAsMainHandItem(item) ^ isDominantHand) {
                         continue;
                     }
                     elements[elementCount].useAsInventoryItemAndRefreshColor(inventory, item);

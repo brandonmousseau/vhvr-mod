@@ -125,11 +125,11 @@ namespace ValheimVRMod.Scripts {
         {
             if (isOwner())
             {
-                if (EquipScript.getRight() == EquipType.Knife)
+                if (EquipScript.CurrentMainHandEquipType() == EquipType.Knife)
                 {
                     inverseHold = LocalWeaponWield.IsDominantHandHoldInversed;
                 }
-                else if (EquipScript.isSpearEquipped())
+                else if (EquipScript.IsSpearEquipped())
                 {
                     inverseHold = LocalWeaponWield.IsDominantHandHoldInversed || LocalWeaponWield.isCurrentlyTwoHanded();
                 }

@@ -26,7 +26,7 @@ namespace ValheimVRMod.Utilities
     public static class EquipScript
     {
 
-        public readonly static HashSet<ItemDrop.ItemData.ItemType> DominantHandItemTypes =
+        public readonly static HashSet<ItemDrop.ItemData.ItemType> MainHandItemTypes =
             new HashSet<ItemDrop.ItemData.ItemType>(
                 new ItemDrop.ItemData.ItemType[]{
                     ItemDrop.ItemData.ItemType.Tool,
@@ -34,25 +34,25 @@ namespace ValheimVRMod.Utilities
                     ItemDrop.ItemData.ItemType.OneHandedWeapon,
                     ItemDrop.ItemData.ItemType.TwoHandedWeapon});
 
-        public static bool IsDominantHandItem(ItemDrop.ItemData item)
+        public static bool CanUseAsMainHandItem(ItemDrop.ItemData item)
         {
-            return DominantHandItemTypes.Contains(item.m_shared.m_itemType);
+            return MainHandItemTypes.Contains(item.m_shared.m_itemType);
         }
 
-        public static EquipType getRight()
+        public static EquipType CurrentMainHandEquipType()
         {
             if (Player.m_localPlayer?.GetRightItem() != null)
             {
-                return getRightEquipType(Player.m_localPlayer.GetRightItem());
+                return GetEquipTypeAsMainHandItem(Player.m_localPlayer.GetRightItem());
             }
             return EquipType.None;
         }
 
-        public static EquipType getLeft()
+        public static EquipType CurrentOffHandEquipType()
         {
             if (Player.m_localPlayer?.GetLeftItem() != null)
             {
-                return getLeftEquipType(Player.m_localPlayer.GetLeftItem());
+                return GetEquipTypeAsOffHandItem(Player.m_localPlayer.GetLeftItem());
             }
             return EquipType.None;
         }
@@ -71,10 +71,10 @@ namespace ValheimVRMod.Utilities
                 return EquipType.None;
             }
 
-            return EquipScript.getEquippedItem(itemDrop.m_itemData);
+            return EquipScript.GetEquipType(itemDrop.m_itemData);
         }
 
-        public static EquipType getEquippedItem(ItemDrop.ItemData item)
+        public static EquipType GetEquipType(ItemDrop.ItemData item)
         {
             if (item == null || item.m_shared ==  null) {
                 return EquipType.None;
@@ -90,14 +90,14 @@ namespace ValheimVRMod.Utilities
                 case ItemDrop.ItemData.ItemType.Tool:
                 case ItemDrop.ItemData.ItemType.TwoHandedWeapon:
                 case ItemDrop.ItemData.ItemType.TwoHandedWeaponLeft:
-                    var typeAsMainHandItem = getRightEquipType(item);
-                    return typeAsMainHandItem != EquipType.None ? typeAsMainHandItem : getLeftEquipType(item);
+                    var typeAsMainHandItem = GetEquipTypeAsMainHandItem(item);
+                    return typeAsMainHandItem != EquipType.None ? typeAsMainHandItem : GetEquipTypeAsOffHandItem(item);
                 default:
                     return EquipType.None;
             }
         }
 
-        public static EquipType getRightEquipType(ItemDrop.ItemData item)
+        public static EquipType GetEquipTypeAsMainHandItem(ItemDrop.ItemData item)
         {
             if (item?.m_shared?.m_attack?.m_harvest?? false)
             {
@@ -215,7 +215,7 @@ namespace ValheimVRMod.Utilities
             return EquipType.None;
         }
 
-        public static EquipType getLeftEquipType(ItemDrop.ItemData item)
+        public static EquipType GetEquipTypeAsOffHandItem(ItemDrop.ItemData item)
         {
             switch (item?.m_shared.m_name)
             {
@@ -261,7 +261,7 @@ namespace ValheimVRMod.Utilities
             return EquipType.None;
         }
 
-        public static bool localPlayerHasDualWieldingWeaponHolstered()
+        public static bool LocalPlayerHasDualWieldingWeaponHolstered()
         {
             var localPlayer = Player.m_localPlayer;
             if (localPlayer == null)
@@ -269,12 +269,12 @@ namespace ValheimVRMod.Utilities
                 return false;
             }
             var hiddenItem = localPlayer.m_hiddenRightItem;
-            return hiddenItem != null && isDualWeapon(hiddenItem);
+            return hiddenItem != null && IsDualWeapon(hiddenItem);
         }
 
-        public static bool isDualWeapon(ItemDrop.ItemData item)
+        public static bool IsDualWeapon(ItemDrop.ItemData item)
         {
-            var weaponType = getRightEquipType(item);
+            var weaponType = GetEquipTypeAsMainHandItem(item);
             switch (weaponType)
             {
                 case EquipType.Claws:
@@ -286,9 +286,9 @@ namespace ValheimVRMod.Utilities
             }
         }
 
-        public static bool isCompatibleWithParryingKnife()
+        public static bool IsCompatibleWithParryingKnife()
         {
-            switch (getRight())
+            switch (CurrentMainHandEquipType())
             {
                 case EquipType.Axe:
                 case EquipType.Club:
@@ -300,9 +300,9 @@ namespace ValheimVRMod.Utilities
             }
         }
 
-        public static ItemDrop.ItemData equipAmmo()
+        public static ItemDrop.ItemData EquipAmmo()
         {
-            if (getLeft() != EquipType.Bow && getLeft() != EquipType.Crossbow)
+            if (CurrentOffHandEquipType() != EquipType.Bow && CurrentOffHandEquipType() != EquipType.Crossbow)
             {
                 LogUtils.LogWarning("Attempting to equip ammo without bow or crossbow equipped");
                 return null;
@@ -318,7 +318,7 @@ namespace ValheimVRMod.Utilities
             return null;
         }
 
-        public static bool isThrowable(ItemDrop.ItemData item)
+        public static bool IsThrowable(ItemDrop.ItemData item)
         {
             if (item != null)
             {
@@ -332,42 +332,29 @@ namespace ValheimVRMod.Utilities
             return false;
         }
 
-        public static bool isSpearEquipped()
+        public static bool IsSpearEquipped()
         {
-            return getRight() == EquipType.Spear || getRight() == EquipType.SpearChitin;
+            return CurrentMainHandEquipType() == EquipType.Spear || CurrentMainHandEquipType() == EquipType.SpearChitin;
         }
 
-        // Whether there is a spear equipped pointing at the ulnar direction of hold hand.
-        public static bool isSpearEquippedUlnarForward()
-        {
-            return isSpearEquipped() && !VHVRConfig.SpearInverseWield();
-        }
-
-        // Whether there is a spear equipped pointing at the radial direction of hold hand.
-        public static bool isSpearEquippedRadialForward()
-        {
-            return isSpearEquipped() && VHVRConfig.SpearInverseWield();
-        }
-
-        public static bool isDundrEquipped()
+        public static bool IsDundrEquipped()
         {
             return Player.m_localPlayer?.GetRightItem()?.m_shared?.m_name == "$item_staff_lightning";
         }
 
-
-        public static bool shouldSkipAttackAnimation()
+        public static bool ShouldSkipAttackAnimation()
         {
-            if (getLeft() == EquipType.Magic || getRight() == EquipType.Magic) 
+            if (CurrentOffHandEquipType() == EquipType.Magic || CurrentMainHandEquipType() == EquipType.Magic) 
             {
                 return MagicWeaponManager.ShouldSkipAttackAnimation();
             }
-            return getLeft() != EquipType.Crossbow;
+            return CurrentOffHandEquipType() != EquipType.Crossbow;
         }
 
-        public static bool isMeleeMagicAttack(Attack attack, EquipType type)
+        public static bool IsMeleeMagicAttack(Attack attack, EquipType type)
         {
-            //RTD Healing staff is using attack type of horizontal, while the other use projectile
-            return attack.m_attackType.ToString() == "Horizontal" && type == EquipType.Magic;
+            // RTD Healing staff (modded) is using attack type of horizontal, while the other use projectile
+            return attack.m_attackType == Attack.AttackType.Horizontal && type == EquipType.Magic;
         }
     }
 }

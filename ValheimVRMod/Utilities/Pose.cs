@@ -173,7 +173,7 @@ namespace ValheimVRMod.Utilities {
 
         private static bool checkUnsheathingHolsteredDualWieldWeapon(BackReachLocation leftHandBackReach, BackReachLocation rightHandBackReach)
         {
-            if (!EquipScript.localPlayerHasDualWieldingWeaponHolstered())
+            if (!EquipScript.LocalPlayerHasDualWieldingWeaponHolstered())
             {
                 return false;
             }
@@ -197,12 +197,12 @@ namespace ValheimVRMod.Utilities {
             {
                 return false;
             }
-            if (EquipScript.getLeft() == EquipType.Bow)
+            if (EquipScript.CurrentOffHandEquipType() == EquipType.Bow)
             {
                 BowLocalManager.instance.toggleArrow();
                 return true;
             }
-            if (EquipScript.getLeft() == EquipType.Crossbow)
+            if (EquipScript.CurrentOffHandEquipType() == EquipType.Crossbow)
             {
                 CrossbowMorphManager.instance.toggleBolt();
                 return true;
@@ -213,7 +213,7 @@ namespace ValheimVRMod.Utilities {
         private static bool checkUnsheathingHolsteredNonDualWieldItem(
             bool isRightHand, BackReachLocation backReachLocation)
         {
-            if (!canGrabNewWeapon(isRightHand) || EquipScript.localPlayerHasDualWieldingWeaponHolstered())
+            if (!canGrabNewWeapon(isRightHand) || EquipScript.LocalPlayerHasDualWieldingWeaponHolstered())
             {
                 return false;
             }
@@ -255,15 +255,15 @@ namespace ValheimVRMod.Utilities {
                 return false;
             }
 
-            if (EquipScript.getEquippedItem(item) == EquipType.None)
+            if (EquipScript.GetEquipType(item) == EquipType.None)
             {
                 return false;
             }
 
-            var isDualWieldItem = EquipScript.isDualWeapon(item);
+            var isDualWieldItem = EquipScript.IsDualWeapon(item);
             var isMainHandItem = IsMainHandItem(item);
 
-            if (EquipScript.isDualWeapon(item))
+            if (EquipScript.IsDualWeapon(item))
             {
                 if (!(canGrabNewWeapon(isRightHand: true) && canGrabNewWeapon(isRightHand: false)))
                 {
@@ -437,9 +437,9 @@ namespace ValheimVRMod.Utilities {
 
         private static bool IsMainHandItem(ItemDrop.ItemData item)
         {
-            if (EquipScript.getEquippedItem(item) == EquipType.Knife)
+            if (EquipScript.GetEquipType(item) == EquipType.Knife)
             {
-                return !EquipScript.isCompatibleWithParryingKnife();
+                return !EquipScript.IsCompatibleWithParryingKnife();
             }
 
             if (item == Player.m_localPlayer.m_hiddenLeftItem)
@@ -447,7 +447,7 @@ namespace ValheimVRMod.Utilities {
                 return false;
             }
 
-            return item == Player.m_localPlayer.m_hiddenRightItem || EquipScript.IsDominantHandItem(item);
+            return item == Player.m_localPlayer.m_hiddenRightItem || EquipScript.CanUseAsMainHandItem(item);
         }
 
         private static int rightHandBackReachToInventory(BackReachLocation backReachLocation)
@@ -648,15 +648,15 @@ namespace ValheimVRMod.Utilities {
 
         private static bool canGrabNewWeapon(bool isRightHand)
         {
-            if (EquipScript.getRight() == EquipType.Claws)
+            if (EquipScript.CurrentMainHandEquipType() == EquipType.Claws)
             {
                 return true;
             }
 
-            if (EquipScript.getLeft() == EquipType.Bow
-                || EquipScript.getLeft() == EquipType.Crossbow
-                || EquipScript.getRight() == EquipType.Polearms
-                || EquipScript.getRight() == EquipType.BattleAxe
+            if (EquipScript.CurrentOffHandEquipType() == EquipType.Bow
+                || EquipScript.CurrentOffHandEquipType() == EquipType.Crossbow
+                || EquipScript.CurrentMainHandEquipType() == EquipType.Polearms
+                || EquipScript.CurrentMainHandEquipType() == EquipType.BattleAxe
                 || FistCollision.hasDualWieldingWeaponEquipped()
                 || Player.m_localPlayer == null
                 || Player.m_localPlayer.m_inCraftingStation)
@@ -665,7 +665,7 @@ namespace ValheimVRMod.Utilities {
             }
 
             var item = isRightHand ? VRPlayer.rightHandItem : VRPlayer.leftHandItem;
-            return item == null ||  EquipScript.getEquippedItem(item) == EquipType.None;
+            return item == null ||  EquipScript.GetEquipType(item) == EquipType.None;
         }
 
         private static void playEquippingHaptic(bool leftHand, bool rightHand) {

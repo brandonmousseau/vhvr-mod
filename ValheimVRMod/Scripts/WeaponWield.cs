@@ -48,7 +48,7 @@ namespace ValheimVRMod.Scripts
             isLocal = GetComponentInParent<Player>() == Player.m_localPlayer;
             this.isDominantHandWeapon = isDominantHandWeapon;
             this.itemName = itemName;
-            equipType = (item == null ? EquipType.None : EquipScript.getEquippedItem(item));
+            equipType = (item == null ? EquipType.None : EquipScript.GetEquipType(item));
 
             attackAnimation = item?.m_shared.m_attack?.m_attackAnimation ?? "";
 

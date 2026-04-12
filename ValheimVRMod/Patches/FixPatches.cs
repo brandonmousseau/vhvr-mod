@@ -139,7 +139,7 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
-            if (!EquipScript.shouldSkipAttackAnimation() || ___m_character.IsStaggering() || !VRPlayer.attachedToPlayer)
+            if (!EquipScript.ShouldSkipAttackAnimation() || ___m_character.IsStaggering() || !VRPlayer.attachedToPlayer)
             {
                 ___m_animator.speed = 1f;
                 return;

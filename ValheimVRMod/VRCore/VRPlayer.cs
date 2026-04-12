@@ -1784,7 +1784,7 @@ namespace ValheimVRMod.VRCore
                 return;
             }
 
-            if (SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.Any) || EquipScript.getRight() == EquipType.Fishing)
+            if (SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.Any) || EquipScript.CurrentMainHandEquipType() == EquipType.Fishing)
             {
                 return;
             }
@@ -1968,7 +1968,7 @@ namespace ValheimVRMod.VRCore
                 return 0.125f;
             }
             
-            switch (EquipScript.getRight())
+            switch (EquipScript.CurrentMainHandEquipType())
             {
                 case EquipType.Claws:
                 case EquipType.DualKnives:

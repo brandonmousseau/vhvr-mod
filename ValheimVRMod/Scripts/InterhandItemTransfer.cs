@@ -87,8 +87,8 @@ namespace ValheimVRMod.Scripts
             var ulnarsOpposite =
                 Vector3.Dot(VRPlayer.leftHand.transform.forward, VRPlayer.rightHand.transform.forward) < 0;
             var newIsSecondaryWeaponUlnar = FistCollision.ShouldSecondaryKnifeHoldInverse ^ ulnarsOpposite;
-            var isTransferringMainWeapon = (EquipScript.getLeft() == EquipType.None);
-            var isTransferringParryingKnife = (EquipScript.getLeft() == EquipType.Knife);
+            var isTransferringMainWeapon = (EquipScript.CurrentOffHandEquipType() == EquipType.None);
+            var isTransferringParryingKnife = (EquipScript.CurrentOffHandEquipType() == EquipType.Knife);
 
             VRPlayer.offHandWield = !VRPlayer.offHandWield;
 
@@ -151,8 +151,8 @@ namespace ValheimVRMod.Scripts
 
         private bool IsTransferableEquipped()
         {
-            var rightType = EquipScript.getRight();
-            var leftType = EquipScript.getLeft();
+            var rightType = EquipScript.CurrentMainHandEquipType();
+            var leftType = EquipScript.CurrentOffHandEquipType();
 
             foreach (var t in TRANSFERABLE_TYPES)
             {

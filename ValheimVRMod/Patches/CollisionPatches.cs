@@ -65,7 +65,7 @@ namespace ValheimVRMod.Patches {
                 !VHVRConfig.UseVrControls() ||
                 __instance.m_attackType.ToString() == "Projectile" ||
                 __instance.m_attackType == Attack.AttackType.None ||
-                EquipScript.isMeleeMagicAttack(__instance, EquipScript.getEquippedItem(weapon))) {
+                EquipScript.IsMeleeMagicAttack(__instance, EquipScript.GetEquipType(weapon))) {
                 return true;
             }
 

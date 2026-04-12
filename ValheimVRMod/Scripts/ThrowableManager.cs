@@ -213,7 +213,7 @@ namespace ValheimVRMod.Scripts
             if (throwing.Distance > minDist)
             {
                 throwSpeed = throwing.ThrowSpeed;
-                if (MountedAttackUtils.StartAttackIfRiding(isSecondaryAttack: EquipScript.getRight() == EquipType.Spear))
+                if (MountedAttackUtils.StartAttackIfRiding(isSecondaryAttack: EquipScript.CurrentMainHandEquipType() == EquipType.Spear))
                 {
                     ResetSpearOffset();
                 }
@@ -222,7 +222,7 @@ namespace ValheimVRMod.Scripts
                     // Let control patches and vanilla game handle attack if the player is not riding.
                     isThrowing = true;
                 }
-                if (EquipScript.getRight() == EquipType.SpearChitin)
+                if (EquipScript.CurrentMainHandEquipType() == EquipType.SpearChitin)
                 {
                     GetComponentInParent<SpearWield>().HideHarpoon();
                 }
@@ -240,7 +240,7 @@ namespace ValheimVRMod.Scripts
             isAiming = false;
             ShieldBlock.instance?.ScaleShieldSize(1f);
 
-            if (!EquipScript.isSpearEquipped())
+            if (!EquipScript.IsSpearEquipped())
             {
                 return;
             }

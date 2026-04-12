@@ -31,12 +31,12 @@ namespace ValheimVRMod.Patches
                 return true;
             }
 
-            if (EquipScript.isDualWeapon(item))
+            if (EquipScript.IsDualWeapon(item))
             {
                 VRPlayer.offHandWield = false;
             }
 
-            if (EquipScript.getLeft() == EquipType.Knife && __instance.m_leftItem != null)
+            if (EquipScript.CurrentOffHandEquipType() == EquipType.Knife && __instance.m_leftItem != null)
             {
                 if (item.m_shared.m_itemType == ItemDrop.ItemData.ItemType.OneHandedWeapon ||
                     (item.m_shared.m_itemType == ItemDrop.ItemData.ItemType.Torch && __instance.m_rightItem == null))
@@ -59,7 +59,7 @@ namespace ValheimVRMod.Patches
                     wasUsingKnife = false;
                     return true;
                 }
-                if (EquipScript.isCompatibleWithParryingKnife())
+                if (EquipScript.IsCompatibleWithParryingKnife())
                 {
                     __instance.m_leftItem = item;
                     __instance.m_leftItem.m_equipped = true;
@@ -71,14 +71,14 @@ namespace ValheimVRMod.Patches
                     wasUsingKnife = false;
                     return false;
                 }
-                if (EquipScript.getRight() == EquipType.Torch || EquipScript.getRight() == EquipType.Lantern)
+                if (EquipScript.CurrentMainHandEquipType() == EquipType.Torch || EquipScript.CurrentMainHandEquipType() == EquipType.Lantern)
                 {
                     wasUsingKnife = false;
                     return true;
                 }
             }
 
-            if (EquipScript.getRight() == EquipType.Knife && __instance.m_leftItem == null)
+            if (EquipScript.CurrentMainHandEquipType() == EquipType.Knife && __instance.m_leftItem == null)
             {
                 if (item.m_shared.m_itemType == ItemDrop.ItemData.ItemType.OneHandedWeapon)
                 {
@@ -106,7 +106,7 @@ namespace ValheimVRMod.Patches
                 return;
             }
             wasUsingKnife = false;
-            switch (EquipScript.getRight())
+            switch (EquipScript.CurrentMainHandEquipType())
             {
                 case EquipType.Axe:
                 case EquipType.Club:
@@ -166,7 +166,7 @@ namespace ValheimVRMod.Patches
                 return;
             }
 
-            if (EquipScript.getLeft() == EquipType.Knife)
+            if (EquipScript.CurrentOffHandEquipType() == EquipType.Knife)
             {
                 var currentWeapon = __instance.GetCurrentWeapon();
                 if (currentWeapon != null)
@@ -267,7 +267,7 @@ namespace ValheimVRMod.Patches
                 return;
             }
 
-            ParticleFix.maybeFix(___m_rightItemInstance, EquipScript.getRight());
+            ParticleFix.maybeFix(___m_rightItemInstance, EquipScript.CurrentMainHandEquipType());
 
             if (!VHVRConfig.UseVrControls())
             {
@@ -280,7 +280,7 @@ namespace ValheimVRMod.Patches
                 StaticObjects.leftHandQuickMenu.GetComponent<LeftHandQuickMenu>().refreshItems();
             }
 
-            switch (EquipScript.getRight())
+            switch (EquipScript.CurrentMainHandEquipType())
             {
                 case EquipType.Hammer:
                 case EquipType.Hoe:
@@ -293,12 +293,12 @@ namespace ValheimVRMod.Patches
                     break;
             }
 
-            if (EquipScript.getLeft() == EquipType.None && EquipScript.getRight() == EquipType.None)
+            if (EquipScript.CurrentOffHandEquipType() == EquipType.None && EquipScript.CurrentMainHandEquipType() == EquipType.None)
             {
                 return;
             }
 
-            if (EquipScript.getRight() == EquipType.Lantern)
+            if (EquipScript.CurrentMainHandEquipType() == EquipType.Lantern)
             {
                 return;
             }
@@ -309,7 +309,7 @@ namespace ValheimVRMod.Patches
             weaponCol.setColliderParent(
                 meshFilter, handPosition: ___m_rightItemInstance.transform.parent.position, ___m_rightItem, true);
 
-            LocalWeaponWield weaponWield = EquipScript.isSpearEquipped() ? ___m_rightItemInstance.AddComponent<SpearWield>() : ___m_rightItemInstance.AddComponent<LocalWeaponWield>();
+            LocalWeaponWield weaponWield = EquipScript.IsSpearEquipped() ? ___m_rightItemInstance.AddComponent<SpearWield>() : ___m_rightItemInstance.AddComponent<LocalWeaponWield>();
             weaponWield.Initialize(Player.m_localPlayer.GetRightItem(), ___m_rightItem, isDominantHandWeapon: true);
 
             if (MagicWeaponManager.IsSwingLaunchEnabled())
@@ -317,12 +317,12 @@ namespace ValheimVRMod.Patches
                 meshFilter.gameObject.AddComponent<SwingLaunchManager>();
             }
 
-            if (EquipScript.isThrowable(player.GetRightItem()) || EquipScript.isSpearEquipped() || EquipScript.getRight() == EquipType.ThrowObject)
+            if (EquipScript.IsThrowable(player.GetRightItem()) || EquipScript.IsSpearEquipped() || EquipScript.CurrentMainHandEquipType() == EquipType.ThrowObject)
             {
                 (meshFilter.gameObject.AddComponent<ThrowableManager>()).weaponWield = weaponWield;
             }
 
-            switch (EquipScript.getRight())
+            switch (EquipScript.CurrentMainHandEquipType())
             {
                 case EquipType.Cultivator:
                 case EquipType.Hammer:
@@ -420,7 +420,7 @@ namespace ValheimVRMod.Patches
                 return;
             }
 
-            ParticleFix.maybeFix(___m_leftItemInstance, EquipScript.getLeft());
+            ParticleFix.maybeFix(___m_leftItemInstance, EquipScript.CurrentOffHandEquipType());
 
             if (!VHVRConfig.UseVrControls())
             {
@@ -438,17 +438,17 @@ namespace ValheimVRMod.Patches
                 StaticObjects.leftHandQuickMenu.GetComponent<LeftHandQuickMenu>().refreshItems();
             }
 
-            switch (EquipScript.getLeft())
+            switch (EquipScript.CurrentOffHandEquipType())
             {
                 case EquipType.Bow:
                     meshFilter.gameObject.AddComponent<BowLocalManager>();
-                    EquipScript.equipAmmo();
+                    EquipScript.EquipAmmo();
                     return;
                 case EquipType.Crossbow:
                     CrossbowManager crossbowManager = ___m_leftItemInstance.AddComponent<CrossbowManager>();
                     crossbowManager.Initialize(Player.m_localPlayer.GetLeftItem(), ___m_leftItem, isDominantHandWeapon: false);
                     crossbowManager.gameObject.AddComponent<WeaponBlock>().weaponWield = crossbowManager;
-                    EquipScript.equipAmmo();
+                    EquipScript.EquipAmmo();
                     return;
                 case EquipType.Knife:
                     ___m_leftItemInstance.AddComponent<SecondaryWeaponRotator>();

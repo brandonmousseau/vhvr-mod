@@ -424,7 +424,7 @@ namespace ValheimVRMod.Utilities
 
             if (meshFilter != null && handPosition != null)
             {
-                var estimatedCollider = EstimateWeaponCollider(meshFilter, (Vector3)handPosition, EquipScript.getEquippedItem(item));
+                var estimatedCollider = EstimateWeaponCollider(meshFilter, (Vector3)handPosition, EquipScript.GetEquipType(item));
                 estimatedColliders[name] = estimatedCollider;
                 LogUtils.LogDebug(
                     "Estimated and registered collider for unknown weapon " + name + ": position " + estimatedCollider.pos + " scale " + estimatedCollider.scale);
@@ -436,7 +436,7 @@ namespace ValheimVRMod.Utilities
 
         public static WeaponColData GetDualWieldLeftHandColliderData(ItemDrop.ItemData item)
         {
-            return GetDualWieldLeftHandColliderData(EquipScript.getEquippedItem(item));
+            return GetDualWieldLeftHandColliderData(EquipScript.GetEquipType(item));
         }
 
         public static WeaponColData GetDualWieldLeftHandColliderData(EquipType equipType)
@@ -450,7 +450,7 @@ namespace ValheimVRMod.Utilities
 
         public static WeaponColData GetDualWieldLeftHandBlockingColliderData(ItemDrop.ItemData item)
         {
-            var equipType = EquipScript.getEquippedItem(item);
+            var equipType = EquipScript.GetEquipType(item);
             if (!DUAL_WIELD_BLOCKING_COLLIDERS.ContainsKey(equipType))
             {
                 equipType = EquipType.None;

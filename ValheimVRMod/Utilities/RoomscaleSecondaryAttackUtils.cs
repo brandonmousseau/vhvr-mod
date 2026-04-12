@@ -8,7 +8,7 @@ namespace ValheimVRMod.Utilities
     {
         public static bool IsSecondaryAttack(PhysicsEstimator collisionPhysicsEstimator, PhysicsEstimator handPhysicsEstimator)
         {
-            var rightEquipType = EquipScript.getRight();
+            var rightEquipType = EquipScript.CurrentMainHandEquipType();
             switch (rightEquipType)
             {
                 case EquipType.Axe:
