@@ -113,7 +113,7 @@ namespace ValheimVRMod.VRCore.UI
         private bool movingLastFrame = false;
         private Quaternion lastVrPlayerRotation = Quaternion.identity;
         private bool showingChatBox = false;
-        private bool isInventoryOrBuildMenuOpen;
+        private bool isAttachableToHandAsInventoryOrBuildMenu;
         private bool attachedToHand;
 
         // Native handle to OpenVR overlay
@@ -352,22 +352,28 @@ namespace ValheimVRMod.VRCore.UI
                 return;
             }
 
-            bool wasInventoryOrBuildMenuOpen = isInventoryOrBuildMenuOpen;
-            isInventoryOrBuildMenuOpen =
-                InventoryGui.IsVisible() ||
-                (Hud.instance?.m_pieceSelectionWindow != null && Hud.instance.m_pieceSelectionWindow.activeSelf);
+            bool wasAttachableUI = isAttachableToHandAsInventoryOrBuildMenu;
+            bool attachableToHandAsInventory =
+                InventoryGui.IsVisible() && VHVRConfig.AttachInventoryToHand();
+            bool attachableToHandAsBuildMenu =
+                Hud.instance?.m_pieceSelectionWindow != null &&
+                Hud.instance.m_pieceSelectionWindow.activeSelf &&
+                VHVRConfig.AttachBuildMenuToHand();
+            isAttachableToHandAsInventoryOrBuildMenu = attachableToHandAsInventory || attachableToHandAsBuildMenu;
             if (attachedToHand)
             {
                 if (shouldInstantlyDetachPanelFromHand())
                 {
+                    // Instantly reset UI to normal position
                     detachPanelFromHand(resetSize: true);
                 }
-                else if (!isInventoryOrBuildMenuOpen)
+                else if (!isAttachableToHandAsInventoryOrBuildMenu)
                 {
+                    // Smoothly move UI to normal position
                     detachPanelFromHand(resetSize: false);
                 }
             }
-            else if (!wasInventoryOrBuildMenuOpen && isInventoryOrBuildMenuOpen && !shouldInstantlyDetachPanelFromHand())
+            else if (!wasAttachableUI && isAttachableToHandAsInventoryOrBuildMenu && !shouldInstantlyDetachPanelFromHand())
             {
                 attachPanelToHand();
             }

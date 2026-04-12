@@ -68,7 +68,6 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<string> QuickMenuRadialItemDistribution;
         private static ConfigEntry<string> QuickMenuType;
         private static ConfigEntry<int> QuickMenuVerticalAngle;
-        private static ConfigEntry<bool> QuickMenuClassicSeperate;
         private static ConfigEntry<bool> lockGuiWhileInventoryOpen;
         private static ConfigEntry<bool> autoOpenKeyboardOnInteract;
 
@@ -87,6 +86,8 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<string> adrenalinePanelPlacement;
         private static ConfigEntry<string> staggerPanelPlacement;
         private static ConfigEntry<string> minimapPanelPlacement;
+        private static ConfigEntry<bool> attachInventoryToHand;
+        private static ConfigEntry<bool> attachBuildMenuToHand;
         private static ConfigEntry<bool> allowHudFade;
         private static ConfigEntry<bool> hideHotbar;
         private static ConfigEntry<bool> alwaysShowStamina;
@@ -616,6 +617,14 @@ namespace ValheimVRMod.Utilities
                                             "RightWrist",
                                             new ConfigDescription("Where should the minimap panel be placed?",
                                                 new AcceptableValueList<string>(k_HudAlignmentValues)));
+            attachInventoryToHand = config.Bind("VRHUD",
+                                        "AttachInventoryToHand",
+                                        true,
+                                        "Whether UI panel should be attached to hand when inventory GUI is open");
+            attachBuildMenuToHand = config.Bind("VRHUD",
+                                        "AttachBuildMenuToHand",
+                                        true,
+                                        "Whether UI panel should be attached to hand when build menu is open");
             allowHudFade = config.Bind("VRHUD",
                                         "AllowHudFade",
                                         true,
@@ -1725,6 +1734,16 @@ namespace ValheimVRMod.Utilities
         public static string MinimapPanelPlacement()
         {
             return minimapPanelPlacement.Value;
+        }
+
+        public static bool AttachInventoryToHand()
+        {
+            return attachInventoryToHand.Value;
+        }
+
+        public static bool AttachBuildMenuToHand()
+        {
+            return attachBuildMenuToHand.Value;
         }
 
         public static bool AllowHudFade()
