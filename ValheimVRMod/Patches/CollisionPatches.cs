@@ -64,7 +64,8 @@ namespace ValheimVRMod.Patches {
             if (character != Player.m_localPlayer || // if character is not local player, use original Start method
                 !VHVRConfig.UseVrControls() ||
                 __instance.m_attackType.ToString() == "Projectile" ||
-                __instance.m_attackType == Attack.AttackType.None) {
+                __instance.m_attackType == Attack.AttackType.None ||
+                EquipScript.isMeleeMagicAttack(__instance, EquipScript.getEquippedItem(weapon))) {
                 return true;
             }
 
