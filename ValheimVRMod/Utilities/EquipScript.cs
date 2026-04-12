@@ -365,7 +365,7 @@ namespace ValheimVRMod.Utilities
             return getLeft() != EquipType.Crossbow;
         }
 
-        public static bool isModdedMagicStaff(Attack attack, EquipType type)
+        public static bool isMeleeMagicAttack(Attack attack, EquipType type)
         {
             //RTD Healing staff is using attack type of horizontal, while the other use projectile
             return attack.m_attackType.ToString() == "Horizontal" && type == EquipType.Magic;
