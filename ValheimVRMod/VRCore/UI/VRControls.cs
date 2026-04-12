@@ -28,9 +28,9 @@ namespace ValheimVRMod.VRCore.UI
         private float altPieceRotationElapsedTime = 0f;
         private bool altPieceTriggered = false;
         private bool wasAltPieceTriggered = false;
-        private float altMapZoomElapsedTime = 0f;
-        private bool altMapZoomTriggered = false;
         private float buildQuickActionTimer;
+        float? altMapZoomInHoldCountdown = null;
+        float? altMapZoomOutHoldCountdown = null;
 
         private HashSet<string> ignoredZInputs = new HashSet<string>();
         private HashSet<string> quickActionEnabled = new HashSet<string>(); // never ignore these
@@ -158,14 +158,7 @@ namespace ValheimVRMod.VRCore.UI
         {
             updateSmoothWalk(Time.fixedDeltaTime);
             updateAltPieceRotationTimer();
-            updateAltMapZoomTimer();
-        }
-
-        void LateUpdate()
-        {
-            // Reset this at the complete end of the update to allow for
-            // both MapZoomIn and MapZoomOut to test the zoom input.
-            altMapZoomTriggered = false;
+            updateAltMapZoomTimer(Time.fixedDeltaTime);
         }
 
         private void updateSmoothWalk(float deltaTime)
@@ -322,13 +315,52 @@ namespace ValheimVRMod.VRCore.UI
             }
         }
 
-        private void updateAltMapZoomTimer()
+        private void updateAltMapZoomTimer(float deltaTime)
         {
-            altMapZoomElapsedTime += Time.unscaledDeltaTime;
-            if (altMapZoomElapsedTime >= ALT_MAP_ZOOM_TIME_DELAY)
+            if (altMapZoomInHoldCountdown.HasValue)
             {
-                altMapZoomTriggered = true;
-                altMapZoomElapsedTime = 0f;
+                bool wasHolding = (altMapZoomInHoldCountdown.Value >= 0);
+                altMapZoomInHoldCountdown -= deltaTime;
+                if (wasHolding && altMapZoomInHoldCountdown.Value < 0)
+                {
+                    GetButtonPatchUtils.Release("MapZoomIn");
+                }
+            }
+
+            if (altMapZoomOutHoldCountdown.HasValue)
+            {
+                bool wasHolding = (altMapZoomOutHoldCountdown.Value >= 0);
+                altMapZoomOutHoldCountdown -= deltaTime;
+                if (wasHolding && altMapZoomOutHoldCountdown.Value < 0)
+                {
+                    GetButtonPatchUtils.Release("MapZoomOut");
+                }
+            }
+
+            if (altMapZoomInHoldCountdown == null || altMapZoomInHoldCountdown <= -ALT_MAP_ZOOM_TIME_DELAY)
+            {
+                if (getAltMapZoom() > 0)
+                {
+                    GetButtonPatchUtils.Press("MapZoomIn");
+                    altMapZoomInHoldCountdown = ALT_MAP_ZOOM_TIME_DELAY;
+                }
+                else
+                {
+                    altMapZoomInHoldCountdown = null;
+                }
+            }
+
+            if (altMapZoomOutHoldCountdown == null || altMapZoomOutHoldCountdown <= -ALT_MAP_ZOOM_TIME_DELAY)
+            {
+                if (getAltMapZoom() < 0)
+                {
+                    GetButtonPatchUtils.Press("MapZoomOut");
+                    altMapZoomOutHoldCountdown = ALT_MAP_ZOOM_TIME_DELAY;
+                }
+                else
+                {
+                    altMapZoomOutHoldCountdown = null;
+                }
             }
         }
         
@@ -467,37 +499,15 @@ namespace ValheimVRMod.VRCore.UI
             }
 
             // Handle Map zoom specially using context scroll input
-            if (zinput == "MapZoomOut")
+            if (contextScroll.activeBinding)
             {
-                if (contextScroll.activeBinding)
+                if (zinput == "MapZoomOut")
                 {
-                    if (contextScroll.axis.y < 0)
-                    {
-                        return true;
-                    }
-                    else
-                    {
-                        return false;
-                    }
-                } else
-                {
-                    return (getAltMapZoom() < 0);
+                    return contextScroll.axis.y < 0;
                 }
-            } else if (zinput == "MapZoomIn")
-            {
-                if (contextScroll.activeBinding)
+                else if (zinput == "MapZoomIn")
                 {
-                    if (contextScroll.axis.y > 0)
-                    {
-                        return true;
-                    }
-                    else
-                    {
-                        return false;
-                    }
-                } else
-                {
-                    return (getAltMapZoom() > 0);
+                    return contextScroll.axis.y > 0;
                 }
             }
             SteamVR_Action_Boolean[] action;
@@ -788,27 +798,13 @@ namespace ValheimVRMod.VRCore.UI
 
         private int getAltMapZoom()
         {
-            if (!altMapZoomTriggered)
+            if (contextScroll.activeBinding ||
+                !SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand))
             {
                 return 0;
             }
-            bool rightGrip = SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand);
-            if (!rightGrip)
-            {
-                return 0;
-            }
-            float yAxis = GetJoyRightStickY();
-            if (yAxis > 0.5f)
-            {
-                return -1;
-            } else if (yAxis < -0.5f)
-            {
-                return 1;
-            } else
-            {
-                return 0;
-            }
-
+            float y = GetJoyRightStickY();
+            return y > 0.5f ? -1 : y < -0.5f ? 1 : 0;
         }
 
         private bool inPlaceMode()
@@ -898,18 +894,16 @@ namespace ValheimVRMod.VRCore.UI
             initIgnoredZInputs();
             initQuickActionOnly();
 
-            // Patching ZInput may not be sufficient to emulate button iput in some cases
-            // since Jotunn could undo those patches. In those cases, we need to alter the
-            // actual button states in ZInput.
-            registerBooleanActionListeners();
+            // TODO: consider altering the actual button states in ZInput so that VR controller inputs
+            // still work even if ZInput patches get unpatched by Jotunn:
+            // registerBooleanActionListeners();
+            // registerContextScrollListener();
         }
 
         private void registerBooleanActionListeners()
         {
             foreach (var entry in zInputToBooleanAction)
             {
-                // TODO: consider listening to valheim_ToggleMap to button "Map"
-                // when VHVRConfig.MinimapPanelPlacement().Equals("Legacy")
                 var buttonName = entry.Key;
                 foreach (var action in entry.Value)
                 {
@@ -918,11 +912,7 @@ namespace ValheimVRMod.VRCore.UI
                     {
                         action.AddOnStateDownListener(
                             (fromAction, fromSource) => {
-                                if (canJump())
-                                {
-                                    GetButtonPatchUtils.Press(buttonName);
-                                }
-
+                                if (canJump()) GetButtonPatchUtils.Press(buttonName);
                             },
                             SteamVR_Input_Sources.Any);
                     }
@@ -930,10 +920,7 @@ namespace ValheimVRMod.VRCore.UI
                     {
                         action.AddOnStateDownListener(
                             (fromAction, fromSource) => {
-                                if (canRemovePiece())
-                                {
-                                    GetButtonPatchUtils.Press(buttonName);
-                                }
+                                if (canRemovePiece()) GetButtonPatchUtils.Press(buttonName);
                             },
                             SteamVR_Input_Sources.Any);
                     }
@@ -949,6 +936,43 @@ namespace ValheimVRMod.VRCore.UI
                         SteamVR_Input_Sources.Any);
                 }
             }
+
+            SteamVR_Actions.valheim_ToggleMap.AddOnStateDownListener(
+                (fromAction, fromSource) => {
+                    if (VHVRConfig.MinimapPanelPlacement().Equals("Legacy"))
+                        GetButtonPatchUtils.Press("Map");
+                },
+                SteamVR_Input_Sources.Any);
+            SteamVR_Actions.valheim_ToggleMap.AddOnStateUpListener(
+                (fromAction, fromSource) => {
+                    if (VHVRConfig.MinimapPanelPlacement().Equals("Legacy"))
+                        GetButtonPatchUtils.Release("Map");
+                },
+                SteamVR_Input_Sources.Any);
+        }
+
+        private void registerContextScrollListener()
+        {
+            contextScroll.AddOnChangeListener(
+                (fromAction, fromSource, axis, delta) => {
+                    if (axis.y <= 0 && delta.y < axis.y)
+                    {
+                        GetButtonPatchUtils.Release("MapZoomIn");
+                    }
+                    if (axis.y >= 0 && delta.y > axis.y) {
+                        GetButtonPatchUtils.Release("MapZoomOut");
+                    }
+
+                    if (axis.y > 0)
+                    {
+                        GetButtonPatchUtils.Press("MapZoomIn");
+                    }
+                    else if (axis.y < 0)
+                    {
+                        GetButtonPatchUtils.Press("MapZoomOut");
+                    }
+                },
+                SteamVR_Input_Sources.Any);
         }
 
         private void initQuickActionOnly()
