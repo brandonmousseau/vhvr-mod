@@ -208,6 +208,8 @@ namespace ValheimVRMod.Utilities
                     return EquipType.Hammer;
                 case "emote_drink":
                     return EquipType.Tankard;
+                case "staff_fireball":
+                    return EquipType.Magic;
             }
 
             return EquipType.None;
@@ -360,6 +362,12 @@ namespace ValheimVRMod.Utilities
                 return MagicWeaponManager.ShouldSkipAttackAnimation();
             }
             return getLeft() != EquipType.Crossbow;
+        }
+
+        public static bool isMeleeMagicAttack(Attack attack, EquipType type)
+        {
+            //RTD Healing staff is using attack type of horizontal, while the other use projectile
+            return attack.m_attackType.ToString() == "Horizontal" && type == EquipType.Magic;
         }
     }
 }
