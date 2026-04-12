@@ -89,6 +89,10 @@ namespace ValheimVRMod.VRCore.UI
         private static Vector3 desiredSize;
         private static Vector3 desiredHandAttachedSize;
         private static Vector3 desiredOffset;
+        private static bool isBuildMenuOpen
+        {
+            get { return Hud.instance?.m_pieceSelectionWindow != null && Hud.instance.m_pieceSelectionWindow.activeSelf; }
+        }
 
         private float OVERLAY_CURVATURE = 0.25f; /* 0f - 1f */
         private bool USING_OVERLAY = true;
@@ -355,10 +359,7 @@ namespace ValheimVRMod.VRCore.UI
             bool wasAttachableUI = isAttachableToHandAsInventoryOrBuildMenu;
             bool attachableToHandAsInventory =
                 InventoryGui.IsVisible() && VHVRConfig.AttachInventoryToHand();
-            bool attachableToHandAsBuildMenu =
-                Hud.instance?.m_pieceSelectionWindow != null &&
-                Hud.instance.m_pieceSelectionWindow.activeSelf &&
-                VHVRConfig.AttachBuildMenuToHand();
+            bool attachableToHandAsBuildMenu = isBuildMenuOpen && VHVRConfig.AttachBuildMenuToHand();
             isAttachableToHandAsInventoryOrBuildMenu = attachableToHandAsInventory || attachableToHandAsBuildMenu;
             if (attachedToHand)
             {
@@ -477,6 +478,11 @@ namespace ValheimVRMod.VRCore.UI
         private bool shouldInstantlyDetachPanelFromHand()
         {
             if (Minimap.instance != null && Minimap.instance.m_mode == Minimap.MapMode.Large)
+            {
+                return true;
+            }
+
+            if (!VHVRConfig.AttachInventoryToHand() && InventoryGui.IsVisible())
             {
                 return true;
             }
