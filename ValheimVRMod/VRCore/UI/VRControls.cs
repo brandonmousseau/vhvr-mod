@@ -894,10 +894,11 @@ namespace ValheimVRMod.VRCore.UI
             initIgnoredZInputs();
             initQuickActionOnly();
 
-            // TODO: consider altering the actual button states in ZInput so that VR controller inputs
-            // still work even if ZInput patches get unpatched by Jotunn:
-            // registerBooleanActionListeners();
-            // registerContextScrollListener();
+            // Patching ZInput may not be sufficient to emulate button iput in some cases
+            // since Jotunn could undo those patches. In those cases, we need to alter the
+            // actual button states in ZInput.
+            registerBooleanActionListeners();
+            registerContextScrollListener();
         }
 
         private void registerBooleanActionListeners()
