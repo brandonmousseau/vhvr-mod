@@ -83,6 +83,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<string> healthPanelPlacement;
         private static ConfigEntry<string> staminaPanelPlacement;
         private static ConfigEntry<string> eitrPanelPlacement;
+        private static ConfigEntry<string> actionProgressPanelPlacement;
         private static ConfigEntry<string> adrenalinePanelPlacement;
         private static ConfigEntry<string> staggerPanelPlacement;
         private static ConfigEntry<string> minimapPanelPlacement;
@@ -612,6 +613,11 @@ namespace ValheimVRMod.Utilities
                                             "StaggerPanelPlacement",
                                             "CameraLocked",
                                             new ConfigDescription("Where should the stagger panel be placed?",
+                                                new AcceptableValueList<string>(k_HudAlignmentValues)));
+            actionProgressPanelPlacement = config.Bind("VRHUD",
+                                            "ActionProgressPanelPlacement",
+                                            "CameraLocked",
+                                            new ConfigDescription("Where should the Action Progress(Reloading ranged weapon) panel be placed?",
                                                 new AcceptableValueList<string>(k_HudAlignmentValues)));
             minimapPanelPlacement = config.Bind("VRHUD",
                                             "MinimapPanelPlacement",
@@ -1727,7 +1733,10 @@ namespace ValheimVRMod.Utilities
         {
             return eitrPanelPlacement.Value;
         }
-
+        public static string ActionProgressPanelPlacement()
+        {
+            return actionProgressPanelPlacement.Value;
+        }
         public static string StaggerPanelPlacement()
         {
             return staggerPanelPlacement.Value;
