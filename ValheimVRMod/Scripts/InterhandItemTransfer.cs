@@ -18,12 +18,16 @@ namespace ValheimVRMod.Scripts
 
         private static readonly EquipType[] TRANSFERABLE_TYPES =
         {
+            EquipType.Axe,
             EquipType.Bow,
+            EquipType.Club,
+            EquipType.Cultivator,
             EquipType.Fishing,
             EquipType.Hammer,
             EquipType.Hoe,
             EquipType.Knife,
             EquipType.Lantern,
+            EquipType.Magic,
             EquipType.Pickaxe,
             EquipType.Scythe,
             EquipType.Shield,
