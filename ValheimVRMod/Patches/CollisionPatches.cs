@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
 using UnityEngine;
+using UnityEngine.TextCore;
 using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
 
@@ -127,7 +128,8 @@ namespace ValheimVRMod.Patches {
             
         }
 
-        private static void doMeleeAttack(Humanoid ___m_character, ItemDrop.ItemData ___m_weapon, ItemDrop.ItemData ___m_ammoItem, Attack __instance,
+        private static void doMeleeAttack(
+            Humanoid ___m_character, ItemDrop.ItemData ___m_weapon, ItemDrop.ItemData ___m_ammoItem, Attack __instance,
             EffectList ___m_hitEffect, Skills.SkillType ___m_specialHitSkill, DestructibleType ___m_specialHitType,
             bool ___m_lowerDamagePerHit, float ___m_forceMultiplier, float ___m_staggerMultiplier, float ___m_damageMultiplier,
             int ___m_attackChainLevels, int ___m_currentAttackCainLevel, DestructibleType ___m_resetChainIfHit,
@@ -225,9 +227,20 @@ namespace ValheimVRMod.Patches {
                 }
 
                 ___m_character.GetSEMan().ModifyAttack(skill, ref hitData);
-                if (destructible is Character) isHittingCharacter = true;
+                if (destructible is Character)
+                {
+                    isHittingCharacter = true;
+                }
                 destructible.Damage(hitData);
-                if ((destructibleType & ___m_resetChainIfHit) != DestructibleType.None) ___m_nextAttackChainLevel = 0;
+                if ((destructibleType & ___m_resetChainIfHit) != DestructibleType.None)
+                {
+                    ___m_nextAttackChainLevel = 0;
+                }
+                if (isHittingCharacter)
+                {
+                    ___m_character.AddAdrenaline(
+                        __instance.m_attackAdrenaline * ((Character)destructible).m_enemyAdrenalineMultiplier);
+                }
             }
 
             ___m_weapon.m_shared.m_hitTerrainEffect.Create(pos,
