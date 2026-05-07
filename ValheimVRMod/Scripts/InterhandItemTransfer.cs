@@ -31,6 +31,7 @@ namespace ValheimVRMod.Scripts
             EquipType.Pickaxe,
             EquipType.Scythe,
             EquipType.Shield,
+            EquipType.Torch,
             EquipType.Tankard,
             EquipType.ThrowObject
         };
