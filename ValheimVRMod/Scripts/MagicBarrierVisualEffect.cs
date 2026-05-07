@@ -15,6 +15,8 @@ namespace ValheimVRMod.Scripts
         private GameObject fullTextureOverlay;
         private Color overlayColor = new Color(0.25f, 0.125f, 0.5f, 0.375f);
 
+        private float phase;
+
         public void Show(SE_Shield shield, Character character)
         {
             var vfx = character.transform.Find("vfx_StaffShield(Clone)");
@@ -67,9 +69,9 @@ namespace ValheimVRMod.Scripts
             }
 
             var t = shield.GetRemaningTime();
-            var frequency = t > 16 ? 2 : (6 - t / 4);
-            overlayColor.b = (Mathf.Abs(Mathf.Sin(Time.time * frequency)) + 1) * 0.25f;
-            overlayColor.a = 0.125f;
+            phase += Time.fixedDeltaTime * (t > 16 ? 2 : (6f - t / 4f));
+            overlayColor.b = (Mathf.Abs(Mathf.Sin(phase)) + 1) * 0.375f;
+            overlayColor.a = 0.2f;
             SimpleColorMaterial.color = overlayColor;
 
             fullTextureOverlay.SetActive(false);
