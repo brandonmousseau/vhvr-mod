@@ -59,19 +59,12 @@ namespace ValheimVRMod.Utilities
 
         public static EquipType GetEquipTypeFromHash(int hash)
         {
-            var item = ObjectDB.instance.GetItemPrefab(hash);
-            if (item == null)
-            {
-                return EquipType.None;
-            }
+            return EquipScript.GetEquipType(GetItem(hash));
+        }
 
-            var itemDrop = item.GetComponentInChildren<ItemDrop>();
-            if (itemDrop == null || itemDrop.m_itemData == null)
-            {
-                return EquipType.None;
-            }
-
-            return EquipScript.GetEquipType(itemDrop.m_itemData);
+        public static string GetItemName(int hash)
+        {
+            return GetItem(hash)?.m_shared?.m_name;
         }
 
         public static EquipType GetEquipType(ItemDrop.ItemData item)
@@ -339,7 +332,17 @@ namespace ValheimVRMod.Utilities
 
         public static bool IsDundrEquipped()
         {
-            return Player.m_localPlayer?.GetRightItem()?.m_shared?.m_name == "$item_staff_lightning";
+            return IsDundr(Player.m_localPlayer?.GetRightItem());
+        }
+
+        public static bool IsDundr(int hash)
+        {
+            return IsDundr(GetItem(hash));
+        }
+
+        public static bool IsDundr(ItemDrop.ItemData item)
+        {
+            return item?.m_shared?.m_name == "$item_staff_lightning";
         }
 
         public static bool ShouldSkipAttackAnimation()
@@ -355,6 +358,17 @@ namespace ValheimVRMod.Utilities
         {
             // RTD Healing staff (modded) is using attack type of horizontal, while the other use projectile
             return attack.m_attackType == Attack.AttackType.Horizontal && type == EquipType.Magic;
+        }
+
+        private static ItemDrop.ItemData GetItem(int hash)
+        {
+            var obj = ObjectDB.instance.GetItemPrefab(hash);
+            if (obj == null)
+            {
+                return null;
+            }
+            var itemDrop = obj.GetComponentInChildren<ItemDrop>();
+            return itemDrop == null ? null : itemDrop.m_itemData;
         }
     }
 }

@@ -63,7 +63,14 @@ namespace ValheimVRMod.Patches
                 {
                     __instance.m_leftItem = item;
                     __instance.m_leftItem.m_equipped = true;
-                    __instance.m_visEquipment.SetLeftItem(item.m_dropPrefab.name, item.m_variant);
+                    item.m_shared.m_equipEffect.Create(__instance.m_visEquipment.m_leftHand.position, __instance.m_visEquipment.m_leftHand.rotation, null, 1f, -1);
+                    __instance.m_hiddenRightItem = null;
+                    __instance.m_hiddenLeftItem = null;
+                    if (__instance.IsItemEquiped(item))
+                    {
+                        item.m_equipped = true;
+                    }
+                    __instance.SetupEquipment();
                     if (triggerEquipEffects)
                     {
                         __instance.TriggerEquipEffect(item);
@@ -116,7 +123,7 @@ namespace ValheimVRMod.Patches
                 case EquipType.Lantern:
                     __instance.m_leftItem = knife;
                     __instance.m_leftItem.m_equipped = true;
-                    __instance.m_visEquipment.SetLeftItem(knife.m_dropPrefab.name, knife.m_variant);
+                    __instance.SetupEquipment();
                     break;
                 default:
                     return;
@@ -180,7 +187,7 @@ namespace ValheimVRMod.Patches
     [HarmonyPatch(typeof(VisEquipment), nameof(VisEquipment.SetRightHandEquipped))]
     class PatchSetRightHandEquipped
     {
-        static void Postfix(VisEquipment __instance, bool __result, string ___m_rightItem, ref GameObject ___m_rightItemInstance, int hash)
+        static void Postfix(VisEquipment __instance, bool __result, ref GameObject ___m_rightItemInstance, int hash)
         {
             if (!__result)
             {
@@ -252,7 +259,7 @@ namespace ValheimVRMod.Patches
                             {
                                 //  TODO: remove this once weapon sync is fully supported
                                 WeaponWieldSync weaponWieldSync = ___m_rightItemInstance.AddComponent<WeaponWieldSync>();
-                                weaponWieldSync.Initialize(player.GetRightItem(), ___m_rightItem, isDominantHandWeapon: true, vrPlayerSync, vrPlayerSync.leftHand.transform, vrPlayerSync.rightHand.transform);
+                                weaponWieldSync.Initialize(player.GetRightItem(), hash, isDominantHandWeapon: true, vrPlayerSync, vrPlayerSync.leftHand.transform, vrPlayerSync.rightHand.transform);
                             }
                             return;
                         default:
@@ -307,10 +314,10 @@ namespace ValheimVRMod.Patches
             // Weapon collider should be estimated before weapon wield initialization since
             // the latter may move the weapon and interfere with collider estimation.
             weaponCol.setColliderParent(
-                meshFilter, handPosition: ___m_rightItemInstance.transform.parent.position, ___m_rightItem, true);
+                meshFilter, handPosition: ___m_rightItemInstance.transform.parent.position, hash, true);
 
             LocalWeaponWield weaponWield = EquipScript.IsSpearEquipped() ? ___m_rightItemInstance.AddComponent<SpearWield>() : ___m_rightItemInstance.AddComponent<LocalWeaponWield>();
-            weaponWield.Initialize(Player.m_localPlayer.GetRightItem(), ___m_rightItem, isDominantHandWeapon: true);
+            weaponWield.Initialize(Player.m_localPlayer.GetRightItem(), hash, isDominantHandWeapon: true);
 
             if (MagicWeaponManager.IsSwingLaunchEnabled())
             {
@@ -337,9 +344,9 @@ namespace ValheimVRMod.Patches
                     break;
             }
             weaponCol.weaponWield = weaponWield;
-            meshFilter.gameObject.AddComponent<ButtonSecondaryAttackManager>().Initialize(meshFilter.transform, ___m_rightItem, VRPlayer.isRightHandMainWeaponHand);
+            meshFilter.gameObject.AddComponent<ButtonSecondaryAttackManager>().Initialize(meshFilter.transform, VRPlayer.isRightHandMainWeaponHand);
 
-            if (___m_rightItem == "StaffLightning")
+            if (EquipScript.IsDundr(hash))
             {
                 WeaponUtils.AlignLoadedMeshToUnloadedMesh(
                     loaded: ___m_rightItemInstance.transform.Find("Loaded").gameObject,
@@ -356,7 +363,7 @@ namespace ValheimVRMod.Patches
     [HarmonyPatch(typeof(VisEquipment), nameof(VisEquipment.SetLeftHandEquipped))]
     class PatchSetLeftHandEquipped
     {
-        static void Postfix(VisEquipment __instance, bool __result, string ___m_leftItem, GameObject ___m_leftItemInstance, int hash)
+        static void Postfix(VisEquipment __instance, bool __result, GameObject ___m_leftItemInstance, int hash)
         {
             if (!__result)
             {
@@ -409,7 +416,7 @@ namespace ValheimVRMod.Patches
                     {
                         //  TODO: remove this once weapon sync is fully supported
                         WeaponWieldSync weaponWieldSync = ___m_leftItemInstance.AddComponent<WeaponWieldSync>();
-                        weaponWieldSync.Initialize(player.GetLeftItem(), ___m_leftItem, isDominantHandWeapon: false, vrPlayerSync, vrPlayerSync.leftHand.transform, vrPlayerSync.rightHand.transform);
+                        weaponWieldSync.Initialize(player.GetLeftItem(), hash, isDominantHandWeapon: false, vrPlayerSync, vrPlayerSync.leftHand.transform, vrPlayerSync.rightHand.transform);
                     }
                 }
                 return;
@@ -446,7 +453,7 @@ namespace ValheimVRMod.Patches
                     return;
                 case EquipType.Crossbow:
                     CrossbowManager crossbowManager = ___m_leftItemInstance.AddComponent<CrossbowManager>();
-                    crossbowManager.Initialize(Player.m_localPlayer.GetLeftItem(), ___m_leftItem, isDominantHandWeapon: false);
+                    crossbowManager.Initialize(Player.m_localPlayer.GetLeftItem(), hash, isDominantHandWeapon: false);
                     crossbowManager.gameObject.AddComponent<WeaponBlock>().weaponWield = crossbowManager;
                     EquipScript.EquipAmmo();
                     return;
@@ -456,11 +463,10 @@ namespace ValheimVRMod.Patches
                 case EquipType.Lantern:
                     return;
                 case EquipType.Shield:
-                    meshFilter.gameObject.AddComponent<ShieldBlock>().itemName = ___m_leftItem;
                     return;
             }
 
-            meshFilter.gameObject.AddComponent<ButtonSecondaryAttackManager>().Initialize(meshFilter.transform, ___m_leftItem, !VRPlayer.isRightHandMainWeaponHand);
+            meshFilter.gameObject.AddComponent<ButtonSecondaryAttackManager>().Initialize(meshFilter.transform, !VRPlayer.isRightHandMainWeaponHand);
         }
     }
 
@@ -556,7 +562,7 @@ namespace ValheimVRMod.Patches
     [HarmonyPatch(typeof(VisEquipment), nameof(VisEquipment.SetChestEquipped))]
     class PatchSetChestEquiped
     {
-        static void Postfix(bool __result, string ___m_chestItem, List<GameObject> ___m_chestItemInstances)
+        static void Postfix(bool __result, List<GameObject> ___m_chestItemInstances, int hash)
         {
             if (!__result || ___m_chestItemInstances == null || ___m_chestItemInstances.Count == 0 || VHVRConfig.NonVrPlayer())
             {
@@ -572,7 +578,7 @@ namespace ValheimVRMod.Patches
 
             foreach (GameObject itemInstance in ___m_chestItemInstances)
             {
-                EquipBoundingBoxFix.GetInstanceForPlayer(player)?.RequestArmorBoundingBoxFixIfNeeded(itemInstance, ___m_chestItem);
+                EquipBoundingBoxFix.GetInstanceForPlayer(player)?.RequestArmorBoundingBoxFixIfNeeded(itemInstance, EquipScript.GetItemName(hash));
             }
         }
     }

@@ -113,7 +113,7 @@ namespace ValheimVRMod.Scripts
             isStaminaDrained = false;
         }
 
-        public void Initialize(Transform obj, string name, bool isRightHand)
+        public void Initialize(Transform obj, bool isRightHand)
         {
             parent = obj.parent.gameObject;
             outline = obj.parent.gameObject.GetComponent<Outline>();

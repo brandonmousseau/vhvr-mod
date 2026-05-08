@@ -417,7 +417,7 @@ namespace ValheimVRMod.Scripts
             transform.SetParent(Player.m_localPlayer.transform, true);
         }
 
-        public void setColliderParent(MeshFilter meshFilter, Vector3 handPosition, string name, bool isDominantHand)
+        public void setColliderParent(MeshFilter meshFilter, Vector3 handPosition, int itemHash, bool isDominantHand)
         {
             var meshTranform = meshFilter.transform;
             outline = meshTranform.parent.gameObject.AddComponent<Outline>();
@@ -426,7 +426,12 @@ namespace ValheimVRMod.Scripts
             this.isVanillaRightHandedWeapon = isDominantHand;
             item = this.isVanillaRightHandedWeapon ? Player.m_localPlayer.GetRightItem() : Player.m_localPlayer.GetLeftItem();
 
-            itemIsTool = (name == "Hammer" || EquipScript.CurrentMainHandEquipType() == EquipType.Hoe || EquipScript.CurrentMainHandEquipType() == EquipType.Cultivator || EquipScript.CurrentMainHandEquipType() == EquipType.Scythe);
+            var equipType = EquipScript.GetEquipTypeFromHash(itemHash);
+            itemIsTool =
+                equipType == EquipType.Hammer ||
+                equipType == EquipType.Hoe ||
+                equipType == EquipType.Cultivator ||
+                equipType == EquipType.Scythe;
 
             if (colliderParent == null)
             {
@@ -442,7 +447,7 @@ namespace ValheimVRMod.Scripts
                 case EquipType.SpearChitin:
                     if (this.isVanillaRightHandedWeapon)
                     {
-                        item = Player.m_localPlayer.m_unarmedWeapon.m_itemData;
+                        // item = Player.m_localPlayer.m_unarmedWeapon.m_itemData;
                         attack = secondaryAttack = Player.m_localPlayer.m_unarmedWeapon.m_itemData.m_shared.m_attack;
                         break;
                     }
@@ -456,7 +461,7 @@ namespace ValheimVRMod.Scripts
             }
             try
             {
-                WeaponColData colliderData = WeaponUtils.GetColliderData(name, item, meshFilter, handPosition);
+                WeaponColData colliderData = WeaponUtils.GetColliderData(itemHash, item, meshFilter, handPosition);
                 colliderParent.transform.parent = meshTranform;
                 colliderParent.transform.localPosition = colliderData.pos;
                 colliderParent.transform.localRotation = Quaternion.Euler(colliderData.euler);

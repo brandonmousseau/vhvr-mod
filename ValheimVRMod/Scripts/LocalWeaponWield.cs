@@ -134,7 +134,7 @@ namespace ValheimVRMod.Scripts
             {
                 isAiming = true;
             }
-            else if (IsDundr())
+            else if (isDundr)
             {
                 isAiming = true;
             }
@@ -227,11 +227,11 @@ namespace ValheimVRMod.Scripts
                 return TwoHandedState.SingleHanded;
             }
             
-            switch (itemName)
+            switch (EquipScript.GetEquipTypeFromHash(itemHash))
             {
-                case "Hammer":
+                case EquipType.Hammer:
                     return TwoHandedState.SingleHanded;
-                case "FishingRod":
+                case EquipType.Fishing:
                     if (FishingManager.instance && FishingManager.instance.reelGrabbed)
                         return TwoHandedState.SingleHanded;
                     break;

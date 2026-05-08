@@ -23,7 +23,8 @@ namespace ValheimVRMod.Scripts
         public Transform frontHandTransform { get; private set; }
 
         protected string attackAnimation { get; private set; }
-        protected string itemName { get; private set; }
+        protected int itemHash { get; private set; }
+        protected bool isDundr { get; private set; }
 
         public Vector3 originalPosition { get { return originalTransform.position; } }
         public Quaternion originalRotation { get { return originalTransform.rotation; } }
@@ -31,8 +32,8 @@ namespace ValheimVRMod.Scripts
         protected TwoHandedGeometryProvider geometryProvider;
         protected float weaponLength { get; private set; }
         protected float distanceBetweenGripAndRearEnd { get; private set; } = 0.1f;
-        private static Dictionary<string, Vector3> EstimatedWeaponLocalDirectionsAndLengths = new Dictionary<string, Vector3>();
-        private static Dictionary<string, float> DistancesBehindGripAndRearEnd = new Dictionary<string, float>();
+        private static Dictionary<int, Vector3> EstimatedWeaponLocalDirectionsAndLengths = new Dictionary<int, Vector3>();
+        private static Dictionary<int, float> DistancesBehindGripAndRearEnd = new Dictionary<int, float>();
         private Transform originalTransform;
         private Vector3 longestLocalExtrusion = Vector3.forward;
         private VRPlayerSync playerSync { get { return _playerSync == null ? (_playerSync = GetComponentInParent<VRPlayerSync>()) : _playerSync; } }
@@ -43,14 +44,15 @@ namespace ValheimVRMod.Scripts
         protected bool isDominantHandWeapon { get; private set; }
 
         public WeaponWield Initialize(
-            ItemDrop.ItemData item, string itemName, bool isDominantHandWeapon, WeaponWieldSync.TwoHandedStateProvider twoHandedStateProvider = null)
+            ItemDrop.ItemData item, int itemHash, bool isDominantHandWeapon, WeaponWieldSync.TwoHandedStateProvider twoHandedStateProvider = null)
         {
             isLocal = GetComponentInParent<Player>() == Player.m_localPlayer;
             this.isDominantHandWeapon = isDominantHandWeapon;
-            this.itemName = itemName;
+            this.itemHash = itemHash;
             equipType = (item == null ? EquipType.None : EquipScript.GetEquipType(item));
 
             attackAnimation = item?.m_shared.m_attack?.m_attackAnimation ?? "";
+            isDundr = EquipScript.IsDundr(item);
 
             originalTransform = new GameObject().transform;
             originalTransform.parent = transform.parent;
@@ -58,7 +60,7 @@ namespace ValheimVRMod.Scripts
             originalTransform.rotation = transform.rotation;
 
             MeshFilter weaponMeshFilter = gameObject.GetComponentInChildren<MeshFilter>();
-            if (itemName == "Hoe") {
+            if (EquipScript.GetEquipTypeFromHash(itemHash) == EquipType.Hoe) {
                 var meshFilters = gameObject.GetComponentsInChildren<MeshFilter>();
                 foreach (var meshFilter in meshFilters)
                 {
@@ -72,14 +74,14 @@ namespace ValheimVRMod.Scripts
             if (weaponMeshFilter != null)
             {
                 if (item != null &&
-                    itemName != "" &&
-                    EstimatedWeaponLocalDirectionsAndLengths.ContainsKey(itemName) &&
-                    DistancesBehindGripAndRearEnd.ContainsKey(itemName))
+                    itemHash != 0 &&
+                    EstimatedWeaponLocalDirectionsAndLengths.ContainsKey(itemHash) &&
+                    DistancesBehindGripAndRearEnd.ContainsKey(itemHash))
                 {
-                    var weaponDirectionAndLength = EstimatedWeaponLocalDirectionsAndLengths[itemName];
+                    var weaponDirectionAndLength = EstimatedWeaponLocalDirectionsAndLengths[itemHash];
                     longestLocalExtrusion = weaponDirectionAndLength.normalized;
                     weaponLength = weaponDirectionAndLength.magnitude;
-                    distanceBetweenGripAndRearEnd = DistancesBehindGripAndRearEnd[itemName];
+                    distanceBetweenGripAndRearEnd = DistancesBehindGripAndRearEnd[itemHash];
                 }
                 else
                 {
@@ -90,10 +92,10 @@ namespace ValheimVRMod.Scripts
                     this.distanceBetweenGripAndRearEnd = distanceBetweenGripAndRearEnd;
                     longestLocalExtrusion = weaponDirectionAndLength.normalized;
                     weaponLength = weaponDirectionAndLength.magnitude;
-                    if (item != null && itemName != "") {
-                        EstimatedWeaponLocalDirectionsAndLengths.Add(itemName, weaponDirectionAndLength);
-                        DistancesBehindGripAndRearEnd.Add(itemName, distanceBetweenGripAndRearEnd);
-                        LogUtils.LogDebug("Registered " + itemName + " local pointing direction and length: " + weaponDirectionAndLength + " distance between rear end and grip: " + distanceBetweenGripAndRearEnd);
+                    if (item != null && itemHash != 0) {
+                        EstimatedWeaponLocalDirectionsAndLengths.Add(itemHash, weaponDirectionAndLength);
+                        DistancesBehindGripAndRearEnd.Add(itemHash, distanceBetweenGripAndRearEnd);
+                        LogUtils.LogDebug("Registered item " + itemHash + " local pointing direction and length: " + weaponDirectionAndLength + " distance between rear end and grip: " + distanceBetweenGripAndRearEnd);
                     }
                     else if (!isLocal)
                     {
@@ -194,15 +196,10 @@ namespace ValheimVRMod.Scripts
         protected abstract Transform GetRightHandTransform();
         protected abstract TwoHandedState GetDesiredTwoHandedState(bool wasTwoHanded);
 
-        protected bool IsDundr()
-        {
-            return itemName == "StaffLightning";
-        }
-
         private TwoHandedGeometryProvider GetGeometryProvider
             (Vector3 longestLocalExtrusion, float distanceBetweenGripAndRearEnd, WeaponWieldSync.TwoHandedStateProvider twoHandedStateProvider)
         {
-            if (IsDundr())
+            if (isDundr)
             {
                 return new TwoHandedGeometry.DundrGeometryProvider();
             }

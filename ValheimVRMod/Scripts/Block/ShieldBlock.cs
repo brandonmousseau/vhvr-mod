@@ -6,7 +6,6 @@ using Valve.VR;
 namespace ValheimVRMod.Scripts.Block {
     public class ShieldBlock : Block {
 
-        public string itemName;
         private const float MIN_PARRY_ENTRY_SPEED = 1.5f;
         private const float MAX_PARRY_ANGLE = 150f;
         private const float PARRY_EXIT_SPEED = 0.2f;

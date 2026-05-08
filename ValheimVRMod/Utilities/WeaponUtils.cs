@@ -14,268 +14,124 @@ namespace ValheimVRMod.Utilities
         // TODO: consider use different default weapon collider lenght proportion for different weapon types.
         private const float DEFAULT_WEAPON_COLLIDER_LENGTH_PROPORTION = 0.75f;
 
-        private static readonly Dictionary<string, WeaponColData> colliders = new Dictionary<string, WeaponColData>
+        private static readonly Dictionary<string, WeaponColData> COLLIDERS = new Dictionary<string, WeaponColData>
         {
-            {           // AXES
-                "AxeBronze", WeaponColData.create(
-                    0.0105f,  0, -0.03929f,
-                    0,  -9, 0,
-                    0.01f,  0.001f, 0.021f
-                )}, {
-                "AxeIron", WeaponColData.create(
-                    0.0105f,  0, -0.03929f,
-                    0,  -9, 0,
-                    0.01f,  0.001f, 0.021f
-                )}, {
-                "AxeBlackMetal", WeaponColData.create(
-                    0.058f,  0.714f, 0,
-                    0,  0, 0,
-                    0.1f,  0.21f, 0.01f
-                )}, {
-                "AxeFlint", WeaponColData.create(
-                    -0.1339f,  2.2458f, 0,
-                    0,  0, 0,
-                    0.9623004f,  0.36668f, 0.2870208f
-                )}, {
-                "AxeStone", WeaponColData.create(
-                    -0.608f,  2.267f, 0,
-                    0,  0, 0,
-                    1.000489f,  0.177166f, 0.2626824f
-                )}, {
-                "PickaxeStone", WeaponColData.create(
-                    -0.608f,  2.267f, 0,
-                    0,  0, 0,
-                    1.000489f,  0.177166f, 0.2626824f
-                )}, {
-                "Hammer", WeaponColData.create(
-                    0,  0.956f, 0,
-                    0,  0, 0,
-                    0.9030886f,  0.3803992f, 0.3803992f
-                )}, {   // WEAPONS
-                "Torch", WeaponColData.create(
-                    0,  0.385f, 0,
-                    0,  0, 0,
-                    0.1f,  0.3f, 0.1f
-                )}, {
-                "Club", WeaponColData.create(
-                    -0.013f,  -0.022f, 0.603f,
-                    0,  -5.241f, 45,
-                    0.1044289f,  0.09270307f, 0.5340722f
-                )}, {
-                "SwordBronze", WeaponColData.create(
-                    0,  1.523f, 0,
-                    0,  0, 0,
-                    0.1934575f,  2.34697f, 0.05382534f
-                )}, {
-                "SwordIron", WeaponColData.create(
-                    0,  2.102f, 0,
-                    0,  0, 0,
-                    0.1934575f,  3.425369f, 0.05382534f
-                )}, {
-                "SwordIronFire", WeaponColData.create(
-                    0,  2.102f, 0,
-                    0,  0, 0,
-                    0.1934575f,  3.425369f, 0.05382534f
-                )}, {
-                "SwordCheat", WeaponColData.create(
-                    0,  2.102f, 0,
-                    0,  0, 0,
-                    0.1934575f,  3.425369f, 0.05382534f
-                )}, {
-                "SwordSilver", WeaponColData.create(
-                    0,  2.158f, 0,
-                    0,  0, 0,
-                    0.1101757f,  3.519603f, 0.05382534f
-                )}, {
-                "SwordBlackmetal", WeaponColData.create(
-                    0,  0.842f, 0,
-                    0,  0, 0,
-                    0.09493963f,  1.120129f, 0.01100477f
-                )}, {
-                "SpearWolfFang", WeaponColData.create(
-                    0,  -6.06f, 0,
-                    0,  0, 0,
-                    0.3996784f,  7.445521f, 0.4638378f
-                )}, {
-                "SpearFlint", WeaponColData.create(
-                    0,  0, 0.738f,
-                    0,  0, 0,
-                    0.08946446f,  0.05617056f, 1.1811694f
-                )}, {
-                "SpearChitin", WeaponColData.create( 
-                     0,  1.12f, 0.008f,
-                     0,  0, 0,
-                     0.01591795f,  0.8536723f, 0.09076092f
-                )}, {
-                "SpearElderbark", WeaponColData.create(
-                    0,  1.7915f, 0,
-                    0,  0, 0,
-                    0.07673188f,  0.9863854f, 0.02554126f
-                )}, {
-                "SpearBronze", WeaponColData.create(
-                    0,  1.882f, 0,
-                    0,  0, 0,
-                    0.07756059f,  1.025059f, 0.02554126f
-                )}, {
-                "SpearSplitner", WeaponColData.create(
-                    0,  1.77f, 0,
-                    0,  0, 0,
-                    0.1f,  1.3f, 0.1f
-                )}, {
-                "SpearSplitner_Blood", WeaponColData.create(
-                    0,  1.77f, 0,
-                    0,  0, 0,
-                    0.1f,  1.3f, 0.1f
-                )}, {
-                "SpearSplitner_Lightning", WeaponColData.create(
-                    0,  1.77f, 0,
-                    0,  0, 0,
-                    0.1f,  1.3f, 0.1f
-                )}, {
-                "SpearSplitner_Nature", WeaponColData.create(
-                    0,  1.77f, 0,
-                    0,  0, 0,
-                    0.1f,  1.3f, 0.1f
-                )}, {
-                "SledgeStagbreaker", WeaponColData.create(
-                    0,  2.064f, 0,
-                    0,  0, 0,
-                    0.5530369f,  0.5530369f, 1.284601f
-                )}, {
-                "SledgeIron", WeaponColData.create(
-                    0,  1.194f, 0,
-                    0,  0, 0,
-                    0.7411623f,  0.3304068f, 0.2240506f
-                )}, {
-                "MaceBronze", WeaponColData.create(
-                    0,  1.946f, 0,
-                    0,  45, 0,
-                    0.4857313f,  0.5671427f, 0.4857313f
-                )}, {
-                "MaceSilver", WeaponColData.create(
-                    0,  0.53f, 0,
-                    0,  0, 0,
-                    0.4254949f,  0.1803948f, 0.133568f
-                )}, {
-                "MaceIron", WeaponColData.create(
-                    0,  2.548f, 0,
-                    0,  45f, 0,
-                    0.4857313f,  0.5671427f, 0.4857313f
-                )}, {
-                "MaceNeedle", WeaponColData.create(
-                    0,  1.063f, 0,
-                    0,  0, 0,
-                    0.4f,  0.4f, 0.4f
-                )}, {
-                "AtgeirBlackmetal", WeaponColData.create(
-                    0,  1.861f, 0,
-                    0,  0, 0,
-                    0.1277498f,  1.7300777f, 0.01543969f
-                )}, {
-                "AtgeirBronze", WeaponColData.create(
-                    0,  0, -1.229f,
-                    0,  0, 0,
-                    0.02239758f,  0.1504803f, 2.5769629f
-                )}, {
-                "AtgeirIron", WeaponColData.create(
-                    0,  0, -1.229f,
-                    0,  0, 0,
-                    0.02239758f,  0.1504803f, 2.5769629f
-                )}, {
-                "Battleaxe", WeaponColData.create(
-                    -0.679f,  3.496f, -0.003f,
-                    0,  0, 12.943f,
-                    0.44454f,  1.314052f, 0.086121f
-                )}, {
-                "BattleaxeCrystal", WeaponColData.create(
-                    0.15f,  1.45f, 0,
-                    0,  0, 0,
-                    0.24f,  0.63f, 0.056f
-                )}, {
-                "KnifeCopper", WeaponColData.create(
-                    -0.042f,  0.645f, 0,
-                    0,  0, 5.632f,
-                    0.1822819f,  0.6237586f, 0.03287503f
-                )}, {
-                "KnifeFlint", WeaponColData.create(
-                    -0.142f,  0.602f, 0,
-                    0,  0, 28.779f,
-                    0.2098247f,  0.6237586f, 0.03287503f
-                )}, {
-                "KnifeBlackMetal", WeaponColData.create(
-                    -0.2284f,  0.3629f, -0.0032f,
-                    0,  0, -0.445f,
-                    0.06340086f,  0.3513995f, 0.0144201f
-                )}, {
-                "KnifeChitin", WeaponColData.create(
-                    0,  0.208f, 0.027f,
-                    15.689f,  0, 0,
-                    0.0150678f,  0.3227402f, 0.086121f
-                )}, {
-                "KnifeButcher", WeaponColData.create(
-                    -0.3549f,  0.968f, 0.472f,
-                    15.689f,  20.2f, -1.5f,
-                    0.4f,  0.01f, 0.06f
-                )}, {
-                "KnifeSilver", WeaponColData.create(
-                    0,  0.41f, 0,
-                    0, 0, 0,
-                    0.04f,  0.45f, 0.01f
-                )}, {
-                "Scythe", WeaponColData.create(
-                    -0.3f,  1.4f, 0,
-                    0,  0, 0,
-                    0.71f,  0.71f, 0.1f
-                )}, {
-                "Tankard", WeaponColData.create(
-                    0,  0.28f, 0,
-                    0, 0, 0,
-                    0.18f,  0.03f, 0.18f
-                )}, {
-                "Tankard_dvergr", WeaponColData.create(
-                    0,  0.31f, 0,
-                    0, 0, 0,
-                    0.18f,  0.03f, 0.18f
-                )}, {
-                "TankardAnniversary", WeaponColData.create(
-                    0,  0.48f, 0,
-                    0, 0, 0,
-                    0.18f,  0.03f, 0.18f
-                )}, {
-                "TankardOdin", WeaponColData.create(
-                    0,  -0.01f, 0.115f,
-                    0, 0, 0,
-                    0.025f, 0.025f, 0.005f
-                )}, {
-                "AtgeirHimminAfl", WeaponColData.create(
-                    0,  1.919f, -0.002f,
-                    0, 0, 0,
-                    0.10725f,  1.6230943f, 0.03f
-                )}, {
-                "AxeJotunBane", WeaponColData.create(
+            {   // Axes
+                "$item_axe_jotunbane", WeaponColData.create(
                     -0.0048f,  0.6406f, 0.001f,
                     0, 0, 0,
                     0.3860153f,  0.3521031f, 0.02278163f
                 )}, {
-                "SledgeDemolisher", WeaponColData.create(
-                    0,  1.2215f, -0.0019f,
-                    0, 0, 0,
-                    0.6946211f,  0.3374455f, 0.3453262f
+                // Swords
+                "$item_sword_bronze", WeaponColData.create(
+                    0,  1.523f, 0,
+                    0,  0, 0,
+                    0.1934575f,  2.34697f, 0.05382534f
                 )}, {
-                "SpearCarapace", WeaponColData.create(
+                "$item_sword_iron", WeaponColData.create(
+                    0,  2.102f, 0,
+                    0,  0, 0,
+                    0.1934575f,  3.425369f, 0.05382534f
+                )}, {
+                "$item_sword_silver", WeaponColData.create(
+                    0,  2.158f, 0,
+                    0,  0, 0,
+                    0.1101757f,  3.519603f, 0.05382534f
+                )}, {
+                // Clubs
+                "$item_club", WeaponColData.create(
+                    -0.013f,  -0.022f, 0.603f,
+                    0,  -5.241f, 45,
+                    0.1044289f,  0.09270307f, 0.5340722f
+                )}, {
+                "$item_mace_needle", WeaponColData.create(
+                    0,  1.063f, 0,
+                    0,  0, 0,
+                    0.4f,  0.4f, 0.4f
+                )}, {
+                // Spears
+                "$item_spear_wolffang", WeaponColData.create(
+                    0,  -6.06f, 0,
+                    0,  0, 0,
+                    0.3996784f,  7.445521f, 0.4638378f
+                )}, {
+                "$item_spear_flint", WeaponColData.create(
+                    0,  0, 0.738f,
+                    0,  0, 0,
+                    0.08946446f,  0.05617056f, 1.1811694f
+                )}, {
+                "$item_spear_chitin", WeaponColData.create( 
+                     0,  1.12f, 0.008f,
+                     0,  0, 0,
+                     0.01591795f,  0.8536723f, 0.09076092f
+                )}, {
+                "$item_spear_ancientbark", WeaponColData.create(
+                    0,  1.7915f, 0,
+                    0,  0, 0,
+                    0.07673188f,  0.9863854f, 0.02554126f
+                )}, {
+                "$item_spear_bronze", WeaponColData.create(
+                    0,  1.882f, 0,
+                    0,  0, 0,
+                    0.07756059f,  1.025059f, 0.02554126f
+                )}, {
+                "$item_spear_carapace", WeaponColData.create(
                     0, 1.9915f, 0,
                     0, 0, 0,
                     0.07673188f,  0.8555415f, 0.02554126f
                 )}, {
-                "SwordMistwalker", WeaponColData.create(
-                    0,  0.842f, 0,
+                // Sledges
+                "$item_stagbreaker", WeaponColData.create(
+                    0,  2.064f, 0,
                     0,  0, 0,
-                    0.09493963f,  1.120129f, 0.01100477f
+                    0.5530369f,  0.5530369f, 1.284601f
                 )}, {
-                "THSwordKrom", WeaponColData.create(
-                    0,  1.194f, 0,
+                // Knives
+                "$item_knife_flint", WeaponColData.create(
+                    -0.142f,  0.602f, 0,
+                    0,  0, 28.779f,
+                    0.2098247f,  0.6237586f, 0.03287503f
+                )}, {
+                "$item_knife_chitin", WeaponColData.create(
+                    0,  0.208f, 0.027f,
+                    15.689f,  0, 0,
+                    0.0150678f,  0.3227402f, 0.086121f
+                )}, {
+                "$item_knife_butcher", WeaponColData.create(
+                    -0.3549f,  0.968f, 0.472f,
+                    15.689f,  20.2f, -1.5f,
+                    0.4f,  0.01f, 0.06f
+                )}, {
+                // Tools
+                "$item_hammer", WeaponColData.create(
+                    0,  0.956f, 0,
                     0,  0, 0,
-                    0.09493963f,  1.387952f, 0.01100477f
+                    0.9030886f,  0.3803992f, 0.3803992f
+                )}, {
+                "$item_torch", WeaponColData.create(
+                    0,  0.385f, 0,
+                    0,  0, 0,
+                    0.1f,  0.3f, 0.1f
+                )}, {
+                "$item_pickaxe_stone", WeaponColData.create(
+                    -0.608f,  2.267f, 0,
+                    0,  0, 0,
+                    1.000489f,  0.177166f, 0.2626824f
+                )}, {
+                "$item_scythe", WeaponColData.create(
+                    -0.3f,  1.4f, 0,
+                    0,  0, 0,
+                    0.71f,  0.71f, 0.1f
+                )}, {
+                "$item_tankard_anniversary", WeaponColData.create(
+                    0,  0.48f, 0,
+                    0, 0, 0,
+                    0.18f,  0.03f, 0.18f
+                )}, {
+                "$item_tankard_odin", WeaponColData.create(
+                    0,  -0.01f, 0.115f,
+                    0, 0, 0,
+                    0.025f, 0.025f, 0.005f
                 )}
         };
 
@@ -398,7 +254,7 @@ namespace ValheimVRMod.Utilities
         private static readonly HashSet<string> TWO_HANDED_MULTITARGET_SWIPE_NAMES =
             new HashSet<string>(new string[] { "battleaxe_attack", "atgeir_secondary" });
 
-        private static readonly Dictionary<string, WeaponColData> estimatedColliders = new Dictionary<string, WeaponColData>();
+        private static readonly Dictionary<int, WeaponColData> estimatedColliders = new Dictionary<int, WeaponColData>();
 
         public static float GetAttackDuration(Attack attack)
         {
@@ -410,24 +266,27 @@ namespace ValheimVRMod.Utilities
             return TWO_HANDED_MULTITARGET_SWIPE_NAMES.Contains(attack.m_attackAnimation);
         }
 
-        public static WeaponColData GetColliderData(string name, ItemDrop.ItemData item, MeshFilter meshFilter, Vector3? handPosition)
+        public static WeaponColData GetColliderData(int itemHash, ItemDrop.ItemData item, MeshFilter meshFilter, Vector3? handPosition)
         {
-            if (colliders.ContainsKey(name))
+            if (COLLIDERS.TryGetValue(item.m_shared.m_name, out var weaponColData))
             {
-                return colliders[name];
+                return weaponColData;
             }
 
-            if (estimatedColliders.ContainsKey(name))
+            if (estimatedColliders.TryGetValue(itemHash, out var estimated))
             {
-                return estimatedColliders[name];
+                return estimated;
             }
 
             if (meshFilter != null && handPosition != null)
             {
                 var estimatedCollider = EstimateWeaponCollider(meshFilter, (Vector3)handPosition, EquipScript.GetEquipType(item));
-                estimatedColliders[name] = estimatedCollider;
+                if (itemHash != 0)
+                {
+                    estimatedColliders[itemHash] = estimatedCollider;
+                }
                 LogUtils.LogDebug(
-                    "Estimated and registered collider for unknown weapon " + name + ": position " + estimatedCollider.pos + " scale " + estimatedCollider.scale);
+                    "Estimated and registered collider for weapon " + itemHash + " " + item.m_shared.m_name + ": position " + estimatedCollider.pos + " scale " + estimatedCollider.scale);
                 return estimatedCollider;
             }
 
@@ -654,14 +513,12 @@ namespace ValheimVRMod.Utilities
             loaded.transform.position += (unloadedMeshCenter - loadedMeshCenter);
         }
 
-
         public static GameObject CreateDebugSphere(Transform parent)
         {
             var sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             PrepareDebugGameObject(sphere, parent);
             return sphere;
         }
-
 
         public static GameObject CreateDebugBox(Transform parent)
         {
