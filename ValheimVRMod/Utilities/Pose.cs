@@ -544,7 +544,7 @@ namespace ValheimVRMod.Utilities {
 
             float verticalOffset = Vector3.Dot(playerUp, offsetFromHead);
 
-            bool reachingShoulder = verticalOffset >= -0.25f && verticalOffset <= 0.25f;
+            bool reachingShoulder = verticalOffset >= -0.3125f && verticalOffset <= 0.125f;
             bool reachingWaist = verticalOffset >= -0.75f && verticalOffset < -0.375f;
             if (!reachingShoulder && !reachingWaist)
             {
@@ -574,7 +574,7 @@ namespace ValheimVRMod.Utilities {
 
             if (!contralateral && Mathf.Abs(lateralOffset) > 0.5f)
             {
-                return BackReachLocation.None;
+               return BackReachLocation.None;
             }
 
             if (!contralateral && reachingWaist &&
