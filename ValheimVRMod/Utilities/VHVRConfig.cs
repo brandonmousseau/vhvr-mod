@@ -135,6 +135,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<string> buildAngleSnap;
         private static ConfigEntry<float> smoothTurnSpeed;
         private static ConfigEntry<bool> invertXAxis;
+        private static ConfigEntry<string> groqApiKey;
 
         // Graphics Settings
         private static ConfigEntry<bool> useAmplifyOcclusion;
@@ -779,6 +780,11 @@ namespace ValheimVRMod.Utilities
                                         "InvertTurnDirection",
                                         false,
                                         "Some people experience an issue where the right joystick turns the player the opposite direction as expected. Setting this will reverse the turn direction.");
+            groqApiKey = config.Bind(
+                "Controls",
+                "GroqApiKey",
+                "",
+                "Groq API key for voice-to-text transcription (obtained by applying on Groq website)");
             InitializeConfigurableKeyBindings(config);
         }
 
@@ -1000,7 +1006,7 @@ namespace ValheimVRMod.Utilities
                                          "BuildAngleSnap",
                                          "26, 22.5, 10, 5, 2.5, 1, 0.5, 0.1, 0.05, 0.01",
                                          "List of Build angle snap for advance rotation mode");
-            
+
             #if DEBUG
             DebugPosX = config.Bind("Motion Control",
                 "DebugPosX",
@@ -1577,6 +1583,11 @@ namespace ValheimVRMod.Utilities
         public static bool ViewTurnWithMountedAnimal()
         {
             return viewTurnWithMountedAnimal.Value;
+        }
+
+        public static string GroqApiKey()
+        {
+            return groqApiKey.Value;
         }
 
         public static float ArrowParticleSize()

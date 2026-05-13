@@ -1,11 +1,11 @@
+using static ValheimVRMod.Utilities.LogUtils;
+
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
-using Valve.VR;
 using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
-
-using static ValheimVRMod.Utilities.LogUtils;
-using System.Linq;
+using Valve.VR;
 
 namespace ValheimVRMod.VRCore.UI
 {
@@ -63,7 +63,8 @@ namespace ValheimVRMod.VRCore.UI
         public SteamVR_Action_Boolean useLeftHandAction { get
             {
                 return _useLeftHand;
-            } }
+            }
+        }
 
         private float recenteringPoseDuration;
 
@@ -103,6 +104,7 @@ namespace ValheimVRMod.VRCore.UI
             init();
             recenteringPoseDuration = 0f;
             _instance = this;
+            gameObject.GetOrAddComponent<VoiceChat>();
         }
 
         void Update()
