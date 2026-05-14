@@ -12,14 +12,14 @@ namespace ValheimVRMod.VRCore.UI
         private enum TalkGesture
         {
             IDLE,
-            NORMAL,
-            SHOUT,
+            START,
             RELEASE
         }
         private const string GROQ_URL = "https://api.groq.com/openai/v1/audio/transcriptions";
 
         private AudioClip recording;
         private bool isRecording = false;
+        private bool hasPending = false;
         private bool isLastRecordingShout = false;
         private string pendingText = null;
         private readonly object lockObj = new object();
@@ -40,22 +40,16 @@ namespace ValheimVRMod.VRCore.UI
             {
                 if (talkGesture == TalkGesture.RELEASE)
                 {
+                    // Require looking upward to use shout
+                    isLastRecordingShout =
+                        (Vector3.Dot(VRPlayer.vrCam.transform.forward, VRPlayer.vrCam.transform.parent.up) > 0.75f);
+                    hasPending = true;
                     StopRecording();
                 }
-                else if (talkGesture == TalkGesture.SHOUT)
-                {
-                    isLastRecordingShout = true;
-                }
             }
-            else if (talkGesture == TalkGesture.NORMAL)
+            else if (talkGesture == TalkGesture.START && !hasPending)
             {
-                isLastRecordingShout = false;
                 StartRecording();
-            }
-            else if (talkGesture == TalkGesture.SHOUT) {
-                isLastRecordingShout = true;
-                StartRecording();
-
             }
 
             string text = ConsumePending();
@@ -124,6 +118,7 @@ namespace ValheimVRMod.VRCore.UI
             {
                 string text = pendingText;
                 pendingText = null;
+                if (text != null) hasPending = false;
                 return text;
             }
         }
@@ -154,15 +149,15 @@ namespace ValheimVRMod.VRCore.UI
                 return TalkGesture.IDLE;
             }
 
-            Vector3 leftHandDistal = leftHand.forward - leftHand.up;
-            Vector3 rightHandDistal = rightHand.forward - rightHand.up;
-            return leftHandDistal.y > 1.25f && rightHandDistal.y > 1.25f ? TalkGesture.SHOUT : TalkGesture.NORMAL;
+            return TalkGesture.START;
         }
 
         private bool IsHandInMouthRange(Transform hand, Transform head)
         {
             Vector3 offset = hand.position - head.position;
-            if (offset.y > 0 || offset.y < -0.25)
+
+            float verticalOffset = Vector3.Dot(offset, head.up);
+            if (verticalOffset > 0 || verticalOffset < -0.25)
             {
                 return false;
             }
