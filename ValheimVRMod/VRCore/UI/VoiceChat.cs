@@ -38,18 +38,30 @@ namespace ValheimVRMod.VRCore.UI
 
             if (isRecording)
             {
-                if (talkGesture == TalkGesture.RELEASE)
+                if (!Microphone.IsRecording(null))
                 {
+                    LogUtils.LogDebug("Chat recording timeout");
+                    isLastRecordingShout = false;
+                    isRecording = false;
+                    StartCoroutine(SendToGroq());
+                }
+                else if (talkGesture == TalkGesture.RELEASE)
+                {
+                    LogUtils.LogDebug("Stop recording chat");
                     // Require looking upward to use shout
                     isLastRecordingShout =
                         (Vector3.Dot(VRPlayer.vrCam.transform.forward, VRPlayer.vrCam.transform.parent.up) > 0.75f);
-                    hasPending = true;
-                    StopRecording();
+                    Microphone.End(null);
+                    isRecording = false;
+                    StartCoroutine(SendToGroq());
                 }
             }
             else if (talkGesture == TalkGesture.START && !hasPending)
             {
-                StartRecording();
+                LogUtils.LogDebug("Start recording chat");
+                recording = Microphone.Start(null, false, 30, 16000);
+                isRecording = true;
+                hasPending = true;
             }
 
             string text = ConsumePending();
@@ -59,21 +71,6 @@ namespace ValheimVRMod.VRCore.UI
             }
 
             Chat.instance.SendText(isLastRecordingShout ? Talker.Type.Shout : Talker.Type.Normal, text);
-        }
-
-        private void StartRecording()
-        {
-            LogUtils.LogDebug("Start recording chat");
-            recording = Microphone.Start(null, false, 30, 16000);
-            isRecording = true;
-        }
-
-        private void StopRecording()
-        {
-            LogUtils.LogDebug("Stop recording chat");
-            Microphone.End(null);
-            isRecording = false;
-            StartCoroutine(SendToGroq());
         }
 
         private IEnumerator SendToGroq()
@@ -116,9 +113,13 @@ namespace ValheimVRMod.VRCore.UI
         {
             lock (lockObj)
             {
-                string text = pendingText;
+                string text = null;
+                if (hasPending && pendingText != null)
+                {
+                    text = pendingText;
+                    hasPending = false;
+                }
                 pendingText = null;
-                if (text != null) hasPending = false;
                 return text;
             }
         }
