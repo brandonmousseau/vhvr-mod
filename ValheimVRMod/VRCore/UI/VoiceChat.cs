@@ -51,9 +51,20 @@ namespace ValheimVRMod.VRCore.UI
                     // Require looking upward to use shout
                     isLastRecordingShout =
                         (Vector3.Dot(VRPlayer.vrCam.transform.forward, VRPlayer.vrCam.transform.parent.up) > 0.75f);
+                    int lastSamplePos = Microphone.GetPosition(null);
                     Microphone.End(null);
+                    float duration = lastSamplePos / recording.frequency;
                     isRecording = false;
-                    StartCoroutine(SendToGroq());
+                    if (duration > 0.5f)
+                    {
+                        LogUtils.LogDebug("Voice recording length: " + recording.length);
+                        StartCoroutine(SendToGroq());
+                    }
+                    else
+                    {
+                        LogUtils.LogDebug("Voice recording too short to transcribe");
+                        hasPending = false;
+                    }
                 }
             }
             else if (talkGesture == TalkGesture.START && !hasPending)
@@ -142,10 +153,10 @@ namespace ValheimVRMod.VRCore.UI
                 return TalkGesture.IDLE;
             }
 
-            bool palmsFacingEachOther =
-                Vector3.Dot(leftHand.right, head.right) > 0.75f &&
-                Vector3.Dot(rightHand.right, head.right) > 0.75f;
-            if (!palmsFacingEachOther)
+            if (Vector3.Dot(leftHand.right, head.right) < 0.875f || // left palm not facing right
+                Vector3.Dot(rightHand.right, head.right) < 0.875f || // right palm not facing left
+                Vector3.Dot(leftHand.up, head.up) > -0.75 || // left digital not pointing up
+                Vector3.Dot(rightHand.up, head.up) > -0.75) // right digital not pointing up
             {
                 return TalkGesture.IDLE;
             }
@@ -158,16 +169,17 @@ namespace ValheimVRMod.VRCore.UI
             Vector3 offset = hand.position - head.position;
 
             float verticalOffset = Vector3.Dot(offset, head.up);
-            if (verticalOffset > 0 || verticalOffset < -0.25)
+            if (verticalOffset > 0 || verticalOffset < -0.125)
             {
                 return false;
             }
-            float anteriorOffset = Vector3.Dot(head.forward, offset);
-            if (anteriorOffset < 0 || anteriorOffset > 0.25f)
+            float anteriorOffset = Vector3.Dot(offset, head.forward);
+            if (anteriorOffset < 0 || anteriorOffset > 0.125f)
             {
                 return false;
             }
-            return Mathf.Abs(Vector3.Dot(head.right, offset)) < 0.125f;
+            float lateralOffset = Vector3.Dot(offset, head.right);
+            return Mathf.Abs(lateralOffset) < 0.125f;
         }
 
         // Minimal WAV encoder
