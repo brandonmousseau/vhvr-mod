@@ -319,7 +319,7 @@ namespace ValheimVRMod.VRCore
         private static SteamVRBodyTrackingProvider bodyTrackingProvider;
         // TEMPORARY: set false to bypass SteamVR role resolution so the auto (0) case goes
         // straight to coordinate-based detection (for testing the heuristic in isolation).
-        private const bool USE_ROLE_BASED_TRACKING = false;
+        private const bool USE_ROLE_BASED_TRACKING = true;
         // Highest device index considered by coordinate-based auto-detection. Detection is
         // only a fallback for the auto (0) case when no SteamVR role is assigned, so the
         // legacy enumeration limit is fine; role-based tracking has no such limit.
