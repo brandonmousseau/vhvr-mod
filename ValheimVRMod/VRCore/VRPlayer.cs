@@ -778,8 +778,10 @@ namespace ValheimVRMod.VRCore
             var role = USE_ROLE_BASED_TRACKING && bodyTrackingProvider != null ? bodyTrackingProvider.GetJointTransform(joint) : null;
             if (role != null)
             {
+                LogUtils.LogInfo("Detected tracker for role " + joint);
                 return role;
             }
+            LogUtils.LogInfo("Detecting tracker for role " + joint + " using coordinates...");
             return joint == BodyJoint.Waist ? DetectHipTransform() : DetectFootTransform(hip, exclude);
         }
 

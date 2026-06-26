@@ -23,12 +23,17 @@ namespace ValheimVRMod.VRCore.BodyTracking
 
         private static SteamVR_Action_Pose bodyPose;
 
-        private static readonly Dictionary<BodyJoint, SteamVR_Input_Sources> JointSources =
-            new Dictionary<BodyJoint, SteamVR_Input_Sources>
+        // Each joint maps to one or more SteamVR input sources in priority order (highest
+        // priority first). Feet prefer the Foot tracker role but fall back to the Ankle
+        // role, so a user who assigned either role in SteamVR gets working tracking.
+        // SteamVR resolves each role to exactly one device, so the fallback (picking the
+        // first source with a valid pose) has to happen here rather than in the bindings.
+        private static readonly Dictionary<BodyJoint, SteamVR_Input_Sources[]> JointSources =
+            new Dictionary<BodyJoint, SteamVR_Input_Sources[]>
             {
-                { BodyJoint.Waist, SteamVR_Input_Sources.Waist },
-                { BodyJoint.LeftFoot, SteamVR_Input_Sources.LeftFoot },
-                { BodyJoint.RightFoot, SteamVR_Input_Sources.RightFoot },
+                { BodyJoint.Waist, new[] { SteamVR_Input_Sources.Waist } },
+                { BodyJoint.LeftFoot, new[] { SteamVR_Input_Sources.LeftFoot, SteamVR_Input_Sources.LeftAnkle } },
+                { BodyJoint.RightFoot, new[] { SteamVR_Input_Sources.RightFoot, SteamVR_Input_Sources.RightAnkle } },
             };
 
         private readonly Dictionary<BodyJoint, Transform> jointTransforms = new Dictionary<BodyJoint, Transform>();
@@ -99,11 +104,25 @@ namespace ValheimVRMod.VRCore.BodyTracking
 
         public bool IsJointActive(BodyJoint joint)
         {
-            if (bodyPose == null || !JointSources.TryGetValue(joint, out var source))
+            return GetActiveSource(joint).HasValue;
+        }
+
+        // Returns the highest-priority source for the joint that currently has a connected
+        // tracker reporting a valid pose, or null if none of the joint's sources do.
+        private SteamVR_Input_Sources? GetActiveSource(BodyJoint joint)
+        {
+            if (bodyPose == null || !JointSources.TryGetValue(joint, out var sources))
             {
-                return false;
+                return null;
             }
-            return bodyPose.GetDeviceIsConnected(source) && bodyPose.GetPoseIsValid(source);
+            foreach (var source in sources)
+            {
+                if (bodyPose.GetDeviceIsConnected(source) && bodyPose.GetPoseIsValid(source))
+                {
+                    return source;
+                }
+            }
+            return null;
         }
 
         public Transform GetJointTransform(BodyJoint joint)
@@ -117,19 +136,19 @@ namespace ValheimVRMod.VRCore.BodyTracking
             {
                 return;
             }
-            foreach (var entry in JointSources)
+            foreach (var joint in JointSources.Keys)
             {
-                if (!jointTransforms.TryGetValue(entry.Key, out var t))
+                if (!jointTransforms.TryGetValue(joint, out var t))
                 {
                     continue;
                 }
-                var source = entry.Value;
-                if (!bodyPose.GetDeviceIsConnected(source) || !bodyPose.GetPoseIsValid(source))
+                var source = GetActiveSource(joint);
+                if (!source.HasValue)
                 {
                     continue;
                 }
-                t.localPosition = bodyPose.GetLocalPosition(source);
-                t.localRotation = bodyPose.GetLocalRotation(source);
+                t.localPosition = bodyPose.GetLocalPosition(source.Value);
+                t.localRotation = bodyPose.GetLocalRotation(source.Value);
             }
         }
     }
