@@ -89,6 +89,11 @@
       "requirement": "mandatory"
     },
     {
+      "name": "/actions/Valheim/in/BodyPose",
+      "type": "pose",
+      "requirement": "optional"
+    },
+    {
       "name": "/actions/Valheim/in/HotbarUp",
       "type": "boolean",
       "requirement": "optional"
