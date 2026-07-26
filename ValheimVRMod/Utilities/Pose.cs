@@ -533,11 +533,11 @@ namespace ValheimVRMod.Utilities {
                 return BackReachLocation.None;
             }
 
-            bool trackPelvis = (VHVRConfig.IsHipTrackingEnabled() && VRPlayer.pelvis != null);
+            bool trackPelvis = (VHVRConfig.IsHipTrackingEnabled() && VRPlayer.trackedPelvis != null);
 
             Vector3 playerUp =
                 trackPelvis ?
-                (vrCam.transform.position - VRPlayer.pelvis.transform.position).normalized :
+                (vrCam.transform.position - VRPlayer.trackedPelvis.position).normalized :
                 vrCam.transform.parent.up;
 
             Vector3 offsetFromHead = handTransform.position - vrCam.transform.position;
@@ -552,7 +552,7 @@ namespace ValheimVRMod.Utilities {
             }
 
             Vector3 facing =
-                Vector3.ProjectOnPlane(trackPelvis ? VRPlayer.pelvis.transform.forward : vrCam.transform.forward, playerUp).normalized;
+                Vector3.ProjectOnPlane(trackPelvis ? VRPlayer.trackedPelvis.forward : vrCam.transform.forward, playerUp).normalized;
             Vector3 playerRight = Vector3.Cross(playerUp, facing);
 
             float lateralOffset = Vector3.Dot(offsetFromHead, playerRight);
