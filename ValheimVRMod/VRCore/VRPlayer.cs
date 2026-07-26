@@ -1,4 +1,5 @@
 using AmplifyOcclusion;
+using PartyCSharpSDK;
 using RootMotion.FinalIK;
 using System.Collections.Generic;
 using System.Reflection;
@@ -68,6 +69,7 @@ namespace ValheimVRMod.VRCore
         // per-frame accessor; null when no waist tracker is in use. See ResolveHipTransform.
         private static Transform hipTrackerTransform { get { return resolvedHipTransform; } }
         private static MeshRenderer hipTrackerRenderer;
+        public static Transform trackedPelvis { get; private set; }
         public static Transform pelvis { get; private set; }
         private Vector3 roomscaleLocomotive {
             get {
@@ -313,8 +315,6 @@ namespace ValheimVRMod.VRCore
         // deadline passes). Handles the one-frame latency of a freshly created tracker.
         private static bool awaitingForcedTracker;
         private static float bodyTrackingCaliberationDeadline;
-        private static Vector3 caliberatedPelvisLocalPosition = Vector3.zero;
-        private static Quaternion caliberatedPelvisLocalRotation = Quaternion.identity;
         // Role-based body tracking (default, no device-count limit).
         private static SteamVRBodyTrackingProvider bodyTrackingProvider;
         // TEMPORARY: set false to bypass SteamVR role resolution so the auto (0) case goes
@@ -741,7 +741,9 @@ namespace ValheimVRMod.VRCore
 
             // Parenting to the actual waist tracker happens during caliberation (and the
             // renderer is reparented each frame in Update), once a tracker is available.
+            trackedPelvis = new GameObject().transform;
             pelvis = new GameObject().transform;
+            pelvis.parent = trackedPelvis;
 
             hipTrackerRenderer = GameObject.CreatePrimitive(PrimitiveType.Cube).GetComponent<MeshRenderer>();
             hipTrackerRenderer.gameObject.layer = LayerUtils.getWorldspaceUiLayer();
@@ -1276,11 +1278,11 @@ namespace ValheimVRMod.VRCore
             bool isFreeStanding =
                 !player.IsAttached() &&
                 !player.IsSitting() &&
-                Vector3.Angle(pelvis.parent.rotation * caliberatedPelvisLocalRotation * Vector3.up, player.transform.up) < 30 &&
+                Vector3.Angle(trackedPelvis.up, player.transform.up) < 30 &&
                 Valve.VR.InteractionSystem.Player.instance.eyeHeight > referencePlayerHeight * 0.75f;
 
             if (player.IsAttached() ||
-                (!VHVRConfig.TrackFeet() && (player.IsSneaking() || player.IsSitting() || isFreeStanding)))
+                (!VHVRConfig.TrackFeet() && (player.IsSneaking() || player.IsSitting() || !isFreeStanding)))
             {
                 vrikRef.solver.spine.pelvisPositionWeight = 0;
                 pelvis.position = vrikRef.references.pelvis.position;
@@ -1288,26 +1290,25 @@ namespace ValheimVRMod.VRCore
             else
             {
                 vrikRef.solver.spine.pelvisPositionWeight = attachedToPlayer ? 1 : 0;
-                pelvis.localPosition = caliberatedPelvisLocalPosition;
+                pelvis.localPosition = Vector3.zero;
             }
 
             if (player.IsAttached())
             {
                 pelvis.rotation =
-                    Quaternion.Lerp(player.transform.rotation, pelvis.parent.rotation * caliberatedPelvisLocalRotation, 0.25f);
+                    Quaternion.Lerp(player.transform.rotation, trackedPelvis.rotation, 0.25f);
                 vrikRef.solver.spine.rootHeadingOffset = 0;
             }
             else
             {
-                Vector3 caliberatedPelvisForward = pelvis.parent.rotation * caliberatedPelvisLocalRotation * Vector3.forward;
-                Vector3 pelvisFacing = Vector3.ProjectOnPlane(caliberatedPelvisForward, player.transform.up);
+                Vector3 pelvisFacing = Vector3.ProjectOnPlane(trackedPelvis.forward, player.transform.up);
                 if (isFreeStanding && !VHVRConfig.TrackFeet())
                 {
                     pelvis.rotation = Quaternion.LookRotation(pelvisFacing, player.transform.up);
                 }
                 else
                 {
-                    pelvis.localRotation = caliberatedPelvisLocalRotation;
+                    pelvis.localRotation = Quaternion.identity;
                 }
                 //TODO: find out why this is not working
                 vrikRef.solver.spine.rootHeadingOffset = Vector3.SignedAngle(Vector3.ProjectOnPlane(_vrCam.transform.forward, player.transform.up), pelvisFacing, player.transform.up);
@@ -1626,11 +1627,11 @@ namespace ValheimVRMod.VRCore
                 VHVRConfig.IsHipTrackingEnabled() ?
                 ResolveJointTransform(BodyJoint.Waist, VHVRConfig.HipTrackerIndex(), null, null) :
                 null;
-            pelvis.parent = resolvedHipTransform != null ? resolvedHipTransform : _vrCam.transform;
-            pelvis.position = inferPelvisPositionFromHead();
-            pelvis.rotation = Quaternion.LookRotation(Vector3.ProjectOnPlane(vrCam.transform.forward, roomUpDirection), roomUpDirection);
-            caliberatedPelvisLocalPosition = pelvis.localPosition;
-            caliberatedPelvisLocalRotation = pelvis.localRotation;
+            trackedPelvis.parent = resolvedHipTransform != null ? resolvedHipTransform : _vrCam.transform;
+            trackedPelvis.position = inferPelvisPositionFromHead();
+            trackedPelvis.rotation = Quaternion.LookRotation(Vector3.ProjectOnPlane(vrCam.transform.forward, roomUpDirection), roomUpDirection);
+            pelvis.localPosition = Vector3.zero;
+            pelvis.localRotation = Quaternion.identity;
             caliberateFeet();
             if (vrikRef != null)
             {
@@ -1903,10 +1904,10 @@ namespace ValheimVRMod.VRCore
             {
                 if (VHVRConfig.TrackFeet())
                 {
-                    Vector3 pelvisFacing = Vector3.ProjectOnPlane(pelvis.forward, _vrCameraRig.up);
-                    if (Vector3.Dot(leftFoot.position - pelvis.position, pelvisFacing) > 0.3f &&
-                        Vector3.Dot(rightFoot.position - pelvis.position, pelvisFacing) > 0.3f &&
-                        Vector3.Dot(_vrCam.transform.position - pelvis.position, pelvisFacing) < 0.1f) // Sitting with feet in front
+                    Vector3 pelvisFacing = Vector3.ProjectOnPlane(trackedPelvis.forward, _vrCameraRig.up);
+                    if (Vector3.Dot(leftFoot.position - trackedPelvis.position, pelvisFacing) > 0.3f &&
+                        Vector3.Dot(rightFoot.position - trackedPelvis.position, pelvisFacing) > 0.3f &&
+                        Vector3.Dot(_vrCam.transform.position - trackedPelvis.position, pelvisFacing) < 0.1f) // Sitting with feet in front
                     {
                         startingSit = true;
                         return;
@@ -1915,8 +1916,8 @@ namespace ValheimVRMod.VRCore
                 else
                 {
                     Vector3 facing = Vector3.ProjectOnPlane(vrCam.transform.forward, _vrCameraRig.up);
-                    if (Vector3.Dot(pelvis.position - vrCam.transform.position, facing) > 0.15f &&
-                        Vector3.Dot(pelvis.forward, _vrCameraRig.up) > 0.8f) // Laying back
+                    if (Vector3.Dot(trackedPelvis.position - vrCam.transform.position, facing) > 0.15f &&
+                        Vector3.Dot(trackedPelvis.forward, _vrCameraRig.up) > 0.8f) // Laying back
                     {
                         startingSit = true;
                         return;
