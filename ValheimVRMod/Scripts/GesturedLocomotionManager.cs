@@ -731,7 +731,7 @@ namespace ValheimVRMod.Scripts
                 Vector3 feetToHead = (vrCam.transform.position - feet).normalized;
 
                 if (Vector3.Dot(feetToHead, upDirection.Value) < 0.25f || 
-                    Vector3.Dot(VRPlayer.pelvis.position - feet, upDirection.Value) < 0.125f)
+                    Vector3.Dot(VRPlayer.trackedPelvis.position - feet, upDirection.Value) < 0.125f)
                 {
                     // Supine, stop walking
                     pace = Pace.STOP;
