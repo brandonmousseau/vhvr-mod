@@ -1,3 +1,4 @@
+using Microsoft.SqlServer.Server;
 using UnityEngine;
 using ValheimVRMod.Patches;
 using ValheimVRMod.Scripts;
@@ -154,12 +155,39 @@ namespace ValheimVRMod.Utilities {
                 return;
             }
 
+            if (LocalWeaponWield.isCurrentlyTwoHanded())
+            {
+                if (isLeftHandDrawingWeapon || isRightHandDrawingWeapon)
+                {
+                    return;
+                }
+                bool isLeftHandHolstering =
+                    leftHandBackReach != BackReachLocation.None &&
+                    grabAction.GetStateUp(SteamVR_Input_Sources.LeftHand) &&
+                    !grabAction.GetState(SteamVR_Input_Sources.RightHand);
+                bool isRightHandHolstering =
+                    rightHandBackReach != BackReachLocation.None &&
+                    grabAction.GetStateUp(SteamVR_Input_Sources.RightHand) &&
+                    !grabAction.GetState(SteamVR_Input_Sources.LeftHand);
+                if (isLeftHandHolstering || isRightHandHolstering) {
+                    if (VRPlayer.leftHandItem != null)
+                    {
+                        PatchHideHandItems.HideLocalPlayerHandItem(isMainHandItem: VRPlayer.isLeftHandMainWeaponHand);
+                    }
+                    if (VRPlayer.rightHandItem != null)
+                    {
+                        PatchHideHandItems.HideLocalPlayerHandItem(isMainHandItem: VRPlayer.isRightHandMainWeaponHand);
+                    }
+                }
+                return;
+            }
+
             if (!isLeftHandDrawingWeapon &&
                 VRPlayer.leftHandItem != null &&
                 leftHandBackReach != BackReachLocation.None &&
                 grabAction.GetStateUp(SteamVR_Input_Sources.LeftHand))
             {
-                PatchHideHandItems.HideLocalPlayerHandItem(VRPlayer.isLeftHandMainWeaponHand);
+                PatchHideHandItems.HideLocalPlayerHandItem(isMainHandItem: VRPlayer.isLeftHandMainWeaponHand);
             }
 
             if (!isRightHandDrawingWeapon &&
@@ -167,7 +195,7 @@ namespace ValheimVRMod.Utilities {
                 rightHandBackReach != BackReachLocation.None &&
                 grabAction.GetStateUp(SteamVR_Input_Sources.RightHand))
             {
-                PatchHideHandItems.HideLocalPlayerHandItem(VRPlayer.isRightHandMainWeaponHand);
+                PatchHideHandItems.HideLocalPlayerHandItem(isMainHandItem: VRPlayer.isRightHandMainWeaponHand);
             }
         }
 
@@ -544,7 +572,7 @@ namespace ValheimVRMod.Utilities {
 
             float verticalOffset = Vector3.Dot(playerUp, offsetFromHead);
 
-            bool reachingShoulder = verticalOffset >= -0.3125f && verticalOffset <= 0.125f;
+            bool reachingShoulder = verticalOffset >= -0.25f && verticalOffset <= 0.125f;
             bool reachingWaist = verticalOffset >= -0.75f && verticalOffset < -0.375f;
             if (!reachingShoulder && !reachingWaist)
             {
@@ -565,20 +593,27 @@ namespace ValheimVRMod.Utilities {
 
             bool contralateral = (isRightHand ^ reachingRight);
 
-            if (contralateral ?
-                sagittalOffset > 0.0625f :
-                sagittalOffset > -0.0625f)
+            if (contralateral)
+            {
+                if (sagittalOffset > 0.03125f)
+                {
+                    return BackReachLocation.None;
+                }
+
+                if (reachingShoulder && verticalOffset < -0.0625f)
+                {
+                    return BackReachLocation.None;
+                }
+            }
+            else if (sagittalOffset > -0.0625f)
             {
                 return BackReachLocation.None;
-            }
-
-            if (!contralateral && Mathf.Abs(lateralOffset) > 0.5f)
+            } 
+            else if (Mathf.Abs(lateralOffset) > 0.5f)
             {
                return BackReachLocation.None;
             }
-
-            if (!contralateral && reachingWaist &&
-                sagittalOffset + Mathf.Abs(lateralOffset) * 0.75f > 0)
+            else if (reachingWaist && sagittalOffset + Mathf.Abs(lateralOffset) * 0.75f > 0)
             {
                 return BackReachLocation.None;
             }
