@@ -1,4 +1,3 @@
-using Microsoft.SqlServer.Server;
 using UnityEngine;
 using ValheimVRMod.Patches;
 using ValheimVRMod.Scripts;
