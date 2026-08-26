@@ -463,6 +463,11 @@ namespace ValheimVRMod.Patches
                 case EquipType.Lantern:
                     return;
                 case EquipType.Shield:
+                    // Attaching ShieldBlock is what makes a shield block and parry at all: ShieldBlock.Awake()
+                    // assigns the static ShieldBlock.instance that PatchBlockAttack reads in ShieldPatches.cs.
+                    // This call was lost in 666124e6 when the ".itemName = ___m_leftItem" tail of the statement
+                    // was removed along with the field; the field was write-only, so it is not restored here.
+                    meshFilter.gameObject.AddComponent<ShieldBlock>();
                     return;
             }
 
