@@ -24,16 +24,15 @@ namespace ValheimVRMod.VRCore.BodyTracking
         private static SteamVR_Action_Pose bodyPose;
 
         // Each joint maps to one or more SteamVR input sources in priority order (highest
-        // priority first). Feet prefer the Foot tracker role but fall back to the Ankle
-        // role, so a user who assigned either role in SteamVR gets working tracking.
+        // priority first). The installed Valheim SteamVR API exposes the Foot tracker roles.
         // SteamVR resolves each role to exactly one device, so the fallback (picking the
         // first source with a valid pose) has to happen here rather than in the bindings.
         private static readonly Dictionary<BodyJoint, SteamVR_Input_Sources[]> JointSources =
             new Dictionary<BodyJoint, SteamVR_Input_Sources[]>
             {
                 { BodyJoint.Waist, new[] { SteamVR_Input_Sources.Waist } },
-                { BodyJoint.LeftFoot, new[] { SteamVR_Input_Sources.LeftFoot, SteamVR_Input_Sources.LeftAnkle } },
-                { BodyJoint.RightFoot, new[] { SteamVR_Input_Sources.RightFoot, SteamVR_Input_Sources.RightAnkle } },
+                { BodyJoint.LeftFoot, new[] { SteamVR_Input_Sources.LeftFoot } },
+                { BodyJoint.RightFoot, new[] { SteamVR_Input_Sources.RightFoot } },
             };
 
         private readonly Dictionary<BodyJoint, Transform> jointTransforms = new Dictionary<BodyJoint, Transform>();

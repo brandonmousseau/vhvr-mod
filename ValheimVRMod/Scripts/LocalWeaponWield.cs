@@ -147,6 +147,7 @@ namespace ValheimVRMod.Scripts
                 isAiming = false;
             }
 
+            localWeaponTip = transform.position + (weaponLength - distanceBetweenGripAndRearEnd) * weaponForward;
             updateCrosshair();
 
             if (twoHandedState != TwoHandedState.SingleHanded)
@@ -190,7 +191,6 @@ namespace ValheimVRMod.Scripts
             lastRenderedTransform.SetPositionAndRotation(transform.position, transform.rotation);
             lastRenderedTransform.localScale = Vector3.one;
             lastRenderedTransform.SetParent(null, true);
-            localWeaponTip = transform.position + (weaponLength - distanceBetweenGripAndRearEnd) * weaponForward;
             playerSync?.UpdateWeaponTransform(transform.localPosition, transform.localRotation);
 
             return weaponForward;
@@ -439,7 +439,9 @@ namespace ValheimVRMod.Scripts
 
             crosshair.SetActive(VHVRConfig.ShowStaticCrosshair());
             crosshair.transform.SetParent(transform, false);
-            crosshair.transform.position = transform.position + CrosshairManager.WEAPON_CROSSHAIR_DISTANCE * weaponForward;
+            var crosshairOrigin = EquipScript.CurrentOffHandEquipType() == EquipType.Magic ||
+                EquipScript.CurrentMainHandEquipType() == EquipType.Magic ? localWeaponTip : transform.position;
+            crosshair.transform.position = crosshairOrigin + CrosshairManager.WEAPON_CROSSHAIR_DISTANCE * weaponForward;
             crosshair.transform.localRotation = Quaternion.identity;
             crosshair.SetActive(isAiming);
         }
