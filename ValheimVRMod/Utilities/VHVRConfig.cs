@@ -39,6 +39,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> immersiveShipCameraSitting;
         private static ConfigEntry<string> immersiveShipCameraStanding;
         private static ConfigEntry<bool> immersiveDodgeRoll;
+        private static ConfigEntry<string> dodgeRollActivation;
         private static ConfigEntry<bool> allowMovementWhenInMenu;
         private static ConfigEntry<bool> showDebugColliders;
         private static ConfigEntry<int> hipTrackerIndex;
@@ -730,6 +731,11 @@ namespace ValheimVRMod.Utilities
                                           0.75f,
                                           new ConfigDescription("The minimum vertical head speed to trigger a jump",
                                           new AcceptableValueRange<float>(0.25f, 3f)));
+            dodgeRollActivation = config.Bind("Controls",
+                                          "DodgeRollActivation",
+                                          "Chord",
+                                          new ConfigDescription("How dodge roll is activated. BilateralMovement requires both controllers to move together 1 to 3 feet.",
+                                          new AcceptableValueList<string>(new string[] { "Chord", "BilateralMovement" })));
             walkSpeedSmoothener = config.Bind("Controls",
                                           "WalkSpeedSmoothener",
                                           0f,
@@ -1494,6 +1500,11 @@ namespace ValheimVRMod.Utilities
         public static bool IsGesturedSwimEnabled()
         {
             return gesturedLocomotion.Value == "Full" || gesturedLocomotion.Value == "SwimAndSteering";
+        }
+
+        public static bool IsBilateralDodgeEnabled()
+        {
+            return dodgeRollActivation.Value == "BilateralMovement";
         }
 
         public static bool IsGesturedSteeringEnabled()

@@ -891,15 +891,28 @@ namespace ValheimVRMod.Scripts
 
         class GesturedDodgeRoll : GesturedLocomotion
         {
+            private const float MIN_BILATERAL_DISPLACEMENT = 0.3048f;
+            private const float MAX_BILATERAL_DISPLACEMENT = 0.9144f;
             private const float MIN_HAND_ELEVATION = -0.125f;
             private const float MAX_HEAD_VERTICAL_VELOCITY = -1.5f;
             private const float MAX_HEIGHT = 0.875f;
             private const float MIN_HAND_SPEED = 2;
 
             private Camera vrCam;
+            private Vector3 previousLeftHandPosition;
+            private Vector3 previousRightHandPosition;
+            private Vector3 bilateralMovement;
+            private float leftHandDisplacement;
+            private float rightHandDisplacement;
+            private bool bilateralDodgeTriggered;
 
             public override Vector3 GetTargetVelocityFromGestures(Player player, float deltaTime)
             {
+                if (VHVRConfig.IsBilateralDodgeEnabled())
+                {
+                    return GetBilateralDodgeDirection(player, deltaTime);
+                }
+
                 if (!VHVRConfig.IsGesturedSwimEnabled() ||
                     player.IsAttached() ||
                     player.InDodge() ||
@@ -949,6 +962,70 @@ namespace ValheimVRMod.Scripts
                 }
 
                 return (rollDirection.normalized - upDirection.Value) * 16f;
+            }
+
+            private Vector3 GetBilateralDodgeDirection(Player player, float deltaTime)
+            {
+                if (player.IsAttached() || player.InDodge() || player.m_queuedDodgeTimer > 0 ||
+                    !SteamVR_Actions.valheim_StopGesturedLocomotion.activeBinding ||
+                    SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.LeftHand) ||
+                    SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.RightHand))
+                {
+                    ResetBilateralDodge();
+                    return Vector3.zero;
+                }
+
+                Vector3 leftPosition = VRPlayer.leftHand.transform.position;
+                Vector3 rightPosition = VRPlayer.rightHand.transform.position;
+                if (previousLeftHandPosition == Vector3.zero || previousRightHandPosition == Vector3.zero)
+                {
+                    previousLeftHandPosition = leftPosition;
+                    previousRightHandPosition = rightPosition;
+                    return Vector3.zero;
+                }
+
+                Vector3 leftMovement = Vector3.ProjectOnPlane(leftPosition - previousLeftHandPosition, upDirection.Value);
+                Vector3 rightMovement = Vector3.ProjectOnPlane(rightPosition - previousRightHandPosition, upDirection.Value);
+                previousLeftHandPosition = leftPosition;
+                previousRightHandPosition = rightPosition;
+
+                if (leftMovement.sqrMagnitude == 0 || rightMovement.sqrMagnitude == 0 ||
+                    Vector3.Dot(leftMovement.normalized, rightMovement.normalized) < 0.5f)
+                {
+                    ResetBilateralDodge();
+                    return Vector3.zero;
+                }
+
+                leftHandDisplacement += leftMovement.magnitude;
+                rightHandDisplacement += rightMovement.magnitude;
+                bilateralMovement += leftMovement + rightMovement;
+                if (leftHandDisplacement < MIN_BILATERAL_DISPLACEMENT ||
+                    rightHandDisplacement < MIN_BILATERAL_DISPLACEMENT)
+                {
+                    return Vector3.zero;
+                }
+
+                if (!bilateralDodgeTriggered && leftHandDisplacement <= MAX_BILATERAL_DISPLACEMENT &&
+                    rightHandDisplacement <= MAX_BILATERAL_DISPLACEMENT)
+                {
+                    bilateralDodgeTriggered = true;
+                    Vector3 direction = bilateralMovement.normalized;
+                    ResetBilateralDodge();
+                    return direction * 16f;
+                }
+
+                ResetBilateralDodge();
+                return Vector3.zero;
+            }
+
+            private void ResetBilateralDodge()
+            {
+                previousLeftHandPosition = Vector3.zero;
+                previousRightHandPosition = Vector3.zero;
+                bilateralMovement = Vector3.zero;
+                leftHandDisplacement = 0;
+                rightHandDisplacement = 0;
+                bilateralDodgeTriggered = false;
             }
 
             private float GetHandAssistance(PhysicsEstimator handPhyicsEstimator)
