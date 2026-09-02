@@ -15,7 +15,7 @@ namespace ValheimVRMod.Scripts
 
         private static readonly HashSet<string> SWING_LAUNCH_MAGIC_STAFF_NAMES =
             new HashSet<string>(new string[] {
-                "$item_stafffireball", "$item_staffgreenroots", "$item_staffclusterbomb", "$item_staffredtroll" });
+                "$item_staffgreenroots", "$item_staffclusterbomb", "$item_staffredtroll" });
         private static readonly HashSet<string> OPPOSITE_HAND_SUMMONER_NAMES =
             new HashSet<string>(new string[] { "$item_staffskeleton" });
 
@@ -133,6 +133,13 @@ namespace ValheimVRMod.Scripts
 
         public static Vector3 GetProjectileSpawnPoint(Attack attack)
         {
+            // Projectiles should originate from the actual tip of the staff, not the pointer origin or the center/front-top of the weapon.
+            // This fixes staff spells on Index controllers and makes swing-launch fire staffs behave like the tip-based spell casts.
+            if (LocalWeaponWield.localWeaponTip != Vector3.zero)
+            {
+                return LocalWeaponWield.localWeaponTip;
+            }
+
             var offsetDirection =
                 CanSummonWithOppositeHand() ?
                 (VRPlayer.isRightHandMainWeaponHand ? VRPlayer.rightHandBone.up : VRPlayer.leftHandBone.up) :
