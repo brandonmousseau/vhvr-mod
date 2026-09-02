@@ -1,5 +1,4 @@
 using System.Text;
-using System.Threading;
 using GUIFramework;
 using HarmonyLib;
 using UnityEngine;
@@ -14,22 +13,20 @@ namespace ValheimVRMod.Patches {
 
     [HarmonyPatch(typeof(TextInput), "Show")]
     class PatchTextInputAwake {
-        
-        private static TextInput instance;
-
         public static void Postfix(TextInput __instance) {
             if (VHVRConfig.UseVrControls()) {
-                instance = __instance;
-                if (VHVRConfig.AutoOpenKeyboardOnInteract() || instance.m_topic.text == "ChatText")
+                bool isChatInput = __instance.m_topic.text == "ChatText";
+                if (VHVRConfig.AutoOpenKeyboardOnInteract() || isChatInput)
                 {
-                    // TODO: find out why portal tag and sign text input dialog can no longer be visible after chat input is used once.
-                    InputManager.start(null, null, instance.m_inputField, returnOnClose: false, OnClose);
+                    InputManager.start(
+                        null,
+                        null,
+                        __instance.m_inputField,
+                        returnOnClose: false,
+                        closedAction: delegate { __instance.OnEnter(); },
+                        chatInput: isChatInput);
                 }
             }
-        }
-
-        private static void OnClose() {
-            instance.OnEnter();
         }
     }
     
@@ -128,13 +125,27 @@ namespace ValheimVRMod.Patches {
         public static float closeTime;
         public static bool triggerReturn;
 
-        public static void start(InputField inputField, TMP_InputField inputFieldTmp, GuiInputField inputFieldGui, bool returnOnClose = false, UnityAction closedAction = null) {
+        public static void start(
+            InputField inputField,
+            TMP_InputField inputFieldTmp,
+            GuiInputField inputFieldGui,
+            bool returnOnClose = false,
+            UnityAction closedAction = null,
+            bool chatInput = false) {
+            if (_keyboardOpen)
+            {
+                return;
+            }
+
             // TODO: consider enforcing the check that one and only one among inputField, inputFieldGui, and inputFieldTmp is non-null.
             _inputField = inputField;
             _inputFieldGui = inputFieldGui;
             _inputFieldTmp = inputFieldTmp;
             _returnOnClose = returnOnClose;
             _closedAction = closedAction;
+            _chatInput = chatInput;
+            _keyboardOpen = true;
+            triggerReturn = false;
             
             if (_inputField != null && _inputField.text == "...") {
                 _inputField.text = "";
@@ -157,31 +168,53 @@ namespace ValheimVRMod.Patches {
             SteamVR.instance.overlay.ShowKeyboard(0, 0, 0, "TextInput", 256, _inputField != null ? _inputField.text : _inputFieldTmp != null ? _inputFieldTmp.text : _inputFieldGui.text, 1);
         }
 
+        private static bool _keyboardOpen;
+        private static bool _chatInput;
+
         private static void OnKeyboardClosed(VREvent_t args) {
+            if (!_keyboardOpen)
+            {
+                return;
+            }
+
+            InputField inputField = _inputField;
+            TMP_InputField inputFieldTmp = _inputFieldTmp;
+            GuiInputField inputFieldGui = _inputFieldGui;
+            UnityAction closedAction = _closedAction;
+            bool returnOnClose = _returnOnClose;
+            bool chatInput = _chatInput;
+            _inputField = null;
+            _inputFieldTmp = null;
+            _inputFieldGui = null;
+            _closedAction = null;
+            _returnOnClose = false;
+            _chatInput = false;
+            _keyboardOpen = false;
+
             closeTime = Time.fixedTime;
             StringBuilder textBuilder = new StringBuilder(256);
             int caretPosition = (int)SteamVR.instance.overlay.GetKeyboardText(textBuilder, 256);
             string text = textBuilder.ToString();
 
-            if (_inputField)
+            if (inputField)
             {
-                _inputField.caretPosition = caretPosition;
-                _inputField.text = text;
+                inputField.caretPosition = caretPosition;
+                inputField.text = text;
             }
 
-            if (_inputFieldTmp)
+            if (inputFieldTmp)
             {
-                _inputFieldTmp.caretPosition = caretPosition;
-                _inputFieldTmp.text = text;
+                inputFieldTmp.caretPosition = caretPosition;
+                inputFieldTmp.text = text;
             }
 
-            if (_inputFieldGui)
+            if (inputFieldGui)
             {
-                _inputFieldGui.caretPosition = caretPosition;
-                _inputFieldGui.text = text;
+                inputFieldGui.caretPosition = caretPosition;
+                inputFieldGui.text = text;
             }
 
-            if (Scripts.QuickAbstract.shouldStartChat)
+            if (chatInput)
             {
                 if (text != "")
                 {
@@ -204,12 +237,16 @@ namespace ValheimVRMod.Patches {
             }
             Scripts.QuickAbstract.shouldStartChat = false;
 
-            triggerReturn = _returnOnClose;
+            triggerReturn = returnOnClose;
 
             // If return is to be triggered, we will wait until then to fire close action.
-            if (!_returnOnClose)
+            if (!returnOnClose)
             {
-                _closedAction?.Invoke();
+                closedAction?.Invoke();
+            }
+            else
+            {
+                _closedAction = closedAction;
             }
         }
 
@@ -218,7 +255,9 @@ namespace ValheimVRMod.Patches {
             if (triggerReturn && key == KeyCode.Return) {
                 result = true;
                 triggerReturn = false;
-                new Thread(()=>_closedAction?.Invoke()).Start();
+                UnityAction closedAction = _closedAction;
+                _closedAction = null;
+                closedAction?.Invoke();
                 return false;
             }
 
