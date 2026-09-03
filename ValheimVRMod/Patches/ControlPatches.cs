@@ -1252,6 +1252,13 @@ namespace ValheimVRMod.Patches {
     class Player_UpdateDodge_Patch
     {
         public static bool wasDodging = false;
+
+        [HarmonyPrepare]
+        static bool Prepare()
+        {
+            return !VHVRConfig.NonVrPlayer();
+        }
+
         static void Postfix(Player __instance)
         {
             if (VHVRConfig.NonVrPlayer() || __instance != Player.m_localPlayer)
@@ -1306,6 +1313,13 @@ namespace ValheimVRMod.Patches {
     {
         public static float currdodgetimer { get; private set; } = 0f;
         static Vector3 currDodgeDir;
+
+        [HarmonyPrepare]
+        static bool Prepare()
+        {
+            return !VHVRConfig.NonVrPlayer();
+        }
+
         static bool Prefix(Player __instance, float dt, ref bool ___m_beenHitWhileDodging)
         {
             if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls())
