@@ -1,4 +1,3 @@
-using Microsoft.SqlServer.Server;
 using UnityEngine;
 using ValheimVRMod.Patches;
 using ValheimVRMod.Scripts;
@@ -600,7 +599,7 @@ namespace ValheimVRMod.Utilities {
                     return BackReachLocation.None;
                 }
 
-                if (reachingShoulder && verticalOffset < -0.0625f)
+                if (reachingShoulder && verticalOffset < -0.125f)
                 {
                     return BackReachLocation.None;
                 }
