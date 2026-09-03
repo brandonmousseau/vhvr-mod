@@ -463,6 +463,7 @@ namespace ValheimVRMod.Patches
                 case EquipType.Lantern:
                     return;
                 case EquipType.Shield:
+                    meshFilter.gameObject.AddComponent<ShieldBlock>();
                     return;
             }
 
