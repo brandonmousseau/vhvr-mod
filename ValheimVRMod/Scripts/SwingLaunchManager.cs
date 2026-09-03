@@ -18,14 +18,20 @@ namespace ValheimVRMod.Scripts
         public static bool isThrowing;
         private static bool preparingThrow;
 
-        protected SteamVR_Action_Boolean mainHandInputAction { get { return VRPlayer.isRightHandMainWeaponHand ? SteamVR_Actions.valheim_Use : SteamVR_Actions.valheim_UseLeft; } }
+        public static bool isRightHandRear { get { return LocalWeaponWield.LocalPlayerTwoHandedState == WeaponWield.TwoHandedState.RightHandBehind; } }
+        public static SteamVR_Input_Sources frontHandInputSource { get { return isRightHandRear ? SteamVR_Input_Sources.LeftHand : SteamVR_Input_Sources.RightHand; } }
+        public static SteamVR_Action_Boolean frontHandTriggerAction { get { return isRightHandRear ? SteamVR_Actions.valheim_UseLeft : SteamVR_Actions.valheim_Use; } }
+        private static SteamVR_Action_Boolean mainWeaponHandTriggerAction { get { return VRPlayer.isRightHandMainWeaponHand ? SteamVR_Actions.valheim_Use : SteamVR_Actions.valheim_UseLeft; } }
+
+        protected SteamVR_Action_Boolean mainHandInputAction { get { return LocalWeaponWield.isCurrentlyTwoHanded() ? frontHandTriggerAction : mainWeaponHandTriggerAction; } }
+        private SteamVR_Input_Sources swingInputSource { get { return LocalWeaponWield.isCurrentlyTwoHanded() ? frontHandInputSource : VRPlayer.mainWeaponHandInputSource; } }
         private LocalWeaponWield weaponWield { get { return gameObject.GetComponentInParent<LocalWeaponWield>(); } }
         private PhysicsEstimator handPhysicsEstimator { get { return VRPlayer.isRightHandMainWeaponHand ? VRPlayer.rightHandPhysicsEstimator : VRPlayer.leftHandPhysicsEstimator; } }
         private float peakSpeed = 0;
 
         protected virtual void OnRenderObject()
         {
-            if (mainHandInputAction.GetStateDown(VRPlayer.mainWeaponHandInputSource))
+            if (mainHandInputAction.GetStateDown(swingInputSource))
             {
                 preparingThrow = true;
                 peakSpeed = 0;
@@ -76,7 +82,7 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            if (ReleaseTriggerToAttack() && !mainHandInputAction.GetStateUp(VRPlayer.mainWeaponHandInputSource))
+            if (ReleaseTriggerToAttack() && !mainHandInputAction.GetStateUp(swingInputSource))
             {
                 return;
             }
