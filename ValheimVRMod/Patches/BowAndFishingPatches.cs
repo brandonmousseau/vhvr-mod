@@ -160,11 +160,11 @@ namespace ValheimVRMod.Patches {
                     aimDir = CrossbowManager.AimDir;
                     return false;
                 case EquipType.Magic:
-                    spawnPoint = MagicWeaponManager.GetProjectileSpawnPoint(__instance);
-                    aimDir = MagicWeaponManager.AimDir;
+                    spawnPoint = MagicStaffManagers.OffHand.GetProjectileSpawnPoint(__instance);
+                    aimDir = MagicStaffManagers.OffHand.AimDir;
                     return false;
             }
-            
+
             switch (EquipScript.CurrentMainHandEquipType()) {
 
                 case EquipType.Fishing:
@@ -178,8 +178,8 @@ namespace ValheimVRMod.Patches {
                     aimDir = ThrowableManager.aimDir.normalized * ThrowableManager.throwSpeed;
                     return false;
                 case EquipType.Magic:
-                    spawnPoint = MagicWeaponManager.GetProjectileSpawnPoint(__instance);
-                    aimDir = MagicWeaponManager.AimDir;
+                    spawnPoint = MagicStaffManagers.MainHand.GetProjectileSpawnPoint(__instance);
+                    aimDir = MagicStaffManagers.MainHand.AimDir;
                     return false;
                 case EquipType.RuneSkyheim:
                     spawnPoint = VRPlayer.rightHand.transform.position;
@@ -350,7 +350,7 @@ namespace ValheimVRMod.Patches {
             }
             else if (EquipScript.IsDundrEquipped())
             {
-                __instance.m_character.ApplyPushback(-MagicWeaponManager.AimDir, recoilPushback);
+                __instance.m_character.ApplyPushback(-ShootingStaffManager.instance.AimDir, recoilPushback);
                 recoilPushback = 0f;
             }
         }

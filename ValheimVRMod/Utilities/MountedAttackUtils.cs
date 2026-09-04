@@ -28,7 +28,11 @@ namespace ValheimVRMod.Utilities
 
         public static void CheckMountedMagicAndCrossbowAttack()
         {
-            if (MagicWeaponManager.AttemptingAttack && !MagicWeaponManager.UseSwingForCurrentAttack())
+            bool attemptingNonSwingMagicAttack =
+                (MagicStaffManagers.OffHand != null && MagicStaffManagers.OffHand.AttemptingAttack) ||
+                (MagicStaffManagers.MainHand != null && MagicStaffManagers.MainHand.AttemptingAttack &&
+                 !(SwingableStaffManager.instance != null && SwingableStaffManager.instance.UseSwingForCurrentAttack()));
+            if (attemptingNonSwingMagicAttack)
             {
                 // Swing-launch attack is managed in SwingLaunchManager.
                 StartAttackIfRiding();

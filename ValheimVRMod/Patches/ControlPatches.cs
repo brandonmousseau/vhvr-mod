@@ -774,12 +774,12 @@ namespace ValheimVRMod.Patches {
                 blockHold = ShieldBlock.instance?.isBlocking() ?? false;
             }
 
-            if (EquipScript.CurrentOffHandEquipType() == EquipType.Magic && MagicWeaponManager.AttemptingAttack)
+            if (MagicStaffManagers.OffHand != null && MagicStaffManagers.OffHand.AttemptingAttack)
             {
                 //Check if there's secondary attack or not, if not, fallback to normal attack
-                if (MagicWeaponManager.IsSecondaryAttack)
+                if (MagicStaffManagers.OffHand.IsSecondaryAttack)
                 {
-                    var canSecondaryAttack = MagicWeaponManager.TrySecondaryAttack;
+                    var canSecondaryAttack = MagicStaffManagers.OffHand.TrySecondaryAttack;
                     attack = canSecondaryAttack;
                     attackHold = canSecondaryAttack;
                     secondaryAttack = canSecondaryAttack;
@@ -833,12 +833,12 @@ namespace ValheimVRMod.Patches {
 
                     break;
                 case EquipType.Magic:
-                    if (MagicWeaponManager.AttemptingAttack)
+                    if (MagicStaffManagers.MainHand != null && MagicStaffManagers.MainHand.AttemptingAttack)
                     {
                         //Check if there's secondary attack or not, if not, fallback to normal attack
-                        if (MagicWeaponManager.IsSecondaryAttack)
+                        if (MagicStaffManagers.MainHand.IsSecondaryAttack)
                         {
-                            var canSecondaryAttack = MagicWeaponManager.TrySecondaryAttack;
+                            var canSecondaryAttack = MagicStaffManagers.MainHand.TrySecondaryAttack;
                             attack = canSecondaryAttack;
                             attackHold = canSecondaryAttack;
                             secondaryAttack = canSecondaryAttack;
