@@ -108,6 +108,10 @@ namespace ValheimVRMod.Scripts
         private LayerMask piecelayer2;
         private LayerMask nonpiecelayer;
 
+        public static bool IsModdedStructure(string name)
+        {
+            return name == "MS_CustomShip(Clone)" || name == "MovableBase" || name.Contains("ValheimVehicles");
+        }
         private void Awake()
         {
             createRefBox();
@@ -1802,11 +1806,6 @@ namespace ValheimVRMod.Scripts
                 }
                 parentRotation = false;
             }
-        }
-
-        public bool IsModdedStructure(string name)
-        {
-            return name == "MS_CustomShip(Clone)" || name == "MovableBase";
         }
     }
 }

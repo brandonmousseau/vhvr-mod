@@ -6,7 +6,6 @@ using Valve.VR;
 namespace ValheimVRMod.Scripts.Block {
     public class ShieldBlock : Block {
 
-        public string itemName;
         private const float MIN_PARRY_ENTRY_SPEED = 1.5f;
         private const float MAX_PARRY_ANGLE = 150f;
         private const float PARRY_EXIT_SPEED = 0.2f;
@@ -18,7 +17,7 @@ namespace ValheimVRMod.Scripts.Block {
         private Vector3 scaleRef;
         private bool attemptingParry;
         private int parryCheckFixedUpateTicker = 0;
-        private Vector3 shieldFacing { get { return VHVRConfig.LeftHanded() ? VRPlayer.rightHand.transform.right : -VRPlayer.leftHand.transform.right; } }
+        private Vector3 shieldFacing { get { return VRPlayer.isRightHandMainWeaponHand ? -VRPlayer.leftHand.transform.right : VRPlayer.rightHand.transform.right; } }
 
         public static ShieldBlock instance;
 
@@ -51,14 +50,14 @@ namespace ValheimVRMod.Scripts.Block {
         {
             posRef = _meshCooldown.transform.localPosition;
             scaleRef = _meshCooldown.transform.localScale;
-            hand = VHVRConfig.LeftHanded() ? VRPlayer.rightHand.transform : VRPlayer.leftHand.transform;
-            offhand = VHVRConfig.LeftHanded() ? VRPlayer.leftHand.transform : VRPlayer.rightHand.transform;
+            hand = VRPlayer.mainWeaponHand.otherHand.transform;
+            offhand = VRPlayer.mainWeaponHand.transform;
         }
 
         public override void setBlocking(HitData hitData) {
             if (VHVRConfig.UseGrabButtonBlock())
             {
-                _blocking = SteamVR_Actions.valheim_Grab.GetState(VRPlayer.nonDominantHandInputSource);
+                _blocking = SteamVR_Actions.valheim_Grab.GetState(VRPlayer.secondaryWeaponHandInputSource);
             }
             else if (VHVRConfig.UseRealisticBlock())
             {
@@ -72,7 +71,8 @@ namespace ValheimVRMod.Scripts.Block {
         }
 
         private void CheckParryMotion() {
-            PhysicsEstimator handPhysicsEstimator = VHVRConfig.LeftHanded() ? VRPlayer.rightHandPhysicsEstimator : VRPlayer.leftHandPhysicsEstimator;
+            PhysicsEstimator handPhysicsEstimator =
+                VRPlayer.isRightHandMainWeaponHand ? VRPlayer.leftHandPhysicsEstimator : VRPlayer.rightHandPhysicsEstimator;
             float l = handPhysicsEstimator.GetLongestLocomotion(/* deltaT= */ 0.4f).magnitude;
             if (physicsEstimator.GetVelocity().magnitude > MIN_PARRY_ENTRY_SPEED && Vector3.Angle(physicsEstimator.GetVelocity(), shieldFacing) < MAX_PARRY_ANGLE) {
                 if (!attemptingParry)

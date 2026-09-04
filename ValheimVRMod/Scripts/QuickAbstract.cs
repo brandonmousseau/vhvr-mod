@@ -46,8 +46,8 @@ namespace ValheimVRMod.Scripts
         private Texture2D mapTexture;
         private Texture2D recenterTexture;
         private Texture2D chatTexture;
-        public static bool toggleMap;
         public static bool shouldStartChat;
+        private static float? toggleMapHoldCountdown;
 
         protected virtual void Awake()
         {
@@ -120,6 +120,14 @@ namespace ValheimVRMod.Scripts
                 this.callback = callback;
             }
 
+            public void useAsNoOp()
+            {
+                this.item = null;
+                this.itemName = "NoOp";
+                this.sprite = null;
+                this.callback = null;
+            }
+
             private void ResizeIcon()
             {
                 Vector3 fSize;
@@ -187,6 +195,16 @@ namespace ValheimVRMod.Scripts
 
         private void Update()
         {
+            if (toggleMapHoldCountdown.HasValue)
+            {
+                toggleMapHoldCountdown -= Time.deltaTime;
+                if (toggleMapHoldCountdown <= 0)
+                {
+                    toggleMapHoldCountdown = null;
+                    GetButtonPatchUtils.Release("Map");
+                }
+            }
+
             if (!quickMenuLocker)
             {
                 resetQuickMenuLocker();
@@ -480,32 +498,38 @@ namespace ValheimVRMod.Scripts
             {
                 return;
             }
-            for (int i = 0; i < 8; i++)
+
+            if (VHVRConfig.SplitQuickMenuRadialItemsBySlot())
             {
-                ItemDrop.ItemData item = inventory?.GetItemAt(i, 0);
-
-                if (item == null)
+                var isRightHand = VHVRConfig.LeftHanded() ^ isDominantHand;
+                var startIndex = isRightHand ? 4 : 0;
+                elementCount = 4;
+                for (var i = 0; i < elementCount; i++)
                 {
-                    continue;
+                    ItemDrop.ItemData item = inventory?.GetItemAt(startIndex + i, 0);
+                    if (item == null)
+                    {
+                        elements[i].useAsNoOp();
+                    }
+                    else
+                    {
+                        elements[i].useAsInventoryItemAndRefreshColor(inventory, item);
+                    }
                 }
-                if (VHVRConfig.SplitQuickMenuRadialItemsByWieldingHand())
+            } else {
+                for (int i = 0; i < 8; i++)
                 {
-                    if (EquipScript.IsDominantHandItem(item) ^ isDominantHand)
+                    ItemDrop.ItemData item = inventory?.GetItemAt(i, 0);
+                    if (item == null)
                     {
                         continue;
                     }
-                }
-                else if (VHVRConfig.SplitQuickMenuRadialItemsBySlot())
-                {
-                    var isRightHand = VHVRConfig.LeftHanded() ^ isDominantHand;
-                    if (i >= 4 ^ isRightHand)
-                    {
+                    if (VHVRConfig.SplitQuickMenuRadialItemsByWieldingHand() && EquipScript.CanUseAsMainHandItem(item) ^ isDominantHand) {
                         continue;
                     }
+                    elements[elementCount].useAsInventoryItemAndRefreshColor(inventory, item);
+                    elementCount++;
                 }
-
-                elements[elementCount].useAsInventoryItemAndRefreshColor(inventory, item);
-                elementCount++;
             }
         }
 
@@ -595,7 +619,8 @@ namespace ValheimVRMod.Scripts
                     Sprite.Create(mapTexture, new Rect(0.0f, 0.0f, mapTexture.width, mapTexture.height), new Vector2(0.5f, 0.5f), 500),
                     delegate ()
                     {
-                        toggleMap = true;
+                        GetButtonPatchUtils.Press("Map");
+                        toggleMapHoldCountdown = 0.25f;
                         return true;
                     });
             }

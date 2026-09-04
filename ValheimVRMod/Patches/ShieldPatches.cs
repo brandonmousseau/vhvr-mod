@@ -4,9 +4,6 @@ using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using Valve.VR;
-using Valve.VR.InteractionSystem;
-using UnityEngine;
-using System.Collections;
 
 namespace ValheimVRMod.Patches {
     
@@ -52,7 +49,7 @@ namespace ValheimVRMod.Patches {
             if (ShieldBlock.instance?.isBlocking() ?? false)
             {
                 blocking = true;
-                handHapticTrigger = VHVRConfig.LeftHanded() ? HandHapticTrigger.RightHand : HandHapticTrigger.LeftHand;
+                handHapticTrigger = VRPlayer.isRightHandMainWeaponHand ? HandHapticTrigger.LeftHand : HandHapticTrigger.RightHand;
             }
             else if (WeaponBlock.instance?.isBlocking() ?? false)
             {
@@ -178,7 +175,21 @@ namespace ValheimVRMod.Patches {
     class PatchRPCDamager {
         static void Prefix(Character __instance, HitData hit) {
 
-            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls()) {
+            if (__instance != Player.m_localPlayer) {
+                return;
+            }
+
+            var vrCam = VRPlayer.vrCam;
+            if (vrCam != null)
+            {
+                var fadingManager = vrCam.GetComponent<FadingManager>();
+                if (fadingManager != null)
+                {
+                    fadingManager.OnPlayerInjure();
+                }
+            }
+            
+            if (!VHVRConfig.UseVrControls()) {
                 return;
             }
 
@@ -206,6 +217,7 @@ namespace ValheimVRMod.Patches {
             FistBlock.instance?.resetBlocking();
         }
     }
+
     [HarmonyPatch(typeof(Character),nameof(Character.AddStaggerDamage))]
     class PatchStaggerDamage
     {

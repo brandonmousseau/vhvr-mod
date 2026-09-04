@@ -2,10 +2,8 @@ using System;
 using HarmonyLib;
 using System.Reflection;
 using UnityEngine;
-using ValheimVRMod.VRCore;
 using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
-using Valve.VR;
 using System.Collections.Generic;
 using System.Reflection.Emit;
 
@@ -15,8 +13,8 @@ namespace ValheimVRMod.Patches
     enum HandItemPatchTarget
     {
         Both = 0,
-        DominantHand = 1,
-        NonDominantHand = 2
+        MainHandOnly = 1,
+        OffHandOnly = 2
     }
 
     [HarmonyPatch(typeof(Humanoid), "HideHandItems")]
@@ -25,12 +23,12 @@ namespace ValheimVRMod.Patches
         
         private static MethodInfo setupVisEquipmentMethod = AccessTools.Method(typeof(Humanoid), "SetupVisEquipment");
         
-        private static HandItemPatchTarget shouldPatch;
+        private static HandItemPatchTarget shouldChange;
 
-        public static void HideLocalPlayerHandItem(bool isDominantHand) {
-            shouldPatch = isDominantHand ? HandItemPatchTarget.DominantHand : HandItemPatchTarget.NonDominantHand;
+        public static void HideLocalPlayerHandItem(bool isMainHandItem) {
+            shouldChange = isMainHandItem ? HandItemPatchTarget.MainHandOnly : HandItemPatchTarget.OffHandOnly;
             Player.m_localPlayer.HideHandItems();
-            shouldPatch = HandItemPatchTarget.Both;      
+            shouldChange = HandItemPatchTarget.Both;      
         }
 
         static bool Prefix(ref Humanoid __instance,
@@ -47,17 +45,14 @@ namespace ValheimVRMod.Patches
                 return false;
             }
 
-            bool hideDominantHandItem = (shouldPatch == HandItemPatchTarget.DominantHand || shouldPatch == HandItemPatchTarget.Both);
-            bool hideNonDominantHandItem = (shouldPatch == HandItemPatchTarget.NonDominantHand || shouldPatch == HandItemPatchTarget.Both);
-
-            if (hideDominantHandItem)
+            if (shouldChange != HandItemPatchTarget.OffHandOnly)
             {
                 var itemToHide = ___m_rightItem != null ? ___m_rightItem : ___m_hiddenRightItem;
                 __instance.UnequipItem(___m_rightItem);
                 ___m_hiddenRightItem = itemToHide;
             }
 
-            if (hideNonDominantHandItem)
+            if (shouldChange != HandItemPatchTarget.MainHandOnly)
             {
                 var itemToHide = ___m_leftItem != null ? ___m_leftItem : ___m_hiddenLeftItem;
                 __instance.UnequipItem(___m_leftItem);
@@ -75,13 +70,18 @@ namespace ValheimVRMod.Patches
     [HarmonyPatch(typeof(Humanoid), "ShowHandItems")]
     class PatchShowHandItems
     {
-        private static HandItemPatchTarget shouldPatch;
+        private static HandItemPatchTarget shouldChange;
 
-        public static void ShowLocalPlayerHandItem(bool isDominantHand)
+        public static bool ShowLocalPlayerHandItem(bool isMainHandItem)
         {
-            shouldPatch = isDominantHand ? HandItemPatchTarget.DominantHand : HandItemPatchTarget.NonDominantHand;
+            if (isMainHandItem ? Player.m_localPlayer.m_hiddenRightItem == null : Player.m_localPlayer.m_hiddenLeftItem == null)
+            {
+                return false;
+            }
+            shouldChange = isMainHandItem ? HandItemPatchTarget.MainHandOnly : HandItemPatchTarget.OffHandOnly;
             Player.m_localPlayer.ShowHandItems();
-            shouldPatch = HandItemPatchTarget.Both;
+            shouldChange = HandItemPatchTarget.Both;
+            return true;
         }
 
         static bool Prefix(ref Humanoid __instance,
@@ -99,18 +99,14 @@ namespace ValheimVRMod.Patches
                 return false;
             }
 
-            bool showDominantHandItem = (shouldPatch == HandItemPatchTarget.DominantHand || shouldPatch == HandItemPatchTarget.Both);
-            bool showNonDominantHandItem = (shouldPatch == HandItemPatchTarget.NonDominantHand || shouldPatch == HandItemPatchTarget.Both);
-
-            if (showDominantHandItem && ___m_hiddenRightItem != null)
+            if (shouldChange != HandItemPatchTarget.OffHandOnly && ___m_hiddenRightItem != null)
             {
                 ___m_hiddenRightItem = null;
                 __instance.EquipItem(hiddenRightItem);
                 ___m_hiddenLeftItem = hiddenLeftItem;
                 __instance.SetupVisEquipment(__instance.m_visEquipment, false);
             }
-
-            if (showNonDominantHandItem && ___m_hiddenLeftItem != null)
+            if (shouldChange != HandItemPatchTarget.MainHandOnly && ___m_hiddenLeftItem != null)
             {
                 ___m_hiddenLeftItem = null;
                 __instance.EquipItem(hiddenLeftItem);
@@ -120,7 +116,7 @@ namespace ValheimVRMod.Patches
 
             ___m_zanim.SetTrigger("equip_hip");
 
-            shouldPatch = HandItemPatchTarget.Both; // Patching is done.
+            shouldChange = HandItemPatchTarget.Both; // Patching is done.
 
             return false;
         }

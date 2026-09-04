@@ -24,7 +24,7 @@ namespace ValheimVRMod.Scripts
                 harpoonHidingTimer -= Time.fixedDeltaTime;
             }
 
-            if (EquipScript.getRight() == EquipType.SpearChitin)
+            if (EquipScript.CurrentMainHandEquipType() == EquipType.SpearChitin)
             {
                 MeshRenderer spearRenderer = throwableManager.GetComponent<MeshRenderer>();
                 spearRenderer.shadowCastingMode = (harpoonHidingTimer > 0 && !ThrowableManager.isAiming) ? UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly : UnityEngine.Rendering.ShadowCastingMode.On;

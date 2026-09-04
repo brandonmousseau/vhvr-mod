@@ -51,6 +51,12 @@ namespace Valve.VR
 
         [Description("/user/treadmill")]
         Treadmill,
+
+        [Description("/user/ankle/left")]
+        LeftAnkle,
+
+        [Description("/user/ankle/right")]
+        RightAnkle,
     }
 }
 

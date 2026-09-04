@@ -13,19 +13,35 @@ namespace ValheimVRMod.Scripts
     class MagicWeaponManager
     {
 
-        private static readonly HashSet<string> SWING_LAUNCH_MAGIC_STAFF_NAMES =
+        // Staves that can either swing-launch or aim-and-shoot.
+        private static readonly HashSet<string> SWING_LAUNCHABLE_MAGIC_STAFF_NAMES =
             new HashSet<string>(new string[] {
                 "$item_stafffireball", "$item_staffgreenroots", "$item_staffclusterbomb", "$item_staffredtroll" });
         private static readonly HashSet<string> OPPOSITE_HAND_SUMMONER_NAMES =
             new HashSet<string>(new string[] { "$item_staffskeleton" });
 
-        private static bool IsMagicWeaponEquipped { get { return EquipScript.getLeft() == EquipType.Magic || EquipScript.getRight() == EquipType.Magic; } }
+        private static bool IsMagicWeaponEquipped { get { return EquipScript.CurrentOffHandEquipType() == EquipType.Magic || EquipScript.CurrentMainHandEquipType() == EquipType.Magic; } }
         // Right-handed weapons in vanilla game is treated as domininant hand weapon in VHVR.
-        private static bool IsDominantHandWeapon { get { return EquipScript.getRight() == EquipType.Magic; } }
+        private static bool IsDominantHandWeapon { get { return EquipScript.CurrentMainHandEquipType() == EquipType.Magic; } }
 
-        private static bool IsRightHandWeapon { get { return IsDominantHandWeapon ^ VHVRConfig.LeftHanded(); } }
-        public static SteamVR_LaserPointer WeaponHandPointer { get { return IsRightHandWeapon ? VRPlayer.rightPointer : VRPlayer.leftPointer; } }
-        protected static SteamVR_Action_Boolean AttackTriggerAction { get { return IsRightHandWeapon ? SteamVR_Actions.valheim_Use : SteamVR_Actions.valheim_UseLeft; } }
+        private static bool IsInRightHand { get { return IsDominantHandWeapon ^ !VRPlayer.isRightHandMainWeaponHand; } }
+        public static SteamVR_LaserPointer WeaponHandPointer { get { return IsInRightHand ? VRPlayer.rightPointer : VRPlayer.leftPointer; } }
+        protected static SteamVR_Action_Boolean AttackTriggerAction { get { return IsInRightHand ? SteamVR_Actions.valheim_Use : SteamVR_Actions.valheim_UseLeft; } }
+
+        protected static SteamVR_Action_Boolean SecondaryTriggerAction { get { return IsInRightHand ? SteamVR_Actions.valheim_UseLeft : SteamVR_Actions.valheim_Use; } }
+
+        // The rear hand trigger shoots at aiming direction whereas the front hand trigger swing-launches.
+        private static SteamVR_Action_Boolean RearHandTriggerAction { get { return SwingLaunchManager.isRightHandRear ? SteamVR_Actions.valheim_Use : SteamVR_Actions.valheim_UseLeft; } }
+        private static SteamVR_Input_Sources RearHandInputSource { get { return SwingLaunchManager.isRightHandRear ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand; } }
+
+        private static SteamVR_Action_Boolean ShootingTriggerAction
+        {
+            get
+            {
+                UpdateSwingAttackMode();
+                return currentSwingAttackMode == SwingAttackMode.AimAndShoot ? currentAttackTriggerAction : AttackTriggerAction;
+            }
+        }
 
         public static Vector3 AimDir
         {
@@ -33,7 +49,7 @@ namespace ValheimVRMod.Scripts
             {
                 if (CanSummonWithOppositeHand())
                 {
-                    return VHVRConfig.LeftHanded() ? VRPlayer.leftHandBone.up : VRPlayer.rightHandBone.up;
+                    return VRPlayer.isRightHandMainWeaponHand ? VRPlayer.rightHandBone.up : VRPlayer.leftHandBone.up;
                 }
                 if (UseSwingForCurrentAttack())
                 {
@@ -45,9 +61,14 @@ namespace ValheimVRMod.Scripts
             }
         }
 
+        private static string CurrentMagicWeaponName()
+        {
+            return Player.m_localPlayer?.GetRightItem()?.m_shared?.m_name;
+        }
+
         public static bool IsSwingLaunchEnabled()
         {
-            return SWING_LAUNCH_MAGIC_STAFF_NAMES.Contains(Player.m_localPlayer?.GetRightItem()?.m_shared?.m_name);
+            return SWING_LAUNCHABLE_MAGIC_STAFF_NAMES.Contains(CurrentMagicWeaponName());
         }
 
         public static bool CanSummonWithOppositeHand()
@@ -65,7 +86,7 @@ namespace ValheimVRMod.Scripts
                     return false;
                 }
 
-                if (EquipScript.isDundrEquipped())
+                if (EquipScript.IsDundrEquipped())
                 {
                     switch (LocalWeaponWield.LocalPlayerTwoHandedState)
                     {
@@ -82,7 +103,39 @@ namespace ValheimVRMod.Scripts
                     return true;
                 }
 
-                return UseSwingForCurrentAttack() ? SwingLaunchManager.isThrowing : AttackTriggerAction.state;
+                return UseSwingForCurrentAttack() ? SwingLaunchManager.isThrowing : ShootingTriggerAction.state;
+            }
+        }
+        
+        public static bool IsSecondaryAttack
+        {
+            get
+            {
+                if (!IsMagicWeaponEquipped)
+                {
+                    return false;
+                }
+                //Check if there's Secondary Attack or not
+                var secondaryAttack = Player.m_localPlayer?.GetRightItem()?.m_shared.m_secondaryAttack;
+                return SecondaryTriggerAction.state && secondaryAttack.m_attackAnimation != "";
+            }
+        }
+        public static bool TrySecondaryAttack
+        {
+            get
+            {
+                if (!IsMagicWeaponEquipped)
+                {
+                    return false;
+                }
+                var secondaryAttack = Player.m_localPlayer?.GetRightItem()?.m_shared.m_secondaryAttack;
+                var isEitrEnough = false;
+                if (SecondaryTriggerAction.state && secondaryAttack.m_attackAnimation != "")
+                {
+                    //Check If eitr enough or not
+                    isEitrEnough = Player.m_localPlayer.TryUseEitr(secondaryAttack.m_attackEitr);
+                }
+                return isEitrEnough;
             }
         }
 
@@ -101,7 +154,7 @@ namespace ValheimVRMod.Scripts
         {
             var offsetDirection =
                 CanSummonWithOppositeHand() ?
-                (VHVRConfig.LeftHanded() ? VRPlayer.leftHandBone.up : VRPlayer.rightHandBone.up) :
+                (VRPlayer.isRightHandMainWeaponHand ? VRPlayer.rightHandBone.up : VRPlayer.leftHandBone.up) :
                 LocalWeaponWield.weaponForward.normalized;
             var offsetAmount =
                 (new Vector3(attack.m_attackOffset, attack.m_attackRange, attack.m_attackHeight)).magnitude;
@@ -120,11 +173,51 @@ namespace ValheimVRMod.Scripts
             // return VRPlayer.dominantHand.transform.position + offsetDirection * offsetAmount;
         }
 
+        private enum SwingAttackMode { None, AimAndShoot, SwingLaunch }
+
+        private static SwingAttackMode currentSwingAttackMode = SwingAttackMode.None;
+        private static SteamVR_Action_Boolean currentAttackTriggerAction;
+
+        private static void UpdateSwingAttackMode()
+        {
+            if (!IsSwingLaunchEnabled())
+            {
+                currentSwingAttackMode = SwingAttackMode.None;
+                return;
+            }
+
+            if (LocalWeaponWield.isCurrentlyTwoHanded())
+            {
+                if (RearHandTriggerAction.GetStateDown(RearHandInputSource) && !SwingLaunchManager.frontHandTriggerAction.state)
+                {
+                    currentSwingAttackMode = SwingAttackMode.AimAndShoot;
+                    currentAttackTriggerAction = RearHandTriggerAction;
+                }
+                else if (SwingLaunchManager.frontHandTriggerAction.GetStateDown(SwingLaunchManager.frontHandInputSource) && !RearHandTriggerAction.state)
+                {
+                    currentSwingAttackMode = SwingAttackMode.SwingLaunch;
+                    currentAttackTriggerAction = SwingLaunchManager.frontHandTriggerAction;
+                }
+            }
+            else
+            {
+                // Single-handed: swing-launch only if grip is held down the moment the trigger is pressed.
+                SteamVR_Input_Sources mainHandInputSource = VRPlayer.mainWeaponHandInputSource;
+                if (AttackTriggerAction.GetStateDown(mainHandInputSource))
+                {
+                    currentSwingAttackMode =
+                        SteamVR_Actions.valheim_Grab.GetState(mainHandInputSource) ?
+                        SwingAttackMode.SwingLaunch :
+                        SwingAttackMode.AimAndShoot;
+                    currentAttackTriggerAction = AttackTriggerAction;
+                }
+            }
+        }
+
         public static bool UseSwingForCurrentAttack()
         {
-            // Disable swing launch if the staff is held with two hands like a rifle
-            // (dominant hand behind the other hand).
-            return IsSwingLaunchEnabled() && !LocalWeaponWield.IsDominantHandBehind;
+            UpdateSwingAttackMode();
+            return currentSwingAttackMode == SwingAttackMode.SwingLaunch;
         }
 
         public class SummonByMovingHandUpward : MonoBehaviour
@@ -136,11 +229,10 @@ namespace ValheimVRMod.Scripts
             private bool hasSummonedInCurrentMotion = false;
 
             public static bool pendingSummon = false;
-            public bool isDominantHand = true;
 
             void FixedUpdate()
             {
-                var inputSource = isDominantHand ? VRPlayer.dominantHandInputSource : VRPlayer.nonDominantHandInputSource;
+                var inputSource = VRPlayer.mainWeaponHandInputSource;
                 if (SteamVR_Actions.valheim_Use.GetState(inputSource))
                 {
                     if (hasSummonedInCurrentMotion)
@@ -148,7 +240,7 @@ namespace ValheimVRMod.Scripts
                         return;
                     }
 
-                    float handHeight = VRPlayer.dominantHand.transform.position.y;
+                    float handHeight = VRPlayer.mainWeaponHand.transform.position.y;
                     if (handHeight < currentMaxHandHight)
                     {
                         // Pause summoning unless the hand is moving upward.
@@ -157,13 +249,13 @@ namespace ValheimVRMod.Scripts
                     currentMaxHandHight = handHeight;
 
                     var physicsEstimator =
-                        (VHVRConfig.LeftHanded() ^ isDominantHand) ?
+                        VRPlayer.isRightHandMainWeaponHand ?
                         VRPlayer.rightHandPhysicsEstimator :
                         VRPlayer.leftHandPhysicsEstimator;
                     if (physicsEstimator.GetVelocity().y > MIN_SUMMONING_HAND_SPEED)
                     {
                         summonTimer += Time.fixedDeltaTime;
-                        VRPlayer.dominantHand.hapticAction.Execute(0, 0.1f, 50, 0.3f, inputSource);
+                        VRPlayer.mainWeaponHand.hapticAction.Execute(0, 0.1f, 50, 0.3f, inputSource);
                     }
 
                     if (summonTimer > SUMMON_TIME)
