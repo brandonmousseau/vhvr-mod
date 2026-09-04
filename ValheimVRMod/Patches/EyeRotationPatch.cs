@@ -4,6 +4,7 @@ using ValheimVRMod.VRCore;
 using ValheimVRMod.Utilities;
 using System.Reflection;
 using System.Collections.Generic;
+using ValheimVRMod.Scripts;
 
 namespace ValheimVRMod.Patches
 {
@@ -24,7 +25,7 @@ namespace ValheimVRMod.Patches
     [HarmonyPatch(typeof(Player), nameof(Player.SetMouseLook))]
     class Player_SetMouseLook_Patch
     {
-        public static float? previousHeadLocalRotation;
+        public static float? previousTrackedLocalAngle;
         public static Quaternion lastAttachRot;
         public static GameObject headLookRef;
         public static bool wasAttached;
@@ -98,17 +99,16 @@ namespace ValheimVRMod.Patches
                 wasAttached = false;
             }
 
-            if (Player.m_localPlayer.InDodge() && !VHVRConfig.ImmersiveDodgeRoll())
+            if (!Player_Rotation_Patch.ShouldFaceLookDirection(__instance))
             {
                 return;
             }
 
-            // Calculate the current head local rotation
-            float currentHeadLocalRotation = Valve.VR.InteractionSystem.Player.instance.hmdTransform.localRotation.eulerAngles.y;
-            if (previousHeadLocalRotation.HasValue)
+            float currentLocalAngle = (Quaternion.Inverse(Valve.VR.InteractionSystem.Player.instance.hmdTransform.parent.rotation) * VRPlayer.pelvis.rotation).eulerAngles.y;
+            if (previousTrackedLocalAngle.HasValue)
             {
                 // Find the difference between the current rotation and previous rotation
-                float deltaRotation = currentHeadLocalRotation - previousHeadLocalRotation.Value;
+                float deltaRotation = currentLocalAngle - previousTrackedLocalAngle.Value;
 
                 // Rotate the look yaw by the amount the player rotated their head since last iteration
                 ___m_lookYaw *= Quaternion.AngleAxis(deltaRotation, Vector3.up);
@@ -119,7 +119,7 @@ namespace ValheimVRMod.Patches
             }
 
             // Save the current rotation for use in next iteration
-            previousHeadLocalRotation = currentHeadLocalRotation;
+            previousTrackedLocalAngle = currentLocalAngle;
         }
 
         public static void Postfix(Player __instance, ref Vector3 ___m_lookDir)
@@ -178,16 +178,24 @@ namespace ValheimVRMod.Patches
     {
         public static Quaternion attachmentIndependentRoomRotation;
 
+        private static float lastPhysicsSyncAngle;
+
         [HarmonyPatch(typeof(Player), nameof(Player.Update))]
         class Player_Update_RotationPatch
         {
             public static void Postfix(Player __instance)
             {
-                if (!ShouldFaceLookDirection(__instance))
+                if (ShouldFaceLookDirection(__instance))
                 {
-                    return;
+                    __instance.transform.rotation = __instance.m_lookYaw;
+
+                    if (Player_SetMouseLook_Patch.previousTrackedLocalAngle != null &&
+                        Mathf.Abs(Player_SetMouseLook_Patch.previousTrackedLocalAngle.Value - lastPhysicsSyncAngle) > 30)
+                    {
+                        Physics.SyncTransforms();
+                        lastPhysicsSyncAngle = Player_SetMouseLook_Patch.previousTrackedLocalAngle.Value;
+                    }
                 }
-                __instance.FaceLookDirection();
             }
         }
 
@@ -196,11 +204,10 @@ namespace ValheimVRMod.Patches
         {
             public static void Postfix(Player __instance)
             {
-                if (!ShouldFaceLookDirection(__instance))
+                if (ShouldFaceLookDirection(__instance))
                 {
-                    return;
+                    __instance.transform.rotation = __instance.m_lookYaw;
                 }
-                __instance.FaceLookDirection();
             }
         }
 
@@ -209,18 +216,21 @@ namespace ValheimVRMod.Patches
         {
             public static void Postfix(Player __instance)
             {
-                if (!ShouldFaceLookDirection(__instance))
+                if (ShouldFaceLookDirection(__instance))
                 {
-                    return;
+                    __instance.transform.rotation = __instance.m_lookYaw;
                 }
-                __instance.FaceLookDirection();
             }
         }
 
-        static bool ShouldFaceLookDirection(Player player)
+        public static bool ShouldFaceLookDirection(Player player)
         {
             // TODO: Consider disabling face-look-direction patch whenever VRPlayer.attachedToPlayer is false as opposed to just when PlayerCustomizaton.IsBarberGuiVisible().
-            return !VHVRConfig.NonVrPlayer() && player == Player.m_localPlayer && !PlayerCustomizaton.IsBarberGuiVisible() && !VRPlayer.inImmersiveDodge && !player.IsAttached();
+            return !VHVRConfig.NonVrPlayer() &&
+                player == Player.m_localPlayer &&
+                !PlayerCustomizaton.IsBarberGuiVisible() &&
+                !VRPlayer.inImmersiveDodge &&
+                !player.IsAttached();
         }
 
         /// <summary>
@@ -253,7 +263,7 @@ namespace ValheimVRMod.Patches
                         upTarget = Vector3.up;
                     }
                     __instance.m_lookYaw = Quaternion.LookRotation(attachmentHeading, upTarget);
-                    VRPlayer.headPositionInitialized = false;
+                    VRPlayer.RequestRecentering();
                     VRPlayer.vrPlayerInstance?.ResetRoomscaleCamera();
                     attachmentIndependentRoomRotation = Quaternion.Euler(0, VRPlayer.instance.transform.rotation.eulerAngles.y, 0);
                 }
@@ -289,14 +299,14 @@ namespace ValheimVRMod.Patches
                 {
                     var ship = player.GetStandingOnShip();
                     var movableBase = player.transform.parent;
-                    if (ship || (movableBase && movableBase?.name == "MovableBase"))
+                    if (ship || (movableBase && BuildingManager.IsModdedStructure(movableBase?.name)))
                     {
                         Transform referenceUp = null;
                         if (ship)
                         {
                             referenceUp = ship.transform;
                         }
-                        else if (movableBase && movableBase?.name == "MovableBase")
+                        else if (movableBase && BuildingManager.IsModdedStructure(movableBase?.name))
                         {
                             referenceUp = movableBase.transform;
                         }
@@ -391,9 +401,9 @@ namespace ValheimVRMod.Patches
                 attachmentHeading.y = 0;
                 attachmentHeading.Normalize();
                 __instance.m_lookYaw = Quaternion.LookRotation(attachmentHeading, Vector3.up);
-                VRPlayer.headPositionInitialized = false;
+                VRPlayer.RequestRecentering();
                 VRPlayer.vrPlayerInstance?.ResetRoomscaleCamera();
-                Player_SetMouseLook_Patch.previousHeadLocalRotation = null;
+                Player_SetMouseLook_Patch.previousTrackedLocalAngle = null;
             }
         }
 

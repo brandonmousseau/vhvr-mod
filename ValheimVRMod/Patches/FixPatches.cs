@@ -1,7 +1,10 @@
 using System.Collections.Generic;
 using HarmonyLib;
+using UnityEngine;
+using ValheimVRMod.VRCore;
 using ValheimVRMod.Utilities;
 using Valve.VR.InteractionSystem;
+using Valheim.SettingsGui;
 
 namespace ValheimVRMod.Patches {
     [HarmonyPatch(typeof(Hand), "FixedUpdate")]
@@ -36,7 +39,7 @@ namespace ValheimVRMod.Patches {
         }
     }
 
-    [HarmonyPatch(typeof(VirtualFrameBuffer), nameof(VirtualFrameBuffer.UpdateCurrentRenderScale))]
+    [HarmonyPatch(typeof(UpscaledFrameBuffer), nameof(UpscaledFrameBuffer.UpdateCurrentRenderScale))]
     class PatchUpdateCurrentRenderScale
     {
         static bool Prefix()
@@ -45,9 +48,114 @@ namespace ValheimVRMod.Patches {
             {
                 return true;
             }
-            // A render scale less than 1 would cause the game world disappear in VR. Force it to be 1 since we do not support any other value.
-            VirtualFrameBuffer.m_global3DRenderScale = 1f;
+            // Force-disable frame scaling since it would cause the game world to disappear in VR.
+            UpscaledFrameBuffer.m_targetResolutionVertical = int.MaxValue;
             return false;
+        }
+    }
+
+    [HarmonyPatch(typeof(Player), nameof(Player.TeleportTo))]
+    class WaterLevelFixPatch
+    {
+        public static void Postfix(Player __instance, bool __result)
+        {
+            if (Player.m_localPlayer != __instance || VHVRConfig.NonVrPlayer() || !__result)
+            {
+                return;
+            }
+
+            __instance.m_liquids[(int)LiquidType.Water] = 0;
+            __instance.SetLiquidLevel(-10000, LiquidType.Water, null);
+        }
+    }
+
+
+    [HarmonyPatch(typeof(Player), nameof(Player.Start))]
+    class PlayerDriftFixPatch
+    {
+        public static void Postfix(Player __instance)
+        {
+            if (Player.m_localPlayer != __instance || VHVRConfig.NonVrPlayer())
+            {
+                return;
+            }
+
+            __instance.gameObject.GetOrAddComponent<PlayerDriftFix>();
+        }
+    }
+
+    [HarmonyPatch(typeof(GraphicsSettings), nameof(GraphicsSettings.UpdateSettingAvailability))]
+    class GraphicsSettingsUpdateSettingAvailabilityPatch
+    {
+        public static bool Prefix(GraphicsSettings __instance)
+        {
+            // TODO: investigate why clicking OK on vanilla settings after opening and closing VHVR settings will result in a null instance here.
+            //Stack trace:
+            // UnityEngine.Bindings.ThrowHelper.ThrowNullReferenceException(System.Object obj)(at < 89f741081c874c65b780dbd6a0d8d33e >:0)
+            // UnityEngine.Component.get_gameObject()(at < 89f741081c874c65b780dbd6a0d8d33e >:0)
+            // Valheim.SettingsGui.GraphicsSettings.SetChangeable(System.Boolean isChangeable, UnityEngine.UI.Selectable ui)(at<f02a2207632846a3a0012c7f73401843>:0)
+            // (wrapper dynamic - method) Valheim.SettingsGui.GraphicsSettings.DMD<Valheim.SettingsGui.GraphicsSettings::UpdateSettingAvailability>(Valheim.SettingsGui.GraphicsSettings, GraphicsModeConfiguration)
+            // Valheim.SettingsGui.GraphicsSettings.UpdateUI()(at<f02a2207632846a3a0012c7f73401843>:0)
+            // GraphicsSettingsManager.ApplyGraphicsSettingsToCurrentSession()(at<f02a2207632846a3a0012c7f73401843>:0)
+            // GraphicsSettingsManager.SaveAndApplyGraphicsSettingsCustom(GraphicsSettingsState & settings)(at<f02a2207632846a3a0012c7f73401843>:0)
+            // Valheim.SettingsGui.GraphicsSettings.OnOkAsync(Valheim.SettingsGui.OkActionCompletedHandler okActionCompletedCallback)(at<f02a2207632846a3a0012c7f73401843>:0)
+            // (wrapper dynamic - method) Settings.DMD<Settings::OnOk>(Settings)
+            return __instance != null;
+        }
+    }
+
+
+    [HarmonyPatch(typeof(Character), nameof(Character.Decrement))]
+    class CharacterDecrementPatch
+    {
+        public static void Postfix(Character __instance, ref int __result, LiquidType type)
+        {
+            if ((Character) Player.m_localPlayer != __instance || VHVRConfig.NonVrPlayer())
+            {
+                return;
+            }
+
+            if (__result < 0 && type == LiquidType.Water)
+            {
+                __instance.m_liquids[(int)LiquidType.Water] = 0;
+                __result = 0;
+            }
+        }
+    }
+
+    /**
+     * Remove attack animation by speeding it up. It only applies to attack moves,
+     * because the original method switches it back to normal for other animations
+     */
+    [HarmonyPatch(typeof(CharacterAnimEvent), nameof(CharacterAnimEvent.CustomFixedUpdate))]
+    class PatchFixedUpdate
+    {
+
+        public static float lastSpeedUp = 1f;
+        static void Prefix(Character ___m_character, ref Animator ___m_animator)
+        {
+            if (___m_character != Player.m_localPlayer || !VHVRConfig.UseVrControls())
+            {
+                return;
+            }
+
+            if (!EquipScript.ShouldSkipAttackAnimation() || ___m_character.IsStaggering() || !VRPlayer.attachedToPlayer)
+            {
+                ___m_animator.speed = 1f;
+                return;
+            }
+
+            if (___m_character.IsSitting() && !___m_character.m_attack && !___m_character.m_attackHold)
+            {
+                ___m_animator.speed = 1f;
+                return;
+            }
+
+            if (___m_animator.speed != 1 && ___m_animator.speed != 1000)
+            {
+                lastSpeedUp = ___m_animator.speed;
+            }
+            ___m_animator.speed = 1000f;
         }
     }
 }

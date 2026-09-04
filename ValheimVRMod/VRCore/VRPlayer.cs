@@ -1,22 +1,24 @@
-using static ValheimVRMod.Utilities.LogUtils;
-
 using AmplifyOcclusion;
-using System.Reflection;
+using PartyCSharpSDK;
 using RootMotion.FinalIK;
+using System.Collections.Generic;
+using System.Reflection;
 using UnityEngine;
 using UnityEngine.PostProcessing;
 using UnityEngine.SceneManagement;
 using UnityEngine.SpatialTracking;
 using UnityStandardAssets.ImageEffects;
-using ValheimVRMod.Scripts;
 using ValheimVRMod.Patches;
+using ValheimVRMod.Scripts;
+using ValheimVRMod.Scripts.Block;
 using ValheimVRMod.Utilities;
+using ValheimVRMod.VRCore.BodyTracking;
 using ValheimVRMod.VRCore.UI;
 using Valve.VR;
 using Valve.VR.Extras;
 using Valve.VR.InteractionSystem;
+using static ValheimVRMod.Utilities.LogUtils;
 using Pose = ValheimVRMod.Utilities.Pose;
-using ValheimVRMod.Scripts.Block;
 
 /**
  * VRPlayer manages instantiating the SteamVR Player
@@ -47,26 +49,43 @@ namespace ValheimVRMod.VRCore
         // This layer must be set in the hand model prefab in the
         // Unity AssetBundle project too. If they don't match,
         // the hands won't be rendered by the handsCam.
-        private static Vector3 FIRST_PERSON_OFFSET = Vector3.zero;
+        private static Vector3 firstPersonOffset = Vector3.zero;
         private static float CROUCH_HEIGHT_ADJUST = -0.4f;
         private static float RIDE_HEIGHT_ADJUST = -0.85f;
-        private static float SIT_ATTACH_HEIGHT_ADJUST = -0.4f;
+        private static float SIT_ATTACH_HEIGHT_ADJUST = -0.6f;
         private static float SIT_HEIGHT_ADJUST = -0.7f;
         private static Vector3 THIRD_PERSON_0_OFFSET = new Vector3(0f, 1.0f, -0.6f);
         private static Vector3 THIRD_PERSON_1_OFFSET = new Vector3(0f, 1.4f, -1.5f);
         private static Vector3 THIRD_PERSON_2_OFFSET = new Vector3(0f, 1.9f, -2.6f);
         private static Vector3 THIRD_PERSON_3_OFFSET = new Vector3(0f, 3.2f, -4.4f);
         private static Vector3 THIRD_PERSON_CONFIG_OFFSET = Vector3.zero;
-        private const float NECK_OFFSET = 0.2f;
+        private const float NECK_OFFSET = 0.25f;
         public const float ROOMSCALE_STEP_ANIMATION_SMOOTHING = 0.3f;
         public const float ROOMSCALE_ANIMATION_WEIGHT = 2f;
 
-        public static VRIK vrikRef { get { return _vrik; } }
-        private static VRIK _vrik;
+        public static float MainCameraFarClipPlane { get; private set; }
+        public static VRIK vrikRef { get; private set; }
+        // Transform following the waist tracker as resolved at the last caliberation. Cheap
+        // per-frame accessor; null when no waist tracker is in use. See ResolveHipTransform.
+        private static Transform hipTrackerTransform { get { return resolvedHipTransform; } }
+        private static MeshRenderer hipTrackerRenderer;
+        public static Transform trackedPelvis { get; private set; }
+        public static Transform pelvis { get; private set; }
+        private Vector3 roomscaleLocomotive {
+            get {
+                var hip = hipTrackerTransform;
+                return VHVRConfig.IsHipTrackingEnabled() && hip != null ?
+                    hip.localPosition : _vrCam.transform.localPosition;
+            }
+        }
+        private Vector3 initialRoomscaleLocomotiveOffsetFromHead;
 
+        public static Camera vrCam { get { return vrPlayerInstance != null ? vrPlayerInstance._vrCam : null; } }
         public static float referencePlayerHeight { get; private set; }
+        public static bool startingSit { get; private set; }
         public static bool isRoomscaleSneaking { get { return _isRoomscaleSneaking; } }
         private static bool _isRoomscaleSneaking = false;
+        public static bool offHandWield; // Whether the player is temporarily wielding weapon using off-hand
 
         private static GameObject _prefab;
         private static GameObject _instance;
@@ -76,16 +95,14 @@ namespace ValheimVRMod.VRCore
         private Camera _vrCam;
         private Camera _handsCam;
         private Camera _skyboxCam;
-        private Camera _followCamera;
-        private Vector3 followCameraVelocity;
-        private MeshRenderer cameraDot;
+        private Camera _thirdPersonCamera;
 
         //Roomscale movement variables
         private Transform _vrCameraRig;
-        private Vector3 _lastCamPosition = Vector3.zero;
+        private Vector3 lastRoomscaleLocomotivePosition = Vector3.zero;
         private Vector3 _lastPlayerPosition = Vector3.zero;
         private Vector3 _lastPlayerAttachmentPosition = Vector3.zero;
-        private FadeToBlackManager _fadeManager;
+        private FadingManager _fadeManager;
         private float _forwardSmoothVel = 0.0f, _sideSmoothVel = 0.0f;
         private static float _roomscaleAnimationForwardSpeed = 0.0f;
         private static float _roomscaleAnimationSideSpeed = 0.0f;
@@ -97,12 +114,13 @@ namespace ValheimVRMod.VRCore
 
         private static SteamVR_LaserPointer _leftPointer;
         private static SteamVR_LaserPointer _rightPointer;
-        private string _preferredHand;
 
         private Vector3 roomLocalPositionBeforeDodge;
         private Transform _dodgingRoom;
-        private Transform dodgingRoom { get { return _dodgingRoom ?? (_dodgingRoom = new GameObject().transform); } }
+        private Transform dodgingRoom { get { return _dodgingRoom == null ? (_dodgingRoom = new GameObject().transform) : _dodgingRoom; } }
         private bool pausedMovement = false;
+        private bool isRoomScaleMovementActive;
+        private float roomScaleMovementTimeout = 0;
 
         private float timerLeft;
         private float timerRight;
@@ -115,7 +133,21 @@ namespace ValheimVRMod.VRCore
         // character's hand bones as opposed to that of the VR controllers.
         public static Transform leftHandBone { get; private set; }
         public static Transform rightHandBone { get; private set; }
-        public static Hand dominantHand { get { return VHVRConfig.LeftHanded() ? leftHand : rightHand; } }
+
+        public static bool isLeftHandMainWeaponHand { get { return VHVRConfig.LeftHanded() ^ offHandWield; } }
+        public static bool isRightHandMainWeaponHand { get { return VHVRConfig.LeftHanded() ^ !offHandWield; } }
+        public static ItemDrop.ItemData leftHandItem {
+            get { return isRightHandMainWeaponHand ? Player.m_localPlayer.GetLeftItem() :  Player.m_localPlayer.GetRightItem(); }
+        }
+        public static ItemDrop.ItemData rightHandItem
+        {
+            get { return isRightHandMainWeaponHand ? Player.m_localPlayer.GetRightItem() : Player.m_localPlayer.GetLeftItem(); }
+        }
+
+        public static Hand mainWeaponHand { get { return isRightHandMainWeaponHand ? rightHand : leftHand; } }
+
+        public static Hand arrowHand { get { return VHVRConfig.LeftHanded() ^ offHandWield ? leftHand : rightHand; } }
+        public static Hand bowHand { get { return VHVRConfig.LeftHanded() ^ offHandWield ? rightHand : leftHand; } }
         public static bool ShouldPauseMovement { get { return PlayerCustomizaton.IsBarberGuiVisible() || (Menu.IsVisible() && !VHVRConfig.AllowMovementWhenInMenu()); } }
         public static bool IsClickableGuiOpen
         {
@@ -161,7 +193,6 @@ namespace ValheimVRMod.VRCore
             }
         }
 
-
         public static PhysicsEstimator headPhysicsEstimator
         {
             get
@@ -178,8 +209,26 @@ namespace ValheimVRMod.VRCore
             }
         }
 
+        public static PhysicsEstimator leftFootPhysicsEstimator { get; private set; }
+        public static PhysicsEstimator rightFootPhysicsEstimator { get; private set; }
+
+        public static float leftFootElevation
+        {
+            get { return leftFoot.parent == null || vrPlayerInstance == null ? 0 : vrPlayerInstance._vrCameraRig.InverseTransformPoint(leftFoot.position).y - baseFootHeight; }
+        }
+        public static float rightFootElevation
+        {
+            get { return rightFoot.parent == null || vrPlayerInstance == null ? 0 : vrPlayerInstance._vrCameraRig.InverseTransformPoint(rightFoot.position).y - baseFootHeight; }
+        }
+
+        private static float baseFootHeight;
+
+
         public static SteamVR_Input_Sources dominantHandInputSource { get { return VHVRConfig.LeftHanded() ? SteamVR_Input_Sources.LeftHand : SteamVR_Input_Sources.RightHand; } }
-        public static SteamVR_Input_Sources nonDominantHandInputSource { get { return VHVRConfig.LeftHanded() ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand; } }
+        public static SteamVR_Input_Sources mainWeaponHandInputSource { get { return VHVRConfig.LeftHanded() ^ offHandWield ? SteamVR_Input_Sources.LeftHand : SteamVR_Input_Sources.RightHand; } }
+        public static SteamVR_Input_Sources secondaryWeaponHandInputSource { get { return VHVRConfig.LeftHanded() ^ offHandWield ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand; } }
+        public static SteamVR_Input_Sources arrowHandInputSource { get { return VHVRConfig.LeftHanded() ^ offHandWield ? SteamVR_Input_Sources.LeftHand : SteamVR_Input_Sources.RightHand; } }
+        public static SteamVR_Input_Sources bowHandInputSource { get { return VHVRConfig.LeftHanded() ^ offHandWield ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand; } }
 
         public static bool handsActive
         {
@@ -258,32 +307,70 @@ namespace ValheimVRMod.VRCore
         public static VRPlayer vrPlayerInstance => _vrPlayerInstance;
         public static bool attachedToPlayer = false;
 
-        private static float FIRST_PERSON_HEIGHT_OFFSET = 0.0f;
-        private static bool _headPositionInitialized = false;
-        public static bool headPositionInitialized
+        private static float? firstPersonHeightOffset = null;
+        public static bool headPositionInitialized { get; private set; }
+        private static bool bodyTrackingCaliberationPending;
+        // While caliberating, set true if a forced (index > 0) tracker exists but has not yet
+        // reported a valid pose, so caliberation retries until it comes online (or the
+        // deadline passes). Handles the one-frame latency of a freshly created tracker.
+        private static bool awaitingForcedTracker;
+        private static float bodyTrackingCaliberationDeadline;
+        // Role-based body tracking (default, no device-count limit).
+        private static SteamVRBodyTrackingProvider bodyTrackingProvider;
+        // TEMPORARY: set false to bypass SteamVR role resolution so the auto (0) case goes
+        // straight to coordinate-based detection (for testing the heuristic in isolation).
+        private const bool USE_ROLE_BASED_TRACKING = true;
+        // Highest device index considered by coordinate-based auto-detection. Detection is
+        // only a fallback for the auto (0) case when no SteamVR role is assigned, so the
+        // legacy enumeration limit is fine; role-based tracking has no such limit.
+        private const int MAX_AUTO_DETECT_INDEX = 32;
+        // Legacy device-index trackers, used both for forced index overrides (index > 0)
+        // and as the enumeration source for coordinate-based auto-detection. Indices 1..
+        // MAX_AUTO_DETECT_INDEX are created eagerly so their poses are valid by caliberation;
+        // higher forced indices are created on demand.
+        private static readonly Dictionary<int, SteamVR_TrackedObject> legacyTrackers =
+            new Dictionary<int, SteamVR_TrackedObject>();
+        // Waist tracker transform resolved at caliberation time (role -> coordinate -> forced
+        // index), cached so the per-frame accessors stay cheap. Null when no waist tracker.
+        private static Transform resolvedHipTransform;
+
+        public static Transform leftFoot { get; private set; }
+        public static Transform rightFoot { get; private set; }
+
+        public static void RequestRecentering()
         {
-            get
+            headPositionInitialized = false;
+            firstPersonOffset = Vector3.zero;
+            firstPersonHeightOffset = null;
+        }
+
+        public static void RequestPelvisCaliberation()
+        {
+            bodyTrackingCaliberationPending = true;
+            // Give forced trackers a few seconds to come online before giving up (covers the
+            // latency between creating a tracker and it receiving its first valid pose).
+            bodyTrackingCaliberationDeadline = Time.unscaledTime + 5f;
+        }
+
+        public static void DestroyVrik()
+        {
+            if (vrikRef == null)
             {
-                return _headPositionInitialized;
+                return;
             }
-            set
-            {
-                _headPositionInitialized = value;
-                if (!_headPositionInitialized)
-                {
-                    FIRST_PERSON_HEIGHT_OFFSET = 0.0f;
-                    FIRST_PERSON_OFFSET = Vector3.zero;
-                }
-            }
+
+            Destroy(vrikRef);
+            vrikRef = null;
+
+            LogUtils.LogDebug("Destroyed local player stale VRIK");
         }
 
         void Awake()
         {
             _vrPlayerInstance = this;
             _prefab = VRAssetManager.GetAsset<GameObject>(PLAYER_PREFAB_NAME);
-            _preferredHand = VHVRConfig.GetPreferredHand();
             headPositionInitialized = false;
-            FIRST_PERSON_OFFSET = Vector3.zero;
+            firstPersonOffset = Vector3.zero;
             THIRD_PERSON_CONFIG_OFFSET = VHVRConfig.GetThirdPersonHeadOffset();
             ensurePlayerInstance();
             gameObject.AddComponent<VRControls>();
@@ -295,15 +382,31 @@ namespace ValheimVRMod.VRCore
             {
                 return;
             }
+            if (ensureBodyTrackers())
+            {
+                var hip = hipTrackerTransform;
+                hipTrackerRenderer.enabled =
+                    hip != null &&
+                    VHVRConfig.IsHipTrackingEnabled() &&
+                    (Menu.IsVisible() || (FejdStartup.m_instance != null && FejdStartup.m_instance.isActiveAndEnabled));
+                if (hip != null && hipTrackerRenderer.transform.parent != hip)
+                {
+                    hipTrackerRenderer.transform.SetParent(hip, worldPositionStays: false);
+                    hipTrackerRenderer.transform.localPosition = Vector3.zero;
+                    hipTrackerRenderer.transform.localRotation = Quaternion.identity;
+                    hipTrackerRenderer.transform.localScale = Vector3.one * 0.125f;
+                }
+            }
             maybeUpdateHeadPosition();
             attachVrPlayerToWorldObject();
             enableCameras();
             checkAndSetHandsAndPointers();
+            updateBodyTracking();
             updateVrik();
             // When dodge starts, we need to make sure that updateVrik() has been called first so that the head is no longer controlled by Vrik before doing any dodge-related camera rotation.
             maybeMoveVRPlayerDuringDodge();
             UpdateAmplifyOcclusionStatus();
-            Pose.checkInteractions();
+            CheckSitRoomscale();
             CheckSneakRoomscale();
 
             // Vanilla game does not support attack when riding, so force initiate ranged attack here.
@@ -318,18 +421,6 @@ namespace ValheimVRMod.VRCore
             {
                 timerRight -= Time.deltaTime;
                 rightHand.hapticAction.Execute(0f, 0.1f, 20f, 0.1f, SteamVR_Input_Sources.RightHand);
-            }
-        }
-
-        void OnRenderObject()
-        {
-            if (leftHandBone && _vrik?.references?.leftHand)
-            {
-                leftHandBone.SetPositionAndRotation(_vrik.references.leftHand.position, _vrik.references.leftHand.rotation);
-            }
-            if (rightHandBone && _vrik?.references?.rightHand)
-            {
-                rightHandBone.SetPositionAndRotation(_vrik.references.rightHand.position, _vrik.references.rightHand.rotation);
             }
         }
 
@@ -356,8 +447,8 @@ namespace ValheimVRMod.VRCore
                 if (vrikEnabled() && pausedMovement)
                 {
                     // Before unpausing, move the camera back to the position before the pause to prevent teleporting the player to the cuurent camera position.
-                    _vrCameraRig.localPosition -= Vector3.ProjectOnPlane(_vrCam.transform.localPosition - _lastCamPosition, Vector3.up);
-                    _lastCamPosition = _vrCam.transform.localPosition;
+                    _vrCameraRig.localPosition -= Vector3.ProjectOnPlane(roomscaleLocomotive - lastRoomscaleLocomotivePosition, Vector3.up);
+                    lastRoomscaleLocomotivePosition = roomscaleLocomotive;
                     VrikCreator.UnpauseLocalPlayerVrik();
                     pausedMovement = false;
                 }
@@ -375,86 +466,32 @@ namespace ValheimVRMod.VRCore
                 }
             }
 
-            UpdateFollowCamera();
+            UpdateThirdPersonCamera();
         }
 
-        private void UpdateFollowCamera()
+        public static void StartSit()
         {
-            if (_followCamera == null)
+            startingSit = true;
+            _isRoomscaleSneaking = false;
+        }
+
+        private void UpdateThirdPersonCamera()
+        {
+            if (_thirdPersonCamera == null)
             {
-                if (!VHVRConfig.UseFollowCameraOnFlatscreen())
+                if (!VHVRConfig.UseThirdPersonCameraOnFlatscreen())
                 {
                     return;
                 }
-                enableFollowCamera();
-            }
+                enableThirdPersonCamera();
 
-            if (_followCamera == null || _vrCam == null)
-            {
-                return;
-            }
-
-            _followCamera.gameObject.SetActive(_followCamera.enabled = VHVRConfig.UseFollowCameraOnFlatscreen());
-            if (!_followCamera.enabled)
-            {
-                return;
-            }
-
-            float distance = 3;
-            var targetPosition =
-                VRPlayer.inFirstPerson ?
-                _vrCam.transform.position + 0.25f * Vector3.up :
-                Player.m_localPlayer ?
-                Player.m_localPlayer.transform.position + Vector3.up * 0.5f :
-                CameraUtils.getCamera(CameraUtils.MAIN_CAMERA).transform.position;
-            var hits = Physics.RaycastAll(targetPosition, _followCamera.transform.position - targetPosition, distance);
-            foreach (var hit in hits)
-            {
-                if (hit.distance > distance || hit.collider.gameObject.layer == LayerUtils.CHARACTER)
+                if (_thirdPersonCamera == null)
                 {
-                    continue;
+                    return;
                 }
-                if (hit.collider.attachedRigidbody != null &&
-                    hit.collider.attachedRigidbody.gameObject == getPlayerCharacter().gameObject)
-                {
-                    continue;
-                }
-
-                distance = hit.distance;
             }
 
-            _followCamera.transform.position =
-                Vector3.SmoothDamp(
-                    _followCamera.transform.position,
-                    Vector3.MoveTowards(targetPosition, _followCamera.transform.position, Mathf.Max(0.125f, distance)),
-                    ref followCameraVelocity,
-                    0.25f);
-
-            if (VRPlayer.inFirstPerson)
-            {
-                _followCamera.transform.LookAt(_vrCam.transform);
-            }
-            else if (Player.m_localPlayer)
-            {
-                _followCamera.transform.LookAt(Player.m_localPlayer.transform.position + Vector3.up * 0.5f);
-            }
-            else
-            {
-                _followCamera.transform.rotation = CameraUtils.getCamera(CameraUtils.MAIN_CAMERA).transform.rotation;
-            }
-
-            if (cameraDot == null)
-            {
-                cameraDot = GameObject.CreatePrimitive(PrimitiveType.Cylinder).GetComponent<MeshRenderer>();
-                cameraDot.transform.parent = _followCamera.transform;
-                cameraDot.transform.localPosition = Vector3.zero;
-                cameraDot.transform.localRotation = Quaternion.Euler(90, 0, 0);
-                cameraDot.material = Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
-                cameraDot.material.color = Color.red;
-            }
-
-            cameraDot.transform.localScale =
-                new Vector3(0.0075f, 0.001f, 0.0075f) * Vector3.Distance(_followCamera.transform.position, _vrCam.transform.position);
+            _thirdPersonCamera.gameObject.SetActive(VHVRConfig.UseThirdPersonCameraOnFlatscreen());
         }
 
         // Fixes an issue on Pimax HMDs that causes rotation to be incorrect:
@@ -513,7 +550,7 @@ namespace ValheimVRMod.VRCore
             }
             if (inFirstPerson)
             {
-                FIRST_PERSON_OFFSET += offset;
+                firstPersonOffset += offset;
             }
             else
             {
@@ -551,7 +588,7 @@ namespace ValheimVRMod.VRCore
             if (handIsActive(leftHand, _leftPointer) && handIsActive(rightHand, _rightPointer))
             {
                 // Both hands active, so choose preferred hand
-                if (_preferredHand == LEFT_HAND)
+                if (VHVRConfig.GetPreferredHand() == LEFT_HAND)
                 {
                     setPointerActive(_leftPointer, true);
                     setPointerActive(_rightPointer, false);
@@ -588,6 +625,8 @@ namespace ValheimVRMod.VRCore
                 if (leftHand != null)
                 {
                     (leftHandBone = new GameObject().transform).parent = leftHand.transform;
+                    leftHandBone.localPosition = VrikCreator.leftUnequippedPosition;
+                    leftHandBone.localRotation = VrikCreator.leftUnequippedRotation;
                     _leftPointer = leftHand.GetComponent<SteamVR_LaserPointer>();
                     if (_leftPointer != null)
                     {
@@ -601,6 +640,8 @@ namespace ValheimVRMod.VRCore
                 if (rightHand != null)
                 {
                     (rightHandBone = new GameObject().transform).parent = rightHand.transform;
+                    rightHandBone.localPosition = VrikCreator.rightUnequippedPosition;
+                    rightHandBone.localRotation = VrikCreator.rightUnequippedRotation;
                     _rightPointer = rightHand.GetComponent<SteamVR_LaserPointer>();
                     if (_rightPointer != null)
                     {
@@ -669,15 +710,175 @@ namespace ValheimVRMod.VRCore
                 {
                     DisableRigidBodies(_instance);
                     UpdateTrackedPoseDriverPoseSource();
+                    gameObject.GetOrAddComponent<Pose>();
+                    gameObject.GetOrAddComponent<InterhandItemTransfer>();
                 }
             }
             return _instance != null;
+        }
+
+        private bool ensureBodyTrackers()
+        {
+            if (bodyTrackingProvider != null)
+            {
+                return true;
+            }
+
+            if (_vrCam == null || _vrCam.transform.parent == null)
+            {
+                return false;
+            }
+
+            bodyTrackingProvider = _vrCameraRig.gameObject.AddComponent<SteamVRBodyTrackingProvider>();
+            bodyTrackingProvider.Initialize(_vrCameraRig);
+
+            // Pre-create the legacy trackers used for coordinate-based auto-detection so their
+            // poses are valid by the time caliberation reads them.
+            for (int i = 1; i <= MAX_AUTO_DETECT_INDEX; i++)
+            {
+                GetOrCreateLegacyTracker(i);
+            }
+
+            // Parenting to the actual waist tracker happens during caliberation (and the
+            // renderer is reparented each frame in Update), once a tracker is available.
+            trackedPelvis = new GameObject().transform;
+            pelvis = new GameObject().transform;
+            pelvis.parent = trackedPelvis;
+
+            hipTrackerRenderer = GameObject.CreatePrimitive(PrimitiveType.Cube).GetComponent<MeshRenderer>();
+            hipTrackerRenderer.gameObject.layer = LayerUtils.getWorldspaceUiLayer();
+            hipTrackerRenderer.transform.localScale = new Vector3(0.125f, 0.125f, 0.125f);
+            hipTrackerRenderer.material = Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
+            hipTrackerRenderer.material.color = new Vector4(0.5f, 0.5f, 0, 0.5f);
+            hipTrackerRenderer.receiveShadows = false;
+
+            RequestPelvisCaliberation();
+
+            return true;
+        }
+
+        // Resolves the configured device index for a joint into a tracker-following transform:
+        //   index  < 0 : joint not in use (null)
+        //   index == 0 : auto -- prefer the SteamVR role, fall back to coordinate detection
+        //   index  > 0 : force the tracker at that specific device index
+        // For feet, hip is the resolved waist transform and exclude is the other foot's
+        // transform, both used only by coordinate detection. Pass null for the hip case.
+        private static Transform ResolveJointTransform(BodyJoint joint, int index, Transform hip, Transform exclude)
+        {
+            if (index > 0)
+            {
+                var forced = GetOrCreateLegacyTracker(index);
+                if (forced == null || !forced.isValid)
+                {
+                    // Tracker may have just been created this frame, or the device may not be
+                    // online yet; signal caliberation to retry rather than fall back.
+                    awaitingForcedTracker = true;
+                    return null;
+                }
+                return forced.transform;
+            }
+            var role = USE_ROLE_BASED_TRACKING && bodyTrackingProvider != null ? bodyTrackingProvider.GetJointTransform(joint) : null;
+            if (role != null)
+            {
+                LogUtils.LogInfo("Detected tracker for role " + joint);
+                return role;
+            }
+            LogUtils.LogInfo("Detecting tracker for role " + joint + " using coordinates...");
+            return joint == BodyJoint.Waist ? DetectHipTransform() : DetectFootTransform(hip, exclude);
+        }
+
+        // Coordinate-based waist detection (fallback for auto when no role is assigned):
+        // the lowest valid tracker that is near and not far below the head.
+        private static Transform DetectHipTransform()
+        {
+            var cam = vrPlayerInstance?._vrCam;
+            if (cam == null)
+            {
+                return null;
+            }
+            SteamVR_TrackedObject best = null;
+            foreach (var entry in legacyTrackers)
+            {
+                if (entry.Key > MAX_AUTO_DETECT_INDEX)
+                {
+                    continue;
+                }
+                var t = entry.Value;
+                if (t == null || !t.isValid ||
+                    t.transform.localPosition.y - cam.transform.localPosition.y < -0.8f ||
+                    Vector3.Distance(t.transform.position, cam.transform.position) > 1.5f)
+                {
+                    continue;
+                }
+                if (best == null || t.transform.localPosition.y < best.transform.localPosition.y)
+                {
+                    best = t;
+                }
+            }
+            return best == null ? null : best.transform;
+        }
+
+        // Coordinate-based foot detection (fallback for auto when no role is assigned):
+        // the lowest valid tracker below the hip, excluding the hip and the other foot.
+        private static Transform DetectFootTransform(Transform hip, Transform exclude)
+        {
+            if (hip == null)
+            {
+                return null;
+            }
+            SteamVR_TrackedObject best = null;
+            foreach (var entry in legacyTrackers)
+            {
+                if (entry.Key > MAX_AUTO_DETECT_INDEX)
+                {
+                    continue;
+                }
+                var t = entry.Value;
+                if (t == null || !t.isValid ||
+                    t.transform == hip || t.transform == exclude ||
+                    t.transform.localPosition.y > hip.localPosition.y)
+                {
+                    continue;
+                }
+                if (best == null ||
+                    (Vector3.Distance(t.transform.localPosition, hip.localPosition) < 2 &&
+                     t.transform.localPosition.y < best.transform.localPosition.y))
+                {
+                    best = t;
+                }
+            }
+            return best == null ? null : best.transform;
+        }
+
+        // Returns (creating if needed) the legacy index-based tracker for a device index.
+        // The device index is assigned directly rather than via SteamVR_TrackedObject.
+        // SetDeviceIndex, which would silently reject indices above 16 (its EIndex cap), so
+        // a forced index override works for high-index trackers too.
+        private static SteamVR_TrackedObject GetOrCreateLegacyTracker(int deviceIndex)
+        {
+            var rig = vrPlayerInstance?._vrCameraRig;
+            if (deviceIndex <= 0 || rig == null)
+            {
+                return null;
+            }
+            if (!legacyTrackers.TryGetValue(deviceIndex, out var tracker) || tracker == null)
+            {
+                tracker = new GameObject("VHVR_LegacyTracker_" + deviceIndex).AddComponent<SteamVR_TrackedObject>();
+                tracker.transform.parent = rig;
+                tracker.index = (SteamVR_TrackedObject.EIndex)deviceIndex;
+                legacyTrackers[deviceIndex] = tracker;
+            }
+            return tracker;
         }
 
         private void enableCameras()
         {
             if (_vrCam == null || !_vrCam.enabled)
             {
+                if (_thirdPersonCamera != null)
+                {
+                    Destroy(_thirdPersonCamera);
+                }
                 enableVrCamera();
             }
             else
@@ -713,6 +914,7 @@ namespace ValheimVRMod.VRCore
             maybeAddAmplifyOcclusion(vrCam);
             // Prevent visibility of the head
             vrCam.nearClipPlane = VHVRConfig.GetNearClipPlane();
+            MainCameraFarClipPlane = mainCamera.farClipPlane;
             // Turn off rendering the UI panel layer. We need to capture
             // it in a camera of higher depth so that it
             // is rendered on top of everything else. (except hands)
@@ -720,6 +922,7 @@ namespace ValheimVRMod.VRCore
             vrCam.cullingMask &= ~(1 << LayerMask.NameToLayer("UI"));
             vrCam.cullingMask &= ~(1 << LayerUtils.getHandsLayer());
             vrCam.cullingMask &= ~(1 << LayerUtils.getWorldspaceUiLayer());
+            vrCam.cullingMask &= ~(1 << LayerUtils.CHARARCTER_TRIGGER);
             mainCamera.enabled = false;
             AudioListener mainCamListener = mainCamera.GetComponent<AudioListener>();
             if (mainCamListener != null)
@@ -728,7 +931,7 @@ namespace ValheimVRMod.VRCore
                 DestroyImmediate(mainCamListener);
             }
             //Add fade component to camera for transition handling
-            _fadeManager = vrCam.gameObject.AddComponent<FadeToBlackManager>();
+            _fadeManager = vrCam.gameObject.AddComponent<FadingManager>();
             _instance.SetActive(true);
             vrCam.enabled = true;
             _vrCam = vrCam;
@@ -738,6 +941,7 @@ namespace ValheimVRMod.VRCore
             _fadeManager.OnFadeToWorld += () => {
                 //Recenter
                 VRPlayer.headPositionInitialized = false;
+                firstPersonOffset = Vector3.zero;
                 VRPlayer.vrPlayerInstance?.ResetRoomscaleCamera();
             };
         }
@@ -765,24 +969,35 @@ namespace ValheimVRMod.VRCore
             _handsCam = handsCamera;
         }
 
-        private void enableFollowCamera()
+        private void enableThirdPersonCamera()
         {
             Camera vrCam = CameraUtils.getCamera(CameraUtils.VR_CAMERA);
             if (vrCam == null || vrCam.gameObject == null)
             {
                 return;
             }
-            LogDebug("Enabling Follow Camera");
-            _followCamera = new GameObject(CameraUtils.FOLLOW_CAMERA).AddComponent<Camera>();
-            _followCamera.CopyFrom(vrCam);
-            _followCamera.depth = 4;
-            // Borrow the UI layer to render headgears which should be hidden for the VR camera.
-            _followCamera.cullingMask |= (1 << LayerMask.NameToLayer("UI"));
-            _followCamera.transform.position = vrCam.transform.position;
-            _followCamera.stereoTargetEye = StereoTargetEyeMask.None;
-            _followCamera.enabled = true;
-            _followCamera.ResetAspect();
-            _followCamera.fieldOfView = 75;
+
+            if (PlayerOnDeathPatch.hasCharacterDied && !attachedToPlayer)
+            {
+                // Do not enable follow camera until the VRCamera is attached to the player after character death,
+                // otherwise the projection matrix of the VRCamera might become wrong.
+                return;
+            }
+
+            LogDebug("Enabling third person camera");
+            _thirdPersonCamera = new GameObject(CameraUtils.FOLLOW_CAMERA).AddComponent<Camera>();
+            _thirdPersonCamera.CopyFrom(vrCam);
+            _thirdPersonCamera.depth = 4;
+            // Borrow the character trigger layer to render headgears which should be hidden for the VR camera.
+            _thirdPersonCamera.cullingMask |= (1 << LayerUtils.CHARARCTER_TRIGGER);
+            _thirdPersonCamera.cullingMask |= (1 << LayerUtils.getUiPanelLayer());
+            _thirdPersonCamera.cullingMask |= (1 << LayerUtils.getWorldspaceUiLayer());
+            _thirdPersonCamera.transform.position = vrCam.transform.position;
+            _thirdPersonCamera.stereoTargetEye = StereoTargetEyeMask.None;
+            _thirdPersonCamera.gameObject.AddComponent<ThirdPersonCameraUpdater>();
+            _thirdPersonCamera.enabled = true;
+            _thirdPersonCamera.ResetAspect();
+            _thirdPersonCamera.fieldOfView = 75;
         }
 
         // Search for the original skybox cam, if found, copy it, disable it,
@@ -866,7 +1081,7 @@ namespace ValheimVRMod.VRCore
             switch (headZoomLevel)
             {
                 case HeadZoomLevel.FirstPerson:
-                    return FIRST_PERSON_OFFSET;
+                    return firstPersonOffset;
                 case HeadZoomLevel.ThirdPerson0:
                     return THIRD_PERSON_0_OFFSET + THIRD_PERSON_CONFIG_OFFSET;
                 case HeadZoomLevel.ThirdPerson1:
@@ -876,7 +1091,7 @@ namespace ValheimVRMod.VRCore
                 case HeadZoomLevel.ThirdPerson3:
                     return THIRD_PERSON_3_OFFSET + THIRD_PERSON_CONFIG_OFFSET;
                 default:
-                    return FIRST_PERSON_OFFSET;
+                    return firstPersonOffset;
             }
         }
 
@@ -916,12 +1131,25 @@ namespace ValheimVRMod.VRCore
                 return;
             }
             _instance.transform.SetParent(playerCharacter.transform, false);
+            _instance.transform.localScale = Vector3.one / VrikCreator.ROOT_SCALE;
             attachedToPlayer = true;
 
             maybeExitDodge();
 
             maybeInitHeadPosition(playerCharacter);
-            float firstPersonAdjust = inFirstPerson ? FIRST_PERSON_HEIGHT_OFFSET : 0.0f;
+            if (bodyTrackingCaliberationPending)
+            {
+                caliberateBodyTracking();
+                if (!bodyTrackingCaliberationPending)
+                {
+                    initialRoomscaleLocomotiveOffsetFromHead = roomscaleLocomotive - vrCam.transform.localPosition;
+                }
+            }
+            else
+            {
+                initialRoomscaleLocomotiveOffsetFromHead = Vector3.zero;
+            }
+            float firstPersonAdjust = inFirstPerson ? (float) firstPersonHeightOffset : 0.0f;
             setHeadVisibility(!inFirstPerson);
             // Update the position with the first person adjustment calculated in init phase
             _instance.transform.localPosition = getDesiredLocalPosition(playerCharacter) // Base Positioning
@@ -935,10 +1163,22 @@ namespace ValheimVRMod.VRCore
                 setPlayerVisualsOffset(playerCharacter.transform, Vector3.zero);
             }
             else
-                setPlayerVisualsOffset(playerCharacter.transform,
-                                -getHeadOffset(_headZoomLevel) // Player controlled offset (zeroed on tracking reset)
-                                - Vector3.forward * NECK_OFFSET // Move slightly forward to position on neck
-                                );
+            {
+                var offset = -getHeadOffset(_headZoomLevel); // Player controlled offset (zeroed on tracking reset)
+                if (playerCharacter.IsSitting())
+                {
+                    if (playerCharacter.IsAttached())
+                    {
+                        _instance.transform.localPosition += Vector3.forward * 0.33f;
+                    }
+                    offset += Vector3.forward * 0.0625f; // Move slightly backward to position on neck;
+                }
+                else if (!VHVRConfig.TrackFeet())
+                {
+                    offset -= Vector3.forward * NECK_OFFSET; // Move slightly forward to position on neck
+                }
+                setPlayerVisualsOffset(playerCharacter.transform, offset);
+            }
         }
 
         //Moves all the effects and the meshes that compose the player, doesn't move the Rigidbody
@@ -950,26 +1190,6 @@ namespace ValheimVRMod.VRCore
                 if (child == _instance.transform || child.name == "EyePos") continue;
                 playerTransform.GetChild(i).localPosition = offset;
             }
-
-            var pelvisTarget = vrikRef?.solver?.spine?.pelvisTarget;
-            if (pelvisTarget != null && VHVRConfig.UseVrControls() && !pausedMovement)
-            {
-                pelvisTarget.localRotation = getPelvisRotationRelativeToPlayer(playerTransform);
-            }
-        }
-
-        private Quaternion getPelvisRotationRelativeToPlayer(Transform playerTransform)
-        {
-            if (GesturedLocomotionManager.isInUse && Mathf.Abs(gesturedLocomotionManager.stickOutputY) > 0.25f)
-            {
-                return Quaternion.identity;
-            }
-
-            var elbowSpan =
-                playerTransform.InverseTransformDirection(
-                    rightHandBone.TransformPoint(-Vector3.up * 0.25f) - leftHandBone.TransformPoint(-Vector3.up * 0.25f));
-            // Rotate pelvis slightly according to forearm positions
-            return Quaternion.LookRotation(new Vector3(-elbowSpan.z, 0, elbowSpan.x + 0.5f));
         }
 
         private float getHeadHeightAdjust(Player player)
@@ -992,7 +1212,16 @@ namespace ValheimVRMod.VRCore
 
             if (player.IsSitting())
             {
-                return player.IsAttached() ? SIT_ATTACH_HEIGHT_ADJUST : SIT_HEIGHT_ADJUST;
+                if (player.IsAttached())
+                {
+                    var chair = player.m_attachPoint?.GetComponentInParent<Chair>();
+                    var isRidingAsksvinSkeleton = chair != null && chair.m_name == "$piece_asksvinskeleton";
+                    return isRidingAsksvinSkeleton ? -1.1f : SIT_ATTACH_HEIGHT_ADJUST;
+                }
+                if (!VHVRConfig.CharaterMovesWithHeadset())
+                {
+                    return SIT_HEIGHT_ADJUST;
+                }
             }
 
             if (player.IsCrouching() && Player_SetControls_SneakPatch.isJoystickSneaking)
@@ -1003,6 +1232,159 @@ namespace ValheimVRMod.VRCore
             return VHVRConfig.PlayerHeightAdjust();
         }
 
+        private void updateBodyTracking()
+        {
+            var player = Player.m_localPlayer;
+            if (!ensureBodyTrackers())
+            {
+                return;
+            }
+
+            var pelvisTarget = vrikRef?.solver?.spine?.pelvisTarget;
+            if (player == null || vrikRef == null || pelvisTarget == null || !headPositionInitialized || _vrCam == null || !VHVRConfig.UseVrControls() || pausedMovement)
+            {
+                return;
+            }
+
+            vrikRef.solver.spine.maintainPelvisPosition = attachedToPlayer ? 0 : 1;
+            vrikRef.solver.spine.pelvisRotationWeight = attachedToPlayer ? 1 : 0;
+
+            if (!VHVRConfig.IsHipTrackingEnabled())
+            {
+                vrikRef.solver.leftLeg.positionWeight = vrikRef.solver.rightLeg.positionWeight = 0;
+                vrikRef.solver.leftLeg.rotationWeight = vrikRef.solver.rightLeg.rotationWeight = 0;
+                StaticObjects.leftFootCollision().gameObject.SetActive(false);
+                StaticObjects.rightFootCollision().gameObject.SetActive(false);
+
+                if (player.IsAttached() || player.IsSitting() || Valve.VR.InteractionSystem.Player.instance.eyeHeight > referencePlayerHeight * 0.125f)
+                {
+                    vrikRef.solver.spine.pelvisPositionWeight = 0;
+                    vrikRef.solver.spine.pelvisRotationWeight = 1;
+                    Vector3 pelvisFacing = inferPelvisFacingFromPlayerHeadingAndHands(player.transform, player.IsAttached());
+                    pelvis.rotation = Quaternion.LookRotation(pelvisFacing, player.transform.up);
+                    vrikRef.solver.spine.rootHeadingOffset = Vector3.SignedAngle(player.transform.forward, pelvisFacing, player.transform.up);
+                }
+                else
+                {
+                    vrikRef.solver.spine.pelvisPositionWeight = 1;
+                    vrikRef.solver.spine.pelvisRotationWeight = 0;
+                    pelvis.position = inferPelvisPositionFromHead(_vrCam.transform.up);
+                    vrikRef.solver.spine.rootHeadingOffset = 0;
+                }
+
+                return;
+            }
+
+            bool isFreeStanding =
+                !player.IsAttached() &&
+                !player.IsSitting() &&
+                Vector3.Angle(trackedPelvis.up, player.transform.up) < 30 &&
+                Valve.VR.InteractionSystem.Player.instance.eyeHeight > referencePlayerHeight * 0.75f;
+
+            if (player.IsAttached() ||
+                (!VHVRConfig.TrackFeet() && (player.IsSneaking() || player.IsSitting() || !isFreeStanding)))
+            {
+                vrikRef.solver.spine.pelvisPositionWeight = 0;
+                pelvis.position = vrikRef.references.pelvis.position;
+            }
+            else
+            {
+                vrikRef.solver.spine.pelvisPositionWeight = attachedToPlayer ? 1 : 0;
+                pelvis.localPosition = Vector3.zero;
+            }
+
+            if (player.IsAttached())
+            {
+                pelvis.rotation =
+                    Quaternion.Lerp(player.transform.rotation, trackedPelvis.rotation, 0.25f);
+                vrikRef.solver.spine.rootHeadingOffset = 0;
+            }
+            else
+            {
+                Vector3 pelvisFacing = Vector3.ProjectOnPlane(trackedPelvis.forward, player.transform.up);
+                if (isFreeStanding && !VHVRConfig.TrackFeet())
+                {
+                    pelvis.rotation = Quaternion.LookRotation(pelvisFacing, player.transform.up);
+                }
+                else
+                {
+                    pelvis.localRotation = Quaternion.identity;
+                }
+                //TODO: find out why this is not working
+                vrikRef.solver.spine.rootHeadingOffset = Vector3.SignedAngle(Vector3.ProjectOnPlane(_vrCam.transform.forward, player.transform.up), pelvisFacing, player.transform.up);
+            }
+
+            if (shouldTrackFeet())
+            {
+                VrikCreator.EnableFootTracking(vrikRef);
+                StaticObjects.leftFootCollision().gameObject.SetActive(true);
+                StaticObjects.rightFootCollision().gameObject.SetActive(true);
+            }
+            else
+            {
+                VrikCreator.DisableFootTracking(vrikRef);
+                StaticObjects.leftFootCollision().gameObject.SetActive(false);
+                StaticObjects.rightFootCollision().gameObject.SetActive(false);
+            }
+        }
+
+        public bool shouldTrackFeet()
+        {
+            if (!VHVRConfig.TrackFeet() || !attachedToPlayer || Player.m_localPlayer == null || Player.m_localPlayer.IsAttached())
+            {
+                return false;
+            }
+
+            if (GesturedLocomotionManager.isUsingFootTracking)
+            {
+                return true;
+            }
+
+            float standingHeadHeight = _vrCam.transform.localPosition.y - Valve.VR.InteractionSystem.Player.instance.eyeHeight + referencePlayerHeight;
+            if (_vrCameraRig.InverseTransformPoint(leftFoot.position).y > standingHeadHeight - 1.5f - VHVRConfig.PlayerHeightAdjust() ||
+                _vrCameraRig.InverseTransformPoint(rightFoot.position).y > standingHeadHeight - 1.5f - VHVRConfig.PlayerHeightAdjust() ||
+                Vector3.ProjectOnPlane(leftFoot.position - rightFoot.position, _vrCameraRig.up).magnitude > 0.5f)
+            {
+                return true;
+            }
+
+            if (VRControls.smoothWalkX > 0.1f || VRControls.smoothWalkY > 0.1f ||
+                VRControls.smoothWalkX < -0.1f || VRControls.smoothWalkY < -0.1f ||
+                gesturedLocomotionManager.stickOutputX > 0.1f || gesturedLocomotionManager.stickOutputY > 0.1f ||
+                gesturedLocomotionManager.stickOutputX < -0.1f || gesturedLocomotionManager.stickOutputY < -0.1f)
+            {
+                return false;
+            }
+
+            return Player.m_localPlayer.IsOnGround();
+        }
+
+        private Vector3 inferPelvisPositionFromHead(Vector3? upDirection = null)
+        {
+            if (upDirection == null)
+            {
+                upDirection = _vrCameraRig.up;
+            }
+            return _vrCam.transform.position - _vrCam.transform.forward * 0.1f - upDirection.Value * 0.89f * VrikCreator.ROOT_SCALE;
+        }
+
+        private Vector3 inferPelvisFacingFromPlayerHeadingAndHands(Transform playerTransform, bool isPlayerAttached)
+        {
+            Vector3 forward = isPlayerAttached ? Player.m_localPlayer.transform.forward : Vector3.ProjectOnPlane(_vrCam.transform.forward, _vrCameraRig.up);
+            if (GesturedLocomotionManager.isInUse && Mathf.Abs(gesturedLocomotionManager.stickOutputY) > 0.25f)
+            {
+                return forward;
+            }
+            Vector3 up = isPlayerAttached ? playerTransform.up : _vrCameraRig.up;
+           
+            Vector3 elbowSpan = rightHandBone.TransformPoint(-Vector3.up * 0.25f) - leftHandBone.TransformPoint(-Vector3.up * 0.25f);
+            Vector3 adjustment = Vector3.Cross(Vector3.ProjectOnPlane(elbowSpan, up), up);
+
+            // Rotate pelvis slightly according to forearm positions
+            return isPlayerAttached ? forward + adjustment * 0.5f : forward + adjustment;
+        }
+
+
         private void updateVrik()
         {
             var player = getPlayerCharacter();
@@ -1011,43 +1393,50 @@ namespace ValheimVRMod.VRCore
                 return;
             }
             maybeAddVrik(player);
-            if (_vrik != null)
+            if (vrikRef == null)
             {
-                _vrik.enabled =
-                    VHVRConfig.UseVrControls() &&
-                    inFirstPerson &&
-                    !player.InDodge() &&
-                    !player.IsStaggering() &&
-                    !player.IsSleeping() &&
-                    validVrikAnimatorState(player.GetComponentInChildren<Animator>());
-                LeftHandQuickMenu.instance.UpdateWristBar();
-                RightHandQuickMenu.instance.UpdateWristBar();
+                return;
             }
+
+            vrikRef.enabled =
+                VHVRConfig.UseVrControls() &&
+                inFirstPerson &&
+                !player.InDodge() &&
+                !player.IsStaggering() &&
+                !player.IsSleeping() &&
+                validVrikAnimatorState(player.GetComponentInChildren<Animator>());
+
+            LeftHandQuickMenu.instance.UpdateWristBar();
+            RightHandQuickMenu.instance.UpdateWristBar();
         }
 
         private void maybeExitDodge()
         {
             var player = getPlayerCharacter();
-            if (player != null && !player.InDodge() && wasDodging)
+            if (player == null || player.InDodge() || !wasDodging)
             {
-                if (attachedToPlayer && VHVRConfig.ImmersiveDodgeRoll())
-                {
-                    var cameraLocalHeading = _vrCam.transform.localRotation.eulerAngles.y;
-                    var desiredFacing =
-                        _instance.transform.rotation * Quaternion.Euler(0, cameraLocalHeading, 0) * Vector3.forward;
-                    _vrCameraRig.localPosition = roomLocalPositionBeforeDodge;
-                    _vrCameraRig.localRotation = Quaternion.identity;
-                    player.m_lookDir = desiredFacing;
-                    player.FaceLookDirection();
-                    _instance.transform.localRotation = Quaternion.Euler(0, -cameraLocalHeading, 0);
-                    _vrCam.nearClipPlane = VHVRConfig.GetNearClipPlane();
-                    _vrCameraRig.position += 
-                        Vector3.ProjectOnPlane(player.transform.position - _vrCam.transform.position, _vrCameraRig.up);
-                    _lastCamPosition = _vrCam.transform.localPosition;
-                    roomscaleMovement = Vector3.zero;
-                }
-                wasDodging = false;
+                return;
             }
+
+            if (attachedToPlayer && VHVRConfig.ImmersiveDodgeRoll())
+            {
+                var cameraLocalHeading = _vrCam.transform.localRotation.eulerAngles.y;
+                var desiredFacing =
+                    _instance.transform.rotation * Quaternion.Euler(0, cameraLocalHeading, 0) * Vector3.forward;
+                _vrCameraRig.localPosition = roomLocalPositionBeforeDodge;
+                _vrCameraRig.localRotation = Quaternion.identity;
+                player.m_lookDir = desiredFacing;
+                player.FaceLookDirection();
+                _instance.transform.localRotation = Quaternion.Euler(0, -cameraLocalHeading, 0);
+                _vrCam.nearClipPlane = VHVRConfig.GetNearClipPlane();
+                _vrCameraRig.position += 
+                    Vector3.ProjectOnPlane(
+                        player.transform.position - _vrCameraRig.TransformPoint(roomscaleLocomotive - initialRoomscaleLocomotiveOffsetFromHead),
+                        _vrCameraRig.up);
+                lastRoomscaleLocomotivePosition = roomscaleLocomotive;
+                roomscaleMovement = Vector3.zero;
+            }
+            wasDodging = false;
         }
 
         private void maybeMoveVRPlayerDuringDodge()
@@ -1095,26 +1484,38 @@ namespace ValheimVRMod.VRCore
 
         private void maybeAddVrik(Player player)
         {
-            if (!VHVRConfig.UseVrControls() || player.gameObject.GetComponent<VRIK>() != null)
+            if (!VHVRConfig.UseVrControls() || vrikRef != null || !attachedToPlayer)
             {
                 return;
             }
             var cam = CameraUtils.getCamera(CameraUtils.VR_CAMERA);
-            _vrik = VrikCreator.initialize(player.gameObject,
-                leftHand.transform, rightHand.transform, cam.transform);
+            leftFootPhysicsEstimator =
+                (leftFoot != null ? leftFoot : (leftFoot = new GameObject().transform)).gameObject.GetOrAddComponent<PhysicsEstimator>();
+            rightFootPhysicsEstimator =
+                (rightFoot != null ? rightFoot : (rightFoot = new GameObject().transform)).gameObject.GetOrAddComponent<PhysicsEstimator>();
+            leftFootPhysicsEstimator.refTransform = rightFootPhysicsEstimator.refTransform = _vrCameraRig;
+            vrikRef = VrikCreator.initialize(
+                player.gameObject, leftHand.transform, rightHand.transform, cam.transform, pelvis, leftFoot, rightFoot);
+            if (vrikRef == null)
+            {
+                return;
+            }
             var vrPlayerSync = player.gameObject.GetComponent<VRPlayerSync>();
             vrPlayerSync.camera = cam.gameObject;
-            vrPlayerSync.leftHand = _vrik.solver.leftArm.target.parent.gameObject;
-            vrPlayerSync.rightHand = _vrik.solver.rightArm.target.parent.gameObject;
+            vrPlayerSync.leftHand = vrikRef.solver.leftArm.target.parent.gameObject;
+            vrPlayerSync.rightHand = vrikRef.solver.rightArm.target.parent.gameObject;
             VrikCreator.resetVrikHandTransform(player);
-            var leftHandGesture = _vrik.references.leftHand.gameObject.AddComponent<HandGesture>();
-            var rightHandGesture = _vrik.references.rightHand.gameObject.AddComponent<HandGesture>();
+            var leftHandGesture = vrikRef.references.leftHand.gameObject.GetOrAddComponent<HandGesture>();
+            var rightHandGesture = vrikRef.references.rightHand.gameObject.GetOrAddComponent<HandGesture>();
             leftHandGesture.sourceHand = leftHand;
             rightHandGesture.sourceHand = rightHand;
             StaticObjects.leftFist().setColliderParent(leftHandBone, leftHandGesture, false);
             StaticObjects.rightFist().setColliderParent(rightHandBone, rightHandGesture, true);
-            Player.m_localPlayer.gameObject.AddComponent<FistBlock>();
-            var reining = Player.m_localPlayer.gameObject.AddComponent<Reining>();
+            StaticObjects.leftFootCollision().setColliderParent(leftFoot);
+            StaticObjects.rightFootCollision().setColliderParent(rightFoot);
+            player.gameObject.GetOrAddComponent<FistBlock>();
+            player.gameObject.GetOrAddComponent<ShipSteering>().Initialize(leftHandGesture, rightHandGesture);
+            var reining = player.gameObject.GetOrAddComponent<Reining>();
             reining.leftHandGesture = leftHandGesture;
             reining.rightHandGesture = rightHandGesture;
             StaticObjects.mouthCollider(cam.transform);
@@ -1140,6 +1541,19 @@ namespace ValheimVRMod.VRCore
 
         private void maybeInitHeadPosition(Player playerCharacter)
         {
+            if (!headPositionInitialized && !playerCharacter.InDodge() && _vrCam != null)
+            {
+                foreach (var c in GameObject.FindObjectsOfType<Camera>())
+                {
+                    if (c.name == CameraUtils.VR_CAMERA && c != _vrCam)
+                    {
+                        LogWarning("VR Camera is stale!");
+                        _vrCam = null;
+                        return;
+                    }
+                }
+            }
+
             if (headPositionInitialized || !inFirstPerson || playerCharacter.InDodge())
             {
                 return;
@@ -1148,8 +1562,11 @@ namespace ValheimVRMod.VRCore
             // First set the position without any adjustment
             _instance.transform.localPosition = getDesiredLocalPosition(playerCharacter);
             var hmd = Valve.VR.InteractionSystem.Player.instance.hmdTransform;
-            // Measure the distance between HMD and desires location, and save it.
-            FIRST_PERSON_HEIGHT_OFFSET = Vector3.Dot(_instance.transform.position - hmd.position, playerCharacter.transform.up);
+            if (firstPersonHeightOffset == null)
+            {
+                // Measure the distance between HMD and desires location, and save it.
+                firstPersonHeightOffset = Vector3.Dot(_instance.transform.position - hmd.position, playerCharacter.transform.up);
+            }
 
             if (_headZoomLevel != HeadZoomLevel.FirstPerson)
             {
@@ -1173,6 +1590,7 @@ namespace ValheimVRMod.VRCore
             headPositionInitialized = true;
 
             referencePlayerHeight = Valve.VR.InteractionSystem.Player.instance.eyeHeight;
+            LogUtils.LogDebug("Reference player height: " + referencePlayerHeight);
         }
 
         private static Vector3 getDesiredLocalPosition(Player playerCharacter)
@@ -1184,6 +1602,94 @@ namespace ValheimVRMod.VRCore
             var desiredLocalPosition = playerCharacter.transform.InverseTransformPoint(playerCharacter.GetEyePoint());
             desiredLocalPosition.x = desiredLocalPosition.z = 0;
             return desiredLocalPosition;
+        }
+
+        private void caliberateBodyTracking()
+        {
+            if (vrCam == null || vrCam.transform.parent == null || !headPositionInitialized || vrikRef?.solver?.spine?.pelvisTarget == null)
+            {
+                return;
+            }
+ 
+            if (!VHVRConfig.IsHipTrackingEnabled())
+            {
+                return;
+            }
+
+            awaitingForcedTracker = false;
+            Vector3 roomUpDirection = vrCam.transform.parent.up;
+            // Resolve the waist tracker (role -> coordinate -> forced index) and cache it for
+            // the per-frame accessors. Parent the pelvis to it when available; otherwise drive
+            // it from the head (matching the previous HMD-fallback behavior). This keeps
+            // pelvis.parent non-null for downstream updateBodyTracking, and lets feet-only
+            // setups still calibrate their feet below.
+            resolvedHipTransform =
+                VHVRConfig.IsHipTrackingEnabled() ?
+                ResolveJointTransform(BodyJoint.Waist, VHVRConfig.HipTrackerIndex(), null, null) :
+                null;
+            trackedPelvis.parent = resolvedHipTransform != null ? resolvedHipTransform : _vrCam.transform;
+            trackedPelvis.position = inferPelvisPositionFromHead();
+            trackedPelvis.rotation = Quaternion.LookRotation(Vector3.ProjectOnPlane(vrCam.transform.forward, roomUpDirection), roomUpDirection);
+            pelvis.localPosition = Vector3.zero;
+            pelvis.localRotation = Quaternion.identity;
+            caliberateFeet();
+            if (vrikRef != null)
+            {
+                VrikCreator.ResetPelvisAndFootTransform(vrikRef);
+            }
+            // Keep retrying while a forced tracker is still coming online (bounded by the
+            // deadline) so a freshly created >16 tracker is picked up without a manual recenter.
+            bodyTrackingCaliberationPending = awaitingForcedTracker && Time.unscaledTime < bodyTrackingCaliberationDeadline;
+        }
+
+        private void caliberateFeet()
+        {
+            // Resolve each foot (role -> coordinate -> forced index). Coordinate detection uses
+            // the resolved waist transform and excludes the already-resolved first foot.
+            Transform firstFoot =
+                VHVRConfig.TrackFeet() ?
+                ResolveJointTransform(BodyJoint.LeftFoot, VHVRConfig.LeftFootTrackerIndex(), resolvedHipTransform, null) :
+                null;
+            Transform secondFoot =
+                VHVRConfig.TrackFeet() ?
+                ResolveJointTransform(BodyJoint.RightFoot, VHVRConfig.RightFootTrackerIndex(), resolvedHipTransform, firstFoot) :
+                null;
+
+            if (firstFoot == null || secondFoot == null)
+            {
+                leftFoot.parent = null;
+                rightFoot.parent = null;
+                return;
+            }
+
+            // Assign the two foot trackers to left/right by comparing their head-local x
+            // position, so the mapping is correct regardless of which role/index is which side.
+            if (vrCam.transform.InverseTransformPoint(firstFoot.position).x <
+                vrCam.transform.InverseTransformPoint(secondFoot.position).x)
+            {
+                leftFoot.parent = firstFoot;
+                rightFoot.parent = secondFoot;
+            }
+            else
+            {
+                leftFoot.parent = secondFoot;
+                rightFoot.parent = firstFoot;
+            }
+
+            leftFoot.rotation = pelvis.rotation;
+            rightFoot.rotation = pelvis.rotation;
+
+            Vector3 roomUpDirection = vrCam.transform.parent.up;
+            Vector3 footHeight = _vrCam.transform.position - _vrCam.transform.forward * 0.1f - (1.7f + VHVRConfig.PlayerHeightAdjust()) * roomUpDirection;
+            leftFoot.position = footHeight + Vector3.ProjectOnPlane(leftFoot.parent.position - footHeight, roomUpDirection);
+            rightFoot.position = footHeight + Vector3.ProjectOnPlane(rightFoot.parent.position - footHeight, roomUpDirection);
+            baseFootHeight = _vrCameraRig.InverseTransformPoint(footHeight).y;
+
+            if (vrikRef != null)
+            {
+                vrikRef.solver.leftLeg.target.SetParent(leftFoot, worldPositionStays: false);
+                vrikRef.solver.rightLeg.target.SetParent(rightFoot, worldPositionStays: false);
+            }
         }
 
         private void attachVrPlayerToMainCamera()
@@ -1211,6 +1717,7 @@ namespace ValheimVRMod.VRCore
             _instance.transform.rotation = mainCamera.gameObject.transform.rotation;
             attachedToPlayer = false;
             headPositionInitialized = false;
+            firstPersonOffset = Vector3.zero;
         }
 
         // Used to turn off the head model when player is currently occupying it.
@@ -1348,9 +1855,104 @@ namespace ValheimVRMod.VRCore
             }
         }
 
+        private void CheckSitRoomscale()
+        {
+            var player = getPlayerCharacter();
+            if (!VHVRConfig.UseVrControls() || _vrCam == null || player == null || player.IsAttached() || !player.IsOnGround())
+            {
+                startingSit = false;
+                return;
+            }
+
+            if (player.IsSitting())
+            {
+                startingSit = false;
+                return;
+            }
+
+            if (startingSit)
+            {
+                if (!player.InEmote())
+                {
+                    player.StartEmote("sit", false);
+                }
+                return;
+            }
+
+            if (VRControls.smoothWalkX > 0.1f || VRControls.smoothWalkY > 0.1f ||
+                VRControls.smoothWalkX < -0.1f || VRControls.smoothWalkY < -0.1f ||
+                gesturedLocomotionManager.stickOutputX > 0.1f || gesturedLocomotionManager.stickOutputY > 0.1f ||
+                gesturedLocomotionManager.stickOutputX < -0.1f || gesturedLocomotionManager.stickOutputY < -0.1f)
+            {
+                return;
+            }
+
+            float height = Valve.VR.InteractionSystem.Player.instance.eyeHeight;
+            float heightThreshold = referencePlayerHeight * VHVRConfig.RoomScaleSneakHeight();
+            if (height > heightThreshold - 0.1f)
+            {
+                // Head too high for sitting
+                return;
+            }
+
+            if (SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.Any) || EquipScript.CurrentMainHandEquipType() == EquipType.Fishing)
+            {
+                return;
+            }
+
+            if (VHVRConfig.IsHipTrackingEnabled())
+            {
+                if (VHVRConfig.TrackFeet())
+                {
+                    Vector3 pelvisFacing = Vector3.ProjectOnPlane(trackedPelvis.forward, _vrCameraRig.up);
+                    if (Vector3.Dot(leftFoot.position - trackedPelvis.position, pelvisFacing) > 0.3f &&
+                        Vector3.Dot(rightFoot.position - trackedPelvis.position, pelvisFacing) > 0.3f &&
+                        Vector3.Dot(_vrCam.transform.position - trackedPelvis.position, pelvisFacing) < 0.1f) // Sitting with feet in front
+                    {
+                        startingSit = true;
+                        return;
+                    }
+                }
+                else
+                {
+                    Vector3 facing = Vector3.ProjectOnPlane(vrCam.transform.forward, _vrCameraRig.up);
+                    if (Vector3.Dot(trackedPelvis.position - vrCam.transform.position, facing) > 0.15f &&
+                        Vector3.Dot(trackedPelvis.forward, _vrCameraRig.up) > 0.8f) // Laying back
+                    {
+                        startingSit = true;
+                        return;
+                    }
+                }
+            }
+
+            Vector3 leftHandRelativeToHead = leftHandBone.position - _vrCam.transform.position;
+            Vector3 rightHandRelativeToHead = rightHandBone.position - _vrCam.transform.position;
+
+            if (Vector3.Dot(leftHandRelativeToHead, _vrCameraRig.up) > -0.25f || Vector3.Dot(rightHandRelativeToHead, _vrCameraRig.up) > -0.25f)
+            {
+                // Hands too high for sitting.
+                return;
+            }
+
+            var heading = Vector3.ProjectOnPlane(_vrCam.transform.forward, _vrCameraRig.up).normalized;
+            if (Vector3.Dot(leftHandRelativeToHead, heading) < -0.33f && Vector3.Dot(rightHandRelativeToHead, heading) < -0.33f)
+            {
+                // Hands are behind back, sit.
+                startingSit = true;
+                return;
+            }
+
+            Vector3 playerRight = Vector3.Cross(_vrCameraRig.up, heading);
+            if (Vector3.Dot(leftHandRelativeToHead, playerRight) > 0.0625f && Vector3.Dot(rightHandRelativeToHead, playerRight) < -0.0625f)
+            {
+                // Hands are crosssing, sit.
+                startingSit = true;
+            }
+    }
+
         private void CheckSneakRoomscale()
         {
-            if (!VHVRConfig.RoomScaleSneakEnabled())
+            if (!VHVRConfig.RoomScaleSneakEnabled() || startingSit)
             {
                 _isRoomscaleSneaking = false;
                 return;
@@ -1373,7 +1975,6 @@ namespace ValheimVRMod.VRCore
             {
                 _isRoomscaleSneaking = false;
             }
-
         }
 
         /// <summary>
@@ -1386,26 +1987,30 @@ namespace ValheimVRMod.VRCore
             {
                 return;
             }
-            Vector3 deltaPosition = _vrCam.transform.localPosition - _lastCamPosition;
+
+            Vector3 deltaPosition = roomscaleLocomotive - lastRoomscaleLocomotivePosition;
             deltaPosition.y = 0;
 
-            float moveThreshold = 0.005f;
-            switch (EquipScript.getRight()) {
-                case EquipType.Claws:
-                case EquipType.DualKnives:
-                case EquipType.Hammer:
-                case EquipType.Knife:
-                case EquipType.None:
-                    if (GesturedLocomotionManager.isInUse || SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.Any))
-                    {
-                        // Allow leaning when holding small weapons are bare-handed.
-                        moveThreshold = 1f;
-                    }
-                    break;
+            if (!isRoomScaleMovementActive)
+            {
+                if (deltaPosition.magnitude > GetRoomscaleMovementActivationThreshold())
+                {
+                    isRoomScaleMovementActive = true;
+                    roomScaleMovementTimeout = 0;
+                }
+            }
+            else if (deltaPosition.magnitude > 0.01f)
+            {
+                roomScaleMovementTimeout = 0;
+            }
+            else {
+                roomScaleMovementTimeout += deltaTime;
+                if (roomScaleMovementTimeout > 1) {
+                    isRoomScaleMovementActive = false;
+                }
             }
 
-            bool shouldMove = deltaPosition.magnitude > moveThreshold;
-            if (shouldMove)
+            if (isRoomScaleMovementActive)
             {
                 float maxMovement = deltaTime * MAX_ROOMSCALE_MOVEMENT_SPEED;
                 if (deltaPosition.magnitude > maxMovement)
@@ -1437,18 +2042,60 @@ namespace ValheimVRMod.VRCore
                 }
 
                 // Calculate new postion
-                _lastCamPosition += deltaPosition;
+                lastRoomscaleLocomotivePosition += deltaPosition;
                 var globalDeltaPosition = _instance.transform.TransformVector(deltaPosition);
                 globalDeltaPosition.y = 0;
 
                 roomscaleMovement = globalDeltaPosition;
                 _vrCameraRig.localPosition -= deltaPosition; // Since we move the VR camera rig with the player character elsewhere, we counteract that here to prevent it from moving.
             }
-            else roomscaleMovement = Vector3.zero;
+            else
+            {
+                roomscaleMovement = Vector3.zero;
+            }
 
             //Set animation parameters
-            _roomscaleAnimationForwardSpeed = Mathf.SmoothDamp(_roomscaleAnimationForwardSpeed, shouldMove ? deltaPosition.z / Time.fixedDeltaTime : 0, ref _forwardSmoothVel, ROOMSCALE_STEP_ANIMATION_SMOOTHING, 99f);
-            _roomscaleAnimationSideSpeed = Mathf.SmoothDamp(_roomscaleAnimationSideSpeed, shouldMove ? deltaPosition.x / Time.fixedDeltaTime : 0, ref _sideSmoothVel, ROOMSCALE_STEP_ANIMATION_SMOOTHING, 99f);
+            _roomscaleAnimationForwardSpeed =
+                Mathf.SmoothDamp(
+                    _roomscaleAnimationForwardSpeed,
+                    isRoomScaleMovementActive ? deltaPosition.z / Time.fixedDeltaTime : 0, ref _forwardSmoothVel, ROOMSCALE_STEP_ANIMATION_SMOOTHING, 99f);
+            _roomscaleAnimationSideSpeed =
+                Mathf.SmoothDamp(
+                    _roomscaleAnimationSideSpeed,
+                    isRoomScaleMovementActive ? deltaPosition.x / Time.fixedDeltaTime : 0, ref _sideSmoothVel, ROOMSCALE_STEP_ANIMATION_SMOOTHING, 99f);
+        }
+
+        private float GetRoomscaleMovementActivationThreshold()
+        {
+            Player player = Player.m_localPlayer;
+
+            if (player == null || player.IsSitting() || player.m_inCraftingStation)
+            {
+                return 0.5f;
+            }
+
+            if (VHVRConfig.IsHipTrackingEnabled())
+            {
+                return 0.125f;
+            }
+            
+            switch (EquipScript.CurrentMainHandEquipType())
+            {
+                case EquipType.Claws:
+                case EquipType.DualKnives:
+                case EquipType.Hammer:
+                case EquipType.Knife:
+                case EquipType.None:
+                case EquipType.Tankard:
+                    if (GesturedLocomotionManager.isInUse || SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.Any))
+                    {
+                        // Allow leaning when holding small weapons or bare-handed.
+                        return 1f;
+                    }
+                    break;
+            }
+
+            return 0.125f;
         }
 
         public void ResetRoomscaleCamera()
@@ -1461,7 +2108,7 @@ namespace ValheimVRMod.VRCore
             Vector3 vrCamPosition = _vrCam.transform.localPosition;
             vrCamPosition.y = 0;
             _vrCameraRig.localPosition = -vrCamPosition;
-            _lastCamPosition = _vrCam.transform.localPosition;
+            lastRoomscaleLocomotivePosition = roomscaleLocomotive;
         }
 
         public void TriggerHandVibration(float time)

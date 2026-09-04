@@ -45,6 +45,11 @@ namespace ValheimVRMod.Scripts
         private Vector3 pointVel4;
         private Vector3 pointVel5;
 
+        private bool isMovementSecondaryAttack;
+        private float movementCooldown;
+        private bool isMovementSecondaryAttackHold;
+        public static bool isStaminaDrained;
+
         private void Awake()
         {
             firstPos = Vector3.zero;
@@ -105,25 +110,23 @@ namespace ValheimVRMod.Scripts
             }
             isSecondaryAttackStarted = false;
             isSecondaryAttackTriggered = true;
+            isStaminaDrained = false;
         }
 
-        public void Initialize(Transform obj, string name, bool isRightHand)
+        public void Initialize(Transform obj, bool isRightHand)
         {
             parent = obj.parent.gameObject;
             outline = obj.parent.gameObject.GetComponent<Outline>();
             this.isRightHand = isRightHand;
-            if (isRightHand)
-            {
-                item = Player.m_localPlayer.GetRightItem();
-            }
-            else
-            {
-                item = Player.m_localPlayer.GetLeftItem();
-            }
+            item =
+                isRightHand ^ VRPlayer.isRightHandMainWeaponHand ?
+                Player.m_localPlayer.GetLeftItem() :
+                Player.m_localPlayer.GetRightItem();
             attack = item.m_shared.m_attack.Clone();
             secondaryAttack = item.m_shared.m_secondaryAttack.Clone();
+            isMovementSecondaryAttackHold = false;
+            isStaminaDrained = false;
 
-            
             float damage = 0;
             if (item.m_shared.m_damages.m_slash > damage)
             {
@@ -183,9 +186,24 @@ namespace ValheimVRMod.Scripts
             {
                 rangeMultiplier = 1.5f;
             }
-            if (secondaryAttack.m_attackAnimation == "" || obj.gameObject.GetComponent<ThrowableManager>() != null)
+
+            //Check if There's secondary attack animation, is not a spear throwing, and not a magic weapon
+            if (secondaryAttack.m_attackAnimation == "" || obj.gameObject.GetComponent<ThrowableManager>() != null || EquipScript.CurrentMainHandEquipType() == EquipType.Magic)
             {
                 isSecondaryAvailable = false;
+            }
+            
+            if (VHVRConfig.MovementSecondaryAttack()
+                && (secondaryAttack.m_attackAnimation == "knife_secondary" 
+                || secondaryAttack.m_attackAnimation == "dual_knives_secondary"
+                || secondaryAttack.m_attackAnimation == "dualaxes_secondary"))
+            {
+                slashTrail.time = 1f;
+                isMovementSecondaryAttack = true;
+            }
+            else
+            {
+                isMovementSecondaryAttack = false;
             }
             
         }
@@ -211,18 +229,27 @@ namespace ValheimVRMod.Scripts
             {
                 secondaryAttackTimer -= Time.deltaTime;
             }
+
+            if(movementCooldown >= 0)
+            {
+                movementCooldown -= Time.deltaTime;
+            }
             
             var mainHandTrigger = isRightHand ? SteamVR_Actions.valheim_Use.state : SteamVR_Actions.valheim_UseLeft.state;
             var inCooldown = AttackTargetMeshCooldown.isPrimaryTargetInCooldown();
             var localWeaponForward = LocalWeaponWield.weaponForward * secondaryAttack.m_attackRange / 2;
-            var localHandPos = VRPlayer.dominantHand.transform.position - Player.m_localPlayer.transform.position;
-            var posHeight = Player.m_localPlayer.transform.InverseTransformPoint(VRPlayer.dominantHand.transform.position + localWeaponForward);
+            var localHandPos = VRPlayer.mainWeaponHand.transform.position - Player.m_localPlayer.transform.position;
+            var posHeight = Player.m_localPlayer.transform.InverseTransformPoint(VRPlayer.mainWeaponHand.transform.position + localWeaponForward);
 
+            if (isMovementSecondaryAttack && !(movementCooldown >= 0 || isMovementSecondaryAttackHold))
+            {
+                localWeaponForward = Vector3.zero;
+            }
             if (LocalWeaponWield.isCurrentlyTwoHanded())
             {
-                localHandPos -= LocalWeaponWield.weaponForward * Vector3.Distance(VRPlayer.dominantHand.transform.position, VRPlayer.dominantHand.otherHand.transform.position);
+                localHandPos -= LocalWeaponWield.weaponForward * Vector3.Distance(VRPlayer.mainWeaponHand.transform.position, VRPlayer.mainWeaponHand.otherHand.transform.position);
             }
-            if (!SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource) || 
+            if (!SteamVR_Actions.valheim_Grab.GetState(VRPlayer.mainWeaponHandInputSource) || 
                 item.m_shared.m_itemType == ItemDrop.ItemData.ItemType.TwoHandedWeapon && !LocalWeaponWield.isCurrentlyTwoHanded())
             {
                 firstPos = Vector3.zero;
@@ -230,7 +257,7 @@ namespace ValheimVRMod.Scripts
             }
             
             //Input Check
-            if (SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource) && 
+            if (SteamVR_Actions.valheim_Grab.GetState(VRPlayer.mainWeaponHandInputSource) && 
                 !inCooldown && 
                 !VRPlayer.IsClickableGuiOpen && 
                 !(item.m_shared.m_itemType == ItemDrop.ItemData.ItemType.TwoHandedWeapon && !LocalWeaponWield.isCurrentlyTwoHanded()))
@@ -243,11 +270,20 @@ namespace ValheimVRMod.Scripts
                     slashLine.widthCurve = slashCurve;
                     slashLine.loop = false;
 
-                    slashTrail.transform.SetParent(VRPlayer.dominantHand.transform);
+                    slashTrail.transform.SetParent(VRPlayer.mainWeaponHand.transform);
                     slashTrail.transform.position = Player.m_localPlayer.transform.position + firstPos;
                     slashTrail.material.color = Color.clear;
                     slashTrail.emitting = true;
                     slashTrail.Clear();
+
+                    if (isMovementSecondaryAttack && movementCooldown >= 0 && !isMovementSecondaryAttackHold) 
+                    {
+                        isMovementSecondaryAttackHold = true;
+                    }
+                    else
+                    {
+                        isStaminaDrained = false;
+                    }
 
                     isSecondaryAttackStarted = true;
                     hitDir = Vector3.zero;
@@ -277,7 +313,7 @@ namespace ValheimVRMod.Scripts
                     outline.enabled = false;
                     if (!isSecondaryAttackEnded)
                     {
-                        VRPlayer.dominantHand.hapticAction.Execute(0, 0.2f, 50, 0.1f, VRPlayer.dominantHandInputSource);
+                        VRPlayer.mainWeaponHand.hapticAction.Execute(0, 0.2f, 50, 0.1f, VRPlayer.mainWeaponHandInputSource);
                         hitDir = Vector3.zero;
                         isSecondaryAttackEnded = true;
                     }
@@ -370,7 +406,41 @@ namespace ValheimVRMod.Scripts
                 pointList = new List<Vector3>();
 
                 //Secondary attack raycast check
-                if (secondaryAttack.m_attackAnimation == "atgeir_secondary")
+                if (isMovementSecondaryAttack && movementCooldown <=0 && !isMovementSecondaryAttackHold)
+                {
+                    var firstTrail = slashTrail.GetPosition(0);
+                    var halfTrail = slashTrail.GetPosition((int)((slashTrail.positionCount - 1) * 0.5f));
+                    var endTrail = slashTrail.GetPosition(slashTrail.positionCount - 1);
+                    slashLine.SetPositions(pointList.ToArray());
+                    slashLine.positionCount = 5;
+
+                    var range = (Vector3.Distance(firstTrail, halfTrail) + Vector3.Distance(halfTrail, endTrail));
+                    //LogUtils.LogDebug("range : " + range);
+                    isMovementSecondaryAttackHold = false;
+                    if (range < 0.2f)
+                    {
+                        ResetSecondaryAttack();
+                        return;
+                    }
+                    if(Player.m_localPlayer.HaveStamina(getStaminaSecondaryAtttackUsage() + 0.1f))
+                    {
+                        var direction = (halfTrail - firstTrail);
+                        direction.y = 0;
+                        var clampedRange = Mathf.Clamp(range, 0.3f, 1);
+                        Player.m_localPlayer.ForceJump(direction.normalized * 10 * clampedRange + (Vector3.up * 8), true);
+                        Player.m_localPlayer.UseStamina(getStaminaSecondaryAtttackUsage());
+
+                        var time = GetAttackDurationWithMovement(secondaryAttack);
+                        movementCooldown = time;
+                        isStaminaDrained = true;
+                    }
+                    else
+                    {
+                        ResetSecondaryAttack();
+                    }
+                    
+                }
+                else if (secondaryAttack.m_attackAnimation == "atgeir_secondary")
                 {
                     if (Vector3.Distance(firstPos, lastPos) < secondaryAttack.m_attackRange * 0.5f)
                     {
@@ -409,7 +479,8 @@ namespace ValheimVRMod.Scripts
                     }
                     slashLine.SetPositions(pointList.ToArray());
                     slashLine.positionCount = 5;
-
+                    isMovementSecondaryAttackHold = false;
+                    movementCooldown = -1;
                     if ((Vector3.Distance(firstTrail, halfTrail) + Vector3.Distance(halfTrail, endTrail)) < secondaryAttack.m_attackRange * 0.5f)
                     {
                         ResetSecondaryAttack();
@@ -429,24 +500,24 @@ namespace ValheimVRMod.Scripts
                     RaycastSecondaryAttack(tempSecondaryHitList);
                 }
 
-                var hitTime = WeaponUtils.GetAttackDuration(secondaryAttack);
-                secondaryAttackTimer = Mathf.Min(hitTime / 2, 0.3f);
+                var hitTime = GetAttackDurationWithMovement(secondaryAttack);
+                secondaryAttackTimer = Mathf.Min(hitTime / 2, 0.1f);
                 secondaryAttackTimerFull = -hitTime + secondaryAttackTimer;
 
                 //Secondary attack check target outlines and terrain hit
-                if (secondaryHitList.Count >= 1 && Player.m_localPlayer.HaveStamina(getStaminaSecondaryAtttackUsage() + 0.1f))
+                if (secondaryHitList.Count >= 1 && (Player.m_localPlayer.HaveStamina(getStaminaSecondaryAtttackUsage() + 0.1f)||isStaminaDrained))
                 {
-                    var isTerrain = item.m_shared.m_spawnOnHitTerrain ? true : false;
+                    var isLastHitTerrain = item.m_shared.m_spawnOnHitTerrain ? true : false;
                     foreach (var hit in secondaryHitList)
                     {
                         var target = hit.collider.gameObject;
-                        if (target.GetComponent<Heightmap>() == null)
-                        {
-                            isTerrain = false;
-                        }
-                        else
+                        var isTerrain = (target.GetComponent<Heightmap>() != null);
+                        if (isTerrain)
                         {
                             terrainHitCount += 1;
+                        }
+                        else {
+                            isLastHitTerrain = false;
                         }
 
                         var character = hit.collider.gameObject.GetComponentInParent<Character>();
@@ -460,9 +531,10 @@ namespace ValheimVRMod.Scripts
                         {
                             attackTargetMeshCooldown = target.AddComponent<AttackTargetMeshCooldown>();
                         }
+                        attackTargetMeshCooldown.showOutline = isTerrain ? VHVRConfig.ShowTerrainAttackOutline() : VHVRConfig.ShowNonTerrainAttackOutline();
                         attackTargetMeshCooldown.tryTriggerSecondaryAttack(hitTime,false);
                     }
-                    if (isTerrain)
+                    if (isLastHitTerrain)
                     {
                         WeaponCollision.isLastHitOnTerrain = true;
                     }
@@ -494,14 +566,8 @@ namespace ValheimVRMod.Scripts
                     Player.m_localPlayer.m_animEvent,
                     null, item, null, 0.0f, 0.0f))
                     {
-                        if (isRightHand)
-                        {
-                            VRPlayer.rightHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, SteamVR_Input_Sources.RightHand);
-                        }
-                        else
-                        {
-                            VRPlayer.leftHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, SteamVR_Input_Sources.LeftHand);
-                        }
+                        VRPlayer.rightHand.hapticAction.Execute(
+                            0, 0.2f, 100, 0.5f, isRightHand ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand);
                     }
                 }
                 isSecondaryAttackTriggered = true;
@@ -512,7 +578,7 @@ namespace ValheimVRMod.Scripts
 
         private void ResetSecondaryAttack()
         {
-            var hitTime = WeaponUtils.GetAttackDuration(secondaryAttack);
+            var hitTime = GetAttackDurationWithMovement(secondaryAttack);
             secondaryAttackTimer = Mathf.Min(hitTime / 2, 0.3f);
             secondaryAttackTimerFull = -hitTime + secondaryAttackTimer;
             firstPos = Vector3.zero;
@@ -520,6 +586,15 @@ namespace ValheimVRMod.Scripts
             isSecondaryAttackStarted = false;
             slashTrail.emitting = false;
             lastpointList = new List<Vector3>();
+        }
+
+        private float GetAttackDurationWithMovement(Attack secondaryAttack)
+        {
+            if (isMovementSecondaryAttack && isMovementSecondaryAttackHold)
+            {
+                return 0.2f;
+            }
+            return WeaponUtils.GetAttackDuration(secondaryAttack);
         }
         private void RaycastSecondaryAttack(RaycastHit[] raycastList)
         {

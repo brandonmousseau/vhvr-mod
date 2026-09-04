@@ -91,8 +91,11 @@ namespace ValheimVRMod.Utilities
         void OnRenderObject()
         {
             debugVelocityLine.enabled = renderDebugVelocityLine;
-            debugVelocityLine.SetPosition(0, transform.position);
-            debugVelocityLine.SetPosition(1, transform.position + GetVelocity());
+            if (renderDebugVelocityLine)
+            {
+                debugVelocityLine.SetPosition(0, transform.position);
+                debugVelocityLine.SetPosition(1, transform.position + GetVelocity());
+            }
         }
 
         void Destroy()

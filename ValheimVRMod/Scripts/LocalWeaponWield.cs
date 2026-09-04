@@ -17,6 +17,10 @@ namespace ValheimVRMod.Scripts
         public static bool IsDominantHandBehind { get { return isCurrentlyTwoHanded() && (LocalPlayerTwoHandedState == TwoHandedState.RightHandBehind ^ VHVRConfig.LeftHanded()); } }
         public static bool isAiming { get; private set; }  
         public static Vector3 localWeaponTip { get; private set; }
+        public static bool CurrentTwoHandedWieldStartedWithLongGrip { get; private set; }
+        public static bool? NextWeaponHoldShouldStartPointingUlnar;
+        public static bool IsWeaponPointingUlnar { get; private set; }
+        public static bool IsDominantHandHoldInversed { get; private set; }
 
         protected bool isRedDotVisible { set { redDotRenderer.enabled = value; } }
 
@@ -24,6 +28,14 @@ namespace ValheimVRMod.Scripts
         private const float RED_DOT_SIZE_RADIANS = 1f / 256f;
         private static Material RedDotMaterial = null;
         private MeshRenderer redDotRenderer; // Red dot for aiming
+        private bool leftHandPreparingToUnstickTwoHandedWield = false;
+        private bool rightHandPreparingToUnstickTwoHandedWield = false;
+        private bool rotatingHandConnectors;
+        // The ordering of the hands along the radial axis of both hands when holding battleaxe/spear/atgeir.
+        // If the radial directions of the hands are pointing opposite ways, this variable is not updated.
+        private TwoHandedState polearmHandOrderAlongRadialDirection = TwoHandedState.SingleHanded;
+        private VRPlayerSync playerSync { get { return _playerSync == null ? (_playerSync = GetComponentInParent<VRPlayerSync>()) : _playerSync; } }
+        private VRPlayerSync _playerSync;
 
         public Hand mainHand {
             get {
@@ -34,7 +46,7 @@ namespace ValheimVRMod.Scripts
                     case TwoHandedState.LeftHandBehind:
                         return VRPlayer.leftHand;
                     default:
-                        return VRPlayer.dominantHand;
+                        return VRPlayer.mainWeaponHand;
                 }
 
             }
@@ -45,11 +57,18 @@ namespace ValheimVRMod.Scripts
         private Transform rearHandConnector { get { return twoHandedState == TwoHandedState.LeftHandBehind ? VrikCreator.localPlayerLeftHandConnector : VrikCreator.localPlayerRightHandConnector; } }
         private Transform lastRenderedTransform;
 
-        private bool knifeReverseHold;
         private float shieldSize = 1f;
 
         protected virtual void Awake()
         {
+            if (NextWeaponHoldShouldStartPointingUlnar.HasValue)
+            {
+                IsWeaponPointingUlnar = NextWeaponHoldShouldStartPointingUlnar.Value;
+                NextWeaponHoldShouldStartPointingUlnar = null;
+            }
+            else if (EquipScript.IsSpearEquipped()) {
+                IsWeaponPointingUlnar = !VHVRConfig.SpearInverseWield();
+            }
             lastRenderedTransform = new GameObject().transform;
             physicsEstimator = lastRenderedTransform.gameObject.AddComponent<PhysicsEstimator>();
             physicsEstimator.refTransform = CameraUtils.getCamera(CameraUtils.VR_CAMERA)?.transform.parent;
@@ -58,9 +77,17 @@ namespace ValheimVRMod.Scripts
         protected override void OnDestroy()
         {
             VrikCreator.ResetHandConnectors();
+            LocalPlayerTwoHandedState = TwoHandedState.SingleHanded;
+            // IsWeaponPointingUlnar = false;
             Destroy(lastRenderedTransform.gameObject);
             Destroy(redDotRenderer.gameObject);
             base.OnDestroy();
+        }
+
+        protected void OnDisable()
+        {
+            LocalPlayerTwoHandedState = TwoHandedState.SingleHanded;
+            IsWeaponPointingUlnar = false;
         }
 
         protected override Vector3 UpdateTwoHandedWield()
@@ -71,29 +98,47 @@ namespace ValheimVRMod.Scripts
             }
 
             bool wasTwoHanded = (LocalPlayerTwoHandedState != TwoHandedState.SingleHanded);
-            weaponForward = base.UpdateTwoHandedWield();
-            LocalPlayerTwoHandedState = twoHandedState;
-
-            if (attackAnimation == "knife_stab")
+            if (wasTwoHanded)
             {
-                KnifeWield();
-                weaponForward = GetWeaponPointingDirection();
+                IsWeaponPointingUlnar = Vector3.Dot(VRPlayer.mainWeaponHand.transform.forward, weaponForward) < 0;
             }
+             
+            weaponForward = base.UpdateTwoHandedWield();
+
+            if (!wasTwoHanded)
+            {
+                CurrentTwoHandedWieldStartedWithLongGrip = ShouldUseLongGrip();
+            }
+
+            if (twoHandedState == TwoHandedState.SingleHanded)
+            {
+                if (wasTwoHanded)
+                {
+                    IsWeaponPointingUlnar = Vector3.Dot(VRPlayer.mainWeaponHand.transform.forward, weaponForward) < 0;
+                }
+                else if (EquipScript.CurrentMainHandEquipType() == EquipType.Knife)
+                {
+                    IsWeaponPointingUlnar = WeaponUtils.MaybeFlipKnife(IsWeaponPointingUlnar, !VRPlayer.isRightHandMainWeaponHand);
+                }
+            }
+
+            LocalPlayerTwoHandedState = twoHandedState;
+            IsDominantHandHoldInversed = geometryProvider.InverseHoldForDominantHand();
 
             if (!redDotRenderer)
             {
                 InitializeRedDot();
             }
 
-            if (EquipScript.getLeft() == EquipType.Crossbow && VHVRConfig.OneHandedBow())
+            if (EquipScript.CurrentOffHandEquipType() == EquipType.Crossbow && VHVRConfig.OneHandedBow())
             {
                 isAiming = true;
             }
-            else if (IsDundr())
+            else if (isDundr)
             {
                 isAiming = true;
             }
-            else if (EquipScript.getLeft() == EquipType.Crossbow || EquipScript.getRight() == EquipType.Magic)
+            else if (EquipScript.CurrentOffHandEquipType() == EquipType.Crossbow || EquipScript.CurrentMainHandEquipType() == EquipType.Magic)
             {
                 isAiming = isCurrentlyTwoHanded();
             }
@@ -108,6 +153,7 @@ namespace ValheimVRMod.Scripts
             {
                 //VRIK Hand rotation
                 RotateHandsForTwoHandedWield(weaponForward);
+                rotatingHandConnectors = true;
                 // Adjust the positions so that they are rotated around the hand centers which are slightly off from their local origins.
                 Vector3 frontHandCenter = getHandCenter(frontHandTransform);
                 Vector3 rearHandCenter = getHandCenter(rearHandTransform);
@@ -116,13 +162,25 @@ namespace ValheimVRMod.Scripts
 
                 shieldSize = 0.4f;
             }
-            else if (wasTwoHanded)
+            else
             {
-                VrikCreator.ResetHandConnectors();
-                shieldSize = 1f;
+                if (rotatingHandConnectors)
+                {
+                    VrikCreator.ResetHandConnectors();
+                    shieldSize = 1f;
+                }
+                if (geometryProvider.ShouldRotateHandForOneHandedWield())
+                {
+                    RotateHandForOneHandedWield(weaponForward);
+                    rotatingHandConnectors = true;
+                }
+                else
+                {
+                    rotatingHandConnectors = false;
+                }
             }
 
-            if (!EquipScript.isSpearEquipped() && VHVRConfig.TwoHandedWithShield())
+            if (!EquipScript.IsSpearEquipped() && EquipScript.CurrentMainHandEquipType() != EquipType.Knife && VHVRConfig.TwoHandedWithShield())
             {
                 ShieldBlock.instance?.ScaleShieldSize(shieldSize);
             }
@@ -133,12 +191,13 @@ namespace ValheimVRMod.Scripts
             lastRenderedTransform.localScale = Vector3.one;
             lastRenderedTransform.SetParent(null, true);
             localWeaponTip = transform.position + (weaponLength - distanceBetweenGripAndRearEnd) * weaponForward;
+            playerSync?.UpdateWeaponTransform(transform.localPosition, transform.localRotation);
 
             return weaponForward;
         }
 
         protected override bool IsPlayerLeftHanded() {
-            return VHVRConfig.LeftHanded();
+            return !VRPlayer.isRightHandMainWeaponHand;
         }
 
         protected override Transform GetLeftHandTransform()
@@ -163,52 +222,117 @@ namespace ValheimVRMod.Scripts
                 return TwoHandedState.SingleHanded;
             }
 
-            if (!VHVRConfig.TwoHandedWithShield() && EquipScript.getLeft() == EquipType.Shield)
+            if (!VHVRConfig.TwoHandedWithShield() && EquipScript.CurrentOffHandEquipType() == EquipType.Shield)
             {
                 return TwoHandedState.SingleHanded;
             }
             
-            switch (itemName)
+            switch (EquipScript.GetEquipTypeFromHash(itemHash))
             {
-                case "Hammer":
+                case EquipType.Hammer:
                     return TwoHandedState.SingleHanded;
-                case "FishingRod":
+                case EquipType.Fishing:
                     if (FishingManager.instance && FishingManager.instance.reelGrabbed)
                         return TwoHandedState.SingleHanded;
                     break;
             }
 
-            if (attackAnimation == "knife_stab") {
-                return TwoHandedState.SingleHanded;
-            }
-            
-            if (nonDominantHandHasWeapon() && EquipScript.getLeft() != EquipType.Crossbow)
+            if (nonDominantHandHasWeapon() && EquipScript.CurrentOffHandEquipType() != EquipType.Crossbow)
             {
                 return TwoHandedState.SingleHanded;
             }
 
-            if (!SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand) ||
-                !SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand) ||
-                TemporaryDisableTwoHandedWield())
+            if (TemporaryDisableTwoHandedWield())
             {
                 return TwoHandedState.SingleHanded;
             }
 
+            if (wasTwoHanded && IsTwoHandedWieldSticky())
+            {
+                if (Vector3.Distance(VRPlayer.leftHand.transform.position, VRPlayer.rightHand.transform.position) > 0.2f)
+                {
+                    leftHandPreparingToUnstickTwoHandedWield = rightHandPreparingToUnstickTwoHandedWield = false;
+                }
+                else if (SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.LeftHand) ||
+                        SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.RightHand))
+                {
+                    if (leftHandPreparingToUnstickTwoHandedWield && rightHandPreparingToUnstickTwoHandedWield)
+                    {
+                        return TwoHandedState.SingleHanded;
+                    }
+                    leftHandPreparingToUnstickTwoHandedWield = rightHandPreparingToUnstickTwoHandedWield = false;
+                }
+                else
+                {
+                    if (SteamVR_Actions.valheim_Grab.GetStateDown(SteamVR_Input_Sources.LeftHand))
+                    {
+                        leftHandPreparingToUnstickTwoHandedWield = true;
+                    }
+                    if (SteamVR_Actions.valheim_Grab.GetStateDown(SteamVR_Input_Sources.RightHand))
+                    {
+                        rightHandPreparingToUnstickTwoHandedWield = true;
+                    }
+                }
+            }
+            else if (!SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand) ||
+                    !SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand))
+            {
+                return TwoHandedState.SingleHanded;
+            }
+
+            Vector3 rightHandToLeftHand;
             if (wasTwoHanded)
             {
+                if (isPolearm())
+                {
+                    rightHandToLeftHand = getHandCenter(GetLeftHandTransform()) - getHandCenter(GetRightHandTransform());
+                    float handDistance = rightHandToLeftHand.magnitude;
+                    rightHandToLeftHand = rightHandToLeftHand / handDistance;
+                    float leftHandRadialProjection = Vector3.Dot(GetLeftHandTransform().forward, rightHandToLeftHand);
+                    float rightHandRadialProjection = Vector3.Dot(GetRightHandTransform().forward, rightHandToLeftHand);
+                    var previousHandRadialSuggestedHold = polearmHandOrderAlongRadialDirection;
+                    if (leftHandRadialProjection > 0.25f && rightHandRadialProjection > 0.25f)
+                    {
+                        polearmHandOrderAlongRadialDirection = TwoHandedState.RightHandBehind;
+                    }
+                    else if (leftHandRadialProjection < -0.25f && rightHandRadialProjection < -0.25f)
+                    {
+                        polearmHandOrderAlongRadialDirection = TwoHandedState.LeftHandBehind;
+                    }
+                    if (previousHandRadialSuggestedHold != polearmHandOrderAlongRadialDirection && handDistance < 0.3f)
+                    {
+                        // When the hands are close to each other and the hand order along the radial axis is flipped,
+                        // flip the weapon so that the weapon is pointing the radial direction of the hands.
+                        return polearmHandOrderAlongRadialDirection;
+                    }
+                }
+
                 // Stay in current two-handed mode since both hands are grabbing.
                 return twoHandedState;
             }
 
             // Enter two-handed wield as needed.
-            Vector3 rightHandToLeftHand = getHandCenter(GetLeftHandTransform()) - getHandCenter(GetRightHandTransform());
+            rightHandToLeftHand = getHandCenter(GetLeftHandTransform()) - getHandCenter(GetRightHandTransform());
+            if (Vector3.Project(rightHandToLeftHand, GetWeaponPointingDirection()).magnitude > weaponLength * 0.5f)
+            {
+                return TwoHandedState.SingleHanded;
+            }
             float wieldingAngle = Vector3.Angle(rightHandToLeftHand, GetWeaponPointingDirection());
             if (wieldingAngle < 60)
             {
+                leftHandPreparingToUnstickTwoHandedWield = rightHandPreparingToUnstickTwoHandedWield = false;
+                polearmHandOrderAlongRadialDirection =
+                    Vector3.Dot(VRPlayer.mainWeaponHand.transform.forward, rightHandToLeftHand) > 0 ?
+                    TwoHandedState.RightHandBehind : TwoHandedState.LeftHandBehind;
                 return TwoHandedState.RightHandBehind;
             }
             else if (wieldingAngle > 120f)
             {
+                leftHandPreparingToUnstickTwoHandedWield = rightHandPreparingToUnstickTwoHandedWield = false;
+                polearmHandOrderAlongRadialDirection =
+                    Vector3.Dot(VRPlayer.mainWeaponHand.transform.forward, rightHandToLeftHand) > 0 ?
+                    TwoHandedState.RightHandBehind :
+                    TwoHandedState.LeftHandBehind;
                 return TwoHandedState.LeftHandBehind;
             }
 
@@ -217,30 +341,68 @@ namespace ValheimVRMod.Scripts
 
         protected virtual void RotateHandsForTwoHandedWield(Vector3 weaponPointingDir)
         {
-            Vector3 desiredFrontHandForward = Vector3.Project(frontHandTransform.forward, weaponPointingDir);
+            Vector3 desiredFrontHandForward =
+                Vector3.Project(
+                    frontHandTransform.forward,
+                    EquipScript.CurrentMainHandEquipType() == EquipType.Scythe ? Vector3.Cross(weaponPointingDir, frontHandTransform.up) : weaponPointingDir);
             Vector3 desiredRearHandForward = Vector3.Project(rearHandTransform.forward, Quaternion.AngleAxis(10, rearHandTransform.right) * weaponPointingDir);
             frontHandConnector.rotation = Quaternion.LookRotation(desiredFrontHandForward, frontHandTransform.up);
             rearHandConnector.rotation = Quaternion.LookRotation(desiredRearHandForward, rearHandTransform.up);
         }
 
-        private void KnifeWield()
+        private void RotateHandForOneHandedWield(Vector3 weaponPointingDir)
         {
-            if (SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource))
+            VrikCreator.GetLocalPlayerArrowHandConnector().rotation =
+                Quaternion.LookRotation(
+                    Quaternion.AngleAxis(10, mainHand.transform.right) * weaponPointingDir,
+                    mainHand.transform.up);
+        }
+
+        private bool IsTwoHandedWieldSticky()
+        {
+            if (EquipScript.CurrentOffHandEquipType() == EquipType.Crossbow)
             {
-                // Reverse grip
-                transform.rotation = originalRotation * Quaternion.AngleAxis(180, Vector3.right);
-                knifeReverseHold = true;
+                return false;
             }
-            else if (knifeReverseHold)
+
+            switch (EquipScript.CurrentMainHandEquipType())
             {
-                transform.rotation = originalRotation;
-                knifeReverseHold = false;
+                case EquipType.BattleAxe:
+                case EquipType.Polearms:
+                    return VHVRConfig.StickyTwoHandedWield(isPolearm: true);
+                case EquipType.Spear:
+                case EquipType.SpearChitin:
+                    return EquipScript.CurrentOffHandEquipType() == EquipType.None && VHVRConfig.StickyTwoHandedWield(isPolearm: true);
+                default:
+                    return EquipScript.CurrentOffHandEquipType() == EquipType.None && VHVRConfig.StickyTwoHandedWield(isPolearm: false);
             }
         }
 
         public static bool isCurrentlyTwoHanded()
         {
+            if (EquipScript.CurrentOffHandEquipType() == EquipType.None && EquipScript.CurrentMainHandEquipType() == EquipType.None)
+            {
+                return false;
+            }
             return LocalPlayerTwoHandedState != TwoHandedState.SingleHanded;
+        }
+
+        private bool isPolearm()
+        {
+            if (!isDominantHandWeapon)
+            {
+                return false;
+            }
+            switch (EquipScript.CurrentMainHandEquipType())
+            {
+                case EquipType.BattleAxe:
+                case EquipType.Spear:
+                case EquipType.SpearChitin:
+                case EquipType.Polearms:
+                    return true;
+                default:
+                    return false;
+            }
         }
 
         public bool allowBlocking()
@@ -248,12 +410,13 @@ namespace ValheimVRMod.Scripts
             switch (attackAnimation)
             {
                 case "knife_stab":
-                    if (EquipScript.getLeft() == EquipType.Shield)
-                        return false;
-                    else
-                        return SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource);
+                    return EquipScript.CurrentOffHandEquipType() != EquipType.Shield && SteamVR_Actions.valheim_Grab.GetState(VRPlayer.mainWeaponHandInputSource);
                 default:
-                    return VHVRConfig.BlockingType() == "Gesture" ? isCurrentlyTwoHanded() : SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource);
+                    if (!SteamVR_Actions.valheim_Grab.GetState(VRPlayer.mainWeaponHandInputSource))
+                    {
+                        return false;
+                    }
+                    return !VHVRConfig.UseGestureBlock() || isCurrentlyTwoHanded();
             }
         }
 

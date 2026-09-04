@@ -21,12 +21,12 @@ namespace ValheimVRMod.Patches {
                 return true;
             }
 
-            if (EquipScript.getLeft() == EquipType.Bow && VHVRConfig.RestrictBowDrawSpeed() == "None") {
+            if (EquipScript.CurrentOffHandEquipType() == EquipType.Bow && VHVRConfig.RestrictBowDrawSpeed() == "None") {
                 __result = BowLocalManager.instance.GetAttackPercentage();
                 return false;
             }
 
-            if (EquipScript.getRight() == EquipType.Fishing) {
+            if (EquipScript.CurrentMainHandEquipType() == EquipType.Fishing) {
                 __result = FishingManager.attackDrawPercentage;
                 return false;
             }
@@ -39,7 +39,7 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
-            if (EquipScript.getLeft() != EquipType.Bow || VHVRConfig.RestrictBowDrawSpeed() == "None" || BowLocalManager.instance == null)
+            if (EquipScript.CurrentOffHandEquipType() != EquipType.Bow || VHVRConfig.RestrictBowDrawSpeed() == "None" || BowLocalManager.instance == null)
             {
                 return;
             }
@@ -68,7 +68,7 @@ namespace ValheimVRMod.Patches {
                 return;
             }
             
-            if (EquipScript.getLeft() == EquipType.Crossbow && CrossbowMorphManager.instance != null)
+            if (EquipScript.CurrentOffHandEquipType() == EquipType.Crossbow && CrossbowMorphManager.instance != null)
             {
                 CrossbowMorphManager.instance.UpdateWeaponLoading(__instance, dt);
             }
@@ -88,7 +88,7 @@ namespace ValheimVRMod.Patches {
                 return true;
             }
 
-            if (EquipScript.getLeft() == EquipType.Crossbow)
+            if (EquipScript.CurrentOffHandEquipType() == EquipType.Crossbow)
             {
                 return CrossbowManager.CanQueueReloadAction();
             }
@@ -98,7 +98,7 @@ namespace ValheimVRMod.Patches {
                 return true;
             }
 
-            if (EquipScript.isDundrEquipped())
+            if (EquipScript.IsDundrEquipped())
             {
                 if (!LocalWeaponWield.isCurrentlyTwoHanded())
                 {
@@ -127,7 +127,7 @@ namespace ValheimVRMod.Patches {
             if (__result &&
                 __instance.m_character == Player.m_localPlayer &&
                 VHVRConfig.UseVrControls() &&
-                EquipScript.getLeft() == EquipType.Crossbow &&
+                EquipScript.CurrentOffHandEquipType() == EquipType.Crossbow &&
                 CrossbowMorphManager.instance != null &&
                 !CrossbowMorphManager.instance.shouldAutoReload)
             {
@@ -139,7 +139,7 @@ namespace ValheimVRMod.Patches {
     /**
         * Manipulate Position and Direction of the Arrow SpawnPoint
         */
-    [HarmonyPatch(typeof(Attack), "GetProjectileSpawnPoint")]
+    [HarmonyPatch(typeof(Attack), nameof(Attack.GetProjectileSpawnPoint))]
     class PatchGetProjectileSpawnPoint {
         static bool Prefix(Attack __instance, out Vector3 spawnPoint, out Vector3 aimDir, Humanoid ___m_character) {
 
@@ -150,7 +150,7 @@ namespace ValheimVRMod.Patches {
                 return true;
             }
 
-            switch(EquipScript.getLeft()) { 
+            switch(EquipScript.CurrentOffHandEquipType()) { 
                 case EquipType.Bow: 
                     spawnPoint = BowLocalManager.spawnPoint;
                     aimDir = BowLocalManager.aimDir;
@@ -165,7 +165,7 @@ namespace ValheimVRMod.Patches {
                     return false;
             }
             
-            switch (EquipScript.getRight()) {
+            switch (EquipScript.CurrentMainHandEquipType()) {
 
                 case EquipType.Fishing:
                     spawnPoint = FishingManager.spawnPoint;
@@ -187,7 +187,7 @@ namespace ValheimVRMod.Patches {
                     return false;
             }
 
-            if (EquipScript.isThrowable(___m_character.GetRightItem()))
+            if (EquipScript.IsThrowable(___m_character.GetRightItem()))
             {
                 spawnPoint = ThrowableManager.spawnPoint;
                 aimDir = ThrowableManager.aimDir;
@@ -210,34 +210,7 @@ namespace ValheimVRMod.Patches {
             }
         }
     }
-    
-    /**
-     * Remove attack animation by speeding it up. It only applies to attack moves,
-     * because the original method switches it back to normal for other animations
-     */
-    [HarmonyPatch(typeof(CharacterAnimEvent), nameof(CharacterAnimEvent.CustomFixedUpdate))]
 
-    class PatchFixedUpdate {
-
-        public static float lastSpeedUp = 1f;
-        static void Prefix(Character ___m_character, ref Animator ___m_animator) {
-            
-            if (___m_character != Player.m_localPlayer || !VHVRConfig.UseVrControls()) {
-                return;
-            }
-            if (!EquipScript.shouldSkipAttackAnimation() || ___m_character.IsStaggering() || PlayerCustomizaton.IsBarberGuiVisible())
-            {
-                ___m_animator.speed = 1f;
-                return;
-            }
-            if(___m_animator.speed != 1 && ___m_animator.speed != 1000)
-            {
-                lastSpeedUp = ___m_animator.speed;
-            }
-            ___m_animator.speed = 1000f;
-        }
-    }  
-    
     /**
     * remove character facing and inaccuracy for projectile stuff
     */
@@ -249,40 +222,41 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
-
-
             __instance.m_useCharacterFacing = false;
             __instance.m_launchAngle = 0;
 
-            if (VHVRConfig.RestrictBowDrawSpeed() != "None" && EquipScript.getLeft() == EquipType.Bow) {
-                if (VHVRConfig.BowAccuracyIgnoresDrawLength())
+            if (VHVRConfig.RestrictBowDrawSpeed() == "None" || EquipScript.CurrentOffHandEquipType() != EquipType.Bow)
+            {
+                __instance.m_projectileAccuracyMin = 0;
+                if (___m_ammoItem != null)
                 {
-
-                    float currentSpreadFactor = 1 - Mathf.Sqrt(BowLocalManager.instance.GetAttackPercentage());
-                    if (currentSpreadFactor <= 0)
-                    {
-                        return;
-                    }
-
-                    float desiredSpreadFactor = 1 - Mathf.Sqrt(BowLocalManager.instance.timeBasedChargePercentage);
-                    float accuracyAdjustment = desiredSpreadFactor / currentSpreadFactor;
-                    float minSpread = __instance.m_projectileAccuracy;
-
-                    // We scale the max spread (i. e. m_projectileAccuracyMin) to compensate for the difference between desiredSpreadFactor and currentSpreadFactor.
-                    __instance.m_projectileAccuracyMin = Mathf.Lerp(minSpread, __instance.m_projectileAccuracyMin, accuracyAdjustment);
-                    if (___m_ammoItem != null)
-                    {
-                        ___m_ammoItem.m_shared.m_attack.m_projectileAccuracyMin = Mathf.Lerp(___m_ammoItem.m_shared.m_attack.m_projectileAccuracy, ___m_ammoItem.m_shared.m_attack.m_projectileAccuracyMin, accuracyAdjustment);
-                    }
+                    ___m_ammoItem.m_shared.m_attack.m_projectileAccuracyMin = 0;
                 }
                 return;
             }
 
-            __instance.m_projectileAccuracyMin = 0;
-            if (___m_ammoItem != null) {
-                ___m_ammoItem.m_shared.m_attack.m_projectileAccuracyMin = 0;   
+            if (!VHVRConfig.BowAccuracyIgnoresDrawLength())
+            {
+                return;
             }
-        }
+
+            float currentSpreadFactor = 1 - Mathf.Sqrt(BowLocalManager.instance.GetAttackPercentage());
+            if (currentSpreadFactor <= 0)
+            {
+                return;
+            }
+
+            float desiredSpreadFactor = 1 - Mathf.Sqrt(BowLocalManager.instance.timeBasedChargePercentage);
+            float accuracyAdjustment = desiredSpreadFactor / currentSpreadFactor;
+            float minSpread = __instance.m_projectileAccuracy;
+
+            // We scale the max spread (i. e. m_projectileAccuracyMin) to compensate for the difference between desiredSpreadFactor and currentSpreadFactor.
+            __instance.m_projectileAccuracyMin = Mathf.Lerp(minSpread, __instance.m_projectileAccuracyMin, accuracyAdjustment);
+            if (___m_ammoItem != null)
+            {
+                ___m_ammoItem.m_shared.m_attack.m_projectileAccuracyMin = Mathf.Lerp(___m_ammoItem.m_shared.m_attack.m_projectileAccuracy, ___m_ammoItem.m_shared.m_attack.m_projectileAccuracyMin, accuracyAdjustment);
+            }
+    }
     }
     
     /**
@@ -293,8 +267,7 @@ namespace ValheimVRMod.Patches {
         
         static bool Prefix(ref Transform __result, Character owner) {
 
-            if (owner != Player.m_localPlayer
-                || FishingManager.fixedRodTop == null || !VHVRConfig.UseVrControls()) {
+            if (owner != Player.m_localPlayer || FishingManager.fixedRodTop == null || !VHVRConfig.UseVrControls()) {
                 return true;
             }
 
@@ -351,7 +324,7 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
-            if (EquipScript.getLeft() == EquipType.Crossbow || EquipScript.isDundrEquipped())
+            if (EquipScript.CurrentOffHandEquipType() == EquipType.Crossbow || EquipScript.IsDundrEquipped())
             {
                 recoilPushback = __instance.m_recoilPushback;
                 __instance.m_recoilPushback = 0f;
@@ -370,12 +343,12 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
-            if (EquipScript.getLeft() == EquipType.Crossbow)
+            if (EquipScript.CurrentOffHandEquipType() == EquipType.Crossbow)
             {
                 __instance.m_character.ApplyPushback(-CrossbowManager.AimDir, recoilPushback);
                 recoilPushback = 0f;
             }
-            else if (EquipScript.isDundrEquipped())
+            else if (EquipScript.IsDundrEquipped())
             {
                 __instance.m_character.ApplyPushback(-MagicWeaponManager.AimDir, recoilPushback);
                 recoilPushback = 0f;

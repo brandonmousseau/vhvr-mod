@@ -108,6 +108,10 @@ namespace ValheimVRMod.Scripts
         private LayerMask piecelayer2;
         private LayerMask nonpiecelayer;
 
+        public static bool IsModdedStructure(string name)
+        {
+            return name == "MS_CustomShip(Clone)" || name == "MovableBase" || name.Contains("ValheimVehicles");
+        }
         private void Awake()
         {
             createRefBox();
@@ -1381,13 +1385,24 @@ namespace ValheimVRMod.Scripts
                                 break;
                         }
 
-                        if (isFreeMode && copyRotationTimer >= 8)
+                        if (isFreeMode)
                         {
-                            Player.m_localPlayer.m_placementGhost.transform.position = transformCopy.position;
-                            justRotatedAnalogLongPress = true;
+                            if (copyRotationTimer >= 12)
+                            {
+                                Piece copyPiece = transformCopy.GetComponentInParent(typeof(Piece)) as Piece;
+                                Player.m_localPlayer.SetSelectedPiece(copyPiece);
+                                Player.m_localPlayer.m_placementGhost.transform.position = transformCopy.position;
+                                justRotatedAnalogLongPress = true;
+                            }
+                            else if (copyRotationTimer >= 8)
+                            {
+                                Player.m_localPlayer.m_placementGhost.transform.position = transformCopy.position;
+                            }
                         }
-                        else if (!isFreeMode)
+                        else if (copyRotationTimer >= 8)
                         {
+                            Piece copyPiece = transformCopy.GetComponentInParent(typeof(Piece)) as Piece;
+                            Player.m_localPlayer.SetSelectedPiece(copyPiece);
                             justRotatedAnalogLongPress = true;
                         }
                     }
@@ -1791,11 +1806,6 @@ namespace ValheimVRMod.Scripts
                 }
                 parentRotation = false;
             }
-        }
-
-        public bool IsModdedStructure(string name)
-        {
-            return name == "MS_CustomShip(Clone)" || name == "MovableBase";
         }
     }
 }

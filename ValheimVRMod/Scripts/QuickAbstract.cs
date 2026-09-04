@@ -2,11 +2,10 @@ using System;
 using System.Reflection;
 using HarmonyLib;
 using UnityEngine;
+using ValheimVRMod.Patches;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using Valve.VR;
-using Valve.VR.InteractionSystem;
-using System.Collections.Generic;
 
 namespace ValheimVRMod.Scripts
 {
@@ -15,7 +14,7 @@ namespace ValheimVRMod.Scripts
 
         private float elementDistance = 0.1f;
         protected const int MAX_ELEMENTS = 11;
-        protected const int MAX_EXTRA_ELEMENTS = 5;
+        protected const int MAX_EXTRA_ELEMENTS = 8;
 
         private Color standard = new Color(0.2f, 0.2f, 0.2f, 0.5f);
         private Color hovered = new Color(0.5f, 0.5f, 0.5f, 0.5f);
@@ -47,8 +46,8 @@ namespace ValheimVRMod.Scripts
         private Texture2D mapTexture;
         private Texture2D recenterTexture;
         private Texture2D chatTexture;
-        public static bool toggleMap;
         public static bool shouldStartChat;
+        private static float? toggleMapHoldCountdown;
 
         protected virtual void Awake()
         {
@@ -71,6 +70,8 @@ namespace ValheimVRMod.Scripts
             public string itemName { get; private set; }
             public delegate bool QuickMenuItemCallback();
 
+            private ItemDrop.ItemData item;
+
             private QuickMenuItemCallback callback;
             private Sprite sprite
             {
@@ -88,8 +89,9 @@ namespace ValheimVRMod.Scripts
 
             public void useAsInventoryItemAndRefreshColor(Inventory inventory, ItemDrop.ItemData item)
             {
-                if (item.GetIcon().name != itemName)
+                if (this.item != item)
                 {
+                    this.item = item;
                     itemName = item.GetIcon().name;
                     sprite = item.GetIcon();
                     callback = delegate ()
@@ -112,9 +114,18 @@ namespace ValheimVRMod.Scripts
 
             public void useAsQuickAction(string itemName, Sprite sprite, QuickMenuItemCallback callback)
             {
+                this.item = null;
                 this.itemName = itemName;
                 this.sprite = sprite;
                 this.callback = callback;
+            }
+
+            public void useAsNoOp()
+            {
+                this.item = null;
+                this.itemName = "NoOp";
+                this.sprite = null;
+                this.callback = null;
             }
 
             private void ResizeIcon()
@@ -184,6 +195,16 @@ namespace ValheimVRMod.Scripts
 
         private void Update()
         {
+            if (toggleMapHoldCountdown.HasValue)
+            {
+                toggleMapHoldCountdown -= Time.deltaTime;
+                if (toggleMapHoldCountdown <= 0)
+                {
+                    toggleMapHoldCountdown = null;
+                    GetButtonPatchUtils.Release("Map");
+                }
+            }
+
             if (!quickMenuLocker)
             {
                 resetQuickMenuLocker();
@@ -193,7 +214,7 @@ namespace ValheimVRMod.Scripts
                 // Lock the quick menu's position and rotation relative to the vr cam rig so it moves and rotates with the player.
                 transform.SetPositionAndRotation(quickMenuLocker.position, quickMenuLocker.rotation);
             }
-            
+
             if (VHVRConfig.getQuickMenuType() == "Hand Follow Cam") {
                 Transform VRCamTransform = CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform;
                 // Rotate the menu around its x-axis to have it facing the current height of the player.
@@ -317,9 +338,17 @@ namespace ValheimVRMod.Scripts
                     extraElements[i].gameObject.SetActive(false);
                     continue;
                 }
-                var extraOffset = (i * 0.05f) - (extraElementCount / 2 * 0.05f) + (extraElementCount % 2 == 0 ? 0.025f : 0);
-                var position = new Vector2((float)extraOffset, 0);
-
+                var center = Mathf.Min(extraElementCount, 4);
+                var row = 0f;
+                var column = i;
+                if (i >= 4)
+                {
+                    row = -0.05f;
+                    center = extraElementCount - 4;
+                    column = i - 4;
+                }
+                var extraOffset = (column * 0.05f) - (center / 2 * 0.05f) + (center % 2 == 0 ? 0.025f : 0);
+                var position = new Vector2((float)extraOffset, row);
                 extraElements[i].gameObject.SetActive(true);
                 extraElements[i].transform.localPosition = position;
             }
@@ -469,22 +498,38 @@ namespace ValheimVRMod.Scripts
             {
                 return;
             }
-            for (int i = 0; i < 8; i++)
+
+            if (VHVRConfig.SplitQuickMenuRadialItemsBySlot())
             {
-
-                ItemDrop.ItemData item = inventory?.GetItemAt(i, 0);
-
-                if (item == null)
+                var isRightHand = VHVRConfig.LeftHanded() ^ isDominantHand;
+                var startIndex = isRightHand ? 4 : 0;
+                elementCount = 4;
+                for (var i = 0; i < elementCount; i++)
                 {
-                    continue;
+                    ItemDrop.ItemData item = inventory?.GetItemAt(startIndex + i, 0);
+                    if (item == null)
+                    {
+                        elements[i].useAsNoOp();
+                    }
+                    else
+                    {
+                        elements[i].useAsInventoryItemAndRefreshColor(inventory, item);
+                    }
                 }
-                if (VHVRConfig.GetQuickMenuIsSeperate() && (EquipScript.IsDominantHandItem(item) ^ isDominantHand))
+            } else {
+                for (int i = 0; i < 8; i++)
                 {
-                    continue;
+                    ItemDrop.ItemData item = inventory?.GetItemAt(i, 0);
+                    if (item == null)
+                    {
+                        continue;
+                    }
+                    if (VHVRConfig.SplitQuickMenuRadialItemsByWieldingHand() && EquipScript.CanUseAsMainHandItem(item) ^ isDominantHand) {
+                        continue;
+                    }
+                    elements[elementCount].useAsInventoryItemAndRefreshColor(inventory, item);
+                    elementCount++;
                 }
-
-                elements[elementCount].useAsInventoryItemAndRefreshColor(inventory, item);
-                elementCount++;
             }
         }
 
@@ -502,10 +547,10 @@ namespace ValheimVRMod.Scripts
             {
                 return;
             }
-            for (int i = 0; i < 4; i++)
+            for (int i = 0; i < VHVRConfig.QuickBarQuantity(); i++)
             {
 
-                ItemDrop.ItemData item = inventory?.GetItemAt(i + 4, 1);
+                ItemDrop.ItemData item = inventory?.GetItemAt(i + (8- VHVRConfig.QuickBarQuantity()), 1);
 
                 if (item == null)
                 {
@@ -561,7 +606,7 @@ namespace ValheimVRMod.Scripts
                         if (Player.m_localPlayer.InEmote() && Player.m_localPlayer.IsSitting())
                             stopEmote.Invoke(Player.m_localPlayer, null);
                         else
-                            Player.m_localPlayer.StartEmote("sit", false);
+                            VRPlayer.StartSit();
                         return true;
                     });
             }
@@ -574,7 +619,8 @@ namespace ValheimVRMod.Scripts
                     Sprite.Create(mapTexture, new Rect(0.0f, 0.0f, mapTexture.width, mapTexture.height), new Vector2(0.5f, 0.5f), 500),
                     delegate ()
                     {
-                        toggleMap = true;
+                        GetButtonPatchUtils.Press("Map");
+                        toggleMapHoldCountdown = 0.25f;
                         return true;
                     });
             }
@@ -600,14 +646,43 @@ namespace ValheimVRMod.Scripts
                     Sprite.Create(chatTexture, new Rect(0.0f, 0.0f, chatTexture.width, chatTexture.height), new Vector2(0.5f, 0.5f), 500),
                     delegate ()
                     {
-                        shouldStartChat = true;
-                        TextInput.m_instance.Show("ChatText", "", 256);
-                        TextInput.m_instance.m_panel.gameObject.transform.localScale = new Vector3(0, 0, 0);
+                        if (shouldStartChat && Chat.instance.HasFocus())
+                        {
+                            enterChatText();
+                        }
+                        else
+                        {
+                            shouldStartChat = true;
+                            if (SteamVR_Actions.valheim_Use.GetState(SteamVR_Input_Sources.Any) ||
+                                SteamVR_Actions.valheim_UseLeft.GetState(SteamVR_Input_Sources.Any))
+                            {
+                                ZInput_GetButtonDown_Patch.EmulateButtonDown("Chat");
+                            }
+                            else
+                            {
+                                // Use SteamVR virtual keyboard to chat
+                                TextInput.m_instance.Show("ChatText", "", 256);
+                                TextInput.m_instance.m_panel.gameObject.transform.localScale = new Vector3(0, 0, 0);
+                            }
+                        }
                         return true;
                     });
             }
             extraElementCount++;
         }
+
+        public static void enterChatText()
+        {
+            Chat.instance.InputText();
+            unfocusChatWindow();
+        }
+
+        public static void unfocusChatWindow()
+        {
+            ZInput_GetKeyDown_Patch.EmulateKeyDown(KeyCode.Escape);
+            shouldStartChat = false;
+        }
+
 
         public bool selectHoveredItem()
         {

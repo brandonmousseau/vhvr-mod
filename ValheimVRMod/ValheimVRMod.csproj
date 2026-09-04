@@ -61,7 +61,7 @@
     <PackageReference Include="BepInEx.Core" Version="5.4.21" />
     <PackageReference Include="NDesk.Options" Version="0.2.1" />
     <PackageReference Include="UnityEngine.Modules" Version="2020.3.45" />
-    <PackageReference Include="ValheimGameLibs" Version="0.218.15" />
+    <PackageReference Include="ValheimGameLibz" Version="0.221.12" />
 	<PackageReference Include="Bhaptics.Tac" Version="1.4.16" />
   </ItemGroup>
   <ItemGroup>
@@ -121,6 +121,11 @@
       <HintPath>..\Unity\build\ValheimVR_Data\Managed\SteamVR_Actions.dll</HintPath>
     </Reference>
   </ItemGroup>
+  <Target Name="RemoveConflictingPackageReferences" AfterTargets="ResolveLockFileReferences" BeforeTargets="ResolveAssemblyReferences">
+    <ItemGroup>
+      <Reference Remove="@(Reference)" Condition="('%(Filename)' == 'SteamVR' Or '%(Filename)' == 'SteamVR_Actions') And $([System.String]::Copy('%(Reference.HintPath)').Contains('valheimgamelibz'))" />
+    </ItemGroup>
+  </Target>
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
     <Exec Command="make-release.cmd" EnvironmentVariables="
 	    SOLUTION_DIR=$(SolutionDir);

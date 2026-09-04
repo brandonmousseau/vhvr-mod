@@ -10,6 +10,7 @@ using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using UnityEngine.UI;
 using Valheim.SettingsGui;
+using ValheimVRMod.VRCore;
 using ValheimVRMod.VRCore.UI;
 using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
@@ -70,7 +71,8 @@ namespace ValheimVRMod.Patches
             {
                 return;
             }
-            __instance.m_smallMarker.localRotation = Quaternion.Euler(0f, 0f, -playerRot.eulerAngles.y);
+            float angle = VHVRConfig.UseVrControls() && VRPlayer.vrCam != null ? VRPlayer.vrCam.transform.rotation.eulerAngles.y : playerRot.eulerAngles.y;
+            __instance.m_smallMarker.localRotation = Quaternion.Euler(0f, 0f, -angle);
             Ship controlledShip = player.GetControlledShip();
             if (controlledShip)
             {
@@ -78,6 +80,30 @@ namespace ValheimVRMod.Patches
             }
         }
     }
+
+    /**
+     * This is required because for the VRHud we move the Minimap's Canvas
+     * from the default position/rotation, so setting the absolute rotation
+     * of the wind marker doesn't work anymore. This changes it to use
+     * the local rotation instead so it'll work regardless of canvas
+     * position.
+     */
+    [HarmonyPatch(typeof(Minimap), nameof(Minimap.UpdateWindMarker))]
+    class MinimapWindMarkerPatch
+    {
+        public static bool Prefix(Minimap __instance)
+        {
+            if (VHVRConfig.NonVrPlayer())
+            {
+                return true;
+            }
+
+            Quaternion quaternion = Quaternion.LookRotation(EnvMan.instance.GetWindDir());
+            __instance.m_windMarker.localRotation = Quaternion.Euler(0f, 0f, -quaternion.eulerAngles.y);
+            return false;
+        }
+    }
+
 
     /**
     * The purpose of this patch is to update the base
@@ -395,6 +421,19 @@ namespace ValheimVRMod.Patches
             }
         }
 
+        [HarmonyPatch(typeof(EnemyHud), "RemoveCharacterHud")]
+        class EnemyHud_RemoveCharacterHud_Patch
+        {
+            public static void Prefix(Character character)
+            {
+                if (VHVRConfig.NonVrPlayer())
+                {
+                    return;
+                }
+                EnemyHudManager.instance.RemoveEnemyHud(character);
+            }
+        }
+
         // The UpdateHuds method is responsible for updating values
         // of any active Enemy huds (ie, health, level, alert status etc) as
         // well as removing any huds that should no longer active. Rather
@@ -406,8 +445,6 @@ namespace ValheimVRMod.Patches
         class EnemyHud_UpdateHuds_Patch
         {
             private static FieldInfo guiField = AccessTools.Field(typeof(EnemyHud.HudData), nameof(EnemyHud.HudData.m_gui));
-            private static MethodInfo destroyMethod =
-                AccessTools.Method(typeof(UnityEngine.Object), "Destroy", new Type[] { typeof(UnityEngine.Object) });
             private static MethodInfo getHealthPercentageMethod =
                 AccessTools.Method(typeof(Character), nameof(Character.GetHealthPercentage));
             private static MethodInfo getLevelMethod =
@@ -437,12 +474,6 @@ namespace ValheimVRMod.Patches
             private static void AssertCharacter(Character c, [CallerMemberName] string caller = "")
             {
                 if (c is null) Debug.LogError($"ASSERT FAILED: Character c is null in {caller}");
-            }
-
-            private static void DestroyHud(Character c)
-            {
-                AssertCharacter(c);
-                EnemyHudManager.instance.DestroyHudGui(c);
             }
 
             // Some wrapper methods to use as the Transpiler's Call targets
@@ -542,8 +573,6 @@ namespace ValheimVRMod.Patches
                 var patched = new List<CodeInstruction>();
                 for (int i = 0; i < original.Count; i++) {
                     patched.Add(original[i]);
-                    // FIXME: Mystlands broke this
-                    MaybeAddDestroyHudInstructions(original, ref patched, i);
                     MaybeAddUpdateHealthInstructions(original, ref patched, i);
                     MaybeAddUpdateLevelInstructions(original, ref patched, i);
                     MaybeAddAIAlertnessUpdateInstructions(original, ref patched, i);
@@ -580,18 +609,6 @@ namespace ValheimVRMod.Patches
                     // Need to remove our mirror from the enemy hud dictionary
                     patched.Add(new CodeInstruction(OpCodes.Ldloc_3));
                     patched.Add(CodeInstruction.Call(typeof(EnemyHud_UpdateHuds_Patch), nameof(RemoveHud)));
-                }
-            }
-
-            private static void MaybeAddDestroyHudInstructions(List<CodeInstruction> original, ref List<CodeInstruction> patched, int i)
-            {
-                var instruction = original[i];
-                if (instruction.Calls(destroyMethod))
-                {
-                    // The current hud is being destroyed here so
-                    // lets destroy out mirror gui too.
-                    LoadCharacterField(ref patched);
-                    patched.Add(CodeInstruction.Call(typeof(EnemyHud_UpdateHuds_Patch), nameof(DestroyHud)));
                 }
             }
 
@@ -751,7 +768,7 @@ namespace ValheimVRMod.Patches
             playerRot = player.transform.rotation;
         }
     }
-    
+
     // remove stupid keyboard/mouse hints:
     // for some reason after Hearth&Home "Awake" isn't called on the cloned hud, so to be sure we destroy it in Update
     [HarmonyPatch(typeof(KeyHints), "Update")]
@@ -793,6 +810,24 @@ namespace ValheimVRMod.Patches
                 return;
             }
             ConfigSettings.updateBindings();
+        }
+    }
+
+    [HarmonyPatch(typeof(KeyboardMouseSettings), nameof(KeyboardMouseSettings.Update))]
+    class PatchKeyboardMouseSettingsUpdate
+    {
+        public static bool Prefix(KeyboardMouseSettings __instance)
+        {
+            return !ConfigSettings.isVHVRClone(__instance);
+        }
+    }
+
+    [HarmonyPatch(typeof(KeyboardMouseSettings), nameof(KeyboardMouseSettings.OnDestroy))]
+    class PatchKeyboardMouseSettingsDestroy
+    {
+        public static bool Prefix(KeyboardMouseSettings __instance)
+        {
+            return !ConfigSettings.isVHVRClone(__instance);
         }
     }
 
@@ -1072,13 +1107,13 @@ namespace ValheimVRMod.Patches
     {
         public static void Postfix(DamageText __instance, Vector3 pos, bool mySelf)
         {
-            if (VHVRConfig.NonVrPlayer())
+            if (VHVRConfig.NonVrPlayer() || !VHVRConfig.ShowDamageText())
             {
                 return;
             }
 
             var lastText = __instance.m_worldTexts.Last();
-            new GameObject().AddComponent<VRDamageTexts>().CreateText(lastText.m_textField.text, pos, lastText.m_textField.color, mySelf, __instance.m_textDuration);
+            VRDamageTexts.Pool().CreateText(lastText.m_textField.text, pos, lastText.m_textField.color, mySelf, __instance.m_textDuration);
         }
     }
     [HarmonyPatch(typeof(Player), nameof(Player.OnDeath))]
