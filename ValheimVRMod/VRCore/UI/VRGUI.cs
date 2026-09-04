@@ -54,9 +54,8 @@ namespace ValheimVRMod.VRCore.UI
         public static bool isResized;
         public static readonly string MENU_GUI_CANVAS = "GUI";
         public static readonly string PASSWORD_CANVAS = "Password";
-        public static readonly string IN_GAME_GUI_CANVAS_LEGACY = "LoadingGUI";
         public static readonly string HUD_GUI_CANVAS = "HUD";
-        public static readonly string CURSOR_GUI_CANVAS = "Scaled 3D Viewport";
+        public static readonly string CURSOR_GUI_CANVAS = "UnifiedPopup";
         public static readonly string CHAT_BOX = "Chat_box";
         public static readonly string[] ADDITIONAL_GUI_CANVAS_NAMES = new string[]
         {
@@ -74,16 +73,26 @@ namespace ValheimVRMod.VRCore.UI
             "TextInput",
             "HudMessage",
             "ConnectionPanel",
-            "UnifiedPopup",
             "Tutorial",
-            "BarberGui"
+            "BarberGui",
+            "Scaled 3D Viewport"
         };
         private static readonly string OVERLAY_KEY = "VALHEIM_VR_MOD_OVERLAY";
         private static readonly string OVERLAY_NAME = "Valheim VR";
         private static readonly string UI_PANEL_NAME = "VRUIPanel";
+        private static readonly Vector3 DESIRED_HAND_ATTACHED_LOCAL_POSITION = new Vector3(0f, 0.0625f, 0.125f);
+        private static readonly Quaternion DESIRED_ROTATION_ON_LEFT_HAND = Quaternion.Euler(75, 270, 300);
+        private static readonly Quaternion DESIRED_ROTATION_ON_RIGHT_HAND = Quaternion.Euler(75, 90, 60);
         // The angle difference that is acceptable for the GUI being
         // considered to be "centered"
         private static readonly float RECENTERED_TOLERANCE = 1f;
+        private static Vector3 desiredSize;
+        private static Vector3 desiredHandAttachedSize;
+        private static Vector3 desiredOffset;
+        private static bool isBuildMenuOpen
+        {
+            get { return Hud.instance?.m_pieceSelectionWindow != null && Hud.instance.m_pieceSelectionWindow.activeSelf; }
+        }
 
         private float OVERLAY_CURVATURE = 0.25f; /* 0f - 1f */
         private bool USING_OVERLAY = true;
@@ -108,6 +117,8 @@ namespace ValheimVRMod.VRCore.UI
         private bool movingLastFrame = false;
         private Quaternion lastVrPlayerRotation = Quaternion.identity;
         private bool showingChatBox = false;
+        private bool isAttachableToHandAsInventoryOrBuildMenu;
+        private bool attachedToHand;
 
         // Native handle to OpenVR overlay
         private ulong _overlay = OpenVR.k_ulOverlayHandleInvalid;
@@ -116,11 +127,10 @@ namespace ValheimVRMod.VRCore.UI
 
         public void Awake()
         {
-            //Automatically Change resolution aspect ratio on UI Start
-            //GUI_DIMENSIONS = new Vector2(GUI_DIMENSIONS.x, GUI_DIMENSIONS.x / Screen.width * Screen.height);
             USING_OVERLAY = VHVRConfig.GetUseOverlayGui();
             OVERLAY_CURVATURE = VHVRConfig.GetOverlayCurvature();
             _inputModule = EventSystem.current.gameObject.AddComponent<VRGUI_InputModule>();
+            UpdateUIPanelSize();
         }
 
         public void OnEnable()
@@ -203,12 +213,30 @@ namespace ValheimVRMod.VRCore.UI
             disableVanillaInputSystemUiInputModule();
             if (VHVRConfig.UseVrControls())
             {
+                if (attachedToHand)
+                {
+                    UpdateMouseButtonsFromLaserPointer();
+                }
                 return;
             }
             bool leftButtonPressed = Input.GetMouseButton(0);
             bool rightButtonPressed = Input.GetMouseButton(1);
             bool middleButtonPressed = Input.GetMouseButton(2);
             _inputModule.UpdateButtonStates(leftButtonPressed, rightButtonPressed, middleButtonPressed);
+        }
+
+        public static void UpdateUIPanelSize()
+        {
+            GUI_DIMENSIONS = VHVRConfig.GetUiPanelResolution();
+            var ratio = GUI_DIMENSIONS.x / GUI_DIMENSIONS.y;
+            desiredSize.x = VHVRConfig.GetUiPanelSize() * ratio;
+            desiredSize.y = VHVRConfig.GetUiPanelSize();
+            desiredSize.z = 0.00001f;
+            desiredHandAttachedSize.x = 0.375f * ratio;
+            desiredHandAttachedSize.y = 0.375f;
+            desiredHandAttachedSize.z = 0.00001f;
+            desiredOffset.y = VHVRConfig.GetUiPanelVerticalOffset();
+            desiredOffset.z = VHVRConfig.GetUiPanelDistance();
         }
 
         // The Input system was replaced and it is incompabible. We now rely on inserting mouse controls
@@ -241,6 +269,49 @@ namespace ValheimVRMod.VRCore.UI
         public void OnDisable()
         {
             destroyOverlay();
+        }
+
+        private void tryToggleInventory()
+        {
+            if (!canToggleInventory())
+            {
+                return;
+            }
+
+            if (InventoryGui.IsVisible())
+            {
+                InventoryGui.instance.Hide();
+                return;
+            }
+
+            InventoryGui.instance.Show(null);
+        }
+
+        private bool canToggleInventory()
+        {
+            if (Chat.instance != null && Chat.instance.HasFocus())
+            {
+                return false;
+            }
+
+            if (global::Console.IsVisible() ||
+                Player.m_localPlayer == null ||
+                Player.m_localPlayer.InCutscene() ||
+                GameCamera.InFreeFly() ||
+                Minimap.IsOpen() ||
+                Menu.IsVisible())
+            {
+                return false;
+            }
+
+            if (TextViewer.instance && TextViewer.instance.IsVisible())
+            {
+                return false;
+            }
+
+            // TODO: also check this.m_craftTimer < 0f
+
+            return true;
         }
 
         private void checkAndSetCurvatureUpdates()
@@ -277,79 +348,181 @@ namespace ValheimVRMod.VRCore.UI
 
         private void updateUiPanelScaleAndPosition()
         {
-            var offsetPosition = new Vector3(0f, VHVRConfig.GetUiPanelVerticalOffset(), VHVRConfig.GetUiPanelDistance());
-            if (useDynamicallyPositionedGui())
+            if (!useDynamicallyPositionedGui())
             {
-                if (shouldLockDynamicGuiPosition())
-                {
-                    // Restore the locked position and rotation of GUI's relative to the VR camera rig.
-                    _uiPanel.SetPositionAndRotation(_uiPanelTransformLocker.position, _uiPanelTransformLocker.rotation);
-                    isRecentering = false;
-                    return;
-                }
-                // Record the GUI's transform in case it will be locked in that position and rotation.
-                _uiPanelTransformLocker.SetPositionAndRotation(_uiPanel.position, _uiPanel.rotation);
+                _uiPanel.rotation = VRPlayer.instance.transform.rotation;
+                _uiPanel.position = VRPlayer.instance.transform.TransformPoint(desiredOffset);
+                _uiPanel.transform.localScale = desiredSize;
+                return;
+            }
 
-                var playerInstance = Player.m_localPlayer;
-
-                if (playerInstance.IsAttachedToShip())
+            bool wasAttachableUI = isAttachableToHandAsInventoryOrBuildMenu;
+            bool attachableToHandAsInventory =
+                InventoryGui.IsVisible() && VHVRConfig.AttachInventoryToHand();
+            bool attachableToHandAsBuildMenu = isBuildMenuOpen && VHVRConfig.AttachBuildMenuToHand();
+            isAttachableToHandAsInventoryOrBuildMenu = attachableToHandAsInventory || attachableToHandAsBuildMenu;
+            if (attachedToHand)
+            {
+                if (shouldInstantlyDetachPanelFromHand())
                 {
-                    // Always lock the UI to the forward direction of ship when sailing.
-                    Vector3 shipForward = Player.m_localPlayer.m_attachPoint.forward;
-                    Vector3 roomUp = VRPlayer.instance.transform.up;
-                    Vector3 forwardDirection = Vector3.ProjectOnPlane(shipForward, roomUp).normalized;
-                    _uiPanel.rotation = Quaternion.LookRotation(forwardDirection, roomUp);
-                    _uiPanel.position = VRPlayer.instance.transform.position + _uiPanel.rotation * offsetPosition;
-                    return;
+                    // Instantly reset UI to normal position
+                    detachPanelFromHand(resetSize: true);
                 }
-                _uiPanel.transform.localScale =
-                    new Vector3(
-                        VHVRConfig.GetUiPanelSize() * GUI_DIMENSIONS.x / GUI_DIMENSIONS.y,
-                        VHVRConfig.GetUiPanelSize(),
-                        0.00001f);
-                var currentDirection = getCurrentGuiDirection();
-                if (isRecentering)
+                else if (!isAttachableToHandAsInventoryOrBuildMenu)
                 {
-                    // We are currently recentering, so calculate a new rotation a step towards the targe rotation
-                    // and set the GUI position using that rotation. If the new rotation is close enough to
-                    // the target rotation, then stop recentering for the next frame.
-                    var targetDirection = getTargetGuiDirection();
-                    var stepDirection = Vector3.Slerp(currentDirection, targetDirection, VHVRConfig.GuiRecenterSpeed() * Mathf.Deg2Rad * Time.unscaledDeltaTime);
+                    // Smoothly move UI to normal position
+                    detachPanelFromHand(resetSize: false);
+                }
+            }
+            else if (!wasAttachableUI && isAttachableToHandAsInventoryOrBuildMenu && !shouldInstantlyDetachPanelFromHand())
+            {
+                attachPanelToHand();
+            }
+
+            if (shouldLockDynamicGuiPosition())
+            {
+                // Restore the locked position and rotation of GUI's relative to the VR camera rig.
+                _uiPanel.SetPositionAndRotation(_uiPanelTransformLocker.position, _uiPanelTransformLocker.rotation);
+                isRecentering = false;
+                return;
+            }
+
+            var localPlayer = Player.m_localPlayer;
+
+            if (localPlayer.IsAttachedToShip())
+            {
+                // Always lock the UI to the forward direction of ship when sailing.
+                Vector3 shipForward = Player.m_localPlayer.m_attachPoint.forward;
+                Vector3 roomUp = VRPlayer.instance.transform.up;
+                Vector3 forwardDirection = Vector3.ProjectOnPlane(shipForward, roomUp).normalized;
+                _uiPanel.rotation = Quaternion.LookRotation(forwardDirection, roomUp);
+                _uiPanel.position = VRPlayer.instance.transform.position + _uiPanel.rotation * desiredOffset;
+                return;
+            }
+
+            if (attachedToHand)
+            {
+                UpdateHandAttachedTransform();
+                UpdateCursorPosition();
+                return;
+            }
+
+            // Record the GUI's transform in case it will be locked in that position and rotation.
+            _uiPanelTransformLocker.SetPositionAndRotation(_uiPanel.position, _uiPanel.rotation);
+            var currentDirection = getCurrentGuiDirection();
+            if (isRecentering)
+            {
+                // We are currently recentering, so calculate a new rotation a step towards the targe rotation
+                // and set the GUI position using that rotation. If the new rotation is close enough to
+                // the target rotation, then stop recentering for the next frame.
+                var targetDirection = getTargetGuiDirection();
+                var angularRecenterStep = VHVRConfig.GuiRecenterSpeed() * Mathf.Deg2Rad * Time.unscaledDeltaTime;
+
+                bool smoothenRotationOnly = (desiredSize.x - _uiPanel.transform.localScale.x < 0.0625f);
+                if (smoothenRotationOnly)
+                {
+                    var stepDirection = Vector3.Slerp(currentDirection, targetDirection, angularRecenterStep);
                     var stepRotation = Quaternion.LookRotation(stepDirection, VRPlayer.instance.transform.up);
                     _uiPanel.rotation = stepRotation;
-                    _uiPanel.position = playerInstance.transform.position + stepRotation * offsetPosition;
-                    lastVrPlayerRotation = VRPlayer.instance.transform.rotation;
-                    maybeResetIsRecentering(stepDirection, targetDirection);
+                    // If we are not smooth transitioning the scale, avoid smooth transitioning the position
+                    // so that the distance of the panel stays stable
+                    _uiPanel.position = localPlayer.transform.position + stepRotation * desiredOffset;
+                    _uiPanel.transform.localScale = desiredSize;
                 }
                 else
                 {
-                    // We are not recentering, so keep the GUI in front of the player. Need to account for
-                    // any rotation of the VRPlayer instance caused by mouse or joystick input since the last frame.
-                    float rotationDelta = VRPlayer.instance.transform.rotation.eulerAngles.y - lastVrPlayerRotation.eulerAngles.y;
-                    lastVrPlayerRotation = VRPlayer.instance.transform.rotation;
-                    var newRotation = Quaternion.LookRotation(currentDirection, VRPlayer.instance.transform.up);
-                    newRotation *= Quaternion.AngleAxis(rotationDelta, Vector3.up);
-                    _uiPanel.rotation = newRotation;
-                    _uiPanel.position = playerInstance.transform.position + newRotation * offsetPosition;
+                    var targetRotation =
+                        Quaternion.LookRotation(targetDirection, VRPlayer.instance.transform.up);
+                    _uiPanel.rotation =
+                        Quaternion.Lerp(_uiPanel.transform.rotation, targetRotation, angularRecenterStep);
+                    // If we are smooth transitioning the scale, we might as well smooth transition the position                    {
+                    _uiPanel.position =
+                        Vector3.MoveTowards(
+                            _uiPanel.position,
+                            localPlayer.transform.position + targetRotation * desiredOffset,
+                            Time.unscaledDeltaTime);
+                    _uiPanel.transform.localScale =
+                        Vector3.MoveTowards(
+                            _uiPanel.transform.localScale, desiredSize, Time.unscaledDeltaTime * 2);
                 }
+
+                lastVrPlayerRotation = VRPlayer.instance.transform.rotation;
+                maybeResetIsRecentering(currentDirection, targetDirection);
             }
             else
             {
-                _uiPanel.rotation = VRPlayer.instance.transform.rotation;
-                _uiPanel.position = VRPlayer.instance.transform.position + VRPlayer.instance.transform.rotation * offsetPosition;
+                // We are not recentering, so keep the GUI in front of the player. Need to account for
+                // any rotation of the VRPlayer instance caused by mouse or joystick input since the last frame.
+                float rotationDelta =
+                    VRPlayer.instance.transform.rotation.eulerAngles.y - lastVrPlayerRotation.eulerAngles.y;
+                lastVrPlayerRotation = VRPlayer.instance.transform.rotation;
+                var newRotation = Quaternion.LookRotation(currentDirection, VRPlayer.instance.transform.up);
+                newRotation *= Quaternion.AngleAxis(rotationDelta, Vector3.up);
+                _uiPanel.rotation = newRotation;
+                _uiPanel.position = localPlayer.transform.position + newRotation * desiredOffset;
+                _uiPanel.transform.localScale = desiredSize;
             }
-            float ratio = (float)GUI_DIMENSIONS.x / (float)GUI_DIMENSIONS.y;
-            _uiPanel.localScale = new Vector3(VHVRConfig.GetUiPanelSize() * ratio, VHVRConfig.GetUiPanelSize(), 0.00001f);
+
         }
 
         private bool shouldLockDynamicGuiPosition()
         {
-            return VHVRConfig.LockGuiWhileMenuOpen() && menuIsOpen() && !Player.m_localPlayer.IsAttachedToShip();
+            return VHVRConfig.LockGuiWhileMenuOpen() && menuIsOpen() && !attachedToHand && !Player.m_localPlayer.IsAttachedToShip(); 
         }
 
         private bool menuIsOpen()
         {
             return StoreGui.IsVisible() || InventoryGui.IsVisible() || Menu.IsVisible() || Minimap.IsOpen();
+        }
+
+        private bool shouldInstantlyDetachPanelFromHand()
+        {
+            if (Minimap.instance != null && Minimap.instance.m_mode == Minimap.MapMode.Large)
+            {
+                return true;
+            }
+
+            if (!VHVRConfig.AttachInventoryToHand() && InventoryGui.IsVisible())
+            {
+                return true;
+            }
+
+            return InventoryGui.instance == null ||
+                !VHVRConfig.UseVrControls() ||
+                InventoryGui.instance.IsContainerOpen() ||
+                Player.m_localPlayer == null ||
+                Player.m_localPlayer.m_inCraftingStation ||
+                Player.m_localPlayer.IsAttachedToShip();
+        }
+
+        private void attachPanelToHand()
+        {
+            attachedToHand = true;
+            _uiPanel.transform.localScale = desiredHandAttachedSize;
+            // if (VHVRConfig.LeftHanded())
+            // {
+            //     _uiPanel.transform.parent = VRPlayer.rightHand.transform;
+            //     _uiPanel.transform.localRotation = DESIRED_ROTATION_ON_RIGHT_HAND;
+            // }
+            // else
+            // {
+            //     _uiPanel.transform.parent = VRPlayer.leftHand.transform;
+            //     _uiPanel.transform.localRotation = DESIRED_ROTATION_ON_LEFT_HAND;
+            // }
+            //_uiPanel.localPosition = DESIRED_HAND_ATTACHED_LOCAL_POSITION;
+            //_uiPanel.gameObject.layer = LayerUtils.getUiPanelLayer();
+        }
+
+        private void detachPanelFromHand(bool resetSize)
+        {
+            attachedToHand = false;
+            if (resetSize)
+            {
+                _uiPanel.transform.localScale = desiredSize;
+            }
+            //_uiPanel.transform.parent = null;
+            //_uiPanel.gameObject.layer = LayerUtils.getUiPanelLayer();
+            triggerGuiRecenter();
         }
 
         private bool ensureUIPanel()
@@ -433,19 +606,17 @@ namespace ValheimVRMod.VRCore.UI
 
         public void OnPointerTrackingLeftHand(object p, PointerEventArgs e)
         {
-            if (isUiPanel(e.target))
+            // When the UI panel is attached to hand, improve responsiveness by updating cursor location
+            // even if the raycast hits something other than UI panel
+            if (!isUiPanel(e.target)) // && !(attachedToHand && e.distance < 1))
             {
-                SoftwareCursor.simulatedMousePosition =
-                    convertLocalUiPanelCoordinatesToCursorCoordinates(e.target.InverseTransformPoint(e.position));
-                // PointerEventArgs#buttonStateLeft does not give valid state of the trigger, so we need check the action states explicitly.
-                // Note: when the laser pointer action set is active, it takes priority over the Valheim action set so SteamVR_Actions.valheim_Use are SteamVR_Actions.valheim_UseLeft are unused.
-                // TODO: update click modifier to use grab buttons and left click to use both controller's triggers in laser action set and update this method accordingly.
-                // LogUtils.LogWarning("Left hand: " + SteamVR_Actions.valheim_UseLeft.state + " " + SteamVR_Actions.LaserPointers.ClickModifier.GetState(SteamVR_Input_Sources.LeftHand));
-                _inputModule.UpdateButtonStates(
-                    SteamVR_Actions.LaserPointers.ClickModifier.GetState(SteamVR_Input_Sources.LeftHand) || SteamVR_Actions.LaserPointers.LeftClick.GetState(SteamVR_Input_Sources.LeftHand),
-                    SteamVR_Actions.valheim_QuickActions.GetState(SteamVR_Input_Sources.LeftHand),
-                    false);
+                return;
             }
+
+            // TODO: consider parenting _uiPanel to hand when inventory is open
+            UpdateHandAttachedTransform();
+            UpdateCursorPosition();
+            UpdateMouseButtonsFromLaserPointer();
         }
 
         public void OnPointerTracking(object p, PointerEventArgs e)
@@ -456,22 +627,81 @@ namespace ValheimVRMod.VRCore.UI
                 return;
             }
 
-            if (!isUiPanel(e.target))
+            // When the UI panel is attached to hand, improve responsiveness by updating cursor location
+            // even if the raycast hits something other than UI panel
+            if (!isUiPanel(e.target) && !(attachedToHand && e.distance < 1))
             {
                 return;
             }
 
-            SoftwareCursor.simulatedMousePosition =
-                convertLocalUiPanelCoordinatesToCursorCoordinates(e.target.InverseTransformPoint(e.position));
+            // TODO: consider parenting _uiPanel to hand when inventory is open
+            UpdateHandAttachedTransform();
+            UpdateCursorPosition();
+
             _inputModule.UpdateButtonStates(e.buttonStateLeft, e.buttonStateRight, false);
+        }
+
+        private void UpdateCursorPosition()
+        {
+            if (!_leftPointer.pointerIsActive() && !_rightPointer.pointerIsActive())
+            {
+                return;
+            }
+
+            var localDir = _uiPanel.InverseTransformVector(VRPlayer.activePointer.rayDirection * Vector3.forward);
+            var localStart = _uiPanel.InverseTransformPoint(VRPlayer.activePointer.rayStartingPosition);
+            // This is more precise than using raycast hit position especially when the player is moving fast
+            var correctedLocalHit = localStart - localDir * (localStart.z / localDir.z);
+            SoftwareCursor.simulatedMousePosition = convertLocalUiPanelCoordinatesToCursorCoordinates(correctedLocalHit);
+        }
+
+        private void UpdateMouseButtonsFromLaserPointer()
+        {
+            if (_leftPointer.pointerIsActive())
+            {
+                // TODO: add proper actions for left pointer click?
+                _inputModule.UpdateButtonStates(
+                    SteamVR_Actions.LaserPointers.ClickModifier.GetState(SteamVR_Input_Sources.LeftHand) ||
+                    SteamVR_Actions.LaserPointers.LeftClick.GetState(SteamVR_Input_Sources.LeftHand),
+                    SteamVR_Actions.valheim_QuickActions.GetState(SteamVR_Input_Sources.LeftHand),
+                    false);
+            }
+            if (_rightPointer.pointerIsActive())
+            {
+                _inputModule.UpdateButtonStates(
+                    SteamVR_Actions.LaserPointers.LeftClick.GetState(SteamVR_Input_Sources.RightHand),
+                    SteamVR_Actions.LaserPointers.RightClick.GetState(SteamVR_Input_Sources.RightHand),
+                    false);
+            }
+        }
+
+        private void UpdateHandAttachedTransform()
+        {
+            if (!attachedToHand)
+            {
+                return;
+            }
+
+            // Use off-hand (non-dominant hand) to hold the inventory panel
+            if (VHVRConfig.LeftHanded())
+            {
+                _uiPanel.SetPositionAndRotation(
+                    VRPlayer.rightHand.transform.TransformPoint(DESIRED_HAND_ATTACHED_LOCAL_POSITION),
+                    VRPlayer.rightHand.transform.rotation * DESIRED_ROTATION_ON_RIGHT_HAND);
+            }
+            else
+            {
+                _uiPanel.SetPositionAndRotation(
+                    VRPlayer.leftHand.transform.TransformPoint(DESIRED_HAND_ATTACHED_LOCAL_POSITION),
+                    VRPlayer.leftHand.transform.rotation * DESIRED_ROTATION_ON_LEFT_HAND);
+            }
         }
 
         private Vector2 convertLocalUiPanelCoordinatesToCursorCoordinates(Vector3 localCoordinates)
         {
-            float x = localCoordinates.x + 0.5f;
-            float y = localCoordinates.y + 0.5f;
-            Vector2 cursorSpace = new Vector2(GUI_DIMENSIONS.x * x, GUI_DIMENSIONS.y * y);
-            return cursorSpace;
+            float x = Mathf.Clamp01(localCoordinates.x + 0.5f);
+            float y = Mathf.Clamp01(localCoordinates.y + 0.5f);
+            return new Vector2(GUI_DIMENSIONS.x * x, GUI_DIMENSIONS.y * y);
         }
 
         private bool isUiPanel(Transform t)
@@ -523,9 +753,9 @@ namespace ValheimVRMod.VRCore.UI
             _guiCanvases.Clear();
             foreach (var canvas in GameObject.FindObjectsOfType<Canvas>(includeInactive: true))
             {
-                if (canvas.name == MENU_GUI_CANVAS || canvas.name == PASSWORD_CANVAS || canvas.name == IN_GAME_GUI_CANVAS_LEGACY)
+                if (canvas.name == MENU_GUI_CANVAS || canvas.name == PASSWORD_CANVAS)
                 {
-                    _cursorGuiCanvas = _hudGuiCanvas = canvas;
+                    _hudGuiCanvas = canvas;
                     _guiCanvases.Add(canvas);
                 }
                 else if (canvas.name == CURSOR_GUI_CANVAS)
@@ -537,7 +767,7 @@ namespace ValheimVRMod.VRCore.UI
                 {
                     _hudGuiCanvas = canvas;
                     _guiCanvases.Add(canvas);
-                } 
+                }
                 else if (canvas.name == CHAT_BOX)
                 {
                     _chatBox = canvas;
@@ -767,7 +997,7 @@ namespace ValheimVRMod.VRCore.UI
 
         public static GameObject getUiPanel()
         {
-            return _uiPanel.gameObject;
+            return _uiPanel == null ? null : _uiPanel.gameObject;
         }
 
         class VRGUI_InputModule : StandaloneInputModule

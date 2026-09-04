@@ -3,13 +3,13 @@ using ValheimVRMod.Utilities;
 
 namespace ValheimVRMod.Scripts {
     public class MeshCooldown : MonoBehaviour {
+        public bool showOutline = true;
         protected virtual Color FullOutlineColor { get; } = Color.red;
         private Color HiddenOutlineColor { get { return new Color(FullOutlineColor.r, FullOutlineColor.g, FullOutlineColor.b, 0); } }
 
         private float cooldownStart;
         private float cooldown;
         private Outline outline;
-
         public virtual bool tryTrigger(float cd, float? overrideMinAttackInterval = null) {
             if (inCoolDown()) {
                 return overrideMinAttackInterval != null && cooldownStart - cooldown > overrideMinAttackInterval.Value;
@@ -28,7 +28,7 @@ namespace ValheimVRMod.Scripts {
             }
             return outline != null;
         }
-
+ 
         // Whether the outline should be kept (as opposed to destroyed) after cooldown finishes.
         protected virtual bool keepOutlineInstance()
         {
@@ -60,6 +60,7 @@ namespace ValheimVRMod.Scripts {
                 outline.OutlineWidth = 10;
                 outline.OutlineColor = FullOutlineColor;
                 outline.OutlineMode = Outline.Mode.OutlineVisible;
+                outline.enabled = showOutline;
             }
         }
 
@@ -81,8 +82,14 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
 
+            if (!showOutline)
+            {
+                outline.enabled = false;
+                return;
+            }
+
             outline.OutlineColor = GetOutlineColor(FullOutlineColor, HiddenOutlineColor, Mathf.Max(cooldown, 0) / cooldownStart);
-            if (! inCoolDown()) {
+            if (!inCoolDown()) {
                 outline.OutlineMode = Outline.Mode.OutlineHidden;
                 if (!keepOutlineInstance()) {
                     Destroy(outline);

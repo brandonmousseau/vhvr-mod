@@ -1107,7 +1107,7 @@ namespace ValheimVRMod.Patches
     {
         public static void Postfix(DamageText __instance, Vector3 pos, bool mySelf)
         {
-            if (VHVRConfig.NonVrPlayer())
+            if (VHVRConfig.NonVrPlayer() || !VHVRConfig.ShowDamageText())
             {
                 return;
             }

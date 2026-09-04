@@ -13,6 +13,7 @@ namespace ValheimVRMod.Scripts
             LayerUtils.WATER,
             LayerUtils.UI_PANEL_LAYER,
             LayerUtils.CHARARCTER_TRIGGER,
+            LayerUtils.ITEM_LAYER,
         };
 
         private PhysicsEstimator physicsEstimator;
@@ -49,6 +50,32 @@ namespace ValheimVRMod.Scripts
 
         private void OnTriggerEnter(Collider collider)
         {
+            TryHit(collider);
+        }
+
+        private void OnTriggerStay(Collider collider)
+        {
+            Character character = null;
+            if (collider.gameObject.layer == LayerUtils.CHARACTER)
+            {
+                character = collider.GetComponentInParent<Character>();
+            }
+
+            if (character == null || character.gameObject == Player.m_localPlayer.gameObject || character.m_tamed)
+            {
+                return;
+            }
+
+            var cooldown = collider.GetComponent<AttackTargetMeshCooldown>();
+            if (cooldown != null && cooldown.inCoolDown())
+            {
+                return;
+            }
+
+            TryHit(collider);
+        }
+
+        private void TryHit(Collider collider) {
             Player player = Player.m_localPlayer;
             if (!VRPlayer.inFirstPerson ||
                 transform.parent == null ||
@@ -69,7 +96,7 @@ namespace ValheimVRMod.Scripts
             }
 
             Vector3 step = VRPlayer.leftFoot.position - VRPlayer.rightFoot.position;
-            if (Mathf.Abs(Vector3.Dot(step, VRPlayer.vrCam.transform.up)) < 0.125f && step.magnitude < 0.3f)
+            if (Mathf.Abs(Vector3.Dot(step, VRPlayer.vrCam.transform.up)) < 0.125f && step.magnitude < 0.25f)
             {
                 return;
             }
@@ -86,14 +113,14 @@ namespace ValheimVRMod.Scripts
                 clampedLocalVelocity.y = 0;
             }
             var speed = clampedLocalVelocity.magnitude;
-            if (speed < 6f)
+            if (speed < 1 || speed < VHVRConfig.SwingSpeedRequirement())
             {
                 return;
             }
 
             var isCurrentlySecondaryAttack = FistCollision.LocalPlayerSecondaryAttackCooldown <= 0;
             var item = Player.m_localPlayer.m_unarmedWeapon.m_itemData;
-            var attack = isCurrentlySecondaryAttack ? item.m_shared.m_attack : item.m_shared.m_secondaryAttack;
+            var attack = isCurrentlySecondaryAttack ? item.m_shared.m_secondaryAttack : item.m_shared.m_attack;
 
             // Always use the duration of the primary attack for target cooldown to allow primary attack immediately following a secondary attack.
             // The secondary attack cooldown is managed by FistCollision.LocalPlayerSecondaryAttackCooldown  instead.
@@ -129,7 +156,7 @@ namespace ValheimVRMod.Scripts
             {
                 attackTargetMeshCooldown = target.AddComponent<AttackTargetMeshCooldown>();
             }
-
+            attackTargetMeshCooldown.showOutline = VHVRConfig.ShowNonTerrainAttackOutline();
             return isSecondaryAttack ? attackTargetMeshCooldown.tryTriggerSecondaryAttack(duration) : attackTargetMeshCooldown.tryTriggerPrimaryAttack(duration, speed);
         }
     }

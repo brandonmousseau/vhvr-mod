@@ -26,13 +26,14 @@ namespace ValheimVRMod.Scripts
         private Hand thisHand {  get { return isRightHand ? VRPlayer.rightHand : VRPlayer.leftHand; } }
 
         public static float LocalPlayerSecondaryAttackCooldown = 0;
-        public static bool ShouldSecondaryKnifeHoldInverse { get; private set; }
+        public static bool ShouldSecondaryKnifeHoldInverse;
 
         private static readonly int[] NONATTACKABLE_LAYERS = {
             LayerUtils.WATERVOLUME_LAYER,
             LayerUtils.WATER,
             LayerUtils.UI_PANEL_LAYER,
             LayerUtils.CHARARCTER_TRIGGER,
+            LayerUtils.ITEM_LAYER,
         };
 
         public bool isGrabbingJumpingAid { get { return lastGrabbedType == Grabbable.ENVIRONMENT || lastGrabbedType == Grabbable.IMAGINARY_CLIMIBNG_HOLD; } }
@@ -153,7 +154,10 @@ namespace ValheimVRMod.Scripts
             {
                 // When using bare hands or claws to attack anything other than an enemy character,
                 // require both pressing trigger and grip so that the attack does not accidentally happen too easily.
-                if (handGesture.isHandFree() && !SteamVR_Actions.valheim_Use.GetState(inputSource) && !SteamVR_Actions.valheim_UseLeft.GetState(inputSource)) {
+                if (handGesture.isHandFree() &&
+                    !SteamVR_Actions.valheim_Use.GetState(inputSource) &&
+                    !SteamVR_Actions.valheim_UseLeft.GetState(inputSource) &&
+                    !Player.m_localPlayer.m_inCraftingStation) {
                     if (collider.gameObject.layer != LayerUtils.CHARACTER)
                     {
                         return;
@@ -288,7 +292,10 @@ namespace ValheimVRMod.Scripts
 
         private Grabbable GetGrabbable(GameObject target)
         {
-            if (!handGesture.isHandFree() || !SteamVR_Actions.valheim_Grab.GetStateDown(inputSource))
+            if (!handGesture.isHandFree() ||
+                !SteamVR_Actions.valheim_Grab.GetStateDown(inputSource) ||
+                Player.m_localPlayer == null ||
+                Player.m_localPlayer.m_inCraftingStation)
             {
                 return Grabbable.NONE;
             }
@@ -391,9 +398,9 @@ namespace ValheimVRMod.Scripts
             Attack attack;
             if (holdingSecondaryWeapon())
             {
-                if (EquipScript.getLeft() != EquipType.Torch &&
-                    EquipScript.getRight() != EquipType.Torch &&
-                    EquipScript.getRight() != EquipType.None)
+                if (EquipScript.CurrentOffHandEquipType() != EquipType.Torch &&
+                    EquipScript.CurrentMainHandEquipType() != EquipType.Torch &&
+                    EquipScript.CurrentMainHandEquipType() != EquipType.None)
                 {
                     item = Player.m_localPlayer.GetRightItem();
                 }
@@ -413,13 +420,13 @@ namespace ValheimVRMod.Scripts
                 {
                     item = Player.m_localPlayer.GetRightItem();
                     attack =
-                        (isCurrentlySecondaryAttack ? item.m_shared.m_attack : item.m_shared.m_secondaryAttack).Clone();
+                        (isCurrentlySecondaryAttack ? item.m_shared.m_secondaryAttack : item.m_shared.m_attack).Clone();
                 }
                 else
                 {
                     item = Player.m_localPlayer.m_unarmedWeapon.m_itemData;
                     attack =
-                        isCurrentlySecondaryAttack ? item.m_shared.m_attack : item.m_shared.m_secondaryAttack;
+                        isCurrentlySecondaryAttack ? item.m_shared.m_secondaryAttack : item.m_shared.m_attack;
                 }
             }
 
@@ -448,11 +455,27 @@ namespace ValheimVRMod.Scripts
 
         private bool tryHitTarget(GameObject target, bool isSecondaryAttack, float duration, float speed)
         {
+
+            if (!isSecondaryAttack && Player.m_localPlayer.m_inCraftingStation &&
+                InventoryGui.IsVisible() && InventoryGui.instance != null) {
+                var craftingStation = Player.m_localPlayer.GetCurrentCraftingStation();
+                if (craftingStation != null &&
+                    (craftingStation == target.GetComponent<CraftingStation>() ||
+                    craftingStation == target.GetComponentInParent<CraftingStation>()))
+                {
+                    // Instead of attacking, repair items using the crafting station
+                    InventoryGui.instance.m_repairButton.onClick.Invoke();
+                    return false;
+                }
+            }
+
             var attackTargetMeshCooldown = target.GetComponent<AttackTargetMeshCooldown>();
             if (attackTargetMeshCooldown == null)
             {
                 attackTargetMeshCooldown = target.AddComponent<AttackTargetMeshCooldown>();
             }
+            attackTargetMeshCooldown.showOutline = 
+                (target.layer == LayerUtils.TERRAIN ? VHVRConfig.ShowTerrainAttackOutline() : VHVRConfig.ShowNonTerrainAttackOutline());
 
             return isSecondaryAttack ? attackTargetMeshCooldown.tryTriggerSecondaryAttack(duration) : attackTargetMeshCooldown.tryTriggerPrimaryAttack(duration, speed);
         }
@@ -479,9 +502,9 @@ namespace ValheimVRMod.Scripts
         private void refreshColliderData()
         {
             var newEquipType =
-                hasDualWieldingWeaponEquipped() || (isRightHand ^ VHVRConfig.LeftHanded()) ?
-                EquipScript.getRight() :
-                EquipScript.getLeft();
+                hasDualWieldingWeaponEquipped() || (isRightHand ^ !VRPlayer.isRightHandMainWeaponHand) ?
+                EquipScript.CurrentMainHandEquipType() :
+                EquipScript.CurrentOffHandEquipType();
 
             if (!Player.m_localPlayer || newEquipType == currentEquipType)
             {
@@ -530,20 +553,20 @@ namespace ValheimVRMod.Scripts
 
         private bool holdingSecondaryWeapon()
         {
-            if (isRightHand ^ VHVRConfig.LeftHanded())
+            if (isRightHand ^ !VRPlayer.isRightHandMainWeaponHand)
             {
                 return false;
             }
-            return EquipScript.getLeft() == EquipType.Torch || EquipScript.getLeft() == EquipType.Knife;
+            return EquipScript.CurrentOffHandEquipType() == EquipType.Torch || EquipScript.CurrentOffHandEquipType() == EquipType.Knife;
         }
 
         private bool holdingShield()
         {
-            if (isRightHand ^ VHVRConfig.LeftHanded())
+            if (isRightHand ^ !VRPlayer.isRightHandMainWeaponHand)
             {
                 return false;
             }
-            return EquipScript.getLeft() == EquipType.Shield;
+            return EquipScript.CurrentOffHandEquipType() == EquipType.Shield;
         }
 
         public bool hasMomentum(out float speed, out bool isJab)
@@ -569,7 +592,7 @@ namespace ValheimVRMod.Scripts
 
         public static bool hasDualWieldingWeaponEquipped()
         {
-            var equipType = EquipScript.getRight();
+            var equipType = EquipScript.CurrentMainHandEquipType();
             return equipType.Equals(EquipType.Claws) ||
                 equipType.Equals(EquipType.DualAxes) ||
                 equipType.Equals(EquipType.DualKnives);
@@ -587,12 +610,12 @@ namespace ValheimVRMod.Scripts
 
         private void RotateColliderForSecondaryWeapon()
         {
-            if (isRightHand ^ VHVRConfig.LeftHanded())
+            if (isRightHand ^ !VRPlayer.isRightHandMainWeaponHand)
             {
                 return;
             }
 
-            if (EquipScript.getLeft() != EquipType.Knife)
+            if (EquipScript.CurrentOffHandEquipType() != EquipType.Knife)
             {
                 ShouldSecondaryKnifeHoldInverse = false;
                 return;
