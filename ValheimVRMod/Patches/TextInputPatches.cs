@@ -17,6 +17,16 @@ namespace ValheimVRMod.Patches {
         public static void Postfix(TextInput __instance) {
             if (VHVRConfig.UseVrControls()) {
                 bool isChatInput = __instance.m_topic.text == "ChatText";
+
+                // TextInput.m_instance.m_panel is a singleton GameObject reused for chat, sign,
+                // portal, and map pin naming dialogs alike. Chat input hides it (the vanilla chat
+                // window plus the SteamVR overlay keyboard already give the player feedback), but
+                // every other use must explicitly restore the scale on every Show() call, or it
+                // stays hidden from a previous chat session (this was the "TODO: find out why
+                // portal tag and sign text input dialog can no longer be visible after chat input
+                // is used once" bug).
+                __instance.m_panel.gameObject.transform.localScale = isChatInput ? Vector3.zero : Vector3.one;
+
                 if (VHVRConfig.AutoOpenKeyboardOnInteract() || isChatInput)
                 {
                     // Capture __instance in the closure directly instead of via a shared static field:
@@ -134,6 +144,12 @@ namespace ValheimVRMod.Patches {
         // session's fields happen to be sitting in the statics by the time it's finally handled.
         private static bool _keyboardOpen;
 
+        // True while a chat text keyboard session (opened via the SteamVR virtual keyboard path)
+        // is in flight. VRControls' grip-based confirm/cancel gesture handling is meant for the
+        // physical-keyboard chat flow only and must not also react while this is true, or it will
+        // race with the keyboard-driven submit/cancel below.
+        public static bool chatKeyboardActive => _keyboardOpen && _chatInput;
+
         // Some SteamVR versions no longer render their own temp text row, and VREvent_KeyboardCharInput's
         // cNewInput payload comes back all zero bytes (confirmed via logging) even though the event still
         // fires once per keystroke. So we treat that event purely as a "poll now" signal and re-fetch the
@@ -230,6 +246,12 @@ namespace ValheimVRMod.Patches {
             if (_inputFieldGui) {
                 _inputFieldGui.text = text;
             }
+            if (_chatInput && Chat.instance != null) {
+                // Mirror into the vanilla chat window's own input field (opened alongside the
+                // SteamVR keyboard, see QuickAbstract's chat quick action) so the player sees
+                // what they're typing instead of typing blind into the hidden TextInput dialog.
+                Chat.instance.m_input.text = text;
+            }
         }
 
         private static void OnKeyboardClosed(VREvent_t args) {
@@ -285,24 +307,25 @@ namespace ValheimVRMod.Patches {
 
             if (chatInput)
             {
-                if (text != "")
+                if (text != "" && text.StartsWith("/cmd")) //SEND CONSOLE INPUT
                 {
-                    if (text.StartsWith("/cmd")) //SEND CONSOLE INPUT
-                    {
-                        if (text.StartsWith("/cmd "))
-                            text = text.Remove(0, 5);
-                        else
-                            text = text.Remove(0, 4);
-
-                        Console.instance.TryRunCommand(text);
-                    }
-                    else //SEND CHAT INPUT
-                    {
-                        Chat.instance.m_input.text = text;
-                        Chat.instance.InputText();
-                        Chat.instance.m_input.text = "";
-                    }
+                    string command = text.StartsWith("/cmd ") ? text.Remove(0, 5) : text.Remove(0, 4);
+                    Console.instance.TryRunCommand(command);
+                    Chat.instance.m_input.text = "";
                 }
+                else
+                {
+                    // Leave submission itself to Chat.instance.SendInput() rather than calling
+                    // Chat.instance.InputText() directly: per Terminal.SendInput()/Chat.SendInput(),
+                    // that's also what closes the window - it deactivates m_input's GameObject
+                    // afterward (unconditionally, even if text is empty), which is what actually
+                    // clears Unity's EventSystem focus and stops the caret from blinking. Emulating
+                    // an Escape keypress instead (the previous approach) raced against whatever else
+                    // polls ZInput.GetKeyDown(Escape) that frame and could lose it, leaving the
+                    // window focused with no SteamVR keyboard left open to close it.
+                    Chat.instance.m_input.text = text;
+                }
+                Chat.instance.SendInput();
             }
             Scripts.QuickAbstract.shouldStartChat = false;
 
