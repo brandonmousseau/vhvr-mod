@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using ValheimVRMod.VRCore;
 using ValheimVRMod.VRCore.UI;
 using HarmonyLib;
@@ -774,21 +774,11 @@ namespace ValheimVRMod.Patches {
                 blockHold = ShieldBlock.instance?.isBlocking() ?? false;
             }
 
-            if (EquipScript.CurrentOffHandEquipType() == EquipType.Magic && MagicWeaponManager.AttemptingAttack)
+            // This is the only place that may consume the dead raiser attack when not riding.
+            if (DeadRaiserManager.instance != null && DeadRaiserManager.instance.ConsumeAttemptingAttack())
             {
-                //Check if there's secondary attack or not, if not, fallback to normal attack
-                if (MagicWeaponManager.IsSecondaryAttack)
-                {
-                    var canSecondaryAttack = MagicWeaponManager.TrySecondaryAttack;
-                    attack = canSecondaryAttack;
-                    attackHold = canSecondaryAttack;
-                    secondaryAttack = canSecondaryAttack;
-                }
-                else
-                {
-                    attack = true;
-                    attackHold = true;
-                }
+                attack = true;
+                attackHold = true;
             }
 
             if (EquipScript.CurrentOffHandEquipType() == EquipType.Crossbow && CrossbowManager.IsPullingTrigger())
@@ -833,12 +823,13 @@ namespace ValheimVRMod.Patches {
 
                     break;
                 case EquipType.Magic:
-                    if (MagicWeaponManager.AttemptingAttack)
+                    var staff = MagicStaffManagers.Current;
+                    if (staff != null && staff.AttemptingAttack)
                     {
                         //Check if there's secondary attack or not, if not, fallback to normal attack
-                        if (MagicWeaponManager.IsSecondaryAttack)
+                        if (staff.IsSecondaryAttack)
                         {
-                            var canSecondaryAttack = MagicWeaponManager.TrySecondaryAttack;
+                            var canSecondaryAttack = staff.TrySecondaryAttack;
                             attack = canSecondaryAttack;
                             attackHold = canSecondaryAttack;
                             secondaryAttack = canSecondaryAttack;

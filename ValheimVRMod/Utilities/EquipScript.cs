@@ -347,9 +347,9 @@ namespace ValheimVRMod.Utilities
 
         public static bool ShouldSkipAttackAnimation()
         {
-            if (CurrentOffHandEquipType() == EquipType.Magic || CurrentMainHandEquipType() == EquipType.Magic) 
+            if (CurrentOffHandEquipType() == EquipType.Magic || CurrentMainHandEquipType() == EquipType.Magic)
             {
-                return MagicWeaponManager.ShouldSkipAttackAnimation();
+                return SwingableStaffManager.instance != null && SwingableStaffManager.instance.UseSwingForCurrentAttack();
             }
             return CurrentOffHandEquipType() != EquipType.Crossbow;
         }

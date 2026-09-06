@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using Valve.VR;
@@ -98,8 +98,11 @@ namespace ValheimVRMod.Scripts
 
         protected virtual Vector3 GetProjectileSpawnPoint()
         {
-            // TODO: Consider moving MagicWeaponManager.GetProjectileSpawnPoint() to WeaponUtils since its logic is not specific to magic weapons.
-            return MagicWeaponManager.GetProjectileSpawnPoint(Player.m_localPlayer.GetRightItem().m_shared.m_attack);
+            // TODO: Consider moving this default to WeaponUtils since its logic is not specific to magic weapons.
+            return MagicStaffUtils.GetProjectileSpawnPoint(
+                Player.m_localPlayer.GetRightItem().m_shared.m_attack,
+                LocalWeaponWield.weaponForward.normalized,
+                MagicStaffUtils.WeaponHandPointer);
         }
 
         protected virtual bool ReleaseTriggerToAttack()
