@@ -5,46 +5,48 @@ using Valve.VR.Extras;
 
 namespace ValheimVRMod.Scripts
 {
-    // Shared helpers for the magic staff managers (SwingableStaffManager, DeadRaiserManager, ShootingStaffManager).
+    // Shared helpers for the magic staff managers (SwingableStaffManager, ShootingStaffManager).
+    // All staves are main hand weapons, so a staff is always held in the main weapon hand.
     public static class MagicStaffUtils
     {
-        public static bool IsInRightHand(bool isDominantHandWeapon)
+        public static SteamVR_LaserPointer WeaponHandPointer
         {
-            return isDominantHandWeapon ^ !VRPlayer.isRightHandMainWeaponHand;
+            get { return VRPlayer.isRightHandMainWeaponHand ? VRPlayer.rightPointer : VRPlayer.leftPointer; }
         }
 
-        public static SteamVR_LaserPointer WeaponHandPointer(bool isDominantHandWeapon)
+        public static SteamVR_Action_Boolean AttackTriggerAction
         {
-            return IsInRightHand(isDominantHandWeapon) ? VRPlayer.rightPointer : VRPlayer.leftPointer;
+            get { return VRPlayer.isRightHandMainWeaponHand ? SteamVR_Actions.valheim_Use : SteamVR_Actions.valheim_UseLeft; }
         }
 
-        public static SteamVR_Action_Boolean AttackTriggerAction(bool isDominantHandWeapon)
+        public static SteamVR_Action_Boolean SecondaryTriggerAction
         {
-            return IsInRightHand(isDominantHandWeapon) ? SteamVR_Actions.valheim_Use : SteamVR_Actions.valheim_UseLeft;
+            get { return VRPlayer.isRightHandMainWeaponHand ? SteamVR_Actions.valheim_UseLeft : SteamVR_Actions.valheim_Use; }
         }
 
-        public static SteamVR_Action_Boolean SecondaryTriggerAction(bool isDominantHandWeapon)
+        // Only some (mostly modded) staves have a secondary attack, so it must be null-checked before use.
+        private static Attack GetSecondaryAttack()
         {
-            return IsInRightHand(isDominantHandWeapon) ? SteamVR_Actions.valheim_UseLeft : SteamVR_Actions.valheim_Use;
+            var secondaryAttack = Player.m_localPlayer?.GetRightItem()?.m_shared?.m_secondaryAttack;
+            return string.IsNullOrEmpty(secondaryAttack?.m_attackAnimation) ? null : secondaryAttack;
         }
 
-        public static bool IsSecondaryAttack(bool isDominantHandWeapon)
+        public static bool IsSecondaryAttack()
         {
-            var secondaryAttack = Player.m_localPlayer?.GetRightItem()?.m_shared.m_secondaryAttack;
-            return SecondaryTriggerAction(isDominantHandWeapon).state && secondaryAttack.m_attackAnimation != "";
+            return SecondaryTriggerAction.state && GetSecondaryAttack() != null;
         }
 
-        public static bool TrySecondaryAttack(bool isDominantHandWeapon)
+        public static bool TrySecondaryAttack()
         {
-            var secondaryAttack = Player.m_localPlayer?.GetRightItem()?.m_shared.m_secondaryAttack;
-            var isEitrEnough = false;
-            if (SecondaryTriggerAction(isDominantHandWeapon).state && secondaryAttack.m_attackAnimation != "")
+            if (!SecondaryTriggerAction.state)
             {
-                isEitrEnough = Player.m_localPlayer.TryUseEitr(secondaryAttack.m_attackEitr);
+                return false;
             }
-            return isEitrEnough;
+            var secondaryAttack = GetSecondaryAttack();
+            return secondaryAttack != null && Player.m_localPlayer.TryUseEitr(secondaryAttack.m_attackEitr);
         }
 
+        // TODO: Consider moving this to WeaponUtils since its logic is not specific to magic weapons.
         public static Vector3 GetProjectileSpawnPoint(Attack attack, Vector3 offsetDirection, SteamVR_LaserPointer weaponHandPointer)
         {
             var offsetAmount =
@@ -76,14 +78,10 @@ namespace ValheimVRMod.Scripts
 
     public static class MagicStaffManagers
     {
-        public static IMagicStaffManager MainHand
+        // Staves are always main hand weapons, so at most one staff manager can be active at a time.
+        public static IMagicStaffManager Current
         {
             get { return (IMagicStaffManager) SwingableStaffManager.instance ?? ShootingStaffManager.instance; }
-        }
-
-        public static IMagicStaffManager OffHand
-        {
-            get { return DeadRaiserManager.instance; }
         }
     }
 }

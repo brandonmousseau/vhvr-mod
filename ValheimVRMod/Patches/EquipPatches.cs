@@ -1,4 +1,4 @@
-using HarmonyLib;
+﻿using HarmonyLib;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -449,7 +449,7 @@ namespace ValheimVRMod.Patches
                 return;
             }
 
-            if (DeadRaiserManager.STAFF_NAMES.Contains(Player.m_localPlayer.GetLeftItem()?.m_shared?.m_name))
+            if (DeadRaiserManager.ITEM_NAMES.Contains(Player.m_localPlayer.GetLeftItem()?.m_shared?.m_name))
             {
                 ___m_leftItemInstance.AddComponent<DeadRaiserManager>();
             }

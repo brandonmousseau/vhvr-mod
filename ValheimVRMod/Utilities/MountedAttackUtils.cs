@@ -1,4 +1,4 @@
-
+﻿
 using HarmonyLib;
 using System.Reflection;
 using ValheimVRMod.Scripts;
@@ -28,11 +28,20 @@ namespace ValheimVRMod.Utilities
 
         public static void CheckMountedMagicAndCrossbowAttack()
         {
-            bool attemptingNonSwingMagicAttack =
-                (MagicStaffManagers.OffHand != null && MagicStaffManagers.OffHand.AttemptingAttack) ||
-                (MagicStaffManagers.MainHand != null && MagicStaffManagers.MainHand.AttemptingAttack &&
+            // Bail out before querying the managers when not riding: both DeadRaiserManager#ConsumeAttemptingAttack
+            // and IMagicStaffManager#AttemptingAttack are destructive reads, so polling them here on foot would
+            // steal the attack from Player#SetControls, which is what actually triggers the attack when not riding.
+            if (!IsRiding())
+            {
+                return;
+            }
+
+            var staff = MagicStaffManagers.Current;
+            bool attemptingNonSwingAttack =
+                (DeadRaiserManager.instance != null && DeadRaiserManager.instance.ConsumeAttemptingAttack()) ||
+                (staff != null && staff.AttemptingAttack &&
                  !(SwingableStaffManager.instance != null && SwingableStaffManager.instance.UseSwingForCurrentAttack()));
-            if (attemptingNonSwingMagicAttack)
+            if (attemptingNonSwingAttack)
             {
                 // Swing-launch attack is managed in SwingLaunchManager.
                 StartAttackIfRiding();

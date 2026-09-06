@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using ValheimVRMod.Utilities;
 using Valve.VR;
 
@@ -39,18 +39,18 @@ namespace ValheimVRMod.Scripts
                     }
                 }
 
-                return MagicStaffUtils.AttackTriggerAction(isDominantHandWeapon: true).state;
+                return MagicStaffUtils.AttackTriggerAction.state;
             }
         }
 
         public bool IsSecondaryAttack
         {
-            get { return MagicStaffUtils.IsSecondaryAttack(isDominantHandWeapon: true); }
+            get { return MagicStaffUtils.IsSecondaryAttack(); }
         }
 
         public bool TrySecondaryAttack
         {
-            get { return MagicStaffUtils.TrySecondaryAttack(isDominantHandWeapon: true); }
+            get { return MagicStaffUtils.TrySecondaryAttack(); }
         }
 
         public Vector3 AimDir
@@ -59,13 +59,13 @@ namespace ValheimVRMod.Scripts
             {
                 return isCurrentlyTwoHanded() || isAiming ?
                     weaponForward :
-                    MagicStaffUtils.WeaponHandPointer(true).rayDirection * Vector3.forward;
+                    MagicStaffUtils.WeaponHandPointer.rayDirection * Vector3.forward;
             }
         }
 
         public Vector3 GetProjectileSpawnPoint(Attack attack)
         {
-            return MagicStaffUtils.GetProjectileSpawnPoint(attack, weaponForward.normalized, MagicStaffUtils.WeaponHandPointer(true));
+            return MagicStaffUtils.GetProjectileSpawnPoint(attack, weaponForward.normalized, MagicStaffUtils.WeaponHandPointer);
         }
     }
 }

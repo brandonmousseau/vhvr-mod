@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using Valve.VR;
@@ -102,7 +102,7 @@ namespace ValheimVRMod.Scripts
             return MagicStaffUtils.GetProjectileSpawnPoint(
                 Player.m_localPlayer.GetRightItem().m_shared.m_attack,
                 LocalWeaponWield.weaponForward.normalized,
-                MagicStaffUtils.WeaponHandPointer(isDominantHandWeapon: true));
+                MagicStaffUtils.WeaponHandPointer);
         }
 
         protected virtual bool ReleaseTriggerToAttack()

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -160,9 +160,15 @@ namespace ValheimVRMod.Patches {
                     aimDir = CrossbowManager.AimDir;
                     return false;
                 case EquipType.Magic:
-                    spawnPoint = MagicStaffManagers.OffHand.GetProjectileSpawnPoint(__instance);
-                    aimDir = MagicStaffManagers.OffHand.AimDir;
-                    return false;
+                    // The dead raiser is the only off-hand magic item; staves are main hand weapons.
+                    var deadRaiser = DeadRaiserManager.instance;
+                    if (deadRaiser != null)
+                    {
+                        spawnPoint = deadRaiser.GetProjectileSpawnPoint(__instance);
+                        aimDir = deadRaiser.AimDir;
+                        return false;
+                    }
+                    break;
             }
 
             switch (EquipScript.CurrentMainHandEquipType()) {
@@ -178,8 +184,13 @@ namespace ValheimVRMod.Patches {
                     aimDir = ThrowableManager.aimDir.normalized * ThrowableManager.throwSpeed;
                     return false;
                 case EquipType.Magic:
-                    spawnPoint = MagicStaffManagers.MainHand.GetProjectileSpawnPoint(__instance);
-                    aimDir = MagicStaffManagers.MainHand.AimDir;
+                    var staff = MagicStaffManagers.Current;
+                    if (staff == null)
+                    {
+                        return true;
+                    }
+                    spawnPoint = staff.GetProjectileSpawnPoint(__instance);
+                    aimDir = staff.AimDir;
                     return false;
                 case EquipType.RuneSkyheim:
                     spawnPoint = VRPlayer.rightHand.transform.position;

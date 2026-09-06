@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using ValheimVRMod.VRCore;
 using Valve.VR;
@@ -29,7 +29,7 @@ namespace ValheimVRMod.Scripts
             get
             {
                 UpdateSwingAttackMode();
-                return currentSwingAttackMode == SwingAttackMode.AimAndShoot ? currentAttackTriggerAction : MagicStaffUtils.AttackTriggerAction(true);
+                return currentSwingAttackMode == SwingAttackMode.AimAndShoot ? currentAttackTriggerAction : MagicStaffUtils.AttackTriggerAction;
             }
         }
 
@@ -56,7 +56,7 @@ namespace ValheimVRMod.Scripts
                 }
                 return LocalWeaponWield.isCurrentlyTwoHanded() || LocalWeaponWield.isAiming ?
                     LocalWeaponWield.weaponForward :
-                    MagicStaffUtils.WeaponHandPointer(true).rayDirection * Vector3.forward;
+                    MagicStaffUtils.WeaponHandPointer.rayDirection * Vector3.forward;
             }
         }
 
@@ -67,12 +67,12 @@ namespace ValheimVRMod.Scripts
 
         public bool IsSecondaryAttack
         {
-            get { return MagicStaffUtils.IsSecondaryAttack(isDominantHandWeapon: true); }
+            get { return MagicStaffUtils.IsSecondaryAttack(); }
         }
 
         public bool TrySecondaryAttack
         {
-            get { return MagicStaffUtils.TrySecondaryAttack(isDominantHandWeapon: true); }
+            get { return MagicStaffUtils.TrySecondaryAttack(); }
         }
 
         public bool ShouldSkipAttackAnimation()
@@ -82,7 +82,7 @@ namespace ValheimVRMod.Scripts
 
         public Vector3 GetProjectileSpawnPoint(Attack attack)
         {
-            return MagicStaffUtils.GetProjectileSpawnPoint(attack, LocalWeaponWield.weaponForward.normalized, MagicStaffUtils.WeaponHandPointer(true));
+            return MagicStaffUtils.GetProjectileSpawnPoint(attack, LocalWeaponWield.weaponForward.normalized, MagicStaffUtils.WeaponHandPointer);
         }
 
         protected override Vector3 GetProjectileSpawnPoint()
@@ -109,13 +109,13 @@ namespace ValheimVRMod.Scripts
             {
                 // Single-handed: swing-launch only if grip is held down the moment the trigger is pressed.
                 SteamVR_Input_Sources mainHandInputSource = VRPlayer.mainWeaponHandInputSource;
-                if (MagicStaffUtils.AttackTriggerAction(true).GetStateDown(mainHandInputSource))
+                if (MagicStaffUtils.AttackTriggerAction.GetStateDown(mainHandInputSource))
                 {
                     currentSwingAttackMode =
                         SteamVR_Actions.valheim_Grab.GetState(mainHandInputSource) ?
                         SwingAttackMode.SwingLaunch :
                         SwingAttackMode.AimAndShoot;
-                    currentAttackTriggerAction = MagicStaffUtils.AttackTriggerAction(true);
+                    currentAttackTriggerAction = MagicStaffUtils.AttackTriggerAction;
                 }
             }
         }
