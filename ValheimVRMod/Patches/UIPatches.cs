@@ -1016,8 +1016,25 @@ namespace ValheimVRMod.Patches
             {
                 return;
             }
-            mousePos = SoftwareCursor.ScaledMouseVector();
-            return;
+            // Minimap.ScreenToWorldPoint resolves the point with a null camera, which makes it treat
+            // mousePos as raw world coordinates rather than screen coordinates. Project the cursor onto
+            // the map rect through the canvas camera and hand over the resulting world point, so the
+            // click lands under the cursor no matter how the window resolution, the captured screen size
+            // and the configured UI panel resolution relate to each other.
+            RectTransform mapRect = __instance.m_mapImageLarge.transform as RectTransform;
+            Canvas canvas = mapRect == null ? null : mapRect.GetComponentInParent<Canvas>();
+            Camera camera = canvas == null ? null : canvas.rootCanvas.worldCamera;
+            if (camera == null)
+            {
+                mousePos = SoftwareCursor.ScaledMouseVector();
+                return;
+            }
+            Vector3 worldPoint;
+            if (RectTransformUtility.ScreenPointToWorldPointInRectangle(
+                mapRect, SoftwareCursor.simulatedMousePosition, camera, out worldPoint))
+            {
+                mousePos = worldPoint;
+            }
         }
     }
 
