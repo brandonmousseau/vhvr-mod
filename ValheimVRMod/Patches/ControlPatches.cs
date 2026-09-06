@@ -839,6 +839,16 @@ namespace ValheimVRMod.Patches {
                             attack = true;
                             attackHold = true;
                         }
+                        if (MountedAttackUtils.IsRiding())
+                        {
+                            // While riding it is MountedAttackUtils that initiates the attack, because vanilla
+                            // SetControls clears both the attack trigger and the attack hold whenever the trigger
+                            // is raised while mounted. Raising only the hold leaves it untouched, which a looping
+                            // staff attack (the staff of frost) needs: Player#PlayerAttackInput aborts such an
+                            // attack as soon as the hold drops, cutting it off during its wind-up.
+                            attack = false;
+                            secondaryAttack = false;
+                        }
                         SwingLaunchManager.isThrowing = false;
                     }
                     break;

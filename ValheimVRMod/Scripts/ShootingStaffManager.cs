@@ -1,6 +1,4 @@
 ﻿using UnityEngine;
-using ValheimVRMod.Utilities;
-using Valve.VR;
 
 namespace ValheimVRMod.Scripts
 {
@@ -26,21 +24,7 @@ namespace ValheimVRMod.Scripts
 
         public bool AttemptingAttack
         {
-            get
-            {
-                if (EquipScript.IsDundrEquipped())
-                {
-                    switch (LocalPlayerTwoHandedState)
-                    {
-                        case TwoHandedState.LeftHandBehind:
-                            return SteamVR_Actions.valheim_UseLeft.stateDown;
-                        case TwoHandedState.RightHandBehind:
-                            return SteamVR_Actions.valheim_Use.stateDown;
-                    }
-                }
-
-                return MagicStaffUtils.AttackTriggerAction.state;
-            }
+            get { return MagicStaffUtils.IsShootingTriggerHeld(); }
         }
 
         public bool IsSecondaryAttack

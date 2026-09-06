@@ -21,8 +21,8 @@ namespace ValheimVRMod.Scripts
         private SteamVR_Action_Boolean currentAttackTriggerAction;
 
         // The rear hand trigger shoots at aiming direction whereas the front hand trigger swing-launches.
-        private SteamVR_Action_Boolean RearHandTriggerAction { get { return isRightHandRear ? SteamVR_Actions.valheim_Use : SteamVR_Actions.valheim_UseLeft; } }
-        private SteamVR_Input_Sources RearHandInputSource { get { return isRightHandRear ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand; } }
+        private SteamVR_Action_Boolean RearHandTriggerAction { get { return MagicStaffUtils.RearHandTriggerAction; } }
+        private SteamVR_Input_Sources RearHandInputSource { get { return MagicStaffUtils.RearHandInputSource; } }
 
         private SteamVR_Action_Boolean ShootingTriggerAction
         {

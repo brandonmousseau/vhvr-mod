@@ -19,6 +19,43 @@ namespace ValheimVRMod.Scripts
             get { return VRPlayer.isRightHandMainWeaponHand ? SteamVR_Actions.valheim_Use : SteamVR_Actions.valheim_UseLeft; }
         }
 
+        // The hand that is behind the other when wielding two-handed, or the main weapon hand when wielding
+        // single-handed. Aim-and-shoot staves fire from this hand's trigger, which leaves the front hand
+        // trigger free for the swing-launch gesture of the swingable staves.
+        public static SteamVR_Input_Sources RearHandInputSource
+        {
+            get
+            {
+                switch (LocalWeaponWield.LocalPlayerTwoHandedState)
+                {
+                    case WeaponWield.TwoHandedState.LeftHandBehind:
+                        return SteamVR_Input_Sources.LeftHand;
+                    case WeaponWield.TwoHandedState.RightHandBehind:
+                        return SteamVR_Input_Sources.RightHand;
+                    default:
+                        return VRPlayer.mainWeaponHandInputSource;
+                }
+            }
+        }
+
+        public static SteamVR_Action_Boolean RearHandTriggerAction
+        {
+            get
+            {
+                return RearHandInputSource == SteamVR_Input_Sources.RightHand ?
+                    SteamVR_Actions.valheim_Use : SteamVR_Actions.valheim_UseLeft;
+            }
+        }
+
+        // Whether the rear hand trigger is currently held, which is what makes an aim-and-shoot staff attack.
+        // This is deliberately a level read rather than an edge read: a looping staff attack (the staff of
+        // frost) is aborted by Player#PlayerAttackInput as soon as the attack hold drops, so the trigger has
+        // to keep reporting the attack for the whole wind-up rather than only on the frame it was pressed.
+        public static bool IsShootingTriggerHeld()
+        {
+            return RearHandTriggerAction.GetState(RearHandInputSource);
+        }
+
         public static SteamVR_Action_Boolean SecondaryTriggerAction
         {
             get { return VRPlayer.isRightHandMainWeaponHand ? SteamVR_Actions.valheim_UseLeft : SteamVR_Actions.valheim_Use; }
