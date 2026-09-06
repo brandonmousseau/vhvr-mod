@@ -1090,13 +1090,39 @@ namespace ValheimVRMod.Patches
                     UITooltip.HideTooltip();
                     return false;
                 }
-                if (!RectTransformUtility.RectangleContainsScreenPoint(UITooltip.m_hovered.transform as RectTransform, SoftwareCursor.ScaledMouseVector()))
+                if (!CursorIsWithinHovered(UITooltip.m_hovered))
                 {
-                    UITooltip.HideTooltip();
+                    // Deliberately not HideTooltip(): that clears m_current, and Unity fires no new
+                    // OnPointerEnter while the pointer stays within the same element, so the tooltip
+                    // could never re-appear. Reset instead so it re-arms when the cursor comes back.
+                    __instance.m_showTimer = 0f;
+                    UITooltip.m_tooltip.SetActive(false);
                     return false;
                 }
                 UITooltip.m_tooltip.transform.position = SoftwareCursor.ScaledMouseVector();
                 Utils.ClampUIToScreen(UITooltip.m_tooltip.transform.GetChild(0).transform as RectTransform);
+            }
+            return false;
+        }
+
+        // Tested against the canvas camera and the same cursor value that Input.mousePosition is
+        // patched to return, so this agrees with the hover the EventSystem itself resolved. Passing
+        // no camera instead compares against raw world coordinates, which only lines up when the
+        // canvas position, the captured screen size and the UI panel resolution all coincide.
+        // The UITooltip component is also not necessarily on the object whose rect covers the
+        // visible hover area, so accept the cursor being over any rect below it.
+        private static bool CursorIsWithinHovered(GameObject hovered)
+        {
+            var canvas = hovered.GetComponentInParent<Canvas>();
+            var camera = canvas == null ? null : canvas.rootCanvas.worldCamera;
+            foreach (var rectTransform in hovered.GetComponentsInChildren<RectTransform>())
+            {
+                if (rectTransform != null &&
+                    RectTransformUtility.RectangleContainsScreenPoint(
+                        rectTransform, SoftwareCursor.simulatedMousePosition, camera))
+                {
+                    return true;
+                }
             }
             return false;
         }

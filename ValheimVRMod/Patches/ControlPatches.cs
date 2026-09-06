@@ -1029,12 +1029,14 @@ namespace ValheimVRMod.Patches {
             {
                 return true;
             }
+            // Test against the canvas camera rather than treating the cursor as a raw world point,
+            // so this resolves the same element the EventSystem hovers and the tooltip patch accepts.
+            var canvas = __instance.GetComponentInParent<Canvas>();
+            var camera = canvas == null ? null : canvas.rootCanvas.worldCamera;
             foreach (InventoryGrid.Element element in __instance.m_elements)
             {
-                RectTransform rectTransform = element.m_go.transform as RectTransform;
-                // Use SoftwareCursor.ScaledMouseVector() instead of the vanilla Input.mousePosition to support VR GUI.
-                Vector2 point = rectTransform.InverseTransformPoint(SoftwareCursor.ScaledMouseVector());
-                if (rectTransform.rect.Contains(point))
+                if (RectTransformUtility.RectangleContainsScreenPoint(
+                    element.m_go.transform as RectTransform, SoftwareCursor.simulatedMousePosition, camera))
                 {
                     __result = element;
                     return false;
