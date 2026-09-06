@@ -594,7 +594,7 @@ namespace ValheimVRMod.Utilities {
 
             if (contralateral)
             {
-                if (sagittalOffset > 0.03125f)
+                if (sagittalOffset > 0.125f)
                 {
                     return BackReachLocation.None;
                 }
@@ -623,9 +623,11 @@ namespace ValheimVRMod.Utilities {
                 {
                     if (contralateral)
                     {
-                        return Vector3.Dot(handTransform.forward, playerRight + playerUp) > 0 ?
+                        return Vector3.Dot(handTransform.forward, playerRight + playerUp) < 0 ?
+                            BackReachLocation.RightShoulderRadialDown :
+                            sagittalOffset < 0.03125f ?
                             BackReachLocation.RightShoulderRadialUp :
-                            BackReachLocation.RightShoulderRadialDown;
+                            BackReachLocation.None;
                     }
                     return Vector3.Dot(handTransform.forward, playerRight) > 0 &&
                         Vector3.Dot(handTransform.forward, playerUp) > 0 ?
@@ -636,9 +638,11 @@ namespace ValheimVRMod.Utilities {
                 {
                     if (contralateral)
                     {
-                        return Vector3.Dot(handTransform.forward, playerRight - playerUp) < 0 ?
+                        return Vector3.Dot(handTransform.forward, playerRight - playerUp) > 0 ?
+                            BackReachLocation.LeftShoulderRadialDown :
+                            sagittalOffset < 0.03125f ?
                             BackReachLocation.LeftShoulderRadialUp :
-                            BackReachLocation.LeftShoulderRadialDown;
+                            BackReachLocation.None;
                     }
                     return Vector3.Dot(handTransform.forward, playerRight) < 0 &&
                         Vector3.Dot(handTransform.forward, playerUp) > 0 ?
