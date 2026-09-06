@@ -646,11 +646,14 @@ namespace ValheimVRMod.Scripts
                     Sprite.Create(chatTexture, new Rect(0.0f, 0.0f, chatTexture.width, chatTexture.height), new Vector2(0.5f, 0.5f), 500),
                     delegate ()
                     {
-                        if (shouldStartChat && Chat.instance.HasFocus())
+                        // While the SteamVR keyboard is driving chat input, leave it to close/
+                        // submit via its own keyboard-closed event instead of treating a repeat
+                        // press of this quick action as the physical-keyboard "confirm" gesture.
+                        if (shouldStartChat && Chat.instance.HasFocus() && !InputManager.chatKeyboardActive)
                         {
                             enterChatText();
                         }
-                        else
+                        else if (!InputManager.chatKeyboardActive)
                         {
                             shouldStartChat = true;
                             if (SteamVR_Actions.valheim_Use.GetState(SteamVR_Input_Sources.Any) ||
@@ -660,9 +663,13 @@ namespace ValheimVRMod.Scripts
                             }
                             else
                             {
-                                // Use SteamVR virtual keyboard to chat
+                                // Use SteamVR virtual keyboard to chat. Also open the vanilla chat
+                                // window (as the physical-keyboard branch above does) purely for
+                                // visual feedback - InputManager mirrors each keystroke from the
+                                // SteamVR keyboard into Chat.instance.m_input as it arrives, and the
+                                // window is closed again once the SteamVR keyboard closes.
+                                ZInput_GetButtonDown_Patch.EmulateButtonDown("Chat");
                                 TextInput.m_instance.Show("ChatText", "", 256);
-                                TextInput.m_instance.m_panel.gameObject.transform.localScale = new Vector3(0, 0, 0);
                             }
                         }
                         return true;

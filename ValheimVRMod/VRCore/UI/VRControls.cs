@@ -3,6 +3,7 @@ using static ValheimVRMod.Utilities.LogUtils;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using ValheimVRMod.Patches;
 using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
 using Valve.VR;
@@ -135,7 +136,11 @@ namespace ValheimVRMod.VRCore.UI
             checkQuickItems<RightHandQuickMenu>(StaticObjects.rightHandQuickMenu, SteamVR_Actions.valheim_QuickSwitch, true);
             checkQuickItems<LeftHandQuickMenu>(StaticObjects.leftHandQuickMenu, SteamVR_Actions.valheim_QuickActions, false);
 
-            if (QuickAbstract.shouldStartChat && Chat.instance.HasFocus())
+            // Skip while the SteamVR virtual keyboard is driving chat input: that flow submits/
+            // cancels via its own keyboard-closed event (see InputManager.OnKeyboardClosed), and
+            // this grip-based confirm/cancel gesture handling is for the physical-keyboard flow
+            // only - both would otherwise race once the chat window gains focus.
+            if (QuickAbstract.shouldStartChat && Chat.instance.HasFocus() && !InputManager.chatKeyboardActive)
             {
                 if (SteamVR_Actions.default_GrabGrip.GetState(SteamVR_Input_Sources.Any) ||
                     SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.Any)) {
