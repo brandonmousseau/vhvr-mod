@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using ValheimVRMod.VRCore;
 using ValheimVRMod.VRCore.UI;
 using HarmonyLib;
@@ -774,21 +774,11 @@ namespace ValheimVRMod.Patches {
                 blockHold = ShieldBlock.instance?.isBlocking() ?? false;
             }
 
-            if (EquipScript.CurrentOffHandEquipType() == EquipType.Magic && MagicWeaponManager.AttemptingAttack)
+            // This is the only place that may consume the dead raiser attack when not riding.
+            if (DeadRaiserManager.instance != null && DeadRaiserManager.instance.ConsumeAttemptingAttack())
             {
-                //Check if there's secondary attack or not, if not, fallback to normal attack
-                if (MagicWeaponManager.IsSecondaryAttack)
-                {
-                    var canSecondaryAttack = MagicWeaponManager.TrySecondaryAttack;
-                    attack = canSecondaryAttack;
-                    attackHold = canSecondaryAttack;
-                    secondaryAttack = canSecondaryAttack;
-                }
-                else
-                {
-                    attack = true;
-                    attackHold = true;
-                }
+                attack = true;
+                attackHold = true;
             }
 
             if (EquipScript.CurrentOffHandEquipType() == EquipType.Crossbow && CrossbowManager.IsPullingTrigger())
@@ -833,12 +823,13 @@ namespace ValheimVRMod.Patches {
 
                     break;
                 case EquipType.Magic:
-                    if (MagicWeaponManager.AttemptingAttack)
+                    var staff = MagicStaffManagers.Current;
+                    if (staff != null && staff.AttemptingAttack)
                     {
                         //Check if there's secondary attack or not, if not, fallback to normal attack
-                        if (MagicWeaponManager.IsSecondaryAttack)
+                        if (staff.IsSecondaryAttack)
                         {
-                            var canSecondaryAttack = MagicWeaponManager.TrySecondaryAttack;
+                            var canSecondaryAttack = staff.TrySecondaryAttack;
                             attack = canSecondaryAttack;
                             attackHold = canSecondaryAttack;
                             secondaryAttack = canSecondaryAttack;
@@ -1029,12 +1020,14 @@ namespace ValheimVRMod.Patches {
             {
                 return true;
             }
+            // Test against the canvas camera rather than treating the cursor as a raw world point,
+            // so this resolves the same element the EventSystem hovers and the tooltip patch accepts.
+            var canvas = __instance.GetComponentInParent<Canvas>();
+            var camera = canvas == null ? null : canvas.rootCanvas.worldCamera;
             foreach (InventoryGrid.Element element in __instance.m_elements)
             {
-                RectTransform rectTransform = element.m_go.transform as RectTransform;
-                // Use SoftwareCursor.ScaledMouseVector() instead of the vanilla Input.mousePosition to support VR GUI.
-                Vector2 point = rectTransform.InverseTransformPoint(SoftwareCursor.ScaledMouseVector());
-                if (rectTransform.rect.Contains(point))
+                if (RectTransformUtility.RectangleContainsScreenPoint(
+                    element.m_go.transform as RectTransform, SoftwareCursor.simulatedMousePosition, camera))
                 {
                     __result = element;
                     return false;

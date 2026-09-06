@@ -1,4 +1,4 @@
-using HarmonyLib;
+﻿using HarmonyLib;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -316,12 +316,27 @@ namespace ValheimVRMod.Patches
             weaponCol.setColliderParent(
                 meshFilter, handPosition: ___m_rightItemInstance.transform.parent.position, hash, true);
 
-            LocalWeaponWield weaponWield = EquipScript.IsSpearEquipped() ? ___m_rightItemInstance.AddComponent<SpearWield>() : ___m_rightItemInstance.AddComponent<LocalWeaponWield>();
+            string rightItemName = Player.m_localPlayer.GetRightItem()?.m_shared?.m_name;
+            bool isSwingableStaff = EquipScript.CurrentMainHandEquipType() == EquipType.Magic && SwingableStaffManager.STAFF_NAMES.Contains(rightItemName);
+
+            LocalWeaponWield weaponWield;
+            if (EquipScript.IsSpearEquipped())
+            {
+                weaponWield = ___m_rightItemInstance.AddComponent<SpearWield>();
+            }
+            else if (EquipScript.CurrentMainHandEquipType() == EquipType.Magic && !isSwingableStaff)
+            {
+                weaponWield = ___m_rightItemInstance.AddComponent<ShootingStaffManager>();
+            }
+            else
+            {
+                weaponWield = ___m_rightItemInstance.AddComponent<LocalWeaponWield>();
+            }
             weaponWield.Initialize(Player.m_localPlayer.GetRightItem(), hash, isDominantHandWeapon: true);
 
-            if (MagicWeaponManager.IsSwingLaunchEnabled())
+            if (isSwingableStaff)
             {
-                meshFilter.gameObject.AddComponent<SwingLaunchManager>();
+                meshFilter.gameObject.AddComponent<SwingableStaffManager>();
             }
 
             if (EquipScript.IsThrowable(player.GetRightItem()) || EquipScript.IsSpearEquipped() || EquipScript.CurrentMainHandEquipType() == EquipType.ThrowObject)
@@ -434,9 +449,9 @@ namespace ValheimVRMod.Patches
                 return;
             }
 
-            if (MagicWeaponManager.CanSummonWithOppositeHand())
+            if (DeadRaiserManager.ITEM_NAMES.Contains(Player.m_localPlayer.GetLeftItem()?.m_shared?.m_name))
             {
-                ___m_leftItemInstance.AddComponent<MagicWeaponManager.SummonByMovingHandUpward>();
+                ___m_leftItemInstance.AddComponent<DeadRaiserManager>();
             }
 
             if (StaticObjects.rightHandQuickMenu != null)
