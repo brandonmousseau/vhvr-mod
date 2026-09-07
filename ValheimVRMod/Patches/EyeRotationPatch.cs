@@ -99,7 +99,7 @@ namespace ValheimVRMod.Patches
                 wasAttached = false;
             }
 
-            if (!Player_Rotation_Patch.ShouldFaceLookDirection(__instance))
+            if (!Player_Rotation_Patch.ShouldFaceLookDirection(__instance) || !VHVRConfig.UseVrControls())
             {
                 return;
             }
