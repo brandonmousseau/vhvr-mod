@@ -53,9 +53,9 @@ namespace ValheimVRMod.VRCore.UI {
             ConfigSettings.enableTransformButtons = enableTransformButtons;
         }
 
-        public static bool isVHVRClone(KeyboardMouseSettings settings)
+        public static bool isVHVRClone(Component component)
         {
-            return settings.GetComponentInParent<SettingsCloneMarker>(includeInactive: true) != null;
+            return component.GetComponentInParent<SettingsCloneMarker>(includeInactive: true) != null;
         }
  
         /// <summary>

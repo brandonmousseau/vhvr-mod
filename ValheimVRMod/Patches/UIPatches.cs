@@ -831,6 +831,24 @@ namespace ValheimVRMod.Patches
         }
     }
 
+    // The VHVR settings dialog is a clone of the vanilla Settings object, so its Awake overwrites
+    // the static Settings.m_instance singleton. createModSettings() then destroys the clone's tab
+    // buttons and their key hints, which is what Settings.m_tabKeyHints points at. ZInput.ChangeLayout()
+    // reaches OnInputLayoutChanged() through that hijacked singleton (the vanilla gamepad settings tab
+    // triggers it on back), where SetActive() on the destroyed hints throws. The clone has no vanilla
+    // tabs to update anyway, so skip it.
+    [HarmonyPatch(typeof(Settings), "OnInputLayoutChanged")]
+    class PatchSettingsOnInputLayoutChanged
+    {
+        public static bool Prefix(Settings __instance)
+        {
+            // Destroying the clone does not clear Settings.m_instance, so the singleton can still
+            // hold a destroyed one. Unity reports that as null while the managed call still lands
+            // here, and GetComponentInParent() below would throw on it, so check for it first.
+            return __instance != null && !ConfigSettings.isVHVRClone(__instance);
+        }
+    }
+
     [HarmonyPatch(typeof(HotkeyBar), nameof(HotkeyBar.Update))]
     class HotkeyBarHidePatch
     {
