@@ -13,7 +13,13 @@
     <Deterministic>true</Deterministic>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoStdLib>true</NoStdLib>
+    <!-- Without this the SDK also references the .NET Framework assemblies, whose BCL types
+         then collide with Unity's. -->
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <NoConfig>true</NoConfig>
     <CommonDir>C:\Program Files (x86)\Steam\steamapps\common\</CommonDir>
+    <GameManagedDir>$(CommonDir)Valheim\valheim_Data\Managed\</GameManagedDir>
     <UnityDir>C:\Program Files (x86)\Hub\Editor\2020.3.45f1\</UnityDir>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -60,26 +66,18 @@
   <ItemGroup>
     <PackageReference Include="BepInEx.Core" Version="5.4.21" />
     <PackageReference Include="NDesk.Options" Version="0.2.1" />
-    <PackageReference Include="UnityEngine.Modules" Version="2020.3.45" />
-    <PackageReference Include="ValheimGameLibz" Version="0.221.12" />
+
 	<PackageReference Include="Bhaptics.Tac" Version="1.4.16" />
   </ItemGroup>
+  <!-- Valheim 1.0 moved to Unity 6 and no NuGet package tracks its assemblies, so the game
+       assemblies are referenced straight out of the install. publicized_assemblies is produced
+       by Bepinex Publicizer (see README.development.md). -->
   <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="System.ValueTuple" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="Unity.InputSystem">
-      <HintPath>$(CommonDir)Valheim\valheim_Data\Managed\Unity.InputSystem.dll</HintPath>
-    </Reference>
-    <Reference Include="Unity.TextMeshPro">
-      <HintPath>$(CommonDir)Valheim\valheim_Data\Managed\Unity.TextMeshPro.dll</HintPath>
-    </Reference>
-    <Reference Include="gui_framework, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
-      <HintPath>$(CommonDir)Valheim\valheim_Data\Managed\gui_framework.dll</HintPath>
-    </Reference>
+    <!-- Publicized game and Unity engine assemblies. -->
+    <Reference Include="$(GameManagedDir)publicized_assemblies\*.dll" Private="false" />
+  </ItemGroup>
+  <ItemGroup>
+
     <Reference Include="Unity.XR.Management, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\Unity\build\ValheimVR_Data\Managed\Unity.XR.Management.dll</HintPath>
@@ -88,13 +86,7 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\Unity\build\ValheimVR_Data\Managed\Unity.XR.OpenVR.dll</HintPath>
     </Reference>
-    <Reference Include="UnityEngine.SpatialTracking">
-      <HintPath>..\Unity\build\ValheimVR_Data\Managed\UnityEngine.SpatialTracking.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.UI, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\Unity\build\ValheimVR_Data\Managed\UnityEngine.UI.dll</HintPath>
-    </Reference>
+
     <Reference Include="final_ik.dll">
       <HintPath>..\Unity\build\ValheimVR_Data\Managed\final_ik.dll</HintPath>
     </Reference>
@@ -104,10 +96,7 @@
     <Reference Include="root_motion_shared">
       <HintPath>..\Unity\build\ValheimVR_Data\Managed\root_motion_shared.dll</HintPath>
     </Reference>
-    <Reference Include="amplify_occlusion, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\Unity\build\ValheimVR_Data\Managed\amplify_occlusion.dll</HintPath>
-    </Reference>
+
     <Reference Include="SteamVR, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\Unity\build\ValheimVR_Data\Managed\SteamVR.dll</HintPath>
@@ -121,14 +110,39 @@
       <HintPath>..\Unity\build\ValheimVR_Data\Managed\SteamVR_Actions.dll</HintPath>
     </Reference>
   </ItemGroup>
+  <!-- ResolveAssemblyReferences drops any reference to the core library, so Unity's mscorlib is
+       appended to the compiler's reference list directly. Together with NoStdLib this makes the
+       build see Unity 6's BCL (which defines System.Span, used by new Unity API overloads). -->
+  <Target Name="UseUnityCorlib" AfterTargets="ResolveAssemblyReferences">
+    <ItemGroup>
+      <!-- BepInEx.Core pulls in Microsoft.NETFramework.ReferenceAssemblies transitively; its BCL
+           would sit alongside Unity's and duplicate types such as Queue<T>. -->
+      <FrameworkReferenceToDrop Include="@(ReferencePath)"
+        Condition="$([System.String]::Copy('%(Identity)').ToLower().Contains('microsoft.netframework.referenceassemblies'))" />
+      <ReferencePath Remove="@(FrameworkReferenceToDrop)" />
+      <!-- ResolveAssemblyReferences discards any reference to the core library, so Unity's mscorlib
+           is appended to the compiler's reference list here. -->
+      <ReferencePath Include="$(GameManagedDir)mscorlib.dll" />
+      <ReferencePath Include="$(GameManagedDir)netstandard.dll" />
+      <ReferencePath Include="$(GameManagedDir)System.dll" />
+      <ReferencePath Include="$(GameManagedDir)System.Core.dll" />
+      <ReferencePath Include="$(GameManagedDir)System.Data.dll" />
+      <ReferencePath Include="$(GameManagedDir)System.Xml.dll" />
+      <ReferencePath Include="$(GameManagedDir)System.Xml.Linq.dll" />
+      <ReferencePath Include="$(GameManagedDir)System.Runtime.Serialization.dll" />
+      <ReferencePath Include="$(GameManagedDir)System.Net.Http.dll" />
+      <ReferencePath Include="$(GameManagedDir)System.Numerics.dll" />
+      <ReferencePath Include="$(GameManagedDir)Mono.Security.dll" />
+    </ItemGroup>
+  </Target>
   <Target Name="RemoveConflictingPackageReferences" AfterTargets="ResolveLockFileReferences" BeforeTargets="ResolveAssemblyReferences">
     <ItemGroup>
       <Reference Remove="@(Reference)" Condition="('%(Filename)' == 'SteamVR' Or '%(Filename)' == 'SteamVR_Actions') And $([System.String]::Copy('%(Reference.HintPath)').Contains('valheimgamelibz'))" />
     </ItemGroup>
   </Target>
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="make-release.cmd" EnvironmentVariables="
-	    SOLUTION_DIR=$(SolutionDir);
+    <Exec Command="&quot;$(MSBuildProjectDirectory)\make-release.cmd&quot;" EnvironmentVariables="
+	    SOLUTION_DIR=$([MSBuild]::EnsureTrailingSlash($([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\..'))));
 	    GAME_DIR=$(CommonDir)Valheim\;   
 	    TARGET_PATH=$(TargetPath);   
 	    TARGET_DIR=$(TargetDir);  
