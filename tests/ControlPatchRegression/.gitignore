@@ -1,0 +1,4 @@
+bin/
+obj/
+core
+core.*

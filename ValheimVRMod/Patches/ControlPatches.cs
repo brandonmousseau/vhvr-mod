@@ -222,8 +222,11 @@ namespace ValheimVRMod.Patches {
             {
                 if (instruction.Calls(IsGamepadActive))
                 {
+                    // The original call can be a branch target; retain its labels and exception blocks.
                     patched.Add(
-                        CodeInstruction.Call(typeof(PlayerController_LateUpdate_Patch), nameof(IsGamepadActivePatched)));
+                        new CodeInstruction(instruction) {
+                            operand = AccessTools.Method(typeof(PlayerController_LateUpdate_Patch), nameof(IsGamepadActivePatched))
+                        });
                 }
                 else
                 {
