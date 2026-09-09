@@ -102,7 +102,7 @@ namespace ValheimVRMod.Patches {
 
         private static void OnClose()
         {
-            Minimap.m_instance.m_nameInput.OnInputSubmit.Invoke(Minimap.m_instance.m_nameInput.text);
+            Minimap.instance.m_nameInput.OnInputSubmit.Invoke(Minimap.instance.m_nameInput.text);
         }
     }
 

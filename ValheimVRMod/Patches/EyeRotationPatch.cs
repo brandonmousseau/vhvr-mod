@@ -429,7 +429,7 @@ namespace ValheimVRMod.Patches
                 foreach (var instruction in original)
                 {
                     if (instruction.Calls(MenuIsVisibleCall))
-                        patched.Add(CodeInstruction.Call(typeof(Game_UpdatePause_Patch), nameof(Game_UpdatePause_Patch.Nope)));
+                        patched.Add(instruction.ReplaceCallWith(typeof(Game_UpdatePause_Patch), nameof(Game_UpdatePause_Patch.Nope)));
                     else
                         patched.Add(instruction);
                 }

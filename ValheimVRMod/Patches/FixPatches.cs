@@ -7,6 +7,40 @@ using Valve.VR.InteractionSystem;
 using Valheim.SettingsGui;
 
 namespace ValheimVRMod.Patches {
+
+    // Valheim 1.0 added CinematicsManager, whose camera renders straight to the screen with every
+    // layer in its culling mask, including the UI layer. In VR that camera drew the world space GUI
+    // canvas a second time from its own transform, which is why the main menu appeared twice while
+    // the startup cinematic was still active. The intro video itself also does not composite into a
+    // headset, so it is not started in VR.
+    [HarmonyPatch(typeof(CinematicsManager), "Awake")]
+    class CinematicsManager_Awake_Patch
+    {
+        static void Postfix(CinematicsManager __instance)
+        {
+            if (VHVRConfig.NonVrPlayer())
+            {
+                return;
+            }
+
+            __instance.m_introOnStartup = false;
+            __instance.m_introOnNewWorld = false;
+
+            if (__instance.m_camera == null)
+            {
+                return;
+            }
+
+            // Anything VHVR renders through its own dedicated cameras must stay off this one.
+            var mask = __instance.m_camera.cullingMask;
+            mask &= ~(1 << LayerMask.NameToLayer("UI"));
+            mask &= ~(1 << LayerUtils.getUiPanelLayer());
+            mask &= ~(1 << LayerUtils.getHandsLayer());
+            mask &= ~(1 << LayerUtils.getWorldspaceUiLayer());
+            __instance.m_camera.cullingMask = mask;
+        }
+    }
+
     [HarmonyPatch(typeof(Hand), "FixedUpdate")]
     class PatchDebug {
 

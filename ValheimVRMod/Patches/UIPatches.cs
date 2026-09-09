@@ -43,7 +43,11 @@ namespace ValheimVRMod.Patches
                 if (instruction.Calls(setParentMethod))
                 {
                     // Push "false" onto evaluation stack
-                    patched.Add(new CodeInstruction(OpCodes.Ldc_I4_0));
+                    var pushFalse = new CodeInstruction(OpCodes.Ldc_I4_0);
+                    // The call being replaced may be a branch target, so anything pointing at it has to
+                    // point at the head of the replacement sequence instead.
+                    instruction.MoveMetadataTo(pushFalse);
+                    patched.Add(pushFalse);
                     // Call SetParent method that uses the bool input
                     patched.Add(CodeInstruction.Call(typeof(Transform), "SetParent", new Type[] { typeof(Transform), typeof(bool) }));
                 } else
