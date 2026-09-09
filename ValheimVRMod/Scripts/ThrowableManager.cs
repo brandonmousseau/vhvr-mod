@@ -18,6 +18,9 @@ namespace ValheimVRMod.Scripts
         public static Vector3 spawnPoint { get; private set; }
         public static Vector3 aimDir { get; private set; }
         public static float throwSpeed { get; private set; }
+        // Raw hand speed along the throw direction in m/s, before normalization into throwSpeed.
+        // WeaponUtils.GetThrowLaunchSpeed() turns this into an absolute launch speed.
+        public static float handSpeed { get; private set; }
         public static Vector3 startAim { get; private set; }
         public static bool isThrowing;
         public static bool isAiming { get; private set; }
@@ -284,6 +287,8 @@ namespace ValheimVRMod.Scripts
                         direction, WeaponUtils.GetWeaponVelocity(handPhysicsEstimator.GetVelocity(), angularVelocity, handTipOffset)),
                     Vector3.Dot(
                         direction, WeaponUtils.GetWeaponVelocity(handPhysicsEstimator.GetAverageVelocityInSnapshots(), angularVelocity, handTipOffset)));
+
+            handSpeed = Mathf.Max(throwSpeed, 0);
 
             if (throwSpeed < VHVRConfig.FullThrowSpeed())
             {

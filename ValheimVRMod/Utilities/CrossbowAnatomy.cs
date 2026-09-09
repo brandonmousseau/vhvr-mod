@@ -15,8 +15,24 @@ namespace ValheimVRMod.Utilities {
         public readonly float stringRadius;
         public readonly float boltCenterToTailDistance;
 
+        private static CrossbowAnatomy GoldCrossbowAnatomy = new CrossbowAnatomy(
+            /* hardLimbLeft= */ new Vector3(-0.17f, 1.58f, 0),
+            /* hardLimbRight= */ new Vector3(0.17f, 1.58f, 0),
+            /* restingStringLeft= */ new Vector3(-0.7f, 1.255f, -0.053f),
+            /* restingStringRight= */ new Vector3(0.7f, 1.255f, -0.053f),
+            /* restingNockingPoint= */ new Vector3(0, 1.25f, -0.053f),
+            /* anchorPoint= */  new Vector3(0, 0.739f, -0.06f),
+            /* maxBendAngleRadians= */ 0.31f,
+            /* softLimbHeight= */ 0.01f,
+            /* stringRadius= */ 0.0075f,
+            /* boltCenterToTailDistance= */ 0.51f);
+
         private static Dictionary<string, CrossbowAnatomy> anatomies = new Dictionary<string, CrossbowAnatomy>
         {
+            // Note the suffix order differs from the gold bows: crossbows put "gold" last.
+            { "$item_crossbow_gold", GoldCrossbowAnatomy },                 // Nord Crossbow
+            { "$item_crossbow_bloodlightning_gold", GoldCrossbowAnatomy },  // Thunderblood Crossbow
+            { "$item_crossbow_frostfire_gold", GoldCrossbowAnatomy },       // Frostfire Crossbow
             {
                 "$item_crossbow_arbalest", // Arbalest position: (0.0, 0.0, -1.0) rotation: (0.7, 0.0, 0.0, 0.7) bound center: (0.0, 0.8, 0.0) bound extends: (0.6, 0.8, 0.1)            
                 new CrossbowAnatomy(

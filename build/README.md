@@ -7,12 +7,11 @@ without running that script, pass `-p:SkipPostBuild=true`:
 dotnet build ValheimVRMod/ValheimVRMod.csproj -c Release -p:SkipPostBuild=true
 ```
 
-For a staged build, the project also accepts `GameManagedDir`,
-`PublicizedGameManagedDir`, and `UnityBuildManagedDir` overrides. Each must be an
-absolute directory path with a trailing separator. Publicized assemblies are
-build references only; never copy them into the running game. For Valheim 1.0,
-use references generated from the installed Unity 6 game, not the old
-`ValheimGameLibz` package.
+The project follows upstream's `ValheimGameLibz` 1.0 and Unity reference
+packages. For a staged build, `GameManagedDir` and `UnityBuildManagedDir` can
+point to the installed game's managed assemblies and staged mod dependencies.
+Use absolute directory paths with trailing separators. The previous
+`PublicizedGameManagedDir` override is no longer needed.
 
 ### SteamVR dependency from source
 

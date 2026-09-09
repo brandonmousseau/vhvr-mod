@@ -1598,6 +1598,7 @@ namespace ValheimVRMod.Utilities
         {
             return fullThrowSpeed.Value;
         }
+
         public static bool SpearInverseWield()
         {
             return spearInverseWield.Value;

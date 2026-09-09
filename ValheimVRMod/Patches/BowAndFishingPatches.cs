@@ -181,7 +181,10 @@ namespace ValheimVRMod.Patches {
                 case EquipType.SpearChitin:
                 case EquipType.ThrowObject:
                     spawnPoint = ThrowableManager.spawnPoint;
-                    aimDir = ThrowableManager.aimDir.normalized * ThrowableManager.throwSpeed;
+                    aimDir =
+                        ThrowableManager.aimDir.normalized *
+                        WeaponUtils.GetThrowLaunchSpeed(
+                            ___m_character.GetRightItem(), ThrowableManager.throwSpeed);
                     return false;
                 case EquipType.Magic:
                     var staff = MagicStaffManagers.Current;

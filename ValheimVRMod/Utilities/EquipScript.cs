@@ -118,6 +118,10 @@ namespace ValheimVRMod.Utilities
                     return EquipType.Hammer;
                 case "$item_hoe":
                     return EquipType.Hoe;
+                // TODO: the snow shovel is only borrowing the pickaxe handling for now, give it its
+                // own equip type if the grip or swing needs to differ.
+                case "$item_snowshovel":
+                    return EquipType.Pickaxe;
                 case "$item_feaster":
                     return EquipType.Tray;
 
@@ -131,6 +135,9 @@ namespace ValheimVRMod.Utilities
                     return EquipType.SpearChitin;
                 case "$item_oozebomb":
                 case "$item_bilebomb":
+                case "$item_snowball":
+                // "Ember Charge" in English.
+                case "$item_bomb_dynamite":
                     return EquipType.ThrowObject;
                 case "$item_tankard":
                 case "$item_dvergrtankard":

@@ -356,6 +356,7 @@ namespace ValheimVRMod.Scripts {
 
             var offHandItem = player.m_visEquipment.m_leftItemInstance;
             var offHandItemHash = player.m_visEquipment.m_currentLeftItemHash;
+            var offHandItemQuality = player.m_visEquipment.m_currentLeftItemQuality;
             if (offHandItem != null && offHandItemHash != 0)
             {
                 if (isLeftHanded ?
@@ -364,9 +365,8 @@ namespace ValheimVRMod.Scripts {
                 {
                     LogUtils.LogDebug("Switching secondary hand item to right hand");
                     var variant = player.m_visEquipment.m_currentLeftItemVariant;
-                    var quality = player.m_visEquipment.m_currentLeftItemQuality;
                     player.m_visEquipment.SetLeftHandEquipped(0, 0, 0);
-                    player.m_visEquipment.SetLeftHandEquipped(offHandItemHash, variant, quality);
+                    player.m_visEquipment.SetLeftHandEquipped(offHandItemHash, variant, offHandItemQuality);
                 }
             }
         }

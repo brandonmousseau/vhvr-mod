@@ -121,11 +121,8 @@ namespace ValheimVRMod.VRCore.UI {
             }
             if (chooserPrefab == null)
             {
-                var chooserSource = findInputLayoutChooser();
-                if (chooserSource != null)
-                {
-                    chooserPrefab = createChooserPrefab(chooserSource);
-                }
+                chooserPrefab = createChooserPrefab(
+                    settingsPrefab.transform.Find("Panel").Find("TabContent").Find("Gamepad").Find("Root").Find("CommonSettings").Find("InputLayout").gameObject);
             }
             if (transformButtonPrefab == null)
             {
@@ -415,55 +412,6 @@ namespace ValheimVRMod.VRCore.UI {
 
         }
 
-        // Valheim 1.0 rebuilt the settings prefab, so the gamepad tab is no longer a child called
-        // "Gamepad" under TabContent. Locate it by its component instead, which does not depend on
-        // the names of the prefab's children, and search for the chooser element recursively.
-        private static GameObject findInputLayoutChooser()
-        {
-            var gamepadTab = settingsPrefab.GetComponentInChildren<GamepadSettings>(includeInactive: true);
-            var root = gamepadTab != null ? gamepadTab.transform : settingsPrefab.transform;
-            var chooser = findDeepChild(root, "InputLayout");
-            if (chooser == null)
-            {
-                LogUtils.LogWarning(
-                    "Could not find the input layout chooser under \"" + root.name +
-                    "\"; settings that use a value chooser will be skipped. Hierarchy follows:");
-                logHierarchy(root, 0, 3);
-                return null;
-            }
-            return chooser.gameObject;
-        }
-
-        private static Transform findDeepChild(Transform parent, string name)
-        {
-            if (parent.name == name)
-            {
-                return parent;
-            }
-            for (int i = 0; i < parent.childCount; i++)
-            {
-                var found = findDeepChild(parent.GetChild(i), name);
-                if (found != null)
-                {
-                    return found;
-                }
-            }
-            return null;
-        }
-
-        private static void logHierarchy(Transform t, int depth, int maxDepth)
-        {
-            LogUtils.LogWarning(new string(' ', depth * 2) + t.name);
-            if (depth >= maxDepth)
-            {
-                return;
-            }
-            for (int i = 0; i < t.childCount; i++)
-            {
-                logHierarchy(t.GetChild(i), depth + 1, maxDepth);
-            }
-        }
-
         private static GameObject createChooserPrefab(GameObject vanillaPrefab)
         {
             var chooserPrefab = Object.Instantiate(vanillaPrefab);
@@ -505,12 +453,6 @@ namespace ValheimVRMod.VRCore.UI {
 
         private static void createValueList(
             KeyValuePair<string, ConfigEntryBase> configValue, Transform parent, Vector2 pos, Type type, AcceptableValueBase acceptableValues) {
-
-            if (chooserPrefab == null)
-            {
-                LogUtils.LogWarning("No chooser prefab available, skipping setting " + configValue.Key);
-                return;
-            }
 
             var chooserObj = Object.Instantiate(chooserPrefab, parent);
             chooserObj.GetComponent<RectTransform>().anchoredPosition = pos + Vector2.left * 10;

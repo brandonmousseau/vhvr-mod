@@ -1818,6 +1818,11 @@ namespace ValheimVRMod.VRCore
             {
                 CopyClassFields(mainCamSunshaft, ref vrCamSunshaft);
             }
+            // CameraEffects.Awake() caches GetComponent<AmplifyOcclusionEffect>() and takes over the
+            // static CameraEffects.instance, so the occlusion effect must already be on the VR camera
+            // before the component is added. Otherwise CameraEffects.m_amplifyOcclusion stays null and
+            // both ApplySettings() and EnvMan's per-frame SetEnvironmentAOParams() call throw.
+            maybeAddAmplifyOcclusion(vrCamera);
             var vrCamEffects = vrCamera.gameObject.AddComponent<CameraEffects>();
             // m_amplifyOcclusion is deliberately left null here. VHVR owns the occlusion effect on the
             // VR camera through UpdateAmplifyOcclusionStatus() and its own UseAmplifyOcclusion setting;

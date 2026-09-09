@@ -205,63 +205,63 @@ namespace ValheimVRMod.Patches {
         private static MethodInfo IsMouseActive =
              AccessTools.Method(typeof(ZInput), nameof(ZInput.IsMouseActive));
 
-        // VHVR feeds the laser pointer through a simulated mouse, so ZInput reports the mouse as
-        // active and Valheim 1.0's LateUpdate takes the mouse look branch, which has no delta and
-        // skips the gamepad branch entirely. Reporting the mouse as inactive here routes camera
-        // look through GetJoyRightStickX/Y, which is where the VR stick values are injected.
-        private static bool IsMouseActivePatched()
+        private static bool UsingVrControls()
         {
-            if (VHVRConfig.NonVrPlayer() || !VHVRConfig.UseVrControls())
-            {
-                return ZInput.IsMouseActive();
-            }
-
-            return false;
+            return !VHVRConfig.NonVrPlayer() && VHVRConfig.UseVrControls();
         }
 
         private static bool IsGamepadActivePatched()
         {
-            if (VHVRConfig.NonVrPlayer() || !VHVRConfig.UseVrControls())
-            {
-                return ZInput.IsGamepadActive();
-            }
-
             // Make the vanilla game believe that the gamepad is active so that it will use ZInput.GetJoyRightStickX() which we patch to turn the player left/right.
-            return true;
+            return UsingVrControls() || ZInput.IsGamepadActive();
+        }
+
+        private static bool IsMouseActivePatched()
+        {
+            // The look-input branch only falls through to the gamepad right stick when the mouse is
+            // inactive. A VR player's input source is still KeyboardMouse, so without this the right
+            // stick is never read and thumbstick turning does nothing.
+            return !UsingVrControls() && ZInput.IsMouseActive();
         }
 
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
-            var original = new List<CodeInstruction>(instructions);
-            var patched = new List<CodeInstruction>();
-            // Valheim 1.0 opens LateUpdate with an early return that fires when an input delay is
-            // pending and a gamepad is active. Pretending the gamepad is active there would skip the
-            // rest of the method, camera look included, so only the gate of the look section is
-            // replaced. That section is the one reached via the ZInput.IsMouseActive() check.
-            var reachedLookSection = false;
-            foreach (var instruction in original)
+            var gamepadReplacement =
+                AccessTools.Method(
+                    typeof(PlayerController_LateUpdate_Patch), nameof(IsGamepadActivePatched));
+            var mouseReplacement =
+                AccessTools.Method(
+                    typeof(PlayerController_LateUpdate_Patch), nameof(IsMouseActivePatched));
+            // Only the look-input branch should be redirected. The earlier ZInput.IsGamepadActive()
+            // call guards the take-input-delay early return and must keep its vanilla meaning,
+            // otherwise the delay would suppress turning for VR players only. The mouse check marks
+            // the start of the look-input branch, so patch gamepad checks after it.
+            bool inLookInputBranch = false;
+            int patchedCount = 0;
+            foreach (var instruction in instructions)
             {
                 if (instruction.Calls(IsMouseActive))
                 {
-                    reachedLookSection = true;
-                    patched.Add(
-                        instruction.ReplaceCallWith(typeof(PlayerController_LateUpdate_Patch), nameof(IsMouseActivePatched)));
-                    continue;
+                    inLookInputBranch = true;
+                    instruction.opcode = OpCodes.Call;
+                    instruction.operand = mouseReplacement;
+                    patchedCount++;
                 }
-
-                if (reachedLookSection && instruction.Calls(IsGamepadActive))
+                else if (inLookInputBranch && instruction.Calls(IsGamepadActive))
                 {
-                    // In Valheim 1.0 this call is a branch target, so its metadata has to survive the rewrite.
-                    patched.Add(
-                        instruction.ReplaceCallWith(typeof(PlayerController_LateUpdate_Patch), nameof(IsGamepadActivePatched)));
+                    instruction.opcode = OpCodes.Call;
+                    instruction.operand = gamepadReplacement;
+                    patchedCount++;
                 }
-                else
-                {
-                    patched.Add(instruction);
-                }
+                yield return instruction;
             }
 
-            return patched;
+            if (patchedCount < 2)
+            {
+                LogUtils.LogError(
+                    "PlayerController.LateUpdate: patched only " + patchedCount +
+                    " of the 2 expected input source checks, thumbstick turning may not work.");
+            }
         }
     }
 
@@ -461,17 +461,63 @@ namespace ValheimVRMod.Patches {
     // as a result of the user clicking on it so that we don't
     // cause a placement right after the menu is closed and the
     // trigger is released.
-    [HarmonyPatch(typeof(Hud), nameof(Hud.HidePieceSelection))]
-    class BuildHudTracker
+    // The close is recorded as a timestamp rather than a flag so that it expires on its own: a
+    // close that is not followed by a placement input must not keep suppressing later placements.
+    static class BuildHudTracker
     {
-    
-        public static bool buildHudJustToggledOff = false;
-    
+        // Roughly matches the PlayerController.SetTakeInputDelay(0.2f) that vanilla itself applies
+        // when closing the build menu.
+        private const float SUPPRESS_PLACEMENT_DURATION = 0.25f;
+
+        private static float buildHudClosedTime = -9999f;
+
+        public static bool buildHudJustToggledOff
+        {
+            get { return Time.time - buildHudClosedTime < SUPPRESS_PLACEMENT_DURATION; }
+        }
+
+        public static void NotifyBuildHudClosed()
+        {
+            buildHudClosedTime = Time.time;
+        }
+
+        public static void ClearBuildHudClosed()
+        {
+            buildHudClosedTime = -9999f;
+        }
+    }
+
+    // Since Valheim 1.0 the build menu is the BuildUi component and selecting a piece closes it via
+    // Hud.CloseBuildUi(), so this is the path behind an accidental placement on piece selection.
+    [HarmonyPatch(typeof(Hud), nameof(Hud.CloseBuildUi))]
+    class Hud_CloseBuildUi_Patch
+    {
         static void Postfix()
         {
-            buildHudJustToggledOff = true;
+            BuildHudTracker.NotifyBuildHudClosed();
         }
-    
+    }
+
+    [HarmonyPatch(typeof(Hud), nameof(Hud.TogglePieceSelection))]
+    class Hud_TogglePieceSelection_Patch
+    {
+        static void Postfix()
+        {
+            if (!Hud.IsPieceSelectionVisible())
+            {
+                BuildHudTracker.NotifyBuildHudClosed();
+            }
+        }
+    }
+
+    // Legacy close path, kept because some gamepad flows still route through it.
+    [HarmonyPatch(typeof(Hud), nameof(Hud.HidePieceSelection))]
+    class Hud_HidePieceSelection_Patch
+    {
+        static void Postfix()
+        {
+            BuildHudTracker.NotifyBuildHudClosed();
+        }
     }
     
     [HarmonyPatch(typeof(Player), nameof(Player.UpdatePlacement))]
@@ -502,9 +548,9 @@ namespace ValheimVRMod.Patches {
                 if (BuildHudTracker.buildHudJustToggledOff && inputReceived)
                 {
                     // Since the build hud was just toggled off and the input was receieved,
-                    // we won't trigger the placement. Instead just reset the "buildHudJustToggledOff" flag
+                    // we won't trigger the placement. Instead just clear the recorded close time.
                     LogUtils.LogDebug("Resetting buildHudToggledFlag");
-                    BuildHudTracker.buildHudJustToggledOff = false;
+                    BuildHudTracker.ClearBuildHudClosed();
                     return false;
                 } else
                 {
@@ -519,11 +565,18 @@ namespace ValheimVRMod.Patches {
             }
             else
             {
-                if (GetButtonPatchUtils.GetButtonDownPatched(inputName) && !BuildingManager.instance.isCurrentlyMoving() && VHVRConfig.FreePlaceAutoReturn())
+                bool inputReceived = GetButtonPatchUtils.GetButtonDownPatched(inputName);
+                if (BuildHudTracker.buildHudJustToggledOff && inputReceived)
+                {
+                    LogUtils.LogDebug("Resetting buildHudToggledFlag");
+                    BuildHudTracker.ClearBuildHudClosed();
+                    return false;
+                }
+                if (inputReceived && !BuildingManager.instance.isCurrentlyMoving() && VHVRConfig.FreePlaceAutoReturn())
                 {
                     BuildingManager.instance.ExitPreciseMode();
                 }
-                return GetButtonPatchUtils.GetButtonDownPatched(inputName);
+                return inputReceived;
             }
         }
     
@@ -535,11 +588,12 @@ namespace ValheimVRMod.Patches {
             {
                 return original;
             }
+            int patchedCount = 0;
             for (int i = 0; i < original.Count; i++)
             {
                 var instruction = original[i];
                 patched.Add(instruction);
-                if (instruction.opcode != OpCodes.Ldstr)
+                if (instruction.opcode != OpCodes.Ldstr || i + 1 >= original.Count)
                 {
                     continue;
                 }
@@ -560,8 +614,16 @@ namespace ValheimVRMod.Patches {
                 {
                     continue;
                 }
+                patchedCount++;
                 i++; // skip the next instruction cause we are replacing it
             }
+
+            if (patchedCount == 0)
+            {
+                LogUtils.LogError(
+                    "Player.UpdatePlacement: found no ZInput button checks to patch, VR build placement will not work.");
+            }
+
             return patched;
         }
     }
@@ -1065,7 +1127,7 @@ namespace ValheimVRMod.Patches {
             foreach (InventoryElement element in __instance.m_elements)
             {
                 if (RectTransformUtility.RectangleContainsScreenPoint(
-                    element.GetElementRectTransform(), SoftwareCursor.simulatedMousePosition, camera))
+                    element.transform as RectTransform, SoftwareCursor.simulatedMousePosition, camera))
                 {
                     __result = element;
                     return false;
@@ -1103,8 +1165,6 @@ namespace ValheimVRMod.Patches {
     // between laser pointers and normal controls, things can end up being
     // extra complex when we need to use a new button. Since we already have
     // the modifier, this is simpler).
-    // Valheim 1.0 replaced Minimap.OnMapRightClick with RemovePinUnderPointer, which is what the
-    // right click on the map now invokes.
     [HarmonyPatch(typeof(Minimap), nameof(Minimap.RemovePinUnderPointer))]
     class MinimapPingPatch
     {
