@@ -587,22 +587,51 @@ namespace ValheimVRMod.Utilities
         // speed. Heavier items are slowed proportionally.
         private const float THROW_REFERENCE_WEIGHT = 1f;
 
-        /// <summary>
-        /// Converts the speed of the player's throwing hand into an absolute launch speed for a
-        /// thrown item, scaled down by the item's weight. Scales linearly from zero: a motionless
-        /// hand throws nothing.
-        ///
-        /// Deliberately ignores Attack.m_projectileVel. That stat is tuned for vanilla spawning the
-        /// projectile m_attackRange ahead of the character, whereas VHVR spawns it in the player's
-        /// hand, so it is far too low to drive a hand throw - the Ember Charge ships with
-        /// m_projectileVel = 2, which is about a metre of travel. Item weight differentiates
-        /// throwables instead.
-        /// </summary>
-        public static float GetThrowLaunchSpeed(ItemDrop.ItemData item, float handSpeed)
+        public static float GetThrowLaunchSpeed(ItemDrop.ItemData item, float throwSpeed)
         {
-            float weight = item?.m_shared == null ? THROW_REFERENCE_WEIGHT : item.m_shared.m_weight;
-            float weightSlowdown = Mathf.Max(1f, weight / THROW_REFERENCE_WEIGHT);
-            return Mathf.Max(handSpeed, 0) * VHVRConfig.ThrowSpeedGain() / weightSlowdown;
+            // float weight = item?.m_shared == null ? THROW_REFERENCE_WEIGHT : item.m_shared.m_weight;
+            // float weightSlowdown = Mathf.Max(1f, weight / THROW_REFERENCE_WEIGHT);
+            float speed = Mathf.Max(throwSpeed, 0); //  / weightSlowdown;
+
+            if (item?.m_shared?.m_attack != null && item?.m_shared.m_attack.m_projectileVel < 3)
+            {
+                // When the vanilla max speed is too slow (such as Ember Charge), we should scale
+                // it up by a little amount in VR for realism.
+                speed = speed * 2;
+            }
+
+            return speed;
+        }
+
+        // TODO: temporary. Dumps every throwable's weight once so the values can be sanity checked
+        // against each other rather than one throw at a time.
+        private static bool loggedThrowableStats;
+        private static void MaybeLogThrowableStats()
+        {
+            if (loggedThrowableStats || ObjectDB.instance == null || ObjectDB.instance.m_items == null)
+            {
+                return;
+            }
+            loggedThrowableStats = true;
+            foreach (var prefab in ObjectDB.instance.m_items)
+            {
+                var itemData = prefab == null ? null : prefab.GetComponent<ItemDrop>()?.m_itemData;
+                if (itemData?.m_shared == null)
+                {
+                    continue;
+                }
+                var equipType = EquipScript.GetEquipType(itemData);
+                if (equipType != EquipType.ThrowObject && equipType != EquipType.Spear && equipType != EquipType.SpearChitin)
+                {
+                    continue;
+                }
+                LogUtils.LogDebug(
+                    "VHVR throwable stats: " + itemData.m_shared.m_name +
+                    " weight=" + itemData.m_shared.m_weight +
+                    " vanillaVel=" + itemData.m_shared.m_attack.m_projectileVel +
+                    " launchAngle=" + itemData.m_shared.m_attack.m_launchAngle +
+                    " equipType=" + equipType);
+            }
         }
 
         // Update the holding direction of the knife based button press and hand angular momentum.

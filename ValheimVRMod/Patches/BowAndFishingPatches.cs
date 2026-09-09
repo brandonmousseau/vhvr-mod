@@ -181,13 +181,10 @@ namespace ValheimVRMod.Patches {
                 case EquipType.SpearChitin:
                 case EquipType.ThrowObject:
                     spawnPoint = ThrowableManager.spawnPoint;
-                    // Vanilla multiplies the returned direction by m_projectileVel, so divide it out
-                    // to hand back the absolute launch speed we actually want.
-                    var launchSpeed = WeaponUtils.GetThrowLaunchSpeed(
-                        ___m_character.GetRightItem(), ThrowableManager.handSpeed);
                     aimDir =
                         ThrowableManager.aimDir.normalized *
-                        (launchSpeed / (__instance.m_projectileVel > 0 ? __instance.m_projectileVel : 1f));
+                        WeaponUtils.GetThrowLaunchSpeed(
+                            ___m_character.GetRightItem(), ThrowableManager.throwSpeed);
                     return false;
                 case EquipType.Magic:
                     var staff = MagicStaffManagers.Current;
