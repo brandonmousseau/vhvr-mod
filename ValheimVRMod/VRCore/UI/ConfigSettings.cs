@@ -122,7 +122,7 @@ namespace ValheimVRMod.VRCore.UI {
             if (chooserPrefab == null)
             {
                 chooserPrefab = createChooserPrefab(
-                    settingsPrefab.transform.Find("Panel").Find("TabContent").Find("Gamepad").Find("List").Find("InputLayout").gameObject);
+                    settingsPrefab.transform.Find("Panel").Find("TabContent").Find("Gamepad").Find("Root").Find("CommonSettings").Find("InputLayout").gameObject);
             }
             if (transformButtonPrefab == null)
             {

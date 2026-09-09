@@ -91,7 +91,10 @@ namespace ValheimVRMod.VRCore.UI
         private static Vector3 desiredOffset;
         private static bool isBuildMenuOpen
         {
-            get { return Hud.instance?.m_pieceSelectionWindow != null && Hud.instance.m_pieceSelectionWindow.activeSelf; }
+            // Since Valheim 1.0 the build menu is the BuildUi component; the legacy
+            // m_pieceSelectionWindow still exists but Hud.Awake() deactivates it and never brings it
+            // back, so checking it here left the panel permanently unattachable.
+            get { return Hud.IsPieceSelectionVisible(); }
         }
 
         private float OVERLAY_CURVATURE = 0.25f; /* 0f - 1f */

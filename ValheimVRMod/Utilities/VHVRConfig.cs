@@ -155,6 +155,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<string> spearThrowingType;
         private static ConfigEntry<bool> useSpearDirectionGraphic;
         private static ConfigEntry<float> fullThrowSpeed;
+        private static ConfigEntry<float> throwSpeedGain;
         private static ConfigEntry<bool> spearInverseWield;
         private static ConfigEntry<string> twoHandedWield;
         private static ConfigEntry<bool> twoHandedWithShield;
@@ -944,6 +945,12 @@ namespace ValheimVRMod.Utilities
                 2.0f,
                 new ConfigDescription("The hand movement speed required for a throwable to reach its max speed in game. Setting to 0 makes the throwable always launch at max speed in game.",
                 new AcceptableValueRange<float>(0, 10f)));
+            throwSpeedGain = config.Bind(
+                "Motion Control",
+                "ThrowSpeedGain",
+                2.5f,
+                new ConfigDescription("How much faster a thrown item leaves the hand than the hand itself moves. Raise it if throwables feel sluggish, lower it if they fly too far. Heavier items are still slowed proportionally to their weight.",
+                new AcceptableValueRange<float>(0.5f, 10f)));
             spearInverseWield = config.Bind("Motion Control",
                                                 "SpearInverseWield",
                                                 true,
@@ -1597,6 +1604,10 @@ namespace ValheimVRMod.Utilities
         public static float FullThrowSpeed()
         {
             return fullThrowSpeed.Value;
+        }
+        public static float ThrowSpeedGain()
+        {
+            return throwSpeedGain.Value;
         }
         public static bool SpearInverseWield()
         {

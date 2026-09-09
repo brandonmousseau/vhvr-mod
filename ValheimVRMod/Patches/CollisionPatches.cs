@@ -80,6 +80,9 @@ namespace ValheimVRMod.Patches {
             ___m_attackRange = 0;
             ___m_attackOffset = 0;
             __result = true;
+
+            try
+            {
             
             if (___m_attackMask == 0)
             {
@@ -94,9 +97,6 @@ namespace ValheimVRMod.Patches {
                     if (character.IsPlayer())
                         Hud.instance.StaminaBarEmptyFlash();
                     __result = false;
-                    ___m_attackHeight = attackHeight;
-                    ___m_attackRange = attackRange;
-                    ___m_attackOffset = attackOffset;
                     return false;
                 }
 
@@ -120,12 +120,79 @@ namespace ValheimVRMod.Patches {
             
             doMeleeAttack(___m_character, ___m_weapon, ___m_ammoItem, __instance, ___m_hitEffect, ___m_specialHitSkill, ___m_specialHitType, ___m_lowerDamagePerHit, ___m_forceMultiplier, ___m_staggerMultiplier, ___m_damageMultiplier, ___m_attackChainLevels, ___m_currentAttackCainLevel, ___m_resetChainIfHit, ref ___m_nextAttackChainLevel, ___m_hitTerrainEffect, ___m_attackHitNoise, pos, col, dir, ___m_spawnOnTrigger);
 
-            ___m_attackHeight = attackHeight;
-            ___m_attackRange = attackRange;
-            ___m_attackOffset = attackOffset;
+            maybeShovelSnow(__instance, pos);
 
             return false;
-            
+            }
+            finally
+            {
+                // These live on the shared Attack instance, so they must be restored on every exit
+                // path or the zeroed values leak into subsequent attacks.
+                ___m_attackHeight = attackHeight;
+                ___m_attackRange = attackRange;
+                ___m_attackOffset = attackOffset;
+            }
+        }
+
+        // Vanilla runs the snow shovel effect at the end of Attack.DoMeleeAttack, which the prefix
+        // above never reaches because it replaces the melee path wholesale. Ported here so shovelling
+        // works in VR, using the point where the weapon physically struck rather than
+        // Attack.GetSnowShovelPoint(): that derives from m_attackRange, which is zeroed above so that
+        // hits originate at the weapon collider instead of in front of the character.
+        // Like vanilla, this is not gated on Attack.m_snowShovel, which the game never reads.
+        private static readonly Collider[] snowShovelColliders = new Collider[200];
+        private static int snowShovelRayMask = 0;
+
+        private static void maybeShovelSnow(Attack attack, Vector3 hitPoint)
+        {
+            var player = Player.m_localPlayer;
+            if (player == null || EnvMan.instance == null ||
+                EnvMan.instance.GetCurrentBiome() != Heightmap.Biome.DeepNorth)
+            {
+                return;
+            }
+
+            if (snowShovelRayMask == 0)
+            {
+                snowShovelRayMask = LayerMask.GetMask("piece", "piece_nonsolid", "item", "terrain");
+            }
+
+            int hitCount =
+                Physics.OverlapSphereNonAlloc(
+                    hitPoint, attack.m_snowShovelRadius, snowShovelColliders, snowShovelRayMask);
+            for (int i = 0; i < hitCount; i++)
+            {
+                var collider = snowShovelColliders[i];
+                if (collider.gameObject.GetComponent<Heightmap>() != null)
+                {
+                    var snowPile = attack.m_snowShovelStrong ? player.m_snowShovelStrong : player.m_snowShovelDefault;
+                    if (snowPile != null)
+                    {
+                        UnityEngine.Object.Instantiate(
+                            snowPile, hitPoint + new Vector3(0, 0.5f, 0), Quaternion.identity);
+                    }
+                    player.m_snowShovelEffect.Create(hitPoint, Quaternion.identity);
+                    continue;
+                }
+
+                var wearNTear = collider.gameObject.GetComponentInParent<WearNTear>();
+                if (wearNTear != null)
+                {
+                    if (wearNTear.m_snowBuildup > 0f)
+                    {
+                        wearNTear.ChangeSnow(-attack.m_snowShovelStrength);
+                        player.m_snowShovelEffect.Create(collider.transform.position, collider.transform.rotation);
+                    }
+                    continue;
+                }
+
+                var snowDestruction = collider.gameObject.GetComponent<SnowDestruction>();
+                if (snowDestruction != null)
+                {
+                    snowDestruction.Damage(attack.m_snowShovelStrength);
+                    player.m_snowShovelEffect.Create(collider.transform.position, collider.transform.rotation);
+                }
+            }
         }
 
         private static void doMeleeAttack(

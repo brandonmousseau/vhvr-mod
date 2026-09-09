@@ -583,6 +583,28 @@ namespace ValheimVRMod.Utilities
             return handVelocity + Vector3.Cross(handAngularVelocity, weaponOffset);
         }
 
+        // Weight at which a throwable leaves the hand at the full ThrowSpeedGain multiple of hand
+        // speed. Heavier items are slowed proportionally.
+        private const float THROW_REFERENCE_WEIGHT = 1f;
+
+        /// <summary>
+        /// Converts the speed of the player's throwing hand into an absolute launch speed for a
+        /// thrown item, scaled down by the item's weight. Scales linearly from zero: a motionless
+        /// hand throws nothing.
+        ///
+        /// Deliberately ignores Attack.m_projectileVel. That stat is tuned for vanilla spawning the
+        /// projectile m_attackRange ahead of the character, whereas VHVR spawns it in the player's
+        /// hand, so it is far too low to drive a hand throw - the Ember Charge ships with
+        /// m_projectileVel = 2, which is about a metre of travel. Item weight differentiates
+        /// throwables instead.
+        /// </summary>
+        public static float GetThrowLaunchSpeed(ItemDrop.ItemData item, float handSpeed)
+        {
+            float weight = item?.m_shared == null ? THROW_REFERENCE_WEIGHT : item.m_shared.m_weight;
+            float weightSlowdown = Mathf.Max(1f, weight / THROW_REFERENCE_WEIGHT);
+            return Mathf.Max(handSpeed, 0) * VHVRConfig.ThrowSpeedGain() / weightSlowdown;
+        }
+
         // Update the holding direction of the knife based button press and hand angular momentum.
         public static bool MaybeFlipKnife(bool isKnifeCurrentlyUlnarPointing, bool isLeftHand)
         {

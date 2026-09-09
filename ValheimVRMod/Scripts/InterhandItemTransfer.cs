@@ -107,19 +107,21 @@ namespace ValheimVRMod.Scripts
             }
 
             // Force re-equip to apply new handedness
-            var rightHash = player.m_visEquipment.m_currentRightItemHash;
-            if (rightHash != 0)
+            var rightItemHash = player.m_visEquipment.m_currentRightItemHash;
+            var rightItemQuality = player.m_visEquipment.m_currentRightItemQuality;
+            if (rightItemHash != 0)
             {
-                player.m_visEquipment.SetRightHandEquipped(0);
-                player.m_visEquipment.SetRightHandEquipped(rightHash);
+                player.m_visEquipment.SetRightHandEquipped(0, 0);
+                player.m_visEquipment.SetRightHandEquipped(rightItemHash, rightItemQuality);
             }
 
-            var leftHash = player.m_visEquipment.m_currentLeftItemHash;
-            var leftVariant = player.m_visEquipment.m_currentLeftItemVariant;
-            if (leftHash != 0)
+            var leftItemHash = player.m_visEquipment.m_currentLeftItemHash;
+            var leftItemVariant = player.m_visEquipment.m_currentLeftItemVariant;
+            var leftItemQuality = player.m_visEquipment.m_currentLeftItemQuality;
+            if (leftItemHash != 0)
             {
-                player.m_visEquipment.SetLeftHandEquipped(0, 0);
-                player.m_visEquipment.SetLeftHandEquipped(leftHash, leftVariant);
+                player.m_visEquipment.SetLeftHandEquipped(0, 0, 0);
+                player.m_visEquipment.SetLeftHandEquipped(leftItemHash, leftItemVariant, leftItemQuality);
             }
 
             if (isTransferringParryingKnife)
