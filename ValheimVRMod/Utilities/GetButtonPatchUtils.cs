@@ -69,10 +69,12 @@ namespace ValheimVRMod.Utilities
             var patched = new List<CodeInstruction>();
             foreach (var instruction in original)
             {
+                // These calls can be branch targets or sit inside exception blocks, so replace them in
+                // place instead of emitting fresh instructions that would drop that metadata.
                 if (instruction.Calls(GetButtonOriginal))
                 {
                     patched.Add(
-                        CodeInstruction.Call(
+                        instruction.ReplaceCallWith(
                             typeof(GetButtonPatchUtils),
                             nameof(GetButtonPatched),
                             new[] { typeof(string) }));
@@ -80,7 +82,7 @@ namespace ValheimVRMod.Utilities
                 else if (instruction.Calls(GetButtonDownOriginal))
                 {
                     patched.Add(
-                        CodeInstruction.Call(
+                        instruction.ReplaceCallWith(
                             typeof(GetButtonPatchUtils),
                             nameof(GetButtonDownPatched),
                             new[] { typeof(string) }));
@@ -88,7 +90,7 @@ namespace ValheimVRMod.Utilities
                 else if (instruction.Calls(GetButtonUpOriginal))
                 {
                     patched.Add(
-                        CodeInstruction.Call(
+                        instruction.ReplaceCallWith(
                             typeof(GetButtonPatchUtils),
                             nameof(GetButtonUpPatched),
                             new[] { typeof(string) }));
