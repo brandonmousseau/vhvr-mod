@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net46</TargetFramework>
+    <AssemblyName>SteamVR</AssemblyName>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>UNITY_5_3_OR_NEWER;UNITY_5_4_OR_NEWER;UNITY_5_5_OR_NEWER;UNITY_5_6_OR_NEWER;UNITY_2017_1_OR_NEWER;UNITY_2017_2_OR_NEWER;UNITY_2017_3_OR_NEWER;UNITY_2017_4_OR_NEWER;UNITY_2018_1_OR_NEWER;UNITY_2018_2_OR_NEWER;UNITY_2018_3_OR_NEWER;UNITY_2018_4_OR_NEWER;UNITY_2019_1_OR_NEWER;UNITY_2019_2_OR_NEWER;UNITY_2019_3_OR_NEWER;UNITY_2019_4_OR_NEWER;UNITY_2019_4;UNITY_STANDALONE;UNITY_STANDALONE_WIN;OPENVR_XR_API;UNITY_LEGACY_INPUT_HELPERS</DefineConstants>
+    <CommonDir Condition="'$(CommonDir)' == ''">C:\Program Files (x86)\Steam\steamapps\common\</CommonDir>
+    <GameManagedDir Condition="'$(GameManagedDir)' == ''">$(CommonDir)Valheim\valheim_Data\Managed\</GameManagedDir>
+    <UnityBuildManagedDir Condition="'$(UnityBuildManagedDir)' == ''">$(MSBuildThisFileDirectory)..\..\Unity\build\ValheimVR_Data\Managed\</UnityBuildManagedDir>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+    <Compile Include="../../Unity/ValheimVR/Assets/SteamVR/**/*.cs" Exclude="../../Unity/ValheimVR/Assets/SteamVR/**/Editor/**/*.cs;../../Unity/ValheimVR/Assets/SteamVR/WindowsHelper/**/*.cs" />
+    <!-- This parser is compiled into the shipped SteamVR runtime despite its Editor folder. -->
+    <Compile Include="../../Unity/ValheimVR/Assets/SteamVR/OpenVRUnityXRPackage/Editor/OpenVRSimpleJSON.cs" />
+    <PackageReference Include="UnityEngine.Modules" Version="2019.4.21" PrivateAssets="all" />
+    <Reference Include="Unity.XR.Management" Private="false">
+      <HintPath>$(UnityBuildManagedDir)Unity.XR.Management.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.XR.OpenVR" Private="false">
+      <HintPath>$(UnityBuildManagedDir)Unity.XR.OpenVR.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.SpatialTracking" Private="false">
+      <HintPath>$(UnityBuildManagedDir)UnityEngine.SpatialTracking.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.UI" Private="false">
+      <HintPath>$(GameManagedDir)UnityEngine.UI.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.XR.LegacyInputHelpers" Private="false">
+      <HintPath>$(UnityBuildManagedDir)UnityEngine.XR.LegacyInputHelpers.dll</HintPath>
+    </Reference>
+    <Reference Include="Valve.Newtonsoft.Json" Private="false">
+      <HintPath>$(UnityBuildManagedDir)Valve.Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="netstandard" Private="false">
+      <HintPath>$(GameManagedDir)netstandard.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+</Project>

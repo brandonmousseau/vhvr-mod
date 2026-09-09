@@ -20,6 +20,8 @@
     <NoConfig>true</NoConfig>
     <CommonDir>C:\Program Files (x86)\Steam\steamapps\common\</CommonDir>
     <GameManagedDir>$(CommonDir)Valheim\valheim_Data\Managed\</GameManagedDir>
+    <PublicizedGameManagedDir Condition="'$(PublicizedGameManagedDir)' == ''">$(GameManagedDir)publicized_assemblies\</PublicizedGameManagedDir>
+    <UnityBuildManagedDir Condition="'$(UnityBuildManagedDir)' == ''">$(MSBuildProjectDirectory)\..\Unity\build\ValheimVR_Data\Managed\</UnityBuildManagedDir>
     <UnityDir>C:\Program Files (x86)\Hub\Editor\2020.3.45f1\</UnityDir>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -74,40 +76,40 @@
        by Bepinex Publicizer (see README.development.md). -->
   <ItemGroup>
     <!-- Publicized game and Unity engine assemblies. -->
-    <Reference Include="$(GameManagedDir)publicized_assemblies\*.dll" Private="false" />
+    <Reference Include="$(PublicizedGameManagedDir)*.dll" Private="false" />
   </ItemGroup>
   <ItemGroup>
 
     <Reference Include="Unity.XR.Management, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\Unity\build\ValheimVR_Data\Managed\Unity.XR.Management.dll</HintPath>
+      <HintPath>$(UnityBuildManagedDir)Unity.XR.Management.dll</HintPath>
     </Reference>
     <Reference Include="Unity.XR.OpenVR, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\Unity\build\ValheimVR_Data\Managed\Unity.XR.OpenVR.dll</HintPath>
+      <HintPath>$(UnityBuildManagedDir)Unity.XR.OpenVR.dll</HintPath>
     </Reference>
 
     <Reference Include="final_ik.dll">
-      <HintPath>..\Unity\build\ValheimVR_Data\Managed\final_ik.dll</HintPath>
+      <HintPath>$(UnityBuildManagedDir)final_ik.dll</HintPath>
     </Reference>
     <Reference Include="root_motion_demo_assets">
-      <HintPath>..\Unity\build\ValheimVR_Data\Managed\root_motion_demo_assets.dll</HintPath>
+      <HintPath>$(UnityBuildManagedDir)root_motion_demo_assets.dll</HintPath>
     </Reference>
     <Reference Include="root_motion_shared">
-      <HintPath>..\Unity\build\ValheimVR_Data\Managed\root_motion_shared.dll</HintPath>
+      <HintPath>$(UnityBuildManagedDir)root_motion_shared.dll</HintPath>
     </Reference>
 
     <Reference Include="SteamVR, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\Unity\build\ValheimVR_Data\Managed\SteamVR.dll</HintPath>
+      <HintPath>$(UnityBuildManagedDir)SteamVR.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\Unity\build\ValheimVR_Data\Managed\Valve.Newtonsoft.Json.dll</HintPath>
+      <HintPath>$(UnityBuildManagedDir)Valve.Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="SteamVR_Actions, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\Unity\build\ValheimVR_Data\Managed\SteamVR_Actions.dll</HintPath>
+      <HintPath>$(UnityBuildManagedDir)SteamVR_Actions.dll</HintPath>
     </Reference>
   </ItemGroup>
   <!-- ResolveAssemblyReferences drops any reference to the core library, so Unity's mscorlib is
@@ -140,7 +142,7 @@
       <Reference Remove="@(Reference)" Condition="('%(Filename)' == 'SteamVR' Or '%(Filename)' == 'SteamVR_Actions') And $([System.String]::Copy('%(Reference.HintPath)').Contains('valheimgamelibz'))" />
     </ItemGroup>
   </Target>
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(SkipPostBuild)' != 'true'">
     <Exec Command="&quot;$(MSBuildProjectDirectory)\make-release.cmd&quot;" EnvironmentVariables="
 	    SOLUTION_DIR=$([MSBuild]::EnsureTrailingSlash($([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\..'))));
 	    GAME_DIR=$(CommonDir)Valheim\;   
