@@ -202,6 +202,22 @@ namespace ValheimVRMod.Patches {
     {
         private static MethodInfo IsGamepadActive =
              AccessTools.Method(typeof(ZInput), nameof(ZInput.IsGamepadActive));
+        private static MethodInfo IsMouseActive =
+             AccessTools.Method(typeof(ZInput), nameof(ZInput.IsMouseActive));
+
+        // VHVR feeds the laser pointer through a simulated mouse, so ZInput reports the mouse as
+        // active and Valheim 1.0's LateUpdate takes the mouse look branch, which has no delta and
+        // skips the gamepad branch entirely. Reporting the mouse as inactive here routes camera
+        // look through GetJoyRightStickX/Y, which is where the VR stick values are injected.
+        private static bool IsMouseActivePatched()
+        {
+            if (VHVRConfig.NonVrPlayer() || !VHVRConfig.UseVrControls())
+            {
+                return ZInput.IsMouseActive();
+            }
+
+            return false;
+        }
 
         private static bool IsGamepadActivePatched()
         {
@@ -218,12 +234,26 @@ namespace ValheimVRMod.Patches {
         {
             var original = new List<CodeInstruction>(instructions);
             var patched = new List<CodeInstruction>();
+            // Valheim 1.0 opens LateUpdate with an early return that fires when an input delay is
+            // pending and a gamepad is active. Pretending the gamepad is active there would skip the
+            // rest of the method, camera look included, so only the gate of the look section is
+            // replaced. That section is the one reached via the ZInput.IsMouseActive() check.
+            var reachedLookSection = false;
             foreach (var instruction in original)
             {
-                if (instruction.Calls(IsGamepadActive))
+                if (instruction.Calls(IsMouseActive))
                 {
+                    reachedLookSection = true;
                     patched.Add(
-                        CodeInstruction.Call(typeof(PlayerController_LateUpdate_Patch), nameof(IsGamepadActivePatched)));
+                        instruction.ReplaceCallWith(typeof(PlayerController_LateUpdate_Patch), nameof(IsMouseActivePatched)));
+                    continue;
+                }
+
+                if (reachedLookSection && instruction.Calls(IsGamepadActive))
+                {
+                    // In Valheim 1.0 this call is a branch target, so its metadata has to survive the rewrite.
+                    patched.Add(
+                        instruction.ReplaceCallWith(typeof(PlayerController_LateUpdate_Patch), nameof(IsGamepadActivePatched)));
                 }
                 else
                 {
@@ -406,17 +436,17 @@ namespace ValheimVRMod.Patches {
                 // of moving the map around since that will be done with
                 // simulated mouse cursor click and drag via laser pointer.
                 if (instruction.Calls(getJoyLeftStickX)) {
-                    patched.Add(CodeInstruction.Call(typeof(Minimap_UpdateMap_Patch),
+                    patched.Add(instruction.ReplaceCallWith(typeof(Minimap_UpdateMap_Patch),
                         nameof(getJoyLeftStickXPatched), new[] { typeof(bool) }));
                 }
                 else if (instruction.Calls(getJoyLeftStickY)) {
-                    patched.Add(CodeInstruction.Call(typeof(Minimap_UpdateMap_Patch),
+                    patched.Add(instruction.ReplaceCallWith(typeof(Minimap_UpdateMap_Patch),
                         nameof(getJoyLeftStickYPatched), new[] { typeof(bool) }));
                 }
                 else if (instruction.Calls(GetButtonPatchUtils.GetButtonDownOriginal))
                 {
                     // Necessary for map zoom in case ZInput prefix/postfix stops working
-                    patched.Add(CodeInstruction.Call(typeof(GetButtonPatchUtils),
+                    patched.Add(instruction.ReplaceCallWith(typeof(GetButtonPatchUtils),
                         nameof(GetButtonPatchUtils.GetButtonDownPatched), new[] { typeof(string) }));
                 }
                 else {
@@ -516,13 +546,13 @@ namespace ValheimVRMod.Patches {
                 if (original[i + 1].Calls(GetButtonPatchUtils.GetButtonDownOriginal))
                 {
                     patched.Add(
-                        CodeInstruction.Call(
+                        original[i + 1].ReplaceCallWith(
                             typeof(Player_UpdatePlacement_BuildInputPatch),
                             nameof(ShouldTriggerBuildPlacement)));
                 }
                 else if (original[i + 1].Calls(GetButtonPatchUtils.GetButtonUpOriginal)) {
                     patched.Add(
-                        CodeInstruction.Call(
+                        original[i + 1].ReplaceCallWith(
                             typeof(GetButtonPatchUtils),
                             nameof(GetButtonPatchUtils.GetButtonUpPatched)));
                 }
@@ -924,9 +954,8 @@ namespace ValheimVRMod.Patches {
                 {
                     // Do not let the player unmount unless jumping.
                     // This prevents interactions such as range weapon attack from unmounting when riding.
-                    var changed = CodeInstruction.Call(typeof(MountedAttackUtils), nameof(MountedAttackUtils.UnmountIfJumping));
-                    changed.labels = original[i].labels;
-                    original[i] = changed;
+                    // Carries over exception blocks as well as labels.
+                    original[i] = original[i].ReplaceCallWith(typeof(MountedAttackUtils), nameof(MountedAttackUtils.UnmountIfJumping));
                 }
             }
             return original;
@@ -949,9 +978,8 @@ namespace ValheimVRMod.Patches {
                 {
                     // Do not let the player unmount unless jumping.
                     // This prevents interactions such as range weapon attack from unmounting when riding.
-                    var changed = CodeInstruction.Call(typeof(MountedAttackUtils), nameof(MountedAttackUtils.UnmountIfJumping));
-                    changed.labels = original[i].labels;
-                    original[i] = changed;
+                    // Carries over exception blocks as well as labels.
+                    original[i] = original[i].ReplaceCallWith(typeof(MountedAttackUtils), nameof(MountedAttackUtils.UnmountIfJumping));
                 }
             }
             return original;
@@ -967,7 +995,7 @@ namespace ValheimVRMod.Patches {
             {
                 return;
             }
-            __instance.m_splitSlider.gameObject.AddComponent<SliderSelector>();
+            __instance.m_splitDialog.m_splitSlider.gameObject.AddComponent<SliderSelector>();
         }
     }
 
@@ -1024,7 +1052,7 @@ namespace ValheimVRMod.Patches {
     [HarmonyPatch(typeof(InventoryGrid), nameof(InventoryGrid.GetHoveredElement))]
     static class InventoryGrid_GetHoveredElement_Patch
     {
-        static bool Prefix(InventoryGrid __instance, ref InventoryGrid.Element __result)
+        static bool Prefix(InventoryGrid __instance, ref InventoryElement __result)
         {
             if (VHVRConfig.NonVrPlayer())
             {
@@ -1034,10 +1062,10 @@ namespace ValheimVRMod.Patches {
             // so this resolves the same element the EventSystem hovers and the tooltip patch accepts.
             var canvas = __instance.GetComponentInParent<Canvas>();
             var camera = canvas == null ? null : canvas.rootCanvas.worldCamera;
-            foreach (InventoryGrid.Element element in __instance.m_elements)
+            foreach (InventoryElement element in __instance.m_elements)
             {
                 if (RectTransformUtility.RectangleContainsScreenPoint(
-                    element.m_go.transform as RectTransform, SoftwareCursor.simulatedMousePosition, camera))
+                    element.GetElementRectTransform(), SoftwareCursor.simulatedMousePosition, camera))
                 {
                     __result = element;
                     return false;
@@ -1066,7 +1094,7 @@ namespace ValheimVRMod.Patches {
         }
     }
 
-    // This patch hijacks the right click input on minimap to enable
+    // This patch hijacks the pin removal input on minimap to enable
     // adding map pings. With a normal right click, the default behavior
     // exists where a map pin will be removed. If the click modifier
     // is held down, then instead of removing a pin, a map ping will
@@ -1075,7 +1103,9 @@ namespace ValheimVRMod.Patches {
     // between laser pointers and normal controls, things can end up being
     // extra complex when we need to use a new button. Since we already have
     // the modifier, this is simpler).
-    [HarmonyPatch(typeof(Minimap), nameof(Minimap.OnMapRightClick))]
+    // Valheim 1.0 replaced Minimap.OnMapRightClick with RemovePinUnderPointer, which is what the
+    // right click on the map now invokes.
+    [HarmonyPatch(typeof(Minimap), nameof(Minimap.RemovePinUnderPointer))]
     class MinimapPingPatch
     {
         static bool Prefix(Minimap __instance)

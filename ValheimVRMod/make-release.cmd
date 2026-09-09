@@ -9,7 +9,8 @@ copy "%SOLUTION_DIR%Unity\build\ValheimVR_Data\Managed\Unity.XR.Management.dll" 
 copy "%SOLUTION_DIR%Unity\build\ValheimVR_Data\Managed\Unity.XR.OpenVR.dll" "%GAME_DIR%Valheim_Data\Managed"
 copy "%SOLUTION_DIR%Unity\build\ValheimVR_Data\Managed\UnityEngine.XR.LegacyInputHelpers.dll" "%GAME_DIR%Valheim_Data\Managed"
 copy "%SOLUTION_DIR%Unity\build\ValheimVR_Data\Managed\UnityEngine.SpatialTracking.dll" "%GAME_DIR%Valheim_Data\Managed"
-copy "%SOLUTION_DIR%Unity\build\ValheimVR_Data\Managed\amplify_occlusion.dll" "%GAME_DIR%Valheim_Data\Managed"
+:: Valheim 1.0 defines AmplifyOcclusionEffect inside assembly_valheim, so installing the mod's own
+:: amplify_occlusion.dll would duplicate that type.
 copy "%SOLUTION_DIR%Unity\build\ValheimVR_Data\Managed\final_ik.dll" "%GAME_DIR%Valheim_Data\Managed"
 copy "%SOLUTION_DIR%Unity\build\ValheimVR_Data\Managed\root_motion_demo_assets.dll" "%GAME_DIR%Valheim_Data\Managed"
 copy "%SOLUTION_DIR%Unity\build\ValheimVR_Data\Managed\root_motion_shared.dll" "%GAME_DIR%Valheim_Data\Managed"

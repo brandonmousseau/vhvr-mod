@@ -228,13 +228,13 @@ namespace ValheimVRMod.Patches
                     if (gameCameraCount == 0)
                     {
                         LogUtils.LogDebug("Patching FindHoverObject Raycast Starting Position");
-                        patched.Add(CodeInstruction.Call(typeof(KBandMouse_FindHoverObjectPatch), nameof(GetVRCameraPosition)));
+                        patched.Add(CodeInstruction.Call(typeof(KBandMouse_FindHoverObjectPatch), nameof(GetVRCameraPosition)).KeepMetadataOf(instruction));
                         i++;
                         i++;
                     } else if (gameCameraCount == 1)
                     {
                         LogUtils.LogDebug("Patching FindHoverObject Raycast Direction");
-                        patched.Add(CodeInstruction.Call(typeof(KBandMouse_FindHoverObjectPatch), nameof(GetVRCameraForward)));
+                        patched.Add(CodeInstruction.Call(typeof(KBandMouse_FindHoverObjectPatch), nameof(GetVRCameraForward)).KeepMetadataOf(instruction));
                         i++;
                         i++;
                     } else
