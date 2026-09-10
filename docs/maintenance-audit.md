@@ -36,6 +36,7 @@ asset lookup helper in the Unity asset project received the same correctness fix
 | Sliders | Modulo arithmetic skipped a zero-based slider's maximum; a stopped coroutine remained recorded after closing. Endpoints wrap explicitly and disable clears repeat state. | Regression; old code fails. |
 | Building configuration | Bad, zero, nonfinite or empty snap-angle values could throw or enter invalid calculations. Validated values are cached, with defaults and one warning per invalid edit. | Valid/invalid/locale regression tests. |
 | Diagnostics | Material failures discarded the exception, and a debug indicator continued after detecting a missing owner. Errors now retain context and the missing-owner path returns. | Full build and source review. |
+| Development-player installation | The release script could overwrite the game's executable and engine files whenever a Unity editor was found. That conversion now requires `VHVR_ENABLE_EDITOR_DEBUGGING=true`. | Isolated Windows command-shell check of the opt-in condition; the live install script was not run. |
 
 ## Build and verification
 

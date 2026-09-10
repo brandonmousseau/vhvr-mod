@@ -7,6 +7,11 @@ without running that script, pass `-p:SkipPostBuild=true`:
 dotnet build ValheimVRMod/ValheimVRMod.csproj -c Release -p:SkipPostBuild=true
 ```
 
+The legacy script's Unity development-player conversion is disabled by default.
+Set the environment variable `VHVR_ENABLE_EDITOR_DEBUGGING=true` only when you
+intend to replace the game's executable and engine files for editor debugging.
+Ordinary post-build installation still copies the mod files.
+
 The project follows upstream's `ValheimGameLibz` 1.0 and Unity reference
 packages. For a staged build, `GameManagedDir` and `UnityBuildManagedDir` can
 point to the installed game's managed assemblies and staged mod dependencies.
