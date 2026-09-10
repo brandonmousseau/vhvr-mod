@@ -1,0 +1,37 @@
+<Project>
+  <PropertyGroup>
+    <NoStdLib>true</NoStdLib>
+    <NoConfig>true</NoConfig>
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <PublicizedGameManagedDir Condition="'$(PublicizedGameManagedDir)' == ''">$(GameManagedDir)publicized_assemblies/</PublicizedGameManagedDir>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="$(PublicizedGameManagedDir)*.dll" Private="false" />
+    <!-- Unity 6 UI and input types must come from the same publicized game references. -->
+    <Reference Remove="Unity.InputSystem;Unity.TextMeshPro;gui_framework;UnityEngine.SpatialTracking;UnityEngine.UI" />
+  </ItemGroup>
+  <Target Name="ValidateInstalledGameReferences" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition="!Exists('$(GameManagedDir)mscorlib.dll')" Text="GameManagedDir must point to Valheim's valheim_Data/Managed directory, with a trailing separator." />
+    <Error Condition="!Exists('$(PublicizedGameManagedDir)assembly_valheim-publicized.dll')" Text="Generate build-only game references with build/prepare-game-references.py and set PublicizedGameManagedDir to that directory." />
+  </Target>
+<Target Name="UseUnityCorlib" AfterTargets="ResolveAssemblyReferences">
+    <ItemGroup>
+
+      <FrameworkReferenceToDrop Include="@(ReferencePath)" Condition="$([System.String]::Copy('%(Identity)').ToLower().Contains('microsoft.netframework.referenceassemblies'))" />
+      <ReferencePath Remove="@(FrameworkReferenceToDrop)" />
+
+      <ReferencePath Include="$(GameManagedDir)mscorlib.dll" />
+      <ReferencePath Include="$(GameManagedDir)netstandard.dll" />
+      <ReferencePath Include="$(GameManagedDir)System.dll" />
+      <ReferencePath Include="$(GameManagedDir)System.Core.dll" />
+      <ReferencePath Include="$(GameManagedDir)System.Data.dll" />
+      <ReferencePath Include="$(GameManagedDir)System.Xml.dll" />
+      <ReferencePath Include="$(GameManagedDir)System.Xml.Linq.dll" />
+      <ReferencePath Include="$(GameManagedDir)System.Runtime.Serialization.dll" />
+      <ReferencePath Include="$(GameManagedDir)System.Net.Http.dll" />
+      <ReferencePath Include="$(GameManagedDir)System.Numerics.dll" />
+      <ReferencePath Include="$(GameManagedDir)Mono.Security.dll" />
+    </ItemGroup>
+  </Target>
+
+</Project>

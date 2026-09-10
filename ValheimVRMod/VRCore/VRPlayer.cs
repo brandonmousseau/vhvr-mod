@@ -1824,10 +1824,6 @@ namespace ValheimVRMod.VRCore
             // both ApplySettings() and EnvMan's per-frame SetEnvironmentAOParams() call throw.
             maybeAddAmplifyOcclusion(vrCamera);
             var vrCamEffects = vrCamera.gameObject.AddComponent<CameraEffects>();
-            // m_amplifyOcclusion is deliberately left null here. VHVR owns the occlusion effect on the
-            // VR camera through UpdateAmplifyOcclusionStatus() and its own UseAmplifyOcclusion setting;
-            // wiring the game's CameraEffects to it as well makes both of them fight over enabled,
-            // Downsample and SampleCount, which shows up as screen space artifacts in stereo.
             var mainCamEffects = mainCamera.gameObject.GetComponent<CameraEffects>();
             if (mainCamEffects != null)
             {

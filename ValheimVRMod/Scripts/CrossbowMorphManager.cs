@@ -94,7 +94,7 @@ namespace ValheimVRMod.Scripts
             }
             catch (Exception e)
             {
-                LogUtils.LogError("Bow bending material not found!");
+                LogUtils.LogError("Could not configure crossbow bending material: " + e);
                 useBowBendingShader = false;
             }
             createBones();

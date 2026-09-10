@@ -24,6 +24,8 @@ namespace ValheimVRMod.VRCore.UI
         private void OnDisable() 
         {
             StopAllCoroutines();
+            _doSliderMovementDelayed = null;
+            _cumulativeDirection = 0;
         }
 
         private void Update() 
@@ -54,8 +56,9 @@ namespace ValheimVRMod.VRCore.UI
         {
             yield return new WaitForSeconds(delay);
             if(Mathf.Sign(direction) != Mathf.Sign(_cumulativeDirection)) _cumulativeDirection = 0;
-            var newValue = (_splitSlider.value + direction) % _splitSlider.maxValue;
-            newValue = newValue >= _splitSlider.minValue ? newValue : _splitSlider.maxValue;
+            var newValue = _splitSlider.value + direction;
+            if (newValue > _splitSlider.maxValue) newValue = _splitSlider.minValue;
+            else if (newValue < _splitSlider.minValue) newValue = _splitSlider.maxValue;
             _splitSlider.value = newValue;
             _cumulativeDirection += (int)direction;
             _doSliderMovementDelayed = null;

@@ -272,6 +272,24 @@ namespace ValheimVRMod.VRCore.UI
         public void OnDisable()
         {
             destroyOverlay();
+            if (_guiCamera != null) _guiCamera.enabled = false;
+            if (_leftPointer != null) _leftPointer.PointerTracking -= OnPointerTrackingLeftHand;
+            if (_rightPointer != null) _rightPointer.PointerTracking -= OnPointerTracking;
+            _leftPointer = null;
+            _rightPointer = null;
+        }
+
+        private void OnDestroy()
+        {
+            if (_guiCamera != null) Destroy(_guiCamera.gameObject);
+            if (_guiTexture != null)
+            {
+                _guiTexture.Release();
+                Destroy(_guiTexture);
+            }
+            if (_inputModule != null) Destroy(_inputModule);
+            if (_uiPanel != null) Destroy(_uiPanel.gameObject);
+            if (_uiPanelTransformLocker != null) Destroy(_uiPanelTransformLocker.gameObject);
         }
 
         private void tryToggleInventory()
@@ -744,6 +762,12 @@ namespace ValheimVRMod.VRCore.UI
                 }
                 _overlay = OpenVR.k_ulOverlayHandleInvalid;
             }
+            if (_overlayTexture != null)
+            {
+                _overlayTexture.Release();
+                Destroy(_overlayTexture);
+                _overlayTexture = null;
+            }
         }
 
         private bool ensureGuiCanvas()
@@ -975,6 +999,11 @@ namespace ValheimVRMod.VRCore.UI
 
         private void creatGuiCamera()
         {
+            if (_guiCamera != null)
+            {
+                _guiCamera.enabled = true;
+                return;
+            }
             LogDebug("Creating GUI Camera");
             _guiTexture = new RenderTexture(new RenderTextureDescriptor((int)GUI_DIMENSIONS.x, (int)GUI_DIMENSIONS.y));
             GameObject guiCamObj = new GameObject(CameraUtils.VRGUI_SCREENSPACE_CAM);

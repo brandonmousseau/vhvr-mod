@@ -61,7 +61,7 @@ namespace ValheimVRMod.Scripts
             }
         }
 
-        void Destroy()
+        void OnDestroy()
         {
             Destroy(colliderParent);
             if (debugColliderIndicator != null) Destroy(debugColliderIndicator);

@@ -195,7 +195,7 @@ namespace ValheimVRMod.Patches
                     patched.Add(instruction);
                     continue;
                 }
-                if (instruction.Calls(rotateMethod) && original[i - 1].opcode == OpCodes.Mul)
+                if (instruction.Calls(rotateMethod) && i > 0 && original[i - 1].opcode == OpCodes.Mul)
                 {
                     patched.Add(instruction.ReplaceCallWith(typeof(Prevent_Pause_Character_Spin_Patch), nameof(Prevent_Pause_Character_Spin_Patch.FakeRotate)));
                 }

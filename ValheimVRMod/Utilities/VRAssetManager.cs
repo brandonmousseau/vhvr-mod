@@ -63,16 +63,23 @@ namespace ValheimVRMod.Utilities
                 LogError("Problem loading AssetBundle from file: " + assetBundlePath);
                 return false;
             }
-            foreach (var asset in prefabAssetBundle.LoadAllAssets())
+            try
             {
-                if (!_assets.ContainsKey(asset.name))
+                foreach (var asset in prefabAssetBundle.LoadAllAssets())
                 {
-                    _assets.Add(asset.name, asset);
+                    if (!_assets.ContainsKey(asset.name))
+                    {
+                        _assets.Add(asset.name, asset);
+                    }
+                    else
+                    {
+                        LogWarning("Asset with duplicate name loaded: " + asset.name);
+                    }
                 }
-                else
-                {
-                    LogWarning("Asset with duplicate name loaded: " + asset.name);
-                }
+            }
+            finally
+            {
+                prefabAssetBundle.Unload(false);
             }
             return true;
         }
@@ -101,17 +108,17 @@ namespace ValheimVRMod.Utilities
                 LogError("GetAsset called before Initialize()");
                 return default;
             }
-            if (!_assets.ContainsKey(name))
+            if (!_assets.TryGetValue(name, out var loadedAsset))
             {
                 LogError("No asset with name found: " + name);
+                return default;
             }
-            var loadedAsset = _assets[name];
             if (loadedAsset == null)
             {
                 LogError("Loaded asset is null!");
                 return default;
             }
-            if (!loadedAsset.GetType().IsAssignableFrom(typeof(T))) {
+            if (!(loadedAsset is T)) {
                 LogError("Asset " + name + " is not assignable to type " + typeof(T));
                 return default;
             }

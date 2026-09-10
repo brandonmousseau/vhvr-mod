@@ -296,29 +296,22 @@ namespace ValheimVRMod.Patches {
      */
     [HarmonyPatch(typeof(Player), "PlayerAttackInput")]
     class PatchPlayerAttackInput {
-        
-        private static MethodInfo SetBoolCall =
-            AccessTools.Method(typeof(ZSyncAnimation), nameof(ZSyncAnimation.SetBool), new []{typeof(string), typeof(bool)});
-        
+        private static readonly MethodInfo SetBoolCall =
+            AccessTools.Method(typeof(ZSyncAnimation), nameof(ZSyncAnimation.SetBool), new[] { typeof(string), typeof(bool) });
+
+        private static void SetBoolWithoutPulling(ZSyncAnimation animation, string name, bool value)
+        {
+            animation.SetBool(name, false);
+        }
+
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
-            var original = new List<CodeInstruction>(instructions);
-            var patched = new List<CodeInstruction>();
-            if (!VHVRConfig.UseVrControls())
+            foreach (var instruction in instructions)
             {
-                return original;
+                yield return VHVRConfig.UseVrControls() && instruction.Calls(SetBoolCall)
+                    ? instruction.ReplaceCallWith(typeof(PatchPlayerAttackInput), nameof(SetBoolWithoutPulling))
+                    : instruction;
             }
-            
-            foreach (var instruction in original) {
-    
-                if (instruction.Calls(SetBoolCall)) {
-                    patched[patched.Count - 1].opcode = OpCodes.Ldc_I4_0;
-                }
-    
-                patched.Add(instruction);
-                
-            }
-            return patched;
         }
     }
 

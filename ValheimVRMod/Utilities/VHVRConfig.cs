@@ -1868,11 +1868,21 @@ namespace ValheimVRMod.Utilities
             return buildOnRelease.Value;
         }
 
+        private static string lastBuildAngleSnap;
+        private static float[] cachedBuildAngles;
+
         public static float[] BuildAngleSnap()
         {
-            //"22.5, 15, 10, 5, 2.5, 1, 0.5"
-            float[] snapList = Array.ConvertAll(buildAngleSnap.Value.Split(','), s => float.Parse(s.Trim(), System.Globalization.CultureInfo.InvariantCulture));
-            return snapList;
+            if (cachedBuildAngles == null || lastBuildAngleSnap != buildAngleSnap.Value)
+            {
+                lastBuildAngleSnap = buildAngleSnap.Value;
+                if (!BuildAngleSnapParser.TryParse(lastBuildAngleSnap, out cachedBuildAngles))
+                {
+                    LogUtils.LogWarning("Invalid build angle snap list; using default angles. Enter comma-separated numbers greater than 0 and at most 360.");
+                    cachedBuildAngles = new float[] { 22.5f, 15f, 10f, 5f, 2.5f, 1f, 0.5f };
+                }
+            }
+            return cachedBuildAngles;
         }
 
         public static bool BhapticsEnabled()

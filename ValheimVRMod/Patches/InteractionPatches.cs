@@ -126,10 +126,7 @@ namespace ValheimVRMod.Patches
     class PatchInventoryChanged {
 
         static void Postfix() {
-            if (StaticObjects.rightHandQuickMenu != null && VHVRConfig.UseVrControls()) {
-                StaticObjects.rightHandQuickMenu.GetComponent<RightHandQuickMenu>()?.refreshItems();
-                StaticObjects.leftHandQuickMenu.GetComponent<LeftHandQuickMenu>()?.refreshItems();
-            }
+            if (VHVRConfig.UseVrControls()) StaticObjects.RefreshQuickMenus();
         }
     }
     
@@ -137,10 +134,7 @@ namespace ValheimVRMod.Patches
     class PatchOnSelectedItem {
 
         static void Postfix() {
-            if (StaticObjects.rightHandQuickMenu != null && VHVRConfig.UseVrControls()) {
-                StaticObjects.rightHandQuickMenu.GetComponent<RightHandQuickMenu>().refreshItems();
-                StaticObjects.leftHandQuickMenu.GetComponent<LeftHandQuickMenu>().refreshItems();
-            }
+            if (VHVRConfig.UseVrControls()) StaticObjects.RefreshQuickMenus();
         }
     }
 
@@ -148,10 +142,7 @@ namespace ValheimVRMod.Patches
     class PatchUnEquipItem {
 
         static void Postfix() {
-            if (StaticObjects.rightHandQuickMenu != null) {
-                StaticObjects.rightHandQuickMenu.GetComponent<RightHandQuickMenu>().refreshItems();
-                StaticObjects.leftHandQuickMenu.GetComponent<LeftHandQuickMenu>().refreshItems();
-            }
+            StaticObjects.RefreshQuickMenus();
         }
     }
         
@@ -164,10 +155,7 @@ namespace ValheimVRMod.Patches
                 return;
             }
             
-            if (StaticObjects.leftHandQuickMenu != null) {
-                StaticObjects.leftHandQuickMenu.GetComponent<LeftHandQuickMenu>().refreshItems();
-                StaticObjects.rightHandQuickMenu.GetComponent<RightHandQuickMenu>().refreshItems();
-            }
+            StaticObjects.RefreshQuickMenus();
         }
     }
 

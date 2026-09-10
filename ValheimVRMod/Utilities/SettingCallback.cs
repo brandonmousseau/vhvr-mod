@@ -17,12 +17,17 @@ namespace ValheimVRMod.Utilities {
         private static GameObject notification;
 
         public static bool configRunning;
+        private bool previousSaveOnConfigSet;
 
 
         public static bool CameraLocked(UnityAction<Vector3> pAction)
         {
+            if (configRunning) return false;
+            var camera = CameraUtils.getCamera(CameraUtils.VR_UI_CAMERA);
+            if (camera == null) return false;
+            action = null;
             action3Axis = pAction;
-            return createSettingObj3Axis(VHVRConfig.CameraLockedPos(), "Camera HUD", CameraUtils.getCamera(CameraUtils.VR_UI_CAMERA).transform);
+            return createSettingObj3Axis(VHVRConfig.CameraLockedPos(), "Camera HUD", camera.transform);
         }
         public static bool CameraLockedDefault(UnityAction<Vector3> pAction)
         {
@@ -32,8 +37,12 @@ namespace ValheimVRMod.Utilities {
 
         public static bool CameraLocked2(UnityAction<Vector3> pAction)
         {
+            if (configRunning) return false;
+            var camera = CameraUtils.getCamera(CameraUtils.VR_UI_CAMERA);
+            if (camera == null) return false;
+            action = null;
             action3Axis = pAction;
-            return createSettingObj3Axis(VHVRConfig.CameraLocked2Pos(), "Camera HUD 2", CameraUtils.getCamera(CameraUtils.VR_UI_CAMERA).transform);
+            return createSettingObj3Axis(VHVRConfig.CameraLocked2Pos(), "Camera HUD 2", camera.transform);
         }
         public static bool CameraLocked2Default(UnityAction<Vector3> pAction)
         {
@@ -44,6 +53,8 @@ namespace ValheimVRMod.Utilities {
          * called by ConfigSettings.createTransformButton()
          */
         public static bool LeftWrist(UnityAction<Vector3, Quaternion> pAction) {
+            if (configRunning) return false;
+            action3Axis = null;
             action = pAction;
             return createSettingObj(VHVRConfig.LeftWristPos(), VHVRConfig.LeftWristRot(), "Left Wrist", false);
         }
@@ -76,18 +87,24 @@ namespace ValheimVRMod.Utilities {
          * called by ConfigSettings.createTransformButton()
          */
         public static bool RightWrist(UnityAction<Vector3, Quaternion> pAction) {
+            if (configRunning) return false;
+            action3Axis = null;
             action = pAction;
             return createSettingObj(VHVRConfig.RightWristPos(), VHVRConfig.RightWristRot(), "Right Wrist", true);
         }
 
         public static bool LeftWristQuickSwitch(UnityAction<Vector3, Quaternion> pAction)
         {
+            if (configRunning) return false;
+            action3Axis = null;
             action = pAction;
             return createSettingObj(VHVRConfig.LeftWristQuickBarPos(), VHVRConfig.LeftWristQuickBarRot(), "Left Wrist Quick Bar", false);
         }     
 
         public static bool RightWristQuickAction(UnityAction<Vector3, Quaternion> pAction)
         {
+            if (configRunning) return false;
+            action3Axis = null;
             action = pAction;
             return createSettingObj(VHVRConfig.RightWristQuickBarPos(), VHVRConfig.RightWristQuickBarRot(), "Right Wrist Quick Bar", true);
         }
@@ -95,10 +112,11 @@ namespace ValheimVRMod.Utilities {
         private static bool createSettingObj(Vector3 pos, Quaternion rot, string panel, bool isRightWrist) {
 
             if (configRunning) {
-                LogUtils.LogWarning("Trying to set HUD when config is not running.");
+                LogUtils.LogWarning("HUD placement is already being configured.");
                 return false;
             }
 
+            if (VRPlayer.leftHand == null || VRPlayer.rightHand == null || Hud.instance == null) return false;
             string handness = "";
             if (isRightWrist) {
                 inputAction = SteamVR_Actions.valheim_UseLeft;
@@ -115,9 +133,10 @@ namespace ValheimVRMod.Utilities {
                 handness = "Right Hand";
             }
             
-            VHVRConfig.config.SaveOnConfigSet = false;
             var settingObj = new GameObject();
-            settingObj.AddComponent<SettingCallback>();
+            var callback = settingObj.AddComponent<SettingCallback>();
+            callback.previousSaveOnConfigSet = VHVRConfig.config.SaveOnConfigSet;
+            VHVRConfig.config.SaveOnConfigSet = false;
             settingObj.transform.SetParent(target, false);
             settingObj.transform.localPosition = pos;
             settingObj.transform.localRotation = rot;
@@ -131,21 +150,19 @@ namespace ValheimVRMod.Utilities {
         {
             if (configRunning)
             {
-                LogUtils.LogWarning("Trying to set HUD when config is not running.");
+                LogUtils.LogWarning("HUD placement is already being configured.");
                 return false;
             }
-            if (!target)
-            {
-                LogUtils.LogWarning("Target does not exist");
-            }
+            if (targetParent == null || VRPlayer.rightHand == null || Hud.instance == null) return false;
             inputAction = SteamVR_Actions.valheim_Use;
             inputHand = SteamVR_Input_Sources.RightHand;
             sourceHand = VRPlayer.rightHand.transform;
             target = targetParent;
 
-            VHVRConfig.config.SaveOnConfigSet = false;
             var settingObj = new GameObject();
-            settingObj.AddComponent<SettingCallback>();
+            var callback = settingObj.AddComponent<SettingCallback>();
+            callback.previousSaveOnConfigSet = VHVRConfig.config.SaveOnConfigSet;
+            VHVRConfig.config.SaveOnConfigSet = false;
             settingObj.transform.SetParent(targetParent, false);
             settingObj.transform.localPosition = pos;
             configRunning = true;
@@ -167,7 +184,10 @@ namespace ValheimVRMod.Utilities {
             text.text = textContent;
             text.fontSize = 20;
             text.color = Color.red;
-            text.font =  Resources.GetBuiltinResource(typeof(Font), "Arial.ttf") as Font;
+            var unityMajor = Application.unityVersion.Split('.')[0];
+            var fontName = int.TryParse(unityMajor, out var version) && version >= 2022
+                ? "LegacyRuntime.ttf" : "Arial.ttf";
+            text.font = Resources.GetBuiltinResource<Font>(fontName);
             var fit = text.gameObject.AddComponent<ContentSizeFitter>();
             fit.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
             text.transform.SetParent(notification.transform, false);
@@ -175,16 +195,28 @@ namespace ValheimVRMod.Utilities {
             image.rectTransform.sizeDelta = new Vector2(400, text.preferredHeight);
         }
         
-        private void OnRenderObject() {
+        private void OnDestroy()
+        {
+            VHVRConfig.config.SaveOnConfigSet = previousSaveOnConfigSet;
+            configRunning = false;
+            Destroy(notification);
+            notification = null;
+            action = null;
+            action3Axis = null;
+            target = null;
+            sourceHand = null;
+        }
+
+        private void Update() {
+            if (target == null || sourceHand == null)
+            {
+                Destroy(gameObject);
+                return;
+            }
             
             if (SteamVR_Actions.valheim_Jump.GetState(SteamVR_Input_Sources.Any)) {
                 VHVRConfig.config.Save();
-                VHVRConfig.config.SaveOnConfigSet = true;
-                configRunning = false;
-                Destroy(notification);
                 Destroy(gameObject);
-                action = null;
-                action3Axis = null;
                 return;
             }
             

@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="HarmonyX" Version="2.16.1" />
+    <Reference Include="Microsoft.CodeAnalysis"><HintPath>$(MSBuildSDKsPath)/../Roslyn/bincore/Microsoft.CodeAnalysis.dll</HintPath></Reference>
+    <Reference Include="Microsoft.CodeAnalysis.CSharp"><HintPath>$(MSBuildSDKsPath)/../Roslyn/bincore/Microsoft.CodeAnalysis.CSharp.dll</HintPath></Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="../../ValheimVRMod/Utilities/HapticScheduler.cs" Link="HapticScheduler.cs" />
+    <Compile Include="../../ValheimVRMod/Utilities/VRPosePacket.cs" Link="VRPosePacket.cs" />
+    <Compile Include="../../ValheimVRMod/Utilities/BuildAngleSnapParser.cs" Link="BuildAngleSnapParser.cs" />
+    <Compile Include="../../ValheimVRMod/Utilities/VRAssetManager.cs" Link="VRAssetManager.cs" />
+    <Compile Include="../../ValheimVRMod/Scripts/MeshCooldown.cs" Link="MeshCooldown.cs" />
+    <Compile Include="../../ValheimVRMod/VRCore/UI/SliderSelector.cs" Link="SliderSelector.cs" />
+  </ItemGroup>
+</Project>

@@ -175,7 +175,7 @@ namespace ValheimVRMod.Scripts
             TryPushDoorOpen(collider);
         }
 
-        void Destroy()
+        void OnDestroy()
         {
             if (debugColliderIndicator != null) Destroy(debugColliderIndicator);
         }

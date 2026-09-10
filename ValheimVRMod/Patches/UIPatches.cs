@@ -686,7 +686,7 @@ namespace ValheimVRMod.Patches
                 // loaded the gui field. If these conditions met, call our own SetActive function with (true).
                 // For the second time we find SetActive, we'll then set it to false to disable the original enemy huds
                 // except for the boss hud.
-                if (instruction.opcode.Equals(OpCodes.Ldc_I4_1) && !patchedSetActiveTrue)
+                if (instruction.opcode.Equals(OpCodes.Ldc_I4_1))
                 {
                     if ((i + 1) < original.Count && (i - 1) >= 0) {
                         var previousInstruction = original[i - 1];

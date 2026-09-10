@@ -10,8 +10,42 @@ dotnet build ValheimVRMod/ValheimVRMod.csproj -c Release -p:SkipPostBuild=true
 The project follows upstream's `ValheimGameLibz` 1.0 and Unity reference
 packages. For a staged build, `GameManagedDir` and `UnityBuildManagedDir` can
 point to the installed game's managed assemblies and staged mod dependencies.
-Use absolute directory paths with trailing separators. The previous
-`PublicizedGameManagedDir` override is no longer needed.
+Use absolute directory paths with trailing separators.
+
+### Build against an installed game
+
+If the upstream `ValheimGameLibz` package is unavailable, use the opt-in local
+reference mode. It keeps the normal upstream dependency choices unchanged and
+does not copy anything into the game. Install Python 3 and .NET 8, then run:
+
+```sh
+python3 build/prepare-game-references.py \
+  "/absolute/path/to/Valheim/valheim_Data/Managed" \
+  "/absolute/path/to/build-references"
+
+dotnet build ValheimVRMod/ValheimVRMod.csproj -c Release \
+  -p:SkipPostBuild=true -p:UseInstalledGameAssemblies=true \
+  -p:GameManagedDir="/absolute/path/to/Valheim/valheim_Data/Managed/" \
+  -p:PublicizedGameManagedDir="/absolute/path/to/build-references/" \
+  -p:UnityBuildManagedDir="/absolute/path/to/staged/Valheim_Data/Managed/"
+```
+
+On Windows use `py -3` instead of `python3` if needed. The preparation script
+pins BepInEx AssemblyPublicizer 0.4.3 and strips method bodies from the references.
+These DLLs are for compilation only; never install or distribute them. Regenerate
+them when the game updates. The staged mod dependencies must include the matching
+SteamVR DLL described below; an existing VHVR installation can supply those files.
+
+### Regression checks
+
+```sh
+dotnet run --project tests/MaintenanceRegression -- /absolute/path/to/vhvr-mod
+```
+
+These tests compile the actual input patch and exercise the real asset lookup,
+attack cooldown, slider logic, haptic scheduler, configuration parser, packet
+layout, angular velocity and enemy-HUD/TAA/bow rewrites. Small Unity doubles make them runnable without game files. They do
+not test rendering, headset tracking, Unity object lifetime, or physical haptics.
 
 ### SteamVR dependency from source
 

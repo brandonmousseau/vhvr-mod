@@ -67,6 +67,11 @@ namespace ValheimVRMod.Patches
         private static MethodInfo CallsTaaResetHistory = AccessTools.Method(typeof(TaaComponent), nameof(TaaComponent.ResetHistory));
         private static MethodInfo CallsTaaGetJitterVector = AccessTools.PropertyGetter(typeof(TaaComponent), nameof(TaaComponent.jitterVector));
 
+        private static VRTaaComponent GetVrTaaComponent(PostProcessingBehaviour behaviour)
+        {
+            return VRTaaComponent.PostProcessingExtension.GetOrCreateValue(behaviour);
+        }
+
         [HarmonyTranspiler]
         [HarmonyPatch(typeof(PostProcessingBehaviour), "OnPostRender")]
         [HarmonyPatch(typeof(PostProcessingBehaviour), "OnPreCull")]
@@ -84,24 +89,9 @@ namespace ValheimVRMod.Patches
                 if (instruction.LoadsField(LoadsTaaComponent))
                 {
                     Debug.Log("Patched TAA reference");
-                    var lastInstuction = patched[patched.Count - 1];
-                    CodeInstruction removed = null;
-                    if (lastInstuction != null && lastInstuction.opcode == OpCodes.Ldarg_0)
-                    {
-                        removed = lastInstuction;
-                        patched.RemoveAt(patched.Count - 1);
-                    }
-                    var loadExtensionTable = new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(VRTaaComponent), nameof(VRTaaComponent.PostProcessingExtension)));
-                    // Anything branching to the instructions being replaced has to land on the head of the
-                    // replacement sequence instead, otherwise Harmony fails to emit the method.
-                    if (removed != null)
-                    {
-                        removed.MoveMetadataTo(loadExtensionTable);
-                    }
-                    instruction.MoveMetadataTo(loadExtensionTable);
-                    patched.Add(loadExtensionTable);
-                    patched.Add(new CodeInstruction(OpCodes.Ldarg_0));
-                    patched.Add(new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(ConditionalWeakTable<PostProcessingBehaviour, VRTaaComponent>), nameof(ConditionalWeakTable<PostProcessingBehaviour, VRTaaComponent>.GetOrCreateValue), new Type[] { typeof(PostProcessingBehaviour)})));
+                    // Consume the original field receiver already on the stack. This also works
+                    // when it comes from a local or a branch rather than a preceding ldarg.0.
+                    patched.Add(instruction.ReplaceCallWith(typeof(PostProcessingPatches), nameof(GetVrTaaComponent)));
                 }
                 else if (instruction.Calls(CallsTaaSetProjectionMatrix))
                 {

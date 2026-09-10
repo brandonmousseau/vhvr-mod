@@ -13,6 +13,7 @@
     <Deterministic>true</Deterministic>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <UseInstalledGameAssemblies Condition="'$(UseInstalledGameAssemblies)' == ''">false</UseInstalledGameAssemblies>
     <CommonDir>C:\Program Files (x86)\Steam\steamapps\common\</CommonDir>
     <GameManagedDir Condition="'$(GameManagedDir)' == ''">$(CommonDir)Valheim\valheim_Data\Managed\</GameManagedDir>
     <UnityBuildManagedDir Condition="'$(UnityBuildManagedDir)' == ''">$(MSBuildProjectDirectory)\..\Unity\build\ValheimVR_Data\Managed\</UnityBuildManagedDir>
@@ -62,8 +63,8 @@
   <ItemGroup>
     <PackageReference Include="BepInEx.Core" Version="5.4.21" />
     <PackageReference Include="NDesk.Options" Version="0.2.1" />
-    <PackageReference Include="UnityEngine.Modules" Version="2020.3.45" />
-    <PackageReference Include="ValheimGameLibz" Version="1.0" />
+    <PackageReference Include="UnityEngine.Modules" Version="2020.3.45" Condition="'$(UseInstalledGameAssemblies)' != 'true'" />
+    <PackageReference Include="ValheimGameLibz" Version="1.0" Condition="'$(UseInstalledGameAssemblies)' != 'true'" />
 	<PackageReference Include="Bhaptics.Tac" Version="1.4.16" />
   </ItemGroup>
   <ItemGroup>
@@ -135,4 +136,5 @@
       <Output TaskParameter="ConsoleOutput" ItemName="OutputOfExec" />
     </Exec>
   </Target>
+  <Import Project="../build/InstalledGame.targets" Condition="'$(UseInstalledGameAssemblies)' == 'true'" />
 </Project>

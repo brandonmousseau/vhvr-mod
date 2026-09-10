@@ -12,7 +12,10 @@ namespace ValheimVRMod.Scripts {
         private Outline outline;
         public virtual bool tryTrigger(float cd, float? overrideMinAttackInterval = null) {
             if (inCoolDown()) {
-                return overrideMinAttackInterval != null && cooldownStart - cooldown > overrideMinAttackInterval.Value;
+                if (overrideMinAttackInterval == null || cooldownStart - cooldown <= overrideMinAttackInterval.Value)
+                {
+                    return false;
+                }
             }
             cooldown = cooldownStart = cd;
             resetOutline();
@@ -41,7 +44,7 @@ namespace ValheimVRMod.Scripts {
             }
         }
 
-        void OnDestory() {
+        void OnDestroy() {
             Destroy(outline);
         }
 

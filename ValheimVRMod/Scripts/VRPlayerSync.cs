@@ -66,14 +66,32 @@ namespace ValheimVRMod.Scripts {
         // TODO: remove this once weapon sync is fully supported
         
 
-        private void Awake() {
-            camera = new GameObject();
-            leftHand = new GameObject();
-            rightHand = new GameObject();
-            pelvis = new GameObject();
-            leftFoot = new GameObject();
-            rightFoot = new GameObject();
+        private GameObject poseRoot;
+
+        private void Awake()
+        {
+            poseRoot = new GameObject("VHVR Pose Targets");
+            camera = CreatePoseTarget("Head");
+            leftHand = CreatePoseTarget("Left Hand");
+            rightHand = CreatePoseTarget("Right Hand");
+            pelvis = CreatePoseTarget("Pelvis");
+            leftFoot = CreatePoseTarget("Left Foot");
+            rightFoot = CreatePoseTarget("Right Foot");
             player = GetComponent<Player>();
+        }
+
+        private GameObject CreatePoseTarget(string name)
+        {
+            var target = new GameObject(name);
+            target.transform.SetParent(poseRoot.transform, false);
+            return target;
+        }
+
+        private void OnDestroy()
+        {
+            // The local player replaces some fields with the real headset/hands. Only destroy
+            // the placeholder targets we created, never those borrowed tracking objects.
+            Destroy(poseRoot);
         }
 
         void Start()
@@ -164,6 +182,7 @@ namespace ValheimVRMod.Scripts {
 
         private void calculateOwnerVelocities(float dt)
         {
+            if (dt <= 0) return;
             ownerVelocityCamera = (camera.transform.position - player.transform.position - ownerLastPositionCamera) / dt;
             ownerVelocityLeft = (leftHand.transform.position - player.transform.position - ownerLastPositionLeft) / dt;
             ownerVelocityRight = (rightHand.transform.position - player.transform.position - ownerLastPositionRight) / dt;
@@ -260,7 +279,7 @@ namespace ValheimVRMod.Scripts {
                 return;
             }
             var vr_data = zdo.GetByteArray("vr_data");
-            if (vr_data == null)
+            if (vr_data == null || !VRPosePacket.HasValidLength(vr_data.Length))
             {
                 return;
             }
@@ -435,7 +454,7 @@ namespace ValheimVRMod.Scripts {
 
         private static bool hasMoreData(ZPackage pkg)
         {
-            return pkg.m_reader.BaseStream.Position < pkg.GetArray().Length;
+            return pkg.m_reader.BaseStream.Position < pkg.m_reader.BaseStream.Length;
         }
 
         private static void updatePosition(GameObject obj, Vector3 position)
@@ -487,24 +506,27 @@ namespace ValheimVRMod.Scripts {
         }
         
         private void writeFingers(ZPackage pkg, Transform hand) {
-
+            int count = 0;
             for (int i = 0; i < hand.childCount; i++) {
 
                 var child = hand.GetChild(i);
 
                 if (FINGERS.Contains(child.name)) {
-                    writeFinger(pkg, child);
+                    writeFinger(pkg, child, ref count);
                 }
+            }
+            while (count++ < VRPosePacket.FingerRotationsPerHand) pkg.Write(Quaternion.identity);
+        }
+
+        private void writeFinger(ZPackage pkg, Transform finger, ref int count) {
+            if (count >= VRPosePacket.FingerRotationsPerHand) return;
+            pkg.Write(finger.localRotation);
+            count++;
+            if (finger.childCount > 0) {
+                writeFinger(pkg, finger.GetChild(0), ref count);
             }
         }
 
-        private void writeFinger(ZPackage pkg, Transform finger) {
-            pkg.Write(finger.localRotation);
-            if (finger.childCount > 0) {
-                writeFinger(pkg, finger.GetChild(0));
-            } 
-        }
-        
         private void readFingers(ZPackage pkg) {
 
             for (int i = 0; i < 20; i++) {
@@ -533,6 +555,7 @@ namespace ValheimVRMod.Scripts {
 
         private void applyFinger(Transform finger, Quaternion[] fingerRotations, ref int fingerCounter) {
             
+            if (fingerCounter >= fingerRotations.Length) return;
             finger.localRotation = fingerRotations[fingerCounter];
             fingerCounter++;
             if (finger.childCount > 0) {
