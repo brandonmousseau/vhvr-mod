@@ -80,6 +80,21 @@ namespace ValheimVRMod.Utilities
                     0, 0, 0,
                     0.07673188f,  0.8555415f, 0.02554126f
                 )}, {
+                "$item_spear_gold", WeaponColData.create( // Nord Spear
+                    0,  1.7f, 0,
+                    0,  0, 0,
+                    0.125f,  1.2f, 0.0625f
+                )}, {
+                "$item_spear_gold_bloodlightning", WeaponColData.create( // Thunderblood Spear
+                    0,  1.7f, 0,
+                    0,  0, 0,
+                    0.125f,  1.2f, 0.0625f
+                )}, {
+                "$item_spear_gold_frostfire", WeaponColData.create( // Frostfire Spear
+                    0,  1.7f, 0,
+                    0,  0, 0,
+                    0.125f,  1.2f, 0.0625f
+                )}, {
                 // Sledges
                 "$item_stagbreaker", WeaponColData.create(
                     0,  2.064f, 0,
@@ -285,8 +300,11 @@ namespace ValheimVRMod.Utilities
                 {
                     estimatedColliders[itemHash] = estimatedCollider;
                 }
-                LogUtils.LogDebug(
-                    "Estimated and registered collider for weapon " + itemHash + " " + item.m_shared.m_name + ": position " + estimatedCollider.pos + " scale " + estimatedCollider.scale);
+                LogUtils.LogInfo(
+                    "VHVR estimated collider for " + item.m_shared.m_name +
+                    " -- pos " + estimatedCollider.pos.ToString("F6") +
+                    " euler " + estimatedCollider.euler.ToString("F6") +
+                    " scale " + estimatedCollider.scale.ToString("F6"));
                 return estimatedCollider;
             }
 
