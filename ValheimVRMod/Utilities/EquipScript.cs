@@ -221,9 +221,12 @@ namespace ValheimVRMod.Utilities
             {
                 case "$item_lantern":
                     return EquipType.Lantern;
+                // Held and fired like a crossbow, whatever ammo type it uses.
+                case "$item_graplinghook":
+                    return EquipType.Crossbow;
             }
 
-            //LeftEquipment List 
+            //LeftEquipment List
             switch (item?.m_shared.m_itemType)
             {
                 case ItemDrop.ItemData.ItemType.Bow:

@@ -23,8 +23,29 @@ namespace ValheimVRMod.Scripts {
         {
             base.Awake();
 
-            var loaded = transform.Find("Loaded").gameObject;
-            var unloaded = transform.Find("Unloaded").gameObject;
+            // Vanilla swaps the loaded and unloaded meshes through WeaponLoadState, so prefer its references and only
+            // fall back to looking the children up by name: not every crossbow-like weapon (e.g. the grappling hook)
+            // is guaranteed to name them "Loaded" and "Unloaded", or to have them at all.
+            var weaponLoadState = GetComponentInChildren<WeaponLoadState>(true);
+            GameObject loaded = weaponLoadState != null ? weaponLoadState.m_loaded : null;
+            GameObject unloaded = weaponLoadState != null ? weaponLoadState.m_unloaded : null;
+            if (loaded == null)
+            {
+                loaded = transform.Find("Loaded")?.gameObject;
+            }
+            if (unloaded == null)
+            {
+                unloaded = transform.Find("Unloaded")?.gameObject;
+            }
+
+            if (unloaded == null)
+            {
+                LogUtils.LogWarning("Crossbow " + name + " has no unloaded mesh; bending and manual reload are unavailable for it.");
+                // Still attach the morph manager (inert without anatomy data) since the rest of the crossbow logic,
+                // including two-handed wield, relies on it being present.
+                crossbowMorphManager = gameObject.AddComponent<CrossbowMorphManager>();
+                return;
+            }
 
             // The mesh for the unloaded bow and and the mesh for the loaded bow are in two different child game objects.
             // We only need to use our custom bending animation on the unloaded one.
@@ -32,7 +53,10 @@ namespace ValheimVRMod.Scripts {
 
             // Some crossbows' vanilla loaded model is not completely aligned with the vanilla unloaded model,
             // Fix it here so that the crossbow stays in place when loading.
-            WeaponUtils.AlignLoadedMeshToUnloadedMesh(loaded, unloaded);
+            if (loaded != null)
+            {
+                WeaponUtils.AlignLoadedMeshToUnloadedMesh(loaded, unloaded);
+            }
         }
 
         protected override void OnRenderObject()
@@ -120,7 +144,11 @@ namespace ValheimVRMod.Scripts {
                 return false;
             }
 
-            if (!Player.m_localPlayer.IsWeaponLoaded())
+            // Vanilla only ever reports a weapon as loaded if its attack requires reloading, and only checks the loaded
+            // state for such weapons when starting the attack, so a crossbow-like weapon without reloading must not be
+            // held to it.
+            var weapon = Player.m_localPlayer.GetLeftItem();
+            if (weapon != null && weapon.m_shared.m_attack.m_requiresReload && !Player.m_localPlayer.IsWeaponLoaded())
             {
                 return false;
             }
