@@ -630,7 +630,7 @@ namespace ValheimVRMod.Scripts
             return true;
         }
 
-        private static bool isTerrain(GameObject target)
+        public static bool isTerrain(GameObject target)
         {
             return (target.GetComponentInParent<MineRock5>() == null ? target.transform : target.transform.parent).GetComponent<Heightmap>() != null;
         }
