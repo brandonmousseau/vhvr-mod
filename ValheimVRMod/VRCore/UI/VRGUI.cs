@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
+using ValheimVRMod.Patches;
 using ValheimVRMod.Utilities;
 using Valve.VR;
 using Valve.VR.Extras;
@@ -122,6 +123,9 @@ namespace ValheimVRMod.VRCore.UI
         private bool showingChatBox = false;
         private bool isAttachableToHandAsInventoryOrBuildMenu;
         private bool attachedToHand;
+        // Whether the panel was last detached from the hand because the SteamVR keyboard opened, and so
+        // should go back on the hand once the keyboard closes.
+        private bool reattachWhenKeyboardCloses;
 
         // Native handle to OpenVR overlay
         private ulong _overlay = OpenVR.k_ulOverlayHandleInvalid;
@@ -364,12 +368,17 @@ namespace ValheimVRMod.VRCore.UI
                 InventoryGui.IsVisible() && VHVRConfig.AttachInventoryToHand();
             bool attachableToHandAsBuildMenu = isBuildMenuOpen && VHVRConfig.AttachBuildMenuToHand();
             isAttachableToHandAsInventoryOrBuildMenu = attachableToHandAsInventory || attachableToHandAsBuildMenu;
+            if (!isAttachableToHandAsInventoryOrBuildMenu)
+            {
+                reattachWhenKeyboardCloses = false;
+            }
             if (attachedToHand)
             {
                 if (shouldInstantlyDetachPanelFromHand())
                 {
                     // Instantly reset UI to normal position
                     detachPanelFromHand(resetSize: true);
+                    reattachWhenKeyboardCloses = InputManager.keyboardActive;
                 }
                 else if (!isAttachableToHandAsInventoryOrBuildMenu)
                 {
@@ -377,7 +386,7 @@ namespace ValheimVRMod.VRCore.UI
                     detachPanelFromHand(resetSize: false);
                 }
             }
-            else if (!wasAttachableUI && isAttachableToHandAsInventoryOrBuildMenu && !shouldInstantlyDetachPanelFromHand())
+            else if ((!wasAttachableUI || reattachWhenKeyboardCloses) && isAttachableToHandAsInventoryOrBuildMenu && !shouldInstantlyDetachPanelFromHand())
             {
                 attachPanelToHand();
             }
@@ -480,6 +489,13 @@ namespace ValheimVRMod.VRCore.UI
 
         private bool shouldInstantlyDetachPanelFromHand()
         {
+            if (InputManager.keyboardActive)
+            {
+                // The SteamVR keyboard takes input focus, leaving the hands untracked and VRIK disabled until it
+                // closes, so a hand-attached panel would be stuck at hand size wherever the hand was last seen.
+                return true;
+            }
+
             if (Minimap.instance != null && Minimap.instance.m_mode == Minimap.MapMode.Large)
             {
                 return true;
@@ -501,6 +517,7 @@ namespace ValheimVRMod.VRCore.UI
         private void attachPanelToHand()
         {
             attachedToHand = true;
+            reattachWhenKeyboardCloses = false;
             _uiPanel.transform.localScale = desiredHandAttachedSize;
             // if (VHVRConfig.LeftHanded())
             // {
