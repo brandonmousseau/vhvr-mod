@@ -354,6 +354,11 @@ namespace ValheimVRMod.Utilities
 
         public static bool ShouldSkipAttackAnimation()
         {
+            if (Protector.instance != null)
+            {
+                // These staves are cast with the trigger rather than a gesture, so their animation plays in full.
+                return false;
+            }
             if (CurrentOffHandEquipType() == EquipType.Magic || CurrentMainHandEquipType() == EquipType.Magic)
             {
                 return SwingableStaffManager.instance != null && SwingableStaffManager.instance.UseSwingForCurrentAttack();
