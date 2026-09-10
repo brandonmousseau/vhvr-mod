@@ -324,6 +324,10 @@ namespace ValheimVRMod.Patches
             {
                 weaponWield = ___m_rightItemInstance.AddComponent<SpearWield>();
             }
+            else if (Protector.ITEM_NAMES.Contains(rightItemName))
+            {
+                weaponWield = ___m_rightItemInstance.AddComponent<Protector>();
+            }
             else if (EquipScript.CurrentMainHandEquipType() == EquipType.Magic && !isSwingableStaff)
             {
                 weaponWield = ___m_rightItemInstance.AddComponent<ShootingStaffManager>();
@@ -458,6 +462,12 @@ namespace ValheimVRMod.Patches
             {
                 StaticObjects.rightHandQuickMenu.GetComponent<RightHandQuickMenu>().refreshItems();
                 StaticObjects.leftHandQuickMenu.GetComponent<LeftHandQuickMenu>().refreshItems();
+            }
+
+            if (Protector.ITEM_NAMES.Contains(Player.m_localPlayer.GetLeftItem()?.m_shared?.m_name))
+            {
+                ___m_leftItemInstance.AddComponent<Protector>().Initialize(Player.m_localPlayer.GetLeftItem(), hash, isDominantHandWeapon: false);
+                return;
             }
 
             switch (EquipScript.CurrentOffHandEquipType())
