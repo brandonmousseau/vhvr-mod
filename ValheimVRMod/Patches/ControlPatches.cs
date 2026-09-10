@@ -851,10 +851,10 @@ namespace ValheimVRMod.Patches {
                             attack = false;
                             attackHold = false;
                         }
-                        var currentAnimatorClip = Player.m_localPlayer.m_animator.GetCurrentAnimatorClipInfo(0)?[0].clip;
-                        if (currentAnimatorClip?.name == "Bow Aim Recoil")
+                        var currentAnimatorClipInfo = Player.m_localPlayer.m_animator.GetCurrentAnimatorClipInfo(0)?[0];
+                        if (currentAnimatorClipInfo != null && ((AnimatorClipInfo)currentAnimatorClipInfo).clip?.name == "Bow Aim Recoil")
                         {
-                            timeEnd = currentAnimatorClip.length / PatchFixedUpdate.lastSpeedUp;
+                            timeEnd = ((AnimatorClipInfo)currentAnimatorClipInfo).clip.length / PatchFixedUpdate.lastSpeedUp;
                         }
                     }
                     
