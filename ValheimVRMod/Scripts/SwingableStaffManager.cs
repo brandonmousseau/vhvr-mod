@@ -6,12 +6,13 @@ using Valve.VR;
 namespace ValheimVRMod.Scripts
 {
     // Manages staves that can either swing-launch or aim-and-shoot their projectile
-    // (fireball, greenroots, clusterbomb, redtroll).
+    // (fireball, greenroots, clusterbomb, redtroll, echo spike, lightning strike, spirit caller).
     public class SwingableStaffManager : SwingLaunchManager, IMagicStaffManager
     {
         public static readonly HashSet<string> STAFF_NAMES =
             new HashSet<string>(new string[] {
-                "$item_stafffireball", "$item_staffgreenroots", "$item_staffclusterbomb", "$item_staffredtroll" });
+                "$item_stafffireball", "$item_staffgreenroots", "$item_staffclusterbomb", "$item_staffredtroll",
+                "$item_staff_orbofahri", "$item_staff_thunderblood", "$item_staff_spiritcaller" });
 
         public static SwingableStaffManager instance;
 

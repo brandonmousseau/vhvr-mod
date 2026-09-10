@@ -160,7 +160,8 @@ namespace ValheimVRMod.Patches {
                     aimDir = CrossbowManager.AimDir;
                     return false;
                 case EquipType.Magic:
-                    // The dead raiser is the only off-hand magic item; staves are main hand weapons.
+                    // Of the off-hand magic items only the dead raiser aims its projectile; the others (see
+                    // Protector) leave aiming to vanilla.
                     var deadRaiser = DeadRaiserManager.instance;
                     if (deadRaiser != null)
                     {

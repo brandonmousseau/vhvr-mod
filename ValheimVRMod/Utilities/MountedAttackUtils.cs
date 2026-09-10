@@ -39,6 +39,7 @@ namespace ValheimVRMod.Utilities
             var staff = MagicStaffManagers.Current;
             bool attemptingNonSwingAttack =
                 (DeadRaiserManager.instance != null && DeadRaiserManager.instance.ConsumeAttemptingAttack()) ||
+                (Protector.instance != null && Protector.instance.AttemptingAttack) ||
                 (staff != null && staff.AttemptingAttack &&
                  !(SwingableStaffManager.instance != null && SwingableStaffManager.instance.UseSwingForCurrentAttack()));
             if (attemptingNonSwingAttack)
