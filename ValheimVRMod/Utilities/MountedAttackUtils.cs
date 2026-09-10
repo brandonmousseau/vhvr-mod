@@ -47,9 +47,9 @@ namespace ValheimVRMod.Utilities
                 // Swing-launch attack is managed in SwingLaunchManager.
                 StartAttackIfRiding();
             }
-            else if (EquipScript.CurrentOffHandEquipType() == EquipType.Crossbow && CrossbowManager.IsPullingTrigger())
+            else if (EquipScript.CurrentOffHandEquipType() == EquipType.Crossbow && CrossbowManager.IsPullingTrigger(out bool useSecondaryAttack))
             {
-                StartAttackIfRiding(isSecondaryAttack: false, attackDrawPercentage: 1);
+                StartAttackIfRiding(isSecondaryAttack: useSecondaryAttack, attackDrawPercentage: 1);
             }
         }
 

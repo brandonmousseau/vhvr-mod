@@ -881,10 +881,17 @@ namespace ValheimVRMod.Patches {
                 attackHold = true;
             }
 
-            if (EquipScript.CurrentOffHandEquipType() == EquipType.Crossbow && CrossbowManager.IsPullingTrigger())
+            if (EquipScript.CurrentOffHandEquipType() == EquipType.Crossbow && CrossbowManager.IsPullingTrigger(out bool useSecondaryCrossbowAttack))
             {
-                attack = true;
-                attackHold = true;
+                if (useSecondaryCrossbowAttack)
+                {
+                    secondaryAttack = true;
+                }
+                else
+                {
+                    attack = true;
+                    attackHold = true;
+                }
             }
 
             switch (EquipScript.CurrentMainHandEquipType()) {

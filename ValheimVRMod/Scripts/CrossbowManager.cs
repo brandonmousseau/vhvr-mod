@@ -110,6 +110,36 @@ namespace ValheimVRMod.Scripts {
                 transform.position, transform.rotation * frontHandRotation);
         }
 
+        // The trigger of the hand that doesn't fire: the front hand when wielding two-handed, otherwise the hand
+        // holding the crossbow (the other hand's trigger fires it when wielding one-handed).
+        private SteamVR_Action_Boolean OtherHandTriggerAction
+        {
+            get
+            {
+                switch (twoHandedState)
+                {
+                    case TwoHandedState.LeftHandBehind:
+                        return SteamVR_Actions.valheim_Use;
+                    case TwoHandedState.RightHandBehind:
+                        return SteamVR_Actions.valheim_UseLeft;
+                    default:
+                        return VRPlayer.isRightHandMainWeaponHand ? SteamVR_Actions.valheim_UseLeft : SteamVR_Actions.valheim_Use;
+                }
+            }
+        }
+
+        void Update()
+        {
+            // Pressing the other hand's trigger releases a deployed grappling hook. This runs in Update rather than
+            // OnRenderObject, which may run several times per frame while the hook is only destroyed at its end.
+            if (GrapplingPoint.m_localGrappler != null &&
+                OtherHandTriggerAction.stateDown &&
+                EquipScript.IsGrapplingHook(Player.m_localPlayer.GetLeftItem()))
+            {
+                GrapplingPoint.m_localGrappler.Break(early: true);
+            }
+        }
+
         public static bool CanQueueReloadAction() {
             if (instance?.crossbowMorphManager != null)
             {
@@ -137,8 +167,10 @@ namespace ValheimVRMod.Scripts {
             return crossbowMorphManager.isPulling || crossbowMorphManager.IsHandClosePullStart();
         }
 
-        public static bool IsPullingTrigger()
+        // useSecondaryAttack reports whether the pull should fire the weapon's secondary attack instead of its primary one.
+        public static bool IsPullingTrigger(out bool useSecondaryAttack)
         {
+            useSecondaryAttack = false;
             if (instance == null)
             {
                 return false;
@@ -177,6 +209,13 @@ namespace ValheimVRMod.Scripts {
             {
                 Player.m_localPlayer.ResetLoadedWeapon();
                 return false;
+            }
+
+            if (isPullingTrigger && EquipScript.IsGrapplingHook(weapon) && !string.IsNullOrEmpty(weapon.m_shared.m_secondaryAttack?.m_attackAnimation))
+            {
+                // In VR the hook stays deployed by default (vanilla's secondary attack); holding the other hand's
+                // trigger while firing shoots and retracts instead (vanilla's primary attack).
+                useSecondaryAttack = !instance.OtherHandTriggerAction.state;
             }
             
             return isPullingTrigger;

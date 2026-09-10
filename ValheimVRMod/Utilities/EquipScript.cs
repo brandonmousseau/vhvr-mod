@@ -25,6 +25,7 @@ namespace ValheimVRMod.Utilities
 
     public static class EquipScript
     {
+        private const string GRAPPLING_HOOK_NAME = "$item_graplinghook";
 
         public readonly static HashSet<ItemDrop.ItemData.ItemType> MainHandItemTypes =
             new HashSet<ItemDrop.ItemData.ItemType>(
@@ -222,7 +223,7 @@ namespace ValheimVRMod.Utilities
                 case "$item_lantern":
                     return EquipType.Lantern;
                 // Held and fired like a crossbow, whatever ammo type it uses.
-                case "$item_graplinghook":
+                case GRAPPLING_HOOK_NAME:
                     return EquipType.Crossbow;
             }
 
@@ -353,6 +354,11 @@ namespace ValheimVRMod.Utilities
         public static bool IsDundr(ItemDrop.ItemData item)
         {
             return item?.m_shared?.m_name == "$item_staff_lightning";
+        }
+
+        public static bool IsGrapplingHook(ItemDrop.ItemData item)
+        {
+            return item?.m_shared?.m_name == GRAPPLING_HOOK_NAME;
         }
 
         public static bool ShouldSkipAttackAnimation()
