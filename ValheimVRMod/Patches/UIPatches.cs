@@ -831,6 +831,24 @@ namespace ValheimVRMod.Patches
         }
     }
 
+    // The VHVR settings dialog is a clone of the vanilla Settings object, so its Awake overwrites
+    // the static Settings.m_instance singleton. createModSettings() then destroys the clone's tab
+    // buttons and their key hints, which is what Settings.m_tabKeyHints points at. ZInput.ChangeLayout()
+    // reaches OnInputLayoutChanged() through that hijacked singleton (the vanilla gamepad settings tab
+    // triggers it on back), where SetActive() on the destroyed hints throws. The clone has no vanilla
+    // tabs to update anyway, so skip it.
+    [HarmonyPatch(typeof(Settings), "OnInputLayoutChanged")]
+    class PatchSettingsOnInputLayoutChanged
+    {
+        public static bool Prefix(Settings __instance)
+        {
+            // Destroying the clone does not clear Settings.m_instance, so the singleton can still
+            // hold a destroyed one. Unity reports that as null while the managed call still lands
+            // here, and GetComponentInParent() below would throw on it, so check for it first.
+            return __instance != null && !ConfigSettings.isVHVRClone(__instance);
+        }
+    }
+
     [HarmonyPatch(typeof(HotkeyBar), nameof(HotkeyBar.Update))]
     class HotkeyBarHidePatch
     {
@@ -1016,8 +1034,25 @@ namespace ValheimVRMod.Patches
             {
                 return;
             }
-            mousePos = SoftwareCursor.ScaledMouseVector();
-            return;
+            // Minimap.ScreenToWorldPoint resolves the point with a null camera, which makes it treat
+            // mousePos as raw world coordinates rather than screen coordinates. Project the cursor onto
+            // the map rect through the canvas camera and hand over the resulting world point, so the
+            // click lands under the cursor no matter how the window resolution, the captured screen size
+            // and the configured UI panel resolution relate to each other.
+            RectTransform mapRect = __instance.m_mapImageLarge.transform as RectTransform;
+            Canvas canvas = mapRect == null ? null : mapRect.GetComponentInParent<Canvas>();
+            Camera camera = canvas == null ? null : canvas.rootCanvas.worldCamera;
+            if (camera == null)
+            {
+                mousePos = SoftwareCursor.ScaledMouseVector();
+                return;
+            }
+            Vector3 worldPoint;
+            if (RectTransformUtility.ScreenPointToWorldPointInRectangle(
+                mapRect, SoftwareCursor.simulatedMousePosition, camera, out worldPoint))
+            {
+                mousePos = worldPoint;
+            }
         }
     }
 
@@ -1090,13 +1125,39 @@ namespace ValheimVRMod.Patches
                     UITooltip.HideTooltip();
                     return false;
                 }
-                if (!RectTransformUtility.RectangleContainsScreenPoint(UITooltip.m_hovered.transform as RectTransform, SoftwareCursor.ScaledMouseVector()))
+                if (!CursorIsWithinHovered(UITooltip.m_hovered))
                 {
-                    UITooltip.HideTooltip();
+                    // Deliberately not HideTooltip(): that clears m_current, and Unity fires no new
+                    // OnPointerEnter while the pointer stays within the same element, so the tooltip
+                    // could never re-appear. Reset instead so it re-arms when the cursor comes back.
+                    __instance.m_showTimer = 0f;
+                    UITooltip.m_tooltip.SetActive(false);
                     return false;
                 }
                 UITooltip.m_tooltip.transform.position = SoftwareCursor.ScaledMouseVector();
                 Utils.ClampUIToScreen(UITooltip.m_tooltip.transform.GetChild(0).transform as RectTransform);
+            }
+            return false;
+        }
+
+        // Tested against the canvas camera and the same cursor value that Input.mousePosition is
+        // patched to return, so this agrees with the hover the EventSystem itself resolved. Passing
+        // no camera instead compares against raw world coordinates, which only lines up when the
+        // canvas position, the captured screen size and the UI panel resolution all coincide.
+        // The UITooltip component is also not necessarily on the object whose rect covers the
+        // visible hover area, so accept the cursor being over any rect below it.
+        private static bool CursorIsWithinHovered(GameObject hovered)
+        {
+            var canvas = hovered.GetComponentInParent<Canvas>();
+            var camera = canvas == null ? null : canvas.rootCanvas.worldCamera;
+            foreach (var rectTransform in hovered.GetComponentsInChildren<RectTransform>())
+            {
+                if (rectTransform != null &&
+                    RectTransformUtility.RectangleContainsScreenPoint(
+                        rectTransform, SoftwareCursor.simulatedMousePosition, camera))
+                {
+                    return true;
+                }
             }
             return false;
         }

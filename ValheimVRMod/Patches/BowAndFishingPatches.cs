@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -21,12 +21,12 @@ namespace ValheimVRMod.Patches {
                 return true;
             }
 
-            if (EquipScript.getLeft() == EquipType.Bow && VHVRConfig.RestrictBowDrawSpeed() == "None") {
+            if (EquipScript.CurrentOffHandEquipType() == EquipType.Bow && VHVRConfig.RestrictBowDrawSpeed() == "None") {
                 __result = BowLocalManager.instance.GetAttackPercentage();
                 return false;
             }
 
-            if (EquipScript.getRight() == EquipType.Fishing) {
+            if (EquipScript.CurrentMainHandEquipType() == EquipType.Fishing) {
                 __result = FishingManager.attackDrawPercentage;
                 return false;
             }
@@ -39,7 +39,7 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
-            if (EquipScript.getLeft() != EquipType.Bow || VHVRConfig.RestrictBowDrawSpeed() == "None" || BowLocalManager.instance == null)
+            if (EquipScript.CurrentOffHandEquipType() != EquipType.Bow || VHVRConfig.RestrictBowDrawSpeed() == "None" || BowLocalManager.instance == null)
             {
                 return;
             }
@@ -68,7 +68,7 @@ namespace ValheimVRMod.Patches {
                 return;
             }
             
-            if (EquipScript.getLeft() == EquipType.Crossbow && CrossbowMorphManager.instance != null)
+            if (EquipScript.CurrentOffHandEquipType() == EquipType.Crossbow && CrossbowMorphManager.instance != null)
             {
                 CrossbowMorphManager.instance.UpdateWeaponLoading(__instance, dt);
             }
@@ -88,7 +88,7 @@ namespace ValheimVRMod.Patches {
                 return true;
             }
 
-            if (EquipScript.getLeft() == EquipType.Crossbow)
+            if (EquipScript.CurrentOffHandEquipType() == EquipType.Crossbow)
             {
                 return CrossbowManager.CanQueueReloadAction();
             }
@@ -98,7 +98,7 @@ namespace ValheimVRMod.Patches {
                 return true;
             }
 
-            if (EquipScript.isDundrEquipped())
+            if (EquipScript.IsDundrEquipped())
             {
                 if (!LocalWeaponWield.isCurrentlyTwoHanded())
                 {
@@ -127,7 +127,7 @@ namespace ValheimVRMod.Patches {
             if (__result &&
                 __instance.m_character == Player.m_localPlayer &&
                 VHVRConfig.UseVrControls() &&
-                EquipScript.getLeft() == EquipType.Crossbow &&
+                EquipScript.CurrentOffHandEquipType() == EquipType.Crossbow &&
                 CrossbowMorphManager.instance != null &&
                 !CrossbowMorphManager.instance.shouldAutoReload)
             {
@@ -150,7 +150,7 @@ namespace ValheimVRMod.Patches {
                 return true;
             }
 
-            switch(EquipScript.getLeft()) { 
+            switch(EquipScript.CurrentOffHandEquipType()) { 
                 case EquipType.Bow: 
                     spawnPoint = BowLocalManager.spawnPoint;
                     aimDir = BowLocalManager.aimDir;
@@ -160,12 +160,18 @@ namespace ValheimVRMod.Patches {
                     aimDir = CrossbowManager.AimDir;
                     return false;
                 case EquipType.Magic:
-                    spawnPoint = MagicWeaponManager.GetProjectileSpawnPoint(__instance);
-                    aimDir = MagicWeaponManager.AimDir;
-                    return false;
+                    // The dead raiser is the only off-hand magic item; staves are main hand weapons.
+                    var deadRaiser = DeadRaiserManager.instance;
+                    if (deadRaiser != null)
+                    {
+                        spawnPoint = deadRaiser.GetProjectileSpawnPoint(__instance);
+                        aimDir = deadRaiser.AimDir;
+                        return false;
+                    }
+                    break;
             }
-            
-            switch (EquipScript.getRight()) {
+
+            switch (EquipScript.CurrentMainHandEquipType()) {
 
                 case EquipType.Fishing:
                     spawnPoint = FishingManager.spawnPoint;
@@ -175,11 +181,19 @@ namespace ValheimVRMod.Patches {
                 case EquipType.SpearChitin:
                 case EquipType.ThrowObject:
                     spawnPoint = ThrowableManager.spawnPoint;
-                    aimDir = ThrowableManager.aimDir.normalized * ThrowableManager.throwSpeed;
+                    aimDir =
+                        ThrowableManager.aimDir.normalized *
+                        WeaponUtils.GetThrowLaunchSpeed(
+                            ___m_character.GetRightItem(), ThrowableManager.throwSpeed);
                     return false;
                 case EquipType.Magic:
-                    spawnPoint = MagicWeaponManager.GetProjectileSpawnPoint(__instance);
-                    aimDir = MagicWeaponManager.AimDir;
+                    var staff = MagicStaffManagers.Current;
+                    if (staff == null)
+                    {
+                        return true;
+                    }
+                    spawnPoint = staff.GetProjectileSpawnPoint(__instance);
+                    aimDir = staff.AimDir;
                     return false;
                 case EquipType.RuneSkyheim:
                     spawnPoint = VRPlayer.rightHand.transform.position;
@@ -187,7 +201,7 @@ namespace ValheimVRMod.Patches {
                     return false;
             }
 
-            if (EquipScript.isThrowable(___m_character.GetRightItem()))
+            if (EquipScript.IsThrowable(___m_character.GetRightItem()))
             {
                 spawnPoint = ThrowableManager.spawnPoint;
                 aimDir = ThrowableManager.aimDir;
@@ -225,7 +239,7 @@ namespace ValheimVRMod.Patches {
             __instance.m_useCharacterFacing = false;
             __instance.m_launchAngle = 0;
 
-            if (VHVRConfig.RestrictBowDrawSpeed() == "None" || EquipScript.getLeft() != EquipType.Bow)
+            if (VHVRConfig.RestrictBowDrawSpeed() == "None" || EquipScript.CurrentOffHandEquipType() != EquipType.Bow)
             {
                 __instance.m_projectileAccuracyMin = 0;
                 if (___m_ammoItem != null)
@@ -324,7 +338,7 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
-            if (EquipScript.getLeft() == EquipType.Crossbow || EquipScript.isDundrEquipped())
+            if (EquipScript.CurrentOffHandEquipType() == EquipType.Crossbow || EquipScript.IsDundrEquipped())
             {
                 recoilPushback = __instance.m_recoilPushback;
                 __instance.m_recoilPushback = 0f;
@@ -343,14 +357,14 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
-            if (EquipScript.getLeft() == EquipType.Crossbow)
+            if (EquipScript.CurrentOffHandEquipType() == EquipType.Crossbow)
             {
                 __instance.m_character.ApplyPushback(-CrossbowManager.AimDir, recoilPushback);
                 recoilPushback = 0f;
             }
-            else if (EquipScript.isDundrEquipped())
+            else if (EquipScript.IsDundrEquipped())
             {
-                __instance.m_character.ApplyPushback(-MagicWeaponManager.AimDir, recoilPushback);
+                __instance.m_character.ApplyPushback(-ShootingStaffManager.instance.AimDir, recoilPushback);
                 recoilPushback = 0f;
             }
         }

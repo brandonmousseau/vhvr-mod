@@ -18,6 +18,9 @@ namespace ValheimVRMod.Scripts
         public static Vector3 spawnPoint { get; private set; }
         public static Vector3 aimDir { get; private set; }
         public static float throwSpeed { get; private set; }
+        // Raw hand speed along the throw direction in m/s, before normalization into throwSpeed.
+        // WeaponUtils.GetThrowLaunchSpeed() turns this into an absolute launch speed.
+        public static float handSpeed { get; private set; }
         public static Vector3 startAim { get; private set; }
         public static bool isThrowing;
         public static bool isAiming { get; private set; }
@@ -213,7 +216,7 @@ namespace ValheimVRMod.Scripts
             if (throwing.Distance > minDist)
             {
                 throwSpeed = throwing.ThrowSpeed;
-                if (MountedAttackUtils.StartAttackIfRiding(isSecondaryAttack: EquipScript.getRight() == EquipType.Spear))
+                if (MountedAttackUtils.StartAttackIfRiding(isSecondaryAttack: EquipScript.CurrentMainHandEquipType() == EquipType.Spear))
                 {
                     ResetSpearOffset();
                 }
@@ -222,7 +225,7 @@ namespace ValheimVRMod.Scripts
                     // Let control patches and vanilla game handle attack if the player is not riding.
                     isThrowing = true;
                 }
-                if (EquipScript.getRight() == EquipType.SpearChitin)
+                if (EquipScript.CurrentMainHandEquipType() == EquipType.SpearChitin)
                 {
                     GetComponentInParent<SpearWield>().HideHarpoon();
                 }
@@ -240,7 +243,7 @@ namespace ValheimVRMod.Scripts
             isAiming = false;
             ShieldBlock.instance?.ScaleShieldSize(1f);
 
-            if (!EquipScript.isSpearEquipped())
+            if (!EquipScript.IsSpearEquipped())
             {
                 return;
             }
@@ -284,6 +287,8 @@ namespace ValheimVRMod.Scripts
                         direction, WeaponUtils.GetWeaponVelocity(handPhysicsEstimator.GetVelocity(), angularVelocity, handTipOffset)),
                     Vector3.Dot(
                         direction, WeaponUtils.GetWeaponVelocity(handPhysicsEstimator.GetAverageVelocityInSnapshots(), angularVelocity, handTipOffset)));
+
+            handSpeed = Mathf.Max(throwSpeed, 0);
 
             if (throwSpeed < VHVRConfig.FullThrowSpeed())
             {

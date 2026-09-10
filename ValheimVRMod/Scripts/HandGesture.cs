@@ -34,7 +34,7 @@ namespace ValheimVRMod.Scripts {
                 return false;
             }
 
-            switch (EquipScript.getRight())
+            switch (EquipScript.CurrentMainHandEquipType())
             {
                 case EquipType.Bow:
                     if (BowLocalManager.instance != null && BowLocalManager.instance.isHoldingArrow())
@@ -65,7 +65,7 @@ namespace ValheimVRMod.Scripts {
 
         private bool areFingersFree()
         {
-            if (EquipScript.getLeft() == EquipType.Crossbow)
+            if (EquipScript.CurrentOffHandEquipType() == EquipType.Crossbow)
             {
                 if (CrossbowMorphManager.instance != null)
                 {

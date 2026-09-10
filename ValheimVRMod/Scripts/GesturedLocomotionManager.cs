@@ -12,7 +12,7 @@ namespace ValheimVRMod.Scripts
         private const float WATER_SPEED_CHANGE_DAMPER = 1f;
         private const float AIR_SPEED_CHANGE_DAMPER = 0.25f;
         private const float RUN_ACITIVATION_SPEED = 1.75f;
-        private const float GROUND_RUN_DEACTIVATION_SPEED = 1.125f;
+        private const float GROUND_RUN_DEACTIVATION_SPEED = 0.75f;
         private const float AIR_RUN_DEACTIVATION_SPEED = 0.125f;
         private const float MIN_WATER_SPEED = 0.0625f;
 
@@ -215,8 +215,22 @@ namespace ValheimVRMod.Scripts
 
         class GesturedJump : GesturedLocomotion
         {
+            private float lastNonJumpHeight = 0;
+
             public override Vector3 GetTargetVelocityFromGestures(Player player, float deltaTime)
             {
+                var height = Valve.VR.InteractionSystem.Player.instance.eyeHeight;
+                var verticalSpeed = Vector3.Dot(VRPlayer.headPhysicsEstimator.GetVelocity(), upDirection.Value);
+                if (verticalSpeed < 1)
+                {
+                    lastNonJumpHeight = height;
+                }
+                if (verticalSpeed < VHVRConfig.GesturedJumpMinSpeed())
+                {
+                    lastNonJumpHeight = height;
+                    return Vector3.zero;
+                }
+
                 if (!VHVRConfig.IsGesturedJumpEnabled() || IsInAir(player))
                 {
                     return Vector3.zero;
@@ -227,25 +241,21 @@ namespace ValheimVRMod.Scripts
                     return Vector3.zero;
                 }
 
-                var height = Valve.VR.InteractionSystem.Player.instance.eyeHeight;
-                if (height < VRPlayer.referencePlayerHeight * VHVRConfig.GesturedJumpPreparationHeight())
+                var jumpPrepHeight = VRPlayer.referencePlayerHeight * VHVRConfig.GesturedJumpPreparationHeight();
+                var instantJumpHeight =
+                    VRPlayer.referencePlayerHeight * (2 - VHVRConfig.GesturedJumpPreparationHeight());
+
+                if (height < jumpPrepHeight)
                 {
+                    // Too low, cannot jump
                     return Vector3.zero;
                 }
 
-                var verticalSpeed = Vector3.Dot(VRPlayer.headPhysicsEstimator.GetVelocity(), upDirection.Value);
-                if (verticalSpeed < VHVRConfig.GesturedJumpMinSpeed())
-                {
+                if (height < instantJumpHeight && lastNonJumpHeight < jumpPrepHeight) {
+                    // Likely standing up from crouching, do not jump
                     return Vector3.zero;
                 }
 
-                var verticalAcceleration = Vector3.Dot(VRPlayer.headPhysicsEstimator.GetAcceleration(), upDirection.Value);
-                if (verticalAcceleration < VHVRConfig.GesturedJumpMinSpeed() * 8) // TODO: consider adding an option for min acceleration.
-                {
-                    return Vector3.zero;
-                }
-
-                LogUtils.LogInfo("Gestured jump at speed " + verticalSpeed + " and acceleration " + verticalAcceleration);
                 return upDirection.Value * verticalSpeed;
             }
         }
@@ -721,7 +731,7 @@ namespace ValheimVRMod.Scripts
                 Vector3 feetToHead = (vrCam.transform.position - feet).normalized;
 
                 if (Vector3.Dot(feetToHead, upDirection.Value) < 0.25f || 
-                    Vector3.Dot(VRPlayer.pelvis.position - feet, upDirection.Value) < 0.125f)
+                    Vector3.Dot(VRPlayer.trackedPelvis.position - feet, upDirection.Value) < 0.125f)
                 {
                     // Supine, stop walking
                     pace = Pace.STOP;
@@ -890,7 +900,7 @@ namespace ValheimVRMod.Scripts
 
             public override Vector3 GetTargetVelocityFromGestures(Player player, float deltaTime)
             {
-                if (!VHVRConfig.IsGesturedJumpEnabled() ||
+                if (!VHVRConfig.IsGesturedSwimEnabled() ||
                     player.IsAttached() ||
                     player.InDodge() ||
                     player.m_queuedDodgeTimer > 0 ||

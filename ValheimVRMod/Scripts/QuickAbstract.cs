@@ -46,8 +46,8 @@ namespace ValheimVRMod.Scripts
         private Texture2D mapTexture;
         private Texture2D recenterTexture;
         private Texture2D chatTexture;
-        public static bool toggleMap;
         public static bool shouldStartChat;
+        private static float? toggleMapHoldCountdown;
 
         protected virtual void Awake()
         {
@@ -195,6 +195,16 @@ namespace ValheimVRMod.Scripts
 
         private void Update()
         {
+            if (toggleMapHoldCountdown.HasValue)
+            {
+                toggleMapHoldCountdown -= Time.deltaTime;
+                if (toggleMapHoldCountdown <= 0)
+                {
+                    toggleMapHoldCountdown = null;
+                    GetButtonPatchUtils.Release("Map");
+                }
+            }
+
             if (!quickMenuLocker)
             {
                 resetQuickMenuLocker();
@@ -514,7 +524,7 @@ namespace ValheimVRMod.Scripts
                     {
                         continue;
                     }
-                    if (VHVRConfig.SplitQuickMenuRadialItemsByWieldingHand() && EquipScript.IsDominantHandItem(item) ^ isDominantHand) {
+                    if (VHVRConfig.SplitQuickMenuRadialItemsByWieldingHand() && EquipScript.CanUseAsMainHandItem(item) ^ isDominantHand) {
                         continue;
                     }
                     elements[elementCount].useAsInventoryItemAndRefreshColor(inventory, item);
@@ -609,7 +619,8 @@ namespace ValheimVRMod.Scripts
                     Sprite.Create(mapTexture, new Rect(0.0f, 0.0f, mapTexture.width, mapTexture.height), new Vector2(0.5f, 0.5f), 500),
                     delegate ()
                     {
-                        toggleMap = true;
+                        GetButtonPatchUtils.Press("Map");
+                        toggleMapHoldCountdown = 0.25f;
                         return true;
                     });
             }
@@ -635,11 +646,14 @@ namespace ValheimVRMod.Scripts
                     Sprite.Create(chatTexture, new Rect(0.0f, 0.0f, chatTexture.width, chatTexture.height), new Vector2(0.5f, 0.5f), 500),
                     delegate ()
                     {
-                        if (shouldStartChat && Chat.instance.HasFocus())
+                        // While the SteamVR keyboard is driving chat input, leave it to close/
+                        // submit via its own keyboard-closed event instead of treating a repeat
+                        // press of this quick action as the physical-keyboard "confirm" gesture.
+                        if (shouldStartChat && Chat.instance.HasFocus() && !InputManager.chatKeyboardActive)
                         {
                             enterChatText();
                         }
-                        else
+                        else if (!InputManager.chatKeyboardActive)
                         {
                             shouldStartChat = true;
                             if (SteamVR_Actions.valheim_Use.GetState(SteamVR_Input_Sources.Any) ||
@@ -649,9 +663,13 @@ namespace ValheimVRMod.Scripts
                             }
                             else
                             {
-                                // Use SteamVR virtual keyboard to chat
+                                // Use SteamVR virtual keyboard to chat. Also open the vanilla chat
+                                // window (as the physical-keyboard branch above does) purely for
+                                // visual feedback - InputManager mirrors each keystroke from the
+                                // SteamVR keyboard into Chat.instance.m_input as it arrives, and the
+                                // window is closed again once the SteamVR keyboard closes.
+                                ZInput_GetButtonDown_Patch.EmulateButtonDown("Chat");
                                 TextInput.m_instance.Show("ChatText", "", 256);
-                                TextInput.m_instance.m_panel.gameObject.transform.localScale = new Vector3(0, 0, 0);
                             }
                         }
                         return true;

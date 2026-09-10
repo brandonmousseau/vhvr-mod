@@ -5,7 +5,7 @@ using NDesk.Options;
 using Unity.XR.OpenVR;
 using ValheimVRMod.VRCore;
 using UnityEngine;
-using XGamingRuntime;
+using ValheimVRMod.VRCore.UI;
 
 namespace ValheimVRMod.Utilities
 {
@@ -68,7 +68,6 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<string> QuickMenuRadialItemDistribution;
         private static ConfigEntry<string> QuickMenuType;
         private static ConfigEntry<int> QuickMenuVerticalAngle;
-        private static ConfigEntry<bool> QuickMenuClassicSeperate;
         private static ConfigEntry<bool> lockGuiWhileInventoryOpen;
         private static ConfigEntry<bool> autoOpenKeyboardOnInteract;
 
@@ -84,6 +83,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<string> healthPanelPlacement;
         private static ConfigEntry<string> staminaPanelPlacement;
         private static ConfigEntry<string> eitrPanelPlacement;
+        private static ConfigEntry<string> adrenalinePanelPlacement;
         private static ConfigEntry<string> staggerPanelPlacement;
         private static ConfigEntry<string> minimapPanelPlacement;
         private static ConfigEntry<bool> allowHudFade;
@@ -96,6 +96,9 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<Quaternion> leftWristQuickBarRot;
         private static ConfigEntry<bool> quickActionOnLeftHand;
         private static ConfigEntry<int> quickBarQuantity;
+
+        private static ConfigEntry<bool> attachInventoryToHand;
+        private static ConfigEntry<bool> attachBuildMenuToHand;
 
         // Controls Settings
         private static ConfigEntry<string> joystickForwardDirection;
@@ -132,6 +135,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<string> buildAngleSnap;
         private static ConfigEntry<float> smoothTurnSpeed;
         private static ConfigEntry<bool> invertXAxis;
+        private static ConfigEntry<string> groqApiKey;
 
         // Graphics Settings
         private static ConfigEntry<bool> useAmplifyOcclusion;
@@ -453,11 +457,12 @@ namespace ValheimVRMod.Utilities
                                       3f,
                                       new ConfigDescription("Size for the UI panel display (non-Overlay GUI).",
                                       new AcceptableValueRange<float>(0.5f, 15f)));
-
+            uiPanelSize.SettingChanged += (sender, e) => VRGUI.UpdateUIPanelSize();
             uiPanelResolution = config.Bind("UI",
                                       "UIPanelResolution",
                                       new Vector2(1920, 1080),
                                       new ConfigDescription("The resolution of the UI Panel display (non-Overlay GUI), Use above 1300 width and 940 height for no crop/clipping for vanilla ui, need restart to update"));
+            uiPanelResolution.SettingChanged += (sender, e) => VRGUI.UpdateUIPanelSize();
             uiPanelResolutionCompat = config.Bind("UI",
                                       "UIPanelResolutionCompatibility",
                                       false,
@@ -467,11 +472,13 @@ namespace ValheimVRMod.Utilities
                                       3f,
                                       new ConfigDescription("Distance to draw the UI panel at.",
                                       new AcceptableValueRange<float>(0.5f, 15f)));
+            uiPanelDistance.SettingChanged += (sender, e) => VRGUI.UpdateUIPanelSize();
             uiPanelVerticalOffset = config.Bind("UI",
                                       "UIPanelVerticalOffset",
                                       1f,
                                       new ConfigDescription("Height the UI Panel will be drawn.",
                                       new AcceptableValueRange<float>(-0.5f, 3f)));
+            uiPanelVerticalOffset.SettingChanged += (sender, e) => VRGUI.UpdateUIPanelSize();
             showStaticCrosshair = config.Bind("UI",
                                    "ShowStaticCrosshair",
                                    true,
@@ -597,6 +604,11 @@ namespace ValheimVRMod.Utilities
                                             "CameraLocked",
                                             new ConfigDescription("Where should the eitr panel be placed?",
                                                 new AcceptableValueList<string>(k_HudAlignmentValues)));
+            adrenalinePanelPlacement = config.Bind("VRHUD",
+                                            "AdrenalinePanelPlacement",
+                                            "CameraLocked",
+                                            new ConfigDescription("Where should the Adrenaline panel be placed?",
+                                                new AcceptableValueList<string>(k_HudAlignmentValues)));
             staggerPanelPlacement = config.Bind("VRHUD",
                                             "StaggerPanelPlacement",
                                             "CameraLocked",
@@ -644,6 +656,15 @@ namespace ValheimVRMod.Utilities
                                         4,
                                         new ConfigDescription("Number of Quick switch bar that registered, count is from the right to left, but still sorted from left to right",
                                                 new AcceptableValueRange<int>(0, 8)));
+            attachInventoryToHand = config.Bind("VRHUD",
+                                        "AttachInventoryToHand",
+                                        true,
+                                        "Whether UI panel should be attached to hand when inventory GUI is open");
+            attachBuildMenuToHand = config.Bind("VRHUD",
+                                        "AttachBuildMenuToHand",
+                                        true,
+                                        "Whether UI panel should be attached to hand when build menu is open");
+
         }
 
         private static void InitializeControlsSettings()
@@ -759,6 +780,11 @@ namespace ValheimVRMod.Utilities
                                         "InvertTurnDirection",
                                         false,
                                         "Some people experience an issue where the right joystick turns the player the opposite direction as expected. Setting this will reverse the turn direction.");
+            groqApiKey = config.Bind(
+                "Controls",
+                "GroqApiKey",
+                "",
+                "Groq API key for voice-to-text transcription (obtained by applying on Groq website)");
             InitializeConfigurableKeyBindings(config);
         }
 
@@ -980,7 +1006,7 @@ namespace ValheimVRMod.Utilities
                                          "BuildAngleSnap",
                                          "26, 22.5, 10, 5, 2.5, 1, 0.5, 0.1, 0.05, 0.01",
                                          "List of Build angle snap for advance rotation mode");
-            
+
             #if DEBUG
             DebugPosX = config.Bind("Motion Control",
                 "DebugPosX",
@@ -1559,6 +1585,11 @@ namespace ValheimVRMod.Utilities
             return viewTurnWithMountedAnimal.Value;
         }
 
+        public static string GroqApiKey()
+        {
+            return groqApiKey.Value;
+        }
+
         public static float ArrowParticleSize()
         {
             return arrowParticleSize.Value;
@@ -1567,6 +1598,7 @@ namespace ValheimVRMod.Utilities
         {
             return fullThrowSpeed.Value;
         }
+
         public static bool SpearInverseWield()
         {
             return spearInverseWield.Value;
@@ -1698,6 +1730,10 @@ namespace ValheimVRMod.Utilities
         {
             return staminaPanelPlacement.Value;
         }
+        public static string AdrenalinePanelPlacement()
+        {
+            return adrenalinePanelPlacement.Value;
+        }
 
         public static string EitrPanelPlacement()
         {
@@ -1788,6 +1824,16 @@ namespace ValheimVRMod.Utilities
                 return (int)quickBarQuantity.DefaultValue;
             }
             return quickBarQuantity.Value;
+        }
+
+        public static bool AttachInventoryToHand()
+        {
+            return attachInventoryToHand.Value;
+        }
+
+        public static bool AttachBuildMenuToHand()
+        {
+            return attachBuildMenuToHand.Value;
         }
 
         public static bool LockGuiWhileMenuOpen()

@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using ValheimVRMod.VRCore;
 using ValheimVRMod.VRCore.UI;
 using HarmonyLib;
@@ -202,41 +202,71 @@ namespace ValheimVRMod.Patches {
     {
         private static MethodInfo IsGamepadActive =
              AccessTools.Method(typeof(ZInput), nameof(ZInput.IsGamepadActive));
+        private static MethodInfo IsMouseActive =
+             AccessTools.Method(typeof(ZInput), nameof(ZInput.IsMouseActive));
+
+        private static bool UsingVrControls()
+        {
+            return !VHVRConfig.NonVrPlayer() && VHVRConfig.UseVrControls();
+        }
 
         private static bool IsGamepadActivePatched()
         {
-            if (VHVRConfig.NonVrPlayer() || !VHVRConfig.UseVrControls())
-            {
-                return ZInput.IsGamepadActive();
-            }
-
             // Make the vanilla game believe that the gamepad is active so that it will use ZInput.GetJoyRightStickX() which we patch to turn the player left/right.
-            return true;
+            return UsingVrControls() || ZInput.IsGamepadActive();
+        }
+
+        private static bool IsMouseActivePatched()
+        {
+            // The look-input branch only falls through to the gamepad right stick when the mouse is
+            // inactive. A VR player's input source is still KeyboardMouse, so without this the right
+            // stick is never read and thumbstick turning does nothing.
+            return !UsingVrControls() && ZInput.IsMouseActive();
         }
 
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
-            var original = new List<CodeInstruction>(instructions);
-            var patched = new List<CodeInstruction>();
-            foreach (var instruction in original)
+            var gamepadReplacement =
+                AccessTools.Method(
+                    typeof(PlayerController_LateUpdate_Patch), nameof(IsGamepadActivePatched));
+            var mouseReplacement =
+                AccessTools.Method(
+                    typeof(PlayerController_LateUpdate_Patch), nameof(IsMouseActivePatched));
+            // Only the look-input branch should be redirected. The earlier ZInput.IsGamepadActive()
+            // call guards the take-input-delay early return and must keep its vanilla meaning,
+            // otherwise the delay would suppress turning for VR players only. The mouse check marks
+            // the start of the look-input branch, so patch gamepad checks after it.
+            bool inLookInputBranch = false;
+            int patchedCount = 0;
+            foreach (var instruction in instructions)
             {
-                if (instruction.Calls(IsGamepadActive))
+                if (instruction.Calls(IsMouseActive))
                 {
-                    patched.Add(
-                        CodeInstruction.Call(typeof(PlayerController_LateUpdate_Patch), nameof(IsGamepadActivePatched)));
+                    inLookInputBranch = true;
+                    instruction.opcode = OpCodes.Call;
+                    instruction.operand = mouseReplacement;
+                    patchedCount++;
                 }
-                else
+                else if (inLookInputBranch && instruction.Calls(IsGamepadActive))
                 {
-                    patched.Add(instruction);
+                    instruction.opcode = OpCodes.Call;
+                    instruction.operand = gamepadReplacement;
+                    patchedCount++;
                 }
+                yield return instruction;
             }
 
-            return patched;
+            if (patchedCount < 2)
+            {
+                LogUtils.LogError(
+                    "PlayerController.LateUpdate: patched only " + patchedCount +
+                    " of the 2 expected input source checks, thumbstick turning may not work.");
+            }
         }
     }
 
     // Patch to enable rotation of pieces using VR control actions
-    [HarmonyPatch(typeof(Player), "UpdatePlacement")]
+    [HarmonyPatch(typeof(Player), nameof(Player.UpdatePlacement))]
     class Player_Update_Placement_PieceRotationPatch {
         static void Postfix(Player __instance, bool takeInput, ref int ___m_placeRotation) {
             if (!VRControls.mainControlsActive || __instance != Player.m_localPlayer || !takeInput ||
@@ -254,13 +284,18 @@ namespace ValheimVRMod.Patches {
     }
 
     //Force position nearby snap points
-    [HarmonyPatch(typeof(Player), "UpdatePlacementGhost")]
+    [HarmonyPatch(typeof(Player), nameof(Player.UpdatePlacementGhost))]
     class PlacementSnapPoint
     {
         private static bool Prefix(Player __instance, GameObject ___m_placementGhost, GameObject ___m_placementMarkerInstance)
         {
             if (!VRControls.mainControlsActive || __instance != Player.m_localPlayer || !___m_placementGhost || !___m_placementGhost.transform ||
-               !__instance.InPlaceMode() || !BuildingManager.instance)
+               !__instance.InPlaceMode())
+            {
+                return true;
+            }
+
+            if (!EnsureBuildingManager(__instance))
             {
                 return true;
             }
@@ -278,6 +313,7 @@ namespace ValheimVRMod.Patches {
             }
             return true;
         }
+
         private static void Postfix(Player __instance, GameObject ___m_placementGhost)
         {
             if (!VRControls.mainControlsActive || __instance != Player.m_localPlayer || !___m_placementGhost || !___m_placementGhost.transform ||
@@ -299,6 +335,37 @@ namespace ValheimVRMod.Patches {
             }
 
             BuildingManager.instance.ValidateBuildingPiece(___m_placementGhost);
+        }
+
+        private static bool EnsureBuildingManager(Player player)
+        {
+            if (BuildingManager.instance != null || !player.InPlaceMode() || player.m_visEquipment == null)
+            {
+                return BuildingManager.instance;
+            }
+            
+            var item = player.m_visEquipment.m_rightItemInstance;
+            if (item == null)
+            {
+                return false;
+            }
+
+            if (item.GetComponentInChildren<BuildingManager>() != null)
+            {
+                LogUtils.LogError("Found potentially leaked BuildingManager instance");
+                return false;
+            }
+
+            var meshFilter = item.GetComponentInChildren<MeshFilter>();
+            if (meshFilter == null)
+            {
+                return false;
+            }
+
+            // Add building manager in case we missed it earlier (e. g. for modded building tools)
+            meshFilter.gameObject.AddComponent<BuildingManager>();
+
+            return true;
         }
     }
     [HarmonyPatch(typeof(Player), "PieceRayTest")]
@@ -337,11 +404,8 @@ namespace ValheimVRMod.Patches {
         }
     }
 
-    // If using VR controls, disable the joystick for the purposes
-    // of moving the map around since that will be done with
-    // simulated mouse cursor click and drag via laser pointer.
-    [HarmonyPatch(typeof(Minimap), "UpdateMap")]
-    class Minimap_UpdateMap_MapTranslationPatch {
+    [HarmonyPatch(typeof(Minimap), nameof(Minimap.UpdateMap))]
+    class Minimap_UpdateMap_Patch {
         private static MethodInfo getJoyLeftStickX =
             AccessTools.Method(typeof(ZInput), nameof(ZInput.GetJoyLeftStickX), new [] { typeof(bool) });
 
@@ -368,116 +432,199 @@ namespace ValheimVRMod.Patches {
             var original = new List<CodeInstruction>(instructions);
             var patched = new List<CodeInstruction>();
             foreach (var instruction in original) {
+                // If using VR controls, disable the joystick for the purposes
+                // of moving the map around since that will be done with
+                // simulated mouse cursor click and drag via laser pointer.
                 if (instruction.Calls(getJoyLeftStickX)) {
-                    patched.Add(CodeInstruction.Call(typeof(Minimap_UpdateMap_MapTranslationPatch),
+                    patched.Add(CodeInstruction.Call(typeof(Minimap_UpdateMap_Patch),
                         nameof(getJoyLeftStickXPatched), new[] { typeof(bool) }));
                 }
                 else if (instruction.Calls(getJoyLeftStickY)) {
-                    patched.Add(CodeInstruction.Call(typeof(Minimap_UpdateMap_MapTranslationPatch),
+                    patched.Add(CodeInstruction.Call(typeof(Minimap_UpdateMap_Patch),
                         nameof(getJoyLeftStickYPatched), new[] { typeof(bool) }));
+                }
+                else if (instruction.Calls(GetButtonPatchUtils.GetButtonDownOriginal))
+                {
+                    // Necessary for map zoom in case ZInput prefix/postfix stops working
+                    patched.Add(CodeInstruction.Call(typeof(GetButtonPatchUtils),
+                        nameof(GetButtonPatchUtils.GetButtonDownPatched), new[] { typeof(string) }));
                 }
                 else {
                     patched.Add(instruction);
                 }
             }
-        
             return patched;
         }
     }
 
-    // This patch allows for optional use of releasing the trigger to build things
-    class BuildOnReleasePatches
+    // We need to track when the piece selection menu was just hidden
+    // as a result of the user clicking on it so that we don't
+    // cause a placement right after the menu is closed and the
+    // trigger is released.
+    // The close is recorded as a timestamp rather than a flag so that it expires on its own: a
+    // close that is not followed by a placement input must not keep suppressing later placements.
+    static class BuildHudTracker
     {
+        // Roughly matches the PlayerController.SetTakeInputDelay(0.2f) that vanilla itself applies
+        // when closing the build menu.
+        private const float SUPPRESS_PLACEMENT_DURATION = 0.25f;
 
-        // We need to track when the piece selection menu was just hidden
-        // as a result of the user clicking on it so that we don't
-        // cause a placement right after the menu is closed and the
-        // trigger is released.
-        [HarmonyPatch(typeof(Hud), nameof(Hud.HidePieceSelection))]
-        class BuildHudTracker
+        private static float buildHudClosedTime = -9999f;
+
+        public static bool buildHudJustToggledOff
         {
-
-            public static bool buildHudJustToggledOff = false;
-
-            static void Postfix()
-            {
-                buildHudJustToggledOff = true;
-            }
-
+            get { return Time.time - buildHudClosedTime < SUPPRESS_PLACEMENT_DURATION; }
         }
 
-        [HarmonyPatch(typeof(Player), nameof(Player.UpdatePlacement))]
-        class Player_UpdatePlacement_BuildInputPatch
+        public static void NotifyBuildHudClosed()
         {
-            private static MethodInfo getButtonDownMethod =
-                AccessTools.Method(typeof(ZInput), nameof(ZInput.GetButtonDown), new[] { typeof(string) });
+            buildHudClosedTime = Time.time;
+        }
 
-            private static readonly string placementInput = "JoyPlace";
+        public static void ClearBuildHudClosed()
+        {
+            buildHudClosedTime = -9999f;
+        }
+    }
 
-            private static bool ShouldTriggerBuildPlacement(string inputName)
+    // Since Valheim 1.0 the build menu is the BuildUi component and selecting a piece closes it via
+    // Hud.CloseBuildUi(), so this is the path behind an accidental placement on piece selection.
+    [HarmonyPatch(typeof(Hud), nameof(Hud.CloseBuildUi))]
+    class Hud_CloseBuildUi_Patch
+    {
+        static void Postfix()
+        {
+            BuildHudTracker.NotifyBuildHudClosed();
+        }
+    }
+
+    [HarmonyPatch(typeof(Hud), nameof(Hud.TogglePieceSelection))]
+    class Hud_TogglePieceSelection_Patch
+    {
+        static void Postfix()
+        {
+            if (!Hud.IsPieceSelectionVisible())
             {
-                if (WeaponCollision.hasPendingToolUsageOutput)
-                {
-                    WeaponCollision.hasPendingToolUsageOutput = false;
-                    return true;
-                }
+                BuildHudTracker.NotifyBuildHudClosed();
+            }
+        }
+    }
 
-                if (!BuildingManager.instance)
+    // Legacy close path, kept because some gamepad flows still route through it.
+    [HarmonyPatch(typeof(Hud), nameof(Hud.HidePieceSelection))]
+    class Hud_HidePieceSelection_Patch
+    {
+        static void Postfix()
+        {
+            BuildHudTracker.NotifyBuildHudClosed();
+        }
+    }
+    
+    [HarmonyPatch(typeof(Player), nameof(Player.UpdatePlacement))]
+    class Player_UpdatePlacement_BuildInputPatch
+    {
+        private static readonly string placementInput = "JoyPlace";
+    
+        private static bool ShouldTriggerBuildPlacement(string inputName)
+        {
+            if (inputName != placementInput)
+            {
+                return GetButtonPatchUtils.GetButtonDownPatched(inputName);
+            }
+    
+            if (WeaponCollision.hasPendingToolUsageOutput)
+            {
+                WeaponCollision.hasPendingToolUsageOutput = false;
+                return true;
+            }
+    
+            if (!BuildingManager.instance)
+            {
+                return GetButtonPatchUtils.GetButtonDownPatched(inputName);
+            }
+            if (VHVRConfig.BuildOnRelease())
+            {
+                bool inputReceived = GetButtonPatchUtils.GetButtonUpPatched(inputName);
+                if (BuildHudTracker.buildHudJustToggledOff && inputReceived)
                 {
-                    return ZInput.GetButtonDown(inputName);
-                }
-                if (VHVRConfig.BuildOnRelease())
+                    // Since the build hud was just toggled off and the input was receieved,
+                    // we won't trigger the placement. Instead just clear the recorded close time.
+                    LogUtils.LogDebug("Resetting buildHudToggledFlag");
+                    BuildHudTracker.ClearBuildHudClosed();
+                    return false;
+                } else
                 {
-                    bool inputReceived = ZInput.GetButtonUp(inputName);
-                    if (BuildHudTracker.buildHudJustToggledOff && inputReceived)
-                    {
-                        // Since the build hud was just toggled off and the input was receieved,
-                        // we won't trigger the placement. Instead just reset the "buildHudJustToggledOff" flag
-                        LogUtils.LogDebug("Resetting buildHudToggledFlag");
-                        BuildHudTracker.buildHudJustToggledOff = false;
-                        return false;
-                    } else
-                    {
-                        if (inputReceived && !BuildingManager.instance.isCurrentlyMoving() && VHVRConfig.FreePlaceAutoReturn())
-                        {
-                            BuildingManager.instance.ExitPreciseMode();
-                        }
-                        if (BuildingManager.instance.isHoldingJump())
-                            return false;
-                        return inputReceived;
-                    }
-                }
-                else
-                {
-                    if (ZInput.GetButtonDown(inputName) && !BuildingManager.instance.isCurrentlyMoving() && VHVRConfig.FreePlaceAutoReturn())
+                    if (inputReceived && !BuildingManager.instance.isCurrentlyMoving() && VHVRConfig.FreePlaceAutoReturn())
                     {
                         BuildingManager.instance.ExitPreciseMode();
                     }
-                    return ZInput.GetButtonDown(inputName);
+                    if (BuildingManager.instance.isHoldingJump())
+                        return false;
+                    return inputReceived;
                 }
+            }
+            else
+            {
+                bool inputReceived = GetButtonPatchUtils.GetButtonDownPatched(inputName);
+                if (BuildHudTracker.buildHudJustToggledOff && inputReceived)
+                {
+                    LogUtils.LogDebug("Resetting buildHudToggledFlag");
+                    BuildHudTracker.ClearBuildHudClosed();
+                    return false;
+                }
+                if (inputReceived && !BuildingManager.instance.isCurrentlyMoving() && VHVRConfig.FreePlaceAutoReturn())
+                {
+                    BuildingManager.instance.ExitPreciseMode();
+                }
+                return inputReceived;
+            }
+        }
+    
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            var original = new List<CodeInstruction>(instructions);
+            var patched = new List<CodeInstruction>();
+            if (!VHVRConfig.UseVrControls())
+            {
+                return original;
+            }
+            int patchedCount = 0;
+            for (int i = 0; i < original.Count; i++)
+            {
+                var instruction = original[i];
+                patched.Add(instruction);
+                if (instruction.opcode != OpCodes.Ldstr || i + 1 >= original.Count)
+                {
+                    continue;
+                }
+                if (original[i + 1].Calls(GetButtonPatchUtils.GetButtonDownOriginal))
+                {
+                    patched.Add(
+                        CodeInstruction.Call(
+                            typeof(Player_UpdatePlacement_BuildInputPatch),
+                            nameof(ShouldTriggerBuildPlacement)));
+                }
+                else if (original[i + 1].Calls(GetButtonPatchUtils.GetButtonUpOriginal)) {
+                    patched.Add(
+                        CodeInstruction.Call(
+                            typeof(GetButtonPatchUtils),
+                            nameof(GetButtonPatchUtils.GetButtonUpPatched)));
+                }
+                else
+                {
+                    continue;
+                }
+                patchedCount++;
+                i++; // skip the next instruction cause we are replacing it
             }
 
-            static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+            if (patchedCount == 0)
             {
-                var original = new List<CodeInstruction>(instructions);
-                var patched = new List<CodeInstruction>();
-                if (!VHVRConfig.UseVrControls())
-                {
-                    return original;
-                }
-                for (int i = 0; i < original.Count; i++)
-                {
-                    var instruction = original[i];
-                    patched.Add(instruction);
-                    if (instruction.opcode == OpCodes.Ldstr && placementInput.Equals(instruction.operand) && original[i + 1].Calls(getButtonDownMethod))
-                    {
-                        i++; // skip the next instruction cause we are replacing it
-                        patched.Add(CodeInstruction.Call(typeof(Player_UpdatePlacement_BuildInputPatch),
-                            nameof(Player_UpdatePlacement_BuildInputPatch.ShouldTriggerBuildPlacement)));
-                    }
-                }
-                return patched;
+                LogUtils.LogError(
+                    "Player.UpdatePlacement: found no ZInput button checks to patch, VR build placement will not work.");
             }
+
+            return patched;
         }
     }
 
@@ -672,7 +819,7 @@ namespace ValheimVRMod.Patches {
             }
             timer = timer <= timeEnd ? timer + Time.deltaTime : timeEnd;
 
-            if (EquipScript.getLeft() == EquipType.Bow) {
+            if (EquipScript.CurrentOffHandEquipType() == EquipType.Bow) {
                 if (BowLocalManager.aborting) {
                     block = true;
                     blockHold = true;
@@ -715,23 +862,24 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
-            if (EquipScript.getLeft() == EquipType.Shield) {
+            if (EquipScript.CurrentOffHandEquipType() == EquipType.Shield) {
                 blockHold = ShieldBlock.instance?.isBlocking() ?? false;
             }
 
-            if (EquipScript.getLeft() == EquipType.Magic && MagicWeaponManager.AttemptingAttack)
+            // This is the only place that may consume the dead raiser attack when not riding.
+            if (DeadRaiserManager.instance != null && DeadRaiserManager.instance.ConsumeAttemptingAttack())
             {
                 attack = true;
                 attackHold = true;
             }
 
-            if (EquipScript.getLeft() == EquipType.Crossbow && CrossbowManager.IsPullingTrigger())
+            if (EquipScript.CurrentOffHandEquipType() == EquipType.Crossbow && CrossbowManager.IsPullingTrigger())
             {
                 attack = true;
                 attackHold = true;
             }
 
-            switch (EquipScript.getRight()) {
+            switch (EquipScript.CurrentMainHandEquipType()) {
                 case EquipType.Fishing:
                     if (FishingManager.isThrowing) {
                         attack = true;
@@ -767,10 +915,32 @@ namespace ValheimVRMod.Patches {
 
                     break;
                 case EquipType.Magic:
-                    if (MagicWeaponManager.AttemptingAttack)
+                    var staff = MagicStaffManagers.Current;
+                    if (staff != null && staff.AttemptingAttack)
                     {
-                        attack = true;
-                        attackHold = true;
+                        //Check if there's secondary attack or not, if not, fallback to normal attack
+                        if (staff.IsSecondaryAttack)
+                        {
+                            var canSecondaryAttack = staff.TrySecondaryAttack;
+                            attack = canSecondaryAttack;
+                            attackHold = canSecondaryAttack;
+                            secondaryAttack = canSecondaryAttack;
+                        }
+                        else
+                        {
+                            attack = true;
+                            attackHold = true;
+                        }
+                        if (MountedAttackUtils.IsRiding())
+                        {
+                            // While riding it is MountedAttackUtils that initiates the attack, because vanilla
+                            // SetControls clears both the attack trigger and the attack hold whenever the trigger
+                            // is raised while mounted. Raising only the hold leaves it untouched, which a looping
+                            // staff attack (the staff of frost) needs: Player#PlayerAttackInput aborts such an
+                            // attack as soon as the hold drops, cutting it off during its wind-up.
+                            attack = false;
+                            secondaryAttack = false;
+                        }
                         SwingLaunchManager.isThrowing = false;
                     }
                     break;
@@ -790,7 +960,7 @@ namespace ValheimVRMod.Patches {
                     break;
             }
 
-            if (EquipScript.isThrowable(__instance.GetRightItem()) && ThrowableManager.isThrowing)
+            if (EquipScript.IsThrowable(__instance.GetRightItem()) && ThrowableManager.isThrowing)
             {
                 secondaryAttack = true;
                 ThrowableManager.isThrowing = false;
@@ -889,7 +1059,7 @@ namespace ValheimVRMod.Patches {
             {
                 return;
             }
-            __instance.m_splitSlider.gameObject.AddComponent<SliderSelector>();
+            __instance.m_splitDialog.m_splitSlider.gameObject.AddComponent<SliderSelector>();
         }
     }
 
@@ -946,18 +1116,20 @@ namespace ValheimVRMod.Patches {
     [HarmonyPatch(typeof(InventoryGrid), nameof(InventoryGrid.GetHoveredElement))]
     static class InventoryGrid_GetHoveredElement_Patch
     {
-        static bool Prefix(InventoryGrid __instance, ref InventoryGrid.Element __result)
+        static bool Prefix(InventoryGrid __instance, ref InventoryElement __result)
         {
             if (VHVRConfig.NonVrPlayer())
             {
                 return true;
             }
-            foreach (InventoryGrid.Element element in __instance.m_elements)
+            // Test against the canvas camera rather than treating the cursor as a raw world point,
+            // so this resolves the same element the EventSystem hovers and the tooltip patch accepts.
+            var canvas = __instance.GetComponentInParent<Canvas>();
+            var camera = canvas == null ? null : canvas.rootCanvas.worldCamera;
+            foreach (InventoryElement element in __instance.m_elements)
             {
-                RectTransform rectTransform = element.m_go.transform as RectTransform;
-                // Use SoftwareCursor.ScaledMouseVector() instead of the vanilla Input.mousePosition to support VR GUI.
-                Vector2 point = rectTransform.InverseTransformPoint(SoftwareCursor.ScaledMouseVector());
-                if (rectTransform.rect.Contains(point))
+                if (RectTransformUtility.RectangleContainsScreenPoint(
+                    element.transform as RectTransform, SoftwareCursor.simulatedMousePosition, camera))
                 {
                     __result = element;
                     return false;
@@ -995,7 +1167,7 @@ namespace ValheimVRMod.Patches {
     // between laser pointers and normal controls, things can end up being
     // extra complex when we need to use a new button. Since we already have
     // the modifier, this is simpler).
-    [HarmonyPatch(typeof(Minimap), nameof(Minimap.OnMapRightClick))]
+    [HarmonyPatch(typeof(Minimap), nameof(Minimap.RemovePinUnderPointer))]
     class MinimapPingPatch
     {
         static bool Prefix(Minimap __instance)

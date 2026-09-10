@@ -54,6 +54,28 @@ namespace ValheimVRMod.Patches {
         }
     }
 
+    // The intro cinematic that plays on first startup swaps the game over to its own camera:
+    // CinematicsManager.Play() disables Utils.GetMainCamera() (which resolves to the VR camera,
+    // since VHVR keeps the vanilla "Main Camera" disabled) and CinematicsManager.Stop() enables it
+    // again, leaving the start menu fighting VRPlayer.enableCameras() over who owns the camera.
+    // The video itself is not rendered in stereo either and only shows up as a magenta block, so
+    // suppress the automatic intro and let FejdStartup go straight to the main menu.
+    // Cinematics started from the menu, dreams and the outro are left alone.
+    // TODO: m_introOnNewWorld plays the same intro video via Game when a new world is created and
+    // breaks the VR camera the same way. Consider clearing it here too.
+    [HarmonyPatch(typeof(CinematicsManager), "Awake")]
+    class DisableStartupCinematicPatch
+    {
+        static void Postfix(CinematicsManager __instance)
+        {
+            if (VHVRConfig.NonVrPlayer())
+            {
+                return;
+            }
+            __instance.m_introOnStartup = false;
+        }
+    }
+
     [HarmonyPatch(typeof(Player), nameof(Player.TeleportTo))]
     class WaterLevelFixPatch
     {
@@ -66,6 +88,21 @@ namespace ValheimVRMod.Patches {
 
             __instance.m_liquids[(int)LiquidType.Water] = 0;
             __instance.SetLiquidLevel(-10000, LiquidType.Water, null);
+        }
+    }
+
+
+    [HarmonyPatch(typeof(Player), nameof(Player.Start))]
+    class PlayerDriftFixPatch
+    {
+        public static void Postfix(Player __instance)
+        {
+            if (Player.m_localPlayer != __instance || VHVRConfig.NonVrPlayer())
+            {
+                return;
+            }
+
+            __instance.gameObject.GetOrAddComponent<PlayerDriftFix>();
         }
     }
 
@@ -124,7 +161,7 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
-            if (!EquipScript.shouldSkipAttackAnimation() || ___m_character.IsStaggering() || !VRPlayer.attachedToPlayer)
+            if (!EquipScript.ShouldSkipAttackAnimation() || ___m_character.IsStaggering() || !VRPlayer.attachedToPlayer)
             {
                 ___m_animator.speed = 1f;
                 return;

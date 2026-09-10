@@ -2,6 +2,7 @@ using UnityEngine;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using Valve.VR;
+using Valve.VR.InteractionSystem;
 
 namespace ValheimVRMod.Scripts {
     class CrossbowManager : LocalWeaponWield
@@ -41,27 +42,46 @@ namespace ValheimVRMod.Scripts {
             crossbowMorphManager.loadBoltIfBoltInHandIsNearAnchor();
             if (twoHandedState == TwoHandedState.SingleHanded && VHVRConfig.OneHandedBow())
             {
-                UpdateDominantHandAiming();
+                UpdateOneHandedAiming();
             }
         }
 
-        private void UpdateDominantHandAiming()
+        private void UpdateOneHandedAiming()
         { 
-            bool isAiming = VHVRConfig.LeftHanded() ? SteamVR_Actions.valheim_UseLeft.state : SteamVR_Actions.valheim_Use.state;
+            bool isAiming =
+                VHVRConfig.LeftHanded() ?
+                SteamVR_Actions.valheim_UseLeft.state :
+                SteamVR_Actions.valheim_Use.state;
             if (!isAiming)
             {
-                transform.localPosition = geometryProvider.GetDesiredSingleHandedPosition(this);
+                transform.position = geometryProvider.GetDesiredSingleHandedPosition(this);
                 transform.rotation = geometryProvider.GetDesiredSingleHandedRotation(this);
                 VrikCreator.ResetHandConnectors();
                 return;
             }
 
             Vector3 aimingDirection = VRPlayer.dominantHandRayDirection;
-            transform.rotation = Quaternion.LookRotation(aimingDirection, VRPlayer.arrowHand.transform.up);
-            transform.position = VRPlayer.arrowHand.transform.position + aimingDirection * INTERGRIP_DISTANCE;
+
+            if (VRPlayer.offHandWield)
+            {
+                // Bow hand is dominant hand, use bow hand to determine weapon transform;
+                transform.position = VRPlayer.bowHand.transform.position;
+                transform.rotation = Quaternion.LookRotation(aimingDirection, VRPlayer.bowHand.transform.up);
+                VrikCreator.GetLocalPlayerArrowHandConnector().position =
+                    VRPlayer.bowHand.transform.position - aimingDirection * INTERGRIP_DISTANCE;
+            }
+            else
+            {
+                // Arrow hand is dominant hand, use bow hand to determine weapon transform;
+                transform.position =
+                    VRPlayer.arrowHand.transform.position + aimingDirection * INTERGRIP_DISTANCE;
+                transform.rotation = Quaternion.LookRotation(aimingDirection, VRPlayer.arrowHand.transform.up);
+            }
 
             Quaternion frontHandRotation =
-                VHVRConfig.LeftHanded() ? frontGripRotationForRightHand : frontGripRotationForLeftHand;
+                VRPlayer.isLeftHandMainWeaponHand ?
+                frontGripRotationForRightHand :
+                frontGripRotationForLeftHand;
             VrikCreator.GetLocalPlayerBowHandConnector().SetPositionAndRotation(
                 transform.position, transform.rotation * frontHandRotation);
         }

@@ -436,7 +436,7 @@ namespace ValheimVRMod.Scripts
 
         private bool createBolt()
         {
-            ItemDrop.ItemData ammoItem = EquipScript.equipAmmo();
+            ItemDrop.ItemData ammoItem = EquipScript.EquipAmmo();
             if (ammoItem == null)
             {
                 // Out of ammo

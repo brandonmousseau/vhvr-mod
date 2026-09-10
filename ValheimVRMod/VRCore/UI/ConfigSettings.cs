@@ -53,9 +53,9 @@ namespace ValheimVRMod.VRCore.UI {
             ConfigSettings.enableTransformButtons = enableTransformButtons;
         }
 
-        public static bool isVHVRClone(KeyboardMouseSettings settings)
+        public static bool isVHVRClone(Component component)
         {
-            return settings.GetComponentInParent<SettingsCloneMarker>(includeInactive: true) != null;
+            return component.GetComponentInParent<SettingsCloneMarker>(includeInactive: true) != null;
         }
  
         /// <summary>
@@ -122,7 +122,7 @@ namespace ValheimVRMod.VRCore.UI {
             if (chooserPrefab == null)
             {
                 chooserPrefab = createChooserPrefab(
-                    settingsPrefab.transform.Find("Panel").Find("TabContent").Find("Gamepad").Find("List").Find("InputLayout").gameObject);
+                    settingsPrefab.transform.Find("Panel").Find("TabContent").Find("Gamepad").Find("Root").Find("CommonSettings").Find("InputLayout").gameObject);
             }
             if (transformButtonPrefab == null)
             {

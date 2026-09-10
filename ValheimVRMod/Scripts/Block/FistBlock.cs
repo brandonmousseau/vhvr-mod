@@ -54,7 +54,7 @@ namespace ValheimVRMod.Scripts.Block {
 
                 CheckParryMotion(hitData.m_dir, blockedWithLeftHand, blockedWithRightHand);
             }
-            else if (FistCollision.hasDualWieldingWeaponEquipped() && EquipScript.getRight() != EquipType.Claws)
+            else if (FistCollision.hasDualWieldingWeaponEquipped() && EquipScript.CurrentMainHandEquipType() != EquipType.Claws)
             {
                 var leftAngle = Vector3.Angle(hitData.m_dir, VRPlayer.leftHandBone.right);
                 var rightAngle = Vector3.Angle(hitData.m_dir, VRPlayer.rightHandBone.right);
@@ -88,8 +88,8 @@ namespace ValheimVRMod.Scripts.Block {
 
         public void updateBlockBoxShape()
         {
-            var newLeftEquipmentType = EquipScript.getLeft();
-            var newRightEquipmentType = EquipScript.getRight();
+            var newLeftEquipmentType = EquipScript.CurrentOffHandEquipType();
+            var newRightEquipmentType = EquipScript.CurrentMainHandEquipType();
 
             if (newLeftEquipmentType == currentLeftEquipType && newRightEquipmentType == currentRightEquipType)
             {
@@ -177,7 +177,7 @@ namespace ValheimVRMod.Scripts.Block {
 
         private void RotateColliderForSecondaryWeapon()
         {
-            if (EquipScript.getLeft() != EquipType.Knife || leftHandBlockBox == null || rightHandBlockBox == null)
+            if (EquipScript.CurrentOffHandEquipType() != EquipType.Knife || leftHandBlockBox == null || rightHandBlockBox == null)
             {
                 return;
             }
