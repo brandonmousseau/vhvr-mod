@@ -18,20 +18,21 @@ namespace ValheimVRMod.Utilities {
         private enum BackReachLocation
         {
             None,
-            LeftShoulderRadialUp,        // left hand, right (opposite) shoulder
-            LeftShoulderRadialDown,      // left hand, right (opposite) shoulder
+            // Each location is named after the shoulder or waist being reached, not the hand reaching it.
+            LeftShoulderRadialUp,        // right (opposite) hand, left shoulder
+            LeftShoulderRadialDown,      // right (opposite) hand, left shoulder
             LeftShoulderRadialMedial,    // left hand, left (same) shoulder
             LeftShoulderRadialLateral,   // left hand, left (same) shoulder
-            RightShoulderRadialUp,       // right hand, left (opposite) shoulder
-            RightShoulderRadialDown,     // right hand, left (opposite) shoulder
+            RightShoulderRadialUp,       // left (opposite) hand, right shoulder
+            RightShoulderRadialDown,     // left (opposite) hand, right shoulder
             RightShoulderRadialMedial,   // right hand, right (same) shoulder
             RightShoulderRadialLateral,  // right hand, right (same) shoulder
-            LeftWaistRadialForward,      // left hand, right (opposite) waist
-            LeftWaistRadialBackward,     // left hand, right (opposite) waist
+            LeftWaistRadialForward,      // right (opposite) hand, left waist
+            LeftWaistRadialBackward,     // right (opposite) hand, left waist
             LeftWaistRadialMedial,       // left hand, left (same) waist
             LeftWaistRadialLateral,      // left hand, left (same) waist
-            RightWaistRadialForward,     // right hand, left (opposite) waist
-            RightWaistRadialBackward,    // right hand, left (opposite) waist
+            RightWaistRadialForward,     // left (opposite) hand, right waist
+            RightWaistRadialBackward,    // left (opposite) hand, right waist
             RightWaistRadialMedial,      // right hand, right (same) waist
             RightWaistRadialLateral,     // right hand, right (same) waist
         }
@@ -380,7 +381,7 @@ namespace ValheimVRMod.Utilities {
             if (leftHandGrabbedBackLocation != BackReachLocation.None &&
                 rightHandGrabbedBackLocation != BackReachLocation.None)
             {
-                if (isDrawingWeapon(leftHandBackReach, VRPlayer.leftHand.transform, VRPlayer.leftFootPhysicsEstimator.GetVelocity()) ||
+                if (isDrawingWeapon(leftHandBackReach, VRPlayer.leftHand.transform, VRPlayer.leftHandPhysicsEstimator.GetVelocity()) ||
                     isDrawingWeapon(rightHandBackReach, VRPlayer.rightHand.transform, VRPlayer.rightHandPhysicsEstimator.GetVelocity()))
                 {
                     var leftLocation = leftHandGrabbedBackLocation;
@@ -402,7 +403,7 @@ namespace ValheimVRMod.Utilities {
             }
 
             if (leftHandGrabbedBackLocation != BackReachLocation.None &&
-                isDrawingWeapon(leftHandBackReach, VRPlayer.leftHand.transform, VRPlayer.leftFootPhysicsEstimator.GetVelocity()))
+                isDrawingWeapon(leftHandBackReach, VRPlayer.leftHand.transform, VRPlayer.leftHandPhysicsEstimator.GetVelocity()))
             {
                 var location = leftHandGrabbedBackLocation;
                 leftHandGrabbedBackLocation = BackReachLocation.None;
