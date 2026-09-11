@@ -616,24 +616,52 @@ namespace ValheimVRMod.Utilities
             return handVelocity + Vector3.Cross(handAngularVelocity, weaponOffset);
         }
 
-        // Weight at which a throwable leaves the hand at the full ThrowSpeedGain multiple of hand
-        // speed. Heavier items are slowed proportionally.
-        private const float THROW_REFERENCE_WEIGHT = 1f;
+        // Vanilla max projectile speeds below this are too slow to feel right when thrown by hand (e.g. Ember Charge).
+        private const float MIN_THROW_MAX_SPEED = 4f;
 
-        public static float GetThrowLaunchSpeed(ItemDrop.ItemData item, float throwSpeed)
+        // Returns the aim direction to hand to vanilla for a throw: vanilla multiplies it by the attack's max projectile
+        // speed, so the launch speed is divided by that here.
+        public static Vector3 GetThrowAimDir(Attack attack, Vector3 direction, float handSpeed)
         {
-            // float weight = item?.m_shared == null ? THROW_REFERENCE_WEIGHT : item.m_shared.m_weight;
-            // float weightSlowdown = Mathf.Max(1f, weight / THROW_REFERENCE_WEIGHT);
-            float speed = Mathf.Max(throwSpeed, 0); //  / weightSlowdown;
-
-            if (item?.m_shared?.m_attack != null && item?.m_shared.m_attack.m_projectileVel < 3)
+            float vanillaMaxSpeed = attack.m_projectileVel;
+            if (vanillaMaxSpeed <= 0)
             {
-                // When the vanilla max speed is too slow (such as Ember Charge), we should scale
-                // it up by a little amount in VR for realism.
-                speed = speed * 2;
+                return direction.normalized;
+            }
+            float launchSpeed = GetThrowLaunchSpeed(handSpeed, Mathf.Max(vanillaMaxSpeed, MIN_THROW_MAX_SPEED));
+            return direction.normalized * (launchSpeed / vanillaMaxSpeed);
+        }
+
+        // Maps the hand speed along the throw to the launch speed. FullThrowSpeed is the hand speed that reaches
+        // maxSpeed; it stays the reference rather than the real hand speed alone since tracked controller speed may
+        // be capped below what a real throw reaches.
+        // Up to FullThrowSpeed this follows a cubic Hermite curve from 0 to maxSpeed: it starts rising 1:1 with the
+        // hand speed, so gentle throws leave at their real speed, and flattens out into maxSpeed at FullThrowSpeed,
+        // beyond which it stays at maxSpeed. If maxSpeed is below FullThrowSpeed, the real hand speed is used as is,
+        // capped at maxSpeed.
+        public static float GetThrowLaunchSpeed(float handSpeed, float maxSpeed)
+        {
+            float fullThrowSpeed = VHVRConfig.FullThrowSpeed();
+            if (fullThrowSpeed <= 0 || handSpeed >= fullThrowSpeed)
+            {
+                // Setting FullThrowSpeed to 0 always launches at max speed.
+                return maxSpeed;
+            }
+            if (handSpeed <= 0)
+            {
+                return 0;
+            }
+            if (maxSpeed < fullThrowSpeed)
+            {
+                return Mathf.Min(handSpeed, maxSpeed);
             }
 
-            return speed;
+            float s = handSpeed / fullThrowSpeed;
+            float s2 = s * s;
+            float s3 = s2 * s;
+            return
+                (s3 - 2 * s2 + s) * fullThrowSpeed +  // slope 1 at 0...
+                (-2 * s3 + 3 * s2) * maxSpeed;        // ...reaching maxSpeed with zero slope at FullThrowSpeed.
         }
 
         // TODO: temporary. Dumps every throwable's weight once so the values can be sanity checked

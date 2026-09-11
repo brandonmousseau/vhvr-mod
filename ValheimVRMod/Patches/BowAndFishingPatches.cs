@@ -181,10 +181,7 @@ namespace ValheimVRMod.Patches {
                 case EquipType.SpearChitin:
                 case EquipType.ThrowObject:
                     spawnPoint = ThrowableManager.spawnPoint;
-                    aimDir =
-                        ThrowableManager.aimDir.normalized *
-                        WeaponUtils.GetThrowLaunchSpeed(
-                            ___m_character.GetRightItem(), ThrowableManager.throwSpeed);
+                    aimDir = WeaponUtils.GetThrowAimDir(__instance, ThrowableManager.aimDir, ThrowableManager.handSpeed);
                     return false;
                 case EquipType.Magic:
                     var staff = MagicStaffManagers.Current;
@@ -204,7 +201,7 @@ namespace ValheimVRMod.Patches {
             if (EquipScript.IsThrowable(___m_character.GetRightItem()))
             {
                 spawnPoint = ThrowableManager.spawnPoint;
-                aimDir = ThrowableManager.aimDir;
+                aimDir = WeaponUtils.GetThrowAimDir(__instance, ThrowableManager.aimDir, ThrowableManager.handSpeed);
                 return false;
             }
             return true;
@@ -238,6 +235,13 @@ namespace ValheimVRMod.Patches {
 
             __instance.m_useCharacterFacing = false;
             __instance.m_launchAngle = 0;
+
+            if (EquipScript.IsHandThrownWeaponEquipped())
+            {
+                // The throw speed is handed to vanilla relative to the attack's max projectile speed (see
+                // WeaponUtils.GetThrowAimDir), so vanilla must not substitute a random speed for that max.
+                __instance.m_randomVelocity = false;
+            }
 
             if (VHVRConfig.RestrictBowDrawSpeed() == "None" || EquipScript.CurrentOffHandEquipType() != EquipType.Bow)
             {

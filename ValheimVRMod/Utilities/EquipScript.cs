@@ -339,6 +339,12 @@ namespace ValheimVRMod.Utilities
             return CurrentMainHandEquipType() == EquipType.Spear || CurrentMainHandEquipType() == EquipType.SpearChitin;
         }
 
+        // Whether the main hand holds something thrown by hand (see ThrowableManager).
+        public static bool IsHandThrownWeaponEquipped()
+        {
+            return IsSpearEquipped() || CurrentMainHandEquipType() == EquipType.ThrowObject || IsThrowable(Player.m_localPlayer?.GetRightItem());
+        }
+
         public static bool IsDundrEquipped()
         {
             return IsDundr(Player.m_localPlayer?.GetRightItem());
