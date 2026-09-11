@@ -659,9 +659,7 @@ namespace ValheimVRMod.Utilities
             float s = handSpeed / fullThrowSpeed;
             float s2 = s * s;
             float s3 = s2 * s;
-            return
-                (s3 - 2 * s2 + s) * fullThrowSpeed +  // slope 1 at 0...
-                (-2 * s3 + 3 * s2) * maxSpeed;        // ...reaching maxSpeed with zero slope at FullThrowSpeed.
+            return s3 * (maxSpeed - fullThrowSpeed) + handSpeed;
         }
 
         // TODO: temporary. Dumps every throwable's weight once so the values can be sanity checked
