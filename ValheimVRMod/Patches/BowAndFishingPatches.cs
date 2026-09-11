@@ -150,8 +150,18 @@ namespace ValheimVRMod.Patches {
                 return true;
             }
 
-            switch(EquipScript.CurrentOffHandEquipType()) { 
-                case EquipType.Bow: 
+            // Summoners may be held in either hand. Other magic items that are not staves (see Protector) leave aiming
+            // to vanilla.
+            var summoner = SummonerManager.instance;
+            if (summoner != null)
+            {
+                spawnPoint = summoner.GetProjectileSpawnPoint(__instance);
+                aimDir = summoner.AimDir;
+                return false;
+            }
+
+            switch(EquipScript.CurrentOffHandEquipType()) {
+                case EquipType.Bow:
                     spawnPoint = BowLocalManager.spawnPoint;
                     aimDir = BowLocalManager.aimDir;
                     return false;
@@ -159,17 +169,6 @@ namespace ValheimVRMod.Patches {
                     spawnPoint = CrossbowManager.GetBoltSpawnPoint(__instance);
                     aimDir = CrossbowManager.AimDir;
                     return false;
-                case EquipType.Magic:
-                    // Of the off-hand magic items only the dead raiser aims its projectile; the others (see
-                    // Protector) leave aiming to vanilla.
-                    var deadRaiser = DeadRaiserManager.instance;
-                    if (deadRaiser != null)
-                    {
-                        spawnPoint = deadRaiser.GetProjectileSpawnPoint(__instance);
-                        aimDir = deadRaiser.AimDir;
-                        return false;
-                    }
-                    break;
             }
 
             switch (EquipScript.CurrentMainHandEquipType()) {

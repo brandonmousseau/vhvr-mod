@@ -31,7 +31,7 @@ namespace ValheimVRMod.Scripts
 
         private bool IsInRightHand { get { return isDominantHandWeapon == VRPlayer.isRightHandMainWeaponHand; } }
 
-        // A level read rather than an edge read, like the dead raiser: vanilla won't restart an attack that is
+        // A level read rather than an edge read, like SummonerManager: vanilla won't restart an attack that is
         // already playing, and the attack hold has to stay raised for as long as the player keeps casting.
         public bool AttemptingAttack
         {

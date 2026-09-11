@@ -28,7 +28,7 @@ namespace ValheimVRMod.Utilities
 
         public static void CheckMountedMagicAndCrossbowAttack()
         {
-            // Bail out before querying the managers when not riding: both DeadRaiserManager#ConsumeAttemptingAttack
+            // Bail out before querying the managers when not riding: both SummonerManager#ConsumeAttemptingAttack
             // and IMagicStaffManager#AttemptingAttack are destructive reads, so polling them here on foot would
             // steal the attack from Player#SetControls, which is what actually triggers the attack when not riding.
             if (!IsRiding())
@@ -38,7 +38,7 @@ namespace ValheimVRMod.Utilities
 
             var staff = MagicStaffManagers.Current;
             bool attemptingNonSwingAttack =
-                (DeadRaiserManager.instance != null && DeadRaiserManager.instance.ConsumeAttemptingAttack()) ||
+                (SummonerManager.instance != null && SummonerManager.instance.ConsumeAttemptingAttack()) ||
                 (Protector.instance != null && Protector.instance.AttemptingAttack) ||
                 (staff != null && staff.AttemptingAttack &&
                  !(SwingableStaffManager.instance != null && SwingableStaffManager.instance.UseSwingForCurrentAttack()));
@@ -81,7 +81,7 @@ namespace ValheimVRMod.Utilities
             {
                 // Vanilla Humanoid#StartAttack refuses to start an attack while one is already playing. Without
                 // the same check here, a caller that reports an attack attempt on every frame the trigger is held
-                // (e.g. the dead raiser) would restart the attack each frame, leaving the weapon stuck replaying
+                // (e.g. a summoner) would restart the attack each frame, leaving the weapon stuck replaying
                 // the wind-up part of its animation instead of ever releasing its projectile.
                 return false;
             }

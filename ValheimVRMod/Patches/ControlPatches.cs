@@ -866,8 +866,8 @@ namespace ValheimVRMod.Patches {
                 blockHold = ShieldBlock.instance?.isBlocking() ?? false;
             }
 
-            // This is the only place that may consume the dead raiser attack when not riding.
-            if (DeadRaiserManager.instance != null && DeadRaiserManager.instance.ConsumeAttemptingAttack())
+            // This is the only place that may consume a summoner attack when not riding.
+            if (SummonerManager.instance != null && SummonerManager.instance.ConsumeAttemptingAttack())
             {
                 attack = true;
                 attackHold = true;
