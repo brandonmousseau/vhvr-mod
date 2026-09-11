@@ -16,7 +16,8 @@ namespace ValheimVRMod.Utilities
 
         // Immutable Settings
         private static ConfigEntry<bool> vrModEnabled;
-        private static ConfigEntry<bool> nonVrPlayer;
+        private static ConfigEntry<string> flatScreenMode;
+        private static bool? flatScreenModeResolved;
         private static ConfigEntry<bool> useVrControls;
         private static ConfigEntry<int> maxVRInitializationTries;
         private static ConfigEntry<bool> useOverlayGui;
@@ -180,9 +181,20 @@ namespace ValheimVRMod.Utilities
 #endif
 
         private static Dictionary<int, bool> commandLineOverrides = new Dictionary<int, bool>();
+        private static Dictionary<int, string> commandLineStringOverrides = new Dictionary<int, string>();
 
         // Common values
         private static readonly string[] k_HudAlignmentValues = { "LeftWrist", "RightWrist", "CameraLocked", "CameraLocked2", "Legacy" };
+
+        private const string k_flatScreenModeOn = "true";
+        private const string k_flatScreenModeOff = "false";
+        private const string k_flatScreenModeAuto = "auto";
+        // The default is listed first because BepInEx clamps an unrecognized value to that entry.
+        private static readonly string[] k_flatScreenModeValues =
+            { k_flatScreenModeAuto, k_flatScreenModeOff, k_flatScreenModeOn };
+
+        // vrserver is the SteamVR runtime itself; vrmonitor is the status window started alongside it.
+        private static readonly string[] k_steamVrProcessNames = { "vrserver", "vrmonitor" };
 
         private const string k_arrowRestCenter = "Center";
         private const string k_arrowRestAsiatic = "Asiatic";
@@ -249,10 +261,13 @@ namespace ValheimVRMod.Utilities
                 "ModEnabled",
                 true,
                 "Used to toggle the mod on and off.");
-            nonVrPlayer = createImmutableSettingWithOverride("Immutable",
-                "nonVrPlayer",
-                false,
-                "Disables VR completely. This is for Non-Vr Players that want to see their multiplayer VR companions animations in game.");
+            flatScreenMode = createImmutableStringSettingWithOverride("Immutable",
+                "flatScreenMode",
+                k_flatScreenModeAuto,
+                "Whether to disable VR completely and play on a flat screen, which is for non-VR players that want to see their" +
+                " multiplayer VR companions animations in game. Legal values: false (always use VR), true (never use VR)," +
+                " auto (use VR if and only if SteamVR is already running when the game starts).",
+                k_flatScreenModeValues);
             useVrControls = createImmutableSettingWithOverride("Immutable",
                 "UseVRControls",
                 true,
@@ -279,7 +294,7 @@ namespace ValheimVRMod.Utilities
             bhapticsEnabled = createImmutableSettingWithOverride("Immutable",
                 "bhapticsEnabled",
                 false,
-                "Enables bhaptics feedback. Only usable if vrModEnabled true AND nonVrPlayer false.");
+                "Enables bhaptics feedback. Only usable if vrModEnabled true AND the game is not in flat screen mode.");
         }
 
         private static ConfigEntry<bool> createImmutableSettingWithOverride(
@@ -299,6 +314,40 @@ namespace ValheimVRMod.Utilities
                                 commandLineOverrides.Add(immutableSetting.GetHashCode(), result);
                             } else {
                                 LogUtils.LogError("Invalid boolean string provided for command line option value: " + key + "=" + v);
+                            }
+                        }}
+            };
+
+            try {
+                p.Parse(Environment.GetCommandLineArgs());
+            }
+            catch (Exception e) {
+                Debug.LogError("Error parsing Start Option [" + key + "]: " + e.Message);
+            }
+
+            return immutableSetting;
+        }
+
+        private static ConfigEntry<string> createImmutableStringSettingWithOverride(
+            string section,
+            string key,
+            string defaultValue,
+            string description,
+            string[] acceptableValues)
+        {
+            ConfigEntry<string> immutableSetting = config.Bind<string>(
+                section, key, defaultValue, new ConfigDescription(description, new AcceptableValueList<string>(acceptableValues)));
+            // now trying to find same setting in start options and override on match
+            var p = new OptionSet {
+                { key + "=",
+                    "the immutable " + key + " to get the value of",
+                    v => {
+                            LogUtils.LogInfo("Overriding value for mod setting with command line argument: -" + key + "=" + v);
+                            string match = System.Array.Find(acceptableValues, acceptable => string.Equals(acceptable, v, StringComparison.OrdinalIgnoreCase));
+                            if (match != null) {
+                                commandLineStringOverrides.Add(immutableSetting.GetHashCode(), match);
+                            } else {
+                                LogUtils.LogError("Invalid value provided for command line option: " + key + "=" + v);
                             }
                         }}
             };
@@ -1387,11 +1436,66 @@ namespace ValheimVRMod.Utilities
             {
                 return true;
             }
-            if (commandLineOverrides.ContainsKey(nonVrPlayer.GetHashCode()))
+            if (flatScreenModeResolved == null)
             {
-                return commandLineOverrides[nonVrPlayer.GetHashCode()];
+                flatScreenModeResolved = ResolveFlatScreenMode();
             }
-            return nonVrPlayer.Value;
+            return flatScreenModeResolved.Value;
+        }
+
+        // Resolved only once and then cached, both because NonVrPlayer() is called from hot paths and
+        // because VR is either initialized on startup or not at all, so the answer must not change
+        // partway through a session.
+        private static bool ResolveFlatScreenMode()
+        {
+            string mode = commandLineStringOverrides.ContainsKey(flatScreenMode.GetHashCode())
+                ? commandLineStringOverrides[flatScreenMode.GetHashCode()]
+                : flatScreenMode.Value;
+
+            if (mode != k_flatScreenModeAuto)
+            {
+                return mode == k_flatScreenModeOn;
+            }
+
+            bool steamVrRunning = IsSteamVrRunning();
+            LogUtils.LogInfo("flatScreenMode is \"" + k_flatScreenModeAuto + "\" and SteamVR is " +
+                (steamVrRunning ? "running, so VR will be used." : "not running, so flat screen mode will be used."));
+            return !steamVrRunning;
+        }
+
+        // Looks for the SteamVR processes instead of asking OpenVR, because every OpenVR entry point
+        // that can answer this would launch SteamVR itself and therefore always report it as running.
+        private static bool IsSteamVrRunning()
+        {
+            foreach (string processName in k_steamVrProcessNames)
+            {
+                System.Diagnostics.Process[] processes;
+                try
+                {
+                    processes = System.Diagnostics.Process.GetProcessesByName(processName);
+                }
+                catch (Exception e)
+                {
+                    LogUtils.LogWarning("Could not check whether " + processName + " is running: " + e.Message);
+                    continue;
+                }
+
+                try
+                {
+                    if (processes.Length > 0)
+                    {
+                        return true;
+                    }
+                }
+                finally
+                {
+                    foreach (System.Diagnostics.Process process in processes)
+                    {
+                        process.Dispose();
+                    }
+                }
+            }
+            return false;
         }
 
 #if DEBUG
