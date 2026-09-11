@@ -370,4 +370,25 @@ namespace ValheimVRMod.Patches {
             }
         }
     }
+
+    // Vanilla attaches a deployed grappling hook's chain to the left hand bone every Update, when the bone may still be
+    // in its animated pose rather than where the VR crossbow is rendered. Attach it to the front of the crossbow as
+    // last rendered instead (see CrossbowManager#grapplingChainAttachPoint, which also refreshes it at render time).
+    [HarmonyPatch(typeof(GrapplingPoint), "UpdateLinePosition")]
+    class GrapplingPoint_UpdateLinePosition_Patch
+    {
+        static void Postfix(GrapplingPoint __instance, LineRenderer ___m_lineRenderer)
+        {
+            if (__instance != GrapplingPoint.m_localGrappler || !VHVRConfig.UseVrControls() || ___m_lineRenderer == null)
+            {
+                return;
+            }
+
+            var attachPoint = CrossbowManager.grapplingChainAttachPoint;
+            if (attachPoint.HasValue)
+            {
+                ___m_lineRenderer.SetPosition(1, attachPoint.Value);
+            }
+        }
+    }
 }

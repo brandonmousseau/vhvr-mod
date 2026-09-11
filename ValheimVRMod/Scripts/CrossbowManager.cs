@@ -68,6 +68,38 @@ namespace ValheimVRMod.Scripts {
             {
                 UpdateOneHandedAiming();
             }
+            UpdateGrapplingChainAttachPoint();
+        }
+
+        protected override void OnDestroy()
+        {
+            grapplingChainAttachPoint = null;
+            base.OnDestroy();
+        }
+
+        // Where a deployed grappling hook's chain attaches: the front of the crossbow as last rendered. Vanilla attaches
+        // it to the left hand bone, which outside rendering may still be in its animated pose rather than where the hand
+        // appears, so this is recorded at render time along with the crossbow transform.
+        public static Vector3? grapplingChainAttachPoint { get; private set; }
+
+        private void UpdateGrapplingChainAttachPoint()
+        {
+            if (!EquipScript.IsGrapplingHook(Player.m_localPlayer.GetLeftItem()))
+            {
+                grapplingChainAttachPoint = null;
+                return;
+            }
+
+            // Same as localWeaponTip, but also after any one-handed aiming adjustment.
+            grapplingChainAttachPoint =
+                transform.position + GetWeaponPointingDirection() * (weaponLength - distanceBetweenGripAndRearEnd);
+
+            // Also refresh the chain right away so it stays in sync with the crossbow for this render.
+            var chain = GrapplingPoint.m_localGrappler != null ? GrapplingPoint.m_localGrappler.GetComponent<LineRenderer>() : null;
+            if (chain != null)
+            {
+                chain.SetPosition(1, grapplingChainAttachPoint.Value);
+            }
         }
 
         private void UpdateOneHandedAiming()
