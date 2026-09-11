@@ -150,13 +150,25 @@ namespace ValheimVRMod.Patches {
         // race with the keyboard-driven submit/cancel below.
         public static bool chatKeyboardActive => _keyboardOpen && _chatInput;
 
+        // True while any SteamVR virtual keyboard session is in flight.
+        public static bool keyboardActive => _keyboardOpen;
+
         // Some SteamVR versions no longer render their own temp text row, and VREvent_KeyboardCharInput's
         // cNewInput payload comes back all zero bytes (confirmed via logging) even though the event still
         // fires once per keystroke. So we treat that event purely as a "poll now" signal and re-fetch the
-        // full current text via GetKeyboardText() on every keystroke, mirroring it into the live UI field
-        // ourselves as a stand-in for the temp text row.
+        // text via GetKeyboardText() on every keystroke, mirroring it into the live UI field ourselves as a
+        // stand-in for the temp text row.
         private static StringBuilder _liveText = new StringBuilder(256);
         private static int _liveCaretPosition;
+
+        // SteamVR versions disagree on what GetKeyboardText() returns mid-session: versions that still
+        // render the temp text row return the full accumulated text (including pchExistingText), while
+        // versions without it return only the newest keystroke. Merging a full-text read as if it were a
+        // delta re-appends the whole text on every keystroke, so we have to tell the two apart. The
+        // runtime can't change under a running game, so once a read identifies it we remember it for all
+        // later keyboard sessions.
+        private enum KeyboardTextMode { Unknown, FullText, Delta }
+        private static KeyboardTextMode _keyboardTextMode = KeyboardTextMode.Unknown;
 
         public static float closeTime;
         public static bool triggerReturn;
@@ -207,33 +219,68 @@ namespace ValheimVRMod.Patches {
             RefreshLiveTextFromSteamVR();
         }
 
-        private static void RefreshLiveTextFromSteamVR() {
+        private static string ReadKeyboardText() {
             StringBuilder textBuilder = new StringBuilder(256);
-            int caretPosition = (int)SteamVR.instance.overlay.GetKeyboardText(textBuilder, 256);
-            string delta = textBuilder.ToString();
-            LogUtils.LogInfo($"[Keyboard] GetKeyboardText delta=\"{delta}\" caret={caretPosition}");
+            SteamVR.instance.overlay.GetKeyboardText(textBuilder, 256);
+            return textBuilder.ToString().Replace("\0", string.Empty);
+        }
 
-            // GetKeyboardText() doesn't return the full accumulated text on this SteamVR version - it
-            // returns only what changed since the last read (typically the single newest character), so
-            // we merge it into our own persistent buffer rather than replacing it wholesale.
-            foreach (char c in delta) {
-                if (c == '\0') {
-                    continue;
+        private static void RefreshLiveTextFromSteamVR() {
+            string read = ReadKeyboardText();
+            LogUtils.LogInfo($"[Keyboard] GetKeyboardText read=\"{read}\" mode={_keyboardTextMode}");
+
+            if (_keyboardTextMode == KeyboardTextMode.Unknown) {
+                _keyboardTextMode = ClassifyKeyboardText(_liveText.ToString(), read);
+                if (_keyboardTextMode != KeyboardTextMode.Unknown) {
+                    LogUtils.LogInfo($"[Keyboard] Detected GetKeyboardText mode: {_keyboardTextMode}");
                 }
-                if (c == '\b') {
-                    if (_liveText.Length > 0) {
-                        _liveText.Remove(_liveText.Length - 1, 1);
+            }
+
+            if (_keyboardTextMode == KeyboardTextMode.FullText) {
+                _liveText.Clear();
+                _liveText.Append(read);
+            } else {
+                // Delta mode (or not yet known, where the delta interpretation is the safer default: it
+                // never wipes text): merge into our own persistent buffer rather than replacing it.
+                foreach (char c in read) {
+                    if (c == '\b') {
+                        if (_liveText.Length > 0) {
+                            _liveText.Remove(_liveText.Length - 1, 1);
+                        }
+                    } else if (c == '\n' || c == '\r') {
+                        // Submission is handled by VREvent_KeyboardClosed.
+                    } else {
+                        _liveText.Append(c);
                     }
-                } else if (c == '\n' || c == '\r') {
-                    // Submission is handled by VREvent_KeyboardClosed.
-                } else {
-                    _liveText.Append(c);
                 }
             }
             _liveCaretPosition = _liveText.Length;
 
             LogUtils.LogInfo($"[Keyboard] liveText now: \"{_liveText}\"");
             ApplyLiveText(_liveText.ToString());
+        }
+
+        // Works out from a single read whether GetKeyboardText() returned the full text or just a delta,
+        // assuming each keystroke makes at most one edit. Returns Unknown when the read is consistent with
+        // both, or when both interpretations give the same result anyway.
+        private static KeyboardTextMode ClassifyKeyboardText(string current, string read) {
+            if (read.IndexOf('\b') >= 0) {
+                // The full text never contains a raw backspace.
+                return KeyboardTextMode.Delta;
+            }
+            if (current.Length == 0) {
+                // Merging into an empty buffer and replacing it are the same thing - nothing to go on yet.
+                return KeyboardTextMode.Unknown;
+            }
+            if (read.Length >= 2 && (read.StartsWith(current) || current.StartsWith(read))) {
+                // The text we already have with one character typed or deleted.
+                return KeyboardTextMode.FullText;
+            }
+            if (read.Length == 1 && current.Length >= 2) {
+                // One keystroke can't shrink the full text by two or more characters.
+                return KeyboardTextMode.Delta;
+            }
+            return KeyboardTextMode.Unknown;
         }
 
         private static void ApplyLiveText(string text) {
@@ -279,11 +326,13 @@ namespace ValheimVRMod.Patches {
             _keyboardOpen = false;
 
             closeTime = Time.fixedTime;
-            // Every keystroke, including the last one, already arrived via OnKeyboardCharInput and was
-            // merged into _liveText. Polling GetKeyboardText() again here re-reads and re-merges that
-            // same last delta a second time (SteamVR doesn't seem to clear it until the next keystroke),
-            // which duplicates the final character - so just use what we already have.
-            string text = _liveText.ToString();
+            // In delta mode every keystroke, including the last one, already arrived via OnKeyboardCharInput
+            // and was merged into _liveText. Polling GetKeyboardText() again here would re-read and re-merge
+            // that same last delta a second time (SteamVR doesn't seem to clear it until the next keystroke),
+            // duplicating the final character - so just use what we already have. In full-text mode the
+            // read is authoritative and idempotent, so take it directly, as this did before delta mode
+            // existed.
+            string text = _keyboardTextMode == KeyboardTextMode.FullText ? ReadKeyboardText() : _liveText.ToString();
             int caretPosition = Mathf.Clamp(_liveCaretPosition, 0, text.Length);
             LogUtils.LogInfo($"[Keyboard] Closed. final text=\"{text}\"");
 
