@@ -9,7 +9,7 @@ namespace ValheimVRMod.Utilities
     public enum EquipType
     {
         None,
-        Fishing, Cultivator, Hammer, Hoe, Torch, Scythe, Tray,
+        Fishing, Cultivator, Hammer, Hoe, Torch, Scythe, Tray, Shovel,
         Bow, Spear, SpearChitin, ThrowObject,
         Shield, Tankard, Claws, Magic, Crossbow
         ,
@@ -119,10 +119,8 @@ namespace ValheimVRMod.Utilities
                     return EquipType.Hammer;
                 case "$item_hoe":
                     return EquipType.Hoe;
-                // TODO: the snow shovel is only borrowing the pickaxe handling for now, give it its
-                // own equip type if the grip or swing needs to differ.
                 case "$item_snowshovel":
-                    return EquipType.Pickaxe;
+                    return EquipType.Shovel;
                 case "$item_feaster":
                     return EquipType.Tray;
 

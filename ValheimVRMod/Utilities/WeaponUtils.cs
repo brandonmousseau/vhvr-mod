@@ -568,7 +568,20 @@ namespace ValheimVRMod.Utilities
             var bounds = meshFilter.mesh.bounds;
             var weaponTip = bounds.center + weaponPointing * Mathf.Abs(Vector3.Dot(bounds.extents, weaponPointing));
             var colliderLength = EstimateColliderLength(Vector3.Distance(weaponTip, handLocalPosition), type);
-            var colliderCenter = (type == EquipType.Pickaxe ? weaponTip : weaponTip - weaponPointing * (colliderLength * 0.5f));
+            Vector3 colliderCenter;
+            switch (type)
+            {
+                case EquipType.Pickaxe:
+                    colliderCenter = weaponTip;
+                    break;
+                case EquipType.Shovel:
+                    // Mostly covers the blade, overhanging the tip by a quarter of its length so the ground is easy to reach.
+                    colliderCenter = weaponTip - weaponPointing * (colliderLength * 0.25f);
+                    break;
+                default:
+                    colliderCenter = weaponTip - weaponPointing * (colliderLength * 0.5f);
+                    break;
+            }
             var colliderOffset = colliderCenter - bounds.center;
             var colliderSize =
                 bounds.size - (new Vector3(Mathf.Abs(colliderOffset.x), Mathf.Abs(colliderOffset.y), Mathf.Abs(colliderOffset.z))) * 2;
@@ -589,6 +602,8 @@ namespace ValheimVRMod.Utilities
                 case EquipType.Pickaxe:
                 case EquipType.Spear:
                     return weaponTipDistanceFromHand * 0.875f;
+                case EquipType.Shovel:
+                    return weaponTipDistanceFromHand;
                 case EquipType.Sword:
                     return Mathf.Max(0.125f, weaponTipDistanceFromHand - 0.15f);
                 default:

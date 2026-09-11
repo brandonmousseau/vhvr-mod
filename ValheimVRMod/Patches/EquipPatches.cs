@@ -248,6 +248,7 @@ namespace ValheimVRMod.Patches
                         case EquipType.Knife:
                         case EquipType.Magic:
                         case EquipType.Pickaxe:
+                        case EquipType.Shovel:
                         case EquipType.Polearms:
                         case EquipType.Scythe:
                         case EquipType.Sledge:

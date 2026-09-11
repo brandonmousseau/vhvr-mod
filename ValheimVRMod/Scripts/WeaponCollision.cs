@@ -110,6 +110,18 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
+            if (EquipScript.CurrentMainHandEquipType() == EquipType.Shovel)
+            {
+                // When scooping from the ground the blade is usually already buried by the time the upward scoop
+                // starts, so entering the terrain alone would rarely coincide with the required upward motion.
+                // Anything else only collides on enter like a regular weapon.
+                if (isTerrain(collider.gameObject))
+                {
+                    MaybeAttackCollider(collider, requireStab: false, requireStabOrBackSlash: false);
+                }
+                return;
+            }
+
             if (itemIsTool)
             {
                 switch (EquipScript.CurrentMainHandEquipType())
@@ -149,6 +161,12 @@ namespace ValheimVRMod.Scripts
             }
 
             return character.m_baseAI != null && !character.m_baseAI.m_aggravated && character.m_faction == Character.Faction.Dverger;
+        }
+
+        private static bool IsHostileCharacter(Collider collider)
+        {
+            var character = collider.GetComponentInParent<Character>();
+            return character != null && !IsFriendly(character);
         }
 
         private bool CheckDrinking(Collider collider)
@@ -218,7 +236,8 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            if (!hasMomentum(out bool isStab, out bool isBackSlash, out float speed))
+            bool isShovelScoop = EquipScript.CurrentMainHandEquipType() == EquipType.Shovel && isTerrain(collider.gameObject);
+            if (!hasMomentum(isShovelScoop, out bool isStab, out bool isBackSlash, out float speed))
             {
                 return;
             }
@@ -230,6 +249,16 @@ namespace ValheimVRMod.Scripts
 
             if (requireStabOrBackSlash && !isStab && !isBackSlash)
             {
+                return;
+            }
+
+            if (EquipScript.CurrentMainHandEquipType() == EquipType.Shovel && IsHostileCharacter(collider))
+            {
+                // The shovel has no real attack against hostiles, so it falls back to a kick.
+                if (FootCollision.Kick(collider, transform.position, physicsEstimator.GetVelocity(), speed))
+                {
+                    VRPlayer.mainWeaponHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, VRPlayer.mainWeaponHandInputSource);
+                }
                 return;
             }
 
@@ -561,7 +590,7 @@ namespace ValheimVRMod.Scripts
             }
         }
 
-        private bool hasMomentum(out bool isStab, out bool isBackSlash, out float speed)
+        private bool hasMomentum(bool isShovelScoop, out bool isStab, out bool isBackSlash, out float speed)
         {
             Vector3 velocity;
             if (weaponWield.twoHandedState == WeaponWield.TwoHandedState.SingleHanded)
@@ -586,6 +615,13 @@ namespace ValheimVRMod.Scripts
 
             isBackSlash = Vector3.Angle(velocity, LocalWeaponWield.weaponForward) > 135;
             isStab = !isBackSlash && WeaponCollision.isStab(velocity);
+
+            if (isShovelScoop)
+            {
+                // Scooping is an upward motion: only its upward part counts, against a tool threshold like the hoe's
+                // rather than the weapon swing speed requirement.
+                return velocity.y > MIN_LONG_TOOL_SPEED;
+            }
 
             if (weaponWield.twoHandedState == WeaponWield.TwoHandedState.SingleHanded &&
                 EquipScript.CurrentMainHandEquipType() == EquipType.Polearms &&
