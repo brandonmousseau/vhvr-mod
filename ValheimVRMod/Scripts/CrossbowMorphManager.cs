@@ -392,7 +392,10 @@ namespace ValheimVRMod.Scripts
             bowBendingMaterial.SetFloat("_SoftLimbHeight", anatomy.softLimbHeight);
 
             bowBendingMaterial.SetVector("_StringTop", new Vector4(anatomy.restingStringRight.x, anatomy.restingStringRight.y, anatomy.restingStringRight.z, 1));
-            bowBendingMaterial.SetVector("_StringTopToBottomDirection", new Vector4(-1, 0, 0, 0));
+            // Follow the actual resting string rather than assuming it lies along -X: a slanted vanilla string (e.g. the
+            // grappling hook's) would otherwise drift outside the string radius and only partly get hidden.
+            Vector3 stringTopToBottom = (anatomy.restingStringLeft - anatomy.restingStringRight).normalized;
+            bowBendingMaterial.SetVector("_StringTopToBottomDirection", new Vector4(stringTopToBottom.x, stringTopToBottom.y, stringTopToBottom.z, 0));
             bowBendingMaterial.SetFloat("_StringLength", Vector3.Distance(anatomy.restingStringLeft, anatomy.restingStringRight));
             bowBendingMaterial.SetFloat("_StringRadius", anatomy.stringRadius);
 

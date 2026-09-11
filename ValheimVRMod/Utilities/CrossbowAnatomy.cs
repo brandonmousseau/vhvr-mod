@@ -114,9 +114,9 @@ namespace ValheimVRMod.Utilities {
                 new CrossbowAnatomy(
                     /* hardLimbLeft= */ new Vector3(-0.25f, 0, 1f),
                     /* hardLimbRight= */ new Vector3(0.25f, 0, 1f),
-                    /* restingStringLeft= */ new Vector3(-0.625f, 0.115f, 0.74f),
-                    /* restingStringRight= */ new Vector3(0.625f, 0.10f, 0.74f),
-                    /* restingNockingPoint= */ new Vector3(0, 0.1075f, 0.74f),
+                    /* restingStringLeft= */ new Vector3(-0.61f, 0.115f, 0.74f),
+                    /* restingStringRight= */ new Vector3(0.61f, 0.097f, 0.74f),
+                    /* restingNockingPoint= */ new Vector3(0, 0.105f, 0.74f),
                     /* anchorPoint= */  new Vector3(0, 0.105f, 0.25f),
                     /* maxBendAngleRadians= */ 0.5f,
                     /* softLimbHeight= */ 0.01f,
