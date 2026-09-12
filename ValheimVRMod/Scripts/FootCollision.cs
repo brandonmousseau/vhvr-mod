@@ -146,7 +146,7 @@ namespace ValheimVRMod.Scripts
             return attack.Start(Player.m_localPlayer, null, null, Player.m_localPlayer.m_animEvent, null, item, null, 0.0f, 0.0f);
         }
 
-        void Destroy()
+        void OnDestroy()
         {
             if (debugColliderIndicator != null) Destroy(debugColliderIndicator);
         }

@@ -436,17 +436,17 @@ namespace ValheimVRMod.Patches {
                 // of moving the map around since that will be done with
                 // simulated mouse cursor click and drag via laser pointer.
                 if (instruction.Calls(getJoyLeftStickX)) {
-                    patched.Add(CodeInstruction.Call(typeof(Minimap_UpdateMap_Patch),
+                    patched.Add(instruction.ReplaceCallWith(typeof(Minimap_UpdateMap_Patch),
                         nameof(getJoyLeftStickXPatched), new[] { typeof(bool) }));
                 }
                 else if (instruction.Calls(getJoyLeftStickY)) {
-                    patched.Add(CodeInstruction.Call(typeof(Minimap_UpdateMap_Patch),
+                    patched.Add(instruction.ReplaceCallWith(typeof(Minimap_UpdateMap_Patch),
                         nameof(getJoyLeftStickYPatched), new[] { typeof(bool) }));
                 }
                 else if (instruction.Calls(GetButtonPatchUtils.GetButtonDownOriginal))
                 {
                     // Necessary for map zoom in case ZInput prefix/postfix stops working
-                    patched.Add(CodeInstruction.Call(typeof(GetButtonPatchUtils),
+                    patched.Add(instruction.ReplaceCallWith(typeof(GetButtonPatchUtils),
                         nameof(GetButtonPatchUtils.GetButtonDownPatched), new[] { typeof(string) }));
                 }
                 else {
@@ -600,13 +600,13 @@ namespace ValheimVRMod.Patches {
                 if (original[i + 1].Calls(GetButtonPatchUtils.GetButtonDownOriginal))
                 {
                     patched.Add(
-                        CodeInstruction.Call(
+                        original[i + 1].ReplaceCallWith(
                             typeof(Player_UpdatePlacement_BuildInputPatch),
                             nameof(ShouldTriggerBuildPlacement)));
                 }
                 else if (original[i + 1].Calls(GetButtonPatchUtils.GetButtonUpOriginal)) {
                     patched.Add(
-                        CodeInstruction.Call(
+                        original[i + 1].ReplaceCallWith(
                             typeof(GetButtonPatchUtils),
                             nameof(GetButtonPatchUtils.GetButtonUpPatched)));
                 }
@@ -1031,9 +1031,8 @@ namespace ValheimVRMod.Patches {
                 {
                     // Do not let the player unmount unless jumping.
                     // This prevents interactions such as range weapon attack from unmounting when riding.
-                    var changed = CodeInstruction.Call(typeof(MountedAttackUtils), nameof(MountedAttackUtils.UnmountIfJumping));
-                    changed.labels = original[i].labels;
-                    original[i] = changed;
+                    // Carries over exception blocks as well as labels.
+                    original[i] = original[i].ReplaceCallWith(typeof(MountedAttackUtils), nameof(MountedAttackUtils.UnmountIfJumping));
                 }
             }
             return original;
@@ -1056,9 +1055,8 @@ namespace ValheimVRMod.Patches {
                 {
                     // Do not let the player unmount unless jumping.
                     // This prevents interactions such as range weapon attack from unmounting when riding.
-                    var changed = CodeInstruction.Call(typeof(MountedAttackUtils), nameof(MountedAttackUtils.UnmountIfJumping));
-                    changed.labels = original[i].labels;
-                    original[i] = changed;
+                    // Carries over exception blocks as well as labels.
+                    original[i] = original[i].ReplaceCallWith(typeof(MountedAttackUtils), nameof(MountedAttackUtils.UnmountIfJumping));
                 }
             }
             return original;
@@ -1139,7 +1137,7 @@ namespace ValheimVRMod.Patches {
         }
     }
 
-    // This patch hijacks the right click input on minimap to enable
+    // This patch hijacks the pin removal input on minimap to enable
     // adding map pings. With a normal right click, the default behavior
     // exists where a map pin will be removed. If the click modifier
     // is held down, then instead of removing a pin, a map ping will

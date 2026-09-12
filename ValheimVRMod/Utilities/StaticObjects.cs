@@ -17,6 +17,12 @@ namespace ValheimVRMod.Utilities {
         private static GameObject _shieldObj;
         private static GameObject _mouthCollider;
         
+        public static void RefreshQuickMenus()
+        {
+            if (rightHandQuickMenu != null) rightHandQuickMenu.GetComponent<RightHandQuickMenu>()?.refreshItems();
+            if (leftHandQuickMenu != null) leftHandQuickMenu.GetComponent<LeftHandQuickMenu>()?.refreshItems();
+        }
+
         public static Vector3 lastHitPoint;
         public static Vector3 lastHitDir;
         public static Collider lastHitCollider;

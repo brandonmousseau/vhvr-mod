@@ -60,7 +60,7 @@ namespace ValheimVRMod.Utilities
                 return null;
             }
             GameObject worldSpaceUiCamParent = new GameObject(WORLD_SPACE_UI_CAMERA);
-            worldSpaceUiCamParent.transform.SetParent(vrCam.transform);
+            worldSpaceUiCamParent.transform.SetParent(vrCam.transform, false);
             _worldSpaceUiCamera = worldSpaceUiCamParent.AddComponent<Camera>();
             _worldSpaceUiCamera.CopyFrom(vrCam);
             _worldSpaceUiCamera.clearFlags = CameraClearFlags.Depth;
@@ -74,15 +74,14 @@ namespace ValheimVRMod.Utilities
         public static Camera getCamera(string name)
         {
             //Check cache
-            if(_cameraCache.ContainsKey(name) && _cameraCache[name] != null) return _cameraCache[name];
+            if (_cameraCache.TryGetValue(name, out var cached) && cached != null) return cached;
 
             //Update cache
             foreach (var c in GameObject.FindObjectsOfType<Camera>())
             {
                 if (c.name == name)
                 {
-                    _cameraCache.Remove(name);
-                    _cameraCache.Add(name, c);
+                    _cameraCache[name] = c;
                     return c;
                 }
             }

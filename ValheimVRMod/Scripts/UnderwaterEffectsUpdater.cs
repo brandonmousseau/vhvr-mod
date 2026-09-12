@@ -14,6 +14,7 @@ namespace ValheimVRMod.Scripts
         private GameObject underwaterOverlay;
         private Material underwaterOverlayMaterial;
         private GameObject underwaterLightBlocker = null;
+        private Material underwaterLightBlockerMaterial;
         private Camera camera;
         private bool initialized = false;
         private bool isHidingWater;
@@ -48,7 +49,8 @@ namespace ValheimVRMod.Scripts
             underwaterLightBlocker.transform.rotation = Quaternion.LookRotation(Vector3.up, Vector3.forward);
             Destroy(underwaterLightBlocker.GetComponent<Collider>());
             var underwaterLightBlockerRenderer = underwaterLightBlocker.GetComponent<MeshRenderer>();
-            underwaterLightBlockerRenderer.material = Instantiate(VRAssetManager.GetAsset<Material>("StandardClone"));
+            underwaterLightBlockerMaterial = Instantiate(VRAssetManager.GetAsset<Material>("StandardClone"));
+            underwaterLightBlockerRenderer.material = underwaterLightBlockerMaterial;
             underwaterLightBlockerRenderer.material.color = new Vector4(0.5f, 0.5f, 0.625f, 1);
             underwaterLightBlockerRenderer.receiveShadows = false;
             underwaterLightBlockerRenderer.shadowCastingMode = ShadowCastingMode.Off;
@@ -56,6 +58,15 @@ namespace ValheimVRMod.Scripts
             underwaterLightBlocker.SetActive(false);
 
             initialized = true;
+        }
+
+        private void OnDestroy()
+        {
+            Destroy(underwaterOverlay);
+            Destroy(underwaterLightBlocker);
+            Destroy(underwaterOverlayMaterial);
+            Destroy(underwaterLightBlockerMaterial);
+            Underwaterness = 0;
         }
 
         void FixedUpdate()

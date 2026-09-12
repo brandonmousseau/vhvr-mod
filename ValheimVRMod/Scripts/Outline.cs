@@ -110,7 +110,7 @@ public class Outline : MonoBehaviour {
     }
     if (sharedOutlineFillMaterial == null) {
       sharedOutlineFillMaterial = Instantiate(VRAssetManager.GetAsset<Material>("OutlineFill"));
-      sharedOutlineMaskMaterial.name = "OutlineFill (Instance)";
+      sharedOutlineFillMaterial.name = "OutlineFill (Instance)";
     }
 
     outlineMaskMaterial = new Material(sharedOutlineMaskMaterial);
@@ -119,7 +119,7 @@ public class Outline : MonoBehaviour {
 
   private bool IsPlayerHairMaterials(List<Material> materials) {
     foreach (Material material in materials) {
-      if (material.name.StartsWith("PlayerHair")) {
+      if (material != null && material.name.StartsWith("PlayerHair")) {
         return true;
       }
     }
@@ -191,6 +191,11 @@ public class Outline : MonoBehaviour {
       materials.Remove(outlineFillMaterial);
       renderer.materials = materials.ToArray();
     }
+  }
+
+  void OnDestroy() {
+    Destroy(outlineMaskMaterial);
+    Destroy(outlineFillMaterial);
   }
 
   void Bake() {

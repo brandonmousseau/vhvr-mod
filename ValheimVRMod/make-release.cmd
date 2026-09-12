@@ -93,7 +93,7 @@ copy  "%SOLUTION_DIR%Unity\ValheimVR\Assets\AssetBundles\amplify_resources.manif
 
 ::: Interactive Editor Debugging :::
 
-if exist "%UNITY_DIR%" if not exist "%GAME_DIR%WinPixEventRuntime.dll" (
+if /I "%VHVR_ENABLE_EDITOR_DEBUGGING%"=="true" if exist "%UNITY_DIR%" if not exist "%GAME_DIR%WinPixEventRuntime.dll" (
     :: this part is needed only once, it will turn the game into a development build  
     Xcopy "%UNITY_DIR%Editor\Data\PlaybackEngines\windowsstandalonesupport\Variations\win64_development_mono\Data" "%GAME_DIR%valheim_Data" /s /y /i
     copy "%UNITY_DIR%Editor\Data\PlaybackEngines\windowsstandalonesupport\Variations\win64_development_mono\WindowsPlayer.exe" "%GAME_DIR%valheim.exe"

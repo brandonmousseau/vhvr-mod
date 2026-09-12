@@ -1,4 +1,4 @@
-﻿using static ValheimVRMod.Utilities.LogUtils;
+using static ValheimVRMod.Utilities.LogUtils;
 
 using System.Collections.Generic;
 using System.IO;
@@ -101,17 +101,17 @@ namespace ValheimVRMod.Utilities
                 LogError("GetAsset called before Initialize()");
                 return default;
             }
-            if (!_assets.ContainsKey(name))
+            if (!_assets.TryGetValue(name, out var loadedAsset))
             {
                 LogError("No asset with name found: " + name);
+                return default;
             }
-            var loadedAsset = _assets[name];
             if (loadedAsset == null)
             {
                 LogError("Loaded asset is null!");
                 return default;
             }
-            if (!loadedAsset.GetType().IsAssignableFrom(typeof(T))) {
+            if (!(loadedAsset is T)) {
                 LogError("Asset " + name + " is not assignable to type " + typeof(T));
                 return default;
             }

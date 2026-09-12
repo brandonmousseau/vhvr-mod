@@ -1,14 +1,13 @@
-﻿using System;
-using System.Timers;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using System.Threading;
 using Bhaptics.Tact;
 using UnityEngine;
 
 using static ValheimVRMod.Utilities.LogUtils;
 using System.Linq;
+using ValheimVRMod.Utilities;
 
 namespace ValheimVRMod.Scripts
 {
@@ -17,16 +16,9 @@ namespace ValheimVRMod.Scripts
     {
         public static bool suitDisabled = true;
         public static bool systemInitialized = false;
-        public static bool threadEnabled = false;
-        //semaphore allowing one thread at a time
-        //private static Semaphore _threadAllowed = new Semaphore(0,1);
-        //list of allowed thread by effectname
-        public static volatile Dictionary<string, bool> ThreadsConditions = new Dictionary<string, bool>();
-        public static volatile Dictionary<string, bool> ThreadsStatus = new Dictionary<string, bool>();
-        //association effect name => params (intensity, sleep)
-        public static Dictionary<string, float[]> ThreadParams = new Dictionary<string, float[]>();
-        //association effect name => effect
-        public static Dictionary<string, string[]> ThreadCallbacks = new Dictionary<string, string[]>();
+        private static readonly System.Diagnostics.Stopwatch clock = System.Diagnostics.Stopwatch.StartNew();
+        private static readonly HapticScheduler scheduler = new HapticScheduler(PlaybackHaptics, StopHapticFeedback);
+        private static double nextThrottledStart;
         // dictionary of all feedback patterns found in the bHaptics directory
         public static Dictionary<string, FileInfo> FeedbackMap = new Dictionary<string, FileInfo>();
 
@@ -35,7 +27,6 @@ namespace ValheimVRMod.Scripts
 #pragma warning restore CS0618 
 
         public static RotationOption defaultRotationOption = new RotationOption(0.0f, 0.0f);
-        private static System.Timers.Timer aTimer;
 
         #region Initializers
 
@@ -60,24 +51,34 @@ namespace ValheimVRMod.Scripts
                 LogInfo("Suit initialization failed!");
                 return;
             }
-            RegisterAllTactFiles();
+            if (!RegisterAllTactFiles())
+            {
+                suitDisabled = true;
+                return;
+            }
             LogInfo("Starting HeartBeat thread...");
             PlaybackHaptics("HeartBeat");
-            SetTimer();
+
         }
 
         /**
          * Registers all tact files in bHaptics folder
          */
-        void RegisterAllTactFiles()
+        bool RegisterAllTactFiles()
         {
-            if (suitDisabled) { return; }
+            if (suitDisabled) { return false; }
             // Get location of the compiled assembly and search through "bHaptics" directory and contained patterns
             string assemblyFile = Assembly.GetExecutingAssembly().Location;
             string myPath = Path.GetDirectoryName(assemblyFile);
             LogInfo("Assembly path: " + myPath);
             string configPath = myPath + "\\bHaptics";
             DirectoryInfo d = new DirectoryInfo(configPath);
+            if (!d.Exists)
+            {
+                LogError("Haptics pattern directory is missing: " + configPath);
+                return false;
+            }
+            FeedbackMap.Clear();
             FileInfo[] Files = d.GetFiles("*.tact", SearchOption.AllDirectories);
             for (int i = 0; i < Files.Length; i++)
             {
@@ -94,25 +95,21 @@ namespace ValheimVRMod.Scripts
                 }
                 catch (Exception e) { LogInfo(e.ToString()); }
 
-                FeedbackMap.Add(prefix, Files[i]);
+                FeedbackMap[prefix] = Files[i];
             }
             systemInitialized = true;
+            return true;
         }
-        /**
-         * Starts Timer needed for thread creation limiter
-         */
-        private static void SetTimer()
+        private void Update()
         {
-            // Create a timer with a 200ms interval.
-            aTimer = new System.Timers.Timer(200);
-            // Hook up the Elapsed event for the timer. 
-            aTimer.Elapsed += OnTimedEvent;
-            aTimer.AutoReset = true;
-            aTimer.Enabled = true;
+            if (!suitDisabled) scheduler.Tick(clock.Elapsed.TotalSeconds);
         }
-        private static void OnTimedEvent(object source, ElapsedEventArgs e)
+
+        private void OnDestroy()
         {
-            threadEnabled = true;
+            StopAllHapticFeedback();
+            suitDisabled = true;
+            systemInitialized = false;
         }
         #endregion
 
@@ -205,212 +202,41 @@ namespace ValheimVRMod.Scripts
             hapticPlayer.SubmitRegisteredVestRotation(keyVest, keyVest, rotationFront, scaleOption);
         }
 
-        /**
-         * Checks if creation needs to be controlled by timer
-         * Creates Thread condition if not exists
-         * Create Thread if not exists
-         * creates or update thread params
-         * Start or restart thread with params/updated params
-         */
-        public static void StartThreadHaptic(
-            string EffectName,
-            float intensity = 1.0f,
-            bool timerNeeded = false,
-            int sleep = 1000,
-            float duration = 1.0f,
-            int delayedStart = 0
-            )
+        // Keep the public method names used by patches; effects are now scheduled on the Unity thread.
+        public static void StartThreadHaptic(string EffectName, float intensity = 1.0f,
+            bool timerNeeded = false, int sleep = 1000, float duration = 1.0f, int delayedStart = 0)
         {
+            if (suitDisabled) return;
+            var now = clock.Elapsed.TotalSeconds;
             if (timerNeeded)
             {
+                if (now < nextThrottledStart) return;
+                nextThrottledStart = now + 0.2;
                 sleep = 200;
             }
-            //checks if timer control needed
-            if (timerNeeded && !threadEnabled)
-            {
-                return;
-            }
-            //params
-            if (!ThreadParams.ContainsKey(EffectName))
-            {
-                float[] thParams = { intensity, sleep, duration };
-                ThreadParams.Add(EffectName, thParams);
-            }
-            else
-            {
-                //update params
-                ThreadParams[EffectName][0] = intensity;
-                ThreadParams[EffectName][1] = sleep;
-                ThreadParams[EffectName][2] = duration;
-            }
-            //set thread condition true cause we are in start function
-            setThreadsConditions(EffectName, true);
-            //checking if thread is created and alive
-            if (!ThreadsStatus.ContainsKey(EffectName) || !ThreadsStatus[EffectName])
-            {
-                Thread EffectThread = new Thread(() => ThreadHapticFunc(EffectName, delayedStart));
-                EffectThread.Start();
-            }
-            //we still turn threadEnabled to false for other timerNeeded processes
-            threadEnabled = false;
+            scheduler.Start(EffectName, intensity, duration, sleep / 1000.0, delayedStart / 1000.0, now);
         }
 
-        /**
-         * Resets the thread condition to tell the corresponding
-         * Thread to stop
-         */
         public static void StopThreadHaptic(string name, string[] callback = null)
         {
-            if (ThreadsStatus.ContainsKey(name) && ThreadsStatus[name])
-            {
-                StopHapticFeedback(name);
-                if (callback != null)
-                {
-                    setThreadCallbacks(name, callback);
-                }
-                setThreadsConditions(name, false);
-            }
+            scheduler.Stop(name, callback);
         }
 
-        /**
-         * Stop a thread but with delay
-         */
         public static void StopThreadHapticDelayed(string name, int delay)
         {
-            if (ThreadsStatus.ContainsKey(name) && ThreadsStatus[name])
-            {
-                setThreadsStatus(name, true);
-                Thread EffectThread = new Thread(() =>
-                {
-                    Thread.Sleep(delay);
-                    StopHapticFeedback(name);
-                    setThreadsConditions(name, false);
-                    setThreadsStatus(name, false);
-
-                });
-                EffectThread.Start();
-            }
+            scheduler.StopAfter(name, delay / 1000.0, clock.Elapsed.TotalSeconds);
         }
 
         public static void StopHapticFeedback(string effect)
         {
-            lock (hapticPlayer)
-            {
-                hapticPlayer.TurnOff(effect);
-            }
+            if (!suitDisabled && hapticPlayer != null) hapticPlayer.TurnOff(effect);
         }
 
         public static void StopAllHapticFeedback(string[] exceptions = null)
         {
-            lock (ThreadsConditions)
-            {
-                foreach (string name in ThreadsConditions.Keys)
-                {
-                    setThreadsConditions(name, false);
-                }
-            }
-            lock (FeedbackMap)
-            {
-                foreach (string key in FeedbackMap.Keys)
-                {
-                    if (exceptions == null || !exceptions.Contains(key))
-                    {
-                        StopHapticFeedback(key);
-                    }
-                }
-            }
-        }
-
-        /**
-         * Thread function executing haptic effect every sleep value
-         * while corresponding name condition is not false
-         */
-        public static void ThreadHapticFunc(string name, int delayedStart = 0)
-        {
-            try
-            {
-                //thread is alive
-                setThreadsStatus(name, true);
-                if (delayedStart != 0)
-                {
-                    Thread.Sleep(delayedStart);
-                }
-                //if false, stops the thread by making it finish
-                while (ThreadsConditions[name])
-                {
-                    PlaybackHaptics(name, ThreadParams[name][0], ThreadParams[name][2]);
-                    int sleep = (int)ThreadParams[name][1];
-                    Thread.Sleep(sleep == 0 ? 1000 : sleep);
-                }
-            }
-            finally
-            {
-                //thread is dead
-                setThreadsStatus(name, false);
-                //if callback exists
-                if (ThreadCallbacks.ContainsKey(name))
-                {
-                    foreach ( string eff in ThreadCallbacks[name])
-                    {
-                        PlaybackHaptics(eff);
-                    }
-                    removeThreadCallbacks(name);
-                }
-            }
-        }
-        #endregion
-
-        #region Setters
-        public static void setThreadCallbacks(string name, string[] effect)
-        {
-            lock (ThreadCallbacks)
-            {
-                if (ThreadCallbacks.ContainsKey(name))
-                {
-                    ThreadCallbacks[name] = effect;
-                }
-                else
-                {
-                    ThreadCallbacks.Add(name, effect);
-                }
-            }
-        }
-        public static void setThreadsStatus(string name, bool value)
-        {
-            lock (ThreadsStatus)
-            {
-                if (ThreadsStatus.ContainsKey(name))
-                {
-                    ThreadsStatus[name] = value;
-                }
-                else
-                {
-                    ThreadsStatus.Add(name, value);
-                }
-            }
-        }
-
-        public static void setThreadsConditions(string name, bool value)
-        {
-            lock (ThreadsConditions)
-            {
-                if (ThreadsConditions.ContainsKey(name))
-                {
-                    ThreadsConditions[name] = value;
-                }
-                else
-                {
-                    ThreadsConditions.Add(name, value);
-                }
-            }
-        }
-
-        public static void removeThreadCallbacks(string name)
-        {
-            lock (ThreadCallbacks)
-            {
-                ThreadCallbacks.Remove(name);
-            }
+            scheduler.StopAll(exceptions);
+            foreach (var key in FeedbackMap.Keys)
+                if (exceptions == null || !exceptions.Contains(key)) StopHapticFeedback(key);
         }
         #endregion
     }

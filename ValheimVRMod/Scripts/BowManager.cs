@@ -47,8 +47,10 @@ namespace ValheimVRMod.Scripts
         protected GameObject pullObj;
         // An object placed at the handle center with the direction of the push force as its forward direction.
         protected GameObject pushObj;
-        protected bool initialized;
+        protected volatile bool initialized;
         protected bool wasInitialized;
+        private Exception initializationError;
+        private volatile bool initializationFailed;
         protected Outline outline;
         public Transform arrowHandTransform;
 
@@ -84,7 +86,17 @@ namespace ValheimVRMod.Scripts
             float handleBottomLocalHeight = Vector3.Dot(transform.InverseTransformPoint(bowOrientation.TransformPoint(new Vector3(0, -bowAnatomy.handleHeight * 0.5f, 0))), bowUpInObjectSpace);
             // we need to run this method in thread as it takes longer than a frame and freezes game for a moment
             var xScale = transform.localScale.x;
-            Thread thread = new Thread(() => initializeRenderersAsync(handleTopLocalHeight, handleBottomLocalHeight, xScale));
+            var restElevation = VHVRConfig.ArrowRestElevation();
+            Thread thread = new Thread(() =>
+            {
+                try { initializeRenderersAsync(handleTopLocalHeight, handleBottomLocalHeight, xScale, restElevation); }
+                catch (Exception error)
+                {
+                    initializationError = error;
+                    initializationFailed = true;
+                }
+            });
+            thread.IsBackground = true;
             thread.Start();
 
             pullObj = new GameObject();
@@ -97,6 +109,12 @@ namespace ValheimVRMod.Scripts
 
         void Update()
         {
+            if (initializationFailed)
+            {
+                LogUtils.LogError("Could not prepare bow mesh: " + initializationError);
+                enabled = false;
+                return;
+            }
             if (outline == null && gameObject.GetComponent<SkinnedMeshRenderer>() != null)
             {
                 createOutline();
@@ -107,13 +125,7 @@ namespace ValheimVRMod.Scripts
         {
             Destroy(pullObj);
             Destroy(pushObj);
-            Destroy(pullStart.gameObject);
-            Destroy(bowOrientation.gameObject);
-            Destroy(bowTransformUpdater.gameObject);
-            Destroy(stringTop.gameObject);
-            Destroy(stringBottom.gameObject);
-            Destroy(upperLimbBone.gameObject);
-            Destroy(lowerLimbBone.gameObject);
+            if (bowOrientation != null) Destroy(bowOrientation.gameObject);
         }
 
         protected Vector3 getArrowRestPosition(
@@ -142,7 +154,7 @@ namespace ValheimVRMod.Scripts
         }
 
 
-        private void initializeRenderersAsync(float handleTopLocalHeight, float handleBottomLocalHeight, float bowScale)
+        private void initializeRenderersAsync(float handleTopLocalHeight, float handleBottomLocalHeight, float bowScale, float restElevation)
         {
 
             // Remove the old bow string, which is part of the bow mesh to later replace it with a linerenderer.
@@ -226,16 +238,14 @@ namespace ValheimVRMod.Scripts
                     // The vertex is in the lower limb.
                     boneWeights[i].boneIndex0 = 2;
                 }
-                if (0 <= currentHeight && currentHeight < VHVRConfig.ArrowRestElevation())
+                if (0 <= currentHeight && currentHeight < restElevation)
                 {
                     localGripLocalHalfWidth = Math.Max(Math.Abs(Vector3.Dot(v, bowRightInObjectSpace)), localGripLocalHalfWidth);
                 }
                 boneWeights[i].weight0 = 1;
             }
-            gripLocalHalfWidth = localGripLocalHalfWidth * bowScale;
-
-            bowOrientation.localRotation = adjustedRotation;
-            transform.SetPositionAndRotation(bowTransformUpdater.position, bowTransformUpdater.rotation);
+            gripLocalHalfWidth = float.IsNegativeInfinity(localGripLocalHalfWidth)
+                ? bowAnatomy.fallbackHandleWidth * 0.5f : localGripLocalHalfWidth * bowScale;
 
             initialized = true;
         }
@@ -269,6 +279,9 @@ namespace ValheimVRMod.Scripts
 
         private void PostInit()
         {
+            // Transform access belongs on the Unity thread, after the mesh worker has finished.
+            bowOrientation.localRotation = adjustedRotation;
+            transform.SetPositionAndRotation(bowTransformUpdater.position, bowTransformUpdater.rotation);
             if (canAccessMesh)
             {
                 handleTop = bowOrientation.InverseTransformPoint(transform.TransformPoint(handleTopInObjectSpace));
@@ -346,7 +359,7 @@ namespace ValheimVRMod.Scripts
                 }
                 catch (Exception e)
                 {
-                    LogUtils.LogError("Bow bending material not found!");
+                    LogUtils.LogError("Could not configure bow bending material: " + e);
                     useCustomShader = false;
                 }
             }
@@ -457,7 +470,8 @@ namespace ValheimVRMod.Scripts
             float realLifeHandDistance = bowOrientation.InverseTransformPoint(arrowHandTransform.position).magnitude;
 
             // The angle between the push direction and the arrow direction.
-            double pushOffsetAngle = Math.Asin(VHVRConfig.ArrowRestElevation() / realLifeHandDistance);
+            if (realLifeHandDistance <= 0.0001f) return;
+            double pushOffsetAngle = Math.Asin(Mathf.Clamp(VHVRConfig.ArrowRestElevation() / realLifeHandDistance, -1f, 1f));
 
             // Align the forward vector of the pushObj with the direction of the push force and determine its y-axis using the orientation of the bow hand.
             Vector3 pushDirection = pushObj.transform.position - arrowHandTransform.position;

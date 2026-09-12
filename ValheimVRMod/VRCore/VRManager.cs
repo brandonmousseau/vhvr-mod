@@ -36,6 +36,7 @@ namespace ValheimVRMod.VRCore
             if (!InitializeSteamVR())
             {
                 LogError("Problem initializing SteamVR");
+                StopVR();
                 return false;
             }
             return true;
@@ -45,6 +46,14 @@ namespace ValheimVRMod.VRCore
         {
             LogInfo("Starting VR...");
             return StartXRSDK();
+        }
+
+        public static void StopVR()
+        {
+            var manager = XRGeneralSettings.Instance != null ? XRGeneralSettings.Instance.Manager : null;
+            if (manager == null || manager.activeLoader == null) return;
+            manager.StopSubsystems();
+            manager.DeinitializeLoader();
         }
 
         public static bool InitializeSteamVR()
@@ -116,9 +125,21 @@ namespace ValheimVRMod.VRCore
             string xrManagerAssetPath = Path.Combine(Application.streamingAssetsPath, "xrmanager");
             LogDebug("Loading XR Settings from AssetBundle: " + xrManagerAssetPath);
             var assetBundle = AssetBundle.LoadFromFile(xrManagerAssetPath);
-            foreach (var a in assetBundle.LoadAllAssets())
+            if (assetBundle == null)
             {
-                LogDebug("XRManagement Asset Loaded: " + a.name);
+                LogError("Cannot load XR settings bundle: " + xrManagerAssetPath);
+                return null;
+            }
+            try
+            {
+                foreach (var a in assetBundle.LoadAllAssets())
+                {
+                    LogDebug("XRManagement Asset Loaded: " + a.name);
+                }
+            }
+            finally
+            {
+                assetBundle.Unload(false);
             }
             XRGeneralSettings instance = XRGeneralSettings.Instance;
             if (instance == null)
@@ -146,7 +167,7 @@ namespace ValheimVRMod.VRCore
             } while ((managerSettings.activeLoader == null) && (tries < VHVRConfig.MaxVRInitializationTries()));
             if (managerSettings.activeLoader == null)
             {
-                LogError("managerSettings.activeLoader is null after " + tries + " tries.");
+                LogError("VR initialization failed after " + tries + " attempts. Connect the headset and start SteamVR before relaunching Valheim.");
                 return false;
             }
             OpenVRSettings openVrSettings = OpenVRSettings.GetSettings(false);

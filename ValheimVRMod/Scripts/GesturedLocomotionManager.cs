@@ -599,6 +599,7 @@ namespace ValheimVRMod.Scripts
                     if (gesturedWalkRun == null)
                     {
                         Destroy(this.gameObject);
+                        return;
                     }
 
                     if (VRPlayer.leftHand == null || VRPlayer.rightHand == null || !gesturedWalkRun.isWalkingOrRunningUsingGestures)

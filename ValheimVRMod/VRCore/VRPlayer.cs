@@ -567,6 +567,10 @@ namespace ValheimVRMod.VRCore
             }
             var effect = _vrCam.gameObject.GetComponent<AmplifyOcclusionEffect>();
             effect.SampleCount = SampleCountLevel.Medium;
+            // The temporal filter accumulates occlusion across frames. The two eyes are rendered in
+            // sequence, so each one blends in the other's history, which makes fine shadowing (grass
+            // most visibly) drift independently in each eye. The spatial blur keeps the look without it.
+            effect.FilterEnabled = false;
             effect.enabled = VHVRConfig.UseAmplifyOcclusion();
         }
 
@@ -910,8 +914,9 @@ namespace ValheimVRMod.VRCore
             }
             Camera vrCam = CameraUtils.getCamera(CameraUtils.VR_CAMERA);
             CameraUtils.copyCamera(mainCamera, vrCam);
-            maybeCopyPostProcessingEffects(vrCam, mainCamera);
+            // Must run first: Valheim 1.0's CameraEffects wants a reference to the occlusion effect.
             maybeAddAmplifyOcclusion(vrCam);
+            maybeCopyPostProcessingEffects(vrCam, mainCamera);
             // Prevent visibility of the head
             vrCam.nearClipPlane = VHVRConfig.GetNearClipPlane();
             MainCameraFarClipPlane = mainCamera.farClipPlane;

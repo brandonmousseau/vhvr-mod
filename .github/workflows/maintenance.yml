@@ -1,0 +1,17 @@
+name: Maintenance regressions
+on:
+  push:
+    branches: ['cleanup/**']
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  regressions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - run: dotnet run --project tests/MaintenanceRegression -- "$GITHUB_WORKSPACE"
+      - run: python3 -m py_compile build/prepare-game-references.py

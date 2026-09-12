@@ -38,6 +38,7 @@ namespace ValheimVRMod.Utilities
                 rotationSnapshots.Clear();
                 velocitySnapshots.Clear();
                 sparseSnapshots.Clear();
+                sparseSnapshotTicker = 0;
                 cachedAverageVelocityInSnapshots = null;
                 _refTransform = value;
             }
@@ -98,9 +99,12 @@ namespace ValheimVRMod.Utilities
             }
         }
 
-        void Destroy()
+        void OnDestroy()
         {
-            Destroy(debugVelocityLine.gameObject);
+            if (debugVelocityLine != null)
+            {
+                Destroy(debugVelocityLine.gameObject);
+            }
         }
 
         public Vector3 GetVelocity(Vector3? position = null)
@@ -139,11 +143,21 @@ namespace ValheimVRMod.Utilities
             {
                 return Vector3.zero;
             }
-            Quaternion deltaRotation = Quaternion.Inverse(rotationSnapshots[0]) * rotationSnapshots[rotationSnapshots.Count - 1];
             float deltaT = (rotationSnapshots.Count - 1) * Time.fixedDeltaTime;
-            Quaternion.SlerpUnclamped(Quaternion.identity, deltaRotation, 1 / deltaT).ToAngleAxis(out float angle, out Vector3 axis);
-            var angularVelocity = angle * axis * Mathf.PI / 180;
+            var angularVelocity = EstimateAngularVelocity(rotationSnapshots[0], rotationSnapshots[rotationSnapshots.Count - 1], deltaT);
             return refTransform == null ? angularVelocity : refTransform.TransformVector(angularVelocity);
+        }
+
+        private static Vector3 EstimateAngularVelocity(Quaternion previous, Quaternion current, float deltaTime)
+        {
+            if (deltaTime <= 0) return Vector3.zero;
+            // Measure the shortest rotation in the reference frame before dividing by time.
+            // Extrapolating the quaternion first wraps fast rotations back into a single turn.
+            var delta = current * Quaternion.Inverse(previous);
+            delta.ToAngleAxis(out float angle, out Vector3 axis);
+            if (angle > 180) angle -= 360;
+            if (Mathf.Abs(angle) < 0.0001f) return Vector3.zero;
+            return axis * (angle * Mathf.Deg2Rad / deltaTime);
         }
             
         public Vector3 GetAcceleration() {
@@ -210,4 +224,3 @@ namespace ValheimVRMod.Utilities
         }
     }
 }
-

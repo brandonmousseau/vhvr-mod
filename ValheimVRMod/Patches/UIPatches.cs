@@ -43,7 +43,11 @@ namespace ValheimVRMod.Patches
                 if (instruction.Calls(setParentMethod))
                 {
                     // Push "false" onto evaluation stack
-                    patched.Add(new CodeInstruction(OpCodes.Ldc_I4_0));
+                    var pushFalse = new CodeInstruction(OpCodes.Ldc_I4_0);
+                    // The call being replaced may be a branch target, so anything pointing at it has to
+                    // point at the head of the replacement sequence instead.
+                    instruction.MoveMetadataTo(pushFalse);
+                    patched.Add(pushFalse);
                     // Call SetParent method that uses the bool input
                     patched.Add(CodeInstruction.Call(typeof(Transform), "SetParent", new Type[] { typeof(Transform), typeof(bool) }));
                 } else
@@ -682,7 +686,7 @@ namespace ValheimVRMod.Patches
                 // loaded the gui field. If these conditions met, call our own SetActive function with (true).
                 // For the second time we find SetActive, we'll then set it to false to disable the original enemy huds
                 // except for the boss hud.
-                if (instruction.opcode.Equals(OpCodes.Ldc_I4_1) && !patchedSetActiveTrue)
+                if (instruction.opcode.Equals(OpCodes.Ldc_I4_1))
                 {
                     if ((i + 1) < original.Count && (i - 1) >= 0) {
                         var previousInstruction = original[i - 1];

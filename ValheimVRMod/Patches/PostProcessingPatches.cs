@@ -68,6 +68,18 @@ namespace ValheimVRMod.Patches
     [HarmonyPatch]
     public class PostProcessingPatches
     {
+        // Valheim 1.0 made CameraEffects.Awake() call ApplySettings() straight away, and SetSSAO
+        // dereferences the serialized m_amplifyOcclusion field. VHVR adds CameraEffects to the VR
+        // camera at runtime, where that field is still null while Awake runs, and the resulting
+        // NullReferenceException aborted the whole VR camera setup - which left the world space UI
+        // camera uncreated and the post processing effects unconfigured.
+        [HarmonyPrefix]
+        [HarmonyPatch(typeof(CameraEffects), nameof(CameraEffects.SetSSAO))]
+        static bool PrefixCameraEffectsSetSSAO(CameraEffects __instance)
+        {
+            return __instance.m_amplifyOcclusion != null;
+        }
+
         [HarmonyPostfix]
         [HarmonyPatch(typeof(PostProcessingBehaviour), "OnEnable")]
         static void PostfixPostProcessingOnEnable(PostProcessingBehaviour __instance, TaaComponent ___m_Taa, Dictionary<PostProcessingComponentBase, bool> ___m_ComponentStates, List<PostProcessingComponentBase> ___m_Components)
@@ -105,6 +117,11 @@ namespace ValheimVRMod.Patches
         private static MethodInfo CallsTaaResetHistory = AccessTools.Method(typeof(TaaComponent), nameof(TaaComponent.ResetHistory));
         private static MethodInfo CallsTaaGetJitterVector = AccessTools.PropertyGetter(typeof(TaaComponent), nameof(TaaComponent.jitterVector));
 
+        private static VRTaaComponent GetVrTaaComponent(PostProcessingBehaviour behaviour)
+        {
+            return VRTaaComponent.PostProcessingExtension.GetOrCreateValue(behaviour);
+        }
+
         [HarmonyTranspiler]
         [HarmonyPatch(typeof(PostProcessingBehaviour), "OnPostRender")]
         [HarmonyPatch(typeof(PostProcessingBehaviour), "OnPreCull")]
@@ -122,32 +139,29 @@ namespace ValheimVRMod.Patches
                 if (instruction.LoadsField(LoadsTaaComponent))
                 {
                     Debug.Log("Patched TAA reference");
-                    var lastInstuction = patched[patched.Count - 1];
-                    if (lastInstuction != null && lastInstuction.opcode == OpCodes.Ldarg_0)
-                        patched.RemoveAt(patched.Count - 1);
-                    patched.Add(new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(VRTaaComponent), nameof(VRTaaComponent.PostProcessingExtension))));
-                    patched.Add(new CodeInstruction(OpCodes.Ldarg_0));
-                    patched.Add(new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(ConditionalWeakTable<PostProcessingBehaviour, VRTaaComponent>), nameof(ConditionalWeakTable<PostProcessingBehaviour, VRTaaComponent>.GetOrCreateValue), new Type[] { typeof(PostProcessingBehaviour)})));
+                    // Consume the original field receiver already on the stack. This also works
+                    // when it comes from a local or a branch rather than a preceding ldarg.0.
+                    patched.Add(instruction.ReplaceCallWith(typeof(PostProcessingPatches), nameof(GetVrTaaComponent)));
                 }
                 else if (instruction.Calls(CallsTaaSetProjectionMatrix))
                 {
                     Debug.Log("Patched TAA SetProjectionMatrix");
-                    patched.Add(new CodeInstruction(instruction.opcode, AccessTools.Method(typeof(VRTaaComponent), nameof(VRTaaComponent.ConfigureStereoMonoProjectionMatrices), new Type[] { typeof(Func<Vector2, Matrix4x4>) })));
+                    patched.Add(new CodeInstruction(instruction.opcode, AccessTools.Method(typeof(VRTaaComponent), nameof(VRTaaComponent.ConfigureStereoMonoProjectionMatrices), new Type[] { typeof(Func<Vector2, Matrix4x4>) })).KeepMetadataOf(instruction));
                 }
                 else if (instruction.Calls(CallsTaaRender))
                 {
                     Debug.Log("Patched TAA Render");
-                    patched.Add(new CodeInstruction(instruction.opcode, AccessTools.Method(typeof(VRTaaComponent), nameof(VRTaaComponent.Render), new Type[] { typeof(RenderTexture), typeof(RenderTexture) })));
+                    patched.Add(new CodeInstruction(instruction.opcode, AccessTools.Method(typeof(VRTaaComponent), nameof(VRTaaComponent.Render), new Type[] { typeof(RenderTexture), typeof(RenderTexture) })).KeepMetadataOf(instruction));
                 }
                 else if (instruction.Calls(CallsTaaGetJitterVector))
                 {
                     Debug.Log("Patched TAA GetJitterVector");
-                    patched.Add(new CodeInstruction(instruction.opcode, AccessTools.PropertyGetter(typeof(VRTaaComponent), nameof(VRTaaComponent.jitterVector))));
+                    patched.Add(new CodeInstruction(instruction.opcode, AccessTools.PropertyGetter(typeof(VRTaaComponent), nameof(VRTaaComponent.jitterVector))).KeepMetadataOf(instruction));
                 }
                 else if (instruction.Calls(CallsTaaResetHistory))
                 {
                     Debug.Log("Patched TAA ResetHistory");
-                    patched.Add(new CodeInstruction(instruction.opcode, AccessTools.Method(typeof(VRTaaComponent), nameof(VRTaaComponent.ResetHistory))));
+                    patched.Add(new CodeInstruction(instruction.opcode, AccessTools.Method(typeof(VRTaaComponent), nameof(VRTaaComponent.ResetHistory))).KeepMetadataOf(instruction));
                 }
                 else
                 {

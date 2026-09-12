@@ -159,9 +159,8 @@ namespace ValheimVRMod.Patches
             {
                 if (original[i].Calls(AccessTools.Method(typeof(Application), "set_targetFrameRate", new[] { typeof(Int32) })))
                 {
-                    var changed = CodeInstruction.Call(typeof(Application_FrameRate_Patch), nameof(Nop), new[] { typeof(Int32) });
-                    changed.labels = original[i].labels;
-                    original[i] = changed;
+                    // Carries over exception blocks as well as labels.
+                    original[i] = original[i].ReplaceCallWith(typeof(Application_FrameRate_Patch), nameof(Nop), new[] { typeof(Int32) });
                 }
             }
             return original;
@@ -196,13 +195,13 @@ namespace ValheimVRMod.Patches
                     patched.Add(instruction);
                     continue;
                 }
-                if (instruction.Calls(rotateMethod) && original[i - 1].opcode == OpCodes.Mul)
+                if (instruction.Calls(rotateMethod) && i > 0 && original[i - 1].opcode == OpCodes.Mul)
                 {
-                    patched.Add(CodeInstruction.Call(typeof(Prevent_Pause_Character_Spin_Patch), nameof(Prevent_Pause_Character_Spin_Patch.FakeRotate)));
+                    patched.Add(instruction.ReplaceCallWith(typeof(Prevent_Pause_Character_Spin_Patch), nameof(Prevent_Pause_Character_Spin_Patch.FakeRotate)));
                 }
                 else if (instruction.Calls(setLookDirMethod))
                 {
-                    patched.Add(CodeInstruction.Call(typeof(Prevent_Pause_Character_Spin_Patch), nameof(Prevent_Pause_Character_Spin_Patch.FakeSetLookDir)));
+                    patched.Add(instruction.ReplaceCallWith(typeof(Prevent_Pause_Character_Spin_Patch), nameof(Prevent_Pause_Character_Spin_Patch.FakeSetLookDir)));
                 }
                 else
                 {

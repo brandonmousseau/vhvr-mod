@@ -75,13 +75,23 @@ namespace ValheimVRMod
                 }
             }
 
-            HarmonyPatcher.DoPatching();
-
             if (!VRAssetManager.Initialize())
             {
-                LogError("Problem initializing VR Assets");
-                vrInitialized = false;
+                LogError("Required VR assets could not be loaded; VHVR will not apply its patches.");
+                failedToInitializeVR = true;
+                VRManager.StopVR();
+                enabled = false;
+                return;
             }
+
+            if (vrInitialized && !VRManager.StartVR())
+            {
+                failedToInitializeVR = true;
+                vrInitialized = false;
+                VRManager.StopVR();
+            }
+
+            HarmonyPatcher.DoPatching();
 
             if (!vrInitialized)
             {
@@ -89,7 +99,6 @@ namespace ValheimVRMod
                 return;
             }
 
-            VRManager.StartVR();
             vrPlayer = new GameObject("VRPlayer");
             DontDestroyOnLoad(vrPlayer);
             vrPlayer.AddComponent<VRPlayer>();
