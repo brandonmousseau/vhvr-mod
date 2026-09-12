@@ -17,9 +17,7 @@ namespace ValheimVRMod.Scripts
         public LocalWeaponWield weaponWield { private get; set; }
         public static Vector3 spawnPoint { get; private set; }
         public static Vector3 aimDir { get; private set; }
-        public static float throwSpeed { get; private set; }
-        // Raw hand speed along the throw direction in m/s, before normalization into throwSpeed.
-        // WeaponUtils.GetThrowLaunchSpeed() turns this into an absolute launch speed.
+        // Hand speed along the throw direction in m/s, which WeaponUtils.GetThrowLaunchSpeed() maps to the launch speed.
         public static float handSpeed { get; private set; }
         public static Vector3 startAim { get; private set; }
         public static bool isThrowing;
@@ -212,10 +210,9 @@ namespace ValheimVRMod.Scripts
             spawnPoint = VRPlayer.mainWeaponHand.transform.position;
             var throwing = CalculateThrowAndDistance(direction);
             aimDir = direction;
-            throwSpeed = throwing.ThrowSpeed;
+            handSpeed = throwing.HandSpeed;
             if (throwing.Distance > minDist)
             {
-                throwSpeed = throwing.ThrowSpeed;
                 if (MountedAttackUtils.StartAttackIfRiding(isSecondaryAttack: EquipScript.CurrentMainHandEquipType() == EquipType.Spear))
                 {
                     ResetSpearOffset();
@@ -265,11 +262,11 @@ namespace ValheimVRMod.Scripts
 
         class ThrowCalculate
         {
-            public float ThrowSpeed { get; set; }
+            public float HandSpeed { get; set; }
             public float Distance { get; set; }
-            public ThrowCalculate(float throwSpeed, float distance)
+            public ThrowCalculate(float handSpeed, float distance)
             {
-                ThrowSpeed = throwSpeed;
+                HandSpeed = handSpeed;
                 Distance = distance;
             }
         }
@@ -281,26 +278,15 @@ namespace ValheimVRMod.Scripts
                 (VRPlayer.isRightHandMainWeaponHand ? VRPlayer.rightHandBone.up : VRPlayer.leftHandBone.up) * 0.125f;
             var angularVelocity = handPhysicsEstimator.GetAngularVelocity();
 
-            var throwSpeed =
+            var speedAlongThrow =
                 Mathf.Max(
                     Vector3.Dot(
                         direction, WeaponUtils.GetWeaponVelocity(handPhysicsEstimator.GetVelocity(), angularVelocity, handTipOffset)),
                     Vector3.Dot(
                         direction, WeaponUtils.GetWeaponVelocity(handPhysicsEstimator.GetAverageVelocityInSnapshots(), angularVelocity, handTipOffset)));
 
-            handSpeed = Mathf.Max(throwSpeed, 0);
-
-            if (throwSpeed < VHVRConfig.FullThrowSpeed())
-            {
-                throwSpeed /= VHVRConfig.FullThrowSpeed();
-            }
-            else
-            {
-                var normalizer = Mathf.Max(VHVRConfig.FullThrowSpeed(), 2);
-                throwSpeed = throwSpeed > normalizer ? throwSpeed / normalizer : 1;
-            }
-
-            return new ThrowCalculate(throwSpeed, handPhysicsEstimator.GetLongestLocomotion(Mathf.Min(0.4f, aimingDuration)).magnitude);
+            return new ThrowCalculate(
+                Mathf.Max(speedAlongThrow, 0), handPhysicsEstimator.GetLongestLocomotion(Mathf.Min(0.4f, aimingDuration)).magnitude);
         }
     }
 }

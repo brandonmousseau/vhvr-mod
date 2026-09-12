@@ -130,6 +130,32 @@ namespace ValheimVRMod.VRCore.UI {
                     sliderPrefab.transform.Find("Label").gameObject,
                     settingsPrefab.transform.Find("Panel").Find("Back").gameObject);
             }
+
+            // These prefabs are cloned from vanilla settings rows, which carry a Localize component.
+            // Its Start() runs a frame after instantiation and re-localizes the row, reverting the
+            // config label we write back to the vanilla token's text - the chooser rows are cloned
+            // from the gamepad InputLayout setting, so they all reverted to "Controller layout".
+            StripLocalization(tabButtonPrefab);
+            StripLocalization(sliderPrefab);
+            StripLocalization(keyBindingPrefab);
+            StripLocalization(chooserPrefab);
+            StripLocalization(transformButtonPrefab);
+        }
+
+        private static void StripLocalization(GameObject prefab)
+        {
+            if (prefab == null)
+            {
+                return;
+            }
+            foreach (var localize in prefab.GetComponentsInChildren<Localize>(includeInactive: true))
+            {
+                Object.Destroy(localize);
+            }
+            foreach (var localize in prefab.GetComponentsInChildren<PlatformSpecificLocalization>(includeInactive: true))
+            {
+                Object.Destroy(localize);
+            }
         }
 
         private static void createToolTip(Transform settings) {

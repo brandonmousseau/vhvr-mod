@@ -118,6 +118,14 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
+            Kick(collider, transform.position, velocity, speed);
+        }
+
+        // Attacks the target with the unarmed weapon's kick (its secondary attack), or its primary attack while the
+        // kick is still cooling down. Also used by weapons without a real attack against hostiles (the snow shovel).
+        // Returns whether the attack was started.
+        public static bool Kick(Collider collider, Vector3 hitPoint, Vector3 velocity, float speed)
+        {
             var isCurrentlySecondaryAttack = FistCollision.LocalPlayerSecondaryAttackCooldown <= 0;
             var item = Player.m_localPlayer.m_unarmedWeapon.m_itemData;
             var attack = isCurrentlySecondaryAttack ? item.m_shared.m_secondaryAttack : item.m_shared.m_attack;
@@ -126,16 +134,16 @@ namespace ValheimVRMod.Scripts
             // The secondary attack cooldown is managed by FistCollision.LocalPlayerSecondaryAttackCooldown  instead.
             if (!tryHitTarget(collider.gameObject, isCurrentlySecondaryAttack, WeaponUtils.GetAttackDuration(item.m_shared.m_attack), speed))
             {
-                return;
+                return false;
             }
 
             FistCollision.LocalPlayerSecondaryAttackCooldown = WeaponUtils.GetAttackDuration(attack);
 
-            StaticObjects.lastHitPoint = transform.position;
+            StaticObjects.lastHitPoint = hitPoint;
             StaticObjects.lastHitDir = velocity.normalized;
             StaticObjects.lastHitCollider = collider;
 
-            attack.Start(Player.m_localPlayer, null, null, Player.m_localPlayer.m_animEvent, null, item, null, 0.0f, 0.0f);
+            return attack.Start(Player.m_localPlayer, null, null, Player.m_localPlayer.m_animEvent, null, item, null, 0.0f, 0.0f);
         }
 
         void OnDestroy()
@@ -149,7 +157,7 @@ namespace ValheimVRMod.Scripts
             transform.localScale = new Vector3(0.22f, 0.7f, 0.375f);
         }
 
-        private bool tryHitTarget(GameObject target, bool isSecondaryAttack, float duration, float speed)
+        private static bool tryHitTarget(GameObject target, bool isSecondaryAttack, float duration, float speed)
         {
             var attackTargetMeshCooldown = target.GetComponent<AttackTargetMeshCooldown>();
             if (attackTargetMeshCooldown == null)

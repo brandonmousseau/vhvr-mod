@@ -80,6 +80,21 @@ namespace ValheimVRMod.Utilities
                     0, 0, 0,
                     0.07673188f,  0.8555415f, 0.02554126f
                 )}, {
+                "$item_spear_gold", WeaponColData.create( // Nord Spear
+                    0,  1.7f, 0,
+                    0,  0, 0,
+                    0.125f,  1.2f, 0.0625f
+                )}, {
+                "$item_spear_gold_bloodlightning", WeaponColData.create( // Thunderblood Spear
+                    0,  1.7f, 0,
+                    0,  0, 0,
+                    0.125f,  1.2f, 0.0625f
+                )}, {
+                "$item_spear_gold_frostfire", WeaponColData.create( // Frostfire Spear
+                    0,  1.7f, 0,
+                    0,  0, 0,
+                    0.125f,  1.2f, 0.0625f
+                )}, {
                 // Sledges
                 "$item_stagbreaker", WeaponColData.create(
                     0,  2.064f, 0,
@@ -285,8 +300,11 @@ namespace ValheimVRMod.Utilities
                 {
                     estimatedColliders[itemHash] = estimatedCollider;
                 }
-                LogUtils.LogDebug(
-                    "Estimated and registered collider for weapon " + itemHash + " " + item.m_shared.m_name + ": position " + estimatedCollider.pos + " scale " + estimatedCollider.scale);
+                LogUtils.LogInfo(
+                    "VHVR estimated collider for " + item.m_shared.m_name +
+                    " -- pos " + estimatedCollider.pos.ToString("F6") +
+                    " euler " + estimatedCollider.euler.ToString("F6") +
+                    " scale " + estimatedCollider.scale.ToString("F6"));
                 return estimatedCollider;
             }
 
@@ -550,7 +568,20 @@ namespace ValheimVRMod.Utilities
             var bounds = meshFilter.mesh.bounds;
             var weaponTip = bounds.center + weaponPointing * Mathf.Abs(Vector3.Dot(bounds.extents, weaponPointing));
             var colliderLength = EstimateColliderLength(Vector3.Distance(weaponTip, handLocalPosition), type);
-            var colliderCenter = (type == EquipType.Pickaxe ? weaponTip : weaponTip - weaponPointing * (colliderLength * 0.5f));
+            Vector3 colliderCenter;
+            switch (type)
+            {
+                case EquipType.Pickaxe:
+                    colliderCenter = weaponTip;
+                    break;
+                case EquipType.Shovel:
+                    // Mostly covers the blade, overhanging the tip by a quarter of its length so the ground is easy to reach.
+                    colliderCenter = weaponTip - weaponPointing * (colliderLength * 0.25f);
+                    break;
+                default:
+                    colliderCenter = weaponTip - weaponPointing * (colliderLength * 0.5f);
+                    break;
+            }
             var colliderOffset = colliderCenter - bounds.center;
             var colliderSize =
                 bounds.size - (new Vector3(Mathf.Abs(colliderOffset.x), Mathf.Abs(colliderOffset.y), Mathf.Abs(colliderOffset.z))) * 2;
@@ -571,6 +602,8 @@ namespace ValheimVRMod.Utilities
                 case EquipType.Pickaxe:
                 case EquipType.Spear:
                     return weaponTipDistanceFromHand * 0.875f;
+                case EquipType.Shovel:
+                    return weaponTipDistanceFromHand;
                 case EquipType.Sword:
                     return Mathf.Max(0.125f, weaponTipDistanceFromHand - 0.15f);
                 default:
@@ -583,24 +616,50 @@ namespace ValheimVRMod.Utilities
             return handVelocity + Vector3.Cross(handAngularVelocity, weaponOffset);
         }
 
-        // Weight at which a throwable leaves the hand at the full ThrowSpeedGain multiple of hand
-        // speed. Heavier items are slowed proportionally.
-        private const float THROW_REFERENCE_WEIGHT = 1f;
+        // Vanilla max projectile speeds below this are too slow to feel right when thrown by hand (e.g. Ember Charge).
+        private const float MIN_THROW_MAX_SPEED = 4f;
 
-        public static float GetThrowLaunchSpeed(ItemDrop.ItemData item, float throwSpeed)
+        // Returns the aim direction to hand to vanilla for a throw: vanilla multiplies it by the attack's max projectile
+        // speed, so the launch speed is divided by that here.
+        public static Vector3 GetThrowAimDir(Attack attack, Vector3 direction, float handSpeed)
         {
-            // float weight = item?.m_shared == null ? THROW_REFERENCE_WEIGHT : item.m_shared.m_weight;
-            // float weightSlowdown = Mathf.Max(1f, weight / THROW_REFERENCE_WEIGHT);
-            float speed = Mathf.Max(throwSpeed, 0); //  / weightSlowdown;
-
-            if (item?.m_shared?.m_attack != null && item?.m_shared.m_attack.m_projectileVel < 3)
+            float vanillaMaxSpeed = attack.m_projectileVel;
+            if (vanillaMaxSpeed <= 0)
             {
-                // When the vanilla max speed is too slow (such as Ember Charge), we should scale
-                // it up by a little amount in VR for realism.
-                speed = speed * 2;
+                return direction.normalized;
+            }
+            float launchSpeed = GetThrowLaunchSpeed(handSpeed, Mathf.Max(vanillaMaxSpeed, MIN_THROW_MAX_SPEED));
+            return direction.normalized * (launchSpeed / vanillaMaxSpeed);
+        }
+
+        // Maps the hand speed along the throw to the launch speed. FullThrowSpeed is the hand speed that reaches
+        // maxSpeed; it stays the reference rather than the real hand speed alone since tracked controller speed may
+        // be capped below what a real throw reaches.
+        // Up to FullThrowSpeed this follows a cubic Hermite curve from 0 to maxSpeed: it starts rising 1:1 with the
+        // hand speed, so gentle throws leave at their real speed, and flattens out into maxSpeed at FullThrowSpeed,
+        // beyond which it stays at maxSpeed. If maxSpeed is below FullThrowSpeed, the real hand speed is used as is,
+        // capped at maxSpeed.
+        public static float GetThrowLaunchSpeed(float handSpeed, float maxSpeed)
+        {
+            float fullThrowSpeed = VHVRConfig.FullThrowSpeed();
+            if (fullThrowSpeed <= 0 || handSpeed >= fullThrowSpeed)
+            {
+                // Setting FullThrowSpeed to 0 always launches at max speed.
+                return maxSpeed;
+            }
+            if (handSpeed <= 0)
+            {
+                return 0;
+            }
+            if (maxSpeed < fullThrowSpeed)
+            {
+                return Mathf.Min(handSpeed, maxSpeed);
             }
 
-            return speed;
+            float s = handSpeed / fullThrowSpeed;
+            float s2 = s * s;
+            float s3 = s2 * s;
+            return s3 * (maxSpeed - fullThrowSpeed) + handSpeed;
         }
 
         // TODO: temporary. Dumps every throwable's weight once so the values can be sanity checked

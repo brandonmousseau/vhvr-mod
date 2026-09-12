@@ -363,7 +363,11 @@ namespace ValheimVRMod.Scripts
             {
                 return;
             }
-            if (collider.gameObject.layer == LayerUtils.TERRAIN && !SteamVR_Actions.valheim_Grab.GetState(inputSource))
+            // Test for an actual Heightmap rather than the terrain layer, matching WeaponCollision.
+            // Props can sit on the terrain layer without being terrain - the cave rocks and roots in
+            // the Deep North tunnels among them - and a layer test made those unpunchable while every
+            // other weapon could hit them freely.
+            if (WeaponCollision.isTerrain(collider.gameObject) && !SteamVR_Actions.valheim_Grab.GetState(inputSource))
             {
                 // Prevent hitting terrain too easily.
                 return;

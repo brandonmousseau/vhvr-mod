@@ -248,6 +248,7 @@ namespace ValheimVRMod.Patches
                         case EquipType.Knife:
                         case EquipType.Magic:
                         case EquipType.Pickaxe:
+                        case EquipType.Shovel:
                         case EquipType.Polearms:
                         case EquipType.Scythe:
                         case EquipType.Sledge:
@@ -318,13 +319,18 @@ namespace ValheimVRMod.Patches
 
             string rightItemName = Player.m_localPlayer.GetRightItem()?.m_shared?.m_name;
             bool isSwingableStaff = EquipScript.CurrentMainHandEquipType() == EquipType.Magic && SwingableStaffManager.STAFF_NAMES.Contains(rightItemName);
+            bool isSummoner = SummonerManager.ITEM_NAMES.Contains(rightItemName);
 
             LocalWeaponWield weaponWield;
             if (EquipScript.IsSpearEquipped())
             {
                 weaponWield = ___m_rightItemInstance.AddComponent<SpearWield>();
             }
-            else if (EquipScript.CurrentMainHandEquipType() == EquipType.Magic && !isSwingableStaff)
+            else if (Protector.ITEM_NAMES.Contains(rightItemName))
+            {
+                weaponWield = ___m_rightItemInstance.AddComponent<Protector>();
+            }
+            else if (EquipScript.CurrentMainHandEquipType() == EquipType.Magic && !isSwingableStaff && !isSummoner)
             {
                 weaponWield = ___m_rightItemInstance.AddComponent<ShootingStaffManager>();
             }
@@ -333,6 +339,11 @@ namespace ValheimVRMod.Patches
                 weaponWield = ___m_rightItemInstance.AddComponent<LocalWeaponWield>();
             }
             weaponWield.Initialize(Player.m_localPlayer.GetRightItem(), hash, isDominantHandWeapon: true);
+
+            if (isSummoner)
+            {
+                ___m_rightItemInstance.AddComponent<SummonerManager>().isHeldInMainHand = true;
+            }
 
             if (isSwingableStaff)
             {
@@ -449,15 +460,21 @@ namespace ValheimVRMod.Patches
                 return;
             }
 
-            if (DeadRaiserManager.ITEM_NAMES.Contains(Player.m_localPlayer.GetLeftItem()?.m_shared?.m_name))
+            if (SummonerManager.ITEM_NAMES.Contains(Player.m_localPlayer.GetLeftItem()?.m_shared?.m_name))
             {
-                ___m_leftItemInstance.AddComponent<DeadRaiserManager>();
+                ___m_leftItemInstance.AddComponent<SummonerManager>();
             }
 
             if (StaticObjects.rightHandQuickMenu != null)
             {
                 StaticObjects.rightHandQuickMenu.GetComponent<RightHandQuickMenu>().refreshItems();
                 StaticObjects.leftHandQuickMenu.GetComponent<LeftHandQuickMenu>().refreshItems();
+            }
+
+            if (Protector.ITEM_NAMES.Contains(Player.m_localPlayer.GetLeftItem()?.m_shared?.m_name))
+            {
+                ___m_leftItemInstance.AddComponent<Protector>().Initialize(Player.m_localPlayer.GetLeftItem(), hash, isDominantHandWeapon: false);
+                return;
             }
 
             switch (EquipScript.CurrentOffHandEquipType())
@@ -675,7 +692,7 @@ namespace ValheimVRMod.Patches
                 return;
             }
 
-            // TODO: consider fixing orietantion for dead raiser too.
+            // TODO: consider fixing orietantion for summoners (e.g. the dead raiser) too.
             var equipType = EquipScript.GetEquipTypeFromHash(itemHash);
             if (equipType == EquipType.Tankard)
             {

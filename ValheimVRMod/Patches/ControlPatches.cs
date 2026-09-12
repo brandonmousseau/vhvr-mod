@@ -851,10 +851,10 @@ namespace ValheimVRMod.Patches {
                             attack = false;
                             attackHold = false;
                         }
-                        var currentAnimatorClip = Player.m_localPlayer.m_animator.GetCurrentAnimatorClipInfo(0)?[0].clip;
-                        if (currentAnimatorClip?.name == "Bow Aim Recoil")
+                        var currentAnimatorClipInfo = Player.m_localPlayer.m_animator.GetCurrentAnimatorClipInfo(0)?[0];
+                        if (currentAnimatorClipInfo != null && ((AnimatorClipInfo)currentAnimatorClipInfo).clip?.name == "Bow Aim Recoil")
                         {
-                            timeEnd = currentAnimatorClip.length / PatchFixedUpdate.lastSpeedUp;
+                            timeEnd = ((AnimatorClipInfo)currentAnimatorClipInfo).clip.length / PatchFixedUpdate.lastSpeedUp;
                         }
                     }
                     
@@ -866,17 +866,32 @@ namespace ValheimVRMod.Patches {
                 blockHold = ShieldBlock.instance?.isBlocking() ?? false;
             }
 
-            // This is the only place that may consume the dead raiser attack when not riding.
-            if (DeadRaiserManager.instance != null && DeadRaiserManager.instance.ConsumeAttemptingAttack())
+            // This is the only place that may consume a summoner attack when not riding.
+            if (SummonerManager.instance != null && SummonerManager.instance.ConsumeAttemptingAttack())
             {
                 attack = true;
                 attackHold = true;
             }
 
-            if (EquipScript.CurrentOffHandEquipType() == EquipType.Crossbow && CrossbowManager.IsPullingTrigger())
+            if (Protector.instance != null && Protector.instance.AttemptingAttack)
             {
-                attack = true;
+                // While riding, MountedAttackUtils initiates the attack instead and only the hold may be raised
+                // here, for the same reason as the magic staff case below.
+                attack = !MountedAttackUtils.IsRiding();
                 attackHold = true;
+            }
+
+            if (EquipScript.CurrentOffHandEquipType() == EquipType.Crossbow && CrossbowManager.IsPullingTrigger(out bool useSecondaryCrossbowAttack))
+            {
+                if (useSecondaryCrossbowAttack)
+                {
+                    secondaryAttack = true;
+                }
+                else
+                {
+                    attack = true;
+                    attackHold = true;
+                }
             }
 
             switch (EquipScript.CurrentMainHandEquipType()) {
@@ -1058,40 +1073,6 @@ namespace ValheimVRMod.Patches {
                 return;
             }
             __instance.m_splitDialog.m_splitSlider.gameObject.AddComponent<SliderSelector>();
-        }
-    }
-
-    [HarmonyPatch(typeof(InventoryGui), nameof(InventoryGui.Update))]
-    class InventoryGui_Update_Patch
-    {
-        static bool allowQuickStackAll = true;
-        static void Prefix(InventoryGui __instance)
-        {
-            if (VHVRConfig.NonVrPlayer() || !VHVRConfig.UseVrControls())
-            {
-                return;
-            }
-            if (!__instance.IsContainerOpen())
-            {
-                // When a container is no longer open, reset this flag so that
-                // quick-stack-all can be used next time the player interacts with a container.
-                allowQuickStackAll = true;
-            }
-            else if (SteamVR_Actions.laserPointers_LeftClick.GetStateUp(SteamVR_Input_Sources.Any))
-            {
-                // When a container is open, the GUI is open so laser pointers take priority over valheim_Use.
-                // As the player releases the trigger when the container is open, the button-up state of vaheim_Use is therefore not detected.
-                // The game will mistakenly think that the use button is still being pressed and hold, triggering quick-stack-all inadvertently
-                // so we must patch to prevent that from happening. 
-                // Note: this flag will stay false for the rest of the entire duration when the current container is open
-                // so that dragging item spliiter will not trigger quick-stack-all either.
-                // TODO: try find a way to fix the wrong state of valheim_Use instead of using this ad hoc patch.
-                allowQuickStackAll = false;
-            }
-            if (!allowQuickStackAll || !SteamVR_Actions.laserPointers_LeftClick.GetState(SteamVR_Input_Sources.Any)) {
-                // Quick-stack-all is triggered by holding the use button and resetting this timer disables quick-stack-all.
-                __instance.m_containerHoldTime = 0;
-            }
         }
     }
 

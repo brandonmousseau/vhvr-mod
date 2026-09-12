@@ -940,10 +940,22 @@ namespace ValheimVRMod.VRCore.UI
                     }
 
                     action.AddOnStateUpListener(
-                        (fromAction, fromSource) => GetButtonPatchUtils.Release(buttonName),
+                        (fromAction, fromSource) => MaybeReleaseZInputButton(buttonName),
                         SteamVR_Input_Sources.Any);
                 }
             }
+
+            // valheim_Use is masked while a laser pointer is active, so once the laserPointers set
+            // takes the trigger, valheim_Use never reports state-up again and "Use" would stay held
+            // forever. Release it when the physical trigger lifts under the other action instead.
+            SteamVR_Actions.laserPointers_LeftClick.AddOnStateUpListener(
+                (fromAction, fromSource) => {
+                    if (!SteamVR_Actions.valheim_Use.GetState(SteamVR_Input_Sources.Any))
+                    {
+                        GetButtonPatchUtils.Release("Use");
+                    }
+                },
+                SteamVR_Input_Sources.Any);
 
             SteamVR_Actions.valheim_ToggleMap.AddOnStateDownListener(
                 (fromAction, fromSource) => {
@@ -957,6 +969,21 @@ namespace ValheimVRMod.VRCore.UI
                         GetButtonPatchUtils.Release("Map");
                 },
                 SteamVR_Input_Sources.Any);
+        }
+
+        // An action set activating at a higher priority steals the physical control from a lower one,
+        // which makes the lower action report state-up even though the button is still physically
+        // down. Releasing the ZInput button on that would be a lie: opening a container activates the
+        // laserPointers set, and both it and the Valheim set bind the same trigger, so "Use" would go
+        // false mid-press and break anything that needs an unbroken hold.
+        private static void MaybeReleaseZInputButton(string buttonName)
+        {
+            if (buttonName == "Use" &&
+                SteamVR_Actions.laserPointers_LeftClick.GetState(SteamVR_Input_Sources.Any))
+            {
+                return;
+            }
+            GetButtonPatchUtils.Release(buttonName);
         }
 
         private void registerContextScrollListener()

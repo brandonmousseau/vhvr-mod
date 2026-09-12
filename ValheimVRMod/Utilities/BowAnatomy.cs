@@ -90,8 +90,8 @@ namespace ValheimVRMod.Utilities
                     /* stringRadius= */ 0.01f,
                     /* bowBendingImpl= */ BowBendingImplType.Auto,
                     /* fallbackHandleWidth= */ 0.0625f,
-                    /* fallbackStringTop= */ new Vector3(0, 0.75f, -0.245f),
-                    /* fallbackStringBottom= */ new Vector3(0, -0.75f, -0.245f),
+                    /* fallbackStringTop= */ new Vector3(0.03f, 0.75f, -0.22f),
+                    /* fallbackStringBottom= */ new Vector3(0.03f, -0.75f, -0.22f),
                     /* fallbackHandleTop= */ new Vector3(0, 0.35f, 0),
                     /* fallbackHandleBottom= */ new Vector3(0, -0.35f, 0))
             },
@@ -103,8 +103,8 @@ namespace ValheimVRMod.Utilities
                     /* stringRadius= */ 0.01f,
                     /* bowBendingImpl= */ BowBendingImplType.Auto,
                     /* fallbackHandleWidth= */ 0.0625f,
-                    /* fallbackStringTop= */ new Vector3(0, 0.8f, -0.24f),
-                    /* fallbackStringBottom= */ new Vector3(0, -0.8f, -0.24f),
+                    /* fallbackStringTop= */ new Vector3(0.01f, 0.8f, -0.18f),
+                    /* fallbackStringBottom= */ new Vector3(0.01f, -0.8f, -0.18f),
                     /* fallbackHandleTop= */ new Vector3(0, 0.375f, 0),
                     /* fallbackHandleBottom= */ new Vector3(0, -0.375f, 0))
             },
@@ -116,8 +116,8 @@ namespace ValheimVRMod.Utilities
                     /* stringRadius= */ 0.01f,
                     /* bowBendingImpl= */ BowBendingImplType.Auto,
                     /* fallbackHandleWidth= */ 0.0625f,
-                    /* fallbackStringTop= */ new Vector3(0.005f, 0.75f, -0.25f),
-                    /* fallbackStringBottom= */ new Vector3(0.005f, -0.75f, -0.25f),
+                    /* fallbackStringTop= */ new Vector3(0.03f, 0.75f, -0.205f),
+                    /* fallbackStringBottom= */ new Vector3(0.03f, -0.75f, -0.205f),
                     /* fallbackHandleTop= */ new Vector3(0, 0.4f, 0),
                     /* fallbackHandleBottom= */ new Vector3(0, -0.4f, 0))
             }

@@ -14,6 +14,9 @@ namespace ValheimVRMod.Utilities {
         public readonly float softLimbHeight;
         public readonly float stringRadius;
         public readonly float boltCenterToTailDistance;
+        // The local axis the left limb rotates around (the right limb rotates the opposite way) as the string is
+        // drawn, i.e. bowRight x bowForward. Crossbows point along local +Y, so this is +Z for them.
+        public readonly Vector3 limbBendAxis;
 
         private static CrossbowAnatomy GoldCrossbowAnatomy = new CrossbowAnatomy(
             /* hardLimbLeft= */ new Vector3(-0.17f, 1.58f, 0),
@@ -102,6 +105,25 @@ namespace ValheimVRMod.Utilities {
                     /* softLimbHeight= */ 0.01f,
                     /* stringRadius= */ 0.0075f,
                     /* boltCenterToTailDistance= */ 0.51f)
+            },
+            {
+                // Unlike the crossbows, the grappling hook points along local +Z (limbs still along X, "up" is +Y).
+                // Unloaded mesh bound center: (0.00, -0.26, 0.57) bound extends: (0.64, 0.38, 0.85).
+                // TODO: educated guess mapping the ripper layout onto that frame; tune against the actual model.
+                "$item_graplinghook",
+                new CrossbowAnatomy(
+                    /* hardLimbLeft= */ new Vector3(-0.25f, 0, 1f),
+                    /* hardLimbRight= */ new Vector3(0.25f, 0, 1f),
+                    /* restingStringLeft= */ new Vector3(-0.61f, 0.115f, 0.74f),
+                    /* restingStringRight= */ new Vector3(0.61f, 0.097f, 0.74f),
+                    /* restingNockingPoint= */ new Vector3(0, 0.105f, 0.74f),
+                    /* anchorPoint= */  new Vector3(0, 0.105f, 0.25f),
+                    /* maxBendAngleRadians= */ 0.5f,
+                    /* softLimbHeight= */ 0.01f,
+                    /* stringRadius= */ 0.0075f,
+                    // Unused: the grappling hook fires its own projectile and never shows a bolt.
+                    /* boltCenterToTailDistance= */ 0.51f,
+                    /* limbBendAxis= */ Vector3.down)
             }
         };
 
@@ -121,8 +143,10 @@ namespace ValheimVRMod.Utilities {
             float maxBendAngleRadians,
             float softLimbHeight,
             float stringRadius,
-            float boltCenterToTailDistance)
+            float boltCenterToTailDistance,
+            Vector3? limbBendAxis = null)
         {
+            this.limbBendAxis = limbBendAxis ?? Vector3.forward;
             this.hardLimbLeft = hardLimbLeft;
             this.hardLimbRight = hardLimbRight;
             this.restingStringLeft = restingStringLeft;

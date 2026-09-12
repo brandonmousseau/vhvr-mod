@@ -9,7 +9,7 @@ namespace ValheimVRMod.Utilities
     public enum EquipType
     {
         None,
-        Fishing, Cultivator, Hammer, Hoe, Torch, Scythe, Tray,
+        Fishing, Cultivator, Hammer, Hoe, Torch, Scythe, Tray, Shovel,
         Bow, Spear, SpearChitin, ThrowObject,
         Shield, Tankard, Claws, Magic, Crossbow
         ,
@@ -25,6 +25,7 @@ namespace ValheimVRMod.Utilities
 
     public static class EquipScript
     {
+        private const string GRAPPLING_HOOK_NAME = "$item_graplinghook";
 
         public readonly static HashSet<ItemDrop.ItemData.ItemType> MainHandItemTypes =
             new HashSet<ItemDrop.ItemData.ItemType>(
@@ -118,10 +119,8 @@ namespace ValheimVRMod.Utilities
                     return EquipType.Hammer;
                 case "$item_hoe":
                     return EquipType.Hoe;
-                // TODO: the snow shovel is only borrowing the pickaxe handling for now, give it its
-                // own equip type if the grip or swing needs to differ.
                 case "$item_snowshovel":
-                    return EquipType.Pickaxe;
+                    return EquipType.Shovel;
                 case "$item_feaster":
                     return EquipType.Tray;
 
@@ -221,9 +220,12 @@ namespace ValheimVRMod.Utilities
             {
                 case "$item_lantern":
                     return EquipType.Lantern;
+                // Held and fired like a crossbow, whatever ammo type it uses.
+                case GRAPPLING_HOOK_NAME:
+                    return EquipType.Crossbow;
             }
 
-            //LeftEquipment List 
+            //LeftEquipment List
             switch (item?.m_shared.m_itemType)
             {
                 case ItemDrop.ItemData.ItemType.Bow:
@@ -337,6 +339,12 @@ namespace ValheimVRMod.Utilities
             return CurrentMainHandEquipType() == EquipType.Spear || CurrentMainHandEquipType() == EquipType.SpearChitin;
         }
 
+        // Whether the main hand holds something thrown by hand (see ThrowableManager).
+        public static bool IsHandThrownWeaponEquipped()
+        {
+            return IsSpearEquipped() || CurrentMainHandEquipType() == EquipType.ThrowObject || IsThrowable(Player.m_localPlayer?.GetRightItem());
+        }
+
         public static bool IsDundrEquipped()
         {
             return IsDundr(Player.m_localPlayer?.GetRightItem());
@@ -352,8 +360,18 @@ namespace ValheimVRMod.Utilities
             return item?.m_shared?.m_name == "$item_staff_lightning";
         }
 
+        public static bool IsGrapplingHook(ItemDrop.ItemData item)
+        {
+            return item?.m_shared?.m_name == GRAPPLING_HOOK_NAME;
+        }
+
         public static bool ShouldSkipAttackAnimation()
         {
+            if (Protector.instance != null)
+            {
+                // These staves are cast with the trigger rather than a gesture, so their animation plays in full.
+                return false;
+            }
             if (CurrentOffHandEquipType() == EquipType.Magic || CurrentMainHandEquipType() == EquipType.Magic)
             {
                 return SwingableStaffManager.instance != null && SwingableStaffManager.instance.UseSwingForCurrentAttack();
