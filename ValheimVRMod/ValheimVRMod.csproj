@@ -15,6 +15,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CommonDir>C:\Program Files (x86)\Steam\steamapps\common\</CommonDir>
     <UnityDir>C:\Program Files (x86)\Hub\Editor\2020.3.45f1\</UnityDir>
+    <ValheimManagedDir>$(CommonDir)Valheim\valheim_Data\Managed\</ValheimManagedDir>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -61,7 +62,7 @@
     <PackageReference Include="BepInEx.Core" Version="5.4.21" />
     <PackageReference Include="NDesk.Options" Version="0.2.1" />
     <PackageReference Include="UnityEngine.Modules" Version="2020.3.45" />
-    <PackageReference Include="ValheimGameLibz" Version="1.0" />
+    <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.3" PrivateAssets="all" />
 	<PackageReference Include="Bhaptics.Tac" Version="1.4.16" />
   </ItemGroup>
   <ItemGroup>
@@ -72,13 +73,40 @@
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="Unity.InputSystem">
-      <HintPath>$(CommonDir)Valheim\valheim_Data\Managed\Unity.InputSystem.dll</HintPath>
+      <HintPath>$(ValheimManagedDir)Unity.InputSystem.dll</HintPath>
     </Reference>
     <Reference Include="Unity.TextMeshPro">
-      <HintPath>$(CommonDir)Valheim\valheim_Data\Managed\Unity.TextMeshPro.dll</HintPath>
+      <HintPath>$(ValheimManagedDir)Unity.TextMeshPro.dll</HintPath>
     </Reference>
     <Reference Include="gui_framework, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
-      <HintPath>$(CommonDir)Valheim\valheim_Data\Managed\gui_framework.dll</HintPath>
+      <HintPath>$(ValheimManagedDir)gui_framework.dll</HintPath>
+    </Reference>
+    <!-- Game assemblies come from the local Valheim install. The ones whose non-public members the mod uses are
+         publicized at build time by BepInEx.AssemblyPublicizer.MSBuild. -->
+    <Reference Include="assembly_valheim" Publicize="true">
+      <HintPath>$(ValheimManagedDir)assembly_valheim.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="assembly_utils" Publicize="true">
+      <HintPath>$(ValheimManagedDir)assembly_utils.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="assembly_guiutils" Publicize="true">
+      <HintPath>$(ValheimManagedDir)assembly_guiutils.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="assembly_postprocessing" Publicize="true">
+      <HintPath>$(ValheimManagedDir)assembly_postprocessing.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- The game assemblies are built against netstandard 2.0. -->
+    <Reference Include="netstandard">
+      <HintPath>$(ValheimManagedDir)netstandard.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="assembly_sunshafts">
+      <HintPath>$(ValheimManagedDir)assembly_sunshafts.dll</HintPath>
+      <Private>false</Private>
     </Reference>
     <Reference Include="Unity.XR.Management, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -117,11 +145,6 @@
       <HintPath>..\Unity\build\ValheimVR_Data\Managed\SteamVR_Actions.dll</HintPath>
     </Reference>
   </ItemGroup>
-  <Target Name="RemoveConflictingPackageReferences" AfterTargets="ResolveLockFileReferences" BeforeTargets="ResolveAssemblyReferences">
-    <ItemGroup>
-      <Reference Remove="@(Reference)" Condition="('%(Filename)' == 'SteamVR' Or '%(Filename)' == 'SteamVR_Actions') And $([System.String]::Copy('%(Reference.HintPath)').Contains('valheimgamelibz'))" />
-    </ItemGroup>
-  </Target>
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
     <Exec Command="make-release.cmd" EnvironmentVariables="
 	    SOLUTION_DIR=$(SolutionDir);
