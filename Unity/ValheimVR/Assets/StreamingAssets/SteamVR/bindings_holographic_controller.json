@@ -177,6 +177,20 @@
                   [ "/user/hand/right/input/trigger", "click" ]
                ],
                "output" : "/actions/laserpointers/in/addmappin"
+            },
+            {
+               "inputs" : [
+                  [ "/user/hand/right/input/grip", "click" ],
+                  [ "/user/hand/right/input/trigger", "click" ]
+               ],
+               "output" : "/actions/laserpointers/in/discarditem"
+            },
+            {
+               "inputs" : [
+                  [ "/user/hand/left/input/grip", "click" ],
+                  [ "/user/hand/right/input/trigger", "click" ]
+               ],
+               "output" : "/actions/laserpointers/in/splitstack"
             }
          ],
          "sources" : [

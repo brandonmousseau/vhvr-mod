@@ -1084,7 +1084,9 @@ namespace ValheimVRMod.Patches {
     {
         static void Prefix(InventoryGui __instance, ref InventoryGrid.Modifier mod)
         {
-            if (!VHVRConfig.UseVrControls())
+            // Only turn plain clicks into split/move, so modifiers applied on purpose (e.g. the drop from
+            // LaserPointerChords, which is chorded with a grip) are kept.
+            if (!VHVRConfig.UseVrControls() || mod != InventoryGrid.Modifier.Select)
                 return;
 
             if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand))

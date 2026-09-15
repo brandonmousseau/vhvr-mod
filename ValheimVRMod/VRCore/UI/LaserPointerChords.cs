@@ -7,6 +7,9 @@ namespace ValheimVRMod.VRCore.UI
     /**
      * Applies the laser pointer chord actions and hides the clicks they are chorded with from the game:
      * - AddMapPin adds a pin on the large map. It is chorded with the left click.
+     * - DiscardItem moves the inventory item under the pointer to the open container (or back from it), or drops it
+     *   when no container is open. It is chorded with the left click.
+     * - SplitStack splits the inventory item stack under the pointer. It is chorded with the left click.
      * - MiddleClick is sent to the GUI as a middle mouse button (see VRGUI), which vanilla uses to ping on the map,
      *   favorite a build piece and delete a favorite category. It is chorded with the right click.
      *
@@ -28,6 +31,8 @@ namespace ValheimVRMod.VRCore.UI
 
         private static bool initialized = false;
         private static int lastAddMapPinFrame = -1;
+        private static int lastDiscardItemFrame = -1;
+        private static int lastSplitStackFrame = -1;
 
         public static bool isLeftClickSuppressed { get; private set; }
         public static bool isRightClickSuppressed { get; private set; }
@@ -77,6 +82,19 @@ namespace ValheimVRMod.VRCore.UI
                 {
                     Minimap.instance.OnMapDblClick();
                     resetMapPointerState();
+                }
+                if (SteamVR_Actions.laserPointers_DiscardItem.GetState(SteamVR_Input_Sources.Any) ||
+                    SteamVR_Actions.laserPointers_SplitStack.GetState(SteamVR_Input_Sources.Any))
+                {
+                    isLeftClickSuppressed = true;
+                }
+                if (isChordDown(SteamVR_Actions.laserPointers_DiscardItem, ref lastDiscardItemFrame))
+                {
+                    selectHoveredInventoryItem(InventoryGrid.Modifier.Move);
+                }
+                if (isChordDown(SteamVR_Actions.laserPointers_SplitStack, ref lastSplitStackFrame))
+                {
+                    selectHoveredInventoryItem(InventoryGrid.Modifier.Split);
                 }
                 if (SteamVR_Actions.laserPointers_MiddleClick.GetState(SteamVR_Input_Sources.Any))
                 {
@@ -153,6 +171,37 @@ namespace ValheimVRMod.VRCore.UI
             var canvas = map.GetComponentInParent<Canvas>();
             var camera = canvas == null ? null : canvas.rootCanvas.worldCamera;
             return RectTransformUtility.RectangleContainsScreenPoint(map, SoftwareCursor.simulatedMousePosition, camera);
+        }
+
+        // Selects the item under the pointer in the player's or the open container's inventory with the given modifier,
+        // as vanilla does for modified clicks: Move moves the item between the inventory and the open container, or
+        // drops it when no container is open, and Split opens the split dialog for a stack.
+        private static void selectHoveredInventoryItem(InventoryGrid.Modifier modifier)
+        {
+            InventoryGui inventoryGui = InventoryGui.instance;
+            if (!InventoryGui.IsVisible() || inventoryGui == null || inventoryGui.m_dragGo != null)
+            {
+                return;
+            }
+            foreach (InventoryGrid grid in new InventoryGrid[] { inventoryGui.m_playerGrid, inventoryGui.m_containerGrid })
+            {
+                if (grid == null || !grid.isActiveAndEnabled || grid.GetInventory() == null)
+                {
+                    continue;
+                }
+                InventoryElement element = grid.GetHoveredElement();
+                if (element == null)
+                {
+                    continue;
+                }
+                Vector2i position = grid.GetElementPos(element);
+                ItemDrop.ItemData item = grid.GetInventory().GetItemAt(position.x, position.y);
+                if (item != null)
+                {
+                    inventoryGui.OnSelectedItem(grid, item, position, modifier);
+                }
+                return;
+            }
         }
 
         // A click that was pressed before its chord completed has already reached the map. Without resetting this,

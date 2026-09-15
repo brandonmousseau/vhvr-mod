@@ -105,6 +105,10 @@ namespace Valve.VR
         
         private static SteamVR_Action_Boolean p_laserPointers_MiddleClick;
         
+        private static SteamVR_Action_Boolean p_laserPointers_DiscardItem;
+        
+        private static SteamVR_Action_Boolean p_laserPointers_SplitStack;
+        
         public static SteamVR_Action_Boolean default_InteractUI
         {
             get
@@ -457,6 +461,22 @@ namespace Valve.VR
             }
         }
         
+        public static SteamVR_Action_Boolean laserPointers_DiscardItem
+        {
+            get
+            {
+                return SteamVR_Actions.p_laserPointers_DiscardItem.GetCopy<SteamVR_Action_Boolean>();
+            }
+        }
+        
+        public static SteamVR_Action_Boolean laserPointers_SplitStack
+        {
+            get
+            {
+                return SteamVR_Actions.p_laserPointers_SplitStack.GetCopy<SteamVR_Action_Boolean>();
+            }
+        }
+        
         private static void InitializeActionArrays()
         {
             Valve.VR.SteamVR_Input.actions = new Valve.VR.SteamVR_Action[] {
@@ -503,7 +523,9 @@ namespace Valve.VR
                     SteamVR_Actions.laserPointers_Jump,
                     SteamVR_Actions.laserPointers_PitchAndYaw,
                     SteamVR_Actions.laserPointers_AddMapPin,
-                    SteamVR_Actions.laserPointers_MiddleClick};
+                    SteamVR_Actions.laserPointers_MiddleClick,
+                    SteamVR_Actions.laserPointers_DiscardItem,
+                    SteamVR_Actions.laserPointers_SplitStack};
             Valve.VR.SteamVR_Input.actionsIn = new Valve.VR.ISteamVR_Action_In[] {
                     SteamVR_Actions.default_InteractUI,
                     SteamVR_Actions.default_Teleport,
@@ -546,7 +568,9 @@ namespace Valve.VR
                     SteamVR_Actions.laserPointers_Jump,
                     SteamVR_Actions.laserPointers_PitchAndYaw,
                     SteamVR_Actions.laserPointers_AddMapPin,
-                    SteamVR_Actions.laserPointers_MiddleClick};
+                    SteamVR_Actions.laserPointers_MiddleClick,
+                    SteamVR_Actions.laserPointers_DiscardItem,
+                    SteamVR_Actions.laserPointers_SplitStack};
             Valve.VR.SteamVR_Input.actionsOut = new Valve.VR.ISteamVR_Action_Out[] {
                     SteamVR_Actions.default_Haptic,
                     SteamVR_Actions.valheim_Haptic};
@@ -588,7 +612,9 @@ namespace Valve.VR
                     SteamVR_Actions.laserPointers_ClickModifier,
                     SteamVR_Actions.laserPointers_Jump,
                     SteamVR_Actions.laserPointers_AddMapPin,
-                    SteamVR_Actions.laserPointers_MiddleClick};
+                    SteamVR_Actions.laserPointers_MiddleClick,
+                    SteamVR_Actions.laserPointers_DiscardItem,
+                    SteamVR_Actions.laserPointers_SplitStack};
             Valve.VR.SteamVR_Input.actionsSingle = new Valve.VR.SteamVR_Action_Single[] {
                     SteamVR_Actions.default_Squeeze};
             Valve.VR.SteamVR_Input.actionsVector2 = new Valve.VR.SteamVR_Action_Vector2[] {
@@ -637,7 +663,9 @@ namespace Valve.VR
                     SteamVR_Actions.laserPointers_Jump,
                     SteamVR_Actions.laserPointers_PitchAndYaw,
                     SteamVR_Actions.laserPointers_AddMapPin,
-                    SteamVR_Actions.laserPointers_MiddleClick};
+                    SteamVR_Actions.laserPointers_MiddleClick,
+                    SteamVR_Actions.laserPointers_DiscardItem,
+                    SteamVR_Actions.laserPointers_SplitStack};
         }
         
         private static void PreInitActions()
@@ -686,6 +714,8 @@ namespace Valve.VR
             SteamVR_Actions.p_laserPointers_PitchAndYaw = ((SteamVR_Action_Vector2)(SteamVR_Action.Create<SteamVR_Action_Vector2>("/actions/LaserPointers/in/PitchAndYaw")));
             SteamVR_Actions.p_laserPointers_AddMapPin = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/LaserPointers/in/AddMapPin")));
             SteamVR_Actions.p_laserPointers_MiddleClick = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/LaserPointers/in/MiddleClick")));
+            SteamVR_Actions.p_laserPointers_DiscardItem = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/LaserPointers/in/DiscardItem")));
+            SteamVR_Actions.p_laserPointers_SplitStack = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/LaserPointers/in/SplitStack")));
         }
     }
 }

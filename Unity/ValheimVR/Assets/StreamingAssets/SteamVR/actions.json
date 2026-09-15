@@ -213,6 +213,16 @@
       "name": "/actions/LaserPointers/in/MiddleClick",
       "type": "boolean",
       "requirement": "optional"
+    },
+    {
+      "name": "/actions/LaserPointers/in/DiscardItem",
+      "type": "boolean",
+      "requirement": "optional"
+    },
+    {
+      "name": "/actions/LaserPointers/in/SplitStack",
+      "type": "boolean",
+      "requirement": "optional"
     }
   ],
   "action_sets": [
@@ -317,7 +327,9 @@
       "/actions/default/out/Haptic": "Haptic",
       "/actions/Valheim/in/StopGesturedLocomotion": "Stop gestured locomotion",
       "/actions/LaserPointers/in/AddMapPin": "Add map pin",
-      "/actions/LaserPointers/in/MiddleClick": "Middle click"
+      "/actions/LaserPointers/in/MiddleClick": "Middle click",
+      "/actions/LaserPointers/in/DiscardItem": "Discard or stash item",
+      "/actions/LaserPointers/in/SplitStack": "Split stack"
     }
   ]
 }

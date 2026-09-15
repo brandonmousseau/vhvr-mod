@@ -72,5 +72,21 @@ namespace Valve.VR
                 return SteamVR_Actions.laserPointers_MiddleClick;
             }
         }
+        
+        public virtual SteamVR_Action_Boolean DiscardItem
+        {
+            get
+            {
+                return SteamVR_Actions.laserPointers_DiscardItem;
+            }
+        }
+        
+        public virtual SteamVR_Action_Boolean SplitStack
+        {
+            get
+            {
+                return SteamVR_Actions.laserPointers_SplitStack;
+            }
+        }
     }
 }
