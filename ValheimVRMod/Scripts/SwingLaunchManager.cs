@@ -31,6 +31,12 @@ namespace ValheimVRMod.Scripts
 
         protected virtual void OnRenderObject()
         {
+            // The item may already be unequipped while its instance awaits destruction at the end of the frame.
+            if (Player.m_localPlayer == null || Player.m_localPlayer.GetRightItem() == null)
+            {
+                return;
+            }
+
             if (mainHandInputAction.GetStateDown(swingInputSource))
             {
                 preparingThrow = true;
