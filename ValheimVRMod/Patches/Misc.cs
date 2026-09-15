@@ -425,8 +425,37 @@ namespace ValheimVRMod.Patches
     class SEShieldSetupPatch
     {
 
+        // Note: Staff of Protection uses SE_Shield
         public static void Postfix(SE_Shield __instance, Character character)
         {
+            if (VHVRConfig.NonVrPlayer() ||
+                !VHVRConfig.EnableMagicBarrierOverlay() ||
+                character != Player.m_localPlayer ||
+                character == null)
+            {
+                return;
+            }
+
+            var vrCam = VRPlayer.vrCam;
+            if (vrCam == null)
+            {
+                return;
+            }
+
+            vrCam.gameObject.GetOrAddComponent<MagicBarrierVisualEffect>().Show(__instance, character);
+        }
+    }
+
+    // Note: Northern Vengeance uses SE_React
+    [HarmonyPatch(typeof(StatusEffect), nameof(StatusEffect.Setup))]
+    class SEReactSetupPatch
+    {
+
+        public static void Postfix(StatusEffect __instance, Character character)
+        {
+            if (!(__instance is SE_React)) {
+                return;
+            }
             if (VHVRConfig.NonVrPlayer() ||
                 !VHVRConfig.EnableMagicBarrierOverlay() ||
                 character != Player.m_localPlayer ||
