@@ -30,13 +30,15 @@ namespace ValheimVRMod.Patches {
 
             if(!VHVRConfig.UseGrabButtonBlock())
             {
-                if (StaticObjects.leftFist().blockingWithFist() || StaticObjects.rightFist().blockingWithFist())
+
+                if (WeaponBlock.instance && (WeaponBlock.instance.weaponWield.allowBlocking() || LocalWeaponWield.nonDominantHandHasWeapon()))
+                {
+
+                    ___m_blockTimer = WeaponBlock.instance?.blockTimer ?? Block.blockTimerNonParry;
+                }
+                else if (StaticObjects.leftFist().blockingWithFist() || StaticObjects.rightFist().blockingWithFist())
                 {
                     ___m_blockTimer = FistBlock.instance?.blockTimer ?? Block.blockTimerNonParry;
-                }
-                else if (WeaponBlock.instance && (WeaponBlock.instance.weaponWield.allowBlocking() || LocalWeaponWield.nonDominantHandHasWeapon()))
-                {
-                    ___m_blockTimer = WeaponBlock.instance?.blockTimer ?? Block.blockTimerNonParry;
                 }
                 else
                 {
