@@ -54,25 +54,14 @@ namespace ValheimVRMod.Patches {
         }
     }
 
-    // The intro cinematic that plays on first startup swaps the game over to its own camera:
-    // CinematicsManager.Play() disables Utils.GetMainCamera() (which resolves to the VR camera,
-    // since VHVR keeps the vanilla "Main Camera" disabled) and CinematicsManager.Stop() enables it
-    // again, leaving the start menu fighting VRPlayer.enableCameras() over who owns the camera.
-    // The video itself is not rendered in stereo either and only shows up as a magenta block, so
-    // suppress the automatic intro and let FejdStartup go straight to the main menu.
-    // Cinematics started from the menu, dreams and the outro are left alone.
-    // TODO: m_introOnNewWorld plays the same intro video via Game when a new world is created and
-    // breaks the VR camera the same way. Consider clearing it here too.
-    [HarmonyPatch(typeof(CinematicsManager), "Awake")]
-    class DisableStartupCinematicPatch
+    [HarmonyPatch(typeof(FejdStartup), "Start")]
+    class StartupCinematicPatch
     {
-        static void Postfix(CinematicsManager __instance)
+        public static bool hasFejdStartupStarted { get; private set; } = false;
+
+        static void Finalizer()
         {
-            if (VHVRConfig.NonVrPlayer())
-            {
-                return;
-            }
-            __instance.m_introOnStartup = false;
+            hasFejdStartupStarted = true;
         }
     }
 

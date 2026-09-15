@@ -1,3 +1,5 @@
+using System;
+using System.Collections;
 using BepInEx;
 using UnityEngine;
 using ValheimVRMod.VRCore;
@@ -46,10 +48,11 @@ namespace ValheimVRMod
 
         void Update()
         {
-            if (VHVRConfig.NonVrPlayer()) {
+            // vrPlayer is only created once VR has been initialized and started.
+            if (vrPlayer == null) {
                 return;
             }
-            
+
             if (Input.GetKeyDown(VHVRConfig.GetRecenterKey()))
             {
                 VRManager.tryRecenter();
@@ -64,29 +67,71 @@ namespace ValheimVRMod
 
         void StartValheimVR()
         {
-            bool vrInitialized = false;
-            if (!VHVRConfig.NonVrPlayer())
-            {
-                vrInitialized = VRManager.InitializeVR();
-                if (!vrInitialized)
-                {
-                    LogError("Could not initialize VR.");
-                    failedToInitializeVR = true;
-                }
-            }
-
             HarmonyPatcher.DoPatching();
 
-            if (!VRAssetManager.Initialize())
+            bool assetsInitialized = VRAssetManager.Initialize();
+            if (!assetsInitialized)
             {
                 LogError("Problem initializing VR Assets");
-                vrInitialized = false;
             }
 
-            if (!vrInitialized)
+            if (VHVRConfig.NonVrPlayer())
             {
                 LogDebug("Non VR Mode Patching Complete.");
                 return;
+            }
+
+            if (!assetsInitialized)
+            {
+                FallBackToFlatScreenMode();
+                return;
+            }
+
+            // See StartupCinematicPatch for why VR is not initialized until the startup cinematic is over.
+            StartCoroutine(InitializeVRAfterStartupCinematic());
+        }
+
+        private static void FallBackToFlatScreenMode()
+        {
+            failedToInitializeVR = true;
+            LogDebug("Non VR Mode Patching Complete.");
+        }
+
+        private IEnumerator InitializeVRAfterStartupCinematic()
+        {
+            LogInfo("Waiting for the startup cinematic to finish before initializing VR...");
+            // The intro cinematic that plays on first startup swaps the game over to its own camera:
+            // CinematicsManager.Play() disables Utils.GetMainCamera() and CinematicsManager.Stop() enables it
+            // again. Once VR is running that resolves to the VR camera (VHVR keeps the vanilla "Main Camera"
+            // disabled), which leaves the start menu fighting VRPlayer.enableCameras() over who owns the
+            // camera, and the video is not rendered in stereo either. So ValheimVRMod waits for the intro to
+            // finish before initializing VR, letting it play on the flat screen with the vanilla camera.
+            // FejdStartup.Start() starts the intro coroutine, whose first step already calls
+            // CinematicsManager.Play(), so once Start() has returned CinematicsManager.IsStartedPlaying()
+            // tells whether the intro is still playing. A finalizer is used so that an exception thrown from
+            // Start() cannot leave VR waiting forever.
+            // TODO: m_introOnNewWorld plays the same intro video via Game when a new world is created, after
+            // VR is running, and breaks the VR camera the same way.
+            while (!StartupCinematicPatch.hasFejdStartupStarted || CinematicsManager.IsStartedPlaying())
+            {
+                yield return null;
+            }
+
+            bool vrInitialized;
+            try
+            {
+                vrInitialized = VRManager.InitializeVR();
+            }
+            catch (Exception e)
+            {
+                LogError("Exception while initializing VR: " + e);
+                vrInitialized = false;
+            }
+            if (!vrInitialized)
+            {
+                LogError("Could not initialize VR.");
+                FallBackToFlatScreenMode();
+                yield break;
             }
 
             VRManager.StartVR();
