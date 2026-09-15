@@ -203,6 +203,21 @@
       "name": "/actions/LaserPointers/in/PitchAndYaw",
       "type": "vector2",
       "requirement": "optional"
+    },
+    {
+      "name": "/actions/LaserPointers/in/AddMapPin",
+      "type": "boolean",
+      "requirement": "optional"
+    },
+    {
+      "name": "/actions/LaserPointers/in/FavoriteBuildPiece",
+      "type": "boolean",
+      "requirement": "optional"
+    },
+    {
+      "name": "/actions/LaserPointers/in/SendMapPing",
+      "type": "boolean",
+      "requirement": "optional"
     }
   ],
   "action_sets": [
@@ -305,7 +320,10 @@
       "/actions/default/in/SkeletonRightHand": "Skeleton (Right)",
       "/actions/default/in/Teleport": "Teleport",
       "/actions/default/out/Haptic": "Haptic",
-      "/actions/Valheim/in/StopGesturedLocomotion": "Stop gestured locomotion"
+      "/actions/Valheim/in/StopGesturedLocomotion": "Stop gestured locomotion",
+      "/actions/LaserPointers/in/AddMapPin": "Add map pin",
+      "/actions/LaserPointers/in/FavoriteBuildPiece": "Favorite build piece",
+      "/actions/LaserPointers/in/SendMapPing": "Send map ping"
     }
   ]
 }

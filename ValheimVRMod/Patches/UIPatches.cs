@@ -123,6 +123,22 @@ namespace ValheimVRMod.Patches
         }
     }
 
+    // Same as above for ZInput.pointerPosition, which reads the Input System mouse position instead of
+    // Input.mousePosition. The minimap uses it for where to add and remove pins, and the hardware cursor it
+    // would otherwise return is locked to the screen center.
+    [HarmonyPatch(typeof(ZInput), nameof(ZInput.Internal_GetPointerPosition))]
+    class ZInput_Internal_GetPointerPosition_Patch
+    {
+        public static void Postfix(ref Vector3 __result)
+        {
+            if (VHVRConfig.NonVrPlayer() || ZInput.IsTouchActive())
+            {
+                return;
+            }
+            __result = SoftwareCursor.simulatedMousePosition;
+        }
+    }
+
     // This patch replaces the method used to determine where on the UI to print
     // the NPC text (e.g. Munin/Hugin and trader dialog). Rather than use the transpiler I'm just replacing
     // the whole method. Vanilla places the text at the talker's position projected onto the screen by the

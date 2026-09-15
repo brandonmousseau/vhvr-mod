@@ -1121,47 +1121,6 @@ namespace ValheimVRMod.Patches {
         }
     }
 
-    // This patch enables adding map pins without needing to "Double Click".
-    // Instead it is triggered using the "click modifier" plus a single left click.
-    [HarmonyPatch(typeof(Minimap), nameof(Minimap.OnMapLeftClick))]
-    class MinimapAddPinPatch
-    {
-        static void Postfix(Minimap __instance)
-        {
-            if (!VHVRConfig.UseVrControls())
-            {
-                return;
-            }
-            if (VRControls.instance.getClickModifier())
-            {
-                __instance.OnMapDblClick();
-            }
-        }
-    }
-
-    // This patch hijacks the right click input on minimap to enable
-    // adding map pings. With a normal right click, the default behavior
-    // exists where a map pin will be removed. If the click modifier
-    // is held down, then instead of removing a pin, a map ping will
-    // be sent. (Alternative may be to just add a "middle click" button
-    // to laser pointer controls, but since there are overlapping controls
-    // between laser pointers and normal controls, things can end up being
-    // extra complex when we need to use a new button. Since we already have
-    // the modifier, this is simpler).
-    [HarmonyPatch(typeof(Minimap), nameof(Minimap.RemovePinUnderPointer))]
-    class MinimapPingPatch
-    {
-        static bool Prefix(Minimap __instance)
-        {
-            if (!VHVRConfig.UseVrControls() || !VRControls.instance.getClickModifier())
-            {
-                return true;
-            }
-            Chat.instance.SendPing(__instance.ScreenToWorldPoint(Input.mousePosition));
-            return false;
-        }
-    }
-
     class SnapTurnPatches
     {
         [HarmonyPatch(typeof(Player), nameof(Player.SetMouseLook))]

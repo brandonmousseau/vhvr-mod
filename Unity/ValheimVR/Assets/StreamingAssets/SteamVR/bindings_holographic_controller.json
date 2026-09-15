@@ -163,6 +163,29 @@
          ]
       },
       "/actions/laserpointers" : {
+         "chords" : [
+            {
+               "inputs" : [
+                  [ "/user/hand/left/input/grip", "click" ],
+                  [ "/user/hand/right/input/grip", "click" ]
+               ],
+               "output" : "/actions/laserpointers/in/sendmapping"
+            },
+            {
+               "inputs" : [
+                  [ "/user/hand/right/input/grip", "click" ],
+                  [ "/user/hand/right/input/trigger", "click" ]
+               ],
+               "output" : "/actions/laserpointers/in/addmappin"
+            },
+            {
+               "inputs" : [
+                  [ "/user/hand/left/input/grip", "click" ],
+                  [ "/user/hand/right/input/grip", "click" ]
+               ],
+               "output" : "/actions/laserpointers/in/favoritebuildpiece"
+            }
+         ],
          "sources" : [
             {
                "inputs" : {

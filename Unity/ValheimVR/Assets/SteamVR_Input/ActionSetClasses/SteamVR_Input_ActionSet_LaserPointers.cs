@@ -56,5 +56,29 @@ namespace Valve.VR
                 return SteamVR_Actions.laserPointers_PitchAndYaw;
             }
         }
+        
+        public virtual SteamVR_Action_Boolean AddMapPin
+        {
+            get
+            {
+                return SteamVR_Actions.laserPointers_AddMapPin;
+            }
+        }
+        
+        public virtual SteamVR_Action_Boolean FavoriteBuildPiece
+        {
+            get
+            {
+                return SteamVR_Actions.laserPointers_FavoriteBuildPiece;
+            }
+        }
+        
+        public virtual SteamVR_Action_Boolean SendMapPing
+        {
+            get
+            {
+                return SteamVR_Actions.laserPointers_SendMapPing;
+            }
+        }
     }
 }

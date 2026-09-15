@@ -81,7 +81,8 @@ namespace ValheimVRMod.Patches
             shouldChange = isMainHandItem ? HandItemPatchTarget.MainHandOnly : HandItemPatchTarget.OffHandOnly;
             Player.m_localPlayer.ShowHandItems();
             shouldChange = HandItemPatchTarget.Both;
-            return true;
+            // The item stays hidden if it could not be equipped.
+            return isMainHandItem ? Player.m_localPlayer.m_hiddenRightItem == null : Player.m_localPlayer.m_hiddenLeftItem == null;
         }
 
         static bool Prefix(ref Humanoid __instance,
@@ -99,18 +100,29 @@ namespace ValheimVRMod.Patches
                 return false;
             }
 
+            // EquipItem() can refuse (e.g. while the player is in an attack or dodge animation, which quickly
+            // holstering and unholstering can run into). Keep the item hidden in that case, otherwise it would be
+            // neither equipped nor holstered and could not be unholstered anymore.
             if (shouldChange != HandItemPatchTarget.OffHandOnly && ___m_hiddenRightItem != null)
             {
                 ___m_hiddenRightItem = null;
-                __instance.EquipItem(hiddenRightItem);
+                bool equipped = __instance.EquipItem(hiddenRightItem);
                 ___m_hiddenLeftItem = hiddenLeftItem;
+                if (!equipped)
+                {
+                    ___m_hiddenRightItem = hiddenRightItem;
+                }
                 __instance.SetupVisEquipment(__instance.m_visEquipment, false);
             }
             if (shouldChange != HandItemPatchTarget.MainHandOnly && ___m_hiddenLeftItem != null)
             {
                 ___m_hiddenLeftItem = null;
-                __instance.EquipItem(hiddenLeftItem);
+                bool equipped = __instance.EquipItem(hiddenLeftItem);
                 ___m_hiddenRightItem = hiddenRightItem;
+                if (!equipped)
+                {
+                    ___m_hiddenLeftItem = hiddenLeftItem;
+                }
                 __instance.SetupVisEquipment(__instance.m_visEquipment, false);
             }
 

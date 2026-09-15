@@ -1052,9 +1052,41 @@ namespace ValheimVRMod.VRCore.UI
                 // Use the existing EventSystems input module input as the
                 // input for our custom input module.
                 m_InputOverride = EventSystem.current.currentInputModule.input;
+                if (VHVRConfig.UseVrControls())
+                {
+                    // Hide laser pointer clicks that are part of a chord action (e.g. grip + trigger to add a map pin).
+                    if (LaserPointerChords.isLeftClickSuppressed)
+                    {
+                        CancelPress(PointerEventData.InputButton.Left);
+                    }
+                    if (LaserPointerChords.isRightClickSuppressed)
+                    {
+                        CancelPress(PointerEventData.InputButton.Right);
+                    }
+                    leftButtonPressed = LaserPointerChords.FilterLeftClick(leftButtonPressed);
+                    rightButtonPressed = LaserPointerChords.FilterRightClick(rightButtonPressed);
+                }
                 UpdateButtonState(leftButtonPressed, PointerEventData.InputButton.Left);
                 UpdateButtonState(rightButtonPressed, PointerEventData.InputButton.Right);
                 UpdateButtonState(middleButtonPressed, PointerEventData.InputButton.Middle);
+            }
+
+            // Drops a press that is still held, for when the click turns out to be part of a chord, e.g. when the
+            // trigger is pressed before the grip. Releasing it instead would deliver the pointer up and click that the
+            // chord is meant to replace.
+            private void CancelPress(PointerEventData.InputButton button)
+            {
+                if (!lastButtonStateMap[button])
+                {
+                    return;
+                }
+                lastButtonStateMap[button] = false;
+                PointerEventData buttonData = GetMousePointerEventData().GetButtonState(button).eventData.buttonData;
+                buttonData.eligibleForClick = false;
+                buttonData.pointerPress = null;
+                buttonData.rawPointerPress = null;
+                buttonData.pointerDrag = null;
+                buttonData.dragging = false;
             }
 
             // Scrolls whatever is under the simulated cursor, mirroring StandaloneInputModule.ProcessMouseEvent().

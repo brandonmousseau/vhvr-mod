@@ -385,8 +385,10 @@ namespace ValheimVRMod.VRCore.UI
             bool rightClickUp = false;
             if (useRightClick && laserControlsActive && inPlaceMode())
             {
-                rightClickDown = SteamVR_Actions.laserPointers_RightClick.GetState(SteamVR_Input_Sources.Any);
-                rightClickUp = SteamVR_Actions.laserPointers_RightClick.GetStateUp(SteamVR_Input_Sources.Any);
+                // Filtered so that a right click chorded with an action (e.g. favoriting a build piece) does not also
+                // count towards opening the quick switch menu.
+                rightClickDown = LaserPointerChords.rightClick;
+                rightClickUp = LaserPointerChords.rightClickUp;
                 if(rightClickDown)
                     buildQuickActionTimer += Time.unscaledDeltaTime;
             }
@@ -517,6 +519,14 @@ namespace ValheimVRMod.VRCore.UI
                     return contextScroll.axis.y > 0;
                 }
             }
+            if (zinput == "JoyPlace")
+            {
+                return LaserPointerChords.leftClickDown;
+            }
+            if (zinput == "BuildMenu")
+            {
+                return LaserPointerChords.rightClickDown;
+            }
             SteamVR_Action_Boolean[] action;
             zInputToBooleanAction.TryGetValue(zinput, out action);
             if (action == null)
@@ -548,6 +558,14 @@ namespace ValheimVRMod.VRCore.UI
             if (zinput == "JoyAltPlace")
             {
                 return CheckAltButton();
+            }
+            if (zinput == "JoyPlace")
+            {
+                return LaserPointerChords.leftClick;
+            }
+            if (zinput == "BuildMenu")
+            {
+                return LaserPointerChords.rightClick;
             }
             SteamVR_Action_Boolean[] action;
             zInputToBooleanAction.TryGetValue(zinput, out action);
@@ -583,6 +601,14 @@ namespace ValheimVRMod.VRCore.UI
             if (zinput == "Remove" && !canRemovePiece())
             {
                 return false;
+            }
+            if (zinput == "JoyPlace")
+            {
+                return LaserPointerChords.leftClickUp;
+            }
+            if (zinput == "BuildMenu")
+            {
+                return LaserPointerChords.rightClickUp;
             }
             SteamVR_Action_Boolean[] action;
             zInputToBooleanAction.TryGetValue(zinput, out action);
@@ -886,7 +912,9 @@ namespace ValheimVRMod.VRCore.UI
             zInputToBooleanAction.Add("AutoPickup", new[] { SteamVR_Actions.valheim_ToggleAutoPickup });
             zInputToBooleanAction.Add(ToggleMiniMap, new[] { SteamVR_Actions.valheim_ToggleMap });
 
-            // These placement commands re-use some of the normal game inputs
+            // These placement commands re-use some of the normal game inputs. They are read from the laser pointer
+            // clicks as filtered by LaserPointerChords (see GetButton*() and registerBooleanActionListeners()), the
+            // entries here only keep them from being treated as unmapped.
             zInputToBooleanAction.Add("BuildMenu", new[] { SteamVR_Actions.laserPointers_RightClick });
             zInputToBooleanAction.Add("JoyPlace", new[] { SteamVR_Actions.laserPointers_LeftClick });
             zInputToBooleanAction.Add("Remove", new[] { SteamVR_Actions.valheim_Jump, SteamVR_Actions.laserPointers_Jump });
@@ -906,6 +934,7 @@ namespace ValheimVRMod.VRCore.UI
             // actual button states in ZInput.
             registerBooleanActionListeners();
             registerContextScrollListener();
+            LaserPointerChords.Initialize();
         }
 
         private void registerBooleanActionListeners()
@@ -913,6 +942,11 @@ namespace ValheimVRMod.VRCore.UI
             foreach (var entry in zInputToBooleanAction)
             {
                 var buttonName = entry.Key;
+                if (buttonName == "JoyPlace" || buttonName == "BuildMenu")
+                {
+                    // Pressed and released by LaserPointerChords, which hides clicks that are part of a chord.
+                    continue;
+                }
                 foreach (var action in entry.Value)
                 {
                     // TODO: add listener of map zoom too

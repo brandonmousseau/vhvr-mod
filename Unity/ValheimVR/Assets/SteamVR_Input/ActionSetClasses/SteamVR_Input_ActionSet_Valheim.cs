@@ -81,6 +81,14 @@ namespace Valve.VR
             }
         }
         
+        public virtual SteamVR_Action_Pose BodyPose
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_BodyPose;
+            }
+        }
+        
         public virtual SteamVR_Action_Boolean HotbarUp
         {
             get
