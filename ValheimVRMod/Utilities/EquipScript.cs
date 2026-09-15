@@ -208,6 +208,9 @@ namespace ValheimVRMod.Utilities
                 case "emote_drink":
                     return EquipType.Tankard;
                 case "staff_fireball":
+                case "staff_lightningshot":
+                case "staff_thrust":
+                case "staff_thunder":
                     return EquipType.Magic;
             }
 
