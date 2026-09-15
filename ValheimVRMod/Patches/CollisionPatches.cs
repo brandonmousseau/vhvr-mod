@@ -278,7 +278,7 @@ namespace ValheimVRMod.Patches {
                 hitData.m_skill = skill;
                 hitData.m_damage = ___m_weapon.GetDamage();
                 hitData.m_point = pos;
-                hitData.m_dir = ButtonSecondaryAttackManager.hitDir == Vector3.zero ? (pos - Player.m_localPlayer.transform.position).normalized : ButtonSecondaryAttackManager.hitDir;
+                hitData.m_dir = ButtonSecondaryAttackManager.hitDir == Vector3.zero ? (VHVRConfig.UseKnockbackSwingDirection() ? StaticObjects.lastHitDir.normalized : (pos - Player.m_localPlayer.transform.position).normalized) : ButtonSecondaryAttackManager.hitDir;
                 hitData.m_hitCollider = col;
                 hitData.SetAttacker(___m_character);
                 hitData.m_damage.Modify(___m_damageMultiplier);
