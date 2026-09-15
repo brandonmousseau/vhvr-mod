@@ -252,9 +252,9 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            if (EquipScript.CurrentMainHandEquipType() == EquipType.Shovel && IsHostileCharacter(collider))
+            if (EquipScript.CurrentMainHandEquipType() == EquipType.Shovel && !isTerrain(collider.gameObject))
             {
-                // The shovel has no real attack against hostiles, so it falls back to a kick.
+                // The shovel deals no damage of its own, so hitting anything but terrain with it falls back to a kick.
                 if (FootCollision.Kick(collider, transform.position, physicsEstimator.GetVelocity(), speed))
                 {
                     VRPlayer.mainWeaponHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, VRPlayer.mainWeaponHandInputSource);
@@ -634,18 +634,22 @@ namespace ValheimVRMod.Scripts
                 !TwoHandedGeometry.LocalAtgeirGeometryProvider.UsingArmpitAnchor)
             {
                 // When wielding polearms with only one hand without armpit anchor, make attack harder to trigger
-                return isStab && speed > GetMinSpeed();
+                return isStab && speed > GetMinSpeed(isShovelScoop);
             }
 
-            return isStab || speed > GetMinSpeed();
+            return isStab || speed > GetMinSpeed(isShovelScoop);
         }
 
-        private float GetMinSpeed()
+        private float GetMinSpeed(bool isShovelScoop)
         {
             switch (EquipScript.CurrentMainHandEquipType())
             {
                 case EquipType.Hammer:
                     return MIN_HAMMER_SPEED;
+                case EquipType.Shovel:
+                    // The shovel is only used as a tool when scooping; hitting anything else with it is a kick and
+                    // should take as much speed as swinging a weapon.
+                    return isShovelScoop ? MIN_LONG_TOOL_SPEED : VHVRConfig.SwingSpeedRequirement();
                 case EquipType.BattleAxe:
                 case EquipType.Sledge:
                 case EquipType.Polearms:
