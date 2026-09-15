@@ -33,7 +33,6 @@ namespace ValheimVRMod.Patches {
 
                 if (WeaponBlock.instance && (WeaponBlock.instance.weaponWield.allowBlocking() || LocalWeaponWield.nonDominantHandHasWeapon()))
                 {
-
                     ___m_blockTimer = WeaponBlock.instance?.blockTimer ?? Block.blockTimerNonParry;
                 }
                 else if (StaticObjects.leftFist().blockingWithFist() || StaticObjects.rightFist().blockingWithFist())
