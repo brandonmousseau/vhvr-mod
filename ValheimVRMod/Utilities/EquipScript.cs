@@ -370,7 +370,7 @@ namespace ValheimVRMod.Utilities
 
         public static bool ShouldSkipAttackAnimation()
         {
-            if (Protector.instance != null)
+            if (OrbManager.instance != null)
             {
                 // These staves are cast with the trigger rather than a gesture, so their animation plays in full.
                 return false;

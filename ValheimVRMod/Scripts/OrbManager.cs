@@ -7,12 +7,12 @@ namespace ValheimVRMod.Scripts
     // Manages staves that are cast by pulling the trigger of the hand holding them and that play their
     // attack animation in full (Northern Vengeance, staff of protection). Unlike the other staves these are
     // not necessarily main hand weapons, so everything here is relative to the hand actually holding the item.
-    public class Protector : LocalWeaponWield
+    public class OrbManager : LocalWeaponWield
     {
         public static readonly HashSet<string> ITEM_NAMES =
             new HashSet<string>(new string[] { "$item_staff_frostorbs", "$item_staffshield" });
 
-        public static Protector instance;
+        public static OrbManager instance;
 
         protected override void Awake()
         {

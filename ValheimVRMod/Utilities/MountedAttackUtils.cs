@@ -1,6 +1,7 @@
 ﻿
 using HarmonyLib;
 using System.Reflection;
+using ValheimVRMod.Patches;
 using ValheimVRMod.Scripts;
 using Valve.VR;
 
@@ -39,7 +40,7 @@ namespace ValheimVRMod.Utilities
             var staff = MagicStaffManagers.Current;
             bool attemptingNonSwingAttack =
                 (SummonerManager.instance != null && SummonerManager.instance.ConsumeAttemptingAttack()) ||
-                (Protector.instance != null && Protector.instance.AttemptingAttack) ||
+                (OrbManager.instance != null && OrbManager.instance.AttemptingAttack) ||
                 (staff != null && staff.AttemptingAttack &&
                  !(SwingableStaffManager.instance != null && SwingableStaffManager.instance.UseSwingForCurrentAttack()));
             if (attemptingNonSwingAttack)

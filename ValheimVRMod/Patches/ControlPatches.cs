@@ -873,7 +873,7 @@ namespace ValheimVRMod.Patches {
                 attackHold = true;
             }
 
-            if (Protector.instance != null && Protector.instance.AttemptingAttack)
+            if (OrbManager.instance != null && OrbManager.instance.AttemptingAttack)
             {
                 // While riding, MountedAttackUtils initiates the attack instead and only the hold may be raised
                 // here, for the same reason as the magic staff case below.
