@@ -110,8 +110,7 @@ namespace ValheimVRMod
             // CinematicsManager.Play(), so once Start() has returned CinematicsManager.IsStartedPlaying()
             // tells whether the intro is still playing. A finalizer is used so that an exception thrown from
             // Start() cannot leave VR waiting forever.
-            // TODO: m_introOnNewWorld plays the same intro video via Game when a new world is created, after
-            // VR is running, and breaks the VR camera the same way.
+            // Cinematics played once VR is running are shown on the VRGUI instead, see CinematicsManager_Play_Patch.
             while (!StartupCinematicPatch.hasFejdStartupStarted || CinematicsManager.IsStartedPlaying())
             {
                 yield return null;

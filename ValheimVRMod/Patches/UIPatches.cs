@@ -124,15 +124,17 @@ namespace ValheimVRMod.Patches
     }
 
     // This patch replaces the method used to determine where on the UI to print
-    // the NPC text. Rather than use the transpiler I'm just replacing the whole method.
-    // The reason the original doesn't work is because it assumes the GUI is being printed as
-    // Screen Space overlay and uses a WorldToScreenSpace function that doesn't work correctly
-    // with the changes I needed to make to get the GUI working right in VR. This version isn't
-    // perfect, but it should keep the NPC text on the screen for the duration it should remain
-    // there.
+    // the NPC text (e.g. Munin/Hugin and trader dialog). Rather than use the transpiler I'm just replacing
+    // the whole method. Vanilla places the text at the talker's position projected onto the screen by the
+    // main camera. In VR that is the head camera while the text is drawn on the VRGUI panel, so the text
+    // would slide across the panel whenever the head turns. Instead the text is pinned to a fixed spot on
+    // the panel for the duration it should remain there.
     [HarmonyPatch(typeof(Chat), "UpdateNpcTexts")]
     class Chat_UpdateNpcTexts_Patch
     {
+        // Height of the NPC text on the GUI canvas as a fraction of the canvas height from the bottom.
+        private const float NPC_TEXT_HEIGHT_FRACTION = 0.3f;
+
         public static bool Prefix(Chat __instance, List<Chat.NpcText> ___m_npcTexts, float dt)
         {
             if (VHVRConfig.NonVrPlayer()) {
@@ -160,29 +162,16 @@ namespace ValheimVRMod.Patches
                         }
                     }
                     Vector3 mGo = mNpcText.m_go.transform.position + mNpcText.m_offset;
-                    Vector3 screenPoint = mainCamera.WorldToScreenPoint(mGo);
-                    if (screenPoint.x < 0f || screenPoint.x > (float)mainCamera.pixelWidth || screenPoint.y < 0f || screenPoint.y > (float)mainCamera.pixelHeight || screenPoint.z < 0f)
+                    mNpcText.SetVisible(true);
+                    // Position relative to the canvas the text is on so that it does not depend on how VRGUI
+                    // sizes and places that canvas.
+                    Canvas canvas = mNpcText.m_gui.GetComponentInParent<Canvas>();
+                    if (canvas != null)
                     {
-                        mNpcText.SetVisible(false);
-                    }
-                    else
-                    {
-                        mNpcText.SetVisible(true);
-                        RectTransform mGui = mNpcText.m_gui.transform as RectTransform;
-                        float screenpointX = screenPoint.x;
-                        Rect rect = mGui.rect;
-                        float halfWidth = rect.width / 2f;
-                        float screenWidth = (float)Screen.width;
-                        rect = mGui.rect;
-                        screenPoint.x = Mathf.Clamp(screenpointX, halfWidth, screenWidth - halfWidth);
-                        float screenpointY = screenPoint.y;
-                        rect = mGui.rect;
-                        float halfHeight = rect.height / 2f;
-                        float screenHeight = (float)Screen.height;
-                        rect = mGui.rect;
-                        screenPoint.y = Mathf.Clamp(screenpointY, halfHeight, screenHeight - rect.height);
-                        screenPoint.z = 0f;
-                        mNpcText.m_gui.transform.position = screenPoint;
+                        RectTransform canvasTransform = canvas.rootCanvas.GetComponent<RectTransform>();
+                        Rect canvasRect = canvasTransform.rect;
+                        mNpcText.m_gui.transform.position = canvasTransform.TransformPoint(
+                            new Vector3(canvasRect.center.x, canvasRect.yMin + canvasRect.height * NPC_TEXT_HEIGHT_FRACTION, 0f));
                     }
                     if (Vector3.Distance(mainCamera.transform.position, mGo) <= mNpcText.m_cullDistance)
                     {
@@ -208,6 +197,10 @@ namespace ValheimVRMod.Patches
             if (npcText != null)
             {
                 Chat_ClearNpcText_ReversePatch.ReversePatchClearNpcText(__instance, npcText);
+            }
+            if (Hud.instance.m_userHidden && ___m_npcTexts.Count > 0)
+            {
+                __instance.HideAllNpcTexts();
             }
             return false;
         }
@@ -934,6 +927,48 @@ namespace ValheimVRMod.Patches
             }
 
             return true;
+        }
+    }
+
+    // Shows cinematics on the VRGUI instead of on CinematicsManager's own flat camera, which would also
+    // disable the VR camera while playing. The startup intro plays before VR is initialized and is left as is.
+    [HarmonyPatch(typeof(CinematicsManager), nameof(CinematicsManager.Play), new Type[] { typeof(CinematicsManager.VideoEntry), typeof(CinematicsManager.VideoCompleteAction) })]
+    class CinematicsManager_Play_Patch
+    {
+        private static bool ShouldPatch()
+        {
+            return !VHVRConfig.NonVrPlayer() && VRPlayer.instance != null && CinematicsManager.s_instance != null;
+        }
+
+        static void Prefix(CinematicsManager.VideoEntry video)
+        {
+            if (!ShouldPatch() || video == null)
+            {
+                return;
+            }
+            var clip = video.m_videoClip != null ? video.m_videoClip : video.m_videoClipLow;
+            if (clip == null)
+            {
+                return;
+            }
+            // Set up before vanilla starts the video player.
+            VRCinematicScreen.OnPlay(CinematicsManager.s_instance, clip);
+        }
+
+        static void Postfix(bool __result)
+        {
+            if (!__result || !ShouldPatch())
+            {
+                return;
+            }
+            // Undo the camera swap. CinematicsManager.Stop() only disables m_camera and enables m_mainCamera
+            // again, so it is fine with both already being in that state.
+            CinematicsManager cinematicsManager = CinematicsManager.s_instance;
+            cinematicsManager.m_camera.enabled = false;
+            if (cinematicsManager.m_mainCamera != null)
+            {
+                cinematicsManager.m_mainCamera.enabled = true;
+            }
         }
     }
 
