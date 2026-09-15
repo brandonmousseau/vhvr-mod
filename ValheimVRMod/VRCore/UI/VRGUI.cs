@@ -230,6 +230,7 @@ namespace ValheimVRMod.VRCore.UI
             bool rightButtonPressed = Input.GetMouseButton(1);
             bool middleButtonPressed = Input.GetMouseButton(2);
             _inputModule.UpdateButtonStates(leftButtonPressed, rightButtonPressed, middleButtonPressed);
+            _inputModule.UpdateScroll();
         }
 
         public static void UpdateUIPanelSize()
@@ -262,8 +263,23 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return;
             }
-            
+
             inputUiModule.enabled = true;
+
+            if (!VHVRConfig.UseVrControls())
+            {
+                // Mouse input is already fed to VRGUI_InputModule at the simulated cursor position, but
+                // the vanilla module would also handle it at the hardware cursor position, which is locked
+                // to the screen center. That hits whatever happens to be there, e.g. clicks land on the
+                // inventory's drop outside area, so an item picked up from the inventory would immediately
+                // get dropped, and hovering highlights a second, unrelated inventory slot.
+                // Assigned every frame since the game may reassign the module's actions.
+                inputUiModule.point = null;
+                inputUiModule.scrollWheel = null;
+                inputUiModule.leftClick = null;
+                inputUiModule.rightClick = null;
+                inputUiModule.middleClick = null;
+            }
         }
 
         public void LateUpdate()
@@ -1039,6 +1055,20 @@ namespace ValheimVRMod.VRCore.UI
                 UpdateButtonState(leftButtonPressed, PointerEventData.InputButton.Left);
                 UpdateButtonState(rightButtonPressed, PointerEventData.InputButton.Right);
                 UpdateButtonState(middleButtonPressed, PointerEventData.InputButton.Middle);
+            }
+
+            // Scrolls whatever is under the simulated cursor, mirroring StandaloneInputModule.ProcessMouseEvent().
+            public void UpdateScroll()
+            {
+                if (Mathf.Approximately(input.mouseScrollDelta.sqrMagnitude, 0f))
+                {
+                    return;
+                }
+                PointerEventData pointerData =
+                    GetMousePointerEventData().GetButtonState(PointerEventData.InputButton.Left).eventData.buttonData;
+                GameObject scrollHandler =
+                    ExecuteEvents.GetEventHandler<IScrollHandler>(pointerData.pointerCurrentRaycast.gameObject);
+                ExecuteEvents.ExecuteHierarchy(scrollHandler, pointerData, ExecuteEvents.scrollHandler);
             }
 
             private void UpdateButtonState(bool state, PointerEventData.InputButton button)
