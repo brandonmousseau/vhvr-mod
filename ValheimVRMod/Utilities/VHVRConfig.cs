@@ -169,6 +169,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> crossbowManualReload;
         private static ConfigEntry<string> blockingType;
         private static ConfigEntry<bool> movementSecondaryAttack;
+        private static ConfigEntry<string> meleeAttackKnockbackDirection;
 
 #if DEBUG
         private static ConfigEntry<float> DebugPosX;
@@ -1034,6 +1035,14 @@ namespace ValheimVRMod.Utilities
                                                     "KnifeMovementSecondaryAttack",
                                                     false,
                                                     "When enabled, Weapon that have movement secondary attack (Knife) button secondary attack will have 2 step, first trigger-release will make you leap, the second one works like usual button secondary attack. Re-equip after changing setting to update");
+            meleeAttackKnockbackDirection = config.Bind("Motion Control",
+                                        "MeleeAttackKnockbackDirection",
+                                        "Basic",
+                                        new ConfigDescription("Melee Attack Knockback Direction: " +
+                                        "Basic - Melee knockback direction away from player position. " +
+                                        "Swing - Melee knockback follow swing direction.",
+                                        new AcceptableValueList<string>(new string[] { "Basic", "Swing" })));
+
 
             advancedBuildMode = config.Bind("Motion Control",
                                                    "AdvancedBuildMode",
@@ -1759,6 +1768,10 @@ namespace ValheimVRMod.Utilities
             return movementSecondaryAttack.Value;
         }
 
+        public static bool UseKnockbackSwingDirection()
+        {
+            return meleeAttackKnockbackDirection.Value == "Swing";
+        }
         public static bool UseLegacyHud()
         {
             return useLegacyHud.Value;
