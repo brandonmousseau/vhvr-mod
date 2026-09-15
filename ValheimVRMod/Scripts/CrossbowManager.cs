@@ -92,7 +92,7 @@ namespace ValheimVRMod.Scripts {
 
             // Same as localWeaponTip, but also after any one-handed aiming adjustment.
             grapplingChainAttachPoint =
-                transform.position + GetWeaponPointingDirection() * (weaponLength - distanceBetweenGripAndRearEnd);
+                transform.position + GetWeaponPointingDirection() * (weaponLength - distanceBetweenGripAndRearEnd) * 0.5f;
 
             // Also refresh the chain right away so it stays in sync with the crossbow for this render.
             var chain = GrapplingPoint.m_localGrappler != null ? GrapplingPoint.m_localGrappler.GetComponent<LineRenderer>() : null;
