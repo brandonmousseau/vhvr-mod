@@ -18,6 +18,11 @@ namespace ValheimVRMod.Utilities {
         // drawn, i.e. bowRight x bowForward. Crossbows point along local +Y, so this is +Z for them.
         public readonly Vector3 limbBendAxis;
 
+        // Euler correction applied to a weapon's own projectile when it is shown resting on the string, for a
+        // projectile model that is not authored pointing straight along the anatomy's forward axis. Zero for the
+        // crossbows, which show their ammo's bolts instead (see CrossbowMorphManager.createBolt).
+        public readonly Vector3 ownProjectileRotation;
+
         private static CrossbowAnatomy GoldCrossbowAnatomy = new CrossbowAnatomy(
             /* hardLimbLeft= */ new Vector3(-0.17f, 1.58f, 0),
             /* hardLimbRight= */ new Vector3(0.17f, 1.58f, 0),
@@ -121,9 +126,11 @@ namespace ValheimVRMod.Utilities {
                     /* maxBendAngleRadians= */ 0.5f,
                     /* softLimbHeight= */ 0.01f,
                     /* stringRadius= */ 0.0075f,
-                    // Unused: the grappling hook fires its own projectile and never shows a bolt.
-                    /* boltCenterToTailDistance= */ 0.51f,
-                    /* limbBendAxis= */ Vector3.down)
+                    // Unused: the grappling hook shows its own projectile, whose offset is measured from its
+                    // model instead (see CrossbowMorphManager.GetTailToPivotDistance).
+                    /* boltCenterToTailDistance= */ 1.6f,
+                    /* limbBendAxis= */ Vector3.down,
+                    /* ownProjectileRotation= */ new Vector3(0, -3, 0))
             }
         };
 
@@ -144,9 +151,11 @@ namespace ValheimVRMod.Utilities {
             float softLimbHeight,
             float stringRadius,
             float boltCenterToTailDistance,
-            Vector3? limbBendAxis = null)
+            Vector3? limbBendAxis = null,
+            Vector3? ownProjectileRotation = null)
         {
             this.limbBendAxis = limbBendAxis ?? Vector3.forward;
+            this.ownProjectileRotation = ownProjectileRotation ?? Vector3.zero;
             this.hardLimbLeft = hardLimbLeft;
             this.hardLimbRight = hardLimbRight;
             this.restingStringLeft = restingStringLeft;
