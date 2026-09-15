@@ -977,14 +977,52 @@ namespace ValheimVRMod.Patches
             {
                 return;
             }
-            // Undo the camera swap. CinematicsManager.Stop() only disables m_camera and enables m_mainCamera
-            // again, so it is fine with both already being in that state.
-            CinematicsManager cinematicsManager = CinematicsManager.s_instance;
-            cinematicsManager.m_camera.enabled = false;
-            if (cinematicsManager.m_mainCamera != null)
+            // Play() still enables CinematicsManager's own camera, which would render over the VRGUI. No camera
+            // needs restoring: the transpiler below leaves m_mainCamera null, so Play() disabled none, and Stop()
+            // is fine with m_camera already being disabled.
+            CinematicsManager.s_instance.m_camera.enabled = false;
+        }
+
+        // Hides the main camera from Play(), which stores it in m_mainCamera and disables it for the length of
+        // the cinematic (Stop() enables it again). Once VR is running Utils.GetMainCamera() is the VR camera, so
+        // vanilla would disable the camera the headset renders with, and VRPlayer.enableCameras() reacts to a
+        // disabled VR camera by rebuilding it and destroying the follow camera along with it. Both Play() and
+        // Stop() null check m_mainCamera, so leaving it null means neither touches any camera at all, and the
+        // video goes to the VRGUI instead. Before VR is initialized this returns the camera unchanged, so the
+        // startup intro still plays on the flat screen with the vanilla camera.
+        private static Camera GetMainCameraForCinematic()
+        {
+            return ShouldPatch() ? null : Utils.GetMainCamera();
+        }
+
+        private static readonly MethodInfo getMainCamera =
+            AccessTools.Method(typeof(Utils), nameof(Utils.GetMainCamera));
+
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            var patched = new List<CodeInstruction>();
+            int patchedCount = 0;
+            foreach (var instruction in instructions)
             {
-                cinematicsManager.m_mainCamera.enabled = true;
+                if (instruction.Calls(getMainCamera))
+                {
+                    patched.Add(
+                        CodeInstruction.Call(
+                            typeof(CinematicsManager_Play_Patch), nameof(GetMainCameraForCinematic)));
+                    patchedCount++;
+                }
+                else
+                {
+                    patched.Add(instruction);
+                }
             }
+            if (patchedCount != 1)
+            {
+                LogError(
+                    "CinematicsManager.Play: patched " + patchedCount +
+                    " of the 1 expected Utils.GetMainCamera() call, the VR camera may be disabled by cinematics.");
+            }
+            return patched;
         }
     }
 

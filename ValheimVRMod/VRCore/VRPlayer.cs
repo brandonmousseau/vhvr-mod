@@ -876,7 +876,11 @@ namespace ValheimVRMod.VRCore
             {
                 if (_thirdPersonCamera != null)
                 {
-                    Destroy(_thirdPersonCamera);
+                    // Since enableThirdPersonCamera() creates a new object under the same name,
+                    // It is necessary to destroy the entire object to prevent accumulating objects
+                    // named FollowCamera.
+                    Destroy(_thirdPersonCamera.gameObject);
+                    _thirdPersonCamera = null;
                 }
                 enableVrCamera();
             }
@@ -986,6 +990,13 @@ namespace ValheimVRMod.VRCore
             LogDebug("Enabling third person camera");
             _thirdPersonCamera = new GameObject(CameraUtils.FOLLOW_CAMERA).AddComponent<Camera>();
             _thirdPersonCamera.CopyFrom(vrCam);
+            // CopyFrom also copies vrCam's projection matrix as an explicitly set one, i. e. the off-axis XR eye
+            // projection, carrying the eye texture's vertical convention. Unlike the hands and world space UI
+            // cameras, which stay stereo and let XR drive their projection, this one renders the flat screen
+            // monoscopically (see stereoTargetEye below), where that matrix shows up vertically flipped. Resetting
+            // it lets the camera derive its own projection from the field of view and aspect set further down,
+            // both of which an explicitly set projection matrix would otherwise override.
+            _thirdPersonCamera.ResetProjectionMatrix();
             _thirdPersonCamera.depth = 4;
             // Borrow the character trigger layer to render headgears which should be hidden for the VR camera.
             _thirdPersonCamera.cullingMask |= (1 << LayerUtils.CHARARCTER_TRIGGER);
@@ -995,8 +1006,8 @@ namespace ValheimVRMod.VRCore
             _thirdPersonCamera.stereoTargetEye = StereoTargetEyeMask.None;
             _thirdPersonCamera.gameObject.AddComponent<ThirdPersonCameraUpdater>();
             _thirdPersonCamera.enabled = true;
-            _thirdPersonCamera.ResetAspect();
             _thirdPersonCamera.fieldOfView = 75;
+            _thirdPersonCamera.ResetAspect();
         }
 
         // Search for the original skybox cam, if found, copy it, disable it,
