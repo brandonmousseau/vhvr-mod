@@ -228,8 +228,18 @@ namespace ValheimVRMod.Patches
                 }
             }
 
-            if (!___m_rightItemInstance || meshFilter == null)
+            if (!___m_rightItemInstance)
             {
+                return;
+            }
+
+            if (meshFilter == null)
+            {
+                // Items with only skinned meshes (e. g. knuckles) are not wielded but their particles still need fixing.
+                if (Player.m_localPlayer == player && !VHVRConfig.NonVrPlayer())
+                {
+                    ParticleFix.maybeFix(___m_rightItemInstance, EquipScript.CurrentMainHandEquipType());
+                }
                 return;
             }
 
@@ -429,8 +439,18 @@ namespace ValheimVRMod.Patches
                 }
             }
 
-            if (!___m_leftItemInstance || meshFilter == null)
+            if (!___m_leftItemInstance)
             {
+                return;
+            }
+
+            if (meshFilter == null)
+            {
+                // Items with only skinned meshes (e. g. knuckles) are not wielded but their particles still need fixing.
+                if (Player.m_localPlayer == player && !VHVRConfig.NonVrPlayer())
+                {
+                    ParticleFix.maybeFix(___m_leftItemInstance, EquipScript.CurrentOffHandEquipType());
+                }
                 return;
             }
 
