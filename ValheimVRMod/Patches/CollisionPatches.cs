@@ -10,12 +10,17 @@ namespace ValheimVRMod.Patches {
 
     [HarmonyPatch(typeof(Attack), nameof(Attack.GetAttackOrigin))]
     class PatchAreaAttack {
-
-        static bool Prefix(ref Transform __result,  ref Humanoid ___m_character) {
-            if (___m_character != Player.m_localPlayer || !VHVRConfig.UseVrControls()) {
+        static bool Prefix(ref Transform __result, ref Humanoid ___m_character, ItemDrop.ItemData ___m_weapon)
+        {
+            if (___m_character != Player.m_localPlayer || !VHVRConfig.UseVrControls())
+            {
                 return true;
             }
-             
+
+            if (___m_weapon != null && ___m_weapon == ___m_character.GetLeftItem())
+            {
+                return true;
+            }
             __result = StaticObjects.rightWeaponCollider().transform;
             return false;
         }
