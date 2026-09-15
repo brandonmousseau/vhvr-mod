@@ -55,6 +55,13 @@ namespace ValheimVRMod.Scripts
 
         private void OnTriggerStay(Collider collider)
         {
+            if (IsRollingSnowball(collider))
+            {
+                // The snowball is big enough that a foot can end up inside it without ever entering it.
+                TryHit(collider);
+                return;
+            }
+
             Character character = null;
             if (collider.gameObject.layer == LayerUtils.CHARACTER)
             {
@@ -89,9 +96,12 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            if (collider.gameObject.layer != LayerUtils.CHARACTER && !SteamVR_Actions.valheim_Use.GetState(SteamVR_Input_Sources.Any))
+            if (collider.gameObject.layer != LayerUtils.CHARACTER &&
+                !IsRollingSnowball(collider) &&
+                !SteamVR_Actions.valheim_Use.GetState(SteamVR_Input_Sources.Any))
             {
-                // When kicking anything other than a character, require pressing the grip so that the attack does not accidentally happen too easily.
+                // When kicking anything other than a character or the rolling snowball, require pressing the grip so
+                // that the attack does not accidentally happen too easily.
                 return;
             }
 
@@ -155,6 +165,13 @@ namespace ValheimVRMod.Scripts
         {
             transform.parent = parent;
             transform.localScale = new Vector3(0.22f, 0.7f, 0.375f);
+        }
+
+        // The big snowball rolling around in the Deep North, which is a moving target rather than scenery and
+        // therefore worth kicking without having to ask for it using the grip.
+        private static bool IsRollingSnowball(Collider collider)
+        {
+            return collider.GetComponentInParent<SnowRoller>() != null;
         }
 
         private static bool tryHitTarget(GameObject target, bool isSecondaryAttack, float duration, float speed)
