@@ -44,7 +44,7 @@ namespace ValheimVRMod.Scripts
                 },
                 {
                     "$enemy_asksvin",
-                    new HeadReinAttach("Head", new Vector3(0.3f, 0, 0.2f), new Vector3(-0.3f, 0, 0.2f))
+                    new HeadReinAttach("Head", new Vector3(0.5f, 0, 0.2f), new Vector3(-0.5f, 0, 0.2f))
                 },
                 {
                     "$enemy_moose",
