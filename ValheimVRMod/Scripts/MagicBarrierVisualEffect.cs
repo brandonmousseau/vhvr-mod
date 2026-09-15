@@ -15,8 +15,9 @@ namespace ValheimVRMod.Scripts
      * between barriers.
      *
      * FullTexture mode mirrors each bubble's own material onto a panel in front of the camera, one panel per
-     * barrier, ordered so that the larger bubble's panel sits farther away and therefore draws behind the smaller
-     * one, as the bubbles themselves do.
+     * barrier, placed at a distance derived from that bubble's own radius in the world. A larger bubble therefore
+     * draws behind a smaller one, as the bubbles themselves do, and each panel keeps its depth no matter which
+     * other barriers are up.
      *
      * SimpleColor mode shows a single tinted panel for the barrier that expires first, pulsing faster as it runs
      * out. The pulse is the signal, and two pulses at different rates blended into one panel read as neither, so
@@ -25,19 +26,18 @@ namespace ValheimVRMod.Scripts
      */
     class MagicBarrierVisualEffect : MonoBehaviour
     {
-        // Signature tints, applied in order of bubble size: the smallest bubble (the Staff of Protection) takes
-        // the first. Ranking by size rather than by status effect name keeps this working without knowing each
-        // effect's asset name, and uses the same ordering as the FullTexture panel depths below.
-        private static readonly Color[] SIGNATURE_TINTS = new Color[]
-        {
-            new Color(0.375f, 0.125f, 0.3f),
-            new Color(0.125f, 0.3f, 0.5f),
-        };
+        // Signature tints, one dedicated to each type of barrier so that a tint always means the same barrier,
+        // whichever barriers happen to be up and whatever size they turn out to be.
+        private static readonly Color PROTECTION_TINT = new Color(0.375f, 0.125f, 0.3f);
+        private static readonly Color VENGEANCE_TINT = new Color(0.125f, 0.3f, 0.5f);
         private const float OVERLAY_ALPHA = 0.2f;
-        // Distance of the nearest FullTexture panel, and the gap between panels of successive barriers.
-        private const float FULL_TEXTURE_PANEL_DISTANCE = 1f;
-        private const float FULL_TEXTURE_PANEL_SPACING = 0.25f;
-        // Width and height of a FullTexture panel at FULL_TEXTURE_PANEL_DISTANCE. Panels farther away are scaled
+        // Distance of the FullTexture panel of a bubble of no size, how much farther away the panel moves per meter
+        // of bubble radius, and the distance beyond which it does not move any farther. The cap keeps the panel of
+        // an unusually large (e. g. modded) bubble from reaching far enough to be occluded by the world.
+        private const float FULL_TEXTURE_PANEL_MIN_DISTANCE = 0.25f;
+        private const float FULL_TEXTURE_PANEL_DISTANCE_PER_BUBBLE_RADIUS = 0.5f;
+        private const float FULL_TEXTURE_PANEL_MAX_DISTANCE = 2f;
+        // Width and height of a FullTexture panel at FULL_TEXTURE_PANEL_MIN_DISTANCE. Panels farther away are scaled
         // up in proportion so that they all cover the same part of the view and only their depth order differs.
         private const float FULL_TEXTURE_PANEL_SIZE = 4f;
         private const float SIMPLE_COLOR_PANEL_DISTANCE = 0.125f;
@@ -71,7 +71,6 @@ namespace ValheimVRMod.Scripts
             MeshRenderer bubbleRenderer = FindBubbleRenderer(shield);
 
             barriers.Add(new Barrier(shield, bubbleRenderer, effects, transform));
-            SortBarriersBySize();
             enabled = true;
         }
 
@@ -91,30 +90,22 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            bool anyRadiusResolved = false;
             foreach (Barrier barrier in barriers)
             {
                 barrier.CenterBubbleAtViewHeight(transform.position.y);
                 // A barrier drawn out of particles has empty renderer bounds until the particles have been
                 // emitted and simulated, so its size is not known when it is first shown.
-                anyRadiusResolved |= barrier.RefreshRadius();
-            }
-            if (anyRadiusResolved)
-            {
-                // Its place in the size order, and with it its tint and panel depth, is only settled now.
-                SortBarriersBySize();
+                barrier.RefreshRadius();
             }
 
             bool fullTexture = VHVRConfig.EnableFullTextureMagicBarrierOverlay();
             Barrier soonestToExpire = fullTexture ? null : GetSoonestToExpire();
-            for (int i = 0; i < barriers.Count; i++)
+            foreach (Barrier barrier in barriers)
             {
-                barriers[i].UpdateOverlays(
+                barrier.UpdateOverlays(
                     showFullTexture: fullTexture,
                     // Only one tinted panel at a time, see the class comment.
-                    showSimpleColor: barriers[i] == soonestToExpire && VRPlayer.inFirstPerson,
-                    tint: SIGNATURE_TINTS[Mathf.Min(i, SIGNATURE_TINTS.Length - 1)],
-                    panelDistance: FULL_TEXTURE_PANEL_DISTANCE + i * FULL_TEXTURE_PANEL_SPACING);
+                    showSimpleColor: barrier == soonestToExpire && VRPlayer.inFirstPerson);
             }
         }
 
@@ -127,11 +118,12 @@ namespace ValheimVRMod.Scripts
             barriers.Clear();
         }
 
-        // Smallest bubble first, so that the tints and the panel depths are assigned consistently and the larger
-        // bubble's panel ends up behind the smaller one.
-        private void SortBarriersBySize()
+        // Where the FullTexture panel of a bubble of this radius belongs, see the constants above.
+        private static float GetFullTexturePanelDistance(float bubbleRadius)
         {
-            barriers.Sort((a, b) => a.bubbleRadius.CompareTo(b.bubbleRadius));
+            return Mathf.Min(
+                FULL_TEXTURE_PANEL_MIN_DISTANCE + bubbleRadius * FULL_TEXTURE_PANEL_DISTANCE_PER_BUBBLE_RADIUS,
+                FULL_TEXTURE_PANEL_MAX_DISTANCE);
         }
 
         // A barrier that never times out is the least urgent, whatever its remaining time says, so it is only
@@ -202,6 +194,7 @@ namespace ValheimVRMod.Scripts
 
             private readonly GameObject[] effects;
             private readonly MeshRenderer bubbleRenderer;
+            private readonly Color tint;
             private readonly GameObject simpleColorPanel;
             private readonly GameObject fullTexturePanel;
             private readonly Material simpleColorMaterial;
@@ -212,6 +205,8 @@ namespace ValheimVRMod.Scripts
                 this.shield = shield;
                 this.bubbleRenderer = bubbleRenderer;
                 this.effects = effects;
+                // The Staff of Protection bubble is an SE_Shield whereas Northern Vengeance is an SE_React.
+                tint = shield is SE_Shield ? PROTECTION_TINT : VENGEANCE_TINT;
                 bubbleRadius = MeasureEffectRadius(effects);
 
                 simpleColorMaterial = Object.Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
@@ -233,16 +228,14 @@ namespace ValheimVRMod.Scripts
             // counts down past zero instead of standing still.
             public bool expiresOnTime { get { return shield.m_ttl > 0; } }
 
-            // Measures the barrier if its size is not known yet, and reports whether that just settled it. Keeps
-            // retrying for as long as it stays unknown.
-            public bool RefreshRadius()
+            // Measures the barrier if its size is not known yet, and keeps retrying for as long as it stays unknown.
+            public void RefreshRadius()
             {
                 if (bubbleRadius > 0)
                 {
-                    return false;
+                    return;
                 }
                 bubbleRadius = MeasureEffectRadius(effects);
-                return bubbleRadius > 0;
             }
 
             public bool IsDone()
@@ -266,13 +259,14 @@ namespace ValheimVRMod.Scripts
                 bubbleRenderer.transform.position = new Vector3(p.x, viewHeight, p.z);
             }
 
-            public void UpdateOverlays(bool showFullTexture, bool showSimpleColor, Color tint, float panelDistance)
+            public void UpdateOverlays(bool showFullTexture, bool showSimpleColor)
             {
                 if (showFullTexture && fullTexturePanel != null)
                 {
+                    float panelDistance = GetFullTexturePanelDistance(bubbleRadius);
                     fullTexturePanel.transform.localPosition = Vector3.forward * panelDistance;
                     // Keep the same coverage of the view at every distance, so only the depth order changes.
-                    float size = FULL_TEXTURE_PANEL_SIZE * panelDistance / FULL_TEXTURE_PANEL_DISTANCE;
+                    float size = FULL_TEXTURE_PANEL_SIZE * panelDistance / FULL_TEXTURE_PANEL_MIN_DISTANCE;
                     fullTexturePanel.transform.localScale = new Vector3(size, size, 1);
                 }
                 else if (showSimpleColor)
