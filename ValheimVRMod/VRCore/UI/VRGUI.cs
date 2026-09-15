@@ -1065,6 +1065,8 @@ namespace ValheimVRMod.VRCore.UI
                     }
                     leftButtonPressed = LaserPointerChords.FilterLeftClick(leftButtonPressed);
                     rightButtonPressed = LaserPointerChords.FilterRightClick(rightButtonPressed);
+                    // Laser pointers have no middle button of their own; it comes from the MiddleClick chord action.
+                    middleButtonPressed = middleButtonPressed || LaserPointerChords.middleClick;
                 }
                 UpdateButtonState(leftButtonPressed, PointerEventData.InputButton.Left);
                 UpdateButtonState(rightButtonPressed, PointerEventData.InputButton.Right);

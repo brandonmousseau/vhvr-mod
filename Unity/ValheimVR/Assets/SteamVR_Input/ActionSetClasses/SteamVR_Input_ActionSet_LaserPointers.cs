@@ -65,19 +65,11 @@ namespace Valve.VR
             }
         }
         
-        public virtual SteamVR_Action_Boolean FavoriteBuildPiece
+        public virtual SteamVR_Action_Boolean MiddleClick
         {
             get
             {
-                return SteamVR_Actions.laserPointers_FavoriteBuildPiece;
-            }
-        }
-        
-        public virtual SteamVR_Action_Boolean SendMapPing
-        {
-            get
-            {
-                return SteamVR_Actions.laserPointers_SendMapPing;
+                return SteamVR_Actions.laserPointers_MiddleClick;
             }
         }
     }

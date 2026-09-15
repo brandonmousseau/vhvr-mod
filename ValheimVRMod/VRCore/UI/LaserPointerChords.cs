@@ -5,12 +5,14 @@ using Valve.VR;
 namespace ValheimVRMod.VRCore.UI
 {
     /**
-     * Applies the laser pointer chord actions (AddMapPin, SendMapPing, FavoriteBuildPiece) and hides the clicks
-     * they are chorded with from the game.
+     * Applies the laser pointer chord actions and hides the clicks they are chorded with from the game:
+     * - AddMapPin adds a pin on the large map. It is chorded with the left click.
+     * - MiddleClick is sent to the GUI as a middle mouse button (see VRGUI), which vanilla uses to ping on the map,
+     *   favorite a build piece and delete a favorite category. It is chorded with the right click.
      *
      * SteamVR still reports the buttons that make up a chord, e.g. the trigger (left click) of a grip + trigger
-     * chord, so without this the game would receive both the chord action and the plain click. When a chord
-     * action applies, the click button it is chorded with is suppressed until that button is released, and
+     * chord, so without this the game would receive both the chord action and the plain click. Whenever a chord
+     * action is active, the click button it is chorded with is suppressed until that button is released, and
      * everything that turns laser pointer clicks into game input reads the filtered click states from here.
      *
      * The decisions are made in SteamVR_Input.onNonVisualActionsUpdated, after all actions have been updated. Action
@@ -26,8 +28,6 @@ namespace ValheimVRMod.VRCore.UI
 
         private static bool initialized = false;
         private static int lastAddMapPinFrame = -1;
-        private static int lastSendMapPingFrame = -1;
-        private static int lastFavoriteBuildPieceFrame = -1;
 
         public static bool isLeftClickSuppressed { get; private set; }
         public static bool isRightClickSuppressed { get; private set; }
@@ -39,6 +39,7 @@ namespace ValheimVRMod.VRCore.UI
         public static bool rightClick { get; private set; }
         public static bool rightClickDown { get; private set; }
         public static bool rightClickUp { get; private set; }
+        public static bool middleClick { get; private set; }
 
         public static void Initialize()
         {
@@ -68,23 +69,21 @@ namespace ValheimVRMod.VRCore.UI
 
             if (VRControls.laserControlsActive)
             {
+                if (SteamVR_Actions.laserPointers_AddMapPin.GetState(SteamVR_Input_Sources.Any))
+                {
+                    isLeftClickSuppressed = true;
+                }
                 if (isChordDown(SteamVR_Actions.laserPointers_AddMapPin, ref lastAddMapPinFrame) && isPointerOverLargeMap())
                 {
                     Minimap.instance.OnMapDblClick();
                     resetMapPointerState();
-                    isLeftClickSuppressed = true;
                 }
-                if (isChordDown(SteamVR_Actions.laserPointers_SendMapPing, ref lastSendMapPingFrame) && isPointerOverLargeMap())
-                {
-                    Minimap.instance.OnMapMiddleClick(null);
-                    resetMapPointerState();
-                    isRightClickSuppressed = true;
-                }
-                if (isChordDown(SteamVR_Actions.laserPointers_FavoriteBuildPiece, ref lastFavoriteBuildPieceFrame) && tryFavoriteHoveredBuildPiece())
+                if (SteamVR_Actions.laserPointers_MiddleClick.GetState(SteamVR_Input_Sources.Any))
                 {
                     isRightClickSuppressed = true;
                 }
             }
+            middleClick = VRControls.laserControlsActive && SteamVR_Actions.laserPointers_MiddleClick.GetState(SteamVR_Input_Sources.Any);
 
             // Keep a suppression through the frame its button is released, so that release is hidden too. The left
             // pointer clicks with ClickModifier, so both have to be up before the left click can be used again.
@@ -162,23 +161,6 @@ namespace ValheimVRMod.VRCore.UI
         {
             Minimap.instance.m_leftDownTime = 0f;
             Minimap.instance.m_dragView = false;
-        }
-
-        // Favorites (or opens the favorite category dropdown for) the build piece under the laser pointer, which
-        // vanilla does with a middle click that laser pointers do not have.
-        private static bool tryFavoriteHoveredBuildPiece()
-        {
-            if (!Hud.IsPieceSelectionVisible())
-            {
-                return false;
-            }
-            BuildUi buildUi = Hud.instance.m_buildUi;
-            if (buildUi.m_currentHoveredPieceButton == null || buildUi.m_favoritesDropdown.IsOpen())
-            {
-                return false;
-            }
-            buildUi.PressedFavoriteButton(buildUi.m_currentHoveredPieceButton);
-            return true;
         }
     }
 }

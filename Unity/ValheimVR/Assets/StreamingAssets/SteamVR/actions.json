@@ -210,12 +210,7 @@
       "requirement": "optional"
     },
     {
-      "name": "/actions/LaserPointers/in/FavoriteBuildPiece",
-      "type": "boolean",
-      "requirement": "optional"
-    },
-    {
-      "name": "/actions/LaserPointers/in/SendMapPing",
+      "name": "/actions/LaserPointers/in/MiddleClick",
       "type": "boolean",
       "requirement": "optional"
     }
@@ -322,8 +317,7 @@
       "/actions/default/out/Haptic": "Haptic",
       "/actions/Valheim/in/StopGesturedLocomotion": "Stop gestured locomotion",
       "/actions/LaserPointers/in/AddMapPin": "Add map pin",
-      "/actions/LaserPointers/in/FavoriteBuildPiece": "Favorite build piece",
-      "/actions/LaserPointers/in/SendMapPing": "Send map ping"
+      "/actions/LaserPointers/in/MiddleClick": "Middle click"
     }
   ]
 }

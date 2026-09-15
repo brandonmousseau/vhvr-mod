@@ -173,7 +173,7 @@
                   [ "/user/hand/right/input/grip", "click" ],
                   [ "/user/hand/right/input/b", "click" ]
                ],
-               "output" : "/actions/laserpointers/in/sendmapping"
+               "output" : "/actions/laserpointers/in/middleclick"
             },
             {
                "inputs" : [
@@ -188,13 +188,6 @@
                   [ "/user/hand/left/input/trigger", "click" ]
                ],
                "output" : "/actions/laserpointers/in/addmappin"
-            },
-            {
-               "inputs" : [
-                  [ "/user/hand/right/input/grip", "click" ],
-                  [ "/user/hand/right/input/b", "click" ]
-               ],
-               "output" : "/actions/laserpointers/in/favoritebuildpiece"
             }
          ],
          "haptics" : [],
