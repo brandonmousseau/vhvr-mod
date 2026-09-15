@@ -280,6 +280,7 @@ namespace ValheimVRMod.Scripts
                              collider.GetComponentInParent<Piece>() == hoveringPiece);
                         return;
                     case EquipType.Scythe:
+                    case EquipType.Shovel:
                         break;
                     default:
                         return;
@@ -460,6 +461,7 @@ namespace ValheimVRMod.Scripts
                 equipType == EquipType.Hammer ||
                 equipType == EquipType.Hoe ||
                 equipType == EquipType.Cultivator ||
+                equipType == EquipType.Shovel ||
                 equipType == EquipType.Scythe;
 
             if (colliderParent == null)
@@ -593,6 +595,7 @@ namespace ValheimVRMod.Scripts
         private bool hasMomentum(bool isShovelScoop, out bool isStab, out bool isBackSlash, out float speed)
         {
             Vector3 velocity;
+            bool shoveling = false;
             if (weaponWield.twoHandedState == WeaponWield.TwoHandedState.SingleHanded)
             {
                 velocity =
@@ -601,6 +604,7 @@ namespace ValheimVRMod.Scripts
                         mainHandPhysicsEstimator.GetAngularVelocity(),
                         LocalWeaponWield.weaponForward.normalized * WEAPON_ANGULAR_WEIGHT_OFFSET);
                 speed = velocity.magnitude;
+                shoveling = (velocity.y > 1f);
             }
             else
             {
@@ -611,16 +615,18 @@ namespace ValheimVRMod.Scripts
                 var rightHandSpeed = Vector3.Dot(rightHandVelocity, direction);
                 speed = Mathf.Max(leftHandSpeed, rightHandSpeed);
                 velocity = direction * speed;
+                shoveling =
+                    weaponWield.twoHandedState == WeaponWield.TwoHandedState.LeftHandBehind ?
+                    rightHandVelocity.y > 0:
+                    leftHandVelocity.y > 0;
             }
 
             isBackSlash = Vector3.Angle(velocity, LocalWeaponWield.weaponForward) > 135;
             isStab = !isBackSlash && WeaponCollision.isStab(velocity);
 
-            if (isShovelScoop)
+            if (isShovelScoop && !shoveling)
             {
-                // Scooping is an upward motion: only its upward part counts, against a tool threshold like the hoe's
-                // rather than the weapon swing speed requirement.
-                return velocity.y > MIN_LONG_TOOL_SPEED;
+                return false;
             }
 
             if (weaponWield.twoHandedState == WeaponWield.TwoHandedState.SingleHanded &&
