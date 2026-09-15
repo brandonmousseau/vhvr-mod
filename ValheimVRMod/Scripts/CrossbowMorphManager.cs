@@ -36,9 +36,15 @@ namespace ValheimVRMod.Scripts
         private Vector3 bowUp;
         private Vector3 leverPivot;
 
-        // Whether the weapon fires regular bolts that are shown on it and loaded by hand. The grappling hook fires its
-        // own projectile rather than its ammo's, so it never needs a bolt to be loaded before shooting.
+        // The projectile prefab of a weapon that shoots its own rather than one loaded from its ammo, i. e. the
+        // grappling hook's hook; null for the crossbows, which take theirs from the ammo instead.
+        private GameObject ownProjectile;
+        // Whether the weapon takes bolts from its ammo, which are shown on it and loaded by hand. The grappling
+        // hook does not: it shoots its own projectile, so it is never loaded and firing is not gated on it.
         private bool usesBolts = true;
+        // Whether ownProjectile is shown resting on the string whenever the weapon is unloaded. This is display
+        // only - it is deliberately not hand loaded, and does not gate firing.
+        private bool showsOwnProjectile;
         private bool weaponRequiresReload = true;
         private bool boltLoaded = false;
         public bool isBoltLoaded { get { return !usesBolts || boltLoaded; } }
@@ -88,7 +94,15 @@ namespace ValheimVRMod.Scripts
         void Awake()
         {
             var item = Player.m_localPlayer.GetLeftItem();
+            // The grappling hook shoots the hook itself rather than anything loaded from its ammo, so the hook is
+            // what gets shown on the string. Its shot can be the secondary attack (see
+            // CrossbowManager.IsPullingTrigger), so fall back to that attack's projectile.
+            ownProjectile =
+                !EquipScript.IsGrapplingHook(item) ? null :
+                item.m_shared.m_attack.m_attackProjectile != null ? item.m_shared.m_attack.m_attackProjectile :
+                item.m_shared.m_secondaryAttack?.m_attackProjectile;
             usesBolts = !EquipScript.IsGrapplingHook(item);
+            showsOwnProjectile = ownProjectile != null;
             weaponRequiresReload = item.m_shared.m_attack.m_requiresReload;
             anatomy = CrossbowAnatomy.getAnatomy(item.m_shared.m_name);
             if (anatomy == null)
@@ -152,7 +166,12 @@ namespace ValheimVRMod.Scripts
             MorphBow();
             UpdateStringAndLever();
 
-            if (isPulling || shouldAutoReload)
+            if (showsOwnProjectile)
+            {
+                UpdateOwnProjectile();
+            }
+
+            if (isPulling || shouldAutoReload || showsOwnProjectile)
             {
                 // We use string position to calcualte bolt position so it can only be updated after updating the string.
                 attachBoltToCrossbow();
@@ -166,6 +185,15 @@ namespace ValheimVRMod.Scripts
 
         void OnDisable()
         {
+            // Vanilla deactivates the unloaded object - the one this component lives on - once the weapon is
+            // loaded, so OnRenderObject stops running and cannot hide the shown projectile itself. The projectile
+            // hangs off the weapon root rather than this object (see attachBoltToCrossbow), so it would otherwise
+            // stay on the string next to the hook that the loaded model already has.
+            if (bolt != null && showsOwnProjectile)
+            {
+                bolt.SetActive(false);
+            }
+
             if (isPulling)
             {
                 VrikCreator.ResetHandConnectors();
@@ -406,7 +434,18 @@ namespace ValheimVRMod.Scripts
         {
             if (bolt != null)
             {
-                bolt.GetComponent<ZNetView>().Destroy();
+                ZNetView netView = bolt.GetComponent<ZNetView>();
+                if (netView != null)
+                {
+                    netView.Destroy();
+                }
+                else
+                {
+                    Destroy(bolt);
+                }
+                // Destruction only takes effect at the end of the frame, so clear this now: the checks that
+                // recreate the projectile test it for null within the same frame.
+                bolt = null;
             }
             boltLoaded = false;
         }
@@ -452,29 +491,64 @@ namespace ValheimVRMod.Scripts
             }
         }
 
+        // The shown projectile only belongs on the string while the weapon is unloaded - at rest as well as
+        // during the pull. Once loaded, the weapon model has the hook in it already, and while the chain is
+        // deployed the real hook is out on the end of it.
+        private void UpdateOwnProjectile()
+        {
+            var item = Player.m_localPlayer.GetLeftItem();
+            bool show =
+                !Player.m_localPlayer.IsWeaponLoaded() &&
+                GrapplingPoint.m_localGrappler == null &&
+                (item?.m_lastProjectile == null || !item.m_lastProjectile.activeSelf);
+            if (show && bolt == null)
+            {
+                createBolt();
+            }
+            if (bolt != null)
+            {
+                bolt.SetActive(show);
+            }
+        }
+
         private bool createBolt()
         {
-            if (!usesBolts)
+            GameObject projectilePrefab = ownProjectile;
+            if (projectilePrefab == null)
             {
-                // Its ammo's projectile (if any) isn't what it fires, so there is nothing sensible to show.
+                ItemDrop.ItemData ammoItem = EquipScript.EquipAmmo();
+                if (ammoItem == null)
+                {
+                    // Out of ammo
+                    return false;
+                }
+                projectilePrefab = ammoItem.m_shared.m_attack.m_attackProjectile;
+            }
+            if (projectilePrefab == null)
+            {
                 return false;
             }
 
-            ItemDrop.ItemData ammoItem = EquipScript.EquipAmmo();
-            if (ammoItem == null)
-            {
-                // Out of ammo
-                return false;
-            }
-
-            bolt = Instantiate(ammoItem.m_shared.m_attack.m_attackProjectile, boltAttach.transform);
+            bolt = Instantiate(projectilePrefab, boltAttach.transform);
             // we need to disable the Projectile Component, else the arrow will shoot out of the hands like a New Year rocket
-            bolt.GetComponent<Projectile>().enabled = false;
+            Projectile projectile = bolt.GetComponent<Projectile>();
+            if (projectile != null)
+            {
+                projectile.enabled = false;
+            }
             // also Destroy the Trail, as this produces particles when moving with arrow in hand
             Destroy(findTrail(bolt.transform));
             Destroy(bolt.GetComponentInChildren<Collider>());
-            bolt.transform.localRotation = Quaternion.identity;
-            bolt.transform.localPosition = new Vector3(0, 0, anatomy.boltCenterToTailDistance);
+            var localRotation =
+                projectilePrefab == ownProjectile ?
+                    Quaternion.Euler(anatomy.ownProjectileRotation) :
+                    Quaternion.identity;
+            bolt.transform.localRotation = localRotation;
+            // The anatomy distance is measured for the crossbows' own bolts and says nothing about a weapon's own
+            // projectile, whose model is a different length and pivoted differently, so measure that one instead.
+            bolt.transform.localPosition =
+                localRotation *
+                new Vector3(0, 0, anatomy.boltCenterToTailDistance);
             foreach (ParticleSystem particleSystem in bolt.GetComponentsInChildren<ParticleSystem>())
             {
                 particleSystem.transform.localScale *= VHVRConfig.ArrowParticleSize();
