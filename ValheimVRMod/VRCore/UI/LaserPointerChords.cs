@@ -5,7 +5,7 @@ using Valve.VR;
 namespace ValheimVRMod.VRCore.UI
 {
     /**
-     * Applies the laser pointer chord actions and hides the clicks they are chorded with from the game:
+     * Applies the laser pointer chord actions:
      * - AddMapPin adds a pin on the large map. It is chorded with the left click.
      * - DiscardItem moves the inventory item under the pointer to the open container (or back from it), or drops it
      *   when no container is open. It is chorded with the left click.
@@ -14,9 +14,14 @@ namespace ValheimVRMod.VRCore.UI
      *   favorite a build piece and delete a favorite category. It is chorded with the right click.
      *
      * SteamVR still reports the buttons that make up a chord, e.g. the trigger (left click) of a grip + trigger
-     * chord, so without this the game would receive both the chord action and the plain click. Whenever a chord
-     * action is active, the click button it is chorded with is suppressed until that button is released, and
-     * everything that turns laser pointer clicks into game input reads the filtered click states from here.
+     * chord, so the game receives both the chord action and the plain click. Everything that turns laser pointer
+     * clicks into game input reads the filtered click states from here. A click is hidden where the plain click
+     * would fight the chord action: MiddleClick always hides its own, AddMapPin hides its click while the map is
+     * open, where it would otherwise drag the map out from under the pin name input, and SplitStack while the
+     * inventory is open, where it would otherwise land behind the split dialog. Anywhere else the click goes
+     * through - in place mode especially, where the grips are the modifiers of the building controls (the
+     * reference plane, snapping off, exclusive snap and the rotation gizmo) and hiding the click would swallow
+     * the placement.
      *
      * The decisions are made in SteamVR_Input.onNonVisualActionsUpdated, after all actions have been updated. Action
      * state-down listeners cannot do this since they fire while actions are still being updated, before the chord
@@ -74,7 +79,7 @@ namespace ValheimVRMod.VRCore.UI
 
             if (VRControls.laserControlsActive)
             {
-                if (SteamVR_Actions.laserPointers_AddMapPin.GetState(SteamVR_Input_Sources.Any))
+                if (Minimap.IsOpen() && SteamVR_Actions.laserPointers_AddMapPin.GetState(SteamVR_Input_Sources.Any))
                 {
                     isLeftClickSuppressed = true;
                 }
@@ -83,8 +88,7 @@ namespace ValheimVRMod.VRCore.UI
                     Minimap.instance.OnMapDblClick();
                     resetMapPointerState();
                 }
-                if (SteamVR_Actions.laserPointers_DiscardItem.GetState(SteamVR_Input_Sources.Any) ||
-                    SteamVR_Actions.laserPointers_SplitStack.GetState(SteamVR_Input_Sources.Any))
+                if (InventoryGui.IsVisible() && SteamVR_Actions.laserPointers_SplitStack.GetState(SteamVR_Input_Sources.Any))
                 {
                     isLeftClickSuppressed = true;
                 }
@@ -103,7 +107,8 @@ namespace ValheimVRMod.VRCore.UI
             }
             middleClick = VRControls.laserControlsActive && SteamVR_Actions.laserPointers_MiddleClick.GetState(SteamVR_Input_Sources.Any);
 
-            // Keep a suppression through the frame its button is released, so that release is hidden too. The left
+            // Keep a suppression through the frame its button is released, so that release is hidden too, and so
+            // that closing the GUI mid-click cannot leave the game with a button up it never saw go down. The left
             // pointer clicks with ClickModifier, so both have to be up before the left click can be used again.
             if (!isHeldOrJustReleased(leftClickAction) && !isHeldOrJustReleased(clickModifierAction))
             {

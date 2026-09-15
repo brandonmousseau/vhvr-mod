@@ -1078,24 +1078,6 @@ namespace ValheimVRMod.Patches {
         }
     }
 
-    // Used to enable split and move in inventory
-    [HarmonyPatch(typeof(InventoryGui), "OnSelectedItem")]
-    static class InventoryGui_OnSelectedItem_Patch
-    {
-        static void Prefix(InventoryGui __instance, ref InventoryGrid.Modifier mod)
-        {
-            // Only turn plain clicks into split/move, so modifiers applied on purpose (e.g. the drop from
-            // LaserPointerChords, which is chorded with a grip) are kept.
-            if (!VHVRConfig.UseVrControls() || mod != InventoryGrid.Modifier.Select)
-                return;
-
-            if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand))
-                mod = InventoryGrid.Modifier.Split;
-            else if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand))
-                mod = InventoryGrid.Modifier.Move;
-        }
-    }
-
     [HarmonyPatch(typeof(InventoryGrid), nameof(InventoryGrid.GetHoveredElement))]
     static class InventoryGrid_GetHoveredElement_Patch
     {
