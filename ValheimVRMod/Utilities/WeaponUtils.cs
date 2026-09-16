@@ -80,6 +80,26 @@ namespace ValheimVRMod.Utilities
                     0, 0, 0,
                     0.07673188f,  0.8555415f, 0.02554126f
                 )}, {
+                "$item_spear_splitner", WeaponColData.create(
+                    0,  1.7f, 0,
+                    0,  0, 0,
+                    0.25f,  1.5f, 0.0625f
+                )}, {
+                "$item_spear_splitner_blood", WeaponColData.create(
+                    0,  1.7f, 0,
+                    0,  0, 0,
+                    0.25f,  1.5f, 0.0625f
+                )}, {
+                "$item_spear_splitner_lightning", WeaponColData.create(
+                    0,  1.7f, 0,
+                    0,  0, 0,
+                    0.25f,  1.5f, 0.0625f
+                )}, {
+                "$item_spear_splitner_nature", WeaponColData.create(
+                    0,  1.7f, 0,
+                    0,  0, 0,
+                    0.25f,  1.5f, 0.0625f
+                )}, {
                 "$item_spear_gold", WeaponColData.create( // Nord Spear
                     0,  1.7f, 0,
                     0,  0, 0,
