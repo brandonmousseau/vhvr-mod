@@ -67,6 +67,8 @@ namespace ValheimVRMod.VRCore
         // Transform following the waist tracker as resolved at the last caliberation. Cheap
         // per-frame accessor; null when no waist tracker is in use. See ResolveHipTransform.
         private static Transform hipTrackerTransform { get { return resolvedHipTransform; } }
+        // Whether a waist tracker is actually driving trackedPelvis instead of it being inferred from the head.
+        public static bool isPelvisTracked { get { return VHVRConfig.IsHipTrackingEnabled() && resolvedHipTransform != null; } }
         private static MeshRenderer hipTrackerRenderer;
         public static Transform trackedPelvis { get; private set; }
         public static Transform pelvis { get; private set; }
