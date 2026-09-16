@@ -98,7 +98,7 @@ namespace ValheimVRMod.Scripts
 
             if (collider.gameObject.layer != LayerUtils.CHARACTER &&
                 !IsRollingSnowball(collider) &&
-                !SteamVR_Actions.valheim_Use.GetState(SteamVR_Input_Sources.Any))
+                !SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.Any))
             {
                 // When kicking anything other than a character or the rolling snowball, require pressing the grip so
                 // that the attack does not accidentally happen too easily.
