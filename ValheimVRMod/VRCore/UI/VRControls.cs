@@ -85,6 +85,22 @@ namespace ValheimVRMod.VRCore.UI
             }
         }
 
+        // An action set activating or deactivating at a higher priority takes the physical controls away from
+        // the Valheim set, or hands them back, and SteamVR reports that as an edge the player never made: a
+        // trigger that is still held when a container closes reads as a fresh press the moment the laserPointers
+        // set lets go of it, and an edge that happens while the set holds the control is dropped entirely
+        // (SteamVR_Action_Boolean_Source.stateDown/stateUp are gated on `active`). The ZInput path already
+        // compensates for this (see MaybeReleaseZInputButton() and the laserPointers_LeftClick state-up listener
+        // below); anything that reads the Valheim actions' edges directly should ignore them while this is true.
+        // The window spans the change and the following frame because OpenVR only applies the new set priority
+        // on its next action update, which may land in either frame depending on script execution order.
+        public static bool laserControlsInTransition
+        {
+            get { return Time.frameCount - laserControlsChangedFrame < LASER_CONTROLS_TRANSITION_FRAMES; }
+        }
+
+        private const int LASER_CONTROLS_TRANSITION_FRAMES = 2;
+        private static int laserControlsChangedFrame = -LASER_CONTROLS_TRANSITION_FRAMES;
         public static float smoothWalkX { get { return smoothWalkVelocity.x; } }
         public static float smoothWalkY { get { return smoothWalkVelocity.y; } }
         public static bool isAutoRunActive;
@@ -471,16 +487,22 @@ namespace ValheimVRMod.VRCore.UI
         {
             if (!mainActionSet.IsActive())
             {
-                laserActionSet.Deactivate();
+                if (laserActionSet.IsActive())
+                {
+                    laserActionSet.Deactivate();
+                    laserControlsChangedFrame = Time.frameCount;
+                }
                 return;
             }
             if (laserActionSet.IsActive() && VRPlayer.activePointer == null)
             {
                 laserActionSet.Deactivate();
+                laserControlsChangedFrame = Time.frameCount;
             }
             else if (!laserActionSet.IsActive() && VRPlayer.activePointer != null)
             {
                 laserActionSet.Activate(SteamVR_Input_Sources.Any, 1 /* Higher priority than main action set */);
+                laserControlsChangedFrame = Time.frameCount;
             }
         }
 
