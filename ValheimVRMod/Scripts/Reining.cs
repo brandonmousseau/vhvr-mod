@@ -279,16 +279,14 @@ namespace ValheimVRMod.Scripts
 
         private Sadle.Speed GetCuedTargetSpeed(bool isLeftHandReining, bool isRightHandReining)
         {
-            var leaningVector = CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform.position - sadle.m_attachPoint.position;
-            leaningVector.y = 0;
-            var leaning = leaningVector.magnitude;
+            var isLeaningForward = IsLeaningForward();
 
             var leftHandCuedSpeed =
                  GetCuedTargetSpeed(
-                     isLeftHandReining, VRPlayer.leftHandPhysicsEstimator, leaning, ref leftHandSlowDownResult, ref leftRunCueCountDown);
+                     isLeftHandReining, VRPlayer.leftHandPhysicsEstimator, isLeaningForward, ref leftHandSlowDownResult, ref leftRunCueCountDown);
             var rightHandCuedSpeed =
                  GetCuedTargetSpeed(
-                     isRightHandReining, VRPlayer.rightHandPhysicsEstimator, leaning, ref rightHandSlowDownResult, ref rightRunCueCountDown);
+                     isRightHandReining, VRPlayer.rightHandPhysicsEstimator, isLeaningForward, ref rightHandSlowDownResult, ref rightRunCueCountDown);
 
             if (isLeftHandReining && isRightHandReining)
             {
@@ -319,8 +317,28 @@ namespace ValheimVRMod.Scripts
             return cuedSpeed == Sadle.Speed.NoChange ? sadle.m_speed : cuedSpeed;
         }
 
+        // Whether the player is leaning forward enough to cue a gallop. When the pelvis is tracked, the lean is the
+        // forward tilt of the upper body, which does not depend on where the player happens to sit on the mount.
+        // Otherwise it falls back to how far the head has moved away from the saddle horizontally.
+        private bool IsLeaningForward()
+        {
+            Transform head = CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform;
+
+            if (VRPlayer.isPelvisTracked && VRPlayer.trackedPelvis != null && head.parent != null)
+            {
+                Vector3 roomUp = head.parent.up;
+                Vector3 facing = Vector3.ProjectOnPlane(VRPlayer.trackedPelvis.forward, roomUp).normalized;
+                Vector3 pelvisToHead = (head.position - VRPlayer.trackedPelvis.position).normalized;
+                return Vector3.Dot(pelvisToHead, facing) > 0.625f;
+            }
+
+            var leaningVector = head.position - sadle.m_attachPoint.position;
+            leaningVector.y = 0;
+            return leaningVector.magnitude >= 0.75f;
+        }
+
         private Sadle.Speed GetCuedTargetSpeed(
-            bool isReining, PhysicsEstimator handPhysicsEstimator, float leaning, ref Sadle.Speed slowDownResult, ref float runCueCountDown) {
+            bool isReining, PhysicsEstimator handPhysicsEstimator, bool isLeaningForward, ref Sadle.Speed slowDownResult, ref float runCueCountDown) {
             if (!isReining)
             {
                 slowDownResult = Sadle.Speed.Stop;
@@ -344,8 +362,8 @@ namespace ValheimVRMod.Scripts
             var v = handPhysicsEstimator.GetAverageVelocityInSnapshots();
             if (v.y < -SHAKE_SPEED_THRESHOLD && Vector3.Angle(v, Vector3.down) < REIN_ANGLE_TOLERANCE && handOffsetAmount > MAX_STOP_REIN_DISTNACE)
             {
-                bool shouldRun = 
-                    (runCueCountDown > RUN_CUE_TIMEOUT || leaning >= MIN_LEANING_DISTANCE_TO_START_GALLOPPING || sadle.m_speed == Sadle.Speed.Run);
+                bool shouldRun =
+                    (runCueCountDown > RUN_CUE_TIMEOUT || isLeaningForward || sadle.m_speed == Sadle.Speed.Run);
                 runCueCountDown = RUN_CUE_TIMEOUT;
                 return shouldRun ? Sadle.Speed.Run : Sadle.Speed.Walk;
             }
