@@ -1457,8 +1457,7 @@ namespace ValheimVRMod.Utilities
 
         // Resolved only once and then cached, both because NonVrPlayer() is called from hot paths and
         // because the answer must not change partway through a session, other than by failing to
-        // initialize VR (see ValheimVRMod.failedToInitializeVR), which only happens after the startup
-        // cinematic, once patches have already been applied.
+        // initialize VR (see ValheimVRMod.failedToInitializeVR).
         private static bool ResolveFlatScreenMode()
         {
             string mode = commandLineStringOverrides.ContainsKey(flatScreenMode.GetHashCode())
