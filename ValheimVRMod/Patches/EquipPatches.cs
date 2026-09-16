@@ -362,6 +362,7 @@ namespace ValheimVRMod.Patches
 
             if (EquipScript.IsThrowable(player.GetRightItem()) || EquipScript.IsSpearEquipped() || EquipScript.CurrentMainHandEquipType() == EquipType.ThrowObject)
             {
+                ThrowableManager.isThrowing = false;
                 (meshFilter.gameObject.AddComponent<ThrowableManager>()).weaponWield = weaponWield;
             }
 
