@@ -947,10 +947,15 @@ namespace ValheimVRMod.Patches
     }
 
     // Shows cinematics on the VRGUI instead of on CinematicsManager's own flat camera, which would also
-    // disable the VR camera while playing. The startup intro plays before VR is initialized and is left as is.
+    // disable the VR camera while playing. This includes the startup intro which IntroCinematicVrDelayPatch
+    // holds back until the VRGUI is ready to show it.
     [HarmonyPatch(typeof(CinematicsManager), nameof(CinematicsManager.Play), new Type[] { typeof(CinematicsManager.VideoEntry), typeof(CinematicsManager.VideoCompleteAction) })]
     class CinematicsManager_Play_Patch
     {
+        // Deliberately looser than VRGUI.isReadyToShowCinematic, which the intro gate uses: this has to be true
+        // whenever VHVR owns the camera, even in the moments when the GUI panel is not up, because otherwise
+        // Play() would disable the camera the headset renders with and VRPlayer.enableCameras() would rebuild
+        // it. Answering true too early only costs a badly laid out video for a frame.
         private static bool ShouldPatch()
         {
             return !VHVRConfig.NonVrPlayer() && VRPlayer.instance != null && CinematicsManager.s_instance != null;
@@ -988,8 +993,8 @@ namespace ValheimVRMod.Patches
         // vanilla would disable the camera the headset renders with, and VRPlayer.enableCameras() reacts to a
         // disabled VR camera by rebuilding it and destroying the follow camera along with it. Both Play() and
         // Stop() null check m_mainCamera, so leaving it null means neither touches any camera at all, and the
-        // video goes to the VRGUI instead. Before VR is initialized this returns the camera unchanged, so the
-        // startup intro still plays on the flat screen with the vanilla camera.
+        // video goes to the VRGUI instead. This returns the camera unchanged only in flat screen mode or after
+        // VR failed to initialize, in which case the startup intro plays flat with the vanilla camera.
         private static Camera GetMainCameraForCinematic()
         {
             return ShouldPatch() ? null : Utils.GetMainCamera();
@@ -1174,7 +1179,10 @@ namespace ValheimVRMod.Patches
             }
             if (__instance.m_dragGo)
             {
-                __instance.m_dragGo.transform.position = SoftwareCursor.ScaledMouseVector() + new Vector3(10,50);
+                // The nudge away from the cursor tip is given in cursor coordinates and projected with
+                // it, so the ghost stays at the same visual offset whatever the canvas scale is.
+                __instance.m_dragGo.transform.position =
+                    SoftwareCursor.CursorWorldPosition(__instance.m_dragGo.transform, new Vector2(10, 50));
                 Image component = __instance.m_dragGo.transform.Find("icon").GetComponent<Image>();
                 TMPro.TMP_Text component2 = __instance.m_dragGo.transform.Find("name").GetComponent<TMPro.TMP_Text>();
                 TMPro.TMP_Text component3 = __instance.m_dragGo.transform.Find("amount").GetComponent<TMPro.TMP_Text>();
@@ -1223,7 +1231,8 @@ namespace ValheimVRMod.Patches
                     UITooltip.m_tooltip.SetActive(false);
                     return false;
                 }
-                UITooltip.m_tooltip.transform.position = SoftwareCursor.ScaledMouseVector();
+                UITooltip.m_tooltip.transform.position =
+                    SoftwareCursor.CursorWorldPosition(UITooltip.m_tooltip.transform, Vector2.zero);
                 Utils.ClampUIToScreen(UITooltip.m_tooltip.transform.GetChild(0).transform as RectTransform);
             }
             return false;
