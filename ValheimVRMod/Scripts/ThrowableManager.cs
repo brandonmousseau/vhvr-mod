@@ -101,7 +101,7 @@ namespace ValheimVRMod.Scripts
             }
 
             tickCounter = 0;
-            if (!VHVRConfig.UseSpearDirectionGraphic())
+            if (!(VHVRConfig.UseSpearDirectionGraphicOnGrip() || (VHVRConfig.UseSpearDirectionGraphicOnTriggerGrip() && useAction.GetState(VRPlayer.mainWeaponHandInputSource))))
             {
                 return;
             }
@@ -248,7 +248,7 @@ namespace ValheimVRMod.Scripts
 
         private void UpdateDirectionLine(Vector3 pos1, Vector3 pos2)
         {
-            if (!VHVRConfig.UseSpearDirectionGraphic() || LocalWeaponWield.isCurrentlyTwoHanded())
+            if (!(VHVRConfig.UseSpearDirectionGraphicOnGrip() || (VHVRConfig.UseSpearDirectionGraphicOnTriggerGrip() && useAction.GetState(VRPlayer.mainWeaponHandInputSource))) || LocalWeaponWield.isCurrentlyTwoHanded())
             {
                 return;
             }

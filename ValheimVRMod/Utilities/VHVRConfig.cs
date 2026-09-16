@@ -154,7 +154,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> useArrowPredictionGraphic;
         private static ConfigEntry<float> arrowParticleSize;
         private static ConfigEntry<string> spearThrowingType;
-        private static ConfigEntry<bool> useSpearDirectionGraphic;
+        private static ConfigEntry<string> useSpearDirectionGraphic;
         private static ConfigEntry<float> fullThrowSpeed;
         private static ConfigEntry<bool> spearInverseWield;
         private static ConfigEntry<string> twoHandedWield;
@@ -1000,8 +1000,9 @@ namespace ValheimVRMod.Utilities
                                                 "Use this to flip the spear tip, so you can stab forward instead of needing to do downward stabbing");
             useSpearDirectionGraphic = config.Bind("Motion Control",
                                                     "UseSpearDirectionGraphic",
-                                                    true,
-                                                    "Use this to toggle the direction line of throwing when using the spear with VR controls.");
+                                                    "Grip",
+                                                    new ConfigDescription("Use this to toggle the direction line of throwing when using the spear with VR controls.",
+                                                    new AcceptableValueList<string>(new string[] { "Grip", "TriggerGrip", "Disabled" })));
             //Two-handed Changes
             twoHandedWield = config.Bind(
                 "Motion Control", "TwoHandedWield", "PolearmSticky",
@@ -1735,7 +1736,15 @@ namespace ValheimVRMod.Utilities
         }
         public static bool UseSpearDirectionGraphic()
         {
-            return useSpearDirectionGraphic.Value;
+            return useSpearDirectionGraphic.Value != "Disabled";
+        }
+        public static bool UseSpearDirectionGraphicOnGrip()
+        {
+            return useSpearDirectionGraphic.Value == "Grip";
+        }
+        public static bool UseSpearDirectionGraphicOnTriggerGrip()
+        {
+            return useSpearDirectionGraphic.Value == "TriggerGrip";
         }
 
         public static string CrossbowSaggitalRotationSource()
