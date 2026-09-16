@@ -13,7 +13,7 @@ namespace ValheimVRMod.Scripts
         private const float REIN_ANGLE_TOLERANCE = 30f;
         private const float MAX_STOP_REIN_DISTNACE = 0.33f;
         private const float MIN_STOP_REIN_HAND_SPEED = 0.75f;
-        private const float MIN_LEANING_DISTANCE_TO_START_GALLOPPING = 0.4f;
+        private const float MIN_LEANING_DISTANCE_TO_START_GALLOPPING = 0.75f;
         private const float RUN_CUE_TIMEOUT = 0.5f;
         private class HeadReinAttach
         {
