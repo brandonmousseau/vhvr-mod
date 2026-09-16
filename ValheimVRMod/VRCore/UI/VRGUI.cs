@@ -108,6 +108,11 @@ namespace ValheimVRMod.VRCore.UI
         private Canvas _hudGuiCanvas;
         private Canvas _chatBox;
         private static Transform _uiPanel;
+        // Whether onGuiCanvasFound() has run, which is where the GUI camera is positioned and given its
+        // orthographic size. Before that it still has Unity's default size of 5, so anything laid out in
+        // GUI_DIMENSIONS units would be drawn hugely magnified.
+        private static bool hasConfiguredGuiCamera;
+        private static bool hasCreatedOverlay;
         private Transform _uiPanelTransformLocker;
         private RenderTexture _guiTexture;
         private RenderTexture _overlayTexture;
@@ -759,6 +764,7 @@ namespace ValheimVRMod.VRCore.UI
                     enabled = false;
                     return;
                 }
+                hasCreatedOverlay = true;
             }
             else
             {
@@ -776,6 +782,7 @@ namespace ValheimVRMod.VRCore.UI
                     overlay.DestroyOverlay(_overlay);
                 }
                 _overlay = OpenVR.k_ulOverlayHandleInvalid;
+                hasCreatedOverlay = false;
             }
         }
 
@@ -989,20 +996,13 @@ namespace ValheimVRMod.VRCore.UI
             {
                 // Need to assign the camera to enable UI interactions
                 guiCanvas.worldCamera = _guiCamera;
-                // Originally this was using ScreenSpaceCamera, which was handy to auto-size the canvas/camera
-                // so I didn't need to worry about orthographic size or camera position. The problem
-                // is that there are certain UI elements, particularly in the minimap, that are added
-                // to the canvas using absolute pixel sizes - which when using ScreenSpaceCamera didn't translate
-                // and ended up with map icons extremely large and obscuring the entire map. By using WorldSpace
-                // for the render mode, we can keep the world coordinates equal to the screen space coordinates,
-                // i.e. 1 pixel on screen = 1 unit of world space. That way when any elements are added to the GUI
-                // at a specific pixel size, they are scaled properly.
                 guiCanvas.renderMode = RenderMode.WorldSpace;
                 guiCanvas.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, GUI_DIMENSIONS.x);
                 guiCanvas.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, GUI_DIMENSIONS.y);
             }
             _guiCamera.gameObject.transform.position = new Vector3(Screen.width * 0.5f, Screen.height * 0.5f, -1);
             _guiCamera.orthographicSize = GUI_DIMENSIONS.y * 0.5f;
+            hasConfiguredGuiCamera = true;
             
         }
 
@@ -1034,6 +1034,22 @@ namespace ValheimVRMod.VRCore.UI
         public static GameObject getUiPanel()
         {
             return _uiPanel == null ? null : _uiPanel.gameObject;
+        }
+
+        // Whether the GUI is far enough along to display a cinematic on it: VR is running, the GUI camera
+        // exists and has been configured, and there is a surface the player can actually see it on. This is
+        // stricter than `VRPlayer.instance != null` on purpose, since a cinematic is laid out in
+        // GUI_DIMENSIONS units and would be unreadable until the GUI camera has been sized to match.
+        public static bool isReadyToShowCinematic
+        {
+            get
+            {
+                return !VHVRConfig.NonVrPlayer() &&
+                    VRPlayer.instance != null &&
+                    hasConfiguredGuiCamera &&
+                    CameraUtils.getCamera(CameraUtils.VRGUI_SCREENSPACE_CAM) != null &&
+                    (_uiPanel != null || hasCreatedOverlay);
+            }
         }
 
         class VRGUI_InputModule : StandaloneInputModule

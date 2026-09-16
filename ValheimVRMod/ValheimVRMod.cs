@@ -87,8 +87,7 @@ namespace ValheimVRMod
                 return;
             }
 
-            // See StartupCinematicPatch for why VR is not initialized until the startup cinematic is over.
-            StartCoroutine(InitializeVRAfterStartupCinematic());
+            StartCoroutine(InitializeVRAndCreateRig());
         }
 
         private static void FallBackToFlatScreenMode()
@@ -97,25 +96,15 @@ namespace ValheimVRMod
             LogDebug("Non VR Mode Patching Complete.");
         }
 
-        private IEnumerator InitializeVRAfterStartupCinematic()
+        // VR startup comes in two phases: Initializing the XR SDK and SteamVR is slow but invisible to the
+        // game: it creates no cameras and disables nothing, so it can run as early as possible. Creating the
+        // VRPlayer rig is the half that takes over rendering, disabling the vanilla Main Camera that
+        // Utils.GetMainCamera() resolves to, so it must not land in the middle of a cinematic.
+        // There is deliberately nothing to wait for before initializing: this runs during the plugin's Start(),
+        // which is well before the start scene and therefore FejdStartup are loaded, and the intro is held back
+        // until the rig exists by IntroCinematicVrDelayPatch rather than by delaying initialization here.
+        private IEnumerator InitializeVRAndCreateRig()
         {
-            LogInfo("Waiting for the startup cinematic to finish before initializing VR...");
-            // The intro cinematic that plays on first startup swaps the game over to its own camera:
-            // CinematicsManager.Play() disables Utils.GetMainCamera() and CinematicsManager.Stop() enables it
-            // again. Once VR is running that resolves to the VR camera (VHVR keeps the vanilla "Main Camera"
-            // disabled), which leaves the start menu fighting VRPlayer.enableCameras() over who owns the
-            // camera, and the video is not rendered in stereo either. So ValheimVRMod waits for the intro to
-            // finish before initializing VR, letting it play on the flat screen with the vanilla camera.
-            // FejdStartup.Start() starts the intro coroutine, whose first step already calls
-            // CinematicsManager.Play(), so once Start() has returned CinematicsManager.IsStartedPlaying()
-            // tells whether the intro is still playing. A finalizer is used so that an exception thrown from
-            // Start() cannot leave VR waiting forever.
-            // Cinematics played once VR is running are shown on the VRGUI instead, see CinematicsManager_Play_Patch.
-            while (!StartupCinematicPatch.hasFejdStartupStarted || CinematicsManager.IsStartedPlaying())
-            {
-                yield return null;
-            }
-
             bool vrInitialized;
             try
             {
@@ -134,6 +123,20 @@ namespace ValheimVRMod
             }
 
             VRManager.StartVR();
+
+            // A cinematic that is already playing captured the vanilla camera in CinematicsManager.m_mainCamera
+            // and its Stop() would enable that camera again behind VRPlayer's back, while VRPlayer.enableCameras()
+            // would meanwhile rebuild the VR camera it finds disabled. IntroCinematicVrDelayPatch normally holds
+            // the startup intro until the rig exists so the intro is shown on the VRGUI instead, so this only
+            // waits when that hold gave up and let the intro play flat.
+            while (CinematicsManager.IsStartedPlaying())
+            {
+                yield return null;
+            }
+
+            // VRPlayer has to come first: VRGUI.Awake() installs its input module on EventSystem.current, and
+            // before the start scene is loaded the only EventSystem in existence is the one on the SteamVR
+            // player prefab that VRPlayer.Awake() instantiates.
             vrPlayer = new GameObject("VRPlayer");
             DontDestroyOnLoad(vrPlayer);
             vrPlayer.AddComponent<VRPlayer>();
