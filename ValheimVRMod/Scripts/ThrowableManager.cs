@@ -124,7 +124,14 @@ namespace ValheimVRMod.Scripts
         }
         private void UpdateSecondHandAimCalculation()
         {
-            ShieldBlock.instance?.ScaleShieldSize(0.4f);
+            if (VHVRConfig.UseSpearDirectionGraphicOnTriggerGrip() && !useAction.GetState(VRPlayer.mainWeaponHandInputSource))
+            {
+                ShieldBlock.instance?.ScaleShieldSize(1f);
+            }
+            else
+            {
+                ShieldBlock.instance?.ScaleShieldSize(0.4f);
+            }
             var direction = VRPlayer.mainWeaponHand.otherHand.transform.position - CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform.position;
             var lineDirection = direction;
             var pStartAim = direction.normalized;
