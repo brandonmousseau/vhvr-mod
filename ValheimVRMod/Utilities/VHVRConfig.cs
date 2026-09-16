@@ -1001,7 +1001,9 @@ namespace ValheimVRMod.Utilities
             useSpearDirectionGraphic = config.Bind("Motion Control",
                                                     "UseSpearDirectionGraphic",
                                                     "Grip",
-                                                    new ConfigDescription("Use this to toggle the direction line of throwing when using the spear with VR controls.",
+                                                    new ConfigDescription("Use this to toggle the direction line of throwing when using the spear with VR controls."+
+                                                    "Grip - Holding grip make the direction line appear." +
+                                                    "TriggerGrip - Holding both Grip and Trigger to make the direction line appear",
                                                     new AcceptableValueList<string>(new string[] { "Grip", "TriggerGrip", "Disabled" })));
             //Two-handed Changes
             twoHandedWield = config.Bind(
