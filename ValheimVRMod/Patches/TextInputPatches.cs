@@ -244,7 +244,13 @@ namespace ValheimVRMod.Patches {
                 // never wipes text): merge into our own persistent buffer rather than replacing it.
                 foreach (char c in read) {
                     if (c == '\b') {
-                        if (_liveText.Length > 0) {
+                        if (TryGetSelection(out int selectionStart, out int selectionLength)) {
+                            // Delete what is selected rather than the last character, the way a physical keyboard
+                            // would. Note that this is only possible in delta mode, where _liveText is the text of
+                            // record: in full text mode SteamVR's own buffer is, and OpenVR offers no way to correct
+                            // it (there is a GetKeyboardText but no SetKeyboardText).
+                            _liveText.Remove(selectionStart, selectionLength);
+                        } else if (_liveText.Length > 0) {
                             _liveText.Remove(_liveText.Length - 1, 1);
                         }
                     } else if (c == '\n' || c == '\r') {
@@ -283,6 +289,57 @@ namespace ValheimVRMod.Patches {
             return KeyboardTextMode.Unknown;
         }
 
+        // The text of a dialog is selected as a whole when it opens (TextInput#Show activates the input field, which
+        // makes Unity select all of it), and the player can also select text themselves with the pointer. Reports
+        // what is selected, so that a backspace can delete it instead of the last character.
+        private static bool TryGetSelection(out int start, out int length) {
+            start = length = 0;
+
+            string fieldText;
+            int anchor;
+            int focus;
+            if (_inputField) {
+                fieldText = _inputField.text;
+                anchor = _inputField.selectionAnchorPosition;
+                focus = _inputField.selectionFocusPosition;
+            } else {
+                TMP_InputField field = GetTmpField();
+                if (!field) {
+                    return false;
+                }
+                fieldText = field.text;
+                anchor = field.selectionAnchorPosition;
+                focus = field.selectionFocusPosition;
+            }
+
+            if (fieldText != _liveText.ToString()) {
+                // The field is not showing the text we are about to edit, so its selection indices mean nothing here.
+                return false;
+            }
+
+            start = Mathf.Clamp(Mathf.Min(anchor, focus), 0, _liveText.Length);
+            length = Mathf.Clamp(Mathf.Max(anchor, focus), 0, _liveText.Length) - start;
+            return length > 0;
+        }
+
+        // GuiInputField is a TMP_InputField, so both are handled the same way.
+        private static TMP_InputField GetTmpField() {
+            return _inputFieldTmp ? _inputFieldTmp : _inputFieldGui;
+        }
+
+        // Keeps a selection that has just been deleted from being deleted again on the next backspace, and puts the
+        // caret where the next keystroke lands, since this keyboard always appends at the end.
+        private static void CollapseSelection(string text) {
+            if (_inputField) {
+                _inputField.caretPosition =
+                    _inputField.selectionAnchorPosition = _inputField.selectionFocusPosition = text.Length;
+            }
+            TMP_InputField field = GetTmpField();
+            if (field) {
+                field.caretPosition = field.selectionAnchorPosition = field.selectionFocusPosition = text.Length;
+            }
+        }
+
         private static void ApplyLiveText(string text) {
             if (_inputField) {
                 _inputField.text = text;
@@ -293,6 +350,7 @@ namespace ValheimVRMod.Patches {
             if (_inputFieldGui) {
                 _inputFieldGui.text = text;
             }
+            CollapseSelection(text);
             if (_chatInput && Chat.instance != null) {
                 // Mirror into the vanilla chat window's own input field (opened alongside the
                 // SteamVR keyboard, see QuickAbstract's chat quick action) so the player sees
