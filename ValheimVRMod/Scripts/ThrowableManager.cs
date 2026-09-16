@@ -108,7 +108,7 @@ namespace ValheimVRMod.Scripts
             }
 
             tickCounter = 0;
-            if (!VHVRConfig.UseSpearDirectionGraphic())
+            if (!(VHVRConfig.UseSpearDirectionGraphicOnGrip() || (VHVRConfig.UseSpearDirectionGraphicOnTriggerGrip() && useAction.GetState(VRPlayer.mainWeaponHandInputSource))))
             {
                 return;
             }
@@ -131,7 +131,14 @@ namespace ValheimVRMod.Scripts
         }
         private void UpdateSecondHandAimCalculation()
         {
-            ShieldBlock.instance?.ScaleShieldSize(0.4f);
+            if (VHVRConfig.UseSpearDirectionGraphicOnTriggerGrip() && !useAction.GetState(VRPlayer.mainWeaponHandInputSource))
+            {
+                ShieldBlock.instance?.ScaleShieldSize(1f);
+            }
+            else
+            {
+                ShieldBlock.instance?.ScaleShieldSize(0.4f);
+            }
             var direction = VRPlayer.mainWeaponHand.otherHand.transform.position - CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform.position;
             var lineDirection = direction;
             var pStartAim = direction.normalized;
@@ -265,7 +272,7 @@ namespace ValheimVRMod.Scripts
 
         private void UpdateDirectionLine(Vector3 pos1, Vector3 pos2)
         {
-            if (!VHVRConfig.UseSpearDirectionGraphic() || LocalWeaponWield.isCurrentlyTwoHanded())
+            if (!(VHVRConfig.UseSpearDirectionGraphicOnGrip() || (VHVRConfig.UseSpearDirectionGraphicOnTriggerGrip() && useAction.GetState(VRPlayer.mainWeaponHandInputSource))) || LocalWeaponWield.isCurrentlyTwoHanded())
             {
                 return;
             }
