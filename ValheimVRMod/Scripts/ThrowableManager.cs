@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Valve.VR;
 using ValheimVRMod.VRCore;
+using ValheimVRMod.VRCore.UI;
 using UnityEngine.Rendering;
 using ValheimVRMod.Scripts.Block;
 using ValheimVRMod.Utilities;
@@ -31,6 +32,12 @@ namespace ValheimVRMod.Scripts
         private float directionCooldown;
         private float aimingDuration = 0;
         private int tickCounter;
+        // The frame on which a throw was last initiated, by either branch of UpdateThrowCalculation().
+        // OnRenderObject() runs once per rendering camera and SteamVR latches the trigger's state-up edge for
+        // the whole frame (its default input update mode is OnUpdate), so every camera pass sees the same
+        // release. isThrowing cannot stand in for this on its own: the mounted branch starts the attack itself
+        // and deliberately leaves isThrowing false, so without this a second camera pass would throw again.
+        private static int lastThrowFrame = -1;
         private PhysicsEstimator handPhysicsEstimator { get { return VRPlayer.isRightHandMainWeaponHand ? VRPlayer.rightHandPhysicsEstimator : VRPlayer.leftHandPhysicsEstimator; } }
 
         private void Awake()
@@ -175,7 +182,12 @@ namespace ValheimVRMod.Scripts
                 }
             }
 
-            if (useAction.GetStateDown(VRPlayer.mainWeaponHandInputSource))
+            // The laserPointers action set masks the Valheim set while it is up, so the trigger edges around
+            // that transition are not the player's: a trigger still held when a container closes reads as a
+            // fresh press the moment the mask lifts, which would arm an aim nobody started.
+            bool useActionEdgesAreTrustworthy = !VRControls.laserControlsInTransition;
+
+            if (useActionEdgesAreTrustworthy && useAction.GetStateDown(VRPlayer.mainWeaponHandInputSource))
             {
                 if (startAim == Vector3.zero)
                 {
@@ -193,14 +205,16 @@ namespace ValheimVRMod.Scripts
                     VRPlayer.mainWeaponHand.transform.position + direction.normalized * 50);
             }
 
-            if (!useAction.GetStateUp(VRPlayer.mainWeaponHandInputSource))
+            if (!useActionEdgesAreTrustworthy || !useAction.GetStateUp(VRPlayer.mainWeaponHandInputSource))
             {
                 return;
             }
 
+            // Measured over the window the player spent aiming, so it has to be read before it is reset.
+            float completedAimingDuration = aimingDuration;
             aimingDuration = 0;
 
-            if (isThrowing)
+            if (isThrowing || lastThrowFrame == Time.frameCount)
             {
                 ResetSpearOffset();
                 startAim = Vector3.zero;
@@ -208,11 +222,14 @@ namespace ValheimVRMod.Scripts
             }
 
             spawnPoint = VRPlayer.mainWeaponHand.transform.position;
-            var throwing = CalculateThrowAndDistance(direction);
+            var throwing = CalculateThrowAndDistance(direction, completedAimingDuration);
             aimDir = direction;
             handSpeed = throwing.HandSpeed;
             if (throwing.Distance > minDist)
             {
+                // Marked before either branch runs so that the remaining camera passes of this frame cannot
+                // start a second throw, including the mounted one that leaves isThrowing false.
+                lastThrowFrame = Time.frameCount;
                 if (MountedAttackUtils.StartAttackIfRiding(isSecondaryAttack: EquipScript.CurrentMainHandEquipType() == EquipType.Spear))
                 {
                     ResetSpearOffset();
@@ -271,7 +288,7 @@ namespace ValheimVRMod.Scripts
             }
         }
 
-        private ThrowCalculate CalculateThrowAndDistance(Vector3 direction)
+        private ThrowCalculate CalculateThrowAndDistance(Vector3 direction, float completedAimingDuration)
         {
             direction = direction.normalized;
             var handTipOffset =
@@ -286,7 +303,8 @@ namespace ValheimVRMod.Scripts
                         direction, WeaponUtils.GetWeaponVelocity(handPhysicsEstimator.GetAverageVelocityInSnapshots(), angularVelocity, handTipOffset)));
 
             return new ThrowCalculate(
-                Mathf.Max(speedAlongThrow, 0), handPhysicsEstimator.GetLongestLocomotion(Mathf.Min(0.4f, aimingDuration)).magnitude);
+                Mathf.Max(speedAlongThrow, 0),
+                handPhysicsEstimator.GetLongestLocomotion(Mathf.Min(0.4f, completedAimingDuration)).magnitude);
         }
     }
 }
