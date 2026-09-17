@@ -222,7 +222,7 @@
     {
       "name": "/actions/LaserPointers/in/SplitStack",
       "type": "boolean",
-      "requirement": "optional"
+      "requirement": "mandatory"
     }
   ],
   "action_sets": [
