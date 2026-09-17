@@ -59,6 +59,16 @@ namespace ValheimVRMod.VRCore
         private static Vector3 THIRD_PERSON_3_OFFSET = new Vector3(0f, 3.2f, -4.4f);
         private static Vector3 THIRD_PERSON_CONFIG_OFFSET = Vector3.zero;
         private const float NECK_OFFSET = 0.25f;
+        // Below this raw eye height the HMD is assumed not to be tracking, so height caliberation is deferred.
+        private const float MIN_TRACKED_EYE_HEIGHT = 0.3f;
+        // Height of a raised foot, as a fraction of the player eye height, above which the player is
+        // considered to be stepping rather than standing still (roughly knee height).
+        private const float RAISED_FOOT_HEIGHT_RATIO = 0.765f;
+        // Bounds on how far the camera may be moved from the game character's natural eye point when
+        // matching the character's eye height to the player's, to avoid grotesquely squashed or
+        // stretched IK poses if referencePlayerHeight is configured to an extreme.
+        private const float MIN_EYE_HEIGHT_ADJUST = -0.75f;
+        private const float MAX_EYE_HEIGHT_ADJUST = 0.25f;
         public const float ROOMSCALE_STEP_ANIMATION_SMOOTHING = 0.3f;
         public const float ROOMSCALE_ANIMATION_WEIGHT = 2f;
 
@@ -82,7 +92,37 @@ namespace ValheimVRMod.VRCore
         private Vector3 initialRoomscaleLocomotiveOffsetFromHead;
 
         public static Camera vrCam { get { return vrPlayerInstance != null ? vrPlayerInstance._vrCam : null; } }
-        public static float referencePlayerHeight { get; private set; }
+        // Raw SteamVR eye height (HMD height above the tracking origin) sampled the last time the
+        // player height was caliberated. This is only trustworthy if the SteamVR floor level is set
+        // up correctly, hence it is never used directly, only via referencePlayerHeight below.
+        private static float rawCaliberatedEyeHeight = 0;
+
+        /// <summary>
+        /// The player's standing eye height above the floor, i.e. the measured height clamped into the
+        /// user-configured [PlayerMinEyeHeight, PlayerMaxEyeHeight] range. This is both the in-game eye
+        /// height of the character and the reference used for crouch/sneak/jump gesture detection.
+        /// Setting the two config values equal pins the height, making it immune to a mis-set SteamVR
+        /// floor level.
+        /// </summary>
+        public static float referencePlayerHeight =>
+            Mathf.Clamp(rawCaliberatedEyeHeight, VHVRConfig.PlayerMinEyeHeight(), VHVRConfig.PlayerMaxEyeHeight());
+
+        /// <summary>
+        /// Correction added to the raw SteamVR eye height so that the player's standing pose reads as
+        /// referencePlayerHeight. It is zero whenever the measured height already falls inside the
+        /// configured range, and absorbs the SteamVR floor level error otherwise.
+        /// </summary>
+        private static float eyeHeightCaliberationOffset => referencePlayerHeight - rawCaliberatedEyeHeight;
+
+        /// <summary>
+        /// The current eye height of the player above the floor, corrected for SteamVR floor level error.
+        /// Always use this instead of Valve.VR.InteractionSystem.Player.instance.eyeHeight: the raw
+        /// value is measured against the SteamVR tracking origin, so a mis-calibrated floor shifts it by a
+        /// constant, which in turn wrecks every height ratio computed against referencePlayerHeight
+        /// (most visibly making roomscale sneak trigger on the slightest crouch).
+        /// </summary>
+        public static float playerEyeHeight =>
+            Valve.VR.InteractionSystem.Player.instance.eyeHeight + eyeHeightCaliberationOffset;
         public static bool startingSit { get; private set; }
         public static bool isRoomscaleSneaking { get { return _isRoomscaleSneaking; } }
         private static bool _isRoomscaleSneaking = false;
@@ -311,6 +351,8 @@ namespace ValheimVRMod.VRCore
         private static float? firstPersonHeightOffset = null;
         public static bool headPositionInitialized { get; private set; }
         private static bool bodyTrackingCaliberationPending;
+        private static bool heightCaliberationPending = true;
+        private static bool logHeightDiagnosticsPending;
         // While caliberating, set true if a forced (index > 0) tracker exists but has not yet
         // reported a valid pose, so caliberation retries until it comes online (or the
         // deadline passes). Handles the one-frame latency of a freshly created tracker.
@@ -338,11 +380,18 @@ namespace ValheimVRMod.VRCore
         public static Transform leftFoot { get; private set; }
         public static Transform rightFoot { get; private set; }
 
-        public static void RequestRecentering()
+        /// <summary>
+        /// Recenters the head position on the character body. Head position is re-initialized on all
+        /// sorts of events (loading, respawning, attaching to a chair/ship/mount), most of which are
+        /// poor moments to sample the player's standing height, so the height is only re-caliberated
+        /// when recaliberateHeight is explicitly set - i.e. on a user-requested recentering.
+        /// </summary>
+        public static void RequestRecentering(bool recaliberateHeight = false)
         {
             headPositionInitialized = false;
             firstPersonOffset = Vector3.zero;
             firstPersonHeightOffset = null;
+            heightCaliberationPending |= recaliberateHeight;
         }
 
         public static void RequestPelvisCaliberation()
@@ -1148,6 +1197,7 @@ namespace ValheimVRMod.VRCore
 
             maybeExitDodge();
 
+            maybeCaliberatePlayerHeight();
             maybeInitHeadPosition(playerCharacter);
             if (bodyTrackingCaliberationPending)
             {
@@ -1167,6 +1217,7 @@ namespace ValheimVRMod.VRCore
             _instance.transform.localPosition = getDesiredLocalPosition(playerCharacter) // Base Positioning
                 + (firstPersonAdjust // Offset from calibration on tracking recenter
                 + getHeadHeightAdjust(playerCharacter)) * Vector3.up;
+            maybeLogHeightDiagnostics(playerCharacter);
 
             if (_headZoomLevel != HeadZoomLevel.FirstPerson)
             {
@@ -1241,7 +1292,30 @@ namespace ValheimVRMod.VRCore
                 return CROUCH_HEIGHT_ADJUST;
             }
 
-            return VHVRConfig.PlayerHeightAdjust();
+            return getEyeHeightMatchingAdjust(player);
+        }
+
+        /// <summary>
+        /// Offset, in the character's local space, that moves the view point from the game character's
+        /// natural eye point to the player's own eye height. Valheim characters are noticeably taller
+        /// than most players, so rather than applying a fixed guess at the difference we make the
+        /// character's eye height equal referencePlayerHeight; VRIK bends the body to follow the head
+        /// target, so the whole character adapts rather than just the camera.
+        /// </summary>
+        private float getEyeHeightMatchingAdjust(Player player)
+        {
+            // The character is scaled down (see VrikCreator.ROOT_SCALE), so local space distances have
+            // to be scaled up to compare them against the player's real world eye height.
+            float characterScale = player.transform.lossyScale.y;
+            if (characterScale <= 0)
+            {
+                return 0;
+            }
+
+            return Mathf.Clamp(
+                referencePlayerHeight / characterScale - getDesiredLocalPosition(player).y,
+                MIN_EYE_HEIGHT_ADJUST,
+                MAX_EYE_HEIGHT_ADJUST);
         }
 
         private void updateBodyTracking()
@@ -1268,7 +1342,7 @@ namespace ValheimVRMod.VRCore
                 StaticObjects.leftFootCollision().gameObject.SetActive(false);
                 StaticObjects.rightFootCollision().gameObject.SetActive(false);
 
-                if (player.IsAttached() || player.IsSitting() || Valve.VR.InteractionSystem.Player.instance.eyeHeight > referencePlayerHeight * 0.125f)
+                if (player.IsAttached() || player.IsSitting() || playerEyeHeight > referencePlayerHeight * 0.125f)
                 {
                     vrikRef.solver.spine.pelvisPositionWeight = 0;
                     vrikRef.solver.spine.pelvisRotationWeight = 1;
@@ -1291,7 +1365,7 @@ namespace ValheimVRMod.VRCore
                 !player.IsAttached() &&
                 !player.IsSitting() &&
                 Vector3.Angle(trackedPelvis.up, player.transform.up) < 30 &&
-                Valve.VR.InteractionSystem.Player.instance.eyeHeight > referencePlayerHeight * 0.75f;
+                playerEyeHeight > referencePlayerHeight * 0.75f;
 
             if (player.IsAttached() ||
                 (!VHVRConfig.TrackFeet() && (player.IsSneaking() || player.IsSitting() || !isFreeStanding)))
@@ -1352,9 +1426,11 @@ namespace ValheimVRMod.VRCore
                 return true;
             }
 
-            float standingHeadHeight = _vrCam.transform.localPosition.y - Valve.VR.InteractionSystem.Player.instance.eyeHeight + referencePlayerHeight;
-            if (_vrCameraRig.InverseTransformPoint(leftFoot.position).y > standingHeadHeight - 1.5f - VHVRConfig.PlayerHeightAdjust() ||
-                _vrCameraRig.InverseTransformPoint(rightFoot.position).y > standingHeadHeight - 1.5f - VHVRConfig.PlayerHeightAdjust() ||
+            float standingHeadHeight = _vrCam.transform.localPosition.y - playerEyeHeight + referencePlayerHeight;
+            // A foot raised above roughly knee height means the player is stepping rather than standing still.
+            float raisedFootHeight = standingHeadHeight - referencePlayerHeight * RAISED_FOOT_HEIGHT_RATIO;
+            if (_vrCameraRig.InverseTransformPoint(leftFoot.position).y > raisedFootHeight ||
+                _vrCameraRig.InverseTransformPoint(rightFoot.position).y > raisedFootHeight ||
                 Vector3.ProjectOnPlane(leftFoot.position - rightFoot.position, _vrCameraRig.up).magnitude > 0.5f)
             {
                 return true;
@@ -1576,8 +1652,15 @@ namespace ValheimVRMod.VRCore
             var hmd = Valve.VR.InteractionSystem.Player.instance.hmdTransform;
             if (firstPersonHeightOffset == null)
             {
-                // Measure the distance between HMD and desires location, and save it.
-                firstPersonHeightOffset = Vector3.Dot(_instance.transform.position - hmd.position, playerCharacter.transform.up);
+                // Measure the offset between the HMD and the desired view point and save it. It is applied
+                // to _instance.localPosition, so it has to be measured in the character's local space too:
+                // the character is scaled down (VrikCreator.ROOT_SCALE), so a world space distance used as
+                // a local offset comes out short by that factor, which used to leave the view point - and
+                // with it the apparent floor - too high by eyeHeight * (1 - scale).
+                firstPersonHeightOffset =
+                    Vector3.Dot(
+                        _instance.transform.localPosition - playerCharacter.transform.InverseTransformPoint(hmd.position),
+                        Vector3.up);
             }
 
             if (_headZoomLevel != HeadZoomLevel.FirstPerson)
@@ -1600,9 +1683,52 @@ namespace ValheimVRMod.VRCore
             }
 
             headPositionInitialized = true;
+        }
 
-            referencePlayerHeight = Valve.VR.InteractionSystem.Player.instance.eyeHeight;
-            LogUtils.LogDebug("Reference player height: " + referencePlayerHeight);
+        private static void maybeCaliberatePlayerHeight()
+        {
+            if (!heightCaliberationPending)
+            {
+                return;
+            }
+
+            float rawEyeHeight = Valve.VR.InteractionSystem.Player.instance.eyeHeight;
+            if (rawEyeHeight < MIN_TRACKED_EYE_HEIGHT)
+            {
+                // The HMD is most likely not tracking yet (or is sitting on a desk). Retry later
+                // instead of recording a nonsensical height.
+                return;
+            }
+
+            heightCaliberationPending = false;
+            rawCaliberatedEyeHeight = rawEyeHeight;
+            logHeightDiagnosticsPending = true;
+        }
+
+        /// <summary>
+        /// One-shot dump of every quantity that feeds the view height, logged on the frame after
+        /// caliberation once the camera has actually been placed. Use it when the in-game floor does not
+        /// line up with the real floor: "camera height above character origin" is what referencePlayerHeight
+        /// is supposed to equal, and the gap between the two is the error.
+        /// </summary>
+        private static void maybeLogHeightDiagnostics(Player playerCharacter)
+        {
+            if (!logHeightDiagnosticsPending || !headPositionInitialized ||
+                playerCharacter == null || _instance == null || vrCam == null || firstPersonHeightOffset == null)
+            {
+                return;
+            }
+
+            logHeightDiagnosticsPending = false;
+            LogUtils.LogDebug(
+                "VR player height: raw eye height " + rawCaliberatedEyeHeight +
+                ", reference " + referencePlayerHeight +
+                ", floor level correction " + eyeHeightCaliberationOffset +
+                ", character scale " + playerCharacter.transform.lossyScale.y +
+                ", character eye point (character-local) " + getDesiredLocalPosition(playerCharacter).y +
+                ", recentering offset " + firstPersonHeightOffset +
+                ", camera height above character origin " +
+                Vector3.Dot(vrCam.transform.position - playerCharacter.transform.position, playerCharacter.transform.up));
         }
 
         private static Vector3 getDesiredLocalPosition(Player playerCharacter)
@@ -1692,7 +1818,7 @@ namespace ValheimVRMod.VRCore
             rightFoot.rotation = pelvis.rotation;
 
             Vector3 roomUpDirection = vrCam.transform.parent.up;
-            Vector3 footHeight = _vrCam.transform.position - _vrCam.transform.forward * 0.1f - (1.7f + VHVRConfig.PlayerHeightAdjust()) * roomUpDirection;
+            Vector3 footHeight = _vrCam.transform.position - _vrCam.transform.forward * 0.1f - referencePlayerHeight * roomUpDirection;
             leftFoot.position = footHeight + Vector3.ProjectOnPlane(leftFoot.parent.position - footHeight, roomUpDirection);
             rightFoot.position = footHeight + Vector3.ProjectOnPlane(rightFoot.parent.position - footHeight, roomUpDirection);
             baseFootHeight = _vrCameraRig.InverseTransformPoint(footHeight).y;
@@ -1904,7 +2030,7 @@ namespace ValheimVRMod.VRCore
                 return;
             }
 
-            float height = Valve.VR.InteractionSystem.Player.instance.eyeHeight;
+            float height = playerEyeHeight;
             float heightThreshold = referencePlayerHeight * VHVRConfig.RoomScaleSneakHeight();
             if (height > heightThreshold - 0.1f)
             {
@@ -1982,7 +2108,7 @@ namespace ValheimVRMod.VRCore
                 return;
             }
 
-            float height = Valve.VR.InteractionSystem.Player.instance.eyeHeight;
+            float height = playerEyeHeight;
             float heightThreshold = referencePlayerHeight * VHVRConfig.RoomScaleSneakHeight();
             if (height < heightThreshold && !player.IsSitting())
             {

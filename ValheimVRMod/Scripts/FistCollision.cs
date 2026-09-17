@@ -336,7 +336,7 @@ namespace ValheimVRMod.Scripts
 
             if (VHVRConfig.IsGesturedJumpEnabled() &&
                 target.layer == LayerUtils.CHARACTER &&
-                Valve.VR.InteractionSystem.Player.instance.eyeHeight < VRPlayer.referencePlayerHeight * 0.9f)
+                VRPlayer.playerEyeHeight < VRPlayer.referencePlayerHeight * 0.9f)
             {
                 var leftHandOffset = VRPlayer.instance.transform.InverseTransformVector(VRPlayer.leftHand.transform.position - VRPlayer.vrCam.transform.position);
                 var rightHandOffset = VRPlayer.instance.transform.InverseTransformVector(VRPlayer.rightHand.transform.position - VRPlayer.vrCam.transform.position);
