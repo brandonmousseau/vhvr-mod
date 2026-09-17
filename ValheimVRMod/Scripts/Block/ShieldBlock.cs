@@ -52,6 +52,12 @@ namespace ValheimVRMod.Scripts.Block {
             scaleRef = _meshCooldown.transform.localScale;
             hand = VRPlayer.mainWeaponHand.otherHand.transform;
             offhand = VRPlayer.mainWeaponHand.transform;
+
+            var specifiedScale = VHVRConfig.GetShieldScaleSetting();
+            if (specifiedScale != 1)
+            {
+                ScaleShieldSize(specifiedScale);
+            }
         }
 
         public override void setBlocking(HitData hitData) {
