@@ -150,7 +150,7 @@ namespace ValheimVRMod.Patches {
                 return true;
             }
 
-            // Summoners may be held in either hand. Other magic items that are not staves (see Protector) leave aiming
+            // Summoners may be held in either hand. Other magic items that are not staves (see OrbManager) leave aiming
             // to vanilla.
             var summoner = SummonerManager.instance;
             if (summoner != null)
