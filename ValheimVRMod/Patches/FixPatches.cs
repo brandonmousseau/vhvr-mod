@@ -64,7 +64,7 @@ namespace ValheimVRMod.Patches {
     // VR initializes rather than at nothing.
     // assembly_valheim is publicized at build time, so nameof() here turns a rename by Iron Gate into a build
     // failure instead of a patch that silently stops applying.
-    [HarmonyPatch(typeof(FejdStartup), nameof(FejdStartup.PlayIntroCinematic))]
+    [HarmonyPatch(typeof(FejdStartup), nameof(FejdStartup.TryPlayIntroCinematic))]
     class IntroCinematicVrDelayPatch
     {
         // A backstop against a SteamVR that never finishes starting, not the normal path. Giving up here
