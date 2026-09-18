@@ -29,7 +29,8 @@ namespace ValheimVRMod.VRCore.UI
         private float altPieceRotationElapsedTime = 0f;
         private bool altPieceTriggered = false;
         private bool wasAltPieceTriggered = false;
-        private float buildQuickActionTimer;
+        private float leftQuickMenuHoldTime;
+        private float rightQuickMenuHoldTime;
         float? altMapZoomInHoldCountdown = null;
         float? altMapZoomOutHoldCountdown = null;
 
@@ -57,9 +58,6 @@ namespace ValheimVRMod.VRCore.UI
 
         // Action for "Use" using the left hand controller
         private SteamVR_Action_Boolean _useLeftHand = SteamVR_Actions.valheim_UseLeft;
-
-        // An input where the user holds down the button when clicking for an alternate behavior (ie, stack split)
-        private SteamVR_Action_Boolean _clickModifier = SteamVR_Actions.laserPointers_ClickModifier;
 
         public SteamVR_Action_Boolean useLeftHandAction { get
             {
@@ -100,6 +98,8 @@ namespace ValheimVRMod.VRCore.UI
         }
 
         private const int LASER_CONTROLS_TRANSITION_FRAMES = 2;
+        // How long the quick menu button has to be held to open the menu instead of counting as a right click.
+        private const float QUICK_MENU_HOLD_TIME = 0.3f;
         private static int laserControlsChangedFrame = -LASER_CONTROLS_TRANSITION_FRAMES;
         public static float smoothWalkX { get { return smoothWalkVelocity.x; } }
         public static float smoothWalkY { get { return smoothWalkVelocity.y; } }
@@ -149,8 +149,10 @@ namespace ValheimVRMod.VRCore.UI
                 StaticObjects.leftHandQuickMenu.GetComponent<LeftHandQuickMenu>().refreshItems();
             }
 
-            checkQuickItems<RightHandQuickMenu>(StaticObjects.rightHandQuickMenu, SteamVR_Actions.valheim_QuickSwitch, true);
-            checkQuickItems<LeftHandQuickMenu>(StaticObjects.leftHandQuickMenu, SteamVR_Actions.valheim_QuickActions, false);
+            checkQuickItems<RightHandQuickMenu>(
+                StaticObjects.rightHandQuickMenu, SteamVR_Actions.valheim_QuickSwitch, ref rightQuickMenuHoldTime);
+            checkQuickItems<LeftHandQuickMenu>(
+                StaticObjects.leftHandQuickMenu, SteamVR_Actions.valheim_QuickActions, ref leftQuickMenuHoldTime);
 
             // Skip while the SteamVR virtual keyboard is driving chat input: that flow submits/
             // cancels via its own keyboard-closed event (see InputManager.OnKeyboardClosed), and
@@ -387,52 +389,41 @@ namespace ValheimVRMod.VRCore.UI
             }
         }
         
-        private void checkQuickItems<T>(GameObject obj, SteamVR_Action_Boolean action, bool useRightClick) where T : QuickAbstract {
-            
+        // Opens the quick menu while its button is held and selects the hovered item when it is released.
+        // Limited inputs make the quick menu buttons double as the laser pointers' right click, which the bindings
+        // put on the same buttons (see bindings_*.json), so while a pointer is active the menu waits for the button
+        // to be held to tell it apart from a click.
+        private void checkQuickItems<T>(GameObject obj, SteamVR_Action_Boolean action, ref float holdTime) where T : QuickAbstract {
             if (!obj) {
                 return;
             }
 
-            // Due to complicated bindings/limited inputs, the QuickSwitch and Right click are sharing a button
-            // and when the hammer is equipped, the bindings conflict... so we'll share the right click button
-            // here to activate quick switch. This is hacky because rebinding things can break the controls, but
-            // it works and allows users to use the quick select while the hammer is equipped.
-            bool rightClickDown = false;
-            bool rightClickUp = false;
-            if (useRightClick && laserControlsActive && inPlaceMode())
+            if (!action.GetState(SteamVR_Input_Sources.Any))
             {
-                // Filtered so that a right click chorded with an action (e.g. favoriting a build piece) does not also
-                // count towards opening the quick switch menu.
-                rightClickDown = LaserPointerChords.rightClick;
-                rightClickUp = LaserPointerChords.rightClickUp;
-                if(rightClickDown)
-                    buildQuickActionTimer += Time.unscaledDeltaTime;
-            }
-            
-            if (action.GetStateDown(SteamVR_Input_Sources.Any) || rightClickDown) {
-                if (inPlaceMode())
+                holdTime = 0;
+                if (obj.activeSelf)
                 {
-                    if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand))
-                    {
-                        buildQuickActionTimer = 1;
-                    }
-                    if ((buildQuickActionTimer >= 0.3f || !useRightClick))
-                        obj.SetActive(true);
+                    obj.GetComponent<T>().selectHoveredItem();
+                    obj.SetActive(false);
                 }
-                else
-                    obj.SetActive(true);
+                return;
             }
 
-            if (action.GetStateUp(SteamVR_Input_Sources.Any) || rightClickUp) {
-                if (inPlaceMode() && (buildQuickActionTimer >= 0.3f || !useRightClick))
-                    obj.GetComponent<T>().selectHoveredItem();
-                else if(!inPlaceMode())
-                    obj.GetComponent<T>().selectHoveredItem();
-
-                if (useRightClick)
-                    buildQuickActionTimer = 0;
-                obj.SetActive(false);
+            if (laserControlsActive)
+            {
+                // A click that is part of a chord (e.g. the middle click that favorites a build piece, which uses
+                // this same button) is not a menu request either, so it must not count towards the hold.
+                if (LaserPointerChords.isRightClickSuppressed)
+                {
+                    return;
+                }
+                holdTime += Time.unscaledDeltaTime;
+                if (holdTime < QUICK_MENU_HOLD_TIME)
+                {
+                    return;
+                }
             }
+            obj.SetActive(true);
         }
 
         private void checkRecenterPose(float dt)
@@ -799,9 +790,10 @@ namespace ValheimVRMod.VRCore.UI
             //}
         }
 
+        // The grab button of a hand whose laser pointer is active, which modifies the building controls (the
+        // reference plane, snapping off, exclusive snap and the rotation gizmo) while in place mode.
         public bool getClickModifier()
         {
-            // TODO: update _clickModifier in the action set to use grab buttons. It is obsoletely bound to left controller trigger now and cannot be used here.
             if (VRPlayer.leftPointer.pointerIsActive() && SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand))
             {
                 return true;
@@ -810,7 +802,7 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return true;
             }
-            return _clickModifier.GetState(SteamVR_Input_Sources.Any);
+            return false;
         }
 
         private int getAltPieceRotation()
@@ -937,7 +929,7 @@ namespace ValheimVRMod.VRCore.UI
             // These placement commands re-use some of the normal game inputs. They are read from the laser pointer
             // clicks as filtered by LaserPointerChords (see GetButton*() and registerBooleanActionListeners()), the
             // entries here only keep them from being treated as unmapped.
-            zInputToBooleanAction.Add("BuildMenu", new[] { SteamVR_Actions.laserPointers_RightClick });
+            zInputToBooleanAction.Add("BuildMenu", new[] { SteamVR_Actions.valheim_RightClick });
             zInputToBooleanAction.Add("JoyPlace", new[] { SteamVR_Actions.laserPointers_LeftClick });
             zInputToBooleanAction.Add("Remove", new[] { SteamVR_Actions.valheim_Jump, SteamVR_Actions.laserPointers_Jump });
 

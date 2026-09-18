@@ -26,7 +26,8 @@ namespace ValheimVRMod.Utilities
 
         // General Settings
         private static ConfigEntry<string> mirrorMode;
-        private static ConfigEntry<float> playerHeightAdjust;
+        private static ConfigEntry<float> playerMinEyeHeight;
+        private static ConfigEntry<float> playerMaxEyeHeight;
         private static ConfigEntry<float> headOffsetX;
         private static ConfigEntry<float> headOffsetZ;
         private static ConfigEntry<float> headOffsetY;
@@ -387,11 +388,20 @@ namespace ValheimVRMod.Utilities
                                      " need it for some specific reason, I recommend using another mirror mode or None. Follow mode and spectator mode" +
                                      " render content from a third person camera which can cause lag.",
                                      new AcceptableValueList<string>(new string[] { "Right", "Left", "OpenVR", "None", "Follow", "Spectator" })));
-            playerHeightAdjust = config.Bind("General",
-                              "PlayerHeightAdjust",
-                              -0.2f,
-                              new ConfigDescription("The height difference between the real world player and the game character",
-                              new AcceptableValueRange<float>(-0.5f, 0.25f)));
+            playerMinEyeHeight = config.Bind("General",
+                              "PlayerMinEyeHeight",
+                              1.2f,
+                              new ConfigDescription("Minimal standing eye height above the floor. The eye height measured on" +
+                              " recentering is clamped into the [PlayerMinEyeHeight, PlayerMaxEyeHeight]. Increase this value" +
+                              " up to your real life eye height if crouching-sneak is too sensitive and you suspect that SteamVR floor height is wrong.",
+                              new AcceptableValueRange<float>(0.5f, 2.5f)));
+
+            playerMaxEyeHeight = config.Bind("General",
+                              "PlayerMaxEyeHeight",
+                              1.9f,
+                              new ConfigDescription("Max standing eye height above the floor. Decrease this value down to your real life eye height" +
+                              " if crouching-sneak is too hard you suspect that SteamVR floor height is wrong",
+                              new AcceptableValueRange<float>(0.5f, 2.5f)));
 
 
             headOffsetX = config.Bind("General",
@@ -1167,9 +1177,14 @@ namespace ValheimVRMod.Utilities
             return UseFollowCameraOnFlatscreen() || UseSpectatorCameraOnFlatscreen();
         }
 
-        public static float PlayerHeightAdjust()
+        public static float PlayerMinEyeHeight()
         {
-            return playerHeightAdjust.Value;
+            return Mathf.Min(playerMinEyeHeight.Value, playerMaxEyeHeight.Value);
+        }
+
+        public static float PlayerMaxEyeHeight()
+        {
+            return Mathf.Max(playerMinEyeHeight.Value, playerMaxEyeHeight.Value);
         }
 
         public static bool GetUseOverlayGui()

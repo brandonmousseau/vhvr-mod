@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+using System;
+using System.Collections.Generic;
 using ValheimVRMod.VRCore;
 using ValheimVRMod.VRCore.UI;
 using HarmonyLib;
@@ -92,52 +93,37 @@ namespace ValheimVRMod.Patches {
         }
     }
 
-    [HarmonyPatch(typeof(ZInput), nameof(ZInput.GetJoyLeftStickX))]
-    class ZInput_GetJoyLeftStickX_Patch {
-        static void Postfix(ref float __result) {
-            if (VRControls.mainControlsActive) {
-                var joystick = VRControls.instance.GetJoyLeftStickX();
-
-                if (Player.m_localPlayer.IsAttached())
-                {
-                    if (joystick > -0.3f && joystick < 0.3f)
-                    {
-                        __result = 0f;
-                    }
-                    else
-                    {
-                        __result += joystick;
-                    }
-                    return;
-                }
-                __result = __result + VRControls.smoothWalkX / VHVRConfig.AutoRunThreshold() + (VRPlayer.gesturedLocomotionManager?.stickOutputX ?? 0);
+    // PlayerController#FixedUpdate reads the left stick through this Vector2 overload; GetJoyLeftStickX() and
+    // GetJoyLeftStickY() are only thin wrappers over it, so this single postfix reaches every caller. Patching
+    // the wrappers as well would apply the VR input twice for the menus that read them.
+    [HarmonyPatch(typeof(ZInput), nameof(ZInput.GetJoyLeftStick))]
+    class ZInput_GetJoyLeftStick_Patch {
+        static void Postfix(ref Vector2 __result) {
+            if (!VRControls.mainControlsActive) {
+                return;
             }
+
+            var joystick = VRControls.instance.GetJoyLeftStickInput();
+
+            // GetJoyLeftStickY() returns this vector's y axis negated, and VRControls reports forward/backward
+            // in that same flipped convention, so the y injection is applied against the flip and flipped back.
+            // Getting this wrong inverts forward and backward instead of failing visibly.
+            float forward = -__result.y;
+
+            // Add a dead zone to ship control so that it is harder to change speed or heading by accident.
+            // Forward/backward moves the sail a whole step at a time, so it needs a wider one than steering.
+            if (Player.m_localPlayer != null && Player.m_localPlayer.IsAttached()) {
+                __result.x = ApplyDeadZone(__result.x, joystick.x, 0.3f);
+                __result.y = -ApplyDeadZone(forward, joystick.y, 0.9f);
+                return;
+            }
+
+            __result.x += VRControls.smoothWalkX / VHVRConfig.AutoRunThreshold() + (VRPlayer.gesturedLocomotionManager?.stickOutputX ?? 0);
+            __result.y = -(forward + VRControls.smoothWalkY / VHVRConfig.AutoRunThreshold() + (VRPlayer.gesturedLocomotionManager?.stickOutputY ?? 0));
         }
-    }
 
-    [HarmonyPatch(typeof(ZInput), nameof(ZInput.GetJoyLeftStickY))]
-    class ZInput_GetJoyLeftStickY_Patch {
-        static void Postfix(ref float __result) {
-            if (VRControls.mainControlsActive) {
-
-                var joystick = VRControls.instance.GetJoyLeftStickY();
-
-                //add deadzone to ship control for forward and backward so its harder to accidentally change speed
-                if (Player.m_localPlayer != null && Player.m_localPlayer.IsAttached())
-                {
-                    if(joystick > -0.9f && joystick < 0.9f)
-                    {
-                        __result = 0f;
-                    }
-                    else
-                    {
-                        __result += joystick;
-                    }
-                    return;
-                }
-
-                __result = __result + VRControls.smoothWalkY / VHVRConfig.AutoRunThreshold() + (VRPlayer.gesturedLocomotionManager?.stickOutputY?? 0);
-            }
+        private static float ApplyDeadZone(float vanillaAxis, float vrAxis, float deadZone) {
+            return vrAxis > -deadZone && vrAxis < deadZone ? 0f : vanillaAxis + vrAxis;
         }
     }
 
@@ -407,20 +393,20 @@ namespace ValheimVRMod.Patches {
     [HarmonyPatch(typeof(Minimap), nameof(Minimap.UpdateMap))]
     class Minimap_UpdateMap_Patch {
         private static MethodInfo getJoyLeftStickX =
-            AccessTools.Method(typeof(ZInput), nameof(ZInput.GetJoyLeftStickX), new [] { typeof(bool) });
+            AccessTools.Method(typeof(ZInput), nameof(ZInput.GetJoyLeftStickX), new Type[0]);
 
         private static MethodInfo getJoyLeftStickY =
-            AccessTools.Method(typeof(ZInput), nameof(ZInput.GetJoyLeftStickY), new[] { typeof(bool) });
+            AccessTools.Method(typeof(ZInput), nameof(ZInput.GetJoyLeftStickY), new Type[0]);
 
-        private static float getJoyLeftStickXPatched(bool smooth) {
+        private static float getJoyLeftStickXPatched() {
             if (VRControls.mainControlsActive) {
                 return 0.0f;
             }
 
-            return ZInput.GetJoyLeftStickX(smooth: true);
+            return ZInput.GetJoyLeftStickX();
         }
 
-        private static float getJoyLeftStickYPatched(bool smooth) {
+        private static float getJoyLeftStickYPatched() {
             if (VRControls.mainControlsActive) {
                 return 0.0f;
             }
@@ -437,11 +423,11 @@ namespace ValheimVRMod.Patches {
                 // simulated mouse cursor click and drag via laser pointer.
                 if (instruction.Calls(getJoyLeftStickX)) {
                     patched.Add(CodeInstruction.Call(typeof(Minimap_UpdateMap_Patch),
-                        nameof(getJoyLeftStickXPatched), new[] { typeof(bool) }));
+                        nameof(getJoyLeftStickXPatched), new Type[0]));
                 }
                 else if (instruction.Calls(getJoyLeftStickY)) {
                     patched.Add(CodeInstruction.Call(typeof(Minimap_UpdateMap_Patch),
-                        nameof(getJoyLeftStickYPatched), new[] { typeof(bool) }));
+                        nameof(getJoyLeftStickYPatched), new Type[0]));
                 }
                 else if (instruction.Calls(GetButtonPatchUtils.GetButtonDownOriginal))
                 {

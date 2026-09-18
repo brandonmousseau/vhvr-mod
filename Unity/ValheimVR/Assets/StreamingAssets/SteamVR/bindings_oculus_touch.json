@@ -235,27 +235,7 @@
             {
                "inputs" : {
                   "click" : {
-                     "output" : "/actions/laserpointers/in/rightclick"
-                  }
-               },
-               "mode" : "button",
-               "parameters" : {},
-               "path" : "/user/hand/right/input/y"
-            },
-            {
-               "inputs" : {
-                  "click" : {
-                     "output" : "/actions/laserpointers/in/rightclick"
-                  }
-               },
-               "mode" : "button",
-               "parameters" : {},
-               "path" : "/user/hand/right/input/b"
-            },
-            {
-               "inputs" : {
-                  "click" : {
-                     "output" : "/actions/laserpointers/in/clickmodifier"
+                     "output" : "/actions/laserpointers/in/leftclick"
                   }
                },
                "mode" : "button",
@@ -396,6 +376,36 @@
                "mode" : "button",
                "parameters" : {},
                "path" : "/user/hand/right/input/b"
+            },
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/valheim/in/rightclick"
+                  }
+               },
+               "mode" : "button",
+               "parameters" : {},
+               "path" : "/user/hand/right/input/b"
+            },
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/valheim/in/rightclick"
+                  }
+               },
+               "mode" : "button",
+               "parameters" : {},
+               "path" : "/user/hand/right/input/y"
+            },
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/valheim/in/rightclick"
+                  }
+               },
+               "mode" : "button",
+               "parameters" : {},
+               "path" : "/user/hand/left/input/y"
             },
             {
                "inputs" : {

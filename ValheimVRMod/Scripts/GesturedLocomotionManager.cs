@@ -219,7 +219,7 @@ namespace ValheimVRMod.Scripts
 
             public override Vector3 GetTargetVelocityFromGestures(Player player, float deltaTime)
             {
-                var height = Valve.VR.InteractionSystem.Player.instance.eyeHeight;
+                var height = VRPlayer.playerEyeHeight;
                 var verticalSpeed = Vector3.Dot(VRPlayer.headPhysicsEstimator.GetVelocity(), upDirection.Value);
                 if (verticalSpeed < 1)
                 {
@@ -912,7 +912,7 @@ namespace ValheimVRMod.Scripts
                 }
 
                 var isCrouching = player.IsCrouching();
-                if (!isCrouching && Valve.VR.InteractionSystem.Player.instance.eyeHeight > MAX_HEIGHT * VRPlayer.referencePlayerHeight)
+                if (!isCrouching && VRPlayer.playerEyeHeight > MAX_HEIGHT * VRPlayer.referencePlayerHeight)
                 {
                     return Vector3.zero;
                 }

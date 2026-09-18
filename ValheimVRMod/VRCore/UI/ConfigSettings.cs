@@ -228,7 +228,11 @@ namespace ValheimVRMod.VRCore.UI {
 
             setupOkAndBack(settings.transform.Find("Panel"));
 
-            tabButtons.GetComponent<TabHandler>().SetActiveTab(0);
+            // forceSelect is load bearing, not decorative: TabHandler.SetActiveTab returns early when the
+            // requested index already equals m_selected, and m_selected is 0 on a freshly instantiated clone.
+            // Every tab page here is cloned from one that was just deactivated, so without the flag none of
+            // them is ever activated and the first tab renders empty until the player switches away and back.
+            tabButtons.GetComponent<TabHandler>().SetActiveTab(0, forceSelect: true);
             keyboardMouseSettings.UpdateBindings();
         }
 
@@ -308,7 +312,9 @@ namespace ValheimVRMod.VRCore.UI {
             tab.m_button.onClick.AddListener(() => {
                 tabButtons.GetComponent<TabHandler>().SetActiveTab(activeTabIndex);
             });
-            tab.m_default = true;
+            // Only the first tab is the default one. Claiming that every tab is would make TabHandler.Init()
+            // resolve the default to the last section rather than to General.
+            tab.m_default = (tabCounter == 0);
             tab.m_page = newTab.GetComponent<RectTransform>();
             tab.m_onClick = new UnityEvent();
 

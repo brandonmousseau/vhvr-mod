@@ -700,20 +700,21 @@ namespace ValheimVRMod.VRCore.UI
         {
             if (_leftPointer.pointerIsActive())
             {
-                // TODO: add proper actions for left pointer click?
-                _inputModule.UpdateButtonStates(
-                    SteamVR_Actions.LaserPointers.ClickModifier.GetState(SteamVR_Input_Sources.LeftHand) ||
-                    SteamVR_Actions.LaserPointers.LeftClick.GetState(SteamVR_Input_Sources.LeftHand),
-                    SteamVR_Actions.valheim_QuickActions.GetState(SteamVR_Input_Sources.LeftHand),
-                    false);
+                UpdateMouseButtonsFromLaserPointer(SteamVR_Input_Sources.LeftHand);
             }
             if (_rightPointer.pointerIsActive())
             {
-                _inputModule.UpdateButtonStates(
-                    SteamVR_Actions.LaserPointers.LeftClick.GetState(SteamVR_Input_Sources.RightHand),
-                    SteamVR_Actions.LaserPointers.RightClick.GetState(SteamVR_Input_Sources.RightHand),
-                    false);
+                UpdateMouseButtonsFromLaserPointer(SteamVR_Input_Sources.RightHand);
             }
+        }
+
+        private void UpdateMouseButtonsFromLaserPointer(SteamVR_Input_Sources hand)
+        {
+            // The laser pointers have no middle button of their own, UpdateButtonStates adds the MiddleClick chord.
+            _inputModule.UpdateButtonStates(
+                SteamVR_Actions.LaserPointers.LeftClick.GetState(hand),
+                SteamVR_Actions.Valheim.RightClick.GetState(hand),
+                false);
         }
 
         private void UpdateHandAttachedTransform()
