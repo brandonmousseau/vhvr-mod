@@ -15,9 +15,11 @@ namespace ValheimVRMod.Scripts.Block {
         private float scaling = 1f;
         private Vector3 posRef;
         private Vector3 scaleRef;
+        private float adaptScaleRef = 1f;
         private bool attemptingParry;
         private int parryCheckFixedUpateTicker = 0;
         private Vector3 shieldFacing { get { return VRPlayer.isRightHandMainWeaponHand ? -VRPlayer.leftHand.transform.right : VRPlayer.rightHand.transform.right; } }
+        private MeshFilter meshFilter;
 
         public static ShieldBlock instance;
 
@@ -52,11 +54,25 @@ namespace ValheimVRMod.Scripts.Block {
             scaleRef = _meshCooldown.transform.localScale;
             hand = VRPlayer.mainWeaponHand.otherHand.transform;
             offhand = VRPlayer.mainWeaponHand.transform;
-
+            
+            meshFilter = gameObject.GetComponentInChildren<MeshFilter>();
+            var mesh = meshFilter.sharedMesh;
+            var shieldWideSize = Vector3.Scale(_meshCooldown.transform.localScale, mesh.bounds.size).x;
             var specifiedScale = VHVRConfig.GetShieldScaleSetting();
-            if (specifiedScale != 1)
+            if (specifiedScale < 0.951f || specifiedScale > 1.1f)
             {
-                ScaleShieldSize(specifiedScale);
+                if(specifiedScale > 1)
+                {
+                    adaptScaleRef = specifiedScale;
+                }
+                else
+                {
+                    if(shieldWideSize > specifiedScale)
+                    {
+                        adaptScaleRef = specifiedScale/shieldWideSize;
+                    }
+                }
+                AdaptScaleShieldSize(1f);
             }
         }
 
@@ -112,9 +128,9 @@ namespace ValheimVRMod.Scripts.Block {
             Vector3 v = physicsEstimator.GetVelocity();
         }
 
-        public void ScaleShieldSize(float scale)
+        public void AdaptScaleShieldSize(float scale)
         {
-            scaling = scale;
+            scaling = adaptScaleRef * scale;
         }
 
         private Vector3 CalculatePos()

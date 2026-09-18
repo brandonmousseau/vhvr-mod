@@ -1052,8 +1052,8 @@ namespace ValheimVRMod.Utilities
             shieldScale = config.Bind("Motion Control",
                 "ShieldScale",
                 1.0f,
-                new ConfigDescription("Scale shield size on equip",
-                new AcceptableValueRange<float>(0.05f, 2.0f)));
+                new ConfigDescription("Scale shield max size on equip (0.95 to 1.1 is default size), more than 1 will multiply scale it larger on any case",
+                new AcceptableValueRange<float>(0.05f, 3.0f)));
 
             movementSecondaryAttack = config.Bind("Motion Control",
                                                     "KnifeMovementSecondaryAttack",

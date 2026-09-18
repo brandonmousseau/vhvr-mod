@@ -133,11 +133,11 @@ namespace ValheimVRMod.Scripts
         {
             if (VHVRConfig.UseSpearDirectionGraphicOnTriggerGrip() && !useAction.GetState(VRPlayer.mainWeaponHandInputSource))
             {
-                ShieldBlock.instance?.ScaleShieldSize(VHVRConfig.GetShieldScaleSetting());
+                ShieldBlock.instance?.AdaptScaleShieldSize(1f);
             }
             else
             {
-                ShieldBlock.instance?.ScaleShieldSize(VHVRConfig.GetShieldScaleSetting()* 0.4f);
+                ShieldBlock.instance?.AdaptScaleShieldSize(0.4f);
             }
             var direction = VRPlayer.mainWeaponHand.otherHand.transform.position - CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform.position;
             var lineDirection = direction;
@@ -262,7 +262,7 @@ namespace ValheimVRMod.Scripts
         private void ResetSpearOffset()
         {
             isAiming = false;
-            ShieldBlock.instance?.ScaleShieldSize(VHVRConfig.GetShieldScaleSetting());
+            ShieldBlock.instance?.AdaptScaleShieldSize(1f);
 
             if (!EquipScript.IsSpearEquipped())
             {
