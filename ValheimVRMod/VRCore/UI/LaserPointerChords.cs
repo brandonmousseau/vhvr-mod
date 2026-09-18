@@ -35,6 +35,8 @@ namespace ValheimVRMod.VRCore.UI
         private const string PLACE_BUTTON = "JoyPlace";
 
         private static bool initialized = false;
+        // Whether the game has been given the current right click press, see OnActionsUpdated().
+        private static bool rightClickDelivered;
         private static int lastAddMapPinFrame = -1;
         private static int lastDiscardItemFrame = -1;
         private static int lastSplitStackFrame = -1;
@@ -74,8 +76,11 @@ namespace ValheimVRMod.VRCore.UI
         private static void OnActionsUpdated()
         {
             SteamVR_Action_Boolean leftClickAction = SteamVR_Actions.laserPointers_LeftClick;
-            SteamVR_Action_Boolean rightClickAction = SteamVR_Actions.laserPointers_RightClick;
-            SteamVR_Action_Boolean clickModifierAction = SteamVR_Actions.laserPointers_ClickModifier;
+            // The right click is in the main action set, not the laser pointer one, so that the buttons it shares
+            // with the quick menus (see bindings_*.json) keep reaching those while a pointer is active, which the
+            // higher priority laser pointer set would otherwise mask. Unlike the left click it is therefore not
+            // silenced by its action set going inactive and has to be gated on laserControlsActive below.
+            SteamVR_Action_Boolean rightClickAction = SteamVR_Actions.valheim_RightClick;
 
             if (VRControls.laserControlsActive)
             {
@@ -108,9 +113,8 @@ namespace ValheimVRMod.VRCore.UI
             middleClick = VRControls.laserControlsActive && SteamVR_Actions.laserPointers_MiddleClick.GetState(SteamVR_Input_Sources.Any);
 
             // Keep a suppression through the frame its button is released, so that release is hidden too, and so
-            // that closing the GUI mid-click cannot leave the game with a button up it never saw go down. The left
-            // pointer clicks with ClickModifier, so both have to be up before the left click can be used again.
-            if (!isHeldOrJustReleased(leftClickAction) && !isHeldOrJustReleased(clickModifierAction))
+            // that closing the GUI mid-click cannot leave the game with a button up it never saw go down.
+            if (!isHeldOrJustReleased(leftClickAction))
             {
                 isLeftClickSuppressed = false;
             }
@@ -123,9 +127,19 @@ namespace ValheimVRMod.VRCore.UI
             leftClickDown = FilterLeftClick(leftClickAction.GetStateDown(SteamVR_Input_Sources.Any));
             leftClickUp = FilterLeftClick(leftClickAction.GetStateUp(SteamVR_Input_Sources.Any));
 
-            rightClick = FilterRightClick(rightClickAction.GetState(SteamVR_Input_Sources.Any));
-            rightClickDown = FilterRightClick(rightClickAction.GetStateDown(SteamVR_Input_Sources.Any));
-            rightClickUp = FilterRightClick(rightClickAction.GetStateUp(SteamVR_Input_Sources.Any));
+            rightClick = VRControls.laserControlsActive && FilterRightClick(rightClickAction.GetState(SteamVR_Input_Sources.Any));
+            rightClickDown = VRControls.laserControlsActive && FilterRightClick(rightClickAction.GetStateDown(SteamVR_Input_Sources.Any));
+            if (rightClickDown)
+            {
+                rightClickDelivered = true;
+            }
+            // The release is reported even once the laser controls are gone, so that a press the game has seen
+            // cannot be left without its button up, but a press that was hidden here stays hidden on release too.
+            rightClickUp = rightClickDelivered && FilterRightClick(rightClickAction.GetStateUp(SteamVR_Input_Sources.Any));
+            if (rightClickUp)
+            {
+                rightClickDelivered = false;
+            }
 
             // Patching ZInput may not be sufficient to emulate button input since Jotunn could undo those patches,
             // so also update the actual button states in ZInput (see VRControls.registerBooleanActionListeners()).

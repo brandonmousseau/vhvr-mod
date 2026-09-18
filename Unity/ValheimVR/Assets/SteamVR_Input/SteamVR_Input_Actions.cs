@@ -89,13 +89,11 @@ namespace Valve.VR
         
         private static SteamVR_Action_Boolean p_valheim_ToggleAutoPickup;
         
+        private static SteamVR_Action_Boolean p_valheim_RightClick;
+        
         private static SteamVR_Action_Vibration p_valheim_Haptic;
         
         private static SteamVR_Action_Boolean p_laserPointers_LeftClick;
-        
-        private static SteamVR_Action_Boolean p_laserPointers_RightClick;
-        
-        private static SteamVR_Action_Boolean p_laserPointers_ClickModifier;
         
         private static SteamVR_Action_Boolean p_laserPointers_Jump;
         
@@ -397,6 +395,14 @@ namespace Valve.VR
             }
         }
         
+        public static SteamVR_Action_Boolean valheim_RightClick
+        {
+            get
+            {
+                return SteamVR_Actions.p_valheim_RightClick.GetCopy<SteamVR_Action_Boolean>();
+            }
+        }
+        
         public static SteamVR_Action_Vibration valheim_Haptic
         {
             get
@@ -410,22 +416,6 @@ namespace Valve.VR
             get
             {
                 return SteamVR_Actions.p_laserPointers_LeftClick.GetCopy<SteamVR_Action_Boolean>();
-            }
-        }
-        
-        public static SteamVR_Action_Boolean laserPointers_RightClick
-        {
-            get
-            {
-                return SteamVR_Actions.p_laserPointers_RightClick.GetCopy<SteamVR_Action_Boolean>();
-            }
-        }
-        
-        public static SteamVR_Action_Boolean laserPointers_ClickModifier
-        {
-            get
-            {
-                return SteamVR_Actions.p_laserPointers_ClickModifier.GetCopy<SteamVR_Action_Boolean>();
             }
         }
         
@@ -516,10 +506,9 @@ namespace Valve.VR
                     SteamVR_Actions.valheim_ToggleCrouch,
                     SteamVR_Actions.valheim_Dodge,
                     SteamVR_Actions.valheim_ToggleAutoPickup,
+                    SteamVR_Actions.valheim_RightClick,
                     SteamVR_Actions.valheim_Haptic,
                     SteamVR_Actions.laserPointers_LeftClick,
-                    SteamVR_Actions.laserPointers_RightClick,
-                    SteamVR_Actions.laserPointers_ClickModifier,
                     SteamVR_Actions.laserPointers_Jump,
                     SteamVR_Actions.laserPointers_PitchAndYaw,
                     SteamVR_Actions.laserPointers_AddMapPin,
@@ -562,9 +551,8 @@ namespace Valve.VR
                     SteamVR_Actions.valheim_ToggleCrouch,
                     SteamVR_Actions.valheim_Dodge,
                     SteamVR_Actions.valheim_ToggleAutoPickup,
+                    SteamVR_Actions.valheim_RightClick,
                     SteamVR_Actions.laserPointers_LeftClick,
-                    SteamVR_Actions.laserPointers_RightClick,
-                    SteamVR_Actions.laserPointers_ClickModifier,
                     SteamVR_Actions.laserPointers_Jump,
                     SteamVR_Actions.laserPointers_PitchAndYaw,
                     SteamVR_Actions.laserPointers_AddMapPin,
@@ -607,9 +595,8 @@ namespace Valve.VR
                     SteamVR_Actions.valheim_ToggleCrouch,
                     SteamVR_Actions.valheim_Dodge,
                     SteamVR_Actions.valheim_ToggleAutoPickup,
+                    SteamVR_Actions.valheim_RightClick,
                     SteamVR_Actions.laserPointers_LeftClick,
-                    SteamVR_Actions.laserPointers_RightClick,
-                    SteamVR_Actions.laserPointers_ClickModifier,
                     SteamVR_Actions.laserPointers_Jump,
                     SteamVR_Actions.laserPointers_AddMapPin,
                     SteamVR_Actions.laserPointers_MiddleClick,
@@ -657,9 +644,8 @@ namespace Valve.VR
                     SteamVR_Actions.valheim_ToggleCrouch,
                     SteamVR_Actions.valheim_Dodge,
                     SteamVR_Actions.valheim_ToggleAutoPickup,
+                    SteamVR_Actions.valheim_RightClick,
                     SteamVR_Actions.laserPointers_LeftClick,
-                    SteamVR_Actions.laserPointers_RightClick,
-                    SteamVR_Actions.laserPointers_ClickModifier,
                     SteamVR_Actions.laserPointers_Jump,
                     SteamVR_Actions.laserPointers_PitchAndYaw,
                     SteamVR_Actions.laserPointers_AddMapPin,
@@ -706,10 +692,9 @@ namespace Valve.VR
             SteamVR_Actions.p_valheim_ToggleCrouch = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/Valheim/in/ToggleCrouch")));
             SteamVR_Actions.p_valheim_Dodge = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/Valheim/in/Dodge")));
             SteamVR_Actions.p_valheim_ToggleAutoPickup = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/Valheim/in/ToggleAutoPickup")));
+            SteamVR_Actions.p_valheim_RightClick = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/Valheim/in/RightClick")));
             SteamVR_Actions.p_valheim_Haptic = ((SteamVR_Action_Vibration)(SteamVR_Action.Create<SteamVR_Action_Vibration>("/actions/Valheim/out/Haptic")));
             SteamVR_Actions.p_laserPointers_LeftClick = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/LaserPointers/in/LeftClick")));
-            SteamVR_Actions.p_laserPointers_RightClick = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/LaserPointers/in/RightClick")));
-            SteamVR_Actions.p_laserPointers_ClickModifier = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/LaserPointers/in/ClickModifier")));
             SteamVR_Actions.p_laserPointers_Jump = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/LaserPointers/in/Jump")));
             SteamVR_Actions.p_laserPointers_PitchAndYaw = ((SteamVR_Action_Vector2)(SteamVR_Action.Create<SteamVR_Action_Vector2>("/actions/LaserPointers/in/PitchAndYaw")));
             SteamVR_Actions.p_laserPointers_AddMapPin = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/LaserPointers/in/AddMapPin")));

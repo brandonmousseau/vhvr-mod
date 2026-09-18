@@ -263,7 +263,7 @@
             {
                "inputs" : {
                   "click" : {
-                     "output" : "/actions/laserpointers/in/clickmodifier"
+                     "output" : "/actions/laserpointers/in/leftclick"
                   }
                },
                "mode" : "button",
@@ -274,9 +274,6 @@
                "inputs" : {
                   "north" : {
                      "output" : "/actions/laserpointers/in/jump"
-                  },
-                  "south" : {
-                     "output" : "/actions/laserpointers/in/rightclick"
                   }
                },
                "mode" : "dpad",
@@ -446,6 +443,26 @@
                "mode" : "button",
                "parameters" : {},
                "path" : "/user/hand/right/input/application_menu"
+            },
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/valheim/in/rightclick"
+                  }
+               },
+               "mode" : "button",
+               "parameters" : {},
+               "path" : "/user/hand/right/input/application_menu"
+            },
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/valheim/in/rightclick"
+                  }
+               },
+               "mode" : "button",
+               "parameters" : {},
+               "path" : "/user/hand/left/input/application_menu"
             },
             {
                "inputs" : {

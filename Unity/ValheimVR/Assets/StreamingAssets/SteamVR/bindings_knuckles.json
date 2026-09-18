@@ -150,22 +150,12 @@
           }
         },
         {
-          "path": "/user/hand/right/input/b",
-          "mode": "button",
-          "parameters": {},
-          "inputs": {
-            "click": {
-              "output": "/actions/laserpointers/in/rightclick"
-            }
-          }
-        },
-        {
           "path": "/user/hand/left/input/trigger",
           "mode": "button",
           "parameters": {},
           "inputs": {
             "click": {
-              "output": "/actions/laserpointers/in/clickmodifier"
+              "output": "/actions/laserpointers/in/leftclick"
             }
           }
         }
@@ -292,6 +282,26 @@
             },
             "touch": {
               "output": "/actions/valheim/in/stopgesturedlocomotion"
+            }
+          }
+        },
+        {
+          "path": "/user/hand/right/input/b",
+          "mode": "button",
+          "parameters": {},
+          "inputs": {
+            "click": {
+              "output": "/actions/valheim/in/rightclick"
+            }
+          }
+        },
+        {
+          "path": "/user/hand/left/input/b",
+          "mode": "button",
+          "parameters": {},
+          "inputs": {
+            "click": {
+              "output": "/actions/valheim/in/rightclick"
             }
           }
         },

@@ -25,22 +25,6 @@ namespace Valve.VR
             }
         }
         
-        public virtual SteamVR_Action_Boolean RightClick
-        {
-            get
-            {
-                return SteamVR_Actions.laserPointers_RightClick;
-            }
-        }
-        
-        public virtual SteamVR_Action_Boolean ClickModifier
-        {
-            get
-            {
-                return SteamVR_Actions.laserPointers_ClickModifier;
-            }
-        }
-        
         public virtual SteamVR_Action_Boolean Jump
         {
             get
