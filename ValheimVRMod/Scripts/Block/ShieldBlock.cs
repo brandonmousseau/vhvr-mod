@@ -58,20 +58,11 @@ namespace ValheimVRMod.Scripts.Block {
             meshFilter = gameObject.GetComponentInChildren<MeshFilter>();
             var mesh = meshFilter.sharedMesh;
             var shieldWideSize = Vector3.Scale(_meshCooldown.transform.localScale, mesh.bounds.size).x;
-            var specifiedScale = VHVRConfig.GetShieldScaleSetting();
-            if (specifiedScale < 0.951f || specifiedScale > 1.1f)
+            var shieldMaxWidth = VHVRConfig.GetMaxShieldWidth();
+            var scaleShieldSetting = VHVRConfig.GetShieldScaleSetting();
+            if (shieldMaxWidth !=1f || scaleShieldSetting !=1f)
             {
-                if(specifiedScale > 1)
-                {
-                    adaptScaleRef = specifiedScale;
-                }
-                else
-                {
-                    if(shieldWideSize > specifiedScale)
-                    {
-                        adaptScaleRef = specifiedScale/shieldWideSize;
-                    }
-                }
+                adaptScaleRef = Mathf.Min(scaleShieldSetting, shieldMaxWidth / shieldWideSize);
                 AdaptScaleShieldSize(1f);
             }
         }
