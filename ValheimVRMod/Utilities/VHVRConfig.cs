@@ -154,12 +154,6 @@ namespace ValheimVRMod.Utilities
         // Motion Control Settings
         private static ConfigEntry<bool> useArrowPredictionGraphic;
         private static ConfigEntry<float> arrowParticleSize;
-        private static ConfigEntry<string> spearThrowingType;
-        private static ConfigEntry<string> useSpearDirectionGraphic;
-        private static ConfigEntry<float> fullThrowSpeed;
-        private static ConfigEntry<bool> spearInverseWield;
-        private static ConfigEntry<string> twoHandedWield;
-        private static ConfigEntry<bool> twoHandedWithShield;
         private static ConfigEntry<float> arrowRestElevation;
         private static ConfigEntry<string> arrowRestSide;
         private static ConfigEntry<string> bowDrawRestrictType;
@@ -168,9 +162,18 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> bowStaminaAdjust;
         private static ConfigEntry<string> crossbowSaggitalRotationSource;
         private static ConfigEntry<bool> crossbowManualReload;
-        private static ConfigEntry<string> blockingType;
-        private static ConfigEntry<bool> movementSecondaryAttack;
+        private static ConfigEntry<string> spearThrowingType;
+        private static ConfigEntry<string> useSpearDirectionGraphic;
+        private static ConfigEntry<float> fullThrowSpeed;
+        private static ConfigEntry<bool> spearInverseWield;
         private static ConfigEntry<string> meleeAttackKnockbackDirection;
+        private static ConfigEntry<string> twoHandedWield;
+        private static ConfigEntry<bool> movementSecondaryAttack;
+        private static ConfigEntry<bool> twoHandedWithShield;
+        private static ConfigEntry<string> blockingType;
+        private static ConfigEntry<float> shieldScale;
+        private static ConfigEntry<float> maxShieldWidth;
+        
 
 #if DEBUG
         private static ConfigEntry<float> DebugPosX;
@@ -988,6 +991,18 @@ namespace ValheimVRMod.Utilities
                 new ConfigDescription("Multiplier for stamina drain on bow. Reduce for less stamina drain.",
                 new AcceptableValueRange<float>(0.25f, 1.0f)));
 
+            //Crossbow Changes
+
+            crossbowSaggitalRotationSource = config.Bind("Motion Control",
+                                        "CrossbowSaggitalRotationSource",
+                                        "MotionControl",
+                                        new ConfigDescription("Which hand(s) can rotate the crossbow along its saggital axis during two-handed hold",
+                                        new AcceptableValueList<string>(new string[] { "RearHand", "BothHands" })));
+            crossbowManualReload = config.Bind("Motion Control",
+                                                    "CrossbowManualReload",
+                                                    true,
+                                                    "When supported, crossbows requires manually pulling the string to reload");
+
             //Spear Changes
             spearThrowingType = config.Bind("Motion Control",
                                             "SpearThrowingMode",
@@ -1016,26 +1031,27 @@ namespace ValheimVRMod.Utilities
                                                     "TriggerGrip - Holding both Grip and Trigger to make the direction line appear",
                                                     new AcceptableValueList<string>(new string[] { "Grip", "TriggerGrip", "Disabled" })));
             //Two-handed Changes
+            meleeAttackKnockbackDirection = config.Bind("Motion Control",
+                                        "MeleeAttackKnockbackDirection",
+                                        "Basic",
+                                        new ConfigDescription("Melee Attack Knockback Direction: " +
+                                        "Basic - Melee knockback direction away from player position. " +
+                                        "Swing - Melee knockback follow swing direction.",
+                                        new AcceptableValueList<string>(new string[] { "Basic", "Swing" })));
             twoHandedWield = config.Bind(
                 "Motion Control", "TwoHandedWield", "PolearmSticky",
                 new ConfigDescription(
                     "Use this to toggle controls of two handed weapon (left & right hand grab on weapon), allow blocking and better weapon handling.",
                     new AcceptableValueList<string>(new string[] { "NonSticky", "PolearmSticky", "Sticky", "Disabled" })));
-
+            movementSecondaryAttack = config.Bind("Motion Control",
+                                                    "KnifeMovementSecondaryAttack",
+                                                    false,
+                                                    "When enabled, Weapon that have movement secondary attack (Knife) button secondary attack will have 2 step, first trigger-release will make you leap, the second one works like usual button secondary attack. Re-equip after changing setting to update");
             twoHandedWithShield = config.Bind("Motion Control",
                                                     "TwoHandedWithShield",
                                                     false,
                                                     "Allows Two Handed Wield while using shield");
 
-            crossbowSaggitalRotationSource = config.Bind("Motion Control",
-                                        "CrossbowSaggitalRotationSource",
-                                        "MotionControl",
-                                        new ConfigDescription("Which hand(s) can rotate the crossbow along its saggital axis during two-handed hold",
-                                        new AcceptableValueList<string>(new string[] { "RearHand", "BothHands" })));
-            crossbowManualReload = config.Bind("Motion Control",
-                                                    "CrossbowManualReload",
-                                                    true,
-                                                    "When supported, crossbows requires manually pulling the string to reload");
             blockingType = config.Bind("Motion Control",
                                         "BlockingType",
                                         "Gesture",
@@ -1044,18 +1060,18 @@ namespace ValheimVRMod.Utilities
                                         "Grab button - Block by aiming and pressing grab button, parry by timing the grab button. " +
                                         "Realistic - Block precisely where the enemy hits, swing while blocking to parry",
                                         new AcceptableValueList<string>(new string[] { "Gesture", "GrabButton", "Realistic" })));
-            movementSecondaryAttack = config.Bind("Motion Control",
-                                                    "KnifeMovementSecondaryAttack",
-                                                    false,
-                                                    "When enabled, Weapon that have movement secondary attack (Knife) button secondary attack will have 2 step, first trigger-release will make you leap, the second one works like usual button secondary attack. Re-equip after changing setting to update");
-            meleeAttackKnockbackDirection = config.Bind("Motion Control",
-                                        "MeleeAttackKnockbackDirection",
-                                        "Basic",
-                                        new ConfigDescription("Melee Attack Knockback Direction: " +
-                                        "Basic - Melee knockback direction away from player position. " +
-                                        "Swing - Melee knockback follow swing direction.",
-                                        new AcceptableValueList<string>(new string[] { "Basic", "Swing" })));
+            
+            shieldScale = config.Bind("Motion Control",
+                "ShieldScale",
+                1.0f,
+                new ConfigDescription("Scale shield size on equip(eg. 1.5 means 1.5x size of the vanilla model), capped by max shield width.",
+                new AcceptableValueRange<float>(0.05f, 5.0f)));
 
+            maxShieldWidth = config.Bind("Motion Control",
+                "MaxShieldWidth",
+                1.5f,
+                new ConfigDescription("The max allowed width of a shield in meters - any shield wider will be shrinked to fit this width",
+                new AcceptableValueRange<float>(0.05f, 3.0f)));
 
             advancedBuildMode = config.Bind("Motion Control",
                                                    "AdvancedBuildMode",
@@ -1787,7 +1803,14 @@ namespace ValheimVRMod.Utilities
         {
             return blockingType.Value == "GrabButton";
         }
-
+        public static float GetShieldScaleSetting()
+        {
+            return shieldScale.Value;
+        }
+        public static float GetMaxShieldWidth()
+        {
+            return maxShieldWidth.Value;
+        }
         public static bool MovementSecondaryAttack()
         {
             return movementSecondaryAttack.Value;
