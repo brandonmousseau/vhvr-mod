@@ -139,12 +139,54 @@ namespace ValheimVRMod.Patches
         }
     }
 
+    // Raven.Talk() is the dialog the player gets by interacting with Hugin or Munin, their remarks that come
+    // on their own go through Raven.Say() directly instead.
+    [HarmonyPatch(typeof(Raven), "Talk")]
+    class Raven_Talk_Patch
+    {
+        public static bool isTalking { get; private set; }
+
+        public static void Prefix()
+        {
+            isTalking = true;
+        }
+
+        public static void Finalizer()
+        {
+            isTalking = false;
+        }
+    }
+
+    // The dialog of Hugin and Munin is shown on the VRGUI panel where the long tutorial text is comfortable
+    // to read. Everything else an NPC says, which the player did not ask for, is shown as a bubble above its
+    // head instead, which is closer to how it looks outside VR and does not cover the panel while the player
+    // is doing something else.
+    [HarmonyPatch(typeof(Chat), nameof(Chat.SetNpcText))]
+    class Chat_SetNpcText_Patch
+    {
+        public static void Postfix(GameObject talker, List<Chat.NpcText> ___m_npcTexts)
+        {
+            if (VHVRConfig.NonVrPlayer() || Raven_Talk_Patch.isTalking)
+            {
+                return;
+            }
+
+            // Chat appends the text it has just created, if any, to the end of the list.
+            Chat.NpcText npcText = ___m_npcTexts.LastOrDefault();
+            if (npcText != null && npcText.m_go == talker)
+            {
+                NpcTextBubble.Create(npcText);
+            }
+        }
+    }
+
     // This patch replaces the method used to determine where on the UI to print
     // the NPC text (e.g. Munin/Hugin and trader dialog). Rather than use the transpiler I'm just replacing
     // the whole method. Vanilla places the text at the talker's position projected onto the screen by the
     // main camera. In VR that is the head camera while the text is drawn on the VRGUI panel, so the text
     // would slide across the panel whenever the head turns. Instead the text is pinned to a fixed spot on
-    // the panel for the duration it should remain there.
+    // the panel for the duration it should remain there. Texts shown as a bubble above the talker instead
+    // are positioned by NpcTextBubble and left alone here.
     [HarmonyPatch(typeof(Chat), "UpdateNpcTexts")]
     class Chat_UpdateNpcTexts_Patch
     {
@@ -179,15 +221,18 @@ namespace ValheimVRMod.Patches
                     }
                     Vector3 mGo = mNpcText.m_go.transform.position + mNpcText.m_offset;
                     mNpcText.SetVisible(true);
-                    // Position relative to the canvas the text is on so that it does not depend on how VRGUI
-                    // sizes and places that canvas.
-                    Canvas canvas = mNpcText.m_gui.GetComponentInParent<Canvas>();
-                    if (canvas != null)
+                    if (!NpcTextBubble.IsAttachedTo(mNpcText))
                     {
-                        RectTransform canvasTransform = canvas.rootCanvas.GetComponent<RectTransform>();
-                        Rect canvasRect = canvasTransform.rect;
-                        mNpcText.m_gui.transform.position = canvasTransform.TransformPoint(
-                            new Vector3(canvasRect.center.x, canvasRect.yMin + canvasRect.height * NPC_TEXT_HEIGHT_FRACTION, 0f));
+                        // Position relative to the canvas the text is on so that it does not depend on how VRGUI
+                        // sizes and places that canvas.
+                        Canvas canvas = mNpcText.m_gui.GetComponentInParent<Canvas>();
+                        if (canvas != null)
+                        {
+                            RectTransform canvasTransform = canvas.rootCanvas.GetComponent<RectTransform>();
+                            Rect canvasRect = canvasTransform.rect;
+                            mNpcText.m_gui.transform.position = canvasTransform.TransformPoint(
+                                new Vector3(canvasRect.center.x, canvasRect.yMin + canvasRect.height * NPC_TEXT_HEIGHT_FRACTION, 0f));
+                        }
                     }
                     if (Vector3.Distance(mainCamera.transform.position, mGo) <= mNpcText.m_cullDistance)
                     {
