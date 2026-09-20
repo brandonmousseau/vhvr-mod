@@ -123,16 +123,76 @@ namespace ValheimVRMod.Patches
         }
     }
 
+    // Same as above for ZInput.pointerPosition, which reads the Input System mouse position instead of
+    // Input.mousePosition. The minimap uses it for where to add and remove pins, and the hardware cursor it
+    // would otherwise return is locked to the screen center.
+    [HarmonyPatch(typeof(ZInput), nameof(ZInput.Internal_GetPointerPosition))]
+    class ZInput_Internal_GetPointerPosition_Patch
+    {
+        public static void Postfix(ref Vector3 __result)
+        {
+            if (VHVRConfig.NonVrPlayer() || ZInput.IsTouchActive())
+            {
+                return;
+            }
+            __result = SoftwareCursor.simulatedMousePosition;
+        }
+    }
+
+    // Raven.Talk() is the dialog the player gets by interacting with Hugin or Munin, their remarks that come
+    // on their own go through Raven.Say() directly instead.
+    [HarmonyPatch(typeof(Raven), "Talk")]
+    class Raven_Talk_Patch
+    {
+        public static bool isTalking { get; private set; }
+
+        public static void Prefix()
+        {
+            isTalking = true;
+        }
+
+        public static void Finalizer()
+        {
+            isTalking = false;
+        }
+    }
+
+    // The dialog of Hugin and Munin is shown on the VRGUI panel where the long tutorial text is comfortable
+    // to read. Everything else an NPC says, which the player did not ask for, is shown as a bubble above its
+    // head instead, which is closer to how it looks outside VR and does not cover the panel while the player
+    // is doing something else.
+    [HarmonyPatch(typeof(Chat), nameof(Chat.SetNpcText))]
+    class Chat_SetNpcText_Patch
+    {
+        public static void Postfix(GameObject talker, List<Chat.NpcText> ___m_npcTexts)
+        {
+            if (VHVRConfig.NonVrPlayer() || Raven_Talk_Patch.isTalking)
+            {
+                return;
+            }
+
+            // Chat appends the text it has just created, if any, to the end of the list.
+            Chat.NpcText npcText = ___m_npcTexts.LastOrDefault();
+            if (npcText != null && npcText.m_go == talker)
+            {
+                NpcTextBubble.Create(npcText);
+            }
+        }
+    }
+
     // This patch replaces the method used to determine where on the UI to print
-    // the NPC text. Rather than use the transpiler I'm just replacing the whole method.
-    // The reason the original doesn't work is because it assumes the GUI is being printed as
-    // Screen Space overlay and uses a WorldToScreenSpace function that doesn't work correctly
-    // with the changes I needed to make to get the GUI working right in VR. This version isn't
-    // perfect, but it should keep the NPC text on the screen for the duration it should remain
-    // there.
+    // the NPC text (e.g. Munin/Hugin and trader dialog). Rather than use the transpiler I'm just replacing
+    // the whole method. Vanilla places the text at the talker's position projected onto the screen by the
+    // main camera. In VR that is the head camera while the text is drawn on the VRGUI panel, so the text
+    // would slide across the panel whenever the head turns. Instead the text is pinned to a fixed spot on
+    // the panel for the duration it should remain there. Texts shown as a bubble above the talker instead
+    // are positioned by NpcTextBubble and left alone here.
     [HarmonyPatch(typeof(Chat), "UpdateNpcTexts")]
     class Chat_UpdateNpcTexts_Patch
     {
+        // Height of the NPC text on the GUI canvas as a fraction of the canvas height from the bottom.
+        private const float NPC_TEXT_HEIGHT_FRACTION = 0.3f;
+
         public static bool Prefix(Chat __instance, List<Chat.NpcText> ___m_npcTexts, float dt)
         {
             if (VHVRConfig.NonVrPlayer()) {
@@ -160,29 +220,19 @@ namespace ValheimVRMod.Patches
                         }
                     }
                     Vector3 mGo = mNpcText.m_go.transform.position + mNpcText.m_offset;
-                    Vector3 screenPoint = mainCamera.WorldToScreenPoint(mGo);
-                    if (screenPoint.x < 0f || screenPoint.x > (float)mainCamera.pixelWidth || screenPoint.y < 0f || screenPoint.y > (float)mainCamera.pixelHeight || screenPoint.z < 0f)
+                    mNpcText.SetVisible(true);
+                    if (!NpcTextBubble.IsAttachedTo(mNpcText))
                     {
-                        mNpcText.SetVisible(false);
-                    }
-                    else
-                    {
-                        mNpcText.SetVisible(true);
-                        RectTransform mGui = mNpcText.m_gui.transform as RectTransform;
-                        float screenpointX = screenPoint.x;
-                        Rect rect = mGui.rect;
-                        float halfWidth = rect.width / 2f;
-                        float screenWidth = (float)Screen.width;
-                        rect = mGui.rect;
-                        screenPoint.x = Mathf.Clamp(screenpointX, halfWidth, screenWidth - halfWidth);
-                        float screenpointY = screenPoint.y;
-                        rect = mGui.rect;
-                        float halfHeight = rect.height / 2f;
-                        float screenHeight = (float)Screen.height;
-                        rect = mGui.rect;
-                        screenPoint.y = Mathf.Clamp(screenpointY, halfHeight, screenHeight - rect.height);
-                        screenPoint.z = 0f;
-                        mNpcText.m_gui.transform.position = screenPoint;
+                        // Position relative to the canvas the text is on so that it does not depend on how VRGUI
+                        // sizes and places that canvas.
+                        Canvas canvas = mNpcText.m_gui.GetComponentInParent<Canvas>();
+                        if (canvas != null)
+                        {
+                            RectTransform canvasTransform = canvas.rootCanvas.GetComponent<RectTransform>();
+                            Rect canvasRect = canvasTransform.rect;
+                            mNpcText.m_gui.transform.position = canvasTransform.TransformPoint(
+                                new Vector3(canvasRect.center.x, canvasRect.yMin + canvasRect.height * NPC_TEXT_HEIGHT_FRACTION, 0f));
+                        }
                     }
                     if (Vector3.Distance(mainCamera.transform.position, mGo) <= mNpcText.m_cullDistance)
                     {
@@ -208,6 +258,10 @@ namespace ValheimVRMod.Patches
             if (npcText != null)
             {
                 Chat_ClearNpcText_ReversePatch.ReversePatchClearNpcText(__instance, npcText);
+            }
+            if (Hud.instance.m_userHidden && ___m_npcTexts.Count > 0)
+            {
+                __instance.HideAllNpcTexts();
             }
             return false;
         }
@@ -831,6 +885,24 @@ namespace ValheimVRMod.Patches
         }
     }
 
+    // The VHVR settings dialog is a clone of the vanilla Settings object, so its Awake overwrites
+    // the static Settings.m_instance singleton. createModSettings() then destroys the clone's tab
+    // buttons and their key hints, which is what Settings.m_tabKeyHints points at. ZInput.ChangeLayout()
+    // reaches OnInputLayoutChanged() through that hijacked singleton (the vanilla gamepad settings tab
+    // triggers it on back), where SetActive() on the destroyed hints throws. The clone has no vanilla
+    // tabs to update anyway, so skip it.
+    [HarmonyPatch(typeof(Settings), "OnInputLayoutChanged")]
+    class PatchSettingsOnInputLayoutChanged
+    {
+        public static bool Prefix(Settings __instance)
+        {
+            // Destroying the clone does not clear Settings.m_instance, so the singleton can still
+            // hold a destroyed one. Unity reports that as null while the managed call still lands
+            // here, and GetComponentInParent() below would throw on it, so check for it first.
+            return __instance != null && !ConfigSettings.isVHVRClone(__instance);
+        }
+    }
+
     [HarmonyPatch(typeof(HotkeyBar), nameof(HotkeyBar.Update))]
     class HotkeyBarHidePatch
     {
@@ -916,6 +988,91 @@ namespace ValheimVRMod.Patches
             }
 
             return true;
+        }
+    }
+
+    // Shows cinematics on the VRGUI instead of on CinematicsManager's own flat camera, which would also
+    // disable the VR camera while playing. This includes the startup intro which IntroCinematicVrDelayPatch
+    // holds back until the VRGUI is ready to show it.
+    [HarmonyPatch(typeof(CinematicsManager), nameof(CinematicsManager.Play), new Type[] { typeof(CinematicsManager.VideoEntry), typeof(CinematicsManager.VideoCompleteAction) })]
+    class CinematicsManager_Play_Patch
+    {
+        // Deliberately looser than VRGUI.isReadyToShowCinematic, which the intro gate uses: this has to be true
+        // whenever VHVR owns the camera, even in the moments when the GUI panel is not up, because otherwise
+        // Play() would disable the camera the headset renders with and VRPlayer.enableCameras() would rebuild
+        // it. Answering true too early only costs a badly laid out video for a frame.
+        private static bool ShouldPatch()
+        {
+            return !VHVRConfig.NonVrPlayer() && VRPlayer.instance != null && CinematicsManager.s_instance != null;
+        }
+
+        static void Prefix(CinematicsManager.VideoEntry video)
+        {
+            if (!ShouldPatch() || video == null)
+            {
+                return;
+            }
+            var clip = video.m_videoClip != null ? video.m_videoClip : video.m_videoClipLow;
+            if (clip == null)
+            {
+                return;
+            }
+            // Set up before vanilla starts the video player.
+            VRCinematicScreen.OnPlay(CinematicsManager.s_instance, clip);
+        }
+
+        static void Postfix(bool __result)
+        {
+            if (!__result || !ShouldPatch())
+            {
+                return;
+            }
+            // Play() still enables CinematicsManager's own camera, which would render over the VRGUI. No camera
+            // needs restoring: the transpiler below leaves m_mainCamera null, so Play() disabled none, and Stop()
+            // is fine with m_camera already being disabled.
+            CinematicsManager.s_instance.m_camera.enabled = false;
+        }
+
+        // Hides the main camera from Play(), which stores it in m_mainCamera and disables it for the length of
+        // the cinematic (Stop() enables it again). Once VR is running Utils.GetMainCamera() is the VR camera, so
+        // vanilla would disable the camera the headset renders with, and VRPlayer.enableCameras() reacts to a
+        // disabled VR camera by rebuilding it and destroying the follow camera along with it. Both Play() and
+        // Stop() null check m_mainCamera, so leaving it null means neither touches any camera at all, and the
+        // video goes to the VRGUI instead. This returns the camera unchanged only in flat screen mode or after
+        // VR failed to initialize, in which case the startup intro plays flat with the vanilla camera.
+        private static Camera GetMainCameraForCinematic()
+        {
+            return ShouldPatch() ? null : Utils.GetMainCamera();
+        }
+
+        private static readonly MethodInfo getMainCamera =
+            AccessTools.Method(typeof(Utils), nameof(Utils.GetMainCamera));
+
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            var patched = new List<CodeInstruction>();
+            int patchedCount = 0;
+            foreach (var instruction in instructions)
+            {
+                if (instruction.Calls(getMainCamera))
+                {
+                    patched.Add(
+                        CodeInstruction.Call(
+                            typeof(CinematicsManager_Play_Patch), nameof(GetMainCameraForCinematic)));
+                    patchedCount++;
+                }
+                else
+                {
+                    patched.Add(instruction);
+                }
+            }
+            if (patchedCount != 1)
+            {
+                LogError(
+                    "CinematicsManager.Play: patched " + patchedCount +
+                    " of the 1 expected Utils.GetMainCamera() call, the VR camera may be disabled by cinematics.");
+            }
+            return patched;
         }
     }
 
@@ -1016,8 +1173,25 @@ namespace ValheimVRMod.Patches
             {
                 return;
             }
-            mousePos = SoftwareCursor.ScaledMouseVector();
-            return;
+            // Minimap.ScreenToWorldPoint resolves the point with a null camera, which makes it treat
+            // mousePos as raw world coordinates rather than screen coordinates. Project the cursor onto
+            // the map rect through the canvas camera and hand over the resulting world point, so the
+            // click lands under the cursor no matter how the window resolution, the captured screen size
+            // and the configured UI panel resolution relate to each other.
+            RectTransform mapRect = __instance.m_mapImageLarge.transform as RectTransform;
+            Canvas canvas = mapRect == null ? null : mapRect.GetComponentInParent<Canvas>();
+            Camera camera = canvas == null ? null : canvas.rootCanvas.worldCamera;
+            if (camera == null)
+            {
+                mousePos = SoftwareCursor.ScaledMouseVector();
+                return;
+            }
+            Vector3 worldPoint;
+            if (RectTransformUtility.ScreenPointToWorldPointInRectangle(
+                mapRect, SoftwareCursor.simulatedMousePosition, camera, out worldPoint))
+            {
+                mousePos = worldPoint;
+            }
         }
     }
 
@@ -1050,7 +1224,10 @@ namespace ValheimVRMod.Patches
             }
             if (__instance.m_dragGo)
             {
-                __instance.m_dragGo.transform.position = SoftwareCursor.ScaledMouseVector() + new Vector3(10,50);
+                // The nudge away from the cursor tip is given in cursor coordinates and projected with
+                // it, so the ghost stays at the same visual offset whatever the canvas scale is.
+                __instance.m_dragGo.transform.position =
+                    SoftwareCursor.CursorWorldPosition(__instance.m_dragGo.transform, new Vector2(10, 50));
                 Image component = __instance.m_dragGo.transform.Find("icon").GetComponent<Image>();
                 TMPro.TMP_Text component2 = __instance.m_dragGo.transform.Find("name").GetComponent<TMPro.TMP_Text>();
                 TMPro.TMP_Text component3 = __instance.m_dragGo.transform.Find("amount").GetComponent<TMPro.TMP_Text>();
@@ -1090,13 +1267,40 @@ namespace ValheimVRMod.Patches
                     UITooltip.HideTooltip();
                     return false;
                 }
-                if (!RectTransformUtility.RectangleContainsScreenPoint(UITooltip.m_hovered.transform as RectTransform, SoftwareCursor.ScaledMouseVector()))
+                if (!CursorIsWithinHovered(UITooltip.m_hovered))
                 {
-                    UITooltip.HideTooltip();
+                    // Deliberately not HideTooltip(): that clears m_current, and Unity fires no new
+                    // OnPointerEnter while the pointer stays within the same element, so the tooltip
+                    // could never re-appear. Reset instead so it re-arms when the cursor comes back.
+                    __instance.m_showTimer = 0f;
+                    UITooltip.m_tooltip.SetActive(false);
                     return false;
                 }
-                UITooltip.m_tooltip.transform.position = SoftwareCursor.ScaledMouseVector();
+                UITooltip.m_tooltip.transform.position =
+                    SoftwareCursor.CursorWorldPosition(UITooltip.m_tooltip.transform, Vector2.zero);
                 Utils.ClampUIToScreen(UITooltip.m_tooltip.transform.GetChild(0).transform as RectTransform);
+            }
+            return false;
+        }
+
+        // Tested against the canvas camera and the same cursor value that Input.mousePosition is
+        // patched to return, so this agrees with the hover the EventSystem itself resolved. Passing
+        // no camera instead compares against raw world coordinates, which only lines up when the
+        // canvas position, the captured screen size and the UI panel resolution all coincide.
+        // The UITooltip component is also not necessarily on the object whose rect covers the
+        // visible hover area, so accept the cursor being over any rect below it.
+        private static bool CursorIsWithinHovered(GameObject hovered)
+        {
+            var canvas = hovered.GetComponentInParent<Canvas>();
+            var camera = canvas == null ? null : canvas.rootCanvas.worldCamera;
+            foreach (var rectTransform in hovered.GetComponentsInChildren<RectTransform>())
+            {
+                if (rectTransform != null &&
+                    RectTransformUtility.RectangleContainsScreenPoint(
+                        rectTransform, SoftwareCursor.simulatedMousePosition, camera))
+                {
+                    return true;
+                }
             }
             return false;
         }

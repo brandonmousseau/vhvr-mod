@@ -30,7 +30,7 @@ namespace ValheimVRMod.Scripts
         private float twoHandedMultitargetSwipeCountdown = 0;
         private float twoHandedMultitargetSwipeDuration;
         private GameObject debugColliderIndicator;
-        private bool isHoldingTankard { get { return isVanillaRightHandedWeapon && EquipScript.getRight() == EquipType.Tankard; } }
+        private bool isHoldingTankard { get { return isVanillaRightHandedWeapon && EquipScript.CurrentMainHandEquipType() == EquipType.Tankard; } }
 
         public PhysicsEstimator physicsEstimator { get; private set; }
         public PhysicsEstimator mainHandPhysicsEstimator { get { return weaponWield.mainHand == VRPlayer.leftHand ? VRPlayer.leftHandPhysicsEstimator : VRPlayer.rightHandPhysicsEstimator; } }
@@ -110,9 +110,21 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
+            if (EquipScript.CurrentMainHandEquipType() == EquipType.Shovel)
+            {
+                // When scooping from the ground the blade is usually already buried by the time the upward scoop
+                // starts, so entering the terrain alone would rarely coincide with the required upward motion.
+                // Anything else only collides on enter like a regular weapon.
+                if (isTerrain(collider.gameObject))
+                {
+                    MaybeAttackCollider(collider, requireStab: false, requireStabOrBackSlash: false);
+                }
+                return;
+            }
+
             if (itemIsTool)
             {
-                switch (EquipScript.getRight())
+                switch (EquipScript.CurrentMainHandEquipType())
                 {
                     case EquipType.Cultivator:
                     case EquipType.Hoe:
@@ -149,6 +161,12 @@ namespace ValheimVRMod.Scripts
             }
 
             return character.m_baseAI != null && !character.m_baseAI.m_aggravated && character.m_faction == Character.Faction.Dverger;
+        }
+
+        private static bool IsHostileCharacter(Collider collider)
+        {
+            var character = collider.GetComponentInParent<Character>();
+            return character != null && !IsFriendly(character);
         }
 
         private bool CheckDrinking(Collider collider)
@@ -193,7 +211,7 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            switch(EquipScript.getRight())
+            switch(EquipScript.CurrentMainHandEquipType())
             {
                 case EquipType.BattleAxe:
                 case EquipType.Polearms:
@@ -218,7 +236,8 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            if (!hasMomentum(out bool isStab, out bool isBackSlash, out float speed))
+            bool isShovelScoop = EquipScript.CurrentMainHandEquipType() == EquipType.Shovel && isTerrain(collider.gameObject);
+            if (!hasMomentum(isShovelScoop, out bool isStab, out bool isBackSlash, out float speed))
             {
                 return;
             }
@@ -233,9 +252,19 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
+            if (EquipScript.CurrentMainHandEquipType() == EquipType.Shovel && !isTerrain(collider.gameObject))
+            {
+                // The shovel deals no damage of its own, so hitting anything but terrain with it falls back to a kick.
+                if (FootCollision.Kick(collider, transform.position, physicsEstimator.GetVelocity(), speed))
+                {
+                    VRPlayer.mainWeaponHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, VRPlayer.mainWeaponHandInputSource);
+                }
+                return;
+            }
+
             if (itemIsTool)
             {
-                switch (EquipScript.getRight())
+                switch (EquipScript.CurrentMainHandEquipType())
                 {
                     case EquipType.Cultivator:
                     case EquipType.Hoe:
@@ -251,13 +280,14 @@ namespace ValheimVRMod.Scripts
                              collider.GetComponentInParent<Piece>() == hoveringPiece);
                         return;
                     case EquipType.Scythe:
+                    case EquipType.Shovel:
                         break;
                     default:
                         return;
                 }
             }
 
-            bool weaponHasMultitargetSwipe = EquipScript.getRight() == EquipType.BattleAxe || EquipScript.getRight() == EquipType.Polearms;
+            bool weaponHasMultitargetSwipe = EquipScript.CurrentMainHandEquipType() == EquipType.BattleAxe || EquipScript.CurrentMainHandEquipType() == EquipType.Polearms;
             bool isSlowAttack;
             if (postSlowAttackCountdown <= 0)
             {
@@ -275,7 +305,7 @@ namespace ValheimVRMod.Scripts
             }
 
             Attack currentAttack;
-            if (EquipScript.getRight() == EquipType.BattleAxe)
+            if (EquipScript.CurrentMainHandEquipType() == EquipType.BattleAxe)
             {
                 currentAttack = !isSlowAttack && isStab ? secondaryAttack : attack;
             }
@@ -347,7 +377,7 @@ namespace ValheimVRMod.Scripts
             if (isTerrain(target))
             {
                 // Prevent hitting the terrain too easily.
-                switch (EquipScript.getRight())
+                switch (EquipScript.CurrentMainHandEquipType())
                 {
                     case EquipType.BattleAxe:
                     case EquipType.Magic:
@@ -417,7 +447,7 @@ namespace ValheimVRMod.Scripts
             transform.SetParent(Player.m_localPlayer.transform, true);
         }
 
-        public void setColliderParent(MeshFilter meshFilter, Vector3 handPosition, string name, bool isDominantHand)
+        public void setColliderParent(MeshFilter meshFilter, Vector3 handPosition, int itemHash, bool isDominantHand)
         {
             var meshTranform = meshFilter.transform;
             outline = meshTranform.parent.gameObject.AddComponent<Outline>();
@@ -426,14 +456,20 @@ namespace ValheimVRMod.Scripts
             this.isVanillaRightHandedWeapon = isDominantHand;
             item = this.isVanillaRightHandedWeapon ? Player.m_localPlayer.GetRightItem() : Player.m_localPlayer.GetLeftItem();
 
-            itemIsTool = (name == "Hammer" || EquipScript.getRight() == EquipType.Hoe || EquipScript.getRight() == EquipType.Cultivator || EquipScript.getRight() == EquipType.Scythe);
+            var equipType = EquipScript.GetEquipTypeFromHash(itemHash);
+            itemIsTool =
+                equipType == EquipType.Hammer ||
+                equipType == EquipType.Hoe ||
+                equipType == EquipType.Cultivator ||
+                equipType == EquipType.Shovel ||
+                equipType == EquipType.Scythe;
 
             if (colliderParent == null)
             {
                 colliderParent = new GameObject();
             }
 
-            switch (EquipScript.getRight())
+            switch (EquipScript.CurrentMainHandEquipType())
             {
                 case EquipType.Fishing:
                     setScriptActive(false);
@@ -442,7 +478,7 @@ namespace ValheimVRMod.Scripts
                 case EquipType.SpearChitin:
                     if (this.isVanillaRightHandedWeapon)
                     {
-                        item = Player.m_localPlayer.m_unarmedWeapon.m_itemData;
+                        // item = Player.m_localPlayer.m_unarmedWeapon.m_itemData;
                         attack = secondaryAttack = Player.m_localPlayer.m_unarmedWeapon.m_itemData.m_shared.m_attack;
                         break;
                     }
@@ -456,7 +492,7 @@ namespace ValheimVRMod.Scripts
             }
             try
             {
-                WeaponColData colliderData = WeaponUtils.GetColliderData(name, item, meshFilter, handPosition);
+                WeaponColData colliderData = WeaponUtils.GetColliderData(itemHash, item, meshFilter, handPosition);
                 colliderParent.transform.parent = meshTranform;
                 colliderParent.transform.localPosition = colliderData.pos;
                 colliderParent.transform.localRotation = Quaternion.Euler(colliderData.euler);
@@ -556,9 +592,10 @@ namespace ValheimVRMod.Scripts
             }
         }
 
-        private bool hasMomentum(out bool isStab, out bool isBackSlash, out float speed)
+        private bool hasMomentum(bool isShovelScoop, out bool isStab, out bool isBackSlash, out float speed)
         {
             Vector3 velocity;
+            bool shoveling = false;
             if (weaponWield.twoHandedState == WeaponWield.TwoHandedState.SingleHanded)
             {
                 velocity =
@@ -567,6 +604,7 @@ namespace ValheimVRMod.Scripts
                         mainHandPhysicsEstimator.GetAngularVelocity(),
                         LocalWeaponWield.weaponForward.normalized * WEAPON_ANGULAR_WEIGHT_OFFSET);
                 speed = velocity.magnitude;
+                shoveling = (velocity.y > 1f);
             }
             else
             {
@@ -577,28 +615,41 @@ namespace ValheimVRMod.Scripts
                 var rightHandSpeed = Vector3.Dot(rightHandVelocity, direction);
                 speed = Mathf.Max(leftHandSpeed, rightHandSpeed);
                 velocity = direction * speed;
+                shoveling =
+                    weaponWield.twoHandedState == WeaponWield.TwoHandedState.LeftHandBehind ?
+                    rightHandVelocity.y > 0:
+                    leftHandVelocity.y > 0;
             }
 
             isBackSlash = Vector3.Angle(velocity, LocalWeaponWield.weaponForward) > 135;
             isStab = !isBackSlash && WeaponCollision.isStab(velocity);
 
+            if (isShovelScoop && !shoveling)
+            {
+                return false;
+            }
+
             if (weaponWield.twoHandedState == WeaponWield.TwoHandedState.SingleHanded &&
-                EquipScript.getRight() == EquipType.Polearms &&
+                EquipScript.CurrentMainHandEquipType() == EquipType.Polearms &&
                 !TwoHandedGeometry.LocalAtgeirGeometryProvider.UsingArmpitAnchor)
             {
                 // When wielding polearms with only one hand without armpit anchor, make attack harder to trigger
-                return isStab && speed > GetMinSpeed();
+                return isStab && speed > GetMinSpeed(isShovelScoop);
             }
 
-            return isStab || speed > GetMinSpeed();
+            return isStab || speed > GetMinSpeed(isShovelScoop);
         }
 
-        private float GetMinSpeed()
+        private float GetMinSpeed(bool isShovelScoop)
         {
-            switch (EquipScript.getRight())
+            switch (EquipScript.CurrentMainHandEquipType())
             {
                 case EquipType.Hammer:
                     return MIN_HAMMER_SPEED;
+                case EquipType.Shovel:
+                    // The shovel is only used as a tool when scooping; hitting anything else with it is a kick and
+                    // should take as much speed as swinging a weapon.
+                    return isShovelScoop ? MIN_LONG_TOOL_SPEED : VHVRConfig.SwingSpeedRequirement();
                 case EquipType.BattleAxe:
                 case EquipType.Sledge:
                 case EquipType.Polearms:
@@ -625,7 +676,7 @@ namespace ValheimVRMod.Scripts
             return true;
         }
 
-        private static bool isTerrain(GameObject target)
+        public static bool isTerrain(GameObject target)
         {
             return (target.GetComponentInParent<MineRock5>() == null ? target.transform : target.transform.parent).GetComponent<Heightmap>() != null;
         }

@@ -169,7 +169,7 @@ namespace ValheimVRMod.Scripts.Block {
         public void UpdateGrabParry()
         {
             currentHandSource =
-                EquipScript.getLeft() == EquipType.Shield ?
+                EquipScript.CurrentOffHandEquipType() == EquipType.Shield ?
                 VRPlayer.secondaryWeaponHandInputSource :
                 VRPlayer.mainWeaponHandInputSource;
             if (SteamVR_Actions.valheim_Grab.GetState(currentHandSource) && !_meshCooldown.inCoolDown() && !wasParryStart)

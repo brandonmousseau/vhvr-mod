@@ -18,15 +18,21 @@ namespace ValheimVRMod.Scripts
 
         private static readonly EquipType[] TRANSFERABLE_TYPES =
         {
+            EquipType.Axe,
             EquipType.Bow,
+            EquipType.Club,
+            EquipType.Cultivator,
             EquipType.Fishing,
             EquipType.Hammer,
             EquipType.Hoe,
             EquipType.Knife,
             EquipType.Lantern,
+            EquipType.Magic,
             EquipType.Pickaxe,
             EquipType.Scythe,
             EquipType.Shield,
+            EquipType.Shovel,
+            EquipType.Torch,
             EquipType.Tankard,
             EquipType.ThrowObject
         };
@@ -87,8 +93,8 @@ namespace ValheimVRMod.Scripts
             var ulnarsOpposite =
                 Vector3.Dot(VRPlayer.leftHand.transform.forward, VRPlayer.rightHand.transform.forward) < 0;
             var newIsSecondaryWeaponUlnar = FistCollision.ShouldSecondaryKnifeHoldInverse ^ ulnarsOpposite;
-            var isTransferringMainWeapon = (EquipScript.getLeft() == EquipType.None);
-            var isTransferringParryingKnife = (EquipScript.getLeft() == EquipType.Knife);
+            var isTransferringMainWeapon = (EquipScript.CurrentOffHandEquipType() == EquipType.None);
+            var isTransferringParryingKnife = (EquipScript.CurrentOffHandEquipType() == EquipType.Knife);
 
             VRPlayer.offHandWield = !VRPlayer.offHandWield;
 
@@ -102,19 +108,21 @@ namespace ValheimVRMod.Scripts
             }
 
             // Force re-equip to apply new handedness
-            var rightHash = player.m_visEquipment.m_currentRightItemHash;
-            if (rightHash != 0)
+            var rightItemHash = player.m_visEquipment.m_currentRightItemHash;
+            var rightItemQuality = player.m_visEquipment.m_currentRightItemQuality;
+            if (rightItemHash != 0)
             {
-                player.m_visEquipment.SetRightHandEquipped(0);
-                player.m_visEquipment.SetRightHandEquipped(rightHash);
+                player.m_visEquipment.SetRightHandEquipped(0, 0);
+                player.m_visEquipment.SetRightHandEquipped(rightItemHash, rightItemQuality);
             }
 
-            var leftHash = player.m_visEquipment.m_currentLeftItemHash;
-            var leftVariant = player.m_visEquipment.m_currentLeftItemVariant;
-            if (leftHash != 0)
+            var leftItemHash = player.m_visEquipment.m_currentLeftItemHash;
+            var leftItemVariant = player.m_visEquipment.m_currentLeftItemVariant;
+            var leftItemQuality = player.m_visEquipment.m_currentLeftItemQuality;
+            if (leftItemHash != 0)
             {
-                player.m_visEquipment.SetLeftHandEquipped(0, 0);
-                player.m_visEquipment.SetLeftHandEquipped(leftHash, leftVariant);
+                player.m_visEquipment.SetLeftHandEquipped(0, 0, 0);
+                player.m_visEquipment.SetLeftHandEquipped(leftItemHash, leftItemVariant, leftItemQuality);
             }
 
             if (isTransferringParryingKnife)
@@ -151,8 +159,8 @@ namespace ValheimVRMod.Scripts
 
         private bool IsTransferableEquipped()
         {
-            var rightType = EquipScript.getRight();
-            var leftType = EquipScript.getLeft();
+            var rightType = EquipScript.CurrentMainHandEquipType();
+            var leftType = EquipScript.CurrentOffHandEquipType();
 
             foreach (var t in TRANSFERABLE_TYPES)
             {

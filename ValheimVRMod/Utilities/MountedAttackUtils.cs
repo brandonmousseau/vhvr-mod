@@ -1,6 +1,7 @@
-
+﻿
 using HarmonyLib;
 using System.Reflection;
+using ValheimVRMod.Patches;
 using ValheimVRMod.Scripts;
 using Valve.VR;
 
@@ -28,14 +29,28 @@ namespace ValheimVRMod.Utilities
 
         public static void CheckMountedMagicAndCrossbowAttack()
         {
-            if (MagicWeaponManager.AttemptingAttack && !MagicWeaponManager.UseSwingForCurrentAttack())
+            // Bail out before querying the managers when not riding: both SummonerManager#ConsumeAttemptingAttack
+            // and IMagicStaffManager#AttemptingAttack are destructive reads, so polling them here on foot would
+            // steal the attack from Player#SetControls, which is what actually triggers the attack when not riding.
+            if (!IsRiding())
+            {
+                return;
+            }
+
+            var staff = MagicStaffManagers.Current;
+            bool attemptingNonSwingAttack =
+                (SummonerManager.instance != null && SummonerManager.instance.ConsumeAttemptingAttack()) ||
+                (OrbManager.instance != null && OrbManager.instance.AttemptingAttack) ||
+                (staff != null && staff.AttemptingAttack &&
+                 !(SwingableStaffManager.instance != null && SwingableStaffManager.instance.UseSwingForCurrentAttack()));
+            if (attemptingNonSwingAttack)
             {
                 // Swing-launch attack is managed in SwingLaunchManager.
                 StartAttackIfRiding();
             }
-            else if (EquipScript.getLeft() == EquipType.Crossbow && CrossbowManager.IsPullingTrigger())
+            else if (EquipScript.CurrentOffHandEquipType() == EquipType.Crossbow && CrossbowManager.IsPullingTrigger(out bool useSecondaryAttack))
             {
-                StartAttackIfRiding(isSecondaryAttack: false, attackDrawPercentage: 1);
+                StartAttackIfRiding(isSecondaryAttack: useSecondaryAttack, attackDrawPercentage: 1);
             }
         }
 
@@ -63,6 +78,15 @@ namespace ValheimVRMod.Utilities
             }
 
             var player = Player.m_localPlayer;
+            if (player.InAttack())
+            {
+                // Vanilla Humanoid#StartAttack refuses to start an attack while one is already playing. Without
+                // the same check here, a caller that reports an attack attempt on every frame the trigger is held
+                // (e.g. a summoner) would restart the attack each frame, leaving the weapon stuck replaying
+                // the wind-up part of its animation instead of ever releasing its projectile.
+                return false;
+            }
+
             var weapon = player.GetCurrentWeapon();
             if (weapon == null)
             {
@@ -89,7 +113,7 @@ namespace ValheimVRMod.Utilities
                 player.ClearActionQueue();
                 player.StartAttackGroundCheck();
                 player.m_currentAttack = attack;
-                player.m_currentAttackIsSecondary = false;
+                player.m_currentAttackIsSecondary = isSecondaryAttack;
                 player.m_lastCombatTimer = 0f;
                 // Restore the rotation since vanilla attack logic may have changed it.
                 player.transform.rotation = playerRotation;

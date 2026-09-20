@@ -163,6 +163,36 @@
          ]
       },
       "/actions/laserpointers" : {
+         "chords" : [
+            {
+               "inputs" : [
+                  [ "/user/hand/left/input/grip", "click" ],
+                  [ "/user/hand/right/input/grip", "click" ]
+               ],
+               "output" : "/actions/laserpointers/in/middleclick"
+            },
+            {
+               "inputs" : [
+                  [ "/user/hand/right/input/grip", "click" ],
+                  [ "/user/hand/right/input/trigger", "click" ]
+               ],
+               "output" : "/actions/laserpointers/in/addmappin"
+            },
+            {
+               "inputs" : [
+                  [ "/user/hand/right/input/grip", "click" ],
+                  [ "/user/hand/right/input/trigger", "click" ]
+               ],
+               "output" : "/actions/laserpointers/in/discarditem"
+            },
+            {
+               "inputs" : [
+                  [ "/user/hand/left/input/grip", "click" ],
+                  [ "/user/hand/right/input/trigger", "click" ]
+               ],
+               "output" : "/actions/laserpointers/in/splitstack"
+            }
+         ],
          "sources" : [
             {
                "inputs" : {
@@ -176,11 +206,11 @@
             {
                "inputs" : {
                   "click" : {
-                     "output" : "/actions/laserpointers/in/rightclick"
+                     "output" : "/actions/laserpointers/in/leftclick"
                   }
                },
                "mode" : "button",
-               "path" : "/user/hand/right/input/grip"
+               "path" : "/user/hand/left/input/trigger"
             }
          ]
       },
@@ -242,6 +272,30 @@
                   "sub_mode" : "click"
                },
                "path" : "/user/hand/right/input/trackpad"
+            },
+            {
+               "inputs" : {
+                  "east" : {
+                     "output" : "/actions/valheim/in/rightclick"
+                  }
+               },
+               "mode" : "dpad",
+               "parameters" : {
+                  "sub_mode" : "click"
+               },
+               "path" : "/user/hand/right/input/trackpad"
+            },
+            {
+               "inputs" : {
+                  "west" : {
+                     "output" : "/actions/valheim/in/rightclick"
+                  }
+               },
+               "mode" : "dpad",
+               "parameters" : {
+                  "sub_mode" : "click"
+               },
+               "path" : "/user/hand/left/input/trackpad"
             },
             {
                "inputs" : {

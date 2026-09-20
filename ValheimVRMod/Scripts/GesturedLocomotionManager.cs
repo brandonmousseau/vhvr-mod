@@ -12,7 +12,7 @@ namespace ValheimVRMod.Scripts
         private const float WATER_SPEED_CHANGE_DAMPER = 1f;
         private const float AIR_SPEED_CHANGE_DAMPER = 0.25f;
         private const float RUN_ACITIVATION_SPEED = 1.75f;
-        private const float GROUND_RUN_DEACTIVATION_SPEED = 1.125f;
+        private const float GROUND_RUN_DEACTIVATION_SPEED = 0.75f;
         private const float AIR_RUN_DEACTIVATION_SPEED = 0.125f;
         private const float MIN_WATER_SPEED = 0.0625f;
 
@@ -219,7 +219,7 @@ namespace ValheimVRMod.Scripts
 
             public override Vector3 GetTargetVelocityFromGestures(Player player, float deltaTime)
             {
-                var height = Valve.VR.InteractionSystem.Player.instance.eyeHeight;
+                var height = VRPlayer.playerEyeHeight;
                 var verticalSpeed = Vector3.Dot(VRPlayer.headPhysicsEstimator.GetVelocity(), upDirection.Value);
                 if (verticalSpeed < 1)
                 {
@@ -731,7 +731,7 @@ namespace ValheimVRMod.Scripts
                 Vector3 feetToHead = (vrCam.transform.position - feet).normalized;
 
                 if (Vector3.Dot(feetToHead, upDirection.Value) < 0.25f || 
-                    Vector3.Dot(VRPlayer.pelvis.position - feet, upDirection.Value) < 0.125f)
+                    Vector3.Dot(VRPlayer.trackedPelvis.position - feet, upDirection.Value) < 0.125f)
                 {
                     // Supine, stop walking
                     pace = Pace.STOP;
@@ -912,7 +912,7 @@ namespace ValheimVRMod.Scripts
                 }
 
                 var isCrouching = player.IsCrouching();
-                if (!isCrouching && Valve.VR.InteractionSystem.Player.instance.eyeHeight > MAX_HEIGHT * VRPlayer.referencePlayerHeight)
+                if (!isCrouching && VRPlayer.playerEyeHeight > MAX_HEIGHT * VRPlayer.referencePlayerHeight)
                 {
                     return Vector3.zero;
                 }

@@ -295,7 +295,7 @@ namespace ValheimVRMod.Scripts
         public class DundrGeometryProvider : TwoHandedGeometryProvider
         {
             private static readonly Vector3 DUNDR_OFFSET = new Vector3(-0.1f, 0, 0.2f);
-            private static readonly Quaternion DUNDR_OFFSET_ANGLE_LEFT = Quaternion.Euler(-25f, 55f, 0);
+            private static readonly Quaternion DUNDR_OFFSET_ANGLE_LEFT = Quaternion.Euler(-10f, 55f, 0);
             private static readonly Quaternion DUNDR_OFFSET_ANGLE_RIGHT = Quaternion.Euler(0, 55f, 0);
 
             public Vector3 GetWeaponPointingDirection(Transform weaponTransform, Vector3 longestLocalExtrusion)

@@ -193,6 +193,57 @@
          ]
       },
       "/actions/laserpointers" : {
+         "chords" : [
+            {
+               "inputs" : [
+                  [ "/user/hand/right/input/grip", "click" ],
+                  [ "/user/hand/right/input/trackpad", "south" ]
+               ],
+               "output" : "/actions/laserpointers/in/middleclick"
+            },
+            {
+               "inputs" : [
+                  [ "/user/hand/right/input/grip", "click" ],
+                  [ "/user/hand/right/input/trigger", "click" ]
+               ],
+               "output" : "/actions/laserpointers/in/addmappin"
+            },
+            {
+               "inputs" : [
+                  [ "/user/hand/left/input/grip", "click" ],
+                  [ "/user/hand/left/input/trigger", "click" ]
+               ],
+               "output" : "/actions/laserpointers/in/addmappin"
+            },
+            {
+               "inputs" : [
+                  [ "/user/hand/right/input/grip", "click" ],
+                  [ "/user/hand/right/input/trigger", "click" ]
+               ],
+               "output" : "/actions/laserpointers/in/discarditem"
+            },
+            {
+               "inputs" : [
+                  [ "/user/hand/left/input/grip", "click" ],
+                  [ "/user/hand/left/input/trigger", "click" ]
+               ],
+               "output" : "/actions/laserpointers/in/discarditem"
+            },
+            {
+               "inputs" : [
+                  [ "/user/hand/left/input/grip", "click" ],
+                  [ "/user/hand/right/input/trigger", "click" ]
+               ],
+               "output" : "/actions/laserpointers/in/splitstack"
+            },
+            {
+               "inputs" : [
+                  [ "/user/hand/right/input/grip", "click" ],
+                  [ "/user/hand/left/input/trigger", "click" ]
+               ],
+               "output" : "/actions/laserpointers/in/splitstack"
+            }
+         ],
          "poses" : [],
          "skeleton" : [],
          "sources" : [
@@ -212,7 +263,7 @@
             {
                "inputs" : {
                   "click" : {
-                     "output" : "/actions/laserpointers/in/clickmodifier"
+                     "output" : "/actions/laserpointers/in/leftclick"
                   }
                },
                "mode" : "button",
@@ -223,9 +274,6 @@
                "inputs" : {
                   "north" : {
                      "output" : "/actions/laserpointers/in/jump"
-                  },
-                  "south" : {
-                     "output" : "/actions/laserpointers/in/rightclick"
                   }
                },
                "mode" : "dpad",
@@ -395,6 +443,26 @@
                "mode" : "button",
                "parameters" : {},
                "path" : "/user/hand/right/input/application_menu"
+            },
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/valheim/in/rightclick"
+                  }
+               },
+               "mode" : "button",
+               "parameters" : {},
+               "path" : "/user/hand/right/input/application_menu"
+            },
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/valheim/in/rightclick"
+                  }
+               },
+               "mode" : "button",
+               "parameters" : {},
+               "path" : "/user/hand/left/input/application_menu"
             },
             {
                "inputs" : {

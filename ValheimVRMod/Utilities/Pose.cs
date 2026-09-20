@@ -18,20 +18,21 @@ namespace ValheimVRMod.Utilities {
         private enum BackReachLocation
         {
             None,
-            LeftShoulderRadialUp,        // left hand, right (opposite) shoulder
-            LeftShoulderRadialDown,      // left hand, right (opposite) shoulder
+            // Each location is named after the shoulder or waist being reached, not the hand reaching it.
+            LeftShoulderRadialUp,        // right (opposite) hand, left shoulder
+            LeftShoulderRadialDown,      // right (opposite) hand, left shoulder
             LeftShoulderRadialMedial,    // left hand, left (same) shoulder
             LeftShoulderRadialLateral,   // left hand, left (same) shoulder
-            RightShoulderRadialUp,       // right hand, left (opposite) shoulder
-            RightShoulderRadialDown,     // right hand, left (opposite) shoulder
+            RightShoulderRadialUp,       // left (opposite) hand, right shoulder
+            RightShoulderRadialDown,     // left (opposite) hand, right shoulder
             RightShoulderRadialMedial,   // right hand, right (same) shoulder
             RightShoulderRadialLateral,  // right hand, right (same) shoulder
-            LeftWaistRadialForward,      // left hand, right (opposite) waist
-            LeftWaistRadialBackward,     // left hand, right (opposite) waist
+            LeftWaistRadialForward,      // right (opposite) hand, left waist
+            LeftWaistRadialBackward,     // right (opposite) hand, left waist
             LeftWaistRadialMedial,       // left hand, left (same) waist
             LeftWaistRadialLateral,      // left hand, left (same) waist
-            RightWaistRadialForward,     // right hand, left (opposite) waist
-            RightWaistRadialBackward,    // right hand, left (opposite) waist
+            RightWaistRadialForward,     // left (opposite) hand, right waist
+            RightWaistRadialBackward,    // left (opposite) hand, right waist
             RightWaistRadialMedial,      // right hand, right (same) waist
             RightWaistRadialLateral,     // right hand, right (same) waist
         }
@@ -154,12 +155,39 @@ namespace ValheimVRMod.Utilities {
                 return;
             }
 
+            if (LocalWeaponWield.isCurrentlyTwoHanded())
+            {
+                if (isLeftHandDrawingWeapon || isRightHandDrawingWeapon)
+                {
+                    return;
+                }
+                bool isLeftHandHolstering =
+                    leftHandBackReach != BackReachLocation.None &&
+                    grabAction.GetStateUp(SteamVR_Input_Sources.LeftHand) &&
+                    !grabAction.GetState(SteamVR_Input_Sources.RightHand);
+                bool isRightHandHolstering =
+                    rightHandBackReach != BackReachLocation.None &&
+                    grabAction.GetStateUp(SteamVR_Input_Sources.RightHand) &&
+                    !grabAction.GetState(SteamVR_Input_Sources.LeftHand);
+                if (isLeftHandHolstering || isRightHandHolstering) {
+                    if (VRPlayer.leftHandItem != null)
+                    {
+                        PatchHideHandItems.HideLocalPlayerHandItem(isMainHandItem: VRPlayer.isLeftHandMainWeaponHand);
+                    }
+                    if (VRPlayer.rightHandItem != null)
+                    {
+                        PatchHideHandItems.HideLocalPlayerHandItem(isMainHandItem: VRPlayer.isRightHandMainWeaponHand);
+                    }
+                }
+                return;
+            }
+
             if (!isLeftHandDrawingWeapon &&
                 VRPlayer.leftHandItem != null &&
                 leftHandBackReach != BackReachLocation.None &&
                 grabAction.GetStateUp(SteamVR_Input_Sources.LeftHand))
             {
-                PatchHideHandItems.HideLocalPlayerHandItem(VRPlayer.isLeftHandMainWeaponHand);
+                PatchHideHandItems.HideLocalPlayerHandItem(isMainHandItem: VRPlayer.isLeftHandMainWeaponHand);
             }
 
             if (!isRightHandDrawingWeapon &&
@@ -167,13 +195,13 @@ namespace ValheimVRMod.Utilities {
                 rightHandBackReach != BackReachLocation.None &&
                 grabAction.GetStateUp(SteamVR_Input_Sources.RightHand))
             {
-                PatchHideHandItems.HideLocalPlayerHandItem(VRPlayer.isRightHandMainWeaponHand);
+                PatchHideHandItems.HideLocalPlayerHandItem(isMainHandItem: VRPlayer.isRightHandMainWeaponHand);
             }
         }
 
         private static bool checkUnsheathingHolsteredDualWieldWeapon(BackReachLocation leftHandBackReach, BackReachLocation rightHandBackReach)
         {
-            if (!EquipScript.localPlayerHasDualWieldingWeaponHolstered())
+            if (!EquipScript.LocalPlayerHasDualWieldingWeaponHolstered())
             {
                 return false;
             }
@@ -197,12 +225,12 @@ namespace ValheimVRMod.Utilities {
             {
                 return false;
             }
-            if (EquipScript.getLeft() == EquipType.Bow)
+            if (EquipScript.CurrentOffHandEquipType() == EquipType.Bow)
             {
                 BowLocalManager.instance.toggleArrow();
                 return true;
             }
-            if (EquipScript.getLeft() == EquipType.Crossbow)
+            if (EquipScript.CurrentOffHandEquipType() == EquipType.Crossbow)
             {
                 CrossbowMorphManager.instance.toggleBolt();
                 return true;
@@ -213,7 +241,7 @@ namespace ValheimVRMod.Utilities {
         private static bool checkUnsheathingHolsteredNonDualWieldItem(
             bool isRightHand, BackReachLocation backReachLocation)
         {
-            if (!canGrabNewWeapon(isRightHand) || EquipScript.localPlayerHasDualWieldingWeaponHolstered())
+            if (!canGrabNewWeapon(isRightHand) || EquipScript.LocalPlayerHasDualWieldingWeaponHolstered())
             {
                 return false;
             }
@@ -255,15 +283,15 @@ namespace ValheimVRMod.Utilities {
                 return false;
             }
 
-            if (EquipScript.getEquippedItem(item) == EquipType.None)
+            if (EquipScript.GetEquipType(item) == EquipType.None)
             {
                 return false;
             }
 
-            var isDualWieldItem = EquipScript.isDualWeapon(item);
+            var isDualWieldItem = EquipScript.IsDualWeapon(item);
             var isMainHandItem = IsMainHandItem(item);
 
-            if (EquipScript.isDualWeapon(item))
+            if (EquipScript.IsDualWeapon(item))
             {
                 if (!(canGrabNewWeapon(isRightHand: true) && canGrabNewWeapon(isRightHand: false)))
                 {
@@ -353,7 +381,7 @@ namespace ValheimVRMod.Utilities {
             if (leftHandGrabbedBackLocation != BackReachLocation.None &&
                 rightHandGrabbedBackLocation != BackReachLocation.None)
             {
-                if (isDrawingWeapon(leftHandBackReach, VRPlayer.leftHand.transform, VRPlayer.leftFootPhysicsEstimator.GetVelocity()) ||
+                if (isDrawingWeapon(leftHandBackReach, VRPlayer.leftHand.transform, VRPlayer.leftHandPhysicsEstimator.GetVelocity()) ||
                     isDrawingWeapon(rightHandBackReach, VRPlayer.rightHand.transform, VRPlayer.rightHandPhysicsEstimator.GetVelocity()))
                 {
                     var leftLocation = leftHandGrabbedBackLocation;
@@ -375,7 +403,7 @@ namespace ValheimVRMod.Utilities {
             }
 
             if (leftHandGrabbedBackLocation != BackReachLocation.None &&
-                isDrawingWeapon(leftHandBackReach, VRPlayer.leftHand.transform, VRPlayer.leftFootPhysicsEstimator.GetVelocity()))
+                isDrawingWeapon(leftHandBackReach, VRPlayer.leftHand.transform, VRPlayer.leftHandPhysicsEstimator.GetVelocity()))
             {
                 var location = leftHandGrabbedBackLocation;
                 leftHandGrabbedBackLocation = BackReachLocation.None;
@@ -437,9 +465,9 @@ namespace ValheimVRMod.Utilities {
 
         private static bool IsMainHandItem(ItemDrop.ItemData item)
         {
-            if (EquipScript.getEquippedItem(item) == EquipType.Knife)
+            if (EquipScript.GetEquipType(item) == EquipType.Knife)
             {
-                return !EquipScript.isCompatibleWithParryingKnife();
+                return !EquipScript.IsCompatibleWithParryingKnife();
             }
 
             if (item == Player.m_localPlayer.m_hiddenLeftItem)
@@ -447,7 +475,7 @@ namespace ValheimVRMod.Utilities {
                 return false;
             }
 
-            return item == Player.m_localPlayer.m_hiddenRightItem || EquipScript.IsDominantHandItem(item);
+            return item == Player.m_localPlayer.m_hiddenRightItem || EquipScript.CanUseAsMainHandItem(item);
         }
 
         private static int rightHandBackReachToInventory(BackReachLocation backReachLocation)
@@ -533,18 +561,18 @@ namespace ValheimVRMod.Utilities {
                 return BackReachLocation.None;
             }
 
-            bool trackPelvis = (VHVRConfig.IsHipTrackingEnabled() && VRPlayer.pelvis != null);
+            bool trackPelvis = (VHVRConfig.IsHipTrackingEnabled() && VRPlayer.trackedPelvis != null);
 
             Vector3 playerUp =
                 trackPelvis ?
-                (vrCam.transform.position - VRPlayer.pelvis.transform.position).normalized :
+                (vrCam.transform.position - VRPlayer.trackedPelvis.position).normalized :
                 vrCam.transform.parent.up;
 
             Vector3 offsetFromHead = handTransform.position - vrCam.transform.position;
 
             float verticalOffset = Vector3.Dot(playerUp, offsetFromHead);
 
-            bool reachingShoulder = verticalOffset >= -0.25f && verticalOffset <= 0.25f;
+            bool reachingShoulder = verticalOffset >= -0.25f && verticalOffset <= 0.125f;
             bool reachingWaist = verticalOffset >= -0.75f && verticalOffset < -0.375f;
             if (!reachingShoulder && !reachingWaist)
             {
@@ -552,7 +580,7 @@ namespace ValheimVRMod.Utilities {
             }
 
             Vector3 facing =
-                Vector3.ProjectOnPlane(trackPelvis ? VRPlayer.pelvis.transform.forward : vrCam.transform.forward, playerUp).normalized;
+                Vector3.ProjectOnPlane(trackPelvis ? VRPlayer.trackedPelvis.forward : vrCam.transform.forward, playerUp).normalized;
             Vector3 playerRight = Vector3.Cross(playerUp, facing);
 
             float lateralOffset = Vector3.Dot(offsetFromHead, playerRight);
@@ -565,20 +593,27 @@ namespace ValheimVRMod.Utilities {
 
             bool contralateral = (isRightHand ^ reachingRight);
 
-            if (contralateral ?
-                sagittalOffset > 0.0625f :
-                sagittalOffset > -0.0625f)
+            if (contralateral)
+            {
+                if (sagittalOffset > 0.125f)
+                {
+                    return BackReachLocation.None;
+                }
+
+                if (reachingShoulder && verticalOffset < -0.2f)
+                {
+                    return BackReachLocation.None;
+                }
+            }
+            else if (sagittalOffset > -0.0625f)
             {
                 return BackReachLocation.None;
-            }
-
-            if (!contralateral && Mathf.Abs(lateralOffset) > 0.5f)
+            } 
+            else if (Mathf.Abs(lateralOffset) > 0.5f)
             {
-                return BackReachLocation.None;
+               return BackReachLocation.None;
             }
-
-            if (!contralateral && reachingWaist &&
-                sagittalOffset + Mathf.Abs(lateralOffset) * 0.75f > 0)
+            else if (reachingWaist && sagittalOffset + Mathf.Abs(lateralOffset) * 0.75f > 0)
             {
                 return BackReachLocation.None;
             }
@@ -589,9 +624,11 @@ namespace ValheimVRMod.Utilities {
                 {
                     if (contralateral)
                     {
-                        return Vector3.Dot(handTransform.forward, playerRight + playerUp) > 0 ?
+                        return Vector3.Dot(handTransform.forward, playerRight + playerUp) < 0 ?
+                            BackReachLocation.RightShoulderRadialDown :
+                            sagittalOffset < 0 || verticalOffset < -0.1f ?
                             BackReachLocation.RightShoulderRadialUp :
-                            BackReachLocation.RightShoulderRadialDown;
+                            BackReachLocation.None;
                     }
                     return Vector3.Dot(handTransform.forward, playerRight) > 0 &&
                         Vector3.Dot(handTransform.forward, playerUp) > 0 ?
@@ -602,9 +639,11 @@ namespace ValheimVRMod.Utilities {
                 {
                     if (contralateral)
                     {
-                        return Vector3.Dot(handTransform.forward, playerRight - playerUp) < 0 ?
+                        return Vector3.Dot(handTransform.forward, playerRight - playerUp) > 0 ?
+                            BackReachLocation.LeftShoulderRadialDown :
+                            sagittalOffset < 0 || verticalOffset < -0.1f ?
                             BackReachLocation.LeftShoulderRadialUp :
-                            BackReachLocation.LeftShoulderRadialDown;
+                            BackReachLocation.None;
                     }
                     return Vector3.Dot(handTransform.forward, playerRight) < 0 &&
                         Vector3.Dot(handTransform.forward, playerUp) > 0 ?
@@ -648,15 +687,15 @@ namespace ValheimVRMod.Utilities {
 
         private static bool canGrabNewWeapon(bool isRightHand)
         {
-            if (EquipScript.getRight() == EquipType.Claws)
+            if (EquipScript.CurrentMainHandEquipType() == EquipType.Claws)
             {
                 return true;
             }
 
-            if (EquipScript.getLeft() == EquipType.Bow
-                || EquipScript.getLeft() == EquipType.Crossbow
-                || EquipScript.getRight() == EquipType.Polearms
-                || EquipScript.getRight() == EquipType.BattleAxe
+            if (EquipScript.CurrentOffHandEquipType() == EquipType.Bow
+                || EquipScript.CurrentOffHandEquipType() == EquipType.Crossbow
+                || EquipScript.CurrentMainHandEquipType() == EquipType.Polearms
+                || EquipScript.CurrentMainHandEquipType() == EquipType.BattleAxe
                 || FistCollision.hasDualWieldingWeaponEquipped()
                 || Player.m_localPlayer == null
                 || Player.m_localPlayer.m_inCraftingStation)
@@ -665,7 +704,7 @@ namespace ValheimVRMod.Utilities {
             }
 
             var item = isRightHand ? VRPlayer.rightHandItem : VRPlayer.leftHandItem;
-            return item == null ||  EquipScript.getEquippedItem(item) == EquipType.None;
+            return item == null ||  EquipScript.GetEquipType(item) == EquipType.None;
         }
 
         private static void playEquippingHaptic(bool leftHand, bool rightHand) {

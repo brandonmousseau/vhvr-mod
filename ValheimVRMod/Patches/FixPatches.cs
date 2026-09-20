@@ -1,7 +1,9 @@
+using System.Collections;
 using System.Collections.Generic;
 using HarmonyLib;
 using UnityEngine;
 using ValheimVRMod.VRCore;
+using ValheimVRMod.VRCore.UI;
 using ValheimVRMod.Utilities;
 using Valve.VR.InteractionSystem;
 using Valheim.SettingsGui;
@@ -51,6 +53,57 @@ namespace ValheimVRMod.Patches {
             // Force-disable frame scaling since it would cause the game world to disappear in VR.
             UpscaledFrameBuffer.m_targetResolutionVertical = int.MaxValue;
             return false;
+        }
+    }
+
+    // Holds the startup intro until the VR GUI can show it, so that it plays on the UI panel like every
+    // other cinematic (see CinematicsManager_Play_Patch) instead of on CinematicsManager's own flat camera.
+    // FejdStartup.Start() starts this coroutine as its last statement, well before VR has finished coming
+    // up, and its very first statement hides the main menu and plays the video. Wrapping the returned
+    // iterator therefore also defers hiding the menu, so the player looks at the menu on the VR panel while
+    // VR initializes rather than at nothing.
+    // assembly_valheim is publicized at build time, so nameof() here turns a rename by Iron Gate into a build
+    // failure instead of a patch that silently stops applying.
+    [HarmonyPatch(typeof(FejdStartup), nameof(FejdStartup.TryPlayIntroCinematic))]
+    class IntroCinematicVrDelayPatch
+    {
+        // A backstop against a SteamVR that never finishes starting, not the normal path. Giving up here
+        // costs only the VR presentation of the intro: the video still plays, on the flat screen, and
+        // ValheimVRMod.InitializeVRAndCreateRig() then holds the VR rig back until it is over.
+        private const float TIMEOUT_SECONDS = 10f;
+
+        static void Postfix(ref IEnumerator __result)
+        {
+            if (VHVRConfig.NonVrPlayer() || __result == null)
+            {
+                return;
+            }
+            __result = PlayOnceVrIsReady(__result);
+        }
+
+        private static IEnumerator PlayOnceVrIsReady(IEnumerator playIntroCinematic)
+        {
+            float deadline = Time.realtimeSinceStartup + TIMEOUT_SECONDS;
+            // NonVrPlayer() covers both flat screen mode and VR failing to initialize, in which case it
+            // starts returning true and there is nothing left to wait for.
+            while (!VHVRConfig.NonVrPlayer() &&
+                !VRGUI.isReadyToShowCinematic &&
+                Time.realtimeSinceStartup < deadline)
+            {
+                yield return null;
+            }
+
+            if (!VHVRConfig.NonVrPlayer() && !VRGUI.isReadyToShowCinematic)
+            {
+                LogUtils.LogWarning(
+                    "VR GUI was not ready after " + TIMEOUT_SECONDS +
+                    "s, playing the startup cinematic on the flat screen.");
+            }
+
+            while (playIntroCinematic.MoveNext())
+            {
+                yield return playIntroCinematic.Current;
+            }
         }
     }
 
@@ -139,7 +192,7 @@ namespace ValheimVRMod.Patches {
                 return;
             }
 
-            if (!EquipScript.shouldSkipAttackAnimation() || ___m_character.IsStaggering() || !VRPlayer.attachedToPlayer)
+            if (!EquipScript.ShouldSkipAttackAnimation() || ___m_character.IsStaggering() || !VRPlayer.attachedToPlayer)
             {
                 ___m_animator.speed = 1f;
                 return;

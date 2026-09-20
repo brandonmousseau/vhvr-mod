@@ -1,6 +1,7 @@
-using UnityEngine;
+﻿using UnityEngine;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
+using ValheimVRMod.VRCore.UI;
 using Valve.VR;
 
 namespace ValheimVRMod.Scripts
@@ -18,14 +19,31 @@ namespace ValheimVRMod.Scripts
         public static bool isThrowing;
         private static bool preparingThrow;
 
-        protected SteamVR_Action_Boolean mainHandInputAction { get { return VRPlayer.isRightHandMainWeaponHand ? SteamVR_Actions.valheim_Use : SteamVR_Actions.valheim_UseLeft; } }
+        public static bool isRightHandRear { get { return LocalWeaponWield.LocalPlayerTwoHandedState == WeaponWield.TwoHandedState.RightHandBehind; } }
+        public static SteamVR_Input_Sources frontHandInputSource { get { return isRightHandRear ? SteamVR_Input_Sources.LeftHand : SteamVR_Input_Sources.RightHand; } }
+        public static SteamVR_Action_Boolean frontHandTriggerAction { get { return isRightHandRear ? SteamVR_Actions.valheim_UseLeft : SteamVR_Actions.valheim_Use; } }
+        private static SteamVR_Action_Boolean mainWeaponHandTriggerAction { get { return VRPlayer.isRightHandMainWeaponHand ? SteamVR_Actions.valheim_Use : SteamVR_Actions.valheim_UseLeft; } }
+
+        protected SteamVR_Action_Boolean mainHandInputAction { get { return LocalWeaponWield.isCurrentlyTwoHanded() ? frontHandTriggerAction : mainWeaponHandTriggerAction; } }
+        private SteamVR_Input_Sources swingInputSource { get { return LocalWeaponWield.isCurrentlyTwoHanded() ? frontHandInputSource : VRPlayer.mainWeaponHandInputSource; } }
         private LocalWeaponWield weaponWield { get { return gameObject.GetComponentInParent<LocalWeaponWield>(); } }
         private PhysicsEstimator handPhysicsEstimator { get { return VRPlayer.isRightHandMainWeaponHand ? VRPlayer.rightHandPhysicsEstimator : VRPlayer.leftHandPhysicsEstimator; } }
         private float peakSpeed = 0;
 
         protected virtual void OnRenderObject()
         {
-            if (mainHandInputAction.GetStateDown(VRPlayer.mainWeaponHandInputSource))
+            // The item may already be unequipped while its instance awaits destruction at the end of the frame.
+            if (Player.m_localPlayer == null || Player.m_localPlayer.GetRightItem() == null)
+            {
+                return;
+            }
+
+            // The laserPointers action set masks the Valheim set while it is up, so the trigger edges around
+            // that transition are not the player's: a trigger still held when a container closes reads as a
+            // fresh press the moment the mask lifts. Arming the throw on that would let the next hand movement
+            // launch a projectile the player never asked for, which is especially easy to hit while fishing
+            // since FishingManager casts on speed alone without waiting for the trigger to be released.
+            if (!VRControls.laserControlsInTransition && mainHandInputAction.GetStateDown(swingInputSource))
             {
                 preparingThrow = true;
                 peakSpeed = 0;
@@ -76,7 +94,14 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            if (ReleaseTriggerToAttack() && !mainHandInputAction.GetStateUp(VRPlayer.mainWeaponHandInputSource))
+            if (VRControls.laserControlsInTransition)
+            {
+                // See the comment in OnRenderObject(): the trigger edges are not trustworthy right now, and
+                // ReleaseTriggerToAttack() below reads one of them.
+                return;
+            }
+
+            if (ReleaseTriggerToAttack() && !mainHandInputAction.GetStateUp(swingInputSource))
             {
                 return;
             }
@@ -92,8 +117,11 @@ namespace ValheimVRMod.Scripts
 
         protected virtual Vector3 GetProjectileSpawnPoint()
         {
-            // TODO: Consider moving MagicWeaponManager.GetProjectileSpawnPoint() to WeaponUtils since its logic is not specific to magic weapons.
-            return MagicWeaponManager.GetProjectileSpawnPoint(Player.m_localPlayer.GetRightItem().m_shared.m_attack);
+            // TODO: Consider moving this default to WeaponUtils since its logic is not specific to magic weapons.
+            return MagicStaffUtils.GetProjectileSpawnPoint(
+                Player.m_localPlayer.GetRightItem().m_shared.m_attack,
+                LocalWeaponWield.weaponForward.normalized,
+                MagicStaffUtils.WeaponHandPointer);
         }
 
         protected virtual bool ReleaseTriggerToAttack()

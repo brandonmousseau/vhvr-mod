@@ -25,22 +25,6 @@ namespace Valve.VR
             }
         }
         
-        public virtual SteamVR_Action_Boolean RightClick
-        {
-            get
-            {
-                return SteamVR_Actions.laserPointers_RightClick;
-            }
-        }
-        
-        public virtual SteamVR_Action_Boolean ClickModifier
-        {
-            get
-            {
-                return SteamVR_Actions.laserPointers_ClickModifier;
-            }
-        }
-        
         public virtual SteamVR_Action_Boolean Jump
         {
             get
@@ -54,6 +38,38 @@ namespace Valve.VR
             get
             {
                 return SteamVR_Actions.laserPointers_PitchAndYaw;
+            }
+        }
+        
+        public virtual SteamVR_Action_Boolean AddMapPin
+        {
+            get
+            {
+                return SteamVR_Actions.laserPointers_AddMapPin;
+            }
+        }
+        
+        public virtual SteamVR_Action_Boolean MiddleClick
+        {
+            get
+            {
+                return SteamVR_Actions.laserPointers_MiddleClick;
+            }
+        }
+        
+        public virtual SteamVR_Action_Boolean DiscardItem
+        {
+            get
+            {
+                return SteamVR_Actions.laserPointers_DiscardItem;
+            }
+        }
+        
+        public virtual SteamVR_Action_Boolean SplitStack
+        {
+            get
+            {
+                return SteamVR_Actions.laserPointers_SplitStack;
             }
         }
     }

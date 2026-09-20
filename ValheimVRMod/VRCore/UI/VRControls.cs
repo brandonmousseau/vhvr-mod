@@ -1,11 +1,12 @@
+using static ValheimVRMod.Utilities.LogUtils;
+
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
-using Valve.VR;
+using ValheimVRMod.Patches;
 using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
-
-using static ValheimVRMod.Utilities.LogUtils;
-using System.Linq;
+using Valve.VR;
 
 namespace ValheimVRMod.VRCore.UI
 {
@@ -28,7 +29,8 @@ namespace ValheimVRMod.VRCore.UI
         private float altPieceRotationElapsedTime = 0f;
         private bool altPieceTriggered = false;
         private bool wasAltPieceTriggered = false;
-        private float buildQuickActionTimer;
+        private float leftQuickMenuHoldTime;
+        private float rightQuickMenuHoldTime;
         float? altMapZoomInHoldCountdown = null;
         float? altMapZoomOutHoldCountdown = null;
 
@@ -57,13 +59,11 @@ namespace ValheimVRMod.VRCore.UI
         // Action for "Use" using the left hand controller
         private SteamVR_Action_Boolean _useLeftHand = SteamVR_Actions.valheim_UseLeft;
 
-        // An input where the user holds down the button when clicking for an alternate behavior (ie, stack split)
-        private SteamVR_Action_Boolean _clickModifier = SteamVR_Actions.laserPointers_ClickModifier;
-
         public SteamVR_Action_Boolean useLeftHandAction { get
             {
                 return _useLeftHand;
-            } }
+            }
+        }
 
         private float recenteringPoseDuration;
 
@@ -83,6 +83,24 @@ namespace ValheimVRMod.VRCore.UI
             }
         }
 
+        // An action set activating or deactivating at a higher priority takes the physical controls away from
+        // the Valheim set, or hands them back, and SteamVR reports that as an edge the player never made: a
+        // trigger that is still held when a container closes reads as a fresh press the moment the laserPointers
+        // set lets go of it, and an edge that happens while the set holds the control is dropped entirely
+        // (SteamVR_Action_Boolean_Source.stateDown/stateUp are gated on `active`). The ZInput path already
+        // compensates for this (see MaybeReleaseZInputButton() and the laserPointers_LeftClick state-up listener
+        // below); anything that reads the Valheim actions' edges directly should ignore them while this is true.
+        // The window spans the change and the following frame because OpenVR only applies the new set priority
+        // on its next action update, which may land in either frame depending on script execution order.
+        public static bool laserControlsInTransition
+        {
+            get { return Time.frameCount - laserControlsChangedFrame < LASER_CONTROLS_TRANSITION_FRAMES; }
+        }
+
+        private const int LASER_CONTROLS_TRANSITION_FRAMES = 2;
+        // How long the quick menu button has to be held to open the menu instead of counting as a right click.
+        private const float QUICK_MENU_HOLD_TIME = 0.3f;
+        private static int laserControlsChangedFrame = -LASER_CONTROLS_TRANSITION_FRAMES;
         public static float smoothWalkX { get { return smoothWalkVelocity.x; } }
         public static float smoothWalkY { get { return smoothWalkVelocity.y; } }
         public static bool isAutoRunActive;
@@ -103,6 +121,7 @@ namespace ValheimVRMod.VRCore.UI
             init();
             recenteringPoseDuration = 0f;
             _instance = this;
+            gameObject.GetOrAddComponent<VoiceChat>();
         }
 
         void Update()
@@ -130,10 +149,16 @@ namespace ValheimVRMod.VRCore.UI
                 StaticObjects.leftHandQuickMenu.GetComponent<LeftHandQuickMenu>().refreshItems();
             }
 
-            checkQuickItems<RightHandQuickMenu>(StaticObjects.rightHandQuickMenu, SteamVR_Actions.valheim_QuickSwitch, true);
-            checkQuickItems<LeftHandQuickMenu>(StaticObjects.leftHandQuickMenu, SteamVR_Actions.valheim_QuickActions, false);
+            checkQuickItems<RightHandQuickMenu>(
+                StaticObjects.rightHandQuickMenu, SteamVR_Actions.valheim_QuickSwitch, ref rightQuickMenuHoldTime);
+            checkQuickItems<LeftHandQuickMenu>(
+                StaticObjects.leftHandQuickMenu, SteamVR_Actions.valheim_QuickActions, ref leftQuickMenuHoldTime);
 
-            if (QuickAbstract.shouldStartChat && Chat.instance.HasFocus())
+            // Skip while the SteamVR virtual keyboard is driving chat input: that flow submits/
+            // cancels via its own keyboard-closed event (see InputManager.OnKeyboardClosed), and
+            // this grip-based confirm/cancel gesture handling is for the physical-keyboard flow
+            // only - both would otherwise race once the chat window gains focus.
+            if (QuickAbstract.shouldStartChat && Chat.instance.HasFocus() && !InputManager.chatKeyboardActive)
             {
                 if (SteamVR_Actions.default_GrabGrip.GetState(SteamVR_Input_Sources.Any) ||
                     SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.Any)) {
@@ -364,50 +389,43 @@ namespace ValheimVRMod.VRCore.UI
             }
         }
         
-        private void checkQuickItems<T>(GameObject obj, SteamVR_Action_Boolean action, bool useRightClick) where T : QuickAbstract {
-            
+        // Opens the quick menu while its button is held and selects the hovered item when it is released.
+        // Limited inputs make the quick menu buttons double as the laser pointers' right click, which the bindings
+        // put on the same buttons (see bindings_*.json), so while a pointer is active the menu waits for the button
+        // to be held to tell it apart from a click.
+        private void checkQuickItems<T>(GameObject obj, SteamVR_Action_Boolean action, ref float holdTime) where T : QuickAbstract {
             if (!obj) {
                 return;
             }
 
-            // Due to complicated bindings/limited inputs, the QuickSwitch and Right click are sharing a button
-            // and when the hammer is equipped, the bindings conflict... so we'll share the right click button
-            // here to activate quick switch. This is hacky because rebinding things can break the controls, but
-            // it works and allows users to use the quick select while the hammer is equipped.
-            bool rightClickDown = false;
-            bool rightClickUp = false;
-            if (useRightClick && laserControlsActive && inPlaceMode())
+            if (!action.GetState(SteamVR_Input_Sources.Any))
             {
-                rightClickDown = SteamVR_Actions.laserPointers_RightClick.GetState(SteamVR_Input_Sources.Any);
-                rightClickUp = SteamVR_Actions.laserPointers_RightClick.GetStateUp(SteamVR_Input_Sources.Any);
-                if(rightClickDown)
-                    buildQuickActionTimer += Time.unscaledDeltaTime;
-            }
-            
-            if (action.GetStateDown(SteamVR_Input_Sources.Any) || rightClickDown) {
-                if (inPlaceMode())
+                holdTime = 0;
+                if (obj.activeSelf)
                 {
-                    if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand))
-                    {
-                        buildQuickActionTimer = 1;
-                    }
-                    if ((buildQuickActionTimer >= 0.3f || !useRightClick))
-                        obj.SetActive(true);
+                    obj.GetComponent<T>().selectHoveredItem();
+                    obj.SetActive(false);
                 }
-                else
-                    obj.SetActive(true);
+                return;
             }
 
-            if (action.GetStateUp(SteamVR_Input_Sources.Any) || rightClickUp) {
-                if (inPlaceMode() && (buildQuickActionTimer >= 0.3f || !useRightClick))
-                    obj.GetComponent<T>().selectHoveredItem();
-                else if(!inPlaceMode())
-                    obj.GetComponent<T>().selectHoveredItem();
-
-                if (useRightClick)
-                    buildQuickActionTimer = 0;
-                obj.SetActive(false);
+            if (laserControlsActive)
+            {
+                // A click that is part of a chord (e.g. the middle click that favorites a build piece, which uses
+                // this same button) is not a menu request either, so it must not count towards the hold.
+                if (LaserPointerChords.isRightClickSuppressed)
+                {
+                    obj.SetActive(false);
+                    return;
+                }
+                holdTime += Time.unscaledDeltaTime;
+                // In place mode the menu opens right away, the right click (the build menu) is left to share the press.
+                if (!inPlaceMode() && holdTime < QUICK_MENU_HOLD_TIME)
+                {
+                    return;
+                }
             }
+            obj.SetActive(true);
         }
 
         private void checkRecenterPose(float dt)
@@ -462,16 +480,22 @@ namespace ValheimVRMod.VRCore.UI
         {
             if (!mainActionSet.IsActive())
             {
-                laserActionSet.Deactivate();
+                if (laserActionSet.IsActive())
+                {
+                    laserActionSet.Deactivate();
+                    laserControlsChangedFrame = Time.frameCount;
+                }
                 return;
             }
             if (laserActionSet.IsActive() && VRPlayer.activePointer == null)
             {
                 laserActionSet.Deactivate();
+                laserControlsChangedFrame = Time.frameCount;
             }
             else if (!laserActionSet.IsActive() && VRPlayer.activePointer != null)
             {
                 laserActionSet.Activate(SteamVR_Input_Sources.Any, 1 /* Higher priority than main action set */);
+                laserControlsChangedFrame = Time.frameCount;
             }
         }
 
@@ -510,6 +534,14 @@ namespace ValheimVRMod.VRCore.UI
                     return contextScroll.axis.y > 0;
                 }
             }
+            if (zinput == "JoyPlace")
+            {
+                return LaserPointerChords.leftClickDown;
+            }
+            if (zinput == "BuildMenu")
+            {
+                return LaserPointerChords.rightClickDown;
+            }
             SteamVR_Action_Boolean[] action;
             zInputToBooleanAction.TryGetValue(zinput, out action);
             if (action == null)
@@ -541,6 +573,14 @@ namespace ValheimVRMod.VRCore.UI
             if (zinput == "JoyAltPlace")
             {
                 return CheckAltButton();
+            }
+            if (zinput == "JoyPlace")
+            {
+                return LaserPointerChords.leftClick;
+            }
+            if (zinput == "BuildMenu")
+            {
+                return LaserPointerChords.rightClick;
             }
             SteamVR_Action_Boolean[] action;
             zInputToBooleanAction.TryGetValue(zinput, out action);
@@ -576,6 +616,14 @@ namespace ValheimVRMod.VRCore.UI
             if (zinput == "Remove" && !canRemovePiece())
             {
                 return false;
+            }
+            if (zinput == "JoyPlace")
+            {
+                return LaserPointerChords.leftClickUp;
+            }
+            if (zinput == "BuildMenu")
+            {
+                return LaserPointerChords.rightClickUp;
             }
             SteamVR_Action_Boolean[] action;
             zInputToBooleanAction.TryGetValue(zinput, out action);
@@ -744,9 +792,10 @@ namespace ValheimVRMod.VRCore.UI
             //}
         }
 
+        // The grab button of a hand whose laser pointer is active, which modifies the building controls (the
+        // reference plane, snapping off, exclusive snap and the rotation gizmo) while in place mode.
         public bool getClickModifier()
         {
-            // TODO: update _clickModifier in the action set to use grab buttons. It is obsoletely bound to left controller trigger now and cannot be used here.
             if (VRPlayer.leftPointer.pointerIsActive() && SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand))
             {
                 return true;
@@ -755,7 +804,7 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return true;
             }
-            return _clickModifier.GetState(SteamVR_Input_Sources.Any);
+            return false;
         }
 
         private int getAltPieceRotation()
@@ -879,8 +928,10 @@ namespace ValheimVRMod.VRCore.UI
             zInputToBooleanAction.Add("AutoPickup", new[] { SteamVR_Actions.valheim_ToggleAutoPickup });
             zInputToBooleanAction.Add(ToggleMiniMap, new[] { SteamVR_Actions.valheim_ToggleMap });
 
-            // These placement commands re-use some of the normal game inputs
-            zInputToBooleanAction.Add("BuildMenu", new[] { SteamVR_Actions.laserPointers_RightClick });
+            // These placement commands re-use some of the normal game inputs. They are read from the laser pointer
+            // clicks as filtered by LaserPointerChords (see GetButton*() and registerBooleanActionListeners()), the
+            // entries here only keep them from being treated as unmapped.
+            zInputToBooleanAction.Add("BuildMenu", new[] { SteamVR_Actions.valheim_RightClick });
             zInputToBooleanAction.Add("JoyPlace", new[] { SteamVR_Actions.laserPointers_LeftClick });
             zInputToBooleanAction.Add("Remove", new[] { SteamVR_Actions.valheim_Jump, SteamVR_Actions.laserPointers_Jump });
 
@@ -899,6 +950,7 @@ namespace ValheimVRMod.VRCore.UI
             // actual button states in ZInput.
             registerBooleanActionListeners();
             registerContextScrollListener();
+            LaserPointerChords.Initialize();
         }
 
         private void registerBooleanActionListeners()
@@ -906,6 +958,11 @@ namespace ValheimVRMod.VRCore.UI
             foreach (var entry in zInputToBooleanAction)
             {
                 var buttonName = entry.Key;
+                if (buttonName == "JoyPlace" || buttonName == "BuildMenu")
+                {
+                    // Pressed and released by LaserPointerChords, which hides clicks that are part of a chord.
+                    continue;
+                }
                 foreach (var action in entry.Value)
                 {
                     // TODO: add listener of map zoom too
@@ -933,10 +990,22 @@ namespace ValheimVRMod.VRCore.UI
                     }
 
                     action.AddOnStateUpListener(
-                        (fromAction, fromSource) => GetButtonPatchUtils.Release(buttonName),
+                        (fromAction, fromSource) => MaybeReleaseZInputButton(buttonName),
                         SteamVR_Input_Sources.Any);
                 }
             }
+
+            // valheim_Use is masked while a laser pointer is active, so once the laserPointers set
+            // takes the trigger, valheim_Use never reports state-up again and "Use" would stay held
+            // forever. Release it when the physical trigger lifts under the other action instead.
+            SteamVR_Actions.laserPointers_LeftClick.AddOnStateUpListener(
+                (fromAction, fromSource) => {
+                    if (!SteamVR_Actions.valheim_Use.GetState(SteamVR_Input_Sources.Any))
+                    {
+                        GetButtonPatchUtils.Release("Use");
+                    }
+                },
+                SteamVR_Input_Sources.Any);
 
             SteamVR_Actions.valheim_ToggleMap.AddOnStateDownListener(
                 (fromAction, fromSource) => {
@@ -950,6 +1019,21 @@ namespace ValheimVRMod.VRCore.UI
                         GetButtonPatchUtils.Release("Map");
                 },
                 SteamVR_Input_Sources.Any);
+        }
+
+        // An action set activating at a higher priority steals the physical control from a lower one,
+        // which makes the lower action report state-up even though the button is still physically
+        // down. Releasing the ZInput button on that would be a lie: opening a container activates the
+        // laserPointers set, and both it and the Valheim set bind the same trigger, so "Use" would go
+        // false mid-press and break anything that needs an unbroken hold.
+        private static void MaybeReleaseZInputButton(string buttonName)
+        {
+            if (buttonName == "Use" &&
+                SteamVR_Actions.laserPointers_LeftClick.GetState(SteamVR_Input_Sources.Any))
+            {
+                return;
+            }
+            GetButtonPatchUtils.Release(buttonName);
         }
 
         private void registerContextScrollListener()

@@ -81,6 +81,14 @@ namespace Valve.VR
             }
         }
         
+        public virtual SteamVR_Action_Pose BodyPose
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_BodyPose;
+            }
+        }
+        
         public virtual SteamVR_Action_Boolean HotbarUp
         {
             get
@@ -214,6 +222,14 @@ namespace Valve.VR
             get
             {
                 return SteamVR_Actions.valheim_ToggleAutoPickup;
+            }
+        }
+        
+        public virtual SteamVR_Action_Boolean RightClick
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_RightClick;
             }
         }
         

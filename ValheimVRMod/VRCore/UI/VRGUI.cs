@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
+using ValheimVRMod.Patches;
 using ValheimVRMod.Utilities;
 using Valve.VR;
 using Valve.VR.Extras;
@@ -89,6 +90,13 @@ namespace ValheimVRMod.VRCore.UI
         private static Vector3 desiredSize;
         private static Vector3 desiredHandAttachedSize;
         private static Vector3 desiredOffset;
+        private static bool isBuildMenuOpen
+        {
+            // Since Valheim 1.0 the build menu is the BuildUi component; the legacy
+            // m_pieceSelectionWindow still exists but Hud.Awake() deactivates it and never brings it
+            // back, so checking it here left the panel permanently unattachable.
+            get { return Hud.IsPieceSelectionVisible(); }
+        }
 
         private float OVERLAY_CURVATURE = 0.25f; /* 0f - 1f */
         private bool USING_OVERLAY = true;
@@ -100,6 +108,11 @@ namespace ValheimVRMod.VRCore.UI
         private Canvas _hudGuiCanvas;
         private Canvas _chatBox;
         private static Transform _uiPanel;
+        // Whether onGuiCanvasFound() has run, which is where the GUI camera is positioned and given its
+        // orthographic size. Before that it still has Unity's default size of 5, so anything laid out in
+        // GUI_DIMENSIONS units would be drawn hugely magnified.
+        private static bool hasConfiguredGuiCamera;
+        private static bool hasCreatedOverlay;
         private Transform _uiPanelTransformLocker;
         private RenderTexture _guiTexture;
         private RenderTexture _overlayTexture;
@@ -113,8 +126,11 @@ namespace ValheimVRMod.VRCore.UI
         private bool movingLastFrame = false;
         private Quaternion lastVrPlayerRotation = Quaternion.identity;
         private bool showingChatBox = false;
-        private bool isInventoryOrBuildMenuOpen;
+        private bool isAttachableToHandAsInventoryOrBuildMenu;
         private bool attachedToHand;
+        // Whether the panel was last detached from the hand because the SteamVR keyboard opened, and so
+        // should go back on the hand once the keyboard closes.
+        private bool reattachWhenKeyboardCloses;
 
         // Native handle to OpenVR overlay
         private ulong _overlay = OpenVR.k_ulOverlayHandleInvalid;
@@ -219,6 +235,7 @@ namespace ValheimVRMod.VRCore.UI
             bool rightButtonPressed = Input.GetMouseButton(1);
             bool middleButtonPressed = Input.GetMouseButton(2);
             _inputModule.UpdateButtonStates(leftButtonPressed, rightButtonPressed, middleButtonPressed);
+            _inputModule.UpdateScroll();
         }
 
         public static void UpdateUIPanelSize()
@@ -251,8 +268,23 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return;
             }
-            
+
             inputUiModule.enabled = true;
+
+            if (!VHVRConfig.UseVrControls())
+            {
+                // Mouse input is already fed to VRGUI_InputModule at the simulated cursor position, but
+                // the vanilla module would also handle it at the hardware cursor position, which is locked
+                // to the screen center. That hits whatever happens to be there, e.g. clicks land on the
+                // inventory's drop outside area, so an item picked up from the inventory would immediately
+                // get dropped, and hovering highlights a second, unrelated inventory slot.
+                // Assigned every frame since the game may reassign the module's actions.
+                inputUiModule.point = null;
+                inputUiModule.scrollWheel = null;
+                inputUiModule.leftClick = null;
+                inputUiModule.rightClick = null;
+                inputUiModule.middleClick = null;
+            }
         }
 
         public void LateUpdate()
@@ -352,22 +384,30 @@ namespace ValheimVRMod.VRCore.UI
                 return;
             }
 
-            bool wasInventoryOrBuildMenuOpen = isInventoryOrBuildMenuOpen;
-            isInventoryOrBuildMenuOpen =
-                InventoryGui.IsVisible() ||
-                (Hud.instance?.m_pieceSelectionWindow != null && Hud.instance.m_pieceSelectionWindow.activeSelf);
+            bool wasAttachableUI = isAttachableToHandAsInventoryOrBuildMenu;
+            bool attachableToHandAsInventory =
+                InventoryGui.IsVisible() && VHVRConfig.AttachInventoryToHand();
+            bool attachableToHandAsBuildMenu = isBuildMenuOpen && VHVRConfig.AttachBuildMenuToHand();
+            isAttachableToHandAsInventoryOrBuildMenu = attachableToHandAsInventory || attachableToHandAsBuildMenu;
+            if (!isAttachableToHandAsInventoryOrBuildMenu)
+            {
+                reattachWhenKeyboardCloses = false;
+            }
             if (attachedToHand)
             {
                 if (shouldInstantlyDetachPanelFromHand())
                 {
+                    // Instantly reset UI to normal position
                     detachPanelFromHand(resetSize: true);
+                    reattachWhenKeyboardCloses = InputManager.keyboardActive;
                 }
-                else if (!isInventoryOrBuildMenuOpen)
+                else if (!isAttachableToHandAsInventoryOrBuildMenu)
                 {
+                    // Smoothly move UI to normal position
                     detachPanelFromHand(resetSize: false);
                 }
             }
-            else if (!wasInventoryOrBuildMenuOpen && isInventoryOrBuildMenuOpen && !shouldInstantlyDetachPanelFromHand())
+            else if ((!wasAttachableUI || reattachWhenKeyboardCloses) && isAttachableToHandAsInventoryOrBuildMenu && !shouldInstantlyDetachPanelFromHand())
             {
                 attachPanelToHand();
             }
@@ -470,7 +510,19 @@ namespace ValheimVRMod.VRCore.UI
 
         private bool shouldInstantlyDetachPanelFromHand()
         {
+            if (InputManager.keyboardActive)
+            {
+                // The SteamVR keyboard takes input focus, leaving the hands untracked and VRIK disabled until it
+                // closes, so a hand-attached panel would be stuck at hand size wherever the hand was last seen.
+                return true;
+            }
+
             if (Minimap.instance != null && Minimap.instance.m_mode == Minimap.MapMode.Large)
+            {
+                return true;
+            }
+
+            if (!VHVRConfig.AttachInventoryToHand() && InventoryGui.IsVisible())
             {
                 return true;
             }
@@ -486,6 +538,7 @@ namespace ValheimVRMod.VRCore.UI
         private void attachPanelToHand()
         {
             attachedToHand = true;
+            reattachWhenKeyboardCloses = false;
             _uiPanel.transform.localScale = desiredHandAttachedSize;
             // if (VHVRConfig.LeftHanded())
             // {
@@ -647,20 +700,21 @@ namespace ValheimVRMod.VRCore.UI
         {
             if (_leftPointer.pointerIsActive())
             {
-                // TODO: add proper actions for left pointer click?
-                _inputModule.UpdateButtonStates(
-                    SteamVR_Actions.LaserPointers.ClickModifier.GetState(SteamVR_Input_Sources.LeftHand) ||
-                    SteamVR_Actions.LaserPointers.LeftClick.GetState(SteamVR_Input_Sources.LeftHand),
-                    SteamVR_Actions.valheim_QuickActions.GetState(SteamVR_Input_Sources.LeftHand),
-                    false);
+                UpdateMouseButtonsFromLaserPointer(SteamVR_Input_Sources.LeftHand);
             }
             if (_rightPointer.pointerIsActive())
             {
-                _inputModule.UpdateButtonStates(
-                    SteamVR_Actions.LaserPointers.LeftClick.GetState(SteamVR_Input_Sources.RightHand),
-                    SteamVR_Actions.LaserPointers.RightClick.GetState(SteamVR_Input_Sources.RightHand),
-                    false);
+                UpdateMouseButtonsFromLaserPointer(SteamVR_Input_Sources.RightHand);
             }
+        }
+
+        private void UpdateMouseButtonsFromLaserPointer(SteamVR_Input_Sources hand)
+        {
+            // The laser pointers have no middle button of their own, UpdateButtonStates adds the MiddleClick chord.
+            _inputModule.UpdateButtonStates(
+                SteamVR_Actions.LaserPointers.LeftClick.GetState(hand),
+                SteamVR_Actions.Valheim.RightClick.GetState(hand),
+                false);
         }
 
         private void UpdateHandAttachedTransform()
@@ -711,6 +765,7 @@ namespace ValheimVRMod.VRCore.UI
                     enabled = false;
                     return;
                 }
+                hasCreatedOverlay = true;
             }
             else
             {
@@ -728,6 +783,7 @@ namespace ValheimVRMod.VRCore.UI
                     overlay.DestroyOverlay(_overlay);
                 }
                 _overlay = OpenVR.k_ulOverlayHandleInvalid;
+                hasCreatedOverlay = false;
             }
         }
 
@@ -941,20 +997,13 @@ namespace ValheimVRMod.VRCore.UI
             {
                 // Need to assign the camera to enable UI interactions
                 guiCanvas.worldCamera = _guiCamera;
-                // Originally this was using ScreenSpaceCamera, which was handy to auto-size the canvas/camera
-                // so I didn't need to worry about orthographic size or camera position. The problem
-                // is that there are certain UI elements, particularly in the minimap, that are added
-                // to the canvas using absolute pixel sizes - which when using ScreenSpaceCamera didn't translate
-                // and ended up with map icons extremely large and obscuring the entire map. By using WorldSpace
-                // for the render mode, we can keep the world coordinates equal to the screen space coordinates,
-                // i.e. 1 pixel on screen = 1 unit of world space. That way when any elements are added to the GUI
-                // at a specific pixel size, they are scaled properly.
                 guiCanvas.renderMode = RenderMode.WorldSpace;
                 guiCanvas.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, GUI_DIMENSIONS.x);
                 guiCanvas.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, GUI_DIMENSIONS.y);
             }
             _guiCamera.gameObject.transform.position = new Vector3(Screen.width * 0.5f, Screen.height * 0.5f, -1);
             _guiCamera.orthographicSize = GUI_DIMENSIONS.y * 0.5f;
+            hasConfiguredGuiCamera = true;
             
         }
 
@@ -988,6 +1037,22 @@ namespace ValheimVRMod.VRCore.UI
             return _uiPanel == null ? null : _uiPanel.gameObject;
         }
 
+        // Whether the GUI is far enough along to display a cinematic on it: VR is running, the GUI camera
+        // exists and has been configured, and there is a surface the player can actually see it on. This is
+        // stricter than `VRPlayer.instance != null` on purpose, since a cinematic is laid out in
+        // GUI_DIMENSIONS units and would be unreadable until the GUI camera has been sized to match.
+        public static bool isReadyToShowCinematic
+        {
+            get
+            {
+                return !VHVRConfig.NonVrPlayer() &&
+                    VRPlayer.instance != null &&
+                    hasConfiguredGuiCamera &&
+                    CameraUtils.getCamera(CameraUtils.VRGUI_SCREENSPACE_CAM) != null &&
+                    (_uiPanel != null || hasCreatedOverlay);
+            }
+        }
+
         class VRGUI_InputModule : StandaloneInputModule
         {
 
@@ -1004,9 +1069,57 @@ namespace ValheimVRMod.VRCore.UI
                 // Use the existing EventSystems input module input as the
                 // input for our custom input module.
                 m_InputOverride = EventSystem.current.currentInputModule.input;
+                if (VHVRConfig.UseVrControls())
+                {
+                    // Hide laser pointer clicks that are part of a chord action (e.g. grip + trigger to add a map pin).
+                    if (LaserPointerChords.isLeftClickSuppressed)
+                    {
+                        CancelPress(PointerEventData.InputButton.Left);
+                    }
+                    if (LaserPointerChords.isRightClickSuppressed)
+                    {
+                        CancelPress(PointerEventData.InputButton.Right);
+                    }
+                    leftButtonPressed = LaserPointerChords.FilterLeftClick(leftButtonPressed);
+                    rightButtonPressed = LaserPointerChords.FilterRightClick(rightButtonPressed);
+                    // Laser pointers have no middle button of their own; it comes from the MiddleClick chord action.
+                    middleButtonPressed = middleButtonPressed || LaserPointerChords.middleClick;
+                }
                 UpdateButtonState(leftButtonPressed, PointerEventData.InputButton.Left);
                 UpdateButtonState(rightButtonPressed, PointerEventData.InputButton.Right);
                 UpdateButtonState(middleButtonPressed, PointerEventData.InputButton.Middle);
+            }
+
+            // Drops a press that is still held, for when the click turns out to be part of a chord, e.g. when the
+            // trigger is pressed before the grip. Releasing it instead would deliver the pointer up and click that the
+            // chord is meant to replace.
+            private void CancelPress(PointerEventData.InputButton button)
+            {
+                if (!lastButtonStateMap[button])
+                {
+                    return;
+                }
+                lastButtonStateMap[button] = false;
+                PointerEventData buttonData = GetMousePointerEventData().GetButtonState(button).eventData.buttonData;
+                buttonData.eligibleForClick = false;
+                buttonData.pointerPress = null;
+                buttonData.rawPointerPress = null;
+                buttonData.pointerDrag = null;
+                buttonData.dragging = false;
+            }
+
+            // Scrolls whatever is under the simulated cursor, mirroring StandaloneInputModule.ProcessMouseEvent().
+            public void UpdateScroll()
+            {
+                if (Mathf.Approximately(input.mouseScrollDelta.sqrMagnitude, 0f))
+                {
+                    return;
+                }
+                PointerEventData pointerData =
+                    GetMousePointerEventData().GetButtonState(PointerEventData.InputButton.Left).eventData.buttonData;
+                GameObject scrollHandler =
+                    ExecuteEvents.GetEventHandler<IScrollHandler>(pointerData.pointerCurrentRaycast.gameObject);
+                ExecuteEvents.ExecuteHierarchy(scrollHandler, pointerData, ExecuteEvents.scrollHandler);
             }
 
             private void UpdateButtonState(bool state, PointerEventData.InputButton button)

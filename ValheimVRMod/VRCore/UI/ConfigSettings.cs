@@ -53,9 +53,9 @@ namespace ValheimVRMod.VRCore.UI {
             ConfigSettings.enableTransformButtons = enableTransformButtons;
         }
 
-        public static bool isVHVRClone(KeyboardMouseSettings settings)
+        public static bool isVHVRClone(Component component)
         {
-            return settings.GetComponentInParent<SettingsCloneMarker>(includeInactive: true) != null;
+            return component.GetComponentInParent<SettingsCloneMarker>(includeInactive: true) != null;
         }
  
         /// <summary>
@@ -122,13 +122,39 @@ namespace ValheimVRMod.VRCore.UI {
             if (chooserPrefab == null)
             {
                 chooserPrefab = createChooserPrefab(
-                    settingsPrefab.transform.Find("Panel").Find("TabContent").Find("Gamepad").Find("List").Find("InputLayout").gameObject);
+                    settingsPrefab.transform.Find("Panel").Find("TabContent").Find("Gamepad").Find("Root").Find("CommonSettings").Find("InputLayout").gameObject);
             }
             if (transformButtonPrefab == null)
             {
                 transformButtonPrefab = createTransformButtonPrefab(
                     sliderPrefab.transform.Find("Label").gameObject,
                     settingsPrefab.transform.Find("Panel").Find("Back").gameObject);
+            }
+
+            // These prefabs are cloned from vanilla settings rows, which carry a Localize component.
+            // Its Start() runs a frame after instantiation and re-localizes the row, reverting the
+            // config label we write back to the vanilla token's text - the chooser rows are cloned
+            // from the gamepad InputLayout setting, so they all reverted to "Controller layout".
+            StripLocalization(tabButtonPrefab);
+            StripLocalization(sliderPrefab);
+            StripLocalization(keyBindingPrefab);
+            StripLocalization(chooserPrefab);
+            StripLocalization(transformButtonPrefab);
+        }
+
+        private static void StripLocalization(GameObject prefab)
+        {
+            if (prefab == null)
+            {
+                return;
+            }
+            foreach (var localize in prefab.GetComponentsInChildren<Localize>(includeInactive: true))
+            {
+                Object.Destroy(localize);
+            }
+            foreach (var localize in prefab.GetComponentsInChildren<PlatformSpecificLocalization>(includeInactive: true))
+            {
+                Object.Destroy(localize);
             }
         }
 
@@ -202,7 +228,11 @@ namespace ValheimVRMod.VRCore.UI {
 
             setupOkAndBack(settings.transform.Find("Panel"));
 
-            tabButtons.GetComponent<TabHandler>().SetActiveTab(0);
+            // forceSelect is load bearing, not decorative: TabHandler.SetActiveTab returns early when the
+            // requested index already equals m_selected, and m_selected is 0 on a freshly instantiated clone.
+            // Every tab page here is cloned from one that was just deactivated, so without the flag none of
+            // them is ever activated and the first tab renders empty until the player switches away and back.
+            tabButtons.GetComponent<TabHandler>().SetActiveTab(0, forceSelect: true);
             keyboardMouseSettings.UpdateBindings();
         }
 
@@ -282,7 +312,9 @@ namespace ValheimVRMod.VRCore.UI {
             tab.m_button.onClick.AddListener(() => {
                 tabButtons.GetComponent<TabHandler>().SetActiveTab(activeTabIndex);
             });
-            tab.m_default = true;
+            // Only the first tab is the default one. Claiming that every tab is would make TabHandler.Init()
+            // resolve the default to the last section rather than to General.
+            tab.m_default = (tabCounter == 0);
             tab.m_page = newTab.GetComponent<RectTransform>();
             tab.m_onClick = new UnityEvent();
 
