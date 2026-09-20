@@ -19,7 +19,6 @@ copy "%TARGET_DIR%NDesk.Options.dll" "%GAME_DIR%Valheim_Data\Managed"
 if not exist "%GAME_DIR%Valheim_Data\Plugins\x86_64" mkdir "%GAME_DIR%Valheim_Data\Plugins\x86_64"
 copy "%SOLUTION_DIR%Unity\build\ValheimVR_Data\Plugins\x86_64\XRSDKOpenVR.dll" "%GAME_DIR%Valheim_Data\Plugins\x86_64"
 copy "%SOLUTION_DIR%Unity\build\ValheimVR_Data\Plugins\x86_64\openvr_api.dll" "%GAME_DIR%Valheim_Data\Plugins\x86_64"
-copy "%SOLUTION_DIR%Unity\build\ValheimVR_Data\Plugins\x86_64\ucrtbased.dll" "%GAME_DIR%Valheim_Data\Plugins\x86_64"
 
 if not exist "%GAME_DIR%Valheim_Data\UnitySubsystems" mkdir "%GAME_DIR%Valheim_Data\UnitySubsystems"
 if not exist "%GAME_DIR%Valheim_Data\UnitySubsystems\XRSDKOpenVR" mkdir "%GAME_DIR%Valheim_Data\UnitySubsystems\XRSDKOpenVR"
@@ -68,7 +67,6 @@ if not exist "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\Plugins" mkdir if 
 if not exist "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\Plugins\x86_64" mkdir "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\Plugins\x86_64"
 copy "%SOLUTION_DIR%Unity\build\ValheimVR_Data\Plugins\x86_64\XRSDKOpenVR.dll" "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\Plugins\x86_64"
 copy "%SOLUTION_DIR%Unity\build\ValheimVR_Data\Plugins\x86_64\openvr_api.dll" "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\Plugins\x86_64"
-copy "%SOLUTION_DIR%Unity\build\ValheimVR_Data\Plugins\x86_64\ucrtbased.dll" "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\Plugins\x86_64"
 
 if not exist "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\UnitySubsystems" mkdir "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\UnitySubsystems"
 if not exist "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\UnitySubsystems\XRSDKOpenVR" mkdir "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\UnitySubsystems\XRSDKOpenVR"
