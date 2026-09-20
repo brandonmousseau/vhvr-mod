@@ -32,12 +32,6 @@ namespace ValheimVRMod.Scripts
         private float directionCooldown;
         private float aimingDuration = 0;
         private int tickCounter;
-        // The frame on which a throw was last initiated, by either branch of UpdateThrowCalculation().
-        // OnRenderObject() runs once per rendering camera and SteamVR latches the trigger's state-up edge for
-        // the whole frame (its default input update mode is OnUpdate), so every camera pass sees the same
-        // release. isThrowing cannot stand in for this on its own: the mounted branch starts the attack itself
-        // and deliberately leaves isThrowing false, so without this a second camera pass would throw again.
-        private static int lastThrowFrame = -1;
         private PhysicsEstimator handPhysicsEstimator { get { return VRPlayer.isRightHandMainWeaponHand ? VRPlayer.rightHandPhysicsEstimator : VRPlayer.leftHandPhysicsEstimator; } }
 
         private void Awake()
@@ -55,22 +49,25 @@ namespace ValheimVRMod.Scripts
 
         private void OnDestroy()
         {
-            ResetSpearOffset();
+            EndThrowPreparation();
             Destroy(rotSave);
             Destroy(directionLine, directionCooldown);
         }
 
         private void OnRenderObject()
         {
-            if (SteamVR_Actions.valheim_Grab.GetStateUp(VRPlayer.mainWeaponHandInputSource))
+            // Letting go of the grip, wielding the weapon with both hands, or handing the controls over to a
+            // laser pointer all cancel an ongoing preparation rather than throw. The laser pointer action set
+            // masks the Valheim one while it is up, so without cancelling here the trigger would read as
+            // released and throw a spear that the player is merely holding while clicking on a GUI.
+            if (!SteamVR_Actions.valheim_Grab.GetState(VRPlayer.mainWeaponHandInputSource) ||
+                LocalWeaponWield.isCurrentlyTwoHanded() ||
+                VRControls.laserControlsActive)
             {
-                startAim = Vector3.zero;
-                ResetSpearOffset();
-                return;
-            }
-
-            if (!SteamVR_Actions.valheim_Grab.GetState(VRPlayer.mainWeaponHandInputSource) || LocalWeaponWield.isCurrentlyTwoHanded())
-            {
+                if (isAiming)
+                {
+                    EndThrowPreparation();
+                }
                 return;
             }
 
@@ -189,42 +186,41 @@ namespace ValheimVRMod.Scripts
                 }
             }
 
-            // The laserPointers action set masks the Valheim set while it is up, so the trigger edges around
-            // that transition are not the player's: a trigger still held when a container closes reads as a
-            // fresh press the moment the mask lifts, which would arm an aim nobody started.
-            bool useActionEdgesAreTrustworthy = !VRControls.laserControlsInTransition;
-
-            if (useActionEdgesAreTrustworthy && useAction.GetStateDown(VRPlayer.mainWeaponHandInputSource))
+            // The preparation phase lasts as long as the trigger is held on top of the grip, and is read from
+            // the trigger's current state rather than from its edges: an edge can belong to the laser pointer
+            // action set taking the trigger away or handing it back instead of to the player.
+            if (useAction.GetState(VRPlayer.mainWeaponHandInputSource))
             {
-                if (startAim == Vector3.zero)
+                if (!isAiming)
                 {
+                    isAiming = true;
                     startAim = pStartAim;
+                    aimingDuration = 0;
                 }
 
-                isAiming = true;
-            }
-
-            if (isAiming)
-            {
                 aimDir = direction;
                 UpdateDirectionLine(
                     VRPlayer.mainWeaponHand.transform.position - direction.normalized,
                     VRPlayer.mainWeaponHand.transform.position + direction.normalized * 50);
+                return;
             }
 
-            if (!useActionEdgesAreTrustworthy || !useAction.GetStateUp(VRPlayer.mainWeaponHandInputSource))
+            if (!isAiming)
             {
                 return;
             }
 
-            // Measured over the window the player spent aiming, so it has to be read before it is reset.
+            // The trigger has been released, which ends the preparation whether or not it throws. Ending it
+            // before the throw is evaluated is what keeps the throw single: OnRenderObject() runs once per
+            // rendering camera, and the later passes of the same frame find no preparation left to release.
+            // The aiming duration is measured over the window the player spent aiming, so it has to be read
+            // before the preparation ends and resets it.
             float completedAimingDuration = aimingDuration;
-            aimingDuration = 0;
+            EndThrowPreparation();
 
-            if (isThrowing || lastThrowFrame == Time.frameCount)
+            if (isThrowing)
             {
-                ResetSpearOffset();
-                startAim = Vector3.zero;
+                // The previous throw is still waiting to be handed over to vanilla, see ControlPatches.
                 return;
             }
 
@@ -232,42 +228,31 @@ namespace ValheimVRMod.Scripts
             var throwing = CalculateThrowAndDistance(direction, completedAimingDuration);
             aimDir = direction;
             handSpeed = throwing.HandSpeed;
-            if (throwing.Distance > minDist)
-            {
-                // Marked before either branch runs so that the remaining camera passes of this frame cannot
-                // start a second throw, including the mounted one that leaves isThrowing false.
-                lastThrowFrame = Time.frameCount;
-                if (MountedAttackUtils.StartAttackIfRiding(isSecondaryAttack: EquipScript.CurrentMainHandEquipType() == EquipType.Spear))
-                {
-                    ResetSpearOffset();
-                }
-                else 
-                {
-                    // Let control patches and vanilla game handle attack if the player is not riding.
-                    isThrowing = true;
-                }
-                if (EquipScript.CurrentMainHandEquipType() == EquipType.SpearChitin)
-                {
-                    GetComponentInParent<SpearWield>().HideHarpoon();
-                }
-            }
-
-            if (useAction.GetStateUp(VRPlayer.mainWeaponHandInputSource) && throwing.Distance <= minDist)
-            {
-                startAim = Vector3.zero;
-                ResetSpearOffset();
-            }
-        }
-
-        private void ResetSpearOffset()
-        {
-            isAiming = false;
-            ShieldBlock.instance?.AdaptScaleShieldSize(1f);
-
-            if (!EquipScript.IsSpearEquipped())
+            if (throwing.Distance <= minDist)
             {
                 return;
             }
+
+            if (!MountedAttackUtils.StartAttackIfRiding(isSecondaryAttack: EquipScript.CurrentMainHandEquipType() == EquipType.Spear))
+            {
+                // Let control patches and vanilla game handle attack if the player is not riding.
+                isThrowing = true;
+            }
+
+            if (EquipScript.CurrentMainHandEquipType() == EquipType.SpearChitin)
+            {
+                GetComponentInParent<SpearWield>().HideHarpoon();
+            }
+        }
+
+        // Ends the throw preparation phase without throwing: whoever ends it decides whether a throw comes out
+        // of it.
+        private void EndThrowPreparation()
+        {
+            isAiming = false;
+            startAim = Vector3.zero;
+            aimingDuration = 0;
+            ShieldBlock.instance?.ScaleShieldSize(1f);
         }
 
         private void UpdateDirectionLine(Vector3 pos1, Vector3 pos2)

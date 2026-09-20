@@ -58,6 +58,19 @@
           ]
         },
         {
+          "output": "/actions/laserpointers/in/middleclick",
+          "inputs": [
+            [
+              "/user/hand/left/input/grip",
+              "click"
+            ],
+            [
+              "/user/hand/left/input/b",
+              "click"
+            ]
+          ]
+        },
+        {
           "output": "/actions/laserpointers/in/addmappin",
           "inputs": [
             [

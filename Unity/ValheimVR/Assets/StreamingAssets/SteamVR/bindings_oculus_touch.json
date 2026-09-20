@@ -177,6 +177,13 @@
             },
             {
                "inputs" : [
+                  [ "/user/hand/left/input/grip", "click" ],
+                  [ "/user/hand/left/input/y", "click" ]
+               ],
+               "output" : "/actions/laserpointers/in/middleclick"
+            },
+            {
+               "inputs" : [
                   [ "/user/hand/right/input/grip", "click" ],
                   [ "/user/hand/right/input/trigger", "click" ]
                ],

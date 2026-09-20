@@ -106,9 +106,12 @@ namespace ValheimVRMod.Patches {
                 }
 
                 character.UseStamina(staminaUsage);
-                AttackTargetMeshCooldown.staminaDrained = true;
             }
 
+            // Every target that this attack hits calls Start() separately, but like in vanilla the attack
+            // is only paid for once, so mark it as paid for regardless of which of the two flags covered it.
+            // The flag is cleared again when the next attack starts, see AttackTargetMeshCooldown.
+            AttackTargetMeshCooldown.staminaDrained = true;
             ButtonSecondaryAttackManager.isStaminaDrained = false;
             Collider col = StaticObjects.lastHitCollider;
             Vector3 pos = StaticObjects.lastHitPoint;

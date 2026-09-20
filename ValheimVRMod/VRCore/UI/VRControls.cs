@@ -415,10 +415,12 @@ namespace ValheimVRMod.VRCore.UI
                 // this same button) is not a menu request either, so it must not count towards the hold.
                 if (LaserPointerChords.isRightClickSuppressed)
                 {
+                    obj.SetActive(false);
                     return;
                 }
                 holdTime += Time.unscaledDeltaTime;
-                if (holdTime < QUICK_MENU_HOLD_TIME)
+                // In place mode the menu opens right away, the right click (the build menu) is left to share the press.
+                if (!inPlaceMode() && holdTime < QUICK_MENU_HOLD_TIME)
                 {
                     return;
                 }
