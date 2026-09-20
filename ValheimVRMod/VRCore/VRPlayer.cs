@@ -82,6 +82,7 @@ namespace ValheimVRMod.VRCore
         private static MeshRenderer hipTrackerRenderer;
         public static Transform trackedPelvis { get; private set; }
         public static Transform pelvis { get; private set; }
+
         private Vector3 roomscaleLocomotive {
             get {
                 var hip = hipTrackerTransform;

@@ -664,7 +664,7 @@ namespace ValheimVRMod.VRCore.UI
                 return Vector2.zero;
             }
 
-            if (!VHVRConfig.UseLookLocomotion() || Player.m_localPlayer == null || VRPlayer.vrCam == null || VRPlayer.pelvis == null)
+            if (!VHVRConfig.UseLookLocomotion() || Player.m_localPlayer == null || VRPlayer.vrCam == null)
             {
                 var input = walk.axis;
                 input.y = -input.y;
@@ -677,7 +677,9 @@ namespace ValheimVRMod.VRCore.UI
                     VRPlayer.vrCam.transform,
                     VRPlayer.leftHand?.transform ?? VRPlayer.vrCam.transform,
                     VRPlayer.rightHand?.transform ?? VRPlayer.vrCam.transform,
-                    VRPlayer.pelvis,
+                    body:
+                        VRPlayer.isPelvisTracked && VRPlayer.trackedPelvis != null ?
+                        VRPlayer.trackedPelvis : VRPlayer.vrCam.transform,
                     playerTransform);
             Vector3 heading = Vector3.ProjectOnPlane(joystickForward, playerTransform.up).normalized;
             Vector3 right = Vector3.Cross(playerTransform.up, heading);
