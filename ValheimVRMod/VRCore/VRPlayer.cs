@@ -83,17 +83,6 @@ namespace ValheimVRMod.VRCore
         public static Transform trackedPelvis { get; private set; }
         public static Transform pelvis { get; private set; }
 
-        /// <summary>
-        /// Where the player's body is pointing in the room, which the character's facing follows.
-        /// Deliberately not the pelvis rotation: without a waist tracker that carries a hand-inferred
-        /// adjustment (see inferPelvisFacingFromPlayerHeadingAndHands) which belongs to the body IK pose
-        /// only. EyeRotationPatch integrates this value's delta into the character yaw, so anything that
-        /// keeps moving in it - such as the controller pose drift of a continuously recalibrated hybrid
-        /// headset/controller setup - would otherwise accumulate into unbounded turning.
-        /// Null until body tracking has run at least once, so that its reader can tell "not established
-        /// yet" from a real heading instead of measuring the first delta against a placeholder.
-        /// </summary>
-        public static Quaternion? characterHeading { get; private set; }
         private Vector3 roomscaleLocomotive {
             get {
                 var hip = hipTrackerTransform;
@@ -1366,10 +1355,6 @@ namespace ValheimVRMod.VRCore
                 StaticObjects.leftFootCollision().gameObject.SetActive(false);
                 StaticObjects.rightFootCollision().gameObject.SetActive(false);
 
-                // The hand-inferred adjustment in the pelvis facing below shapes the body pose only, so
-                // the character keeps following the plain body heading.
-                updateCharacterHeading(inferBodyHeading(player.IsAttached()), player.transform.up);
-
                 if (player.IsAttached() || player.IsSitting() || playerEyeHeight > referencePlayerHeight * 0.125f)
                 {
                     vrikRef.solver.spine.pelvisPositionWeight = 0;
@@ -1412,7 +1397,6 @@ namespace ValheimVRMod.VRCore
                 pelvis.rotation =
                     Quaternion.Lerp(player.transform.rotation, trackedPelvis.rotation, 0.25f);
                 vrikRef.solver.spine.rootHeadingOffset = 0;
-                characterHeading = pelvis.rotation;
             }
             else
             {
@@ -1427,9 +1411,6 @@ namespace ValheimVRMod.VRCore
                 }
                 //TODO: find out why this is not working
                 vrikRef.solver.spine.rootHeadingOffset = Vector3.SignedAngle(Vector3.ProjectOnPlane(_vrCam.transform.forward, player.transform.up), pelvisFacing, player.transform.up);
-                // A waist tracker measures the body heading directly, with no hand-inferred term in it,
-                // so the character follows it rather than the head.
-                updateCharacterHeading(pelvisFacing, player.transform.up);
             }
 
             if (shouldTrackFeet())
@@ -1488,28 +1469,9 @@ namespace ValheimVRMod.VRCore
             return _vrCam.transform.position - _vrCam.transform.forward * 0.1f - upDirection.Value * 0.89f * VrikCreator.ROOT_SCALE;
         }
 
-        // Records the direction the player's body is facing, ignoring any heading that has degenerated
-        // into a zero vector (which LookRotation cannot use) and would otherwise blank the character's facing.
-        private static void updateCharacterHeading(Vector3 heading, Vector3 up)
-        {
-            if (heading.sqrMagnitude > 0 && up.sqrMagnitude > 0)
-            {
-                characterHeading = Quaternion.LookRotation(heading, up);
-            }
-        }
-
-        // The direction the player's body is facing, before the hand-inferred adjustment that
-        // inferPelvisFacingFromPlayerHeadingAndHands() applies on top of it for the body IK pose.
-        private Vector3 inferBodyHeading(bool isPlayerAttached)
-        {
-            return isPlayerAttached ?
-                Player.m_localPlayer.transform.forward :
-                Vector3.ProjectOnPlane(_vrCam.transform.forward, _vrCameraRig.up);
-        }
-
         private Vector3 inferPelvisFacingFromPlayerHeadingAndHands(Transform playerTransform, bool isPlayerAttached)
         {
-            Vector3 forward = inferBodyHeading(isPlayerAttached);
+            Vector3 forward = isPlayerAttached ? Player.m_localPlayer.transform.forward : Vector3.ProjectOnPlane(_vrCam.transform.forward, _vrCameraRig.up);
             if (GesturedLocomotionManager.isInUse && Mathf.Abs(gesturedLocomotionManager.stickOutputY) > 0.25f)
             {
                 return forward;

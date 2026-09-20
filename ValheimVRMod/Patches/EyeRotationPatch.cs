@@ -109,17 +109,12 @@ namespace ValheimVRMod.Patches
                 return;
             }
 
-            // Uses the body heading rather than VRPlayer.pelvis: without a waist tracker the pelvis
-            // rotation carries a hand-inferred adjustment for the body IK pose, and integrating that into
-            // the yaw below let the direction the controllers point turn the character.
-            if (VRPlayer.characterHeading == null)
-            {
-                // Body tracking has not established a heading yet, e.g. right after a respawn.
-                previousTrackedLocalAngle = null;
-                return;
-            }
-
-            float currentLocalAngle = (Quaternion.Inverse(Valve.VR.InteractionSystem.Player.instance.hmdTransform.parent.rotation) * VRPlayer.characterHeading.Value).eulerAngles.y;
+            // The character follows the head only. The pelvis is deliberately not used here: it is a body
+            // IK target that carries terms which do not belong in the character facing, such as the
+            // hand-inferred adjustment applied when there is no waist tracker. Moving relative to the
+            // pelvis instead of the head is a locomotion option, applied where the joystick input is
+            // converted (see VHVRConfig.GetJoystickForwardDirection).
+            float currentLocalAngle = Valve.VR.InteractionSystem.Player.instance.hmdTransform.localRotation.eulerAngles.y;
             if (previousTrackedLocalAngle.HasValue)
             {
                 // Find the difference between the current rotation and previous rotation. Taken as an
