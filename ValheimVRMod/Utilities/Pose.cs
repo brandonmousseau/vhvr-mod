@@ -595,7 +595,12 @@ namespace ValheimVRMod.Utilities {
 
             if (contralateral)
             {
-                if (sagittalOffset > 0.125f)
+                if (sagittalOffset > 0)
+                {
+                    return BackReachLocation.None;
+                }
+
+                if (reachingWaist && Mathf.Abs(lateralOffset) < 0.125f)
                 {
                     return BackReachLocation.None;
                 }
