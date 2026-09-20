@@ -527,21 +527,33 @@ namespace ValheimVRMod.VRCore
 
         private void UpdateThirdPersonCamera()
         {
-            if (_thirdPersonCamera == null)
+            if (!VHVRConfig.UseThirdPersonCameraOnFlatscreen())
             {
-                if (!VHVRConfig.UseThirdPersonCameraOnFlatscreen())
+                if (_thirdPersonCamera != null)
                 {
-                    return;
+                    // Destroy the camera instead of merely deactivating it so that it is built anew
+                    // whenever the user switches back to a third person mode. A deactivated one would
+                    // resume from its stale position and smoothing velocity and keep the culling mask
+                    // and clip planes that were copied from the VR camera when it was created.
+                    // Destroying the whole object is necessary since enableThirdPersonCamera() creates
+                    // a new one under the same name and the updater and its camera dot live on it.
+                    Destroy(_thirdPersonCamera.gameObject);
+                    _thirdPersonCamera = null;
                 }
-                enableThirdPersonCamera();
-
-                if (_thirdPersonCamera == null)
-                {
-                    return;
-                }
+                return;
             }
 
-            _thirdPersonCamera.gameObject.SetActive(VHVRConfig.UseThirdPersonCameraOnFlatscreen());
+            if (attachedToPlayer)
+            {
+                // The death that made enableThirdPersonCamera() wait for the VR camera to be attached
+                // to the player again is over.
+                PlayerOnDeathPatch.hasCharacterDied = false;
+            }
+
+            if (_thirdPersonCamera == null)
+            {
+                enableThirdPersonCamera();
+            }
         }
 
         // Fixes an issue on Pimax HMDs that causes rotation to be incorrect:

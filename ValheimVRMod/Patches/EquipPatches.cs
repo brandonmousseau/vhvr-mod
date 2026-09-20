@@ -731,6 +731,9 @@ namespace ValheimVRMod.Patches
         private bool isLocalPlayer;
         Dictionary<GameObject, int> originalLayers = new Dictionary<GameObject, int>();
         private bool isHidden = false;
+        // Which of the two ways of hiding in Hide() was used, need to ensure that the equipment can be hidden the
+        // other way instead if the user changes the flat screen camera mode.
+        private bool hiddenForThirdPersonCamera = false;
 
         void Awake()
         {
@@ -740,41 +743,62 @@ namespace ValheimVRMod.Patches
 
         void OnRenderObject()
         {
-            if (shouldHide())
+            if (!shouldHide())
             {
-                if (!isHidden)
+                if (isHidden)
                 {
-                    foreach (Renderer renderer in gameObject.GetComponentsInChildren<Renderer>())
-                    {
-                        if (!originalLayers.ContainsKey(renderer.gameObject))
-                        {
-                            originalLayers.Add(renderer.gameObject, renderer.gameObject.layer);
-                        }
-                        if (VHVRConfig.UseThirdPersonCameraOnFlatscreen())
-                        {
-                            // Borrow the UI layer to hide the equipment from the VR camera but keep them shown to the follow camera.
-                            renderer.gameObject.layer = LayerUtils.CHARARCTER_TRIGGER;
-                        }
-                        else
-                        {
-                            renderer.shadowCastingMode = ShadowCastingMode.ShadowsOnly;
-                        }
-                    }
-                    isHidden = true;
+                    Restore();
+                }
+                return;
+            }
+
+            if (isHidden && hiddenForThirdPersonCamera != VHVRConfig.UseThirdPersonCameraOnFlatscreen())
+            {
+                // The flat screen camera mode has changed, therefore the equipment needs to be hidden
+                // the other way instead.
+                Restore();
+            }
+
+            if (!isHidden)
+            {
+                Hide();
+            }
+        }
+
+        private void Hide()
+        {
+            bool useThirdPersonCamera = VHVRConfig.UseThirdPersonCameraOnFlatscreen();
+            foreach (Renderer renderer in gameObject.GetComponentsInChildren<Renderer>())
+            {
+                if (!originalLayers.ContainsKey(renderer.gameObject))
+                {
+                    originalLayers.Add(renderer.gameObject, renderer.gameObject.layer);
+                }
+                if (useThirdPersonCamera)
+                {
+                    // Borrow the UI layer to hide the equipment from the VR camera but keep them shown to the follow camera.
+                    renderer.gameObject.layer = LayerUtils.CHARARCTER_TRIGGER;
+                }
+                else
+                {
+                    renderer.shadowCastingMode = ShadowCastingMode.ShadowsOnly;
                 }
             }
-            else if (isHidden)
+            hiddenForThirdPersonCamera = useThirdPersonCamera;
+            isHidden = true;
+        }
+
+        private void Restore()
+        {
+            foreach (Renderer renderer in gameObject.GetComponentsInChildren<Renderer>())
             {
-                foreach (Renderer renderer in gameObject.GetComponentsInChildren<Renderer>())
+                if (originalLayers.ContainsKey(renderer.gameObject))
                 {
-                    if (originalLayers.ContainsKey(renderer.gameObject))
-                    {
-                        renderer.gameObject.layer = originalLayers[renderer.gameObject];
-                    }
-                    renderer.shadowCastingMode = ShadowCastingMode.On;
+                    renderer.gameObject.layer = originalLayers[renderer.gameObject];
                 }
-                isHidden = false;
+                renderer.shadowCastingMode = ShadowCastingMode.On;
             }
+            isHidden = false;
         }
 
         private bool shouldHide()
