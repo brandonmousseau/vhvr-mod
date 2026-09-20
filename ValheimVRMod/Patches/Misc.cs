@@ -477,7 +477,7 @@ namespace ValheimVRMod.Patches
     [HarmonyPatch(typeof(Player), nameof(Player.OnDeath))]
     class PlayerOnDeathPatch
     {
-        public static bool hasCharacterDied { get; private set; } = false;
+        public static bool hasCharacterDied = false;
         public static void Prefix(Player __instance)
         {
             if (__instance != Player.m_localPlayer)
@@ -499,7 +499,9 @@ namespace ValheimVRMod.Patches
                 hasCharacterDied = true;
                 // Disable the follow camera temporarily since it might interfere with the projection matrix of the main camera upon character death.
                 followCamera.enabled = false;
-                GameObject.Destroy(followCamera);
+                // Destroy the whole object and not just the camera component, otherwise its updater and
+                // camera dot are left behind while VRPlayer builds a new follow camera object.
+                GameObject.Destroy(followCamera.gameObject);
             }
         }
     }
