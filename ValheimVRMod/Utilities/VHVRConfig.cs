@@ -381,12 +381,13 @@ namespace ValheimVRMod.Utilities
             mirrorMode = config.Bind("General",
                                      "MirrorMode",
                                      "Right",
-                                     new ConfigDescription("The VR mirror mode.Legal values: OpenVR, Right, Left, Follow, None. Note: OpenVR is" +
+                                     new ConfigDescription("The VR mirror mode.Legal values: OpenVR, Right, Left, Follow, Spectator, None. Note: OpenVR is" +
                                      " required if you want to see the Overlay-type GUI in the mirror image. However, I've found that OpenVR" +
                                      " mirror mode causes some issue that requires SteamVR to be restarted after closing the game, so unless you" +
                                      " need it for some specific reason, I recommend using another mirror mode or None. Follow mode and spectator mode" +
                                      " render content from a third person camera which can cause lag.",
                                      new AcceptableValueList<string>(new string[] { "Right", "Left", "OpenVR", "None", "Follow", "Spectator" })));
+            mirrorMode.SettingChanged += (sender, e) => VRManager.UpdateMirrorViewMode();
             playerMinEyeHeight = config.Bind("General",
                               "PlayerMinEyeHeight",
                               1.2f,
@@ -1144,6 +1145,9 @@ namespace ValheimVRMod.Utilities
                     return OpenVRSettings.MirrorViewModes.OpenVR;
                 case "None":
                 case "Follow":
+                case "Spectator":
+                    // The third person camera modes render the flat screen view themselves, so the
+                    // mirror image must not be drawn over it.
                     return OpenVRSettings.MirrorViewModes.None;
                 default:
                     LogUtils.LogWarning("Invalid mirror mode setting. Defaulting to None");
