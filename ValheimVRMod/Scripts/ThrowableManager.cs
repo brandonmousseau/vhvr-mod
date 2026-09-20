@@ -252,7 +252,7 @@ namespace ValheimVRMod.Scripts
             isAiming = false;
             startAim = Vector3.zero;
             aimingDuration = 0;
-            ShieldBlock.instance?.ScaleShieldSize(1f);
+            ShieldBlock.instance?.AdaptScaleShieldSize(1f);
         }
 
         private void UpdateDirectionLine(Vector3 pos1, Vector3 pos2)
