@@ -37,12 +37,14 @@ namespace ValheimVRMod.Scripts {
 
         protected virtual void OnDisable() {
             if (outline != null) {
-                outline.OutlineMode = Outline.Mode.OutlineHidden;
+                outline.enabled = false;
             }
         }
 
-        void OnDestory() {
-            Destroy(outline);
+        void OnDestroy() {
+            if (outline != null) {
+                Destroy(outline);
+            }
         }
 
         public bool inCoolDown() {
@@ -90,7 +92,9 @@ namespace ValheimVRMod.Scripts {
 
             outline.OutlineColor = GetOutlineColor(FullOutlineColor, HiddenOutlineColor, Mathf.Max(cooldown, 0) / cooldownStart);
             if (!inCoolDown()) {
-                outline.OutlineMode = Outline.Mode.OutlineHidden;
+                // Disabled rather than left enabled with a transparent color, which removes the outline materials from
+                // the target instead of leaving them there for the game to copy (see Outline.IsOutlineMaterial()).
+                outline.enabled = false;
                 if (!keepOutlineInstance()) {
                     Destroy(outline);
                     outline = null;
