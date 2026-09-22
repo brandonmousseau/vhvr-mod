@@ -126,6 +126,13 @@ namespace ValheimVRMod.Patches
                     LogWarning("Left Hand Use Action not initialized.");
                     return;
                 }
+                // Not usable while the left hand's own laser pointer is up: otherwise a click meant for a GUI
+                // panel (e.g. in left-handed mode) would also interact with whatever the ray happens to hit
+                // behind or through it.
+                if (LaserPointerChords.IsLaserActiveFor(SteamVR_Input_Sources.LeftHand))
+                {
+                    return;
+                }
                 if (!useAction.GetStateDown(SteamVR_Input_Sources.LeftHand))
                 {
                     if (useAction.GetState(SteamVR_Input_Sources.LeftHand) && leftHover)

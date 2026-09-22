@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using ValheimVRMod.VRCore;
+using ValheimVRMod.VRCore.UI;
 using Valve.VR;
 
 namespace ValheimVRMod.Scripts
@@ -35,7 +36,11 @@ namespace ValheimVRMod.Scripts
         // already playing, and the attack hold has to stay raised for as long as the player keeps casting.
         public bool AttemptingAttack
         {
-            get { return (IsInRightHand ? SteamVR_Actions.valheim_Use : SteamVR_Actions.valheim_UseLeft).state; }
+            get
+            {
+                var hand = IsInRightHand ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand;
+                return !LaserPointerChords.IsLaserActiveFor(hand) && SteamVR_Actions.valheim_OneHandedMagic.GetState(hand);
+            }
         }
     }
 }

@@ -228,6 +228,7 @@ namespace ValheimVRMod.VRCore.UI
                 if (attachedToHand)
                 {
                     UpdateMouseButtonsFromLaserPointer();
+                    UpdateScrollFromLaserPointer();
                 }
                 return;
             }
@@ -235,7 +236,7 @@ namespace ValheimVRMod.VRCore.UI
             bool rightButtonPressed = Input.GetMouseButton(1);
             bool middleButtonPressed = Input.GetMouseButton(2);
             _inputModule.UpdateButtonStates(leftButtonPressed, rightButtonPressed, middleButtonPressed);
-            _inputModule.UpdateScroll();
+            _inputModule.UpdateScroll(Input.mouseScrollDelta);
         }
 
         public static void UpdateUIPanelSize()
@@ -658,6 +659,7 @@ namespace ValheimVRMod.VRCore.UI
             UpdateHandAttachedTransform();
             UpdateCursorPosition();
             UpdateMouseButtonsFromLaserPointer();
+            UpdateScrollFromLaserPointer();
         }
 
         public void OnPointerTracking(object p, PointerEventArgs e)
@@ -680,6 +682,7 @@ namespace ValheimVRMod.VRCore.UI
             UpdateCursorPosition();
 
             _inputModule.UpdateButtonStates(e.buttonStateLeft, e.buttonStateRight, false);
+            UpdateScrollFromLaserPointer();
         }
 
         private void UpdateCursorPosition()
@@ -712,9 +715,57 @@ namespace ValheimVRMod.VRCore.UI
         {
             // The laser pointers have no middle button of their own, UpdateButtonStates adds the MiddleClick chord.
             _inputModule.UpdateButtonStates(
-                SteamVR_Actions.LaserPointers.LeftClick.GetState(hand),
+                SteamVR_Actions.Valheim.LeftClick.GetState(hand),
                 SteamVR_Actions.Valheim.RightClick.GetState(hand),
                 false);
+        }
+
+        // Scrolls whatever is under the simulated cursor from ContextScroll, currently only bound on controllers
+        // with a real trackpad (index, holographic); on the rest this is simply always zero and never scrolls.
+        private void UpdateScrollFromLaserPointer()
+        {
+            if (_leftPointer.pointerIsActive())
+            {
+                _inputModule.UpdateScroll(SteamVR_Actions.Valheim.ContextScroll.GetAxis(SteamVR_Input_Sources.LeftHand));
+            }
+            if (_rightPointer.pointerIsActive())
+            {
+                _inputModule.UpdateScroll(SteamVR_Actions.Valheim.ContextScroll.GetAxis(SteamVR_Input_Sources.RightHand));
+            }
+        }
+
+        // Selects the item under the pointer in the player's or the open container's inventory with the given
+        // modifier, as vanilla does for modified clicks: Move moves the item between the inventory and the open
+        // container, or drops it when no container is open, and Split opens the split dialog for a stack. Called
+        // by LaserPointerChords for the DiscardItem/SplitStack chords, which resolve to this the same way a plain
+        // click resolves to whatever InventoryGrid.GetHoveredElement() (also laser-pointer-aware, see
+        // ControlPatches) says the pointer is over.
+        public static void SelectHoveredInventoryItem(InventoryGrid.Modifier modifier)
+        {
+            InventoryGui inventoryGui = InventoryGui.instance;
+            if (!InventoryGui.IsVisible() || inventoryGui == null || inventoryGui.m_dragGo != null)
+            {
+                return;
+            }
+            foreach (InventoryGrid grid in new InventoryGrid[] { inventoryGui.m_playerGrid, inventoryGui.m_containerGrid })
+            {
+                if (grid == null || !grid.isActiveAndEnabled || grid.GetInventory() == null)
+                {
+                    continue;
+                }
+                InventoryElement element = grid.GetHoveredElement();
+                if (element == null)
+                {
+                    continue;
+                }
+                Vector2i position = grid.GetElementPos(element);
+                ItemDrop.ItemData item = grid.GetInventory().GetItemAt(position.x, position.y);
+                if (item != null)
+                {
+                    inventoryGui.OnSelectedItem(grid, item, position, modifier);
+                }
+                return;
+            }
         }
 
         private void UpdateHandAttachedTransform()
@@ -1109,14 +1160,18 @@ namespace ValheimVRMod.VRCore.UI
             }
 
             // Scrolls whatever is under the simulated cursor, mirroring StandaloneInputModule.ProcessMouseEvent().
-            public void UpdateScroll()
+            // Takes the delta explicitly rather than reading it from `input` (there is no hardware mouse wheel in
+            // VR to read), so callers pass whatever scroll source applies: the real mouse wheel outside VR, or a
+            // laser pointer's ContextScroll axis in VR.
+            public void UpdateScroll(Vector2 scrollDelta)
             {
-                if (Mathf.Approximately(input.mouseScrollDelta.sqrMagnitude, 0f))
+                if (Mathf.Approximately(scrollDelta.sqrMagnitude, 0f))
                 {
                     return;
                 }
                 PointerEventData pointerData =
                     GetMousePointerEventData().GetButtonState(PointerEventData.InputButton.Left).eventData.buttonData;
+                pointerData.scrollDelta = scrollDelta;
                 GameObject scrollHandler =
                     ExecuteEvents.GetEventHandler<IScrollHandler>(pointerData.pointerCurrentRaycast.gameObject);
                 ExecuteEvents.ExecuteHierarchy(scrollHandler, pointerData, ExecuteEvents.scrollHandler);

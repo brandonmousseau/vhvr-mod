@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 using ValheimVRMod.VRCore;
+using ValheimVRMod.VRCore.UI;
 using Valve.VR;
 
 namespace ValheimVRMod.Scripts
@@ -19,20 +20,10 @@ namespace ValheimVRMod.Scripts
         private enum SwingAttackMode { None, AimAndShoot, SwingLaunch }
 
         private SwingAttackMode currentSwingAttackMode = SwingAttackMode.None;
-        private SteamVR_Action_Boolean currentAttackTriggerAction;
 
         // The rear hand trigger shoots at aiming direction whereas the front hand trigger swing-launches.
         private SteamVR_Action_Boolean RearHandTriggerAction { get { return MagicStaffUtils.RearHandTriggerAction; } }
         private SteamVR_Input_Sources RearHandInputSource { get { return MagicStaffUtils.RearHandInputSource; } }
-
-        private SteamVR_Action_Boolean ShootingTriggerAction
-        {
-            get
-            {
-                UpdateSwingAttackMode();
-                return currentSwingAttackMode == SwingAttackMode.AimAndShoot ? currentAttackTriggerAction : MagicStaffUtils.AttackTriggerAction;
-            }
-        }
 
         private void Awake()
         {
@@ -63,7 +54,22 @@ namespace ValheimVRMod.Scripts
 
         public bool AttemptingAttack
         {
-            get { return UseSwingForCurrentAttack() ? isThrowing : ShootingTriggerAction.state; }
+            get
+            {
+                if (UseSwingForCurrentAttack())
+                {
+                    return isThrowing;
+                }
+                // AimAndShoot: two-handed reads the rear hand's own trigger, disabled while any laser pointer is
+                // up like any other weapon trigger; single-handed there is no rear hand, so it reads
+                // OneHandedMagic instead, gated per-hand.
+                if (LocalWeaponWield.isCurrentlyTwoHanded())
+                {
+                    return !LaserPointerChords.IsLaserActiveFor(SteamVR_Input_Sources.Any) && RearHandTriggerAction.GetState(RearHandInputSource);
+                }
+                var mainHand = VRPlayer.mainWeaponHandInputSource;
+                return !LaserPointerChords.IsLaserActiveFor(mainHand) && SteamVR_Actions.valheim_OneHandedMagic.GetState(mainHand);
+            }
         }
 
         public bool IsSecondaryAttack
@@ -98,12 +104,10 @@ namespace ValheimVRMod.Scripts
                 if (RearHandTriggerAction.GetStateDown(RearHandInputSource) && !frontHandTriggerAction.state)
                 {
                     currentSwingAttackMode = SwingAttackMode.AimAndShoot;
-                    currentAttackTriggerAction = RearHandTriggerAction;
                 }
                 else if (frontHandTriggerAction.GetStateDown(frontHandInputSource) && !RearHandTriggerAction.state)
                 {
                     currentSwingAttackMode = SwingAttackMode.SwingLaunch;
-                    currentAttackTriggerAction = frontHandTriggerAction;
                 }
             }
             else
@@ -116,7 +120,6 @@ namespace ValheimVRMod.Scripts
                         SteamVR_Actions.valheim_Grab.GetState(mainHandInputSource) ?
                         SwingAttackMode.SwingLaunch :
                         SwingAttackMode.AimAndShoot;
-                    currentAttackTriggerAction = MagicStaffUtils.AttackTriggerAction;
                 }
             }
         }

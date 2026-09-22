@@ -1,5 +1,6 @@
 using UnityEngine;
 using ValheimVRMod.VRCore;
+using ValheimVRMod.VRCore.UI;
 using Valve.VR;
 using Valve.VR.Extras;
 
@@ -51,9 +52,19 @@ namespace ValheimVRMod.Scripts
         // This is deliberately a level read rather than an edge read: a looping staff attack (the staff of
         // frost) is aborted by Player#PlayerAttackInput as soon as the attack hold drops, so the trigger has
         // to keep reporting the attack for the whole wind-up rather than only on the frame it was pressed.
+        //
+        // Two-handed, this is the rear hand's own Use/UseLeft trigger, gated like any other weapon trigger.
+        // Single-handed there is no rear hand, so it reads OneHandedMagic instead: a separately bindable action
+        // (defaulted to the same physical trigger) that exists so a one-handed cast can eventually be rebound
+        // away from Use/UseLeft, gated the same way.
         public static bool IsShootingTriggerHeld()
         {
-            return RearHandTriggerAction.GetState(RearHandInputSource);
+            if (LocalWeaponWield.isCurrentlyTwoHanded())
+            {
+                return !LaserPointerChords.IsLaserActiveFor(SteamVR_Input_Sources.Any) && RearHandTriggerAction.GetState(RearHandInputSource);
+            }
+            var mainHand = VRPlayer.mainWeaponHandInputSource;
+            return !LaserPointerChords.IsLaserActiveFor(mainHand) && SteamVR_Actions.valheim_OneHandedMagic.GetState(mainHand);
         }
 
         public static SteamVR_Action_Boolean SecondaryTriggerAction

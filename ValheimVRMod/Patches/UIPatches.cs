@@ -72,11 +72,24 @@ namespace ValheimVRMod.Patches
                 return;
             }
             float angle = VHVRConfig.UseVrControls() && VRPlayer.vrCam != null ? VRPlayer.vrCam.transform.rotation.eulerAngles.y : playerRot.eulerAngles.y;
-            __instance.m_smallMarker.localRotation = Quaternion.Euler(0f, 0f, -angle);
+            Quaternion markerRotation = Quaternion.Euler(0f, 0f, -angle);
+            __instance.m_smallMarker.localRotation = markerRotation;
+            // The vanilla code copies the world rotation of the small marker onto the large one,
+            // but the small marker lives on the VR HUD canvas, which can have any orientation,
+            // so the large marker needs its local rotation set here too.
+            if (__instance.m_mode == Minimap.MapMode.Large)
+            {
+                __instance.m_largeMarker.localRotation = markerRotation;
+            }
             Ship controlledShip = player.GetControlledShip();
             if (controlledShip)
             {
-                __instance.m_smallShipMarker.localRotation = Quaternion.Euler(0f, 0f, -controlledShip.transform.rotation.eulerAngles.y);
+                Quaternion shipMarkerRotation = Quaternion.Euler(0f, 0f, -controlledShip.transform.rotation.eulerAngles.y);
+                __instance.m_smallShipMarker.localRotation = shipMarkerRotation;
+                if (__instance.m_mode == Minimap.MapMode.Large)
+                {
+                    __instance.m_largeShipMarker.localRotation = shipMarkerRotation;
+                }
             }
         }
     }

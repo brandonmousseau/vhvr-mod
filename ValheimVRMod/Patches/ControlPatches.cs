@@ -867,7 +867,13 @@ namespace ValheimVRMod.Patches {
                 attackHold = true;
             }
 
-            if (EquipScript.CurrentOffHandEquipType() == EquipType.Crossbow && CrossbowManager.IsPullingTrigger(out bool useSecondaryCrossbowAttack))
+            // While riding, MountedAttackUtils polls this instead: IsPullingTrigger() reports a pull at most once
+            // (see its own lastPullingTriggerFrame), so if this consumed it here too while riding, vanilla's own
+            // attack flags below would do nothing (vanilla does not support attacking while riding) and the
+            // MountedAttackUtils call that actually fires it would see the pull as already consumed.
+            if (!MountedAttackUtils.IsRiding() &&
+                EquipScript.CurrentOffHandEquipType() == EquipType.Crossbow &&
+                CrossbowManager.IsPullingTrigger(out bool useSecondaryCrossbowAttack))
             {
                 if (useSecondaryCrossbowAttack)
                 {

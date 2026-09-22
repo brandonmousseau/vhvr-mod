@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using ValheimVRMod.VRCore;
+using ValheimVRMod.VRCore.UI;
 using Valve.VR;
 using Valve.VR.Extras;
 using Valve.VR.InteractionSystem;
@@ -36,10 +37,9 @@ namespace ValheimVRMod.Scripts
             get { return IsItemInRightHand ? VRPlayer.rightPointer : VRPlayer.leftPointer; }
         }
 
-        // The trigger of the hand actually holding the item.
-        private SteamVR_Action_Boolean ItemHandTriggerAction
+        private SteamVR_Input_Sources ItemHandInputSource
         {
-            get { return IsItemInRightHand ? SteamVR_Actions.valheim_Use : SteamVR_Actions.valheim_UseLeft; }
+            get { return IsItemInRightHand ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand; }
         }
 
         // The hand raised to summon is the one not holding the item.
@@ -48,10 +48,6 @@ namespace ValheimVRMod.Scripts
         private SteamVR_Input_Sources GestureHandInputSource
         {
             get { return IsGestureHandRight ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand; }
-        }
-        private SteamVR_Action_Boolean GestureHandTriggerAction
-        {
-            get { return IsGestureHandRight ? SteamVR_Actions.valheim_Use : SteamVR_Actions.valheim_UseLeft; }
         }
 
         private void Awake()
@@ -70,7 +66,7 @@ namespace ValheimVRMod.Scripts
         private void FixedUpdate()
         {
             var inputSource = GestureHandInputSource;
-            if (GestureHandTriggerAction.GetState(inputSource))
+            if (!LaserPointerChords.IsLaserActiveFor(inputSource) && SteamVR_Actions.valheim_OneHandedMagic.GetState(inputSource))
             {
                 if (hasSummonedInCurrentMotion)
                 {
@@ -115,7 +111,7 @@ namespace ValheimVRMod.Scripts
         public bool ConsumeAttemptingAttack()
         {
             // Pressing the trigger of the hand holding the summoner attacks directly, without a gesture.
-            if (ItemHandTriggerAction.state)
+            if (!LaserPointerChords.IsLaserActiveFor(ItemHandInputSource) && SteamVR_Actions.valheim_OneHandedMagic.GetState(ItemHandInputSource))
             {
                 return true;
             }

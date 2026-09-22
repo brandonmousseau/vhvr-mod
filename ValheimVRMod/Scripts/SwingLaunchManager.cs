@@ -38,12 +38,10 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            // The laserPointers action set masks the Valheim set while it is up, so the trigger edges around
-            // that transition are not the player's: a trigger still held when a container closes reads as a
-            // fresh press the moment the mask lifts. Arming the throw on that would let the next hand movement
-            // launch a projectile the player never asked for, which is especially easy to hit while fishing
-            // since FishingManager casts on speed alone without waiting for the trigger to be released.
-            if (!VRControls.laserControlsInTransition && mainHandInputAction.GetStateDown(swingInputSource))
+            // Don't arm a new swing-launch while any laser pointer is up (e.g. fishing shouldn't cast just
+            // because the player waved the rod around while clicking through a GUI), but once armed, let the
+            // preparation and the eventual release proceed even if a pointer comes up mid-swing.
+            if (!LaserPointerChords.IsLaserActiveFor(SteamVR_Input_Sources.Any) && mainHandInputAction.GetStateDown(swingInputSource))
             {
                 preparingThrow = true;
                 peakSpeed = 0;
@@ -91,13 +89,6 @@ namespace ValheimVRMod.Scripts
         private void MaybeReleaseProjectile() {
             if (!preparingThrow || isThrowing || peakSpeed < MIN_THROW_SPEED)
             {
-                return;
-            }
-
-            if (VRControls.laserControlsInTransition)
-            {
-                // See the comment in OnRenderObject(): the trigger edges are not trustworthy right now, and
-                // ReleaseTriggerToAttack() below reads one of them.
                 return;
             }
 

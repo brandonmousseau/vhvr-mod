@@ -44,6 +44,9 @@ namespace ValheimVRMod.Patches
                 !VHVRConfig.UseLookLocomotion() ||
                 ___m_currentStation != null /* Not Crafting */)
             {
+                // The heading keeps moving while this is inactive, so drop the stored angle: resuming
+                // against a stale one would apply everything that moved in the meantime as a single jump.
+                previousTrackedLocalAngle = null;
                 return;
             }
 
@@ -91,6 +94,7 @@ namespace ValheimVRMod.Patches
                         VRPlayer.instance.transform.rotation = Player_Rotation_Patch.attachmentIndependentRoomRotation;
                     }
                 }
+                previousTrackedLocalAngle = null;
                 return;
             }
             else
@@ -101,14 +105,22 @@ namespace ValheimVRMod.Patches
 
             if (!Player_Rotation_Patch.ShouldFaceLookDirection(__instance) || !VHVRConfig.UseVrControls())
             {
+                previousTrackedLocalAngle = null;
                 return;
             }
 
-            float currentLocalAngle = (Quaternion.Inverse(Valve.VR.InteractionSystem.Player.instance.hmdTransform.parent.rotation) * VRPlayer.pelvis.rotation).eulerAngles.y;
+            // The character follows the head only. The pelvis is deliberately not used here: it is a body
+            // IK target that carries terms which do not belong in the character facing, such as the
+            // hand-inferred adjustment applied when there is no waist tracker. Moving relative to the
+            // pelvis instead of the head is a locomotion option, applied where the joystick input is
+            // converted (see VHVRConfig.GetJoystickForwardDirection).
+            float currentLocalAngle = Valve.VR.InteractionSystem.Player.instance.hmdTransform.localRotation.eulerAngles.y;
             if (previousTrackedLocalAngle.HasValue)
             {
-                // Find the difference between the current rotation and previous rotation
-                float deltaRotation = currentLocalAngle - previousTrackedLocalAngle.Value;
+                // Find the difference between the current rotation and previous rotation. Taken as an
+                // angle difference rather than a plain subtraction, which yields a full turn either way
+                // whenever the angle wraps around zero.
+                float deltaRotation = Mathf.DeltaAngle(previousTrackedLocalAngle.Value, currentLocalAngle);
 
                 // Rotate the look yaw by the amount the player rotated their head since last iteration
                 ___m_lookYaw *= Quaternion.AngleAxis(deltaRotation, Vector3.up);

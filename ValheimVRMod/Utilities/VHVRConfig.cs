@@ -735,7 +735,8 @@ namespace ValheimVRMod.Utilities
             joystickForwardDirection = config.Bind(
                 "Controls", "JoyStickForwardDirection", "LookDirection",
                 new ConfigDescription(
-                    "The direction the character should move when the joystick is pushed forward",
+                    "The direction the character should move when the joystick is pushed forward. " +
+                    "\"Body\" requires a waist tracker and behaves the same as \"LookDirection\" without one.",
                     new AcceptableValueList<string>(new string[] { "LookDirection", "LeftController", "RightController", "Body", "Original" })));
             smoothTurnSpeed = config.Bind("Controls",
                                           "SmoothTurnSpeed",
@@ -1332,7 +1333,7 @@ namespace ValheimVRMod.Utilities
         {
             return joystickForwardDirection.Value != "Original";
         }
-        public static Vector3 GetJoystickForwardDirection(Transform head, Transform leftHand, Transform rightHand, Transform pelvis, Transform player) {
+        public static Vector3 GetJoystickForwardDirection(Transform head, Transform leftHand, Transform rightHand, Transform body, Transform player) {
             switch (joystickForwardDirection.Value) { 
                 case "LookDirection":
                     return head.forward;
@@ -1340,8 +1341,8 @@ namespace ValheimVRMod.Utilities
                     return leftHand.forward;
                 case "RightController":
                     return rightHand.forward;
-                case "Pelvis":
-                    return pelvis.forward;
+                case "Body":
+                    return body.forward;
                 default:
                     return player.forward;
             }
