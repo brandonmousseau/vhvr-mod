@@ -219,6 +219,13 @@ namespace ValheimVRMod.Scripts {
             return crossbowMorphManager.isPulling || crossbowMorphManager.IsHandClosePullStart();
         }
 
+        // The frame IsPullingTrigger() last reported a pull, so a single physical pull is reported at most once
+        // per frame no matter how many times or from how many call sites (Player.SetControls always polls this,
+        // MountedAttackUtils polls it again while riding) it is queried that frame: SteamVR action values can be
+        // refreshed more than once per frame (see LaserPointerChords.isChordDown()), so without this a single
+        // pull could otherwise fire the weapon more than once.
+        private static int lastPullingTriggerFrame = -1;
+
         // useSecondaryAttack reports whether the pull should fire the weapon's secondary attack instead of its primary one.
         public static bool IsPullingTrigger(out bool useSecondaryAttack)
         {
@@ -262,6 +269,18 @@ namespace ValheimVRMod.Scripts {
                         isPullingTrigger = !LaserPointerChords.IsLaserActiveFor(SteamVR_Input_Sources.Any) && trigger.GetStateUp(hand);
                     }
                     break;
+            }
+
+            if (isPullingTrigger)
+            {
+                if (lastPullingTriggerFrame == Time.frameCount)
+                {
+                    isPullingTrigger = false;
+                }
+                else
+                {
+                    lastPullingTriggerFrame = Time.frameCount;
+                }
             }
 
             if (isPullingTrigger && !instance.crossbowMorphManager.isBoltLoaded)
