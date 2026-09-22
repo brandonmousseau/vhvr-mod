@@ -151,7 +151,9 @@ namespace ValheimVRMod.Scripts.Block {
         }
 
         public void block() {
-            if (VHVRConfig.UseGrabButtonBlock())
+            // Realistic blocking has no post-block cooldown, as in vanilla, where consecutive blocks are only limited
+            // by stamina and the stagger meter.
+            if (VHVRConfig.UseGrabButtonBlock() || VHVRConfig.UseRealisticBlock())
             {
                 return;
             }
