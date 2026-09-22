@@ -115,6 +115,7 @@ namespace ValheimVRMod.VRCore.UI
             if (mainActionSet.IsActive())
             {
                 checkRecenterPose(Time.unscaledDeltaTime);
+                MissingBindingsPrompt.Update(Time.unscaledDeltaTime);
             }
             if ((mainControlsActive && SteamVR_Actions.valheim_ToggleInventory.GetStateDown(SteamVR_Input_Sources.Any)) ||
                 ZInput.GetButtonDown("Inventory") ||
