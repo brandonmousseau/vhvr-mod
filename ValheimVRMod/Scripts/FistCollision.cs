@@ -118,10 +118,10 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            Character character = null;
-            if (collider.gameObject.layer == LayerUtils.CHARACTER)
+            Character character = collider.GetComponentInParent<Character>();
+            if (collider.gameObject.layer != LayerUtils.CHARACTER && !WeaponCollision.IsTrainingDummy(character))
             {
-                character = collider.GetComponentInParent<Character>();
+                character = null;
             }
 
             if (TryPet(collider, character))
@@ -158,12 +158,10 @@ namespace ValheimVRMod.Scripts
                     !SteamVR_Actions.valheim_Use.GetState(inputSource) &&
                     !SteamVR_Actions.valheim_UseLeft.GetState(inputSource) &&
                     !Player.m_localPlayer.m_inCraftingStation) {
-                    if (collider.gameObject.layer != LayerUtils.CHARACTER)
-                    {
-                        return;
-                    }
                     Character character = collider.GetComponentInParent<Character>();
-                    if (character == null || WeaponCollision.IsFriendly(character))
+                    if (character == null ||
+                        (collider.gameObject.layer != LayerUtils.CHARACTER && !WeaponCollision.IsTrainingDummy(character)) ||
+                        WeaponCollision.IsFriendly(character))
                     {
                         return;
                     }
