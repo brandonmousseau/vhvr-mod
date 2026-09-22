@@ -138,6 +138,7 @@ namespace ValheimVRMod.Patches {
     }
 
     [HarmonyPatch(typeof(GraphicsSettings), nameof(GraphicsSettings.UpdateSettingAvailability))]
+    [FlatScreenSafe]
     class GraphicsSettingsUpdateSettingAvailabilityPatch
     {
         public static bool Prefix(GraphicsSettings __instance)
