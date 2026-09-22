@@ -462,8 +462,16 @@ namespace ValheimVRMod.Scripts
         public void setColliderParent(MeshFilter meshFilter, Vector3 handPosition, int itemHash, bool isDominantHand)
         {
             var meshTranform = meshFilter.transform;
-            outline = meshTranform.parent.gameObject.AddComponent<Outline>();
+            outline = meshTranform.parent.gameObject.GetComponent<Outline>();
+            if (outline == null)
+            {
+                outline = meshTranform.parent.gameObject.AddComponent<Outline>();
+            }
             outline.OutlineMode = Outline.Mode.OutlineVisible;
+            // Update() turns the outline on when it is needed. It has to start off: Update() never runs its outline
+            // logic for items without an attack (e.g. the fishing rod), which would otherwise keep the default white
+            // outline forever.
+            outline.enabled = false;
 
             this.isVanillaRightHandedWeapon = isDominantHand;
             item = this.isVanillaRightHandedWeapon ? Player.m_localPlayer.GetRightItem() : Player.m_localPlayer.GetLeftItem();
