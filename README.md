@@ -1,3 +1,35 @@
+
+<div align="right">
+  <details>
+    <summary >🌐 Language</summary>
+    <div>
+      <div align="center">
+        <a href="https://openaitx.github.io/view.html?user=brandonmousseau&project=vhvr-mod&lang=en">English</a>
+        | <a href="https://openaitx.github.io/view.html?user=brandonmousseau&project=vhvr-mod&lang=zh-CN">简体中文</a>
+        | <a href="https://openaitx.github.io/view.html?user=brandonmousseau&project=vhvr-mod&lang=zh-TW">繁體中文</a>
+        | <a href="https://openaitx.github.io/view.html?user=brandonmousseau&project=vhvr-mod&lang=ja">日本語</a>
+        | <a href="https://openaitx.github.io/view.html?user=brandonmousseau&project=vhvr-mod&lang=ko">한국어</a>
+        | <a href="https://openaitx.github.io/view.html?user=brandonmousseau&project=vhvr-mod&lang=hi">हिन्दी</a>
+        | <a href="https://openaitx.github.io/view.html?user=brandonmousseau&project=vhvr-mod&lang=th">ไทย</a>
+        | <a href="https://openaitx.github.io/view.html?user=brandonmousseau&project=vhvr-mod&lang=fr">Français</a>
+        | <a href="https://openaitx.github.io/view.html?user=brandonmousseau&project=vhvr-mod&lang=de">Deutsch</a>
+        | <a href="https://openaitx.github.io/view.html?user=brandonmousseau&project=vhvr-mod&lang=es">Español</a>
+        | <a href="https://openaitx.github.io/view.html?user=brandonmousseau&project=vhvr-mod&lang=it">Italiano</a>
+        | <a href="https://openaitx.github.io/view.html?user=brandonmousseau&project=vhvr-mod&lang=ru">Русский</a>
+        | <a href="https://openaitx.github.io/view.html?user=brandonmousseau&project=vhvr-mod&lang=pt">Português</a>
+        | <a href="https://openaitx.github.io/view.html?user=brandonmousseau&project=vhvr-mod&lang=nl">Nederlands</a>
+        | <a href="https://openaitx.github.io/view.html?user=brandonmousseau&project=vhvr-mod&lang=pl">Polski</a>
+        | <a href="https://openaitx.github.io/view.html?user=brandonmousseau&project=vhvr-mod&lang=ar">العربية</a>
+        | <a href="https://openaitx.github.io/view.html?user=brandonmousseau&project=vhvr-mod&lang=fa">فارسی</a>
+        | <a href="https://openaitx.github.io/view.html?user=brandonmousseau&project=vhvr-mod&lang=tr">Türkçe</a>
+        | <a href="https://openaitx.github.io/view.html?user=brandonmousseau&project=vhvr-mod&lang=vi">Tiếng Việt</a>
+        | <a href="https://openaitx.github.io/view.html?user=brandonmousseau&project=vhvr-mod&lang=id">Bahasa Indonesia</a>
+        | <a href="https://openaitx.github.io/view.html?user=brandonmousseau&project=vhvr-mod&lang=as">অসমীয়া</
+      </div>
+    </div>
+  </details>
+</div>
+
 # VHVR-Mod
 This is an experimental mod for the PC game Valheim that adds in native VR support using Unity and SteamVR with OpenVR.
 
