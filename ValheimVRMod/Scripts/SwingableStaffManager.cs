@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using ValheimVRMod.VRCore.UI;
 using Valve.VR;
@@ -61,14 +62,16 @@ namespace ValheimVRMod.Scripts
                     return isThrowing;
                 }
                 // AimAndShoot: two-handed reads the rear hand's own trigger, disabled while any laser pointer is
-                // up like any other weapon trigger; single-handed there is no rear hand, so it reads
-                // OneHandedMagic instead, gated per-hand.
+                // up like any other weapon trigger. Single-handed, AimAndShoot is the trigger pressed without grab
+                // (grab + trigger swing-launches instead), so it is only available with AllowSimpleMagicAttack.
                 if (LocalWeaponWield.isCurrentlyTwoHanded())
                 {
                     return !LaserPointerChords.IsLaserActiveFor(SteamVR_Input_Sources.Any) && RearHandTriggerAction.GetState(RearHandInputSource);
                 }
                 var mainHand = VRPlayer.mainWeaponHandInputSource;
-                return !LaserPointerChords.IsLaserActiveFor(mainHand) && SteamVR_Actions.valheim_OneHandedMagic.GetState(mainHand);
+                return VHVRConfig.AllowSimpleMagicAttack() &&
+                    !LaserPointerChords.IsLaserActiveFor(mainHand) &&
+                    MagicStaffUtils.AttackTriggerAction.GetState(mainHand);
             }
         }
 

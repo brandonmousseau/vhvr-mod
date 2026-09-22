@@ -233,14 +233,6 @@ namespace Valve.VR
             }
         }
         
-        public virtual SteamVR_Action_Boolean OneHandedMagic
-        {
-            get
-            {
-                return SteamVR_Actions.valheim_OneHandedMagic;
-            }
-        }
-        
         public virtual SteamVR_Action_Boolean LeftClick
         {
             get

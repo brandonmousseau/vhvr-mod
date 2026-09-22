@@ -163,6 +163,20 @@
          "chords" : [
             {
                "inputs" : [
+                  [ "/user/hand/right/input/grip", "click" ],
+                  [ "/user/hand/right/input/joystick", "north" ]
+               ],
+               "output" : "/actions/valheim/in/scrollup"
+            },
+            {
+               "inputs" : [
+                  [ "/user/hand/right/input/grip", "click" ],
+                  [ "/user/hand/right/input/joystick", "south" ]
+               ],
+               "output" : "/actions/valheim/in/scrolldown"
+            },
+            {
+               "inputs" : [
                   [ "/user/hand/left/input/trigger", "click" ],
                   [ "/user/hand/right/input/a", "single" ]
                ],
@@ -477,39 +491,6 @@
                "mode" : "button",
                "parameters" : {},
                "path" : "/user/hand/left/input/trigger"
-            },
-            {
-               "inputs" : {
-                  "click" : {
-                     "output" : "/actions/valheim/in/onehandedmagic"
-                  }
-               },
-               "mode" : "trigger",
-               "parameters" : {},
-               "path" : "/user/hand/left/input/trigger"
-            },
-            {
-               "inputs" : {
-                  "click" : {
-                     "output" : "/actions/valheim/in/onehandedmagic"
-                  }
-               },
-               "mode" : "trigger",
-               "parameters" : {},
-               "path" : "/user/hand/right/input/trigger"
-            },
-            {
-               "inputs" : {
-                  "north" : {
-                     "output" : "/actions/valheim/in/scrollup"
-                  },
-                  "south" : {
-                     "output" : "/actions/valheim/in/scrolldown"
-                  }
-               },
-               "mode" : "dpad",
-               "parameters" : {},
-               "path" : "/user/hand/left/input/joystick"
             }
          ]
       }

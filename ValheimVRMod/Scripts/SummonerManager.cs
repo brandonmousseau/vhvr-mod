@@ -49,6 +49,10 @@ namespace ValheimVRMod.Scripts
         {
             get { return IsGestureHandRight ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand; }
         }
+        private SteamVR_Action_Boolean GestureHandTriggerAction
+        {
+            get { return IsGestureHandRight ? SteamVR_Actions.valheim_Use : SteamVR_Actions.valheim_UseLeft; }
+        }
 
         private void Awake()
         {
@@ -66,7 +70,7 @@ namespace ValheimVRMod.Scripts
         private void FixedUpdate()
         {
             var inputSource = GestureHandInputSource;
-            if (!LaserPointerChords.IsLaserActiveFor(inputSource) && SteamVR_Actions.valheim_OneHandedMagic.GetState(inputSource))
+            if (!LaserPointerChords.IsLaserActiveFor(inputSource) && GestureHandTriggerAction.GetState(inputSource))
             {
                 if (hasSummonedInCurrentMotion)
                 {
@@ -111,7 +115,7 @@ namespace ValheimVRMod.Scripts
         public bool ConsumeAttemptingAttack()
         {
             // Pressing the trigger of the hand holding the summoner attacks directly, without a gesture.
-            if (!LaserPointerChords.IsLaserActiveFor(ItemHandInputSource) && SteamVR_Actions.valheim_OneHandedMagic.GetState(ItemHandInputSource))
+            if (MagicStaffUtils.IsCastTriggerHeld(ItemHandInputSource))
             {
                 return true;
             }

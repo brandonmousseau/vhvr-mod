@@ -75,6 +75,16 @@ namespace ValheimVRMod.VRCore.UI
             return pressed && !isRightClickSuppressed;
         }
 
+        // Whether the action is held on a hand whose own laser pointer is not up, for player controls that share
+        // their buttons with laser pointer controls on the same hand (e.g. the run and crouch toggles on the stick
+        // that scrolls while pointing).
+        public static bool IsHeldWithoutLaser(SteamVR_Action_Boolean action)
+        {
+            return
+                (action.GetState(SteamVR_Input_Sources.LeftHand) && !IsLaserActiveFor(SteamVR_Input_Sources.LeftHand)) ||
+                (action.GetState(SteamVR_Input_Sources.RightHand) && !IsLaserActiveFor(SteamVR_Input_Sources.RightHand));
+        }
+
         // Whether the given hand's own laser pointer is currently up. "Any" (asked by call sites that don't care
         // which hand) is true when either hand's pointer is active, matching VRControls.laserControlsActive.
         public static bool IsLaserActiveFor(SteamVR_Input_Sources hand)

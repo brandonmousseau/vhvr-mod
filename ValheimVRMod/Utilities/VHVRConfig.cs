@@ -160,6 +160,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> spearInverseWield;
         private static ConfigEntry<string> twoHandedWield;
         private static ConfigEntry<bool> twoHandedWithShield;
+        private static ConfigEntry<bool> allowSimpleMagicAttack;
         private static ConfigEntry<float> arrowRestElevation;
         private static ConfigEntry<string> arrowRestSide;
         private static ConfigEntry<string> bowDrawRestrictType;
@@ -1038,6 +1039,12 @@ namespace ValheimVRMod.Utilities
                                                     "CrossbowManualReload",
                                                     true,
                                                     "When supported, crossbows requires manually pulling the string to reload");
+            allowSimpleMagicAttack = config.Bind("Motion Control",
+                                                    "AllowSimpleMagicAttack",
+                                                    true,
+                                                    "Allows casting with a staff, orb or summoner held in one hand by just pulling the trigger of that hand. " +
+                                                    "When disabled, casting requires either two-handed wield or holding grab with the same hand while pulling the trigger, " +
+                                                    "and swingable staves can only swing-launch when held in one hand");
             blockingType = config.Bind("Motion Control",
                                         "BlockingType",
                                         "Gesture",
@@ -1776,6 +1783,11 @@ namespace ValheimVRMod.Utilities
         public static bool CrossbowManualReload()
         {
             return crossbowManualReload.Value;
+        }
+
+        public static bool AllowSimpleMagicAttack()
+        {
+            return allowSimpleMagicAttack.Value;
         }
 
         public static bool UseRealisticBlock()

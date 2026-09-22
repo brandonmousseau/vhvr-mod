@@ -1,4 +1,5 @@
 using UnityEngine;
+using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using ValheimVRMod.VRCore.UI;
 using Valve.VR;
@@ -52,19 +53,28 @@ namespace ValheimVRMod.Scripts
         // This is deliberately a level read rather than an edge read: a looping staff attack (the staff of
         // frost) is aborted by Player#PlayerAttackInput as soon as the attack hold drops, so the trigger has
         // to keep reporting the attack for the whole wind-up rather than only on the frame it was pressed.
-        //
-        // Two-handed, this is the rear hand's own Use/UseLeft trigger, gated like any other weapon trigger.
-        // Single-handed there is no rear hand, so it reads OneHandedMagic instead: a separately bindable action
-        // (defaulted to the same physical trigger) that exists so a one-handed cast can eventually be rebound
-        // away from Use/UseLeft, gated the same way.
         public static bool IsShootingTriggerHeld()
+        {
+            return IsCastTriggerHeld(VRPlayer.mainWeaponHandInputSource);
+        }
+
+        // Whether a magic item held in the given hand is being cast by its trigger, as a level read.
+        // Two-handed, this is the rear hand's trigger, disabled while any laser pointer is up like any other
+        // weapon trigger. Single-handed, this is the item hand's own trigger, disabled while that hand's laser
+        // pointer is up, and unless AllowSimpleMagicAttack is set it also needs the grab of that same hand.
+        public static bool IsCastTriggerHeld(SteamVR_Input_Sources itemHand)
         {
             if (LocalWeaponWield.isCurrentlyTwoHanded())
             {
                 return !LaserPointerChords.IsLaserActiveFor(SteamVR_Input_Sources.Any) && RearHandTriggerAction.GetState(RearHandInputSource);
             }
-            var mainHand = VRPlayer.mainWeaponHandInputSource;
-            return !LaserPointerChords.IsLaserActiveFor(mainHand) && SteamVR_Actions.valheim_OneHandedMagic.GetState(mainHand);
+            if (LaserPointerChords.IsLaserActiveFor(itemHand))
+            {
+                return false;
+            }
+            var triggerAction = itemHand == SteamVR_Input_Sources.RightHand ? SteamVR_Actions.valheim_Use : SteamVR_Actions.valheim_UseLeft;
+            return triggerAction.GetState(itemHand) &&
+                (VHVRConfig.AllowSimpleMagicAttack() || SteamVR_Actions.valheim_Grab.GetState(itemHand));
         }
 
         public static SteamVR_Action_Boolean SecondaryTriggerAction

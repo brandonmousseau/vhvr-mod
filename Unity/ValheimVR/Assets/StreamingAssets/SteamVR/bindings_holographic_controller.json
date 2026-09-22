@@ -397,24 +397,6 @@
                },
                "mode" : "button",
                "path" : "/user/hand/left/input/trigger"
-            },
-            {
-               "inputs" : {
-                  "click" : {
-                     "output" : "/actions/valheim/in/onehandedmagic"
-                  }
-               },
-               "mode" : "button",
-               "path" : "/user/hand/right/input/trigger"
-            },
-            {
-               "inputs" : {
-                  "click" : {
-                     "output" : "/actions/valheim/in/onehandedmagic"
-                  }
-               },
-               "mode" : "button",
-               "path" : "/user/hand/left/input/trigger"
             }
          ]
       }
