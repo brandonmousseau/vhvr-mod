@@ -131,14 +131,25 @@ namespace ValheimVRMod.Scripts
             Kick(collider, transform.position, velocity, speed);
         }
 
-        // Attacks the target with the unarmed weapon's kick (its secondary attack), or its primary attack while the
-        // kick is still cooling down. Also used by weapons without a real attack against hostiles (the snow shovel).
-        // Returns whether the attack was started.
+        // Attacks the target with a kick, which is the secondary attack of the equipped fist weapon or, without one,
+        // of the unarmed weapon, as in vanilla, where the fist weapon's damage makes kicks hit much harder. Falls
+        // back to the primary attack while the kick is still cooling down. Also used by weapons without a real
+        // attack against hostiles (the snow shovel). Returns whether the attack was started.
         public static bool Kick(Collider collider, Vector3 hitPoint, Vector3 velocity, float speed)
         {
             var isCurrentlySecondaryAttack = FistCollision.LocalPlayerSecondaryAttackCooldown <= 0;
-            var item = Player.m_localPlayer.m_unarmedWeapon.m_itemData;
-            var attack = isCurrentlySecondaryAttack ? item.m_shared.m_secondaryAttack : item.m_shared.m_attack;
+            ItemDrop.ItemData item;
+            Attack attack;
+            if (EquipScript.CurrentMainHandEquipType() == EquipType.Claws)
+            {
+                item = Player.m_localPlayer.GetRightItem();
+                attack = (isCurrentlySecondaryAttack ? item.m_shared.m_secondaryAttack : item.m_shared.m_attack).Clone();
+            }
+            else
+            {
+                item = Player.m_localPlayer.m_unarmedWeapon.m_itemData;
+                attack = isCurrentlySecondaryAttack ? item.m_shared.m_secondaryAttack : item.m_shared.m_attack;
+            }
 
             // Always use the duration of the primary attack for target cooldown to allow primary attack immediately following a secondary attack.
             // The secondary attack cooldown is managed by FistCollision.LocalPlayerSecondaryAttackCooldown  instead.
