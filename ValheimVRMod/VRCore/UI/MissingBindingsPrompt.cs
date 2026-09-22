@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using Valve.VR;
 using static ValheimVRMod.Utilities.LogUtils;
@@ -33,6 +34,14 @@ namespace ValheimVRMod.VRCore.UI
             SteamVR_Actions.valheim_RightClick,
         };
 
+        // Scrolling the UI and zooming the map is done either with the ContextScroll trackpad or, on controllers
+        // without one, with the ScrollUp/ScrollDown buttons standing in for it, so neither is essential on its own:
+        // these are only reported as missing when ContextScroll is unbound as well.
+        private static readonly SteamVR_Action[] SCROLL_BUTTON_ACTIONS = {
+            SteamVR_Actions.valheim_ScrollUp,
+            SteamVR_Actions.valheim_ScrollDown,
+        };
+
         // SteamVR loads the bindings asynchronously, and an action only reports its binding once a device it is bound
         // to is connected, so the check waits until both controllers have been connected for a while.
         private const float SETTLE_TIME = 5f;
@@ -59,8 +68,12 @@ namespace ValheimVRMod.VRCore.UI
             }
             hasChecked = true;
 
-            string[] missingActions =
-                ESSENTIAL_ACTIONS.Where(action => !action.activeBinding).Select(action => action.GetShortName()).ToArray();
+            IEnumerable<SteamVR_Action> unboundActions = ESSENTIAL_ACTIONS.Where(action => !action.activeBinding);
+            if (!SteamVR_Actions.valheim_ContextScroll.activeBinding)
+            {
+                unboundActions = unboundActions.Concat(SCROLL_BUTTON_ACTIONS.Where(action => !action.activeBinding));
+            }
+            string[] missingActions = unboundActions.Select(action => action.GetShortName()).ToArray();
             if (missingActions.Length == 0)
             {
                 return;
