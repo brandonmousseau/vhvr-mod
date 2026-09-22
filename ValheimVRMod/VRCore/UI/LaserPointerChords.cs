@@ -1,5 +1,6 @@
 using UnityEngine;
 using ValheimVRMod.Utilities;
+using ValheimVRMod.VRCore;
 using Valve.VR;
 
 namespace ValheimVRMod.VRCore.UI
@@ -35,7 +36,8 @@ namespace ValheimVRMod.VRCore.UI
         private const string PLACE_BUTTON = "JoyPlace";
 
         private static bool initialized = false;
-        // Whether the game has been given the current right click press, see OnActionsUpdated().
+        // Whether the game has been given the current left/right click press, see OnActionsUpdated().
+        private static bool leftClickDelivered;
         private static bool rightClickDelivered;
         private static int lastAddMapPinFrame = -1;
         private static int lastDiscardItemFrame = -1;
@@ -73,44 +75,55 @@ namespace ValheimVRMod.VRCore.UI
             return pressed && !isRightClickSuppressed;
         }
 
+        // Whether the given hand's own laser pointer is currently up. "Any" (asked by call sites that don't care
+        // which hand) is true when either hand's pointer is active, matching VRControls.laserControlsActive.
+        public static bool IsLaserActiveFor(SteamVR_Input_Sources hand)
+        {
+            switch (hand)
+            {
+                case SteamVR_Input_Sources.LeftHand:
+                    return VRPlayer.leftPointer != null && VRPlayer.leftPointer.pointerIsActive();
+                case SteamVR_Input_Sources.RightHand:
+                    return VRPlayer.rightPointer != null && VRPlayer.rightPointer.pointerIsActive();
+                default:
+                    return VRPlayer.activePointer != null;
+            }
+        }
+
         private static void OnActionsUpdated()
         {
-            SteamVR_Action_Boolean leftClickAction = SteamVR_Actions.laserPointers_LeftClick;
-            // The right click is in the main action set, not the laser pointer one, so that the buttons it shares
-            // with the quick menus (see bindings_*.json) keep reaching those while a pointer is active, which the
-            // higher priority laser pointer set would otherwise mask. Unlike the left click it is therefore not
-            // silenced by its action set going inactive and has to be gated on laserControlsActive below.
+            SteamVR_Action_Boolean leftClickAction = SteamVR_Actions.valheim_LeftClick;
             SteamVR_Action_Boolean rightClickAction = SteamVR_Actions.valheim_RightClick;
 
             if (VRControls.laserControlsActive)
             {
-                if (Minimap.IsOpen() && SteamVR_Actions.laserPointers_AddMapPin.GetState(SteamVR_Input_Sources.Any))
+                if (Minimap.IsOpen() && SteamVR_Actions.valheim_AddMapPin.GetState(SteamVR_Input_Sources.Any))
                 {
                     isLeftClickSuppressed = true;
                 }
-                if (isChordDown(SteamVR_Actions.laserPointers_AddMapPin, ref lastAddMapPinFrame) && isPointerOverLargeMap())
+                if (isChordDown(SteamVR_Actions.valheim_AddMapPin, ref lastAddMapPinFrame) && isPointerOverLargeMap())
                 {
                     Minimap.instance.OnMapDblClick();
                     resetMapPointerState();
                 }
-                if (InventoryGui.IsVisible() && SteamVR_Actions.laserPointers_SplitStack.GetState(SteamVR_Input_Sources.Any))
+                if (InventoryGui.IsVisible() && SteamVR_Actions.valheim_SplitStack.GetState(SteamVR_Input_Sources.Any))
                 {
                     isLeftClickSuppressed = true;
                 }
-                if (isChordDown(SteamVR_Actions.laserPointers_DiscardItem, ref lastDiscardItemFrame))
+                if (isChordDown(SteamVR_Actions.valheim_DiscardItem, ref lastDiscardItemFrame))
                 {
-                    selectHoveredInventoryItem(InventoryGrid.Modifier.Move);
+                    VRGUI.SelectHoveredInventoryItem(InventoryGrid.Modifier.Move);
                 }
-                if (isChordDown(SteamVR_Actions.laserPointers_SplitStack, ref lastSplitStackFrame))
+                if (isChordDown(SteamVR_Actions.valheim_SplitStack, ref lastSplitStackFrame))
                 {
-                    selectHoveredInventoryItem(InventoryGrid.Modifier.Split);
+                    VRGUI.SelectHoveredInventoryItem(InventoryGrid.Modifier.Split);
                 }
-                if (SteamVR_Actions.laserPointers_MiddleClick.GetState(SteamVR_Input_Sources.Any))
+                if (SteamVR_Actions.valheim_MiddleClick.GetState(SteamVR_Input_Sources.Any))
                 {
                     isRightClickSuppressed = true;
                 }
             }
-            middleClick = VRControls.laserControlsActive && SteamVR_Actions.laserPointers_MiddleClick.GetState(SteamVR_Input_Sources.Any);
+            middleClick = VRControls.laserControlsActive && SteamVR_Actions.valheim_MiddleClick.GetState(SteamVR_Input_Sources.Any);
 
             // Keep a suppression through the frame its button is released, so that release is hidden too, and so
             // that closing the GUI mid-click cannot leave the game with a button up it never saw go down.
@@ -123,9 +136,23 @@ namespace ValheimVRMod.VRCore.UI
                 isRightClickSuppressed = false;
             }
 
-            leftClick = FilterLeftClick(leftClickAction.GetState(SteamVR_Input_Sources.Any));
-            leftClickDown = FilterLeftClick(leftClickAction.GetStateDown(SteamVR_Input_Sources.Any));
-            leftClickUp = FilterLeftClick(leftClickAction.GetStateUp(SteamVR_Input_Sources.Any));
+            // Both clicks live in the single Valheim action set now (there is no more separate, higher priority
+            // laser pointer set to silence them while a pointer is inactive), so both are explicitly gated on
+            // laserControlsActive here rather than relying on the action itself going quiet - otherwise pulling
+            // the same physical trigger for Use/UseLeft while no pointer is up would also register as a click.
+            leftClick = VRControls.laserControlsActive && FilterLeftClick(leftClickAction.GetState(SteamVR_Input_Sources.Any));
+            leftClickDown = VRControls.laserControlsActive && FilterLeftClick(leftClickAction.GetStateDown(SteamVR_Input_Sources.Any));
+            if (leftClickDown)
+            {
+                leftClickDelivered = true;
+            }
+            // The release is reported even once the laser controls are gone, so that a press the game has seen
+            // cannot be left without its button up, but a press that was hidden here stays hidden on release too.
+            leftClickUp = leftClickDelivered && FilterLeftClick(leftClickAction.GetStateUp(SteamVR_Input_Sources.Any));
+            if (leftClickUp)
+            {
+                leftClickDelivered = false;
+            }
 
             rightClick = VRControls.laserControlsActive && FilterRightClick(rightClickAction.GetState(SteamVR_Input_Sources.Any));
             rightClickDown = VRControls.laserControlsActive && FilterRightClick(rightClickAction.GetStateDown(SteamVR_Input_Sources.Any));
@@ -190,37 +217,6 @@ namespace ValheimVRMod.VRCore.UI
             var canvas = map.GetComponentInParent<Canvas>();
             var camera = canvas == null ? null : canvas.rootCanvas.worldCamera;
             return RectTransformUtility.RectangleContainsScreenPoint(map, SoftwareCursor.simulatedMousePosition, camera);
-        }
-
-        // Selects the item under the pointer in the player's or the open container's inventory with the given modifier,
-        // as vanilla does for modified clicks: Move moves the item between the inventory and the open container, or
-        // drops it when no container is open, and Split opens the split dialog for a stack.
-        private static void selectHoveredInventoryItem(InventoryGrid.Modifier modifier)
-        {
-            InventoryGui inventoryGui = InventoryGui.instance;
-            if (!InventoryGui.IsVisible() || inventoryGui == null || inventoryGui.m_dragGo != null)
-            {
-                return;
-            }
-            foreach (InventoryGrid grid in new InventoryGrid[] { inventoryGui.m_playerGrid, inventoryGui.m_containerGrid })
-            {
-                if (grid == null || !grid.isActiveAndEnabled || grid.GetInventory() == null)
-                {
-                    continue;
-                }
-                InventoryElement element = grid.GetHoveredElement();
-                if (element == null)
-                {
-                    continue;
-                }
-                Vector2i position = grid.GetElementPos(element);
-                ItemDrop.ItemData item = grid.GetInventory().GetItemAt(position.x, position.y);
-                if (item != null)
-                {
-                    inventoryGui.OnSelectedItem(grid, item, position, modifier);
-                }
-                return;
-            }
         }
 
         // A click that was pressed before its chord completed has already reached the map. Without resetting this,

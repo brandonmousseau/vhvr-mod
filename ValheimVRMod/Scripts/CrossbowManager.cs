@@ -1,6 +1,7 @@
 using UnityEngine;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
+using ValheimVRMod.VRCore.UI;
 using Valve.VR;
 using Valve.VR.InteractionSystem;
 
@@ -103,11 +104,12 @@ namespace ValheimVRMod.Scripts {
         }
 
         private void UpdateOneHandedAiming()
-        { 
+        {
             bool isAiming =
-                VHVRConfig.LeftHanded() ?
-                SteamVR_Actions.valheim_UseLeft.state :
-                SteamVR_Actions.valheim_Use.state;
+                !LaserPointerChords.IsLaserActiveFor(SteamVR_Input_Sources.Any) &&
+                (VHVRConfig.LeftHanded() ?
+                SteamVR_Actions.valheim_UseLeft.GetState(SteamVR_Input_Sources.LeftHand) :
+                SteamVR_Actions.valheim_Use.GetState(SteamVR_Input_Sources.RightHand));
             if (!isAiming)
             {
                 transform.position = geometryProvider.GetDesiredSingleHandedPosition(this);
@@ -160,12 +162,30 @@ namespace ValheimVRMod.Scripts {
             }
         }
 
+        private SteamVR_Input_Sources OtherHandInputSource
+        {
+            get
+            {
+                switch (twoHandedState)
+                {
+                    case TwoHandedState.LeftHandBehind:
+                        return SteamVR_Input_Sources.RightHand;
+                    case TwoHandedState.RightHandBehind:
+                        return SteamVR_Input_Sources.LeftHand;
+                    default:
+                        return VRPlayer.isRightHandMainWeaponHand ? SteamVR_Input_Sources.LeftHand : SteamVR_Input_Sources.RightHand;
+                }
+            }
+        }
+
         void Update()
         {
             // Pressing the other hand's trigger releases a deployed grappling hook. This runs in Update rather than
             // OnRenderObject, which may run several times per frame while the hook is only destroyed at its end.
+            // Not usable while any laser pointer is up, like the crossbow's own firing trigger below.
             if (GrapplingPoint.m_localGrappler != null &&
-                OtherHandTriggerAction.stateDown &&
+                !LaserPointerChords.IsLaserActiveFor(SteamVR_Input_Sources.Any) &&
+                OtherHandTriggerAction.GetStateDown(OtherHandInputSource) &&
                 EquipScript.IsGrapplingHook(Player.m_localPlayer.GetLeftItem()))
             {
                 GrapplingPoint.m_localGrappler.Break(early: true);
@@ -221,18 +241,25 @@ namespace ValheimVRMod.Scripts {
             switch (instance.twoHandedState)
             {
                 case TwoHandedState.LeftHandBehind:
-                    isPullingTrigger = SteamVR_Actions.valheim_UseLeft.stateDown;
+                    // Not usable while any laser pointer is up.
+                    isPullingTrigger =
+                        !LaserPointerChords.IsLaserActiveFor(SteamVR_Input_Sources.Any) &&
+                        SteamVR_Actions.valheim_UseLeft.GetStateDown(SteamVR_Input_Sources.LeftHand);
                     break;
                 case TwoHandedState.RightHandBehind:
-                    isPullingTrigger = SteamVR_Actions.valheim_Use.stateDown;
+                    isPullingTrigger =
+                        !LaserPointerChords.IsLaserActiveFor(SteamVR_Input_Sources.Any) &&
+                        SteamVR_Actions.valheim_Use.GetStateDown(SteamVR_Input_Sources.RightHand);
                     break;
                 default:
                     if (VHVRConfig.OneHandedBow())
                     {
-                        isPullingTrigger =
-                            VRPlayer.isRightHandMainWeaponHand ?
-                            SteamVR_Actions.valheim_Use.stateUp :
-                            SteamVR_Actions.valheim_UseLeft.stateUp;
+                        // Fires on release rather than on press: aiming (see UpdateOneHandedAiming) is already
+                        // gated the same way, so a release seen while the pointer is up isn't one the player was
+                        // still aiming through, and gating it here too keeps that consistent.
+                        var hand = VRPlayer.isRightHandMainWeaponHand ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand;
+                        var trigger = VRPlayer.isRightHandMainWeaponHand ? SteamVR_Actions.valheim_Use : SteamVR_Actions.valheim_UseLeft;
+                        isPullingTrigger = !LaserPointerChords.IsLaserActiveFor(SteamVR_Input_Sources.Any) && trigger.GetStateUp(hand);
                     }
                     break;
             }

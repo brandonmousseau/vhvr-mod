@@ -712,9 +712,43 @@ namespace ValheimVRMod.VRCore.UI
         {
             // The laser pointers have no middle button of their own, UpdateButtonStates adds the MiddleClick chord.
             _inputModule.UpdateButtonStates(
-                SteamVR_Actions.LaserPointers.LeftClick.GetState(hand),
+                SteamVR_Actions.Valheim.LeftClick.GetState(hand),
                 SteamVR_Actions.Valheim.RightClick.GetState(hand),
                 false);
+        }
+
+        // Selects the item under the pointer in the player's or the open container's inventory with the given
+        // modifier, as vanilla does for modified clicks: Move moves the item between the inventory and the open
+        // container, or drops it when no container is open, and Split opens the split dialog for a stack. Called
+        // by LaserPointerChords for the DiscardItem/SplitStack chords, which resolve to this the same way a plain
+        // click resolves to whatever InventoryGrid.GetHoveredElement() (also laser-pointer-aware, see
+        // ControlPatches) says the pointer is over.
+        public static void SelectHoveredInventoryItem(InventoryGrid.Modifier modifier)
+        {
+            InventoryGui inventoryGui = InventoryGui.instance;
+            if (!InventoryGui.IsVisible() || inventoryGui == null || inventoryGui.m_dragGo != null)
+            {
+                return;
+            }
+            foreach (InventoryGrid grid in new InventoryGrid[] { inventoryGui.m_playerGrid, inventoryGui.m_containerGrid })
+            {
+                if (grid == null || !grid.isActiveAndEnabled || grid.GetInventory() == null)
+                {
+                    continue;
+                }
+                InventoryElement element = grid.GetHoveredElement();
+                if (element == null)
+                {
+                    continue;
+                }
+                Vector2i position = grid.GetElementPos(element);
+                ItemDrop.ItemData item = grid.GetInventory().GetItemAt(position.x, position.y);
+                if (item != null)
+                {
+                    inventoryGui.OnSelectedItem(grid, item, position, modifier);
+                }
+                return;
+            }
         }
 
         private void UpdateHandAttachedTransform()

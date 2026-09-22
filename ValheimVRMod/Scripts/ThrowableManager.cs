@@ -56,13 +56,12 @@ namespace ValheimVRMod.Scripts
 
         private void OnRenderObject()
         {
-            // Letting go of the grip, wielding the weapon with both hands, or handing the controls over to a
-            // laser pointer all cancel an ongoing preparation rather than throw. The laser pointer action set
-            // masks the Valheim one while it is up, so without cancelling here the trigger would read as
-            // released and throw a spear that the player is merely holding while clicking on a GUI.
+            // Letting go of the grip, wielding the weapon with both hands, or any laser pointer coming up all
+            // cancel an ongoing preparation rather than throw: throwing is disabled outright while a pointer is
+            // active, regardless of whether Use and LeftClick happen to share a button.
             if (!SteamVR_Actions.valheim_Grab.GetState(VRPlayer.mainWeaponHandInputSource) ||
                 LocalWeaponWield.isCurrentlyTwoHanded() ||
-                VRControls.laserControlsActive)
+                LaserPointerChords.IsLaserActiveFor(SteamVR_Input_Sources.Any))
             {
                 if (isAiming)
                 {
@@ -186,9 +185,8 @@ namespace ValheimVRMod.Scripts
                 }
             }
 
-            // The preparation phase lasts as long as the trigger is held on top of the grip, and is read from
-            // the trigger's current state rather than from its edges: an edge can belong to the laser pointer
-            // action set taking the trigger away or handing it back instead of to the player.
+            // The preparation phase lasts as long as the trigger is held on top of the grip; only entry into it is
+            // gated on the laser pointer above, so a hold or release that started while gated still reads real.
             if (useAction.GetState(VRPlayer.mainWeaponHandInputSource))
             {
                 if (!isAiming)

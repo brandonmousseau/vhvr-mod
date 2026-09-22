@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
+using ValheimVRMod.VRCore.UI;
 using Valve.VR;
 using Valve.VR.InteractionSystem;
 
@@ -142,9 +143,14 @@ namespace ValheimVRMod.Scripts {
                 SteamVR_Actions.valheim_Grab.GetState(VRPlayer.bowHandInputSource) &&
                 (SteamVR_Actions.valheim_Use.GetState(bowHand) || SteamVR_Actions.valheim_UseLeft.GetState(bowHand));
 
-            if (SteamVR_Actions.valheim_Use.GetState(pullingSource) ||
+            bool pullInputHeld =
+                SteamVR_Actions.valheim_Use.GetState(pullingSource) ||
                 SteamVR_Actions.valheim_UseLeft.GetState(pullingSource) ||
-                SteamVR_Actions.valheim_Grab.GetState(pullingSource)) {
+                SteamVR_Actions.valheim_Grab.GetState(pullingSource);
+            // Only the start of a draw is disabled while any laser pointer is up; a draw already in progress
+            // keeps being read, and so does its release below, so a pointer coming up mid-draw (e.g. a container
+            // opening) can never strand the string half-drawn or force-release it.
+            if (pullInputHeld && (pulling || !LaserPointerChords.IsLaserActiveFor(SteamVR_Input_Sources.Any))) {
                 handlePulling();
             }
 

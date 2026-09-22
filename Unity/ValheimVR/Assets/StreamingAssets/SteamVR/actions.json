@@ -180,43 +180,38 @@
       "requirement": "mandatory"
     },
     {
+      "name": "/actions/Valheim/in/OneHandedMagic",
+      "type": "boolean",
+      "requirement": "mandatory"
+    },
+    {
+      "name": "/actions/Valheim/in/LeftClick",
+      "type": "boolean",
+      "requirement": "mandatory"
+    },
+    {
+      "name": "/actions/Valheim/in/AddMapPin",
+      "type": "boolean",
+      "requirement": "optional"
+    },
+    {
+      "name": "/actions/Valheim/in/MiddleClick",
+      "type": "boolean",
+      "requirement": "optional"
+    },
+    {
+      "name": "/actions/Valheim/in/DiscardItem",
+      "type": "boolean",
+      "requirement": "optional"
+    },
+    {
+      "name": "/actions/Valheim/in/SplitStack",
+      "type": "boolean",
+      "requirement": "mandatory"
+    },
+    {
       "name": "/actions/Valheim/out/Haptic",
       "type": "vibration",
-      "requirement": "mandatory"
-    },
-    {
-      "name": "/actions/LaserPointers/in/LeftClick",
-      "type": "boolean",
-      "requirement": "mandatory"
-    },
-    {
-      "name": "/actions/LaserPointers/in/Jump",
-      "type": "boolean",
-      "requirement": "optional"
-    },
-    {
-      "name": "/actions/LaserPointers/in/PitchAndYaw",
-      "type": "vector2",
-      "requirement": "optional"
-    },
-    {
-      "name": "/actions/LaserPointers/in/AddMapPin",
-      "type": "boolean",
-      "requirement": "optional"
-    },
-    {
-      "name": "/actions/LaserPointers/in/MiddleClick",
-      "type": "boolean",
-      "requirement": "optional"
-    },
-    {
-      "name": "/actions/LaserPointers/in/DiscardItem",
-      "type": "boolean",
-      "requirement": "optional"
-    },
-    {
-      "name": "/actions/LaserPointers/in/SplitStack",
-      "type": "boolean",
       "requirement": "mandatory"
     }
   ],
@@ -227,10 +222,6 @@
     },
     {
       "name": "/actions/Valheim",
-      "usage": "leftright"
-    },
-    {
-      "name": "/actions/LaserPointers",
       "usage": "leftright"
     }
   ],
@@ -321,10 +312,12 @@
       "/actions/default/in/Teleport": "Teleport",
       "/actions/default/out/Haptic": "Haptic",
       "/actions/Valheim/in/StopGesturedLocomotion": "Stop gestured locomotion",
-      "/actions/LaserPointers/in/AddMapPin": "Add map pin",
-      "/actions/LaserPointers/in/MiddleClick": "Middle click",
-      "/actions/LaserPointers/in/DiscardItem": "Discard or stash item",
-      "/actions/LaserPointers/in/SplitStack": "Split stack"
+      "/actions/Valheim/in/AddMapPin": "Add map pin",
+      "/actions/Valheim/in/MiddleClick": "Middle click",
+      "/actions/Valheim/in/DiscardItem": "Discard or stash item",
+      "/actions/Valheim/in/SplitStack": "Split stack",
+      "/actions/Valheim/in/LeftClick": "Left click",
+      "/actions/Valheim/in/OneHandedMagic": "One-handed magic (staff, summon, orb)"
     }
   ]
 }
