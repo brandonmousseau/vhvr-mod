@@ -148,8 +148,20 @@ namespace ValheimVRMod.Scripts
             MaybeStabCharacter(collider);
         }
 
+        // Whether the character is a training dummy (T.W.I.G.), which is there to practice fighting and so is hit like
+        // an enemy, whatever layer its colliders are on and even if it is flagged as tamed.
+        public static bool IsTrainingDummy(Character character)
+        {
+            return character != null && character.m_faction == Character.Faction.TrainingDummy;
+        }
+
         public static bool IsFriendly(Character character)
         {
+            if (IsTrainingDummy(character))
+            {
+                return false;
+            }
+
             if (character.m_tamed || character.gameObject == Player.m_localPlayer.gameObject)
             {
                 return true;
