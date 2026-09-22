@@ -39,6 +39,11 @@ namespace ValheimVRMod.VRCore.UI
         // Whether the game has been given the current left/right click press, see OnActionsUpdated().
         private static bool leftClickDelivered;
         private static bool rightClickDelivered;
+        // The frame a click release was last reported in. OnActionsUpdated() runs more than once per frame, and the
+        // later runs see the release edge again but with the press no longer marked as delivered, so without this
+        // they would take back the release before the game has read it.
+        private static int leftClickUpFrame = -1;
+        private static int rightClickUpFrame = -1;
         private static int lastAddMapPinFrame = -1;
         private static int lastDiscardItemFrame = -1;
         private static int lastSplitStackFrame = -1;
@@ -158,10 +163,14 @@ namespace ValheimVRMod.VRCore.UI
             }
             // The release is reported even once the laser controls are gone, so that a press the game has seen
             // cannot be left without its button up, but a press that was hidden here stays hidden on release too.
-            leftClickUp = leftClickDelivered && FilterLeftClick(leftClickAction.GetStateUp(SteamVR_Input_Sources.Any));
-            if (leftClickUp)
+            if (leftClickUpFrame != Time.frameCount)
             {
-                leftClickDelivered = false;
+                leftClickUp = leftClickDelivered && FilterLeftClick(leftClickAction.GetStateUp(SteamVR_Input_Sources.Any));
+                if (leftClickUp)
+                {
+                    leftClickDelivered = false;
+                    leftClickUpFrame = Time.frameCount;
+                }
             }
 
             rightClick = VRControls.laserControlsActive && FilterRightClick(rightClickAction.GetState(SteamVR_Input_Sources.Any));
@@ -172,10 +181,14 @@ namespace ValheimVRMod.VRCore.UI
             }
             // The release is reported even once the laser controls are gone, so that a press the game has seen
             // cannot be left without its button up, but a press that was hidden here stays hidden on release too.
-            rightClickUp = rightClickDelivered && FilterRightClick(rightClickAction.GetStateUp(SteamVR_Input_Sources.Any));
-            if (rightClickUp)
+            if (rightClickUpFrame != Time.frameCount)
             {
-                rightClickDelivered = false;
+                rightClickUp = rightClickDelivered && FilterRightClick(rightClickAction.GetStateUp(SteamVR_Input_Sources.Any));
+                if (rightClickUp)
+                {
+                    rightClickDelivered = false;
+                    rightClickUpFrame = Time.frameCount;
+                }
             }
 
             // Patching ZInput may not be sufficient to emulate button input since Jotunn could undo those patches,
