@@ -593,19 +593,16 @@ namespace ValheimVRMod.Utilities {
 
             bool contralateral = (isRightHand ^ reachingRight);
 
-            if (contralateral)
+            if (contralateral && reachingShoulder)
             {
-                if (sagittalOffset > 0)
+                if (sagittalOffset > 0.0625f || verticalOffset < -0.2f)
                 {
                     return BackReachLocation.None;
                 }
-
-                if (reachingWaist && Mathf.Abs(lateralOffset) < 0.125f)
-                {
-                    return BackReachLocation.None;
-                }
-
-                if (reachingShoulder && verticalOffset < -0.2f)
+            }
+            else if (contralateral && reachingWaist)
+            {
+                if (sagittalOffset > 0 || Mathf.Abs(lateralOffset) < 0.125f)
                 {
                     return BackReachLocation.None;
                 }
