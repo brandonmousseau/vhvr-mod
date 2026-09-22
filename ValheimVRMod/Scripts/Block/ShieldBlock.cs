@@ -50,14 +50,14 @@ namespace ValheimVRMod.Scripts.Block {
 
         private void InitShield()
         {
-            posRef = _meshCooldown.transform.localPosition;
-            scaleRef = _meshCooldown.transform.localScale;
+            posRef = transform.localPosition;
+            scaleRef = transform.localScale;
             hand = VRPlayer.mainWeaponHand.otherHand.transform;
             offhand = VRPlayer.mainWeaponHand.transform;
             
             meshFilter = gameObject.GetComponentInChildren<MeshFilter>();
             var mesh = meshFilter.sharedMesh;
-            var shieldWideSize = Vector3.Scale(_meshCooldown.transform.localScale, mesh.bounds.size).x;
+            var shieldWideSize = WeaponUtils.EstimateShieldWidth(mesh) * transform.lossyScale.x;
             var shieldMaxWidth = VHVRConfig.GetMaxShieldWidth();
             var scaleShieldSetting = VHVRConfig.GetShieldScaleSetting();
             if (shieldMaxWidth !=1f || scaleShieldSetting !=1f)
