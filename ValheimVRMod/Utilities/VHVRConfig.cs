@@ -154,6 +154,13 @@ namespace ValheimVRMod.Utilities
         // Motion Control Settings
         private static ConfigEntry<bool> useArrowPredictionGraphic;
         private static ConfigEntry<float> arrowParticleSize;
+        private static ConfigEntry<string> spearThrowingType;
+        private static ConfigEntry<string> useSpearDirectionGraphic;
+        private static ConfigEntry<float> fullThrowSpeed;
+        private static ConfigEntry<bool> spearInverseWield;
+        private static ConfigEntry<string> twoHandedWield;
+        private static ConfigEntry<bool> twoHandedWithShield;
+        private static ConfigEntry<bool> allowSimpleMagicAttack;
         private static ConfigEntry<float> arrowRestElevation;
         private static ConfigEntry<string> arrowRestSide;
         private static ConfigEntry<string> bowDrawRestrictType;
@@ -162,12 +169,6 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> bowStaminaAdjust;
         private static ConfigEntry<string> crossbowSaggitalRotationSource;
         private static ConfigEntry<bool> crossbowManualReload;
-        private static ConfigEntry<string> spearThrowingType;
-        private static ConfigEntry<string> useSpearDirectionGraphic;
-        private static ConfigEntry<float> fullThrowSpeed;
-        private static ConfigEntry<bool> spearInverseWield;
-        private static ConfigEntry<string> twoHandedWield;
-        private static ConfigEntry<bool> twoHandedWithShield;
         private static ConfigEntry<string> blockingType;
         private static ConfigEntry<float> shieldScale;
         private static ConfigEntry<float> maxShieldWidth;
@@ -991,19 +992,6 @@ namespace ValheimVRMod.Utilities
                 1.0f,
                 new ConfigDescription("Multiplier for stamina drain on bow. Reduce for less stamina drain.",
                 new AcceptableValueRange<float>(0.25f, 1.0f)));
-
-            //Crossbow Changes
-
-            crossbowSaggitalRotationSource = config.Bind("Motion Control",
-                                        "CrossbowSaggitalRotationSource",
-                                        "MotionControl",
-                                        new ConfigDescription("Which hand(s) can rotate the crossbow along its saggital axis during two-handed hold",
-                                        new AcceptableValueList<string>(new string[] { "RearHand", "BothHands" })));
-            crossbowManualReload = config.Bind("Motion Control",
-                                                    "CrossbowManualReload",
-                                                    true,
-                                                    "When supported, crossbows requires manually pulling the string to reload");
-
             //Spear Changes
             spearThrowingType = config.Bind("Motion Control",
                                             "SpearThrowingMode",
@@ -1043,6 +1031,21 @@ namespace ValheimVRMod.Utilities
                                                     false,
                                                     "Allows Two Handed Wield while using shield");
 
+            crossbowSaggitalRotationSource = config.Bind("Motion Control",
+                                        "CrossbowSaggitalRotationSource",
+                                        "MotionControl",
+                                        new ConfigDescription("Which hand(s) can rotate the crossbow along its saggital axis during two-handed hold",
+                                        new AcceptableValueList<string>(new string[] { "RearHand", "BothHands" })));
+            crossbowManualReload = config.Bind("Motion Control",
+                                                    "CrossbowManualReload",
+                                                    true,
+                                                    "When supported, crossbows requires manually pulling the string to reload");
+            allowSimpleMagicAttack = config.Bind("Motion Control",
+                                                    "AllowSimpleMagicAttack",
+                                                    true,
+                                                    "Allows casting with a staff, orb or summoner held in one hand by just pulling the trigger of that hand. " +
+                                                    "When disabled, casting requires either two-handed wield or holding grab with the same hand while pulling the trigger, " +
+                                                    "and swingable staves can only swing-launch when held in one hand");
             blockingType = config.Bind("Motion Control",
                                         "BlockingType",
                                         "Gesture",
@@ -1794,6 +1797,11 @@ namespace ValheimVRMod.Utilities
         public static bool CrossbowManualReload()
         {
             return crossbowManualReload.Value;
+        }
+
+        public static bool AllowSimpleMagicAttack()
+        {
+            return allowSimpleMagicAttack.Value;
         }
 
         public static bool UseRealisticBlock()

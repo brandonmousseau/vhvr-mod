@@ -180,11 +180,6 @@
       "requirement": "mandatory"
     },
     {
-      "name": "/actions/Valheim/in/OneHandedMagic",
-      "type": "boolean",
-      "requirement": "mandatory"
-    },
-    {
       "name": "/actions/Valheim/in/LeftClick",
       "type": "boolean",
       "requirement": "mandatory"
@@ -327,7 +322,6 @@
       "/actions/Valheim/in/DiscardItem": "Discard or stash item",
       "/actions/Valheim/in/SplitStack": "Split stack",
       "/actions/Valheim/in/LeftClick": "Left click",
-      "/actions/Valheim/in/OneHandedMagic": "One-handed magic (staff, summon, orb)",
       "/actions/Valheim/in/ScrollUp": "Scroll up",
       "/actions/Valheim/in/ScrollDown": "Scroll down"
     }

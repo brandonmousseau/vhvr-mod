@@ -348,7 +348,7 @@ namespace ValheimVRMod.VRCore.UI
 
             if (altMapZoomInHoldCountdown == null || altMapZoomInHoldCountdown <= -ALT_MAP_ZOOM_TIME_DELAY)
             {
-                if (getAltMapZoom() > 0)
+                if (getScrollButtonDirection() > 0)
                 {
                     GetButtonPatchUtils.Press("MapZoomIn");
                     altMapZoomInHoldCountdown = ALT_MAP_ZOOM_TIME_DELAY;
@@ -361,7 +361,7 @@ namespace ValheimVRMod.VRCore.UI
 
             if (altMapZoomOutHoldCountdown == null || altMapZoomOutHoldCountdown <= -ALT_MAP_ZOOM_TIME_DELAY)
             {
-                if (getAltMapZoom() < 0)
+                if (getScrollButtonDirection() < 0)
                 {
                     GetButtonPatchUtils.Press("MapZoomOut");
                     altMapZoomOutHoldCountdown = ALT_MAP_ZOOM_TIME_DELAY;
@@ -822,15 +822,21 @@ namespace ValheimVRMod.VRCore.UI
             }
         }
 
-        private int getAltMapZoom()
+        // The direction held on the ScrollUp/ScrollDown buttons: 1 for up, -1 for down, 0 for neither. These stand
+        // in for the ContextScroll trackpad on controllers without one (e.g. bound to right grip + right stick on
+        // touch controllers), and zoom the map and scroll the UI under the laser pointer.
+        public int getScrollButtonDirection()
         {
-            if (contextScroll.activeBinding ||
-                !SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand))
+            int direction = 0;
+            if (SteamVR_Actions.valheim_ScrollUp.GetState(SteamVR_Input_Sources.Any))
             {
-                return 0;
+                direction++;
             }
-            float y = GetJoyRightStickY();
-            return y > 0.5f ? -1 : y < -0.5f ? 1 : 0;
+            if (SteamVR_Actions.valheim_ScrollDown.GetState(SteamVR_Input_Sources.Any))
+            {
+                direction--;
+            }
+            return direction;
         }
 
         private bool inPlaceMode()

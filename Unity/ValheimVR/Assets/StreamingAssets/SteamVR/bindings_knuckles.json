@@ -455,26 +455,6 @@
               "output": "/actions/valheim/in/leftclick"
             }
           }
-        },
-        {
-          "path": "/user/hand/right/input/trigger",
-          "mode": "button",
-          "parameters": {},
-          "inputs": {
-            "click": {
-              "output": "/actions/valheim/in/onehandedmagic"
-            }
-          }
-        },
-        {
-          "path": "/user/hand/left/input/trigger",
-          "mode": "button",
-          "parameters": {},
-          "inputs": {
-            "click": {
-              "output": "/actions/valheim/in/onehandedmagic"
-            }
-          }
         }
       ],
       "skeleton": []

@@ -91,8 +91,6 @@ namespace Valve.VR
         
         private static SteamVR_Action_Boolean p_valheim_RightClick;
         
-        private static SteamVR_Action_Boolean p_valheim_OneHandedMagic;
-        
         private static SteamVR_Action_Boolean p_valheim_LeftClick;
         
         private static SteamVR_Action_Boolean p_valheim_AddMapPin;
@@ -405,14 +403,6 @@ namespace Valve.VR
             }
         }
         
-        public static SteamVR_Action_Boolean valheim_OneHandedMagic
-        {
-            get
-            {
-                return SteamVR_Actions.p_valheim_OneHandedMagic.GetCopy<SteamVR_Action_Boolean>();
-            }
-        }
-        
         public static SteamVR_Action_Boolean valheim_LeftClick
         {
             get
@@ -517,7 +507,6 @@ namespace Valve.VR
                     SteamVR_Actions.valheim_Dodge,
                     SteamVR_Actions.valheim_ToggleAutoPickup,
                     SteamVR_Actions.valheim_RightClick,
-                    SteamVR_Actions.valheim_OneHandedMagic,
                     SteamVR_Actions.valheim_LeftClick,
                     SteamVR_Actions.valheim_AddMapPin,
                     SteamVR_Actions.valheim_MiddleClick,
@@ -563,7 +552,6 @@ namespace Valve.VR
                     SteamVR_Actions.valheim_Dodge,
                     SteamVR_Actions.valheim_ToggleAutoPickup,
                     SteamVR_Actions.valheim_RightClick,
-                    SteamVR_Actions.valheim_OneHandedMagic,
                     SteamVR_Actions.valheim_LeftClick,
                     SteamVR_Actions.valheim_AddMapPin,
                     SteamVR_Actions.valheim_MiddleClick,
@@ -608,7 +596,6 @@ namespace Valve.VR
                     SteamVR_Actions.valheim_Dodge,
                     SteamVR_Actions.valheim_ToggleAutoPickup,
                     SteamVR_Actions.valheim_RightClick,
-                    SteamVR_Actions.valheim_OneHandedMagic,
                     SteamVR_Actions.valheim_LeftClick,
                     SteamVR_Actions.valheim_AddMapPin,
                     SteamVR_Actions.valheim_MiddleClick,
@@ -658,7 +645,6 @@ namespace Valve.VR
                     SteamVR_Actions.valheim_Dodge,
                     SteamVR_Actions.valheim_ToggleAutoPickup,
                     SteamVR_Actions.valheim_RightClick,
-                    SteamVR_Actions.valheim_OneHandedMagic,
                     SteamVR_Actions.valheim_LeftClick,
                     SteamVR_Actions.valheim_AddMapPin,
                     SteamVR_Actions.valheim_MiddleClick,
@@ -707,7 +693,6 @@ namespace Valve.VR
             SteamVR_Actions.p_valheim_Dodge = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/Valheim/in/Dodge")));
             SteamVR_Actions.p_valheim_ToggleAutoPickup = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/Valheim/in/ToggleAutoPickup")));
             SteamVR_Actions.p_valheim_RightClick = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/Valheim/in/RightClick")));
-            SteamVR_Actions.p_valheim_OneHandedMagic = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/Valheim/in/OneHandedMagic")));
             SteamVR_Actions.p_valheim_LeftClick = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/Valheim/in/LeftClick")));
             SteamVR_Actions.p_valheim_AddMapPin = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/Valheim/in/AddMapPin")));
             SteamVR_Actions.p_valheim_MiddleClick = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/Valheim/in/MiddleClick")));

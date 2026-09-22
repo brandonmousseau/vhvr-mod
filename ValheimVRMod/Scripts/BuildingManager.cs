@@ -1329,6 +1329,14 @@ namespace ValheimVRMod.Scripts
 
         public void UpdateRotateAnalog()
         {
+            // There is nothing to rotate without a placement ghost, e.g. while the build menu is open, where right
+            // grip + right stick is used for scrolling instead.
+            if (Player.m_localPlayer == null || Player.m_localPlayer.m_placementGhost == null || Hud.IsPieceSelectionVisible())
+            {
+                justRotatedAnalogLongPress = false;
+                copyRotationTimer = 0;
+                return;
+            }
             var rotUp = Vector3.up;
             if (modSupport)
             {

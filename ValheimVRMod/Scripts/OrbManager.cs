@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using ValheimVRMod.VRCore;
-using ValheimVRMod.VRCore.UI;
 using Valve.VR;
 
 namespace ValheimVRMod.Scripts
@@ -39,7 +38,7 @@ namespace ValheimVRMod.Scripts
             get
             {
                 var hand = IsInRightHand ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand;
-                return !LaserPointerChords.IsLaserActiveFor(hand) && SteamVR_Actions.valheim_OneHandedMagic.GetState(hand);
+                return MagicStaffUtils.IsCastTriggerHeld(hand);
             }
         }
     }

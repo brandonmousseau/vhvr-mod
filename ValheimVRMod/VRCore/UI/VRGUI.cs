@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 using ValheimVRMod.Patches;
 using ValheimVRMod.Utilities;
 using Valve.VR;
@@ -122,6 +123,12 @@ namespace ValheimVRMod.VRCore.UI
 
         private VRGUI_InputModule _inputModule;
 
+        // Holding ScrollUp/ScrollDown scrolls one step, then keeps repeating after a short delay.
+        private const float SCROLL_REPEAT_DELAY = 0.4f;
+        private const float SCROLL_REPEAT_INTERVAL = 0.1f;
+        private int heldScrollDirection;
+        private float nextScrollRepeatTime;
+
         private static bool isRecentering = false;
         private bool movingLastFrame = false;
         private Quaternion lastVrPlayerRotation = Quaternion.identity;
@@ -228,8 +235,8 @@ namespace ValheimVRMod.VRCore.UI
                 if (attachedToHand)
                 {
                     UpdateMouseButtonsFromLaserPointer();
-                    UpdateScrollFromLaserPointer();
                 }
+                UpdateScrollFromLaserPointer();
                 return;
             }
             bool leftButtonPressed = Input.GetMouseButton(0);
@@ -659,7 +666,6 @@ namespace ValheimVRMod.VRCore.UI
             UpdateHandAttachedTransform();
             UpdateCursorPosition();
             UpdateMouseButtonsFromLaserPointer();
-            UpdateScrollFromLaserPointer();
         }
 
         public void OnPointerTracking(object p, PointerEventArgs e)
@@ -682,7 +688,6 @@ namespace ValheimVRMod.VRCore.UI
             UpdateCursorPosition();
 
             _inputModule.UpdateButtonStates(e.buttonStateLeft, e.buttonStateRight, false);
-            UpdateScrollFromLaserPointer();
         }
 
         private void UpdateCursorPosition()
@@ -720,18 +725,58 @@ namespace ValheimVRMod.VRCore.UI
                 false);
         }
 
-        // Scrolls whatever is under the simulated cursor from ContextScroll, currently only bound on controllers
-        // with a real trackpad (index, holographic); on the rest this is simply always zero and never scrolls.
+        // Scrolls whatever is under the simulated cursor, e.g. the recipe list or a container, from the
+        // ContextScroll trackpad of a hand whose laser pointer is active (index, holographic) and from the
+        // ScrollUp/ScrollDown buttons (right grip + right stick on touch controllers). Called once per frame.
         private void UpdateScrollFromLaserPointer()
         {
+            if (_leftPointer == null || _rightPointer == null ||
+                (!_leftPointer.pointerIsActive() && !_rightPointer.pointerIsActive()))
+            {
+                heldScrollDirection = 0;
+                return;
+            }
+
+            float steps = GetScrollButtonSteps();
             if (_leftPointer.pointerIsActive())
             {
-                _inputModule.UpdateScroll(SteamVR_Actions.Valheim.ContextScroll.GetAxis(SteamVR_Input_Sources.LeftHand));
+                steps += SteamVR_Actions.Valheim.ContextScroll.GetAxis(SteamVR_Input_Sources.LeftHand).y;
             }
             if (_rightPointer.pointerIsActive())
             {
-                _inputModule.UpdateScroll(SteamVR_Actions.Valheim.ContextScroll.GetAxis(SteamVR_Input_Sources.RightHand));
+                steps += SteamVR_Actions.Valheim.ContextScroll.GetAxis(SteamVR_Input_Sources.RightHand).y;
             }
+            _inputModule.ScrollBySteps(steps);
+        }
+
+        // The steps to scroll this frame from the ScrollUp/ScrollDown buttons: one when pressed, then one every
+        // SCROLL_REPEAT_INTERVAL while held. Only read while the inventory (which includes crafting and containers)
+        // or the build menu is open, since the same buttons zoom the minimap elsewhere.
+        private float GetScrollButtonSteps()
+        {
+            int direction = 0;
+            if (InventoryGui.IsVisible() || Hud.IsPieceSelectionVisible())
+            {
+                direction = VRControls.instance.getScrollButtonDirection();
+            }
+
+            if (direction == 0)
+            {
+                heldScrollDirection = 0;
+                return 0;
+            }
+            if (direction != heldScrollDirection)
+            {
+                heldScrollDirection = direction;
+                nextScrollRepeatTime = Time.unscaledTime + SCROLL_REPEAT_DELAY;
+                return direction;
+            }
+            if (Time.unscaledTime < nextScrollRepeatTime)
+            {
+                return 0;
+            }
+            nextScrollRepeatTime = Time.unscaledTime + SCROLL_REPEAT_INTERVAL;
+            return direction;
         }
 
         // Selects the item under the pointer in the player's or the open container's inventory with the given
@@ -1159,10 +1204,13 @@ namespace ValheimVRMod.VRCore.UI
                 buttonData.dragging = false;
             }
 
-            // Scrolls whatever is under the simulated cursor, mirroring StandaloneInputModule.ProcessMouseEvent().
-            // Takes the delta explicitly rather than reading it from `input` (there is no hardware mouse wheel in
-            // VR to read), so callers pass whatever scroll source applies: the real mouse wheel outside VR, or a
-            // laser pointer's ContextScroll axis in VR.
+            // How far one VR scroll step moves a scroll view, in its content's units.
+            private const float SCROLL_STEP_SIZE = 50f;
+
+            private readonly List<RaycastResult> scrollRaycastResults = new List<RaycastResult>();
+
+            // Scrolls whatever is under the simulated cursor by the real mouse wheel's delta, outside VR, mirroring
+            // the scroll part of StandaloneInputModule.ProcessMouseEvent().
             public void UpdateScroll(Vector2 scrollDelta)
             {
                 if (Mathf.Approximately(scrollDelta.sqrMagnitude, 0f))
@@ -1175,6 +1223,44 @@ namespace ValheimVRMod.VRCore.UI
                 GameObject scrollHandler =
                     ExecuteEvents.GetEventHandler<IScrollHandler>(pointerData.pointerCurrentRaycast.gameObject);
                 ExecuteEvents.ExecuteHierarchy(scrollHandler, pointerData, ExecuteEvents.scrollHandler);
+            }
+
+            // Scrolls the scroll view under the simulated cursor vertically by the given number of steps (positive
+            // is up). Unlike the mouse wheel this looks through every UI element under the cursor rather than only
+            // the topmost one, so an overlay without a scroll view of its own (the cursor, a tooltip) cannot swallow
+            // the scroll. Each step moves the view by SCROLL_STEP_SIZE regardless of its scroll sensitivity, which
+            // vanilla tunes for the mouse wheel rather than for VR controls.
+            public void ScrollBySteps(float steps)
+            {
+                if (Mathf.Approximately(steps, 0f) || EventSystem.current == null)
+                {
+                    return;
+                }
+                PointerEventData pointerData = new PointerEventData(EventSystem.current);
+                pointerData.position = SoftwareCursor.simulatedMousePosition;
+                scrollRaycastResults.Clear();
+                EventSystem.current.RaycastAll(pointerData, scrollRaycastResults);
+
+                ScrollRect scrollRect = null;
+                foreach (RaycastResult result in scrollRaycastResults)
+                {
+                    scrollRect = result.gameObject.GetComponentInParent<ScrollRect>();
+                    if (scrollRect != null && scrollRect.isActiveAndEnabled)
+                    {
+                        break;
+                    }
+                    scrollRect = null;
+                }
+                if (scrollRect == null)
+                {
+                    LogDebug("VR scroll found no scroll view under the cursor at " + pointerData.position + ", top hit: " +
+                        (scrollRaycastResults.Count > 0 ? scrollRaycastResults[0].gameObject.name : "none"));
+                    return;
+                }
+
+                float sensitivity = scrollRect.scrollSensitivity > 0 ? scrollRect.scrollSensitivity : 1;
+                pointerData.scrollDelta = new Vector2(0, steps * SCROLL_STEP_SIZE / sensitivity);
+                scrollRect.OnScroll(pointerData);
             }
 
             private void UpdateButtonState(bool state, PointerEventData.InputButton button)
