@@ -75,9 +75,6 @@ public class Outline : MonoBehaviour {
   [SerializeField, HideInInspector]
   private List<ListVector3> bakeValues = new List<ListVector3>();
 
-  // How often an enabled outline checks whether its materials were replaced by copies, see ReattachReplacedMaterials().
-  private const float REATTACH_CHECK_INTERVAL = 0.5f;
-
   private Renderer[] renderers;
   private static Material sharedOutlineMaskMaterial;
   private static Material sharedOutlineFillMaterial;
@@ -85,7 +82,6 @@ public class Outline : MonoBehaviour {
   private Material outlineFillMaterial;
 
   private bool needsUpdate;
-  private float nextReattachCheckTime;
 
   void Awake() {
 
@@ -114,7 +110,7 @@ public class Outline : MonoBehaviour {
     }
     if (sharedOutlineFillMaterial == null) {
       sharedOutlineFillMaterial = Instantiate(VRAssetManager.GetAsset<Material>("OutlineFill"));
-      sharedOutlineFillMaterial.name = "OutlineFill (Instance)";
+      sharedOutlineMaskMaterial.name = "OutlineFill (Instance)";
     }
 
     outlineMaskMaterial = new Material(sharedOutlineMaskMaterial);
@@ -130,57 +126,27 @@ public class Outline : MonoBehaviour {
     return false;
   }
 
-  // Whether the material is an outline material, including copies of ours: reading Renderer.material(s), which the
-  // game does e.g. in VisEquipment and MaterialVariation, replaces every material of that renderer with a copy, the
-  // outline materials we appended included. Copies keep the shader, so that is what identifies them.
-  private static bool IsOutlineMaterial(Material material) {
-    return material != null && sharedOutlineMaskMaterial != null && sharedOutlineFillMaterial != null &&
-      (material.shader == sharedOutlineMaskMaterial.shader || material.shader == sharedOutlineFillMaterial.shader);
-  }
-
-  private static bool ShouldSkipRenderer(Renderer renderer) {
-    return renderer == null || renderer.GetType() == typeof(ParticleSystemRenderer) || renderer.sharedMaterials == null;
-  }
-
-  // Replaces any outline materials on the renderer, stale copies included, with this outline's own.
-  private void AttachOutlineMaterials(Renderer renderer) {
-    var materials = renderer.sharedMaterials.Where(material => !IsOutlineMaterial(material)).ToList();
-
-    if (IsPlayerHairMaterials(materials)) {
-      // Not adding outlines to player hairs: the hair, espcially eyebrows, is too close to the camera and their
-      // outline may become visible even with a moderate near clip distance.
-      return;
-    }
-
-    materials.Add(outlineMaskMaterial);
-    materials.Add(outlineFillMaterial);
-
-    renderer.sharedMaterials = materials.ToArray();
-  }
-
   void OnEnable() {
     foreach (var renderer in renderers) {
-      if (ShouldSkipRenderer(renderer)) {
-        continue;
-      }
-      AttachOutlineMaterials(renderer);
-    }
-    nextReattachCheckTime = Time.unscaledTime + REATTACH_CHECK_INTERVAL;
-  }
 
-  // If the game replaced our outline materials with copies (see IsOutlineMaterial()), the copies no longer follow
-  // the color and mode set on this outline, so an outline that was fading out would stay stuck at whatever it looked
-  // like when copied. Swap our own materials back in. This also restores them after another outline covering the
-  // same renderer (e.g. on a parent object) was disabled, which removes every outline material from it.
-  private void ReattachReplacedMaterials() {
-    foreach (var renderer in renderers) {
-      if (ShouldSkipRenderer(renderer)) {
+      if (renderer.GetType() == typeof(ParticleSystemRenderer)) {
         continue;
       }
-      var materials = renderer.sharedMaterials;
-      if (!materials.Contains(outlineMaskMaterial) || !materials.Contains(outlineFillMaterial)) {
-        AttachOutlineMaterials(renderer);
+      
+      // Append outline shaders
+      var materials = renderer.sharedMaterials.ToList();
+
+      if (IsPlayerHairMaterials(materials)) {
+        // Two reasons for not adding outlines to player hairs:
+        // 1. The material array on player hairs are finicky and we might not be able find the correct outline material instances later when we attempt to remove them.
+        // 2. The hair, espcially eyebrows, is too close to the camera and their outline may become visible even with a moderate near clip distance.
+        continue;
       }
+
+      materials.Add(outlineMaskMaterial);
+      materials.Add(outlineFillMaterial);
+
+      renderer.materials = materials.ToArray();
     }
   }
 
@@ -207,24 +173,23 @@ public class Outline : MonoBehaviour {
 
       UpdateMaterialProperties();
     }
-
-    if (Time.unscaledTime >= nextReattachCheckTime) {
-      nextReattachCheckTime = Time.unscaledTime + REATTACH_CHECK_INTERVAL;
-      ReattachReplacedMaterials();
-    }
   }
 
   void OnDisable() {
     foreach (var renderer in renderers) {
-      if (ShouldSkipRenderer(renderer)) {
+
+      if (renderer == null || renderer.GetType() == typeof(ParticleSystemRenderer) || renderer.sharedMaterials == null) {
         continue;
       }
 
-      // Remove outline materials, including copies the game may have made of ours (see IsOutlineMaterial()).
-      var materials = renderer.sharedMaterials;
-      if (materials.Any(IsOutlineMaterial)) {
-        renderer.sharedMaterials = materials.Where(material => !IsOutlineMaterial(material)).ToArray();
-      }
+      // Remove outline shaders
+      var materials = renderer.sharedMaterials.ToList();
+      // TODO: there is a chance that the vanilla game or other mods has modified the material array since we added the outline materials,
+      // which would make the outline materials references here stale and cause us to fail to remove them.
+      // Consider, instead, iterating over the materials and check materials[i].name.startWith("OutlineMask") || materials[i].name.startWith("OutlineFill")
+      materials.Remove(outlineMaskMaterial);
+      materials.Remove(outlineFillMaterial);
+      renderer.materials = materials.ToArray();
     }
   }
 
