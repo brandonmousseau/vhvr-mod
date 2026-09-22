@@ -281,6 +281,22 @@ namespace Valve.VR
             }
         }
         
+        public virtual SteamVR_Action_Boolean ScrollUp
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_ScrollUp;
+            }
+        }
+        
+        public virtual SteamVR_Action_Boolean ScrollDown
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_ScrollDown;
+            }
+        }
+        
         public virtual SteamVR_Action_Vibration Haptic
         {
             get

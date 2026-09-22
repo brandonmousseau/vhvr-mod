@@ -210,6 +210,16 @@
       "requirement": "mandatory"
     },
     {
+      "name": "/actions/Valheim/in/ScrollUp",
+      "type": "boolean",
+      "requirement": "optional"
+    },
+    {
+      "name": "/actions/Valheim/in/ScrollDown",
+      "type": "boolean",
+      "requirement": "optional"
+    },
+    {
       "name": "/actions/Valheim/out/Haptic",
       "type": "vibration",
       "requirement": "mandatory"
@@ -317,7 +327,9 @@
       "/actions/Valheim/in/DiscardItem": "Discard or stash item",
       "/actions/Valheim/in/SplitStack": "Split stack",
       "/actions/Valheim/in/LeftClick": "Left click",
-      "/actions/Valheim/in/OneHandedMagic": "One-handed magic (staff, summon, orb)"
+      "/actions/Valheim/in/OneHandedMagic": "One-handed magic (staff, summon, orb)",
+      "/actions/Valheim/in/ScrollUp": "Scroll up",
+      "/actions/Valheim/in/ScrollDown": "Scroll down"
     }
   ]
 }

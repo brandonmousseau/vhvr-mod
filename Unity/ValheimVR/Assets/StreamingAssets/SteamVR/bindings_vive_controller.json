@@ -496,6 +496,19 @@
                "mode" : "button",
                "parameters" : {},
                "path" : "/user/hand/right/input/trigger"
+            },
+            {
+               "inputs" : {
+                  "north" : {
+                     "output" : "/actions/valheim/in/scrollup"
+                  },
+                  "south" : {
+                     "output" : "/actions/valheim/in/scrolldown"
+                  }
+               },
+               "mode" : "dpad",
+               "parameters" : {},
+               "path" : "/user/hand/left/input/trackpad"
             }
          ]
       }
