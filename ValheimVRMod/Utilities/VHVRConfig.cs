@@ -137,8 +137,8 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<string> buildAngleSnap;
         private static ConfigEntry<float> smoothTurnSpeed;
         private static ConfigEntry<bool> invertXAxis;
-        private static ConfigEntry<string> groqApiKey;
         private static ConfigEntry<bool> allowSimpleMagicAttack;
+        private static ConfigEntry<string> groqApiKey;
 
         // Graphics Settings
         private static ConfigEntry<bool> useAmplifyOcclusion;
@@ -845,17 +845,17 @@ namespace ValheimVRMod.Utilities
                                         "InvertTurnDirection",
                                         false,
                                         "Some people experience an issue where the right joystick turns the player the opposite direction as expected. Setting this will reverse the turn direction.");
-            groqApiKey = config.Bind(
-                "Controls",
-                "GroqApiKey",
-                "",
-                "Groq API key for voice-to-text transcription (obtained by applying on Groq website)");
-            allowSimpleMagicAttack = config.Bind("Motion Control",
+            allowSimpleMagicAttack = config.Bind("Controls",
                                                     "AllowSimpleMagicAttack",
                                                     false,
                                                     "Allows casting with a staff, orb or summoner held in one hand by just pulling the trigger of that hand. " +
                                                     "When disabled, casting requires either two-handed wield or holding grab with the same hand while pulling the trigger, " +
                                                     "and swingable staves can only swing-launch when held in one hand");
+            groqApiKey = config.Bind(
+                "Controls",
+                "GroqApiKey",
+                "",
+                "Groq API key for voice-to-text transcription (obtained by applying on Groq website)");
             InitializeConfigurableKeyBindings(config);
         }
 
@@ -1742,13 +1742,14 @@ namespace ValheimVRMod.Utilities
             return viewTurnWithMountedAnimal.Value;
         }
 
-        public static string GroqApiKey()
-        {
-            return groqApiKey.Value;
-        }
         public static bool AllowSimpleMagicAttack()
         {
             return allowSimpleMagicAttack.Value;
+        }
+
+        public static string GroqApiKey()
+        {
+            return groqApiKey.Value;
         }
 
         public static float ArrowParticleSize()
