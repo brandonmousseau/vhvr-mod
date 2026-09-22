@@ -16,11 +16,6 @@ namespace ValheimVRMod.Scripts
             get { return VRPlayer.isRightHandMainWeaponHand ? VRPlayer.rightPointer : VRPlayer.leftPointer; }
         }
 
-        public static SteamVR_Action_Boolean AttackTriggerAction
-        {
-            get { return VRPlayer.isRightHandMainWeaponHand ? SteamVR_Actions.valheim_Use : SteamVR_Actions.valheim_UseLeft; }
-        }
-
         // The hand that is behind the other when wielding two-handed, or the main weapon hand when wielding
         // single-handed. Aim-and-shoot staves fire from this hand's trigger, which leaves the front hand
         // trigger free for the swing-launch gesture of the swingable staves.
@@ -37,15 +32,6 @@ namespace ValheimVRMod.Scripts
                     default:
                         return VRPlayer.mainWeaponHandInputSource;
                 }
-            }
-        }
-
-        public static SteamVR_Action_Boolean RearHandTriggerAction
-        {
-            get
-            {
-                return RearHandInputSource == SteamVR_Input_Sources.RightHand ?
-                    SteamVR_Actions.valheim_Use : SteamVR_Actions.valheim_UseLeft;
             }
         }
 
@@ -66,20 +52,21 @@ namespace ValheimVRMod.Scripts
         {
             if (LocalWeaponWield.isCurrentlyTwoHanded())
             {
-                return !LaserPointerChords.IsLaserActiveFor(SteamVR_Input_Sources.Any) && RearHandTriggerAction.GetState(RearHandInputSource);
+                return !LaserPointerChords.IsLaserActiveFor(SteamVR_Input_Sources.Any) &&
+                    SteamVR_Actions.valheim_Use.GetState(RearHandInputSource);
             }
             if (LaserPointerChords.IsLaserActiveFor(itemHand))
             {
                 return false;
             }
-            var triggerAction = itemHand == SteamVR_Input_Sources.RightHand ? SteamVR_Actions.valheim_Use : SteamVR_Actions.valheim_UseLeft;
-            return triggerAction.GetState(itemHand) &&
+            return SteamVR_Actions.valheim_Use.GetState(itemHand) &&
                 (VHVRConfig.AllowSimpleMagicAttack() || SteamVR_Actions.valheim_Grab.GetState(itemHand));
         }
 
-        public static SteamVR_Action_Boolean SecondaryTriggerAction
+        // The secondary attack is made with the trigger of the hand that is not holding the staff.
+        private static bool IsSecondaryTriggerHeld()
         {
-            get { return VRPlayer.isRightHandMainWeaponHand ? SteamVR_Actions.valheim_UseLeft : SteamVR_Actions.valheim_Use; }
+            return SteamVR_Actions.valheim_Use.GetState(VRPlayer.secondaryWeaponHandInputSource);
         }
 
         // Only some (mostly modded) staves have a secondary attack, so it must be null-checked before use.
@@ -91,12 +78,12 @@ namespace ValheimVRMod.Scripts
 
         public static bool IsSecondaryAttack()
         {
-            return SecondaryTriggerAction.state && GetSecondaryAttack() != null;
+            return IsSecondaryTriggerHeld() && GetSecondaryAttack() != null;
         }
 
         public static bool TrySecondaryAttack()
         {
-            if (!SecondaryTriggerAction.state)
+            if (!IsSecondaryTriggerHeld())
             {
                 return false;
             }

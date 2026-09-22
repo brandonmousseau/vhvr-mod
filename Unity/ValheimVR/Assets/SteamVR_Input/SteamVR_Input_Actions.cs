@@ -73,8 +73,6 @@ namespace Valve.VR
         
         private static SteamVR_Action_Vector2 p_valheim_Walk;
         
-        private static SteamVR_Action_Boolean p_valheim_UseLeft;
-        
         private static SteamVR_Action_Boolean p_valheim_QuickActions;
         
         private static SteamVR_Action_Boolean p_valheim_StopGesturedLocomotion;
@@ -331,14 +329,6 @@ namespace Valve.VR
             }
         }
         
-        public static SteamVR_Action_Boolean valheim_UseLeft
-        {
-            get
-            {
-                return SteamVR_Actions.p_valheim_UseLeft.GetCopy<SteamVR_Action_Boolean>();
-            }
-        }
-        
         public static SteamVR_Action_Boolean valheim_QuickActions
         {
             get
@@ -498,7 +488,6 @@ namespace Valve.VR
                     SteamVR_Actions.valheim_Grab,
                     SteamVR_Actions.valheim_QuickSwitch,
                     SteamVR_Actions.valheim_Walk,
-                    SteamVR_Actions.valheim_UseLeft,
                     SteamVR_Actions.valheim_QuickActions,
                     SteamVR_Actions.valheim_StopGesturedLocomotion,
                     SteamVR_Actions.valheim_ToggleRun,
@@ -543,7 +532,6 @@ namespace Valve.VR
                     SteamVR_Actions.valheim_Grab,
                     SteamVR_Actions.valheim_QuickSwitch,
                     SteamVR_Actions.valheim_Walk,
-                    SteamVR_Actions.valheim_UseLeft,
                     SteamVR_Actions.valheim_QuickActions,
                     SteamVR_Actions.valheim_StopGesturedLocomotion,
                     SteamVR_Actions.valheim_ToggleRun,
@@ -587,7 +575,6 @@ namespace Valve.VR
                     SteamVR_Actions.valheim_HotbarUse,
                     SteamVR_Actions.valheim_Grab,
                     SteamVR_Actions.valheim_QuickSwitch,
-                    SteamVR_Actions.valheim_UseLeft,
                     SteamVR_Actions.valheim_QuickActions,
                     SteamVR_Actions.valheim_StopGesturedLocomotion,
                     SteamVR_Actions.valheim_ToggleRun,
@@ -636,7 +623,6 @@ namespace Valve.VR
                     SteamVR_Actions.valheim_Grab,
                     SteamVR_Actions.valheim_QuickSwitch,
                     SteamVR_Actions.valheim_Walk,
-                    SteamVR_Actions.valheim_UseLeft,
                     SteamVR_Actions.valheim_QuickActions,
                     SteamVR_Actions.valheim_StopGesturedLocomotion,
                     SteamVR_Actions.valheim_ToggleRun,
@@ -684,7 +670,6 @@ namespace Valve.VR
             SteamVR_Actions.p_valheim_Grab = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/Valheim/in/Grab")));
             SteamVR_Actions.p_valheim_QuickSwitch = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/Valheim/in/QuickSwitch")));
             SteamVR_Actions.p_valheim_Walk = ((SteamVR_Action_Vector2)(SteamVR_Action.Create<SteamVR_Action_Vector2>("/actions/Valheim/in/Walk")));
-            SteamVR_Actions.p_valheim_UseLeft = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/Valheim/in/UseLeft")));
             SteamVR_Actions.p_valheim_QuickActions = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/Valheim/in/QuickActions")));
             SteamVR_Actions.p_valheim_StopGesturedLocomotion = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/Valheim/in/StopGesturedLocomotion")));
             SteamVR_Actions.p_valheim_ToggleRun = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/Valheim/in/ToggleRun")));

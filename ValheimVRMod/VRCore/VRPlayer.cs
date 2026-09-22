@@ -283,11 +283,22 @@ namespace ValheimVRMod.VRCore
         public static SteamVR_LaserPointer leftPointer { get { return _leftPointer; } }
         public static SteamVR_LaserPointer rightPointer { get { return _rightPointer; } }
 
+        // The pointers selected purely by the dominant hand setting, deliberately not by which hand is
+        // currently wielding (mainWeaponHand and the like are offhand wield sensitive): a tool that is aimed
+        // with a ray, e. g. the build hammer, is aimed with the dominant hand whichever hand holds it.
+        public static SteamVR_LaserPointer dominantPointer
+        {
+            get { return VHVRConfig.LeftHanded() ? leftPointer : rightPointer; }
+        }
+
+        public static SteamVR_LaserPointer nonDominantPointer
+        {
+            get { return VHVRConfig.LeftHanded() ? rightPointer : leftPointer; }
+        }
+
         public static Vector3 dominantHandRayDirection { get
             {
-                var pointer =
-                 VHVRConfig.LeftHanded() ? VRPlayer.leftPointer : VRPlayer.rightPointer;
-                return (pointer.rayDirection * Vector3.forward).normalized;
+                return (dominantPointer.rayDirection * Vector3.forward).normalized;
             }
         }
 

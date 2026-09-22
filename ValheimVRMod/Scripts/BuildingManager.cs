@@ -582,14 +582,14 @@ namespace ValheimVRMod.Scripts
             }
             if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand) && !isRotatingAdv)
             {
-                if (!Physics.Raycast(PlaceModeRayVectorProvider.startingPositionLeft, PlaceModeRayVectorProvider.rayDirectionLeft, out pieceRaycast, 50f, piecelayer2))
+                if (!Physics.Raycast(PlaceModeRayVectorProvider.startingPositionNonDominant, PlaceModeRayVectorProvider.rayDirectionNonDominant, out pieceRaycast, 50f, piecelayer2))
                 {
                     return;
                 }
                 EnableRefPoint(true);
                 UpdateRefType();
-                UpdateRefPosition(pieceRaycast, PlaceModeRayVectorProvider.rayDirectionLeft);
-                UpdateRefRotation(GetRefDirection(PlaceModeRayVectorProvider.rayDirectionLeft));
+                UpdateRefPosition(pieceRaycast, PlaceModeRayVectorProvider.rayDirectionNonDominant);
+                UpdateRefRotation(GetRefDirection(PlaceModeRayVectorProvider.rayDirectionNonDominant));
                 buildRefPointer.transform.rotation = Quaternion.FromToRotation(buildRefPointer.transform.up, pieceRaycast.normal) * buildRefPointer.transform.rotation;
                 lastRefCast = pieceRaycast;
                 isReferenceActive = true;
@@ -1125,7 +1125,7 @@ namespace ValheimVRMod.Scripts
             var rightHandCenter = VRPlayer.rightHand.transform.TransformPoint(handCenter);
             var avgPos = (leftHandCenter + rightHandCenter) / 2;
             var distanceHand = Vector3.Distance(leftHandCenter, rightHandCenter);
-            var forwardAvg = (PlaceModeRayVectorProvider.rayDirection + PlaceModeRayVectorProvider.rayDirectionLeft) / 2;
+            var forwardAvg = (PlaceModeRayVectorProvider.rayDirection + PlaceModeRayVectorProvider.rayDirectionNonDominant) / 2;
             var cross = Vector3.Cross(forwardAvg, (rightHandCenter - avgPos).normalized);
             var avgRot = Quaternion.identity;
             var vecUp = Vector3.up;
@@ -1193,7 +1193,7 @@ namespace ValheimVRMod.Scripts
             }
 
             //gizmo stuff
-            var rotPlacement = VRPlayer.leftHand.transform.TransformPoint(handCenter) - (VRPlayer.leftHand.transform.right * -0.2f) + (PlaceModeRayVectorProvider.rayDirectionLeft * 0.1f);
+            var rotPlacement = VRPlayer.leftHand.transform.TransformPoint(handCenter) - (VRPlayer.leftHand.transform.right * -0.2f) + (PlaceModeRayVectorProvider.rayDirectionNonDominant * 0.1f);
             var rotationOffset = ghost.transform.forward * 10;
             rotationOffset = new Vector3(rotationOffset.x, 0, rotationOffset.z).normalized;
             if (rotationOffset == Vector3.zero)

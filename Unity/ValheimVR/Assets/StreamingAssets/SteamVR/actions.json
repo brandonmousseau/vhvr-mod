@@ -138,11 +138,6 @@
       "requirement": "mandatory"
     },
     {
-      "name": "/actions/Valheim/in/UseLeft",
-      "type": "boolean",
-      "requirement": "mandatory"
-    },
-    {
       "name": "/actions/Valheim/in/QuickActions",
       "type": "boolean",
       "requirement": "mandatory"

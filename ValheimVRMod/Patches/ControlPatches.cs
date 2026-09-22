@@ -832,7 +832,12 @@ namespace ValheimVRMod.Patches {
                     else
                     {
                         
-                        if (BowLocalManager.isPullingArrow && SteamVR_Actions.valheim_Use.state && timer >= timeEnd)
+                        // TODO: this reads the right hand trigger rather than the hand actually pulling the
+                        // string (BowLocalManager's pullingSource), so it is wrong for a left handed player, as
+                        // is the right handed haptic feedback below. Preserved as-is for now.
+                        if (BowLocalManager.isPullingArrow &&
+                            SteamVR_Actions.valheim_Use.GetState(SteamVR_Input_Sources.RightHand) &&
+                            timer >= timeEnd)
                         {
                             timeEnd = 2f;
                             timer = 0f;
@@ -961,7 +966,8 @@ namespace ValheimVRMod.Patches {
                     break;
 
                 case EquipType.RuneSkyheim:
-                    if (SteamVR_Actions.valheim_Use.state && SteamVR_Actions.valheim_Grab.state && timer >= timeEnd)
+                    if (SteamVR_Actions.valheim_Use.GetState(SteamVR_Input_Sources.RightHand) &&
+                        SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.Any) && timer >= timeEnd)
                     {
                         timeEnd = 2f;
                         timer = 0f;

@@ -107,9 +107,7 @@ namespace ValheimVRMod.Scripts {
         {
             bool isAiming =
                 !LaserPointerChords.IsLaserActiveFor(SteamVR_Input_Sources.Any) &&
-                (VHVRConfig.LeftHanded() ?
-                SteamVR_Actions.valheim_UseLeft.GetState(SteamVR_Input_Sources.LeftHand) :
-                SteamVR_Actions.valheim_Use.GetState(SteamVR_Input_Sources.RightHand));
+                SteamVR_Actions.valheim_Use.GetState(VRPlayer.dominantHandInputSource);
             if (!isAiming)
             {
                 transform.position = geometryProvider.GetDesiredSingleHandedPosition(this);
@@ -146,22 +144,6 @@ namespace ValheimVRMod.Scripts {
 
         // The trigger of the hand that doesn't fire: the front hand when wielding two-handed, otherwise the hand
         // holding the crossbow (the other hand's trigger fires it when wielding one-handed).
-        private SteamVR_Action_Boolean OtherHandTriggerAction
-        {
-            get
-            {
-                switch (twoHandedState)
-                {
-                    case TwoHandedState.LeftHandBehind:
-                        return SteamVR_Actions.valheim_Use;
-                    case TwoHandedState.RightHandBehind:
-                        return SteamVR_Actions.valheim_UseLeft;
-                    default:
-                        return VRPlayer.isRightHandMainWeaponHand ? SteamVR_Actions.valheim_UseLeft : SteamVR_Actions.valheim_Use;
-                }
-            }
-        }
-
         private SteamVR_Input_Sources OtherHandInputSource
         {
             get
@@ -185,7 +167,7 @@ namespace ValheimVRMod.Scripts {
             // Not usable while any laser pointer is up, like the crossbow's own firing trigger below.
             if (GrapplingPoint.m_localGrappler != null &&
                 !LaserPointerChords.IsLaserActiveFor(SteamVR_Input_Sources.Any) &&
-                OtherHandTriggerAction.GetStateDown(OtherHandInputSource) &&
+                SteamVR_Actions.valheim_Use.GetStateDown(OtherHandInputSource) &&
                 EquipScript.IsGrapplingHook(Player.m_localPlayer.GetLeftItem()))
             {
                 GrapplingPoint.m_localGrappler.Break(early: true);
@@ -251,7 +233,7 @@ namespace ValheimVRMod.Scripts {
                     // Not usable while any laser pointer is up.
                     isPullingTrigger =
                         !LaserPointerChords.IsLaserActiveFor(SteamVR_Input_Sources.Any) &&
-                        SteamVR_Actions.valheim_UseLeft.GetStateDown(SteamVR_Input_Sources.LeftHand);
+                        SteamVR_Actions.valheim_Use.GetStateDown(SteamVR_Input_Sources.LeftHand);
                     break;
                 case TwoHandedState.RightHandBehind:
                     isPullingTrigger =
@@ -264,9 +246,8 @@ namespace ValheimVRMod.Scripts {
                         // Fires on release rather than on press: aiming (see UpdateOneHandedAiming) is already
                         // gated the same way, so a release seen while the pointer is up isn't one the player was
                         // still aiming through, and gating it here too keeps that consistent.
-                        var hand = VRPlayer.isRightHandMainWeaponHand ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand;
-                        var trigger = VRPlayer.isRightHandMainWeaponHand ? SteamVR_Actions.valheim_Use : SteamVR_Actions.valheim_UseLeft;
-                        isPullingTrigger = !LaserPointerChords.IsLaserActiveFor(SteamVR_Input_Sources.Any) && trigger.GetStateUp(hand);
+                        isPullingTrigger = !LaserPointerChords.IsLaserActiveFor(SteamVR_Input_Sources.Any) &&
+                            SteamVR_Actions.valheim_Use.GetStateUp(VRPlayer.mainWeaponHandInputSource);
                     }
                     break;
             }
@@ -293,7 +274,7 @@ namespace ValheimVRMod.Scripts {
             {
                 // In VR the hook stays deployed by default (vanilla's secondary attack); holding the other hand's
                 // trigger while firing shoots and retracts instead (vanilla's primary attack).
-                useSecondaryAttack = !instance.OtherHandTriggerAction.state;
+                useSecondaryAttack = !SteamVR_Actions.valheim_Use.GetState(instance.OtherHandInputSource);
             }
             
             return isPullingTrigger;

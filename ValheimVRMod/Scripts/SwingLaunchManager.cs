@@ -21,11 +21,9 @@ namespace ValheimVRMod.Scripts
 
         public static bool isRightHandRear { get { return LocalWeaponWield.LocalPlayerTwoHandedState == WeaponWield.TwoHandedState.RightHandBehind; } }
         public static SteamVR_Input_Sources frontHandInputSource { get { return isRightHandRear ? SteamVR_Input_Sources.LeftHand : SteamVR_Input_Sources.RightHand; } }
-        public static SteamVR_Action_Boolean frontHandTriggerAction { get { return isRightHandRear ? SteamVR_Actions.valheim_UseLeft : SteamVR_Actions.valheim_Use; } }
-        private static SteamVR_Action_Boolean mainWeaponHandTriggerAction { get { return VRPlayer.isRightHandMainWeaponHand ? SteamVR_Actions.valheim_Use : SteamVR_Actions.valheim_UseLeft; } }
-
-        protected SteamVR_Action_Boolean mainHandInputAction { get { return LocalWeaponWield.isCurrentlyTwoHanded() ? frontHandTriggerAction : mainWeaponHandTriggerAction; } }
-        private SteamVR_Input_Sources swingInputSource { get { return LocalWeaponWield.isCurrentlyTwoHanded() ? frontHandInputSource : VRPlayer.mainWeaponHandInputSource; } }
+        // The hand whose trigger arms and releases the swing: the front hand when wielding two-handed, which
+        // leaves the rear hand trigger free to aim and shoot, and the main weapon hand when wielding single-handed.
+        protected SteamVR_Input_Sources swingInputSource { get { return LocalWeaponWield.isCurrentlyTwoHanded() ? frontHandInputSource : VRPlayer.mainWeaponHandInputSource; } }
         private LocalWeaponWield weaponWield { get { return gameObject.GetComponentInParent<LocalWeaponWield>(); } }
         private PhysicsEstimator handPhysicsEstimator { get { return VRPlayer.isRightHandMainWeaponHand ? VRPlayer.rightHandPhysicsEstimator : VRPlayer.leftHandPhysicsEstimator; } }
         private float peakSpeed = 0;
@@ -41,7 +39,8 @@ namespace ValheimVRMod.Scripts
             // Don't arm a new swing-launch while any laser pointer is up (e.g. fishing shouldn't cast just
             // because the player waved the rod around while clicking through a GUI), but once armed, let the
             // preparation and the eventual release proceed even if a pointer comes up mid-swing.
-            if (!LaserPointerChords.IsLaserActiveFor(SteamVR_Input_Sources.Any) && mainHandInputAction.GetStateDown(swingInputSource))
+            if (!LaserPointerChords.IsLaserActiveFor(SteamVR_Input_Sources.Any) &&
+                SteamVR_Actions.valheim_Use.GetStateDown(swingInputSource))
             {
                 preparingThrow = true;
                 peakSpeed = 0;
@@ -49,14 +48,14 @@ namespace ValheimVRMod.Scripts
 
             spawnPoint = GetProjectileSpawnPoint();
 
-            if (mainHandInputAction.state)
+            if (SteamVR_Actions.valheim_Use.GetState(swingInputSource))
             {
                 UpdateThrowDirAndSpeed();
             }
             
             MaybeReleaseProjectile();
 
-            if (!mainHandInputAction.state)
+            if (!SteamVR_Actions.valheim_Use.GetState(swingInputSource))
             {
                 preparingThrow = false;
             }
@@ -92,7 +91,7 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            if (ReleaseTriggerToAttack() && !mainHandInputAction.GetStateUp(swingInputSource))
+            if (ReleaseTriggerToAttack() && !SteamVR_Actions.valheim_Use.GetStateUp(swingInputSource))
             {
                 return;
             }

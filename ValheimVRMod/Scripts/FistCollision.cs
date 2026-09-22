@@ -1,4 +1,3 @@
-using System.Linq;
 using UnityEngine;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
@@ -27,14 +26,6 @@ namespace ValheimVRMod.Scripts
 
         public static float LocalPlayerSecondaryAttackCooldown = 0;
         public static bool ShouldSecondaryKnifeHoldInverse;
-
-        private static readonly int[] NONATTACKABLE_LAYERS = {
-            LayerUtils.WATERVOLUME_LAYER,
-            LayerUtils.WATER,
-            LayerUtils.UI_PANEL_LAYER,
-            LayerUtils.CHARARCTER_TRIGGER,
-            LayerUtils.ITEM_LAYER,
-        };
 
         public bool isGrabbingJumpingAid { get { return lastGrabbedType == Grabbable.ENVIRONMENT || lastGrabbedType == Grabbable.IMAGINARY_CLIMIBNG_HOLD; } }
         public Vector3 lastGrabOffsetFromHead { get; private set; }
@@ -156,7 +147,6 @@ namespace ValheimVRMod.Scripts
                 // require both pressing trigger and grip so that the attack does not accidentally happen too easily.
                 if (handGesture.isHandFree() &&
                     !SteamVR_Actions.valheim_Use.GetState(inputSource) &&
-                    !SteamVR_Actions.valheim_UseLeft.GetState(inputSource) &&
                     !Player.m_localPlayer.m_inCraftingStation) {
                     Character character = collider.GetComponentInParent<Character>();
                     if (character == null ||
@@ -357,7 +347,7 @@ namespace ValheimVRMod.Scripts
             {
                 return;
             }
-            if (NONATTACKABLE_LAYERS.Contains(collider.gameObject.layer))
+            if (LayerUtils.IsNonAttackableLayer(collider.gameObject.layer))
             {
                 return;
             }
