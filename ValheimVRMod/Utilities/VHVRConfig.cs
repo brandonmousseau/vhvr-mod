@@ -170,6 +170,8 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<string> crossbowSaggitalRotationSource;
         private static ConfigEntry<bool> crossbowManualReload;
         private static ConfigEntry<string> blockingType;
+        private static ConfigEntry<float> shieldScale;
+        private static ConfigEntry<float> maxShieldWidth;
         private static ConfigEntry<bool> movementSecondaryAttack;
         private static ConfigEntry<string> meleeAttackKnockbackDirection;
 
@@ -990,7 +992,6 @@ namespace ValheimVRMod.Utilities
                 1.0f,
                 new ConfigDescription("Multiplier for stamina drain on bow. Reduce for less stamina drain.",
                 new AcceptableValueRange<float>(0.25f, 1.0f)));
-
             //Spear Changes
             spearThrowingType = config.Bind("Motion Control",
                                             "SpearThrowingMode",
@@ -1053,10 +1054,19 @@ namespace ValheimVRMod.Utilities
                                         "Grab button - Block by aiming and pressing grab button, parry by timing the grab button. " +
                                         "Realistic - Block precisely where the enemy hits, swing while blocking to parry",
                                         new AcceptableValueList<string>(new string[] { "Gesture", "GrabButton", "Realistic" })));
-            movementSecondaryAttack = config.Bind("Motion Control",
-                                                    "KnifeMovementSecondaryAttack",
-                                                    false,
-                                                    "When enabled, Weapon that have movement secondary attack (Knife) button secondary attack will have 2 step, first trigger-release will make you leap, the second one works like usual button secondary attack. Re-equip after changing setting to update");
+
+            shieldScale = config.Bind("Motion Control",
+                "ShieldScale",
+                1.0f,
+                new ConfigDescription("Scale shield size on equip(eg. 1.5 means 1.5x size of the vanilla model), capped by max shield width.",
+                new AcceptableValueRange<float>(0.05f, 5.0f)));
+
+            maxShieldWidth = config.Bind("Motion Control",
+                "MaxShieldWidth",
+                1.5f,
+                new ConfigDescription("The max allowed width of a shield in meters - any shield wider will be shrinked to fit this width",
+                new AcceptableValueRange<float>(0.05f, 3.0f)));
+
             meleeAttackKnockbackDirection = config.Bind("Motion Control",
                                         "MeleeAttackKnockbackDirection",
                                         "Basic",
@@ -1065,7 +1075,11 @@ namespace ValheimVRMod.Utilities
                                         "Swing - Melee knockback follow swing direction.",
                                         new AcceptableValueList<string>(new string[] { "Basic", "Swing" })));
 
-
+            movementSecondaryAttack = config.Bind("Motion Control",
+                                                    "KnifeMovementSecondaryAttack",
+                                                    false,
+                                                    "When enabled, Weapon that have movement secondary attack (Knife) button secondary attack will have 2 step, first trigger-release will make you leap, the second one works like usual button secondary attack. Re-equip after changing setting to update");
+            
             advancedBuildMode = config.Bind("Motion Control",
                                                    "AdvancedBuildMode",
                                                    false,
@@ -1804,7 +1818,14 @@ namespace ValheimVRMod.Utilities
         {
             return blockingType.Value == "GrabButton";
         }
-
+        public static float GetShieldScaleSetting()
+        {
+            return shieldScale.Value;
+        }
+        public static float GetMaxShieldWidth()
+        {
+            return maxShieldWidth.Value;
+        }
         public static bool MovementSecondaryAttack()
         {
             return movementSecondaryAttack.Value;

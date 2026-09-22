@@ -129,11 +129,11 @@ namespace ValheimVRMod.Scripts
         {
             if (VHVRConfig.UseSpearDirectionGraphicOnTriggerGrip() && !useAction.GetState(VRPlayer.mainWeaponHandInputSource))
             {
-                ShieldBlock.instance?.ScaleShieldSize(1f);
+                ShieldBlock.instance?.AdaptScaleShieldSize(1f);
             }
             else
             {
-                ShieldBlock.instance?.ScaleShieldSize(0.4f);
+                ShieldBlock.instance?.AdaptScaleShieldSize(0.4f);
             }
             var direction = VRPlayer.mainWeaponHand.otherHand.transform.position - CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform.position;
             var lineDirection = direction;
@@ -250,7 +250,7 @@ namespace ValheimVRMod.Scripts
             isAiming = false;
             startAim = Vector3.zero;
             aimingDuration = 0;
-            ShieldBlock.instance?.ScaleShieldSize(1f);
+            ShieldBlock.instance?.AdaptScaleShieldSize(1f);
         }
 
         private void UpdateDirectionLine(Vector3 pos1, Vector3 pos2)

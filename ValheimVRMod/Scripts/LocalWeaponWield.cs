@@ -182,7 +182,7 @@ namespace ValheimVRMod.Scripts
 
             if (!EquipScript.IsSpearEquipped() && EquipScript.CurrentMainHandEquipType() != EquipType.Knife && VHVRConfig.TwoHandedWithShield())
             {
-                ShieldBlock.instance?.ScaleShieldSize(shieldSize);
+                ShieldBlock.instance?.AdaptScaleShieldSize(shieldSize);
             }
 
             // The transform outside OnRenderObject() might be invalid or discontinuous, therefore we need to record its state within this method for physics calculation later.
