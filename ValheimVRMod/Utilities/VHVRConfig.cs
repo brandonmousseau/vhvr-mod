@@ -836,7 +836,7 @@ namespace ValheimVRMod.Utilities
                                              "Basic",
                                              new ConfigDescription(
                                                  "Enables using arm movements to swim, steering, dodging (basic), walk, run, and jump (advanced)",
-                                                 new AcceptableValueList<string>(new string[] { "None", "Basic", "Full" })));
+                                                 new AcceptableValueList<string>(new string[] { "Basic", "Full", "None" })));
             gesturedJumpPreparationHeight = config.Bind("Controls",
                                           "GesturedJumpPreparationHeight",
                                           0.975f,
