@@ -7,13 +7,6 @@ namespace ValheimVRMod.Utilities
 {
     class ThirdPersonCameraUpdater : MonoBehaviour
     {
-        private readonly int VIEW_OBSTRUCTION_LAYER_MASK =
-            Physics.DefaultRaycastLayers &
-            ~(1 << 3) &
-            ~(1 << LayerUtils.CHARACTER) &
-            ~(1 << LayerUtils.ITEM_LAYER) &
-            ~(1 << LayerUtils.CHARARCTER_TRIGGER) &
-            ~(1 << 31); // Smoke
         private Camera camera;
         private Camera vrCamera;
         private Vector3 velocity;
@@ -151,53 +144,21 @@ namespace ValheimVRMod.Utilities
                 viewPoint.y = Mathf.Max(viewPoint.y, vrCamera.transform.position.y + 0.25f);
             }
 
-            ClampViewPointToAvoidObstruction(targetPosition, maxViewDistance, ref viewPoint);
+            viewPoint = Vector3.MoveTowards(targetPosition, viewPoint, maxViewDistance);
+            viewPoint = CameraObstructionUtils.ClampToAvoidObstruction(targetPosition, viewPoint);
 
             float smoothingScale = VHVRConfig.FlatscreenSmoothingScale();
             cameraSpeed *= smoothingScale;
             targetCameraSpeed *= smoothingScale;
-            transform.position = Vector3.SmoothDamp(transform.position, viewPoint, ref velocity, cameraSpeed);
+            // Checked again after smoothing, which would otherwise leave the camera inside a wall for as long as it
+            // takes to catch up with the clamped view point.
+            transform.position =
+                CameraObstructionUtils.ClampToAvoidObstruction(
+                    targetPosition, Vector3.SmoothDamp(transform.position, viewPoint, ref velocity, cameraSpeed));
             targetCurrentPosition = Vector3.SmoothDamp(targetCurrentPosition, viewTarget, ref targetVelocity, targetCameraSpeed);
             transform.LookAt(targetCurrentPosition);
 
             UpdateCameraDot();
-        }
-
-        private void ClampViewPointToAvoidObstruction(Vector3 target, float maxDistance, ref Vector3 viewPoint)
-        {
-            var hits =
-                Physics.RaycastAll(
-                    target,
-                    viewPoint - target,
-                    maxDistance,
-                    camera.cullingMask & VIEW_OBSTRUCTION_LAYER_MASK);
-
-            var distance = maxDistance;
-            foreach (var hit in hits)
-            {
-                if (hit.distance > distance)
-                {
-                    continue;
-                }
-                if (Player.m_localPlayer != null &&
-                    hit.collider.attachedRigidbody != null &&
-                    hit.collider.attachedRigidbody.gameObject == Player.m_localPlayer.gameObject)
-                {
-                    continue;
-                }
-                if (hit.collider.GetComponent<MeshRenderer>() == null && hit.collider.GetComponent<MeshRenderer>() == null)
-                {
-                    continue;
-                }
-                if (hit.collider.GetComponentInParent<Player>() == Player.m_localPlayer && Player.m_localPlayer != null)
-                {
-                    continue;
-                }
-
-                distance = hit.distance;
-            }
-
-            viewPoint = Vector3.MoveTowards(target, viewPoint, distance);
         }
 
         private void UpdateCameraDot()

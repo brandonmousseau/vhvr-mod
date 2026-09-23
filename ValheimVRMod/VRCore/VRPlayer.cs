@@ -1283,6 +1283,7 @@ namespace ValheimVRMod.VRCore
                 _instance.transform.localPosition += getHeadOffset(_headZoomLevel) // Player controlled offset (zeroed on tracking reset)
                             + Vector3.forward * NECK_OFFSET; // Move slightly forward to position on neck
                 setPlayerVisualsOffset(playerCharacter.transform, Vector3.zero);
+                pullThirdPersonViewInFrontOfObstruction(playerCharacter);
             }
             else
             {
@@ -1301,6 +1302,23 @@ namespace ValheimVRMod.VRCore
                 }
                 setPlayerVisualsOffset(playerCharacter.transform, offset);
             }
+        }
+
+        // Like vanilla's third person camera, moves the view towards the character when something comes between the
+        // two, instead of leaving the player looking at the back of a wall. The rig's position is rebuilt from the
+        // zoom offset every frame, so the shift doesn't accumulate and the view goes back out once the way is clear.
+        private void pullThirdPersonViewInFrontOfObstruction(Player playerCharacter)
+        {
+            if (_vrCam == null)
+            {
+                return;
+            }
+            // The point above the character where the first person view would be, taken from the character's own
+            // transform so that nothing the view does can move where the test starts.
+            Vector3 subject = playerCharacter.transform.TransformPoint(getDesiredLocalPosition(playerCharacter));
+            Vector3 viewPoint = _vrCam.transform.position;
+            Vector3 clampedViewPoint = CameraObstructionUtils.ClampToAvoidObstruction(subject, viewPoint);
+            _instance.transform.position += clampedViewPoint - viewPoint;
         }
 
         //Moves all the effects and the meshes that compose the player, doesn't move the Rigidbody
