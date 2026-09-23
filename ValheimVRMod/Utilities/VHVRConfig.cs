@@ -29,7 +29,6 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> flatscreenFieldOfView;
         private static ConfigEntry<float> flatscreenSmoothing;
         private static ConfigEntry<float> followCameraDistance;
-        private static ConfigEntry<bool> stabilizedLevelHorizon;
         private static ConfigEntry<bool> flatscreenPostEffects;
 
         // General Settings
@@ -420,12 +419,9 @@ namespace ValheimVRMod.Utilities
                                      "FollowCameraDistance",
                                      1f,
                                      new ConfigDescription("(Follow only) How far the follow camera sits behind and above the character, as a" +
-                                     " multiple of the original distance. The camera still moves closer when something blocks the view.",
-                                     new AcceptableValueRange<float>(0.5f, 2f)));
-            stabilizedLevelHorizon = config.Bind("Graphics",
-                                     "StabilizedLevelHorizon",
-                                     true,
-                                     "(Stabilized only) Keep the horizon level on the flat screen when the head tilts sideways.");
+                                     " multiple of the original distance. The camera still moves closer when something blocks the view." +
+                                     " At 0 it sits between the eyes, like the stabilized camera but with the horizon kept level.",
+                                     new AcceptableValueRange<float>(0f, 2f)));
             flatscreenPostEffects = config.Bind("Graphics",
                                      "FlatscreenPostEffects",
                                      true,
@@ -1282,9 +1278,22 @@ namespace ValheimVRMod.Utilities
             return followCameraDistance.Value;
         }
 
-        public static bool StabilizedLevelHorizon()
+        public static float MinFollowCameraDistance()
         {
-            return stabilizedLevelHorizon.Value;
+            return ((AcceptableValueRange<float>)followCameraDistance.Description.AcceptableValues).MinValue;
+        }
+
+        // Out of range values are clamped by the config entry.
+        public static void SetFollowCameraDistance(float distance)
+        {
+            followCameraDistance.Value = distance;
+        }
+
+        // Switches between the follow and stabilized cameras, which the mouse wheel steps through as if they were one
+        // continuous zoom.
+        public static void SetFollowOrStabilizedMirrorMode(bool stabilized)
+        {
+            mirrorMode.Value = stabilized ? "Stabilized" : "Follow";
         }
 
         public static bool UseFlatscreenPostEffects()

@@ -7,6 +7,19 @@ namespace ValheimVRMod.Utilities
 {
     class ThirdPersonCameraUpdater : MonoBehaviour
     {
+        // Within this of the eyes the camera is inside the head, e. g. at a follow distance of 0, where the head gear
+        // would fill the view. Checked against where the camera actually is rather than the setting, since the
+        // smoothing still carries it in or out of the head for a moment after the view point changes.
+        private const float INSIDE_HEAD_DISTANCE = 0.3f;
+
+        // Below this follow distance the camera is so close to the head that lagging behind it would carry the
+        // camera out of the head and show its inside. The position then tracks the eyes directly, and the camera
+        // looks where the player looks with the horizon kept level, smoothed like the stabilized camera, instead of
+        // being pulled back for things like drawing a bow.
+        private const float DIRECT_FOLLOW_DISTANCE = 0.25f;
+
+        private const float MAX_VIEW_DISTANCE = 3f;
+
         private Camera camera;
         private Camera vrCamera;
         private Vector3 velocity;
@@ -16,6 +29,7 @@ namespace ValheimVRMod.Utilities
 
         private Vector3 targetCurrentPosition;
         private Vector3 targetVelocity;
+        private bool followsEyesDirectly;
 
         void FixedUpdate()
         {
@@ -34,6 +48,10 @@ namespace ValheimVRMod.Utilities
             }
 
             camera.fieldOfView = VHVRConfig.FlatscreenFieldOfView();
+            // Hides the head itself when the camera is inside it, as it does for the VR camera. Copied at creation
+            // too, but kept in step here in case the setting changes.
+            camera.nearClipPlane = vrCamera.nearClipPlane;
+            followsEyesDirectly = false;
 
             if (!Player.m_localPlayer)
             {
@@ -52,6 +70,14 @@ namespace ValheimVRMod.Utilities
                 return;
             }
 
+            if (VHVRConfig.UseFollowCameraOnFlatscreen() &&
+                VHVRConfig.FollowCameraDistance() < DIRECT_FOLLOW_DISTANCE)
+            {
+                // Placed in LateUpdate instead.
+                followsEyesDirectly = true;
+                return;
+            }
+
             var targetPosition =
                 VRPlayer.inFirstPerson ?
                 vrCamera.transform.position :
@@ -66,7 +92,7 @@ namespace ValheimVRMod.Utilities
             var uiPanel = VRCore.UI.VRGUI.getUiPanel();
             cameraSpeed = 0.15f;
             targetCameraSpeed = 0.2f;
-            float maxViewDistance = 3;
+            float maxViewDistance = MAX_VIEW_DISTANCE;
             if (PlayerCustomizaton.IsBarberGuiVisible())
             {
                 viewPoint = vrCamera.transform.position;
@@ -131,7 +157,7 @@ namespace ValheimVRMod.Utilities
                 {
                     float distance = VHVRConfig.FollowCameraDistance();
                     viewTarget = vrCamera.transform.position + vrCamera.transform.forward * 1.5f;
-                    viewPoint = targetPosition + (Vector3.up * 3 - vrCamera.transform.forward * 3.5f) * distance;
+                    viewPoint = getFollowViewPoint(targetPosition, distance);
                     // The offset above is further than the clamp allows, so the clamp is what actually sets how
                     // far the camera sits, and it has to scale too for the setting to have any effect.
                     maxViewDistance *= distance;
@@ -158,7 +184,80 @@ namespace ValheimVRMod.Utilities
             targetCurrentPosition = Vector3.SmoothDamp(targetCurrentPosition, viewTarget, ref targetVelocity, targetCameraSpeed);
             transform.LookAt(targetCurrentPosition);
 
+            UpdateHeadGearCulling();
             UpdateCameraDot();
+        }
+
+        // FixedUpdate places the camera only at the physics rate, which is enough for a camera smoothing toward
+        // its view point but would leave one meant to stay at the eyes trailing them between physics steps.
+        void LateUpdate()
+        {
+            if (!followsEyesDirectly || camera == null || vrCamera == null || !Player.m_localPlayer)
+            {
+                return;
+            }
+            float distance = VHVRConfig.FollowCameraDistance();
+            Vector3 eyePosition = getEyePosition();
+            Vector3 viewPoint =
+                Vector3.MoveTowards(
+                    eyePosition, getFollowViewPoint(eyePosition, distance), MAX_VIEW_DISTANCE * distance);
+            transform.position = CameraObstructionUtils.ClampToAvoidObstruction(eyePosition, viewPoint);
+
+            Quaternion targetRotation = vrCamera.transform.rotation;
+            Vector3 forward = vrCamera.transform.forward;
+            // Looking straight up or down leaves no horizon to level, and LookRotation has no defined roll there.
+            if (Mathf.Abs(forward.y) < 0.99f)
+            {
+                targetRotation = Quaternion.LookRotation(forward, Vector3.up);
+            }
+            float smoothingTime =
+                StabilizedCameraUpdater.ROTATION_SMOOTHING_TIME * VHVRConfig.FlatscreenSmoothingScale();
+            if (smoothingTime <= 0 ||
+                Quaternion.Angle(transform.rotation, targetRotation) > StabilizedCameraUpdater.SNAP_ANGLE)
+            {
+                transform.rotation = targetRotation;
+            }
+            else
+            {
+                transform.rotation =
+                    Quaternion.Slerp(
+                        transform.rotation, targetRotation, 1f - Mathf.Exp(-Time.deltaTime / smoothingTime));
+            }
+
+            // Leaves the smoothing in FixedUpdate at rest where this camera is, so that going back out to a larger
+            // distance or a pulled back view starts from here instead of from wherever it was left.
+            velocity = Vector3.zero;
+            targetCurrentPosition = transform.position + transform.forward * 1.5f;
+            targetVelocity = Vector3.zero;
+
+            UpdateHeadGearCulling();
+            UpdateCameraDot();
+        }
+
+        // Hides the head gear (helmet, hair and beard), which HeadEquipVisibiltiyUpdater moves to this layer to keep
+        // it from the VR camera.
+        private void UpdateHeadGearCulling()
+        {
+            if (Vector3.Distance(transform.position, getEyePosition()) < INSIDE_HEAD_DISTANCE)
+            {
+                camera.cullingMask &= ~(1 << LayerUtils.CHARARCTER_TRIGGER);
+            }
+            else
+            {
+                camera.cullingMask |= (1 << LayerUtils.CHARARCTER_TRIGGER);
+            }
+        }
+
+        // The VR camera sits between the eyes in first person. When the VR view is zoomed out behind the character
+        // the character's own eyes are used instead.
+        private Vector3 getEyePosition()
+        {
+            return VRPlayer.inFirstPerson ? vrCamera.transform.position : Player.m_localPlayer.m_eye.position;
+        }
+
+        private Vector3 getFollowViewPoint(Vector3 targetPosition, float distance)
+        {
+            return targetPosition + (Vector3.up * 3 - vrCamera.transform.forward * 3.5f) * distance;
         }
 
         private void UpdateCameraDot()

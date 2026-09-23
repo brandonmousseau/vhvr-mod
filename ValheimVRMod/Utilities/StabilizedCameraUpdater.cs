@@ -16,12 +16,12 @@ namespace ValheimVRMod.Utilities
         // shake is angular, so this is where the watchability comes from, and lagging the position would let the
         // camera fall out of the character's head, which is not hidden but merely enclosing the camera, and the
         // head would then be seen from outside.
-        private const float ROTATION_SMOOTHING_TIME = 0.15f;
+        internal const float ROTATION_SMOOTHING_TIME = 0.15f;
 
         // A deliberate head movement is smoothed, but a snap turn or a teleport is a jump rather than a
         // movement, and smoothing one smears the view across the whole turn. Past this the camera is aimed
         // directly instead.
-        private const float SNAP_ANGLE = 20f;
+        internal const float SNAP_ANGLE = 20f;
 
         private Camera camera;
         private Camera vrCamera;
@@ -46,12 +46,6 @@ namespace ValheimVRMod.Utilities
             // view meant to represent what the player sees belongs.
             Vector3 targetPosition = vrCamera.transform.position;
             Quaternion targetRotation = vrCamera.transform.rotation;
-            Vector3 forward = vrCamera.transform.forward;
-            // Looking straight up or down leaves no horizon to level, and LookRotation has no defined roll there.
-            if (VHVRConfig.StabilizedLevelHorizon() && Mathf.Abs(forward.y) < 0.99f)
-            {
-                targetRotation = Quaternion.LookRotation(forward, Vector3.up);
-            }
 
             camera.fieldOfView = VHVRConfig.FlatscreenFieldOfView();
             transform.position = targetPosition;
