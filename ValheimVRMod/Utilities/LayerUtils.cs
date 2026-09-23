@@ -70,6 +70,12 @@ namespace ValheimVRMod.Utilities
         public const int WORLDSPACE_UI_LAYER = 30;
         public const int WORLDSPACE_UI_LAYER_MASK = (1 << WORLDSPACE_UI_LAYER);
 
+        // Layers that a melee attack must never register a hit against: scenery and helper colliders that are
+        // not attackable, plus the VR GUI panel, whose collider is there for the laser pointer to raycast against.
+        private const int NONATTACKABLE_LAYER_MASK =
+            (1 << WATERVOLUME_LAYER) | (1 << WATER) | (1 << UI_PANEL_LAYER) |
+            (1 << CHARARCTER_TRIGGER) | (1 << ITEM_LAYER);
+
         // TODO: Use const instead? (1 << PIECE) | (1 << PIECE_NONSOLID) | (1 << ITEM_LAYER)
         public static readonly int HARVEST_RAY_MASK = LayerMask.GetMask(new string[]
             {
@@ -77,6 +83,11 @@ namespace ValheimVRMod.Utilities
                 "piece_nonsolid",
                 "item"
             });
+
+        public static bool IsNonAttackableLayer(int layer)
+        {
+            return (NONATTACKABLE_LAYER_MASK & (1 << layer)) != 0;
+        }
 
         public static int getHandsLayer()
         {

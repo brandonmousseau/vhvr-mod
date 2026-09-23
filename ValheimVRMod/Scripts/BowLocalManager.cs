@@ -141,11 +141,10 @@ namespace ValheimVRMod.Scripts {
             // Enable using the bow hand orientation alone for aiming if the bow hand is holding down both the grip and the trigger.
             bowHandAiming =
                 SteamVR_Actions.valheim_Grab.GetState(VRPlayer.bowHandInputSource) &&
-                (SteamVR_Actions.valheim_Use.GetState(bowHand) || SteamVR_Actions.valheim_UseLeft.GetState(bowHand));
+                SteamVR_Actions.valheim_Use.GetState(bowHand);
 
             bool pullInputHeld =
                 SteamVR_Actions.valheim_Use.GetState(pullingSource) ||
-                SteamVR_Actions.valheim_UseLeft.GetState(pullingSource) ||
                 SteamVR_Actions.valheim_Grab.GetState(pullingSource);
             // Only the start of a draw is disabled while any laser pointer is up; a draw already in progress
             // keeps being read, and so does its release below, so a pointer coming up mid-draw (e.g. a container
@@ -155,7 +154,6 @@ namespace ValheimVRMod.Scripts {
             }
 
             if (SteamVR_Actions.valheim_Use.GetStateUp(pullingSource) ||
-                SteamVR_Actions.valheim_UseLeft.GetStateUp(pullingSource) ||
                 SteamVR_Actions.valheim_Grab.GetStateUp(pullingSource)) {
                 releaseString();
             }

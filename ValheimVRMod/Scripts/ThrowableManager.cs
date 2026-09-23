@@ -27,7 +27,6 @@ namespace ValheimVRMod.Scripts
 
         private GameObject rotSave;
         private LineRenderer directionLine;
-        private SteamVR_Action_Boolean useAction { get { return VRPlayer.isRightHandMainWeaponHand ? SteamVR_Actions.valheim_Use : SteamVR_Actions.valheim_UseLeft; } }
 
         private float directionCooldown;
         private float aimingDuration = 0;
@@ -104,7 +103,7 @@ namespace ValheimVRMod.Scripts
             }
 
             tickCounter = 0;
-            if (!(VHVRConfig.UseSpearDirectionGraphicOnGrip() || (VHVRConfig.UseSpearDirectionGraphicOnTriggerGrip() && useAction.GetState(VRPlayer.mainWeaponHandInputSource))))
+            if (!(VHVRConfig.UseSpearDirectionGraphicOnGrip() || (VHVRConfig.UseSpearDirectionGraphicOnTriggerGrip() && SteamVR_Actions.valheim_Use.GetState(VRPlayer.mainWeaponHandInputSource))))
             {
                 return;
             }
@@ -127,7 +126,7 @@ namespace ValheimVRMod.Scripts
         }
         private void UpdateSecondHandAimCalculation()
         {
-            if (VHVRConfig.UseSpearDirectionGraphicOnTriggerGrip() && !useAction.GetState(VRPlayer.mainWeaponHandInputSource))
+            if (VHVRConfig.UseSpearDirectionGraphicOnTriggerGrip() && !SteamVR_Actions.valheim_Use.GetState(VRPlayer.mainWeaponHandInputSource))
             {
                 ShieldBlock.instance?.AdaptScaleShieldSize(1f);
             }
@@ -187,7 +186,7 @@ namespace ValheimVRMod.Scripts
 
             // The preparation phase lasts as long as the trigger is held on top of the grip; only entry into it is
             // gated on the laser pointer above, so a hold or release that started while gated still reads real.
-            if (useAction.GetState(VRPlayer.mainWeaponHandInputSource))
+            if (SteamVR_Actions.valheim_Use.GetState(VRPlayer.mainWeaponHandInputSource))
             {
                 if (!isAiming)
                 {
@@ -255,7 +254,7 @@ namespace ValheimVRMod.Scripts
 
         private void UpdateDirectionLine(Vector3 pos1, Vector3 pos2)
         {
-            if (!(VHVRConfig.UseSpearDirectionGraphicOnGrip() || (VHVRConfig.UseSpearDirectionGraphicOnTriggerGrip() && useAction.GetState(VRPlayer.mainWeaponHandInputSource))) || LocalWeaponWield.isCurrentlyTwoHanded())
+            if (!(VHVRConfig.UseSpearDirectionGraphicOnGrip() || (VHVRConfig.UseSpearDirectionGraphicOnTriggerGrip() && SteamVR_Actions.valheim_Use.GetState(VRPlayer.mainWeaponHandInputSource))) || LocalWeaponWield.isCurrentlyTwoHanded())
             {
                 return;
             }

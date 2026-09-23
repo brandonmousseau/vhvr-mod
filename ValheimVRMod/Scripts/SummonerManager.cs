@@ -49,11 +49,6 @@ namespace ValheimVRMod.Scripts
         {
             get { return IsGestureHandRight ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand; }
         }
-        private SteamVR_Action_Boolean GestureHandTriggerAction
-        {
-            get { return IsGestureHandRight ? SteamVR_Actions.valheim_Use : SteamVR_Actions.valheim_UseLeft; }
-        }
-
         private void Awake()
         {
             instance = this;
@@ -70,7 +65,7 @@ namespace ValheimVRMod.Scripts
         private void FixedUpdate()
         {
             var inputSource = GestureHandInputSource;
-            if (!LaserPointerChords.IsLaserActiveFor(inputSource) && GestureHandTriggerAction.GetState(inputSource))
+            if (!LaserPointerChords.IsLaserActiveFor(inputSource) && SteamVR_Actions.valheim_Use.GetState(inputSource))
             {
                 if (hasSummonedInCurrentMotion)
                 {

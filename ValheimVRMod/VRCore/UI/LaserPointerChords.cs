@@ -154,7 +154,7 @@ namespace ValheimVRMod.VRCore.UI
             // Both clicks live in the single Valheim action set now (there is no more separate, higher priority
             // laser pointer set to silence them while a pointer is inactive), so both are explicitly gated on
             // laserControlsActive here rather than relying on the action itself going quiet - otherwise pulling
-            // the same physical trigger for Use/UseLeft while no pointer is up would also register as a click.
+            // the same physical trigger for Use while no pointer is up would also register as a click.
             leftClick = VRControls.laserControlsActive && FilterLeftClick(leftClickAction.GetState(SteamVR_Input_Sources.Any));
             leftClickDown = VRControls.laserControlsActive && FilterLeftClick(leftClickAction.GetStateDown(SteamVR_Input_Sources.Any));
             if (leftClickDown)

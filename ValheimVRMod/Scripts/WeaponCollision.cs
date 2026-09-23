@@ -1,5 +1,4 @@
 using System.ComponentModel;
-using System.Linq;
 using UnityEngine;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
@@ -40,14 +39,6 @@ namespace ValheimVRMod.Scripts
         public LocalWeaponWield weaponWield;
         public static bool isLastHitOnTerrain;
         public bool isTwoHandedMultitargetSwipeActive { get { return twoHandedMultitargetSwipeCountdown > twoHandedMultitargetSwipeDuration * 0.5f; } }
-
-        private static readonly int[] ignoreLayers = {
-            LayerUtils.WATERVOLUME_LAYER,
-            LayerUtils.WATER,
-            LayerUtils.UI_PANEL_LAYER,
-            LayerUtils.CHARARCTER_TRIGGER,
-            LayerUtils.ITEM_LAYER,
-        };
 
         private void Awake()
         {
@@ -362,7 +353,7 @@ namespace ValheimVRMod.Scripts
         private bool tryHitTarget(GameObject target, bool isSlowAttack, float speed)
         {
             // ignore certain Layers
-            if (ignoreLayers.Contains(target.layer))
+            if (LayerUtils.IsNonAttackableLayer(target.layer))
             {
                 return false;
             }

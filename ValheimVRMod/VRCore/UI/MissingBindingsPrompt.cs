@@ -24,10 +24,9 @@ namespace ValheimVRMod.VRCore.UI
             SteamVR_Actions.valheim_PoseR,
             SteamVR_Actions.valheim_Walk,
             SteamVR_Actions.valheim_PitchAndYaw,
-            SteamVR_Actions.valheim_Use,
-            SteamVR_Actions.valheim_UseLeft,
             SteamVR_Actions.valheim_Grab,
-            SteamVR_Actions.valheim_ToggleMenu,
+            // TODO: find out why chords have false activeBinding
+            // SteamVR_Actions.valheim_ToggleMenu,
             SteamVR_Actions.valheim_ToggleInventory,
             SteamVR_Actions.valheim_Jump,
             SteamVR_Actions.valheim_LeftClick,
@@ -40,6 +39,18 @@ namespace ValheimVRMod.VRCore.UI
         private static readonly SteamVR_Action[] SCROLL_BUTTON_ACTIONS = {
             SteamVR_Actions.valheim_ScrollUp,
             SteamVR_Actions.valheim_ScrollDown,
+        };
+
+        // Actions bound on both hands, where each hand is separately essential. These cannot go in the list above:
+        // activeBinding is a shortcut to the Any source, which cannot tell an action bound on one hand only from one
+        // bound on both, so a binding that leaves a single hand out would go unreported.
+        private static readonly SteamVR_Action_Boolean[] TWO_HANDED_ACTIONS = {
+            SteamVR_Actions.valheim_Use,
+        };
+
+        private static readonly SteamVR_Input_Sources[] HANDS = {
+            SteamVR_Input_Sources.LeftHand,
+            SteamVR_Input_Sources.RightHand,
         };
 
         // SteamVR loads the bindings asynchronously, and an action only reports its binding once a device it is bound
@@ -71,9 +82,15 @@ namespace ValheimVRMod.VRCore.UI
             IEnumerable<SteamVR_Action> unboundActions = ESSENTIAL_ACTIONS.Where(action => !action.activeBinding);
             if (!SteamVR_Actions.valheim_ContextScroll.activeBinding)
             {
-                unboundActions = unboundActions.Concat(SCROLL_BUTTON_ACTIONS.Where(action => !action.activeBinding));
+                // TODO: find out why chords have false activeBinding
+                // unboundActions = unboundActions.Concat(SCROLL_BUTTON_ACTIONS.Where(action => !action.activeBinding));
             }
-            string[] missingActions = unboundActions.Select(action => action.GetShortName()).ToArray();
+            string[] missingActions = unboundActions.Select(action => action.GetShortName())
+                .Concat(TWO_HANDED_ACTIONS.SelectMany(
+                    action => HANDS
+                        .Where(hand => !action[hand].activeBinding)
+                        .Select(hand => action.GetShortName() + GetHandSuffix(hand))))
+                .ToArray();
             if (missingActions.Length == 0)
             {
                 return;
@@ -99,6 +116,11 @@ namespace ValheimVRMod.VRCore.UI
                 },
                 () => UnifiedPopup.Pop(),
                 localizeText: false));
+        }
+
+        private static string GetHandSuffix(SteamVR_Input_Sources hand)
+        {
+            return hand == SteamVR_Input_Sources.LeftHand ? " (left hand)" : " (right hand)";
         }
 
         private static bool IsControllerConnected(ETrackedControllerRole role)

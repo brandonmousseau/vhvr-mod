@@ -656,8 +656,7 @@ namespace ValheimVRMod.Scripts
                         else if (!InputManager.chatKeyboardActive)
                         {
                             shouldStartChat = true;
-                            if (SteamVR_Actions.valheim_Use.GetState(SteamVR_Input_Sources.Any) ||
-                                SteamVR_Actions.valheim_UseLeft.GetState(SteamVR_Input_Sources.Any))
+                            if (SteamVR_Actions.valheim_Use.GetState(SteamVR_Input_Sources.Any))
                             {
                                 ZInput_GetButtonDown_Patch.EmulateButtonDown("Chat");
                             }
