@@ -563,11 +563,14 @@ namespace ValheimVRMod.VRCore
             }
 
             if (_thirdPersonCamera != null &&
-                !VHVRConfig.UseFlatscreenPostEffects() &&
-                _thirdPersonCamera.GetComponent<PostProcessingBehaviour>() != null)
+                (VHVRConfig.UseStabilizedCameraOnFlatscreen() !=
+                     (_thirdPersonCamera.GetComponent<StabilizedCameraUpdater>() != null) ||
+                 (!VHVRConfig.UseFlatscreenPostEffects() &&
+                     _thirdPersonCamera.GetComponent<PostProcessingBehaviour>() != null)))
             {
-                // The post effects were just turned off. Rebuild the camera rather than stripping them from it, the
-                // same way a mode change does, so this doesn't have to track every component the copy added.
+                // Either the mode switched between the stabilized camera and a third person one, which differ in
+                // their updater and culling mask, or the post effects were just turned off. Rebuild the camera
+                // rather than patching it up, so this doesn't have to track everything creating it set up.
                 Destroy(_thirdPersonCamera.gameObject);
                 _thirdPersonCamera = null;
             }

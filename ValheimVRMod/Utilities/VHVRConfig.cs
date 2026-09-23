@@ -24,8 +24,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<string> pluginVersion;
         private static ConfigEntry<bool> bhapticsEnabled;
 
-        // Camera Settings
-        private const string CAMERA_SECTION = "Camera";
+        // Flat screen camera settings, listed at the end of the Graphics section
         private static ConfigEntry<string> mirrorMode;
         private static ConfigEntry<float> flatscreenFieldOfView;
         private static ConfigEntry<float> flatscreenSmoothing;
@@ -220,11 +219,12 @@ namespace ValheimVRMod.Utilities
             config = mConfig;
             InitializeImmutableSettings();
             InitializeGeneralSettings();
-            InitializeCameraSettings();
             InitializeUISettings();
             InitializeVrHudSettings();
             InitializeControlsSettings();
             InitializeGraphicsSettings();
+            // After the other graphics settings, so that these are listed below them in the Graphics tab.
+            InitializeFlatscreenCameraSettings();
             InitializeMotionControlSettings();
             DoVersionInit();
         }
@@ -376,7 +376,7 @@ namespace ValheimVRMod.Utilities
             return immutableSetting;
         }
 
-        private static void InitializeCameraSettings()
+        private static void InitializeFlatscreenCameraSettings()
         {
             // MirrorMode used to live in the General section. BepInEx identifies an entry by section and key, so
             // moving it would silently reset everyone's choice. The old entry is bound only to read the value the
@@ -385,7 +385,7 @@ namespace ValheimVRMod.Utilities
             string legacyMirrorModeValue = legacyMirrorMode.Value;
             config.Remove(legacyMirrorMode.Definition);
 
-            mirrorMode = config.Bind(CAMERA_SECTION,
+            mirrorMode = config.Bind("Graphics",
                                      "MirrorMode",
                                      "Right",
                                      new ConfigDescription("The VR mirror mode.Legal values: OpenVR, Right, Left, Follow, Spectator, Stabilized, None. Note: OpenVR is" +
@@ -403,30 +403,30 @@ namespace ValheimVRMod.Utilities
                 mirrorMode.Value = legacyMirrorModeValue;
             }
             mirrorMode.SettingChanged += (sender, e) => VRManager.UpdateMirrorViewMode();
-            flatscreenFieldOfView = config.Bind(CAMERA_SECTION,
+            flatscreenFieldOfView = config.Bind("Graphics",
                                      "FlatscreenFieldOfView",
                                      75f,
                                      new ConfigDescription("(Follow, Spectator and Stabilized only) Vertical field of view in degrees of the" +
                                      " camera that renders the flat screen view. 75 is about 107 degrees horizontally on a 16:9 screen." +
                                      " Wider shows more of the surroundings but stretches the edges of the frame.",
                                      new AcceptableValueRange<float>(50f, 110f)));
-            flatscreenSmoothing = config.Bind(CAMERA_SECTION,
+            flatscreenSmoothing = config.Bind("Graphics",
                                      "FlatscreenSmoothing",
                                      0.5f,
                                      new ConfigDescription("(Follow, Spectator and Stabilized only) How much the flat screen camera smooths out" +
                                      " motion. 0 follows immediately, higher is steadier but lags further behind. 0.5 is the original behavior.",
                                      new AcceptableValueRange<float>(0f, 1f)));
-            followCameraDistance = config.Bind(CAMERA_SECTION,
+            followCameraDistance = config.Bind("Graphics",
                                      "FollowCameraDistance",
                                      1f,
                                      new ConfigDescription("(Follow only) How far the follow camera sits behind and above the character, as a" +
                                      " multiple of the original distance. The camera still moves closer when something blocks the view.",
                                      new AcceptableValueRange<float>(0.5f, 2f)));
-            stabilizedLevelHorizon = config.Bind(CAMERA_SECTION,
+            stabilizedLevelHorizon = config.Bind("Graphics",
                                      "StabilizedLevelHorizon",
                                      true,
                                      "(Stabilized only) Keep the horizon level on the flat screen when the head tilts sideways.");
-            flatscreenPostEffects = config.Bind(CAMERA_SECTION,
+            flatscreenPostEffects = config.Bind("Graphics",
                                      "FlatscreenPostEffects",
                                      true,
                                      "(Follow, Spectator and Stabilized only) Apply post processing such as color grading, bloom and sun shafts" +
