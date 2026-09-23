@@ -384,12 +384,14 @@ namespace ValheimVRMod.Utilities
             mirrorMode = config.Bind("General",
                                      "MirrorMode",
                                      "Right",
-                                     new ConfigDescription("The VR mirror mode.Legal values: OpenVR, Right, Left, Follow, Spectator, None. Note: OpenVR is" +
+                                     new ConfigDescription("The VR mirror mode.Legal values: OpenVR, Right, Left, Follow, Spectator, Stabilized, None. Note: OpenVR is" +
                                      " required if you want to see the Overlay-type GUI in the mirror image. However, I've found that OpenVR" +
                                      " mirror mode causes some issue that requires SteamVR to be restarted after closing the game, so unless you" +
                                      " need it for some specific reason, I recommend using another mirror mode or None. Follow mode and spectator mode" +
-                                     " render content from a third person camera which can cause lag.",
-                                     new AcceptableValueList<string>(new string[] { "Right", "Left", "OpenVR", "None", "Follow", "Spectator" })));
+                                     " render content from a third person camera which can cause lag. Stabilized mode renders a smoothed first person" +
+                                     " camera from between the eyes, which is steadier to watch than the mirror image of an eye," +
+                                     " and is the one to pick for streaming or recording.",
+                                     new AcceptableValueList<string>(new string[] { "Right", "Left", "OpenVR", "None", "Follow", "Spectator", "Stabilized" })));
             mirrorMode.SettingChanged += (sender, e) => VRManager.UpdateMirrorViewMode();
             playerMinEyeHeight = config.Bind("General",
                               "PlayerMinEyeHeight",
@@ -1168,8 +1170,10 @@ namespace ValheimVRMod.Utilities
                 case "None":
                 case "Follow":
                 case "Spectator":
-                    // The third person camera modes render the flat screen view themselves, so the
-                    // mirror image must not be drawn over it.
+                case "Stabilized":
+                    // These modes render the flat screen view with a camera of their own, so the mirror
+                    // image must not be drawn over it. It also leaves the flat screen frame rate free of
+                    // the eye mirror blit that the Right, Left and OpenVR modes are paced by.
                     return OpenVRSettings.MirrorViewModes.None;
                 default:
                     LogUtils.LogWarning("Invalid mirror mode setting. Defaulting to None");
@@ -1187,9 +1191,24 @@ namespace ValheimVRMod.Utilities
             return mirrorMode.Value == "Spectator";
         }
 
+        // Whether the flat screen view comes from a first person camera placed between the eyes and smoothed,
+        // instead of an eye mirror image or a third person camera.
+        public static bool UseStabilizedCameraOnFlatscreen()
+        {
+            return mirrorMode.Value == "Stabilized";
+        }
+
+        // Deliberately excludes the stabilized camera: this also gates showing the head and headgear, which a
+        // camera sitting between the eyes must not render.
         public static bool UseThirdPersonCameraOnFlatscreen()
         {
             return UseFollowCameraOnFlatscreen() || UseSpectatorCameraOnFlatscreen();
+        }
+
+        // Whether the flat screen view is rendered by a camera of the mod's own rather than by the eye mirror.
+        public static bool UseSeparateFlatscreenCamera()
+        {
+            return UseThirdPersonCameraOnFlatscreen() || UseStabilizedCameraOnFlatscreen();
         }
 
         public static float PlayerMinEyeHeight()

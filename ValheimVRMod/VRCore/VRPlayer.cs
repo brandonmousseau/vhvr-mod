@@ -539,7 +539,7 @@ namespace ValheimVRMod.VRCore
 
         private void UpdateThirdPersonCamera()
         {
-            if (!VHVRConfig.UseThirdPersonCameraOnFlatscreen())
+            if (!VHVRConfig.UseSeparateFlatscreenCamera())
             {
                 if (_thirdPersonCamera != null)
                 {
@@ -1073,15 +1073,29 @@ namespace ValheimVRMod.VRCore
             // both of which an explicitly set projection matrix would otherwise override.
             _thirdPersonCamera.ResetProjectionMatrix();
             _thirdPersonCamera.depth = 4;
-            // Borrow the character trigger layer to render headgears which should be hidden for the VR camera.
-            _thirdPersonCamera.cullingMask |= (1 << LayerUtils.CHARARCTER_TRIGGER);
+            bool isStabilizedCamera = VHVRConfig.UseStabilizedCameraOnFlatscreen();
+            if (!isStabilizedCamera)
+            {
+                // Borrow the character trigger layer to render headgears which should be hidden for the VR camera.
+                // The stabilized camera sits between the eyes like the VR camera does, so it has to hide the same
+                // things the VR camera hides, or the player's own head and helmet fill the view.
+                _thirdPersonCamera.cullingMask |= (1 << LayerUtils.CHARARCTER_TRIGGER);
+            }
             _thirdPersonCamera.cullingMask |= (1 << LayerUtils.getUiPanelLayer());
             _thirdPersonCamera.cullingMask |= (1 << LayerUtils.getWorldspaceUiLayer());
             _thirdPersonCamera.transform.position = vrCam.transform.position;
             _thirdPersonCamera.stereoTargetEye = StereoTargetEyeMask.None;
-            _thirdPersonCamera.gameObject.AddComponent<ThirdPersonCameraUpdater>();
             _thirdPersonCamera.enabled = true;
-            _thirdPersonCamera.fieldOfView = 75;
+            if (isStabilizedCamera)
+            {
+                _thirdPersonCamera.gameObject.AddComponent<StabilizedCameraUpdater>();
+                _thirdPersonCamera.fieldOfView = StabilizedCameraUpdater.FIELD_OF_VIEW;
+            }
+            else
+            {
+                _thirdPersonCamera.gameObject.AddComponent<ThirdPersonCameraUpdater>();
+                _thirdPersonCamera.fieldOfView = 75;
+            }
             _thirdPersonCamera.ResetAspect();
         }
 
