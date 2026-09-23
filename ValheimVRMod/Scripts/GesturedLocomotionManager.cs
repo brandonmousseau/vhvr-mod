@@ -904,7 +904,7 @@ namespace ValheimVRMod.Scripts
 
             public override Vector3 GetTargetVelocityFromGestures(Player player, float deltaTime)
             {
-                if (!VHVRConfig.IsGesturedSwimEnabled() ||
+                if (!VHVRConfig.IsBasicGesturedLocomotionEnabled() ||
                     player.IsAttached() ||
                     player.InDodge() ||
                     player.m_queuedDodgeTimer > 0 ||
