@@ -11,7 +11,8 @@ namespace ValheimVRMod.Utilities
     // that tracks the head directly.
     class StabilizedCameraUpdater : MonoBehaviour
     {
-        // Larger is steadier but lags further behind a deliberate head movement. Only the rotation is smoothed:
+        // The time at the default FlatscreenSmoothing setting, which scales it. Larger is steadier but lags further
+        // behind a deliberate head movement. Only the rotation is smoothed:
         // shake is angular, so this is where the watchability comes from, and lagging the position would let the
         // camera fall out of the character's head, which is not hidden but merely enclosing the camera, and the
         // head would then be seen from outside.
@@ -21,11 +22,6 @@ namespace ValheimVRMod.Utilities
         // movement, and smoothing one smears the view across the whole turn. Past this the camera is aimed
         // directly instead.
         private const float SNAP_ANGLE = 20f;
-
-        // Vanilla exposes no field of view setting, so this is simply chosen. It is vertical, which at 16:9 is
-        // about 107 degrees horizontally, close to a wide headset and matching the third person spectator
-        // camera. Much wider stretches the edges of the frame and puts more in the frustum to draw.
-        public const float FIELD_OF_VIEW = 75f;
 
         private Camera camera;
         private Camera vrCamera;
@@ -50,10 +46,18 @@ namespace ValheimVRMod.Utilities
             // view meant to represent what the player sees belongs.
             Vector3 targetPosition = vrCamera.transform.position;
             Quaternion targetRotation = vrCamera.transform.rotation;
+            Vector3 forward = vrCamera.transform.forward;
+            // Looking straight up or down leaves no horizon to level, and LookRotation has no defined roll there.
+            if (VHVRConfig.StabilizedLevelHorizon() && Mathf.Abs(forward.y) < 0.99f)
+            {
+                targetRotation = Quaternion.LookRotation(forward, Vector3.up);
+            }
 
+            camera.fieldOfView = VHVRConfig.FlatscreenFieldOfView();
             transform.position = targetPosition;
 
-            if (!isPlaced || Quaternion.Angle(transform.rotation, targetRotation) > SNAP_ANGLE)
+            float smoothingTime = ROTATION_SMOOTHING_TIME * VHVRConfig.FlatscreenSmoothingScale();
+            if (!isPlaced || smoothingTime <= 0 || Quaternion.Angle(transform.rotation, targetRotation) > SNAP_ANGLE)
             {
                 transform.rotation = targetRotation;
                 isPlaced = true;
@@ -64,7 +68,7 @@ namespace ValheimVRMod.Utilities
             // on the frame rate.
             transform.rotation =
                 Quaternion.Slerp(
-                    transform.rotation, targetRotation, 1f - Mathf.Exp(-Time.deltaTime / ROTATION_SMOOTHING_TIME));
+                    transform.rotation, targetRotation, 1f - Mathf.Exp(-Time.deltaTime / smoothingTime));
         }
     }
 }

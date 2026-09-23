@@ -40,6 +40,8 @@ namespace ValheimVRMod.Utilities
                 return;
             }
 
+            camera.fieldOfView = VHVRConfig.FlatscreenFieldOfView();
+
             if (!Player.m_localPlayer)
             {
                 var panel = VRCore.UI.VRGUI.getUiPanel();
@@ -71,6 +73,7 @@ namespace ValheimVRMod.Utilities
             var uiPanel = VRCore.UI.VRGUI.getUiPanel();
             cameraSpeed = 0.15f;
             targetCameraSpeed = 0.2f;
+            float maxViewDistance = 3;
             if (PlayerCustomizaton.IsBarberGuiVisible())
             {
                 viewPoint = vrCamera.transform.position;
@@ -133,8 +136,12 @@ namespace ValheimVRMod.Utilities
                 }
                 else
                 {
+                    float distance = VHVRConfig.FollowCameraDistance();
                     viewTarget = vrCamera.transform.position + vrCamera.transform.forward * 1.5f;
-                    viewPoint = targetPosition + Vector3.up * 3 - vrCamera.transform.forward * 3.5f;
+                    viewPoint = targetPosition + (Vector3.up * 3 - vrCamera.transform.forward * 3.5f) * distance;
+                    // The offset above is further than the clamp allows, so the clamp is what actually sets how
+                    // far the camera sits, and it has to scale too for the setting to have any effect.
+                    maxViewDistance *= distance;
                 }
             }
             else
@@ -144,8 +151,11 @@ namespace ValheimVRMod.Utilities
                 viewPoint.y = Mathf.Max(viewPoint.y, vrCamera.transform.position.y + 0.25f);
             }
 
-            ClampViewPointToAvoidObstruction(targetPosition, maxDistance: 3, ref viewPoint);
+            ClampViewPointToAvoidObstruction(targetPosition, maxViewDistance, ref viewPoint);
 
+            float smoothingScale = VHVRConfig.FlatscreenSmoothingScale();
+            cameraSpeed *= smoothingScale;
+            targetCameraSpeed *= smoothingScale;
             transform.position = Vector3.SmoothDamp(transform.position, viewPoint, ref velocity, cameraSpeed);
             targetCurrentPosition = Vector3.SmoothDamp(targetCurrentPosition, viewTarget, ref targetVelocity, targetCameraSpeed);
             transform.LookAt(targetCurrentPosition);

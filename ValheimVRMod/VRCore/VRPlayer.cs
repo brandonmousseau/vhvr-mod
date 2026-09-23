@@ -562,15 +562,28 @@ namespace ValheimVRMod.VRCore
                 PlayerOnDeathPatch.hasCharacterDied = false;
             }
 
+            if (_thirdPersonCamera != null &&
+                !VHVRConfig.UseFlatscreenPostEffects() &&
+                _thirdPersonCamera.GetComponent<PostProcessingBehaviour>() != null)
+            {
+                // The post effects were just turned off. Rebuild the camera rather than stripping them from it, the
+                // same way a mode change does, so this doesn't have to track every component the copy added.
+                Destroy(_thirdPersonCamera.gameObject);
+                _thirdPersonCamera = null;
+            }
+
             if (_thirdPersonCamera == null)
             {
                 enableThirdPersonCamera();
             }
 
-            // Retried every frame rather than done once when the camera is created: the VR camera's own post
-            // processing is set up when it is attached to the player, which can happen after this camera exists.
-            // The call returns immediately once the effects are in place.
-            maybeCopyPostProcessingToFlatscreenCamera(_thirdPersonCamera);
+            if (VHVRConfig.UseFlatscreenPostEffects())
+            {
+                // Retried every frame rather than done once when the camera is created: the VR camera's own post
+                // processing is set up when it is attached to the player, which can happen after this camera
+                // exists. The call returns immediately once the effects are in place.
+                maybeCopyPostProcessingToFlatscreenCamera(_thirdPersonCamera);
+            }
         }
 
         // Fixes an issue on Pimax HMDs that causes rotation to be incorrect:
@@ -1094,13 +1107,13 @@ namespace ValheimVRMod.VRCore
             if (isStabilizedCamera)
             {
                 _thirdPersonCamera.gameObject.AddComponent<StabilizedCameraUpdater>();
-                _thirdPersonCamera.fieldOfView = StabilizedCameraUpdater.FIELD_OF_VIEW;
             }
             else
             {
                 _thirdPersonCamera.gameObject.AddComponent<ThirdPersonCameraUpdater>();
-                _thirdPersonCamera.fieldOfView = 75;
             }
+            // The updaters keep applying this as well, so that changing the setting takes effect immediately.
+            _thirdPersonCamera.fieldOfView = VHVRConfig.FlatscreenFieldOfView();
             _thirdPersonCamera.ResetAspect();
         }
 
