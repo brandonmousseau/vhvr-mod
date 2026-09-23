@@ -123,7 +123,12 @@ namespace ValheimVRMod.VRCore.UI
 
         private VRGUI_InputModule _inputModule;
         // How far the laser pointer may drift on the panel while the trigger is held before a click becomes a drag.
+        // Both have to be exceeded: the distance in metres keeps a small panel with densely packed pixels, such as
+        // the one attached to the hand, from being too sensitive, and the one in pixels keeps the pointer on a large
+        // panel from leaving the dead zone before it has moved further than Unity's drag threshold, past which a drag
+        // starts at once and cancels the click of a button in a scroll view, e. g. a recipe in the crafting menu.
         private const float LASER_CLICK_DEAD_ZONE_METERS = 0.005f;
+        private const float LASER_CLICK_DEAD_ZONE_PIXELS = 16f;
         // Where on the panel, in its local coordinates, the laser cursor was last placed. While a click is held in
         // its dead zone, this is where the trigger was pressed.
         private Vector3 cursorLocalHit;
@@ -712,10 +717,13 @@ namespace ValheimVRMod.VRCore.UI
                 // Pulling or releasing the trigger tilts the controller, which would otherwise carry the cursor off
                 // the button that was pressed, or far enough to start dragging the scroll view it sits in, and
                 // either way lose the click. So the cursor stays where the press was until the ray has clearly
-                // moved away on purpose. Measured in metres on the panel, which is independent of the panel's
-                // resolution and size, so the same distance applies to every menu.
+                // moved away on purpose.
                 float drift = _uiPanel.TransformVector(correctedLocalHit - cursorLocalHit).magnitude;
-                if (drift <= LASER_CLICK_DEAD_ZONE_METERS)
+                float pixelDrift =
+                    Vector2.Distance(
+                        convertLocalUiPanelCoordinatesToCursorCoordinates(correctedLocalHit),
+                        convertLocalUiPanelCoordinatesToCursorCoordinates(cursorLocalHit));
+                if (drift <= LASER_CLICK_DEAD_ZONE_METERS || pixelDrift <= LASER_CLICK_DEAD_ZONE_PIXELS)
                 {
                     return;
                 }
