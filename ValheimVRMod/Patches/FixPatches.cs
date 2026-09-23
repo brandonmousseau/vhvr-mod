@@ -7,34 +7,43 @@ using ValheimVRMod.VRCore.UI;
 using ValheimVRMod.Utilities;
 using Valve.VR.InteractionSystem;
 using Valheim.SettingsGui;
+using ValheimVRMod.Scripts;
 
-namespace ValheimVRMod.Patches {
+namespace ValheimVRMod.Patches
+{
     [HarmonyPatch(typeof(Hand), "FixedUpdate")]
-    class PatchDebug {
+    class PatchDebug
+    {
 
-        static bool Prefix(Hand __instance, ref List<Hand.AttachedObject> ___attachedObjects) {
+        static bool Prefix(Hand __instance, ref List<Hand.AttachedObject> ___attachedObjects)
+        {
             if (VHVRConfig.NonVrPlayer())
             {
                 return true;
             }
-            if (__instance.currentAttachedObject == null) {
+            if (__instance.currentAttachedObject == null)
+            {
                 return false;
             }
-            
-            if (__instance.currentAttachedObjectInfo.Value.interactable == null) {
+
+            if (__instance.currentAttachedObjectInfo.Value.interactable == null)
+            {
                 ___attachedObjects.RemoveAt(___attachedObjects.Count - 1);
-                return false;   
+                return false;
             }
-            
+
             return true;
         }
     }
-    
-    [HarmonyPatch(typeof(Character), "SetVisible")]
-    class PatchFixVanishing {
 
-        static bool Prefix(Player __instance) {
-            if (VHVRConfig.NonVrPlayer()) {
+    [HarmonyPatch(typeof(Character), "SetVisible")]
+    class PatchFixVanishing
+    {
+
+        static bool Prefix(Player __instance)
+        {
+            if (VHVRConfig.NonVrPlayer())
+            {
                 return true;
             }
             return __instance != Player.m_localPlayer;
@@ -163,7 +172,7 @@ namespace ValheimVRMod.Patches {
     {
         public static void Postfix(Character __instance, ref int __result, LiquidType type)
         {
-            if ((Character) Player.m_localPlayer != __instance || VHVRConfig.NonVrPlayer())
+            if ((Character)Player.m_localPlayer != __instance || VHVRConfig.NonVrPlayer())
             {
                 return;
             }
@@ -210,5 +219,19 @@ namespace ValheimVRMod.Patches {
             }
             ___m_animator.speed = 1000f;
         }
+    }
+
+    [HarmonyPatch(typeof(Humanoid), nameof(Humanoid.Start))]
+    class TrainingDummyBoundingBoxFixPatch
+    {
+        static void Postfix(Humanoid __instance)
+        {
+            if (VHVRConfig.NonVrPlayer() || !WeaponCollision.IsTrainingDummy(__instance))
+            {
+                return;
+            }
+            EquipBoundingBoxFix.FixNonPlayerEquipmentBoundingBox(__instance.gameObject);
+        }
+
     }
 }
