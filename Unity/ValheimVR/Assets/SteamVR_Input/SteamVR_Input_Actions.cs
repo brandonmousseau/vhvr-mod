@@ -102,6 +102,8 @@ namespace Valve.VR
         private static SteamVR_Action_Boolean p_valheim_ScrollUp;
         
         private static SteamVR_Action_Boolean p_valheim_ScrollDown;
+
+        private static SteamVR_Action_Boolean p_valheim_RemovePiece;
         
         private static SteamVR_Action_Vibration p_valheim_Haptic;
         
@@ -448,6 +450,14 @@ namespace Valve.VR
                 return SteamVR_Actions.p_valheim_ScrollDown.GetCopy<SteamVR_Action_Boolean>();
             }
         }
+
+        public static SteamVR_Action_Boolean valheim_RemovePiece
+        {
+            get
+            {
+                return SteamVR_Actions.p_valheim_RemovePiece.GetCopy<SteamVR_Action_Boolean>();
+            }
+        }
         
         public static SteamVR_Action_Vibration valheim_Haptic
         {
@@ -503,6 +513,7 @@ namespace Valve.VR
                     SteamVR_Actions.valheim_SplitStack,
                     SteamVR_Actions.valheim_ScrollUp,
                     SteamVR_Actions.valheim_ScrollDown,
+                    SteamVR_Actions.valheim_RemovePiece,
                     SteamVR_Actions.valheim_Haptic};
             Valve.VR.SteamVR_Input.actionsIn = new Valve.VR.ISteamVR_Action_In[] {
                     SteamVR_Actions.default_InteractUI,
@@ -546,7 +557,8 @@ namespace Valve.VR
                     SteamVR_Actions.valheim_DiscardItem,
                     SteamVR_Actions.valheim_SplitStack,
                     SteamVR_Actions.valheim_ScrollUp,
-                    SteamVR_Actions.valheim_ScrollDown};
+                    SteamVR_Actions.valheim_ScrollDown,
+                    SteamVR_Actions.valheim_RemovePiece};
             Valve.VR.SteamVR_Input.actionsOut = new Valve.VR.ISteamVR_Action_Out[] {
                     SteamVR_Actions.default_Haptic,
                     SteamVR_Actions.valheim_Haptic};
@@ -589,7 +601,8 @@ namespace Valve.VR
                     SteamVR_Actions.valheim_DiscardItem,
                     SteamVR_Actions.valheim_SplitStack,
                     SteamVR_Actions.valheim_ScrollUp,
-                    SteamVR_Actions.valheim_ScrollDown};
+                    SteamVR_Actions.valheim_ScrollDown,
+                    SteamVR_Actions.valheim_RemovePiece};
             Valve.VR.SteamVR_Input.actionsSingle = new Valve.VR.SteamVR_Action_Single[] {
                     SteamVR_Actions.default_Squeeze};
             Valve.VR.SteamVR_Input.actionsVector2 = new Valve.VR.SteamVR_Action_Vector2[] {
@@ -637,7 +650,8 @@ namespace Valve.VR
                     SteamVR_Actions.valheim_DiscardItem,
                     SteamVR_Actions.valheim_SplitStack,
                     SteamVR_Actions.valheim_ScrollUp,
-                    SteamVR_Actions.valheim_ScrollDown};
+                    SteamVR_Actions.valheim_ScrollDown,
+                    SteamVR_Actions.valheim_RemovePiece};
         }
         
         private static void PreInitActions()
@@ -685,6 +699,7 @@ namespace Valve.VR
             SteamVR_Actions.p_valheim_SplitStack = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/Valheim/in/SplitStack")));
             SteamVR_Actions.p_valheim_ScrollUp = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/Valheim/in/ScrollUp")));
             SteamVR_Actions.p_valheim_ScrollDown = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/Valheim/in/ScrollDown")));
+            SteamVR_Actions.p_valheim_RemovePiece = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/Valheim/in/RemovePiece")));
             SteamVR_Actions.p_valheim_Haptic = ((SteamVR_Action_Vibration)(SteamVR_Action.Create<SteamVR_Action_Vibration>("/actions/Valheim/out/Haptic")));
         }
     }
