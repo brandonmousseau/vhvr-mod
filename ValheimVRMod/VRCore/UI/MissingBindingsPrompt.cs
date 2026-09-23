@@ -25,7 +25,8 @@ namespace ValheimVRMod.VRCore.UI
             SteamVR_Actions.valheim_Walk,
             SteamVR_Actions.valheim_PitchAndYaw,
             SteamVR_Actions.valheim_Grab,
-            SteamVR_Actions.valheim_ToggleMenu,
+            // TODO: find out why chords have false activeBinding
+            // SteamVR_Actions.valheim_ToggleMenu,
             SteamVR_Actions.valheim_ToggleInventory,
             SteamVR_Actions.valheim_Jump,
             SteamVR_Actions.valheim_LeftClick,
@@ -81,7 +82,8 @@ namespace ValheimVRMod.VRCore.UI
             IEnumerable<SteamVR_Action> unboundActions = ESSENTIAL_ACTIONS.Where(action => !action.activeBinding);
             if (!SteamVR_Actions.valheim_ContextScroll.activeBinding)
             {
-                unboundActions = unboundActions.Concat(SCROLL_BUTTON_ACTIONS.Where(action => !action.activeBinding));
+                // TODO: find out why chords have false activeBinding
+                // unboundActions = unboundActions.Concat(SCROLL_BUTTON_ACTIONS.Where(action => !action.activeBinding));
             }
             string[] missingActions = unboundActions.Select(action => action.GetShortName())
                 .Concat(TWO_HANDED_ACTIONS.SelectMany(
