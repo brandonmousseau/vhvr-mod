@@ -19,7 +19,7 @@ namespace ValheimVRMod.Scripts.Block {
         private bool attemptingParry;
         private int parryCheckFixedUpateTicker = 0;
         private Vector3 shieldFacing { get { return VRPlayer.isRightHandMainWeaponHand ? -VRPlayer.leftHand.transform.right : VRPlayer.rightHand.transform.right; } }
-        private Vector3 HandFacing { get { return VRPlayer.isRightHandMainWeaponHand ? VRPlayer.leftHand.transform.forward : VRPlayer.rightHand.transform.forward; } }
+        private Vector3 handFacing { get { return VRPlayer.isRightHandMainWeaponHand ? VRPlayer.leftHand.transform.forward : VRPlayer.rightHand.transform.forward; } }
         private MeshFilter meshFilter;
 
         public static ShieldBlock instance;
@@ -82,7 +82,7 @@ namespace ValheimVRMod.Scripts.Block {
             {
                 if(physicsEstimator.GetVelocity().magnitude > MIN_PARRY_ENTRY_SPEED)
                 {
-                    var isParryCondition = Mathf.Min(Vector3.Dot(hitData.m_dir, shieldFacing), Vector3.Dot(hitData.m_dir, HandFacing));
+                    var isParryCondition = Mathf.Min(Vector3.Dot(hitData.m_dir, shieldFacing), Vector3.Dot(hitData.m_dir, handFacing));
                     _blocking = isParryCondition < -0.5f;
                 }
                 else
