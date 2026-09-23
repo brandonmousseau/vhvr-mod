@@ -189,6 +189,13 @@
          "chords" : [
             {
                "inputs" : [
+                  [ "/user/hand/right/input/grip", "click" ],
+                  [ "/user/hand/right/input/trackpad", "click" ]
+               ],
+               "output" : "/actions/valheim/in/removepiece"
+            },
+            {
+               "inputs" : [
                   [ "/user/hand/right/input/application_menu", "click" ],
                   [ "/user/hand/right/input/grip", "click" ]
                ],
