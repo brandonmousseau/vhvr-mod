@@ -72,11 +72,15 @@ namespace ValheimVRMod.VRCore.UI {
                         addedMenuEntryCount++;
                     }
 
-                    AddMenuEntry("Screenshot", menuEntry, Vector2.up * MENU_ENTRY_HEIGHT * addedMenuEntryCount, CaptureScreenshot);
-                    addedMenuEntryCount++;
+                    // VR conveniences: in flatscreen the keyboard has keys for both.
+                    if (!VHVRConfig.NonVrPlayer())
+                    {
+                        AddMenuEntry("Screenshot", menuEntry, Vector2.up * MENU_ENTRY_HEIGHT * addedMenuEntryCount, CaptureScreenshot);
+                        addedMenuEntryCount++;
 
-                    AddMenuEntry("Toggle auto-pickup", menuEntry, Vector2.up * MENU_ENTRY_HEIGHT * addedMenuEntryCount, ToggleAutoPickup);
-                    addedMenuEntryCount++;
+                        AddMenuEntry("Toggle auto-pickup", menuEntry, Vector2.up * MENU_ENTRY_HEIGHT * addedMenuEntryCount, ToggleAutoPickup);
+                        addedMenuEntryCount++;
+                    }
 
                 }
                 else if (addedMenuEntryCount > 0) {

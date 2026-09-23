@@ -1,5 +1,7 @@
 using UnityEngine;
+using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
+using ValheimVRMod.VRCore.UI;
 using Valve.VR;
 using Valve.VR.Extras;
 
@@ -12,11 +14,6 @@ namespace ValheimVRMod.Scripts
         public static SteamVR_LaserPointer WeaponHandPointer
         {
             get { return VRPlayer.isRightHandMainWeaponHand ? VRPlayer.rightPointer : VRPlayer.leftPointer; }
-        }
-
-        public static SteamVR_Action_Boolean AttackTriggerAction
-        {
-            get { return VRPlayer.isRightHandMainWeaponHand ? SteamVR_Actions.valheim_Use : SteamVR_Actions.valheim_UseLeft; }
         }
 
         // The hand that is behind the other when wielding two-handed, or the main weapon hand when wielding
@@ -38,27 +35,38 @@ namespace ValheimVRMod.Scripts
             }
         }
 
-        public static SteamVR_Action_Boolean RearHandTriggerAction
-        {
-            get
-            {
-                return RearHandInputSource == SteamVR_Input_Sources.RightHand ?
-                    SteamVR_Actions.valheim_Use : SteamVR_Actions.valheim_UseLeft;
-            }
-        }
-
         // Whether the rear hand trigger is currently held, which is what makes an aim-and-shoot staff attack.
         // This is deliberately a level read rather than an edge read: a looping staff attack (the staff of
         // frost) is aborted by Player#PlayerAttackInput as soon as the attack hold drops, so the trigger has
         // to keep reporting the attack for the whole wind-up rather than only on the frame it was pressed.
         public static bool IsShootingTriggerHeld()
         {
-            return RearHandTriggerAction.GetState(RearHandInputSource);
+            return IsCastTriggerHeld(VRPlayer.mainWeaponHandInputSource);
         }
 
-        public static SteamVR_Action_Boolean SecondaryTriggerAction
+        // Whether a magic item held in the given hand is being cast by its trigger, as a level read.
+        // Two-handed, this is the rear hand's trigger, disabled while any laser pointer is up like any other
+        // weapon trigger. Single-handed, this is the item hand's own trigger, disabled while that hand's laser
+        // pointer is up, and unless AllowSimpleMagicAttack is set it also needs the grab of that same hand.
+        public static bool IsCastTriggerHeld(SteamVR_Input_Sources itemHand)
         {
-            get { return VRPlayer.isRightHandMainWeaponHand ? SteamVR_Actions.valheim_UseLeft : SteamVR_Actions.valheim_Use; }
+            if (LocalWeaponWield.isCurrentlyTwoHanded())
+            {
+                return !LaserPointerChords.IsLaserActiveFor(SteamVR_Input_Sources.Any) &&
+                    SteamVR_Actions.valheim_Use.GetState(RearHandInputSource);
+            }
+            if (LaserPointerChords.IsLaserActiveFor(itemHand))
+            {
+                return false;
+            }
+            return SteamVR_Actions.valheim_Use.GetState(itemHand) &&
+                (VHVRConfig.AllowSimpleMagicAttack() || SteamVR_Actions.valheim_Grab.GetState(itemHand));
+        }
+
+        // The secondary attack is made with the trigger of the hand that is not holding the staff.
+        private static bool IsSecondaryTriggerHeld()
+        {
+            return SteamVR_Actions.valheim_Use.GetState(VRPlayer.secondaryWeaponHandInputSource);
         }
 
         // Only some (mostly modded) staves have a secondary attack, so it must be null-checked before use.
@@ -70,12 +78,12 @@ namespace ValheimVRMod.Scripts
 
         public static bool IsSecondaryAttack()
         {
-            return SecondaryTriggerAction.state && GetSecondaryAttack() != null;
+            return IsSecondaryTriggerHeld() && GetSecondaryAttack() != null;
         }
 
         public static bool TrySecondaryAttack()
         {
-            if (!SecondaryTriggerAction.state)
+            if (!IsSecondaryTriggerHeld())
             {
                 return false;
             }

@@ -37,33 +37,23 @@ namespace ValheimVRMod.VRCore.UI
         private HashSet<string> ignoredZInputs = new HashSet<string>();
         private HashSet<string> quickActionEnabled = new HashSet<string>(); // never ignore these
         private SteamVR_ActionSet mainActionSet = SteamVR_Actions.Valheim;
-        private SteamVR_ActionSet laserActionSet = SteamVR_Actions.LaserPointers;
 
-        // Since some controllers have most actions on trackpads (Vive Wands),
-        // SteamVR as of 22/09/2021 will still disable all the actions bound to 
-        // a lower priority action set even if they are of a completely different type
-        // This means that we have to duplicate actions in some actionsets so zInputToBooleanAction
-        // should map to an array that is the conjunction of the same action in different actionsets
+        // Every zinput used to need an array here: with the laser pointer actions in their own, higher priority
+        // action set, SteamVR would disable a lower priority set's action on a physical control that a higher
+        // priority action also used, even when the two actions were of completely different types, so some
+        // zinputs needed a same-shaped duplicate action bound in the laser pointer set to stay readable while it
+        // was active. Now that both live in the single Valheim set, every array here has exactly one element,
+        // but the type is kept since a future need for the same duplication elsewhere is not implausible.
         private Dictionary<string, SteamVR_Action_Boolean[]> zInputToBooleanAction = new Dictionary<string, SteamVR_Action_Boolean[]>();
 
         private SteamVR_Action_Vector2 walk;
         private SteamVR_Action_Vector2 pitchAndYaw;
-        private SteamVR_Action_Vector2 buildPitchAndYaw; //for the same logic as zInputToBooleanAction, this is needed for controllers that have multiple actionsets using the trackpad
-        private float combinedPitchAndYawX => (buildPitchAndYaw.active ? buildPitchAndYaw.axis.x : pitchAndYaw.axis.x)* VHVRConfig.TurnAxisModifier();
+        private float combinedPitchAndYawX => pitchAndYaw.axis.x * VHVRConfig.TurnAxisModifier();
 
         private SteamVR_Action_Vector2 contextScroll;
 
         private SteamVR_Action_Pose poseL;
         private SteamVR_Action_Pose poseR;
-
-        // Action for "Use" using the left hand controller
-        private SteamVR_Action_Boolean _useLeftHand = SteamVR_Actions.valheim_UseLeft;
-
-        public SteamVR_Action_Boolean useLeftHandAction { get
-            {
-                return _useLeftHand;
-            }
-        }
 
         private float recenteringPoseDuration;
 
@@ -75,32 +65,18 @@ namespace ValheimVRMod.VRCore.UI
             }
         }
 
+        // Whether either hand's laser pointer is currently up. LaserPointers used to be its own, higher priority
+        // action set that got activated/deactivated alongside this, which needed compensating for the phantom
+        // edges that an action set change causes (see LaserPointerChords.IsLaserActiveFor()). Now that a laser
+        // pointer being active no longer changes which action set is live, this is just VRPlayer's own notion of
+        // a pointer being active, kept here since call sites already depend on the name.
         public static bool laserControlsActive
         {
-            get
-            {
-                return _instance != null && _instance.laserActionSet.IsActive();
-            }
+            get { return VRPlayer.activePointer != null; }
         }
 
-        // An action set activating or deactivating at a higher priority takes the physical controls away from
-        // the Valheim set, or hands them back, and SteamVR reports that as an edge the player never made: a
-        // trigger that is still held when a container closes reads as a fresh press the moment the laserPointers
-        // set lets go of it, and an edge that happens while the set holds the control is dropped entirely
-        // (SteamVR_Action_Boolean_Source.stateDown/stateUp are gated on `active`). The ZInput path already
-        // compensates for this (see MaybeReleaseZInputButton() and the laserPointers_LeftClick state-up listener
-        // below); anything that reads the Valheim actions' edges directly should ignore them while this is true.
-        // The window spans the change and the following frame because OpenVR only applies the new set priority
-        // on its next action update, which may land in either frame depending on script execution order.
-        public static bool laserControlsInTransition
-        {
-            get { return Time.frameCount - laserControlsChangedFrame < LASER_CONTROLS_TRANSITION_FRAMES; }
-        }
-
-        private const int LASER_CONTROLS_TRANSITION_FRAMES = 2;
         // How long the quick menu button has to be held to open the menu instead of counting as a right click.
         private const float QUICK_MENU_HOLD_TIME = 0.3f;
-        private static int laserControlsChangedFrame = -LASER_CONTROLS_TRANSITION_FRAMES;
         public static float smoothWalkX { get { return smoothWalkVelocity.x; } }
         public static float smoothWalkY { get { return smoothWalkVelocity.y; } }
         public static bool isAutoRunActive;
@@ -127,10 +103,10 @@ namespace ValheimVRMod.VRCore.UI
         void Update()
         {
             updateMainActionSetState();
-            updateLasersActionSetState();
             if (mainActionSet.IsActive())
             {
                 checkRecenterPose(Time.unscaledDeltaTime);
+                MissingBindingsPrompt.Update(Time.unscaledDeltaTime);
             }
             if ((mainControlsActive && SteamVR_Actions.valheim_ToggleInventory.GetStateDown(SteamVR_Input_Sources.Any)) ||
                 ZInput.GetButtonDown("Inventory") ||
@@ -163,9 +139,8 @@ namespace ValheimVRMod.VRCore.UI
                 if (SteamVR_Actions.default_GrabGrip.GetState(SteamVR_Input_Sources.Any) ||
                     SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.Any)) {
                     if (SteamVR_Actions.default_InteractUI.GetStateUp(SteamVR_Input_Sources.Any) ||
-                        SteamVR_Actions.laserPointers_LeftClick.GetStateUp(SteamVR_Input_Sources.Any) ||
-                        SteamVR_Actions.valheim_Use.GetStateUp(SteamVR_Input_Sources.Any) ||
-                        SteamVR_Actions.valheim_UseLeft.GetStateUp(SteamVR_Input_Sources.Any))
+                        SteamVR_Actions.valheim_LeftClick.GetStateUp(SteamVR_Input_Sources.Any) ||
+                        SteamVR_Actions.valheim_Use.GetStateUp(SteamVR_Input_Sources.Any))
                     {
                         QuickAbstract.enterChatText();
                     }
@@ -364,7 +339,7 @@ namespace ValheimVRMod.VRCore.UI
 
             if (altMapZoomInHoldCountdown == null || altMapZoomInHoldCountdown <= -ALT_MAP_ZOOM_TIME_DELAY)
             {
-                if (getAltMapZoom() > 0)
+                if (getScrollButtonDirection() > 0)
                 {
                     GetButtonPatchUtils.Press("MapZoomIn");
                     altMapZoomInHoldCountdown = ALT_MAP_ZOOM_TIME_DELAY;
@@ -377,7 +352,7 @@ namespace ValheimVRMod.VRCore.UI
 
             if (altMapZoomOutHoldCountdown == null || altMapZoomOutHoldCountdown <= -ALT_MAP_ZOOM_TIME_DELAY)
             {
-                if (getAltMapZoom() < 0)
+                if (getScrollButtonDirection() < 0)
                 {
                     GetButtonPatchUtils.Press("MapZoomOut");
                     altMapZoomOutHoldCountdown = ALT_MAP_ZOOM_TIME_DELAY;
@@ -476,29 +451,6 @@ namespace ValheimVRMod.VRCore.UI
             }
         }
 
-        private void updateLasersActionSetState()
-        {
-            if (!mainActionSet.IsActive())
-            {
-                if (laserActionSet.IsActive())
-                {
-                    laserActionSet.Deactivate();
-                    laserControlsChangedFrame = Time.frameCount;
-                }
-                return;
-            }
-            if (laserActionSet.IsActive() && VRPlayer.activePointer == null)
-            {
-                laserActionSet.Deactivate();
-                laserControlsChangedFrame = Time.frameCount;
-            }
-            else if (!laserActionSet.IsActive() && VRPlayer.activePointer != null)
-            {
-                laserActionSet.Activate(SteamVR_Input_Sources.Any, 1 /* Higher priority than main action set */);
-                laserControlsChangedFrame = Time.frameCount;
-            }
-        }
-
         public bool GetButtonDown(string zinput)
         {
             if (!mainActionSet.IsActive() || ignoredZInputs.Contains(zinput))
@@ -509,9 +461,19 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return false;
             }
-            if (zinput == "Remove" && !canRemovePiece())
+            if (zinput == "Remove")
             {
-                return false;
+                return InRemovePieceContext() &&
+                    SteamVR_Actions.valheim_RemovePiece.GetStateDown(SteamVR_Input_Sources.Any);
+            }
+            // Interacting with the world is what "Use" means to vanilla (attacking has its own, separate raw
+            // action reads that don't go through here), and disabled the same way as the left hand's own interact
+            // in HandBasedInteractionPatches: not usable while the right hand's laser pointer is up, even when it
+            // and LeftClick happen to be bound to different physical buttons.
+            if (zinput == "Use")
+            {
+                return !LaserPointerChords.IsLaserActiveFor(SteamVR_Input_Sources.RightHand) &&
+                    SteamVR_Actions.valheim_Use.GetStateDown(SteamVR_Input_Sources.RightHand);
             }
             if (zinput == "Map") {
                 if (VHVRConfig.MinimapPanelPlacement().Equals("Legacy"))
@@ -566,9 +528,15 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return false;
             }
-            if (zinput == "Remove" && !canRemovePiece())
+            if (zinput == "Remove")
             {
-                return false;
+                return InRemovePieceContext() &&
+                    SteamVR_Actions.valheim_RemovePiece.GetState(SteamVR_Input_Sources.Any);
+            }
+            if (zinput == "Use")
+            {
+                return !LaserPointerChords.IsLaserActiveFor(SteamVR_Input_Sources.RightHand) &&
+                    SteamVR_Actions.valheim_Use.GetState(SteamVR_Input_Sources.RightHand);
             }
             if (zinput == "JoyAltPlace")
             {
@@ -599,7 +567,7 @@ namespace ValheimVRMod.VRCore.UI
         private bool CheckAltButton()
         {
             //If both triggers are pressed during this check, the alternate action is enabled
-            return (SteamVR_Actions.valheim_Use.GetState(SteamVR_Input_Sources.Any) && SteamVR_Actions.valheim_UseLeft.GetState(SteamVR_Input_Sources.Any))
+            return (SteamVR_Actions.valheim_Use.GetState(SteamVR_Input_Sources.LeftHand) && SteamVR_Actions.valheim_Use.GetState(SteamVR_Input_Sources.RightHand))
                 || (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand));
         }
 
@@ -613,9 +581,16 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return false;
             }
-            if (zinput == "Remove" && !canRemovePiece())
+            if (zinput == "Remove")
             {
-                return false;
+                return InRemovePieceContext() && SteamVR_Actions.valheim_RemovePiece.GetStateUp(SteamVR_Input_Sources.Any);
+            }
+            // Read on the right hand like GetButtonDown and GetButton, the left hand having its own interact in
+            // HandBasedInteractionPatches. Deliberately not gated on the laser pointer like they are: a pointer
+            // coming up mid-hold must not swallow the release of a press the game has already seen.
+            if (zinput == "Use")
+            {
+                return SteamVR_Actions.valheim_Use.GetStateUp(SteamVR_Input_Sources.RightHand);
             }
             if (zinput == "JoyPlace")
             {
@@ -847,15 +822,21 @@ namespace ValheimVRMod.VRCore.UI
             }
         }
 
-        private int getAltMapZoom()
+        // The direction held on the ScrollUp/ScrollDown buttons: 1 for up, -1 for down, 0 for neither. These stand
+        // in for the ContextScroll trackpad on controllers without one (e.g. bound to right grip + right stick on
+        // touch controllers), and zoom the map and scroll the UI under the laser pointer.
+        public int getScrollButtonDirection()
         {
-            if (contextScroll.activeBinding ||
-                !SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand))
+            int direction = 0;
+            if (SteamVR_Actions.valheim_ScrollUp.GetState(SteamVR_Input_Sources.Any))
             {
-                return 0;
+                direction++;
             }
-            float y = GetJoyRightStickY();
-            return y > 0.5f ? -1 : y < -0.5f ? 1 : 0;
+            if (SteamVR_Actions.valheim_ScrollDown.GetState(SteamVR_Input_Sources.Any))
+            {
+                direction--;
+            }
+            return direction;
         }
 
         private bool inPlaceMode()
@@ -891,11 +872,10 @@ namespace ValheimVRMod.VRCore.UI
             return inPlaceMode() && !Hud.IsPieceSelectionVisible() && SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand);
         }
 
-        private bool canRemovePiece()
+        private bool InRemovePieceContext()
         {
             return
                 inPlaceMode() &&
-                SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand) &&
                 BuildingManager.instance != null &&
                 !BuildingManager.instance.isCurrentlyMoving() &&
                 !BuildingManager.instance.isCurrentlyPreciseMoving() &&
@@ -904,11 +884,16 @@ namespace ValheimVRMod.VRCore.UI
 
         private bool canJump()
         {
-            if (canRemovePiece() || // Removing piece takes higher priority than jump
-                SteamVR_Actions.valheim_UseLeft.state)
+            if (InRemovePieceContext() &&
+                SteamVR_Actions.valheim_RemovePiece.GetState(SteamVR_Input_Sources.Any)) { // Removing piece takes higher priority than jump
+                return false;
+            }
+
+            if (SteamVR_Actions.valheim_Dodge.GetState(SteamVR_Input_Sources.Any))
             {
                 return false;
             }
+
             if (BuildingManager.instance == null)
             {
                 return true;
@@ -924,7 +909,7 @@ namespace ValheimVRMod.VRCore.UI
         {
             zInputToBooleanAction.Add("JoyMenu", new[] { SteamVR_Actions.valheim_ToggleMenu });
             zInputToBooleanAction.Add("Inventory", new[] { SteamVR_Actions.valheim_ToggleInventory });
-            zInputToBooleanAction.Add("Jump", new [] { SteamVR_Actions.valheim_Jump, SteamVR_Actions.laserPointers_Jump });
+            zInputToBooleanAction.Add("Jump", new [] { SteamVR_Actions.valheim_Jump });
             zInputToBooleanAction.Add("Use", new[] { SteamVR_Actions.valheim_Use });
             zInputToBooleanAction.Add("Sit", new[] { SteamVR_Actions.valheim_Sit });
             zInputToBooleanAction.Add("AutoPickup", new[] { SteamVR_Actions.valheim_ToggleAutoPickup });
@@ -934,14 +919,13 @@ namespace ValheimVRMod.VRCore.UI
             // clicks as filtered by LaserPointerChords (see GetButton*() and registerBooleanActionListeners()), the
             // entries here only keep them from being treated as unmapped.
             zInputToBooleanAction.Add("BuildMenu", new[] { SteamVR_Actions.valheim_RightClick });
-            zInputToBooleanAction.Add("JoyPlace", new[] { SteamVR_Actions.laserPointers_LeftClick });
-            zInputToBooleanAction.Add("Remove", new[] { SteamVR_Actions.valheim_Jump, SteamVR_Actions.laserPointers_Jump });
+            zInputToBooleanAction.Add("JoyPlace", new[] { SteamVR_Actions.valheim_LeftClick });
+            zInputToBooleanAction.Add("Remove", new[] { SteamVR_Actions.valheim_RemovePiece });
 
             contextScroll = SteamVR_Actions.valheim_ContextScroll;
 
             walk = SteamVR_Actions.valheim_Walk;
             pitchAndYaw = SteamVR_Actions.valheim_PitchAndYaw;
-            buildPitchAndYaw = SteamVR_Actions.laserPointers_PitchAndYaw;
             poseL = SteamVR_Actions.valheim_PoseL;
             poseR = SteamVR_Actions.valheim_PoseR;
             initIgnoredZInputs();
@@ -965,6 +949,11 @@ namespace ValheimVRMod.VRCore.UI
                     // Pressed and released by LaserPointerChords, which hides clicks that are part of a chord.
                     continue;
                 }
+                // "Use" is bound on both hands, but only the right hand's press is the world interact that this
+                // emulated button stands for: the left hand has its own interact in HandBasedInteractionPatches,
+                // so listening on Any here would make the left hand trigger interact twice.
+                var listenerSource =
+                    buttonName == "Use" ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.Any;
                 foreach (var action in entry.Value)
                 {
                     // TODO: add listener of map zoom too
@@ -974,40 +963,39 @@ namespace ValheimVRMod.VRCore.UI
                             (fromAction, fromSource) => {
                                 if (canJump()) GetButtonPatchUtils.Press(buttonName);
                             },
-                            SteamVR_Input_Sources.Any);
+                            listenerSource);
                     }
                     else if (buttonName == "Remove")
                     {
                         action.AddOnStateDownListener(
                             (fromAction, fromSource) => {
-                                if (canRemovePiece()) GetButtonPatchUtils.Press(buttonName);
+                                if (InRemovePieceContext())
+                                {
+                                    GetButtonPatchUtils.Press(buttonName);
+                                }
                             },
-                            SteamVR_Input_Sources.Any);
+                            listenerSource);
+                    }
+                    else if (buttonName == "Use")
+                    {
+                        action.AddOnStateDownListener(
+                            (fromAction, fromSource) => {
+                                if (!LaserPointerChords.IsLaserActiveFor(SteamVR_Input_Sources.RightHand)) GetButtonPatchUtils.Press(buttonName);
+                            },
+                            listenerSource);
                     }
                     else
                     {
                         action.AddOnStateDownListener(
                             (fromAction, fromSource) => GetButtonPatchUtils.Press(buttonName),
-                            SteamVR_Input_Sources.Any);
+                            listenerSource);
                     }
 
                     action.AddOnStateUpListener(
-                        (fromAction, fromSource) => MaybeReleaseZInputButton(buttonName),
-                        SteamVR_Input_Sources.Any);
+                        (fromAction, fromSource) => GetButtonPatchUtils.Release(buttonName),
+                        listenerSource);
                 }
             }
-
-            // valheim_Use is masked while a laser pointer is active, so once the laserPointers set
-            // takes the trigger, valheim_Use never reports state-up again and "Use" would stay held
-            // forever. Release it when the physical trigger lifts under the other action instead.
-            SteamVR_Actions.laserPointers_LeftClick.AddOnStateUpListener(
-                (fromAction, fromSource) => {
-                    if (!SteamVR_Actions.valheim_Use.GetState(SteamVR_Input_Sources.Any))
-                    {
-                        GetButtonPatchUtils.Release("Use");
-                    }
-                },
-                SteamVR_Input_Sources.Any);
 
             SteamVR_Actions.valheim_ToggleMap.AddOnStateDownListener(
                 (fromAction, fromSource) => {
@@ -1021,21 +1009,6 @@ namespace ValheimVRMod.VRCore.UI
                         GetButtonPatchUtils.Release("Map");
                 },
                 SteamVR_Input_Sources.Any);
-        }
-
-        // An action set activating at a higher priority steals the physical control from a lower one,
-        // which makes the lower action report state-up even though the button is still physically
-        // down. Releasing the ZInput button on that would be a lie: opening a container activates the
-        // laserPointers set, and both it and the Valheim set bind the same trigger, so "Use" would go
-        // false mid-press and break anything that needs an unbroken hold.
-        private static void MaybeReleaseZInputButton(string buttonName)
-        {
-            if (buttonName == "Use" &&
-                SteamVR_Actions.laserPointers_LeftClick.GetState(SteamVR_Input_Sources.Any))
-            {
-                return;
-            }
-            GetButtonPatchUtils.Release(buttonName);
         }
 
         private void registerContextScrollListener()

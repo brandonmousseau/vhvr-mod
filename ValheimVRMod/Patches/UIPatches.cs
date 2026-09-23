@@ -852,9 +852,7 @@ namespace ValheimVRMod.Patches
     [HarmonyPatch(typeof(FejdStartup), "SetupGui")]
     class PatchFejd {
         public static void Postfix(FejdStartup __instance) {
-            if (VHVRConfig.NonVrPlayer()) {
-                return;
-            }
+            // Also shown in flatscreen, e.g. so that settings can be read through desktop translation tools.
             ConfigSettings.instantiate(__instance.m_mainMenu.transform.Find("MenuList"), __instance.m_mainMenu.transform, __instance.m_settingsPrefab, enableTransformButtons: false);
         }
     }
@@ -862,10 +860,8 @@ namespace ValheimVRMod.Patches
     [HarmonyPatch(typeof(Menu), "Start")]
     class PatchMenu {
         public static void Postfix(Menu __instance) {
-            if (VHVRConfig.NonVrPlayer()) {
-                return;
-            }
-            ConfigSettings.instantiate(__instance.m_menuDialog, __instance.transform, __instance.m_settingsPrefab, enableTransformButtons: true);
+            // Also shown in flatscreen, but without the transform buttons, which position HUD panels with the VR hands.
+            ConfigSettings.instantiate(__instance.m_menuDialog, __instance.transform, __instance.m_settingsPrefab, enableTransformButtons: !VHVRConfig.NonVrPlayer());
         }
     }    
     

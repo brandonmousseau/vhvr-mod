@@ -1,13 +1,6 @@
 {
   "app_key": "steam.app.892970",
   "bindings": {
-    "/actions/buggy": {
-      "chords": [],
-      "poses": [],
-      "haptics": [],
-      "sources": [],
-      "skeleton": []
-    },
     "/actions/default": {
       "chords": [],
       "poses": [
@@ -42,155 +35,21 @@
         }
       ]
     },
-    "/actions/laserpointers": {
-      "chords": [
-        {
-          "output": "/actions/laserpointers/in/middleclick",
-          "inputs": [
-            [
-              "/user/hand/right/input/grip",
-              "click"
-            ],
-            [
-              "/user/hand/right/input/b",
-              "click"
-            ]
-          ]
-        },
-        {
-          "output": "/actions/laserpointers/in/middleclick",
-          "inputs": [
-            [
-              "/user/hand/left/input/grip",
-              "click"
-            ],
-            [
-              "/user/hand/left/input/b",
-              "click"
-            ]
-          ]
-        },
-        {
-          "output": "/actions/laserpointers/in/addmappin",
-          "inputs": [
-            [
-              "/user/hand/right/input/grip",
-              "click"
-            ],
-            [
-              "/user/hand/right/input/trigger",
-              "click"
-            ]
-          ]
-        },
-        {
-          "output": "/actions/laserpointers/in/addmappin",
-          "inputs": [
-            [
-              "/user/hand/left/input/grip",
-              "click"
-            ],
-            [
-              "/user/hand/left/input/trigger",
-              "click"
-            ]
-          ]
-        },
-        {
-          "output": "/actions/laserpointers/in/discarditem",
-          "inputs": [
-            [
-              "/user/hand/right/input/grip",
-              "click"
-            ],
-            [
-              "/user/hand/right/input/trigger",
-              "click"
-            ]
-          ]
-        },
-        {
-          "output": "/actions/laserpointers/in/discarditem",
-          "inputs": [
-            [
-              "/user/hand/left/input/grip",
-              "click"
-            ],
-            [
-              "/user/hand/left/input/trigger",
-              "click"
-            ]
-          ]
-        },
-        {
-          "output": "/actions/laserpointers/in/splitstack",
-          "inputs": [
-            [
-              "/user/hand/left/input/grip",
-              "click"
-            ],
-            [
-              "/user/hand/right/input/trigger",
-              "click"
-            ]
-          ]
-        },
-        {
-          "output": "/actions/laserpointers/in/splitstack",
-          "inputs": [
-            [
-              "/user/hand/right/input/grip",
-              "click"
-            ],
-            [
-              "/user/hand/left/input/trigger",
-              "click"
-            ]
-          ]
-        }
-      ],
-      "poses": [],
-      "haptics": [],
-      "sources": [
-        {
-          "path": "/user/hand/right/input/trigger",
-          "mode": "button",
-          "parameters": {},
-          "inputs": {
-            "click": {
-              "output": "/actions/laserpointers/in/leftclick"
-            }
-          }
-        },
-        {
-          "path": "/user/hand/left/input/trigger",
-          "mode": "button",
-          "parameters": {},
-          "inputs": {
-            "click": {
-              "output": "/actions/laserpointers/in/leftclick"
-            }
-          }
-        }
-      ],
-      "skeleton": []
-    },
-    "/actions/placementmode": {
-      "chords": [],
-      "poses": [],
-      "haptics": [],
-      "sources": [],
-      "skeleton": []
-    },
-    "/actions/platformer": {
-      "chords": [],
-      "poses": [],
-      "haptics": [],
-      "sources": [],
-      "skeleton": []
-    },
     "/actions/valheim": {
       "chords": [
+        {
+          "output": "/actions/valheim/in/removepiece",
+          "inputs": [
+            [
+              "/user/hand/right/input/grip",
+              "click"
+            ],
+            [
+              "/user/hand/right/input/a",
+              "click"
+            ]
+          ]
+        },
         {
           "output": "/actions/valheim/in/sit",
           "inputs": []
@@ -205,6 +64,110 @@
             [
               "/user/hand/right/input/a",
               "single"
+            ]
+          ]
+        },
+        {
+          "output": "/actions/valheim/in/middleclick",
+          "inputs": [
+            [
+              "/user/hand/right/input/grip",
+              "click"
+            ],
+            [
+              "/user/hand/right/input/b",
+              "click"
+            ]
+          ]
+        },
+        {
+          "output": "/actions/valheim/in/middleclick",
+          "inputs": [
+            [
+              "/user/hand/left/input/grip",
+              "click"
+            ],
+            [
+              "/user/hand/left/input/b",
+              "click"
+            ]
+          ]
+        },
+        {
+          "output": "/actions/valheim/in/addmappin",
+          "inputs": [
+            [
+              "/user/hand/right/input/grip",
+              "click"
+            ],
+            [
+              "/user/hand/right/input/trigger",
+              "click"
+            ]
+          ]
+        },
+        {
+          "output": "/actions/valheim/in/addmappin",
+          "inputs": [
+            [
+              "/user/hand/left/input/grip",
+              "click"
+            ],
+            [
+              "/user/hand/left/input/trigger",
+              "click"
+            ]
+          ]
+        },
+        {
+          "output": "/actions/valheim/in/discarditem",
+          "inputs": [
+            [
+              "/user/hand/right/input/grip",
+              "click"
+            ],
+            [
+              "/user/hand/right/input/trigger",
+              "click"
+            ]
+          ]
+        },
+        {
+          "output": "/actions/valheim/in/discarditem",
+          "inputs": [
+            [
+              "/user/hand/left/input/grip",
+              "click"
+            ],
+            [
+              "/user/hand/left/input/trigger",
+              "click"
+            ]
+          ]
+        },
+        {
+          "output": "/actions/valheim/in/splitstack",
+          "inputs": [
+            [
+              "/user/hand/left/input/grip",
+              "click"
+            ],
+            [
+              "/user/hand/right/input/trigger",
+              "click"
+            ]
+          ]
+        },
+        {
+          "output": "/actions/valheim/in/splitstack",
+          "inputs": [
+            [
+              "/user/hand/right/input/grip",
+              "click"
+            ],
+            [
+              "/user/hand/left/input/trigger",
+              "click"
             ]
           ]
         }
@@ -366,7 +329,7 @@
           "parameters": {},
           "inputs": {
             "click": {
-              "output": "/actions/valheim/in/useleft"
+              "output": "/actions/valheim/in/use"
             }
           }
         },
@@ -483,6 +446,26 @@
             },
             "south": {
               "output": "/actions/valheim/in/togglecrouch"
+            }
+          }
+        },
+        {
+          "path": "/user/hand/right/input/trigger",
+          "mode": "button",
+          "parameters": {},
+          "inputs": {
+            "click": {
+              "output": "/actions/valheim/in/leftclick"
+            }
+          }
+        },
+        {
+          "path": "/user/hand/left/input/trigger",
+          "mode": "button",
+          "parameters": {},
+          "inputs": {
+            "click": {
+              "output": "/actions/valheim/in/leftclick"
             }
           }
         }

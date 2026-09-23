@@ -1,4 +1,3 @@
-using System.Linq;
 using UnityEngine;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
@@ -8,14 +7,6 @@ namespace ValheimVRMod.Scripts
 {
     public class FootCollision : MonoBehaviour
     {
-        private static readonly int[] NONATTACKABLE_LAYERS = {
-            LayerUtils.WATERVOLUME_LAYER,
-            LayerUtils.WATER,
-            LayerUtils.UI_PANEL_LAYER,
-            LayerUtils.CHARARCTER_TRIGGER,
-            LayerUtils.ITEM_LAYER,
-        };
-
         private PhysicsEstimator physicsEstimator;
         private GameObject debugColliderIndicator;
 
@@ -89,9 +80,7 @@ namespace ValheimVRMod.Scripts
                 !VHVRConfig.TrackFeet() ||
                 player == null ||
                 player.IsRiding() ||
-                player.IsSitting() ||
-                NONATTACKABLE_LAYERS.Contains(collider.gameObject.layer) ||
-                collider.GetComponentInParent<Player>() == player)
+                player.IsSitting())
             {
                 return;
             }
@@ -131,14 +120,33 @@ namespace ValheimVRMod.Scripts
             Kick(collider, transform.position, velocity, speed);
         }
 
-        // Attacks the target with the unarmed weapon's kick (its secondary attack), or its primary attack while the
-        // kick is still cooling down. Also used by weapons without a real attack against hostiles (the snow shovel).
-        // Returns whether the attack was started.
+        // Attacks the target with a kick, which is the secondary attack of the equipped fist weapon or, without one,
+        // of the unarmed weapon, as in vanilla, where the fist weapon's damage makes kicks hit much harder. Falls
+        // back to the primary attack while the kick is still cooling down. Also used by weapons without a real
+        // attack against hostiles (the snow shovel). Returns whether the attack was started.
         public static bool Kick(Collider collider, Vector3 hitPoint, Vector3 velocity, float speed)
         {
+            // Filtered here rather than in the callers since this is shared with weapons that have no real
+            // attack of their own (the snow shovel), whose own attack path does no layer filtering at all.
+            if (LayerUtils.IsNonAttackableLayer(collider.gameObject.layer) ||
+                collider.GetComponentInParent<Player>() == Player.m_localPlayer)
+            {
+                return false;
+            }
+
             var isCurrentlySecondaryAttack = FistCollision.LocalPlayerSecondaryAttackCooldown <= 0;
-            var item = Player.m_localPlayer.m_unarmedWeapon.m_itemData;
-            var attack = isCurrentlySecondaryAttack ? item.m_shared.m_secondaryAttack : item.m_shared.m_attack;
+            ItemDrop.ItemData item;
+            Attack attack;
+            if (EquipScript.CurrentMainHandEquipType() == EquipType.Claws)
+            {
+                item = Player.m_localPlayer.GetRightItem();
+                attack = (isCurrentlySecondaryAttack ? item.m_shared.m_secondaryAttack : item.m_shared.m_attack).Clone();
+            }
+            else
+            {
+                item = Player.m_localPlayer.m_unarmedWeapon.m_itemData;
+                attack = isCurrentlySecondaryAttack ? item.m_shared.m_secondaryAttack : item.m_shared.m_attack;
+            }
 
             // Always use the duration of the primary attack for target cooldown to allow primary attack immediately following a secondary attack.
             // The secondary attack cooldown is managed by FistCollision.LocalPlayerSecondaryAttackCooldown  instead.

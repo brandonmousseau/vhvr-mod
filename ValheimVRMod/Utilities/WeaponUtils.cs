@@ -396,6 +396,15 @@ namespace ValheimVRMod.Utilities
             return result;
         }
 
+        // Estimates the width of a shield using the median of the three dimensions of its mesh bounds.
+        // This estimation assumes that the largest dimension corresponds to the height of the shield
+        // and the smallest one corresponds to its thickness.
+        public static float EstimateShieldWidth(Mesh mesh)
+        {
+            Vector3 size = mesh.bounds.size;
+            return Mathf.Clamp(size.x, Mathf.Min(size.y, size.z), Mathf.Max(size.y, size.z));
+        }
+
         public static EquipType GuesstEquipTypeFromShape(float weaponLength, float distanceBetweenGripAndRearEnd, bool isDominantHandWeapon)
         {
             if (!isDominantHandWeapon)

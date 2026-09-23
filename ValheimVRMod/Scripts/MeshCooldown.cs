@@ -41,7 +41,7 @@ namespace ValheimVRMod.Scripts {
             }
         }
 
-        void OnDestory() {
+        void OnDestroy() {
             Destroy(outline);
         }
 

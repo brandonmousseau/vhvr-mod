@@ -13,7 +13,7 @@ namespace ValheimVRMod.Utilities {
         private static BackReachLocation rightHandGrabbedBackLocation = BackReachLocation.None;
         private static BackReachLocation leftHandGrabbedBackLocation = BackReachLocation.None;
 
-        private static SteamVR_Action_Boolean grabAction { get { return SteamVR_Actions.valheim_Grab;} }
+        private static SteamVR_Action_Boolean grabAction { get { return SteamVR_Actions.valheim_Grab; } }
 
         private enum BackReachLocation
         {
@@ -454,7 +454,7 @@ namespace ValheimVRMod.Utilities {
         private static bool onDualGripDraw(BackReachLocation leftHandBackReach, BackReachLocation rightHandBackReach)
         {
             var inventorySlot = twoHandBackReachToInventory(leftHandBackReach, rightHandBackReach, out bool attachToRightHand);
-            if  (!checkEquippingWeapon(inventorySlot, attachToRightHand))
+            if (!checkEquippingWeapon(inventorySlot, attachToRightHand))
             {
                 return false;
             }
@@ -593,27 +593,32 @@ namespace ValheimVRMod.Utilities {
 
             bool contralateral = (isRightHand ^ reachingRight);
 
-            if (contralateral)
+            if (contralateral && reachingShoulder)
             {
-                if (sagittalOffset > 0.125f)
-                {
-                    return BackReachLocation.None;
-                }
-
-                if (reachingShoulder && verticalOffset < -0.2f)
+                if (sagittalOffset > 0.0625f || verticalOffset < -0.2f)
                 {
                     return BackReachLocation.None;
                 }
             }
-            else if (sagittalOffset > -0.0625f)
+            else if (contralateral && reachingWaist)
             {
-                return BackReachLocation.None;
-            } 
+                if (sagittalOffset > 0 || Mathf.Abs(lateralOffset) < 0.125f)
+                {
+                    return BackReachLocation.None;
+                }
+            }
             else if (Mathf.Abs(lateralOffset) > 0.5f)
             {
-               return BackReachLocation.None;
+                return BackReachLocation.None;
             }
-            else if (reachingWaist && sagittalOffset + Mathf.Abs(lateralOffset) * 0.75f > 0)
+            else if (reachingShoulder)
+            {
+                if (sagittalOffset > 0)
+                {
+                    return BackReachLocation.None;
+                }
+            }
+            else if (sagittalOffset > -0.0625f || sagittalOffset + Mathf.Abs(lateralOffset) * 0.75f > 0)
             {
                 return BackReachLocation.None;
             }

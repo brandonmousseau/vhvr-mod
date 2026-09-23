@@ -651,8 +651,8 @@ namespace ValheimVRMod.Patches {
         private static void handleRunToggle(ref bool run)
         {
             bool togglingRun = toggleRun();
-            bool runIsTriggered = toggleRun() && !lastToggleRunInput;
-            bool crouchApplied = SteamVR_Actions.valheim_ToggleCrouch.state;
+            bool runIsTriggered = togglingRun && !lastToggleRunInput;
+            bool crouchApplied = LaserPointerChords.IsHeldWithoutLaserScroll(SteamVR_Actions.valheim_ToggleCrouch);
             if (crouchApplied || !VRPlayer.isMoving || Player.m_localPlayer.m_stamina < 1)
             {
                 // If the player presses crouch or stops moving, then always stop running.
@@ -674,22 +674,26 @@ namespace ValheimVRMod.Patches {
             lastToggleRunInput = togglingRun;
         }
 
+        // Run inputs are ignored on a hand that is scrolling with its laser pointer since the scroll chords may
+        // share the run stick. The fallback without run bindings reads the right stick.
         private static bool toggleRun()
         {
-            if (SteamVR_Actions.valheim_HoldRun.GetState(SteamVR_Input_Sources.Any))
+            if (LaserPointerChords.IsHeldWithoutLaserScroll(SteamVR_Actions.valheim_HoldRun))
             {
                 return false;
             }
             return SteamVR_Actions.valheim_ToggleRun.activeBinding ?
-                SteamVR_Actions.valheim_ToggleRun.GetState(SteamVR_Input_Sources.Any) :
-                (VHVRConfig.ToggleRun() && ZInput_GetJoyRightStickY_Patch.togglingRun);
+                LaserPointerChords.IsHeldWithoutLaserScroll(SteamVR_Actions.valheim_ToggleRun) :
+                (VHVRConfig.ToggleRun() && ZInput_GetJoyRightStickY_Patch.togglingRun &&
+                    !LaserPointerChords.IsScrollingWithLaser(SteamVR_Input_Sources.RightHand));
         }
 
         private static bool holdRun()
         {
             return SteamVR_Actions.valheim_HoldRun.activeBinding ?
-                SteamVR_Actions.valheim_HoldRun.GetState(SteamVR_Input_Sources.Any) :
-                (!VHVRConfig.ToggleRun() && ZInput_GetJoyRightStickY_Patch.holdingRun);
+                LaserPointerChords.IsHeldWithoutLaserScroll(SteamVR_Actions.valheim_HoldRun) :
+                (!VHVRConfig.ToggleRun() && ZInput_GetJoyRightStickY_Patch.holdingRun &&
+                    !LaserPointerChords.IsScrollingWithLaser(SteamVR_Input_Sources.RightHand));
         }
     }
 
@@ -762,11 +766,15 @@ namespace ValheimVRMod.Patches {
         static void handleControllerOnlySneak(Player player, ref bool crouch, bool isCrouchToggled)
         {
             bool currentToggleCrouchState = SteamVR_Actions.valheim_ToggleCrouch.state;
-            bool crouchToggleTriggered = currentToggleCrouchState && !lastUpdateCrouchInput;
+            // Crouch and run inputs are ignored on a hand that is scrolling with its laser pointer, since the scroll
+            // chords may share their stick. The raw crouch state is still saved below, so letting go of the scroll chord
+            // with the stick still held down does not toggle crouch.
+            bool crouchToggleTriggered =
+                LaserPointerChords.IsHeldWithoutLaserScroll(SteamVR_Actions.valheim_ToggleCrouch) && !lastUpdateCrouchInput;
             bool standupTriggered =
-                ZInput_GetJoyRightStickY_Patch.hasRunInput ||
-                SteamVR_Actions.valheim_ToggleRun.state ||
-                SteamVR_Actions.valheim_HoldRun.state;
+                (ZInput_GetJoyRightStickY_Patch.hasRunInput && !LaserPointerChords.IsScrollingWithLaser(SteamVR_Input_Sources.RightHand)) ||
+                LaserPointerChords.IsHeldWithoutLaserScroll(SteamVR_Actions.valheim_ToggleRun) ||
+                LaserPointerChords.IsHeldWithoutLaserScroll(SteamVR_Actions.valheim_HoldRun);
             if (crouchToggleTriggered)
             {
                 crouch = true;
@@ -824,7 +832,12 @@ namespace ValheimVRMod.Patches {
                     else
                     {
                         
-                        if (BowLocalManager.isPullingArrow && SteamVR_Actions.valheim_Use.state && timer >= timeEnd)
+                        // TODO: this reads the right hand trigger rather than the hand actually pulling the
+                        // string (BowLocalManager's pullingSource), so it is wrong for a left handed player, as
+                        // is the right handed haptic feedback below. Preserved as-is for now.
+                        if (BowLocalManager.isPullingArrow &&
+                            SteamVR_Actions.valheim_Use.GetState(SteamVR_Input_Sources.RightHand) &&
+                            timer >= timeEnd)
                         {
                             timeEnd = 2f;
                             timer = 0f;
@@ -867,7 +880,13 @@ namespace ValheimVRMod.Patches {
                 attackHold = true;
             }
 
-            if (EquipScript.CurrentOffHandEquipType() == EquipType.Crossbow && CrossbowManager.IsPullingTrigger(out bool useSecondaryCrossbowAttack))
+            // While riding, MountedAttackUtils polls this instead: IsPullingTrigger() reports a pull at most once
+            // (see its own lastPullingTriggerFrame), so if this consumed it here too while riding, vanilla's own
+            // attack flags below would do nothing (vanilla does not support attacking while riding) and the
+            // MountedAttackUtils call that actually fires it would see the pull as already consumed.
+            if (!MountedAttackUtils.IsRiding() &&
+                EquipScript.CurrentOffHandEquipType() == EquipType.Crossbow &&
+                CrossbowManager.IsPullingTrigger(out bool useSecondaryCrossbowAttack))
             {
                 if (useSecondaryCrossbowAttack)
                 {
@@ -947,7 +966,8 @@ namespace ValheimVRMod.Patches {
                     break;
 
                 case EquipType.RuneSkyheim:
-                    if (SteamVR_Actions.valheim_Use.state && SteamVR_Actions.valheim_Grab.state && timer >= timeEnd)
+                    if (SteamVR_Actions.valheim_Use.GetState(SteamVR_Input_Sources.RightHand) &&
+                        SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.Any) && timer >= timeEnd)
                     {
                         timeEnd = 2f;
                         timer = 0f;

@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 using ValheimVRMod.Patches;
 using ValheimVRMod.Utilities;
 using Valve.VR;
@@ -121,6 +122,22 @@ namespace ValheimVRMod.VRCore.UI
         private SteamVR_LaserPointer _rightPointer;
 
         private VRGUI_InputModule _inputModule;
+        // How far the laser pointer may drift on the panel while the trigger is held before a click becomes a drag.
+        // Both have to be exceeded: the distance in metres keeps a small panel with densely packed pixels, such as
+        // the one attached to the hand, from being too sensitive, and the one in pixels keeps the pointer on a large
+        // panel from leaving the dead zone before it has moved further than Unity's drag threshold, past which a drag
+        // starts at once and cancels the click of a button in a scroll view, e. g. a recipe in the crafting menu.
+        private const float LASER_CLICK_DEAD_ZONE_METERS = 0.005f;
+        private const float LASER_CLICK_DEAD_ZONE_PIXELS = 16f;
+        // Where on the panel, in its local coordinates, the laser cursor was last placed. While a click is held in
+        // its dead zone, this is where the trigger was pressed.
+        private Vector3 cursorLocalHit;
+
+        // Holding ScrollUp/ScrollDown scrolls one step, then keeps repeating after a short delay.
+        private const float SCROLL_REPEAT_DELAY = 0.4f;
+        private const float SCROLL_REPEAT_INTERVAL = 0.1f;
+        private int heldScrollDirection;
+        private float nextScrollRepeatTime;
 
         private static bool isRecentering = false;
         private bool movingLastFrame = false;
@@ -229,13 +246,14 @@ namespace ValheimVRMod.VRCore.UI
                 {
                     UpdateMouseButtonsFromLaserPointer();
                 }
+                UpdateScrollFromLaserPointer();
                 return;
             }
             bool leftButtonPressed = Input.GetMouseButton(0);
             bool rightButtonPressed = Input.GetMouseButton(1);
             bool middleButtonPressed = Input.GetMouseButton(2);
             _inputModule.UpdateButtonStates(leftButtonPressed, rightButtonPressed, middleButtonPressed);
-            _inputModule.UpdateScroll();
+            _inputModule.UpdateScroll(Input.mouseScrollDelta);
         }
 
         public static void UpdateUIPanelSize()
@@ -693,6 +711,26 @@ namespace ValheimVRMod.VRCore.UI
             var localStart = _uiPanel.InverseTransformPoint(VRPlayer.activePointer.rayStartingPosition);
             // This is more precise than using raycast hit position especially when the player is moving fast
             var correctedLocalHit = localStart - localDir * (localStart.z / localDir.z);
+
+            if (_inputModule.inLaserClickDeadZone)
+            {
+                // Pulling or releasing the trigger tilts the controller, which would otherwise carry the cursor off
+                // the button that was pressed, or far enough to start dragging the scroll view it sits in, and
+                // either way lose the click. So the cursor stays where the press was until the ray has clearly
+                // moved away on purpose.
+                float drift = _uiPanel.TransformVector(correctedLocalHit - cursorLocalHit).magnitude;
+                float pixelDrift =
+                    Vector2.Distance(
+                        convertLocalUiPanelCoordinatesToCursorCoordinates(correctedLocalHit),
+                        convertLocalUiPanelCoordinatesToCursorCoordinates(cursorLocalHit));
+                if (drift <= LASER_CLICK_DEAD_ZONE_METERS || pixelDrift <= LASER_CLICK_DEAD_ZONE_PIXELS)
+                {
+                    return;
+                }
+                _inputModule.LeaveLaserClickDeadZone();
+            }
+
+            cursorLocalHit = correctedLocalHit;
             SoftwareCursor.simulatedMousePosition = convertLocalUiPanelCoordinatesToCursorCoordinates(correctedLocalHit);
         }
 
@@ -712,9 +750,97 @@ namespace ValheimVRMod.VRCore.UI
         {
             // The laser pointers have no middle button of their own, UpdateButtonStates adds the MiddleClick chord.
             _inputModule.UpdateButtonStates(
-                SteamVR_Actions.LaserPointers.LeftClick.GetState(hand),
+                SteamVR_Actions.Valheim.LeftClick.GetState(hand),
                 SteamVR_Actions.Valheim.RightClick.GetState(hand),
                 false);
+        }
+
+        // Scrolls whatever is under the simulated cursor, e.g. the recipe list or a container, from the
+        // ContextScroll trackpad of a hand whose laser pointer is active (index, holographic) and from the
+        // ScrollUp/ScrollDown buttons (right grip + right stick on touch controllers). Called once per frame.
+        private void UpdateScrollFromLaserPointer()
+        {
+            if (_leftPointer == null || _rightPointer == null ||
+                (!_leftPointer.pointerIsActive() && !_rightPointer.pointerIsActive()))
+            {
+                heldScrollDirection = 0;
+                return;
+            }
+
+            float steps = GetScrollButtonSteps();
+            if (_leftPointer.pointerIsActive())
+            {
+                steps += SteamVR_Actions.Valheim.ContextScroll.GetAxis(SteamVR_Input_Sources.LeftHand).y;
+            }
+            if (_rightPointer.pointerIsActive())
+            {
+                steps += SteamVR_Actions.Valheim.ContextScroll.GetAxis(SteamVR_Input_Sources.RightHand).y;
+            }
+            _inputModule.ScrollBySteps(steps);
+        }
+
+        // The steps to scroll this frame from the ScrollUp/ScrollDown buttons: one when pressed, then one every
+        // SCROLL_REPEAT_INTERVAL while held. Only read while the inventory (which includes crafting and containers)
+        // or the build menu is open, since the same buttons zoom the minimap elsewhere.
+        private float GetScrollButtonSteps()
+        {
+            int direction = 0;
+            if (InventoryGui.IsVisible() || Hud.IsPieceSelectionVisible())
+            {
+                direction = VRControls.instance.getScrollButtonDirection();
+            }
+
+            if (direction == 0)
+            {
+                heldScrollDirection = 0;
+                return 0;
+            }
+            if (direction != heldScrollDirection)
+            {
+                heldScrollDirection = direction;
+                nextScrollRepeatTime = Time.unscaledTime + SCROLL_REPEAT_DELAY;
+                return direction;
+            }
+            if (Time.unscaledTime < nextScrollRepeatTime)
+            {
+                return 0;
+            }
+            nextScrollRepeatTime = Time.unscaledTime + SCROLL_REPEAT_INTERVAL;
+            return direction;
+        }
+
+        // Selects the item under the pointer in the player's or the open container's inventory with the given
+        // modifier, as vanilla does for modified clicks: Move moves the item between the inventory and the open
+        // container, or drops it when no container is open, and Split opens the split dialog for a stack. Called
+        // by LaserPointerChords for the DiscardItem/SplitStack chords, which resolve to this the same way a plain
+        // click resolves to whatever InventoryGrid.GetHoveredElement() (also laser-pointer-aware, see
+        // ControlPatches) says the pointer is over.
+        public static void SelectHoveredInventoryItem(InventoryGrid.Modifier modifier)
+        {
+            InventoryGui inventoryGui = InventoryGui.instance;
+            if (!InventoryGui.IsVisible() || inventoryGui == null || inventoryGui.m_dragGo != null)
+            {
+                return;
+            }
+            foreach (InventoryGrid grid in new InventoryGrid[] { inventoryGui.m_playerGrid, inventoryGui.m_containerGrid })
+            {
+                if (grid == null || !grid.isActiveAndEnabled || grid.GetInventory() == null)
+                {
+                    continue;
+                }
+                InventoryElement element = grid.GetHoveredElement();
+                if (element == null)
+                {
+                    continue;
+                }
+                Vector2i position = grid.GetElementPos(element);
+                ItemDrop.ItemData item = grid.GetInventory().GetItemAt(position.x, position.y);
+                if (item != null)
+                {
+                    inventoryGui.OnSelectedItem(grid, item, position, modifier);
+                }
+                return;
+            }
         }
 
         private void UpdateHandAttachedTransform()
@@ -1057,7 +1183,11 @@ namespace ValheimVRMod.VRCore.UI
         {
 
             Dictionary<PointerEventData.InputButton, bool> lastButtonStateMap = new Dictionary<PointerEventData.InputButton, bool>();
+            // For the desktop mouse.
             private bool inDragDeadZone;
+            // For the laser pointers: whether the left button is held and the pointer hasn't yet moved far enough
+            // since the press to start a drag.
+            public bool inLaserClickDeadZone { get; private set; }
 
             public VRGUI_InputModule() {
                 lastButtonStateMap[PointerEventData.InputButton.Left] = false;
@@ -1100,6 +1230,10 @@ namespace ValheimVRMod.VRCore.UI
                     return;
                 }
                 lastButtonStateMap[button] = false;
+                if (button == PointerEventData.InputButton.Left)
+                {
+                    inLaserClickDeadZone = false;
+                }
                 PointerEventData buttonData = GetMousePointerEventData().GetButtonState(button).eventData.buttonData;
                 buttonData.eligibleForClick = false;
                 buttonData.pointerPress = null;
@@ -1108,18 +1242,63 @@ namespace ValheimVRMod.VRCore.UI
                 buttonData.dragging = false;
             }
 
-            // Scrolls whatever is under the simulated cursor, mirroring StandaloneInputModule.ProcessMouseEvent().
-            public void UpdateScroll()
+            // How far one VR scroll step moves a scroll view, in its content's units.
+            private const float SCROLL_STEP_SIZE = 50f;
+
+            private readonly List<RaycastResult> scrollRaycastResults = new List<RaycastResult>();
+
+            // Scrolls whatever is under the simulated cursor by the real mouse wheel's delta, outside VR, mirroring
+            // the scroll part of StandaloneInputModule.ProcessMouseEvent().
+            public void UpdateScroll(Vector2 scrollDelta)
             {
-                if (Mathf.Approximately(input.mouseScrollDelta.sqrMagnitude, 0f))
+                if (Mathf.Approximately(scrollDelta.sqrMagnitude, 0f))
                 {
                     return;
                 }
                 PointerEventData pointerData =
                     GetMousePointerEventData().GetButtonState(PointerEventData.InputButton.Left).eventData.buttonData;
+                pointerData.scrollDelta = scrollDelta;
                 GameObject scrollHandler =
                     ExecuteEvents.GetEventHandler<IScrollHandler>(pointerData.pointerCurrentRaycast.gameObject);
                 ExecuteEvents.ExecuteHierarchy(scrollHandler, pointerData, ExecuteEvents.scrollHandler);
+            }
+
+            // Scrolls the scroll view under the simulated cursor vertically by the given number of steps (positive
+            // is up). Unlike the mouse wheel this looks through every UI element under the cursor rather than only
+            // the topmost one, so an overlay without a scroll view of its own (the cursor, a tooltip) cannot swallow
+            // the scroll. Each step moves the view by SCROLL_STEP_SIZE regardless of its scroll sensitivity, which
+            // vanilla tunes for the mouse wheel rather than for VR controls.
+            public void ScrollBySteps(float steps)
+            {
+                if (Mathf.Approximately(steps, 0f) || EventSystem.current == null)
+                {
+                    return;
+                }
+                PointerEventData pointerData = new PointerEventData(EventSystem.current);
+                pointerData.position = SoftwareCursor.simulatedMousePosition;
+                scrollRaycastResults.Clear();
+                EventSystem.current.RaycastAll(pointerData, scrollRaycastResults);
+
+                ScrollRect scrollRect = null;
+                foreach (RaycastResult result in scrollRaycastResults)
+                {
+                    scrollRect = result.gameObject.GetComponentInParent<ScrollRect>();
+                    if (scrollRect != null && scrollRect.isActiveAndEnabled)
+                    {
+                        break;
+                    }
+                    scrollRect = null;
+                }
+                if (scrollRect == null)
+                {
+                    LogDebug("VR scroll found no scroll view under the cursor at " + pointerData.position + ", top hit: " +
+                        (scrollRaycastResults.Count > 0 ? scrollRaycastResults[0].gameObject.name : "none"));
+                    return;
+                }
+
+                float sensitivity = scrollRect.scrollSensitivity > 0 ? scrollRect.scrollSensitivity : 1;
+                pointerData.scrollDelta = new Vector2(0, steps * SCROLL_STEP_SIZE / sensitivity);
+                scrollRect.OnScroll(pointerData);
             }
 
             private void UpdateButtonState(bool state, PointerEventData.InputButton button)
@@ -1155,6 +1334,25 @@ namespace ValheimVRMod.VRCore.UI
                 }
                 ProcessMove(buttonState.buttonData);
 
+                if (VHVRConfig.UseVrControls())
+                {
+                    // The laser dead zone is measured and left in VRGUI.UpdateCursorPosition, which knows the panel's
+                    // geometry and holds the cursor still until then, so no drag can start before it is left.
+                    if (state == PointerEventData.FramePressState.Pressed)
+                    {
+                        inLaserClickDeadZone = true;
+                    }
+                    else if (state == PointerEventData.FramePressState.Released)
+                    {
+                        inLaserClickDeadZone = false;
+                    }
+                    if (!inLaserClickDeadZone)
+                    {
+                        ProcessDrag(buttonState.buttonData);
+                    }
+                    return;
+                }
+
                 if (state == PointerEventData.FramePressState.Pressed) {
                     inDragDeadZone = true;
                 }
@@ -1166,6 +1364,11 @@ namespace ValheimVRMod.VRCore.UI
                 if (!inDragDeadZone) {
                     ProcessDrag(buttonState.buttonData);
                 }
+            }
+
+            public void LeaveLaserClickDeadZone()
+            {
+                inLaserClickDeadZone = false;
             }
         }
     }
