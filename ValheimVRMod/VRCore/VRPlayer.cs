@@ -566,6 +566,11 @@ namespace ValheimVRMod.VRCore
             {
                 enableThirdPersonCamera();
             }
+
+            // Retried every frame rather than done once when the camera is created: the VR camera's own post
+            // processing is set up when it is attached to the player, which can happen after this camera exists.
+            // The call returns immediately once the effects are in place.
+            maybeCopyPostProcessingToFlatscreenCamera(_thirdPersonCamera);
         }
 
         // Fixes an issue on Pimax HMDs that causes rotation to be incorrect:
@@ -2007,6 +2012,68 @@ namespace ValheimVRMod.VRCore
             }
             vrCamera.gameObject.AddComponent<UnderwaterEffectsUpdater>().Init(
                 vrCamera, postProcessingBehavior, postProcessingBehavior.profile);
+        }
+
+        // Gives the flat screen camera the same post processing the VR camera renders with, so that what the
+        // desktop window shows matches the headset: bloom, colour grading, vignette and the rest of what the
+        // profile carries.
+        //
+        // The profile is deliberately shared rather than cloned, because CameraEffects.ApplySettings() toggles
+        // bloom, motion blur, antialiasing and chromatic aberration in place on the profile the VR camera renders
+        // with whenever the graphics settings change, and a clone would stop receiving those. Nothing ever assigns
+        // a different profile, so sharing cannot go stale.
+        //
+        // The environment does not come into this: an EnvSetup carries no post processing at all, and the look of
+        // a biome or a weather is RenderSettings fog and ambient light, the directional light, the skybox and
+        // global shader uniforms, all of which are scene wide and reach every camera on their own.
+        //
+        // Four things that the VR camera gets are deliberately left off:
+        //  - CameraEffects, whose Awake takes over the static CameraEffects.instance. A second one would steal it
+        //    from the VR camera and the headset would stop receiving settings and environment updates.
+        //  - AmplifyOcclusionEffect, because PatchAmplifyOcclusionStereoMultiPass forces stereo multi pass on for
+        //    every camera, and this one renders monoscopically. It would be sent down the stereo path with four
+        //    history buffers and stereo matrices. This is the one environment driven effect the flat screen view
+        //    therefore misses: EnvMan pushes an EnvSetup's ambient occlusion tint and intensity onto this
+        //    component, not onto the profile, and only onto the one CameraEffects.instance holds.
+        //  - UnderwaterEffectsUpdater, which keeps a static Underwaterness and spawns a world sized light blocker,
+        //    so a second one would fight the first. Its overlay is parented to the VR camera on the worldspace UI
+        //    layer, which this camera already renders, so the underwater tint carries over anyway.
+        //  - DepthOfField, which CameraEffects is what drives every frame, so without one it throws from
+        //    FocalDistance01 on every render. It is also the effect that means least here, being focused on what
+        //    the player's own camera is looking at.
+        private void maybeCopyPostProcessingToFlatscreenCamera(Camera flatscreenCamera)
+        {
+            if (flatscreenCamera == null ||
+                flatscreenCamera.gameObject.GetComponent<PostProcessingBehaviour>() != null)
+            {
+                return;
+            }
+
+            Camera vrCam = CameraUtils.getCamera(CameraUtils.VR_CAMERA);
+            if (vrCam == null)
+            {
+                return;
+            }
+
+            // The VR camera's own post processing is set up when it is attached to the player, which may not have
+            // happened yet, so this is retried until it has.
+            var vrCamPostProcessing = vrCam.gameObject.GetComponent<PostProcessingBehaviour>();
+            if (vrCamPostProcessing == null || vrCamPostProcessing.profile == null)
+            {
+                return;
+            }
+
+            LogDebug("Copying post processing onto the flat screen camera");
+            var postProcessing = flatscreenCamera.gameObject.AddComponent<PostProcessingBehaviour>();
+            postProcessing.profile = vrCamPostProcessing.profile;
+            postProcessing.jitteredMatrixFunc = vrCamPostProcessing.jitteredMatrixFunc;
+
+            var vrCamSunshaft = vrCam.gameObject.GetComponent<SunShafts>();
+            if (vrCamSunshaft != null)
+            {
+                var sunshaft = flatscreenCamera.gameObject.AddComponent<SunShafts>();
+                CopyClassFields(vrCamSunshaft, ref sunshaft);
+            }
         }
 
         private void CopyClassFields<T>(T source, ref T dest)
