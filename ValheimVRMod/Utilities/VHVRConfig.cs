@@ -833,10 +833,10 @@ namespace ValheimVRMod.Utilities
                                            new AcceptableValueRange<float>(0f, 0.95f)));
             gesturedLocomotion = config.Bind("Controls",
                                              "GesturedLocomotion",
-                                             "SwimAndSteering",
+                                             "Basic",
                                              new ConfigDescription(
-                                                 "Enables using arm movements to swim, walk, run, and jump",
-                                                 new AcceptableValueList<string>(new string[] { "None", "SwimAndSteering", "Full" })));
+                                                 "Enables using arm movements to swim, steering, dodging (basic), walk, run, and jump (advanced)",
+                                                 new AcceptableValueList<string>(new string[] { "None", "Basic", "Full" })));
             gesturedJumpPreparationHeight = config.Bind("Controls",
                                           "GesturedJumpPreparationHeight",
                                           0.975f,
@@ -1757,24 +1757,34 @@ namespace ValheimVRMod.Utilities
             return gesturedLocomotion.Definition.Key;
         }
 
+        public static bool IsBasicGesturedLocomotionEnabled()
+        {
+            return gesturedLocomotion.Value == "Full" || gesturedLocomotion.Value == "Basic";
+        }
+
+        public static bool IsFullGesturedLocomotionEnabled()
+        {
+            return gesturedLocomotion.Value == "Full";
+        }
+
         public static bool IsGesturedSwimEnabled()
         {
-            return gesturedLocomotion.Value == "Full" || gesturedLocomotion.Value == "SwimAndSteering";
+            return IsBasicGesturedLocomotionEnabled();
         }
 
         public static bool IsGesturedSteeringEnabled()
         {
-            return gesturedLocomotion.Value == "Full" || gesturedLocomotion.Value == "SwimAndSteering";
+            return IsBasicGesturedLocomotionEnabled();
         }
 
         public static bool IsGesturedJumpEnabled()
         {
-            return gesturedLocomotion.Value == "Full";
+            return IsFullGesturedLocomotionEnabled();
         }
 
         public static bool IsGesturedWalkRunEnabled()
         {
-            return gesturedLocomotion.Value == "Full";
+            return IsFullGesturedLocomotionEnabled();
         }
 
         public static float GesturedJumpPreparationHeight()
