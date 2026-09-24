@@ -23,6 +23,21 @@ namespace ValheimVRMod.Scripts.Block {
 
         public static ShieldBlock instance;
 
+        private PhysicsEstimator parryPhysicsEstimator
+        {
+            get
+            {
+                var shieldHand = VRPlayer.isRightHandMainWeaponHand ? VRPlayer.leftHand : VRPlayer.rightHand;
+                if (shieldHand == null)
+                {
+                    return physicsEstimator;
+                }
+                var handPhysicsEstimator =
+                    VRPlayer.isRightHandMainWeaponHand ? VRPlayer.leftHandPhysicsEstimator : VRPlayer.rightHandPhysicsEstimator;
+                return handPhysicsEstimator != null ? handPhysicsEstimator : physicsEstimator;
+            }
+        }
+
         private void OnDisable() {
             instance = null;
         }
@@ -81,7 +96,7 @@ namespace ValheimVRMod.Scripts.Block {
             else
             {
                 var shieldFacingAlignment = Vector3.Dot(hitData.m_dir, shieldFacing);
-                var v = GetShieldHandVelocity();
+                var v = parryPhysicsEstimator.GetVelocity();
                 _blocking =
                     v.magnitude > MIN_PARRY_ENTRY_SPEED && Mathf.Abs(Vector3.Dot(hitData.m_dir, Vector3.Normalize(v))) < 0.7f ?
                     shieldFacingAlignment < 0.5f :
@@ -93,15 +108,8 @@ namespace ValheimVRMod.Scripts.Block {
             CheckParryMotion();
         }
 
-        private Vector3 GetShieldHandVelocity()
-        {
-            PhysicsEstimator handPhysicsEstimator =
-                VRPlayer.isRightHandMainWeaponHand ? VRPlayer.leftHandPhysicsEstimator : VRPlayer.rightHandPhysicsEstimator;
-            return handPhysicsEstimator.GetVelocity();
-        }
-
         private void CheckParryMotion() {
-            Vector3 v = GetShieldHandVelocity();
+            Vector3 v = parryPhysicsEstimator.GetVelocity();
             if (v.magnitude > MIN_PARRY_ENTRY_SPEED) {
                 if (!attemptingParry)
                 {
@@ -109,7 +117,7 @@ namespace ValheimVRMod.Scripts.Block {
                     attemptingParry = true;
                 }
             }
-            else if (attemptingParry && physicsEstimator.GetAverageVelocityInSnapshots().magnitude < PARRY_EXIT_SPEED)
+            else if (attemptingParry && parryPhysicsEstimator.GetAverageVelocityInSnapshots().magnitude < PARRY_EXIT_SPEED)
             {
                 blockTimer = blockTimerNonParry;
                 attemptingParry = false;
