@@ -1490,7 +1490,11 @@ namespace ValheimVRMod.VRCore
                 Vector3.Angle(trackedPelvis.up, player.transform.up) < 30 &&
                 playerEyeHeight > referencePlayerHeight * 0.75f;
 
-            if (player.IsAttached() ||
+            // While attached (sitting, riding, steering) or swimming the hips are left to the vanilla animation, unless
+            // the lower body override makes the tracked pelvis drive them anyway.
+            bool useAnimatedPelvis = (player.IsAttached() || player.IsSwimming()) && !shouldOverrideLowerBodyWithIK();
+
+            if (useAnimatedPelvis ||
                 (!VHVRConfig.TrackFeet() && (player.IsSneaking() || player.IsSitting() || !isFreeStanding)))
             {
                 vrikRef.solver.spine.pelvisPositionWeight = 0;
@@ -1502,7 +1506,7 @@ namespace ValheimVRMod.VRCore
                 pelvis.localPosition = Vector3.zero;
             }
 
-            if (player.IsAttached())
+            if (useAnimatedPelvis)
             {
                 pelvis.rotation =
                     Quaternion.Lerp(player.transform.rotation, trackedPelvis.rotation, 0.25f);
@@ -1537,9 +1541,26 @@ namespace ValheimVRMod.VRCore
             }
         }
 
+        private bool shouldOverrideLowerBodyWithIK()
+        {
+            var player = Player.m_localPlayer;
+            return VHVRConfig.IKOverrideLowerBody() &&
+                VHVRConfig.TrackFeet() &&
+                attachedToPlayer &&
+                player != null &&
+                !player.InDodge() &&
+                !wasDodging;
+        }
+
         public bool shouldTrackFeet()
         {
-            if (!VHVRConfig.TrackFeet() || !attachedToPlayer || Player.m_localPlayer == null || Player.m_localPlayer.IsAttached())
+            if (shouldOverrideLowerBodyWithIK())
+            {
+                return true;
+            }
+
+            if (!VHVRConfig.TrackFeet() || !attachedToPlayer || Player.m_localPlayer == null ||
+                Player.m_localPlayer.IsAttached() || Player.m_localPlayer.IsSwimming())
             {
                 return false;
             }
