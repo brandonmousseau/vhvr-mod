@@ -15,9 +15,11 @@ namespace ValheimVRMod.Scripts.Block {
         private float scaling = 1f;
         private Vector3 posRef;
         private Vector3 scaleRef;
+        private float adaptScaleRef = 1f;
         private bool attemptingParry;
         private int parryCheckFixedUpateTicker = 0;
         private Vector3 shieldFacing { get { return VRPlayer.isRightHandMainWeaponHand ? -VRPlayer.leftHand.transform.right : VRPlayer.rightHand.transform.right; } }
+        private MeshFilter meshFilter;
 
         public static ShieldBlock instance;
 
@@ -48,10 +50,21 @@ namespace ValheimVRMod.Scripts.Block {
 
         private void InitShield()
         {
-            posRef = _meshCooldown.transform.localPosition;
-            scaleRef = _meshCooldown.transform.localScale;
+            posRef = transform.localPosition;
+            scaleRef = transform.localScale;
             hand = VRPlayer.mainWeaponHand.otherHand.transform;
             offhand = VRPlayer.mainWeaponHand.transform;
+            
+            meshFilter = gameObject.GetComponentInChildren<MeshFilter>();
+            var mesh = meshFilter.sharedMesh;
+            var shieldWideSize = WeaponUtils.EstimateShieldWidth(mesh) * transform.lossyScale.x;
+            var shieldMaxWidth = VHVRConfig.GetMaxShieldWidth();
+            var scaleShieldSetting = VHVRConfig.GetShieldScaleSetting();
+            if (shieldMaxWidth !=1f || scaleShieldSetting !=1f)
+            {
+                adaptScaleRef = Mathf.Min(scaleShieldSetting, shieldMaxWidth / shieldWideSize);
+                AdaptScaleShieldSize(1f);
+            }
         }
 
         public override void setBlocking(HitData hitData) {
@@ -106,9 +119,9 @@ namespace ValheimVRMod.Scripts.Block {
             Vector3 v = physicsEstimator.GetVelocity();
         }
 
-        public void ScaleShieldSize(float scale)
+        public void AdaptScaleShieldSize(float scale)
         {
-            scaling = scale;
+            scaling = adaptScaleRef * scale;
         }
 
         private Vector3 CalculatePos()

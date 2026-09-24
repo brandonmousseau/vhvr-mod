@@ -425,8 +425,37 @@ namespace ValheimVRMod.Patches
     class SEShieldSetupPatch
     {
 
+        // Note: Staff of Protection uses SE_Shield
         public static void Postfix(SE_Shield __instance, Character character)
         {
+            if (VHVRConfig.NonVrPlayer() ||
+                !VHVRConfig.EnableMagicBarrierOverlay() ||
+                character != Player.m_localPlayer ||
+                character == null)
+            {
+                return;
+            }
+
+            var vrCam = VRPlayer.vrCam;
+            if (vrCam == null)
+            {
+                return;
+            }
+
+            vrCam.gameObject.GetOrAddComponent<MagicBarrierVisualEffect>().Show(__instance, character);
+        }
+    }
+
+    // Note: Northern Vengeance uses SE_React
+    [HarmonyPatch(typeof(StatusEffect), nameof(StatusEffect.Setup))]
+    class SEReactSetupPatch
+    {
+
+        public static void Postfix(StatusEffect __instance, Character character)
+        {
+            if (!(__instance is SE_React)) {
+                return;
+            }
             if (VHVRConfig.NonVrPlayer() ||
                 !VHVRConfig.EnableMagicBarrierOverlay() ||
                 character != Player.m_localPlayer ||
@@ -448,7 +477,7 @@ namespace ValheimVRMod.Patches
     [HarmonyPatch(typeof(Player), nameof(Player.OnDeath))]
     class PlayerOnDeathPatch
     {
-        public static bool hasCharacterDied { get; private set; } = false;
+        public static bool hasCharacterDied = false;
         public static void Prefix(Player __instance)
         {
             if (__instance != Player.m_localPlayer)
@@ -470,7 +499,9 @@ namespace ValheimVRMod.Patches
                 hasCharacterDied = true;
                 // Disable the follow camera temporarily since it might interfere with the projection matrix of the main camera upon character death.
                 followCamera.enabled = false;
-                GameObject.Destroy(followCamera);
+                // Destroy the whole object and not just the camera component, otherwise its updater and
+                // camera dot are left behind while VRPlayer builds a new follow camera object.
+                GameObject.Destroy(followCamera.gameObject);
             }
         }
     }

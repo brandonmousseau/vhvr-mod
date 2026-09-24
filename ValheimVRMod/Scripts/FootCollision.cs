@@ -1,4 +1,3 @@
-using System.Linq;
 using UnityEngine;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
@@ -8,14 +7,6 @@ namespace ValheimVRMod.Scripts
 {
     public class FootCollision : MonoBehaviour
     {
-        private static readonly int[] NONATTACKABLE_LAYERS = {
-            LayerUtils.WATERVOLUME_LAYER,
-            LayerUtils.WATER,
-            LayerUtils.UI_PANEL_LAYER,
-            LayerUtils.CHARARCTER_TRIGGER,
-            LayerUtils.ITEM_LAYER,
-        };
-
         private PhysicsEstimator physicsEstimator;
         private GameObject debugColliderIndicator;
 
@@ -55,6 +46,13 @@ namespace ValheimVRMod.Scripts
 
         private void OnTriggerStay(Collider collider)
         {
+            if (IsRollingSnowball(collider))
+            {
+                // The snowball is big enough that a foot can end up inside it without ever entering it.
+                TryHit(collider);
+                return;
+            }
+
             Character character = null;
             if (collider.gameObject.layer == LayerUtils.CHARACTER)
             {
@@ -82,16 +80,17 @@ namespace ValheimVRMod.Scripts
                 !VHVRConfig.TrackFeet() ||
                 player == null ||
                 player.IsRiding() ||
-                player.IsSitting() ||
-                NONATTACKABLE_LAYERS.Contains(collider.gameObject.layer) ||
-                collider.GetComponentInParent<Player>() == player)
+                player.IsSitting())
             {
                 return;
             }
 
-            if (collider.gameObject.layer != LayerUtils.CHARACTER && !SteamVR_Actions.valheim_Use.GetState(SteamVR_Input_Sources.Any))
+            if (collider.gameObject.layer != LayerUtils.CHARACTER &&
+                !IsRollingSnowball(collider) &&
+                !SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.Any))
             {
-                // When kicking anything other than a character, require pressing the grip so that the attack does not accidentally happen too easily.
+                // When kicking anything other than a character or the rolling snowball, require pressing the grip so
+                // that the attack does not accidentally happen too easily.
                 return;
             }
 
@@ -118,24 +117,51 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
+            Kick(collider, transform.position, velocity, speed);
+        }
+
+        // Attacks the target with a kick, which is the secondary attack of the equipped fist weapon or, without one,
+        // of the unarmed weapon, as in vanilla, where the fist weapon's damage makes kicks hit much harder. Falls
+        // back to the primary attack while the kick is still cooling down. Also used by weapons without a real
+        // attack against hostiles (the snow shovel). Returns whether the attack was started.
+        public static bool Kick(Collider collider, Vector3 hitPoint, Vector3 velocity, float speed)
+        {
+            // Filtered here rather than in the callers since this is shared with weapons that have no real
+            // attack of their own (the snow shovel), whose own attack path does no layer filtering at all.
+            if (LayerUtils.IsNonAttackableLayer(collider.gameObject.layer) ||
+                collider.GetComponentInParent<Player>() == Player.m_localPlayer)
+            {
+                return false;
+            }
+
             var isCurrentlySecondaryAttack = FistCollision.LocalPlayerSecondaryAttackCooldown <= 0;
-            var item = Player.m_localPlayer.m_unarmedWeapon.m_itemData;
-            var attack = isCurrentlySecondaryAttack ? item.m_shared.m_secondaryAttack : item.m_shared.m_attack;
+            ItemDrop.ItemData item;
+            Attack attack;
+            if (EquipScript.CurrentMainHandEquipType() == EquipType.Claws)
+            {
+                item = Player.m_localPlayer.GetRightItem();
+                attack = (isCurrentlySecondaryAttack ? item.m_shared.m_secondaryAttack : item.m_shared.m_attack).Clone();
+            }
+            else
+            {
+                item = Player.m_localPlayer.m_unarmedWeapon.m_itemData;
+                attack = isCurrentlySecondaryAttack ? item.m_shared.m_secondaryAttack : item.m_shared.m_attack;
+            }
 
             // Always use the duration of the primary attack for target cooldown to allow primary attack immediately following a secondary attack.
             // The secondary attack cooldown is managed by FistCollision.LocalPlayerSecondaryAttackCooldown  instead.
             if (!tryHitTarget(collider.gameObject, isCurrentlySecondaryAttack, WeaponUtils.GetAttackDuration(item.m_shared.m_attack), speed))
             {
-                return;
+                return false;
             }
 
             FistCollision.LocalPlayerSecondaryAttackCooldown = WeaponUtils.GetAttackDuration(attack);
 
-            StaticObjects.lastHitPoint = transform.position;
+            StaticObjects.lastHitPoint = hitPoint;
             StaticObjects.lastHitDir = velocity.normalized;
             StaticObjects.lastHitCollider = collider;
 
-            attack.Start(Player.m_localPlayer, null, null, Player.m_localPlayer.m_animEvent, null, item, null, 0.0f, 0.0f);
+            return attack.Start(Player.m_localPlayer, null, null, Player.m_localPlayer.m_animEvent, null, item, null, 0.0f, 0.0f);
         }
 
         void Destroy()
@@ -149,7 +175,14 @@ namespace ValheimVRMod.Scripts
             transform.localScale = new Vector3(0.22f, 0.7f, 0.375f);
         }
 
-        private bool tryHitTarget(GameObject target, bool isSecondaryAttack, float duration, float speed)
+        // The big snowball rolling around in the Deep North, which is a moving target rather than scenery and
+        // therefore worth kicking without having to ask for it using the grip.
+        private static bool IsRollingSnowball(Collider collider)
+        {
+            return collider.GetComponentInParent<SnowRoller>() != null;
+        }
+
+        private static bool tryHitTarget(GameObject target, bool isSecondaryAttack, float duration, float speed)
         {
             var attackTargetMeshCooldown = target.GetComponent<AttackTargetMeshCooldown>();
             if (attackTargetMeshCooldown == null)

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -150,8 +150,18 @@ namespace ValheimVRMod.Patches {
                 return true;
             }
 
-            switch(EquipScript.CurrentOffHandEquipType()) { 
-                case EquipType.Bow: 
+            // Summoners may be held in either hand. Other magic items that are not staves (see OrbManager) leave aiming
+            // to vanilla.
+            var summoner = SummonerManager.instance;
+            if (summoner != null)
+            {
+                spawnPoint = summoner.GetProjectileSpawnPoint(__instance);
+                aimDir = summoner.AimDir;
+                return false;
+            }
+
+            switch(EquipScript.CurrentOffHandEquipType()) {
+                case EquipType.Bow:
                     spawnPoint = BowLocalManager.spawnPoint;
                     aimDir = BowLocalManager.aimDir;
                     return false;
@@ -159,12 +169,8 @@ namespace ValheimVRMod.Patches {
                     spawnPoint = CrossbowManager.GetBoltSpawnPoint(__instance);
                     aimDir = CrossbowManager.AimDir;
                     return false;
-                case EquipType.Magic:
-                    spawnPoint = MagicWeaponManager.GetProjectileSpawnPoint(__instance);
-                    aimDir = MagicWeaponManager.AimDir;
-                    return false;
             }
-            
+
             switch (EquipScript.CurrentMainHandEquipType()) {
 
                 case EquipType.Fishing:
@@ -175,11 +181,16 @@ namespace ValheimVRMod.Patches {
                 case EquipType.SpearChitin:
                 case EquipType.ThrowObject:
                     spawnPoint = ThrowableManager.spawnPoint;
-                    aimDir = ThrowableManager.aimDir.normalized * ThrowableManager.throwSpeed;
+                    aimDir = WeaponUtils.GetThrowAimDir(__instance, ThrowableManager.aimDir, ThrowableManager.handSpeed);
                     return false;
                 case EquipType.Magic:
-                    spawnPoint = MagicWeaponManager.GetProjectileSpawnPoint(__instance);
-                    aimDir = MagicWeaponManager.AimDir;
+                    var staff = MagicStaffManagers.Current;
+                    if (staff == null)
+                    {
+                        return true;
+                    }
+                    spawnPoint = staff.GetProjectileSpawnPoint(__instance);
+                    aimDir = staff.AimDir;
                     return false;
                 case EquipType.RuneSkyheim:
                     spawnPoint = VRPlayer.rightHand.transform.position;
@@ -190,7 +201,7 @@ namespace ValheimVRMod.Patches {
             if (EquipScript.IsThrowable(___m_character.GetRightItem()))
             {
                 spawnPoint = ThrowableManager.spawnPoint;
-                aimDir = ThrowableManager.aimDir;
+                aimDir = WeaponUtils.GetThrowAimDir(__instance, ThrowableManager.aimDir, ThrowableManager.handSpeed);
                 return false;
             }
             return true;
@@ -224,6 +235,13 @@ namespace ValheimVRMod.Patches {
 
             __instance.m_useCharacterFacing = false;
             __instance.m_launchAngle = 0;
+
+            if (EquipScript.IsHandThrownWeaponEquipped())
+            {
+                // The throw speed is handed to vanilla relative to the attack's max projectile speed (see
+                // WeaponUtils.GetThrowAimDir), so vanilla must not substitute a random speed for that max.
+                __instance.m_randomVelocity = false;
+            }
 
             if (VHVRConfig.RestrictBowDrawSpeed() == "None" || EquipScript.CurrentOffHandEquipType() != EquipType.Bow)
             {
@@ -350,8 +368,29 @@ namespace ValheimVRMod.Patches {
             }
             else if (EquipScript.IsDundrEquipped())
             {
-                __instance.m_character.ApplyPushback(-MagicWeaponManager.AimDir, recoilPushback);
+                __instance.m_character.ApplyPushback(-ShootingStaffManager.instance.AimDir, recoilPushback);
                 recoilPushback = 0f;
+            }
+        }
+    }
+
+    // Vanilla attaches a deployed grappling hook's chain to the left hand bone every Update, when the bone may still be
+    // in its animated pose rather than where the VR crossbow is rendered. Attach it to the front of the crossbow as
+    // last rendered instead (see CrossbowManager#grapplingChainAttachPoint, which also refreshes it at render time).
+    [HarmonyPatch(typeof(GrapplingPoint), "UpdateLinePosition")]
+    class GrapplingPoint_UpdateLinePosition_Patch
+    {
+        static void Postfix(GrapplingPoint __instance, LineRenderer ___m_lineRenderer)
+        {
+            if (__instance != GrapplingPoint.m_localGrappler || !VHVRConfig.UseVrControls() || ___m_lineRenderer == null)
+            {
+                return;
+            }
+
+            var attachPoint = CrossbowManager.grapplingChainAttachPoint;
+            if (attachPoint.HasValue)
+            {
+                ___m_lineRenderer.SetPosition(1, attachPoint.Value);
             }
         }
     }

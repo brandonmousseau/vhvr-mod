@@ -341,6 +341,7 @@ namespace ValheimVRMod.Scripts {
             // Force re-equip to trigger a patch with the updated isLeftHanded.
             var mainHandItem = player.m_visEquipment.m_rightItemInstance;
             var mainHandItemHash = player.m_visEquipment.m_currentRightItemHash;
+            var mainHandItemQuality = player.m_visEquipment.m_currentRightItemQuality;
             if (mainHandItem != null && mainHandItemHash != 0)
             {
                 if (isLeftHanded ?
@@ -348,13 +349,14 @@ namespace ValheimVRMod.Scripts {
                     mainHandItem.transform.parent == player.m_visEquipment.m_leftHand)
                 {
                     LogUtils.LogDebug("Switching main hand item to the other hand");
-                    player.m_visEquipment.SetRightHandEquipped(0);
-                    player.m_visEquipment.SetRightHandEquipped(mainHandItemHash);
+                    player.m_visEquipment.SetRightHandEquipped(0, 0);
+                    player.m_visEquipment.SetRightHandEquipped(mainHandItemHash, mainHandItemQuality);
                 }
             }
 
             var offHandItem = player.m_visEquipment.m_leftItemInstance;
             var offHandItemHash = player.m_visEquipment.m_currentLeftItemHash;
+            var offHandItemQuality = player.m_visEquipment.m_currentLeftItemQuality;
             if (offHandItem != null && offHandItemHash != 0)
             {
                 if (isLeftHanded ?
@@ -363,8 +365,8 @@ namespace ValheimVRMod.Scripts {
                 {
                     LogUtils.LogDebug("Switching secondary hand item to right hand");
                     var variant = player.m_visEquipment.m_currentLeftItemVariant;
-                    player.m_visEquipment.SetLeftHandEquipped(0, 0);
-                    player.m_visEquipment.SetLeftHandEquipped(offHandItemHash, variant);
+                    player.m_visEquipment.SetLeftHandEquipped(0, 0, 0);
+                    player.m_visEquipment.SetLeftHandEquipped(offHandItemHash, variant, offHandItemQuality);
                 }
             }
         }

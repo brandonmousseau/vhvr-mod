@@ -235,7 +235,8 @@ namespace ValheimVRMod.Scripts
                 movementCooldown -= Time.deltaTime;
             }
             
-            var mainHandTrigger = isRightHand ? SteamVR_Actions.valheim_Use.state : SteamVR_Actions.valheim_UseLeft.state;
+            var mainHandTrigger = SteamVR_Actions.valheim_Use.GetState(
+                isRightHand ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand);
             var inCooldown = AttackTargetMeshCooldown.isPrimaryTargetInCooldown();
             var localWeaponForward = LocalWeaponWield.weaponForward * secondaryAttack.m_attackRange / 2;
             var localHandPos = VRPlayer.mainWeaponHand.transform.position - Player.m_localPlayer.transform.position;

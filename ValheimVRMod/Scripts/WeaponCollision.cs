@@ -1,5 +1,4 @@
 using System.ComponentModel;
-using System.Linq;
 using UnityEngine;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
@@ -40,14 +39,6 @@ namespace ValheimVRMod.Scripts
         public LocalWeaponWield weaponWield;
         public static bool isLastHitOnTerrain;
         public bool isTwoHandedMultitargetSwipeActive { get { return twoHandedMultitargetSwipeCountdown > twoHandedMultitargetSwipeDuration * 0.5f; } }
-
-        private static readonly int[] ignoreLayers = {
-            LayerUtils.WATERVOLUME_LAYER,
-            LayerUtils.WATER,
-            LayerUtils.UI_PANEL_LAYER,
-            LayerUtils.CHARARCTER_TRIGGER,
-            LayerUtils.ITEM_LAYER,
-        };
 
         private void Awake()
         {
@@ -110,6 +101,18 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
+            if (EquipScript.CurrentMainHandEquipType() == EquipType.Shovel)
+            {
+                // When scooping from the ground the blade is usually already buried by the time the upward scoop
+                // starts, so entering the terrain alone would rarely coincide with the required upward motion.
+                // Anything else only collides on enter like a regular weapon.
+                if (isTerrain(collider.gameObject))
+                {
+                    MaybeAttackCollider(collider, requireStab: false, requireStabOrBackSlash: false);
+                }
+                return;
+            }
+
             if (itemIsTool)
             {
                 switch (EquipScript.CurrentMainHandEquipType())
@@ -136,8 +139,20 @@ namespace ValheimVRMod.Scripts
             MaybeStabCharacter(collider);
         }
 
+        // Whether the character is a training dummy (T.W.I.G.), which is there to practice fighting and so is hit like
+        // an enemy, whatever layer its colliders are on and even if it is flagged as tamed.
+        public static bool IsTrainingDummy(Character character)
+        {
+            return character != null && character.m_faction == Character.Faction.TrainingDummy;
+        }
+
         public static bool IsFriendly(Character character)
         {
+            if (IsTrainingDummy(character))
+            {
+                return false;
+            }
+
             if (character.m_tamed || character.gameObject == Player.m_localPlayer.gameObject)
             {
                 return true;
@@ -149,6 +164,12 @@ namespace ValheimVRMod.Scripts
             }
 
             return character.m_baseAI != null && !character.m_baseAI.m_aggravated && character.m_faction == Character.Faction.Dverger;
+        }
+
+        private static bool IsHostileCharacter(Collider collider)
+        {
+            var character = collider.GetComponentInParent<Character>();
+            return character != null && !IsFriendly(character);
         }
 
         private bool CheckDrinking(Collider collider)
@@ -218,7 +239,8 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            if (!hasMomentum(out bool isStab, out bool isBackSlash, out float speed))
+            bool isShovelScoop = EquipScript.CurrentMainHandEquipType() == EquipType.Shovel && isTerrain(collider.gameObject);
+            if (!hasMomentum(isShovelScoop, out bool isStab, out bool isBackSlash, out float speed))
             {
                 return;
             }
@@ -230,6 +252,16 @@ namespace ValheimVRMod.Scripts
 
             if (requireStabOrBackSlash && !isStab && !isBackSlash)
             {
+                return;
+            }
+
+            if (EquipScript.CurrentMainHandEquipType() == EquipType.Shovel && !isTerrain(collider.gameObject))
+            {
+                // The shovel deals no damage of its own, so hitting anything but terrain with it falls back to a kick.
+                if (FootCollision.Kick(collider, transform.position, physicsEstimator.GetVelocity(), speed))
+                {
+                    VRPlayer.mainWeaponHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, VRPlayer.mainWeaponHandInputSource);
+                }
                 return;
             }
 
@@ -251,6 +283,7 @@ namespace ValheimVRMod.Scripts
                              collider.GetComponentInParent<Piece>() == hoveringPiece);
                         return;
                     case EquipType.Scythe:
+                    case EquipType.Shovel:
                         break;
                     default:
                         return;
@@ -320,7 +353,7 @@ namespace ValheimVRMod.Scripts
         private bool tryHitTarget(GameObject target, bool isSlowAttack, float speed)
         {
             // ignore certain Layers
-            if (ignoreLayers.Contains(target.layer))
+            if (LayerUtils.IsNonAttackableLayer(target.layer))
             {
                 return false;
             }
@@ -420,8 +453,16 @@ namespace ValheimVRMod.Scripts
         public void setColliderParent(MeshFilter meshFilter, Vector3 handPosition, int itemHash, bool isDominantHand)
         {
             var meshTranform = meshFilter.transform;
-            outline = meshTranform.parent.gameObject.AddComponent<Outline>();
+            outline = meshTranform.parent.gameObject.GetComponent<Outline>();
+            if (outline == null)
+            {
+                outline = meshTranform.parent.gameObject.AddComponent<Outline>();
+            }
             outline.OutlineMode = Outline.Mode.OutlineVisible;
+            // Update() turns the outline on when it is needed. It has to start off: Update() never runs its outline
+            // logic for items without an attack (e.g. the fishing rod), which would otherwise keep the default white
+            // outline forever.
+            outline.enabled = false;
 
             this.isVanillaRightHandedWeapon = isDominantHand;
             item = this.isVanillaRightHandedWeapon ? Player.m_localPlayer.GetRightItem() : Player.m_localPlayer.GetLeftItem();
@@ -431,6 +472,7 @@ namespace ValheimVRMod.Scripts
                 equipType == EquipType.Hammer ||
                 equipType == EquipType.Hoe ||
                 equipType == EquipType.Cultivator ||
+                equipType == EquipType.Shovel ||
                 equipType == EquipType.Scythe;
 
             if (colliderParent == null)
@@ -561,9 +603,10 @@ namespace ValheimVRMod.Scripts
             }
         }
 
-        private bool hasMomentum(out bool isStab, out bool isBackSlash, out float speed)
+        private bool hasMomentum(bool isShovelScoop, out bool isStab, out bool isBackSlash, out float speed)
         {
             Vector3 velocity;
+            bool shoveling = false;
             if (weaponWield.twoHandedState == WeaponWield.TwoHandedState.SingleHanded)
             {
                 velocity =
@@ -572,6 +615,7 @@ namespace ValheimVRMod.Scripts
                         mainHandPhysicsEstimator.GetAngularVelocity(),
                         LocalWeaponWield.weaponForward.normalized * WEAPON_ANGULAR_WEIGHT_OFFSET);
                 speed = velocity.magnitude;
+                shoveling = (velocity.y > 1f);
             }
             else
             {
@@ -582,28 +626,41 @@ namespace ValheimVRMod.Scripts
                 var rightHandSpeed = Vector3.Dot(rightHandVelocity, direction);
                 speed = Mathf.Max(leftHandSpeed, rightHandSpeed);
                 velocity = direction * speed;
+                shoveling =
+                    weaponWield.twoHandedState == WeaponWield.TwoHandedState.LeftHandBehind ?
+                    rightHandVelocity.y > 0:
+                    leftHandVelocity.y > 0;
             }
 
             isBackSlash = Vector3.Angle(velocity, LocalWeaponWield.weaponForward) > 135;
             isStab = !isBackSlash && WeaponCollision.isStab(velocity);
+
+            if (isShovelScoop && !shoveling)
+            {
+                return false;
+            }
 
             if (weaponWield.twoHandedState == WeaponWield.TwoHandedState.SingleHanded &&
                 EquipScript.CurrentMainHandEquipType() == EquipType.Polearms &&
                 !TwoHandedGeometry.LocalAtgeirGeometryProvider.UsingArmpitAnchor)
             {
                 // When wielding polearms with only one hand without armpit anchor, make attack harder to trigger
-                return isStab && speed > GetMinSpeed();
+                return isStab && speed > GetMinSpeed(isShovelScoop);
             }
 
-            return isStab || speed > GetMinSpeed();
+            return isStab || speed > GetMinSpeed(isShovelScoop);
         }
 
-        private float GetMinSpeed()
+        private float GetMinSpeed(bool isShovelScoop)
         {
             switch (EquipScript.CurrentMainHandEquipType())
             {
                 case EquipType.Hammer:
                     return MIN_HAMMER_SPEED;
+                case EquipType.Shovel:
+                    // The shovel is only used as a tool when scooping; hitting anything else with it is a kick and
+                    // should take as much speed as swinging a weapon.
+                    return isShovelScoop ? MIN_LONG_TOOL_SPEED : VHVRConfig.SwingSpeedRequirement();
                 case EquipType.BattleAxe:
                 case EquipType.Sledge:
                 case EquipType.Polearms:
@@ -630,7 +687,7 @@ namespace ValheimVRMod.Scripts
             return true;
         }
 
-        private static bool isTerrain(GameObject target)
+        public static bool isTerrain(GameObject target)
         {
             return (target.GetComponentInParent<MineRock5>() == null ? target.transform : target.transform.parent).GetComponent<Heightmap>() != null;
         }

@@ -8,8 +8,8 @@ namespace Valve.VR.Extras
     {
         public SteamVR_Behaviour_Pose pose;
 
-        public SteamVR_Action_Boolean leftClick = SteamVR_Input.GetBooleanActionFromPath("/actions/LaserPointers/in/LeftClick");
-        public SteamVR_Action_Boolean rightClick = SteamVR_Input.GetBooleanActionFromPath("/actions/LaserPointers/in/RightClick");
+        public SteamVR_Action_Boolean leftClick = SteamVR_Input.GetBooleanActionFromPath("/actions/Valheim/in/LeftClick");
+        public SteamVR_Action_Boolean rightClick = SteamVR_Input.GetBooleanActionFromPath("/actions/Valheim/in/RightClick");
 
         public bool active = true;
         public Color color;

@@ -208,6 +208,7 @@ namespace ValheimVRMod.Scripts
             {
                 case EquipType.Axe:
                 case EquipType.Pickaxe:
+                case EquipType.Shovel:
                     return new TwoHandedGeometry.DefaultGeometryProvider(distanceBetweenGripAndRearEnd * 0.5f);
                 case EquipType.Club:
                 case EquipType.Cultivator:

@@ -1,4 +1,4 @@
-using HarmonyLib;
+﻿using HarmonyLib;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -228,8 +228,18 @@ namespace ValheimVRMod.Patches
                 }
             }
 
-            if (!___m_rightItemInstance || meshFilter == null)
+            if (!___m_rightItemInstance)
             {
+                return;
+            }
+
+            if (meshFilter == null)
+            {
+                // Items with only skinned meshes (e. g. knuckles) are not wielded but their particles still need fixing.
+                if (Player.m_localPlayer == player && !VHVRConfig.NonVrPlayer())
+                {
+                    ParticleFix.maybeFix(___m_rightItemInstance, EquipScript.CurrentMainHandEquipType());
+                }
                 return;
             }
 
@@ -248,6 +258,7 @@ namespace ValheimVRMod.Patches
                         case EquipType.Knife:
                         case EquipType.Magic:
                         case EquipType.Pickaxe:
+                        case EquipType.Shovel:
                         case EquipType.Polearms:
                         case EquipType.Scythe:
                         case EquipType.Sledge:
@@ -316,12 +327,37 @@ namespace ValheimVRMod.Patches
             weaponCol.setColliderParent(
                 meshFilter, handPosition: ___m_rightItemInstance.transform.parent.position, hash, true);
 
-            LocalWeaponWield weaponWield = EquipScript.IsSpearEquipped() ? ___m_rightItemInstance.AddComponent<SpearWield>() : ___m_rightItemInstance.AddComponent<LocalWeaponWield>();
+            string rightItemName = Player.m_localPlayer.GetRightItem()?.m_shared?.m_name;
+            bool isSwingableStaff = EquipScript.CurrentMainHandEquipType() == EquipType.Magic && SwingableStaffManager.STAFF_NAMES.Contains(rightItemName);
+            bool isSummoner = SummonerManager.ITEM_NAMES.Contains(rightItemName);
+
+            LocalWeaponWield weaponWield;
+            if (EquipScript.IsSpearEquipped())
+            {
+                weaponWield = ___m_rightItemInstance.AddComponent<SpearWield>();
+            }
+            else if (OrbManager.ITEM_NAMES.Contains(rightItemName))
+            {
+                weaponWield = ___m_rightItemInstance.AddComponent<OrbManager>();
+            }
+            else if (EquipScript.CurrentMainHandEquipType() == EquipType.Magic && !isSwingableStaff && !isSummoner)
+            {
+                weaponWield = ___m_rightItemInstance.AddComponent<ShootingStaffManager>();
+            }
+            else
+            {
+                weaponWield = ___m_rightItemInstance.AddComponent<LocalWeaponWield>();
+            }
             weaponWield.Initialize(Player.m_localPlayer.GetRightItem(), hash, isDominantHandWeapon: true);
 
-            if (MagicWeaponManager.IsSwingLaunchEnabled())
+            if (isSummoner)
             {
-                meshFilter.gameObject.AddComponent<SwingLaunchManager>();
+                ___m_rightItemInstance.AddComponent<SummonerManager>().isHeldInMainHand = true;
+            }
+
+            if (isSwingableStaff)
+            {
+                meshFilter.gameObject.AddComponent<SwingableStaffManager>();
             }
 
             if (EquipScript.IsThrowable(player.GetRightItem()) || EquipScript.IsSpearEquipped() || EquipScript.CurrentMainHandEquipType() == EquipType.ThrowObject)
@@ -403,8 +439,18 @@ namespace ValheimVRMod.Patches
                 }
             }
 
-            if (!___m_leftItemInstance || meshFilter == null)
+            if (!___m_leftItemInstance)
             {
+                return;
+            }
+
+            if (meshFilter == null)
+            {
+                // Items with only skinned meshes (e. g. knuckles) are not wielded but their particles still need fixing.
+                if (Player.m_localPlayer == player && !VHVRConfig.NonVrPlayer())
+                {
+                    ParticleFix.maybeFix(___m_leftItemInstance, EquipScript.CurrentOffHandEquipType());
+                }
                 return;
             }
 
@@ -434,15 +480,21 @@ namespace ValheimVRMod.Patches
                 return;
             }
 
-            if (MagicWeaponManager.CanSummonWithOppositeHand())
+            if (SummonerManager.ITEM_NAMES.Contains(Player.m_localPlayer.GetLeftItem()?.m_shared?.m_name))
             {
-                ___m_leftItemInstance.AddComponent<MagicWeaponManager.SummonByMovingHandUpward>();
+                ___m_leftItemInstance.AddComponent<SummonerManager>();
             }
 
             if (StaticObjects.rightHandQuickMenu != null)
             {
                 StaticObjects.rightHandQuickMenu.GetComponent<RightHandQuickMenu>().refreshItems();
                 StaticObjects.leftHandQuickMenu.GetComponent<LeftHandQuickMenu>().refreshItems();
+            }
+
+            if (OrbManager.ITEM_NAMES.Contains(Player.m_localPlayer.GetLeftItem()?.m_shared?.m_name))
+            {
+                ___m_leftItemInstance.AddComponent<OrbManager>().Initialize(Player.m_localPlayer.GetLeftItem(), hash, isDominantHandWeapon: false);
+                return;
             }
 
             switch (EquipScript.CurrentOffHandEquipType())
@@ -463,6 +515,7 @@ namespace ValheimVRMod.Patches
                 case EquipType.Lantern:
                     return;
                 case EquipType.Shield:
+                    meshFilter.gameObject.AddComponent<ShieldBlock>();
                     return;
             }
 
@@ -659,7 +712,7 @@ namespace ValheimVRMod.Patches
                 return;
             }
 
-            // TODO: consider fixing orietantion for dead raiser too.
+            // TODO: consider fixing orietantion for summoners (e.g. the dead raiser) too.
             var equipType = EquipScript.GetEquipTypeFromHash(itemHash);
             if (equipType == EquipType.Tankard)
             {
@@ -678,6 +731,9 @@ namespace ValheimVRMod.Patches
         private bool isLocalPlayer;
         Dictionary<GameObject, int> originalLayers = new Dictionary<GameObject, int>();
         private bool isHidden = false;
+        // Which of the two ways of hiding in Hide() was used, need to ensure that the equipment can be hidden the
+        // other way instead if the user changes the flat screen camera mode.
+        private bool hiddenForThirdPersonCamera = false;
 
         void Awake()
         {
@@ -687,41 +743,62 @@ namespace ValheimVRMod.Patches
 
         void OnRenderObject()
         {
-            if (shouldHide())
+            if (!shouldHide())
             {
-                if (!isHidden)
+                if (isHidden)
                 {
-                    foreach (Renderer renderer in gameObject.GetComponentsInChildren<Renderer>())
-                    {
-                        if (!originalLayers.ContainsKey(renderer.gameObject))
-                        {
-                            originalLayers.Add(renderer.gameObject, renderer.gameObject.layer);
-                        }
-                        if (VHVRConfig.UseThirdPersonCameraOnFlatscreen())
-                        {
-                            // Borrow the UI layer to hide the equipment from the VR camera but keep them shown to the follow camera.
-                            renderer.gameObject.layer = LayerUtils.CHARARCTER_TRIGGER;
-                        }
-                        else
-                        {
-                            renderer.shadowCastingMode = ShadowCastingMode.ShadowsOnly;
-                        }
-                    }
-                    isHidden = true;
+                    Restore();
+                }
+                return;
+            }
+
+            if (isHidden && hiddenForThirdPersonCamera != VHVRConfig.UseThirdPersonCameraOnFlatscreen())
+            {
+                // The flat screen camera mode has changed, therefore the equipment needs to be hidden
+                // the other way instead.
+                Restore();
+            }
+
+            if (!isHidden)
+            {
+                Hide();
+            }
+        }
+
+        private void Hide()
+        {
+            bool useThirdPersonCamera = VHVRConfig.UseThirdPersonCameraOnFlatscreen();
+            foreach (Renderer renderer in gameObject.GetComponentsInChildren<Renderer>())
+            {
+                if (!originalLayers.ContainsKey(renderer.gameObject))
+                {
+                    originalLayers.Add(renderer.gameObject, renderer.gameObject.layer);
+                }
+                if (useThirdPersonCamera)
+                {
+                    // Borrow the UI layer to hide the equipment from the VR camera but keep them shown to the follow camera.
+                    renderer.gameObject.layer = LayerUtils.CHARARCTER_TRIGGER;
+                }
+                else
+                {
+                    renderer.shadowCastingMode = ShadowCastingMode.ShadowsOnly;
                 }
             }
-            else if (isHidden)
+            hiddenForThirdPersonCamera = useThirdPersonCamera;
+            isHidden = true;
+        }
+
+        private void Restore()
+        {
+            foreach (Renderer renderer in gameObject.GetComponentsInChildren<Renderer>())
             {
-                foreach (Renderer renderer in gameObject.GetComponentsInChildren<Renderer>())
+                if (originalLayers.ContainsKey(renderer.gameObject))
                 {
-                    if (originalLayers.ContainsKey(renderer.gameObject))
-                    {
-                        renderer.gameObject.layer = originalLayers[renderer.gameObject];
-                    }
-                    renderer.shadowCastingMode = ShadowCastingMode.On;
+                    renderer.gameObject.layer = originalLayers[renderer.gameObject];
                 }
-                isHidden = false;
+                renderer.shadowCastingMode = ShadowCastingMode.On;
             }
+            isHidden = false;
         }
 
         private bool shouldHide()
