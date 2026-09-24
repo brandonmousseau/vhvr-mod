@@ -652,7 +652,7 @@ namespace ValheimVRMod.Patches {
         {
             bool togglingRun = toggleRun();
             bool runIsTriggered = togglingRun && !lastToggleRunInput;
-            bool crouchApplied = LaserPointerChords.IsHeldWithoutLaser(SteamVR_Actions.valheim_ToggleCrouch);
+            bool crouchApplied = LaserPointerChords.IsHeldWithoutLaserScroll(SteamVR_Actions.valheim_ToggleCrouch);
             if (crouchApplied || !VRPlayer.isMoving || Player.m_localPlayer.m_stamina < 1)
             {
                 // If the player presses crouch or stops moving, then always stop running.
@@ -674,26 +674,26 @@ namespace ValheimVRMod.Patches {
             lastToggleRunInput = togglingRun;
         }
 
-        // Run inputs are ignored on a hand whose laser pointer is up, since its stick is then used for laser
-        // pointer controls such as scrolling. The fallback without run bindings reads the right stick.
+        // Run inputs are ignored on a hand that is scrolling with its laser pointer since the scroll chords may
+        // share the run stick. The fallback without run bindings reads the right stick.
         private static bool toggleRun()
         {
-            if (LaserPointerChords.IsHeldWithoutLaser(SteamVR_Actions.valheim_HoldRun))
+            if (LaserPointerChords.IsHeldWithoutLaserScroll(SteamVR_Actions.valheim_HoldRun))
             {
                 return false;
             }
             return SteamVR_Actions.valheim_ToggleRun.activeBinding ?
-                LaserPointerChords.IsHeldWithoutLaser(SteamVR_Actions.valheim_ToggleRun) :
+                LaserPointerChords.IsHeldWithoutLaserScroll(SteamVR_Actions.valheim_ToggleRun) :
                 (VHVRConfig.ToggleRun() && ZInput_GetJoyRightStickY_Patch.togglingRun &&
-                    !LaserPointerChords.IsLaserActiveFor(SteamVR_Input_Sources.RightHand));
+                    !LaserPointerChords.IsScrollingWithLaser(SteamVR_Input_Sources.RightHand));
         }
 
         private static bool holdRun()
         {
             return SteamVR_Actions.valheim_HoldRun.activeBinding ?
-                LaserPointerChords.IsHeldWithoutLaser(SteamVR_Actions.valheim_HoldRun) :
+                LaserPointerChords.IsHeldWithoutLaserScroll(SteamVR_Actions.valheim_HoldRun) :
                 (!VHVRConfig.ToggleRun() && ZInput_GetJoyRightStickY_Patch.holdingRun &&
-                    !LaserPointerChords.IsLaserActiveFor(SteamVR_Input_Sources.RightHand));
+                    !LaserPointerChords.IsScrollingWithLaser(SteamVR_Input_Sources.RightHand));
         }
     }
 
@@ -766,15 +766,15 @@ namespace ValheimVRMod.Patches {
         static void handleControllerOnlySneak(Player player, ref bool crouch, bool isCrouchToggled)
         {
             bool currentToggleCrouchState = SteamVR_Actions.valheim_ToggleCrouch.state;
-            // Crouch and run inputs are ignored on a hand whose laser pointer is up, since its stick is then used for
-            // laser pointer controls such as scrolling. The raw crouch state is still saved below, so putting the
-            // laser pointer away with the stick held down does not toggle crouch.
+            // Crouch and run inputs are ignored on a hand that is scrolling with its laser pointer, since the scroll
+            // chords may share their stick. The raw crouch state is still saved below, so letting go of the scroll chord
+            // with the stick still held down does not toggle crouch.
             bool crouchToggleTriggered =
-                LaserPointerChords.IsHeldWithoutLaser(SteamVR_Actions.valheim_ToggleCrouch) && !lastUpdateCrouchInput;
+                LaserPointerChords.IsHeldWithoutLaserScroll(SteamVR_Actions.valheim_ToggleCrouch) && !lastUpdateCrouchInput;
             bool standupTriggered =
-                (ZInput_GetJoyRightStickY_Patch.hasRunInput && !LaserPointerChords.IsLaserActiveFor(SteamVR_Input_Sources.RightHand)) ||
-                LaserPointerChords.IsHeldWithoutLaser(SteamVR_Actions.valheim_ToggleRun) ||
-                LaserPointerChords.IsHeldWithoutLaser(SteamVR_Actions.valheim_HoldRun);
+                (ZInput_GetJoyRightStickY_Patch.hasRunInput && !LaserPointerChords.IsScrollingWithLaser(SteamVR_Input_Sources.RightHand)) ||
+                LaserPointerChords.IsHeldWithoutLaserScroll(SteamVR_Actions.valheim_ToggleRun) ||
+                LaserPointerChords.IsHeldWithoutLaserScroll(SteamVR_Actions.valheim_HoldRun);
             if (crouchToggleTriggered)
             {
                 crouch = true;

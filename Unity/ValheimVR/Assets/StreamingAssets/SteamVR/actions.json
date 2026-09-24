@@ -210,6 +210,11 @@
       "requirement": "optional"
     },
     {
+      "name": "/actions/Valheim/in/RemovePiece",
+      "type": "boolean",
+      "requirement": "mandatory"
+    },
+    {
       "name": "/actions/Valheim/out/Haptic",
       "type": "vibration",
       "requirement": "mandatory"
@@ -318,7 +323,8 @@
       "/actions/Valheim/in/SplitStack": "Split stack",
       "/actions/Valheim/in/LeftClick": "Left click",
       "/actions/Valheim/in/ScrollUp": "Scroll up",
-      "/actions/Valheim/in/ScrollDown": "Scroll down"
+      "/actions/Valheim/in/ScrollDown": "Scroll down",
+      "/actions/Valheim/in/RemovePiece": "Remove building piece"
     }
   ]
 }
