@@ -71,23 +71,38 @@ namespace ValheimVRMod.Scripts.Block {
             if (VHVRConfig.UseGrabButtonBlock())
             {
                 _blocking = SteamVR_Actions.valheim_Grab.GetState(VRPlayer.secondaryWeaponHandInputSource);
+                return;
             }
-            else if (VHVRConfig.UseRealisticBlock())
+
+            if (VHVRConfig.UseRealisticBlock() && !hitIntersectsBlockBox(hitData))
             {
-                _blocking = Vector3.Dot(hitData.m_dir, shieldFacing) < -0.25f && hitIntersectsBlockBox(hitData);
-                CheckParryMotion();
+                _blocking = false;
             }
-            else {
-                _blocking = Vector3.Dot(hitData.m_dir, shieldFacing) < -0.5f;
-                CheckParryMotion();
+            else
+            {
+                var shieldFacingAlignment = Vector3.Dot(hitData.m_dir, shieldFacing);
+                var v = GetShieldHandVelocity();
+                _blocking =
+                    v.magnitude > MIN_PARRY_ENTRY_SPEED && Mathf.Abs(Vector3.Dot(hitData.m_dir, Vector3.Normalize(v))) < 0.7f ?
+                    shieldFacingAlignment < 0.5f :
+                    VHVRConfig.UseRealisticBlock() ?
+                    shieldFacingAlignment < -0.25f :
+                    shieldFacingAlignment < -0.5f;
             }
+
+            CheckParryMotion();
+        }
+
+        private Vector3 GetShieldHandVelocity()
+        {
+            PhysicsEstimator handPhysicsEstimator =
+                VRPlayer.isRightHandMainWeaponHand ? VRPlayer.leftHandPhysicsEstimator : VRPlayer.rightHandPhysicsEstimator;
+            return handPhysicsEstimator.GetVelocity();
         }
 
         private void CheckParryMotion() {
-            PhysicsEstimator handPhysicsEstimator =
-                VRPlayer.isRightHandMainWeaponHand ? VRPlayer.leftHandPhysicsEstimator : VRPlayer.rightHandPhysicsEstimator;
-            float l = handPhysicsEstimator.GetLongestLocomotion(/* deltaT= */ 0.4f).magnitude;
-            if (physicsEstimator.GetVelocity().magnitude > MIN_PARRY_ENTRY_SPEED && Vector3.Angle(physicsEstimator.GetVelocity(), shieldFacing) < MAX_PARRY_ANGLE) {
+            Vector3 v = GetShieldHandVelocity();
+            if (v.magnitude > MIN_PARRY_ENTRY_SPEED) {
                 if (!attemptingParry)
                 {
                     blockTimer = 0;
