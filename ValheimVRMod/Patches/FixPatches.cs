@@ -68,9 +68,10 @@ namespace ValheimVRMod.Patches
     // Holds the startup intro until the VR GUI can show it, so that it plays on the UI panel like every
     // other cinematic (see CinematicsManager_Play_Patch) instead of on CinematicsManager's own flat camera.
     // FejdStartup.Start() starts this coroutine as its last statement, well before VR has finished coming
-    // up, and its very first statement hides the main menu and plays the video. Wrapping the returned
-    // iterator therefore also defers hiding the menu, so the player looks at the menu on the VR panel while
-    // VR initializes rather than at nothing.
+    // up. The coroutine is only held back when it is actually going to play the intro (see WillPlayIntro()):
+    // then wrapping the returned iterator also defers hiding the menu, so the player looks at the menu on the
+    // VR panel while VR initializes rather than at nothing. Otherwise vanilla only fades the menu in, which
+    // has nothing to wait for.
     // assembly_valheim is publicized at build time, so nameof() here turns a rename by Iron Gate into a build
     // failure instead of a patch that silently stops applying.
     [HarmonyPatch(typeof(FejdStartup), nameof(FejdStartup.TryPlayIntroCinematic))]
@@ -81,13 +82,28 @@ namespace ValheimVRMod.Patches
         // ValheimVRMod.InitializeVRAndCreateRig() then holds the VR rig back until it is over.
         private const float TIMEOUT_SECONDS = 10f;
 
-        static void Postfix(ref IEnumerator __result)
+        static void Postfix(FejdStartup __instance, ref IEnumerator __result)
         {
-            if (VHVRConfig.NonVrPlayer() || __result == null)
+            if (VHVRConfig.NonVrPlayer() || __result == null || !WillPlayIntro(__instance))
             {
                 return;
             }
             __result = PlayOnceVrIsReady(__result);
+        }
+
+        // Mirrors the conditions under which FejdStartup.TryPlayIntroCinematic() plays the intro. Everything else it
+        // does (e.g. just fading the menu in when the player has turned the intro off in the vanilla settings) has
+        // nothing to do with VR, and holding it back would leave the start menu blank until the VR GUI is up.
+        // Should this drift from vanilla and miss an intro, the intro plays flat instead, which
+        // ValheimVRMod.InitializeVRAndCreateRig() already waits out before creating the VR rig.
+        private static bool WillPlayIntro(FejdStartup fejdStartup)
+        {
+            return !PlatformPrefs.GetBool("SkipIntroCinematic") &&
+                fejdStartup.m_queuedJoinServer == ServerJoinData.None &&
+                !MatchmakingManager.HasPendingInvite() &&
+                !Game.m_hasStartedOnce &&
+                CinematicsManager.s_instance != null &&
+                CinematicsManager.s_instance.m_introOnStartup;
         }
 
         private static IEnumerator PlayOnceVrIsReady(IEnumerator playIntroCinematic)
