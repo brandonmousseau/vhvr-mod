@@ -5,6 +5,7 @@ using ValheimVRMod.Patches;
 using ValheimVRMod.Utilities;
 using Valve.VR;
 using Valve.VR.Extras;
+using Valve.VR.InteractionSystem;
 using System.Collections.Generic;
 
 using static ValheimVRMod.Utilities.LogUtils;
@@ -85,6 +86,15 @@ namespace ValheimVRMod.VRCore.UI
         private static readonly Vector3 DESIRED_HAND_ATTACHED_LOCAL_POSITION = new Vector3(0f, 0.0625f, 0.125f);
         private static readonly Quaternion DESIRED_ROTATION_ON_LEFT_HAND = Quaternion.Euler(75, 270, 300);
         private static readonly Quaternion DESIRED_ROTATION_ON_RIGHT_HAND = Quaternion.Euler(75, 90, 60);
+        private static readonly string HAND_PANEL_RENDER_ORIGIN_NAME = "VHVRHandPanelRenderOrigin";
+        private static readonly string HAND_PANEL_PROXY_NAME = "VHVRHandPanelProxy";
+        private static readonly string LASER_PROXY_NAME = "VHVRLaserProxy";
+        // How far the real panel may be from its place on the hand to still count as held, see placeHandPanelProxy().
+        private const float HAND_PANEL_PROXY_MAX_DISTANCE_FROM_HAND = 0.1f;
+        // How far from the world origin, along any axis, the rig has to be for the panel to be drawn at the origin
+        // instead, see updateUiPanelCameraAnchoring(), and how much closer it has to come back before it is not.
+        private const float PANEL_ORIGIN_ANCHOR_MIN_DISTANCE = 200f;
+        private const float PANEL_ORIGIN_ANCHOR_HYSTERESIS = 20f;
         // The angle difference that is acceptable for the GUI being
         // considered to be "centered"
         private static readonly float RECENTERED_TOLERANCE = 1f;
@@ -103,6 +113,22 @@ namespace ValheimVRMod.VRCore.UI
         private bool USING_OVERLAY = true;
 
         private Camera _uiPanelCamera;
+        // Draws the hand attached panel near the world origin, see updateUiPanelCameraAnchoring().
+        private Transform _handPanelRenderOrigin;
+        private Renderer _handPanelProxy;
+        // The UI panel camera while it is moved under _handPanelRenderOrigin, and its local pose under the VR
+        // camera to restore afterwards.
+        private Camera anchoredUiPanelCamera;
+        private Vector3 uiPanelCameraLocalPosition;
+        private Quaternion uiPanelCameraLocalRotation;
+        private Vector3 uiPanelCameraLocalScale;
+        private int lastHandPanelProxyPlacementFrame = -1;
+        // Copies of the left and right laser beams drawn at the origin along with the panel, and the real beams.
+        private readonly Renderer[] _laserProxies = new Renderer[2];
+        private readonly Renderer[] realLasers = new Renderer[2];
+        private readonly bool[] isLaserProxyShown = new bool[2];
+        // What onCameraPreCull() hid from the camera being rendered, for onCameraPostRender() to show again.
+        private readonly List<Renderer> hiddenFromCurrentCamera = new List<Renderer>();
         private Camera _guiCamera;
         private List<Canvas> _guiCanvases = new List<Canvas>();
         private Canvas _cursorGuiCanvas;
@@ -164,6 +190,8 @@ namespace ValheimVRMod.VRCore.UI
 
         public void OnEnable()
         {
+            Camera.onPreCull += onCameraPreCull;
+            Camera.onPostRender += onCameraPostRender;
             creatGuiCamera();
             if (USING_OVERLAY)
             {
@@ -310,10 +338,15 @@ namespace ValheimVRMod.VRCore.UI
             // Needs to go into LateUpdate to ensure it runs after VRIK calculations
             // since the model HumanBodyBones are being referenced
             VRHud.instance.Update();
+            updateUiPanelCameraAnchoring();
         }
 
         public void OnDisable()
         {
+            Camera.onPreCull -= onCameraPreCull;
+            Camera.onPostRender -= onCameraPostRender;
+            showHiddenRenderers();
+            setUiPanelCameraAnchored(false);
             destroyOverlay();
         }
 
@@ -707,8 +740,11 @@ namespace ValheimVRMod.VRCore.UI
                 return;
             }
 
-            var localDir = _uiPanel.InverseTransformVector(VRPlayer.activePointer.rayDirection * Vector3.forward);
-            var localStart = _uiPanel.InverseTransformPoint(VRPlayer.activePointer.rayStartingPosition);
+            if (!tryGetPreciseRayInHeldPanel(VRPlayer.activePointer, out Vector3 localStart, out Vector3 localDir))
+            {
+                localDir = _uiPanel.InverseTransformVector(VRPlayer.activePointer.rayDirection * Vector3.forward);
+                localStart = _uiPanel.InverseTransformPoint(VRPlayer.activePointer.rayStartingPosition);
+            }
             // This is more precise than using raycast hit position especially when the player is moving fast
             var correctedLocalHit = localStart - localDir * (localStart.z / localDir.z);
 
@@ -850,18 +886,363 @@ namespace ValheimVRMod.VRCore.UI
                 return;
             }
 
-            // Use off-hand (non-dominant hand) to hold the inventory panel
-            if (VHVRConfig.LeftHanded())
+            Transform hand = getPanelHoldingHand().transform;
+            _uiPanel.SetPositionAndRotation(
+                hand.TransformPoint(DESIRED_HAND_ATTACHED_LOCAL_POSITION),
+                hand.rotation * getPanelRotationOnHand());
+        }
+
+        // Use off-hand (non-dominant hand) to hold the inventory panel
+        private static Hand getPanelHoldingHand()
+        {
+            return VHVRConfig.LeftHanded() ? VRPlayer.rightHand : VRPlayer.leftHand;
+        }
+
+        private static Quaternion getPanelRotationOnHand()
+        {
+            return VHVRConfig.LeftHanded() ? DESIRED_ROTATION_ON_RIGHT_HAND : DESIRED_ROTATION_ON_LEFT_HAND;
+        }
+
+        // Far from the world origin, e. g. at the edge of the world some 10 km out, world space positions are only
+        // precise to about a millimeter. A panel held 30 cm from the eyes visibly shakes from that, as the panel,
+        // the camera and the panel's vertices on the GPU all snap to that grid independently, and no amount of
+        // precision in local coordinates helps since everything is drawn through world space. So while far from the
+        // origin, the UI panel camera and a copy of the panel are moved under a stand-in for the VR camera rig at
+        // the world origin, at their poses relative to the rig. For the panel held in the hand, those are small and
+        // keep their full precision. A panel placed some other way is further away, where the error it keeps from
+        // its world space pose does not show. The real panel stays where it is, for the laser pointers to hit and
+        // for the flat screen cameras to show.
+        //
+        // The UI panel camera is only ever reparented here, between frames, and no camera is ever added, enabled
+        // or disabled for this: doing that to an XR camera while the cameras are rendering can leave another
+        // camera with the headset's eye projection, flipping the whole view upside down.
+        private void updateUiPanelCameraAnchoring()
+        {
+            Camera vrCam = VRPlayer.vrCam;
+            Transform rig = vrCam == null ? null : vrCam.transform.parent;
+            if (anchoredUiPanelCamera != null && anchoredUiPanelCamera != _uiPanelCamera)
             {
-                _uiPanel.SetPositionAndRotation(
-                    VRPlayer.rightHand.transform.TransformPoint(DESIRED_HAND_ATTACHED_LOCAL_POSITION),
-                    VRPlayer.rightHand.transform.rotation * DESIRED_ROTATION_ON_RIGHT_HAND);
+                // The UI panel camera was replaced, the old one is not to be restored any more.
+                anchoredUiPanelCamera = null;
+            }
+
+            // Some leeway before going back, so that it does not keep switching around the boundary.
+            float minDistance = anchoredUiPanelCamera != null ?
+                PANEL_ORIGIN_ANCHOR_MIN_DISTANCE - PANEL_ORIGIN_ANCHOR_HYSTERESIS : PANEL_ORIGIN_ANCHOR_MIN_DISTANCE;
+            // The settings for the camera locked HUD use the UI panel camera's transform as their reference.
+            bool anchor =
+                !USING_OVERLAY && !SettingCallback.configRunning &&
+                _uiPanel != null && _uiPanelCamera != null && rig != null &&
+                getMaxAbsCoordinate(rig.position) > minDistance &&
+                tryGetPoseInAncestor(vrCam.transform, rig, out _, out _, out _) &&
+                ensureHandPanelRenderer();
+            setUiPanelCameraAnchored(anchor);
+        }
+
+        private void setUiPanelCameraAnchored(bool anchor)
+        {
+            if (anchor == (anchoredUiPanelCamera != null) || _uiPanelCamera == null)
+            {
+                return;
+            }
+
+            Camera vrCam = VRPlayer.vrCam;
+            Transform cameraTransform = _uiPanelCamera.transform;
+            if (anchor)
+            {
+                anchoredUiPanelCamera = _uiPanelCamera;
+                uiPanelCameraLocalPosition = cameraTransform.localPosition;
+                uiPanelCameraLocalRotation = cameraTransform.localRotation;
+                uiPanelCameraLocalScale = cameraTransform.localScale;
+                cameraTransform.SetParent(_handPanelRenderOrigin, false);
+                cameraTransform.localScale = Vector3.one;
+                placeHandPanelProxy();
             }
             else
             {
-                _uiPanel.SetPositionAndRotation(
-                    VRPlayer.leftHand.transform.TransformPoint(DESIRED_HAND_ATTACHED_LOCAL_POSITION),
-                    VRPlayer.leftHand.transform.rotation * DESIRED_ROTATION_ON_LEFT_HAND);
+                anchoredUiPanelCamera = null;
+                cameraTransform.SetParent(vrCam == null ? null : vrCam.transform, false);
+                cameraTransform.localPosition = uiPanelCameraLocalPosition;
+                cameraTransform.localRotation = uiPanelCameraLocalRotation;
+                cameraTransform.localScale = uiPanelCameraLocalScale;
+            }
+        }
+
+        // Moves the UI panel camera and the copy of the panel under the origin stand-in to where the VR camera and
+        // the real panel are in the rig. Called once a frame before the cameras render, when the head and hand
+        // poses for the frame are final, as well as right after anchoring.
+        private void placeHandPanelProxy()
+        {
+            lastHandPanelProxyPlacementFrame = Time.frameCount;
+            Camera vrCam = VRPlayer.vrCam;
+            if (anchoredUiPanelCamera == null || _uiPanel == null || _handPanelRenderOrigin == null ||
+                _handPanelProxy == null || vrCam == null || vrCam.transform.parent == null)
+            {
+                return;
+            }
+            Transform rig = vrCam.transform.parent;
+            if (!tryGetPoseInAncestor(vrCam.transform, rig, out Vector3 cameraPosition, out Quaternion cameraRotation, out _))
+            {
+                return;
+            }
+
+            Vector3 rigScale = rig.lossyScale;
+            _handPanelRenderOrigin.SetPositionAndRotation(Vector3.zero, rig.rotation);
+            _handPanelRenderOrigin.localScale = rigScale;
+            anchoredUiPanelCamera.transform.localPosition = cameraPosition;
+            anchoredUiPanelCamera.transform.localRotation = cameraRotation;
+
+            Transform proxy = _handPanelProxy.transform;
+            if (tryGetHeldPanelPoseInRig(rig, out Vector3 heldPanelPosition, out Quaternion heldPanelRotation))
+            {
+                proxy.localPosition = heldPanelPosition;
+                proxy.localRotation = heldPanelRotation;
+            }
+            else
+            {
+                // Wherever the real panel is instead, only as precise as its world space pose.
+                proxy.localPosition = rig.InverseTransformPoint(_uiPanel.position);
+                proxy.localRotation = Quaternion.Inverse(rig.rotation) * _uiPanel.rotation;
+            }
+            // The real panel has no parent, so its local scale is its world scale.
+            Vector3 panelScale = _uiPanel.localScale;
+            proxy.localScale = new Vector3(panelScale.x / rigScale.x, panelScale.y / rigScale.y, panelScale.z / rigScale.z);
+            Renderer panelRenderer = _uiPanel.GetComponent<Renderer>();
+            if (panelRenderer != null)
+            {
+                _handPanelProxy.sharedMaterial = panelRenderer.sharedMaterial;
+            }
+
+            placeLaserProxy(0, VRPlayer.leftPointer, rig);
+            placeLaserProxy(1, VRPlayer.rightPointer, rig);
+        }
+
+        // The panel's pose in the rig, composed from the hand's local pose, while it is held in the hand. False if
+        // it is not, e. g. while the GUI position is locked. The real panel is only moved after the first camera has
+        // rendered, so it may trail the hand a little.
+        private bool tryGetHeldPanelPoseInRig(Transform rig, out Vector3 position, out Quaternion rotation)
+        {
+            position = Vector3.zero;
+            rotation = Quaternion.identity;
+            Hand hand = getPanelHoldingHand();
+            if (!attachedToHand || hand == null || _uiPanel == null ||
+                Vector3.Distance(_uiPanel.position, hand.transform.TransformPoint(DESIRED_HAND_ATTACHED_LOCAL_POSITION))
+                    > HAND_PANEL_PROXY_MAX_DISTANCE_FROM_HAND ||
+                !tryGetPoseInAncestor(hand.transform, rig, out Vector3 handPosition, out Quaternion handRotation, out Vector3 handScale))
+            {
+                return false;
+            }
+            position = handPosition + handRotation * Vector3.Scale(handScale, DESIRED_HAND_ATTACHED_LOCAL_POSITION);
+            rotation = handRotation * getPanelRotationOnHand();
+            return true;
+        }
+
+        // The laser beams need the same treatment as the panel: they are only a couple of millimeters thick and end
+        // on the panel, so a beam drawn at its world space pose visibly shakes against it.
+        private void placeLaserProxy(int index, SteamVR_LaserPointer laser, Transform rig)
+        {
+            isLaserProxyShown[index] = false;
+            if (laser == null || laser.pointer == null || !laser.pointer.activeInHierarchy)
+            {
+                return;
+            }
+            Renderer laserRenderer = laser.pointer.GetComponent<Renderer>();
+            if (laserRenderer == null || !laserRenderer.enabled ||
+                !tryGetPoseInAncestor(laser.pointer.transform, rig, out Vector3 position, out Quaternion rotation, out Vector3 scale))
+            {
+                return;
+            }
+            if (_laserProxies[index] == null)
+            {
+                _laserProxies[index] = createProxyRenderer(PrimitiveType.Cube, LASER_PROXY_NAME);
+            }
+            Transform proxy = _laserProxies[index].transform;
+            proxy.localPosition = position;
+            proxy.localRotation = rotation;
+            proxy.localScale = scale;
+            _laserProxies[index].sharedMaterial = laserRenderer.sharedMaterial;
+            realLasers[index] = laserRenderer;
+            isLaserProxyShown[index] = true;
+        }
+
+        // The laser pointer ray in the local space of the panel held in the hand, composed from the local poses of
+        // the pointer and the hand in the rig, rather than from their world space poses. False unless the panel is
+        // held in the hand while it is being drawn at the origin.
+        private bool tryGetPreciseRayInHeldPanel(SteamVR_LaserPointer laser, out Vector3 localStart, out Vector3 localDirection)
+        {
+            localStart = Vector3.zero;
+            localDirection = Vector3.forward;
+            Camera vrCam = VRPlayer.vrCam;
+            if (anchoredUiPanelCamera == null || laser == null || laser.holder == null || _uiPanel == null ||
+                vrCam == null || vrCam.transform.parent == null)
+            {
+                return false;
+            }
+            Transform rig = vrCam.transform.parent;
+            if (!tryGetHeldPanelPoseInRig(rig, out Vector3 panelPosition, out Quaternion panelRotation) ||
+                !tryGetPoseInAncestor(laser.holder.transform, rig, out Vector3 rayStart, out Quaternion rayRotation, out _))
+            {
+                return false;
+            }
+            Vector3 rigScale = rig.lossyScale;
+            Vector3 panelScale = _uiPanel.localScale;
+            Vector3 panelScaleInRig = new Vector3(panelScale.x / rigScale.x, panelScale.y / rigScale.y, panelScale.z / rigScale.z);
+            Quaternion toPanel = Quaternion.Inverse(panelRotation);
+            localStart = divide(toPanel * (rayStart - panelPosition), panelScaleInRig);
+            localDirection = divide(toPanel * (rayRotation * Vector3.forward), panelScaleInRig);
+            return true;
+        }
+
+        private static Vector3 divide(Vector3 a, Vector3 b)
+        {
+            return new Vector3(a.x / b.x, a.y / b.y, a.z / b.z);
+        }
+
+        private static float getMaxAbsCoordinate(Vector3 position)
+        {
+            return Mathf.Max(Mathf.Abs(position.x), Mathf.Abs(position.y), Mathf.Abs(position.z));
+        }
+
+        // The pose of the transform in the space of an ancestor, composed from the local poses in between rather
+        // than derived from the world space ones, so that it stays precise however far the ancestor is from the
+        // world origin. False if the ancestor is not an ancestor.
+        private static bool tryGetPoseInAncestor(
+            Transform transform, Transform ancestor, out Vector3 position, out Quaternion rotation, out Vector3 scale)
+        {
+            position = Vector3.zero;
+            rotation = Quaternion.identity;
+            scale = Vector3.one;
+            for (Transform current = transform; current != ancestor; current = current.parent)
+            {
+                if (current == null)
+                {
+                    return false;
+                }
+                position = current.localPosition + current.localRotation * Vector3.Scale(current.localScale, position);
+                rotation = current.localRotation * rotation;
+                scale = Vector3.Scale(current.localScale, scale);
+            }
+            return true;
+        }
+
+        private bool ensureHandPanelRenderer()
+        {
+            // Scene objects, so a scene load destroys them and they are made again.
+            if (_handPanelRenderOrigin == null)
+            {
+                _handPanelRenderOrigin = new GameObject(HAND_PANEL_RENDER_ORIGIN_NAME).transform;
+            }
+            if (_handPanelProxy == null)
+            {
+                _handPanelProxy = createProxyRenderer(PrimitiveType.Quad, HAND_PANEL_PROXY_NAME);
+            }
+            return true;
+        }
+
+        private Renderer createProxyRenderer(PrimitiveType primitive, string name)
+        {
+            GameObject proxy = GameObject.CreatePrimitive(primitive);
+            proxy.name = name;
+            // Not for the laser pointers to hit: they aim at the real objects.
+            Destroy(proxy.GetComponent<Collider>());
+            proxy.layer = LayerUtils.getUiPanelLayer();
+            proxy.transform.SetParent(_handPanelRenderOrigin, false);
+            Renderer renderer = proxy.GetComponent<Renderer>();
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+            // Only ever shown to the anchored UI panel camera, see onCameraPreCull(). Being on the UI panel layer,
+            // it would otherwise show up near the world origin for every other camera that draws that layer.
+            renderer.enabled = false;
+            return renderer;
+        }
+
+        // Culling happens per camera after onPreCull, so a renderer toggled here only affects the camera about to
+        // render. It is restored before the next camera culls, and not only by onCameraPostRender(): that is not
+        // reliably called for the XR cameras rendering to the headset, which would leave the real panel hidden from
+        // the flat screen cameras rendering after them.
+        private void onCameraPreCull(Camera camera)
+        {
+            showHiddenRenderers();
+            if (anchoredUiPanelCamera == null)
+            {
+                return;
+            }
+            bool isAnchoredUiPanelCamera = camera == anchoredUiPanelCamera;
+            // The headset cameras that may draw the real laser beams, whatever layer those are on.
+            bool isVrCamera = camera == VRPlayer.vrCam;
+            bool isHandsCamera = camera.name == CameraUtils.HANDS_CAMERA;
+            if (!isVrCamera && !isHandsCamera && !isAnchoredUiPanelCamera)
+            {
+                return;
+            }
+            // Once a frame, before the first of these cameras renders (normally the VR camera).
+            if (lastHandPanelProxyPlacementFrame != Time.frameCount)
+            {
+                placeHandPanelProxy();
+            }
+
+            for (int i = 0; i < _laserProxies.Length; i++)
+            {
+                if (!isLaserProxyShown[i] || _laserProxies[i] == null || realLasers[i] == null)
+                {
+                    continue;
+                }
+                if (isAnchoredUiPanelCamera)
+                {
+                    _laserProxies[i].enabled = true;
+                }
+                else
+                {
+                    hide(realLasers[i]);
+                }
+            }
+
+            if (!isAnchoredUiPanelCamera || _uiPanel == null || _handPanelProxy == null)
+            {
+                return;
+            }
+            Renderer panelRenderer = _uiPanel.GetComponent<Renderer>();
+            if (panelRenderer.enabled && _uiPanel.gameObject.activeInHierarchy)
+            {
+                hide(panelRenderer);
+                _handPanelProxy.enabled = true;
+            }
+        }
+
+        private void onCameraPostRender(Camera camera)
+        {
+            showHiddenRenderers();
+        }
+
+        private void hide(Renderer renderer)
+        {
+            if (renderer.enabled)
+            {
+                renderer.enabled = false;
+                hiddenFromCurrentCamera.Add(renderer);
+            }
+        }
+
+        private void showHiddenRenderers()
+        {
+            foreach (Renderer renderer in hiddenFromCurrentCamera)
+            {
+                if (renderer != null)
+                {
+                    renderer.enabled = true;
+                }
+            }
+            hiddenFromCurrentCamera.Clear();
+            if (_handPanelProxy != null)
+            {
+                _handPanelProxy.enabled = false;
+            }
+            foreach (Renderer laserProxy in _laserProxies)
+            {
+                if (laserProxy != null)
+                {
+                    laserProxy.enabled = false;
+                }
             }
         }
 
