@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.TextCore;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using Valve.VR;
@@ -110,7 +111,7 @@ namespace ValheimVRMod.Scripts
             }
 
             Character character = collider.GetComponentInParent<Character>();
-            if (!LayerUtils.IsCharacterLayer(collider.gameObject.layer) && !WeaponCollision.IsTrainingDummy(character))
+            if (!IsCharacterLayer(collider.gameObject.layer) && !WeaponCollision.IsTrainingDummy(character))
             {
                 character = null;
             }
@@ -150,7 +151,7 @@ namespace ValheimVRMod.Scripts
                     !Player.m_localPlayer.m_inCraftingStation) {
                     Character character = collider.GetComponentInParent<Character>();
                     if (character == null ||
-                        (!LayerUtils.IsCharacterLayer(collider.gameObject.layer) && !WeaponCollision.IsTrainingDummy(character)) ||
+                        (!IsCharacterLayer(collider.gameObject.layer) && !WeaponCollision.IsTrainingDummy(character)) ||
                         WeaponCollision.IsFriendly(character))
                     {
                         return;
@@ -619,6 +620,13 @@ namespace ValheimVRMod.Scripts
                 isRightHand ^ ShouldSecondaryKnifeHoldInverse ?
                 Vector3.Reflect(colliderData.pos, Vector3.right) :
                 colliderData.pos;
+        }
+
+        // A character's main collider, whichever client owns the character.
+        private static bool IsCharacterLayer(int layer)
+        {
+            // CHARACTER OR CHARACTER_NET
+            return layer == LayerUtils.CHARACTER || layer == 26;
         }
     }
 }
