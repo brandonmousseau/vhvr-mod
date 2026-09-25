@@ -31,6 +31,10 @@ namespace ValheimVRMod.Utilities
         private Vector3 targetVelocity;
         private bool followsEyesDirectly;
 
+        // Whether this camera looks at the player character from outside, as opposed to following the eyes
+        // directly, in which case it should show what the headset shows.
+        public bool ViewsCharacterFromOutside { get { return !followsEyesDirectly; } }
+
         void FixedUpdate()
         {
             if (camera == null)
