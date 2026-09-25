@@ -153,16 +153,17 @@ namespace ValheimVRMod.Scripts
                 return false;
             }
 
-            // IsTamed() and IsAggravated() rather than the m_tamed and m_aggravated fields: on a character owned by
-            // another client the fields are only refreshed from the ZDO by those accessors.
-            if (character.IsTamed() || character.gameObject == Player.m_localPlayer.gameObject)
+            // IsTamed(), IsAggravated() and IsPVPEnabled() rather than the m_tamed, m_aggravated and m_pvp fields: on
+            // a character owned by another client the fields are only refreshed from the ZDO by those accessors, and
+            // Player.m_pvp not even that, so it stays false on every other player.
+            if (Player.m_localPlayer == null || character.IsTamed() || character.gameObject == Player.m_localPlayer.gameObject)
             {
                 return true;
             }
 
             if (character.IsPlayer())
             {
-                return Player.m_localPlayer == null || !Player.m_localPlayer.m_pvp || !character.GetComponent<Player>().m_pvp;
+                return !Player.m_localPlayer.IsPVPEnabled() || !character.IsPVPEnabled();
             }
 
             return character.m_baseAI != null && !character.m_baseAI.IsAggravated() && character.m_faction == Character.Faction.Dverger;
@@ -199,7 +200,7 @@ namespace ValheimVRMod.Scripts
 
         private void MaybeStabCharacter(Collider collider) {
 
-            if (collider.gameObject.layer != LayerUtils.CHARACTER)
+            if (!LayerUtils.IsCharacterLayer(collider.gameObject.layer))
             {
                 return;
             }

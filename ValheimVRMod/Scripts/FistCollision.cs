@@ -110,7 +110,7 @@ namespace ValheimVRMod.Scripts
             }
 
             Character character = collider.GetComponentInParent<Character>();
-            if (collider.gameObject.layer != LayerUtils.CHARACTER && !WeaponCollision.IsTrainingDummy(character))
+            if (!LayerUtils.IsCharacterLayer(collider.gameObject.layer) && !WeaponCollision.IsTrainingDummy(character))
             {
                 character = null;
             }
@@ -150,7 +150,7 @@ namespace ValheimVRMod.Scripts
                     !Player.m_localPlayer.m_inCraftingStation) {
                     Character character = collider.GetComponentInParent<Character>();
                     if (character == null ||
-                        (collider.gameObject.layer != LayerUtils.CHARACTER && !WeaponCollision.IsTrainingDummy(character)) ||
+                        (!LayerUtils.IsCharacterLayer(collider.gameObject.layer) && !WeaponCollision.IsTrainingDummy(character)) ||
                         WeaponCollision.IsFriendly(character))
                     {
                         return;
