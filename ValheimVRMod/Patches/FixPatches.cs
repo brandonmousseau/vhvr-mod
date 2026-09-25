@@ -50,6 +50,30 @@ namespace ValheimVRMod.Patches
         }
     }
 
+    // Catapult.CollectLaunchCharacters() adds a character once per collider it finds on the character layer, and the
+    // VR hand block boxes (see FistBlock) are on that layer under the local player. A repeated SetTempParent() would
+    // store the catapult arm as the parent to return to, so ReleaseTempParent() would leave the player attached to the
+    // arm until relogging, carried along by every later shot.
+    [HarmonyPatch(typeof(Character), nameof(Character.SetTempParent))]
+    class PatchSetTempParentOnce
+    {
+        static bool Prefix(Character __instance, Transform t)
+        {
+            return __instance.transform.parent != t;
+        }
+    }
+
+    [HarmonyPatch(typeof(Catapult), "CollectLaunchCharacters")]
+    class PatchCatapultCollectLaunchCharactersOnce
+    {
+        // Launch each character once, not once per collider, see PatchSetTempParentOnce.
+        static void Postfix(List<Character> ___m_launchCharacters)
+        {
+            var seen = new HashSet<Character>();
+            ___m_launchCharacters.RemoveAll(character => !seen.Add(character));
+        }
+    }
+
     [HarmonyPatch(typeof(UpscaledFrameBuffer), nameof(UpscaledFrameBuffer.UpdateCurrentRenderScale))]
     class PatchUpdateCurrentRenderScale
     {

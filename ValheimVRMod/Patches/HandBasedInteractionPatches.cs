@@ -127,6 +127,12 @@ namespace ValheimVRMod.Patches
                 {
                     return;
                 }
+                // Nor while aiming a weapon, whose triggers then shoot or swing-launch, like the right hand's
+                // interact in VRControls.
+                if (LocalWeaponWield.isAiming)
+                {
+                    return;
+                }
                 if (!SteamVR_Actions.valheim_Use.GetStateDown(SteamVR_Input_Sources.LeftHand))
                 {
                     if (SteamVR_Actions.valheim_Use.GetState(SteamVR_Input_Sources.LeftHand) && leftHover)

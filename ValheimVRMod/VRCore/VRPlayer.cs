@@ -140,6 +140,8 @@ namespace ValheimVRMod.VRCore
         private Camera _handsCam;
         private Camera _skyboxCam;
         private Camera _thirdPersonCamera;
+        // Set once _vrCam has rendered a frame to the headset, see enableThirdPersonCamera().
+        private bool _vrCamHasRenderedStereo;
 
         //Roomscale movement variables
         private Transform _vrCameraRig;
@@ -499,6 +501,7 @@ namespace ValheimVRMod.VRCore
 
         void OnDestroy()
         {
+            Camera.onPostRender -= OnCameraPostRender;
             if (_dodgingRoom != null)
             {
                 Destroy(_dodgingRoom.gameObject);
@@ -562,13 +565,6 @@ namespace ValheimVRMod.VRCore
                     _thirdPersonCamera = null;
                 }
                 return;
-            }
-
-            if (attachedToPlayer)
-            {
-                // The death that made enableThirdPersonCamera() wait for the VR camera to be attached
-                // to the player again is over.
-                PlayerOnDeathPatch.hasCharacterDied = false;
             }
 
             if (_thirdPersonCamera != null &&
@@ -1043,6 +1039,10 @@ namespace ValheimVRMod.VRCore
             _instance.SetActive(true);
             vrCam.enabled = true;
             _vrCam = vrCam;
+            // A rebuilt VR camera has to render to the headset again before the flat screen camera may copy it.
+            _vrCamHasRenderedStereo = false;
+            Camera.onPostRender -= OnCameraPostRender;
+            Camera.onPostRender += OnCameraPostRender;
             _vrCameraRig = vrCam.transform.parent;
             gesturedLocomotionManager = new GesturedLocomotionManager();
 
@@ -1077,23 +1077,47 @@ namespace ValheimVRMod.VRCore
             _handsCam = handsCamera;
         }
 
+        private void OnCameraPostRender(Camera camera)
+        {
+            if (camera == null || camera != _vrCam || !camera.stereoEnabled)
+            {
+                return;
+            }
+            _vrCamHasRenderedStereo = true;
+            Camera.onPostRender -= OnCameraPostRender;
+        }
+
         private void enableThirdPersonCamera()
         {
-            Camera vrCam = CameraUtils.getCamera(CameraUtils.VR_CAMERA);
-            if (vrCam == null || vrCam.gameObject == null)
+            // Use the VR camera only once enableVrCamera() has set it up and XR has rendered it to the headset.
+            // Looking it up by name instead would find the SteamVR prefab's camera as soon as the prefab is
+            // instantiated, and Update() runs this before enableCameras(), so the flat screen camera could be copied
+            // from a half built VR camera.
+            Camera vrCam = _vrCam;
+            if (vrCam == null || !vrCam.enabled || !vrCam.stereoEnabled || !_vrCamHasRenderedStereo)
             {
                 return;
             }
 
-            if (PlayerOnDeathPatch.hasCharacterDied && !attachedToPlayer)
+            string sceneName = SceneManager.GetActiveScene().name;
+            if (sceneName != START_SCENE && !attachedToPlayer)
             {
-                // Do not enable follow camera until the VRCamera is attached to the player after character death,
-                // otherwise the projection matrix of the VRCamera might become wrong.
+                // Do not create the flat screen camera in the world until the VR camera is attached to the player,
+                // as a precaution against the projection matrix of the VR camera becoming wrong. This window opens both while spawning after death and at game start: the flat screen
+                // camera is a scene object, so loading the world destroys the one created in the main menu, and
+                // Update() would otherwise rebuild it right away while the player is still spawning. An existing
+                // camera is left alone when the VR camera detaches (e.g. in bed or in a cutscene), only creating
+                // one waits. The main menu still gets one, looking at the UI panel (see ThirdPersonCameraUpdater).
                 return;
             }
 
-            LogDebug("Enabling third person camera");
-            _thirdPersonCamera = new GameObject(CameraUtils.FOLLOW_CAMERA).AddComponent<Camera>();
+            LogDebug("Enabling third person camera (scene: " + sceneName + ")");
+            // Built on an inactive object so the camera is never an enabled stereo camera, which is what
+            // AddComponent<Camera>() and CopyFrom(vrCam) would otherwise leave it as until stereoTargetEye is set
+            // below. It is activated once fully set up.
+            var thirdPersonCameraObject = new GameObject(CameraUtils.FOLLOW_CAMERA);
+            thirdPersonCameraObject.SetActive(false);
+            _thirdPersonCamera = thirdPersonCameraObject.AddComponent<Camera>();
             _thirdPersonCamera.CopyFrom(vrCam);
             // CopyFrom also copies vrCam's projection matrix as an explicitly set one, i. e. the off-axis XR eye
             // projection, carrying the eye texture's vertical convention. Unlike the hands and world space UI
@@ -1102,6 +1126,12 @@ namespace ValheimVRMod.VRCore
             // it lets the camera derive its own projection from the field of view and aspect set further down,
             // both of which an explicitly set projection matrix would otherwise override.
             _thirdPersonCamera.ResetProjectionMatrix();
+            // The same goes for the other matrices CopyFrom can carry over from the XR camera.
+            _thirdPersonCamera.ResetWorldToCameraMatrix();
+            _thirdPersonCamera.ResetCullingMatrix();
+            _thirdPersonCamera.ResetStereoProjectionMatrices();
+            _thirdPersonCamera.ResetStereoViewMatrices();
+            _thirdPersonCamera.targetTexture = null;
             _thirdPersonCamera.depth = 4;
             bool isStabilizedCamera = VHVRConfig.UseStabilizedCameraOnFlatscreen();
             if (!isStabilizedCamera)
@@ -1127,6 +1157,7 @@ namespace ValheimVRMod.VRCore
             // The updaters keep applying this as well, so that changing the setting takes effect immediately.
             _thirdPersonCamera.fieldOfView = VHVRConfig.FlatscreenFieldOfView();
             _thirdPersonCamera.ResetAspect();
+            thirdPersonCameraObject.SetActive(true);
         }
 
         // Search for the original skybox cam, if found, copy it, disable it,
