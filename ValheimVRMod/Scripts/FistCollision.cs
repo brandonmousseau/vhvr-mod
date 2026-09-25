@@ -120,7 +120,8 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            if (character == null || character.gameObject == Player.m_localPlayer.gameObject)
+            if (character == null || character.gameObject == Player.m_localPlayer.gameObject ||
+                WeaponCollision.IsFriendly(character))
             {
                 return;
             }
@@ -155,6 +156,12 @@ namespace ValheimVRMod.Scripts
                     {
                         return;
                     }
+                }
+                else if (IsFriendlyCharacter(collider))
+                {
+                    // Pressing both trigger and grip allows punching anything, but not a friendly character, e. g.
+                    // another player while either of the two has PVP off.
+                    return;
                 }
                 tryHitCollider(collider, requireJab: false);
                 return;
@@ -619,6 +626,14 @@ namespace ValheimVRMod.Scripts
                 isRightHand ^ ShouldSecondaryKnifeHoldInverse ?
                 Vector3.Reflect(colliderData.pos, Vector3.right) :
                 colliderData.pos;
+        }
+
+        private static bool IsFriendlyCharacter(Collider collider)
+        {
+            Character character = collider.GetComponentInParent<Character>();
+            return character != null &&
+                (IsCharacterLayer(collider.gameObject.layer) || WeaponCollision.IsTrainingDummy(character)) &&
+                WeaponCollision.IsFriendly(character);
         }
 
         // A character's main collider, whichever client owns the character.
