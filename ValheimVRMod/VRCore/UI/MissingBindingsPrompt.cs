@@ -19,9 +19,9 @@ namespace ValheimVRMod.VRCore.UI
         // Actions the game cannot be played without, all bound by every default binding shipped with the mod. This is
         // deliberately not the "mandatory" flag of actions.json, which also covers actions with a fallback, e.g.
         // ToggleRun falls back to the stick and is left unbound by the default holographic binding.
+        // The poses are not in here: missing hand tracking is self evident, and they serve as the sign that the binding
+        // is in a state fit for checking instead (see IsReadyToCheck()).
         private static readonly SteamVR_Action[] ESSENTIAL_ACTIONS = {
-            SteamVR_Actions.valheim_PoseL,
-            SteamVR_Actions.valheim_PoseR,
             SteamVR_Actions.valheim_Walk,
             SteamVR_Actions.valheim_PitchAndYaw,
             SteamVR_Actions.valheim_Grab,
@@ -54,31 +54,72 @@ namespace ValheimVRMod.VRCore.UI
         };
 
         // SteamVR loads the bindings asynchronously, and an action only reports its binding once a device it is bound
-        // to is connected, so the check waits until both controllers have been connected for a while.
+        // to is connected, so the check waits until both controllers and both poses have been ready for a while.
         private const float SETTLE_TIME = 5f;
 
-        private static float controllersConnectedTime;
+        private static float readyTime;
         private static bool hasChecked;
+        // The result of the check, latched until the popup can be shown: null when nothing essential is missing.
+        private static string missingActionList;
+        private static bool canClickPopup;
 
         // Called every frame while the Valheim action set is active.
         public static void Update(float deltaTime)
         {
-            if (hasChecked)
+            if (!hasChecked)
             {
-                return;
+                if (!IsReadyToCheck())
+                {
+                    readyTime = 0;
+                    return;
+                }
+                readyTime += deltaTime;
+                if (readyTime < SETTLE_TIME)
+                {
+                    return;
+                }
+                hasChecked = true;
+                CheckBindings();
             }
-            if (!IsControllerConnected(ETrackedControllerRole.LeftHand) || !IsControllerConnected(ETrackedControllerRole.RightHand))
-            {
-                controllersConnectedTime = 0;
-                return;
-            }
-            controllersConnectedTime += deltaTime;
-            if (controllersConnectedTime < SETTLE_TIME || !UnifiedPopup.IsAvailable() || UnifiedPopup.IsVisible())
-            {
-                return;
-            }
-            hasChecked = true;
 
+            if (missingActionList == null || !UnifiedPopup.IsAvailable() || UnifiedPopup.IsVisible())
+            {
+                return;
+            }
+            string actionList = missingActionList;
+            missingActionList = null;
+
+            if (!canClickPopup)
+            {
+                SteamVR_Input.OpenBindingUI(SteamVR_Actions.Valheim);
+                return;
+            }
+
+            UnifiedPopup.Push(new YesNoPopup(
+                "Missing controller bindings",
+                "Your SteamVR controller binding has nothing bound to: " + actionList + ". " +
+                "This usually happens with a custom binding saved for an older version of the mod.\n\n" +
+                "Open the SteamVR binding settings to bind them, or to switch back to the default binding?",
+                () => {
+                    UnifiedPopup.Pop();
+                    SteamVR_Input.OpenBindingUI(SteamVR_Actions.Valheim);
+                },
+                () => UnifiedPopup.Pop(),
+                localizeText: false));
+        }
+
+        // Unbound poses mean either a binding that is plainly broken, which the player notices without being told, or
+        // one that is not fully loaded yet, in which case the other actions cannot be judged either.
+        private static bool IsReadyToCheck()
+        {
+            return IsControllerConnected(ETrackedControllerRole.LeftHand) &&
+                IsControllerConnected(ETrackedControllerRole.RightHand) &&
+                SteamVR_Actions.valheim_PoseL.activeBinding &&
+                SteamVR_Actions.valheim_PoseR.activeBinding;
+        }
+
+        private static void CheckBindings()
+        {
             IEnumerable<SteamVR_Action> unboundActions = ESSENTIAL_ACTIONS.Where(action => !action.activeBinding);
             if (!SteamVR_Actions.valheim_ContextScroll.activeBinding)
             {
@@ -95,27 +136,10 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return;
             }
-            string missingActionList = string.Join(", ", missingActions);
+            missingActionList = string.Join(", ", missingActions);
             LogWarning("The current SteamVR binding leaves essential actions unbound: " + missingActionList);
-
-            if (!SteamVR_Actions.valheim_LeftClick.activeBinding)
-            {
-                // The popup could not be clicked.
-                SteamVR_Input.OpenBindingUI(SteamVR_Actions.Valheim);
-                return;
-            }
-
-            UnifiedPopup.Push(new YesNoPopup(
-                "Missing controller bindings",
-                "Your SteamVR controller binding has nothing bound to: " + missingActionList + ". " +
-                "This usually happens with a custom binding saved for an older version of the mod.\n\n" +
-                "Open the SteamVR binding settings to bind them, or to switch back to the default binding?",
-                () => {
-                    UnifiedPopup.Pop();
-                    SteamVR_Input.OpenBindingUI(SteamVR_Actions.Valheim);
-                },
-                () => UnifiedPopup.Pop(),
-                localizeText: false));
+            // Without the laser click the popup could not be clicked, so the binding UI is opened in its place.
+            canClickPopup = SteamVR_Actions.valheim_LeftClick.activeBinding;
         }
 
         private static string GetHandSuffix(SteamVR_Input_Sources hand)

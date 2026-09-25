@@ -358,7 +358,7 @@ namespace ValheimVRMod.Scripts
                     mainHand.transform.up);
         }
 
-        private bool IsTwoHandedWieldSticky()
+        public static bool IsTwoHandedWieldSticky()
         {
             if (EquipScript.CurrentOffHandEquipType() == EquipType.Crossbow)
             {

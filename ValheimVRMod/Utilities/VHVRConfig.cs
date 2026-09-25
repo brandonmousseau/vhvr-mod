@@ -52,6 +52,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<int> hipTrackerIndex;
         private static ConfigEntry<int> leftFootTrackerIndex;
         private static ConfigEntry<int> rightFootTrackerIndex;
+        private static ConfigEntry<bool> ikOverrideLowerBody;
 
         // UI Settings
         private static ConfigEntry<float> overlayCurvature;
@@ -154,6 +155,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<string> meleeWeaponGlow;
         private static ConfigEntry<string> magicBarrierOvelay;
         private static ConfigEntry<float> enemyRenderDistance;
+        private static ConfigEntry<int> underwaterWaveResolution;
         private static ConfigEntry<float> buildingPieceDetailReductionFactor;
         private static ConfigEntry<bool> showDamageText;
         private static ConfigEntry<string> showAttackOutline;
@@ -537,6 +539,10 @@ namespace ValheimVRMod.Utilities
                     new AcceptableValueRange<int>(-1, 20)));
             rightFootTrackerIndex.SettingChanged += ((o, i) => VRPlayer.RequestPelvisCaliberation());
 
+            ikOverrideLowerBody = config.Bind(
+                "General", "IKOverrideLowerBody", false,
+                "When foot tracking is enabled, always drive the lower body with foot tracker IK instead of vanilla " +
+                "animation even if the player is walking/swimming/sitting (unless dodge-rolling). ");
 
         }
 
@@ -833,10 +839,10 @@ namespace ValheimVRMod.Utilities
                                            new AcceptableValueRange<float>(0f, 0.95f)));
             gesturedLocomotion = config.Bind("Controls",
                                              "GesturedLocomotion",
-                                             "SwimAndSteering",
+                                             "Basic",
                                              new ConfigDescription(
-                                                 "Enables using arm movements to swim, walk, run, and jump",
-                                                 new AcceptableValueList<string>(new string[] { "None", "SwimAndSteering", "Full" })));
+                                                 "Enables using arm movements to swim, steering, dodging (basic), walk, run, and jump (advanced)",
+                                                 new AcceptableValueList<string>(new string[] { "Basic", "Full", "None" })));
             gesturedJumpPreparationHeight = config.Bind("Controls",
                                           "GesturedJumpPreparationHeight",
                                           0.975f,
@@ -988,6 +994,12 @@ namespace ValheimVRMod.Utilities
                                         8f,
                                         new ConfigDescription("Increase the mobs render distance, does not apply to tamed creature, only raise mob render distance, not lowering them (default eg. deer render distance is around 2, neck is around 10) (also limited by default ingame draw distance option)",
                                         new AcceptableValueRange<float>(1f, 50f)));
+            underwaterWaveResolution = config.Bind("Graphics",
+                                        "UnderwaterWaveResolution",
+                                        16,
+                                        new ConfigDescription("How closely the surface seen from under water follows the waves. 0: flat. 1: flat but tilted with the waves at the eyes." +
+                                                              " 2 or more: a grid of this many by this many points following the waves, costing more CPU the higher it is.",
+                                        new AcceptableValueRange<int>(0, 20)));
             buildingPieceDetailReductionFactor = config.Bind("Graphics",
                                         "BuildingPieceDetailReductionFactor",
                                         1f,
@@ -1757,24 +1769,34 @@ namespace ValheimVRMod.Utilities
             return gesturedLocomotion.Definition.Key;
         }
 
+        public static bool IsBasicGesturedLocomotionEnabled()
+        {
+            return gesturedLocomotion.Value == "Full" || gesturedLocomotion.Value == "Basic";
+        }
+
+        public static bool IsFullGesturedLocomotionEnabled()
+        {
+            return gesturedLocomotion.Value == "Full";
+        }
+
         public static bool IsGesturedSwimEnabled()
         {
-            return gesturedLocomotion.Value == "Full" || gesturedLocomotion.Value == "SwimAndSteering";
+            return IsBasicGesturedLocomotionEnabled();
         }
 
         public static bool IsGesturedSteeringEnabled()
         {
-            return gesturedLocomotion.Value == "Full" || gesturedLocomotion.Value == "SwimAndSteering";
+            return IsBasicGesturedLocomotionEnabled();
         }
 
         public static bool IsGesturedJumpEnabled()
         {
-            return gesturedLocomotion.Value == "Full";
+            return IsFullGesturedLocomotionEnabled();
         }
 
         public static bool IsGesturedWalkRunEnabled()
         {
-            return gesturedLocomotion.Value == "Full";
+            return IsFullGesturedLocomotionEnabled();
         }
 
         public static float GesturedJumpPreparationHeight()
@@ -1794,6 +1816,11 @@ namespace ValheimVRMod.Utilities
         public static float GetNearClipPlane()
         {
             return nearClipPlane.Value;
+        }
+
+        public static int UnderwaterWaveResolution()
+        {
+            return underwaterWaveResolution.Value;
         }
 
         public static float GetEnemyRenderDistanceValue()
@@ -2239,6 +2266,11 @@ namespace ValheimVRMod.Utilities
         public static int RightFootTrackerIndex()
         {
             return rightFootTrackerIndex.Value;
+        }
+
+        public static bool IKOverrideLowerBody()
+        {
+            return ikOverrideLowerBody.Value;
         }
 
         public static bool IsHipTrackingEnabled()
