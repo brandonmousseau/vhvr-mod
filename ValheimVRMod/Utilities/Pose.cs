@@ -12,6 +12,8 @@ namespace ValheimVRMod.Utilities {
         private static bool isRightHandDrawingWeapon = false;
         private static BackReachLocation rightHandGrabbedBackLocation = BackReachLocation.None;
         private static BackReachLocation leftHandGrabbedBackLocation = BackReachLocation.None;
+        private static bool isLeftHandStickyHolsterArmed = false;
+        private static bool isRightHandStickyHolsterArmed = false;
 
         private static SteamVR_Action_Boolean grabAction { get { return SteamVR_Actions.valheim_Grab; } }
 
@@ -155,6 +157,15 @@ namespace ValheimVRMod.Utilities {
                 return;
             }
 
+            if (LocalWeaponWield.isCurrentlyTwoHanded() &&
+                LocalWeaponWield.IsTwoHandedWieldSticky() &&
+                EquipScript.CurrentOffHandEquipType() == EquipType.None)
+            {
+                checkStickyTwoHandedHolster(leftHandBackReach, rightHandBackReach);
+                return;
+            }
+            isLeftHandStickyHolsterArmed = isRightHandStickyHolsterArmed = false;
+
             if (LocalWeaponWield.isCurrentlyTwoHanded())
             {
                 if (isLeftHandDrawingWeapon || isRightHandDrawingWeapon)
@@ -196,6 +207,66 @@ namespace ValheimVRMod.Utilities {
                 grabAction.GetStateUp(SteamVR_Input_Sources.RightHand))
             {
                 PatchHideHandItems.HideLocalPlayerHandItem(isMainHandItem: VRPlayer.isRightHandMainWeaponHand);
+            }
+        }
+
+        // While a weapon is held with sticky two-handed wield and neither hand is gripping, either hand can holster it
+        // by pressing and releasing grip behind the back, as long as the other hand does not grip in the meantime.
+        private static void checkStickyTwoHandedHolster(BackReachLocation leftHandBackReach, BackReachLocation rightHandBackReach)
+        {
+            bool leftHandGripping = grabAction.GetState(SteamVR_Input_Sources.LeftHand);
+            bool rightHandGripping = grabAction.GetState(SteamVR_Input_Sources.RightHand);
+
+            // A press only starts the gesture if the other hand is not gripping, i. e. neither hand was gripping before it.
+            if (grabAction.GetStateDown(SteamVR_Input_Sources.LeftHand))
+            {
+                isLeftHandStickyHolsterArmed = !rightHandGripping;
+            }
+            if (grabAction.GetStateDown(SteamVR_Input_Sources.RightHand))
+            {
+                isRightHandStickyHolsterArmed = !leftHandGripping;
+            }
+            // The other hand gripping at any point during the gesture cancels it.
+            if (rightHandGripping)
+            {
+                isLeftHandStickyHolsterArmed = false;
+            }
+            if (leftHandGripping)
+            {
+                isRightHandStickyHolsterArmed = false;
+            }
+
+            bool isLeftHandHolstering =
+                isLeftHandStickyHolsterArmed &&
+                !isLeftHandDrawingWeapon &&
+                leftHandBackReach != BackReachLocation.None &&
+                grabAction.GetStateUp(SteamVR_Input_Sources.LeftHand);
+            bool isRightHandHolstering =
+                isRightHandStickyHolsterArmed &&
+                !isRightHandDrawingWeapon &&
+                rightHandBackReach != BackReachLocation.None &&
+                grabAction.GetStateUp(SteamVR_Input_Sources.RightHand);
+
+            if (!leftHandGripping)
+            {
+                isLeftHandStickyHolsterArmed = false;
+            }
+            if (!rightHandGripping)
+            {
+                isRightHandStickyHolsterArmed = false;
+            }
+
+            if (isLeftHandHolstering || isRightHandHolstering)
+            {
+                isLeftHandStickyHolsterArmed = isRightHandStickyHolsterArmed = false;
+                if (VRPlayer.leftHandItem != null)
+                {
+                    PatchHideHandItems.HideLocalPlayerHandItem(isMainHandItem: VRPlayer.isLeftHandMainWeaponHand);
+                }
+                if (VRPlayer.rightHandItem != null)
+                {
+                    PatchHideHandItems.HideLocalPlayerHandItem(isMainHandItem: VRPlayer.isRightHandMainWeaponHand);
+                }
             }
         }
 
@@ -277,8 +348,14 @@ namespace ValheimVRMod.Utilities {
                 return false;
             }
 
-            ItemDrop.ItemData item = inventory?.GetItemAt(inventorySlot % 8, inventorySlot / 8);
-            if (item == null || item.m_equipped)
+            return TryEquipToHand(inventory.GetItemAt(inventorySlot % 8, inventorySlot / 8), isRightHand);
+        }
+
+        // Equips an unequipped hand item into the given hand, e. g. for the radial quick menu of that hand.
+        // Returns false without doing anything if it is not a hand item or that hand cannot take it right now.
+        public static bool TryEquipToHand(ItemDrop.ItemData item, bool isRightHand)
+        {
+            if (Player.m_localPlayer == null || item == null || item.m_equipped)
             {
                 return false;
             }
@@ -319,7 +396,7 @@ namespace ValheimVRMod.Utilities {
             }
             else
             {
-                Player.m_localPlayer.UseItem(inventory, item, false);
+                Player.m_localPlayer.UseItem(Player.m_localPlayer.GetInventory(), item, false);
             }
 
             return true;
@@ -394,6 +471,14 @@ namespace ValheimVRMod.Utilities {
                 return false;
             }
 
+            // While both hands are at the waist, where the two-hand items are, a hand that has gripped first may
+            // still be waiting for the other one to grip, so it only draws on its own once it leaves the waist.
+            // Moving fast is not enough there, as the hand is often still settling when it grips.
+            if (isOwnSideWaist(leftHandBackReach) && isOwnSideWaist(rightHandBackReach))
+            {
+                return false;
+            }
+
             if (rightHandGrabbedBackLocation != BackReachLocation.None &&
                 isDrawingWeapon(rightHandBackReach, VRPlayer.rightHand.transform, VRPlayer.rightHandPhysicsEstimator.GetVelocity()))
             {
@@ -411,6 +496,15 @@ namespace ValheimVRMod.Utilities {
             }
 
             return false;
+        }
+
+        // The waist locations that twoHandBackReachToInventory() pairs up.
+        private static bool isOwnSideWaist(BackReachLocation backReach)
+        {
+            return backReach == BackReachLocation.LeftWaistRadialMedial ||
+                backReach == BackReachLocation.LeftWaistRadialLateral ||
+                backReach == BackReachLocation.RightWaistRadialMedial ||
+                backReach == BackReachLocation.RightWaistRadialLateral;
         }
 
         private static bool isDrawingWeapon(
@@ -662,31 +756,33 @@ namespace ValheimVRMod.Utilities {
             {
                 if (Vector3.Dot(handTransform.forward, facing + playerRight * 0.5f) > 0)
                 {
-                    return contralateral ?
-                        BackReachLocation.RightWaistRadialForward :
-                        BackReachLocation.RightWaistRadialLateral;
+                    if (contralateral)
+                    {
+                        return sagittalOffset < -0.0625f ?
+                            BackReachLocation.RightWaistRadialForward :
+                            BackReachLocation.None;
+                    }
+                    return BackReachLocation.RightWaistRadialLateral;
                 }
-                else
-                {
-                    return contralateral ?
-                        BackReachLocation.RightWaistRadialBackward :
-                        BackReachLocation.RightWaistRadialMedial;
-                }
+                return contralateral ?
+                    BackReachLocation.RightWaistRadialBackward :
+                    BackReachLocation.RightWaistRadialMedial;
             }
             else
             {
                 if (Vector3.Dot(handTransform.forward, facing - playerRight * 0.5f) > 0)
                 {
-                    return contralateral ?
-                        BackReachLocation.LeftWaistRadialForward :
-                        BackReachLocation.LeftWaistRadialLateral;
+                    if (contralateral)
+                    {
+                        return sagittalOffset < -0.0625f ?
+                            BackReachLocation.LeftWaistRadialForward :
+                            BackReachLocation.None;
+                    }
+                    return BackReachLocation.LeftWaistRadialLateral;
                 }
-                else
-                {
-                    return contralateral ?
-                        BackReachLocation.LeftWaistRadialBackward :
-                        BackReachLocation.LeftWaistRadialMedial;
-                }
+                return contralateral ?
+                    BackReachLocation.LeftWaistRadialBackward :
+                    BackReachLocation.LeftWaistRadialMedial;
             }
         }
 

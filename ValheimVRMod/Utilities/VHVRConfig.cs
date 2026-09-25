@@ -155,6 +155,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<string> meleeWeaponGlow;
         private static ConfigEntry<string> magicBarrierOvelay;
         private static ConfigEntry<float> enemyRenderDistance;
+        private static ConfigEntry<int> underwaterWaveResolution;
         private static ConfigEntry<float> buildingPieceDetailReductionFactor;
         private static ConfigEntry<bool> showDamageText;
         private static ConfigEntry<string> showAttackOutline;
@@ -993,6 +994,12 @@ namespace ValheimVRMod.Utilities
                                         8f,
                                         new ConfigDescription("Increase the mobs render distance, does not apply to tamed creature, only raise mob render distance, not lowering them (default eg. deer render distance is around 2, neck is around 10) (also limited by default ingame draw distance option)",
                                         new AcceptableValueRange<float>(1f, 50f)));
+            underwaterWaveResolution = config.Bind("Graphics",
+                                        "UnderwaterWaveResolution",
+                                        16,
+                                        new ConfigDescription("How closely the surface seen from under water follows the waves. 0: flat. 1: flat but tilted with the waves at the eyes." +
+                                                              " 2 or more: a grid of this many by this many points following the waves, costing more CPU the higher it is.",
+                                        new AcceptableValueRange<int>(0, 20)));
             buildingPieceDetailReductionFactor = config.Bind("Graphics",
                                         "BuildingPieceDetailReductionFactor",
                                         1f,
@@ -1809,6 +1816,11 @@ namespace ValheimVRMod.Utilities
         public static float GetNearClipPlane()
         {
             return nearClipPlane.Value;
+        }
+
+        public static int UnderwaterWaveResolution()
+        {
+            return underwaterWaveResolution.Value;
         }
 
         public static float GetEnemyRenderDistanceValue()
