@@ -24,8 +24,14 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<string> pluginVersion;
         private static ConfigEntry<bool> bhapticsEnabled;
 
-        // General Settings
+        // Flat screen camera settings, listed at the end of the Graphics section
         private static ConfigEntry<string> mirrorMode;
+        private static ConfigEntry<float> flatscreenFieldOfView;
+        private static ConfigEntry<float> flatscreenSmoothing;
+        private static ConfigEntry<float> followCameraDistance;
+        private static ConfigEntry<bool> flatscreenPostEffects;
+
+        // General Settings
         private static ConfigEntry<float> playerMinEyeHeight;
         private static ConfigEntry<float> playerMaxEyeHeight;
         private static ConfigEntry<float> headOffsetX;
@@ -46,6 +52,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<int> hipTrackerIndex;
         private static ConfigEntry<int> leftFootTrackerIndex;
         private static ConfigEntry<int> rightFootTrackerIndex;
+        private static ConfigEntry<bool> ikOverrideLowerBody;
 
         // UI Settings
         private static ConfigEntry<float> overlayCurvature;
@@ -216,6 +223,8 @@ namespace ValheimVRMod.Utilities
             InitializeVrHudSettings();
             InitializeControlsSettings();
             InitializeGraphicsSettings();
+            // After the other graphics settings, so that these are listed below them in the Graphics tab.
+            InitializeFlatscreenCameraSettings();
             InitializeMotionControlSettings();
             DoVersionInit();
         }
@@ -367,6 +376,60 @@ namespace ValheimVRMod.Utilities
             return immutableSetting;
         }
 
+        private static void InitializeFlatscreenCameraSettings()
+        {
+            // MirrorMode used to live in the General section. BepInEx identifies an entry by section and key, so
+            // moving it would silently reset everyone's choice. The old entry is bound only to read the value the
+            // user had and then removed again, so that it neither shows up in the General tab nor stays in the file.
+            var legacyMirrorMode = config.Bind("General", "MirrorMode", "Right");
+            string legacyMirrorModeValue = legacyMirrorMode.Value;
+            config.Remove(legacyMirrorMode.Definition);
+
+            mirrorMode = config.Bind("Graphics",
+                                     "MirrorMode",
+                                     "Right",
+                                     new ConfigDescription("The VR mirror mode.Legal values: OpenVR, Right, Left, Follow, Spectator, Stabilized, None. Note: OpenVR is" +
+                                     " required if you want to see the Overlay-type GUI in the mirror image. However, I've found that OpenVR" +
+                                     " mirror mode causes some issue that requires SteamVR to be restarted after closing the game, so unless you" +
+                                     " need it for some specific reason, I recommend using another mirror mode or None. Follow mode and spectator mode" +
+                                     " render content from a third person camera which can cause lag. Stabilized mode renders a smoothed first person" +
+                                     " camera from between the eyes, which is steadier to watch than the mirror image of an eye," +
+                                     " and is the one to pick for streaming or recording.",
+                                     new AcceptableValueList<string>(new string[] { "Right", "Left", "OpenVR", "None", "Follow", "Spectator", "Stabilized" })));
+            // Carried over before the change listener is added, since the VR manager is not set up yet.
+            if (legacyMirrorModeValue != (string)mirrorMode.DefaultValue &&
+                mirrorMode.Value == (string)mirrorMode.DefaultValue)
+            {
+                mirrorMode.Value = legacyMirrorModeValue;
+            }
+            mirrorMode.SettingChanged += (sender, e) => VRManager.UpdateMirrorViewMode();
+            flatscreenFieldOfView = config.Bind("Graphics",
+                                     "FlatscreenFieldOfView",
+                                     75f,
+                                     new ConfigDescription("(Follow, Spectator and Stabilized only) Vertical field of view in degrees of the" +
+                                     " camera that renders the flat screen view. 75 is about 107 degrees horizontally on a 16:9 screen." +
+                                     " Wider shows more of the surroundings but stretches the edges of the frame.",
+                                     new AcceptableValueRange<float>(50f, 110f)));
+            flatscreenSmoothing = config.Bind("Graphics",
+                                     "FlatscreenSmoothing",
+                                     0.5f,
+                                     new ConfigDescription("(Follow, Spectator and Stabilized only) How much the flat screen camera smooths out" +
+                                     " motion. 0 follows immediately, higher is steadier but lags further behind. 0.5 is the original behavior.",
+                                     new AcceptableValueRange<float>(0f, 1f)));
+            followCameraDistance = config.Bind("Graphics",
+                                     "FollowCameraDistance",
+                                     1f,
+                                     new ConfigDescription("(Follow only) How far the follow camera sits behind and above the character, as a" +
+                                     " multiple of the original distance. The camera still moves closer when something blocks the view." +
+                                     " At 0 it sits between the eyes, like the stabilized camera but with the horizon kept level.",
+                                     new AcceptableValueRange<float>(0f, 2f)));
+            flatscreenPostEffects = config.Bind("Graphics",
+                                     "FlatscreenPostEffects",
+                                     true,
+                                     "(Follow, Spectator and Stabilized only) Apply post processing such as color grading, bloom and sun shafts" +
+                                     " to the flat screen camera as well. Looks closer to the headset view but costs frame rate.");
+        }
+
         private static void InitializeGeneralSettings()
         {
             recenterOnStart = config.Bind("General",
@@ -381,16 +444,6 @@ namespace ValheimVRMod.Utilities
                                           "RoomscaleFadeToBlack",
                                           false,
                                           "Set this to true if you want the game to fade to black when roomscale movement causes the player to being pushed back.");
-            mirrorMode = config.Bind("General",
-                                     "MirrorMode",
-                                     "Right",
-                                     new ConfigDescription("The VR mirror mode.Legal values: OpenVR, Right, Left, Follow, Spectator, None. Note: OpenVR is" +
-                                     " required if you want to see the Overlay-type GUI in the mirror image. However, I've found that OpenVR" +
-                                     " mirror mode causes some issue that requires SteamVR to be restarted after closing the game, so unless you" +
-                                     " need it for some specific reason, I recommend using another mirror mode or None. Follow mode and spectator mode" +
-                                     " render content from a third person camera which can cause lag.",
-                                     new AcceptableValueList<string>(new string[] { "Right", "Left", "OpenVR", "None", "Follow", "Spectator" })));
-            mirrorMode.SettingChanged += (sender, e) => VRManager.UpdateMirrorViewMode();
             playerMinEyeHeight = config.Bind("General",
                               "PlayerMinEyeHeight",
                               1.2f,
@@ -485,6 +538,10 @@ namespace ValheimVRMod.Utilities
                     new AcceptableValueRange<int>(-1, 20)));
             rightFootTrackerIndex.SettingChanged += ((o, i) => VRPlayer.RequestPelvisCaliberation());
 
+            ikOverrideLowerBody = config.Bind(
+                "General", "IKOverrideLowerBody", false,
+                "When foot tracking is enabled, always drive the lower body with foot tracker IK instead of vanilla " +
+                "animation even if the player is walking/swimming/sitting (unless dodge-rolling). ");
 
         }
 
@@ -781,10 +838,10 @@ namespace ValheimVRMod.Utilities
                                            new AcceptableValueRange<float>(0f, 0.95f)));
             gesturedLocomotion = config.Bind("Controls",
                                              "GesturedLocomotion",
-                                             "SwimAndSteering",
+                                             "Basic",
                                              new ConfigDescription(
-                                                 "Enables using arm movements to swim, walk, run, and jump",
-                                                 new AcceptableValueList<string>(new string[] { "None", "SwimAndSteering", "Full" })));
+                                                 "Enables using arm movements to swim, steering, dodging (basic), walk, run, and jump (advanced)",
+                                                 new AcceptableValueList<string>(new string[] { "Basic", "Full", "None" })));
             gesturedJumpPreparationHeight = config.Bind("Controls",
                                           "GesturedJumpPreparationHeight",
                                           0.975f,
@@ -1168,8 +1225,10 @@ namespace ValheimVRMod.Utilities
                 case "None":
                 case "Follow":
                 case "Spectator":
-                    // The third person camera modes render the flat screen view themselves, so the
-                    // mirror image must not be drawn over it.
+                case "Stabilized":
+                    // These modes render the flat screen view with a camera of their own, so the mirror
+                    // image must not be drawn over it. It also leaves the flat screen frame rate free of
+                    // the eye mirror blit that the Right, Left and OpenVR modes are paced by.
                     return OpenVRSettings.MirrorViewModes.None;
                 default:
                     LogUtils.LogWarning("Invalid mirror mode setting. Defaulting to None");
@@ -1187,9 +1246,64 @@ namespace ValheimVRMod.Utilities
             return mirrorMode.Value == "Spectator";
         }
 
+        // Whether the flat screen view comes from a first person camera placed between the eyes and smoothed,
+        // instead of an eye mirror image or a third person camera.
+        public static bool UseStabilizedCameraOnFlatscreen()
+        {
+            return mirrorMode.Value == "Stabilized";
+        }
+
+        // Deliberately excludes the stabilized camera: this also gates showing the head and headgear, which a
+        // camera sitting between the eyes must not render.
         public static bool UseThirdPersonCameraOnFlatscreen()
         {
             return UseFollowCameraOnFlatscreen() || UseSpectatorCameraOnFlatscreen();
+        }
+
+        // Whether the flat screen view is rendered by a camera of the mod's own rather than by the eye mirror.
+        public static bool UseSeparateFlatscreenCamera()
+        {
+            return UseThirdPersonCameraOnFlatscreen() || UseStabilizedCameraOnFlatscreen();
+        }
+
+        public static float FlatscreenFieldOfView()
+        {
+            return flatscreenFieldOfView.Value;
+        }
+
+        // Scales the flat screen cameras' smoothing times. 1 at the default setting, so that it keeps the times they
+        // were tuned with, and 0 when smoothing is turned off.
+        public static float FlatscreenSmoothingScale()
+        {
+            return flatscreenSmoothing.Value * 2f;
+        }
+
+        public static float FollowCameraDistance()
+        {
+            return followCameraDistance.Value;
+        }
+
+        public static float MinFollowCameraDistance()
+        {
+            return ((AcceptableValueRange<float>)followCameraDistance.Description.AcceptableValues).MinValue;
+        }
+
+        // Out of range values are clamped by the config entry.
+        public static void SetFollowCameraDistance(float distance)
+        {
+            followCameraDistance.Value = distance;
+        }
+
+        // Switches between the follow and stabilized cameras, which the mouse wheel steps through as if they were one
+        // continuous zoom.
+        public static void SetFollowOrStabilizedMirrorMode(bool stabilized)
+        {
+            mirrorMode.Value = stabilized ? "Stabilized" : "Follow";
+        }
+
+        public static bool UseFlatscreenPostEffects()
+        {
+            return flatscreenPostEffects.Value;
         }
 
         public static float PlayerMinEyeHeight()
@@ -1648,24 +1762,34 @@ namespace ValheimVRMod.Utilities
             return gesturedLocomotion.Definition.Key;
         }
 
+        public static bool IsBasicGesturedLocomotionEnabled()
+        {
+            return gesturedLocomotion.Value == "Full" || gesturedLocomotion.Value == "Basic";
+        }
+
+        public static bool IsFullGesturedLocomotionEnabled()
+        {
+            return gesturedLocomotion.Value == "Full";
+        }
+
         public static bool IsGesturedSwimEnabled()
         {
-            return gesturedLocomotion.Value == "Full" || gesturedLocomotion.Value == "SwimAndSteering";
+            return IsBasicGesturedLocomotionEnabled();
         }
 
         public static bool IsGesturedSteeringEnabled()
         {
-            return gesturedLocomotion.Value == "Full" || gesturedLocomotion.Value == "SwimAndSteering";
+            return IsBasicGesturedLocomotionEnabled();
         }
 
         public static bool IsGesturedJumpEnabled()
         {
-            return gesturedLocomotion.Value == "Full";
+            return IsFullGesturedLocomotionEnabled();
         }
 
         public static bool IsGesturedWalkRunEnabled()
         {
-            return gesturedLocomotion.Value == "Full";
+            return IsFullGesturedLocomotionEnabled();
         }
 
         public static float GesturedJumpPreparationHeight()
@@ -2130,6 +2254,11 @@ namespace ValheimVRMod.Utilities
         public static int RightFootTrackerIndex()
         {
             return rightFootTrackerIndex.Value;
+        }
+
+        public static bool IKOverrideLowerBody()
+        {
+            return ikOverrideLowerBody.Value;
         }
 
         public static bool IsHipTrackingEnabled()

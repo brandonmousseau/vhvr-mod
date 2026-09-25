@@ -122,6 +122,16 @@ namespace ValheimVRMod.VRCore.UI
         private SteamVR_LaserPointer _rightPointer;
 
         private VRGUI_InputModule _inputModule;
+        // How far the laser pointer may drift on the panel while the trigger is held before a click becomes a drag.
+        // Both have to be exceeded: the distance in metres keeps a small panel with densely packed pixels, such as
+        // the one attached to the hand, from being too sensitive, and the one in pixels keeps the pointer on a large
+        // panel from leaving the dead zone before it has moved further than Unity's drag threshold, past which a drag
+        // starts at once and cancels the click of a button in a scroll view, e. g. a recipe in the crafting menu.
+        private const float LASER_CLICK_DEAD_ZONE_METERS = 0.005f;
+        private const float LASER_CLICK_DEAD_ZONE_PIXELS = 16f;
+        // Where on the panel, in its local coordinates, the laser cursor was last placed. While a click is held in
+        // its dead zone, this is where the trigger was pressed.
+        private Vector3 cursorLocalHit;
 
         // Holding ScrollUp/ScrollDown scrolls one step, then keeps repeating after a short delay.
         private const float SCROLL_REPEAT_DELAY = 0.4f;
@@ -701,6 +711,26 @@ namespace ValheimVRMod.VRCore.UI
             var localStart = _uiPanel.InverseTransformPoint(VRPlayer.activePointer.rayStartingPosition);
             // This is more precise than using raycast hit position especially when the player is moving fast
             var correctedLocalHit = localStart - localDir * (localStart.z / localDir.z);
+
+            if (_inputModule.inLaserClickDeadZone)
+            {
+                // Pulling or releasing the trigger tilts the controller, which would otherwise carry the cursor off
+                // the button that was pressed, or far enough to start dragging the scroll view it sits in, and
+                // either way lose the click. So the cursor stays where the press was until the ray has clearly
+                // moved away on purpose.
+                float drift = _uiPanel.TransformVector(correctedLocalHit - cursorLocalHit).magnitude;
+                float pixelDrift =
+                    Vector2.Distance(
+                        convertLocalUiPanelCoordinatesToCursorCoordinates(correctedLocalHit),
+                        convertLocalUiPanelCoordinatesToCursorCoordinates(cursorLocalHit));
+                if (drift <= LASER_CLICK_DEAD_ZONE_METERS || pixelDrift <= LASER_CLICK_DEAD_ZONE_PIXELS)
+                {
+                    return;
+                }
+                _inputModule.LeaveLaserClickDeadZone();
+            }
+
+            cursorLocalHit = correctedLocalHit;
             SoftwareCursor.simulatedMousePosition = convertLocalUiPanelCoordinatesToCursorCoordinates(correctedLocalHit);
         }
 
@@ -1153,7 +1183,11 @@ namespace ValheimVRMod.VRCore.UI
         {
 
             Dictionary<PointerEventData.InputButton, bool> lastButtonStateMap = new Dictionary<PointerEventData.InputButton, bool>();
+            // For the desktop mouse.
             private bool inDragDeadZone;
+            // For the laser pointers: whether the left button is held and the pointer hasn't yet moved far enough
+            // since the press to start a drag.
+            public bool inLaserClickDeadZone { get; private set; }
 
             public VRGUI_InputModule() {
                 lastButtonStateMap[PointerEventData.InputButton.Left] = false;
@@ -1196,6 +1230,10 @@ namespace ValheimVRMod.VRCore.UI
                     return;
                 }
                 lastButtonStateMap[button] = false;
+                if (button == PointerEventData.InputButton.Left)
+                {
+                    inLaserClickDeadZone = false;
+                }
                 PointerEventData buttonData = GetMousePointerEventData().GetButtonState(button).eventData.buttonData;
                 buttonData.eligibleForClick = false;
                 buttonData.pointerPress = null;
@@ -1296,6 +1334,25 @@ namespace ValheimVRMod.VRCore.UI
                 }
                 ProcessMove(buttonState.buttonData);
 
+                if (VHVRConfig.UseVrControls())
+                {
+                    // The laser dead zone is measured and left in VRGUI.UpdateCursorPosition, which knows the panel's
+                    // geometry and holds the cursor still until then, so no drag can start before it is left.
+                    if (state == PointerEventData.FramePressState.Pressed)
+                    {
+                        inLaserClickDeadZone = true;
+                    }
+                    else if (state == PointerEventData.FramePressState.Released)
+                    {
+                        inLaserClickDeadZone = false;
+                    }
+                    if (!inLaserClickDeadZone)
+                    {
+                        ProcessDrag(buttonState.buttonData);
+                    }
+                    return;
+                }
+
                 if (state == PointerEventData.FramePressState.Pressed) {
                     inDragDeadZone = true;
                 }
@@ -1307,6 +1364,11 @@ namespace ValheimVRMod.VRCore.UI
                 if (!inDragDeadZone) {
                     ProcessDrag(buttonState.buttonData);
                 }
+            }
+
+            public void LeaveLaserClickDeadZone()
+            {
+                inLaserClickDeadZone = false;
             }
         }
     }

@@ -59,7 +59,7 @@ namespace ValheimVRMod.Scripts
                 character = collider.GetComponentInParent<Character>();
             }
 
-            if (character == null || character.gameObject == Player.m_localPlayer.gameObject || character.m_tamed)
+            if (character == null || character.gameObject == Player.m_localPlayer.gameObject || character.IsTamed())
             {
                 return;
             }

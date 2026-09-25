@@ -164,6 +164,13 @@
             {
                "inputs" : [
                   [ "/user/hand/right/input/grip", "click" ],
+                  [ "/user/hand/right/input/a", "click" ]
+               ],
+               "output" : "/actions/valheim/in/removepiece"
+            },
+            {
+               "inputs" : [
+                  [ "/user/hand/right/input/grip", "click" ],
                   [ "/user/hand/right/input/joystick", "north" ]
                ],
                "output" : "/actions/valheim/in/scrollup"

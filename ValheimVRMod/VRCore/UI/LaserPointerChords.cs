@@ -80,14 +80,25 @@ namespace ValheimVRMod.VRCore.UI
             return pressed && !isRightClickSuppressed;
         }
 
-        // Whether the action is held on a hand whose own laser pointer is not up, for player controls that share
-        // their buttons with laser pointer controls on the same hand (e.g. the run and crouch toggles on the stick
-        // that scrolls while pointing).
-        public static bool IsHeldWithoutLaser(SteamVR_Action_Boolean action)
+        // Whether the action is held on a hand that without scrolling with its laser pointer, for player controls that
+        // share their buttons with the ScrollUp/ScrollDown chords (e.g. the run and crouch toggles on the Touch right
+        // stick, whose grip + stick chords scroll). SteamVR still reports the stick direction of a chord, so without
+        // this, scrolling would also toggle run or crouch. Pointing alone doesn't block them.
+        public static bool IsHeldWithoutLaserScroll(SteamVR_Action_Boolean action)
         {
             return
-                (action.GetState(SteamVR_Input_Sources.LeftHand) && !IsLaserActiveFor(SteamVR_Input_Sources.LeftHand)) ||
-                (action.GetState(SteamVR_Input_Sources.RightHand) && !IsLaserActiveFor(SteamVR_Input_Sources.RightHand));
+                (action.GetState(SteamVR_Input_Sources.LeftHand) && !IsScrollingWithLaser(SteamVR_Input_Sources.LeftHand)) ||
+                (action.GetState(SteamVR_Input_Sources.RightHand) && !IsScrollingWithLaser(SteamVR_Input_Sources.RightHand));
+        }
+
+        // Whether the given hand's laser pointer is up while a scroll chord is held. The chords are read on Any,
+        // since a chord's source hand isn't necessarily the hand of its stick.
+        public static bool IsScrollingWithLaser(SteamVR_Input_Sources hand)
+        {
+            return
+                IsLaserActiveFor(hand) &&
+                (SteamVR_Actions.valheim_ScrollUp.GetState(SteamVR_Input_Sources.Any) ||
+                    SteamVR_Actions.valheim_ScrollDown.GetState(SteamVR_Input_Sources.Any));
         }
 
         // Whether the given hand's own laser pointer is currently up. "Any" (asked by call sites that don't care

@@ -461,9 +461,10 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return false;
             }
-            if (zinput == "Remove" && !canRemovePiece())
+            if (zinput == "Remove")
             {
-                return false;
+                return InRemovePieceContext() &&
+                    SteamVR_Actions.valheim_RemovePiece.GetStateDown(SteamVR_Input_Sources.Any);
             }
             // Interacting with the world is what "Use" means to vanilla (attacking has its own, separate raw
             // action reads that don't go through here), and disabled the same way as the left hand's own interact
@@ -527,9 +528,10 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return false;
             }
-            if (zinput == "Remove" && !canRemovePiece())
+            if (zinput == "Remove")
             {
-                return false;
+                return InRemovePieceContext() &&
+                    SteamVR_Actions.valheim_RemovePiece.GetState(SteamVR_Input_Sources.Any);
             }
             if (zinput == "Use")
             {
@@ -579,9 +581,9 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return false;
             }
-            if (zinput == "Remove" && !canRemovePiece())
+            if (zinput == "Remove")
             {
-                return false;
+                return InRemovePieceContext() && SteamVR_Actions.valheim_RemovePiece.GetStateUp(SteamVR_Input_Sources.Any);
             }
             // Read on the right hand like GetButtonDown and GetButton, the left hand having its own interact in
             // HandBasedInteractionPatches. Deliberately not gated on the laser pointer like they are: a pointer
@@ -870,11 +872,10 @@ namespace ValheimVRMod.VRCore.UI
             return inPlaceMode() && !Hud.IsPieceSelectionVisible() && SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand);
         }
 
-        private bool canRemovePiece()
+        private bool InRemovePieceContext()
         {
             return
                 inPlaceMode() &&
-                SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand) &&
                 BuildingManager.instance != null &&
                 !BuildingManager.instance.isCurrentlyMoving() &&
                 !BuildingManager.instance.isCurrentlyPreciseMoving() &&
@@ -883,15 +884,16 @@ namespace ValheimVRMod.VRCore.UI
 
         private bool canJump()
         {
-            // The left hand trigger is the modifier half of the Dodge chord in the default Touch binding, whose
-            // other half is the jump button itself, so a dodge must not also jump. Deliberately read on the left
-            // hand rather than on Any: no shipped binding uses the right hand trigger as a dodge modifier, and it
-            // is held for ordinary attacks, which must not block jumping.
-            if (canRemovePiece() || // Removing piece takes higher priority than jump
-                SteamVR_Actions.valheim_Use.GetState(SteamVR_Input_Sources.LeftHand))
+            if (InRemovePieceContext() &&
+                SteamVR_Actions.valheim_RemovePiece.GetState(SteamVR_Input_Sources.Any)) { // Removing piece takes higher priority than jump
+                return false;
+            }
+
+            if (SteamVR_Actions.valheim_Dodge.GetState(SteamVR_Input_Sources.Any))
             {
                 return false;
             }
+
             if (BuildingManager.instance == null)
             {
                 return true;
@@ -918,7 +920,7 @@ namespace ValheimVRMod.VRCore.UI
             // entries here only keep them from being treated as unmapped.
             zInputToBooleanAction.Add("BuildMenu", new[] { SteamVR_Actions.valheim_RightClick });
             zInputToBooleanAction.Add("JoyPlace", new[] { SteamVR_Actions.valheim_LeftClick });
-            zInputToBooleanAction.Add("Remove", new[] { SteamVR_Actions.valheim_Jump });
+            zInputToBooleanAction.Add("Remove", new[] { SteamVR_Actions.valheim_RemovePiece });
 
             contextScroll = SteamVR_Actions.valheim_ContextScroll;
 
@@ -967,7 +969,10 @@ namespace ValheimVRMod.VRCore.UI
                     {
                         action.AddOnStateDownListener(
                             (fromAction, fromSource) => {
-                                if (canRemovePiece()) GetButtonPatchUtils.Press(buttonName);
+                                if (InRemovePieceContext())
+                                {
+                                    GetButtonPatchUtils.Press(buttonName);
+                                }
                             },
                             listenerSource);
                     }

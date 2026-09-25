@@ -280,6 +280,14 @@ namespace Valve.VR
                 return SteamVR_Actions.valheim_ScrollDown;
             }
         }
+
+        public virtual SteamVR_Action_Boolean RemovePiece
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_RemovePiece;
+            }
+        }
         
         public virtual SteamVR_Action_Vibration Haptic
         {
