@@ -52,6 +52,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<int> hipTrackerIndex;
         private static ConfigEntry<int> leftFootTrackerIndex;
         private static ConfigEntry<int> rightFootTrackerIndex;
+        private static ConfigEntry<bool> ikOverrideLowerBody;
 
         // UI Settings
         private static ConfigEntry<float> overlayCurvature;
@@ -541,6 +542,10 @@ namespace ValheimVRMod.Utilities
                     new AcceptableValueRange<int>(-1, 20)));
             rightFootTrackerIndex.SettingChanged += ((o, i) => VRPlayer.RequestPelvisCaliberation());
 
+            ikOverrideLowerBody = config.Bind(
+                "General", "IKOverrideLowerBody", false,
+                "When foot tracking is enabled, always drive the lower body with foot tracker IK instead of vanilla " +
+                "animation even if the player is walking/swimming/sitting (unless dodge-rolling). ");
 
         }
 
@@ -2284,6 +2289,11 @@ namespace ValheimVRMod.Utilities
         public static int RightFootTrackerIndex()
         {
             return rightFootTrackerIndex.Value;
+        }
+
+        public static bool IKOverrideLowerBody()
+        {
+            return ikOverrideLowerBody.Value;
         }
 
         public static bool IsHipTrackingEnabled()
