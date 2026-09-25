@@ -169,6 +169,41 @@ namespace ValheimVRMod.Scripts
             return character.m_baseAI != null && !character.m_baseAI.IsAggravated() && character.m_faction == Character.Faction.Dverger;
         }
 
+        // Whether a melee attack by the attacker with the weapon is allowed to hit the character, or a non-character
+        // target if character is null, regardless of dodging. Mirrors vanilla Attack.DoMeleeAttack(): e.g. a player
+        // hits another character only with PvP on or if it is an enemy, and a tamed-only weapon such as the butcher
+        // knife hits nothing but tamed creatures.
+        public static bool CanWeaponHit(Humanoid attacker, ItemDrop.ItemData weapon, Character character)
+        {
+            if (character == null)
+            {
+                return !weapon.m_shared.m_tamedOnly;
+            }
+            return (attacker.IsPlayer() || BaseAI.IsEnemy(attacker, character)) &&
+                   (weapon.m_shared.m_tamedOnly || !attacker.IsPlayer() || attacker.IsPVPEnabled() || BaseAI.IsEnemy(attacker, character)) &&
+                   (!weapon.m_shared.m_tamedOnly || character.IsTamed());
+        }
+
+        // Whether the local player swinging, punching or kicking the collider with the item should start an attack at
+        // all, so that a hit which Attack.DoMeleeAttack() would reject anyway does not cost stamina or put the target
+        // in cooldown.
+        public static bool CanHitCollider(Collider collider, ItemDrop.ItemData item)
+        {
+            if (item == null)
+            {
+                return true;
+            }
+
+            Character character = collider.GetComponentInParent<Character>();
+            if (!CanWeaponHit(Player.m_localPlayer, item, character))
+            {
+                return false;
+            }
+
+            // Vanilla lets a PvP player's hit land on a non-PvP player and leaves it to the damage to be ignored.
+            return character == null || !character.IsPlayer() || character.IsPVPEnabled();
+        }
+
         private static bool IsHostileCharacter(Collider collider)
         {
             var character = collider.GetComponentInParent<Character>();
@@ -306,7 +341,7 @@ namespace ValheimVRMod.Scripts
                 isSlowAttack = weaponHasMultitargetSwipe && isTwoHandedMultitargetSwipeActive;
             }
 
-            if (!tryHitTarget(collider.gameObject, isSlowAttack, speed))
+            if (!CanHitCollider(collider, item) ||!tryHitTarget(collider.gameObject, isSlowAttack, speed))
             {
                 return;
             }
