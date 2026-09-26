@@ -71,6 +71,7 @@ namespace ValheimVRMod.Scripts
             public delegate bool QuickMenuItemCallback();
 
             private ItemDrop.ItemData item;
+            private bool? equipToRightHand;
 
             private QuickMenuItemCallback callback;
             private Sprite sprite
@@ -87,16 +88,22 @@ namespace ValheimVRMod.Scripts
                 return callback == null ? false : callback();
             }
 
-            public void useAsInventoryItemAndRefreshColor(Inventory inventory, ItemDrop.ItemData item)
+            // equipToRightHand, if given, is the hand a hand item goes into when it is free, like grabbing it from the
+            // back would (see Pose.TryEquipToHand()). Otherwise, and for anything else, the game decides as usual.
+            public void useAsInventoryItemAndRefreshColor(Inventory inventory, ItemDrop.ItemData item, bool? equipToRightHand = null)
             {
-                if (this.item != item)
+                if (this.item != item || this.equipToRightHand != equipToRightHand)
                 {
                     this.item = item;
+                    this.equipToRightHand = equipToRightHand;
                     itemName = item.GetIcon().name;
                     sprite = item.GetIcon();
                     callback = delegate ()
                     {
-                        Player.m_localPlayer.UseItem(inventory, item, false);
+                        if (!(equipToRightHand.HasValue && Utilities.Pose.TryEquipToHand(item, equipToRightHand.Value)))
+                        {
+                            Player.m_localPlayer.UseItem(inventory, item, false);
+                        }
                         return true;
                     };
                 }
@@ -517,6 +524,11 @@ namespace ValheimVRMod.Scripts
                     }
                 }
             } else {
+                // Items shown on both hands go into the hand whose menu they are picked from.
+                bool? equipToRightHand =
+                    VHVRConfig.SplitQuickMenuRadialItemsByWieldingHand() ?
+                    (bool?)null :
+                    handTransform == VRPlayer.rightHand.transform;
                 for (int i = 0; i < 8; i++)
                 {
                     ItemDrop.ItemData item = inventory?.GetItemAt(i, 0);
@@ -527,7 +539,7 @@ namespace ValheimVRMod.Scripts
                     if (VHVRConfig.SplitQuickMenuRadialItemsByWieldingHand() && EquipScript.CanUseAsMainHandItem(item) ^ isDominantHand) {
                         continue;
                     }
-                    elements[elementCount].useAsInventoryItemAndRefreshColor(inventory, item);
+                    elements[elementCount].useAsInventoryItemAndRefreshColor(inventory, item, equipToRightHand);
                     elementCount++;
                 }
             }
