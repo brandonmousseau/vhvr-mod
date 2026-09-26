@@ -220,8 +220,9 @@ namespace ValheimVRMod.Scripts {
 
             writeData(pkg, leftHand, ownerVelocityLeft);
             writeData(pkg, rightHand, ownerVelocityRight);
+            // The solver works relative to solverOrigin to keep precision far from the world origin.
             pelvis.transform.SetPositionAndRotation(
-                VRPlayer.vrikRef.solver.spine.pelvis.solverPosition,
+                VRPlayer.vrikRef.solver.spine.pelvis.solverPosition + VRPlayer.vrikRef.solver.solverOrigin,
                 VRPlayer.vrikRef.solver.spine.pelvis.solverRotation);
             writeData(pkg, pelvis, ownerVelocityCamera);
             writeFingers(pkg, VRPlayer.vrikRef.references.leftHand);
