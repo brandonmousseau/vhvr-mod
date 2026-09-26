@@ -30,6 +30,7 @@ namespace ValheimVRMod.Utilities
             (1 << LayerUtils.CHARARCTER_TRIGGER) |
             (1 << LayerUtils.WEAPON_LAYER) |
             LayerUtils.HANDS_LAYER_MASK |
+            (1 << LayerUtils.BLOCKER) |
             LayerUtils.UI_PANEL_LAYER_MASK |
             LayerUtils.WORLDSPACE_UI_LAYER_MASK;
 

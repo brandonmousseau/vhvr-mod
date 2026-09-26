@@ -56,16 +56,16 @@ namespace ValheimVRMod.Utilities
         public const int PIECE_NONSOLID = 10;
         public const int WATERVOLUME_LAYER = 21;
         public const int WEAPON_LAYER = 22;
+        public const int BLOCKER = 23;
 
         // VHVR custom layers
         // A layer that collides with most other layers, borrowing it for VR weapon collsion.
         public const int VHVR_WEAPON = 3;
         public const int UI_PANEL_LAYER = 7;
         public const int UI_PANEL_LAYER_MASK = (1 << UI_PANEL_LAYER);
-        // I need a layer with non-visible objects since
-        // layers are short supply, so re-using 23. Must be
-        // in sync with what is in the prefab in Unity Editor.
-        private const int HANDS_LAYER = 23;
+        // A layer with no visible objects of its own, drawn by the hands camera on top of everything else.
+        // Must be in sync with what is in the prefab in Unity Editor.
+        private const int HANDS_LAYER = 6;
         public const int HANDS_LAYER_MASK = (1 << HANDS_LAYER);
         public const int WORLDSPACE_UI_LAYER = 30;
         public const int WORLDSPACE_UI_LAYER_MASK = (1 << WORLDSPACE_UI_LAYER);
