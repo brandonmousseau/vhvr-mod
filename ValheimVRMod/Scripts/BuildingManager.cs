@@ -473,7 +473,7 @@ namespace ValheimVRMod.Scripts
                             originalRayTraceMod = pieceRaycast.transform;
                             originalRayTraceTransform = pieceRaycast.collider.transform;
                         }
-                        else if (pieceRaycast.transform && (SteamVR_Actions.valheim_LeftClick.GetStateDown(VRPlayer.mainWeaponHandInputSource) || !(Player.m_localPlayer.transform.parent && IsModdedStructure(Player.m_localPlayer.transform.parent.name))))
+                        else if (pieceRaycast.transform && (SteamVR_Actions.valheim_LeftClick.GetStateDown(VRPlayer.dominantHandInputSource) || !(Player.m_localPlayer.transform.parent && IsModdedStructure(Player.m_localPlayer.transform.parent.name))))
                         {
                             originalRayTraceMod = null;
                         }
@@ -503,7 +503,7 @@ namespace ValheimVRMod.Scripts
             Player.m_localPlayer.m_placementStatus = Player.PlacementStatus.Valid;
             Piece component = piece.GetComponent<Piece>();
             if ((VHVRConfig.BuildOnRelease() &&
-                SteamVR_Actions.valheim_LeftClick.GetState(VRPlayer.mainWeaponHandInputSource) &&
+                SteamVR_Actions.valheim_LeftClick.GetState(VRPlayer.dominantHandInputSource) &&
                 SteamVR_Actions.valheim_Jump.GetState(SteamVR_Input_Sources.Any)) || isForcedDisable)
             {
                 Player.m_localPlayer.m_placementStatus = Player.PlacementStatus.Invalid;
@@ -580,7 +580,7 @@ namespace ValheimVRMod.Scripts
                 isReferenceActive = false;
                 return;
             }
-            if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand) && !isRotatingAdv)
+            if (SteamVR_Actions.valheim_Grab.GetState(VRPlayer.nonDominantHandInputSource) && !isRotatingAdv)
             {
                 if (!Physics.Raycast(PlaceModeRayVectorProvider.startingPositionNonDominant, PlaceModeRayVectorProvider.rayDirectionNonDominant, out pieceRaycast, 50f, piecelayer2))
                 {
@@ -802,7 +802,7 @@ namespace ValheimVRMod.Scripts
                 snapTimer = 0;
                 isSnapping = false;
             }
-            if (SteamVR_Actions.valheim_LeftClick.GetState(VRPlayer.mainWeaponHandInputSource) && !isReferenceActive && !isFreeMode && !VRPlayer.IsClickableGuiOpen)
+            if (SteamVR_Actions.valheim_LeftClick.GetState(VRPlayer.dominantHandInputSource) && !isReferenceActive && !isFreeMode && !VRPlayer.IsClickableGuiOpen)
             {
                 if (Physics.Raycast(PlaceModeRayVectorProvider.startingPosition, PlaceModeRayVectorProvider.rayDirection, out pieceRaycast, 50f, LayerMask.GetMask("piece")))
                 {
@@ -1051,8 +1051,8 @@ namespace ValheimVRMod.Scripts
         // Precision stuff
         private void FreeMode()
         {
-            var leftHandCenter = VRPlayer.leftHand.transform.TransformPoint(handCenter);
-            var dist = Vector3.Distance(leftHandCenter, freeModeAxisParent.transform.position);
+            var nonDominantHandCenter = VRPlayer.nonDominantHand.transform.TransformPoint(handCenter);
+            var dist = Vector3.Distance(nonDominantHandCenter, freeModeAxisParent.transform.position);
             if (isExitFreeMode)
             {
                 triggerFreeModeAreaTimer -= Time.deltaTime;
@@ -1071,7 +1071,7 @@ namespace ValheimVRMod.Scripts
                 if (dist < 0.08f)
                 {
                     inTriggerArea = true;
-                    if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand))
+                    if (SteamVR_Actions.valheim_Grab.GetState(VRPlayer.nonDominantHandInputSource))
                     {
                         triggerFreeModeAreaTimer += Time.deltaTime;
                         if (triggerFreeModeAreaTimer > 5)
@@ -1107,7 +1107,7 @@ namespace ValheimVRMod.Scripts
             }
             else
             {
-                if (SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.LeftHand))
+                if (SteamVR_Actions.valheim_Grab.GetStateUp(VRPlayer.nonDominantHandInputSource))
                 {
                     justChangedFreeMode = false;
                 }
@@ -1123,6 +1123,8 @@ namespace ValheimVRMod.Scripts
         {
             var leftHandCenter = VRPlayer.leftHand.transform.TransformPoint(handCenter);
             var rightHandCenter = VRPlayer.rightHand.transform.TransformPoint(handCenter);
+            var dominantHandCenter = VRPlayer.dominantHand.transform.TransformPoint(handCenter);
+            // The two-handed move frame goes by which hand is physically on the right, whatever the handedness.
             var avgPos = (leftHandCenter + rightHandCenter) / 2;
             var distanceHand = Vector3.Distance(leftHandCenter, rightHandCenter);
             var forwardAvg = (PlaceModeRayVectorProvider.rayDirection + PlaceModeRayVectorProvider.rayDirectionNonDominant) / 2;
@@ -1193,7 +1195,9 @@ namespace ValheimVRMod.Scripts
             }
 
             //gizmo stuff
-            var rotPlacement = VRPlayer.leftHand.transform.TransformPoint(handCenter) - (VRPlayer.leftHand.transform.right * -0.2f) + (PlaceModeRayVectorProvider.rayDirectionNonDominant * 0.1f);
+            // Next to the non-dominant hand, offset towards the dominant hand that grabs it.
+            var nonDominantHand = VRPlayer.nonDominantHand.transform;
+            var rotPlacement = nonDominantHand.TransformPoint(handCenter) + (nonDominantHand.right * 0.2f * HandednessSign()) + (PlaceModeRayVectorProvider.rayDirectionNonDominant * 0.1f);
             var rotationOffset = ghost.transform.forward * 10;
             rotationOffset = new Vector3(rotationOffset.x, 0, rotationOffset.z).normalized;
             if (rotationOffset == Vector3.zero)
@@ -1222,20 +1226,20 @@ namespace ValheimVRMod.Scripts
                 ghost.transform.position = translatePos.transform.position;
                 if (grabbedAxis1 == translateAxisX)
                 {
-                    grabbedAxis1.transform.localPosition = Vector3.Project(translateAxisParent.transform.InverseTransformPoint(rightHandCenter), Vector3.right);
+                    grabbedAxis1.transform.localPosition = Vector3.Project(translateAxisParent.transform.InverseTransformPoint(dominantHandCenter), Vector3.right);
                     ghost.transform.position += grabbedAxis1.transform.position - translateAxisParent.transform.position;
                 }
                 else if (grabbedAxis1 == translateAxisY)
                 {
-                    grabbedAxis1.transform.localPosition = Vector3.Project(translateAxisParent.transform.InverseTransformPoint(rightHandCenter), Vector3.up);
+                    grabbedAxis1.transform.localPosition = Vector3.Project(translateAxisParent.transform.InverseTransformPoint(dominantHandCenter), Vector3.up);
                     ghost.transform.position += grabbedAxis1.transform.position - translateAxisParent.transform.position;
                 }
                 else if (grabbedAxis1 == translateAxisZ)
                 {
-                    grabbedAxis1.transform.localPosition = Vector3.Project(translateAxisParent.transform.InverseTransformPoint(rightHandCenter), Vector3.forward);
+                    grabbedAxis1.transform.localPosition = Vector3.Project(translateAxisParent.transform.InverseTransformPoint(dominantHandCenter), Vector3.forward);
                     ghost.transform.position += grabbedAxis1.transform.position - translateAxisParent.transform.position;
                 }
-                if (!SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand))
+                if (!SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource))
                 {
                     translatePos.transform.position += grabbedAxis1.transform.position - translateAxisParent.transform.position;
                     ghost.transform.position = translatePos.transform.position;
@@ -1254,11 +1258,11 @@ namespace ValheimVRMod.Scripts
             }
             else
             {
-                if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand) && !isMoving)
+                if (SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource) && !isMoving)
                 {
-                    if (Vector3.Distance(rightHandCenter, translateAxisParent.transform.position) < 0.1f)
+                    if (Vector3.Distance(dominantHandCenter, translateAxisParent.transform.position) < 0.1f)
                     {
-                        var handUp = VRPlayer.rightHand.transform.TransformDirection(0, -0.3f, -0.7f);
+                        var handUp = VRPlayer.dominantHand.transform.TransformDirection(0, -0.3f, -0.7f);
                         if (Mathf.Abs(Vector3.Dot(handUp, translateAxisParent.transform.right)) > 0.6f)
                         {
                             grabbedAxis1 = translateAxisX;
@@ -1282,15 +1286,15 @@ namespace ValheimVRMod.Scripts
         //Advanced Rotation
         private void RotationModeChange()
         {
-            var leftHandCenter = VRPlayer.leftHand.transform.TransformPoint(handCenter);
-            var dist = Vector3.Distance(leftHandCenter, rotationChangeAxisIndicator.transform.position);
+            var nonDominantHandCenter = VRPlayer.nonDominantHand.transform.TransformPoint(handCenter);
+            var dist = Vector3.Distance(nonDominantHandCenter, rotationChangeAxisIndicator.transform.position);
 
             if (!justChangedRotationMode)
             {
                 if (dist < 0.08f)
                 {
                     inTriggerArea = true;
-                    if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand))
+                    if (SteamVR_Actions.valheim_Grab.GetState(VRPlayer.nonDominantHandInputSource))
                     {
                         triggerRotationModeTimer += Time.deltaTime;
                         if (triggerRotationModeTimer > 5)
@@ -1320,7 +1324,7 @@ namespace ValheimVRMod.Scripts
             }
             else
             {
-                if (SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.LeftHand))
+                if (SteamVR_Actions.valheim_Grab.GetStateUp(VRPlayer.nonDominantHandInputSource))
                 {
                     justChangedRotationMode = false;
                 }
@@ -1345,6 +1349,8 @@ namespace ValheimVRMod.Scripts
                     rotUp = originalRayTraceMod.up;
                 }
             }
+            // Deliberately the physical right hand for both handednesses: the grip goes with the stick on the same
+            // controller, which is the turn stick, and VRControls stops turning while the right grip is held.
             if (VRControls.instance.getDirectRightXAxis() != 0 && SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand))
             {
                 if (lastAdvRot != Player.m_localPlayer.m_placeRotation)
@@ -1423,6 +1429,13 @@ namespace ValheimVRMod.Scripts
                 copyRotationTimer = 0;
             }
         }
+        // 1 for a right handed player and -1 for a left handed one, to mirror the sideways offsets that place a gizmo
+        // next to one hand and towards the other.
+        private static float HandednessSign()
+        {
+            return VHVRConfig.LeftHanded() ? -1 : 1;
+        }
+
         public void UpdateRotationAdvanced(GameObject ghost)
         {
             if (!VHVRConfig.AdvancedBuildingMode())
@@ -1430,9 +1443,10 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            var leftHandCenter = VRPlayer.leftHand.transform.TransformPoint(handCenter);
-            var rightHandCenter = VRPlayer.rightHand.transform.TransformPoint(handCenter);
-            var rotPlacement = VRPlayer.rightHand.transform.TransformPoint(handCenter) - (VRPlayer.rightHand.transform.right * 0.2f) + (PlaceModeRayVectorProvider.rayDirection * 0.1f);
+            var nonDominantHandCenter = VRPlayer.nonDominantHand.transform.TransformPoint(handCenter);
+            // Next to the dominant hand, offset towards the non-dominant hand that grabs it.
+            var dominantHand = VRPlayer.dominantHand.transform;
+            var rotPlacement = dominantHand.TransformPoint(handCenter) - (dominantHand.right * 0.2f * HandednessSign()) + (PlaceModeRayVectorProvider.rayDirection * 0.1f);
             var vecUp = Vector3.up;
             if (modSupport)
             {
@@ -1462,7 +1476,7 @@ namespace ValheimVRMod.Scripts
                     rotationLine.SetPosition(0, rotationAxisParent.transform.position);
                 }
                 ghost.transform.rotation = rotateReference.transform.rotation;
-                var localHandPos = rotationAxisParent.transform.InverseTransformPoint(leftHandCenter);
+                var localHandPos = rotationAxisParent.transform.InverseTransformPoint(nonDominantHandCenter);
                 var localPosDir = ((grabbedAxis2.transform.position - rotationAxisParent.transform.position) * 10).normalized;
                 var distance = Vector3.Distance(rotationAxisParent.transform.position, grabbedAxis2.transform.position);
                 var rotate = false;
@@ -1568,13 +1582,13 @@ namespace ValheimVRMod.Scripts
 
                 if (rotate && ghost.transform.rotation != advRotationGhostObject.transform.rotation)
                 {
-                    VRPlayer.leftHand.hapticAction.Execute(0, 0.01f, 10, 0.01f, SteamVR_Input_Sources.LeftHand);
+                    VRPlayer.nonDominantHand.hapticAction.Execute(0, 0.01f, 10, 0.01f, VRPlayer.nonDominantHandInputSource);
                     advRotationGhostObject.transform.rotation = ghost.transform.rotation;
                 }
 
                 rotationLine.SetPosition(0, rotationAxisParent.transform.position + ((grabbedAxis2.transform.position - rotationAxisParent.transform.position) * 10).normalized * 0.05f);
                 rotationLine.SetPosition(1, grabbedAxis2.transform.position);
-                if (!SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand))
+                if (!SteamVR_Actions.valheim_Grab.GetState(VRPlayer.nonDominantHandInputSource))
                 {
                     grabbedAxis2 = null;
                     lastRotationDist = 0;
@@ -1600,11 +1614,11 @@ namespace ValheimVRMod.Scripts
             }
             else
             {
-                if (SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand) && !(isMoving || isReferenceActive))
+                if (SteamVR_Actions.valheim_Grab.GetState(VRPlayer.nonDominantHandInputSource) && !(isMoving || isReferenceActive))
                 {
-                    if (Vector3.Distance(leftHandCenter, rotationAxisParent.transform.position) < 0.1f)
+                    if (Vector3.Distance(nonDominantHandCenter, rotationAxisParent.transform.position) < 0.1f)
                     {
-                        var handUp = VRPlayer.leftHand.transform.TransformDirection(0, -0.3f, -0.7f);
+                        var handUp = VRPlayer.nonDominantHand.transform.TransformDirection(0, -0.3f, -0.7f);
                         if (Mathf.Abs(Vector3.Dot(handUp, rotationAxisParent.transform.right)) > 0.6f)
                         {
                             grabbedAxis2 = rotationAxisX;
@@ -1729,9 +1743,9 @@ namespace ValheimVRMod.Scripts
             if (!VHVRConfig.BuildOnRelease())
                 return false;
 
-            if (!SteamVR_Actions.valheim_LeftClick.GetState(VRPlayer.mainWeaponHandInputSource) && !SteamVR_Actions.valheim_Jump.GetState(SteamVR_Input_Sources.Any))
+            if (!SteamVR_Actions.valheim_LeftClick.GetState(VRPlayer.dominantHandInputSource) && !SteamVR_Actions.valheim_Jump.GetState(SteamVR_Input_Sources.Any))
                 holdPlacePressed = false;
-            else if (SteamVR_Actions.valheim_LeftClick.GetState(VRPlayer.mainWeaponHandInputSource))
+            else if (SteamVR_Actions.valheim_LeftClick.GetState(VRPlayer.dominantHandInputSource))
                 holdPlacePressed = true;
 
             return holdPlacePressed && !freeModeSnapSave1;
