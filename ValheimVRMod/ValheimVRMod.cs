@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Runtime.CompilerServices;
 using BepInEx;
 using UnityEngine;
 using ValheimVRMod.VRCore;
@@ -65,24 +66,37 @@ namespace ValheimVRMod
 #endif
         }
 
+        // Nothing here may mention a type from the VR assemblies, including in a branch that is not taken:
+        // Mono compiles the whole method body on the first call and resolves the types it references, so
+        // the VR half lives in StartVr(), which flat screen mode never calls and therefore never compiles.
         void StartValheimVR()
         {
-            HarmonyPatcher.DoPatching();
+            // Resolved before anything is patched so that the patch set and the session mode cannot disagree.
+            bool nonVrPlayer = VHVRConfig.NonVrPlayer();
 
-            bool assetsInitialized = VRAssetManager.Initialize();
-            if (!assetsInitialized)
-            {
-                LogError("Problem initializing VR Assets");
-            }
+            HarmonyPatcher.DoFlatScreenSafePatching();
 
-            if (VHVRConfig.NonVrPlayer())
+            if (nonVrPlayer)
             {
+                if (!VRAssetManager.InitializeFlatScreenAssets())
+                {
+                    LogError("Problem initializing flat screen assets");
+                }
                 LogDebug("Non VR Mode Patching Complete.");
                 return;
             }
 
-            if (!assetsInitialized)
+            StartVr();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void StartVr()
+        {
+            HarmonyPatcher.DoVrPatching();
+
+            if (!VRAssetManager.InitializeVrAssets())
             {
+                LogError("Problem initializing VR Assets");
                 FallBackToFlatScreenMode();
                 return;
             }
@@ -90,6 +104,10 @@ namespace ValheimVRMod
             StartCoroutine(InitializeVRAndCreateRig());
         }
 
+        // Reached only when the VR assemblies are installed but VR could not be started, so the VR patches
+        // are already in place by now. They are left installed and neutralized by their own
+        // VHVRConfig.NonVrPlayer() checks, which is why those runtime guards must stay even though the
+        // patch set is now chosen up front.
         private static void FallBackToFlatScreenMode()
         {
             failedToInitializeVR = true;

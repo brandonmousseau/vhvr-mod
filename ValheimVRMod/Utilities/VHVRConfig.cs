@@ -209,6 +209,10 @@ namespace ValheimVRMod.Utilities
         // vrserver is the SteamVR runtime itself; vrmonitor is the status window started alongside it.
         private static readonly string[] k_steamVrProcessNames = { "vrserver", "vrmonitor" };
 
+        // Stands in for the whole set of VR assemblies the full package installs into Managed: they are
+        // installed and removed together, and this is the one every VR code path needs.
+        private const string k_steamVrAssemblyName = "SteamVR.dll";
+
         private const string k_arrowRestCenter = "Center";
         private const string k_arrowRestAsiatic = "Asiatic";
         private const string k_arrowRestMediterranean = "Mediterranean";
@@ -1626,6 +1630,17 @@ namespace ValheimVRMod.Utilities
                 ? commandLineStringOverrides[flatScreenMode.GetHashCode()]
                 : flatScreenMode.Value;
 
+            if (!VrAssembliesInstalled())
+            {
+                // The flat screen companion package ships without the VR assemblies, so there is nothing
+                // to run VR with no matter what the configuration asks for. Deciding this here rather than
+                // trusting the configuration is what keeps that package from throwing instead of playing.
+                LogUtils.LogInfo(k_steamVrAssemblyName + " is not installed in the game's Managed folder, " +
+                    "so flat screen mode will be used." +
+                    (mode == k_flatScreenModeOn ? "" : " Install the full VHVR package to play in VR."));
+                return true;
+            }
+
             if (mode != k_flatScreenModeAuto)
             {
                 return mode == k_flatScreenModeOn;
@@ -1635,6 +1650,26 @@ namespace ValheimVRMod.Utilities
             LogUtils.LogInfo("flatScreenMode is \"" + k_flatScreenModeAuto + "\" and SteamVR is " +
                 (steamVrRunning ? "running, so VR will be used." : "not running, so flat screen mode will be used."));
             return !steamVrRunning;
+        }
+
+        // Checks the file rather than the loaded assemblies: the VR assemblies are resolved lazily, on the
+        // first call to a method that mentions one of their types, so by the time any of them is loaded it
+        // is already too late to choose flat screen mode instead.
+        private static bool VrAssembliesInstalled()
+        {
+            try
+            {
+                return System.IO.File.Exists(
+                    System.IO.Path.Combine(BepInEx.Paths.ManagedPath, k_steamVrAssemblyName));
+            }
+            catch (Exception e)
+            {
+                // Assume the full package is installed: an unreadable Managed folder is not a reason to
+                // take VR away from someone who has it.
+                LogUtils.LogWarning("Could not check whether " + k_steamVrAssemblyName +
+                    " is installed: " + e.Message);
+                return true;
+            }
         }
 
         // Looks for the SteamVR processes instead of asking OpenVR, because every OpenVR entry point

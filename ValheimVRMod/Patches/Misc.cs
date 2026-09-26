@@ -377,6 +377,7 @@ namespace ValheimVRMod.Patches
     // These patches just remove a warning log that was very spammy under some circumstances
     // and resulted in poor performance. (Something to do with spiky fish...)
     [HarmonyPatch(typeof(Aoe), nameof(Aoe.OnCollisionEnter))]
+    [FlatScreenSafe]
     class AoeOnCollisionEnterPatch
     {
         public static bool Prefix(Aoe __instance, ref Collision collision)
@@ -400,6 +401,7 @@ namespace ValheimVRMod.Patches
     }
 
     [HarmonyPatch(typeof(Aoe), nameof(Aoe.OnCollisionStay))]
+    [FlatScreenSafe]
     class AoeOnCollisionStayPatch
     {
         public static bool Prefix(Aoe __instance, ref Collision collision)
@@ -475,6 +477,7 @@ namespace ValheimVRMod.Patches
     }
 
     [HarmonyPatch(typeof(Player), nameof(Player.OnDeath))]
+    [FlatScreenSafe]
     class PlayerOnDeathPatch
     {
         public static void Prefix(Player __instance)
