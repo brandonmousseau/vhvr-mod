@@ -178,6 +178,8 @@ namespace ValheimVRMod.VRCore
             }
             OpenVRSettings.MirrorViewModes mirrorMode = VHVRConfig.GetMirrorViewMode();
             LogInfo("Mirror View Mode: " + mirrorMode);
+            // Keeps the eye mirror at its true aspect, checking the mode itself every frame.
+            MirrorLetterboxer.EnsureCreated();
             try
             {
                 openVrSettings.SetMirrorViewMode(mirrorMode);
