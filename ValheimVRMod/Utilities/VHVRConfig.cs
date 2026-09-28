@@ -30,6 +30,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> flatscreenSmoothing;
         private static ConfigEntry<float> followCameraDistance;
         private static ConfigEntry<bool> flatscreenPostEffects;
+        private static ConfigEntry<bool> displayVRGUIOnFlatScreen;
 
         // General Settings
         private static ConfigEntry<float> playerMinEyeHeight;
@@ -389,13 +390,13 @@ namespace ValheimVRMod.Utilities
             mirrorMode = config.Bind("Graphics",
                                      "MirrorMode",
                                      "Right",
-                                     new ConfigDescription("The VR mirror mode.Legal values: OpenVR, Right, Left, Follow, Spectator, Stabilized, None. Note: OpenVR is" +
-                                     " required if you want to see the Overlay-type GUI in the mirror image. However, I've found that OpenVR" +
-                                     " mirror mode causes some issue that requires SteamVR to be restarted after closing the game, so unless you" +
-                                     " need it for some specific reason, I recommend using another mirror mode or None. Follow mode and spectator mode" +
-                                     " render content from a third person camera which can cause lag. Stabilized mode renders a smoothed first person" +
-                                     " camera from between the eyes, which is steadier to watch than the mirror image of an eye," +
-                                     " and is the one to pick for streaming or recording.",
+                                     new ConfigDescription("The VR mirror mode: OpenVR, Right, Left, Follow, Spectator, Stabilized, None. Note: OpenVR is" +
+                                     " required if you want to see the Overlay-type GUI in the mirror image. However, OpenVR" +
+                                     " mirror mode may cause some issue that requires SteamVR to be restarted after closing the game." +
+                                     " Follow mode, spectator mode, and stabilized mode" +
+                                     " render content from a separate camera which can cause lag." +
+                                     " Follow mode and stabilized smoothenes rotation and may be easier from watching on flat screen." +
+                                     " and streaming/recording.",
                                      new AcceptableValueList<string>(new string[] { "Right", "Left", "OpenVR", "None", "Follow", "Spectator", "Stabilized" })));
             // Carried over before the change listener is added, since the VR manager is not set up yet.
             if (legacyMirrorModeValue != (string)mirrorMode.DefaultValue &&
@@ -429,6 +430,12 @@ namespace ValheimVRMod.Utilities
                                      true,
                                      "(Follow, Spectator and Stabilized only) Apply post processing such as color grading, bloom and sun shafts" +
                                      " to the flat screen camera as well. Looks closer to the headset view but costs frame rate.");
+            displayVRGUIOnFlatScreen = config.Bind("Graphics",
+                                     "DisplayVRGUIOnFlatScreen",
+                                     true,
+                                     "(Follow, Spectator and Stabilized only) Show the VR GUI panel, including when it is attached to" +
+                                     " the hand, and the laser pointers in the flat screen view. Turn off to keep them out of a stream or" +
+                                     " recording. The main menu is always shown, since the flat screen camera looks at it there.");
         }
 
         private static void InitializeGeneralSettings()
@@ -1311,6 +1318,11 @@ namespace ValheimVRMod.Utilities
         public static bool UseFlatscreenPostEffects()
         {
             return flatscreenPostEffects.Value;
+        }
+
+        public static bool DisplayVRGUIOnFlatScreen()
+        {
+            return displayVRGUIOnFlatScreen.Value;
         }
 
         public static float PlayerMinEyeHeight()
