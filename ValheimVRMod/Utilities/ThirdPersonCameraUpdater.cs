@@ -104,12 +104,15 @@ namespace ValheimVRMod.Utilities
             }
             else if (VHVRConfig.UseFollowCameraOnFlatscreen())
             {
-                if (Player.m_localPlayer.IsSleeping() || Player.m_localPlayer.IsTeleporting())
+                // Turning to the GUI panel is pointless when it is hidden from this camera, the usual follow view
+                // is kept instead.
+                bool showsGui = VHVRConfig.DisplayVRGUIOnFlatScreen();
+                if (showsGui && (Player.m_localPlayer.IsSleeping() || Player.m_localPlayer.IsTeleporting()))
                 {
                     viewTarget = uiPanel.transform.position;
                     viewPoint = uiPanel.transform.position - uiPanel.transform.forward * 1.5f;
                 }
-                else if (VRPlayer.IsClickableGuiOpen)
+                else if (showsGui && VRPlayer.IsClickableGuiOpen)
                 {
                     viewTarget = uiPanel.transform.position;
                     viewPoint = targetPosition - uiPanel.transform.right * 0.5f + Vector3.up * 0.3f - vrCamera.transform.forward * 0.3f;
