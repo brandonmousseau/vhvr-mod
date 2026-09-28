@@ -394,8 +394,7 @@ namespace ValheimVRMod.VRCore.UI
                     return;
                 }
                 holdTime += Time.unscaledDeltaTime;
-                // In place mode the menu opens right away, the right click (the build menu) is left to share the press.
-                if (!inPlaceMode() && holdTime < QUICK_MENU_HOLD_TIME)
+                if (holdTime < QUICK_MENU_HOLD_TIME)
                 {
                     return;
                 }

@@ -256,6 +256,10 @@
       "binding_url": "bindings_logitech_stylus.json"
     },
     {
+      "controller_type": "frame_controller",
+      "binding_url": "bindings_frame_controller.json"
+    },
+    {
       "controller_type": "vive_cosmos",
       "binding_url": "binding_vive_cosmos.json"
     },
