@@ -19,9 +19,11 @@ namespace ValheimVRMod.Utilities
         internal const float ROTATION_SMOOTHING_TIME = 0.15f;
 
         // A deliberate head movement is smoothed, but a snap turn or a teleport is a jump rather than a
-        // movement, and smoothing one smears the view across the whole turn. Past this the camera is aimed
-        // directly instead.
-        internal const float SNAP_ANGLE = 20f;
+        // movement, and smoothing one at the full smoothing time smears the view across the whole turn. The
+        // smoothing time is therefore shortened as the camera falls further behind: at this angle it is halved,
+        // and it keeps shrinking with the square of the angle, so large jumps are caught up almost at once
+        // without any threshold at which the camera suddenly snaps.
+        internal const float CATCH_UP_ANGLE = 20f;
 
         private Camera camera;
         private Camera vrCamera;
@@ -51,18 +53,27 @@ namespace ValheimVRMod.Utilities
             transform.position = targetPosition;
 
             float smoothingTime = ROTATION_SMOOTHING_TIME * VHVRConfig.FlatscreenSmoothingScale();
-            if (!isPlaced || smoothingTime <= 0 || Quaternion.Angle(transform.rotation, targetRotation) > SNAP_ANGLE)
+            if (!isPlaced)
             {
                 transform.rotation = targetRotation;
                 isPlaced = true;
                 return;
             }
 
+            transform.rotation = SmoothRotation(transform.rotation, targetRotation, smoothingTime);
+        }
+
+        internal static Quaternion SmoothRotation(Quaternion current, Quaternion target, float smoothingTime)
+        {
+            if (smoothingTime <= 0)
+            {
+                return target;
+            }
+            float lag = Quaternion.Angle(current, target) / CATCH_UP_ANGLE;
+            float effectiveSmoothingTime = smoothingTime / (1f + lag * lag);
             // Exponential smoothing rather than a fixed Slerp fraction, so that the steadiness does not depend
             // on the frame rate.
-            transform.rotation =
-                Quaternion.Slerp(
-                    transform.rotation, targetRotation, 1f - Mathf.Exp(-Time.deltaTime / smoothingTime));
+            return Quaternion.Slerp(current, target, 1f - Mathf.Exp(-Time.deltaTime / effectiveSmoothingTime));
         }
     }
 }
