@@ -88,8 +88,8 @@ namespace ValheimVRMod.Scripts
                 return callback == null ? false : callback();
             }
 
-            // equipToRightHand, if given, is the hand a hand item goes into when it is free, like grabbing it from the
-            // back would (see Pose.TryEquipToHand()). Otherwise, and for anything else, the game decides as usual.
+            // equipToRightHand, if given, is the hand a hand item goes into, replacing whatever that hand holds (see
+            // Pose.TryEquipToHand()). Otherwise, and for anything else, the game decides as usual.
             public void useAsInventoryItemAndRefreshColor(Inventory inventory, ItemDrop.ItemData item, bool? equipToRightHand = null)
             {
                 if (this.item != item || this.equipToRightHand != equipToRightHand)
@@ -100,7 +100,8 @@ namespace ValheimVRMod.Scripts
                     sprite = item.GetIcon();
                     callback = delegate ()
                     {
-                        if (!(equipToRightHand.HasValue && Utilities.Pose.TryEquipToHand(item, equipToRightHand.Value)))
+                        if (!(equipToRightHand.HasValue &&
+                              Utilities.Pose.TryEquipToHand(item, equipToRightHand.Value, replaceHeldItems: true)))
                         {
                             Player.m_localPlayer.UseItem(inventory, item, false);
                         }
