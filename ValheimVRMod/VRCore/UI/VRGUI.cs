@@ -1163,6 +1163,11 @@ namespace ValheimVRMod.VRCore.UI
         private void onCameraPreCull(Camera camera)
         {
             showHiddenRenderers();
+            if (camera.name == CameraUtils.FOLLOW_CAMERA)
+            {
+                maybeHideFromFlatscreenCamera();
+                return;
+            }
             if (anchoredUiPanelCamera == null)
             {
                 return;
@@ -1206,6 +1211,40 @@ namespace ValheimVRMod.VRCore.UI
             {
                 hide(panelRenderer);
                 _handPanelProxy.enabled = true;
+            }
+        }
+
+        // Hides the panel, wherever it is, and the real laser beams by renderer rather than by culling layer, since
+        // the beams are not on a layer of their own. Left alone in the main menu, where the flat screen camera looks
+        // at the panel and would otherwise show nothing.
+        private void maybeHideFromFlatscreenCamera()
+        {
+            if (VHVRConfig.DisplayVRGUIOnFlatScreen() || Player.m_localPlayer == null)
+            {
+                return;
+            }
+            if (_uiPanel != null)
+            {
+                Renderer panelRenderer = _uiPanel.GetComponent<Renderer>();
+                if (panelRenderer != null)
+                {
+                    hide(panelRenderer);
+                }
+            }
+            hideLaser(VRPlayer.leftPointer);
+            hideLaser(VRPlayer.rightPointer);
+        }
+
+        private void hideLaser(SteamVR_LaserPointer laser)
+        {
+            if (laser == null || laser.pointer == null)
+            {
+                return;
+            }
+            Renderer laserRenderer = laser.pointer.GetComponent<Renderer>();
+            if (laserRenderer != null)
+            {
+                hide(laserRenderer);
             }
         }
 

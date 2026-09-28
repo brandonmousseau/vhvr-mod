@@ -216,17 +216,8 @@ namespace ValheimVRMod.Utilities
             }
             float smoothingTime =
                 StabilizedCameraUpdater.ROTATION_SMOOTHING_TIME * VHVRConfig.FlatscreenSmoothingScale();
-            if (smoothingTime <= 0 ||
-                Quaternion.Angle(transform.rotation, targetRotation) > StabilizedCameraUpdater.SNAP_ANGLE)
-            {
-                transform.rotation = targetRotation;
-            }
-            else
-            {
-                transform.rotation =
-                    Quaternion.Slerp(
-                        transform.rotation, targetRotation, 1f - Mathf.Exp(-Time.deltaTime / smoothingTime));
-            }
+            transform.rotation =
+                StabilizedCameraUpdater.SmoothRotation(transform.rotation, targetRotation, smoothingTime);
 
             // Leaves the smoothing in FixedUpdate at rest where this camera is, so that going back out to a larger
             // distance or a pulled back view starts from here instead of from wherever it was left.

@@ -30,6 +30,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> flatscreenSmoothing;
         private static ConfigEntry<float> followCameraDistance;
         private static ConfigEntry<bool> flatscreenPostEffects;
+        private static ConfigEntry<bool> displayVRGUIOnFlatScreen;
 
         // General Settings
         private static ConfigEntry<float> playerMinEyeHeight;
@@ -429,6 +430,12 @@ namespace ValheimVRMod.Utilities
                                      true,
                                      "(Follow, Spectator and Stabilized only) Apply post processing such as color grading, bloom and sun shafts" +
                                      " to the flat screen camera as well. Looks closer to the headset view but costs frame rate.");
+            displayVRGUIOnFlatScreen = config.Bind("Graphics",
+                                     "DisplayVRGUIOnFlatScreen",
+                                     true,
+                                     "(Follow, Spectator and Stabilized only) Show the VR GUI panel, including when it is attached to" +
+                                     " the hand, and the laser pointers in the flat screen view. Turn off to keep them out of a stream or" +
+                                     " recording. The main menu is always shown, since the flat screen camera looks at it there.");
         }
 
         private static void InitializeGeneralSettings()
@@ -1311,6 +1318,11 @@ namespace ValheimVRMod.Utilities
         public static bool UseFlatscreenPostEffects()
         {
             return flatscreenPostEffects.Value;
+        }
+
+        public static bool DisplayVRGUIOnFlatScreen()
+        {
+            return displayVRGUIOnFlatScreen.Value;
         }
 
         public static float PlayerMinEyeHeight()
