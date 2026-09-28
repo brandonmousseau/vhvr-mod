@@ -10,26 +10,19 @@ namespace ValheimVRMod.Utilities
     // Shows the eye mirror of the Left, Right and OpenVR mirror modes at its true aspect, with black bars, instead
     // of stretched to the shape of the game window.
     //
-    // The image is still the one the OpenVR display provider chooses for its mirror blit: Unity's automatic blit to
-    // the window is turned off and the same blit is instead drawn into a centered rectangle at the end of the frame.
-    // Whenever that cannot be done the automatic blit is turned back on, so the window never goes black, at worst
-    // it is stretched again.
+    // The image is still the one the OpenVR display provider chooses for its mirror blit, drawn into a centered
+    // rectangle over the window at the end of the frame. Unity's automatic, stretched blit is deliberately left on:
+    // turning it off (SetPreferredMirrorBlitMode(None)) makes Unity lay out screen space canvases at the eye texture
+    // size instead of the window size, which misplaces the whole VR GUI when a world is loaded. Whenever the
+    // letterboxed image cannot be drawn, the stretched one is simply left in place.
     class MirrorLetterboxer : MonoBehaviour
     {
-        // Giving up for good after the automatic blit had to be restored this often, rather than flickering between
-        // letterboxed and stretched frames on a setup where the manual blit only works now and then.
-        private const int MAX_FALLBACKS = 5;
-
         private static MirrorLetterboxer instance;
 
         private readonly List<XRDisplaySubsystem> displays = new List<XRDisplaySubsystem>();
         private XRDisplaySubsystem display;
         private CommandBuffer commandBuffer;
-        private bool suppressingAutomaticBlit;
-        private int fallbackCount;
-        private bool givenUp;
         private bool loggedSuccess;
-
         public static void EnsureCreated()
         {
             if (instance != null)
@@ -46,11 +39,6 @@ namespace ValheimVRMod.Utilities
             StartCoroutine(drawAtEndOfFrames());
         }
 
-        void OnDisable()
-        {
-            setAutomaticBlitSuppressed(false);
-        }
-
         void OnDestroy()
         {
             commandBuffer?.Release();
@@ -63,26 +51,10 @@ namespace ValheimVRMod.Utilities
             while (true)
             {
                 yield return endOfFrame;
-                if (givenUp || VHVRConfig.NonVrPlayer() ||
-                    VHVRConfig.GetMirrorViewMode() == Unity.XR.OpenVR.OpenVRSettings.MirrorViewModes.None)
+                if (!VHVRConfig.NonVrPlayer() &&
+                    VHVRConfig.GetMirrorViewMode() != Unity.XR.OpenVR.OpenVRSettings.MirrorViewModes.None)
                 {
-                    // The window is either not drawn from the eye mirror at all, or left to the automatic blit.
-                    setAutomaticBlitSuppressed(false);
-                    continue;
-                }
-
-                if (tryDrawLetterboxed())
-                {
-                    setAutomaticBlitSuppressed(true);
-                }
-                else if (suppressingAutomaticBlit)
-                {
-                    setAutomaticBlitSuppressed(false);
-                    if (++fallbackCount >= MAX_FALLBACKS)
-                    {
-                        LogWarning("Could not letterbox the mirror view, showing it stretched to the window instead.");
-                        givenUp = true;
-                    }
+                    tryDrawLetterboxed();
                 }
             }
         }
@@ -184,21 +156,6 @@ namespace ValheimVRMod.Utilities
             {
                 RenderTexture.ReleaseTemporary(temporary);
             }
-        }
-
-        private void setAutomaticBlitSuppressed(bool suppressed)
-        {
-            if (suppressed == suppressingAutomaticBlit)
-            {
-                return;
-            }
-            XRDisplaySubsystem display = getDisplay();
-            if (display == null)
-            {
-                return;
-            }
-            display.SetPreferredMirrorBlitMode(suppressed ? XRMirrorViewBlitMode.None : XRMirrorViewBlitMode.Default);
-            suppressingAutomaticBlit = suppressed;
         }
 
         private XRDisplaySubsystem getDisplay()
