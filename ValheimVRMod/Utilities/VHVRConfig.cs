@@ -390,14 +390,16 @@ namespace ValheimVRMod.Utilities
             mirrorMode = config.Bind("Graphics",
                                      "MirrorMode",
                                      "Right",
-                                     new ConfigDescription("The VR mirror mode: OpenVR, Right, Left, Follow, Spectator, Stabilized, None. Note: OpenVR is" +
+                                     new ConfigDescription("The VR mirror mode: OpenVR, Right, Left, FullWidthRight, FullWidthLeft, Follow, Spectator, Stabilized, None." +
+                                     " FullWidthRight and FullWidthLeft show the whole width of the eye image, undistorted and cropped at the top and bottom," +
+                                     " instead of stretched to the window. Note: OpenVR is" +
                                      " required if you want to see the Overlay-type GUI in the mirror image. However, OpenVR" +
                                      " mirror mode may cause some issue that requires SteamVR to be restarted after closing the game." +
                                      " Follow mode, spectator mode, and stabilized mode" +
                                      " render content from a separate camera which can cause lag." +
                                      " Follow mode and stabilized smoothenes rotation and may be easier from watching on flat screen." +
                                      " and streaming/recording.",
-                                     new AcceptableValueList<string>(new string[] { "Right", "Left", "OpenVR", "None", "Follow", "Spectator", "Stabilized" })));
+                                     new AcceptableValueList<string>(new string[] { "Right", "Left", "OpenVR", "FullWidthRight", "FullWidthLeft", "None", "Follow", "Spectator", "Stabilized" })));
             // Carried over before the change listener is added, since the VR manager is not set up yet.
             if (legacyMirrorModeValue != (string)mirrorMode.DefaultValue &&
                 mirrorMode.Value == (string)mirrorMode.DefaultValue)
@@ -1237,6 +1239,8 @@ namespace ValheimVRMod.Utilities
                 case "OpenVR":
                     return OpenVRSettings.MirrorViewModes.OpenVR;
                 case "None":
+                case "FullWidthRight":
+                case "FullWidthLeft":
                 case "Follow":
                 case "Spectator":
                 case "Stabilized":
@@ -1247,6 +1251,31 @@ namespace ValheimVRMod.Utilities
                 default:
                     LogUtils.LogWarning("Invalid mirror mode setting. Defaulting to None");
                     return OpenVRSettings.MirrorViewModes.None;
+            }
+        }
+
+        // The None mirror mode, as opposed to the other modes that also leave the eye mirror off but draw the flat
+        // screen themselves.
+        public static bool UseNoFlatscreenView()
+        {
+            return mirrorMode.Value == "None";
+        }
+
+        // Whether the flat screen shows an eye image at its true aspect, copied by a camera of the mod's own instead of
+        // the stretched eye mirror. The eye is only set when this returns true.
+        public static bool UseFullWidthMirror(out UnityEngine.XR.XRNode eye)
+        {
+            switch (mirrorMode.Value)
+            {
+                case "FullWidthRight":
+                    eye = UnityEngine.XR.XRNode.RightEye;
+                    return true;
+                case "FullWidthLeft":
+                    eye = UnityEngine.XR.XRNode.LeftEye;
+                    return true;
+                default:
+                    eye = UnityEngine.XR.XRNode.RightEye;
+                    return false;
             }
         }
 

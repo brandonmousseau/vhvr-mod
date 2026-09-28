@@ -21,6 +21,22 @@ namespace ValheimVRMod.VRCore
         // Set once the XRSDK loader is up. Until then there is no OpenVR runtime and no XRSDKOpenVR
         // native plugin to push a mirror view mode into.
         private static bool xrSdkInitialized;
+
+        // Turning the mirror off before the OpenVR display provider has shown it once (as starting in a mode that
+        // leaves the eye mirror off would, since the provider starts on the Right mode of the bundled settings) leaves
+        // it broken for the whole session: the window stops refreshing in the Left and Right modes chosen later.
+        // Switching between the modes works once the provider has produced a mirror image, so the None mode is held
+        // back until then.
+        private const int MIRROR_FRAMES_BEFORE_NONE = 3;
+        // Applying the None mode anyway after this long, rather than showing the eye mirror in a mode that is meant
+        // to leave it off, should the provider never report a mirror image.
+        private const float MIRROR_SETUP_TIMEOUT = 60;
+        private static bool mirrorShown;
+        private static int mirrorFramesSeen;
+        // When the None mode started waiting for the mirror to be set up, or -1 when it is not waiting.
+        private static float deferredNoneSince = -1;
+        private static readonly List<XRDisplaySubsystem> displays = new List<XRDisplaySubsystem>();
+
         public static bool InitializeVR()
         {
             // Need to PreInitialize actions before XRSDK
@@ -177,6 +193,18 @@ namespace ValheimVRMod.VRCore
                 return;
             }
             OpenVRSettings.MirrorViewModes mirrorMode = VHVRConfig.GetMirrorViewMode();
+            if (VHVRConfig.UseFullWidthMirror(out _) || VHVRConfig.UseNoFlatscreenView())
+            {
+                // Turns itself on and off with the mode from then on.
+                FullWidthMirror.EnsureCreated();
+            }
+            if (mirrorMode == OpenVRSettings.MirrorViewModes.None && !mirrorShown)
+            {
+                LogInfo("Mirror View Mode: None, once the mirror has been set up");
+                deferredNoneSince = Time.realtimeSinceStartup;
+                return;
+            }
+            deferredNoneSince = -1;
             LogInfo("Mirror View Mode: " + mirrorMode);
             try
             {
@@ -189,6 +217,48 @@ namespace ValheimVRMod.VRCore
                 // the remaining settings short.
                 LogError("Failed to set mirror view mode " + mirrorMode + ": " + e);
             }
+        }
+
+        // Called every frame. Notes when the provider has shown its mirror and then applies a None mode held back
+        // until it has.
+        public static void UpdateMirrorSetup()
+        {
+            if (mirrorShown || !xrSdkInitialized || VHVRConfig.NonVrPlayer())
+            {
+                return;
+            }
+            if (hasMirrorImage() && ++mirrorFramesSeen >= MIRROR_FRAMES_BEFORE_NONE)
+            {
+                mirrorShown = true;
+            }
+            else if (deferredNoneSince < 0 || Time.realtimeSinceStartup - deferredNoneSince < MIRROR_SETUP_TIMEOUT)
+            {
+                return;
+            }
+            else
+            {
+                LogWarning("The mirror was not set up in time, turning it off anyway.");
+                mirrorShown = true;
+            }
+            if (deferredNoneSince >= 0)
+            {
+                UpdateMirrorViewMode();
+            }
+        }
+
+        private static bool hasMirrorImage()
+        {
+            SubsystemManager.GetInstances(displays);
+            foreach (XRDisplaySubsystem display in displays)
+            {
+                if (display.running &&
+                    display.GetMirrorViewBlitDesc(null, out var desc, XRMirrorViewBlitMode.Default) &&
+                    desc.blitParamsCount > 0)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         public static void tryRecenter()
