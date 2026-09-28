@@ -10,14 +10,19 @@ namespace ValheimVRMod.Scripts
     // nor anything feeding it ever sees the smoothed pose.
     public class VrikVisualSmoother : MonoBehaviour
     {
-        // Smoothing only applies beyond this distance from the world origin.
+        // Smoothing only applies beyond this distance from the world origin. Within it the jitter is negligible.
         private const float MIN_DISTANCE_FROM_ORIGIN = 500f;
-        // A difference between the smoothed and the solved pose within these is mostly jitter and is smoothed heavily.
-        // Beyond them it is real movement and followed more and more closely, which keeps the added lag small.
-        private const float JITTER_ANGLE = 2f;
-        private const float JITTER_DISTANCE = 0.005f;
-        // Time constant of the smoothing of jitter, in seconds.
-        private const float JITTER_SMOOTHING_TIME = 0.05f;
+        // The spacing of floats around 1, which the spacing around any value is roughly that value times.
+        private const float FLOAT_RELATIVE_PRECISION = 1.1920929e-7f;
+        // How many float steps at the body's distance from the origin the solved pose jitters by, as its noise scale.
+        private const float NOISE_IN_FLOAT_STEPS = 4f;
+        // Turns the noise scale of positions into that of rotations: roughly the length of the bones whose ends the
+        // solve places.
+        private const float NOISE_LEVER = 0.25f;
+        // Time constant, in seconds, of following a difference as big as the noise scale. The follow speed grows with
+        // the square of the difference: a difference within the noise scale, which is mostly jitter, is followed
+        // slowly, and one a few times bigger, which is real movement, within a frame or two.
+        private const float NOISE_FOLLOW_TIME = 0.1f;
 
         private VRIK vrik;
         private Transform[] bones;
@@ -65,8 +70,8 @@ namespace ValheimVRMod.Scripts
         private void OnPostSolve()
         {
             // Without FixTransforms() (LOD 2), smoothed values would feed back into the next solve.
-            if (vrik == null || vrik.solver.LOD >= 2 ||
-                vrik.references.root.position.magnitude < MIN_DISTANCE_FROM_ORIGIN)
+            float distanceFromOrigin = vrik != null ? vrik.references.root.position.magnitude : 0;
+            if (vrik == null || vrik.solver.LOD >= 2 || distanceFromOrigin < MIN_DISTANCE_FROM_ORIGIN)
             {
                 lastSmoothedFrame = -1;
                 return;
@@ -75,7 +80,9 @@ namespace ValheimVRMod.Scripts
             // Start over from the solved pose after any frame not smoothed, e. g. while VRIK was disabled.
             bool isContinuing = lastSmoothedFrame == Time.frameCount - 1;
             lastSmoothedFrame = Time.frameCount;
-            float baseBlend = 1 - Mathf.Exp(-Time.deltaTime / JITTER_SMOOTHING_TIME);
+            float noiseDistance = distanceFromOrigin * FLOAT_RELATIVE_PRECISION * NOISE_IN_FLOAT_STEPS;
+            float noiseAngle = noiseDistance / NOISE_LEVER;
+            float deltaTime = Time.unscaledDeltaTime;
 
             // The root (index 0) is not restored by FixTransforms(), so it is left alone.
             for (int i = 1; i < bones.Length; i++)
@@ -95,7 +102,7 @@ namespace ValheimVRMod.Scripts
 
                 Quaternion solvedRotation = bone.localRotation;
                 float rotationBlend =
-                    Mathf.Lerp(baseBlend, 1, Quaternion.Angle(smoothedLocalRotations[i], solvedRotation) / JITTER_ANGLE);
+                    GetBlend(AngleBetween(smoothedLocalRotations[i], solvedRotation) / noiseAngle, deltaTime);
                 bone.localRotation =
                     smoothedLocalRotations[i] = Quaternion.Slerp(smoothedLocalRotations[i], solvedRotation, rotationBlend);
 
@@ -103,11 +110,26 @@ namespace ValheimVRMod.Scripts
                 {
                     Vector3 solvedPosition = bone.localPosition;
                     float positionBlend =
-                        Mathf.Lerp(baseBlend, 1, Vector3.Distance(smoothedLocalPositions[i], solvedPosition) / JITTER_DISTANCE);
+                        GetBlend(Vector3.Distance(smoothedLocalPositions[i], solvedPosition) / noiseDistance, deltaTime);
                     bone.localPosition =
                         smoothedLocalPositions[i] = Vector3.Lerp(smoothedLocalPositions[i], solvedPosition, positionBlend);
                 }
             }
+        }
+
+        // The fraction of the way to the solved pose to move this frame, given the difference from it in noise scales.
+        private static float GetBlend(float differenceInNoise, float deltaTime)
+        {
+            return 1 - Mathf.Exp(-deltaTime / NOISE_FOLLOW_TIME * differenceInNoise * differenceInNoise);
+        }
+
+        // In radians. Unlike Quaternion.Angle, which reads any angle below about 0.16 degrees as 0, it measures the
+        // small differences that jitter is made of.
+        private static float AngleBetween(Quaternion a, Quaternion b)
+        {
+            Quaternion difference = Quaternion.Inverse(a) * b;
+            float sine = new Vector3(difference.x, difference.y, difference.z).magnitude;
+            return 2 * Mathf.Atan2(sine, Mathf.Abs(difference.w));
         }
     }
 }
