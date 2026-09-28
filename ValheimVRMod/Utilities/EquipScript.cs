@@ -146,6 +146,8 @@ namespace ValheimVRMod.Utilities
                 case "$item_fistweapon_fenris":
                     return EquipType.Claws;
                 case "$item_lantern":
+                // "Salvaged Lantern" in English.
+                case "$item_lanternDN":
                     return EquipType.Lantern;
                 //modded
                 case "Rune of Frostbolt":
@@ -222,6 +224,8 @@ namespace ValheimVRMod.Utilities
             switch (item?.m_shared.m_name)
             {
                 case "$item_lantern":
+                // "Salvaged Lantern" in English.
+                case "$item_lanternDN":
                     return EquipType.Lantern;
                 // Held and fired like a crossbow, whatever ammo type it uses.
                 case GRAPPLING_HOOK_NAME:
