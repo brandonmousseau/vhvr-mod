@@ -1763,6 +1763,7 @@ namespace ValheimVRMod.VRCore
             {
                 return;
             }
+            VrikVisualSmoother.Attach(vrikRef);
             var vrPlayerSync = player.gameObject.GetComponent<VRPlayerSync>();
             vrPlayerSync.camera = cam.gameObject;
             vrPlayerSync.leftHand = vrikRef.solver.leftArm.target.parent.gameObject;
