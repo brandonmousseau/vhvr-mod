@@ -13,21 +13,20 @@ namespace ValheimVRMod.Scripts
      *
      * Rather than reimplementing the countdown, this reroutes the vanilla one, the same way the VRHud elements do:
      * Hud.m_gpRoot and the widgets under it are pointed at a small canvas on the button, so Hud.UpdateGuardianPower()
-     * keeps writing the cooldown ("Ready" once it is over) and shows or hides the canvas along with the power. Only
-     * the time left on the power's effect, which vanilla shows in the status effect list instead, is added here.
+     * keeps writing the cooldown ("Ready" once it is over) and shows or hides the canvas along with the power. The time
+     * left on the power's effect is not shown here, since vanilla already shows it on the effect's status effect icon.
      */
     public class GuardianPowerCountdown : MonoBehaviour
     {
         // In canvas units. The canvas is as wide as the spacing between two wrist buttons.
         private const float CANVAS_WIDTH = 240f;
-        private const float CANVAS_HEIGHT = 80f;
+        private const float CANVAS_HEIGHT = 40f;
         private const float CANVAS_WIDTH_METERS = 0.05f;
         private const float FONT_SIZE = 28f;
         // Below the button's icon, whose background sprite is 4 cm across. Above it is where WristStatusEffects puts the
         // status effect icons. The Forsaken Power button is the leftmost of the first row, clear of the chat button that
         // the second row holds in the middle.
-        private static readonly Vector3 OFFSET_FROM_BUTTON = new Vector3(0, -0.035f, 0);
-        private static readonly Color ACTIVE_COLOR = new Color(0.6f, 0.9f, 1f);
+        private static readonly Vector3 OFFSET_FROM_BUTTON = new Vector3(0, -0.03f, 0);
 
         private static GuardianPowerCountdown instance;
 
@@ -37,9 +36,8 @@ namespace ValheimVRMod.Scripts
         private TMP_Text originalName;
         private TMP_Text originalCooldown;
         private RectTransform canvasRect;
-        private TMP_Text activeText;
 
-        // Puts the countdown above the given Forsaken Power button, taking it over from the HUD if not done yet.
+        // Puts the countdown below the given Forsaken Power button, taking it over from the HUD if not done yet.
         public static void AttachTo(Transform powerButton)
         {
             if (instance != null && instance.hud != Hud.instance)
@@ -116,12 +114,7 @@ namespace ValheimVRMod.Scripts
             cooldown.transform.SetParent(canvasRect, false);
             clone.SetActive(false);
 
-            placeLine(cooldown, /* top= */ false);
-            TMP_Text activeText = Instantiate(cooldown.gameObject, canvasRect, false).GetComponent<TMP_Text>();
-            activeText.name = "ActiveTime";
-            activeText.color = ACTIVE_COLOR;
-            activeText.text = "";
-            placeLine(activeText, /* top= */ true);
+            placeText(cooldown);
             foreach (Transform child in canvasObject.GetComponentsInChildren<Transform>(includeInactive: true))
             {
                 child.gameObject.layer = LayerUtils.getWorldspaceUiLayer();
@@ -134,7 +127,6 @@ namespace ValheimVRMod.Scripts
             countdown.originalName = hud.m_gpName;
             countdown.originalCooldown = hud.m_gpCooldown;
             countdown.canvasRect = canvasRect;
-            countdown.activeText = activeText;
 
             // Vanilla shows or hides m_gpRoot with the power, which now does the same with this canvas.
             hud.m_gpRoot.gameObject.SetActive(false);
@@ -165,12 +157,12 @@ namespace ValheimVRMod.Scripts
             return counterpart == null ? null : counterpart.GetComponent<T>();
         }
 
-        private static void placeLine(TMP_Text text, bool top)
+        private static void placeText(TMP_Text text)
         {
             RectTransform rect = text.rectTransform;
             rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0.5f, 0.5f);
-            rect.sizeDelta = new Vector2(CANVAS_WIDTH, CANVAS_HEIGHT / 2);
-            rect.anchoredPosition = new Vector2(0, (top ? 1 : -1) * CANVAS_HEIGHT / 4);
+            rect.sizeDelta = new Vector2(CANVAS_WIDTH, CANVAS_HEIGHT);
+            rect.anchoredPosition = Vector2.zero;
             rect.localRotation = Quaternion.identity;
             rect.localScale = Vector3.one;
             text.enableAutoSizing = false;
@@ -185,19 +177,7 @@ namespace ValheimVRMod.Scripts
             if (hud != Hud.instance)
             {
                 Destroy(gameObject);
-                return;
             }
-            Player player = Player.m_localPlayer;
-            if (player == null)
-            {
-                return;
-            }
-            StatusEffect power;
-            float cooldown;
-            player.GetGuardianPowerHUD(out power, out cooldown);
-            StatusEffect activePower = power == null ? null : player.GetSEMan().GetStatusEffect(power.NameHash());
-            float timeLeft = activePower == null ? 0 : activePower.GetRemaningTime();
-            activeText.text = timeLeft > 0 ? StatusEffect.GetTimeString(timeLeft) : "";
         }
 
         private void OnDestroy()

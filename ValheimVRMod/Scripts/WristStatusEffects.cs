@@ -10,7 +10,7 @@ namespace ValheimVRMod.Scripts
      *
      * Like GuardianPowerCountdown, this reroutes the vanilla list rather than reimplementing it: Hud.m_statusEffectListRoot
      * is pointed at a small canvas that follows the wrist bar, so Hud.UpdateStatusEffects() keeps creating, updating and
-     * removing the icons there. Only their layout is redone here, centering them in rows above the buttons.
+     * removing the icons there. Only their layout is redone here, centering them in a single row above the buttons.
      *
      * The canvas is not a child of the wrist bar, since that is deactivated whenever it is out of view, and vanilla looks
      * up the icons' text and animator with GetComponentInChildren(), which skips inactive objects. It is only hidden by
@@ -18,9 +18,8 @@ namespace ValheimVRMod.Scripts
      */
     public class WristStatusEffects : MonoBehaviour
     {
-        private const int EFFECTS_PER_ROW = 5;
-        // Distance between two icons. A bit less than the 5 cm between two wrist buttons, so that a full row of icons is
-        // about as wide as a row of buttons.
+        // Distance between two icons. A bit less than the 5 cm between two wrist buttons, so that five icons are about as
+        // wide as a row of buttons.
         private const float SPACING_METERS = 0.04f;
 
         private static WristStatusEffects instance;
@@ -30,14 +29,14 @@ namespace ValheimVRMod.Scripts
         private RectTransform root;
         private Canvas canvas;
         private GameObject wrist;
-        // Where the center of the first row of icons goes, in the wrist bar's space. Further rows go above it.
-        private float firstRowY;
+        // Where the center of the row of icons goes, in the wrist bar's space.
+        private float rowY;
         // From an icon's pivot to the center of its image, which is what gets laid out.
         private Vector2? iconCenterOffset;
 
-        // Puts the status effect icons on the given wrist bar, centered in rows stacked upwards from the given height, taking them
+        // Puts the status effect icons on the given wrist bar, centered in a row at the given height, taking them
         // over from the HUD if not done yet.
-        public static void AttachTo(GameObject wrist, float firstRowY)
+        public static void AttachTo(GameObject wrist, float rowY)
         {
             if (instance != null && instance.hud != Hud.instance)
             {
@@ -54,7 +53,7 @@ namespace ValheimVRMod.Scripts
                 }
             }
             instance.wrist = wrist;
-            instance.firstRowY = firstRowY;
+            instance.rowY = rowY;
         }
 
         // Hands the icons back to the HUD.
@@ -143,7 +142,7 @@ namespace ValheimVRMod.Scripts
             {
                 transform.SetParent(wristTransform.parent, false);
             }
-            transform.SetPositionAndRotation(wristTransform.TransformPoint(0, firstRowY, 0), wristTransform.rotation);
+            transform.SetPositionAndRotation(wristTransform.TransformPoint(0, rowY, 0), wristTransform.rotation);
             transform.localScale = wristTransform.localScale * (SPACING_METERS / hud.m_statusEffectSpacing);
             canvas.enabled = wrist.activeInHierarchy && hud.IsVisible();
 
@@ -170,10 +169,7 @@ namespace ValheimVRMod.Scripts
                     }
                 }
 
-                int row = i / EFFECTS_PER_ROW;
-                int column = i % EFFECTS_PER_ROW;
-                int iconsInRow = Mathf.Min(EFFECTS_PER_ROW, icons.Count - row * EFFECTS_PER_ROW);
-                Vector2 center = new Vector2((column - (iconsInRow - 1) / 2f) * spacing, row * spacing);
+                Vector2 center = new Vector2((i - (icons.Count - 1) / 2f) * spacing, 0);
                 icon.anchoredPosition = center - getIconCenterOffset(icon);
             }
         }
