@@ -106,6 +106,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<Quaternion> leftWristQuickBarRot;
         private static ConfigEntry<bool> quickActionOnLeftHand;
         private static ConfigEntry<int> quickBarQuantity;
+        private static ConfigEntry<string> statusEffectsPlacement;
 
         private static ConfigEntry<bool> attachInventoryToHand;
         private static ConfigEntry<bool> attachBuildMenuToHand;
@@ -787,6 +788,12 @@ namespace ValheimVRMod.Utilities
                                         4,
                                         new ConfigDescription("Number of Quick switch bar that registered, count is from the right to left, but still sorted from left to right",
                                                 new AcceptableValueRange<int>(0, 8)));
+            statusEffectsPlacement = config.Bind("VRHUD",
+                                        "StatusEffectsPlacement",
+                                        "VanillaHud",
+                                        new ConfigDescription("Where the status effect icons (buffs and debuffs) are shown: VanillaHud keeps them in the top right corner of the HUD, " +
+                                                              "WristQuickBar puts them below the Forsaken Power/sit/map/recenter/chat buttons on the wrist, following those if QuickActionOnLeftHand swaps the wrists.",
+                                            new AcceptableValueList<string>(new string[] { "VanillaHud", "WristQuickBar" })));
             attachInventoryToHand = config.Bind("VRHUD",
                                         "AttachInventoryToHand",
                                         true,
@@ -2173,6 +2180,11 @@ namespace ValheimVRMod.Utilities
         public static bool QuickActionOnLeftHand()
         {
             return quickActionOnLeftHand.Value;
+        }
+
+        public static bool StatusEffectsOnWristQuickBar()
+        {
+            return statusEffectsPlacement.Value == "WristQuickBar";
         }
 
         public static int QuickBarQuantity()

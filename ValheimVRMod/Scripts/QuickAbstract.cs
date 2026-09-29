@@ -543,6 +543,7 @@ namespace ValheimVRMod.Scripts
             extraElementCount = 0;
             // This wrist bar holds items now, the Forsaken Power button is on the other one if anywhere.
             GuardianPowerCountdown.DetachFrom(wrist.transform);
+            WristStatusEffects.DetachFrom(wrist);
 
             Inventory inventory = Player.m_localPlayer?.GetInventory();
             if (inventory == null)
@@ -682,6 +683,17 @@ namespace ValheimVRMod.Scripts
                     });
             }
             extraElementCount++;
+
+            if (VHVRConfig.StatusEffectsOnWristQuickBar())
+            {
+                // One row below the last row of buttons, see reorderElements().
+                float lastButtonRowY = extraElementCount > 4 ? -0.05f : 0f;
+                WristStatusEffects.AttachTo(wrist, lastButtonRowY - 0.05f);
+            }
+            else
+            {
+                WristStatusEffects.DetachFrom(wrist);
+            }
         }
 
         public static void enterChatText()
