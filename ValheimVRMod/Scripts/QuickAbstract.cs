@@ -541,6 +541,8 @@ namespace ValheimVRMod.Scripts
             }
 
             extraElementCount = 0;
+            // This wrist bar holds items now, the Forsaken Power button is on the other one if anywhere.
+            GuardianPowerCountdown.DetachFrom(wrist.transform);
 
             Inventory inventory = Player.m_localPlayer?.GetInventory();
             if (inventory == null)
@@ -593,7 +595,12 @@ namespace ValheimVRMod.Scripts
                             return true;
                         });
                 }
+                GuardianPowerCountdown.AttachTo(extraElements[extraElementCount].transform);
                 extraElementCount++;
+            }
+            else
+            {
+                GuardianPowerCountdown.DetachFrom(wrist.transform);
             }
 
             if (extraElements[extraElementCount].itemName != "QuickActionSIT")
