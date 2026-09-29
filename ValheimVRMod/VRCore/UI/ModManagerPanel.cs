@@ -401,8 +401,6 @@ namespace ValheimVRMod.VRCore.UI
         private void drawWindow()
         {
             Rect windowRect = new Rect(Vector2.zero, WINDOW_SIZE);
-            probeMousePosition = Event.current.mousePosition;
-            probeControlId = GUIUtility.GetControlID(PROBE_HASH, FocusType.Passive);
             if (Event.current.type == EventType.Repaint)
             {
                 // The default window style is translucent, the plugin puts an opaque background behind it as well.
@@ -419,7 +417,6 @@ namespace ValheimVRMod.VRCore.UI
             RectOffset padding = windowStyle.padding;
             GUILayout.BeginArea(
                 new Rect(padding.left, padding.top, WINDOW_SIZE.x - padding.horizontal, WINDOW_SIZE.y - padding.vertical));
-            probeMousePositionInArea = Event.current.mousePosition;
             try
             {
                 ModManagerBridge.DrawWindowContent();
