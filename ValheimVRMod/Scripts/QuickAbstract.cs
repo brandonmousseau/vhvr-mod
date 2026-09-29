@@ -686,9 +686,8 @@ namespace ValheimVRMod.Scripts
 
             if (VHVRConfig.StatusEffectsOnWristQuickBar())
             {
-                // One row below the last row of buttons, see reorderElements().
-                float lastButtonRowY = extraElementCount > 4 ? -0.05f : 0f;
-                WristStatusEffects.AttachTo(wrist, lastButtonRowY - 0.05f);
+                // One row above the first row of buttons, see reorderElements().
+                WristStatusEffects.AttachTo(wrist, 0.05f);
             }
             else
             {

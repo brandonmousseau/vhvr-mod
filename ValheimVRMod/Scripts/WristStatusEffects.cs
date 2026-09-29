@@ -5,12 +5,12 @@ using ValheimVRMod.Utilities;
 namespace ValheimVRMod.Scripts
 {
     /**
-     * Shows the status effect icons (vanilla's list in the top right corner of the HUD) below the buttons on the wrist
+     * Shows the status effect icons (vanilla's list in the top right corner of the HUD) above the buttons on the wrist
      * quick bar that holds the Forsaken Power, sit, map, recenter and chat buttons.
      *
      * Like GuardianPowerCountdown, this reroutes the vanilla list rather than reimplementing it: Hud.m_statusEffectListRoot
      * is pointed at a small canvas that follows the wrist bar, so Hud.UpdateStatusEffects() keeps creating, updating and
-     * removing the icons there. Only their layout is redone here, centering them in rows under the buttons.
+     * removing the icons there. Only their layout is redone here, centering them in rows above the buttons.
      *
      * The canvas is not a child of the wrist bar, since that is deactivated whenever it is out of view, and vanilla looks
      * up the icons' text and animator with GetComponentInChildren(), which skips inactive objects. It is only hidden by
@@ -30,12 +30,12 @@ namespace ValheimVRMod.Scripts
         private RectTransform root;
         private Canvas canvas;
         private GameObject wrist;
-        // Where the center of the first row of icons goes, in the wrist bar's space.
+        // Where the center of the first row of icons goes, in the wrist bar's space. Further rows go above it.
         private float firstRowY;
         // From an icon's pivot to the center of its image, which is what gets laid out.
         private Vector2? iconCenterOffset;
 
-        // Puts the status effect icons on the given wrist bar, centered in rows starting at the given height, taking them
+        // Puts the status effect icons on the given wrist bar, centered in rows stacked upwards from the given height, taking them
         // over from the HUD if not done yet.
         public static void AttachTo(GameObject wrist, float firstRowY)
         {
@@ -173,7 +173,7 @@ namespace ValheimVRMod.Scripts
                 int row = i / EFFECTS_PER_ROW;
                 int column = i % EFFECTS_PER_ROW;
                 int iconsInRow = Mathf.Min(EFFECTS_PER_ROW, icons.Count - row * EFFECTS_PER_ROW);
-                Vector2 center = new Vector2((column - (iconsInRow - 1) / 2f) * spacing, -row * spacing);
+                Vector2 center = new Vector2((column - (iconsInRow - 1) / 2f) * spacing, row * spacing);
                 icon.anchoredPosition = center - getIconCenterOffset(icon);
             }
         }

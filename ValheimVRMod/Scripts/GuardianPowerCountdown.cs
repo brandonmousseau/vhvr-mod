@@ -8,7 +8,7 @@ using static ValheimVRMod.Utilities.LogUtils;
 namespace ValheimVRMod.Scripts
 {
     /**
-     * Shows the Forsaken Power countdown right above its button on the wrist quick bar, in place of the vanilla one
+     * Shows the Forsaken Power countdown right below its button on the wrist quick bar, in place of the vanilla one
      * on the HUD.
      *
      * Rather than reimplementing the countdown, this reroutes the vanilla one, the same way the VRHud elements do:
@@ -23,8 +23,10 @@ namespace ValheimVRMod.Scripts
         private const float CANVAS_HEIGHT = 80f;
         private const float CANVAS_WIDTH_METERS = 0.05f;
         private const float FONT_SIZE = 28f;
-        // Above the button's icon, whose background sprite is 4 cm across. Below it is the second row of buttons.
-        private static readonly Vector3 OFFSET_FROM_BUTTON = new Vector3(0, 0.035f, 0);
+        // Below the button's icon, whose background sprite is 4 cm across. Above it is where WristStatusEffects puts the
+        // status effect icons. The Forsaken Power button is the leftmost of the first row, clear of the chat button that
+        // the second row holds in the middle.
+        private static readonly Vector3 OFFSET_FROM_BUTTON = new Vector3(0, -0.035f, 0);
         private static readonly Color ACTIVE_COLOR = new Color(0.6f, 0.9f, 1f);
 
         private static GuardianPowerCountdown instance;
