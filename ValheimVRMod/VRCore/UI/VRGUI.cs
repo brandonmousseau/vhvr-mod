@@ -268,6 +268,10 @@ namespace ValheimVRMod.VRCore.UI
         public void Update()
         {
             disableVanillaInputSystemUiInputModule();
+            if (VHVRConfig.UseVrControls() && SteamVR_Actions.valheim_ToggleMenu.GetStateDown(SteamVR_Input_Sources.Any))
+            {
+                ModManagerBridge.CloseWindow();
+            }
             if (VHVRConfig.UseVrControls())
             {
                 if (attachedToHand)
@@ -1702,6 +1706,13 @@ namespace ValheimVRMod.VRCore.UI
                 ScrollRect scrollRect = null;
                 foreach (RaycastResult result in scrollRaycastResults)
                 {
+                    // The mod manager window is drawn with IMGUI, which has scroll views of its own.
+                    ModManagerPanel modManagerPanel = result.gameObject.GetComponent<ModManagerPanel>();
+                    if (modManagerPanel != null)
+                    {
+                        modManagerPanel.ScrollBySteps(steps);
+                        return;
+                    }
                     scrollRect = result.gameObject.GetComponentInParent<ScrollRect>();
                     if (scrollRect != null && scrollRect.isActiveAndEnabled)
                     {

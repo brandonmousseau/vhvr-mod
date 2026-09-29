@@ -224,10 +224,17 @@ namespace ValheimVRMod.VRCore.UI {
                 orderedConfig[keyValuePair.Key.Section][keyValuePair.Key.Key] = keyValuePair.Value;
             }
 
+            // The Mods tab is only offered if there is a mod manager to open in it.
+            bool showModsTab = ModManagerBridge.IsAvailable;
+            int tabCount = sectionCount + (showModsTab ? 1 : 0);
+
             tabCounter = 0;
             // iterate ordered configs and create tabs out of each section
             foreach (KeyValuePair<string, Dictionary<string, ConfigEntryBase>> section in orderedConfig) {
-                createTabForSection(section, sectionCount);
+                createTabForSection(section, tabCount);
+            }
+            if (showModsTab) {
+                CreateModsTab(tabCount);
             }
 
             setupOkAndBack(settings.transform.Find("Panel"));
@@ -282,47 +289,8 @@ namespace ValheimVRMod.VRCore.UI {
         /// <summary>
         /// Create a new Tab out of a config section
         /// </summary>
-        private static void createTabForSection(KeyValuePair<string, Dictionary<string, ConfigEntryBase>> section, int sectionCount) {
-            var tabButtons = settings.transform.Find("Panel").Find("TabButtons");
-
-            // Create new tab button
-            var newTabButton = Object.Instantiate(tabButtonPrefab, tabButtons);
-
-            newTabButton.name = section.Key;
-            var rectTransform = newTabButton.GetComponent<RectTransform>();
-            var tabButtonXPosition = TabButtonWidth * (tabCounter - (sectionCount - 1) * 0.5f);
-            rectTransform.anchoredPosition = new Vector2(tabButtonXPosition, rectTransform.anchoredPosition.y);
-
-            var labels = newTabButton.GetComponentsInChildren<TMP_Text>(includeInactive: true);
-            foreach (var label in labels)
-            {
-                label.text = section.Key;
-            }
-
-            // Create new tab content
-            var tabs = settings.transform.Find("Panel").Find("TabContent");
-            var newTab = Object.Instantiate(tabs.GetChild(0), tabs);
-            newTab.name = section.Key;
-
-            foreach (Transform child in newTab.transform)
-            {
-                Object.Destroy(child.gameObject);
-            }
-
-            // Register the new Tab in Tab array
-            var tab = new TabHandler.Tab();
-            tab.m_button = newTabButton.GetComponent<Button>();
-            var activeTabIndex = tabCounter;
-            tab.m_button.onClick.AddListener(() => {
-                tabButtons.GetComponent<TabHandler>().SetActiveTab(activeTabIndex);
-            });
-            // Only the first tab is the default one. Claiming that every tab is would make TabHandler.Init()
-            // resolve the default to the last section rather than to General.
-            tab.m_default = (tabCounter == 0);
-            tab.m_page = newTab.GetComponent<RectTransform>();
-            tab.m_onClick = new UnityEvent();
-
-            tabButtons.GetComponent<TabHandler>().m_tabs.Add(tab);
+        private static void createTabForSection(KeyValuePair<string, Dictionary<string, ConfigEntryBase>> section, int tabCount) {
+            var newTab = CreateTab(section.Key, tabCount);
 
             int posX = 0;
             int posY = 250;
@@ -344,8 +312,96 @@ namespace ValheimVRMod.VRCore.UI {
                     posX = 250;
                 }
             }
+        }
+
+        /// <summary>
+        /// Create an empty Tab with a button among the tab buttons, and register it in the Tab array
+        /// </summary>
+        private static Transform CreateTab(string name, int tabCount) {
+            var tabButtons = settings.transform.Find("Panel").Find("TabButtons");
+
+            // Create new tab button
+            var newTabButton = Object.Instantiate(tabButtonPrefab, tabButtons);
+
+            newTabButton.name = name;
+            var rectTransform = newTabButton.GetComponent<RectTransform>();
+            var tabButtonXPosition = TabButtonWidth * (tabCounter - (tabCount - 1) * 0.5f);
+            rectTransform.anchoredPosition = new Vector2(tabButtonXPosition, rectTransform.anchoredPosition.y);
+
+            var labels = newTabButton.GetComponentsInChildren<TMP_Text>(includeInactive: true);
+            foreach (var label in labels)
+            {
+                label.text = name;
+            }
+
+            // Create new tab content
+            var tabs = settings.transform.Find("Panel").Find("TabContent");
+            var newTab = Object.Instantiate(tabs.GetChild(0), tabs);
+            newTab.name = name;
+
+            foreach (Transform child in newTab.transform)
+            {
+                Object.Destroy(child.gameObject);
+            }
+
+            // Register the new Tab in Tab array
+            var tab = new TabHandler.Tab();
+            tab.m_button = newTabButton.GetComponent<Button>();
+            var activeTabIndex = tabCounter;
+            tab.m_button.onClick.AddListener(() => {
+                tabButtons.GetComponent<TabHandler>().SetActiveTab(activeTabIndex);
+            });
+            // Only the first tab is the default one. Claiming that every tab is would make TabHandler.Init()
+            // resolve the default to the last section rather than to General.
+            tab.m_default = (tabCounter == 0);
+            tab.m_page = newTab.GetComponent<RectTransform>();
+            tab.m_onClick = new UnityEvent();
+
+            tabButtons.GetComponent<TabHandler>().m_tabs.Add(tab);
 
             tabCounter++;
+            return newTab;
+        }
+
+        /// <summary>
+        /// Create the Mods tab, which opens the mod manager (ConfigurationManager) whenever it is selected
+        /// </summary>
+        private static void CreateModsTab(int tabCount) {
+            var newTab = CreateTab("Mods", tabCount);
+            // The tab page is inactive until selected, the component opens the mod manager once it is activated.
+            var modManagerTab = newTab.gameObject.AddComponent<ModManagerTab>();
+
+            var statusObj = Object.Instantiate(togglePrefab.GetComponentInChildren<TMP_Text>().gameObject, newTab);
+            var statusText = statusObj.GetComponent<TMP_Text>();
+            statusText.rectTransform.anchorMin = statusText.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+            statusText.rectTransform.pivot = new Vector2(0.5f, 0.5f);
+            statusText.rectTransform.sizeDelta = new Vector2(600, 60);
+            statusText.rectTransform.anchoredPosition = new Vector2(0, 60);
+            statusText.alignment = TextAlignmentOptions.Center;
+            statusText.text = "";
+            statusText.raycastTarget = false;
+            modManagerTab.statusText = statusText;
+
+            // The tab button can't be clicked again while its tab is selected, so this reopens the mod manager
+            // after it has been closed, and closes it however it was opened.
+            var openButton = Object.Instantiate(settings.transform.Find("Panel").Find("Back").gameObject, newTab);
+            openButton.name = "OpenModManager";
+            StripLocalization(openButton);
+            var hint = openButton.transform.Find("KeyHint");
+            if (hint) Object.Destroy(hint.gameObject);
+            Object.Destroy(openButton.GetComponent<UIGamePad>());
+            var openButtonRect = openButton.GetComponent<RectTransform>();
+            openButtonRect.anchorMin = openButtonRect.anchorMax = new Vector2(0.5f, 0.5f);
+            openButtonRect.pivot = new Vector2(0.5f, 0.5f);
+            openButtonRect.sizeDelta = new Vector2(240, 40);
+            openButtonRect.anchoredPosition = Vector2.zero;
+            // Labelled by the tab, see ModManagerTab.Update().
+            modManagerTab.buttonLabel = openButton.GetComponentInChildren<TMP_Text>();
+            modManagerTab.buttonLabel.text = "";
+            var button = openButton.GetComponent<Button>();
+            button.onClick.RemoveAllListeners();
+            button.onClick.m_PersistentCalls.Clear();
+            button.onClick.AddListener(modManagerTab.ToggleOpen);
         }
 
         /// <summary>
