@@ -85,6 +85,14 @@ namespace ValheimVRMod.Scripts
         private Text rotationText;
         private LineRenderer rotationBorder1;
         private LineRenderer rotationBorder2;
+        private Material rotationRingXMaterial;
+        private Material rotationRingYMaterial;
+        private Material rotationRingZMaterial;
+        private GameObject hoveredRotationAxis;
+        private int rotationHoverPreviewFrame;
+        private const float RotationGrabRadius = 0.1f;
+        // Minimum |cos| between the hand grab direction and a ring axis for that ring to be grabbable (~49 degrees).
+        private const float RotationGrabAlignment = 0.65f;
         private int step = 1;
 
         public Piece currentComponent;
@@ -182,6 +190,7 @@ namespace ValheimVRMod.Scripts
             Destroy(advRotationGhostObject);
             Destroy(rotationBorder1);
             Destroy(rotationBorder2);
+            Destroy(rotationLine.gameObject);
             isFreeMode = false;
             foreach (GameObject collider in snapPointsCollider)
             {
@@ -199,6 +208,12 @@ namespace ValheimVRMod.Scripts
                 UpdateRotateAnalog();
                 FreeMode();
                 RotationModeChange();
+            }
+
+            // UpdateRotationAdvanced stops being called when there is no placement ghost; don't leave the preview hanging.
+            if (hoveredRotationAxis && rotationHoverPreviewFrame != Time.frameCount)
+            {
+                SetRotationHoverPreview(null, Vector3.zero);
             }
 
             UpdateLine();
@@ -345,6 +360,7 @@ namespace ValheimVRMod.Scripts
             var childX = axisX.transform.GetChild(0);
             childX.GetComponent<MeshRenderer>().material = Instantiate(VRAssetManager.GetAsset<Material>("StandardClone"));
             childX.GetComponent<MeshRenderer>().material.color = Color.red;
+            rotationRingXMaterial = childX.GetComponent<MeshRenderer>().material;
             childX.transform.localScale *= 0.196f;
             axisX.transform.Rotate(0, 0, 90);
 
@@ -353,6 +369,7 @@ namespace ValheimVRMod.Scripts
             var childY = axisY.transform.GetChild(0);
             childY.GetComponent<MeshRenderer>().material = Instantiate(VRAssetManager.GetAsset<Material>("StandardClone"));
             childY.GetComponent<MeshRenderer>().material.color = Color.green;
+            rotationRingYMaterial = childY.GetComponent<MeshRenderer>().material;
             childY.transform.localScale *= 0.20f;
 
             var axisZ = Instantiate(VRAssetManager.GetAsset<GameObject>("GizmoRing"), rotationAxisParent.transform);
@@ -360,6 +377,7 @@ namespace ValheimVRMod.Scripts
             var childZ = axisZ.transform.GetChild(0);
             childZ.GetComponent<MeshRenderer>().material = Instantiate(VRAssetManager.GetAsset<Material>("StandardClone"));
             childZ.GetComponent<MeshRenderer>().material.color = Color.blue;
+            rotationRingZMaterial = childZ.GetComponent<MeshRenderer>().material;
             childZ.transform.localScale *= 0.198f;
             axisZ.transform.Rotate(90, 0, 0);
 
@@ -1467,6 +1485,7 @@ namespace ValheimVRMod.Scripts
             {
                 if (!isRotatingAdv)
                 {
+                    SetRotationHoverPreview(null, Vector3.zero);
                     step = 1;
                     isRotatingAdv = true;
                     rotationLine.enabled = true;
@@ -1614,24 +1633,9 @@ namespace ValheimVRMod.Scripts
             }
             else
             {
-                if (SteamVR_Actions.valheim_Grab.GetState(VRPlayer.nonDominantHandInputSource) && !(isMoving || isReferenceActive))
+                if (SteamVR_Actions.valheim_Grab.GetState(VRPlayer.nonDominantHandInputSource))
                 {
-                    if (Vector3.Distance(nonDominantHandCenter, rotationAxisParent.transform.position) < 0.1f)
-                    {
-                        var handUp = VRPlayer.nonDominantHand.transform.TransformDirection(0, -0.3f, -0.7f);
-                        if (Mathf.Abs(Vector3.Dot(handUp, rotationAxisParent.transform.right)) > 0.6f)
-                        {
-                            grabbedAxis2 = rotationAxisX;
-                        }
-                        else if (Mathf.Abs(Vector3.Dot(handUp, rotationAxisParent.transform.up)) > 0.6f)
-                        {
-                            grabbedAxis2 = rotationAxisY;
-                        }
-                        else if (Mathf.Abs(Vector3.Dot(handUp, rotationAxisParent.transform.forward)) > 0.6f)
-                        {
-                            grabbedAxis2 = rotationAxisZ;
-                        }
-                    }
+                    grabbedAxis2 = GetGrabbableRotationAxis(nonDominantHandCenter);
                 }
                 rotationAxisParent.transform.position = rotPlacement;
                 if (isRotationWorldAxis)
@@ -1647,6 +1651,10 @@ namespace ValheimVRMod.Scripts
                 else
                 {
                     rotationAxisParent.transform.rotation = ghost.transform.rotation;
+                }
+                if (!grabbedAxis2)
+                {
+                    SetRotationHoverPreview(GetGrabbableRotationAxis(nonDominantHandCenter), nonDominantHandCenter);
                 }
             }
 
@@ -1754,6 +1762,104 @@ namespace ValheimVRMod.Scripts
         {
             return SteamVR_Actions.valheim_Jump.GetState(SteamVR_Input_Sources.Any) && !freeModeSnapSave1;
         }
+        // The ring whose axis best matches the non-dominant hand's grab direction, if the hand is close enough to the gizmo.
+        private GameObject GetGrabbableRotationAxis(Vector3 nonDominantHandCenter)
+        {
+            if (isMoving || isReferenceActive || !rotationAxisParent.activeInHierarchy)
+            {
+                return null;
+            }
+            if (Vector3.Distance(nonDominantHandCenter, rotationAxisParent.transform.position) >= RotationGrabRadius)
+            {
+                return null;
+            }
+            var handUp = VRPlayer.nonDominantHand.transform.TransformDirection(0, -0.3f, -0.7f).normalized;
+            var axisParent = rotationAxisParent.transform;
+            var dotX = Mathf.Abs(Vector3.Dot(handUp, axisParent.right));
+            var dotY = Mathf.Abs(Vector3.Dot(handUp, axisParent.up));
+            var dotZ = Mathf.Abs(Vector3.Dot(handUp, axisParent.forward));
+            if (dotX >= dotY && dotX >= dotZ)
+            {
+                return dotX > RotationGrabAlignment ? rotationAxisX : null;
+            }
+            if (dotY >= dotZ)
+            {
+                return dotY > RotationGrabAlignment ? rotationAxisY : null;
+            }
+            return dotZ > RotationGrabAlignment ? rotationAxisZ : null;
+        }
+
+        // Shows the grab line, step circles and a highlighted ring for the ring that would be grabbed right now.
+        private void SetRotationHoverPreview(GameObject axis, Vector3 nonDominantHandCenter)
+        {
+            if (!axis && !hoveredRotationAxis)
+            {
+                return;
+            }
+            rotationHoverPreviewFrame = Time.frameCount;
+            if (axis != hoveredRotationAxis)
+            {
+                rotationRingXMaterial.color = axis == rotationAxisX ? Color.Lerp(Color.red, Color.white, 0.6f) : Color.red;
+                rotationRingYMaterial.color = axis == rotationAxisY ? Color.Lerp(Color.green, Color.white, 0.6f) : Color.green;
+                rotationRingZMaterial.color = axis == rotationAxisZ ? Color.Lerp(Color.blue, Color.white, 0.6f) : Color.blue;
+                hoveredRotationAxis = axis;
+            }
+            if (!axis)
+            {
+                rotationLine.enabled = false;
+                rotationBorder1.enabled = false;
+                rotationBorder2.enabled = false;
+                rotationText.text = "";
+                return;
+            }
+
+            var axisParent = rotationAxisParent.transform;
+            var localHandPos = axisParent.InverseTransformPoint(nonDominantHandCenter);
+            string dir;
+            Color lineColor;
+            if (axis == rotationAxisX)
+            {
+                localHandPos.x = 0;
+                dir = "x";
+                lineColor = Color.red;
+            }
+            else if (axis == rotationAxisY)
+            {
+                localHandPos.y = 0;
+                dir = "y";
+                lineColor = Color.green;
+            }
+            else
+            {
+                localHandPos.z = 0;
+                dir = "z";
+                lineColor = Color.blue;
+            }
+
+            var previewStep = (int)Mathf.Max(1, Mathf.Floor(localHandPos.magnitude * 16));
+            CreateCircle(rotationBorder1, previewStep * 0.0625f, dir);
+            CreateCircle(rotationBorder2, (previewStep + 1) * 0.0625f, dir);
+            rotationBorder1.transform.localPosition = Vector3.zero;
+            rotationBorder2.transform.localPosition = Vector3.zero;
+            rotationBorder1.enabled = true;
+            rotationBorder2.enabled = true;
+
+            var handOnPlane = axisParent.TransformPoint(localHandPos);
+            var fromCenter = handOnPlane - axisParent.position;
+            if (fromCenter.sqrMagnitude > 0.0001f)
+            {
+                rotationLine.material.color = lineColor * 0.5f;
+                rotationLine.SetPosition(0, axisParent.position + fromCenter.normalized * 0.05f);
+                rotationLine.SetPosition(1, handOnPlane);
+                rotationLine.enabled = true;
+            }
+            else
+            {
+                rotationLine.enabled = false;
+            }
+            rotationText.text = dir.ToUpper();
+        }
+
         private void CreateCircle(LineRenderer line, float size, string dir)
         {
             float degree = 360 / (line.positionCount - 1);
