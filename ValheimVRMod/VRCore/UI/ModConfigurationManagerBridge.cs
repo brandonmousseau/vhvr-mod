@@ -16,9 +16,9 @@ namespace ValheimVRMod.VRCore.UI
      * tab is simply not offered instead of throwing at the player.
      *
      * Opening the window in flatscreen just asks the plugin to show it. In VR, its window is drawn onto the VR GUI
-     * by ModManagerPanel, which needs the plugin's window function and a few of its layout properties on top of that.
+     * by ModConfigurationManagerPanel, which needs the plugin's window function and a few of its layout properties on top of that.
      */
-    static class ModManagerBridge
+    static class ModConfigurationManagerBridge
     {
         private const string PLUGIN_GUID = "com.bepis.bepinex.configurationmanager";
         // Same window id the plugin uses for its own window.
@@ -68,7 +68,7 @@ namespace ValheimVRMod.VRCore.UI
                 }
                 catch (Exception e)
                 {
-                    LogError("Failed to read whether the mod manager window is open: " + e);
+                    LogError("Failed to read whether the mod configuration manager window is open: " + e);
                     return false;
                 }
             }
@@ -86,11 +86,11 @@ namespace ValheimVRMod.VRCore.UI
             }
             catch (Exception e)
             {
-                LogError("Failed to " + (open ? "open" : "close") + " the mod manager window: " + e);
+                LogError("Failed to " + (open ? "open" : "close") + " the mod configuration manager window: " + e);
             }
         }
 
-        // Closes the window however it was opened, and gives it back to the plugin in case ModManagerPanel had it.
+        // Closes the window however it was opened, and gives it back to the plugin in case ModConfigurationManagerPanel had it.
         public static void CloseWindow()
         {
             if (!IsAvailable)
@@ -128,7 +128,7 @@ namespace ValheimVRMod.VRCore.UI
             }
             catch (Exception e)
             {
-                LogWarning("Failed to resize the mod manager window: " + e);
+                LogWarning("Failed to resize the mod configuration manager window: " + e);
             }
         }
 
@@ -145,7 +145,7 @@ namespace ValheimVRMod.VRCore.UI
                 return;
             }
             VrDrawingBroken = true;
-            LogError("Drawing the mod manager window in VR failed, it will not be shown in VR anymore: " + e);
+            LogError("Drawing the mod configuration manager window in VR failed, it will not be shown in VR anymore: " + e);
         }
 
         private static void Initialize()

@@ -270,7 +270,7 @@ namespace ValheimVRMod.VRCore.UI
             disableVanillaInputSystemUiInputModule();
             if (VHVRConfig.UseVrControls() && SteamVR_Actions.valheim_ToggleMenu.GetStateDown(SteamVR_Input_Sources.Any))
             {
-                ModManagerBridge.CloseWindow();
+                ModConfigurationManagerBridge.CloseWindow();
             }
             if (VHVRConfig.UseVrControls())
             {
@@ -1706,11 +1706,11 @@ namespace ValheimVRMod.VRCore.UI
                 ScrollRect scrollRect = null;
                 foreach (RaycastResult result in scrollRaycastResults)
                 {
-                    // The mod manager window is drawn with IMGUI, which has scroll views of its own.
-                    ModManagerPanel modManagerPanel = result.gameObject.GetComponent<ModManagerPanel>();
-                    if (modManagerPanel != null)
+                    // The mod configuration manager window is drawn with IMGUI, which has scroll views of its own.
+                    ModConfigurationManagerPanel modConfigurationManagerPanel = result.gameObject.GetComponent<ModConfigurationManagerPanel>();
+                    if (modConfigurationManagerPanel != null)
                     {
-                        modManagerPanel.ScrollBySteps(steps);
+                        modConfigurationManagerPanel.ScrollBySteps(steps);
                         return;
                     }
                     scrollRect = result.gameObject.GetComponentInParent<ScrollRect>();

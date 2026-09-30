@@ -224,8 +224,8 @@ namespace ValheimVRMod.VRCore.UI {
                 orderedConfig[keyValuePair.Key.Section][keyValuePair.Key.Key] = keyValuePair.Value;
             }
 
-            // The Mods tab is only offered if there is a mod manager to open in it.
-            bool showModsTab = ModManagerBridge.IsAvailable;
+            // The Mods tab is only offered if there is a mod configuration manager to open in it.
+            bool showModsTab = ModConfigurationManagerBridge.IsAvailable;
             int tabCount = sectionCount + (showModsTab ? 1 : 0);
 
             tabCounter = 0;
@@ -364,12 +364,12 @@ namespace ValheimVRMod.VRCore.UI {
         }
 
         /// <summary>
-        /// Create the Mods tab, which opens the mod manager (ConfigurationManager) whenever it is selected
+        /// Create the Mods tab, which opens the mod configuration manager (ConfigurationManager) whenever it is selected
         /// </summary>
         private static void CreateModsTab(int tabCount) {
             var newTab = CreateTab("Mods", tabCount);
-            // The tab page is inactive until selected, the component opens the mod manager once it is activated.
-            var modManagerTab = newTab.gameObject.AddComponent<ModManagerTab>();
+            // The tab page is inactive until selected, the component opens the mod configuration manager once it is activated.
+            var modConfigurationManagerTab = newTab.gameObject.AddComponent<ModConfigurationManagerTab>();
 
             var statusObj = Object.Instantiate(togglePrefab.GetComponentInChildren<TMP_Text>().gameObject, newTab);
             var statusText = statusObj.GetComponent<TMP_Text>();
@@ -380,12 +380,12 @@ namespace ValheimVRMod.VRCore.UI {
             statusText.alignment = TextAlignmentOptions.Center;
             statusText.text = "";
             statusText.raycastTarget = false;
-            modManagerTab.statusText = statusText;
+            modConfigurationManagerTab.statusText = statusText;
 
-            // The tab button can't be clicked again while its tab is selected, so this reopens the mod manager
+            // The tab button can't be clicked again while its tab is selected, so this reopens the mod configuration manager
             // after it has been closed, and closes it however it was opened.
             var openButton = Object.Instantiate(settings.transform.Find("Panel").Find("Back").gameObject, newTab);
-            openButton.name = "OpenModManager";
+            openButton.name = "OpenModConfigurationManager";
             StripLocalization(openButton);
             var hint = openButton.transform.Find("KeyHint");
             if (hint) Object.Destroy(hint.gameObject);
@@ -393,15 +393,15 @@ namespace ValheimVRMod.VRCore.UI {
             var openButtonRect = openButton.GetComponent<RectTransform>();
             openButtonRect.anchorMin = openButtonRect.anchorMax = new Vector2(0.5f, 0.5f);
             openButtonRect.pivot = new Vector2(0.5f, 0.5f);
-            openButtonRect.sizeDelta = new Vector2(240, 40);
+            openButtonRect.sizeDelta = new Vector2(360, 40);
             openButtonRect.anchoredPosition = Vector2.zero;
-            // Labelled by the tab, see ModManagerTab.Update().
-            modManagerTab.buttonLabel = openButton.GetComponentInChildren<TMP_Text>();
-            modManagerTab.buttonLabel.text = "";
+            // Labelled by the tab, see ModConfigurationManagerTab.Update().
+            modConfigurationManagerTab.buttonLabel = openButton.GetComponentInChildren<TMP_Text>();
+            modConfigurationManagerTab.buttonLabel.text = "";
             var button = openButton.GetComponent<Button>();
             button.onClick.RemoveAllListeners();
             button.onClick.m_PersistentCalls.Clear();
-            button.onClick.AddListener(modManagerTab.ToggleOpen);
+            button.onClick.AddListener(modConfigurationManagerTab.ToggleOpen);
         }
 
         /// <summary>

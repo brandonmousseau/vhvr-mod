@@ -6,7 +6,7 @@ namespace ValheimVRMod.VRCore.UI
 {
     /**
      * The Mods tab of the VHVR settings dialog. The tab itself is empty: selecting it opens the ConfigurationManager
-     * window, on the VR GUI in VR (see ModManagerPanel) and as usual in flatscreen. Leaving the tab or hiding the
+     * window, on the VR GUI in VR (see ModConfigurationManagerPanel) and as usual in flatscreen. Leaving the tab or hiding the
      * dialog keeps the window open. It is closed by the tab's button, from within, or by the ToggleMenu action (see
      * VRGUI.Update()).
      *
@@ -14,19 +14,19 @@ namespace ValheimVRMod.VRCore.UI
      * only. The tab's button closes it whichever way it was opened, which is the way out of a window that can't be
      * seen in the headset, and opens it on the VR GUI otherwise.
      */
-    class ModManagerTab : MonoBehaviour
+    class ModConfigurationManagerTab : MonoBehaviour
     {
-        private const string OPEN_LABEL = "Open mod manager";
-        private const string CLOSE_LABEL = "Close mod manager";
+        private const string OPEN_LABEL = "Open mod configuration manager";
+        private const string CLOSE_LABEL = "Close mod configuration manager";
 
         public TMP_Text statusText;
         public TMP_Text buttonLabel;
 
-        private ModManagerPanel panel;
+        private ModConfigurationManagerPanel panel;
 
         public void ToggleOpen()
         {
-            if (ModManagerBridge.isOpen)
+            if (ModConfigurationManagerBridge.isOpen)
             {
                 Close();
             }
@@ -38,12 +38,12 @@ namespace ValheimVRMod.VRCore.UI
 
         public void Open()
         {
-            if (!ModManagerBridge.IsAvailable)
+            if (!ModConfigurationManagerBridge.IsAvailable)
             {
-                SetStatus("The mod manager (ConfigurationManager) is not available.");
+                SetStatus("ConfigurationManager is not available.");
                 return;
             }
-            if (ModManagerBridge.isOpen && (panel == null || !panel.ownsWindow))
+            if (ModConfigurationManagerBridge.isOpen && (panel == null || !panel.ownsWindow))
             {
                 // Opened with its hotkey, which keeps it the plugin's.
                 return;
@@ -51,22 +51,22 @@ namespace ValheimVRMod.VRCore.UI
 
             if (VHVRConfig.NonVrPlayer())
             {
-                ModManagerBridge.SetOpen(true);
+                ModConfigurationManagerBridge.SetOpen(true);
                 SetStatus(null);
                 return;
             }
 
             if (panel == null)
             {
-                panel = ModManagerPanel.Create(transform);
+                panel = ModConfigurationManagerPanel.Create(transform);
             }
             if (panel == null)
             {
-                SetStatus("The mod manager can't be shown in VR with this version of ConfigurationManager.");
+                SetStatus("The mod configuration manager can't be shown in VR with this version of ConfigurationManager.");
                 return;
             }
             panel.Show();
-            SetStatus(panel.ownsWindow ? null : "The mod manager failed to open.");
+            SetStatus(panel.ownsWindow ? null : "The mod configuration manager failed to open.");
         }
 
         // Closes the window however it was opened.
@@ -76,7 +76,7 @@ namespace ValheimVRMod.VRCore.UI
             {
                 panel.Hide();
             }
-            ModManagerBridge.CloseWindow();
+            ModConfigurationManagerBridge.CloseWindow();
         }
 
         private void OnEnable()
@@ -96,7 +96,7 @@ namespace ValheimVRMod.VRCore.UI
         {
             if (buttonLabel != null)
             {
-                string label = ModManagerBridge.isOpen ? CLOSE_LABEL : OPEN_LABEL;
+                string label = ModConfigurationManagerBridge.isOpen ? CLOSE_LABEL : OPEN_LABEL;
                 if (buttonLabel.text != label)
                 {
                     buttonLabel.text = label;
@@ -108,7 +108,7 @@ namespace ValheimVRMod.VRCore.UI
         {
             if (panel != null)
             {
-                // Not a child of the tab, see ModManagerPanel.Create().
+                // Not a child of the tab, see ModConfigurationManagerPanel.Create().
                 Destroy(panel.gameObject);
             }
         }

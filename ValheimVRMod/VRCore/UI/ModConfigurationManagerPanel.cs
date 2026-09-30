@@ -19,7 +19,7 @@ namespace ValheimVRMod.VRCore.UI
      * EventSystem, so the pointer events arriving at the RawImage are translated back into IMGUI events at the
      * matching point of the window.
      */
-    class ModManagerPanel : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IScrollHandler
+    class ModConfigurationManagerPanel : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IScrollHandler
     {
         // The size the window is laid out for, in IMGUI points. Kept close to the plugin's own window, which is at
         // most 650 points wide, and small enough that its text is readable once stretched over the panel.
@@ -57,21 +57,21 @@ namespace ValheimVRMod.VRCore.UI
         private bool isShown;
         private bool hasFailed;
 
-        public static ModManagerPanel Create(Transform anyChildOfCanvas)
+        public static ModConfigurationManagerPanel Create(Transform anyChildOfCanvas)
         {
-            if (!ModManagerBridge.IsAvailableInVr)
+            if (!ModConfigurationManagerBridge.IsAvailableInVr)
             {
                 return null;
             }
             Canvas canvas = anyChildOfCanvas.GetComponentInParent<Canvas>();
             if (canvas == null)
             {
-                LogWarning("No canvas found for the mod manager panel.");
+                LogWarning("No canvas found for the mod configuration manager panel.");
                 return null;
             }
             patchDragWindow();
 
-            GameObject panelObject = new GameObject("VHVRModManagerPanel", typeof(RectTransform));
+            GameObject panelObject = new GameObject("VHVRModConfigurationManagerPanel", typeof(RectTransform));
             panelObject.layer = canvas.gameObject.layer;
             panelObject.SetActive(false);
             RectTransform rectTransform = panelObject.GetComponent<RectTransform>();
@@ -79,7 +79,7 @@ namespace ValheimVRMod.VRCore.UI
             rectTransform.anchorMin = rectTransform.anchorMax = rectTransform.pivot = new Vector2(0.5f, 0.5f);
             rectTransform.anchoredPosition = Vector2.zero;
 
-            ModManagerPanel panel = panelObject.AddComponent<ModManagerPanel>();
+            ModConfigurationManagerPanel panel = panelObject.AddComponent<ModConfigurationManagerPanel>();
             // Its OnGUI() only drives the container, which does its own layout. Unity would otherwise lay out
             // whatever GUILayout state is selected at the end of it on every Layout event.
             panel.useGUILayout = false;
@@ -92,7 +92,7 @@ namespace ValheimVRMod.VRCore.UI
             }
             catch (Exception e)
             {
-                ModManagerBridge.OnVrDrawingFailed(e);
+                ModConfigurationManagerBridge.OnVrDrawingFailed(e);
                 Destroy(panelObject);
                 return null;
             }
@@ -110,7 +110,7 @@ namespace ValheimVRMod.VRCore.UI
             }
             if (isShown)
             {
-                if (ModManagerBridge.isOpen)
+                if (ModConfigurationManagerBridge.isOpen)
                 {
                     // Resuming after Suspend().
                     gameObject.SetActive(true);
@@ -120,14 +120,14 @@ namespace ValheimVRMod.VRCore.UI
                 // Closed while suspended.
                 stopShowing(closeWindow: false);
             }
-            ModManagerBridge.SetOpen(true);
-            if (!ModManagerBridge.isOpen)
+            ModConfigurationManagerBridge.SetOpen(true);
+            if (!ModConfigurationManagerBridge.isOpen)
             {
                 return;
             }
             // After opening, since the plugin sizes its window by the desktop screen every time it is opened.
-            ModManagerBridge.SetWindowSize(WINDOW_SIZE);
-            ModManagerBridge.SetPluginEnabled(false);
+            ModConfigurationManagerBridge.SetWindowSize(WINDOW_SIZE);
+            ModConfigurationManagerBridge.SetPluginEnabled(false);
             isShown = true;
             queuedInputs.Clear();
             pressedButtons = 0;
@@ -135,7 +135,7 @@ namespace ValheimVRMod.VRCore.UI
             gameObject.SetActive(true);
             transform.SetAsLastSibling();
             LogDebug(
-                "ModManagerPanel shown under canvas " + canvas.name + " (root " + canvas.rootCanvas.name + ", " +
+                "ModConfigurationManagerPanel shown under canvas " + canvas.name + " (root " + canvas.rootCanvas.name + ", " +
                 canvas.rootCanvas.renderMode + ", camera " + (canvas.rootCanvas.worldCamera ? canvas.rootCanvas.worldCamera.name : "none") +
                 "), rect " + ((RectTransform)transform).rect + ", sibling " + transform.GetSiblingIndex() + "/" + transform.parent.childCount +
                 ", raycaster " + (canvas.GetComponent<GraphicRaycaster>() != null));
@@ -152,7 +152,7 @@ namespace ValheimVRMod.VRCore.UI
         }
 
         // Stops drawing the window but keeps it open for Show() to bring back, e. g. while another tab is selected.
-        // The ToggleMenu action still closes it, see ModManagerBridge.CloseWindow().
+        // The ToggleMenu action still closes it, see ModConfigurationManagerBridge.CloseWindow().
         public void Suspend()
         {
             gameObject.SetActive(false);
@@ -170,16 +170,16 @@ namespace ValheimVRMod.VRCore.UI
             pressedButtons = 0;
             if (closeWindow)
             {
-                ModManagerBridge.SetOpen(false);
+                ModConfigurationManagerBridge.SetOpen(false);
             }
-            ModManagerBridge.SetPluginEnabled(true);
+            ModConfigurationManagerBridge.SetPluginEnabled(true);
         }
 
         public void ScrollBySteps(float steps)
         {
             Vector2 position;
             bool inside = tryGetCursorPosition(out position);
-            LogDebug("ModManagerPanel.ScrollBySteps " + steps + " at " + position + ", inside " + inside);
+            LogDebug("ModConfigurationManagerPanel.ScrollBySteps " + steps + " at " + position + ", inside " + inside);
             if (inside)
             {
                 queuedInputs.Enqueue(
@@ -192,7 +192,7 @@ namespace ValheimVRMod.VRCore.UI
             Vector2 position;
             int button = (int)eventData.button;
             bool inside = tryGetWindowPosition(eventData.position, out position);
-            LogDebug("ModManagerPanel.OnPointerDown " + eventData.button + " at " + eventData.position + " -> " + position + ", inside " + inside);
+            LogDebug("ModConfigurationManagerPanel.OnPointerDown " + eventData.button + " at " + eventData.position + " -> " + position + ", inside " + inside);
             if (!inside)
             {
                 return;
@@ -213,13 +213,13 @@ namespace ValheimVRMod.VRCore.UI
             Vector2 position;
             // A release outside the window still has to reach IMGUI, which may have captured the mouse.
             tryGetWindowPosition(eventData.position, out position);
-            LogDebug("ModManagerPanel.OnPointerUp " + eventData.button + " at " + eventData.position + " -> " + position);
+            LogDebug("ModConfigurationManagerPanel.OnPointerUp " + eventData.button + " at " + eventData.position + " -> " + position);
             queuedInputs.Enqueue(new QueuedInput { type = EventType.MouseUp, button = button, position = position });
         }
 
         public void OnScroll(PointerEventData eventData)
         {
-            LogDebug("ModManagerPanel.OnScroll " + eventData.scrollDelta + " at " + eventData.position);
+            LogDebug("ModConfigurationManagerPanel.OnScroll " + eventData.scrollDelta + " at " + eventData.position);
             Vector2 position;
             if (Mathf.Approximately(eventData.scrollDelta.y, 0) || !tryGetWindowPosition(eventData.position, out position))
             {
@@ -244,7 +244,7 @@ namespace ValheimVRMod.VRCore.UI
                 Hide();
                 return;
             }
-            if (!ModManagerBridge.isOpen)
+            if (!ModConfigurationManagerBridge.isOpen)
             {
                 // Closed from within the window, e. g. with its Close button.
                 stopShowing(closeWindow: false);
@@ -293,7 +293,7 @@ namespace ValheimVRMod.VRCore.UI
             catch (Exception e)
             {
                 hasFailed = true;
-                ModManagerBridge.OnVrDrawingFailed(e);
+                ModConfigurationManagerBridge.OnVrDrawingFailed(e);
             }
         }
 
@@ -419,7 +419,7 @@ namespace ValheimVRMod.VRCore.UI
                 new Rect(padding.left, padding.top, WINDOW_SIZE.x - padding.horizontal, WINDOW_SIZE.y - padding.vertical));
             try
             {
-                ModManagerBridge.DrawWindowContent();
+                ModConfigurationManagerBridge.DrawWindowContent();
             }
             finally
             {
@@ -436,7 +436,7 @@ namespace ValheimVRMod.VRCore.UI
             if (texture == null)
             {
                 texture = new RenderTexture((int)WINDOW_SIZE.x, (int)WINDOW_SIZE.y, 0, RenderTextureFormat.ARGB32);
-                texture.name = "VHVRModManager";
+                texture.name = "VHVRModConfigurationManager";
             }
             texture.Create();
             image.texture = texture;
@@ -501,14 +501,14 @@ namespace ValheimVRMod.VRCore.UI
             triedPatching = true;
             try
             {
-                var harmony = new Harmony("com.valheimvrmod.patches.modmanager");
-                var prefix = new HarmonyMethod(typeof(ModManagerPanel), nameof(skipWhileDrawingInContainer));
+                var harmony = new Harmony("com.valheimvrmod.patches.modconfigurationmanager");
+                var prefix = new HarmonyMethod(typeof(ModConfigurationManagerPanel), nameof(skipWhileDrawingInContainer));
                 harmony.Patch(AccessTools.Method(typeof(GUI), nameof(GUI.DragWindow), Type.EmptyTypes), prefix: prefix);
                 harmony.Patch(AccessTools.Method(typeof(GUI), nameof(GUI.DragWindow), new Type[] { typeof(Rect) }), prefix: prefix);
             }
             catch (Exception e)
             {
-                LogWarning("Failed to patch GUI.DragWindow for the mod manager panel: " + e);
+                LogWarning("Failed to patch GUI.DragWindow for the mod configuration manager panel: " + e);
             }
         }
 

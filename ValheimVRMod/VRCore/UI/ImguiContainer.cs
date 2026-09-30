@@ -44,7 +44,7 @@ namespace ValheimVRMod.VRCore.UI
         private static Action popParentClip;
         private static Func<Vector2> getAbsoluteMousePosition;
 
-        // Set while a draw function runs in a container, see ModManagerPanel.GUI_DragWindow_Patch.
+        // Set while a draw function runs in a container, see ModConfigurationManagerPanel.GUI_DragWindow_Patch.
         public static bool isDrawing { get; private set; }
 
         public static bool isAvailable
@@ -191,7 +191,7 @@ namespace ValheimVRMod.VRCore.UI
                 Type guiClip = imgui.GetType("UnityEngine.GUIClip");
                 if (objectGuiState == null || layoutCache == null || guiClip == null)
                 {
-                    LogWarning("Unity IMGUI internals not found, the mod manager can't be shown in VR.");
+                    LogWarning("Unity IMGUI internals not found, the mod configuration manager can't be shown in VR.");
                     return;
                 }
 
@@ -233,13 +233,13 @@ namespace ValheimVRMod.VRCore.UI
                     getAbsoluteMousePosition != null;
                 if (!available)
                 {
-                    LogWarning("Some Unity IMGUI internals are missing, the mod manager can't be shown in VR.");
+                    LogWarning("Some Unity IMGUI internals are missing, the mod configuration manager can't be shown in VR.");
                 }
             }
             catch (Exception e)
             {
                 available = false;
-                LogError("Failed to look up Unity IMGUI internals, the mod manager can't be shown in VR: " + e);
+                LogError("Failed to look up Unity IMGUI internals, the mod configuration manager can't be shown in VR: " + e);
             }
         }
 
