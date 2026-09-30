@@ -9,55 +9,56 @@ using static ValheimVRMod.Utilities.LogUtils;
 
 namespace ValheimVRMod.Utilities
 {
-    // Saves a screenshot chosen for the mirror mode rather than whatever ScreenCapture.CaptureScreenshot() picks in
-    // VR (it asks for the left eye, which the XR display may or may not honor):
-    // - Follow, Spectator and Stabilized: the flat screen window, which shows the view of the mod's own flat screen
-    //   camera those modes exist for.
-    // - Every other mode: one eye's image as rendered for the headset, undistorted, across its full width and
-    //   cropped at the top and bottom to 16:9 like FullWidthMirror does for the window. Right, Left and OpenVR would
-    //   otherwise give the stretched eye mirror, and None a black window. The eye is the mirror's one where the mode
-    //   has one, otherwise the right eye.
+    // Saves a screenshot of both eye images as rendered for the headset rather than whatever
+    // ScreenCapture.CaptureScreenshot() picks in VR (it asks for the left eye, which the XR display may or may not
+    // honor): side by side with the left eye on the left, whole, undistorted and at full resolution, in every mirror
+    // mode. Follow, Spectator and Stabilized also save the flat screen window, which shows the view of the mod's own
+    // flat screen camera those modes exist for, next to it with a _flat suffix.
     static class VRScreenshot
     {
-        private const float ASPECT = 16f / 9f;
         // Gives up on a capture that never happens, e.g. because the capture camera did not render.
         private const int MAX_FRAMES = 10;
 
-        // Calls onDone with null once the screenshot has been saved to path, or with why it could not be.
+        private static readonly XRNode[] EYES = { XRNode.LeftEye, XRNode.RightEye };
+
+        // Calls onDone with null once the screenshot has been saved to path, and the window to path with a _flat
+        // suffix where the mode has a flat screen camera, or with why one of them could not be.
         public static IEnumerator Capture(string path, Action<string> onDone)
         {
             string failure = null;
             if (VHVRConfig.UseSeparateFlatscreenCamera())
             {
+                string flatPath = Path.Combine(
+                    Path.GetDirectoryName(path), Path.GetFileNameWithoutExtension(path) + "_flat" + Path.GetExtension(path));
                 // After everything, including any GUI, has been drawn into the window.
                 yield return new WaitForEndOfFrame();
-                failure = tryRun(() => saveWindow(path));
-            }
-            else
-            {
-                XRNode eye = VHVRConfig.GetMirrorViewMode() == Unity.XR.OpenVR.OpenVRSettings.MirrorViewModes.Left ||
-                    (VHVRConfig.UseFullWidthMirror(out XRNode fullWidthEye) && fullWidthEye == XRNode.LeftEye) ?
-                    XRNode.LeftEye : XRNode.RightEye;
-                bool done = false;
-                EyeCaptureCamera.Create(() =>
+                failure = tryRun(() => saveWindow(flatPath));
+                if (failure != null)
                 {
-                    failure = tryRun(() => saveEye(path, eye));
-                    done = true;
-                });
-                for (int frames = 0; !done && frames < MAX_FRAMES; frames++)
-                {
-                    yield return null;
-                }
-                if (!done)
-                {
-                    failure = "the eye image was not captured";
+                    LogWarning("Could not save the screenshot to " + flatPath + ": " + failure);
                 }
             }
-            if (failure != null)
+
+            string eyeFailure = null;
+            bool done = false;
+            EyeCaptureCamera.Create(() =>
             {
-                LogWarning("Could not save the screenshot to " + path + ": " + failure);
+                eyeFailure = tryRun(() => saveEyes(path, EYES));
+                done = true;
+            });
+            for (int frames = 0; !done && frames < MAX_FRAMES; frames++)
+            {
+                yield return null;
             }
-            onDone(failure);
+            if (!done)
+            {
+                eyeFailure = "the eye image was not captured";
+            }
+            if (eyeFailure != null)
+            {
+                LogWarning("Could not save the screenshot to " + path + ": " + eyeFailure);
+            }
+            onDone(eyeFailure ?? failure);
         }
 
         private static string tryRun(Func<string> save)
@@ -94,8 +95,9 @@ namespace ValheimVRMod.Utilities
             return null;
         }
 
-        // Called right after the stereo cameras have rendered this frame's eye images.
-        private static string saveEye(string path, XRNode eye)
+        // Called right after the stereo cameras have rendered this frame's eye images. Saves the given eyes next to
+        // each other, in order from left to right.
+        private static string saveEyes(string path, XRNode[] eyes)
         {
             XRDisplaySubsystem display = getDisplay();
             if (display == null)
@@ -107,47 +109,53 @@ namespace ValheimVRMod.Utilities
             {
                 return "expected a render pass per eye, found " + display.GetRenderPassCount();
             }
-            display.GetRenderPass(eye == XRNode.LeftEye ? 0 : 1, out var pass);
-            RenderTextureDescriptor eyeDesc = pass.renderTargetDesc;
+            var passes = new XRDisplaySubsystem.XRRenderPass[eyes.Length];
+            for (int i = 0; i < eyes.Length; i++)
+            {
+                display.GetRenderPass(eyes[i] == XRNode.LeftEye ? 0 : 1, out passes[i]);
+            }
+            // Both eyes share one resolution, so the first eye's stands for all of them.
+            RenderTextureDescriptor eyeDesc = passes[0].renderTargetDesc;
             if (eyeDesc.width <= 0 || eyeDesc.height <= 0)
             {
                 return "eye texture " + eyeDesc.width + "x" + eyeDesc.height;
             }
 
-            // The full width and the centered band of the height that makes the image 16:9, or the whole image if
-            // it is already wider than that.
-            float sourceHeight = Mathf.Min(1, (float)eyeDesc.width / eyeDesc.height / ASPECT);
-            int width = eyeDesc.width;
-            int height = Mathf.RoundToInt(eyeDesc.height * sourceHeight);
+            int eyeWidth = eyeDesc.width;
+            int height = eyeDesc.height;
+            int width = eyeWidth * eyes.Length;
 
-            // Keeps the eye's color encoding, so that the copy only crops the image and ReadPixels() below gets the
+            // Keeps the eye's color encoding, so that the copy only flips the image and ReadPixels() below gets the
             // encoded colors a PNG expects.
-            RenderTexture cropped = RenderTexture.GetTemporary(
-                width, height, 0, RenderTextureFormat.ARGB32,
+            RenderTexture flipped = RenderTexture.GetTemporary(
+                eyeWidth, height, 0, RenderTextureFormat.ARGB32,
                 eyeDesc.sRGB ? RenderTextureReadWrite.sRGB : RenderTextureReadWrite.Linear);
             RenderTexture previous = RenderTexture.active;
             Texture2D image = new Texture2D(width, height, TextureFormat.RGB24, false);
             try
             {
-                using (CommandBuffer commandBuffer = new CommandBuffer { name = "VHVR screenshot" })
+                for (int i = 0; i < eyes.Length; i++)
                 {
-                    // The eye image is stored upside down relative to what ReadPixels() below expects, so the band is
-                    // also flipped vertically while copying it: its top row goes to the bottom of the copy and so on.
-                    commandBuffer.Blit(
-                        pass.renderTarget, cropped, new Vector2(1, -sourceHeight), new Vector2(0, (1 + sourceHeight) / 2));
-                    Graphics.ExecuteCommandBuffer(commandBuffer);
+                    using (CommandBuffer commandBuffer = new CommandBuffer { name = "VHVR screenshot" })
+                    {
+                        // The eye image is stored upside down relative to what ReadPixels() below expects, so it is
+                        // flipped vertically while copying it: its top row goes to the bottom of the copy and so on.
+                        commandBuffer.Blit(passes[i].renderTarget, flipped, new Vector2(1, -1), new Vector2(0, 1));
+                        Graphics.ExecuteCommandBuffer(commandBuffer);
+                    }
+                    RenderTexture.active = flipped;
+                    image.ReadPixels(new Rect(0, 0, eyeWidth, height), eyeWidth * i, 0);
                 }
-                RenderTexture.active = cropped;
-                image.ReadPixels(new Rect(0, 0, width, height), 0, 0);
                 File.WriteAllBytes(path, image.EncodeToPNG());
             }
             finally
             {
                 RenderTexture.active = previous;
-                RenderTexture.ReleaseTemporary(cropped);
+                RenderTexture.ReleaseTemporary(flipped);
                 UnityEngine.Object.Destroy(image);
             }
-            LogInfo("Saved the " + eye + " image " + eyeDesc.width + "x" + eyeDesc.height + ", cropped to " + width + "x" + height);
+            LogInfo("Saved the " + string.Join(" and ", eyes) + " image " + eyeDesc.width + "x" + eyeDesc.height +
+                    (eyes.Length > 1 ? ", side by side as " + width + "x" + height : ""));
             return null;
         }
 
