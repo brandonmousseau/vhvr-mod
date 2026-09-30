@@ -828,11 +828,15 @@ namespace ValheimVRMod.VRCore.UI {
             string fileName = "vhvr_screenshot_" + System.DateTime.Now.ToString("yyyyMMdd_HHmmss_fff") + ".png";
             string path = dir + "/" + fileName;
             LogUtils.LogDebug("Saving screenshot to " + path);
-            ScreenCapture.CaptureScreenshot(path);
+            string failure = null;
+            yield return VRScreenshot.Capture(path, result => failure = result);
 
-            // The capture happens at the end of this frame, so the confirmation is only shown after it, where it
-            // can't end up in the picture.
-            yield return null;
+            // Only shown once the image has been taken, so that the confirmation can't end up in the picture.
+            if (failure != null)
+            {
+                MessageHud.instance?.ShowMessage(MessageHud.MessageType.TopLeft, "Screenshot failed, see the log");
+                yield break;
+            }
             MessageHud.instance?.ShowMessage(MessageHud.MessageType.TopLeft, "Screenshot saved: VHVRScreenshots/" + fileName);
             VRPlayer.leftHand?.hapticAction.Execute(0, 0.1f, 100, 0.3f, Valve.VR.SteamVR_Input_Sources.LeftHand);
             VRPlayer.rightHand?.hapticAction.Execute(0, 0.1f, 100, 0.3f, Valve.VR.SteamVR_Input_Sources.RightHand);
