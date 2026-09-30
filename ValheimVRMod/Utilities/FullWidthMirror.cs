@@ -17,6 +17,10 @@ namespace ValheimVRMod.Utilities
     // the post effects, hands and world space GUI already in it, just as the eye mirror would show it. Its cost is
     // about that of the eye mirror blit it replaces, and, being a camera, it draws before any GUI rather than over it.
     //
+    // The SBS mode draws both eye images the same way, each whole and at its own aspect, next to each other with the
+    // left eye on the left. The pair is letterboxed as one (see getSideBySideLayout). That costs a second copy but
+    // no more pixels written than a full width eye, as the two halves together cover at most the window.
+    //
     // In the None mode it only clears the window. Nothing else draws to it then: once the provider has shown its
     // mirror, turning the mirror off merely stops drawing it, which would leave its last image frozen in the window.
     class FullWidthMirror : MonoBehaviour
@@ -30,10 +34,12 @@ namespace ValheimVRMod.Utilities
         private XRDisplaySubsystem display;
         private Camera mirrorCamera;
         private CommandBuffer commandBuffer;
-        // The shown part of the eye image scaled to its size in the window, for Graphics.DrawTexture, which takes a
-        // texture rather than the render target identifier the display hands out for the eye.
-        private RenderTexture scaledEye;
-        private bool loggedSuccess;
+        // Per eye (left, right), the shown part of the eye image scaled to its size in the window, for
+        // Graphics.DrawTexture, which takes a texture rather than the render target identifier the display hands out
+        // for the eye.
+        private readonly RenderTexture[] scaledEyes = new RenderTexture[2];
+        // The layout last logged, so that each mode logs once when it starts showing.
+        private string loggedLayout;
         private bool loggedFailure;
 
         public static void EnsureCreated()
@@ -69,23 +75,32 @@ namespace ValheimVRMod.Utilities
         void Update()
         {
             mirrorCamera.enabled =
-                !VHVRConfig.NonVrPlayer() && (VHVRConfig.UseFullWidthMirror(out _) || VHVRConfig.UseNoFlatscreenView());
+                !VHVRConfig.NonVrPlayer() && (VHVRConfig.UseFullWidthMirror(out _) || VHVRConfig.UseSideBySideMirror() || VHVRConfig.UseNoFlatscreenView());
         }
 
         void OnDestroy()
         {
             commandBuffer?.Release();
             commandBuffer = null;
-            releaseScaledEye();
+            releaseScaledEye(0);
+            releaseScaledEye(1);
         }
 
         void OnPostRender()
         {
-            if (!VHVRConfig.UseFullWidthMirror(out XRNode eye))
+            string failure;
+            if (VHVRConfig.UseSideBySideMirror())
+            {
+                failure = tryDrawSideBySide();
+            }
+            else if (VHVRConfig.UseFullWidthMirror(out XRNode eye))
+            {
+                failure = tryDrawEye(eye);
+            }
+            else
             {
                 return;
             }
-            string failure = tryDrawEye(eye);
             if (failure != null && !loggedFailure)
             {
                 loggedFailure = true;
@@ -96,6 +111,51 @@ namespace ValheimVRMod.Utilities
         // Returns why the eye image could not be drawn, or null once it is.
         private string tryDrawEye(XRNode eye)
         {
+            string failure = tryGetEyePass(eye, out var pass);
+            if (failure != null)
+            {
+                return failure;
+            }
+            RenderTextureDescriptor eyeDesc = pass.renderTargetDesc;
+            getFullWidthLayout((float)eyeDesc.width / eyeDesc.height, out Rect target, out float sourceHeight);
+            int slot = eyeSlot(eye);
+            drawEye(pass, slot, target, sourceHeight);
+            // The other eye's copy is only used by the SBS mode.
+            releaseScaledEye(1 - slot);
+
+            logLayoutOnce("Showing the " + eye + " image " + eyeDesc.width + "x" + eyeDesc.height + ", " +
+                          sourceHeight * 100 + "% of its height, in " + target);
+            return null;
+        }
+
+        // Returns why the eye images could not be drawn, or null once they are.
+        private string tryDrawSideBySide()
+        {
+            string failure = tryGetEyePass(XRNode.LeftEye, out var leftPass);
+            if (failure != null)
+            {
+                return failure;
+            }
+            failure = tryGetEyePass(XRNode.RightEye, out var rightPass);
+            if (failure != null)
+            {
+                return failure;
+            }
+            // Both eyes share one resolution, so the left eye's aspect stands for the pair.
+            RenderTextureDescriptor eyeDesc = leftPass.renderTargetDesc;
+            getSideBySideLayout((float)eyeDesc.width / eyeDesc.height, out Rect leftTarget, out Rect rightTarget);
+            drawEye(leftPass, 0, leftTarget, 1);
+            drawEye(rightPass, 1, rightTarget, 1);
+
+            logLayoutOnce("Showing both eye images " + eyeDesc.width + "x" + eyeDesc.height + " side by side in " +
+                          leftTarget + " and " + rightTarget);
+            return null;
+        }
+
+        // Returns why the eye's render pass cannot be shown, or null once pass holds it.
+        private string tryGetEyePass(XRNode eye, out XRDisplaySubsystem.XRRenderPass pass)
+        {
+            pass = default;
             XRDisplaySubsystem display = getDisplay();
             if (display == null)
             {
@@ -106,15 +166,25 @@ namespace ValheimVRMod.Utilities
             {
                 return "expected a render pass per eye, found " + display.GetRenderPassCount();
             }
-            display.GetRenderPass(eye == XRNode.LeftEye ? 0 : 1, out var pass);
+            display.GetRenderPass(eyeSlot(eye), out pass);
             RenderTextureDescriptor eyeDesc = pass.renderTargetDesc;
             if (eyeDesc.width <= 0 || eyeDesc.height <= 0 || Screen.width <= 0 || Screen.height <= 0)
             {
                 return "eye texture " + eyeDesc.width + "x" + eyeDesc.height + ", window " + Screen.width + "x" + Screen.height;
             }
+            return null;
+        }
 
-            getFullWidthLayout((float)eyeDesc.width / eyeDesc.height, out Rect target, out float sourceHeight);
-            ensureScaledEye((int)target.width, (int)target.height, eyeDesc.sRGB);
+        // The render pass, and scaledEyes slot, of an eye.
+        private static int eyeSlot(XRNode eye)
+        {
+            return eye == XRNode.LeftEye ? 0 : 1;
+        }
+
+        // Draws the given fraction of the eye image's height, centered, into target in the window.
+        private void drawEye(XRDisplaySubsystem.XRRenderPass pass, int slot, Rect target, float sourceHeight)
+        {
+            RenderTexture scaledEye = ensureScaledEye(slot, (int)target.width, (int)target.height, pass.renderTargetDesc.sRGB);
             // Executing the copy moves the render target, so the camera's own is put back before drawing into it.
             RenderTexture previousTarget = RenderTexture.active;
             if (commandBuffer == null)
@@ -134,14 +204,15 @@ namespace ValheimVRMod.Utilities
             // rectangle is flipped vertically to keep the image upright.
             Graphics.DrawTexture(target, scaledEye, new Rect(0, 1, 1, -1), 0, 0, 0, 0);
             GL.PopMatrix();
+        }
 
-            if (!loggedSuccess)
+        private void logLayoutOnce(string layout)
+        {
+            if (layout != loggedLayout)
             {
-                loggedSuccess = true;
-                LogInfo("Showing the " + eye + " image " + eyeDesc.width + "x" + eyeDesc.height + ", " +
-                        sourceHeight * 100 + "% of its height, in " + target);
+                loggedLayout = layout;
+                LogInfo(layout);
             }
-            return null;
         }
 
         // Where the image goes in the window, in pixels, and which fraction of its height, centered, is shown there.
@@ -162,28 +233,54 @@ namespace ValheimVRMod.Utilities
             sourceHeight = 1;
         }
 
-        // Keeps the eye's color encoding, so that the copy changes only the size of the image.
-        private void ensureScaledEye(int width, int height, bool sRGB)
+        // Where the two whole eye images go in the window, in pixels: next to each other, each at its own aspect,
+        // with the pair as large as fits and centered, between bars at the top and bottom or at the sides.
+        private static void getSideBySideLayout(float imageAspect, out Rect left, out Rect right)
         {
+            float windowAspect = (float)Screen.width / Screen.height;
+            float width;
+            float height;
+            if (windowAspect >= imageAspect * 2)
+            {
+                height = Screen.height;
+                width = Mathf.Floor(height * imageAspect);
+            }
+            else
+            {
+                width = Mathf.Floor(Screen.width / 2f);
+                height = Mathf.Round(width / imageAspect);
+            }
+            float x = Mathf.Floor((Screen.width - width * 2) / 2);
+            float y = Mathf.Floor((Screen.height - height) / 2);
+            left = new Rect(x, y, width, height);
+            right = new Rect(x + width, y, width, height);
+        }
+
+        // Keeps the eye's color encoding so that the copy changes only the size of the image.
+        private RenderTexture ensureScaledEye(int slot, int width, int height, bool sRGB)
+        {
+            RenderTexture scaledEye = scaledEyes[slot];
             if (scaledEye != null && scaledEye.width == width && scaledEye.height == height && scaledEye.sRGB == sRGB)
             {
-                return;
+                return scaledEye;
             }
-            releaseScaledEye();
+            releaseScaledEye(slot);
             scaledEye = new RenderTexture(
                 width, height, 0, RenderTextureFormat.ARGB32, sRGB ? RenderTextureReadWrite.sRGB : RenderTextureReadWrite.Linear);
             scaledEye.name = "VHVR full width eye";
             scaledEye.filterMode = FilterMode.Bilinear;
             scaledEye.Create();
+            scaledEyes[slot] = scaledEye;
+            return scaledEye;
         }
 
-        private void releaseScaledEye()
+        private void releaseScaledEye(int slot)
         {
-            if (scaledEye != null)
+            if (scaledEyes[slot] != null)
             {
-                scaledEye.Release();
-                Destroy(scaledEye);
-                scaledEye = null;
+                scaledEyes[slot].Release();
+                Destroy(scaledEyes[slot]);
+                scaledEyes[slot] = null;
             }
         }
 
