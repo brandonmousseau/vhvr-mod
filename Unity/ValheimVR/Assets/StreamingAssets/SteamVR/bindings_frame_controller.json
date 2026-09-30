@@ -166,6 +166,20 @@
                   [ "/user/hand/right/input/grip", "click" ],
                   [ "/user/hand/right/input/trigger", "click" ]
                ],
+               "output" : "/actions/valheim/in/addmappin"
+            },
+            {
+               "inputs" : [
+                  [ "/user/hand/left/input/grip", "click" ],
+                  [ "/user/hand/left/input/trigger", "click" ]
+               ],
+               "output" : "/actions/valheim/in/addmappin"
+            },
+            {
+               "inputs" : [
+                  [ "/user/hand/right/input/grip", "click" ],
+                  [ "/user/hand/right/input/trigger", "click" ]
+               ],
                "output" : "/actions/valheim/in/discarditem"
             },
             {
@@ -319,7 +333,7 @@
                      "output" : "/actions/valheim/in/use"
                   }
                },
-               "mode" : "trigger",
+               "mode" : "button",
                "parameters" : {},
                "path" : "/user/hand/left/input/trigger"
             },
@@ -329,7 +343,7 @@
                      "output" : "/actions/valheim/in/use"
                   }
                },
-               "mode" : "trigger",
+               "mode" : "button",
                "parameters" : {},
                "path" : "/user/hand/right/input/trigger"
             },
@@ -406,7 +420,7 @@
                      "output" : "/actions/valheim/in/leftclick"
                   }
                },
-               "mode" : "trigger",
+               "mode" : "button",
                "parameters" : {},
                "path" : "/user/hand/right/input/trigger"
             },
@@ -517,16 +531,6 @@
                "mode" : "button",
                "parameters" : {},
                "path" : "/user/hand/right/input/bumper"
-            },
-            {
-               "inputs" : {
-                  "click" : {
-                     "output" : "/actions/valheim/in/addmappin"
-                  }
-               },
-               "mode" : "joystick",
-               "parameters" : {},
-               "path" : "/user/hand/right/input/thumbstick"
             },
             {
                "inputs" : {
