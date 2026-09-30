@@ -354,7 +354,8 @@ namespace ValheimVRMod.Utilities {
         // Equips an unequipped hand item into the given hand. Returns false without doing anything if it is not a hand
         // item or that hand cannot take it right now.
         //
-        // Grabbing from the back needs the hand free and no bow, two-handed or dual wield weapon equipped.
+        // Grabbing from the back needs the hand free, no bow, crossbow (other than the grappling hook) or dual wield weapon equipped and no two-handed
+        // wield.
         // replaceHeldItems (for the radial quick menu of that hand) skips those checks, since equipping replaces what
         // is held anyway. Otherwise the item would still be equipped, but into whichever hand the previous weapon
         // was wielded with.
@@ -802,10 +803,12 @@ namespace ValheimVRMod.Utilities {
                 return true;
             }
 
+            // Two-handed weapons that can also be wielded with one hand (sledge, atgeir, battleaxe, grappling hook) leave
+            // the other hand free to draw another weapon, except while wielding them with both hands.
             if (EquipScript.CurrentOffHandEquipType() == EquipType.Bow
-                || EquipScript.CurrentOffHandEquipType() == EquipType.Crossbow
-                || EquipScript.CurrentMainHandEquipType() == EquipType.Polearms
-                || EquipScript.CurrentMainHandEquipType() == EquipType.BattleAxe
+                || (EquipScript.CurrentOffHandEquipType() == EquipType.Crossbow &&
+                    !EquipScript.IsGrapplingHook(Player.m_localPlayer?.GetLeftItem()))
+                || LocalWeaponWield.isCurrentlyTwoHanded()
                 || FistCollision.hasDualWieldingWeaponEquipped()
                 || Player.m_localPlayer == null
                 || Player.m_localPlayer.m_inCraftingStation)
