@@ -114,7 +114,6 @@ namespace ValheimVRMod.Utilities
         // Controls Settings
         private static ConfigEntry<string> joystickForwardDirection;
         private static ConfigEntry<string> dominantHand;
-        private static ConfigEntry<bool> oneHandedBow;
         private static ConfigEntry<KeyCode> headReposFowardKey;
         private static ConfigEntry<KeyCode> headReposBackwardKey;
         private static ConfigEntry<KeyCode> headReposLeftKey;
@@ -179,6 +178,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> bowStaminaAdjust;
         private static ConfigEntry<string> crossbowSaggitalRotationSource;
         private static ConfigEntry<bool> crossbowManualReload;
+        private static ConfigEntry<bool> oneHandedBow;
         private static ConfigEntry<string> blockingType;
         private static ConfigEntry<float> shieldScale;
         private static ConfigEntry<float> maxShieldWidth;
@@ -746,17 +746,17 @@ namespace ValheimVRMod.Utilities
                                             "CameraLocked",
                                             new ConfigDescription("Where should the stagger panel be placed?",
                                                 new AcceptableValueList<string>(k_HudAlignmentValues)));
+            minimapPanelPlacement = config.Bind("VRHUD",
+                                            "MinimapPanelPlacement",
+                                            "RightWrist",
+                                            new ConfigDescription("Where should the minimap panel be placed?",
+                                                new AcceptableValueList<string>(k_HudAlignmentValues)));
             statusEffectsPlacement = config.Bind("VRHUD",
                                         "StatusEffectsPlacement",
                                         "VanillaHud",
                                         new ConfigDescription("Where the status effect icons (buffs and debuffs) are shown: VanillaHud keeps them in the top right corner of the HUD, " +
                                                               "WristQuickBar puts them below the Forsaken Power/sit/map/recenter/chat buttons on the wrist, following those if QuickActionOnLeftHand swaps the wrists.",
                                             new AcceptableValueList<string>(new string[] { "VanillaHud", "WristQuickBar" })));
-            minimapPanelPlacement = config.Bind("VRHUD",
-                                            "MinimapPanelPlacement",
-                                            "RightWrist",
-                                            new ConfigDescription("Where should the minimap panel be placed?",
-                                                new AcceptableValueList<string>(k_HudAlignmentValues)));
             allowHudFade = config.Bind("VRHUD",
                                         "AllowHudFade",
                                         true,
@@ -879,14 +879,6 @@ namespace ValheimVRMod.Utilities
                                         "Right",
                                         new ConfigDescription("The dominant hand of the player",
                                         new AcceptableValueList<string>(new string[] { "Right", "Left" })));
-            // TODO: consider having this override crossbowManualReload.
-            oneHandedBow = config.Bind(
-                "Controls",
-                "OneHandedBow",
-                false,
-                "Accessibility feature that allows operating bows and crossbows with the dominant hand alone. " +
-                "With the grappling hook, releasing the trigger shoots the hook and leaves it attached, releasing it while holding grip " +
-                "shoots and retracts it instead, and pressing grip lets go of an attached hook");
             swingSpeedRequirement =
                 config.Bind(
                     "Controls", "SwingSpeedRequirement", 3f,
@@ -1128,6 +1120,14 @@ namespace ValheimVRMod.Utilities
                                                     "CrossbowManualReload",
                                                     true,
                                                     "When supported, crossbows requires manually pulling the string to reload");
+            // TODO: consider having this override crossbowManualReload.
+            oneHandedBow = config.Bind(
+                "Motion Control",
+                "OneHandedBow",
+                false,
+                "Accessibility feature that allows operating bows and crossbows with the dominant hand alone. " +
+                "With the grappling hook, releasing the trigger shoots the hook and leaves it attached, releasing it while holding grip " +
+                "shoots and retracts it instead, and pressing grip lets go of an attached hook");
             blockingType = config.Bind("Motion Control",
                                         "BlockingType",
                                         "Gesture",
@@ -1918,11 +1918,6 @@ namespace ValheimVRMod.Utilities
             return GetPreferredHand() == VRPlayer.LEFT_HAND;
         }
 
-        public static bool OneHandedBow()
-        {
-            return oneHandedBow.Value;
-        }
-
         public static bool ViewTurnWithMountedAnimal()
         {
             return viewTurnWithMountedAnimal.Value;
@@ -1988,6 +1983,10 @@ namespace ValheimVRMod.Utilities
         public static bool CrossbowManualReload()
         {
             return crossbowManualReload.Value;
+        }
+        public static bool OneHandedBow()
+        {
+            return oneHandedBow.Value;
         }
 
         public static bool UseRealisticBlock()
