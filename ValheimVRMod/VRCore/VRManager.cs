@@ -193,7 +193,7 @@ namespace ValheimVRMod.VRCore
                 return;
             }
             OpenVRSettings.MirrorViewModes mirrorMode = VHVRConfig.GetMirrorViewMode();
-            if (VHVRConfig.UseFullWidthMirror(out _) || VHVRConfig.UseNoFlatscreenView())
+            if (VHVRConfig.UseFullWidthMirror(out _) || VHVRConfig.UseSideBySideMirror() || VHVRConfig.UseNoFlatscreenView())
             {
                 // Turns itself on and off with the mode from then on.
                 FullWidthMirror.EnsureCreated();
