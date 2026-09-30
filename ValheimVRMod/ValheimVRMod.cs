@@ -48,6 +48,7 @@ namespace ValheimVRMod
 
         void Update()
         {
+            VRManager.UpdateMirrorSetup();
             // vrPlayer is only created once VR has been initialized and started.
             if (vrPlayer == null) {
                 return;
