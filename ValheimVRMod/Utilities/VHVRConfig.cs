@@ -884,7 +884,9 @@ namespace ValheimVRMod.Utilities
                 "Controls",
                 "OneHandedBow",
                 false,
-                "Accessibility feature that allows operating bows and crossbows with the dominant hand alone");
+                "Accessibility feature that allows operating bows and crossbows with the dominant hand alone. " +
+                "With the grappling hook, releasing the trigger shoots the hook and leaves it attached, releasing it while holding grip " +
+                "shoots and retracts it instead, and pressing grip lets go of an attached hook");
             swingSpeedRequirement =
                 config.Bind(
                     "Controls", "SwingSpeedRequirement", 3f,
