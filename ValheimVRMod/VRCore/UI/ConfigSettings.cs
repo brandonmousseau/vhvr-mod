@@ -44,11 +44,12 @@ namespace ValheimVRMod.VRCore.UI {
 
         public static KeyboardMouseSettings keyboardMouseSettings;
 
-        public static void instantiate(Transform mList, Transform mParent, GameObject sPrefab, bool enableTransformButtons) {
+        // isInGame: whether this is the in-game menu rather than the main menu, which has no world to act in.
+        public static void instantiate(Transform mList, Transform mParent, GameObject sPrefab, bool enableTransformButtons, bool isInGame) {
             menuList = mList.transform.Find("MenuEntries").transform;
             menuParent = mParent;
             settingsPrefab = sPrefab;
-            createMenuEntry();
+            createMenuEntry(isInGame);
             generatePrefabs();
             ConfigSettings.enableTransformButtons = enableTransformButtons;
         }
@@ -61,7 +62,7 @@ namespace ValheimVRMod.VRCore.UI {
         /// <summary>
         /// Create an Entry in the Menu 
         /// </summary>
-        private static void createMenuEntry() {
+        private static void createMenuEntry(bool isInGame) {
             int addedMenuEntryCount = 0;
             for (int i = 0; i < menuList.childCount; i++) {
                 Transform menuEntry = menuList.GetChild(i);
@@ -78,8 +79,12 @@ namespace ValheimVRMod.VRCore.UI {
                         AddMenuEntry("Screenshot", menuEntry, Vector2.up * MENU_ENTRY_HEIGHT * addedMenuEntryCount, CaptureScreenshot);
                         addedMenuEntryCount++;
 
-                        AddMenuEntry("Toggle auto-pickup", menuEntry, Vector2.up * MENU_ENTRY_HEIGHT * addedMenuEntryCount, ToggleAutoPickup);
-                        addedMenuEntryCount++;
+                        // Auto-pickup only means something with a player in a world.
+                        if (isInGame)
+                        {
+                            AddMenuEntry("Toggle auto-pickup", menuEntry, Vector2.up * MENU_ENTRY_HEIGHT * addedMenuEntryCount, ToggleAutoPickup);
+                            addedMenuEntryCount++;
+                        }
                     }
 
                 }
