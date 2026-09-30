@@ -738,7 +738,7 @@ namespace ValheimVRMod.Utilities {
                     return Vector3.Dot(handTransform.forward, playerRight) < 0 ||
                         Vector3.Dot(handTransform.forward, playerUp) < 0 ?
                         BackReachLocation.RightShoulderRadialMedial :
-                        sagittalOffset < -0.0625f ?
+                        sagittalOffset < -0.08f ?
                         BackReachLocation.RightShoulderRadialLateral :
                         BackReachLocation.None;
                 }
@@ -755,7 +755,7 @@ namespace ValheimVRMod.Utilities {
                     return Vector3.Dot(handTransform.forward, playerRight) > 0 ||
                         Vector3.Dot(handTransform.forward, playerUp) < 0 ?
                         BackReachLocation.LeftShoulderRadialMedial :
-                        sagittalOffset < -0.0625f ?
+                        sagittalOffset < -0.08f ?
                         BackReachLocation.LeftShoulderRadialLateral :
                         BackReachLocation.None;
                 }
