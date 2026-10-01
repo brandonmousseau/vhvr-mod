@@ -6,7 +6,7 @@ using static ValheimVRMod.Utilities.LogUtils;
 
 namespace ValheimVRMod.Utilities
 {
-    // Draws the flat screen of the FullWidthRight and FullWidthLeft mirror modes: one eye's image undistorted,
+    // Draws the flat screen of the Right and Left mirror modes: one eye's image undistorted,
     // across the full width of the window and cropped at the top and bottom, instead of the eye mirror stretched to
     // the shape of the window. That keeps the eye's whole horizontal field of view, which is wider than the native
     // mirror's, and fills the window (see getFullWidthLayout).
