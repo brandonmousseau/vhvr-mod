@@ -253,6 +253,19 @@ namespace ValheimVRMod.VRCore.UI {
             keyboardMouseSettings.UpdateBindings();
         }
 
+        public static bool IsOpen => settings != null;
+
+        // Closes the dialog, saving the edited values (OK) or discarding them (Back). The values are saved as the
+        // dialog's ConfigComponents are destroyed, see ConfigComponent.OnDestroy().
+        public static void Close(bool save) {
+            if (!IsOpen) {
+                return;
+            }
+            doSave = save;
+            GameObject.Destroy(settings);
+            settings = null;
+        }
+
         // Adds listeners for ok and back buttons
         private static void setupOkAndBack(Transform panel) {
             Button okButton = panel.Find("Ok")?.GetComponent<Button>();
@@ -264,10 +277,7 @@ namespace ValheimVRMod.VRCore.UI {
             {
                 okButton.onClick.RemoveAllListeners();
                 okButton.onClick.m_PersistentCalls.Clear();
-                okButton.onClick.AddListener(() => {
-                    doSave = true;
-                    GameObject.Destroy(settings);
-                });
+                okButton.onClick.AddListener(() => Close(save: true));
                 Object.Destroy(okButton.GetComponent<UIGamePad>());
                 var hint = okButton.transform.Find("KeyHint");
                 if (hint) Object.Destroy(hint.gameObject);
@@ -282,10 +292,7 @@ namespace ValheimVRMod.VRCore.UI {
             {
                 backButton.onClick.RemoveAllListeners();
                 backButton.onClick.m_PersistentCalls.Clear();
-                backButton.onClick.AddListener(() => {
-                    doSave = false;
-                    GameObject.Destroy(settings);
-                });
+                backButton.onClick.AddListener(() => Close(save: false));
                 Object.Destroy(backButton.GetComponent<UIGamePad>());
                 var hint = backButton.transform.Find("KeyHint");
                 if (hint) Object.Destroy(hint.gameObject);
@@ -708,8 +715,7 @@ namespace ValheimVRMod.VRCore.UI {
                         return;
                     }
                 }
-                doSave = false;
-                GameObject.Destroy(settings);
+                Close(save: false);
                 Menu.instance.OnClose();
             });
 

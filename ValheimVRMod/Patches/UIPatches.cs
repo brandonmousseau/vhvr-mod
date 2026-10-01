@@ -912,6 +912,42 @@ namespace ValheimVRMod.Patches
         }
     }
 
+    // The menu button is ignored while the VHVR settings dialog is open, as vanilla ignores it while its own settings
+    // are open (Menu.m_settingsInstance), which the VHVR dialog is not. Otherwise the menu would hide and show again
+    // with the dialog left on top of it. The dialog is closed with its OK and Back buttons, so that a stray press
+    // cannot throw away the edits. The button still closes the Mods window, see VRGUI.Update().
+    // Only the in-game menu: the main menu has no Menu.
+    [HarmonyPatch(typeof(Menu), nameof(Menu.Update))]
+    class Menu_Update_VhvrSettingsPatch
+    {
+        static bool Prefix()
+        {
+            return !ConfigSettings.IsOpen || !isMenuButtonDown();
+        }
+
+        // The buttons that Menu.Update() toggles the menu with.
+        private static bool isMenuButtonDown()
+        {
+            return ZInput.GetKeyDown(KeyCode.Escape) || ZInput.GetButtonDown("JoyMenu") || ZInput.GetButtonDown("JoyButtonB");
+        }
+    }
+
+    // The dialog inherits Settings.Update(), which backs out on Escape through Settings.OnBack(). That destroys the
+    // dialog without setting ConfigSettings.doSave, which still holds the last close's choice, so it could save.
+    [HarmonyPatch(typeof(Settings), nameof(Settings.OnBack))]
+    class Settings_OnBack_VhvrSettingsPatch
+    {
+        static bool Prefix(Settings __instance)
+        {
+            if (__instance == null || !ConfigSettings.isVHVRClone(__instance))
+            {
+                return true;
+            }
+            ConfigSettings.Close(save: false);
+            return false;
+        }
+    }
+
     [HarmonyPatch(typeof(HotkeyBar), nameof(HotkeyBar.Update))]
     class HotkeyBarHidePatch
     {
