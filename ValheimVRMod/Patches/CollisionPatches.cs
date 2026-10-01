@@ -226,15 +226,9 @@ namespace ValheimVRMod.Patches {
                 if (!component1 || !component1.IsAttached(___m_character)) {
                     
                     Character character = hitObject.GetComponent<Character>();
-                    
-                    if (character == null) {
-                        hitOccured = !___m_weapon.m_shared.m_tamedOnly;
-                    } else if ((___m_character.IsPlayer() ||  BaseAI.IsEnemy(___m_character, character)) &&
-                               (___m_weapon.m_shared.m_tamedOnly || !___m_character.IsPlayer() || ___m_character.IsPVPEnabled() || BaseAI.IsEnemy(___m_character, character)) &&
-                               (!___m_weapon.m_shared.m_tamedOnly || character.IsTamed()) &&
-                               (!___m_weapon.m_shared.m_dodgeable || !character.IsDodgeInvincible())) {
-                        hitOccured = true;
-                    }
+                    hitOccured =
+                        WeaponCollision.CanWeaponHit(___m_character, ___m_weapon, character) &&
+                        (character == null || !___m_weapon.m_shared.m_dodgeable || !character.IsDodgeInvincible());
                 }
             }
 

@@ -153,19 +153,55 @@ namespace ValheimVRMod.Scripts
                 return false;
             }
 
-            // IsTamed() and IsAggravated() rather than the m_tamed and m_aggravated fields: on a character owned by
-            // another client the fields are only refreshed from the ZDO by those accessors.
-            if (character.IsTamed() || character.gameObject == Player.m_localPlayer.gameObject)
+            // IsTamed(), IsAggravated() and IsPVPEnabled() rather than the m_tamed, m_aggravated and m_pvp fields: on
+            // a character owned by another client the fields are only refreshed from the ZDO by those accessors, and
+            // Player.m_pvp not even that, so it stays false on every other player.
+            if (Player.m_localPlayer == null || character.IsTamed() || character.gameObject == Player.m_localPlayer.gameObject)
             {
                 return true;
             }
 
             if (character.IsPlayer())
             {
-                return Player.m_localPlayer == null || !Player.m_localPlayer.m_pvp || !character.GetComponent<Player>().m_pvp;
+                return !Player.m_localPlayer.IsPVPEnabled() || !character.IsPVPEnabled();
             }
 
             return character.m_baseAI != null && !character.m_baseAI.IsAggravated() && character.m_faction == Character.Faction.Dverger;
+        }
+
+        // Whether a melee attack by the attacker with the weapon is allowed to hit the character, or a non-character
+        // target if character is null, regardless of dodging. Mirrors vanilla Attack.DoMeleeAttack(): e.g. a player
+        // hits another character only with PvP on or if it is an enemy, and a tamed-only weapon such as the butcher
+        // knife hits nothing but tamed creatures.
+        public static bool CanWeaponHit(Humanoid attacker, ItemDrop.ItemData weapon, Character character)
+        {
+            if (character == null)
+            {
+                return !weapon.m_shared.m_tamedOnly;
+            }
+            return (attacker.IsPlayer() || BaseAI.IsEnemy(attacker, character)) &&
+                   (weapon.m_shared.m_tamedOnly || !attacker.IsPlayer() || attacker.IsPVPEnabled() || BaseAI.IsEnemy(attacker, character)) &&
+                   (!weapon.m_shared.m_tamedOnly || character.IsTamed());
+        }
+
+        // Whether the local player swinging, punching or kicking the collider with the item should start an attack at
+        // all, so that a hit which Attack.DoMeleeAttack() would reject anyway does not cost stamina or put the target
+        // in cooldown.
+        public static bool CanHitCollider(Collider collider, ItemDrop.ItemData item)
+        {
+            if (item == null)
+            {
+                return true;
+            }
+
+            Character character = collider.GetComponentInParent<Character>();
+            if (!CanWeaponHit(Player.m_localPlayer, item, character))
+            {
+                return false;
+            }
+
+            // Vanilla lets a PvP player's hit land on a non-PvP player and leaves it to the damage to be ignored.
+            return character == null || !character.IsPlayer() || character.IsPVPEnabled();
         }
 
         private static bool IsHostileCharacter(Collider collider)
@@ -199,7 +235,8 @@ namespace ValheimVRMod.Scripts
 
         private void MaybeStabCharacter(Collider collider) {
 
-            if (collider.gameObject.layer != LayerUtils.CHARACTER)
+            if (collider.gameObject.layer != LayerUtils.CHARACTER &&
+                collider.gameObject.layer != 26) // CHARACTER_NET
             {
                 return;
             }
@@ -304,7 +341,7 @@ namespace ValheimVRMod.Scripts
                 isSlowAttack = weaponHasMultitargetSwipe && isTwoHandedMultitargetSwipeActive;
             }
 
-            if (!tryHitTarget(collider.gameObject, isSlowAttack, speed))
+            if (!CanHitCollider(collider, item) ||!tryHitTarget(collider.gameObject, isSlowAttack, speed))
             {
                 return;
             }
