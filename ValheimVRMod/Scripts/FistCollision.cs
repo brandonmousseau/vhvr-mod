@@ -176,7 +176,7 @@ namespace ValheimVRMod.Scripts
             if (character != null)
             {
                 if (character.gameObject == Player.m_localPlayer.gameObject ||
-                    !character.m_tamed ||
+                    !character.IsTamed() ||
                     !WeaponCollision.IsFriendly(character))
                 {
                     return false;

@@ -394,8 +394,7 @@ namespace ValheimVRMod.VRCore.UI
                     return;
                 }
                 holdTime += Time.unscaledDeltaTime;
-                // In place mode the menu opens right away, the right click (the build menu) is left to share the press.
-                if (!inPlaceMode() && holdTime < QUICK_MENU_HOLD_TIME)
+                if (holdTime < QUICK_MENU_HOLD_TIME)
                 {
                     return;
                 }
@@ -470,9 +469,12 @@ namespace ValheimVRMod.VRCore.UI
             // action reads that don't go through here), and disabled the same way as the left hand's own interact
             // in HandBasedInteractionPatches: not usable while the right hand's laser pointer is up, even when it
             // and LeftClick happen to be bound to different physical buttons.
+            // Also not usable while aiming a weapon, whose triggers then shoot or swing-launch: otherwise shooting
+            // at a summon with grip held would also rename it, grip being the alt modifier (see CheckAltButton).
             if (zinput == "Use")
             {
                 return !LaserPointerChords.IsLaserActiveFor(SteamVR_Input_Sources.RightHand) &&
+                    !LocalWeaponWield.isAiming &&
                     SteamVR_Actions.valheim_Use.GetStateDown(SteamVR_Input_Sources.RightHand);
             }
             if (zinput == "Map") {
@@ -536,6 +538,7 @@ namespace ValheimVRMod.VRCore.UI
             if (zinput == "Use")
             {
                 return !LaserPointerChords.IsLaserActiveFor(SteamVR_Input_Sources.RightHand) &&
+                    !LocalWeaponWield.isAiming &&
                     SteamVR_Actions.valheim_Use.GetState(SteamVR_Input_Sources.RightHand);
             }
             if (zinput == "JoyAltPlace")
@@ -980,7 +983,12 @@ namespace ValheimVRMod.VRCore.UI
                     {
                         action.AddOnStateDownListener(
                             (fromAction, fromSource) => {
-                                if (!LaserPointerChords.IsLaserActiveFor(SteamVR_Input_Sources.RightHand)) GetButtonPatchUtils.Press(buttonName);
+                                // Gated like GetButtonDown("Use"), which this stands in for.
+                                if (!LaserPointerChords.IsLaserActiveFor(SteamVR_Input_Sources.RightHand) &&
+                                    !LocalWeaponWield.isAiming)
+                                {
+                                    GetButtonPatchUtils.Press(buttonName);
+                                }
                             },
                             listenerSource);
                     }

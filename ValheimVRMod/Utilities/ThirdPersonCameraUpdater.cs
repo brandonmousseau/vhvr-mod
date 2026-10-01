@@ -31,6 +31,10 @@ namespace ValheimVRMod.Utilities
         private Vector3 targetVelocity;
         private bool followsEyesDirectly;
 
+        // Whether this camera looks at the player character from outside, as opposed to following the eyes
+        // directly, in which case it should show what the headset shows.
+        public bool ViewsCharacterFromOutside { get { return !followsEyesDirectly; } }
+
         void FixedUpdate()
         {
             if (camera == null)
@@ -100,12 +104,15 @@ namespace ValheimVRMod.Utilities
             }
             else if (VHVRConfig.UseFollowCameraOnFlatscreen())
             {
-                if (Player.m_localPlayer.IsSleeping() || Player.m_localPlayer.IsTeleporting())
+                // Turning to the GUI panel is pointless when it is hidden from this camera, the usual follow view
+                // is kept instead.
+                bool showsGui = VHVRConfig.DisplayVRGUIOnFlatScreen();
+                if (showsGui && (Player.m_localPlayer.IsSleeping() || Player.m_localPlayer.IsTeleporting()))
                 {
                     viewTarget = uiPanel.transform.position;
                     viewPoint = uiPanel.transform.position - uiPanel.transform.forward * 1.5f;
                 }
-                else if (VRPlayer.IsClickableGuiOpen)
+                else if (showsGui && VRPlayer.IsClickableGuiOpen)
                 {
                     viewTarget = uiPanel.transform.position;
                     viewPoint = targetPosition - uiPanel.transform.right * 0.5f + Vector3.up * 0.3f - vrCamera.transform.forward * 0.3f;
@@ -212,17 +219,8 @@ namespace ValheimVRMod.Utilities
             }
             float smoothingTime =
                 StabilizedCameraUpdater.ROTATION_SMOOTHING_TIME * VHVRConfig.FlatscreenSmoothingScale();
-            if (smoothingTime <= 0 ||
-                Quaternion.Angle(transform.rotation, targetRotation) > StabilizedCameraUpdater.SNAP_ANGLE)
-            {
-                transform.rotation = targetRotation;
-            }
-            else
-            {
-                transform.rotation =
-                    Quaternion.Slerp(
-                        transform.rotation, targetRotation, 1f - Mathf.Exp(-Time.deltaTime / smoothingTime));
-            }
+            transform.rotation =
+                StabilizedCameraUpdater.SmoothRotation(transform.rotation, targetRotation, smoothingTime);
 
             // Leaves the smoothing in FixedUpdate at rest where this camera is, so that going back out to a larger
             // distance or a pulled back view starts from here instead of from wherever it was left.

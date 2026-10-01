@@ -153,7 +153,9 @@ namespace ValheimVRMod.Scripts
                 return false;
             }
 
-            if (character.m_tamed || character.gameObject == Player.m_localPlayer.gameObject)
+            // IsTamed() and IsAggravated() rather than the m_tamed and m_aggravated fields: on a character owned by
+            // another client the fields are only refreshed from the ZDO by those accessors.
+            if (character.IsTamed() || character.gameObject == Player.m_localPlayer.gameObject)
             {
                 return true;
             }
@@ -163,7 +165,7 @@ namespace ValheimVRMod.Scripts
                 return Player.m_localPlayer == null || !Player.m_localPlayer.m_pvp || !character.GetComponent<Player>().m_pvp;
             }
 
-            return character.m_baseAI != null && !character.m_baseAI.m_aggravated && character.m_faction == Character.Faction.Dverger;
+            return character.m_baseAI != null && !character.m_baseAI.IsAggravated() && character.m_faction == Character.Faction.Dverger;
         }
 
         private static bool IsHostileCharacter(Collider collider)
@@ -640,15 +642,19 @@ namespace ValheimVRMod.Scripts
                 return false;
             }
 
+            var minSpeed = GetMinSpeed(isShovelScoop);
+
             if (weaponWield.twoHandedState == WeaponWield.TwoHandedState.SingleHanded &&
+                VHVRConfig.TwoHandedWield() &&
                 EquipScript.CurrentMainHandEquipType() == EquipType.Polearms &&
                 !TwoHandedGeometry.LocalAtgeirGeometryProvider.UsingArmpitAnchor)
             {
                 // When wielding polearms with only one hand without armpit anchor, make attack harder to trigger
-                return isStab && speed > GetMinSpeed(isShovelScoop);
+                return (isStab && speed > minSpeed) ||
+                    Vector3.Dot(velocity, LocalWeaponWield.weaponForward.normalized) > minSpeed;
             }
 
-            return isStab || speed > GetMinSpeed(isShovelScoop);
+            return isStab || speed > minSpeed;
         }
 
         private float GetMinSpeed(bool isShovelScoop)

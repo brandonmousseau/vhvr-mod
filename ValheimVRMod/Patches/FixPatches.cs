@@ -50,6 +50,30 @@ namespace ValheimVRMod.Patches
         }
     }
 
+    // Catapult.CollectLaunchCharacters() adds a character once per collider it finds on the character layer, and the
+    // VR hand block boxes (see FistBlock) are on that layer under the local player. A repeated SetTempParent() would
+    // store the catapult arm as the parent to return to, so ReleaseTempParent() would leave the player attached to the
+    // arm until relogging, carried along by every later shot.
+    [HarmonyPatch(typeof(Character), nameof(Character.SetTempParent))]
+    class PatchSetTempParentOnce
+    {
+        static bool Prefix(Character __instance, Transform t)
+        {
+            return __instance.transform.parent != t;
+        }
+    }
+
+    [HarmonyPatch(typeof(Catapult), "CollectLaunchCharacters")]
+    class PatchCatapultCollectLaunchCharactersOnce
+    {
+        // Launch each character once, not once per collider, see PatchSetTempParentOnce.
+        static void Postfix(List<Character> ___m_launchCharacters)
+        {
+            var seen = new HashSet<Character>();
+            ___m_launchCharacters.RemoveAll(character => !seen.Add(character));
+        }
+    }
+
     [HarmonyPatch(typeof(UpscaledFrameBuffer), nameof(UpscaledFrameBuffer.UpdateCurrentRenderScale))]
     class PatchUpdateCurrentRenderScale
     {
@@ -208,6 +232,15 @@ namespace ValheimVRMod.Patches
             }
 
             if (___m_character.IsSitting() && !___m_character.m_attack && !___m_character.m_attackHold)
+            {
+                ___m_animator.speed = 1f;
+                return;
+            }
+
+            // Crafting plays its own animation (hammering, with sound and spark effects) that vanilla doesn't reset
+            // the speed for, so at 1000x its effects would fire hundreds of times per second. Nothing can be
+            // attacked from the crafting menu anyway.
+            if (Player.m_localPlayer.m_inCraftingStation)
             {
                 ___m_animator.speed = 1f;
                 return;
