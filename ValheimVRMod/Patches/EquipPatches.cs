@@ -185,6 +185,7 @@ namespace ValheimVRMod.Patches
     }
 
     [HarmonyPatch(typeof(VisEquipment), nameof(VisEquipment.SetRightHandEquipped))]
+    [FlatScreenSafe]
     class PatchSetRightHandEquipped
     {
         static void Postfix(VisEquipment __instance, bool __result, ref GameObject ___m_rightItemInstance, int hash)
@@ -397,6 +398,7 @@ namespace ValheimVRMod.Patches
     }
 
     [HarmonyPatch(typeof(VisEquipment), nameof(VisEquipment.SetLeftHandEquipped))]
+    [FlatScreenSafe]
     class PatchSetLeftHandEquipped
     {
         static void Postfix(VisEquipment __instance, bool __result, GameObject ___m_leftItemInstance, int hash)
@@ -637,6 +639,7 @@ namespace ValheimVRMod.Patches
     }
 
     [HarmonyPatch(typeof(VisEquipment), nameof(VisEquipment.AttachItem))]
+    [FlatScreenSafe]
     class PatchAttachItem
     {
         static void Prefix(VisEquipment __instance, ref Transform joint, int itemHash)
