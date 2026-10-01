@@ -13,9 +13,6 @@ namespace ValheimVRMod.Scripts
     {
         // From the VR camera to the character's eyes, when the mirror is entered.
         private const float MIRROR_DISTANCE = 1f;
-        // How far the GUI panel is turned away from the character to one side, so that it does not cover it.
-        private const float GUI_SIDE_ANGLE = 40f;
-
         private static VRIK vrik;
         private static Vector3 planePoint;
         private static Vector3 planeNormal;
@@ -95,10 +92,10 @@ namespace ValheimVRMod.Scripts
             headSource = leftHandSource = rightHandSource = null;
         }
 
-        // Turns the panel aside from the character, about the point the camera viewed it from.
+        // Places the panel straight ahead of the point the camera viewed the character from, facing it.
         public static void GetGuiPose(Vector3 offset, Vector3 floorPoint, Vector3 up, out Vector3 position, out Quaternion rotation)
         {
-            rotation = Quaternion.AngleAxis(-GUI_SIDE_ANGLE, up) * Quaternion.LookRotation(ViewDirection, up);
+            rotation = Quaternion.LookRotation(ViewDirection, up);
             position = floorPoint + Vector3.ProjectOnPlane(ViewPoint - floorPoint, up) + rotation * offset;
         }
 
