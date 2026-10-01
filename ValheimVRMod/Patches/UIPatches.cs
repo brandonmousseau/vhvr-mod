@@ -1351,18 +1351,28 @@ namespace ValheimVRMod.Patches
         }
     }
 
+    // Vanilla draws damage texts on the HUD canvas, at the screen position of the main camera, which only makes them
+    // show up in odd places on the VR GUI panel. VR players get them from VRDamageTexts instead, or not at all if
+    // they are disabled.
     [HarmonyPatch(typeof(DamageText), "AddInworldText")]
     class PatchDamageText
     {
-        public static void Postfix(DamageText __instance, Vector3 pos, bool mySelf)
+        public static bool Prefix()
         {
-            if (VHVRConfig.NonVrPlayer() || !VHVRConfig.ShowDamageText())
+            return VHVRConfig.NonVrPlayer() || VHVRConfig.ShowDamageText();
+        }
+
+        public static void Postfix(DamageText __instance, bool mySelf)
+        {
+            if (VHVRConfig.NonVrPlayer() || !VHVRConfig.ShowDamageText() || __instance.m_worldTexts.Count == 0)
             {
                 return;
             }
 
             var lastText = __instance.m_worldTexts.Last();
-            VRDamageTexts.Pool().CreateText(lastText.m_textField.text, pos, lastText.m_textField.color, mySelf, __instance.m_textDuration);
+            VRDamageTexts.Pool().CreateText(lastText.m_textField, lastText.m_worldPos, mySelf, lastText.m_duration);
+            UnityEngine.Object.Destroy(lastText.m_gui);
+            __instance.m_worldTexts.Remove(lastText);
         }
     }
     [HarmonyPatch(typeof(Player), nameof(Player.OnDeath))]
