@@ -1491,8 +1491,7 @@ namespace ValheimVRMod.VRCore
 
             if (!VHVRConfig.IsHipTrackingEnabled())
             {
-                vrikRef.solver.leftLeg.positionWeight = vrikRef.solver.rightLeg.positionWeight = 0;
-                vrikRef.solver.leftLeg.rotationWeight = vrikRef.solver.rightLeg.rotationWeight = 0;
+                VrikCreator.DisableFootTracking(vrikRef);
                 StaticObjects.leftFootCollision().gameObject.SetActive(false);
                 StaticObjects.rightFootCollision().gameObject.SetActive(false);
 
