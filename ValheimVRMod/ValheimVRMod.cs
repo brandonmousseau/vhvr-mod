@@ -58,6 +58,11 @@ namespace ValheimVRMod
             {
                 VRManager.tryRecenter();
             }
+            // TEMP diagnostic for the mountain shade drawn over the VRGUI, remove after.
+            if (Input.GetKeyDown(KeyCode.Backslash))
+            {
+                LogOverlayLayerRenderers();
+            }
 #if DEBUG
             if (Input.GetKeyDown(KeyCode.Backslash))
             {

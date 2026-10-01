@@ -99,6 +99,75 @@ namespace ValheimVRMod.Utilities
         }
         
         /**
+         * TEMP diagnostic: logs all enabled cameras and every enabled renderer on the layers that VHVR draws with its
+         * own cameras on top of the world (UI panel, world space UI, hands), to find what draws over the VRGUI.
+         * Only GameObject renderers are listed, meshes drawn with Graphics.DrawMesh*() on these layers are not.
+         */
+        public static void LogOverlayLayerRenderers()
+        {
+            LogInfo("=== Overlay layer diagnostic ===");
+            foreach (Camera camera in Camera.allCameras)
+            {
+                LogInfo(
+                    "Camera " + camera.name +
+                    " depth=" + camera.depth +
+                    " clear=" + camera.clearFlags +
+                    " mask=0x" + camera.cullingMask.ToString("X8") +
+                    " target=" + (camera.targetTexture == null ? "screen" : camera.targetTexture.name));
+            }
+
+            int[] layers =
+                { LayerUtils.UI_PANEL_LAYER, LayerUtils.WORLDSPACE_UI_LAYER, LayerUtils.getHandsLayer(), 23 };
+            int[] counts = new int[layers.Length];
+            Camera vrCam = CameraUtils.getCamera(CameraUtils.VR_CAMERA);
+            foreach (Renderer renderer in Object.FindObjectsOfType<Renderer>())
+            {
+                if (!renderer.enabled || !renderer.gameObject.activeInHierarchy)
+                {
+                    continue;
+                }
+                int layer = renderer.gameObject.layer;
+                int layerIndex = System.Array.IndexOf(layers, layer);
+                if (layerIndex < 0)
+                {
+                    continue;
+                }
+                counts[layerIndex]++;
+
+                string materials = "";
+                foreach (Material material in renderer.sharedMaterials)
+                {
+                    materials += material == null ?
+                        "<null>; " :
+                        material.name + " (" + (material.shader == null ? "<no shader>" : material.shader.name) +
+                        ", queue " + material.renderQueue + "); ";
+                }
+                string distance =
+                    vrCam == null ? "?" : Vector3.Distance(vrCam.transform.position, renderer.bounds.center).ToString("F1");
+                LogInfo(
+                    "Layer " + layer + " (" + LayerMask.LayerToName(layer) + ") " + getPath(renderer.transform) +
+                    " [" + renderer.GetType().Name + ", visible=" + renderer.isVisible + ", distance=" + distance +
+                    "] " + materials);
+            }
+
+            for (int i = 0; i < layers.Length; i++)
+            {
+                LogInfo("Layer " + layers[i] + ": " + counts[i] + " enabled renderer(s)");
+            }
+            LogInfo("=== End overlay layer diagnostic ===");
+        }
+
+        private static string getPath(Transform transform)
+        {
+            string path = transform.name;
+            for (Transform parent = transform.parent; parent != null; parent = parent.parent)
+            {
+                path = parent.name + "/" + path;
+            }
+            return path;
+        }
+
+        /**
          * Logs all Components of a given object
          */
         public static void LogComponents(Transform obj)
