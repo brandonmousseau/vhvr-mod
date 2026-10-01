@@ -131,6 +131,16 @@ namespace ValheimVRMod.VRCore.UI
         private readonly List<Renderer> hiddenFromCurrentCamera = new List<Renderer>();
         private Camera _guiCamera;
         private List<Canvas> _guiCanvases = new List<Canvas>();
+        // Other mods' canvases listed in AdditionalGuiCanvases, see updateCustomGuiCanvases(). Kept apart from
+        // _guiCanvases, where a destroyed canvas makes VHVR find all of the vanilla ones again, since mods often
+        // destroy their UI when it closes and create it again when it opens.
+        private readonly List<Canvas> _customGuiCanvases = new List<Canvas>();
+        // Names of canvases already logged as not shown in VR, so that each is logged once.
+        private readonly HashSet<string> loggedUnlistedCanvasNames = new HashSet<string>();
+        // Real time, since mod UIs are often opened while the game is paused.
+        private const float CUSTOM_GUI_CANVAS_SCAN_INTERVAL = 2f;
+        private float nextCustomGuiCanvasScanTime;
+        private static bool customGuiCanvasRescanRequested;
         private Canvas _cursorGuiCanvas;
         private Canvas _hudGuiCanvas;
         private Canvas _chatBox;
@@ -268,6 +278,7 @@ namespace ValheimVRMod.VRCore.UI
         public void Update()
         {
             disableVanillaInputSystemUiInputModule();
+            updateCustomGuiCanvases();
             if (VHVRConfig.UseVrControls() && SteamVR_Actions.valheim_ToggleMenu.GetStateDown(SteamVR_Input_Sources.Any))
             {
                 ModConfigurationManagerBridge.CloseWindow();
@@ -286,6 +297,88 @@ namespace ValheimVRMod.VRCore.UI
             bool middleButtonPressed = Input.GetMouseButton(2);
             _inputModule.UpdateButtonStates(leftButtonPressed, rightButtonPressed, middleButtonPressed);
             _inputModule.UpdateScroll(Input.mouseScrollDelta);
+        }
+
+        // Makes the next Update() look for the canvases listed in AdditionalGuiCanvases right away.
+        public static void RequestCustomGuiCanvasRescan()
+        {
+            customGuiCanvasRescanRequested = true;
+        }
+
+        // Shows the other mods' canvases listed in AdditionalGuiCanvases on the VR GUI the same way as the vanilla
+        // ones (see onGuiCanvasFound()), which also makes them clickable with the laser through their own
+        // GraphicRaycaster. Looks for them every few seconds, since mods create their UI whenever they like, often
+        // only once it is first opened, and may destroy it or switch it back to the screen when it closes. Also logs
+        // every other canvas still drawn only on the flat screen, so that players can find the names to list.
+        private void updateCustomGuiCanvases()
+        {
+            if (!hasFoundGuiCanvas() ||
+                (!customGuiCanvasRescanRequested && Time.realtimeSinceStartup < nextCustomGuiCanvasScanTime))
+            {
+                return;
+            }
+            customGuiCanvasRescanRequested = false;
+            nextCustomGuiCanvasScanTime = Time.realtimeSinceStartup + CUSTOM_GUI_CANVAS_SCAN_INTERVAL;
+
+            _customGuiCanvases.RemoveAll(canvas => canvas == null);
+            HashSet<string> listedNames = VHVRConfig.AdditionalGuiCanvasNames();
+            foreach (Canvas canvas in GameObject.FindObjectsOfType<Canvas>(includeInactive: true))
+            {
+                if (!canvas.isRootCanvas || _guiCanvases.Contains(canvas) || canvas == _chatBox)
+                {
+                    // A nested canvas is drawn wherever its root canvas is.
+                    continue;
+                }
+                bool isShownInVr = canvas.renderMode == RenderMode.WorldSpace && canvas.worldCamera == _guiCamera;
+                if (listedNames.Contains(canvas.name))
+                {
+                    if (!isShownInVr)
+                    {
+                        showCustomGuiCanvas(canvas);
+                    }
+                }
+                else if (canvas.renderMode == RenderMode.ScreenSpaceOverlay &&
+                    canvas.gameObject.activeInHierarchy &&
+                    loggedUnlistedCanvasNames.Add(canvas.name))
+                {
+                    LogInfo("Canvas \"" + canvas.name + "\" is not shown in VR; add it to AdditionalGuiCanvases to show it.");
+                }
+            }
+
+            foreach (Canvas canvas in _customGuiCanvases)
+            {
+                RectTransform rectTransform = canvas.GetComponent<RectTransform>();
+                rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, GUI_DIMENSIONS.x);
+                rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, GUI_DIMENSIONS.y);
+            }
+        }
+
+        private void showCustomGuiCanvas(Canvas canvas)
+        {
+            // Need to assign the camera to enable UI interactions
+            canvas.worldCamera = _guiCamera;
+            canvas.renderMode = RenderMode.WorldSpace;
+            RectTransform rectTransform = canvas.GetComponent<RectTransform>();
+            rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, GUI_DIMENSIONS.x);
+            rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, GUI_DIMENSIONS.y);
+
+            // The GUI camera only draws the UI layer, which a canvas drawn on the screen does not need to be on.
+            int uiLayer = LayerMask.NameToLayer("UI");
+            if (canvas.gameObject.layer != uiLayer)
+            {
+                LogInfo("Moving canvas \"" + canvas.name + "\" from layer " + LayerMask.LayerToName(canvas.gameObject.layer) +
+                    " to UI so that it is drawn in VR.");
+                foreach (Transform child in canvas.GetComponentsInChildren<Transform>(includeInactive: true))
+                {
+                    child.gameObject.layer = uiLayer;
+                }
+            }
+
+            if (!_customGuiCanvases.Contains(canvas))
+            {
+                _customGuiCanvases.Add(canvas);
+            }
+            LogInfo("Showing canvas \"" + canvas.name + "\" in VR.");
         }
 
         public static void UpdateUIPanelSize()
