@@ -3,13 +3,6 @@
    "alias_info" : {},
    "app_key" : "steam.app.892970",
    "bindings" : {
-      "/actions/buggy" : {
-         "chords" : [],
-         "haptics" : [],
-         "poses" : [],
-         "skeleton" : [],
-         "sources" : []
-      },
       "/actions/default" : {
          "chords" : [],
          "haptics" : [
@@ -162,36 +155,44 @@
             }
          ]
       },
-      "/actions/laserpointers" : {
-         "sources" : [
+      "/actions/valheim" : {
+         "chords" : [
             {
-               "inputs" : {
-                  "click" : {
-                     "output" : "/actions/laserpointers/in/leftclick"
-                  }
-               },
-               "mode" : "button",
-               "path" : "/user/hand/right/input/trigger"
+               "inputs" : [
+                  [ "/user/hand/right/input/grip", "click" ],
+                  [ "/user/hand/right/input/trackpad", "north" ]
+               ],
+               "output" : "/actions/valheim/in/removepiece"
             },
             {
-               "inputs" : {
-                  "click" : {
-                     "output" : "/actions/laserpointers/in/rightclick"
-                  }
-               },
-               "mode" : "button",
-               "path" : "/user/hand/right/input/grip"
+               "inputs" : [
+                  [ "/user/hand/left/input/grip", "click" ],
+                  [ "/user/hand/right/input/grip", "click" ]
+               ],
+               "output" : "/actions/valheim/in/middleclick"
+            },
+            {
+               "inputs" : [
+                  [ "/user/hand/right/input/grip", "click" ],
+                  [ "/user/hand/right/input/trigger", "click" ]
+               ],
+               "output" : "/actions/valheim/in/addmappin"
+            },
+            {
+               "inputs" : [
+                  [ "/user/hand/right/input/grip", "click" ],
+                  [ "/user/hand/right/input/trigger", "click" ]
+               ],
+               "output" : "/actions/valheim/in/discarditem"
+            },
+            {
+               "inputs" : [
+                  [ "/user/hand/left/input/grip", "click" ],
+                  [ "/user/hand/right/input/trigger", "click" ]
+               ],
+               "output" : "/actions/valheim/in/splitstack"
             }
-         ]
-      },
-      "/actions/platformer" : {
-         "chords" : [],
-         "haptics" : [],
-         "poses" : [],
-         "skeleton" : [],
-         "sources" : []
-      },
-      "/actions/valheim" : {
+         ],
          "haptics" : [
             {
                "output" : "/actions/valheim/out/haptic",
@@ -212,6 +213,7 @@
                "path" : "/user/hand/right/pose/raw"
             }
          ],
+         "skeleton" : [],
          "sources" : [
             {
                "inputs" : {
@@ -242,6 +244,30 @@
                   "sub_mode" : "click"
                },
                "path" : "/user/hand/right/input/trackpad"
+            },
+            {
+               "inputs" : {
+                  "east" : {
+                     "output" : "/actions/valheim/in/rightclick"
+                  }
+               },
+               "mode" : "dpad",
+               "parameters" : {
+                  "sub_mode" : "click"
+               },
+               "path" : "/user/hand/right/input/trackpad"
+            },
+            {
+               "inputs" : {
+                  "west" : {
+                     "output" : "/actions/valheim/in/rightclick"
+                  }
+               },
+               "mode" : "dpad",
+               "parameters" : {
+                  "sub_mode" : "click"
+               },
+               "path" : "/user/hand/left/input/trackpad"
             },
             {
                "inputs" : {
@@ -276,7 +302,7 @@
             {
                "inputs" : {
                   "click" : {
-                     "output" : "/actions/valheim/in/useleft"
+                     "output" : "/actions/valheim/in/use"
                   }
                },
                "mode" : "button",
@@ -360,6 +386,24 @@
                },
                "mode" : "scroll",
                "path" : "/user/hand/left/input/trackpad"
+            },
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/valheim/in/leftclick"
+                  }
+               },
+               "mode" : "button",
+               "path" : "/user/hand/right/input/trigger"
+            },
+            {
+               "inputs" : {
+                  "click" : {
+                     "output" : "/actions/valheim/in/leftclick"
+                  }
+               },
+               "mode" : "button",
+               "path" : "/user/hand/left/input/trigger"
             }
          ]
       }

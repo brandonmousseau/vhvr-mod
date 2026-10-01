@@ -16,6 +16,8 @@ using ValheimVRMod.Utilities;
 
 public class Outline : MonoBehaviour {
   private static HashSet<Mesh> registeredMeshes = new HashSet<Mesh>();
+  // Meshes already warned about in WarnIfOnlyLastSubmeshOutlined(), so that each is reported once.
+  private static HashSet<Mesh> multiSubmeshWarnedMeshes = new HashSet<Mesh>();
 
   public enum Mode {
     OutlineAll,
@@ -126,10 +128,40 @@ public class Outline : MonoBehaviour {
     return false;
   }
 
+  // Whether the renderer is the body model of a player or of an NPC built like one (e.g. the Viking ghosts in the Deep
+  // North). Its mesh has two submeshes, the body and then the eyebrows, and Unity draws the materials appended past
+  // the submesh count on the last submesh only, so an outline on it outlines just the eyebrows. Those sit too close to
+  // the VR camera on the local player, and VisEquipment.UpdateColors() reads the body model's Renderer.materials every
+  // frame, which replaces the outline materials with copies that no longer follow the outline's color and leaves the
+  // eyebrows outlined in whatever color the outline had at that moment.
+  private static bool IsCharacterBodyModel(Renderer renderer) {
+    var visEquipment = renderer.GetComponentInParent<VisEquipment>();
+    return visEquipment != null && visEquipment.m_bodyModel == renderer;
+  }
+
+  // For the same reason as above, the outline covers only the last submesh of a mesh with several of them.
+  private static void WarnIfOnlyLastSubmeshOutlined(Renderer renderer) {
+    var skinnedMeshRenderer = renderer as SkinnedMeshRenderer;
+    if (skinnedMeshRenderer == null) {
+      return;
+    }
+    var mesh = skinnedMeshRenderer.sharedMesh;
+    if (mesh == null || mesh.subMeshCount <= 1 || !multiSubmeshWarnedMeshes.Add(mesh)) {
+      return;
+    }
+    LogUtils.LogWarning(
+      "Outlining skinned mesh " + mesh.name + " on " + renderer.name + ", which has " + mesh.subMeshCount +
+      " submeshes: only the last one will be outlined.");
+  }
+
   void OnEnable() {
     foreach (var renderer in renderers) {
 
       if (renderer.GetType() == typeof(ParticleSystemRenderer)) {
+        continue;
+      }
+
+      if (IsCharacterBodyModel(renderer)) {
         continue;
       }
       
@@ -142,6 +174,8 @@ public class Outline : MonoBehaviour {
         // 2. The hair, espcially eyebrows, is too close to the camera and their outline may become visible even with a moderate near clip distance.
         continue;
       }
+
+      WarnIfOnlyLastSubmeshOutlined(renderer);
 
       materials.Add(outlineMaskMaterial);
       materials.Add(outlineFillMaterial);

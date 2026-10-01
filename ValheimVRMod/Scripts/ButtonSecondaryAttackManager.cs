@@ -113,7 +113,7 @@ namespace ValheimVRMod.Scripts
             isStaminaDrained = false;
         }
 
-        public void Initialize(Transform obj, string name, bool isRightHand)
+        public void Initialize(Transform obj, bool isRightHand)
         {
             parent = obj.parent.gameObject;
             outline = obj.parent.gameObject.GetComponent<Outline>();
@@ -188,7 +188,7 @@ namespace ValheimVRMod.Scripts
             }
 
             //Check if There's secondary attack animation, is not a spear throwing, and not a magic weapon
-            if (secondaryAttack.m_attackAnimation == "" || obj.gameObject.GetComponent<ThrowableManager>() != null || EquipScript.getRight() == EquipType.Magic)
+            if (secondaryAttack.m_attackAnimation == "" || obj.gameObject.GetComponent<ThrowableManager>() != null || EquipScript.CurrentMainHandEquipType() == EquipType.Magic)
             {
                 isSecondaryAvailable = false;
             }
@@ -235,7 +235,8 @@ namespace ValheimVRMod.Scripts
                 movementCooldown -= Time.deltaTime;
             }
             
-            var mainHandTrigger = isRightHand ? SteamVR_Actions.valheim_Use.state : SteamVR_Actions.valheim_UseLeft.state;
+            var mainHandTrigger = SteamVR_Actions.valheim_Use.GetState(
+                isRightHand ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand);
             var inCooldown = AttackTargetMeshCooldown.isPrimaryTargetInCooldown();
             var localWeaponForward = LocalWeaponWield.weaponForward * secondaryAttack.m_attackRange / 2;
             var localHandPos = VRPlayer.mainWeaponHand.transform.position - Player.m_localPlayer.transform.position;
@@ -249,8 +250,13 @@ namespace ValheimVRMod.Scripts
             {
                 localHandPos -= LocalWeaponWield.weaponForward * Vector3.Distance(VRPlayer.mainWeaponHand.transform.position, VRPlayer.mainWeaponHand.otherHand.transform.position);
             }
-            if (!SteamVR_Actions.valheim_Grab.GetState(VRPlayer.mainWeaponHandInputSource) || 
-                item.m_shared.m_itemType == ItemDrop.ItemData.ItemType.TwoHandedWeapon && !LocalWeaponWield.isCurrentlyTwoHanded())
+            // Two-handed weapons need two-handed wield for the button secondary attack, unless two-handed wield is
+            // disabled, in which case they work single-handed like one-handed weapons.
+            bool needsTwoHandedWield =
+                item.m_shared.m_itemType == ItemDrop.ItemData.ItemType.TwoHandedWeapon &&
+                VHVRConfig.TwoHandedWield() &&
+                !LocalWeaponWield.isCurrentlyTwoHanded();
+            if (!SteamVR_Actions.valheim_Grab.GetState(VRPlayer.mainWeaponHandInputSource) || needsTwoHandedWield)
             {
                 firstPos = Vector3.zero;
                 lastPos = Vector3.zero;
@@ -260,7 +266,7 @@ namespace ValheimVRMod.Scripts
             if (SteamVR_Actions.valheim_Grab.GetState(VRPlayer.mainWeaponHandInputSource) && 
                 !inCooldown && 
                 !VRPlayer.IsClickableGuiOpen && 
-                !(item.m_shared.m_itemType == ItemDrop.ItemData.ItemType.TwoHandedWeapon && !LocalWeaponWield.isCurrentlyTwoHanded()))
+                !needsTwoHandedWield)
             {
                 if (firstPos == Vector3.zero && mainHandTrigger)
                 {

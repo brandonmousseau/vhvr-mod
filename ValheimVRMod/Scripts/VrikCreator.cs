@@ -1,3 +1,4 @@
+using HarmonyLib;
 using RootMotion.FinalIK;
 using UnityEngine;
 using ValheimVRMod.Utilities;
@@ -7,6 +8,17 @@ namespace ValheimVRMod.Scripts {
     public class VrikCreator {
         // Valheim characters are 2 meters tall. Scale it down to make tracking less awkward.
         public const float ROOT_SCALE = 0.9f;
+
+        // A foot target's rotation relative to its calibrated foot, which faces forward.
+        private static readonly Quaternion footTargetRotation = Quaternion.Euler(315, 0, 180);
+        // VRIK takes the plane each knee bends in from the leg's pose when it starts, stored relative to the foot. A
+        // leg that is nearly straight in that pose makes it arbitrary, so it is replaced with the plane of a knee
+        // bending the way the calibrated foot points: thigh (down and forward) cross calf (down and back) points to
+        // the foot's right, for either leg.
+        private static readonly AccessTools.FieldRef<IKSolverVR.Leg, Vector3> bendNormalRelToTarget =
+            AccessTools.FieldRefAccess<IKSolverVR.Leg, Vector3>("bendNormalRelToTarget");
+        private static readonly Vector3 forwardKneeBendNormalRelToTarget =
+            Quaternion.Inverse(footTargetRotation) * Vector3.right;
 
         public static readonly Vector3 leftUnequippedPosition = new Vector3(-0.027f, 0.05f, -0.18f);
         public static readonly Quaternion leftUnequippedRotation = Quaternion.Euler(0, 90f, 135f);
@@ -32,12 +44,26 @@ namespace ValheimVRMod.Scripts {
         {
             vrik.solver.leftLeg.rotationWeight = vrik.solver.rightLeg.rotationWeight = 1;
             vrik.solver.leftLeg.positionWeight = vrik.solver.rightLeg.positionWeight = 1;
+            // The feet are taken to point forward when calibrated, so a tracked knee bends the way its foot points.
+            // Blending in the root's facing would turn both knees the same way whenever the body faces elsewhere.
+            vrik.solver.leftLeg.bendToTargetWeight = vrik.solver.rightLeg.bendToTargetWeight = 1;
+            vrik.solver.rightLeg.swivelOffset = 0;
+            // Before VRIK starts, it would overwrite these from its starting pose. This is called on every update
+            // while the feet are tracked, so they are set once it has started.
+            if (vrik.solver.initiated)
+            {
+                bendNormalRelToTarget(vrik.solver.leftLeg) = forwardKneeBendNormalRelToTarget;
+                bendNormalRelToTarget(vrik.solver.rightLeg) = forwardKneeBendNormalRelToTarget;
+            }
         }
 
         public static void DisableFootTracking(VRIK vrik)
         {
             vrik.solver.leftLeg.rotationWeight = vrik.solver.rightLeg.rotationWeight = 0;
             vrik.solver.leftLeg.positionWeight = vrik.solver.rightLeg.positionWeight = 0;
+            vrik.solver.leftLeg.bendToTargetWeight = vrik.solver.rightLeg.bendToTargetWeight = 0.5f;
+            // Untracked legs keep the knee directions VRIK records from its starting pose, where the right one is off.
+            vrik.solver.rightLeg.swivelOffset = -30;
         }
 
         private static VRIK CreateTargets(GameObject playerObject)
@@ -92,10 +118,7 @@ namespace ValheimVRMod.Scripts {
             vrik.solver.spine.pelvisTarget.localPosition = Vector3.zero;
             vrik.solver.spine.pelvisTarget.localRotation = Quaternion.identity;
             vrik.solver.leftLeg.target.SetParent(leftFoot, worldPositionStays: true);
-            vrik.solver.leftLeg.bendToTargetWeight = 0.5f;
             vrik.solver.rightLeg.target.SetParent(rightFoot, worldPositionStays: true);
-            vrik.solver.rightLeg.bendToTargetWeight = 0.5f;
-            vrik.solver.rightLeg.swivelOffset = -30;
             if (isLocalPlayer && VRPlayer.vrPlayerInstance != null && VRPlayer.vrPlayerInstance.shouldTrackFeet())
             {
                 EnableFootTracking(vrik);
@@ -204,9 +227,9 @@ namespace ValheimVRMod.Scripts {
             vrik.solver.spine.pelvisTarget.localPosition = Vector3.zero;
             vrik.solver.spine.pelvisTarget.localRotation = Quaternion.identity;
             vrik.solver.leftLeg.target.localPosition = new Vector3(0, 0, -0.1f);
-            vrik.solver.leftLeg.target.localRotation = Quaternion.Euler(315, 0, 180);
+            vrik.solver.leftLeg.target.localRotation = footTargetRotation;
             vrik.solver.rightLeg.target.localPosition = new Vector3(0, 0, -0.1f);
-            vrik.solver.rightLeg.target.localRotation = Quaternion.Euler(315, 0, 180);
+            vrik.solver.rightLeg.target.localRotation = footTargetRotation;
         }
 
         public static Transform GetLocalPlayerArrowHandConnector()

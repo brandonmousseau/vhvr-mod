@@ -145,7 +145,7 @@ namespace ValheimVRMod.Scripts
             {
                 if (fishingFloat)
                     fishingFloat.m_pullLineSpeed = 1;
-                isPulling = isFishing && mainHandInputAction.GetState(VRPlayer.mainWeaponHandInputSource);
+                isPulling = isFishing && SteamVR_Actions.valheim_Use.GetState(VRPlayer.mainWeaponHandInputSource);
             }
 
             if (fishingFloat)

@@ -1,4 +1,3 @@
-using System.Linq;
 using UnityEngine;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
@@ -26,15 +25,7 @@ namespace ValheimVRMod.Scripts
         private Hand thisHand {  get { return isRightHand ? VRPlayer.rightHand : VRPlayer.leftHand; } }
 
         public static float LocalPlayerSecondaryAttackCooldown = 0;
-        public static bool ShouldSecondaryKnifeHoldInverse { get; private set; }
-
-        private static readonly int[] NONATTACKABLE_LAYERS = {
-            LayerUtils.WATERVOLUME_LAYER,
-            LayerUtils.WATER,
-            LayerUtils.UI_PANEL_LAYER,
-            LayerUtils.CHARARCTER_TRIGGER,
-            LayerUtils.ITEM_LAYER,
-        };
+        public static bool ShouldSecondaryKnifeHoldInverse;
 
         public bool isGrabbingJumpingAid { get { return lastGrabbedType == Grabbable.ENVIRONMENT || lastGrabbedType == Grabbable.IMAGINARY_CLIMIBNG_HOLD; } }
         public Vector3 lastGrabOffsetFromHead { get; private set; }
@@ -118,10 +109,10 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            Character character = null;
-            if (collider.gameObject.layer == LayerUtils.CHARACTER)
+            Character character = collider.GetComponentInParent<Character>();
+            if (collider.gameObject.layer != LayerUtils.CHARACTER && !WeaponCollision.IsTrainingDummy(character))
             {
-                character = collider.GetComponentInParent<Character>();
+                character = null;
             }
 
             if (TryPet(collider, character))
@@ -156,14 +147,11 @@ namespace ValheimVRMod.Scripts
                 // require both pressing trigger and grip so that the attack does not accidentally happen too easily.
                 if (handGesture.isHandFree() &&
                     !SteamVR_Actions.valheim_Use.GetState(inputSource) &&
-                    !SteamVR_Actions.valheim_UseLeft.GetState(inputSource) &&
                     !Player.m_localPlayer.m_inCraftingStation) {
-                    if (collider.gameObject.layer != LayerUtils.CHARACTER)
-                    {
-                        return;
-                    }
                     Character character = collider.GetComponentInParent<Character>();
-                    if (character == null || WeaponCollision.IsFriendly(character))
+                    if (character == null ||
+                        (collider.gameObject.layer != LayerUtils.CHARACTER && !WeaponCollision.IsTrainingDummy(character)) ||
+                        WeaponCollision.IsFriendly(character))
                     {
                         return;
                     }
@@ -188,7 +176,7 @@ namespace ValheimVRMod.Scripts
             if (character != null)
             {
                 if (character.gameObject == Player.m_localPlayer.gameObject ||
-                    !character.m_tamed ||
+                    !character.IsTamed() ||
                     !WeaponCollision.IsFriendly(character))
                 {
                     return false;
@@ -336,7 +324,7 @@ namespace ValheimVRMod.Scripts
 
             if (VHVRConfig.IsGesturedJumpEnabled() &&
                 target.layer == LayerUtils.CHARACTER &&
-                Valve.VR.InteractionSystem.Player.instance.eyeHeight < VRPlayer.referencePlayerHeight * 0.9f)
+                VRPlayer.playerEyeHeight < VRPlayer.referencePlayerHeight * 0.9f)
             {
                 var leftHandOffset = VRPlayer.instance.transform.InverseTransformVector(VRPlayer.leftHand.transform.position - VRPlayer.vrCam.transform.position);
                 var rightHandOffset = VRPlayer.instance.transform.InverseTransformVector(VRPlayer.rightHand.transform.position - VRPlayer.vrCam.transform.position);
@@ -359,11 +347,15 @@ namespace ValheimVRMod.Scripts
             {
                 return;
             }
-            if (NONATTACKABLE_LAYERS.Contains(collider.gameObject.layer))
+            if (LayerUtils.IsNonAttackableLayer(collider.gameObject.layer))
             {
                 return;
             }
-            if (collider.gameObject.layer == LayerUtils.TERRAIN && !SteamVR_Actions.valheim_Grab.GetState(inputSource))
+            // Test for an actual Heightmap rather than the terrain layer, matching WeaponCollision.
+            // Props can sit on the terrain layer without being terrain - the cave rocks and roots in
+            // the Deep North tunnels among them - and a layer test made those unpunchable while every
+            // other weapon could hit them freely.
+            if (WeaponCollision.isTerrain(collider.gameObject) && !SteamVR_Actions.valheim_Grab.GetState(inputSource))
             {
                 // Prevent hitting terrain too easily.
                 return;
@@ -398,9 +390,9 @@ namespace ValheimVRMod.Scripts
             Attack attack;
             if (holdingSecondaryWeapon())
             {
-                if (EquipScript.getLeft() != EquipType.Torch &&
-                    EquipScript.getRight() != EquipType.Torch &&
-                    EquipScript.getRight() != EquipType.None)
+                if (EquipScript.CurrentOffHandEquipType() != EquipType.Torch &&
+                    EquipScript.CurrentMainHandEquipType() != EquipType.Torch &&
+                    EquipScript.CurrentMainHandEquipType() != EquipType.None)
                 {
                     item = Player.m_localPlayer.GetRightItem();
                 }
@@ -503,8 +495,8 @@ namespace ValheimVRMod.Scripts
         {
             var newEquipType =
                 hasDualWieldingWeaponEquipped() || (isRightHand ^ !VRPlayer.isRightHandMainWeaponHand) ?
-                EquipScript.getRight() :
-                EquipScript.getLeft();
+                EquipScript.CurrentMainHandEquipType() :
+                EquipScript.CurrentOffHandEquipType();
 
             if (!Player.m_localPlayer || newEquipType == currentEquipType)
             {
@@ -557,7 +549,7 @@ namespace ValheimVRMod.Scripts
             {
                 return false;
             }
-            return EquipScript.getLeft() == EquipType.Torch || EquipScript.getLeft() == EquipType.Knife;
+            return EquipScript.CurrentOffHandEquipType() == EquipType.Torch || EquipScript.CurrentOffHandEquipType() == EquipType.Knife;
         }
 
         private bool holdingShield()
@@ -566,7 +558,7 @@ namespace ValheimVRMod.Scripts
             {
                 return false;
             }
-            return EquipScript.getLeft() == EquipType.Shield;
+            return EquipScript.CurrentOffHandEquipType() == EquipType.Shield;
         }
 
         public bool hasMomentum(out float speed, out bool isJab)
@@ -592,7 +584,7 @@ namespace ValheimVRMod.Scripts
 
         public static bool hasDualWieldingWeaponEquipped()
         {
-            var equipType = EquipScript.getRight();
+            var equipType = EquipScript.CurrentMainHandEquipType();
             return equipType.Equals(EquipType.Claws) ||
                 equipType.Equals(EquipType.DualAxes) ||
                 equipType.Equals(EquipType.DualKnives);
@@ -615,7 +607,7 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            if (EquipScript.getLeft() != EquipType.Knife)
+            if (EquipScript.CurrentOffHandEquipType() != EquipType.Knife)
             {
                 ShouldSecondaryKnifeHoldInverse = false;
                 return;

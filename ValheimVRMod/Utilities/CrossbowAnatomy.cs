@@ -14,9 +14,33 @@ namespace ValheimVRMod.Utilities {
         public readonly float softLimbHeight;
         public readonly float stringRadius;
         public readonly float boltCenterToTailDistance;
+        // The local axis the left limb rotates around (the right limb rotates the opposite way) as the string is
+        // drawn, i.e. bowRight x bowForward. Crossbows point along local +Y, so this is +Z for them.
+        public readonly Vector3 limbBendAxis;
+
+        // Euler correction applied to a weapon's own projectile when it is shown resting on the string, for a
+        // projectile model that is not authored pointing straight along the anatomy's forward axis. Zero for the
+        // crossbows, which show their ammo's bolts instead (see CrossbowMorphManager.createBolt).
+        public readonly Vector3 ownProjectileRotation;
+
+        private static CrossbowAnatomy GoldCrossbowAnatomy = new CrossbowAnatomy(
+            /* hardLimbLeft= */ new Vector3(-0.17f, 1.58f, 0),
+            /* hardLimbRight= */ new Vector3(0.17f, 1.58f, 0),
+            /* restingStringLeft= */ new Vector3(-0.7f, 1.255f, -0.053f),
+            /* restingStringRight= */ new Vector3(0.7f, 1.255f, -0.053f),
+            /* restingNockingPoint= */ new Vector3(0, 1.25f, -0.053f),
+            /* anchorPoint= */  new Vector3(0, 0.739f, -0.06f),
+            /* maxBendAngleRadians= */ 0.31f,
+            /* softLimbHeight= */ 0.01f,
+            /* stringRadius= */ 0.0075f,
+            /* boltCenterToTailDistance= */ 0.51f);
 
         private static Dictionary<string, CrossbowAnatomy> anatomies = new Dictionary<string, CrossbowAnatomy>
         {
+            // Note the suffix order differs from the gold bows: crossbows put "gold" last.
+            { "$item_crossbow_gold", GoldCrossbowAnatomy },                 // Nord Crossbow
+            { "$item_crossbow_bloodlightning_gold", GoldCrossbowAnatomy },  // Thunderblood Crossbow
+            { "$item_crossbow_frostfire_gold", GoldCrossbowAnatomy },       // Frostfire Crossbow
             {
                 "$item_crossbow_arbalest", // Arbalest position: (0.0, 0.0, -1.0) rotation: (0.7, 0.0, 0.0, 0.7) bound center: (0.0, 0.8, 0.0) bound extends: (0.6, 0.8, 0.1)            
                 new CrossbowAnatomy(
@@ -86,6 +110,27 @@ namespace ValheimVRMod.Utilities {
                     /* softLimbHeight= */ 0.01f,
                     /* stringRadius= */ 0.0075f,
                     /* boltCenterToTailDistance= */ 0.51f)
+            },
+            {
+                // Unlike the crossbows, the grappling hook points along local +Z (limbs still along X, "up" is +Y).
+                // Unloaded mesh bound center: (0.00, -0.26, 0.57) bound extends: (0.64, 0.38, 0.85).
+                // TODO: educated guess mapping the ripper layout onto that frame; tune against the actual model.
+                "$item_graplinghook",
+                new CrossbowAnatomy(
+                    /* hardLimbLeft= */ new Vector3(-0.25f, 0, 1f),
+                    /* hardLimbRight= */ new Vector3(0.25f, 0, 1f),
+                    /* restingStringLeft= */ new Vector3(-0.61f, 0.115f, 0.74f),
+                    /* restingStringRight= */ new Vector3(0.61f, 0.097f, 0.74f),
+                    /* restingNockingPoint= */ new Vector3(0, 0.105f, 0.74f),
+                    /* anchorPoint= */  new Vector3(0, 0.105f, 0.25f),
+                    /* maxBendAngleRadians= */ 0.5f,
+                    /* softLimbHeight= */ 0.01f,
+                    /* stringRadius= */ 0.0075f,
+                    // Unused: the grappling hook shows its own projectile, whose offset is measured from its
+                    // model instead (see CrossbowMorphManager.GetTailToPivotDistance).
+                    /* boltCenterToTailDistance= */ 1.6f,
+                    /* limbBendAxis= */ Vector3.down,
+                    /* ownProjectileRotation= */ new Vector3(0, -3, 0))
             }
         };
 
@@ -105,8 +150,12 @@ namespace ValheimVRMod.Utilities {
             float maxBendAngleRadians,
             float softLimbHeight,
             float stringRadius,
-            float boltCenterToTailDistance)
+            float boltCenterToTailDistance,
+            Vector3? limbBendAxis = null,
+            Vector3? ownProjectileRotation = null)
         {
+            this.limbBendAxis = limbBendAxis ?? Vector3.forward;
+            this.ownProjectileRotation = ownProjectileRotation ?? Vector3.zero;
             this.hardLimbLeft = hardLimbLeft;
             this.hardLimbRight = hardLimbRight;
             this.restingStringLeft = restingStringLeft;

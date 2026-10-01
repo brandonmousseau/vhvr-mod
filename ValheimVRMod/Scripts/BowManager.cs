@@ -445,7 +445,7 @@ namespace ValheimVRMod.Scripts
         {
             if (OnlyUseDominantHand())
             {
-                handleDominantHandAiming();
+                handleOneHandedAiming();
                 return;
             }
 
@@ -469,15 +469,23 @@ namespace ValheimVRMod.Scripts
             transform.SetPositionAndRotation(bowTransformUpdater.position, bowTransformUpdater.rotation);
         }
 
-        private void handleDominantHandAiming()
+        private void handleOneHandedAiming()
         {
             var dominantHandPointer = VHVRConfig.LeftHanded() ? VRPlayer.leftPointer : VRPlayer.rightPointer;
             Vector3 aimingDirection = (dominantHandPointer.rayDirection * Vector3.forward).normalized;
-            bowOrientation.LookAt(bowOrientation.position + aimingDirection, arrowHandTransform.up);
-            bowOrientation.position =
-                arrowHandTransform.position +
-                bowOrientation.TransformVector(
-                    new Vector3(0, -VHVRConfig.ArrowRestElevation(), getPullLengthRestriction(timeBasedChargePercentage)));
+            if (VRPlayer.offHandWield)
+            {
+                bowOrientation.LookAt(bowOrientation.position + aimingDirection, VRPlayer.bowHand.transform.forward);
+                bowOrientation.position = VRPlayer.bowHand.transform.position - bowOrientation.up * VHVRConfig.ArrowRestElevation() * 0.125f;
+            }
+            else
+            {
+                bowOrientation.LookAt(bowOrientation.position + aimingDirection, arrowHandTransform.up);
+                bowOrientation.position =
+                    arrowHandTransform.position +
+                    bowOrientation.TransformVector(
+                        new Vector3(0, -VHVRConfig.ArrowRestElevation(), getPullLengthRestriction(timeBasedChargePercentage)));
+            }
             transform.SetPositionAndRotation(bowTransformUpdater.position, bowTransformUpdater.rotation);
         }
 
@@ -522,12 +530,19 @@ namespace ValheimVRMod.Scripts
 
             Vector3 pullPos = bowOrientation.InverseTransformPoint(arrowHandTransform.position);
 
-            if (bowHandAiming)
+            if (bowHandAiming || OnlyUseDominantHand())
             {
                 pullPos.x = 0f;
                 pullPos.y = VHVRConfig.ArrowRestElevation();
             }
-            pullPos.z = Mathf.Clamp(pullPos.z, -getPullLengthRestriction(), -GetBraceHeight());
+            if (OnlyUseDominantHand())
+            {
+                pullPos.z = -getPullLengthRestriction(timeBasedChargePercentage);
+            }
+            else
+            {
+                pullPos.z = Mathf.Clamp(pullPos.z, -getPullLengthRestriction(), -GetBraceHeight());
+            }
 
             pullObj.transform.localPosition = pullPos;
         }

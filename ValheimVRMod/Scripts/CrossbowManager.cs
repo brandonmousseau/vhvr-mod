@@ -1,7 +1,9 @@
 using UnityEngine;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
+using ValheimVRMod.VRCore.UI;
 using Valve.VR;
+using Valve.VR.InteractionSystem;
 
 namespace ValheimVRMod.Scripts {
     class CrossbowManager : LocalWeaponWield
@@ -22,8 +24,29 @@ namespace ValheimVRMod.Scripts {
         {
             base.Awake();
 
-            var loaded = transform.Find("Loaded").gameObject;
-            var unloaded = transform.Find("Unloaded").gameObject;
+            // Vanilla swaps the loaded and unloaded meshes through WeaponLoadState, so prefer its references and only
+            // fall back to looking the children up by name: not every crossbow-like weapon (e.g. the grappling hook)
+            // is guaranteed to name them "Loaded" and "Unloaded", or to have them at all.
+            var weaponLoadState = GetComponentInChildren<WeaponLoadState>(true);
+            GameObject loaded = weaponLoadState != null ? weaponLoadState.m_loaded : null;
+            GameObject unloaded = weaponLoadState != null ? weaponLoadState.m_unloaded : null;
+            if (loaded == null)
+            {
+                loaded = transform.Find("Loaded")?.gameObject;
+            }
+            if (unloaded == null)
+            {
+                unloaded = transform.Find("Unloaded")?.gameObject;
+            }
+
+            if (unloaded == null)
+            {
+                LogUtils.LogWarning("Crossbow " + name + " has no unloaded mesh; bending and manual reload are unavailable for it.");
+                // Still attach the morph manager (inert without anatomy data) since the rest of the crossbow logic,
+                // including two-handed wield, relies on it being present.
+                crossbowMorphManager = gameObject.AddComponent<CrossbowMorphManager>();
+                return;
+            }
 
             // The mesh for the unloaded bow and and the mesh for the loaded bow are in two different child game objects.
             // We only need to use our custom bending animation on the unloaded one.
@@ -31,7 +54,10 @@ namespace ValheimVRMod.Scripts {
 
             // Some crossbows' vanilla loaded model is not completely aligned with the vanilla unloaded model,
             // Fix it here so that the crossbow stays in place when loading.
-            WeaponUtils.AlignLoadedMeshToUnloadedMesh(loaded, unloaded);
+            if (loaded != null)
+            {
+                WeaponUtils.AlignLoadedMeshToUnloadedMesh(loaded, unloaded);
+            }
         }
 
         protected override void OnRenderObject()
@@ -41,29 +67,116 @@ namespace ValheimVRMod.Scripts {
             crossbowMorphManager.loadBoltIfBoltInHandIsNearAnchor();
             if (twoHandedState == TwoHandedState.SingleHanded && VHVRConfig.OneHandedBow())
             {
-                UpdateDominantHandAiming();
+                UpdateOneHandedAiming();
+            }
+            UpdateGrapplingChainAttachPoint();
+        }
+
+        protected override void OnDestroy()
+        {
+            grapplingChainAttachPoint = null;
+            base.OnDestroy();
+        }
+
+        // Where a deployed grappling hook's chain attaches: the front of the crossbow as last rendered. Vanilla attaches
+        // it to the left hand bone, which outside rendering may still be in its animated pose rather than where the hand
+        // appears, so this is recorded at render time along with the crossbow transform.
+        public static Vector3? grapplingChainAttachPoint { get; private set; }
+
+        private void UpdateGrapplingChainAttachPoint()
+        {
+            if (!EquipScript.IsGrapplingHook(Player.m_localPlayer.GetLeftItem()))
+            {
+                grapplingChainAttachPoint = null;
+                return;
+            }
+
+            // Same as localWeaponTip, but also after any one-handed aiming adjustment.
+            grapplingChainAttachPoint =
+                transform.position + GetWeaponPointingDirection() * (weaponLength - distanceBetweenGripAndRearEnd) * 0.5f;
+
+            // Also refresh the chain right away so it stays in sync with the crossbow for this render.
+            var chain = GrapplingPoint.m_localGrappler != null ? GrapplingPoint.m_localGrappler.GetComponent<LineRenderer>() : null;
+            if (chain != null)
+            {
+                chain.SetPosition(1, grapplingChainAttachPoint.Value);
             }
         }
 
-        private void UpdateDominantHandAiming()
-        { 
-            bool isAiming = VHVRConfig.LeftHanded() ? SteamVR_Actions.valheim_UseLeft.state : SteamVR_Actions.valheim_Use.state;
+        private void UpdateOneHandedAiming()
+        {
+            bool isAiming =
+                !LaserPointerChords.IsLaserActiveFor(SteamVR_Input_Sources.Any) &&
+                SteamVR_Actions.valheim_Use.GetState(VRPlayer.dominantHandInputSource);
             if (!isAiming)
             {
-                transform.localPosition = geometryProvider.GetDesiredSingleHandedPosition(this);
+                transform.position = geometryProvider.GetDesiredSingleHandedPosition(this);
                 transform.rotation = geometryProvider.GetDesiredSingleHandedRotation(this);
                 VrikCreator.ResetHandConnectors();
                 return;
             }
 
             Vector3 aimingDirection = VRPlayer.dominantHandRayDirection;
-            transform.rotation = Quaternion.LookRotation(aimingDirection, VRPlayer.arrowHand.transform.up);
-            transform.position = VRPlayer.arrowHand.transform.position + aimingDirection * INTERGRIP_DISTANCE;
+
+            if (VRPlayer.offHandWield)
+            {
+                // Bow hand is dominant hand, use bow hand to determine weapon transform;
+                transform.position = VRPlayer.bowHand.transform.position;
+                transform.rotation = Quaternion.LookRotation(aimingDirection, VRPlayer.bowHand.transform.up);
+                VrikCreator.GetLocalPlayerArrowHandConnector().position =
+                    VRPlayer.bowHand.transform.position - aimingDirection * INTERGRIP_DISTANCE;
+            }
+            else
+            {
+                // Arrow hand is dominant hand, use bow hand to determine weapon transform;
+                transform.position =
+                    VRPlayer.arrowHand.transform.position + aimingDirection * INTERGRIP_DISTANCE;
+                transform.rotation = Quaternion.LookRotation(aimingDirection, VRPlayer.arrowHand.transform.up);
+            }
 
             Quaternion frontHandRotation =
-                VHVRConfig.LeftHanded() ? frontGripRotationForRightHand : frontGripRotationForLeftHand;
+                VRPlayer.isLeftHandMainWeaponHand ?
+                frontGripRotationForRightHand :
+                frontGripRotationForLeftHand;
             VrikCreator.GetLocalPlayerBowHandConnector().SetPositionAndRotation(
                 transform.position, transform.rotation * frontHandRotation);
+        }
+
+        // The trigger of the hand that doesn't fire: the front hand when wielding two-handed, otherwise the hand
+        // holding the crossbow (the other hand's trigger fires it when wielding one-handed).
+        private SteamVR_Input_Sources OtherHandInputSource
+        {
+            get
+            {
+                switch (twoHandedState)
+                {
+                    case TwoHandedState.LeftHandBehind:
+                        return SteamVR_Input_Sources.RightHand;
+                    case TwoHandedState.RightHandBehind:
+                        return SteamVR_Input_Sources.LeftHand;
+                    default:
+                        return VRPlayer.isRightHandMainWeaponHand ? SteamVR_Input_Sources.LeftHand : SteamVR_Input_Sources.RightHand;
+                }
+            }
+        }
+
+        void Update()
+        {
+            // Pressing the other hand's trigger releases a deployed grappling hook, or, when firing one-handed, pressing
+            // the firing hand's grip. This runs in Update rather than OnRenderObject, which may run several times per
+            // frame while the hook is only destroyed at its end.
+            // Not usable while any laser pointer is up, like the crossbow's own firing trigger below.
+            bool isReleasingHook =
+                twoHandedState == TwoHandedState.SingleHanded && VHVRConfig.OneHandedBow() ?
+                SteamVR_Actions.valheim_Grab.GetStateDown(VRPlayer.mainWeaponHandInputSource) :
+                SteamVR_Actions.valheim_Use.GetStateDown(OtherHandInputSource);
+            if (GrapplingPoint.m_localGrappler != null &&
+                !LaserPointerChords.IsLaserActiveFor(SteamVR_Input_Sources.Any) &&
+                isReleasingHook &&
+                EquipScript.IsGrapplingHook(Player.m_localPlayer.GetLeftItem()))
+            {
+                GrapplingPoint.m_localGrappler.Break(early: true);
+            }
         }
 
         public static bool CanQueueReloadAction() {
@@ -93,42 +206,86 @@ namespace ValheimVRMod.Scripts {
             return crossbowMorphManager.isPulling || crossbowMorphManager.IsHandClosePullStart();
         }
 
-        public static bool IsPullingTrigger()
+        // The frame IsPullingTrigger() last reported a pull, so a single physical pull is reported at most once
+        // per frame no matter how many times or from how many call sites (Player.SetControls always polls this,
+        // MountedAttackUtils polls it again while riding) it is queried that frame: SteamVR action values can be
+        // refreshed more than once per frame (see LaserPointerChords.isChordDown()), so without this a single
+        // pull could otherwise fire the weapon more than once.
+        private static int lastPullingTriggerFrame = -1;
+
+        // useSecondaryAttack reports whether the pull should fire the weapon's secondary attack instead of its primary one.
+        public static bool IsPullingTrigger(out bool useSecondaryAttack)
         {
+            useSecondaryAttack = false;
             if (instance == null)
             {
                 return false;
             }
 
-            if (!Player.m_localPlayer.IsWeaponLoaded())
+            // Vanilla only ever reports a weapon as loaded if its attack requires reloading, and only checks the loaded
+            // state for such weapons when starting the attack, so a crossbow-like weapon without reloading must not be
+            // held to it.
+            var weapon = Player.m_localPlayer.GetLeftItem();
+            if (weapon != null && weapon.m_shared.m_attack.m_requiresReload && !Player.m_localPlayer.IsWeaponLoaded())
             {
                 return false;
             }
 
             bool isPullingTrigger = false;
+            bool isFiringOneHanded = false;
             switch (instance.twoHandedState)
             {
                 case TwoHandedState.LeftHandBehind:
-                    isPullingTrigger = SteamVR_Actions.valheim_UseLeft.stateDown;
+                    // Not usable while any laser pointer is up.
+                    isPullingTrigger =
+                        !LaserPointerChords.IsLaserActiveFor(SteamVR_Input_Sources.Any) &&
+                        SteamVR_Actions.valheim_Use.GetStateDown(SteamVR_Input_Sources.LeftHand);
                     break;
                 case TwoHandedState.RightHandBehind:
-                    isPullingTrigger = SteamVR_Actions.valheim_Use.stateDown;
+                    isPullingTrigger =
+                        !LaserPointerChords.IsLaserActiveFor(SteamVR_Input_Sources.Any) &&
+                        SteamVR_Actions.valheim_Use.GetStateDown(SteamVR_Input_Sources.RightHand);
                     break;
                 default:
                     if (VHVRConfig.OneHandedBow())
                     {
-                        isPullingTrigger =
-                            VRPlayer.isRightHandMainWeaponHand ?
-                            SteamVR_Actions.valheim_Use.stateUp :
-                            SteamVR_Actions.valheim_UseLeft.stateUp;
+                        isFiringOneHanded = true;
+                        // Fires on release rather than on press: aiming (see UpdateOneHandedAiming) is already
+                        // gated the same way, so a release seen while the pointer is up isn't one the player was
+                        // still aiming through, and gating it here too keeps that consistent.
+                        isPullingTrigger = !LaserPointerChords.IsLaserActiveFor(SteamVR_Input_Sources.Any) &&
+                            SteamVR_Actions.valheim_Use.GetStateUp(VRPlayer.mainWeaponHandInputSource);
                     }
                     break;
+            }
+
+            if (isPullingTrigger)
+            {
+                if (lastPullingTriggerFrame == Time.frameCount)
+                {
+                    isPullingTrigger = false;
+                }
+                else
+                {
+                    lastPullingTriggerFrame = Time.frameCount;
+                }
             }
 
             if (isPullingTrigger && !instance.crossbowMorphManager.isBoltLoaded)
             {
                 Player.m_localPlayer.ResetLoadedWeapon();
                 return false;
+            }
+
+            if (isPullingTrigger && EquipScript.IsGrapplingHook(weapon) && !string.IsNullOrEmpty(weapon.m_shared.m_secondaryAttack?.m_attackAnimation))
+            {
+                // In VR the hook stays deployed by default (vanilla's secondary attack); holding the other hand's
+                // trigger while firing shoots and retracts instead (vanilla's primary attack). When firing one-handed,
+                // holding the firing hand's grip does the same so the other hand isn't needed.
+                bool useRetractingAttack = isFiringOneHanded ?
+                    SteamVR_Actions.valheim_Grab.GetState(VRPlayer.mainWeaponHandInputSource) :
+                    SteamVR_Actions.valheim_Use.GetState(instance.OtherHandInputSource);
+                useSecondaryAttack = !useRetractingAttack;
             }
             
             return isPullingTrigger;

@@ -36,21 +36,21 @@ namespace ValheimVRMod.VRCore.UI
             }
         }
 
-        public static Vector3 startingPositionLeft
+        public static Vector3 startingPositionNonDominant
         {
             get
             {
                 ensureInstance();
-                return _startingPositionLeft;
+                return _startingPositionNonDominant;
             }
         }
 
-        public static Vector3 rayDirectionLeft
+        public static Vector3 rayDirectionNonDominant
         {
             get
             {
                 ensureInstance();
-                return _rayDirectionLeft * Vector3.forward;
+                return _rayDirectionNonDominant * Vector3.forward;
             }
         }
 
@@ -60,8 +60,8 @@ namespace ValheimVRMod.VRCore.UI
         private static Quaternion _yaw = Quaternion.identity;
         private static Quaternion _rayDirection = Quaternion.identity;
         private static Vector3 _startingPosition = Vector3.zero;
-        private static Quaternion _rayDirectionLeft = Quaternion.identity;
-        private static Vector3 _startingPositionLeft = Vector3.zero;
+        private static Quaternion _rayDirectionNonDominant = Quaternion.identity;
+        private static Vector3 _startingPositionNonDominant = Vector3.zero;
         private static GameObject _vrCamObj;
 
         private bool inPlaceMode = false;
@@ -109,29 +109,29 @@ namespace ValheimVRMod.VRCore.UI
 
         private void setRayDirection()
         {
-            if (VHVRConfig.UseVrControls() && VRPlayer.rightPointer != null)
+            if (VHVRConfig.UseVrControls() && VRPlayer.dominantPointer != null)
             {
-                _rayDirection = VRPlayer.rightPointer.rayDirection;
+                _rayDirection = VRPlayer.dominantPointer.rayDirection;
             }
             else
             {
                 _rayDirection = Quaternion.Euler(_pitch, _yaw.eulerAngles.y, 0f);
             }
-            if (VHVRConfig.UseVrControls() && VRPlayer.leftPointer != null)
+            if (VHVRConfig.UseVrControls() && VRPlayer.nonDominantPointer != null)
             {
-                _rayDirectionLeft = VRPlayer.leftPointer.rayDirection;
+                _rayDirectionNonDominant = VRPlayer.nonDominantPointer.rayDirection;
             }
             else
             {
-                _rayDirectionLeft = Quaternion.identity;
+                _rayDirectionNonDominant = Quaternion.identity;
             }
         }
 
         private void setRayStartingPosition()
         {
-            if (VHVRConfig.UseVrControls() && VRPlayer.rightPointer != null)
+            if (VHVRConfig.UseVrControls() && VRPlayer.dominantPointer != null)
             {
-                _startingPosition = VRPlayer.rightPointer.rayStartingPosition;
+                _startingPosition = VRPlayer.dominantPointer.rayStartingPosition;
             }
             else if (_vrCamObj != null)
             {
@@ -148,12 +148,12 @@ namespace ValheimVRMod.VRCore.UI
                     _startingPosition = Vector3.zero;
                 }
             }
-            if (VHVRConfig.UseVrControls() && VRPlayer.leftPointer != null)
+            if (VHVRConfig.UseVrControls() && VRPlayer.nonDominantPointer != null)
             {
-                _startingPositionLeft = VRPlayer.leftPointer.rayStartingPosition;
+                _startingPositionNonDominant = VRPlayer.nonDominantPointer.rayStartingPosition;
             } else
             {
-                _startingPositionLeft = Vector3.zero;
+                _startingPositionNonDominant = Vector3.zero;
             }
         }
 

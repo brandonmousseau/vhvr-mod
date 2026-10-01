@@ -151,7 +151,9 @@ namespace ValheimVRMod.Scripts.Block {
         }
 
         public void block() {
-            if (VHVRConfig.UseGrabButtonBlock())
+            // Realistic blocking has no post-block cooldown, as in vanilla, where consecutive blocks are only limited
+            // by stamina and the stagger meter.
+            if (VHVRConfig.UseGrabButtonBlock() || VHVRConfig.UseRealisticBlock())
             {
                 return;
             }
@@ -169,7 +171,7 @@ namespace ValheimVRMod.Scripts.Block {
         public void UpdateGrabParry()
         {
             currentHandSource =
-                EquipScript.getLeft() == EquipType.Shield ?
+                EquipScript.CurrentOffHandEquipType() == EquipType.Shield ?
                 VRPlayer.secondaryWeaponHandInputSource :
                 VRPlayer.mainWeaponHandInputSource;
             if (SteamVR_Actions.valheim_Grab.GetState(currentHandSource) && !_meshCooldown.inCoolDown() && !wasParryStart)

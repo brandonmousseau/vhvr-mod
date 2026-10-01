@@ -12,7 +12,7 @@ namespace ValheimVRMod.Scripts
         private const float WATER_SPEED_CHANGE_DAMPER = 1f;
         private const float AIR_SPEED_CHANGE_DAMPER = 0.25f;
         private const float RUN_ACITIVATION_SPEED = 1.75f;
-        private const float GROUND_RUN_DEACTIVATION_SPEED = 1.125f;
+        private const float GROUND_RUN_DEACTIVATION_SPEED = 0.75f;
         private const float AIR_RUN_DEACTIVATION_SPEED = 0.125f;
         private const float MIN_WATER_SPEED = 0.0625f;
 
@@ -215,8 +215,22 @@ namespace ValheimVRMod.Scripts
 
         class GesturedJump : GesturedLocomotion
         {
+            private float lastNonJumpHeight = 0;
+
             public override Vector3 GetTargetVelocityFromGestures(Player player, float deltaTime)
             {
+                var height = VRPlayer.playerEyeHeight;
+                var verticalSpeed = Vector3.Dot(VRPlayer.headPhysicsEstimator.GetVelocity(), upDirection.Value);
+                if (verticalSpeed < 1)
+                {
+                    lastNonJumpHeight = height;
+                }
+                if (verticalSpeed < VHVRConfig.GesturedJumpMinSpeed())
+                {
+                    lastNonJumpHeight = height;
+                    return Vector3.zero;
+                }
+
                 if (!VHVRConfig.IsGesturedJumpEnabled() || IsInAir(player))
                 {
                     return Vector3.zero;
@@ -227,25 +241,21 @@ namespace ValheimVRMod.Scripts
                     return Vector3.zero;
                 }
 
-                var height = Valve.VR.InteractionSystem.Player.instance.eyeHeight;
-                if (height < VRPlayer.referencePlayerHeight * VHVRConfig.GesturedJumpPreparationHeight())
+                var jumpPrepHeight = VRPlayer.referencePlayerHeight * VHVRConfig.GesturedJumpPreparationHeight();
+                var instantJumpHeight =
+                    VRPlayer.referencePlayerHeight * (2 - VHVRConfig.GesturedJumpPreparationHeight());
+
+                if (height < jumpPrepHeight)
                 {
+                    // Too low, cannot jump
                     return Vector3.zero;
                 }
 
-                var verticalSpeed = Vector3.Dot(VRPlayer.headPhysicsEstimator.GetVelocity(), upDirection.Value);
-                if (verticalSpeed < VHVRConfig.GesturedJumpMinSpeed())
-                {
+                if (height < instantJumpHeight && lastNonJumpHeight < jumpPrepHeight) {
+                    // Likely standing up from crouching, do not jump
                     return Vector3.zero;
                 }
 
-                var verticalAcceleration = Vector3.Dot(VRPlayer.headPhysicsEstimator.GetAcceleration(), upDirection.Value);
-                if (verticalAcceleration < VHVRConfig.GesturedJumpMinSpeed() * 8) // TODO: consider adding an option for min acceleration.
-                {
-                    return Vector3.zero;
-                }
-
-                LogUtils.LogInfo("Gestured jump at speed " + verticalSpeed + " and acceleration " + verticalAcceleration);
                 return upDirection.Value * verticalSpeed;
             }
         }
@@ -583,6 +593,7 @@ namespace ValheimVRMod.Scripts
                 {
                     if (!ENABLE_DEBUG_WALK_RUN_INDICATOR)
                     {
+                        lineRenderer.enabled = false;
                         return;
                     }
 
@@ -721,7 +732,7 @@ namespace ValheimVRMod.Scripts
                 Vector3 feetToHead = (vrCam.transform.position - feet).normalized;
 
                 if (Vector3.Dot(feetToHead, upDirection.Value) < 0.25f || 
-                    Vector3.Dot(VRPlayer.pelvis.position - feet, upDirection.Value) < 0.125f)
+                    Vector3.Dot(VRPlayer.trackedPelvis.position - feet, upDirection.Value) < 0.125f)
                 {
                     // Supine, stop walking
                     pace = Pace.STOP;
@@ -881,28 +892,25 @@ namespace ValheimVRMod.Scripts
 
         class GesturedDodgeRoll : GesturedLocomotion
         {
-            private const float MIN_HAND_ELEVATION = -0.125f;
+            // Head must move down at least this fast (m/s) to count as a fast crouch.
             private const float MAX_HEAD_VERTICAL_VELOCITY = -1.5f;
-            private const float MAX_HEIGHT = 0.875f;
-            private const float MIN_HAND_SPEED = 2;
+            // Each hand's horizontal speed (m/s) required to count as pushing.
+            private const float MIN_HAND_PUSH_SPEED = 2f;
+            // Min cosine between the two hands' horizontal velocities to count as the same direction.
+            private const float MIN_HAND_DIRECTION_ALIGNMENT = 0.7f;
+            // At least one hand must be this far (m) ahead of the head along the push direction.
+            private const float MIN_HAND_AHEAD_OF_HEAD = 0.25f;
 
             private Camera vrCam;
 
             public override Vector3 GetTargetVelocityFromGestures(Player player, float deltaTime)
             {
-                if (!VHVRConfig.IsGesturedJumpEnabled() ||
+                if (!VHVRConfig.IsBasicGesturedLocomotionEnabled() ||
                     player.IsAttached() ||
                     player.InDodge() ||
                     player.m_queuedDodgeTimer > 0 ||
                     !SteamVR_Actions.valheim_StopGesturedLocomotion.activeBinding ||
-                    SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.LeftHand) ||
-                    SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.RightHand))
-                {
-                    return Vector3.zero;
-                }
-
-                var isCrouching = player.IsCrouching();
-                if (!isCrouching && Valve.VR.InteractionSystem.Player.instance.eyeHeight > MAX_HEIGHT * VRPlayer.referencePlayerHeight)
+                    SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.Any))
                 {
                     return Vector3.zero;
                 }
@@ -910,47 +918,48 @@ namespace ValheimVRMod.Scripts
                 if (vrCam == null)
                 {
                     vrCam = CameraUtils.getCamera(CameraUtils.VR_CAMERA);
-                }
-
-                if (vrCam == null)
-                {
-                    return Vector3.zero;
-                }
-
-                Vector3 rollDirection = Vector3.ProjectOnPlane(vrCam.transform.up, upDirection.Value);
-                if (rollDirection.sqrMagnitude < 0.0625f)
-                {
-                    rollDirection = Vector3.ProjectOnPlane(-vrCam.transform.forward, upDirection.Value);
-                }
-                
-                var verticalSpeed = Vector3.Dot(VRPlayer.headPhysicsEstimator.GetVelocity(), upDirection.Value);
-                if (verticalSpeed > MAX_HEAD_VERTICAL_VELOCITY)
-                {
-                    if (!isCrouching ||
-                        GetHandAssistance(VRPlayer.leftHandPhysicsEstimator) < MIN_HAND_SPEED ||
-                        GetHandAssistance(VRPlayer.rightHandPhysicsEstimator) < MIN_HAND_SPEED)
+                    if (vrCam == null)
                     {
                         return Vector3.zero;
                     }
                 }
-                else if (GetHandAssistance(VRPlayer.leftHandPhysicsEstimator) + GetHandAssistance(VRPlayer.rightHandPhysicsEstimator) < MIN_HAND_SPEED)
+
+                Vector3 up = upDirection.Value;
+
+                // 1. Fast crouch down.
+                if (Vector3.Dot(VRPlayer.headPhysicsEstimator.GetVelocity(), up) > MAX_HEAD_VERTICAL_VELOCITY)
                 {
                     return Vector3.zero;
                 }
 
-                return (rollDirection.normalized - upDirection.Value) * 16f;
-            }
-
-            private float GetHandAssistance(PhysicsEstimator handPhyicsEstimator)
-            {
-                var headToHand = handPhyicsEstimator.transform.position - vrCam.transform.position;
-                var handElevationAboveHead = Vector3.Dot(headToHand, upDirection.Value);
-                if (handElevationAboveHead < MIN_HAND_ELEVATION)
+                // 2. Both hands pushing toward the same horizontal direction.
+                Vector3 leftPush = Vector3.ProjectOnPlane(leftHandVelocity, up);
+                Vector3 rightPush = Vector3.ProjectOnPlane(rightHandVelocity, up);
+                float leftSpeed = leftPush.magnitude;
+                float rightSpeed = rightPush.magnitude;
+                if (leftSpeed < MIN_HAND_PUSH_SPEED || rightSpeed < MIN_HAND_PUSH_SPEED)
                 {
-                    return 0;
+                    return Vector3.zero;
                 }
-                var headToHandHorizontalDirection = (headToHand - upDirection.Value * handElevationAboveHead).normalized;
-                return Vector3.Dot(handPhyicsEstimator.GetVelocity(), headToHandHorizontalDirection);
+                if (Vector3.Dot(leftPush / leftSpeed, rightPush / rightSpeed) < MIN_HAND_DIRECTION_ALIGNMENT)
+                {
+                    return Vector3.zero;
+                }
+
+                Vector3 pushDirection = (leftPush + rightPush).normalized;
+
+                // 3. At least one hand is on the push-direction side of the head.
+                Vector3 headPosition = vrCam.transform.position;
+                float leftAhead = Vector3.Dot(Vector3.ProjectOnPlane(leftHandTransform.position - headPosition, up), pushDirection);
+                float rightAhead = Vector3.Dot(Vector3.ProjectOnPlane(rightHandTransform.position - headPosition, up), pushDirection);
+                if (leftAhead < MIN_HAND_AHEAD_OF_HEAD && rightAhead < MIN_HAND_AHEAD_OF_HEAD)
+                {
+                    return Vector3.zero;
+                }
+
+                // Roll opposite to the push. The downward component lets the manager
+                // detect the dodge (verticalSpeed < -0.5) and use the horizontal part as direction.
+                return (-pushDirection - up) * 16f;
             }
         }
     }

@@ -1,12 +1,5 @@
 {
   "bindings": {
-    "/actions/buggy": {
-      "chords": [],
-      "poses": [],
-      "haptics": [],
-      "sources": [],
-      "skeleton": []
-    },
     "/actions/default": {
       "chords": [],
       "poses": [
@@ -156,13 +149,6 @@
           "path": "/user/hand/right/input/skeleton/right"
         }
       ]
-    },
-    "/actions/platformer": {
-      "chords": [],
-      "poses": [],
-      "haptics": [],
-      "sources": [],
-      "skeleton": []
     }
   },
   "controller_type": "vive_cosmos_controller",

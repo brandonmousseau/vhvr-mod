@@ -81,6 +81,14 @@ namespace Valve.VR
             }
         }
         
+        public virtual SteamVR_Action_Pose BodyPose
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_BodyPose;
+            }
+        }
+        
         public virtual SteamVR_Action_Boolean HotbarUp
         {
             get
@@ -153,14 +161,6 @@ namespace Valve.VR
             }
         }
         
-        public virtual SteamVR_Action_Boolean UseLeft
-        {
-            get
-            {
-                return SteamVR_Actions.valheim_UseLeft;
-            }
-        }
-        
         public virtual SteamVR_Action_Boolean QuickActions
         {
             get
@@ -214,6 +214,78 @@ namespace Valve.VR
             get
             {
                 return SteamVR_Actions.valheim_ToggleAutoPickup;
+            }
+        }
+        
+        public virtual SteamVR_Action_Boolean RightClick
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_RightClick;
+            }
+        }
+        
+        public virtual SteamVR_Action_Boolean LeftClick
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_LeftClick;
+            }
+        }
+        
+        public virtual SteamVR_Action_Boolean AddMapPin
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_AddMapPin;
+            }
+        }
+        
+        public virtual SteamVR_Action_Boolean MiddleClick
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_MiddleClick;
+            }
+        }
+        
+        public virtual SteamVR_Action_Boolean DiscardItem
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_DiscardItem;
+            }
+        }
+        
+        public virtual SteamVR_Action_Boolean SplitStack
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_SplitStack;
+            }
+        }
+        
+        public virtual SteamVR_Action_Boolean ScrollUp
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_ScrollUp;
+            }
+        }
+        
+        public virtual SteamVR_Action_Boolean ScrollDown
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_ScrollDown;
+            }
+        }
+
+        public virtual SteamVR_Action_Boolean RemovePiece
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_RemovePiece;
             }
         }
         

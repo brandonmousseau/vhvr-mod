@@ -61,7 +61,7 @@ namespace ValheimVRMod.Utilities
                 return false;
             }
 
-            const float SPEED_TOLERANCE = 1f / 1024f;
+            const float SPEED_TOLERANCE = 1f / 512f;
             var v = player.GetVelocity();
             if (Mathf.Abs(v.x) > SPEED_TOLERANCE ||
                 Mathf.Abs(v.y) > SPEED_TOLERANCE ||

@@ -1,8 +1,11 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
+using ValheimVRMod.Patches;
 using ValheimVRMod.Utilities;
 using Valve.VR;
 using Valve.VR.Extras;
+using Valve.VR.InteractionSystem;
 using System.Collections.Generic;
 
 using static ValheimVRMod.Utilities.LogUtils;
@@ -83,23 +86,60 @@ namespace ValheimVRMod.VRCore.UI
         private static readonly Vector3 DESIRED_HAND_ATTACHED_LOCAL_POSITION = new Vector3(0f, 0.0625f, 0.125f);
         private static readonly Quaternion DESIRED_ROTATION_ON_LEFT_HAND = Quaternion.Euler(75, 270, 300);
         private static readonly Quaternion DESIRED_ROTATION_ON_RIGHT_HAND = Quaternion.Euler(75, 90, 60);
+        private static readonly string HAND_PANEL_RENDER_ORIGIN_NAME = "VHVRHandPanelRenderOrigin";
+        private static readonly string HAND_PANEL_PROXY_NAME = "VHVRHandPanelProxy";
+        private static readonly string LASER_PROXY_NAME = "VHVRLaserProxy";
+        // How far the real panel may be from its place on the hand to still count as held, see placeHandPanelProxy().
+        private const float HAND_PANEL_PROXY_MAX_DISTANCE_FROM_HAND = 0.1f;
+        // How far from the world origin, along any axis, the rig has to be for the panel to be drawn at the origin
+        // instead, see updateUiPanelCameraAnchoring(), and how much closer it has to come back before it is not.
+        private const float PANEL_ORIGIN_ANCHOR_MIN_DISTANCE = 200f;
+        private const float PANEL_ORIGIN_ANCHOR_HYSTERESIS = 20f;
         // The angle difference that is acceptable for the GUI being
         // considered to be "centered"
         private static readonly float RECENTERED_TOLERANCE = 1f;
         private static Vector3 desiredSize;
         private static Vector3 desiredHandAttachedSize;
         private static Vector3 desiredOffset;
+        private static bool isBuildMenuOpen
+        {
+            // Since Valheim 1.0 the build menu is the BuildUi component; the legacy
+            // m_pieceSelectionWindow still exists but Hud.Awake() deactivates it and never brings it
+            // back, so checking it here left the panel permanently unattachable.
+            get { return Hud.IsPieceSelectionVisible(); }
+        }
 
         private float OVERLAY_CURVATURE = 0.25f; /* 0f - 1f */
         private bool USING_OVERLAY = true;
 
         private Camera _uiPanelCamera;
+        // Draws the hand attached panel near the world origin, see updateUiPanelCameraAnchoring().
+        private Transform _handPanelRenderOrigin;
+        private Renderer _handPanelProxy;
+        // The UI panel camera while it is moved under _handPanelRenderOrigin, and its local pose under the VR
+        // camera to restore afterwards.
+        private Camera anchoredUiPanelCamera;
+        private Vector3 uiPanelCameraLocalPosition;
+        private Quaternion uiPanelCameraLocalRotation;
+        private Vector3 uiPanelCameraLocalScale;
+        private int lastHandPanelProxyPlacementFrame = -1;
+        // Copies of the left and right laser beams drawn at the origin along with the panel, and the real beams.
+        private readonly Renderer[] _laserProxies = new Renderer[2];
+        private readonly Renderer[] realLasers = new Renderer[2];
+        private readonly bool[] isLaserProxyShown = new bool[2];
+        // What onCameraPreCull() hid from the camera being rendered, for onCameraPostRender() to show again.
+        private readonly List<Renderer> hiddenFromCurrentCamera = new List<Renderer>();
         private Camera _guiCamera;
         private List<Canvas> _guiCanvases = new List<Canvas>();
         private Canvas _cursorGuiCanvas;
         private Canvas _hudGuiCanvas;
         private Canvas _chatBox;
         private static Transform _uiPanel;
+        // Whether onGuiCanvasFound() has run, which is where the GUI camera is positioned and given its
+        // orthographic size. Before that it still has Unity's default size of 5, so anything laid out in
+        // GUI_DIMENSIONS units would be drawn hugely magnified.
+        private static bool hasConfiguredGuiCamera;
+        private static bool hasCreatedOverlay;
         private Transform _uiPanelTransformLocker;
         private RenderTexture _guiTexture;
         private RenderTexture _overlayTexture;
@@ -108,13 +148,32 @@ namespace ValheimVRMod.VRCore.UI
         private SteamVR_LaserPointer _rightPointer;
 
         private VRGUI_InputModule _inputModule;
+        // How far the laser pointer may drift on the panel while the trigger is held before a click becomes a drag.
+        // Both have to be exceeded: the distance in metres keeps a small panel with densely packed pixels, such as
+        // the one attached to the hand, from being too sensitive, and the one in pixels keeps the pointer on a large
+        // panel from leaving the dead zone before it has moved further than Unity's drag threshold, past which a drag
+        // starts at once and cancels the click of a button in a scroll view, e. g. a recipe in the crafting menu.
+        private const float LASER_CLICK_DEAD_ZONE_METERS = 0.005f;
+        private const float LASER_CLICK_DEAD_ZONE_PIXELS = 16f;
+        // Where on the panel, in its local coordinates, the laser cursor was last placed. While a click is held in
+        // its dead zone, this is where the trigger was pressed.
+        private Vector3 cursorLocalHit;
+
+        // Holding ScrollUp/ScrollDown scrolls one step, then keeps repeating after a short delay.
+        private const float SCROLL_REPEAT_DELAY = 0.4f;
+        private const float SCROLL_REPEAT_INTERVAL = 0.1f;
+        private int heldScrollDirection;
+        private float nextScrollRepeatTime;
 
         private static bool isRecentering = false;
         private bool movingLastFrame = false;
         private Quaternion lastVrPlayerRotation = Quaternion.identity;
         private bool showingChatBox = false;
-        private bool isInventoryOrBuildMenuOpen;
+        private bool isAttachableToHandAsInventoryOrBuildMenu;
         private bool attachedToHand;
+        // Whether the panel was last detached from the hand because the SteamVR keyboard opened, and so
+        // should go back on the hand once the keyboard closes.
+        private bool reattachWhenKeyboardCloses;
 
         // Native handle to OpenVR overlay
         private ulong _overlay = OpenVR.k_ulOverlayHandleInvalid;
@@ -131,6 +190,8 @@ namespace ValheimVRMod.VRCore.UI
 
         public void OnEnable()
         {
+            Camera.onPreCull += onCameraPreCull;
+            Camera.onPostRender += onCameraPostRender;
             creatGuiCamera();
             if (USING_OVERLAY)
             {
@@ -207,18 +268,24 @@ namespace ValheimVRMod.VRCore.UI
         public void Update()
         {
             disableVanillaInputSystemUiInputModule();
+            if (VHVRConfig.UseVrControls() && SteamVR_Actions.valheim_ToggleMenu.GetStateDown(SteamVR_Input_Sources.Any))
+            {
+                ModConfigurationManagerBridge.CloseWindow();
+            }
             if (VHVRConfig.UseVrControls())
             {
                 if (attachedToHand)
                 {
                     UpdateMouseButtonsFromLaserPointer();
                 }
+                UpdateScrollFromLaserPointer();
                 return;
             }
             bool leftButtonPressed = Input.GetMouseButton(0);
             bool rightButtonPressed = Input.GetMouseButton(1);
             bool middleButtonPressed = Input.GetMouseButton(2);
             _inputModule.UpdateButtonStates(leftButtonPressed, rightButtonPressed, middleButtonPressed);
+            _inputModule.UpdateScroll(Input.mouseScrollDelta);
         }
 
         public static void UpdateUIPanelSize()
@@ -251,8 +318,23 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return;
             }
-            
+
             inputUiModule.enabled = true;
+
+            if (!VHVRConfig.UseVrControls())
+            {
+                // Mouse input is already fed to VRGUI_InputModule at the simulated cursor position, but
+                // the vanilla module would also handle it at the hardware cursor position, which is locked
+                // to the screen center. That hits whatever happens to be there, e.g. clicks land on the
+                // inventory's drop outside area, so an item picked up from the inventory would immediately
+                // get dropped, and hovering highlights a second, unrelated inventory slot.
+                // Assigned every frame since the game may reassign the module's actions.
+                inputUiModule.point = null;
+                inputUiModule.scrollWheel = null;
+                inputUiModule.leftClick = null;
+                inputUiModule.rightClick = null;
+                inputUiModule.middleClick = null;
+            }
         }
 
         public void LateUpdate()
@@ -260,10 +342,15 @@ namespace ValheimVRMod.VRCore.UI
             // Needs to go into LateUpdate to ensure it runs after VRIK calculations
             // since the model HumanBodyBones are being referenced
             VRHud.instance.Update();
+            updateUiPanelCameraAnchoring();
         }
 
         public void OnDisable()
         {
+            Camera.onPreCull -= onCameraPreCull;
+            Camera.onPostRender -= onCameraPostRender;
+            showHiddenRenderers();
+            setUiPanelCameraAnchored(false);
             destroyOverlay();
         }
 
@@ -352,22 +439,30 @@ namespace ValheimVRMod.VRCore.UI
                 return;
             }
 
-            bool wasInventoryOrBuildMenuOpen = isInventoryOrBuildMenuOpen;
-            isInventoryOrBuildMenuOpen =
-                InventoryGui.IsVisible() ||
-                (Hud.instance?.m_pieceSelectionWindow != null && Hud.instance.m_pieceSelectionWindow.activeSelf);
+            bool wasAttachableUI = isAttachableToHandAsInventoryOrBuildMenu;
+            bool attachableToHandAsInventory =
+                InventoryGui.IsVisible() && VHVRConfig.AttachInventoryToHand();
+            bool attachableToHandAsBuildMenu = isBuildMenuOpen && VHVRConfig.AttachBuildMenuToHand();
+            isAttachableToHandAsInventoryOrBuildMenu = attachableToHandAsInventory || attachableToHandAsBuildMenu;
+            if (!isAttachableToHandAsInventoryOrBuildMenu)
+            {
+                reattachWhenKeyboardCloses = false;
+            }
             if (attachedToHand)
             {
                 if (shouldInstantlyDetachPanelFromHand())
                 {
+                    // Instantly reset UI to normal position
                     detachPanelFromHand(resetSize: true);
+                    reattachWhenKeyboardCloses = InputManager.keyboardActive;
                 }
-                else if (!isInventoryOrBuildMenuOpen)
+                else if (!isAttachableToHandAsInventoryOrBuildMenu)
                 {
+                    // Smoothly move UI to normal position
                     detachPanelFromHand(resetSize: false);
                 }
             }
-            else if (!wasInventoryOrBuildMenuOpen && isInventoryOrBuildMenuOpen && !shouldInstantlyDetachPanelFromHand())
+            else if ((!wasAttachableUI || reattachWhenKeyboardCloses) && isAttachableToHandAsInventoryOrBuildMenu && !shouldInstantlyDetachPanelFromHand())
             {
                 attachPanelToHand();
             }
@@ -470,12 +565,25 @@ namespace ValheimVRMod.VRCore.UI
 
         private bool shouldInstantlyDetachPanelFromHand()
         {
+            if (InputManager.keyboardActive)
+            {
+                // The SteamVR keyboard takes input focus, leaving the hands untracked and VRIK disabled until it
+                // closes, so a hand-attached panel would be stuck at hand size wherever the hand was last seen.
+                return true;
+            }
+
             if (Minimap.instance != null && Minimap.instance.m_mode == Minimap.MapMode.Large)
             {
                 return true;
             }
 
+            if (!VHVRConfig.AttachInventoryToHand() && InventoryGui.IsVisible())
+            {
+                return true;
+            }
+
             return InventoryGui.instance == null ||
+                !VHVRConfig.UseVrControls() ||
                 InventoryGui.instance.IsContainerOpen() ||
                 Player.m_localPlayer == null ||
                 Player.m_localPlayer.m_inCraftingStation ||
@@ -485,6 +593,7 @@ namespace ValheimVRMod.VRCore.UI
         private void attachPanelToHand()
         {
             attachedToHand = true;
+            reattachWhenKeyboardCloses = false;
             _uiPanel.transform.localScale = desiredHandAttachedSize;
             // if (VHVRConfig.LeftHanded())
             // {
@@ -635,10 +744,33 @@ namespace ValheimVRMod.VRCore.UI
                 return;
             }
 
-            var localDir = _uiPanel.InverseTransformVector(VRPlayer.activePointer.rayDirection * Vector3.forward);
-            var localStart = _uiPanel.InverseTransformPoint(VRPlayer.activePointer.rayStartingPosition);
+            if (!tryGetPreciseRayInHeldPanel(VRPlayer.activePointer, out Vector3 localStart, out Vector3 localDir))
+            {
+                localDir = _uiPanel.InverseTransformVector(VRPlayer.activePointer.rayDirection * Vector3.forward);
+                localStart = _uiPanel.InverseTransformPoint(VRPlayer.activePointer.rayStartingPosition);
+            }
             // This is more precise than using raycast hit position especially when the player is moving fast
             var correctedLocalHit = localStart - localDir * (localStart.z / localDir.z);
+
+            if (_inputModule.inLaserClickDeadZone)
+            {
+                // Pulling or releasing the trigger tilts the controller, which would otherwise carry the cursor off
+                // the button that was pressed, or far enough to start dragging the scroll view it sits in, and
+                // either way lose the click. So the cursor stays where the press was until the ray has clearly
+                // moved away on purpose.
+                float drift = _uiPanel.TransformVector(correctedLocalHit - cursorLocalHit).magnitude;
+                float pixelDrift =
+                    Vector2.Distance(
+                        convertLocalUiPanelCoordinatesToCursorCoordinates(correctedLocalHit),
+                        convertLocalUiPanelCoordinatesToCursorCoordinates(cursorLocalHit));
+                if (drift <= LASER_CLICK_DEAD_ZONE_METERS || pixelDrift <= LASER_CLICK_DEAD_ZONE_PIXELS)
+                {
+                    return;
+                }
+                _inputModule.LeaveLaserClickDeadZone();
+            }
+
+            cursorLocalHit = correctedLocalHit;
             SoftwareCursor.simulatedMousePosition = convertLocalUiPanelCoordinatesToCursorCoordinates(correctedLocalHit);
         }
 
@@ -646,19 +778,108 @@ namespace ValheimVRMod.VRCore.UI
         {
             if (_leftPointer.pointerIsActive())
             {
-                // TODO: add proper actions for left pointer click?
-                _inputModule.UpdateButtonStates(
-                    SteamVR_Actions.LaserPointers.ClickModifier.GetState(SteamVR_Input_Sources.LeftHand) ||
-                    SteamVR_Actions.LaserPointers.LeftClick.GetState(SteamVR_Input_Sources.LeftHand),
-                    SteamVR_Actions.valheim_QuickActions.GetState(SteamVR_Input_Sources.LeftHand),
-                    false);
+                UpdateMouseButtonsFromLaserPointer(SteamVR_Input_Sources.LeftHand);
             }
             if (_rightPointer.pointerIsActive())
             {
-                _inputModule.UpdateButtonStates(
-                    SteamVR_Actions.LaserPointers.LeftClick.GetState(SteamVR_Input_Sources.RightHand),
-                    SteamVR_Actions.LaserPointers.RightClick.GetState(SteamVR_Input_Sources.RightHand),
-                    false);
+                UpdateMouseButtonsFromLaserPointer(SteamVR_Input_Sources.RightHand);
+            }
+        }
+
+        private void UpdateMouseButtonsFromLaserPointer(SteamVR_Input_Sources hand)
+        {
+            // The laser pointers have no middle button of their own, UpdateButtonStates adds the MiddleClick chord.
+            _inputModule.UpdateButtonStates(
+                SteamVR_Actions.Valheim.LeftClick.GetState(hand),
+                SteamVR_Actions.Valheim.RightClick.GetState(hand),
+                false);
+        }
+
+        // Scrolls whatever is under the simulated cursor, e.g. the recipe list or a container, from the
+        // ContextScroll trackpad of a hand whose laser pointer is active (index, holographic) and from the
+        // ScrollUp/ScrollDown buttons (right grip + right stick on touch controllers). Called once per frame.
+        private void UpdateScrollFromLaserPointer()
+        {
+            if (_leftPointer == null || _rightPointer == null ||
+                (!_leftPointer.pointerIsActive() && !_rightPointer.pointerIsActive()))
+            {
+                heldScrollDirection = 0;
+                return;
+            }
+
+            float steps = GetScrollButtonSteps();
+            if (_leftPointer.pointerIsActive())
+            {
+                steps += SteamVR_Actions.Valheim.ContextScroll.GetAxis(SteamVR_Input_Sources.LeftHand).y;
+            }
+            if (_rightPointer.pointerIsActive())
+            {
+                steps += SteamVR_Actions.Valheim.ContextScroll.GetAxis(SteamVR_Input_Sources.RightHand).y;
+            }
+            _inputModule.ScrollBySteps(steps);
+        }
+
+        // The steps to scroll this frame from the ScrollUp/ScrollDown buttons: one when pressed, then one every
+        // SCROLL_REPEAT_INTERVAL while held. Only read while the inventory (which includes crafting and containers)
+        // or the build menu is open, since the same buttons zoom the minimap elsewhere.
+        private float GetScrollButtonSteps()
+        {
+            int direction = 0;
+            if (InventoryGui.IsVisible() || Hud.IsPieceSelectionVisible())
+            {
+                direction = VRControls.instance.getScrollButtonDirection();
+            }
+
+            if (direction == 0)
+            {
+                heldScrollDirection = 0;
+                return 0;
+            }
+            if (direction != heldScrollDirection)
+            {
+                heldScrollDirection = direction;
+                nextScrollRepeatTime = Time.unscaledTime + SCROLL_REPEAT_DELAY;
+                return direction;
+            }
+            if (Time.unscaledTime < nextScrollRepeatTime)
+            {
+                return 0;
+            }
+            nextScrollRepeatTime = Time.unscaledTime + SCROLL_REPEAT_INTERVAL;
+            return direction;
+        }
+
+        // Selects the item under the pointer in the player's or the open container's inventory with the given
+        // modifier, as vanilla does for modified clicks: Move moves the item between the inventory and the open
+        // container, or drops it when no container is open, and Split opens the split dialog for a stack. Called
+        // by LaserPointerChords for the DiscardItem/SplitStack chords, which resolve to this the same way a plain
+        // click resolves to whatever InventoryGrid.GetHoveredElement() (also laser-pointer-aware, see
+        // ControlPatches) says the pointer is over.
+        public static void SelectHoveredInventoryItem(InventoryGrid.Modifier modifier)
+        {
+            InventoryGui inventoryGui = InventoryGui.instance;
+            if (!InventoryGui.IsVisible() || inventoryGui == null || inventoryGui.m_dragGo != null)
+            {
+                return;
+            }
+            foreach (InventoryGrid grid in new InventoryGrid[] { inventoryGui.m_playerGrid, inventoryGui.m_containerGrid })
+            {
+                if (grid == null || !grid.isActiveAndEnabled || grid.GetInventory() == null)
+                {
+                    continue;
+                }
+                InventoryElement element = grid.GetHoveredElement();
+                if (element == null)
+                {
+                    continue;
+                }
+                Vector2i position = grid.GetElementPos(element);
+                ItemDrop.ItemData item = grid.GetInventory().GetItemAt(position.x, position.y);
+                if (item != null)
+                {
+                    inventoryGui.OnSelectedItem(grid, item, position, modifier);
+                }
+                return;
             }
         }
 
@@ -669,18 +890,402 @@ namespace ValheimVRMod.VRCore.UI
                 return;
             }
 
-            // Use off-hand (non-dominant hand) to hold the inventory panel
-            if (VHVRConfig.LeftHanded())
+            Transform hand = getPanelHoldingHand().transform;
+            _uiPanel.SetPositionAndRotation(
+                hand.TransformPoint(DESIRED_HAND_ATTACHED_LOCAL_POSITION),
+                hand.rotation * getPanelRotationOnHand());
+        }
+
+        // Use off-hand (non-dominant hand) to hold the inventory panel
+        private static Hand getPanelHoldingHand()
+        {
+            return VHVRConfig.LeftHanded() ? VRPlayer.rightHand : VRPlayer.leftHand;
+        }
+
+        private static Quaternion getPanelRotationOnHand()
+        {
+            return VHVRConfig.LeftHanded() ? DESIRED_ROTATION_ON_RIGHT_HAND : DESIRED_ROTATION_ON_LEFT_HAND;
+        }
+
+        // Far from the world origin, e. g. at the edge of the world some 10 km out, world space positions are only
+        // precise to about a millimeter. A panel held 30 cm from the eyes visibly shakes from that, as the panel,
+        // the camera and the panel's vertices on the GPU all snap to that grid independently, and no amount of
+        // precision in local coordinates helps since everything is drawn through world space. So while far from the
+        // origin, the UI panel camera and a copy of the panel are moved under a stand-in for the VR camera rig at
+        // the world origin, at their poses relative to the rig. For the panel held in the hand, those are small and
+        // keep their full precision. A panel placed some other way is further away, where the error it keeps from
+        // its world space pose does not show. The real panel stays where it is, for the laser pointers to hit and
+        // for the flat screen cameras to show.
+        //
+        // The UI panel camera is only ever reparented here, between frames, and no camera is ever added, enabled
+        // or disabled for this: doing that to an XR camera while the cameras are rendering can leave another
+        // camera with the headset's eye projection, flipping the whole view upside down.
+        private void updateUiPanelCameraAnchoring()
+        {
+            Camera vrCam = VRPlayer.vrCam;
+            Transform rig = vrCam == null ? null : vrCam.transform.parent;
+            if (anchoredUiPanelCamera != null && anchoredUiPanelCamera != _uiPanelCamera)
             {
-                _uiPanel.SetPositionAndRotation(
-                    VRPlayer.rightHand.transform.TransformPoint(DESIRED_HAND_ATTACHED_LOCAL_POSITION),
-                    VRPlayer.rightHand.transform.rotation * DESIRED_ROTATION_ON_RIGHT_HAND);
+                // The UI panel camera was replaced, the old one is not to be restored any more.
+                anchoredUiPanelCamera = null;
+            }
+
+            // Some leeway before going back, so that it does not keep switching around the boundary.
+            float minDistance = anchoredUiPanelCamera != null ?
+                PANEL_ORIGIN_ANCHOR_MIN_DISTANCE - PANEL_ORIGIN_ANCHOR_HYSTERESIS : PANEL_ORIGIN_ANCHOR_MIN_DISTANCE;
+            // The settings for the camera locked HUD use the UI panel camera's transform as their reference.
+            bool anchor =
+                !USING_OVERLAY && !SettingCallback.configRunning &&
+                _uiPanel != null && _uiPanelCamera != null && rig != null &&
+                getMaxAbsCoordinate(rig.position) > minDistance &&
+                tryGetPoseInAncestor(vrCam.transform, rig, out _, out _, out _) &&
+                ensureHandPanelRenderer();
+            setUiPanelCameraAnchored(anchor);
+        }
+
+        private void setUiPanelCameraAnchored(bool anchor)
+        {
+            if (anchor == (anchoredUiPanelCamera != null) || _uiPanelCamera == null)
+            {
+                return;
+            }
+
+            Camera vrCam = VRPlayer.vrCam;
+            Transform cameraTransform = _uiPanelCamera.transform;
+            if (anchor)
+            {
+                anchoredUiPanelCamera = _uiPanelCamera;
+                uiPanelCameraLocalPosition = cameraTransform.localPosition;
+                uiPanelCameraLocalRotation = cameraTransform.localRotation;
+                uiPanelCameraLocalScale = cameraTransform.localScale;
+                cameraTransform.SetParent(_handPanelRenderOrigin, false);
+                cameraTransform.localScale = Vector3.one;
+                placeHandPanelProxy();
             }
             else
             {
-                _uiPanel.SetPositionAndRotation(
-                    VRPlayer.leftHand.transform.TransformPoint(DESIRED_HAND_ATTACHED_LOCAL_POSITION),
-                    VRPlayer.leftHand.transform.rotation * DESIRED_ROTATION_ON_LEFT_HAND);
+                anchoredUiPanelCamera = null;
+                cameraTransform.SetParent(vrCam == null ? null : vrCam.transform, false);
+                cameraTransform.localPosition = uiPanelCameraLocalPosition;
+                cameraTransform.localRotation = uiPanelCameraLocalRotation;
+                cameraTransform.localScale = uiPanelCameraLocalScale;
+            }
+        }
+
+        // Moves the UI panel camera and the copy of the panel under the origin stand-in to where the VR camera and
+        // the real panel are in the rig. Called once a frame before the cameras render, when the head and hand
+        // poses for the frame are final, as well as right after anchoring.
+        private void placeHandPanelProxy()
+        {
+            lastHandPanelProxyPlacementFrame = Time.frameCount;
+            Camera vrCam = VRPlayer.vrCam;
+            if (anchoredUiPanelCamera == null || _uiPanel == null || _handPanelRenderOrigin == null ||
+                _handPanelProxy == null || vrCam == null || vrCam.transform.parent == null)
+            {
+                return;
+            }
+            Transform rig = vrCam.transform.parent;
+            if (!tryGetPoseInAncestor(vrCam.transform, rig, out Vector3 cameraPosition, out Quaternion cameraRotation, out _))
+            {
+                return;
+            }
+
+            Vector3 rigScale = rig.lossyScale;
+            _handPanelRenderOrigin.SetPositionAndRotation(Vector3.zero, rig.rotation);
+            _handPanelRenderOrigin.localScale = rigScale;
+            anchoredUiPanelCamera.transform.localPosition = cameraPosition;
+            anchoredUiPanelCamera.transform.localRotation = cameraRotation;
+
+            Transform proxy = _handPanelProxy.transform;
+            if (tryGetHeldPanelPoseInRig(rig, out Vector3 heldPanelPosition, out Quaternion heldPanelRotation))
+            {
+                proxy.localPosition = heldPanelPosition;
+                proxy.localRotation = heldPanelRotation;
+            }
+            else
+            {
+                // Wherever the real panel is instead, only as precise as its world space pose.
+                proxy.localPosition = rig.InverseTransformPoint(_uiPanel.position);
+                proxy.localRotation = Quaternion.Inverse(rig.rotation) * _uiPanel.rotation;
+            }
+            // The real panel has no parent, so its local scale is its world scale.
+            Vector3 panelScale = _uiPanel.localScale;
+            proxy.localScale = new Vector3(panelScale.x / rigScale.x, panelScale.y / rigScale.y, panelScale.z / rigScale.z);
+            Renderer panelRenderer = _uiPanel.GetComponent<Renderer>();
+            if (panelRenderer != null)
+            {
+                _handPanelProxy.sharedMaterial = panelRenderer.sharedMaterial;
+            }
+
+            placeLaserProxy(0, VRPlayer.leftPointer, rig);
+            placeLaserProxy(1, VRPlayer.rightPointer, rig);
+        }
+
+        // The panel's pose in the rig, composed from the hand's local pose, while it is held in the hand. False if
+        // it is not, e. g. while the GUI position is locked. The real panel is only moved after the first camera has
+        // rendered, so it may trail the hand a little.
+        private bool tryGetHeldPanelPoseInRig(Transform rig, out Vector3 position, out Quaternion rotation)
+        {
+            position = Vector3.zero;
+            rotation = Quaternion.identity;
+            Hand hand = getPanelHoldingHand();
+            if (!attachedToHand || hand == null || _uiPanel == null ||
+                Vector3.Distance(_uiPanel.position, hand.transform.TransformPoint(DESIRED_HAND_ATTACHED_LOCAL_POSITION))
+                    > HAND_PANEL_PROXY_MAX_DISTANCE_FROM_HAND ||
+                !tryGetPoseInAncestor(hand.transform, rig, out Vector3 handPosition, out Quaternion handRotation, out Vector3 handScale))
+            {
+                return false;
+            }
+            position = handPosition + handRotation * Vector3.Scale(handScale, DESIRED_HAND_ATTACHED_LOCAL_POSITION);
+            rotation = handRotation * getPanelRotationOnHand();
+            return true;
+        }
+
+        // The laser beams need the same treatment as the panel: they are only a couple of millimeters thick and end
+        // on the panel, so a beam drawn at its world space pose visibly shakes against it.
+        private void placeLaserProxy(int index, SteamVR_LaserPointer laser, Transform rig)
+        {
+            isLaserProxyShown[index] = false;
+            if (laser == null || laser.pointer == null || !laser.pointer.activeInHierarchy)
+            {
+                return;
+            }
+            Renderer laserRenderer = laser.pointer.GetComponent<Renderer>();
+            if (laserRenderer == null || !laserRenderer.enabled ||
+                !tryGetPoseInAncestor(laser.pointer.transform, rig, out Vector3 position, out Quaternion rotation, out Vector3 scale))
+            {
+                return;
+            }
+            if (_laserProxies[index] == null)
+            {
+                _laserProxies[index] = createProxyRenderer(PrimitiveType.Cube, LASER_PROXY_NAME);
+            }
+            Transform proxy = _laserProxies[index].transform;
+            proxy.localPosition = position;
+            proxy.localRotation = rotation;
+            proxy.localScale = scale;
+            _laserProxies[index].sharedMaterial = laserRenderer.sharedMaterial;
+            realLasers[index] = laserRenderer;
+            isLaserProxyShown[index] = true;
+        }
+
+        // The laser pointer ray in the local space of the panel held in the hand, composed from the local poses of
+        // the pointer and the hand in the rig, rather than from their world space poses. False unless the panel is
+        // held in the hand while it is being drawn at the origin.
+        private bool tryGetPreciseRayInHeldPanel(SteamVR_LaserPointer laser, out Vector3 localStart, out Vector3 localDirection)
+        {
+            localStart = Vector3.zero;
+            localDirection = Vector3.forward;
+            Camera vrCam = VRPlayer.vrCam;
+            if (anchoredUiPanelCamera == null || laser == null || laser.holder == null || _uiPanel == null ||
+                vrCam == null || vrCam.transform.parent == null)
+            {
+                return false;
+            }
+            Transform rig = vrCam.transform.parent;
+            if (!tryGetHeldPanelPoseInRig(rig, out Vector3 panelPosition, out Quaternion panelRotation) ||
+                !tryGetPoseInAncestor(laser.holder.transform, rig, out Vector3 rayStart, out Quaternion rayRotation, out _))
+            {
+                return false;
+            }
+            Vector3 rigScale = rig.lossyScale;
+            Vector3 panelScale = _uiPanel.localScale;
+            Vector3 panelScaleInRig = new Vector3(panelScale.x / rigScale.x, panelScale.y / rigScale.y, panelScale.z / rigScale.z);
+            Quaternion toPanel = Quaternion.Inverse(panelRotation);
+            localStart = divide(toPanel * (rayStart - panelPosition), panelScaleInRig);
+            localDirection = divide(toPanel * (rayRotation * Vector3.forward), panelScaleInRig);
+            return true;
+        }
+
+        private static Vector3 divide(Vector3 a, Vector3 b)
+        {
+            return new Vector3(a.x / b.x, a.y / b.y, a.z / b.z);
+        }
+
+        private static float getMaxAbsCoordinate(Vector3 position)
+        {
+            return Mathf.Max(Mathf.Abs(position.x), Mathf.Abs(position.y), Mathf.Abs(position.z));
+        }
+
+        // The pose of the transform in the space of an ancestor, composed from the local poses in between rather
+        // than derived from the world space ones, so that it stays precise however far the ancestor is from the
+        // world origin. False if the ancestor is not an ancestor.
+        private static bool tryGetPoseInAncestor(
+            Transform transform, Transform ancestor, out Vector3 position, out Quaternion rotation, out Vector3 scale)
+        {
+            position = Vector3.zero;
+            rotation = Quaternion.identity;
+            scale = Vector3.one;
+            for (Transform current = transform; current != ancestor; current = current.parent)
+            {
+                if (current == null)
+                {
+                    return false;
+                }
+                position = current.localPosition + current.localRotation * Vector3.Scale(current.localScale, position);
+                rotation = current.localRotation * rotation;
+                scale = Vector3.Scale(current.localScale, scale);
+            }
+            return true;
+        }
+
+        private bool ensureHandPanelRenderer()
+        {
+            // Scene objects, so a scene load destroys them and they are made again.
+            if (_handPanelRenderOrigin == null)
+            {
+                _handPanelRenderOrigin = new GameObject(HAND_PANEL_RENDER_ORIGIN_NAME).transform;
+            }
+            if (_handPanelProxy == null)
+            {
+                _handPanelProxy = createProxyRenderer(PrimitiveType.Quad, HAND_PANEL_PROXY_NAME);
+            }
+            return true;
+        }
+
+        private Renderer createProxyRenderer(PrimitiveType primitive, string name)
+        {
+            GameObject proxy = GameObject.CreatePrimitive(primitive);
+            proxy.name = name;
+            // Not for the laser pointers to hit: they aim at the real objects.
+            Destroy(proxy.GetComponent<Collider>());
+            proxy.layer = LayerUtils.getUiPanelLayer();
+            proxy.transform.SetParent(_handPanelRenderOrigin, false);
+            Renderer renderer = proxy.GetComponent<Renderer>();
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+            // Only ever shown to the anchored UI panel camera, see onCameraPreCull(). Being on the UI panel layer,
+            // it would otherwise show up near the world origin for every other camera that draws that layer.
+            renderer.enabled = false;
+            return renderer;
+        }
+
+        // Culling happens per camera after onPreCull, so a renderer toggled here only affects the camera about to
+        // render. It is restored before the next camera culls, and not only by onCameraPostRender(): that is not
+        // reliably called for the XR cameras rendering to the headset, which would leave the real panel hidden from
+        // the flat screen cameras rendering after them.
+        private void onCameraPreCull(Camera camera)
+        {
+            showHiddenRenderers();
+            if (camera.name == CameraUtils.FOLLOW_CAMERA)
+            {
+                maybeHideFromFlatscreenCamera();
+                return;
+            }
+            if (anchoredUiPanelCamera == null)
+            {
+                return;
+            }
+            bool isAnchoredUiPanelCamera = camera == anchoredUiPanelCamera;
+            // The headset cameras that may draw the real laser beams, whatever layer those are on.
+            bool isVrCamera = camera == VRPlayer.vrCam;
+            bool isHandsCamera = camera.name == CameraUtils.HANDS_CAMERA;
+            if (!isVrCamera && !isHandsCamera && !isAnchoredUiPanelCamera)
+            {
+                return;
+            }
+            // Once a frame, before the first of these cameras renders (normally the VR camera).
+            if (lastHandPanelProxyPlacementFrame != Time.frameCount)
+            {
+                placeHandPanelProxy();
+            }
+
+            for (int i = 0; i < _laserProxies.Length; i++)
+            {
+                if (!isLaserProxyShown[i] || _laserProxies[i] == null || realLasers[i] == null)
+                {
+                    continue;
+                }
+                if (isAnchoredUiPanelCamera)
+                {
+                    _laserProxies[i].enabled = true;
+                }
+                else
+                {
+                    hide(realLasers[i]);
+                }
+            }
+
+            if (!isAnchoredUiPanelCamera || _uiPanel == null || _handPanelProxy == null)
+            {
+                return;
+            }
+            Renderer panelRenderer = _uiPanel.GetComponent<Renderer>();
+            if (panelRenderer.enabled && _uiPanel.gameObject.activeInHierarchy)
+            {
+                hide(panelRenderer);
+                _handPanelProxy.enabled = true;
+            }
+        }
+
+        // Hides the panel, wherever it is, and the real laser beams by renderer rather than by culling layer, since
+        // the beams are not on a layer of their own. Left alone in the main menu, where the flat screen camera looks
+        // at the panel and would otherwise show nothing.
+        private void maybeHideFromFlatscreenCamera()
+        {
+            if (VHVRConfig.DisplayVRGUIOnFlatScreen() || Player.m_localPlayer == null)
+            {
+                return;
+            }
+            if (_uiPanel != null)
+            {
+                Renderer panelRenderer = _uiPanel.GetComponent<Renderer>();
+                if (panelRenderer != null)
+                {
+                    hide(panelRenderer);
+                }
+            }
+            hideLaser(VRPlayer.leftPointer);
+            hideLaser(VRPlayer.rightPointer);
+        }
+
+        private void hideLaser(SteamVR_LaserPointer laser)
+        {
+            if (laser == null || laser.pointer == null)
+            {
+                return;
+            }
+            Renderer laserRenderer = laser.pointer.GetComponent<Renderer>();
+            if (laserRenderer != null)
+            {
+                hide(laserRenderer);
+            }
+        }
+
+        private void onCameraPostRender(Camera camera)
+        {
+            showHiddenRenderers();
+        }
+
+        private void hide(Renderer renderer)
+        {
+            if (renderer.enabled)
+            {
+                renderer.enabled = false;
+                hiddenFromCurrentCamera.Add(renderer);
+            }
+        }
+
+        private void showHiddenRenderers()
+        {
+            foreach (Renderer renderer in hiddenFromCurrentCamera)
+            {
+                if (renderer != null)
+                {
+                    renderer.enabled = true;
+                }
+            }
+            hiddenFromCurrentCamera.Clear();
+            if (_handPanelProxy != null)
+            {
+                _handPanelProxy.enabled = false;
+            }
+            foreach (Renderer laserProxy in _laserProxies)
+            {
+                if (laserProxy != null)
+                {
+                    laserProxy.enabled = false;
+                }
             }
         }
 
@@ -710,6 +1315,7 @@ namespace ValheimVRMod.VRCore.UI
                     enabled = false;
                     return;
                 }
+                hasCreatedOverlay = true;
             }
             else
             {
@@ -727,6 +1333,7 @@ namespace ValheimVRMod.VRCore.UI
                     overlay.DestroyOverlay(_overlay);
                 }
                 _overlay = OpenVR.k_ulOverlayHandleInvalid;
+                hasCreatedOverlay = false;
             }
         }
 
@@ -940,20 +1547,13 @@ namespace ValheimVRMod.VRCore.UI
             {
                 // Need to assign the camera to enable UI interactions
                 guiCanvas.worldCamera = _guiCamera;
-                // Originally this was using ScreenSpaceCamera, which was handy to auto-size the canvas/camera
-                // so I didn't need to worry about orthographic size or camera position. The problem
-                // is that there are certain UI elements, particularly in the minimap, that are added
-                // to the canvas using absolute pixel sizes - which when using ScreenSpaceCamera didn't translate
-                // and ended up with map icons extremely large and obscuring the entire map. By using WorldSpace
-                // for the render mode, we can keep the world coordinates equal to the screen space coordinates,
-                // i.e. 1 pixel on screen = 1 unit of world space. That way when any elements are added to the GUI
-                // at a specific pixel size, they are scaled properly.
                 guiCanvas.renderMode = RenderMode.WorldSpace;
                 guiCanvas.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, GUI_DIMENSIONS.x);
                 guiCanvas.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, GUI_DIMENSIONS.y);
             }
             _guiCamera.gameObject.transform.position = new Vector3(Screen.width * 0.5f, Screen.height * 0.5f, -1);
             _guiCamera.orthographicSize = GUI_DIMENSIONS.y * 0.5f;
+            hasConfiguredGuiCamera = true;
             
         }
 
@@ -987,11 +1587,31 @@ namespace ValheimVRMod.VRCore.UI
             return _uiPanel == null ? null : _uiPanel.gameObject;
         }
 
+        // Whether the GUI is far enough along to display a cinematic on it: VR is running, the GUI camera
+        // exists and has been configured, and there is a surface the player can actually see it on. This is
+        // stricter than `VRPlayer.instance != null` on purpose, since a cinematic is laid out in
+        // GUI_DIMENSIONS units and would be unreadable until the GUI camera has been sized to match.
+        public static bool isReadyToShowCinematic
+        {
+            get
+            {
+                return !VHVRConfig.NonVrPlayer() &&
+                    VRPlayer.instance != null &&
+                    hasConfiguredGuiCamera &&
+                    CameraUtils.getCamera(CameraUtils.VRGUI_SCREENSPACE_CAM) != null &&
+                    (_uiPanel != null || hasCreatedOverlay);
+            }
+        }
+
         class VRGUI_InputModule : StandaloneInputModule
         {
 
             Dictionary<PointerEventData.InputButton, bool> lastButtonStateMap = new Dictionary<PointerEventData.InputButton, bool>();
+            // For the desktop mouse.
             private bool inDragDeadZone;
+            // For the laser pointers: whether the left button is held and the pointer hasn't yet moved far enough
+            // since the press to start a drag.
+            public bool inLaserClickDeadZone { get; private set; }
 
             public VRGUI_InputModule() {
                 lastButtonStateMap[PointerEventData.InputButton.Left] = false;
@@ -1003,9 +1623,113 @@ namespace ValheimVRMod.VRCore.UI
                 // Use the existing EventSystems input module input as the
                 // input for our custom input module.
                 m_InputOverride = EventSystem.current.currentInputModule.input;
+                if (VHVRConfig.UseVrControls())
+                {
+                    // Hide laser pointer clicks that are part of a chord action (e.g. grip + trigger to add a map pin).
+                    if (LaserPointerChords.isLeftClickSuppressed)
+                    {
+                        CancelPress(PointerEventData.InputButton.Left);
+                    }
+                    if (LaserPointerChords.isRightClickSuppressed)
+                    {
+                        CancelPress(PointerEventData.InputButton.Right);
+                    }
+                    leftButtonPressed = LaserPointerChords.FilterLeftClick(leftButtonPressed);
+                    rightButtonPressed = LaserPointerChords.FilterRightClick(rightButtonPressed);
+                    // Laser pointers have no middle button of their own; it comes from the MiddleClick chord action.
+                    middleButtonPressed = middleButtonPressed || LaserPointerChords.middleClick;
+                }
                 UpdateButtonState(leftButtonPressed, PointerEventData.InputButton.Left);
                 UpdateButtonState(rightButtonPressed, PointerEventData.InputButton.Right);
                 UpdateButtonState(middleButtonPressed, PointerEventData.InputButton.Middle);
+            }
+
+            // Drops a press that is still held, for when the click turns out to be part of a chord, e.g. when the
+            // trigger is pressed before the grip. Releasing it instead would deliver the pointer up and click that the
+            // chord is meant to replace.
+            private void CancelPress(PointerEventData.InputButton button)
+            {
+                if (!lastButtonStateMap[button])
+                {
+                    return;
+                }
+                lastButtonStateMap[button] = false;
+                if (button == PointerEventData.InputButton.Left)
+                {
+                    inLaserClickDeadZone = false;
+                }
+                PointerEventData buttonData = GetMousePointerEventData().GetButtonState(button).eventData.buttonData;
+                buttonData.eligibleForClick = false;
+                buttonData.pointerPress = null;
+                buttonData.rawPointerPress = null;
+                buttonData.pointerDrag = null;
+                buttonData.dragging = false;
+            }
+
+            // How far one VR scroll step moves a scroll view, in its content's units.
+            private const float SCROLL_STEP_SIZE = 50f;
+
+            private readonly List<RaycastResult> scrollRaycastResults = new List<RaycastResult>();
+
+            // Scrolls whatever is under the simulated cursor by the real mouse wheel's delta, outside VR, mirroring
+            // the scroll part of StandaloneInputModule.ProcessMouseEvent().
+            public void UpdateScroll(Vector2 scrollDelta)
+            {
+                if (Mathf.Approximately(scrollDelta.sqrMagnitude, 0f))
+                {
+                    return;
+                }
+                PointerEventData pointerData =
+                    GetMousePointerEventData().GetButtonState(PointerEventData.InputButton.Left).eventData.buttonData;
+                pointerData.scrollDelta = scrollDelta;
+                GameObject scrollHandler =
+                    ExecuteEvents.GetEventHandler<IScrollHandler>(pointerData.pointerCurrentRaycast.gameObject);
+                ExecuteEvents.ExecuteHierarchy(scrollHandler, pointerData, ExecuteEvents.scrollHandler);
+            }
+
+            // Scrolls the scroll view under the simulated cursor vertically by the given number of steps (positive
+            // is up). Unlike the mouse wheel this looks through every UI element under the cursor rather than only
+            // the topmost one, so an overlay without a scroll view of its own (the cursor, a tooltip) cannot swallow
+            // the scroll. Each step moves the view by SCROLL_STEP_SIZE regardless of its scroll sensitivity, which
+            // vanilla tunes for the mouse wheel rather than for VR controls.
+            public void ScrollBySteps(float steps)
+            {
+                if (Mathf.Approximately(steps, 0f) || EventSystem.current == null)
+                {
+                    return;
+                }
+                PointerEventData pointerData = new PointerEventData(EventSystem.current);
+                pointerData.position = SoftwareCursor.simulatedMousePosition;
+                scrollRaycastResults.Clear();
+                EventSystem.current.RaycastAll(pointerData, scrollRaycastResults);
+
+                ScrollRect scrollRect = null;
+                foreach (RaycastResult result in scrollRaycastResults)
+                {
+                    // The mod configuration manager window is drawn with IMGUI, which has scroll views of its own.
+                    ModConfigurationManagerPanel modConfigurationManagerPanel = result.gameObject.GetComponent<ModConfigurationManagerPanel>();
+                    if (modConfigurationManagerPanel != null)
+                    {
+                        modConfigurationManagerPanel.ScrollBySteps(steps);
+                        return;
+                    }
+                    scrollRect = result.gameObject.GetComponentInParent<ScrollRect>();
+                    if (scrollRect != null && scrollRect.isActiveAndEnabled)
+                    {
+                        break;
+                    }
+                    scrollRect = null;
+                }
+                if (scrollRect == null)
+                {
+                    LogDebug("VR scroll found no scroll view under the cursor at " + pointerData.position + ", top hit: " +
+                        (scrollRaycastResults.Count > 0 ? scrollRaycastResults[0].gameObject.name : "none"));
+                    return;
+                }
+
+                float sensitivity = scrollRect.scrollSensitivity > 0 ? scrollRect.scrollSensitivity : 1;
+                pointerData.scrollDelta = new Vector2(0, steps * SCROLL_STEP_SIZE / sensitivity);
+                scrollRect.OnScroll(pointerData);
             }
 
             private void UpdateButtonState(bool state, PointerEventData.InputButton button)
@@ -1041,6 +1765,25 @@ namespace ValheimVRMod.VRCore.UI
                 }
                 ProcessMove(buttonState.buttonData);
 
+                if (VHVRConfig.UseVrControls())
+                {
+                    // The laser dead zone is measured and left in VRGUI.UpdateCursorPosition, which knows the panel's
+                    // geometry and holds the cursor still until then, so no drag can start before it is left.
+                    if (state == PointerEventData.FramePressState.Pressed)
+                    {
+                        inLaserClickDeadZone = true;
+                    }
+                    else if (state == PointerEventData.FramePressState.Released)
+                    {
+                        inLaserClickDeadZone = false;
+                    }
+                    if (!inLaserClickDeadZone)
+                    {
+                        ProcessDrag(buttonState.buttonData);
+                    }
+                    return;
+                }
+
                 if (state == PointerEventData.FramePressState.Pressed) {
                     inDragDeadZone = true;
                 }
@@ -1052,6 +1795,11 @@ namespace ValheimVRMod.VRCore.UI
                 if (!inDragDeadZone) {
                     ProcessDrag(buttonState.buttonData);
                 }
+            }
+
+            public void LeaveLaserClickDeadZone()
+            {
+                inLaserClickDeadZone = false;
             }
         }
     }

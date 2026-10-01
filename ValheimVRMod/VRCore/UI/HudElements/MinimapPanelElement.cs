@@ -82,7 +82,7 @@ namespace ValheimVRMod.VRCore.UI.HudElements
                 _original.mapRoot.SetActive(false);
             }
 
-            if (Minimap.m_instance.m_mode == Minimap.MapMode.Small)
+            if (Minimap.s_instance.m_mode == Minimap.MapMode.Small)
             {
                 _clone.Root.SetActive(toggledOn);
             }

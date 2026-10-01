@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.XR;
 using Unity.XR.OpenVR;
 using Valve.VR;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine.XR.Management;
@@ -17,12 +18,35 @@ namespace ValheimVRMod.VRCore
      */
     class VRManager
     {
+        // Set once the XRSDK loader is up. Until then there is no OpenVR runtime and no XRSDKOpenVR
+        // native plugin to push a mirror view mode into.
+        private static bool xrSdkInitialized;
+
+        // Turning the mirror off before the OpenVR display provider has shown it once (as starting in a mode that
+        // leaves the eye mirror off would, since the provider starts on the Right mode of the bundled settings) leaves
+        // it broken for the whole session: the window stops refreshing in the Left and Right modes chosen later.
+        // Switching between the modes works once the provider has produced a mirror image, so the None mode is held
+        // back until then.
+        private const int MIRROR_FRAMES_BEFORE_NONE = 3;
+        // Applying the None mode anyway after this long, rather than showing the eye mirror in a mode that is meant
+        // to leave it off, should the provider never report a mirror image.
+        private const float MIRROR_SETUP_TIMEOUT = 60;
+        private static bool mirrorShown;
+        private static int mirrorFramesSeen;
+        // When the None mode started waiting for the mirror to be set up, or -1 when it is not waiting.
+        private static float deferredNoneSince = -1;
+        private static readonly List<XRDisplaySubsystem> displays = new List<XRDisplaySubsystem>();
+
         public static bool InitializeVR()
         {
             // Need to PreInitialize actions before XRSDK
             // to ensure SteamVR_Input is enabled.
             LogDebug("PreInitializing SteamVR Actions...");
             SteamVR_Actions.PreInitialize();
+            // Register the runtime-created body tracking pose action now that the SteamVR
+            // action arrays exist (via PreInitialize) but before SteamVR_Input.Initialize
+            // runs (triggered by InitializeSteamVR), which initializes every action in them.
+            BodyTracking.SteamVRBodyTrackingProvider.EnsureActionRegistered();
             LogInfo("Initializing VR...");
             if (!InitXRSDK())
             {
@@ -145,15 +169,96 @@ namespace ValheimVRMod.VRCore
                 LogError("managerSettings.activeLoader is null after " + tries + " tries.");
                 return false;
             }
-            OpenVRSettings openVrSettings = OpenVRSettings.GetSettings(false);
-            if (openVrSettings != null)
-            {
-                OpenVRSettings.MirrorViewModes mirrorMode = VHVRConfig.GetMirrorViewMode();
-                LogInfo("Mirror View Mode: " + mirrorMode);
-                openVrSettings.SetMirrorViewMode(mirrorMode);
-            }
+            xrSdkInitialized = true;
+            UpdateMirrorViewMode();
             LogDebug("Got non-null Active Loader.");
             return true;
+        }
+
+        // Applies the configured mirror view mode to the flat screen window. Also called after the
+        // setting changes in game, since the mirror view mode of the OpenVR runtime is not derived
+        // from the config on its own and would otherwise stay on whatever was set during startup.
+        public static void UpdateMirrorViewMode()
+        {
+            if (!xrSdkInitialized || VHVRConfig.NonVrPlayer())
+            {
+                // Either VR is not running at all or the XRSDK loader has not been initialized yet,
+                // in which case InitializeXRSDKLoaders() applies the mode as soon as it is.
+                return;
+            }
+            OpenVRSettings openVrSettings = OpenVRSettings.GetSettings(false);
+            if (openVrSettings == null)
+            {
+                LogWarning("Cannot update the mirror view mode without OpenVR settings.");
+                return;
+            }
+            OpenVRSettings.MirrorViewModes mirrorMode = VHVRConfig.GetMirrorViewMode();
+            if (VHVRConfig.UseFullWidthMirror(out _) || VHVRConfig.UseSideBySideMirror() || VHVRConfig.UseNoFlatscreenView())
+            {
+                // Turns itself on and off with the mode from then on.
+                FullWidthMirror.EnsureCreated();
+            }
+            if (mirrorMode == OpenVRSettings.MirrorViewModes.None && !mirrorShown)
+            {
+                LogInfo("Mirror View Mode: None, once the mirror has been set up");
+                deferredNoneSince = Time.realtimeSinceStartup;
+                return;
+            }
+            deferredNoneSince = -1;
+            LogInfo("Mirror View Mode: " + mirrorMode);
+            try
+            {
+                openVrSettings.SetMirrorViewMode(mirrorMode);
+            }
+            catch (Exception e)
+            {
+                // SetMirrorViewMode() ends in a call into the XRSDKOpenVR native plugin, and this runs
+                // from a config callback during the settings menu teardown, where throwing would cut
+                // the remaining settings short.
+                LogError("Failed to set mirror view mode " + mirrorMode + ": " + e);
+            }
+        }
+
+        // Called every frame. Notes when the provider has shown its mirror and then applies a None mode held back
+        // until it has.
+        public static void UpdateMirrorSetup()
+        {
+            if (mirrorShown || !xrSdkInitialized || VHVRConfig.NonVrPlayer())
+            {
+                return;
+            }
+            if (hasMirrorImage() && ++mirrorFramesSeen >= MIRROR_FRAMES_BEFORE_NONE)
+            {
+                mirrorShown = true;
+            }
+            else if (deferredNoneSince < 0 || Time.realtimeSinceStartup - deferredNoneSince < MIRROR_SETUP_TIMEOUT)
+            {
+                return;
+            }
+            else
+            {
+                LogWarning("The mirror was not set up in time, turning it off anyway.");
+                mirrorShown = true;
+            }
+            if (deferredNoneSince >= 0)
+            {
+                UpdateMirrorViewMode();
+            }
+        }
+
+        private static bool hasMirrorImage()
+        {
+            SubsystemManager.GetInstances(displays);
+            foreach (XRDisplaySubsystem display in displays)
+            {
+                if (display.running &&
+                    display.GetMirrorViewBlitDesc(null, out var desc, XRMirrorViewBlitMode.Default) &&
+                    desc.blitParamsCount > 0)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         public static void tryRecenter()
@@ -172,7 +277,7 @@ namespace ValheimVRMod.VRCore
             }
 
             // Trigger recentering head position on player body
-            VRPlayer.RequestRecentering();
+            VRPlayer.RequestRecentering(recaliberateHeight: true);
             VRPlayer.RequestPelvisCaliberation();
             VRPlayer.vrPlayerInstance?.ResetRoomscaleCamera();
         }

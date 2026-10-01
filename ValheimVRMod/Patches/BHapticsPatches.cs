@@ -127,7 +127,7 @@ namespace ValheimVRMod.Patches
             {
                 return;
             }
-            if (EquipScript.getLeft() == EquipType.Bow)
+            if (EquipScript.CurrentOffHandEquipType() == EquipType.Bow)
             {
                 BhapticsTactsuit.PlaybackHaptics(VRPlayer.isRightHandMainWeaponHand ? "ArrowThrowRight" : "ArrowThrowLeft", 2.0f); 
                 // arms tactosy
@@ -193,7 +193,7 @@ namespace ValheimVRMod.Patches
         public static void Postfix(Humanoid __instance, bool __result)
         {
 
-            if (BhapticsTactsuit.suitDisabled || __instance != Player.m_localPlayer || EquipScript.getLeft() != EquipType.Shield || !VHVRConfig.UseVrControls())
+            if (BhapticsTactsuit.suitDisabled || __instance != Player.m_localPlayer || EquipScript.CurrentOffHandEquipType() != EquipType.Shield || !VHVRConfig.UseVrControls())
             {
                 return;
             }

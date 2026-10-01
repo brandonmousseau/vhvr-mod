@@ -14,20 +14,17 @@ namespace ValheimVRMod.Scripts
             bool InverseHold();
         }
 
-        private bool isDominantHandWeapon;
         private TwoHandedStateProvider twoHandedStateSync;
         private Transform leftHandTransform;
         private Transform rightHandTransform;
         private bool recalculatedDirectionOffset = false;
 
-        public void Initialize(ItemDrop.ItemData item, string itemName, bool isDominantHandWeapon, TwoHandedStateProvider twoHandedStateSync, Transform leftHandTransform, Transform rightHandTransform)
+        public void Initialize(ItemDrop.ItemData item, int itemHash, bool isDominantHandWeapon, TwoHandedStateProvider twoHandedStateSync, Transform leftHandTransform, Transform rightHandTransform)
         {
-            this.isDominantHandWeapon = isDominantHandWeapon;
             this.twoHandedStateSync = twoHandedStateSync;
             this.leftHandTransform = leftHandTransform;
             this.rightHandTransform = rightHandTransform;
-            // TODO: figure out a better way to detect crossbow.
-            base.Initialize(item, itemName, isDominantHandWeapon, twoHandedStateSync);
+            base.Initialize(item, itemHash, isDominantHandWeapon, twoHandedStateSync);
         }
 
         protected override bool IsPlayerLeftHanded()

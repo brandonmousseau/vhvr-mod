@@ -1,12 +1,5 @@
 {
   "bindings": {
-    "/actions/buggy": {
-      "chords": [],
-      "poses": [],
-      "haptics": [],
-      "sources": [],
-      "skeleton": []
-    },
     "/actions/default": {
       "chords": [],
       "poses": [
@@ -170,13 +163,6 @@
           }
         }
       ],
-      "skeleton": []
-    },
-    "/actions/platformer": {
-      "chords": [],
-      "poses": [],
-      "haptics": [],
-      "sources": [],
       "skeleton": []
     }
   },

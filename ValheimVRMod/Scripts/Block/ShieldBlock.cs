@@ -6,7 +6,6 @@ using Valve.VR;
 namespace ValheimVRMod.Scripts.Block {
     public class ShieldBlock : Block {
 
-        public string itemName;
         private const float MIN_PARRY_ENTRY_SPEED = 1.5f;
         private const float MAX_PARRY_ANGLE = 150f;
         private const float PARRY_EXIT_SPEED = 0.2f;
@@ -16,11 +15,28 @@ namespace ValheimVRMod.Scripts.Block {
         private float scaling = 1f;
         private Vector3 posRef;
         private Vector3 scaleRef;
+        private float adaptScaleRef = 1f;
         private bool attemptingParry;
         private int parryCheckFixedUpateTicker = 0;
         private Vector3 shieldFacing { get { return VRPlayer.isRightHandMainWeaponHand ? -VRPlayer.leftHand.transform.right : VRPlayer.rightHand.transform.right; } }
+        private MeshFilter meshFilter;
 
         public static ShieldBlock instance;
+
+        private PhysicsEstimator parryPhysicsEstimator
+        {
+            get
+            {
+                var shieldHand = VRPlayer.isRightHandMainWeaponHand ? VRPlayer.leftHand : VRPlayer.rightHand;
+                if (shieldHand == null)
+                {
+                    return physicsEstimator;
+                }
+                var handPhysicsEstimator =
+                    VRPlayer.isRightHandMainWeaponHand ? VRPlayer.leftHandPhysicsEstimator : VRPlayer.rightHandPhysicsEstimator;
+                return handPhysicsEstimator != null ? handPhysicsEstimator : physicsEstimator;
+            }
+        }
 
         private void OnDisable() {
             instance = null;
@@ -49,40 +65,59 @@ namespace ValheimVRMod.Scripts.Block {
 
         private void InitShield()
         {
-            posRef = _meshCooldown.transform.localPosition;
-            scaleRef = _meshCooldown.transform.localScale;
+            posRef = transform.localPosition;
+            scaleRef = transform.localScale;
             hand = VRPlayer.mainWeaponHand.otherHand.transform;
             offhand = VRPlayer.mainWeaponHand.transform;
+            
+            meshFilter = gameObject.GetComponentInChildren<MeshFilter>();
+            var mesh = meshFilter.sharedMesh;
+            var shieldWideSize = WeaponUtils.EstimateShieldWidth(mesh) * transform.lossyScale.x;
+            var shieldMaxWidth = VHVRConfig.GetMaxShieldWidth();
+            var scaleShieldSetting = VHVRConfig.GetShieldScaleSetting();
+            if (shieldMaxWidth !=1f || scaleShieldSetting !=1f)
+            {
+                adaptScaleRef = Mathf.Min(scaleShieldSetting, shieldMaxWidth / shieldWideSize);
+                AdaptScaleShieldSize(1f);
+            }
         }
 
         public override void setBlocking(HitData hitData) {
             if (VHVRConfig.UseGrabButtonBlock())
             {
                 _blocking = SteamVR_Actions.valheim_Grab.GetState(VRPlayer.secondaryWeaponHandInputSource);
+                return;
             }
-            else if (VHVRConfig.UseRealisticBlock())
+
+            if (VHVRConfig.UseRealisticBlock() && !hitIntersectsBlockBox(hitData))
             {
-                _blocking = Vector3.Dot(hitData.m_dir, shieldFacing) < -0.25f && hitIntersectsBlockBox(hitData);
-                CheckParryMotion();
+                _blocking = false;
             }
-            else {
-                _blocking = Vector3.Dot(hitData.m_dir, shieldFacing) < -0.5f;
-                CheckParryMotion();
+            else
+            {
+                var shieldFacingAlignment = Vector3.Dot(hitData.m_dir, shieldFacing);
+                var v = parryPhysicsEstimator.GetVelocity();
+                _blocking =
+                    v.magnitude > MIN_PARRY_ENTRY_SPEED && Mathf.Abs(Vector3.Dot(hitData.m_dir, Vector3.Normalize(v))) < 0.7f ?
+                    shieldFacingAlignment < 0.5f :
+                    VHVRConfig.UseRealisticBlock() ?
+                    shieldFacingAlignment < -0.25f :
+                    shieldFacingAlignment < -0.5f;
             }
+
+            CheckParryMotion();
         }
 
         private void CheckParryMotion() {
-            PhysicsEstimator handPhysicsEstimator =
-                VRPlayer.isRightHandMainWeaponHand ? VRPlayer.leftHandPhysicsEstimator : VRPlayer.rightHandPhysicsEstimator;
-            float l = handPhysicsEstimator.GetLongestLocomotion(/* deltaT= */ 0.4f).magnitude;
-            if (physicsEstimator.GetVelocity().magnitude > MIN_PARRY_ENTRY_SPEED && Vector3.Angle(physicsEstimator.GetVelocity(), shieldFacing) < MAX_PARRY_ANGLE) {
+            Vector3 v = parryPhysicsEstimator.GetVelocity();
+            if (v.magnitude > MIN_PARRY_ENTRY_SPEED) {
                 if (!attemptingParry)
                 {
                     blockTimer = 0;
                     attemptingParry = true;
                 }
             }
-            else if (attemptingParry && physicsEstimator.GetAverageVelocityInSnapshots().magnitude < PARRY_EXIT_SPEED)
+            else if (attemptingParry && parryPhysicsEstimator.GetAverageVelocityInSnapshots().magnitude < PARRY_EXIT_SPEED)
             {
                 blockTimer = blockTimerNonParry;
                 attemptingParry = false;
@@ -107,9 +142,9 @@ namespace ValheimVRMod.Scripts.Block {
             Vector3 v = physicsEstimator.GetVelocity();
         }
 
-        public void ScaleShieldSize(float scale)
+        public void AdaptScaleShieldSize(float scale)
         {
-            scaling = scale;
+            scaling = adaptScaleRef * scale;
         }
 
         private Vector3 CalculatePos()
