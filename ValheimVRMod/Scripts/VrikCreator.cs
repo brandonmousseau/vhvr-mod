@@ -34,6 +34,10 @@ namespace ValheimVRMod.Scripts {
         private static readonly Quaternion rightEquippedRotation = Quaternion.Euler(0, -90, -170);
         private static readonly Vector3 rightEquippedElbow = new Vector3(-1, -3f, 0);
 
+        // The head target's pose relative to the camera.
+        private static readonly Vector3 headTargetLocalPosition = new Vector3(0, -0.165f, -0.09f) * ROOT_SCALE;
+        private static readonly Quaternion headTargetLocalRotation = Quaternion.Euler(0, 90, 20);
+
         private static Transform localPlayerCamera;
         private static Transform CameraRig { get { return localPlayerCamera.parent; } }
 
@@ -111,9 +115,8 @@ namespace ValheimVRMod.Scripts {
             {
                 VrikCreator.localPlayerCamera = camera;
             }
-            head.localPosition = new Vector3(0, -0.165f, -0.09f) * ROOT_SCALE;
-            head.localRotation = Quaternion.Euler(0, 90, 20);
-
+            head.localPosition = headTargetLocalPosition;
+            head.localRotation = headTargetLocalRotation;
             vrik.solver.spine.pelvisTarget.SetParent(pelvis, worldPositionStays: false);
             vrik.solver.spine.pelvisTarget.localPosition = Vector3.zero;
             vrik.solver.spine.pelvisTarget.localRotation = Quaternion.identity;
@@ -269,6 +272,45 @@ namespace ValheimVRMod.Scripts {
             vrik.solver.spine.pelvisTarget.SetParent(localPlayerCamera.parent, true);
             vrik.solver.leftLeg.target.SetParent(localPlayerCamera.parent, true);
             vrik.solver.rightLeg.target.SetParent(localPlayerCamera.parent, true);
+        }
+
+        public static bool IsLocalPlayerVrikPaused()
+        {
+            VRIK vrik = Player.m_localPlayer?.GetComponent<VRIK>();
+            return vrik != null && IsPaused(vrik);
+        }
+
+        // Drives the head and the hands of the paused local player VRIK from stand-ins for the camera and the hand
+        // connectors, e. g. the reflections of BarberMirror. The pelvis and the feet are left untracked meanwhile.
+        public static void BindLocalPlayerVrik(Transform camera, Transform leftHandConnector, Transform rightHandConnector)
+        {
+            VRIK vrik = Player.m_localPlayer?.GetComponent<VRIK>();
+            if (vrik == null)
+            {
+                return;
+            }
+            vrik.solver.spine.headTarget.SetParent(camera, false);
+            vrik.solver.spine.headTarget.localPosition = headTargetLocalPosition;
+            vrik.solver.spine.headTarget.localRotation = headTargetLocalRotation;
+            vrik.solver.leftArm.target.SetParent(leftHandConnector, false);
+            vrik.solver.rightArm.target.SetParent(rightHandConnector, false);
+            resetVrikHandTransform(Player.m_localPlayer);
+            vrik.solver.spine.pelvisPositionWeight = 0;
+            vrik.solver.spine.pelvisRotationWeight = 0;
+            DisableFootTracking(vrik);
+        }
+
+        // Undoes BindLocalPlayerVrik, leaving the VRIK paused as PauseLocalPlayerVrik does.
+        public static void ReturnLocalPlayerVrikToPause()
+        {
+            VRIK vrik = Player.m_localPlayer?.GetComponent<VRIK>();
+            if (vrik == null || localPlayerCamera == null)
+            {
+                return;
+            }
+            vrik.solver.leftArm.target.SetParent(CameraRig, true);
+            vrik.solver.rightArm.target.SetParent(CameraRig, true);
+            vrik.solver.spine.headTarget.SetParent(CameraRig, true);
         }
 
         public static void UnpauseLocalPlayerVrik()

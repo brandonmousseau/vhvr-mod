@@ -510,6 +510,12 @@ namespace ValheimVRMod.VRCore
 
         private void FixedUpdate()
         {
+            if (BarberMirror.IsActive)
+            {
+                // The VRIK targets belong to the mirror until Update leaves it, which may come after the barber GUI
+                // closes: unpausing in between would fail and lose track of the pause.
+                return;
+            }
             if (ShouldPauseMovement)
             {
                 if (vrikEnabled() && !pausedMovement)
@@ -1188,13 +1194,36 @@ namespace ValheimVRMod.VRCore
         {
             if (shouldAttachToPlayerCharacter())
             {
+                BarberMirror.Exit();
                 updateZoomLevel();
                 attachVrPlayerToPlayerCharacter();
             }
+            else if (BarberMirror.ShouldBeActive(vrikRef) && ensurePlayerInstance())
+            {
+                attachVrPlayerToBarberMirror();
+            }
             else
             {
+                BarberMirror.Exit();
                 attachVrPlayerToMainCamera();
             }
+        }
+
+        // The rig keeps the place BarberMirror gives it, the mirror is not entered anew on every update.
+        private void attachVrPlayerToBarberMirror()
+        {
+            if (BarberMirror.IsActive)
+            {
+                return;
+            }
+            setHeadVisibility(true);
+            _instance.transform.SetParent(getPlayerCharacter().transform, false);
+            attachedToPlayer = false;
+            headPositionInitialized = false;
+            firstPersonOffset = Vector3.zero;
+            BarberMirror.Enter(vrikRef, getPlayerCharacter(), _instance.transform, _vrCam.transform);
+            // BarberMirror leaves the VRIK paused, for the usual unpausing to restore it once the mirror is left.
+            pausedMovement = true;
         }
 
         private void updateZoomLevel()
@@ -1662,7 +1691,7 @@ namespace ValheimVRMod.VRCore
 
             vrikRef.enabled =
                 VHVRConfig.UseVrControls() &&
-                inFirstPerson &&
+                (inFirstPerson || BarberMirror.IsActive) &&
                 !player.InDodge() &&
                 !player.IsStaggering() &&
                 !player.IsSleeping() &&

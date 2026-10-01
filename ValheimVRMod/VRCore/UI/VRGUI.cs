@@ -3,6 +3,7 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using ValheimVRMod.Patches;
 using ValheimVRMod.Utilities;
+using ValheimVRMod.Scripts;
 using Valve.VR;
 using Valve.VR.Extras;
 using Valve.VR.InteractionSystem;
@@ -431,6 +432,16 @@ namespace ValheimVRMod.VRCore.UI
 
         private void updateUiPanelScaleAndPosition()
         {
+            if (BarberMirror.IsActive)
+            {
+                BarberMirror.GetGuiPose(
+                    desiredOffset, VRPlayer.instance.transform.position, VRPlayer.instance.transform.up,
+                    out Vector3 position, out Quaternion rotation);
+                _uiPanel.SetPositionAndRotation(position, rotation);
+                _uiPanel.transform.localScale = desiredSize;
+                return;
+            }
+
             if (!useDynamicallyPositionedGui())
             {
                 _uiPanel.rotation = VRPlayer.instance.transform.rotation;
