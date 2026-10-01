@@ -391,17 +391,15 @@ namespace ValheimVRMod.Utilities
             mirrorMode = config.Bind("Graphics",
                                      "MirrorMode",
                                      "Right",
-                                     new ConfigDescription("The VR mirror mode: OpenVR, Right, Left, FullWidthRight, FullWidthLeft, SBS, Follow, Spectator, Stabilized, None." +
-                                     " FullWidthRight and FullWidthLeft show the whole width of the eye image, undistorted and cropped at the top and bottom," +
-                                     " instead of stretched to the window. SBS shows both whole eye images side by side, left eye on the left," +
-                                     " undistorted with bars around them. Note: OpenVR is" +
-                                     " required if you want to see the Overlay-type GUI in the mirror image. However, OpenVR" +
-                                     " mirror mode may cause some issue that requires SteamVR to be restarted after closing the game." +
-                                     " Follow mode, spectator mode, and stabilized mode" +
-                                     " render content from a separate camera which can cause lag." +
+                                     new ConfigDescription("The VR mirror mode:" +
+                                     " Right and Left show the whole width of the eye image, undistorted and cropped at the top and bottom;" +
+                                     " NativeRight and NativeLeft show the VR runtime's own eye mirror, stretched to the window;" +
+                                     " SBS shows both whole eye images side by side;" +
+                                     " OpenVR mirror mode may cause some issue that requires SteamVR to be restarted after closing the game;" +
+                                     " Follow mode, spectator mode, and stabilized mode render content from a separate camera which can cause lag." +
                                      " Follow mode and stabilized smoothenes rotation and may be easier from watching on flat screen." +
                                      " and streaming/recording.",
-                                     new AcceptableValueList<string>(new string[] { "Right", "Left", "OpenVR", "FullWidthRight", "FullWidthLeft", "SBS", "None", "Follow", "Spectator", "Stabilized" })));
+                                     new AcceptableValueList<string>(new string[] { "Right", "Left", "NativeRight", "NativeLeft", "OpenVR", "SBS", "None", "Follow", "Spectator", "Stabilized" })));
             // Carried over before the change listener is added, since the VR manager is not set up yet.
             if (legacyMirrorModeValue != (string)mirrorMode.DefaultValue &&
                 mirrorMode.Value == (string)mirrorMode.DefaultValue)
@@ -891,7 +889,7 @@ namespace ValheimVRMod.Utilities
                     "Controls",
                     "MomentumScalesAttackDamage",
                     false,
-                    "Allow attacking during cooldown (except AOE and secondary attacks) but reduce its damage by momentum deficiency and remaining cooldown time.");
+                    "Allow hitting a target during its cooldown (except with AOE and secondary attacks), at most every 0.25s. Such a hit only deals damage and push force, reduced by momentum deficiency and by how recently the target was last hit, without any other attack effects.");
             altPieceRotationDelay = config.Bind("Controls",
                                                 "AltPieceRotationDelay",
                                                 1f,
@@ -1242,22 +1240,22 @@ namespace ValheimVRMod.Utilities
         {
             string mode = mirrorMode.Value;
             switch (mode) {
-                case "Right":
+                case "NativeRight":
                     return OpenVRSettings.MirrorViewModes.Right;
-                case "Left":
+                case "NativeLeft":
                     return OpenVRSettings.MirrorViewModes.Left;
                 case "OpenVR":
                     return OpenVRSettings.MirrorViewModes.OpenVR;
                 case "None":
-                case "FullWidthRight":
-                case "FullWidthLeft":
+                case "Right":
+                case "Left":
                 case "SBS":
                 case "Follow":
                 case "Spectator":
                 case "Stabilized":
                     // These modes render the flat screen view with a camera of their own, so the mirror
                     // image must not be drawn over it. It also leaves the flat screen frame rate free of
-                    // the eye mirror blit that the Right, Left and OpenVR modes are paced by.
+                    // the eye mirror blit that the NativeRight, NativeLeft and OpenVR modes are paced by.
                     return OpenVRSettings.MirrorViewModes.None;
                 default:
                     LogUtils.LogWarning("Invalid mirror mode setting. Defaulting to None");
@@ -1278,10 +1276,10 @@ namespace ValheimVRMod.Utilities
         {
             switch (mirrorMode.Value)
             {
-                case "FullWidthRight":
+                case "Right":
                     eye = UnityEngine.XR.XRNode.RightEye;
                     return true;
-                case "FullWidthLeft":
+                case "Left":
                     eye = UnityEngine.XR.XRNode.LeftEye;
                     return true;
                 default:
