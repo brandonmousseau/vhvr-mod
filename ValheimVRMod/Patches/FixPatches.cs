@@ -114,9 +114,15 @@ namespace ValheimVRMod.Patches
             __result = PlayOnceVrIsReady(__result);
         }
 
-        private static IEnumerator PlayOnceVrIsReady(IEnumerator playIntroCinematic)
+        // Also called from FejdStartup_Start_IntroHoldPatch. TryPlayIntroCinematic() only creates the iterator, a
+        // method small enough to be inlined into FejdStartup.Start(), in which case the Postfix above never runs.
+        // The intro then starts in the start scene's first frame, before the rig exists, and plays the vanilla way:
+        // black in the headset, and Stop() switches the menu's Main Camera back on, showing the menu twice.
+        // Wrapping an already wrapped iterator is harmless: the inner wait ends at once.
+        internal static IEnumerator PlayOnceVrIsReady(IEnumerator playIntroCinematic)
         {
             float deadline = Time.realtimeSinceStartup + TIMEOUT_SECONDS;
+            int startFrame = Time.frameCount;
             // NonVrPlayer() covers both flat screen mode and VR failing to initialize, in which case it
             // starts returning true and there is nothing left to wait for.
             while (!VHVRConfig.NonVrPlayer() &&
@@ -133,9 +139,64 @@ namespace ValheimVRMod.Patches
                     "s, playing the startup cinematic on the flat screen.");
             }
 
+            LogUtils.LogDebug("Startup intro held for " + (Time.frameCount - startFrame) + " frame(s); VR GUI ready: " + VRGUI.isReadyToShowCinematic + ".");
             while (playIntroCinematic.MoveNext())
             {
                 yield return playIntroCinematic.Current;
+            }
+        }
+    }
+
+    // Wraps the intro coroutine at its call site in FejdStartup.Start(), which is too big to be inlined, so the hold
+    // above applies even when TryPlayIntroCinematic() was inlined and its Postfix never ran.
+    [HarmonyPatch(typeof(FejdStartup), nameof(FejdStartup.Start))]
+    class FejdStartup_Start_IntroHoldPatch
+    {
+        private static readonly System.Reflection.MethodInfo tryPlayIntro =
+            AccessTools.Method(typeof(FejdStartup), nameof(FejdStartup.TryPlayIntroCinematic));
+
+        private static IEnumerator Wrap(IEnumerator intro)
+        {
+            return VHVRConfig.NonVrPlayer() || intro == null ? intro : IntroCinematicVrDelayPatch.PlayOnceVrIsReady(intro);
+        }
+
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            int count = 0;
+            foreach (var instruction in instructions)
+            {
+                yield return instruction;
+                if (instruction.Calls(tryPlayIntro))
+                {
+                    count++;
+                    yield return CodeInstruction.Call(typeof(FejdStartup_Start_IntroHoldPatch), nameof(Wrap));
+                }
+            }
+            if (count != 1)
+            {
+                LogUtils.LogError("FejdStartup.Start: wrapped " + count + " of the 1 expected TryPlayIntroCinematic() calls; the intro may play before VR is ready.");
+            }
+        }
+    }
+
+    // In VR, VHVR owns the cameras. If a cinematic was started the vanilla way (before the rig existed, or with an
+    // older build), Play() captured the vanilla Main Camera in m_mainCamera and Stop() would switch it back on
+    // behind VRPlayer's back: a second, untracked camera drawing the world and the GUI panel again over the VR
+    // camera (the main menu shown twice). Forget it instead; VRPlayer keeps it disabled.
+    [HarmonyPatch(typeof(CinematicsManager), nameof(CinematicsManager.Stop))]
+    class CinematicsManager_Stop_KeepVrCameraPatch
+    {
+        static void Prefix()
+        {
+            var cm = CinematicsManager.s_instance;
+            if (VHVRConfig.NonVrPlayer() || VRPlayer.instance == null || cm == null || cm.m_mainCamera == null)
+            {
+                return;
+            }
+            if (cm.m_mainCamera != VRPlayer.vrCam)
+            {
+                LogUtils.LogInfo("Cinematic stop: not re-enabling " + cm.m_mainCamera.name + " in VR.");
+                cm.m_mainCamera = null;
             }
         }
     }
