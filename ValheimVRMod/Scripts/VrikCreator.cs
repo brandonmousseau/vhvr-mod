@@ -97,6 +97,8 @@ namespace ValheimVRMod.Scripts {
                 return false;
             }
 
+            VrikUpperBodyStabilizer.Attach(vrik);
+
             vrik.references.leftToes = null;
             vrik.references.rightToes = null;
             vrik.references.root.localScale = Vector3.one * ROOT_SCALE;
