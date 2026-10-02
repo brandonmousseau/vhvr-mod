@@ -3,6 +3,7 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using ValheimVRMod.Patches;
 using ValheimVRMod.Utilities;
+using ValheimVRMod.Scripts;
 using Valve.VR;
 using Valve.VR.Extras;
 using Valve.VR.InteractionSystem;
@@ -268,6 +269,10 @@ namespace ValheimVRMod.VRCore.UI
         public void Update()
         {
             disableVanillaInputSystemUiInputModule();
+            if (VHVRConfig.UseVrControls() && SteamVR_Actions.valheim_ToggleMenu.GetStateDown(SteamVR_Input_Sources.Any))
+            {
+                ModConfigurationManagerBridge.CloseWindow();
+            }
             if (VHVRConfig.UseVrControls())
             {
                 if (attachedToHand)
@@ -427,6 +432,16 @@ namespace ValheimVRMod.VRCore.UI
 
         private void updateUiPanelScaleAndPosition()
         {
+            if (BarberMirror.IsActive)
+            {
+                BarberMirror.GetGuiPose(
+                    desiredOffset, VRPlayer.instance.transform.position, VRPlayer.instance.transform.up,
+                    out Vector3 position, out Quaternion rotation);
+                _uiPanel.SetPositionAndRotation(position, rotation);
+                _uiPanel.transform.localScale = desiredSize;
+                return;
+            }
+
             if (!useDynamicallyPositionedGui())
             {
                 _uiPanel.rotation = VRPlayer.instance.transform.rotation;
@@ -1163,6 +1178,11 @@ namespace ValheimVRMod.VRCore.UI
         private void onCameraPreCull(Camera camera)
         {
             showHiddenRenderers();
+            if (camera.name == CameraUtils.FOLLOW_CAMERA)
+            {
+                maybeHideFromFlatscreenCamera();
+                return;
+            }
             if (anchoredUiPanelCamera == null)
             {
                 return;
@@ -1206,6 +1226,40 @@ namespace ValheimVRMod.VRCore.UI
             {
                 hide(panelRenderer);
                 _handPanelProxy.enabled = true;
+            }
+        }
+
+        // Hides the panel, wherever it is, and the real laser beams by renderer rather than by culling layer, since
+        // the beams are not on a layer of their own. Left alone in the main menu, where the flat screen camera looks
+        // at the panel and would otherwise show nothing.
+        private void maybeHideFromFlatscreenCamera()
+        {
+            if (VHVRConfig.DisplayVRGUIOnFlatScreen() || Player.m_localPlayer == null)
+            {
+                return;
+            }
+            if (_uiPanel != null)
+            {
+                Renderer panelRenderer = _uiPanel.GetComponent<Renderer>();
+                if (panelRenderer != null)
+                {
+                    hide(panelRenderer);
+                }
+            }
+            hideLaser(VRPlayer.leftPointer);
+            hideLaser(VRPlayer.rightPointer);
+        }
+
+        private void hideLaser(SteamVR_LaserPointer laser)
+        {
+            if (laser == null || laser.pointer == null)
+            {
+                return;
+            }
+            Renderer laserRenderer = laser.pointer.GetComponent<Renderer>();
+            if (laserRenderer != null)
+            {
+                hide(laserRenderer);
             }
         }
 
@@ -1663,6 +1717,13 @@ namespace ValheimVRMod.VRCore.UI
                 ScrollRect scrollRect = null;
                 foreach (RaycastResult result in scrollRaycastResults)
                 {
+                    // The mod configuration manager window is drawn with IMGUI, which has scroll views of its own.
+                    ModConfigurationManagerPanel modConfigurationManagerPanel = result.gameObject.GetComponent<ModConfigurationManagerPanel>();
+                    if (modConfigurationManagerPanel != null)
+                    {
+                        modConfigurationManagerPanel.ScrollBySteps(steps);
+                        return;
+                    }
                     scrollRect = result.gameObject.GetComponentInParent<ScrollRect>();
                     if (scrollRect != null && scrollRect.isActiveAndEnabled)
                     {

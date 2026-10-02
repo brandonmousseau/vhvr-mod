@@ -237,6 +237,15 @@ namespace ValheimVRMod.Patches
                 return;
             }
 
+            // Crafting plays its own animation (hammering, with sound and spark effects) that vanilla doesn't reset
+            // the speed for, so at 1000x its effects would fire hundreds of times per second. Nothing can be
+            // attacked from the crafting menu anyway.
+            if (Player.m_localPlayer.m_inCraftingStation)
+            {
+                ___m_animator.speed = 1f;
+                return;
+            }
+
             if (___m_animator.speed != 1 && ___m_animator.speed != 1000)
             {
                 lastSpeedUp = ___m_animator.speed;

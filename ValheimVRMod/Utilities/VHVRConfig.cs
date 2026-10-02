@@ -30,6 +30,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> flatscreenSmoothing;
         private static ConfigEntry<float> followCameraDistance;
         private static ConfigEntry<bool> flatscreenPostEffects;
+        private static ConfigEntry<bool> displayVRGUIOnFlatScreen;
 
         // General Settings
         private static ConfigEntry<float> playerMinEyeHeight;
@@ -95,6 +96,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<string> adrenalinePanelPlacement;
         private static ConfigEntry<string> staggerPanelPlacement;
         private static ConfigEntry<string> minimapPanelPlacement;
+        private static ConfigEntry<string> statusEffectsPlacement;
         private static ConfigEntry<bool> allowHudFade;
         private static ConfigEntry<bool> hideHotbar;
         private static ConfigEntry<bool> alwaysShowStamina;
@@ -112,7 +114,6 @@ namespace ValheimVRMod.Utilities
         // Controls Settings
         private static ConfigEntry<string> joystickForwardDirection;
         private static ConfigEntry<string> dominantHand;
-        private static ConfigEntry<bool> oneHandedBow;
         private static ConfigEntry<KeyCode> headReposFowardKey;
         private static ConfigEntry<KeyCode> headReposBackwardKey;
         private static ConfigEntry<KeyCode> headReposLeftKey;
@@ -177,6 +178,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> bowStaminaAdjust;
         private static ConfigEntry<string> crossbowSaggitalRotationSource;
         private static ConfigEntry<bool> crossbowManualReload;
+        private static ConfigEntry<bool> oneHandedBow;
         private static ConfigEntry<string> blockingType;
         private static ConfigEntry<float> shieldScale;
         private static ConfigEntry<float> maxShieldWidth;
@@ -389,14 +391,15 @@ namespace ValheimVRMod.Utilities
             mirrorMode = config.Bind("Graphics",
                                      "MirrorMode",
                                      "Right",
-                                     new ConfigDescription("The VR mirror mode.Legal values: OpenVR, Right, Left, Follow, Spectator, Stabilized, None. Note: OpenVR is" +
-                                     " required if you want to see the Overlay-type GUI in the mirror image. However, I've found that OpenVR" +
-                                     " mirror mode causes some issue that requires SteamVR to be restarted after closing the game, so unless you" +
-                                     " need it for some specific reason, I recommend using another mirror mode or None. Follow mode and spectator mode" +
-                                     " render content from a third person camera which can cause lag. Stabilized mode renders a smoothed first person" +
-                                     " camera from between the eyes, which is steadier to watch than the mirror image of an eye," +
-                                     " and is the one to pick for streaming or recording.",
-                                     new AcceptableValueList<string>(new string[] { "Right", "Left", "OpenVR", "None", "Follow", "Spectator", "Stabilized" })));
+                                     new ConfigDescription("The VR mirror mode:" +
+                                     " Right and Left show the whole width of the eye image, undistorted and cropped at the top and bottom;" +
+                                     " NativeRight and NativeLeft show the VR runtime's own eye mirror, stretched to the window;" +
+                                     " SBS shows both whole eye images side by side;" +
+                                     " OpenVR mirror mode may cause some issue that requires SteamVR to be restarted after closing the game;" +
+                                     " Follow mode, spectator mode, and stabilized mode render content from a separate camera which can cause lag." +
+                                     " Follow mode and stabilized smoothenes rotation and may be easier from watching on flat screen." +
+                                     " and streaming/recording.",
+                                     new AcceptableValueList<string>(new string[] { "Right", "Left", "NativeRight", "NativeLeft", "OpenVR", "SBS", "None", "Follow", "Spectator", "Stabilized" })));
             // Carried over before the change listener is added, since the VR manager is not set up yet.
             if (legacyMirrorModeValue != (string)mirrorMode.DefaultValue &&
                 mirrorMode.Value == (string)mirrorMode.DefaultValue)
@@ -429,6 +432,12 @@ namespace ValheimVRMod.Utilities
                                      true,
                                      "(Follow, Spectator and Stabilized only) Apply post processing such as color grading, bloom and sun shafts" +
                                      " to the flat screen camera as well. Looks closer to the headset view but costs frame rate.");
+            displayVRGUIOnFlatScreen = config.Bind("Graphics",
+                                     "DisplayVRGUIOnFlatScreen",
+                                     true,
+                                     "(Follow, Spectator and Stabilized only) Show the VR GUI panel, including when it is attached to" +
+                                     " the hand, and the laser pointers in the flat screen view. Turn off to keep them out of a stream or" +
+                                     " recording. The main menu is always shown, since the flat screen camera looks at it there.");
         }
 
         private static void InitializeGeneralSettings()
@@ -741,6 +750,12 @@ namespace ValheimVRMod.Utilities
                                             "RightWrist",
                                             new ConfigDescription("Where should the minimap panel be placed?",
                                                 new AcceptableValueList<string>(k_HudAlignmentValues)));
+            statusEffectsPlacement = config.Bind("VRHUD",
+                                        "StatusEffectsPlacement",
+                                        "VanillaHud",
+                                        new ConfigDescription("Where the status effect icons (buffs and debuffs) are shown: VanillaHud keeps them in the top right corner of the HUD, " +
+                                                              "WristQuickBar puts them below the Forsaken Power/sit/map/recenter/chat buttons on the wrist, following those if QuickActionOnLeftHand swaps the wrists.",
+                                            new AcceptableValueList<string>(new string[] { "VanillaHud", "WristQuickBar" })));
             allowHudFade = config.Bind("VRHUD",
                                         "AllowHudFade",
                                         true,
@@ -863,12 +878,6 @@ namespace ValheimVRMod.Utilities
                                         "Right",
                                         new ConfigDescription("The dominant hand of the player",
                                         new AcceptableValueList<string>(new string[] { "Right", "Left" })));
-            // TODO: consider having this override crossbowManualReload.
-            oneHandedBow = config.Bind(
-                "Controls",
-                "OneHandedBow",
-                false,
-                "Accessibility feature that allows operating bows and crossbows with the dominant hand alone");
             swingSpeedRequirement =
                 config.Bind(
                     "Controls", "SwingSpeedRequirement", 3f,
@@ -880,7 +889,7 @@ namespace ValheimVRMod.Utilities
                     "Controls",
                     "MomentumScalesAttackDamage",
                     false,
-                    "Allow attacking during cooldown (except AOE and secondary attacks) but reduce its damage by momentum deficiency and remaining cooldown time.");
+                    "Allow hitting a target during its cooldown (except with AOE and secondary attacks), at most every 0.25s. Such a hit only deals damage and push force, reduced by momentum deficiency and by how recently the target was last hit, without any other attack effects.");
             altPieceRotationDelay = config.Bind("Controls",
                                                 "AltPieceRotationDelay",
                                                 1f,
@@ -1110,6 +1119,14 @@ namespace ValheimVRMod.Utilities
                                                     "CrossbowManualReload",
                                                     true,
                                                     "When supported, crossbows requires manually pulling the string to reload");
+            // TODO: consider having this override crossbowManualReload.
+            oneHandedBow = config.Bind(
+                "Motion Control",
+                "OneHandedBow",
+                false,
+                "Accessibility feature that allows operating bows and crossbows with the dominant hand alone. " +
+                "With the grappling hook, releasing the trigger shoots the hook and leaves it attached, releasing it while holding grip " +
+                "shoots and retracts it instead, and pressing grip lets go of an attached hook");
             blockingType = config.Bind("Motion Control",
                                         "BlockingType",
                                         "Gesture",
@@ -1223,24 +1240,58 @@ namespace ValheimVRMod.Utilities
         {
             string mode = mirrorMode.Value;
             switch (mode) {
-                case "Right":
+                case "NativeRight":
                     return OpenVRSettings.MirrorViewModes.Right;
-                case "Left":
+                case "NativeLeft":
                     return OpenVRSettings.MirrorViewModes.Left;
                 case "OpenVR":
                     return OpenVRSettings.MirrorViewModes.OpenVR;
                 case "None":
+                case "Right":
+                case "Left":
+                case "SBS":
                 case "Follow":
                 case "Spectator":
                 case "Stabilized":
                     // These modes render the flat screen view with a camera of their own, so the mirror
                     // image must not be drawn over it. It also leaves the flat screen frame rate free of
-                    // the eye mirror blit that the Right, Left and OpenVR modes are paced by.
+                    // the eye mirror blit that the NativeRight, NativeLeft and OpenVR modes are paced by.
                     return OpenVRSettings.MirrorViewModes.None;
                 default:
                     LogUtils.LogWarning("Invalid mirror mode setting. Defaulting to None");
                     return OpenVRSettings.MirrorViewModes.None;
             }
+        }
+
+        // The None mirror mode, as opposed to the other modes that also leave the eye mirror off but draw the flat
+        // screen themselves.
+        public static bool UseNoFlatscreenView()
+        {
+            return mirrorMode.Value == "None";
+        }
+
+        // Whether the flat screen shows an eye image at its true aspect, copied by a camera of the mod's own instead of
+        // the stretched eye mirror. The eye is only set when this returns true.
+        public static bool UseFullWidthMirror(out UnityEngine.XR.XRNode eye)
+        {
+            switch (mirrorMode.Value)
+            {
+                case "Right":
+                    eye = UnityEngine.XR.XRNode.RightEye;
+                    return true;
+                case "Left":
+                    eye = UnityEngine.XR.XRNode.LeftEye;
+                    return true;
+                default:
+                    eye = UnityEngine.XR.XRNode.RightEye;
+                    return false;
+            }
+        }
+
+        // Whether the flat screen shows both eye images whole and side by side, copied like the full width modes do.
+        public static bool UseSideBySideMirror()
+        {
+            return mirrorMode.Value == "SBS";
         }
 
         public static bool UseFollowCameraOnFlatscreen()
@@ -1311,6 +1362,11 @@ namespace ValheimVRMod.Utilities
         public static bool UseFlatscreenPostEffects()
         {
             return flatscreenPostEffects.Value;
+        }
+
+        public static bool DisplayVRGUIOnFlatScreen()
+        {
+            return displayVRGUIOnFlatScreen.Value;
         }
 
         public static float PlayerMinEyeHeight()
@@ -1868,11 +1924,6 @@ namespace ValheimVRMod.Utilities
             return GetPreferredHand() == VRPlayer.LEFT_HAND;
         }
 
-        public static bool OneHandedBow()
-        {
-            return oneHandedBow.Value;
-        }
-
         public static bool ViewTurnWithMountedAnimal()
         {
             return viewTurnWithMountedAnimal.Value;
@@ -1938,6 +1989,10 @@ namespace ValheimVRMod.Utilities
         public static bool CrossbowManualReload()
         {
             return crossbowManualReload.Value;
+        }
+        public static bool OneHandedBow()
+        {
+            return oneHandedBow.Value;
         }
 
         public static bool UseRealisticBlock()
@@ -2065,6 +2120,11 @@ namespace ValheimVRMod.Utilities
         public static string MinimapPanelPlacement()
         {
             return minimapPanelPlacement.Value;
+        }
+
+        public static bool StatusEffectsOnWristQuickBar()
+        {
+            return statusEffectsPlacement.Value == "WristQuickBar";
         }
 
         public static bool AllowHudFade()

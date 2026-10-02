@@ -162,12 +162,17 @@ namespace ValheimVRMod.Scripts {
 
         void Update()
         {
-            // Pressing the other hand's trigger releases a deployed grappling hook. This runs in Update rather than
-            // OnRenderObject, which may run several times per frame while the hook is only destroyed at its end.
+            // Pressing the other hand's trigger releases a deployed grappling hook, or, when firing one-handed, pressing
+            // the firing hand's grip. This runs in Update rather than OnRenderObject, which may run several times per
+            // frame while the hook is only destroyed at its end.
             // Not usable while any laser pointer is up, like the crossbow's own firing trigger below.
+            bool isReleasingHook =
+                twoHandedState == TwoHandedState.SingleHanded && VHVRConfig.OneHandedBow() ?
+                SteamVR_Actions.valheim_Grab.GetStateDown(VRPlayer.mainWeaponHandInputSource) :
+                SteamVR_Actions.valheim_Use.GetStateDown(OtherHandInputSource);
             if (GrapplingPoint.m_localGrappler != null &&
                 !LaserPointerChords.IsLaserActiveFor(SteamVR_Input_Sources.Any) &&
-                SteamVR_Actions.valheim_Use.GetStateDown(OtherHandInputSource) &&
+                isReleasingHook &&
                 EquipScript.IsGrapplingHook(Player.m_localPlayer.GetLeftItem()))
             {
                 GrapplingPoint.m_localGrappler.Break(early: true);
@@ -227,6 +232,7 @@ namespace ValheimVRMod.Scripts {
             }
 
             bool isPullingTrigger = false;
+            bool isFiringOneHanded = false;
             switch (instance.twoHandedState)
             {
                 case TwoHandedState.LeftHandBehind:
@@ -243,6 +249,7 @@ namespace ValheimVRMod.Scripts {
                 default:
                     if (VHVRConfig.OneHandedBow())
                     {
+                        isFiringOneHanded = true;
                         // Fires on release rather than on press: aiming (see UpdateOneHandedAiming) is already
                         // gated the same way, so a release seen while the pointer is up isn't one the player was
                         // still aiming through, and gating it here too keeps that consistent.
@@ -273,8 +280,12 @@ namespace ValheimVRMod.Scripts {
             if (isPullingTrigger && EquipScript.IsGrapplingHook(weapon) && !string.IsNullOrEmpty(weapon.m_shared.m_secondaryAttack?.m_attackAnimation))
             {
                 // In VR the hook stays deployed by default (vanilla's secondary attack); holding the other hand's
-                // trigger while firing shoots and retracts instead (vanilla's primary attack).
-                useSecondaryAttack = !SteamVR_Actions.valheim_Use.GetState(instance.OtherHandInputSource);
+                // trigger while firing shoots and retracts instead (vanilla's primary attack). When firing one-handed,
+                // holding the firing hand's grip does the same so the other hand isn't needed.
+                bool useRetractingAttack = isFiringOneHanded ?
+                    SteamVR_Actions.valheim_Grab.GetState(VRPlayer.mainWeaponHandInputSource) :
+                    SteamVR_Actions.valheim_Use.GetState(instance.OtherHandInputSource);
+                useSecondaryAttack = !useRetractingAttack;
             }
             
             return isPullingTrigger;

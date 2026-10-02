@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -44,11 +45,12 @@ namespace ValheimVRMod.VRCore.UI {
 
         public static KeyboardMouseSettings keyboardMouseSettings;
 
-        public static void instantiate(Transform mList, Transform mParent, GameObject sPrefab, bool enableTransformButtons) {
+        // isInGame: whether this is the in-game menu rather than the main menu, which has no world to act in.
+        public static void instantiate(Transform mList, Transform mParent, GameObject sPrefab, bool enableTransformButtons, bool isInGame) {
             menuList = mList.transform.Find("MenuEntries").transform;
             menuParent = mParent;
             settingsPrefab = sPrefab;
-            createMenuEntry();
+            createMenuEntry(isInGame);
             generatePrefabs();
             ConfigSettings.enableTransformButtons = enableTransformButtons;
         }
@@ -61,7 +63,7 @@ namespace ValheimVRMod.VRCore.UI {
         /// <summary>
         /// Create an Entry in the Menu 
         /// </summary>
-        private static void createMenuEntry() {
+        private static void createMenuEntry(bool isInGame) {
             int addedMenuEntryCount = 0;
             for (int i = 0; i < menuList.childCount; i++) {
                 Transform menuEntry = menuList.GetChild(i);
@@ -78,8 +80,12 @@ namespace ValheimVRMod.VRCore.UI {
                         AddMenuEntry("Screenshot", menuEntry, Vector2.up * MENU_ENTRY_HEIGHT * addedMenuEntryCount, CaptureScreenshot);
                         addedMenuEntryCount++;
 
-                        AddMenuEntry("Toggle auto-pickup", menuEntry, Vector2.up * MENU_ENTRY_HEIGHT * addedMenuEntryCount, ToggleAutoPickup);
-                        addedMenuEntryCount++;
+                        // Auto-pickup only means something with a player in a world.
+                        if (isInGame)
+                        {
+                            AddMenuEntry("Toggle auto-pickup", menuEntry, Vector2.up * MENU_ENTRY_HEIGHT * addedMenuEntryCount, ToggleAutoPickup);
+                            addedMenuEntryCount++;
+                        }
                     }
 
                 }
@@ -224,10 +230,17 @@ namespace ValheimVRMod.VRCore.UI {
                 orderedConfig[keyValuePair.Key.Section][keyValuePair.Key.Key] = keyValuePair.Value;
             }
 
+            // The Mods tab is only offered if there is a mod configuration manager to open in it.
+            bool showModsTab = ModConfigurationManagerBridge.IsAvailable;
+            int tabCount = sectionCount + (showModsTab ? 1 : 0);
+
             tabCounter = 0;
             // iterate ordered configs and create tabs out of each section
             foreach (KeyValuePair<string, Dictionary<string, ConfigEntryBase>> section in orderedConfig) {
-                createTabForSection(section, sectionCount);
+                createTabForSection(section, tabCount);
+            }
+            if (showModsTab) {
+                CreateModsTab(tabCount);
             }
 
             setupOkAndBack(settings.transform.Find("Panel"));
@@ -238,6 +251,19 @@ namespace ValheimVRMod.VRCore.UI {
             // them is ever activated and the first tab renders empty until the player switches away and back.
             tabButtons.GetComponent<TabHandler>().SetActiveTab(0, forceSelect: true);
             keyboardMouseSettings.UpdateBindings();
+        }
+
+        public static bool IsOpen => settings != null;
+
+        // Closes the dialog, saving the edited values (OK) or discarding them (Back). The values are saved as the
+        // dialog's ConfigComponents are destroyed, see ConfigComponent.OnDestroy().
+        public static void Close(bool save) {
+            if (!IsOpen) {
+                return;
+            }
+            doSave = save;
+            GameObject.Destroy(settings);
+            settings = null;
         }
 
         // Adds listeners for ok and back buttons
@@ -251,10 +277,7 @@ namespace ValheimVRMod.VRCore.UI {
             {
                 okButton.onClick.RemoveAllListeners();
                 okButton.onClick.m_PersistentCalls.Clear();
-                okButton.onClick.AddListener(() => {
-                    doSave = true;
-                    GameObject.Destroy(settings);
-                });
+                okButton.onClick.AddListener(() => Close(save: true));
                 Object.Destroy(okButton.GetComponent<UIGamePad>());
                 var hint = okButton.transform.Find("KeyHint");
                 if (hint) Object.Destroy(hint.gameObject);
@@ -269,10 +292,7 @@ namespace ValheimVRMod.VRCore.UI {
             {
                 backButton.onClick.RemoveAllListeners();
                 backButton.onClick.m_PersistentCalls.Clear();
-                backButton.onClick.AddListener(() => {
-                    doSave = false;
-                    GameObject.Destroy(settings);
-                });
+                backButton.onClick.AddListener(() => Close(save: false));
                 Object.Destroy(backButton.GetComponent<UIGamePad>());
                 var hint = backButton.transform.Find("KeyHint");
                 if (hint) Object.Destroy(hint.gameObject);
@@ -282,47 +302,8 @@ namespace ValheimVRMod.VRCore.UI {
         /// <summary>
         /// Create a new Tab out of a config section
         /// </summary>
-        private static void createTabForSection(KeyValuePair<string, Dictionary<string, ConfigEntryBase>> section, int sectionCount) {
-            var tabButtons = settings.transform.Find("Panel").Find("TabButtons");
-
-            // Create new tab button
-            var newTabButton = Object.Instantiate(tabButtonPrefab, tabButtons);
-
-            newTabButton.name = section.Key;
-            var rectTransform = newTabButton.GetComponent<RectTransform>();
-            var tabButtonXPosition = TabButtonWidth * (tabCounter - (sectionCount - 1) * 0.5f);
-            rectTransform.anchoredPosition = new Vector2(tabButtonXPosition, rectTransform.anchoredPosition.y);
-
-            var labels = newTabButton.GetComponentsInChildren<TMP_Text>(includeInactive: true);
-            foreach (var label in labels)
-            {
-                label.text = section.Key;
-            }
-
-            // Create new tab content
-            var tabs = settings.transform.Find("Panel").Find("TabContent");
-            var newTab = Object.Instantiate(tabs.GetChild(0), tabs);
-            newTab.name = section.Key;
-
-            foreach (Transform child in newTab.transform)
-            {
-                Object.Destroy(child.gameObject);
-            }
-
-            // Register the new Tab in Tab array
-            var tab = new TabHandler.Tab();
-            tab.m_button = newTabButton.GetComponent<Button>();
-            var activeTabIndex = tabCounter;
-            tab.m_button.onClick.AddListener(() => {
-                tabButtons.GetComponent<TabHandler>().SetActiveTab(activeTabIndex);
-            });
-            // Only the first tab is the default one. Claiming that every tab is would make TabHandler.Init()
-            // resolve the default to the last section rather than to General.
-            tab.m_default = (tabCounter == 0);
-            tab.m_page = newTab.GetComponent<RectTransform>();
-            tab.m_onClick = new UnityEvent();
-
-            tabButtons.GetComponent<TabHandler>().m_tabs.Add(tab);
+        private static void createTabForSection(KeyValuePair<string, Dictionary<string, ConfigEntryBase>> section, int tabCount) {
+            var newTab = CreateTab(section.Key, tabCount);
 
             int posX = 0;
             int posY = 250;
@@ -344,8 +325,96 @@ namespace ValheimVRMod.VRCore.UI {
                     posX = 250;
                 }
             }
+        }
+
+        /// <summary>
+        /// Create an empty Tab with a button among the tab buttons, and register it in the Tab array
+        /// </summary>
+        private static Transform CreateTab(string name, int tabCount) {
+            var tabButtons = settings.transform.Find("Panel").Find("TabButtons");
+
+            // Create new tab button
+            var newTabButton = Object.Instantiate(tabButtonPrefab, tabButtons);
+
+            newTabButton.name = name;
+            var rectTransform = newTabButton.GetComponent<RectTransform>();
+            var tabButtonXPosition = TabButtonWidth * (tabCounter - (tabCount - 1) * 0.5f);
+            rectTransform.anchoredPosition = new Vector2(tabButtonXPosition, rectTransform.anchoredPosition.y);
+
+            var labels = newTabButton.GetComponentsInChildren<TMP_Text>(includeInactive: true);
+            foreach (var label in labels)
+            {
+                label.text = name;
+            }
+
+            // Create new tab content
+            var tabs = settings.transform.Find("Panel").Find("TabContent");
+            var newTab = Object.Instantiate(tabs.GetChild(0), tabs);
+            newTab.name = name;
+
+            foreach (Transform child in newTab.transform)
+            {
+                Object.Destroy(child.gameObject);
+            }
+
+            // Register the new Tab in Tab array
+            var tab = new TabHandler.Tab();
+            tab.m_button = newTabButton.GetComponent<Button>();
+            var activeTabIndex = tabCounter;
+            tab.m_button.onClick.AddListener(() => {
+                tabButtons.GetComponent<TabHandler>().SetActiveTab(activeTabIndex);
+            });
+            // Only the first tab is the default one. Claiming that every tab is would make TabHandler.Init()
+            // resolve the default to the last section rather than to General.
+            tab.m_default = (tabCounter == 0);
+            tab.m_page = newTab.GetComponent<RectTransform>();
+            tab.m_onClick = new UnityEvent();
+
+            tabButtons.GetComponent<TabHandler>().m_tabs.Add(tab);
 
             tabCounter++;
+            return newTab;
+        }
+
+        /// <summary>
+        /// Create the Mods tab, which opens the mod configuration manager (ConfigurationManager) whenever it is selected
+        /// </summary>
+        private static void CreateModsTab(int tabCount) {
+            var newTab = CreateTab("Mods", tabCount);
+            // The tab page is inactive until selected, the component opens the mod configuration manager once it is activated.
+            var modConfigurationManagerTab = newTab.gameObject.AddComponent<ModConfigurationManagerTab>();
+
+            var statusObj = Object.Instantiate(togglePrefab.GetComponentInChildren<TMP_Text>().gameObject, newTab);
+            var statusText = statusObj.GetComponent<TMP_Text>();
+            statusText.rectTransform.anchorMin = statusText.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+            statusText.rectTransform.pivot = new Vector2(0.5f, 0.5f);
+            statusText.rectTransform.sizeDelta = new Vector2(600, 60);
+            statusText.rectTransform.anchoredPosition = new Vector2(0, 60);
+            statusText.alignment = TextAlignmentOptions.Center;
+            statusText.text = "";
+            statusText.raycastTarget = false;
+            modConfigurationManagerTab.statusText = statusText;
+
+            // The tab button can't be clicked again while its tab is selected, so this reopens the mod configuration manager
+            // after it has been closed, and closes it however it was opened.
+            var openButton = Object.Instantiate(settings.transform.Find("Panel").Find("Back").gameObject, newTab);
+            openButton.name = "OpenModConfigurationManager";
+            StripLocalization(openButton);
+            var hint = openButton.transform.Find("KeyHint");
+            if (hint) Object.Destroy(hint.gameObject);
+            Object.Destroy(openButton.GetComponent<UIGamePad>());
+            var openButtonRect = openButton.GetComponent<RectTransform>();
+            openButtonRect.anchorMin = openButtonRect.anchorMax = new Vector2(0.5f, 0.5f);
+            openButtonRect.pivot = new Vector2(0.5f, 0.5f);
+            openButtonRect.sizeDelta = new Vector2(360, 40);
+            openButtonRect.anchoredPosition = Vector2.zero;
+            // Labelled by the tab, see ModConfigurationManagerTab.Update().
+            modConfigurationManagerTab.buttonLabel = openButton.GetComponentInChildren<TMP_Text>();
+            modConfigurationManagerTab.buttonLabel.text = "";
+            var button = openButton.GetComponent<Button>();
+            button.onClick.RemoveAllListeners();
+            button.onClick.m_PersistentCalls.Clear();
+            button.onClick.AddListener(modConfigurationManagerTab.ToggleOpen);
         }
 
         /// <summary>
@@ -646,8 +715,7 @@ namespace ValheimVRMod.VRCore.UI {
                         return;
                     }
                 }
-                doSave = false;
-                GameObject.Destroy(settings);
+                Close(save: false);
                 Menu.instance.OnClose();
             });
 
@@ -738,16 +806,46 @@ namespace ValheimVRMod.VRCore.UI {
             ZInput.instance.AddButton(configValue.Key, ZInput.KeyCodeToPath((KeyCode)Enum.Parse(typeof(KeyCode), configValue.Value.GetSerializedValue())));
         }
 
+        // How long to wait after closing the in-game menu before capturing, so that the menu panel and the laser
+        // pointer are gone from the image. Real time, since the menu may have paused the game.
+        private const float SCREENSHOT_DELAY_AFTER_MENU = 0.3f;
+
         private static void CaptureScreenshot()
         {
+            // The button sits in a menu, which would otherwise be in the picture. The main menu can't be closed, so
+            // only the in-game menu is.
+            if (Menu.instance != null && Menu.IsVisible())
+            {
+                Menu.instance.Hide();
+            }
+            VRPlayer.vrPlayerInstance?.StartCoroutine(CaptureScreenshotAfterMenuCloses());
+        }
+
+        private static IEnumerator CaptureScreenshotAfterMenuCloses()
+        {
+            yield return new WaitForSecondsRealtime(SCREENSHOT_DELAY_AFTER_MENU);
+
             string dir = new Regex("[\\/]valheim_Data$", RegexOptions.IgnoreCase).Replace(Application.dataPath, "") + "/VHVRScreenshots";
             if (!Directory.Exists(dir))
             {
                 Directory.CreateDirectory(dir);
             }
-            string path = dir + "/vhvr_screenshot_" + System.DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".png";
+            // Down to the millisecond, so that screenshots taken within the same second don't overwrite each other.
+            string fileName = "vhvr_screenshot_" + System.DateTime.Now.ToString("yyyyMMdd_HHmmss_fff") + ".png";
+            string path = dir + "/" + fileName;
             LogUtils.LogDebug("Saving screenshot to " + path);
-            ScreenCapture.CaptureScreenshot(path);
+            string failure = null;
+            yield return VRScreenshot.Capture(path, result => failure = result);
+
+            // Only shown once the image has been taken, so that the confirmation can't end up in the picture.
+            if (failure != null)
+            {
+                MessageHud.instance?.ShowMessage(MessageHud.MessageType.TopLeft, "Screenshot failed, see the log");
+                yield break;
+            }
+            MessageHud.instance?.ShowMessage(MessageHud.MessageType.TopLeft, "Screenshot saved: VHVRScreenshots/" + fileName);
+            VRPlayer.leftHand?.hapticAction.Execute(0, 0.1f, 100, 0.3f, Valve.VR.SteamVR_Input_Sources.LeftHand);
+            VRPlayer.rightHand?.hapticAction.Execute(0, 0.1f, 100, 0.3f, Valve.VR.SteamVR_Input_Sources.RightHand);
         }
 
         private static void ToggleAutoPickup()

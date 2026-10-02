@@ -853,7 +853,7 @@ namespace ValheimVRMod.Patches
     class PatchFejd {
         public static void Postfix(FejdStartup __instance) {
             // Also shown in flatscreen, e.g. so that settings can be read through desktop translation tools.
-            ConfigSettings.instantiate(__instance.m_mainMenu.transform.Find("MenuList"), __instance.m_mainMenu.transform, __instance.m_settingsPrefab, enableTransformButtons: false);
+            ConfigSettings.instantiate(__instance.m_mainMenu.transform.Find("MenuList"), __instance.m_mainMenu.transform, __instance.m_settingsPrefab, enableTransformButtons: false, isInGame: false);
         }
     }
     
@@ -861,7 +861,7 @@ namespace ValheimVRMod.Patches
     class PatchMenu {
         public static void Postfix(Menu __instance) {
             // Also shown in flatscreen, but without the transform buttons, which position HUD panels with the VR hands.
-            ConfigSettings.instantiate(__instance.m_menuDialog, __instance.transform, __instance.m_settingsPrefab, enableTransformButtons: !VHVRConfig.NonVrPlayer());
+            ConfigSettings.instantiate(__instance.m_menuDialog, __instance.transform, __instance.m_settingsPrefab, enableTransformButtons: !VHVRConfig.NonVrPlayer(), isInGame: true);
         }
     }    
     
@@ -909,6 +909,42 @@ namespace ValheimVRMod.Patches
             // hold a destroyed one. Unity reports that as null while the managed call still lands
             // here, and GetComponentInParent() below would throw on it, so check for it first.
             return __instance != null && !ConfigSettings.isVHVRClone(__instance);
+        }
+    }
+
+    // The menu button is ignored while the VHVR settings dialog is open, as vanilla ignores it while its own settings
+    // are open (Menu.m_settingsInstance), which the VHVR dialog is not. Otherwise the menu would hide and show again
+    // with the dialog left on top of it. The dialog is closed with its OK and Back buttons, so that a stray press
+    // cannot throw away the edits. The button still closes the Mods window, see VRGUI.Update().
+    // Only the in-game menu: the main menu has no Menu.
+    [HarmonyPatch(typeof(Menu), nameof(Menu.Update))]
+    class Menu_Update_VhvrSettingsPatch
+    {
+        static bool Prefix()
+        {
+            return !ConfigSettings.IsOpen || !isMenuButtonDown();
+        }
+
+        // The buttons that Menu.Update() toggles the menu with.
+        private static bool isMenuButtonDown()
+        {
+            return ZInput.GetKeyDown(KeyCode.Escape) || ZInput.GetButtonDown("JoyMenu") || ZInput.GetButtonDown("JoyButtonB");
+        }
+    }
+
+    // The dialog inherits Settings.Update(), which backs out on Escape through Settings.OnBack(). That destroys the
+    // dialog without setting ConfigSettings.doSave, which still holds the last close's choice, so it could save.
+    [HarmonyPatch(typeof(Settings), nameof(Settings.OnBack))]
+    class Settings_OnBack_VhvrSettingsPatch
+    {
+        static bool Prefix(Settings __instance)
+        {
+            if (__instance == null || !ConfigSettings.isVHVRClone(__instance))
+            {
+                return true;
+            }
+            ConfigSettings.Close(save: false);
+            return false;
         }
     }
 
@@ -1315,18 +1351,28 @@ namespace ValheimVRMod.Patches
         }
     }
 
+    // Vanilla draws damage texts on the HUD canvas, at the screen position of the main camera, which only makes them
+    // show up in odd places on the VR GUI panel. VR players get them from VRDamageTexts instead, or not at all if
+    // they are disabled.
     [HarmonyPatch(typeof(DamageText), "AddInworldText")]
     class PatchDamageText
     {
-        public static void Postfix(DamageText __instance, Vector3 pos, bool mySelf)
+        public static bool Prefix()
         {
-            if (VHVRConfig.NonVrPlayer() || !VHVRConfig.ShowDamageText())
+            return VHVRConfig.NonVrPlayer() || VHVRConfig.ShowDamageText();
+        }
+
+        public static void Postfix(DamageText __instance, bool mySelf)
+        {
+            if (VHVRConfig.NonVrPlayer() || !VHVRConfig.ShowDamageText() || __instance.m_worldTexts.Count == 0)
             {
                 return;
             }
 
             var lastText = __instance.m_worldTexts.Last();
-            VRDamageTexts.Pool().CreateText(lastText.m_textField.text, pos, lastText.m_textField.color, mySelf, __instance.m_textDuration);
+            VRDamageTexts.Pool().CreateText(lastText.m_textField, lastText.m_worldPos, mySelf, lastText.m_duration);
+            UnityEngine.Object.Destroy(lastText.m_gui);
+            __instance.m_worldTexts.Remove(lastText);
         }
     }
     [HarmonyPatch(typeof(Player), nameof(Player.OnDeath))]

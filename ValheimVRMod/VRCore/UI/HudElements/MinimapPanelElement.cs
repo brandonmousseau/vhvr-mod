@@ -14,6 +14,9 @@ namespace ValheimVRMod.VRCore.UI.HudElements
 
         private bool toggledOn = true;
         private bool wasTogglingMap;
+        // Set when the vanilla small map is not laid out as expected, e. g. because another mod replaced it. It is
+        // then left alone, to whatever took its place.
+        private bool smallMapUnavailable;
 
         //Data class to store references to the small minimap elements
         private class MinimapPanelComponents : IVRPanelComponent
@@ -76,20 +79,22 @@ namespace ValheimVRMod.VRCore.UI.HudElements
                 wasTogglingMap = false;
             }
 
+            if (smallMapUnavailable || Minimap.instance == null)
+            {
+                return;
+            }
+
             maybeCloneSmallMinimapPanelComponents();
+            if (!_clone.mapRoot)
+            {
+                return;
+            }
             if (_original.mapRoot)
             {
                 _original.mapRoot.SetActive(false);
             }
 
-            if (Minimap.s_instance.m_mode == Minimap.MapMode.Small)
-            {
-                _clone.Root.SetActive(toggledOn);
-            }
-            else
-            {
-                _clone.Root.SetActive(false);
-            }
+            _clone.Root.SetActive(toggledOn && Minimap.instance.m_mode == Minimap.MapMode.Small);
 
             updateSmallMinimapPanelHudReferences(_clone, false);
         }
@@ -109,7 +114,13 @@ namespace ValheimVRMod.VRCore.UI.HudElements
             {
                 return;
             }
-            cacheSmallMinimapPanelComponents(Minimap.instance.m_smallRoot.gameObject, _original);
+            if (!cacheSmallMinimapPanelComponents(Minimap.instance.m_smallRoot.gameObject, _original))
+            {
+                LogWarning("The small minimap is not laid out as expected, possibly replaced by another mod. It will not be shown on the VR HUD.");
+                _original.Clear();
+                smallMapUnavailable = true;
+                return;
+            }
             GameObject smallMinimapPanelClone = GameObject.Instantiate(Minimap.instance.m_smallRoot.gameObject);
             cacheSmallMinimapPanelComponents(smallMinimapPanelClone, _clone);
 
@@ -124,19 +135,33 @@ namespace ValheimVRMod.VRCore.UI.HudElements
             _clone.map.GetComponent<RectMask2D>().enabled = false;
         }
 
-        private void cacheSmallMinimapPanelComponents(GameObject root, MinimapPanelComponents cache)
+        // Returns false if any of the expected parts is missing, leaving the cache incomplete.
+        private bool cacheSmallMinimapPanelComponents(GameObject root, MinimapPanelComponents cache)
         {
             if (!root)
             {
                 LogError("Invalid root object while caching SmallMinimapPanel");
+                return false;
             }
             cache.mapRoot = root;
-            cache.mapBiomeName = root.transform.Find("small_biome").gameObject;
-            cache.map = root.transform.Find("map").gameObject;
-            cache.mapPinsRoot = cache.map.transform.Find("small_mapPin_root").gameObject;
-            cache.mapMarker = cache.map.transform.Find("player_marker").gameObject;
-            cache.mapWindMarker = cache.map.transform.Find("wind_marker").gameObject;
-            cache.mapShipMarker = cache.map.transform.Find("ship_marker").gameObject;
+            cache.mapBiomeName = findChild(root.transform, "small_biome");
+            cache.map = findChild(root.transform, "map");
+            if (!cache.map)
+            {
+                return false;
+            }
+            cache.mapPinsRoot = findChild(cache.map.transform, "small_mapPin_root");
+            cache.mapMarker = findChild(cache.map.transform, "player_marker");
+            cache.mapWindMarker = findChild(cache.map.transform, "wind_marker");
+            cache.mapShipMarker = findChild(cache.map.transform, "ship_marker");
+            return cache.mapBiomeName && cache.mapPinsRoot && cache.mapMarker && cache.mapWindMarker && cache.mapShipMarker &&
+                cache.map.GetComponent<RawImage>() && cache.map.GetComponent<RectMask2D>() && cache.mapBiomeName.GetComponent<TMP_Text>();
+        }
+
+        private static GameObject findChild(Transform parent, string name)
+        {
+            Transform child = parent.Find(name);
+            return child ? child.gameObject : null;
         }
 
         private void updateSmallMinimapPanelHudReferences(MinimapPanelComponents newComponents, bool isOriginal)
@@ -159,8 +184,11 @@ namespace ValheimVRMod.VRCore.UI.HudElements
 
                 //make sure hud windmarker is on the right layer
                 newComponents.mapWindMarker.gameObject.layer = LayerUtils.getWorldspaceUiLayer();
-                Quaternion quaternion = Quaternion.LookRotation(EnvMan.instance.GetWindDir());
-                newComponents.mapWindMarker.transform.localRotation = Quaternion.Euler(0f, 0f, -quaternion.eulerAngles.y);
+                if (EnvMan.instance != null)
+                {
+                    Quaternion quaternion = Quaternion.LookRotation(EnvMan.instance.GetWindDir());
+                    newComponents.mapWindMarker.transform.localRotation = Quaternion.Euler(0f, 0f, -quaternion.eulerAngles.y);
+                }
             }
             Minimap.instance.m_smallMarker = newComponents.mapMarker.GetComponent<RectTransform>();
             Minimap.instance.m_smallShipMarker = newComponents.mapShipMarker.GetComponent<RectTransform>();

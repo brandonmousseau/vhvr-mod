@@ -351,9 +351,15 @@ namespace ValheimVRMod.Utilities {
             return TryEquipToHand(inventory.GetItemAt(inventorySlot % 8, inventorySlot / 8), isRightHand);
         }
 
-        // Equips an unequipped hand item into the given hand, e. g. for the radial quick menu of that hand.
-        // Returns false without doing anything if it is not a hand item or that hand cannot take it right now.
-        public static bool TryEquipToHand(ItemDrop.ItemData item, bool isRightHand)
+        // Equips an unequipped hand item into the given hand. Returns false without doing anything if it is not a hand
+        // item or that hand cannot take it right now.
+        //
+        // Grabbing from the back needs the hand free, no bow, crossbow (other than the grappling hook) or dual wield weapon equipped and no two-handed
+        // wield.
+        // replaceHeldItems (for the radial quick menu of that hand) skips those checks, since equipping replaces what
+        // is held anyway. Otherwise the item would still be equipped, but into whichever hand the previous weapon
+        // was wielded with.
+        public static bool TryEquipToHand(ItemDrop.ItemData item, bool isRightHand, bool replaceHeldItems = false)
         {
             if (Player.m_localPlayer == null || item == null || item.m_equipped)
             {
@@ -370,13 +376,13 @@ namespace ValheimVRMod.Utilities {
 
             if (EquipScript.IsDualWeapon(item))
             {
-                if (!(canGrabNewWeapon(isRightHand: true) && canGrabNewWeapon(isRightHand: false)))
+                if (!replaceHeldItems && !(canGrabNewWeapon(isRightHand: true) && canGrabNewWeapon(isRightHand: false)))
                 {
                     return false;
                 }
                 VRPlayer.offHandWield = false;
             }
-            else if (!canGrabNewWeapon(isRightHand))
+            else if (!replaceHeldItems && !canGrabNewWeapon(isRightHand))
             {
                 return false;
             }
@@ -729,10 +735,12 @@ namespace ValheimVRMod.Utilities {
                             BackReachLocation.RightShoulderRadialUp :
                             BackReachLocation.None;
                     }
-                    return Vector3.Dot(handTransform.forward, playerRight) > 0 &&
-                        Vector3.Dot(handTransform.forward, playerUp) > 0 ?
+                    return Vector3.Dot(handTransform.forward, playerRight) < 0 ||
+                        Vector3.Dot(handTransform.forward, playerUp) < 0 ?
+                        BackReachLocation.RightShoulderRadialMedial :
+                        sagittalOffset < -0.1f ?
                         BackReachLocation.RightShoulderRadialLateral :
-                        BackReachLocation.RightShoulderRadialMedial;
+                        BackReachLocation.None;
                 }
                 else
                 {
@@ -744,10 +752,12 @@ namespace ValheimVRMod.Utilities {
                             BackReachLocation.LeftShoulderRadialUp :
                             BackReachLocation.None;
                     }
-                    return Vector3.Dot(handTransform.forward, playerRight) < 0 &&
-                        Vector3.Dot(handTransform.forward, playerUp) > 0 ?
+                    return Vector3.Dot(handTransform.forward, playerRight) > 0 ||
+                        Vector3.Dot(handTransform.forward, playerUp) < 0 ?
+                        BackReachLocation.LeftShoulderRadialMedial :
+                        sagittalOffset < -0.1f ?
                         BackReachLocation.LeftShoulderRadialLateral :
-                        BackReachLocation.LeftShoulderRadialMedial;
+                        BackReachLocation.None;
                 }
             }
 
@@ -793,10 +803,12 @@ namespace ValheimVRMod.Utilities {
                 return true;
             }
 
+            // Two-handed weapons that can also be wielded with one hand (sledge, atgeir, battleaxe, grappling hook) leave
+            // the other hand free to draw another weapon, except while wielding them with both hands.
             if (EquipScript.CurrentOffHandEquipType() == EquipType.Bow
-                || EquipScript.CurrentOffHandEquipType() == EquipType.Crossbow
-                || EquipScript.CurrentMainHandEquipType() == EquipType.Polearms
-                || EquipScript.CurrentMainHandEquipType() == EquipType.BattleAxe
+                || (EquipScript.CurrentOffHandEquipType() == EquipType.Crossbow &&
+                    !EquipScript.IsGrapplingHook(Player.m_localPlayer?.GetLeftItem()))
+                || LocalWeaponWield.isCurrentlyTwoHanded()
                 || FistCollision.hasDualWieldingWeaponEquipped()
                 || Player.m_localPlayer == null
                 || Player.m_localPlayer.m_inCraftingStation)

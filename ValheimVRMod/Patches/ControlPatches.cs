@@ -528,6 +528,10 @@ namespace ValheimVRMod.Patches {
             {
                 return GetButtonPatchUtils.GetButtonDownPatched(inputName);
             }
+            // Only the laser hand's trigger places the piece, since the placement ray always comes from the dominant
+            // hand's pointer (see PlaceModeRayVectorProvider). The other trigger is left to the building controls,
+            // e.g. both triggers together for JoyAltPlace. The build hud flag is still cleared by either trigger,
+            // since either hand can have picked the piece that closed it.
             if (VHVRConfig.BuildOnRelease())
             {
                 bool inputReceived = GetButtonPatchUtils.GetButtonUpPatched(inputName);
@@ -540,6 +544,8 @@ namespace ValheimVRMod.Patches {
                     return false;
                 } else
                 {
+                    inputReceived = inputReceived &&
+                        SteamVR_Actions.valheim_LeftClick.GetStateUp(VRPlayer.dominantHandInputSource);
                     if (inputReceived && !BuildingManager.instance.isCurrentlyMoving() && VHVRConfig.FreePlaceAutoReturn())
                     {
                         BuildingManager.instance.ExitPreciseMode();
@@ -558,6 +564,8 @@ namespace ValheimVRMod.Patches {
                     BuildHudTracker.ClearBuildHudClosed();
                     return false;
                 }
+                inputReceived = inputReceived &&
+                    SteamVR_Actions.valheim_LeftClick.GetStateDown(VRPlayer.dominantHandInputSource);
                 if (inputReceived && !BuildingManager.instance.isCurrentlyMoving() && VHVRConfig.FreePlaceAutoReturn())
                 {
                     BuildingManager.instance.ExitPreciseMode();
