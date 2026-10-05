@@ -80,6 +80,8 @@ public class Outline : MonoBehaviour {
   private Renderer[] renderers;
   private static Material sharedOutlineMaskMaterial;
   private static Material sharedOutlineFillMaterial;
+  // The mask and fill materials of all outlines, to tell them from the copies that renderers make of them.
+  private static HashSet<Material> ownedMaterials = new HashSet<Material>();
   private Material outlineMaskMaterial;
   private Material outlineFillMaterial;
 
@@ -117,6 +119,46 @@ public class Outline : MonoBehaviour {
 
     outlineMaskMaterial = new Material(sharedOutlineMaskMaterial);
     outlineFillMaterial = new Material(sharedOutlineFillMaterial);
+    ownedMaterials.Add(outlineMaskMaterial);
+    ownedMaterials.Add(outlineFillMaterial);
+  }
+
+  // Whether the material is a copy that a renderer made of an outline material. Reading Renderer.materials replaces
+  // every material of the renderer with a copy, which the vanilla game does on some objects (e. g. on wards, to
+  // switch their glow). Such a copy no longer follows the outline's properties and is not found when it is time to
+  // remove the outline, which would leave the object outlined for good.
+  private static bool IsStrayCopy(Material material, Material original) {
+    return material != null && material.shader == original.shader && !ownedMaterials.Contains(material);
+  }
+
+  // Finds where the renderer has this outline's material, or else a stray copy of it. Only one stray copy is
+  // claimed, leaving any others to the other outlines that may cover the same renderer.
+  private static int FindOutlineMaterial(List<Material> materials, Material original) {
+    int index = materials.IndexOf(original);
+    return index >= 0 ? index : materials.FindIndex(material => IsStrayCopy(material, original));
+  }
+
+  // Puts this outline's materials back in the place of stray copies of them.
+  private void ReclaimMaterials() {
+    foreach (var renderer in renderers) {
+      if (renderer == null || renderer.GetType() == typeof(ParticleSystemRenderer)) {
+        continue;
+      }
+
+      var materials = renderer.sharedMaterials.ToList();
+      bool reclaimed = false;
+      foreach (var original in new Material[] { outlineMaskMaterial, outlineFillMaterial }) {
+        int index = FindOutlineMaterial(materials, original);
+        if (index >= 0 && materials[index] != original) {
+          Destroy(materials[index]);
+          materials[index] = original;
+          reclaimed = true;
+        }
+      }
+      if (reclaimed) {
+        renderer.sharedMaterials = materials.ToArray();
+      }
+    }
   }
 
   private bool IsPlayerHairMaterials(List<Material> materials) {
@@ -218,13 +260,25 @@ public class Outline : MonoBehaviour {
 
       // Remove outline shaders
       var materials = renderer.sharedMaterials.ToList();
-      // TODO: there is a chance that the vanilla game or other mods has modified the material array since we added the outline materials,
-      // which would make the outline materials references here stale and cause us to fail to remove them.
-      // Consider, instead, iterating over the materials and check materials[i].name.startWith("OutlineMask") || materials[i].name.startWith("OutlineFill")
-      materials.Remove(outlineMaskMaterial);
-      materials.Remove(outlineFillMaterial);
+      foreach (var original in new Material[] { outlineMaskMaterial, outlineFillMaterial }) {
+        int index = FindOutlineMaterial(materials, original);
+        if (index < 0) {
+          continue;
+        }
+        if (materials[index] != original) {
+          Destroy(materials[index]);
+        }
+        materials.RemoveAt(index);
+      }
       renderer.materials = materials.ToArray();
     }
+  }
+
+  void OnDestroy() {
+    ownedMaterials.Remove(outlineMaskMaterial);
+    ownedMaterials.Remove(outlineFillMaterial);
+    Destroy(outlineMaskMaterial);
+    Destroy(outlineFillMaterial);
   }
 
   void Bake() {
@@ -315,6 +369,8 @@ public class Outline : MonoBehaviour {
   }
 
   void UpdateMaterialProperties() {
+
+    ReclaimMaterials();
 
     // Apply properties according to mode
     outlineFillMaterial.SetColor("_OutlineColor", outlineColor);
