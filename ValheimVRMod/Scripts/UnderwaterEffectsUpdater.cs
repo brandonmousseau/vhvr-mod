@@ -27,6 +27,9 @@ namespace ValheimVRMod.Scripts
         private float lightBlockerEyeDepth;
         private static readonly Color LIGHT_BLOCKER_COLOR = new Color(0.5f, 0.5f, 0.625f, 1);
         private const float LIGHT_BLOCKER_SMOOTHNESS = 0.25f;
+        // How bright the blocker with its own shader is compared to the fog. Outside Snell's window the surface
+        // mirrors the water below, which is darker than the water further ahead that the fog color stands for.
+        private const float LIGHT_BLOCKER_REFLECTION_BRIGHTNESS = 0.75f;
         private Material lightBlockerMaterial;
         // Whether the blocker uses its own shader, which is unlit and fogs itself, rather than a Standard material.
         private bool lightBlockerHasOwnFog;
@@ -40,7 +43,7 @@ namespace ValheimVRMod.Scripts
         private const float LIGHT_BLOCKER_WINDOW_RADIUS_PER_DEPTH = 1.13f;
         private const float LIGHT_BLOCKER_WINDOW_MIN_RADIUS = 0.25f;
         // Where the window has turned fully into the blocker's color, relative to its clear radius.
-        private const float LIGHT_BLOCKER_WINDOW_DARK_RATIO = 2;
+        private const float LIGHT_BLOCKER_WINDOW_DARK_RATIO = 1.5f;
         // Half the distance between the samples the tilted quad takes its slope from.
         private const float LIGHT_BLOCKER_SLOPE_SAMPLE_DISTANCE = 0.5f;
         // How far the grid follows the waves. Further out the fog and the reduced far clip plane hide the surface.
@@ -113,7 +116,9 @@ namespace ValheimVRMod.Scripts
                 // stays bright wherever the player is, while a fully rough one turns out too dark.
                 lightBlockerMaterial.SetFloat("_Glossiness", LIGHT_BLOCKER_SMOOTHNESS);
             }
-            lightBlockerMaterial.mainTexture = CreateLightBlockerWindowTexture();
+            // The blocker's own shader is given its whole color in UpdateLightBlockerColors().
+            lightBlockerMaterial.mainTexture =
+                CreateLightBlockerWindowTexture(lightBlockerHasOwnFog ? Color.white : LIGHT_BLOCKER_COLOR);
             underwaterLightBlockerRenderer.sharedMaterial = lightBlockerMaterial;
             underwaterLightBlockerRenderer.receiveShadows = false;
             underwaterLightBlockerRenderer.shadowCastingMode = ShadowCastingMode.Off;
@@ -177,7 +182,7 @@ namespace ValheimVRMod.Scripts
         // quickly turning into the blocker's color further out, like the Snell's window real water shows from below.
         // Its texture coordinates are scaled so that the texture's inscribed circle is LIGHT_BLOCKER_WINDOW_DARK_RATIO
         // times the clear radius, see UpdateLightBlockerWindow().
-        private static Texture2D CreateLightBlockerWindowTexture()
+        private static Texture2D CreateLightBlockerWindowTexture(Color blockerColor)
         {
             const int size = 64;
             var texture = new Texture2D(size, size, TextureFormat.RGBA32, /* mipChain= */ false);
@@ -190,7 +195,7 @@ namespace ValheimVRMod.Scripts
                 {
                     var radius = new Vector2(x + 0.5f - size / 2f, y + 0.5f - size / 2f).magnitude / (size / 2f);
                     var t = Mathf.SmoothStep(0, 1, Mathf.InverseLerp(1 / LIGHT_BLOCKER_WINDOW_DARK_RATIO, 1, radius));
-                    var color = Color.Lerp(Color.white, LIGHT_BLOCKER_COLOR, t);
+                    var color = Color.Lerp(Color.white, blockerColor, t);
                     color.a = t;
                     pixels[y * size + x] = color;
                 }
@@ -280,11 +285,14 @@ namespace ValheimVRMod.Scripts
         }
 
         // The blocker's own shader is unlit, so that it can fade into exactly the color of the fog. Up close it is
-        // given the ambient light instead, which is all that would light a surface facing down, and the same fog
-        // parameters as the fog post process, which is drawn before anything transparent and so leaves it out.
+        // given a darker shade of that color, since outside Snell's window the surface mirrors the water below
+        // rather than being lit, and the same fog parameters as the fog post process, which is drawn before
+        // anything transparent and so leaves it out.
         private void UpdateLightBlockerColors()
         {
-            lightBlockerMaterial.color = RenderSettings.ambientLight;
+            var color = RenderSettings.fogColor * LIGHT_BLOCKER_REFLECTION_BRIGHTNESS;
+            color.a = 1;
+            lightBlockerMaterial.color = color;
             lightBlockerMaterial.SetColor(FOG_COLOR_ID, RenderSettings.fogColor);
             lightBlockerMaterial.SetFloat(FOG_DENSITY_ID, GetFogDensity());
             lightBlockerMaterial.SetFloat(FOG_START_ID, RenderSettings.fogStartDistance);
