@@ -73,13 +73,23 @@ namespace ValheimVRMod.Scripts.Block {
             meshFilter = gameObject.GetComponentInChildren<MeshFilter>();
             var mesh = meshFilter.sharedMesh;
             var shieldWideSize = WeaponUtils.EstimateShieldWidth(mesh) * transform.lossyScale.x;
-            var shieldMaxWidth = VHVRConfig.GetMaxShieldWidth();
+            var shieldMaxWidth =
+                IsBuckler(Player.m_localPlayer.GetLeftItem()) ? VHVRConfig.GetMaxBucklerWidth() : VHVRConfig.GetMaxShieldWidth();
             var scaleShieldSetting = VHVRConfig.GetShieldScaleSetting();
-            if (shieldMaxWidth !=1f || scaleShieldSetting !=1f)
+            adaptScaleRef = Mathf.Min(scaleShieldSetting, shieldMaxWidth / shieldWideSize);
+            AdaptScaleShieldSize(1f);
+        }
+
+        // Bucklers are told apart from other shields by their name, which holds for all vanilla ones.
+        private static bool IsBuckler(ItemDrop.ItemData item)
+        {
+            const string BUCKLER = "buckler";
+            if (item == null)
             {
-                adaptScaleRef = Mathf.Min(scaleShieldSetting, shieldMaxWidth / shieldWideSize);
-                AdaptScaleShieldSize(1f);
+                return false;
             }
+            return item.m_shared.m_name.ToLowerInvariant().Contains(BUCKLER) ||
+                (item.m_dropPrefab != null && item.m_dropPrefab.name.ToLowerInvariant().Contains(BUCKLER));
         }
 
         public override void setBlocking(HitData hitData) {
