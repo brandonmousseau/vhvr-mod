@@ -22,6 +22,7 @@ namespace ValheimVRMod.Scripts
         // small wrist rotation will not acccidentally trigger an attack when holding a long weapon.
         private const float WEAPON_ANGULAR_WEIGHT_OFFSET = 0.125f;
         private const string MOUTH_COLLIDER_NAME = "MouthCollider";
+        private const string LIGHTNING_STRIKE_STAFF_NAME = "$item_staff_thunderblood";
 
         private bool scriptActive;
         private GameObject colliderParent;
@@ -36,6 +37,10 @@ namespace ValheimVRMod.Scripts
         private float twoHandedMultitargetSwipeDuration;
         private GameObject debugColliderIndicator;
         private readonly StabStick stabStick = new StabStick();
+        // Whether hitting things with the held item is a fist attack, for items that have no melee attack of their own.
+        private bool usesUnarmedAttack;
+        // Whether stabbing with the held item is an attack with the item itself even though it uses fist attacks.
+        private bool stabsWithHeldItem;
         private bool isHoldingTankard { get { return isVanillaRightHandedWeapon && EquipScript.CurrentMainHandEquipType() == EquipType.Tankard; } }
 
         public PhysicsEstimator physicsEstimator { get; private set; }
@@ -342,9 +347,14 @@ namespace ValheimVRMod.Scripts
             // Attack.Start() clears the flag, so it has to be read beforehand.
             bool isCooldownHit = AttackTargetMeshCooldown.isCooldownHit;
 
+            // A fist attack is made with the fists as the weapon, so that the held item contributes nothing to it. A
+            // stab with the harpoon is made with the harpoon instead, which harpoons the target like throwing it does.
+            var attackItem =
+                usesUnarmedAttack && !(isStab && stabsWithHeldItem) ? Player.m_localPlayer.m_unarmedWeapon.m_itemData : item;
+
             if (currentAttack.Start(Player.m_localPlayer, null, null,
                         Player.m_localPlayer.m_animEvent,
-                        null, item, null, 0.0f, 0.0f))
+                        null, attackItem, null, 0.0f, 0.0f))
             {
                 if (isStab && !isCooldownHit && canStabStick())
                 {
@@ -497,6 +507,9 @@ namespace ValheimVRMod.Scripts
                 colliderParent = new GameObject();
             }
 
+            usesUnarmedAttack = false;
+            stabsWithHeldItem = false;
+
             switch (EquipScript.CurrentMainHandEquipType())
             {
                 case EquipType.Fishing:
@@ -506,7 +519,9 @@ namespace ValheimVRMod.Scripts
                 case EquipType.SpearChitin:
                     if (this.isVanillaRightHandedWeapon)
                     {
-                        // item = Player.m_localPlayer.m_unarmedWeapon.m_itemData;
+                        // The held item is still what the collider is looked up for below.
+                        usesUnarmedAttack = true;
+                        stabsWithHeldItem = EquipScript.CurrentMainHandEquipType() == EquipType.SpearChitin;
                         attack = secondaryAttack = Player.m_localPlayer.m_unarmedWeapon.m_itemData.m_shared.m_attack;
                         break;
                     }
@@ -637,6 +652,8 @@ namespace ValheimVRMod.Scripts
                 case EquipType.Spear:
                 case EquipType.Sword:
                     return true;
+                case EquipType.Magic:
+                    return Player.m_localPlayer.GetRightItem()?.m_shared?.m_name == LIGHTNING_STRIKE_STAFF_NAME;
                 default:
                     return false;
             }

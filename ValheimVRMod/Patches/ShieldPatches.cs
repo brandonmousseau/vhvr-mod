@@ -132,7 +132,16 @@ namespace ValheimVRMod.Patches {
     
     [HarmonyPatch(typeof(Humanoid), "IsBlocking")]
     class PatchIsBlocking {
+        // Whether it is a harpooned character that is currently asking, to find out whether to come off the harpoon.
+        public static bool isCheckingHarpoonRelease;
+
         static bool Prefix(Humanoid __instance, ref float ___m_blockTimer, ref bool __result) {
+
+            if (isCheckingHarpoonRelease && __instance == Player.m_localPlayer && SpearWield.isSignallingHarpoonRelease)
+            {
+                __result = true;
+                return false;
+            }
 
             if (__instance != Player.m_localPlayer || (FishingManager.instance && FishingManager.isFishing) || !VHVRConfig.UseVrControls()) {
                 return true;
@@ -159,6 +168,20 @@ namespace ValheimVRMod.Patches {
             return false;
         }
     }
+    [HarmonyPatch(typeof(SE_Harpooned), nameof(SE_Harpooned.IsDone))]
+    class PatchHarpoonedIsDone
+    {
+        static void Prefix()
+        {
+            PatchIsBlocking.isCheckingHarpoonRelease = true;
+        }
+
+        static void Postfix()
+        {
+            PatchIsBlocking.isCheckingHarpoonRelease = false;
+        }
+    }
+
     [HarmonyPatch(typeof(Hud),nameof(Hud.UpdateStagger))]
     class PatchStagger
     {

@@ -115,6 +115,47 @@ namespace ValheimVRMod.Utilities
                     0,  0, 0,
                     0.125f,  1.2f, 0.0625f
                 )}, {
+                // Staves, which hit with the quarter at their head.
+                "$item_staff_thunderblood", WeaponColData.create(
+                    0,  1.785f, -0.003f,
+                    0,  0, 0,
+                    0.126f,  0.583f, 0.076f
+                )}, {
+                "$item_staffclusterbomb", WeaponColData.create(
+                    0.064f,  1.5f, 0,
+                    0,  0, 0,
+                    0.255f,  0.75f, 0.42f
+                )}, {
+                "$item_stafffireball", WeaponColData.create(
+                    0,  1.6f, 0,
+                    0,  0, 0,
+                    0.25f,  0.6f, 0.25f
+                )}, {
+                "$item_stafficeshards", WeaponColData.create(
+                    0,  1.75f, 0,
+                    0,  0, 0,
+                    0.25f,  0.625f, 0.25f
+                )}, {
+                "$item_staffgreenroots", WeaponColData.create(
+                    0,  1.625f, 0,
+                    0,  0, 0,
+                    0.375f,  0.625f, 0.125f
+                )}, {
+                "$item_staffredtroll", WeaponColData.create(
+                    0,  1.25f, 0,
+                    0,  0, 0,
+                    0.33f,  0.5f, 0.33f
+                )}, {
+                "$item_staff_lightning", WeaponColData.create( // Dundr
+                    0f,  0.9f, 0f,
+                    0,  0, 0,
+                    0.2f,  0.625f, 0.2f
+                )}, {
+                "$item_staff_orbofahri", WeaponColData.create(
+                    0,  0.95f, 0,
+                    0,  0, 0,
+                    0.25f,  0.3125f, 0.125f
+                )}, {
                 // Sledges
                 "$item_stagbreaker", WeaponColData.create(
                     0,  2.064f, 0,
