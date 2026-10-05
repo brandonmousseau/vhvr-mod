@@ -1085,7 +1085,7 @@ namespace ValheimVRMod.Utilities
                 new AcceptableValueRange<float>(0, 10f)));
             useThrowDirectionGraphic = config.Bind(
                 "Motion Control",
-                "UseSpearDirectionGraphic",
+                "UseThrowDirectionGraphic",
                 "Grip",
                 new ConfigDescription(
                     "Use this to toggle the direction line of throwing when using VR controls."+
