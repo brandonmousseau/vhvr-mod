@@ -12,8 +12,9 @@ namespace ValheimVRMod.Utilities
             switch (rightEquipType)
             {
                 case EquipType.Axe:
+                    return !IsStab(handPhysicsEstimator) && IsOverheadSwing(collisionPhysicsEstimator, handPhysicsEstimator);
                 case EquipType.Club:
-                    return !IsStab(handPhysicsEstimator) && IsStrongSwing(collisionPhysicsEstimator, handPhysicsEstimator);
+                    return IsLongHorizontalSwing(collisionPhysicsEstimator);
                 case EquipType.BattleAxe:
                 case EquipType.Polearms:
                     if (!LocalWeaponWield.isCurrentlyTwoHanded() || LocalWeaponWield.IsDominantHandBehind || VRPlayer.vrCam == null)
@@ -110,6 +111,70 @@ namespace ValheimVRMod.Utilities
             return GetSagittalComponent(thrust, weaponOffsetFromPlayer).magnitude >= MIN_THRUST_DISTANCE;
         }
 
+        // A chop that is wound up from above the head, as opposed to the chops from the shoulder or the side that are
+        // used all the time, e. g. for felling trees.
+        private static bool IsOverheadSwing(PhysicsEstimator collisionPhysicsEstimator, PhysicsEstimator mainHandPhysicsEstimator)
+        {
+            const float MIN_THRUST_DISTANCE = 1f;
+            const float WIND_UP_DURATION = 0.5f;
+
+            if (VRPlayer.vrCam == null)
+            {
+                return false;
+            }
+
+            Vector3 up = VRPlayer.instance.transform.up;
+            var weaponOffsetFromPlayer = mainHandPhysicsEstimator.transform.position - Player.m_localPlayer.transform.position;
+            Vector3 handVelocity = GetSwingHandVelocity(mainHandPhysicsEstimator);
+            if (GetSagittalComponent(handVelocity, weaponOffsetFromPlayer).magnitude < GetMinAxeOrClubSecondarySwingSpeed())
+            {
+                return false;
+            }
+
+            Vector3 thrust = collisionPhysicsEstimator.GetLongestLocomotion(WIND_UP_DURATION);
+            if (GetSagittalComponent(thrust, weaponOffsetFromPlayer).magnitude < MIN_THRUST_DISTANCE)
+            {
+                return false;
+            }
+
+            // The hand rather than the blade has to come from above the head: the blade is there whenever the axe is
+            // simply held upright.
+            Vector3 handWindUpPosition =
+                mainHandPhysicsEstimator.transform.position - mainHandPhysicsEstimator.GetLongestLocomotion(WIND_UP_DURATION);
+            return Vector3.Dot(handWindUpPosition - VRPlayer.vrCam.transform.position, up) > 0;
+        }
+
+        // A long level swing, like swinging a baseball bat or a tennis racket.
+        private static bool IsLongHorizontalSwing(PhysicsEstimator collisionPhysicsEstimator)
+        {
+            const float MIN_SWING_DISTANCE = 1.25f;
+            const float MAX_FOLLOW_THROUGH_ANGLE = 45f;
+
+            Vector3 up = VRPlayer.instance.transform.up;
+            Vector3 handVelocity = GetSwingHandVelocity(
+                VRPlayer.isRightHandMainWeaponHand ? VRPlayer.rightHandPhysicsEstimator : VRPlayer.leftHandPhysicsEstimator);
+            if (Vector3.ProjectOnPlane(handVelocity, up).magnitude < GetMinAxeOrClubSecondarySwingSpeed())
+            {
+                return false;
+            }
+
+            // The swing has to end driving through the target, away from the player, rather than sweeping past it.
+            Vector3 strikeOffsetFromPlayer =
+                Vector3.ProjectOnPlane(
+                    collisionPhysicsEstimator.transform.position - Player.m_localPlayer.transform.position, up);
+
+            Vector3 swing = collisionPhysicsEstimator.GetLongestLocomotion(0.5f);
+            return Vector3.Angle(swing, strikeOffsetFromPlayer) < MAX_FOLLOW_THROUGH_ANGLE &&
+                swing.magnitude >= MIN_SWING_DISTANCE;
+        }
+
+        // When wielding with both hands, the sum of both hands' velocities is used to make the secondary attack easier
+        // to trigger.
+        private static Vector3 GetSwingHandVelocity(PhysicsEstimator mainHandPhysicsEstimator)
+        {
+            return LocalWeaponWield.isCurrentlyTwoHanded() ? GetHandVelocitySum() : mainHandPhysicsEstimator.GetVelocity();
+        }
+
         public static bool IsHook(PhysicsEstimator physicsEstimator)
         {
             const float MIN_HOOK_DISTANCE = 1f;
@@ -159,6 +224,12 @@ namespace ValheimVRMod.Utilities
         }
 
         private static float GetMinSecondarySwingSpeed()
+        {
+            return Mathf.Clamp(VHVRConfig.SwingSpeedRequirement() * 1.5f, 3, 9);
+        }
+
+        // Axes and clubs are swung hard all the time, so their secondary attacks ask for more than other weapons'.
+        private static float GetMinAxeOrClubSecondarySwingSpeed()
         {
             return Mathf.Clamp(VHVRConfig.SwingSpeedRequirement() * 1.5f, 3, 9);
         }
