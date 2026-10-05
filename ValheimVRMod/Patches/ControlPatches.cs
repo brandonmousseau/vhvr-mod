@@ -524,8 +524,9 @@ namespace ValheimVRMod.Patches {
             {
                 return GetButtonPatchUtils.GetButtonDownPatched(inputName);
             }
-            // Only the laser hand's trigger places the piece, since the placement ray always comes from the dominant
-            // hand's pointer (see PlaceModeRayVectorProvider). The other trigger is left to the building controls,
+            // Only the ray hand's trigger places the piece: normally the dominant hand, whose pointer the placement
+            // ray comes from, or the free hand while it casts the ray at the ground beneath it instead (see
+            // PlaceModeRayVectorProvider). The other trigger is left to the building controls,
             // e.g. both triggers together for JoyAltPlace. The build hud flag is still cleared by either trigger,
             // since either hand can have picked the piece that closed it.
             if (VHVRConfig.BuildOnRelease())
@@ -541,7 +542,7 @@ namespace ValheimVRMod.Patches {
                 } else
                 {
                     inputReceived = inputReceived &&
-                        LaserPointerChords.leftClickAction.GetStateUp(VRPlayer.dominantHandInputSource);
+                        LaserPointerChords.leftClickAction.GetStateUp(PlaceModeRayVectorProvider.rayHandInputSource);
                     if (inputReceived && !BuildingManager.instance.isCurrentlyMoving() && VHVRConfig.FreePlaceAutoReturn())
                     {
                         BuildingManager.instance.ExitPreciseMode();
@@ -561,7 +562,7 @@ namespace ValheimVRMod.Patches {
                     return false;
                 }
                 inputReceived = inputReceived &&
-                    LaserPointerChords.leftClickAction.GetStateDown(VRPlayer.dominantHandInputSource);
+                    LaserPointerChords.leftClickAction.GetStateDown(PlaceModeRayVectorProvider.rayHandInputSource);
                 if (inputReceived && !BuildingManager.instance.isCurrentlyMoving() && VHVRConfig.FreePlaceAutoReturn())
                 {
                     BuildingManager.instance.ExitPreciseMode();
