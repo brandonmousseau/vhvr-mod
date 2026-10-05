@@ -1,9 +1,9 @@
 ManifestFileVersion: 0
-CRC: 3924048994
+CRC: 4203697133
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 31cabd6fbf2db5f1f7ba9bc8ceaf000c
+    Hash: 5ecc291d951df6c105199f0fafbddf9d
   TypeTreeHash:
     serializedVersion: 2
     Hash: 1fe3abd029edb3522ae5dbbc711d0a74
@@ -41,6 +41,7 @@ Assets:
 - Assets/CustomResources/Textures/sit.png
 - Assets/CustomResources/Materials/OutlineMaterial.mat
 - Assets/CustomResources/Materials/BowBendingMaterial.mat
+- Assets/CustomResources/Materials/VHVRUnderwaterSurface.shader
 - Assets/QuickOutline/Resources/Shaders/OutlineMask.shader
 - Assets/CustomResources/Textures/black_screen.png
 - Assets/CustomResources/Materials/Slash.mat

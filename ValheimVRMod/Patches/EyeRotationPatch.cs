@@ -115,19 +115,34 @@ namespace ValheimVRMod.Patches
             // pelvis instead of the head is a locomotion option, applied where the joystick input is
             // converted (see VHVRConfig.GetJoystickForwardDirection).
             float currentLocalAngle = Valve.VR.InteractionSystem.Player.instance.hmdTransform.localRotation.eulerAngles.y;
+            float? deltaRotation = null;
             if (previousTrackedLocalAngle.HasValue)
             {
                 // Find the difference between the current rotation and previous rotation. Taken as an
                 // angle difference rather than a plain subtraction, which yields a full turn either way
                 // whenever the angle wraps around zero.
-                float deltaRotation = Mathf.DeltaAngle(previousTrackedLocalAngle.Value, currentLocalAngle);
+                deltaRotation = Mathf.DeltaAngle(previousTrackedLocalAngle.Value, currentLocalAngle);
+            }
+            else if (VRPlayer.headPositionInitialized)
+            {
+                // Resuming after the head was not followed for a while, e. g. with a menu or a crafting
+                // station open: catch up on however far it turned away from the character in the meantime.
+                // Recentering leaves the rig's yaw cancelling out the head's (see
+                // VRPlayer.maybeInitHeadPosition()), and following the head keeps it that way, so the sum
+                // of the two is how far off the character is. With a recentering pending there is nothing
+                // to catch up on, since it is about to turn the view to the character instead.
+                deltaRotation =
+                    Mathf.DeltaAngle(0, VRPlayer.instance.transform.localRotation.eulerAngles.y + currentLocalAngle);
+            }
 
+            if (deltaRotation.HasValue)
+            {
                 // Rotate the look yaw by the amount the player rotated their head since last iteration
-                ___m_lookYaw *= Quaternion.AngleAxis(deltaRotation, Vector3.up);
+                ___m_lookYaw *= Quaternion.AngleAxis(deltaRotation.Value, Vector3.up);
 
                 // Rotate the VRPlayer to match the current yaw
                 // to offset the rotation the VRPlayer will experience due to rotation of yaw.
-                VRPlayer.instance.transform.localRotation *= Quaternion.AngleAxis(-deltaRotation, Vector3.up);
+                VRPlayer.instance.transform.localRotation *= Quaternion.AngleAxis(-deltaRotation.Value, Vector3.up);
             }
 
             // Save the current rotation for use in next iteration
