@@ -11,8 +11,9 @@ namespace ValheimVRMod.Scripts
         private const float GROUND_SPEED_CHANGE_DAMPER = 0.25f;
         private const float WATER_SPEED_CHANGE_DAMPER = 1f;
         private const float AIR_SPEED_CHANGE_DAMPER = 0.25f;
-        private const float RUN_ACITIVATION_SPEED = 1.75f;
-        private const float GROUND_RUN_DEACTIVATION_SPEED = 0.75f;
+        private const float RUN_ACITIVATION_SPEED = 2f;
+        // Above the speed of a walk at full pace, so that slowing down to a walk stops the run.
+        private const float GROUND_RUN_DEACTIVATION_SPEED = 1;
         private const float AIR_RUN_DEACTIVATION_SPEED = 0.125f;
         // How long the speed has to stay below the deactivation speed to stop running. The strokes of a gesture
         // come in pulses, so a brief dip does not mean that the player is slowing down.
@@ -521,7 +522,7 @@ namespace ValheimVRMod.Scripts
                 {
                     return false;
                 }
-                if (!IsStepping() && walkSpeed < 2.5f && wheelDiamaterLength < 1f)
+                if (!IsStepping() && walkSpeed < 1.5f && wheelDiamaterLength < 1f)
                 {
                     return false;
                 }
