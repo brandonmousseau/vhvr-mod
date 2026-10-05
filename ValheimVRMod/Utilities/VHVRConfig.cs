@@ -23,6 +23,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> useOverlayGui;
         private static ConfigEntry<string> pluginVersion;
         private static ConfigEntry<bool> bhapticsEnabled;
+        private static ConfigEntry<string> additionalGuiCanvases;
 
         // Flat screen camera settings, listed at the end of the Graphics section
         private static ConfigEntry<string> mirrorMode;
@@ -312,6 +313,15 @@ namespace ValheimVRMod.Utilities
                 "bhapticsEnabled",
                 false,
                 "Enables bhaptics feedback. Only usable if vrModEnabled true AND the game is not in flat screen mode.");
+            additionalGuiCanvases = config.Bind(
+                "Immutable",
+                "AdditionalGuiCanvases",
+                "",
+                new ConfigDescription("Names of other mods' UI canvases to show on the VR UI panel, where they can also be clicked with the laser, " +
+                "separated by tabs or commas. Canvases that are not shown in VR are listed by name in the log when they appear. " +
+                "A canvas removed from this list stays in VR until the game is restarted"));
+            additionalGuiCanvases.SettingChanged += (sender, e) => VRGUI.RequestCustomGuiCanvasRescan();
+
         }
 
         private static ConfigEntry<bool> createImmutableSettingWithOverride(
@@ -2260,6 +2270,20 @@ namespace ValheimVRMod.Utilities
                 bhapticsEnabledValue = commandLineOverrides[bhapticsEnabled.GetHashCode()];
             }
             return bhapticsEnabledValue && !NonVrPlayer();
+        }
+
+        public static HashSet<string> AdditionalGuiCanvasNames()
+        {
+            var names = new HashSet<string>();
+            foreach (string name in additionalGuiCanvases.Value.Split('\t', ','))
+            {
+                string trimmed = name.Trim();
+                if (trimmed.Length > 0)
+                {
+                    names.Add(trimmed);
+                }
+            }
+            return names;
         }
 
         public static bool ShowDebugColliders()
