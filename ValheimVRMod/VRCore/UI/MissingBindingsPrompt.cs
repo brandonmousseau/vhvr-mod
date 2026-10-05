@@ -10,9 +10,9 @@ namespace ValheimVRMod.VRCore.UI
      * means a custom binding saved for an older version of the mod whose actions have since changed. If so, it offers
      * to open the SteamVR binding UI, where the missing actions can be bound or the default binding selected again.
      *
-     * The popup itself is clicked with the laser pointer, so when the laser click is among the missing actions the
-     * binding UI is opened right away instead: the binding UI is operated with SteamVR's own pointer and does not
-     * depend on the game's bindings.
+     * The popup itself is clicked with the laser pointer, so when the laser click is among the missing actions and
+     * so is Use, which stands in for it (see LaserPointerChords.leftClickAction), the binding UI is opened right away
+     * instead: the binding UI is operated with SteamVR's own pointer and does not depend on the game's bindings.
      */
     static class MissingBindingsPrompt
     {
@@ -138,8 +138,9 @@ namespace ValheimVRMod.VRCore.UI
             }
             missingActionList = string.Join(", ", missingActions);
             LogWarning("The current SteamVR binding leaves essential actions unbound: " + missingActionList);
-            // Without the laser click the popup could not be clicked, so the binding UI is opened in its place.
-            canClickPopup = SteamVR_Actions.valheim_LeftClick.activeBinding;
+            // Without the laser click the popup could not be clicked, so the binding UI is opened in its place. An
+            // unbound LeftClick alone does not come to that, since Use stands in for it.
+            canClickPopup = LaserPointerChords.leftClickAction.activeBinding;
         }
 
         private static string GetHandSuffix(SteamVR_Input_Sources hand)

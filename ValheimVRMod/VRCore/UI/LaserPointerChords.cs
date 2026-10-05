@@ -60,6 +60,20 @@ namespace ValheimVRMod.VRCore.UI
         public static bool rightClickUp { get; private set; }
         public static bool middleClick { get; private set; }
 
+        // The action to read the left click from. A binding that leaves LeftClick unbound, usually a custom one saved
+        // for an older version of the mod, falls back to Use, which the default bindings put on the same triggers.
+        // This keeps the laser pointer usable, and with it the popup of MissingBindingsPrompt that tells the player
+        // what is wrong. Only a LeftClick that is unbound on both hands falls back: it is read per hand in places
+        // (e.g. only the dominant hand places a build piece), and Use is bound on both.
+        public static SteamVR_Action_Boolean leftClickAction
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_LeftClick.activeBinding ?
+                    SteamVR_Actions.valheim_LeftClick : SteamVR_Actions.valheim_Use;
+            }
+        }
+
         public static void Initialize()
         {
             if (initialized)
@@ -118,7 +132,7 @@ namespace ValheimVRMod.VRCore.UI
 
         private static void OnActionsUpdated()
         {
-            SteamVR_Action_Boolean leftClickAction = SteamVR_Actions.valheim_LeftClick;
+            SteamVR_Action_Boolean leftClickAction = LaserPointerChords.leftClickAction;
             SteamVR_Action_Boolean rightClickAction = SteamVR_Actions.valheim_RightClick;
 
             if (VRControls.laserControlsActive)

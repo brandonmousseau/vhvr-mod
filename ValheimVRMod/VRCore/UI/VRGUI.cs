@@ -801,7 +801,7 @@ namespace ValheimVRMod.VRCore.UI
         {
             // The laser pointers have no middle button of their own, UpdateButtonStates adds the MiddleClick chord.
             _inputModule.UpdateButtonStates(
-                SteamVR_Actions.Valheim.LeftClick.GetState(hand),
+                LaserPointerChords.leftClickAction.GetState(hand),
                 SteamVR_Actions.Valheim.RightClick.GetState(hand),
                 false);
         }
