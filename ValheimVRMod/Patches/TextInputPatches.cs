@@ -113,15 +113,18 @@ namespace ValheimVRMod.Patches {
         }
     }
     
-    [HarmonyPatch(typeof(Input), "GetKeyDownInt")]
-    class PatchInputGetKeyDownInt {
+    // Steam Frame / Proton+FEX: GetKeyDownInt and GetKeyInt are InternalCall (native) methods, which Harmony patches with a
+    // NativeDetour. Under FEX the detour trampoline re-enters the detour and recurses until the main-thread stack overflows.
+    // Patch the managed wrappers instead (plain IL hook); the Int variants are only reached through them.
+    [HarmonyPatch(typeof(Input), nameof(Input.GetKeyDown), new[] { typeof(KeyCode) })]
+    class PatchInputGetKeyDown {
         public static bool Prefix(ref bool __result, KeyCode key) {
             return !VHVRConfig.UseVrControls() || InputManager.handleReturnKeyInput(ref __result, key);
         }
     }
     
-    [HarmonyPatch(typeof(Input), "GetKeyInt")]
-    class PatchInputGetKeyInt {
+    [HarmonyPatch(typeof(Input), nameof(Input.GetKey), new[] { typeof(KeyCode) })]
+    class PatchInputGetKey {
         
         public static bool Prefix(ref bool __result, KeyCode key) {
             return !VHVRConfig.UseVrControls() || InputManager.handleReturnKeyInput(ref __result, key);
