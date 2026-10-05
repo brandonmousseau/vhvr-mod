@@ -1968,15 +1968,15 @@ namespace ValheimVRMod.Utilities
         {
             return twoHandedWithShield.Value;
         }
-        public static bool UseSpearDirectionGraphic()
+        public static bool UseThrowDirectionGraphic()
         {
             return useThrowDirectionGraphic.Value != "Disabled";
         }
-        public static bool UseSpearDirectionGraphicOnGrip()
+        public static bool UseThrowDirectionGraphicOnGrip()
         {
             return useThrowDirectionGraphic.Value == "Grip";
         }
-        public static bool UseSpearDirectionGraphicOnTriggerGrip()
+        public static bool UseThrowDirectionGraphicOnTriggerGrip()
         {
             return useThrowDirectionGraphic.Value == "TriggerGrip";
         }

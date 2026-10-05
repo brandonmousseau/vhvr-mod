@@ -103,7 +103,7 @@ namespace ValheimVRMod.Scripts
             }
 
             tickCounter = 0;
-            if (!(VHVRConfig.UseSpearDirectionGraphicOnGrip() || (VHVRConfig.UseSpearDirectionGraphicOnTriggerGrip() && SteamVR_Actions.valheim_Use.GetState(VRPlayer.mainWeaponHandInputSource))))
+            if (!(VHVRConfig.UseThrowDirectionGraphicOnGrip() || (VHVRConfig.UseThrowDirectionGraphicOnTriggerGrip() && SteamVR_Actions.valheim_Use.GetState(VRPlayer.mainWeaponHandInputSource))))
             {
                 return;
             }
@@ -126,7 +126,7 @@ namespace ValheimVRMod.Scripts
         }
         private void UpdateSecondHandAimCalculation()
         {
-            if (VHVRConfig.UseSpearDirectionGraphicOnTriggerGrip() && !SteamVR_Actions.valheim_Use.GetState(VRPlayer.mainWeaponHandInputSource))
+            if (VHVRConfig.UseThrowDirectionGraphicOnTriggerGrip() && !SteamVR_Actions.valheim_Use.GetState(VRPlayer.mainWeaponHandInputSource))
             {
                 ShieldBlock.instance?.AdaptScaleShieldSize(1f);
             }
@@ -254,7 +254,7 @@ namespace ValheimVRMod.Scripts
 
         private void UpdateDirectionLine(Vector3 pos1, Vector3 pos2)
         {
-            if (!(VHVRConfig.UseSpearDirectionGraphicOnGrip() || (VHVRConfig.UseSpearDirectionGraphicOnTriggerGrip() && SteamVR_Actions.valheim_Use.GetState(VRPlayer.mainWeaponHandInputSource))) || LocalWeaponWield.isCurrentlyTwoHanded())
+            if (!(VHVRConfig.UseThrowDirectionGraphicOnGrip() || (VHVRConfig.UseThrowDirectionGraphicOnTriggerGrip() && SteamVR_Actions.valheim_Use.GetState(VRPlayer.mainWeaponHandInputSource))) || LocalWeaponWield.isCurrentlyTwoHanded())
             {
                 return;
             }
