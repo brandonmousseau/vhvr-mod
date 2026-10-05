@@ -14,6 +14,9 @@ namespace ValheimVRMod.Scripts
         private const float RUN_ACITIVATION_SPEED = 1.75f;
         private const float GROUND_RUN_DEACTIVATION_SPEED = 0.75f;
         private const float AIR_RUN_DEACTIVATION_SPEED = 0.125f;
+        // How long the speed has to stay below the deactivation speed to stop running. The strokes of a gesture
+        // come in pulses, so a brief dip does not mean that the player is slowing down.
+        private const float RUN_DEACTIVATION_DELAY = 0.5f;
         private const float MIN_WATER_SPEED = 0.0625f;
 
         public static float distanceTraveled { get; private set; } = 0;
@@ -27,6 +30,7 @@ namespace ValheimVRMod.Scripts
         private readonly GesturedLocomotion[] gesturedLocomotions;
         private Vector3 gesturedLocomotionVelocity = Vector3.zero;
         private float horizontalSpeed = 0;
+        private float slowRunningTime = 0;
         public static bool isInUse
         {
             get
@@ -102,8 +106,18 @@ namespace ValheimVRMod.Scripts
 
             if (isRunning)
             {
+                if (horizontalSpeed < (IsInAir(localPlayer) ? AIR_RUN_DEACTIVATION_SPEED : GROUND_RUN_DEACTIVATION_SPEED))
+                {
+                    slowRunningTime += deltaTime;
+                }
+                else
+                {
+                    slowRunningTime = 0;
+                }
+
                 if (!localPlayer.HaveStamina() ||
-                    horizontalSpeed < (IsInAir(localPlayer) ? AIR_RUN_DEACTIVATION_SPEED : GROUND_RUN_DEACTIVATION_SPEED))
+                    slowRunningTime > RUN_DEACTIVATION_DELAY ||
+                    SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.Any))
                 {
                     isRunning = false;
                 }
@@ -119,6 +133,7 @@ namespace ValheimVRMod.Scripts
                 !SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.Any))
             {
                 isRunning = true;
+                slowRunningTime = 0;
             }
 
             var verticalSpeed = Vector3.Dot(targetVelocity, upDirection.Value);
