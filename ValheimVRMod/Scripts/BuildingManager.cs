@@ -491,7 +491,7 @@ namespace ValheimVRMod.Scripts
                             originalRayTraceMod = pieceRaycast.transform;
                             originalRayTraceTransform = pieceRaycast.collider.transform;
                         }
-                        else if (pieceRaycast.transform && (SteamVR_Actions.valheim_LeftClick.GetStateDown(VRPlayer.dominantHandInputSource) || !(Player.m_localPlayer.transform.parent && IsModdedStructure(Player.m_localPlayer.transform.parent.name))))
+                        else if (pieceRaycast.transform && (LaserPointerChords.leftClickAction.GetStateDown(VRPlayer.dominantHandInputSource) || !(Player.m_localPlayer.transform.parent && IsModdedStructure(Player.m_localPlayer.transform.parent.name))))
                         {
                             originalRayTraceMod = null;
                         }
@@ -521,7 +521,7 @@ namespace ValheimVRMod.Scripts
             Player.m_localPlayer.m_placementStatus = Player.PlacementStatus.Valid;
             Piece component = piece.GetComponent<Piece>();
             if ((VHVRConfig.BuildOnRelease() &&
-                SteamVR_Actions.valheim_LeftClick.GetState(VRPlayer.dominantHandInputSource) &&
+                LaserPointerChords.leftClickAction.GetState(VRPlayer.dominantHandInputSource) &&
                 SteamVR_Actions.valheim_Jump.GetState(SteamVR_Input_Sources.Any)) || isForcedDisable)
             {
                 Player.m_localPlayer.m_placementStatus = Player.PlacementStatus.Invalid;
@@ -820,7 +820,7 @@ namespace ValheimVRMod.Scripts
                 snapTimer = 0;
                 isSnapping = false;
             }
-            if (SteamVR_Actions.valheim_LeftClick.GetState(VRPlayer.dominantHandInputSource) && !isReferenceActive && !isFreeMode && !VRPlayer.IsClickableGuiOpen)
+            if (LaserPointerChords.leftClickAction.GetState(VRPlayer.dominantHandInputSource) && !isReferenceActive && !isFreeMode && !VRPlayer.IsClickableGuiOpen)
             {
                 if (Physics.Raycast(PlaceModeRayVectorProvider.startingPosition, PlaceModeRayVectorProvider.rayDirection, out pieceRaycast, 50f, LayerMask.GetMask("piece")))
                 {
@@ -1751,9 +1751,9 @@ namespace ValheimVRMod.Scripts
             if (!VHVRConfig.BuildOnRelease())
                 return false;
 
-            if (!SteamVR_Actions.valheim_LeftClick.GetState(VRPlayer.dominantHandInputSource) && !SteamVR_Actions.valheim_Jump.GetState(SteamVR_Input_Sources.Any))
+            if (!LaserPointerChords.leftClickAction.GetState(VRPlayer.dominantHandInputSource) && !SteamVR_Actions.valheim_Jump.GetState(SteamVR_Input_Sources.Any))
                 holdPlacePressed = false;
-            else if (SteamVR_Actions.valheim_LeftClick.GetState(VRPlayer.dominantHandInputSource))
+            else if (LaserPointerChords.leftClickAction.GetState(VRPlayer.dominantHandInputSource))
                 holdPlacePressed = true;
 
             return holdPlacePressed && !freeModeSnapSave1;

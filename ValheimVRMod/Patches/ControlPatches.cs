@@ -545,7 +545,7 @@ namespace ValheimVRMod.Patches {
                 } else
                 {
                     inputReceived = inputReceived &&
-                        SteamVR_Actions.valheim_LeftClick.GetStateUp(VRPlayer.dominantHandInputSource);
+                        LaserPointerChords.leftClickAction.GetStateUp(VRPlayer.dominantHandInputSource);
                     if (inputReceived && !BuildingManager.instance.isCurrentlyMoving() && VHVRConfig.FreePlaceAutoReturn())
                     {
                         BuildingManager.instance.ExitPreciseMode();
@@ -565,7 +565,7 @@ namespace ValheimVRMod.Patches {
                     return false;
                 }
                 inputReceived = inputReceived &&
-                    SteamVR_Actions.valheim_LeftClick.GetStateDown(VRPlayer.dominantHandInputSource);
+                    LaserPointerChords.leftClickAction.GetStateDown(VRPlayer.dominantHandInputSource);
                 if (inputReceived && !BuildingManager.instance.isCurrentlyMoving() && VHVRConfig.FreePlaceAutoReturn())
                 {
                     BuildingManager.instance.ExitPreciseMode();
