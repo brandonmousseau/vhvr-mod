@@ -163,7 +163,7 @@ namespace ValheimVRMod.Utilities
         // Motion Control Settings
         private static ConfigEntry<bool> useArrowPredictionGraphic;
         private static ConfigEntry<float> arrowParticleSize;
-        private static ConfigEntry<string> throwingType;
+        private static ConfigEntry<string> throwingMode;
         private static ConfigEntry<string> useThrowDirectionGraphic;
         private static ConfigEntry<float> fullThrowSpeed;
         private static ConfigEntry<bool> spearInverseWield;
@@ -1065,33 +1065,38 @@ namespace ValheimVRMod.Utilities
                 1.0f,
                 new ConfigDescription("Multiplier for stamina drain on bow. Reduce for less stamina drain.",
                 new AcceptableValueRange<float>(0.25f, 1.0f)));
-            //Spear Changes
-            throwingType = config.Bind("Motion Control",
-                                            "SpearThrowingMode",
-                                            "Classic",
-                                            new ConfigDescription("Change the throwing mode, Throw by holding grab and trigger and then release trigger." +
-                                            "Classic - Throw aim is based on swing direction" +
-                                            "DartType - Throw aim is based on first trigger pressed to release in a straight line" +
-                                            "TwoStagedThrowing - Throw aim is based on first grab and then aim is locked after pressing trigger" +
-                                            "SecondHandAiming - Throw aim is based from your head to your left hand in a straight line",
-                                            new AcceptableValueList<string>(new string[] { "Classic", "DartType", "TwoStagedThrowing", "SecondHandAiming" })));
+            // Throwing
+            throwingMode = config.Bind(
+                "Motion Control",
+                "ThrowingMode",
+                "Classic",
+                new ConfigDescription(
+                    "Trow by holding grab and trigger and then release trigger: " +
+                    "Classic - Throw aim is based on swing direction" +
+                    "DartType - Throw aim is based on first trigger pressed to release in a straight line" +
+                    "TwoStagedThrowing - Throw aim is based on first grab and then aim is locked after pressing trigger" +
+                    "SecondHandAiming - Throw aim is based from your head to your left hand in a straight line",
+                    new AcceptableValueList<string>(new string[] { "Classic", "DartType", "TwoStagedThrowing", "SecondHandAiming" })));
             fullThrowSpeed = config.Bind(
                 "Motion Control",
                 "FullThrowSpeed",
                 5.0f,
                 new ConfigDescription("The hand movement speed required for a throwable to reach its max speed in game. Setting to 0 makes the throwable always launch at max speed in game.",
                 new AcceptableValueRange<float>(0, 10f)));
+            useThrowDirectionGraphic = config.Bind(
+                "Motion Control",
+                "UseSpearDirectionGraphic",
+                "Grip",
+                new ConfigDescription(
+                    "Use this to toggle the direction line of throwing when using VR controls."+
+                    "Grip - Holding grip make the direction line appear." +
+                    "TriggerGrip - Holding both Grip and Trigger to make the direction line appear",
+                    new AcceptableValueList<string>(new string[] { "Grip", "TriggerGrip", "Disabled" })));
+            // Spear
             spearInverseWield = config.Bind("Motion Control",
                                                 "SpearInverseWield",
                                                 true,
                                                 "Use this to flip the spear tip, so you can stab forward instead of needing to do downward stabbing");
-            useThrowDirectionGraphic = config.Bind("Motion Control",
-                                                    "UseSpearDirectionGraphic",
-                                                    "Grip",
-                                                    new ConfigDescription("Use this to toggle the direction line of throwing when using VR controls."+
-                                                    "Grip - Holding grip make the direction line appear." +
-                                                    "TriggerGrip - Holding both Grip and Trigger to make the direction line appear",
-                                                    new AcceptableValueList<string>(new string[] { "Grip", "TriggerGrip", "Disabled" })));
             //Two-handed Changes
             twoHandedWield = config.Bind(
                 "Motion Control", "TwoHandedWield", "PolearmSticky",
@@ -1947,9 +1952,9 @@ namespace ValheimVRMod.Utilities
         {
             return spearInverseWield.Value;
         }
-        public static string SpearThrowType()
+        public static string ThrowingMode()
         {
-            return throwingType.Value;
+            return throwingMode.Value;
         }
         public static bool TwoHandedWield()
         {

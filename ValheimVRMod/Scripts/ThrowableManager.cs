@@ -23,7 +23,7 @@ namespace ValheimVRMod.Scripts
         public static Vector3 startAim { get; private set; }
         public static bool isThrowing;
         public static bool isAiming { get; private set; }
-        public static bool preAimingInTwoStagedThrow { get { return VHVRConfig.SpearThrowType() == "TwoStagedThrowing" && !isAiming && SteamVR_Actions.valheim_Grab.GetState(VRPlayer.mainWeaponHandInputSource); } }
+        public static bool preAimingInTwoStagedThrow { get { return VHVRConfig.ThrowingMode() == "TwoStagedThrowing" && !isAiming && SteamVR_Actions.valheim_Grab.GetState(VRPlayer.mainWeaponHandInputSource); } }
 
         private GameObject rotSave;
         private LineRenderer directionLine;
@@ -69,7 +69,7 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            switch (VHVRConfig.SpearThrowType())
+            switch (VHVRConfig.ThrowingMode())
             {
                 case "DartType":
                     UpdateDartSpearThrowCalculation();
@@ -171,7 +171,7 @@ namespace ValheimVRMod.Scripts
         {
             if (!isAiming && !isThrowing)
             {
-                switch (VHVRConfig.SpearThrowType())
+                switch (VHVRConfig.ThrowingMode())
                 {
                     case "DartType":
                     case "Classic":

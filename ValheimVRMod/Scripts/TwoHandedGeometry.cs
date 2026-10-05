@@ -409,7 +409,7 @@ namespace ValheimVRMod.Scripts
 
                 var pointing = SpearWield.lastFixedUpdatedAimDir.normalized;
 
-                if (VHVRConfig.SpearThrowType() != "Classic")
+                if (VHVRConfig.ThrowingMode() != "Classic")
                 {
                     return weaponWield.getAimingRotation(pointing, GetPreferredTwoHandedWeaponUp(weaponWield));
                 }
