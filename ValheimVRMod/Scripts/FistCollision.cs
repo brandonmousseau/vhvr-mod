@@ -110,7 +110,7 @@ namespace ValheimVRMod.Scripts
             }
 
             Character character = collider.GetComponentInParent<Character>();
-            if (collider.gameObject.layer != LayerUtils.CHARACTER && !WeaponCollision.IsTrainingDummy(character))
+            if (!IsCharacterLayer(collider.gameObject.layer) && !WeaponCollision.IsTrainingDummy(character))
             {
                 character = null;
             }
@@ -120,7 +120,8 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            if (character == null || character.gameObject == Player.m_localPlayer.gameObject)
+            if (character == null || character.gameObject == Player.m_localPlayer.gameObject ||
+                WeaponCollision.IsFriendly(character))
             {
                 return;
             }
@@ -150,11 +151,17 @@ namespace ValheimVRMod.Scripts
                     !Player.m_localPlayer.m_inCraftingStation) {
                     Character character = collider.GetComponentInParent<Character>();
                     if (character == null ||
-                        (collider.gameObject.layer != LayerUtils.CHARACTER && !WeaponCollision.IsTrainingDummy(character)) ||
+                        (!IsCharacterLayer(collider.gameObject.layer) && !WeaponCollision.IsTrainingDummy(character)) ||
                         WeaponCollision.IsFriendly(character))
                     {
                         return;
                     }
+                }
+                else if (IsFriendlyCharacter(collider))
+                {
+                    // Pressing both trigger and grip allows punching anything, but not a friendly character, e. g.
+                    // another player while either of the two has PVP off.
+                    return;
                 }
                 tryHitCollider(collider, requireJab: false);
                 return;
@@ -424,7 +431,8 @@ namespace ValheimVRMod.Scripts
 
             // Always use the duration of the primary attack for target cooldown to allow primary attack immediately following a secondary attack.
             // The secondary attack cooldown is managed by LocalPlayerSecondaryAttackCooldown in this class instead.
-            if (!tryHitTarget(collider.gameObject, isCurrentlySecondaryAttack, WeaponUtils.GetAttackDuration(item.m_shared.m_attack), speed))
+            if (!WeaponCollision.CanHitCollider(collider, item) ||
+                !tryHitTarget(collider.gameObject, isCurrentlySecondaryAttack, WeaponUtils.GetAttackDuration(item.m_shared.m_attack), speed))
             {
                 return;
             }
@@ -619,6 +627,21 @@ namespace ValheimVRMod.Scripts
                 isRightHand ^ ShouldSecondaryKnifeHoldInverse ?
                 Vector3.Reflect(colliderData.pos, Vector3.right) :
                 colliderData.pos;
+        }
+
+        private static bool IsFriendlyCharacter(Collider collider)
+        {
+            Character character = collider.GetComponentInParent<Character>();
+            return character != null &&
+                (IsCharacterLayer(collider.gameObject.layer) || WeaponCollision.IsTrainingDummy(character)) &&
+                WeaponCollision.IsFriendly(character);
+        }
+
+        // A character's main collider, whichever client owns the character.
+        private static bool IsCharacterLayer(int layer)
+        {
+            // CHARACTER OR CHARACTER_NET
+            return layer == LayerUtils.CHARACTER || layer == 26;
         }
     }
 }
