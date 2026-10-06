@@ -12,6 +12,20 @@ namespace ValheimVRMod.Scripts
         private static readonly Color UNDER_WATER_OVERLAY_COLOR = new Color(0.5f, 0.75f, 0.75f);
         private static readonly Vector3 UNDER_WATER_OVERLAY_OFFSET = new Vector3(0, 0, 0.125f);
         private const float UNDER_WATER_OVERLAY_SIZE = 0.25f;
+        // How far beyond the near clip plane the overlay sits. Any closer and it gets clipped every now and then far
+        // away from the world origin, where positions are only accurate to about a millimeter.
+        private const float UNDER_WATER_OVERLAY_NEAR_CLIP_ALLOWANCE = 0.005f;
+        // How steeply up or down the camera has to face, as the vertical component of its facing, for the overlay
+        // to be either shown or hidden as a whole rather than cover the part of the view below the surface, and
+        // how steeply it has to keep facing that way for that to last.
+        private const float UNDER_WATER_OVERLAY_STEEP_FACING = 0.875f;
+        private const float UNDER_WATER_OVERLAY_STEEP_FACING_RELEASE = 0.8f;
+        // How far past the surface the eyes have to go, relative to the half size of the overlay, before they count
+        // as being on the other side of it.
+        private const float UNDER_WATER_OVERLAY_SURFACE_HYSTERESIS = 0.5f;
+        private bool overlayEyesUnderwater;
+        private bool overlayFacingSteeplyUp;
+        private bool overlayFacingSteeplyDown;
         private GameObject underwaterOverlay;
         private Material underwaterOverlayMaterial;
         private GameObject underwaterLightBlocker = null;
@@ -405,11 +419,30 @@ namespace ValheimVRMod.Scripts
         private void UpdateUnderwaterOverlay(float elevation)
         {
             // The overlay tints what the near clip plane lets through from below the water surface, so its edge
-            // belongs where the surface crosses that plane. It sits just beyond it to still be drawn, and is scaled
-            // with it to keep covering the same field of view.
-            var distance = camera.nearClipPlane + 0.001f;
+            // belongs where the surface crosses that plane. It sits slightly beyond it to still be drawn, and is
+            // scaled with it to keep covering the same field of view.
+            var distance = camera.nearClipPlane + UNDER_WATER_OVERLAY_NEAR_CLIP_ALLOWANCE;
             var halfSize = distance * UNDER_WATER_OVERLAY_SIZE / UNDER_WATER_OVERLAY_OFFSET.z;
             underwaterOverlay.transform.localScale = 2 * halfSize * Vector3.one;
+
+            var facing = camera.transform.forward;
+
+            // Facing steeply up or down, the overlay is switched as a whole by which side of the surface the eyes are
+            // on. Both that side and the steepness only change once clearly past where they would change back, or
+            // the overlay would flicker with every wave that passes the eyes.
+            var surfaceHysteresis = halfSize * UNDER_WATER_OVERLAY_SURFACE_HYSTERESIS;
+            if (elevation < -surfaceHysteresis)
+            {
+                overlayEyesUnderwater = true;
+            }
+            else if (elevation > surfaceHysteresis)
+            {
+                overlayEyesUnderwater = false;
+            }
+            overlayFacingSteeplyUp =
+                facing.y > (overlayFacingSteeplyUp ? UNDER_WATER_OVERLAY_STEEP_FACING_RELEASE : UNDER_WATER_OVERLAY_STEEP_FACING);
+            overlayFacingSteeplyDown =
+                facing.y < -(overlayFacingSteeplyDown ? UNDER_WATER_OVERLAY_STEEP_FACING_RELEASE : UNDER_WATER_OVERLAY_STEEP_FACING);
 
             if (elevation > halfSize)
             {
@@ -418,16 +451,14 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            var facing = camera.transform.forward;
-
-            if (facing.y > 0.875f && elevation > 0)
+            if (overlayFacingSteeplyUp && !overlayEyesUnderwater)
             {
                 // Looking up near water, hide the overlay
                 underwaterOverlay.SetActive(false);
                 return;
             }
 
-            if ((facing.y < -0.875f && elevation < 0) || elevation < -halfSize)
+            if ((overlayFacingSteeplyDown && overlayEyesUnderwater) || elevation < -halfSize)
             {
                 // Underwater or looking down near water, cover entire view with overlay
                 underwaterOverlay.transform.localRotation = Quaternion.identity;
