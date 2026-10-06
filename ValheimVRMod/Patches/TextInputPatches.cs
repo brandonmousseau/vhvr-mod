@@ -3,6 +3,7 @@ using GUIFramework;
 using HarmonyLib;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using ValheimVRMod.Patches;
 using ValheimVRMod.Utilities;
@@ -206,7 +207,76 @@ namespace ValheimVRMod.Patches {
             _liveText.Append(existingText);
             _liveCaretPosition = existingText.Length;
 
-            SteamVR.instance.overlay.ShowKeyboard(0, 0, 0, "TextInput", 256, existingText, 1);
+            EVROverlayError error = SteamVR.instance.overlay.ShowKeyboard(0, 0, 0, "TextInput", 256, existingText, 1);
+            if (error != EVROverlayError.None) {
+                // No keyboard came up, so no VREvent_KeyboardClosed will ever end this session. Leaving
+                // _keyboardOpen set would block every later start().
+                LogUtils.LogWarning($"[Keyboard] ShowKeyboard failed: {error}");
+                // The usual cause is a keyboard that is still up without us knowing about it.
+                SteamVR.instance.overlay.HideKeyboard();
+                if (chatInput) {
+                    CancelChat();
+                } else {
+                    ClearSession();
+                }
+            }
+        }
+
+        // True while the chat is taking input, from either the SteamVR keyboard or a physical one.
+        public static bool chatActive =>
+            chatKeyboardActive || (Chat.instance != null && (Chat.instance.HasFocus() || Chat.instance.m_wasFocused));
+
+        // Opens the vanilla chat window, the way Chat.Update() does on the "Chat" button. Done directly
+        // rather than by emulating that button: Chat.Update() only polls it while nothing else blocks the
+        // chat, so an emulated press could sit unconsumed and open the chat at some later, unrelated point.
+        public static void OpenChat(bool useSteamVrKeyboard) {
+            Chat chat = Chat.instance;
+            chat.m_hideTimer = 0f;
+            chat.m_chatWindow.gameObject.SetActive(true);
+            chat.m_input.gameObject.SetActive(true);
+            chat.TryShowTextCommunicationRestrictedSystemPopup();
+            chat.m_input.text = "";
+            chat.m_input.ActivateInputField();
+            if (useSteamVrKeyboard) {
+                // The keyboard types straight into the chat's own input field, so that the two cannot get
+                // out of step with each other.
+                start(null, null, chat.m_input, chatInput: true);
+            }
+        }
+
+        // Closes the chat without sending anything, along with the SteamVR keyboard if it is typing into it.
+        public static void CancelChat() {
+            if (chatKeyboardActive) {
+                // End the session first, so that the VREvent_KeyboardClosed that hiding the keyboard
+                // raises is not taken as a submission.
+                ClearSession();
+                closeTime = Time.fixedTime;
+                SteamVR.instance.overlay.HideKeyboard();
+            }
+
+            Chat chat = Chat.instance;
+            if (chat != null) {
+                chat.m_input.text = "";
+                if (EventSystem.current != null && EventSystem.current.currentSelectedGameObject == chat.m_input.gameObject) {
+                    EventSystem.current.SetSelectedGameObject(null);
+                }
+                chat.m_input.gameObject.SetActive(false);
+                // Chat.Update() only refreshes these on its next run, and Menu.Update() will not open the
+                // menu while the chat still counts as focused.
+                chat.m_wasFocused = false;
+                chat.m_focused = false;
+            }
+            Scripts.QuickAbstract.shouldStartChat = false;
+        }
+
+        private static void ClearSession() {
+            _inputField = null;
+            _inputFieldTmp = null;
+            _inputFieldGui = null;
+            _closedAction = null;
+            _returnOnClose = false;
+            _chatInput = false;
+            _keyboardOpen = false;
         }
 
         private static void OnKeyboardCharInput(VREvent_t args) {
@@ -403,13 +473,7 @@ namespace ValheimVRMod.Patches {
             bool returnOnClose = _returnOnClose;
             bool chatInput = _chatInput;
 
-            _inputField = null;
-            _inputFieldTmp = null;
-            _inputFieldGui = null;
-            _closedAction = null;
-            _returnOnClose = false;
-            _chatInput = false;
-            _keyboardOpen = false;
+            ClearSession();
 
             closeTime = Time.fixedTime;
             // Every keystroke, including the last one, already arrived via OnKeyboardCharInput and left
