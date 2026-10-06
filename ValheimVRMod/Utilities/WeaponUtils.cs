@@ -116,11 +116,6 @@ namespace ValheimVRMod.Utilities
                     0.125f,  1.2f, 0.0625f
                 )}, {
                 // Staves, which hit with the quarter at their head.
-                "$item_staff_thunderblood", WeaponColData.create(
-                    0,  1.785f, -0.003f,
-                    0,  0, 0,
-                    0.126f,  0.583f, 0.076f
-                )}, {
                 "$item_staffclusterbomb", WeaponColData.create(
                     0.064f,  1.5f, 0,
                     0,  0, 0,
@@ -636,8 +631,9 @@ namespace ValheimVRMod.Utilities
                     EstimateWeaponDirectionAndLength(meshFilter, handPosition, out float handleAllowanceBehindGrip)).normalized;
             var handLocalPosition = meshFilter.transform.InverseTransformPoint(handPosition);
             var bounds = meshFilter.mesh.bounds;
-            var weaponTip = bounds.center + weaponPointing * Mathf.Abs(Vector3.Dot(bounds.extents, weaponPointing));
-            var colliderLength = EstimateColliderLength(Vector3.Distance(weaponTip, handLocalPosition), type);
+            var halfLength = Mathf.Abs(Vector3.Dot(bounds.extents, weaponPointing));
+            var weaponTip = bounds.center + weaponPointing * halfLength;
+            var colliderLength = EstimateColliderLength(Vector3.Distance(weaponTip, handLocalPosition), halfLength * 2, type);
             Vector3 colliderCenter;
             switch (type)
             {
@@ -660,13 +656,15 @@ namespace ValheimVRMod.Utilities
             return new WeaponColData(colliderCenter, Vector3.zero, colliderSize);
         }
 
-        private static float EstimateColliderLength(float weaponTipDistanceFromHand, EquipType type)
+        private static float EstimateColliderLength(float weaponTipDistanceFromHand, float weaponLength, EquipType type)
         {
             switch (type)
             {
                 case EquipType.Axe:
                 case EquipType.BattleAxe:
                 case EquipType.Club:
+                case EquipType.Magic:
+                    return weaponLength;
                 case EquipType.Sledge:
                     return weaponTipDistanceFromHand * 0.375f;
                 case EquipType.Pickaxe:
