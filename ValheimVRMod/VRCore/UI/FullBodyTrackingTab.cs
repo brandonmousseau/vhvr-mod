@@ -3,6 +3,7 @@ using System.Text;
 using BepInEx.Configuration;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using ValheimVRMod.Utilities;
 using Valve.VR;
@@ -32,6 +33,8 @@ namespace ValheimVRMod.VRCore.UI
         private const float CELL_WIDTH = 120;
         private const float CIRCLE_SIZE = 26;
         private const int CIRCLE_TEXTURE_SIZE = 64;
+
+        private const string AUTO_HOVER_TIP = "Automatically detect using tracker roles and positions during recenter pose";
 
         private static readonly string[] COLUMN_TITLES = { "Hip", "Left foot", "Right foot" };
         private static readonly float[] COLUMN_X = { 100, 230, 360 };
@@ -64,6 +67,52 @@ namespace ValheimVRMod.VRCore.UI
             public int deviceIndex;
             public string title;
             public bool connected;
+        }
+
+        // Shows a text in the tooltip of the settings dialog while hovered, like ConfigComponent does for a config option.
+        private class HoverTip : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
+        {
+            private static HoverTip current;
+
+            public string text;
+
+            private void LateUpdate()
+            {
+                if (current != this)
+                {
+                    return;
+                }
+                TMP_Text textObj = ConfigSettings.toolTip.GetComponentInChildren<TMP_Text>();
+                textObj.text = text;
+                ConfigSettings.toolTip.GetComponent<Image>().rectTransform.sizeDelta = new Vector2(908, textObj.preferredHeight + 8);
+            }
+
+            public void OnPointerEnter(PointerEventData eventData)
+            {
+                current = this;
+                ConfigSettings.toolTip.GetComponentInChildren<TMP_Text>(includeInactive: true).text = text;
+                ConfigSettings.toolTip.SetActive(true);
+            }
+
+            public void OnPointerExit(PointerEventData eventData)
+            {
+                Hide();
+            }
+
+            // The table is rebuilt when trackers come or go, and the tab can be switched while a title is hovered.
+            private void OnDisable()
+            {
+                Hide();
+            }
+
+            private void Hide()
+            {
+                if (current == this)
+                {
+                    current = null;
+                    ConfigSettings.toolTip.SetActive(false);
+                }
+            }
         }
 
         public void Initialize(ConfigEntry<int> hip, ConfigEntry<int> leftFoot, ConfigEntry<int> rightFoot)
@@ -201,54 +250,69 @@ namespace ValheimVRMod.VRCore.UI
             tableRect.anchoredPosition = Vector2.zero;
             table = tableRect;
 
-            CreateLabel("Tracker", new Vector2(TITLE_LEFT, HEADER_Y), TITLE_WIDTH, TextAlignmentOptions.MidlineLeft);
+            CreateLabel(table, "Tracker", new Vector2(TITLE_LEFT, HEADER_Y), TITLE_WIDTH, TextAlignmentOptions.MidlineLeft);
             for (int column = 0; column < COLUMN_TITLES.Length; column++)
             {
-                CreateLabel(COLUMN_TITLES[column], new Vector2(COLUMN_X[column], HEADER_Y), CELL_WIDTH, TextAlignmentOptions.Midline);
+                CreateLabel(table, COLUMN_TITLES[column], new Vector2(COLUMN_X[column], HEADER_Y), CELL_WIDTH, TextAlignmentOptions.Midline);
             }
 
             // Off, auto, the trackers, and a line saying that there are none.
             int rowCount = 2 + Mathf.Max(trackers.Count, 1);
             float rowHeight = Mathf.Min(MAX_ROW_HEIGHT, (FIRST_ROW_Y - LAST_ROW_Y) / (rowCount - 1));
             float y = FIRST_ROW_Y;
-            CreateRow(OFF, "Off", y, Color.white);
+            CreateRow(OFF, "Off", y, rowHeight, Color.white, null);
             y -= rowHeight;
-            CreateRow(AUTO, "Auto", y, Color.white);
+            CreateRow(AUTO, "Auto", y, rowHeight, Color.white, AUTO_HOVER_TIP);
             y -= rowHeight;
             foreach (var tracker in trackers)
             {
-                CreateRow(tracker.deviceIndex, tracker.title, y, tracker.connected ? Color.white : DISCONNECTED_COLOR);
+                // The title may not fit in the table, the hover tip shows it in full.
+                CreateRow(tracker.deviceIndex, tracker.title, y, rowHeight, tracker.connected ? Color.white : DISCONNECTED_COLOR, tracker.title);
                 y -= rowHeight;
             }
             if (trackers.Count == 0)
             {
-                CreateLabel("No trackers connected", new Vector2(TITLE_LEFT, y), TITLE_WIDTH, TextAlignmentOptions.MidlineLeft).color =
+                CreateLabel(table, "No trackers connected", new Vector2(TITLE_LEFT, y), TITLE_WIDTH, TextAlignmentOptions.MidlineLeft).color =
                     DISCONNECTED_COLOR;
             }
 
             UpdateSelection();
         }
 
-        private void CreateRow(int deviceIndex, string title, float y, Color color)
+        private void CreateRow(int deviceIndex, string title, float y, float height, Color color, string hoverTip)
         {
-            CreateLabel(title, new Vector2(TITLE_LEFT, y), TITLE_WIDTH, TextAlignmentOptions.MidlineLeft).color = color;
+            // The title and the cells are children of the row, so that the row stays hovered while they are.
+            var rowRect = new GameObject("Row", typeof(RectTransform)).GetComponent<RectTransform>();
+            rowRect.SetParent(table, false);
+            rowRect.anchorMin = rowRect.anchorMax = rowRect.pivot = new Vector2(0.5f, 0.5f);
+            float halfWidth = Mathf.Max(-TITLE_LEFT, COLUMN_X[COLUMN_X.Length - 1] + CELL_WIDTH * 0.5f);
+            rowRect.sizeDelta = new Vector2(halfWidth * 2, height);
+            rowRect.anchoredPosition = new Vector2(0, y);
+            if (hoverTip != null)
+            {
+                // The tip shows for the whole row, including the gaps between its cells.
+                rowRect.gameObject.AddComponent<Image>().color = Color.clear;
+                rowRect.gameObject.AddComponent<HoverTip>().text = hoverTip;
+            }
+
+            CreateLabel(rowRect, title, new Vector2(TITLE_LEFT, 0), TITLE_WIDTH, TextAlignmentOptions.MidlineLeft).color = color;
             var row = new Row { deviceIndex = deviceIndex, dots = new GameObject[COLUMN_X.Length] };
             for (int column = 0; column < COLUMN_X.Length; column++)
             {
-                row.dots[column] = CreateCell(column, deviceIndex, new Vector2(COLUMN_X[column], y));
+                row.dots[column] = CreateCell(rowRect, column, deviceIndex, new Vector2(COLUMN_X[column], 0));
             }
             rows.Add(row);
         }
 
         // Creates a selectable circle and returns the dot that marks it as selected.
-        private GameObject CreateCell(int column, int deviceIndex, Vector2 position)
+        private GameObject CreateCell(Transform parent, int column, int deviceIndex, Vector2 position)
         {
             EnsureSprites();
 
             // The whole cell is clickable rather than just the circle, which is a small target for a laser pointer.
             var cell = new GameObject("Cell", typeof(RectTransform));
             var cellRect = cell.GetComponent<RectTransform>();
-            cellRect.SetParent(table, false);
+            cellRect.SetParent(parent, false);
             cellRect.anchorMin = cellRect.anchorMax = cellRect.pivot = new Vector2(0.5f, 0.5f);
             cellRect.sizeDelta = new Vector2(CELL_WIDTH, MAX_ROW_HEIGHT);
             cellRect.anchoredPosition = position;
@@ -283,9 +347,9 @@ namespace ValheimVRMod.VRCore.UI
             return image;
         }
 
-        private TMP_Text CreateLabel(string text, Vector2 position, float width, TextAlignmentOptions alignment)
+        private TMP_Text CreateLabel(Transform parent, string text, Vector2 position, float width, TextAlignmentOptions alignment)
         {
-            var labelObj = Instantiate(labelPrefab, table);
+            var labelObj = Instantiate(labelPrefab, parent);
             ConfigSettings.StripLocalization(labelObj);
             labelObj.SetActive(true);
             var label = labelObj.GetComponent<TMP_Text>();
