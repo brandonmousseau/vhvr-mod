@@ -527,21 +527,21 @@ namespace ValheimVRMod.Utilities
                 "General", "HipTrackerIndex", -1,
                 new ConfigDescription(
                     "The device index of the hip tracker. Set to -1 disables hip tracking and 0 to auto-detect.",
-                    new AcceptableValueRange<int>(-1, 20)));
+                    new AcceptableValueRange<int>(-1, 63)));
             hipTrackerIndex.SettingChanged += ((o, i) => VRPlayer.RequestPelvisCaliberation());
 
             leftFootTrackerIndex = config.Bind(
                 "General", "LeftFootTrackerIndex", -1,
                 new ConfigDescription(
                     "The device index of the left foot tracker. Set to -1 to disable and 0 to auto-detect.",
-                    new AcceptableValueRange<int>(-1, 20)));
+                    new AcceptableValueRange<int>(-1, 63)));
             leftFootTrackerIndex.SettingChanged += ((o, i) => VRPlayer.RequestPelvisCaliberation());
 
             rightFootTrackerIndex = config.Bind(
                 "General", "RightFootTrackerIndex", -1,
                 new ConfigDescription(
                     "The device index of the right foot tracker. Set to -1 to disable and 0 to auto-detect.",
-                    new AcceptableValueRange<int>(-1, 20)));
+                    new AcceptableValueRange<int>(-1, 63)));
             rightFootTrackerIndex.SettingChanged += ((o, i) => VRPlayer.RequestPelvisCaliberation());
 
             ikOverrideLowerBody = config.Bind(
@@ -2335,6 +2335,17 @@ namespace ValheimVRMod.Utilities
         public static bool IKOverrideLowerBody()
         {
             return ikOverrideLowerBody.Value;
+        }
+
+        // The entries shown in the FBT tab of the settings dialog (see FullBodyTrackingTab) instead of in the tab
+        // of their config section.
+        public static ConfigEntry<int> HipTrackerIndexEntry => hipTrackerIndex;
+        public static ConfigEntry<int> LeftFootTrackerIndexEntry => leftFootTrackerIndex;
+        public static ConfigEntry<int> RightFootTrackerIndexEntry => rightFootTrackerIndex;
+
+        public static bool IsFullBodyTrackingEntry(ConfigEntryBase entry)
+        {
+            return entry == hipTrackerIndex || entry == leftFootTrackerIndex || entry == rightFootTrackerIndex;
         }
 
         public static bool IsHipTrackingEnabled()

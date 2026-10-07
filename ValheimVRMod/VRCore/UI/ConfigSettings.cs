@@ -152,7 +152,7 @@ namespace ValheimVRMod.VRCore.UI {
             StripLocalization(transformButtonPrefab);
         }
 
-        private static void StripLocalization(GameObject prefab)
+        public static void StripLocalization(GameObject prefab)
         {
             if (prefab == null)
             {
@@ -222,6 +222,10 @@ namespace ValheimVRMod.VRCore.UI {
                 if (keyValuePair.Key.Section == "Immutable") {
                     continue;
                 }
+                // These have a tab of their own, see CreateFullBodyTrackingTab().
+                if (VHVRConfig.IsFullBodyTrackingEntry(keyValuePair.Value)) {
+                    continue;
+                }
                 if (!orderedConfig.ContainsKey(keyValuePair.Key.Section)) {
                     orderedConfig.Add(keyValuePair.Key.Section, new Dictionary<string, ConfigEntryBase>());
                     sectionCount++;
@@ -232,13 +236,15 @@ namespace ValheimVRMod.VRCore.UI {
 
             // The Mods tab is only offered if there is a mod configuration manager to open in it.
             bool showModsTab = ModConfigurationManagerBridge.IsAvailable;
-            int tabCount = sectionCount + (showModsTab ? 1 : 0);
+            // The sections, the full body tracking tab and the Mods tab.
+            int tabCount = sectionCount + 1 + (showModsTab ? 1 : 0);
 
             tabCounter = 0;
             // iterate ordered configs and create tabs out of each section
             foreach (KeyValuePair<string, Dictionary<string, ConfigEntryBase>> section in orderedConfig) {
                 createTabForSection(section, tabCount);
             }
+            CreateFullBodyTrackingTab(tabCount);
             if (showModsTab) {
                 CreateModsTab(tabCount);
             }
@@ -374,6 +380,32 @@ namespace ValheimVRMod.VRCore.UI {
 
             tabCounter++;
             return newTab;
+        }
+
+        /// <summary>
+        /// Create the FBT tab, where the trackers are assigned to the hip and the feet in a table, see FullBodyTrackingTab
+        /// </summary>
+        private static void CreateFullBodyTrackingTab(int tabCount) {
+            var newTab = CreateTab("FBT", tabCount);
+            var fullBodyTrackingTab = newTab.gameObject.AddComponent<FullBodyTrackingTab>();
+            fullBodyTrackingTab.labelPrefab = togglePrefab.GetComponentInChildren<TMP_Text>().gameObject;
+            fullBodyTrackingTab.Initialize(
+                VHVRConfig.HipTrackerIndexEntry, VHVRConfig.LeftFootTrackerIndexEntry, VHVRConfig.RightFootTrackerIndexEntry);
+
+            var hintObj = Object.Instantiate(togglePrefab.GetComponentInChildren<TMP_Text>().gameObject, newTab);
+            var hintText = hintObj.GetComponent<TMP_Text>();
+            hintText.rectTransform.anchorMin = hintText.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+            hintText.rectTransform.pivot = new Vector2(0.5f, 0.5f);
+            hintText.rectTransform.sizeDelta = new Vector2(860, 50);
+            hintText.rectTransform.anchoredPosition = new Vector2(0, -250);
+            hintText.enableAutoSizing = false;
+            hintText.fontSize = 16;
+            hintText.enableWordWrapping = true;
+            hintText.alignment = TextAlignmentOptions.Center;
+            hintText.text =
+                "Foot tracking needs both feet. Stand upright and face forward when confirming with OK, " +
+                "the trackers are calibrated to that pose.";
+            hintText.raycastTarget = false;
         }
 
         /// <summary>
