@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Text;
 using GUIFramework;
 using HarmonyLib;
@@ -534,10 +535,18 @@ namespace ValheimVRMod.Patches {
             return _inputFieldTmp ? _inputFieldTmp : _inputFieldGui;
         }
 
+        // Shows the caret and restarts its blinking. A field does this by itself for the keys it handles,
+        // which ours never are, and a caret that goes on blinking while it moves is invisible for half of
+        // the moves, which looks like lag.
+        private static readonly MethodInfo ShowCaret = AccessTools.Method(typeof(InputField), "SetCaretVisible");
+        private static readonly MethodInfo ShowCaretTmp = AccessTools.Method(typeof(TMP_InputField), "SetCaretVisible");
+
         private static void SetTextAndCaret(InputField field, string text, int caret) {
             if (field) {
                 field.text = text;
                 field.caretPosition = caret;
+                ShowCaret?.Invoke(field, null);
+                RedrawCaret(field);
             }
         }
 
@@ -546,7 +555,15 @@ namespace ValheimVRMod.Patches {
                 field.text = text;
                 // Unlike its caretPosition, this is an index into the text, as our caret is.
                 field.stringPosition = caret;
+                ShowCaretTmp?.Invoke(field, null);
+                RedrawCaret(field);
             }
+        }
+
+        // A field only redraws its caret when its text changes or the caret blinks, neither of which
+        // moving a caret that was just made to stop blinking does.
+        private static void RedrawCaret(ICanvasElement field) {
+            CanvasUpdateRegistry.RegisterCanvasElementForGraphicRebuild(field);
         }
 
         // Shows the text we track in the field, with the caret where the next keystroke lands. A selection
