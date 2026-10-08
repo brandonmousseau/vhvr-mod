@@ -1042,10 +1042,6 @@ namespace ValheimVRMod.VRCore
             }
             //Add fade component to camera for transition handling
             _fadeManager = vrCam.gameObject.AddComponent<FadingManager>();
-            if (vrCam.GetComponent<EyeSeparationScaler>() == null)
-            {
-                vrCam.gameObject.AddComponent<EyeSeparationScaler>();
-            }
             if (vrCam.GetComponent<ComfortVignette>() == null)
             {
                 vrCam.gameObject.AddComponent<ComfortVignette>();
@@ -1196,7 +1192,6 @@ namespace ValheimVRMod.VRCore
             vrSkyboxCam.CopyFrom(originalSkyboxCamera);
             vrSkyboxCam.depth = -2;
             vrSkyboxCam.transform.SetParent(vrCam.transform);
-            vrSkyboxCamObj.AddComponent<EyeSeparationScaler>();
             originalSkyboxCamera.enabled = false;
             vrSkyboxCam.enabled = true;
             _skyboxCam = vrSkyboxCam;

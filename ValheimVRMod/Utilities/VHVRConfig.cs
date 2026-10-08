@@ -151,7 +151,6 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> useAmplifyOcclusion;
         private static ConfigEntry<float> taaSharpenAmmount;
         private static ConfigEntry<float> nearClipPlane;
-        private static ConfigEntry<float> eyeSeparationScale;
         private static ConfigEntry<float> vignetteStrength;
         private static ConfigEntry<float> vignetteOnLocomotion;
         private static ConfigEntry<float> vignetteOnSmoothTurn;
@@ -977,14 +976,6 @@ namespace ValheimVRMod.Utilities
                                         new ConfigDescription("This can be used to adjust the distance where where anything inside will be clipped out and not rendered. You can try adjusting this if you experience" +
                                                               " problems where you see the nose of the player character for example.",
                                         new AcceptableValueRange<float>(0.05f, 0.5f)));
-            eyeSeparationScale = config.Bind("Graphics",
-                                        "EyeSeparationScale",
-                                        1f,
-                                        new ConfigDescription("Scales the distance between the two eyes that the game world is rendered from. 1 is normal stereo, lower values reduce the 3D depth effect," +
-                                                              " and 0 is mono: both eyes see the same image while head tracking keeps working as usual." +
-                                                              " Your hands and the VR GUI are not affected." +
-                                                              " Lowering this can help if stereo 3D causes double vision or eye strain.",
-                                        new AcceptableValueRange<float>(0f, 1f)));
             vignetteStrength = config.Bind("Graphics",
                                         "VignetteStrength",
                                         0f,
@@ -1912,11 +1903,6 @@ namespace ValheimVRMod.Utilities
         public static float GetNearClipPlane()
         {
             return nearClipPlane.Value;
-        }
-
-        public static float EyeSeparationScale()
-        {
-            return eyeSeparationScale.Value;
         }
 
         public static float VignetteStrength()
