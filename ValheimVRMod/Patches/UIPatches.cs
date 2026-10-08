@@ -1240,21 +1240,45 @@ namespace ValheimVRMod.Patches
         }
     }
 
-    [HarmonyPatch(typeof(Minimap), "GetMaskColor")]
-    class MinimapMaskColorPatch
+    // The map shader leaves the Mistlands transparent on the VR GUI panel.
+    [HarmonyPatch(typeof(Minimap), "Awake")]
+    class Minimap_Awake_AlphaPatch
     {
-        static void Postfix(Minimap __instance, Heightmap.Biome biome, ref Color __result)
+        static void Postfix(Minimap __instance)
         {
-            if (VHVRConfig.NonVrPlayer())
+            if (__instance.m_mapImageLarge != null)
             {
-                return;
+                GuiAlphaRestorer.RestoreRect(__instance.m_mapImageLarge.rectTransform);
             }
-            if (biome == Heightmap.Biome.Mistlands)
-            {
-                // For some reason, bright mask colors makes Mistland completely transparent and hard to see on the large map in VR,
-                // so we need to dim it to prevent that from happening.
-                __result /= 2f;
-            }
+        }
+    }
+
+    // The item icons leave the world showing through their shadows on the VR GUI panel.
+    [HarmonyPatch(typeof(InventoryGui), "Awake")]
+    class InventoryGui_Awake_AlphaPatch
+    {
+        private const string PANEL_NAME = "Bkg";
+
+        static void Postfix(InventoryGui __instance)
+        {
+            GuiAlphaRestorer.RestorePanel(__instance.m_player.transform, PANEL_NAME);
+            GuiAlphaRestorer.RestorePanel(__instance.m_container.transform, PANEL_NAME);
+            GuiAlphaRestorer.RestorePanel(__instance.m_crafting.transform, PANEL_NAME);
+            GuiAlphaRestorer.RestorePanel(__instance.m_info.transform, PANEL_NAME);
+            GuiAlphaRestorer.RestorePanel(__instance.m_skillsDialog.transform, "SkillsFrame/bkg");
+            GuiAlphaRestorer.RestorePanel(__instance.m_trophiesPanel.transform, "TrophiesFrame/border (1)");
+            GuiAlphaRestorer.RestorePanel(__instance.m_achievementsPanel.transform, "AchFrame/border (1)");
+            GuiAlphaRestorer.RestorePanel(__instance.m_achievementsPanel.transform, "AchDetails/border");
+        }
+    }
+
+    // As do the piece icons of the build menu.
+    [HarmonyPatch(typeof(BuildUi), "Awake")]
+    class BuildUi_Awake_AlphaPatch
+    {
+        static void Postfix(BuildUi __instance)
+        {
+            GuiAlphaRestorer.RestorePanel(__instance.transform, "bar/SelectionWindow/Background");
         }
     }
 
