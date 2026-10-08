@@ -1042,6 +1042,10 @@ namespace ValheimVRMod.VRCore
             }
             //Add fade component to camera for transition handling
             _fadeManager = vrCam.gameObject.AddComponent<FadingManager>();
+            if (vrCam.GetComponent<ComfortVignette>() == null)
+            {
+                vrCam.gameObject.AddComponent<ComfortVignette>();
+            }
             _instance.SetActive(true);
             vrCam.enabled = true;
             _vrCam = vrCam;
@@ -1075,6 +1079,9 @@ namespace ValheimVRMod.VRCore
             GameObject handsCameraObject = new GameObject(CameraUtils.HANDS_CAMERA);
             Camera handsCamera = handsCameraObject.AddComponent<Camera>();
             handsCamera.CopyFrom(CameraUtils.getCamera(CameraUtils.VR_CAMERA));
+            // CopyFrom carries over the eye views that EyeSeparationScaler may have set on the VR camera, and they
+            // would stay frozen here since nothing updates them on this camera.
+            handsCamera.ResetStereoViewMatrices();
             handsCamera.depth = 4;
             handsCamera.clearFlags = CameraClearFlags.Depth;
             handsCamera.cullingMask = LayerUtils.HANDS_LAYER_MASK;

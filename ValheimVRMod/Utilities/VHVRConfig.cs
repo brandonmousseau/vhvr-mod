@@ -151,6 +151,10 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> useAmplifyOcclusion;
         private static ConfigEntry<float> taaSharpenAmmount;
         private static ConfigEntry<float> nearClipPlane;
+        private static ConfigEntry<float> vignetteStrength;
+        private static ConfigEntry<float> vignetteOnLocomotion;
+        private static ConfigEntry<float> vignetteOnSmoothTurn;
+        private static ConfigEntry<float> vignetteOnSnapTurn;
         private static ConfigEntry<string> rangedWeaponGlow;
         private static ConfigEntry<string> meleeWeaponGlow;
         private static ConfigEntry<string> magicBarrierOvelay;
@@ -972,6 +976,28 @@ namespace ValheimVRMod.Utilities
                                         new ConfigDescription("This can be used to adjust the distance where where anything inside will be clipped out and not rendered. You can try adjusting this if you experience" +
                                                               " problems where you see the nose of the player character for example.",
                                         new AcceptableValueRange<float>(0.05f, 0.5f)));
+            vignetteStrength = config.Bind("Graphics",
+                                        "VignetteStrength",
+                                        0f,
+                                        new ConfigDescription("Comfort vignette: darkens the edge of the view to reduce motion sickness. This is the strength that always applies," +
+                                                              " also when you are standing still.",
+                                        new AcceptableValueRange<float>(0f, 1f)));
+            vignetteOnLocomotion = config.Bind("Graphics",
+                                        "VignetteOnLocomotion",
+                                        0f,
+                                        new ConfigDescription("Comfort vignette strength while the game moves you (walking, running, falling, riding, sailing)" +
+                                                              " Only has an effect where it is higher than VignetteStrength.",
+                                        new AcceptableValueRange<float>(0f, 1f)));
+            vignetteOnSmoothTurn = config.Bind("Graphics",
+                                        "VignetteOnSmoothTurn",
+                                        0f,
+                                        new ConfigDescription("Comfort vignette strength while turning with smooth turn. Only has an effect where it is higher than VignetteStrength.",
+                                        new AcceptableValueRange<float>(0f, 1f)));
+            vignetteOnSnapTurn = config.Bind("Graphics",
+                                        "VignetteOnSnapTurn",
+                                        0f,
+                                        new ConfigDescription("Comfort vignette strength of the short pulse shown when turning with snap turn. Only has an effect where it is higher than VignetteStrength.",
+                                        new AcceptableValueRange<float>(0f, 1f)));
             rangedWeaponGlow = config.Bind("Graphics",
                                   "RangedWeaponGlow",
                                   "None",
@@ -1877,6 +1903,26 @@ namespace ValheimVRMod.Utilities
         public static float GetNearClipPlane()
         {
             return nearClipPlane.Value;
+        }
+
+        public static float VignetteStrength()
+        {
+            return vignetteStrength.Value;
+        }
+
+        public static float VignetteOnLocomotion()
+        {
+            return vignetteOnLocomotion.Value;
+        }
+
+        public static float VignetteOnSmoothTurn()
+        {
+            return vignetteOnSmoothTurn.Value;
+        }
+
+        public static float VignetteOnSnapTurn()
+        {
+            return vignetteOnSnapTurn.Value;
         }
 
         public static int UnderwaterWaveResolution()

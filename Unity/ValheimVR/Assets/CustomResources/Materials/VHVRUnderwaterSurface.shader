@@ -1,7 +1,7 @@
 // The underside of the water surface as seen from below, see UnderwaterEffectsUpdater.
 // It is transparent, to leave a clear window overhead, so the fog that the game applies as a post process to
 // opaque geometry never reaches it. It fades into the fog color by distance itself instead, and is unlit: the
-// color it is given is expected to follow the environment's brightness already.
+// color it is given is expected to follow the fog color already.
 Shader "VHVRUnderwaterSurface"
 {
     Properties
