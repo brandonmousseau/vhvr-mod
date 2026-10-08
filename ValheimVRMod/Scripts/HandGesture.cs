@@ -11,7 +11,10 @@ namespace ValheimVRMod.Scripts {
         private Quaternion handFixedRotation;
         private Hand _sourceHand;
         private Transform sourceTransform;
-        
+        // The wrist of the other hand, which is the one that drives this hand in the barber mirror.
+        private Transform mirrorSourceTransform;
+        private bool mirroringFingers;
+
         public Hand sourceHand {
             get
             {
@@ -91,34 +94,59 @@ namespace ValheimVRMod.Scripts {
 
         private void Update() {
 
-            if (!areFingersFree() || Game.IsPaused() || VRPlayer.ShouldPauseMovement) {
+            // The barber mirror keeps the hands moving while movement is paused, see BarberMirror.
+            bool mirrored = BarberMirror.IsActive;
+            if (!areFingersFree() || Game.IsPaused() || (VRPlayer.ShouldPauseMovement && !mirrored)) {
                 return;
             }
 
             transform.rotation = handFixedRotation ;
-            updateFingerRotations();
+            updateFingerRotations(mirrored);
         }
 
         private bool ensureSourceTransform()
         {
             if (sourceTransform == null) {
-                foreach (var t in sourceHand.GetComponentsInChildren<Transform>())
-                {
-                    if (t.name == "wrist_r")
-                    {
-                        sourceTransform = t;
-                    }
-                }
+                sourceTransform = findWrist(sourceHand);
             }
             return sourceTransform != null;
         }
 
-        private void updateFingerRotations()
+        private bool ensureMirrorSourceTransform()
         {
-            if (!ensureSourceTransform())
+            if (mirrorSourceTransform == null && sourceHand != null) {
+                mirrorSourceTransform = findWrist(sourceHand.otherHand);
+            }
+            return mirrorSourceTransform != null;
+        }
+
+        private static Transform findWrist(Hand hand)
+        {
+            if (hand == null)
+            {
+                return null;
+            }
+            Transform wrist = null;
+            foreach (var t in hand.GetComponentsInChildren<Transform>())
+            {
+                if (t.name == "wrist_r")
+                {
+                    wrist = t;
+                }
+            }
+            return wrist;
+        }
+
+        // When mirrored, the fingers follow those of the user's opposite hand reflected in the barber mirror, like
+        // the hand itself does.
+        private void updateFingerRotations(bool mirrored)
+        {
+            if (mirrored ? !ensureMirrorSourceTransform() : !ensureSourceTransform())
             {
                 return;
             }
+            Transform sourceTransform = mirrored ? mirrorSourceTransform : this.sourceTransform;
+            mirroringFingers = mirrored;
 
             for (int i = 0; i < transform.childCount; i++) {
 
@@ -155,7 +183,17 @@ namespace ValheimVRMod.Scripts {
 
         private void updateFingerPart(Transform source, Transform target)
         {
-            target.rotation = Quaternion.LookRotation(-source.up, isRightHand ? source.right : -source.right);
+            if (mirroringFingers)
+            {
+                // The source is the opposite hand, whose reflection is a hand of this side.
+                target.rotation = Quaternion.LookRotation(
+                    BarberMirror.ReflectDirection(-source.up),
+                    BarberMirror.ReflectDirection(isRightHand ? -source.right : source.right));
+            }
+            else
+            {
+                target.rotation = Quaternion.LookRotation(-source.up, isRightHand ? source.right : -source.right);
+            }
 
             if (source.childCount > 0 && target.childCount > 0) {
                 updateFingerPart(source.GetChild(0), target.GetChild(0));
