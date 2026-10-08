@@ -67,6 +67,7 @@ namespace ValheimVRMod.Utilities
             _worldSpaceUiCamera.depth = worldSpaceUiDepth;
             _worldSpaceUiCamera.renderingPath = RenderingPath.Forward;
             _worldSpaceUiCamera.cullingMask = LayerUtils.WORLDSPACE_UI_LAYER_MASK;
+            worldSpaceUiCamParent.AddComponent<Scripts.EyeSeparationScaler>();
             _worldSpaceUiCamera.enabled = true;
             return _worldSpaceUiCamera;
         }
