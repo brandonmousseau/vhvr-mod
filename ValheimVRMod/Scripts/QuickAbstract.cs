@@ -596,7 +596,14 @@ namespace ValheimVRMod.Scripts
                             return true;
                         });
                 }
-                GuardianPowerCountdown.AttachTo(extraElements[extraElementCount].transform);
+                if (usesLegacyHud())
+                {
+                    GuardianPowerCountdown.DetachFrom(wrist.transform);
+                }
+                else
+                {
+                    GuardianPowerCountdown.AttachTo(extraElements[extraElementCount].transform);
+                }
                 extraElementCount++;
             }
             else
@@ -660,7 +667,7 @@ namespace ValheimVRMod.Scripts
             }
             extraElementCount++;
 
-            if (VHVRConfig.StatusEffectsOnWristQuickBar())
+            if (VHVRConfig.StatusEffectsOnWristQuickBar() && !usesLegacyHud())
             {
                 // One row above the first row of buttons, see reorderElements().
                 WristStatusEffects.AttachTo(wrist, 0.05f);
@@ -669,6 +676,13 @@ namespace ValheimVRMod.Scripts
             {
                 WristStatusEffects.DetachFrom(wrist);
             }
+        }
+
+        // Whether VRHud has reverted to the legacy HUD, in which case the Forsaken Power countdown and the status effect
+        // icons belong there too rather than on the wrist bar.
+        private static bool usesLegacyHud()
+        {
+            return !VRPlayer.attachedToPlayer || VHVRConfig.UseLegacyHud();
         }
 
         private static void ToggleChat()
