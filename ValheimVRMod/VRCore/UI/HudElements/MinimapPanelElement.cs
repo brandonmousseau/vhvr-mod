@@ -51,6 +51,12 @@ namespace ValheimVRMod.VRCore.UI.HudElements
 
         public void Reset()
         {
+            // The game only writes the biome name when the biome changes, and it has been writing it to the clone.
+            if (_clone.mapBiomeName && _original.mapBiomeName)
+            {
+                _original.mapBiomeName.GetComponent<TMP_Text>().text = _clone.mapBiomeName.GetComponent<TMP_Text>().text;
+            }
+
             //Destroy clone
             GameObject.Destroy(_clone.Root);
             _clone.Clear();
