@@ -28,11 +28,31 @@ namespace ValheimVRMod.Scripts
         public static Vector3 ViewPoint { get; private set; }
         public static Vector3 ViewDirection { get { return -planeNormal; } }
 
+        private static bool usingStation;
+
+        // Whether the local player is at a barber station. Unlike PlayerCustomizaton.IsBarberGuiVisible(), this stays
+        // true while vanilla hides the barber GUI for another one, e. g. the inventory or the map, which leaves the
+        // player seated at the station until the barber GUI comes back and is applied or cancelled.
+        public static bool IsUsingStation()
+        {
+            if (PlayerCustomizaton.IsBarberGuiVisible())
+            {
+                usingStation = true;
+            }
+            else if (usingStation)
+            {
+                Player player = Player.m_localPlayer;
+                usingStation =
+                    PlayerCustomizaton.m_barberWasHidden && player != null && player.IsAttached() && !player.IsDead();
+            }
+            return usingStation;
+        }
+
         public static bool ShouldBeActive(VRIK localPlayerVrik)
         {
             return localPlayerVrik != null &&
                 Player.m_localPlayer != null &&
-                PlayerCustomizaton.IsBarberGuiVisible() &&
+                IsUsingStation() &&
                 VHVRConfig.UseVrControls();
         }
 

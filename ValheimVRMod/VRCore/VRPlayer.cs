@@ -194,7 +194,7 @@ namespace ValheimVRMod.VRCore
 
         public static Hand arrowHand { get { return VHVRConfig.LeftHanded() ^ offHandWield ? leftHand : rightHand; } }
         public static Hand bowHand { get { return VHVRConfig.LeftHanded() ^ offHandWield ? rightHand : leftHand; } }
-        public static bool ShouldPauseMovement { get { return PlayerCustomizaton.IsBarberGuiVisible() || (Menu.IsVisible() && !VHVRConfig.AllowMovementWhenInMenu()); } }
+        public static bool ShouldPauseMovement { get { return BarberMirror.IsUsingStation() || (Menu.IsVisible() && !VHVRConfig.AllowMovementWhenInMenu()); } }
         public static bool IsClickableGuiOpen
         {
             get
@@ -1347,7 +1347,7 @@ namespace ValheimVRMod.VRCore
                 !getPlayerCharacter().InCutscene() &&
                 !getPlayerCharacter().IsDead() &&
                 !getPlayerCharacter().InBed() &&
-                !PlayerCustomizaton.IsBarberGuiVisible();
+                !BarberMirror.IsUsingStation();
         }
 
         private void attachVrPlayerToPlayerCharacter()
@@ -2058,7 +2058,7 @@ namespace ValheimVRMod.VRCore
             // Orient the player with the main camera
             _instance.transform.parent = mainCamera.gameObject.transform;
             var desirePosition = mainCamera.gameObject.transform.position;
-            if (PlayerCustomizaton.IsBarberGuiVisible() && getPlayerCharacter())
+            if (BarberMirror.IsUsingStation() && getPlayerCharacter())
             {
                 desirePosition.y = getPlayerCharacter().transform.position.y;
             }
