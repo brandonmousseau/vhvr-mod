@@ -654,31 +654,7 @@ namespace ValheimVRMod.Scripts
                     Sprite.Create(chatTexture, new Rect(0.0f, 0.0f, chatTexture.width, chatTexture.height), new Vector2(0.5f, 0.5f), 500),
                     delegate ()
                     {
-                        // While the SteamVR keyboard is driving chat input, leave it to close/
-                        // submit via its own keyboard-closed event instead of treating a repeat
-                        // press of this quick action as the physical-keyboard "confirm" gesture.
-                        if (shouldStartChat && Chat.instance.HasFocus() && !InputManager.chatKeyboardActive)
-                        {
-                            enterChatText();
-                        }
-                        else if (!InputManager.chatKeyboardActive)
-                        {
-                            shouldStartChat = true;
-                            if (SteamVR_Actions.valheim_Use.GetState(SteamVR_Input_Sources.Any))
-                            {
-                                ZInput_GetButtonDown_Patch.EmulateButtonDown("Chat");
-                            }
-                            else
-                            {
-                                // Use SteamVR virtual keyboard to chat. Also open the vanilla chat
-                                // window (as the physical-keyboard branch above does) purely for
-                                // visual feedback - InputManager mirrors each keystroke from the
-                                // SteamVR keyboard into Chat.instance.m_input as it arrives, and the
-                                // window is closed again once the SteamVR keyboard closes.
-                                ZInput_GetButtonDown_Patch.EmulateButtonDown("Chat");
-                                TextInput.m_instance.Show("ChatText", "", 256);
-                            }
-                        }
+                        ToggleChat();
                         return true;
                     });
             }
@@ -695,6 +671,56 @@ namespace ValheimVRMod.Scripts
             }
         }
 
+        private static void ToggleChat()
+        {
+            if (Chat.instance == null)
+            {
+                return;
+            }
+
+            if (InputManager.keyboardActive && !InputManager.chatKeyboardActive)
+            {
+                // The SteamVR keyboard is typing into some other dialog.
+                return;
+            }
+
+            if (shouldStartChat && Chat.instance.HasFocus() && !InputManager.chatKeyboardActive)
+            {
+                // Physical keyboard chat: a repeat press is the "confirm" gesture.
+                enterChatText();
+                return;
+            }
+
+            if (InputManager.chatActive)
+            {
+                // This also covers either of the two being open without the other. The SteamVR keyboard
+                // sends the text with its own done key.
+                InputManager.CancelChat();
+                return;
+            }
+
+            if (!CanOpenChat())
+            {
+                return;
+            }
+
+            shouldStartChat = true;
+            // Holding Use opens the chat for a physical keyboard, without the SteamVR one.
+            InputManager.OpenChat(useSteamVrKeyboard: !SteamVR_Actions.valheim_Use.GetState(SteamVR_Input_Sources.Any));
+        }
+
+        // What Chat.Update() requires before it opens the chat.
+        private static bool CanOpenChat()
+        {
+            return Player.m_localPlayer != null &&
+                !global::Console.IsVisible() &&
+                !TextInput.IsVisible() &&
+                !Minimap.InTextInput() &&
+                !Menu.IsVisible() &&
+                !InventoryGui.IsVisible() &&
+                !Hud.IsPieceSelectionVisible();
+        }
+
         public static void enterChatText()
         {
             Chat.instance.InputText();
@@ -703,8 +729,7 @@ namespace ValheimVRMod.Scripts
 
         public static void unfocusChatWindow()
         {
-            ZInput_GetKeyDown_Patch.EmulateKeyDown(KeyCode.Escape);
-            shouldStartChat = false;
+            InputManager.CancelChat();
         }
 
 

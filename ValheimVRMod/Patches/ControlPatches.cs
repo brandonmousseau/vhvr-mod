@@ -147,7 +147,7 @@ namespace ValheimVRMod.Patches {
                 // When toggling running, disable turning left or right if the the x-rotation amount of the stick is less than the y-rotation amount.
                 // This prevents unwanted accidental turning when moving the stick forward or backward.
                 // TODO: examine whether this check should be enabled for smooth-turn mode as well.
-                if (VHVRConfig.SnapTurnEnabled() && VHVRConfig.ToggleRun() && Mathf.Abs(VRControls.instance.GetJoyRightStickX()) < Mathf.Abs(VRControls.instance.GetJoyRightStickY()))
+                if (VHVRConfig.SnapTurnEnabled() && Mathf.Abs(VRControls.instance.GetJoyRightStickX()) < Mathf.Abs(VRControls.instance.GetJoyRightStickY()))
                 {
                     return;
                 }
@@ -160,12 +160,10 @@ namespace ValheimVRMod.Patches {
     [HarmonyPatch(typeof(ZInput), nameof(ZInput.GetJoyRightStickY))]
     class ZInput_GetJoyRightStickY_Patch {
 
-        private const float NON_TOGGLE_RUN_SENSITIVITY = -0.3f;
         private const float TOGGLE_RUN_SENSITIVITY = -0.85f;
 
         public static bool togglingRun { get; private set; }
-        public static bool holdingRun { get; private set; }
-        public static bool hasRunInput { get; private set; }
+        public static bool hasRunInput { get { return togglingRun; } }
 
         static void Postfix(ref float __result) {
             if (!VRControls.mainControlsActive)
@@ -176,8 +174,6 @@ namespace ValheimVRMod.Patches {
             var joystick = VRControls.instance.GetJoyRightStickY();
 
             togglingRun = joystick < TOGGLE_RUN_SENSITIVITY;
-            holdingRun = joystick < NON_TOGGLE_RUN_SENSITIVITY;
-            hasRunInput = VHVRConfig.ToggleRun() ? togglingRun : holdingRun;
 
             __result = __result + joystick;
         }
@@ -528,8 +524,9 @@ namespace ValheimVRMod.Patches {
             {
                 return GetButtonPatchUtils.GetButtonDownPatched(inputName);
             }
-            // Only the laser hand's trigger places the piece, since the placement ray always comes from the dominant
-            // hand's pointer (see PlaceModeRayVectorProvider). The other trigger is left to the building controls,
+            // Only the ray hand's trigger places the piece: normally the dominant hand, whose pointer the placement
+            // ray comes from, or the free hand while it casts the ray at the ground beneath it instead (see
+            // PlaceModeRayVectorProvider). The other trigger is left to the building controls,
             // e.g. both triggers together for JoyAltPlace. The build hud flag is still cleared by either trigger,
             // since either hand can have picked the piece that closed it.
             if (VHVRConfig.BuildOnRelease())
@@ -545,7 +542,7 @@ namespace ValheimVRMod.Patches {
                 } else
                 {
                     inputReceived = inputReceived &&
-                        LaserPointerChords.leftClickAction.GetStateUp(VRPlayer.dominantHandInputSource);
+                        LaserPointerChords.leftClickAction.GetStateUp(PlaceModeRayVectorProvider.rayHandInputSource);
                     if (inputReceived && !BuildingManager.instance.isCurrentlyMoving() && VHVRConfig.FreePlaceAutoReturn())
                     {
                         BuildingManager.instance.ExitPreciseMode();
@@ -565,7 +562,7 @@ namespace ValheimVRMod.Patches {
                     return false;
                 }
                 inputReceived = inputReceived &&
-                    LaserPointerChords.leftClickAction.GetStateDown(VRPlayer.dominantHandInputSource);
+                    LaserPointerChords.leftClickAction.GetStateDown(PlaceModeRayVectorProvider.rayHandInputSource);
                 if (inputReceived && !BuildingManager.instance.isCurrentlyMoving() && VHVRConfig.FreePlaceAutoReturn())
                 {
                     BuildingManager.instance.ExitPreciseMode();
@@ -683,7 +680,8 @@ namespace ValheimVRMod.Patches {
         }
 
         // Run inputs are ignored on a hand that is scrolling with its laser pointer since the scroll chords may
-        // share the run stick. The fallback without run bindings reads the right stick.
+        // share the run stick. Without a binding, toggling run falls back to the right stick; holding run has no
+        // fallback.
         private static bool toggleRun()
         {
             if (LaserPointerChords.IsHeldWithoutLaserScroll(SteamVR_Actions.valheim_HoldRun))
@@ -692,16 +690,14 @@ namespace ValheimVRMod.Patches {
             }
             return SteamVR_Actions.valheim_ToggleRun.activeBinding ?
                 LaserPointerChords.IsHeldWithoutLaserScroll(SteamVR_Actions.valheim_ToggleRun) :
-                (VHVRConfig.ToggleRun() && ZInput_GetJoyRightStickY_Patch.togglingRun &&
+                (ZInput_GetJoyRightStickY_Patch.togglingRun &&
                     !LaserPointerChords.IsScrollingWithLaser(SteamVR_Input_Sources.RightHand));
         }
 
         private static bool holdRun()
         {
-            return SteamVR_Actions.valheim_HoldRun.activeBinding ?
-                LaserPointerChords.IsHeldWithoutLaserScroll(SteamVR_Actions.valheim_HoldRun) :
-                (!VHVRConfig.ToggleRun() && ZInput_GetJoyRightStickY_Patch.holdingRun &&
-                    !LaserPointerChords.IsScrollingWithLaser(SteamVR_Input_Sources.RightHand));
+            return SteamVR_Actions.valheim_HoldRun.activeBinding &&
+                LaserPointerChords.IsHeldWithoutLaserScroll(SteamVR_Actions.valheim_HoldRun);
         }
     }
 

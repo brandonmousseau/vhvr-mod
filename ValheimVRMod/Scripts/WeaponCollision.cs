@@ -8,7 +8,13 @@ namespace ValheimVRMod.Scripts
 {
     public class WeaponCollision : MonoBehaviour
     {
-        private const float MIN_STAB_SPEED = 4f;
+        // The speed along the weapon that shows that it is still going in at the time of contact. Whether the
+        // movement is a stab at all is judged by the thrust leading up to it.
+        private const float MIN_STAB_SPEED = 2f;
+        // How far along the weapon the hand has to have moved within STAB_THRUST_DURATION for a stab.
+        private const float MIN_STAB_THRUST = 0.2f;
+        // Short, so that movement from before the thrust is left out.
+        private const float STAB_THRUST_DURATION = 0.25f;
         private const float MIN_HAMMER_SPEED = 1;
         private const float MIN_LONG_TOOL_SPEED = 1.5f;
         // The offset amount of the point on the weapon relative to the hand to calculate the speed of.
@@ -16,6 +22,7 @@ namespace ValheimVRMod.Scripts
         // small wrist rotation will not acccidentally trigger an attack when holding a long weapon.
         private const float WEAPON_ANGULAR_WEIGHT_OFFSET = 0.125f;
         private const string MOUTH_COLLIDER_NAME = "MouthCollider";
+        private const string LIGHTNING_STRIKE_STAFF_NAME = "$item_staff_thunderblood";
 
         private bool scriptActive;
         private GameObject colliderParent;
@@ -29,6 +36,11 @@ namespace ValheimVRMod.Scripts
         private float twoHandedMultitargetSwipeCountdown = 0;
         private float twoHandedMultitargetSwipeDuration;
         private GameObject debugColliderIndicator;
+        private readonly StabStick stabStick = new StabStick();
+        // Whether hitting things with the held item is a fist attack, for items that have no melee attack of their own.
+        private bool usesUnarmedAttack;
+        // Whether stabbing with the held item is an attack with the item itself even though it uses fist attacks.
+        private bool stabsWithHeldItem;
         private bool isHoldingTankard { get { return isVanillaRightHandedWeapon && EquipScript.CurrentMainHandEquipType() == EquipType.Tankard; } }
 
         public PhysicsEstimator physicsEstimator { get; private set; }
@@ -332,10 +344,23 @@ namespace ValheimVRMod.Scripts
             StaticObjects.lastHitDir = physicsEstimator.GetVelocity().normalized;
             StaticObjects.lastHitCollider = collider;
 
+            // Attack.Start() clears the flag, so it has to be read beforehand.
+            bool isCooldownHit = AttackTargetMeshCooldown.isCooldownHit;
+
+            // A fist attack is made with the fists as the weapon, so that the held item contributes nothing to it. A
+            // stab with the harpoon is made with the harpoon instead, which harpoons the target like throwing it does.
+            var attackItem =
+                usesUnarmedAttack && !(isStab && stabsWithHeldItem) ? Player.m_localPlayer.m_unarmedWeapon.m_itemData : item;
+
             if (currentAttack.Start(Player.m_localPlayer, null, null,
                         Player.m_localPlayer.m_animEvent,
-                        null, item, null, 0.0f, 0.0f))
+                        null, attackItem, null, 0.0f, 0.0f))
             {
+                if (isStab && !isCooldownHit && canStabStick())
+                {
+                    stabStick.TryStick(collider.GetComponentInParent<Character>(), transform.position);
+                }
+
                 if (isVanillaRightHandedWeapon)
                 {
                     VRPlayer.mainWeaponHand.hapticAction.Execute(0, 0.2f, 100, 0.5f, VRPlayer.mainWeaponHandInputSource);
@@ -482,6 +507,9 @@ namespace ValheimVRMod.Scripts
                 colliderParent = new GameObject();
             }
 
+            usesUnarmedAttack = false;
+            stabsWithHeldItem = false;
+
             switch (EquipScript.CurrentMainHandEquipType())
             {
                 case EquipType.Fishing:
@@ -491,7 +519,9 @@ namespace ValheimVRMod.Scripts
                 case EquipType.SpearChitin:
                     if (this.isVanillaRightHandedWeapon)
                     {
-                        // item = Player.m_localPlayer.m_unarmedWeapon.m_itemData;
+                        // The held item is still what the collider is looked up for below.
+                        usesUnarmedAttack = true;
+                        stabsWithHeldItem = EquipScript.CurrentMainHandEquipType() == EquipType.SpearChitin;
                         attack = secondaryAttack = Player.m_localPlayer.m_unarmedWeapon.m_itemData.m_shared.m_attack;
                         break;
                     }
@@ -599,9 +629,33 @@ namespace ValheimVRMod.Scripts
                 postSlowAttackCountdown -= Time.fixedDeltaTime;
             }
 
-            if (!isCollisionAllowed())
+            if (!isCollisionAllowed() || !canStabStick())
             {
+                stabStick.Release();
                 return;
+            }
+
+            if (stabStick.FixedUpdate(transform.position, LocalWeaponWield.weaponForward))
+            {
+                var hand = isVanillaRightHandedWeapon ? VRPlayer.mainWeaponHand : VRPlayer.mainWeaponHand.otherHand;
+                var inputSource = isVanillaRightHandedWeapon ? VRPlayer.mainWeaponHandInputSource : VRPlayer.secondaryWeaponHandInputSource;
+                hand.hapticAction.Execute(0, Time.fixedDeltaTime, 50, 0.2f, inputSource);
+            }
+        }
+
+        private static bool canStabStick()
+        {
+            switch (EquipScript.CurrentMainHandEquipType())
+            {
+                case EquipType.Knife:
+                case EquipType.Polearms:
+                case EquipType.Spear:
+                case EquipType.Sword:
+                    return true;
+                case EquipType.Magic:
+                    return Player.m_localPlayer.GetRightItem()?.m_shared?.m_name == LIGHTNING_STRIKE_STAFF_NAME;
+                default:
+                    return false;
             }
         }
 
@@ -635,7 +689,7 @@ namespace ValheimVRMod.Scripts
             }
 
             isBackSlash = Vector3.Angle(velocity, LocalWeaponWield.weaponForward) > 135;
-            isStab = !isBackSlash && WeaponCollision.isStab(velocity);
+            isStab = !isBackSlash && this.isStab(velocity);
 
             if (isShovelScoop && !shoveling)
             {
@@ -678,17 +732,39 @@ namespace ValheimVRMod.Scripts
             
         }
 
-        private static bool isStab(Vector3 velocity)
+        // A stab is judged by the path that the hand has just taken rather than by the velocity alone, which is only
+        // a single sample that is often taken before or after the peak of the thrust and jitters in direction.
+        private bool isStab(Vector3 velocity)
         {
-            if (!WeaponUtils.IsStab(velocity, LocalWeaponWield.weaponForward, LocalWeaponWield.isCurrentlyTwoHanded())) {
+            Vector3 weaponForward = LocalWeaponWield.weaponForward.normalized;
+            bool isTwoHanded = weaponWield.twoHandedState != WeaponWield.TwoHandedState.SingleHanded;
+
+            Vector3 thrust = mainHandPhysicsEstimator.GetLongestLocomotion(STAB_THRUST_DURATION);
+            if (isTwoHanded)
+            {
+                // Either hand may be the one that drives the thrust.
+                Vector3 leftHandThrust = VRPlayer.leftHandPhysicsEstimator.GetLongestLocomotion(STAB_THRUST_DURATION);
+                Vector3 rightHandThrust = VRPlayer.rightHandPhysicsEstimator.GetLongestLocomotion(STAB_THRUST_DURATION);
+                thrust =
+                    Vector3.Dot(leftHandThrust, weaponForward) > Vector3.Dot(rightHandThrust, weaponForward) ?
+                    leftHandThrust :
+                    rightHandThrust;
+            }
+
+            if (!WeaponUtils.IsStab(thrust, weaponForward, isTwoHanded)) {
                 return false;
             }
 
-            if (Vector3.Dot(velocity, LocalWeaponWield.weaponForward) < MIN_STAB_SPEED)
-            {   
+            if (Vector3.Dot(thrust, weaponForward) < MIN_STAB_THRUST)
+            {
                 return false;
             }
-               
+
+            if (Vector3.Dot(velocity, weaponForward) < MIN_STAB_SPEED)
+            {
+                return false;
+            }
+
             // LogUtils.LogDebug("VHVR: stab detected on weapon direction: " + LocalWeaponWield.weaponForward);
             return true;
         }

@@ -12,6 +12,20 @@ namespace ValheimVRMod.Scripts
         private static readonly Color UNDER_WATER_OVERLAY_COLOR = new Color(0.5f, 0.75f, 0.75f);
         private static readonly Vector3 UNDER_WATER_OVERLAY_OFFSET = new Vector3(0, 0, 0.125f);
         private const float UNDER_WATER_OVERLAY_SIZE = 0.25f;
+        // How far beyond the near clip plane the overlay sits. Any closer and it gets clipped every now and then far
+        // away from the world origin, where positions are only accurate to about a millimeter.
+        private const float UNDER_WATER_OVERLAY_NEAR_CLIP_ALLOWANCE = 0.005f;
+        // How steeply up or down the camera has to face, as the vertical component of its facing, for the overlay
+        // to be either shown or hidden as a whole rather than cover the part of the view below the surface, and
+        // how steeply it has to keep facing that way for that to last.
+        private const float UNDER_WATER_OVERLAY_STEEP_FACING = 0.875f;
+        private const float UNDER_WATER_OVERLAY_STEEP_FACING_RELEASE = 0.8f;
+        // How far past the surface the eyes have to go, relative to the half size of the overlay, before they count
+        // as being on the other side of it.
+        private const float UNDER_WATER_OVERLAY_SURFACE_HYSTERESIS = 0.5f;
+        private bool overlayEyesUnderwater;
+        private bool overlayFacingSteeplyUp;
+        private bool overlayFacingSteeplyDown;
         private GameObject underwaterOverlay;
         private Material underwaterOverlayMaterial;
         private GameObject underwaterLightBlocker = null;
@@ -26,11 +40,24 @@ namespace ValheimVRMod.Scripts
         private float lightBlockerSink;
         private float lightBlockerEyeDepth;
         private static readonly Color LIGHT_BLOCKER_COLOR = new Color(0.5f, 0.5f, 0.625f, 1);
+        private const float LIGHT_BLOCKER_SMOOTHNESS = 0.25f;
+        // How bright the blocker with its own shader is compared to the fog. Outside Snell's window the surface
+        // mirrors the water below, which is darker than the water further ahead that the fog color stands for.
+        private const float LIGHT_BLOCKER_REFLECTION_BRIGHTNESS = 0.75f;
+        private Material lightBlockerMaterial;
+        // Whether the blocker uses its own shader, which is unlit and fogs itself, rather than a Standard material.
+        private bool lightBlockerHasOwnFog;
+        private const float UNDERWATER_FOG_DENSITY = 0.125f;
+        private static readonly int FOG_COLOR_ID = Shader.PropertyToID("_FogColor");
+        private static readonly int FOG_DENSITY_ID = Shader.PropertyToID("_FogDensity");
+        private static readonly int FOG_START_ID = Shader.PropertyToID("_FogStart");
+        private static readonly int FOG_END_ID = Shader.PropertyToID("_FogEnd");
+        private static readonly int FOG_MODE_ID = Shader.PropertyToID("_FogMode");
         // Snell's window has a half angle of about 48.6 degrees, i. e. a radius of about 1.13 times the depth.
         private const float LIGHT_BLOCKER_WINDOW_RADIUS_PER_DEPTH = 1.13f;
         private const float LIGHT_BLOCKER_WINDOW_MIN_RADIUS = 0.25f;
         // Where the window has turned fully into the blocker's color, relative to its clear radius.
-        private const float LIGHT_BLOCKER_WINDOW_DARK_RATIO = 2;
+        private const float LIGHT_BLOCKER_WINDOW_DARK_RATIO = 1.5f;
         // Half the distance between the samples the tilted quad takes its slope from.
         private const float LIGHT_BLOCKER_SLOPE_SAMPLE_DISTANCE = 0.5f;
         // How far the grid follows the waves. Further out the fog and the reduced far clip plane hide the surface.
@@ -46,6 +73,12 @@ namespace ValheimVRMod.Scripts
 
         // A smooth blending factor for transitioning between using and not using under water effects
         public static float Underwaterness { get; private set; }
+
+        // The density of the fog the game draws as a post process (see FogComponentPatches), thicker under water.
+        public static float GetFogDensity()
+        {
+            return Mathf.Lerp(RenderSettings.fogDensity, UNDERWATER_FOG_DENSITY, Underwaterness);
+        }
 
         public void Init(Camera camera, PostProcessingBehaviour postProcessingBehaviour, PostProcessingProfile originalPostProcessingProfile)
         {
@@ -74,20 +107,33 @@ namespace ValheimVRMod.Scripts
             underwaterLightBlocker.transform.rotation = Quaternion.LookRotation(Vector3.up, Vector3.forward);
             Destroy(underwaterLightBlocker.GetComponent<Collider>());
             var underwaterLightBlockerRenderer = underwaterLightBlocker.GetComponent<MeshRenderer>();
-            // The Fade material shows a window overhead (see CreateLightBlockerWindowTexture()). Without it in the
-            // asset bundle, the opaque one still gets the window's brighter middle.
-            Material lightBlockerMaterial;
+            // The blocker's own shader shows a window overhead (see CreateLightBlockerWindowTexture()) and fades into
+            // the fog by distance (see UpdateLightBlockerColors()). Without it in the asset bundle, the Fade material
+            // still shows the window, and without that one either, the opaque one gets the window's brighter middle.
             try
             {
-                lightBlockerMaterial = VRAssetManager.GetAsset<Material>("StandardFade");
+                lightBlockerMaterial = new Material(VRAssetManager.GetAsset<Shader>("VHVRUnderwaterSurface"));
+                lightBlockerHasOwnFog = true;
             }
             catch (KeyNotFoundException)
             {
-                lightBlockerMaterial = VRAssetManager.GetAsset<Material>("StandardClone");
+                try
+                {
+                    lightBlockerMaterial = Instantiate(VRAssetManager.GetAsset<Material>("StandardFade"));
+                }
+                catch (KeyNotFoundException)
+                {
+                    lightBlockerMaterial = Instantiate(VRAssetManager.GetAsset<Material>("StandardClone"));
+                }
+                lightBlockerMaterial.color = Color.white;
+                // Seen from below at a grazing angle, i. e. far away, a smooth surface mostly reflects the sky, which
+                // stays bright wherever the player is, while a fully rough one turns out too dark.
+                lightBlockerMaterial.SetFloat("_Glossiness", LIGHT_BLOCKER_SMOOTHNESS);
             }
-            underwaterLightBlockerRenderer.material = Instantiate(lightBlockerMaterial);
-            underwaterLightBlockerRenderer.material.color = Color.white;
-            underwaterLightBlockerRenderer.material.mainTexture = CreateLightBlockerWindowTexture();
+            // The blocker's own shader is given its whole color in UpdateLightBlockerColors().
+            lightBlockerMaterial.mainTexture =
+                CreateLightBlockerWindowTexture(lightBlockerHasOwnFog ? Color.white : LIGHT_BLOCKER_COLOR);
+            underwaterLightBlockerRenderer.sharedMaterial = lightBlockerMaterial;
             underwaterLightBlockerRenderer.receiveShadows = false;
             underwaterLightBlockerRenderer.shadowCastingMode = ShadowCastingMode.Off;
             underwaterLightBlockerRenderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
@@ -150,7 +196,7 @@ namespace ValheimVRMod.Scripts
         // quickly turning into the blocker's color further out, like the Snell's window real water shows from below.
         // Its texture coordinates are scaled so that the texture's inscribed circle is LIGHT_BLOCKER_WINDOW_DARK_RATIO
         // times the clear radius, see UpdateLightBlockerWindow().
-        private static Texture2D CreateLightBlockerWindowTexture()
+        private static Texture2D CreateLightBlockerWindowTexture(Color blockerColor)
         {
             const int size = 64;
             var texture = new Texture2D(size, size, TextureFormat.RGBA32, /* mipChain= */ false);
@@ -163,7 +209,7 @@ namespace ValheimVRMod.Scripts
                 {
                     var radius = new Vector2(x + 0.5f - size / 2f, y + 0.5f - size / 2f).magnitude / (size / 2f);
                     var t = Mathf.SmoothStep(0, 1, Mathf.InverseLerp(1 / LIGHT_BLOCKER_WINDOW_DARK_RATIO, 1, radius));
-                    var color = Color.Lerp(Color.white, LIGHT_BLOCKER_COLOR, t);
+                    var color = Color.Lerp(Color.white, blockerColor, t);
                     color.a = t;
                     pixels[y * size + x] = color;
                 }
@@ -178,7 +224,7 @@ namespace ValheimVRMod.Scripts
             // About the radius of Snell's window at this depth, but never too small to see when near the surface.
             var clearRadius = Mathf.Max(LIGHT_BLOCKER_WINDOW_MIN_RADIUS, LIGHT_BLOCKER_WINDOW_RADIUS_PER_DEPTH * eyeDepth);
             var darkRadius = clearRadius * LIGHT_BLOCKER_WINDOW_DARK_RATIO;
-            var material = underwaterLightBlocker.GetComponent<MeshRenderer>().material;
+            var material = lightBlockerMaterial;
             // The grid's texture coordinates are meters from the eyes, the quad's span its 1024 meters from 0 to 1.
             var scale = (isGrid ? 1 : 1024) / (2 * darkRadius);
             var offset = isGrid ? 0.5f : 0.5f - 0.5f * scale;
@@ -238,10 +284,34 @@ namespace ValheimVRMod.Scripts
                 1 :
                 camera.transform.position.y - GetDrawnWaterLevel(camera.transform.position));
 
-            if (underwaterLightBlocker.activeSelf && lightBlockerMeshFilter.sharedMesh == lightBlockerGridMesh)
+            if (!underwaterLightBlocker.activeSelf)
+            {
+                return;
+            }
+            if (lightBlockerMeshFilter.sharedMesh == lightBlockerGridMesh)
             {
                 UpdateLightBlockerGrid();
             }
+            if (lightBlockerHasOwnFog)
+            {
+                UpdateLightBlockerColors();
+            }
+        }
+
+        // The blocker's own shader is unlit, so that it can fade into exactly the color of the fog. Up close it is
+        // given a darker shade of that color, since outside Snell's window the surface mirrors the water below
+        // rather than being lit, and the same fog parameters as the fog post process, which is drawn before
+        // anything transparent and so leaves it out.
+        private void UpdateLightBlockerColors()
+        {
+            var color = RenderSettings.fogColor * LIGHT_BLOCKER_REFLECTION_BRIGHTNESS;
+            color.a = 1;
+            lightBlockerMaterial.color = color;
+            lightBlockerMaterial.SetColor(FOG_COLOR_ID, RenderSettings.fogColor);
+            lightBlockerMaterial.SetFloat(FOG_DENSITY_ID, GetFogDensity());
+            lightBlockerMaterial.SetFloat(FOG_START_ID, RenderSettings.fogStartDistance);
+            lightBlockerMaterial.SetFloat(FOG_END_ID, RenderSettings.fogEndDistance);
+            lightBlockerMaterial.SetFloat(FOG_MODE_ID, (float)RenderSettings.fogMode);
         }
 
         private void UpdateLightBlockerGrid()
@@ -349,11 +419,30 @@ namespace ValheimVRMod.Scripts
         private void UpdateUnderwaterOverlay(float elevation)
         {
             // The overlay tints what the near clip plane lets through from below the water surface, so its edge
-            // belongs where the surface crosses that plane. It sits just beyond it to still be drawn, and is scaled
-            // with it to keep covering the same field of view.
-            var distance = camera.nearClipPlane + 0.001f;
+            // belongs where the surface crosses that plane. It sits slightly beyond it to still be drawn, and is
+            // scaled with it to keep covering the same field of view.
+            var distance = camera.nearClipPlane + UNDER_WATER_OVERLAY_NEAR_CLIP_ALLOWANCE;
             var halfSize = distance * UNDER_WATER_OVERLAY_SIZE / UNDER_WATER_OVERLAY_OFFSET.z;
             underwaterOverlay.transform.localScale = 2 * halfSize * Vector3.one;
+
+            var facing = camera.transform.forward;
+
+            // Facing steeply up or down, the overlay is switched as a whole by which side of the surface the eyes are
+            // on. Both that side and the steepness only change once clearly past where they would change back, or
+            // the overlay would flicker with every wave that passes the eyes.
+            var surfaceHysteresis = halfSize * UNDER_WATER_OVERLAY_SURFACE_HYSTERESIS;
+            if (elevation < -surfaceHysteresis)
+            {
+                overlayEyesUnderwater = true;
+            }
+            else if (elevation > surfaceHysteresis)
+            {
+                overlayEyesUnderwater = false;
+            }
+            overlayFacingSteeplyUp =
+                facing.y > (overlayFacingSteeplyUp ? UNDER_WATER_OVERLAY_STEEP_FACING_RELEASE : UNDER_WATER_OVERLAY_STEEP_FACING);
+            overlayFacingSteeplyDown =
+                facing.y < -(overlayFacingSteeplyDown ? UNDER_WATER_OVERLAY_STEEP_FACING_RELEASE : UNDER_WATER_OVERLAY_STEEP_FACING);
 
             if (elevation > halfSize)
             {
@@ -362,16 +451,14 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            var facing = camera.transform.forward;
-
-            if (facing.y > 0.875f && elevation > 0)
+            if (overlayFacingSteeplyUp && !overlayEyesUnderwater)
             {
                 // Looking up near water, hide the overlay
                 underwaterOverlay.SetActive(false);
                 return;
             }
 
-            if ((facing.y < -0.875f && elevation < 0) || elevation < -halfSize)
+            if ((overlayFacingSteeplyDown && overlayEyesUnderwater) || elevation < -halfSize)
             {
                 // Underwater or looking down near water, cover entire view with overlay
                 underwaterOverlay.transform.localRotation = Quaternion.identity;

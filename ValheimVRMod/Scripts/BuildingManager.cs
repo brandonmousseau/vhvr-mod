@@ -521,7 +521,7 @@ namespace ValheimVRMod.Scripts
             Player.m_localPlayer.m_placementStatus = Player.PlacementStatus.Valid;
             Piece component = piece.GetComponent<Piece>();
             if ((VHVRConfig.BuildOnRelease() &&
-                LaserPointerChords.leftClickAction.GetState(VRPlayer.dominantHandInputSource) &&
+                LaserPointerChords.leftClickAction.GetState(PlaceModeRayVectorProvider.rayHandInputSource) &&
                 SteamVR_Actions.valheim_Jump.GetState(SteamVR_Input_Sources.Any)) || isForcedDisable)
             {
                 Player.m_localPlayer.m_placementStatus = Player.PlacementStatus.Invalid;
@@ -1751,9 +1751,9 @@ namespace ValheimVRMod.Scripts
             if (!VHVRConfig.BuildOnRelease())
                 return false;
 
-            if (!LaserPointerChords.leftClickAction.GetState(VRPlayer.dominantHandInputSource) && !SteamVR_Actions.valheim_Jump.GetState(SteamVR_Input_Sources.Any))
+            if (!LaserPointerChords.leftClickAction.GetState(PlaceModeRayVectorProvider.rayHandInputSource) && !SteamVR_Actions.valheim_Jump.GetState(SteamVR_Input_Sources.Any))
                 holdPlacePressed = false;
-            else if (LaserPointerChords.leftClickAction.GetState(VRPlayer.dominantHandInputSource))
+            else if (LaserPointerChords.leftClickAction.GetState(PlaceModeRayVectorProvider.rayHandInputSource))
                 holdPlacePressed = true;
 
             return holdPlacePressed && !freeModeSnapSave1;

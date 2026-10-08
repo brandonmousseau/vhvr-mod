@@ -40,9 +40,7 @@ class FogComponentPatches
             material.SetColor(
                 Uniforms._FogColor,
                 GraphicsUtils.isLinearColorSpace ? RenderSettings.fogColor.linear : RenderSettings.fogColor);
-            material.SetFloat(
-                Uniforms._Density,
-                Mathf.Lerp(RenderSettings.fogDensity, 0.125f, UnderwaterEffectsUpdater.Underwaterness));
+            material.SetFloat(Uniforms._Density, UnderwaterEffectsUpdater.GetFogDensity());
             material.SetFloat(Uniforms._Start, RenderSettings.fogStartDistance);
             material.SetFloat(Uniforms._End, RenderSettings.fogEndDistance);
 
