@@ -155,9 +155,8 @@ namespace ValheimVRMod.Patches
             {
                 return;
             }
-            // The character moves relative to where the view faces, which is where the character faces unless its
-            // facing is left to vanilla.
-            ___m_lookDir = MouseAim.LeavesCharacterFacingToVanilla ? MouseAim.ViewForward : __instance.gameObject.transform.forward;
+            // The character moves relative to where it faces, or to where the headset faces without motion controls.
+            ___m_lookDir = MouseAim.IsActive ? MouseAim.GetMoveForward(__instance.gameObject.transform.forward) : __instance.gameObject.transform.forward;
         }
     }
 

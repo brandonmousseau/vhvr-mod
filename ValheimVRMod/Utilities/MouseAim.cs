@@ -60,15 +60,23 @@ namespace ValheimVRMod.Utilities
         // First person keeps the forced facing: there the character is the player's own body.
         public static bool LeavesCharacterFacingToVanilla { get { return IsActive && !VRPlayer.inFirstPerson; } }
 
-        // Where the view faces, horizontally. This is what moving forward means when the character's facing is
-        // its own.
-        public static Vector3 ViewForward
+        // What moving forward means: where the headset faces, as is usual in VR, whichever way the aim, the view's
+        // center or the character happens to face.
+        public static Vector3 GetMoveForward(Vector3 fallback)
         {
-            get
+            if (VRPlayer.vrCam == null)
             {
-                float viewYaw = isHoldingView ? heldViewYaw : Player.m_localPlayer.transform.eulerAngles.y + appliedViewYawOffset;
-                return Quaternion.Euler(0f, viewYaw, 0f) * Vector3.forward;
+                return fallback;
             }
+            Vector3 up = Player.m_localPlayer.transform.up;
+            Vector3 forward = Vector3.ProjectOnPlane(VRPlayer.vrCam.transform.forward, up);
+            if (forward.sqrMagnitude < 0.01f)
+            {
+                // Looking straight up or down, where the top of the head points the way instead.
+                forward = Vector3.ProjectOnPlane(
+                    VRPlayer.vrCam.transform.up * -Mathf.Sign(Vector3.Dot(VRPlayer.vrCam.transform.forward, up)), up);
+            }
+            return forward.sqrMagnitude < 0.0001f ? fallback : forward.normalized;
         }
 
         // Keeps the view facing where it should while the character under it turns, by turning the camera rig,
