@@ -155,7 +155,9 @@ namespace ValheimVRMod.Patches
             {
                 return;
             }
-            ___m_lookDir = __instance.gameObject.transform.forward;
+            // The character moves relative to where the view faces, which is where the character faces unless its
+            // facing is left to vanilla.
+            ___m_lookDir = MouseAim.LeavesCharacterFacingToVanilla ? MouseAim.ViewForward : __instance.gameObject.transform.forward;
         }
     }
 
@@ -257,7 +259,8 @@ namespace ValheimVRMod.Patches
                 player == Player.m_localPlayer &&
                 !PlayerCustomizaton.IsBarberGuiVisible() &&
                 !VRPlayer.inImmersiveDodge &&
-                !player.IsAttached();
+                !player.IsAttached() &&
+                !MouseAim.LeavesCharacterFacingToVanilla;
         }
 
         /// <summary>

@@ -36,8 +36,7 @@ namespace ValheimVRMod.Utilities
 
         public static Vector3 Forward { get { return Rotation * Vector3.forward; } }
 
-        // How far the camera rig is currently turned away from the character for the snap turn, on top of where
-        // recentering left it.
+        // How far the camera rig is currently turned away from the character, on top of where recentering left it.
         private static float appliedViewYawOffset;
         // Where the view is held while the mouse turns the character under it, and where it is turning to.
         private static float heldViewYaw;
@@ -56,26 +55,36 @@ namespace ValheimVRMod.Utilities
             isHoldingView = false;
         }
 
-        // With snap turn enabled, the mouse turns the character and the aim as usual but not the view: the camera
-        // rig, which the character carries along, is turned back around the character by as much, so the aim moves
-        // sideways in a view that stays put. Once the aim gets a snap turn angle away from where the view faces,
-        // the view catches up with it, in one step or as a quick turn (see VHVRConfig.SmoothSnapTurn()).
+        // In third person the character's facing is left to vanilla, which turns it to where it moves and, while
+        // attacking, blocking or drawing a bow, to where it aims, rather than being forced to follow the mouse.
+        // First person keeps the forced facing: there the character is the player's own body.
+        public static bool LeavesCharacterFacingToVanilla { get { return IsActive && !VRPlayer.inFirstPerson; } }
+
+        // Where the view faces, horizontally. This is what moving forward means when the character's facing is
+        // its own.
+        public static Vector3 ViewForward
+        {
+            get
+            {
+                float viewYaw = isHoldingView ? heldViewYaw : Player.m_localPlayer.transform.eulerAngles.y + appliedViewYawOffset;
+                return Quaternion.Euler(0f, viewYaw, 0f) * Vector3.forward;
+            }
+        }
+
+        // Keeps the view facing where it should while the character under it turns, by turning the camera rig,
+        // which the character carries along, back around the character by as much.
+        //
+        // The view follows the mouse aim: right away with smooth turn, and with snap turn only once the aim gets a
+        // snap turn angle away from where the view faces, in one step or as a quick turn (see
+        // VHVRConfig.SmoothSnapTurn()). Until then the aim moves sideways in a view that stays put.
         //
         // To be called once everything that turns the character in a frame has run, i. e. right before rendering:
         // a turn that is only compensated a frame later shows as a jitter.
-        public static void UpdateSnapTurn(Transform rig)
+        public static void UpdateView(Transform rig)
         {
             if (!IsActive || rig == null || Player.m_localPlayer.IsAttached())
             {
                 // Something else places the view, e. g. a ship. Resumes from whatever offset is left then.
-                isHoldingView = false;
-                return;
-            }
-
-            float snapAngle = VHVRConfig.SnapTurnEnabled() ? VHVRConfig.GetSnapTurnAngle() : 0;
-            if (snapAngle <= 0)
-            {
-                setViewYawOffset(rig, 0);
                 isHoldingView = false;
                 return;
             }
@@ -87,22 +96,31 @@ namespace ValheimVRMod.Utilities
                 player.transform.rotation = player.m_lookYaw;
             }
             float characterYaw = player.transform.eulerAngles.y;
+            float aimYaw = player.m_lookYaw.eulerAngles.y;
             if (!isHoldingView)
             {
                 heldViewYaw = targetViewYaw = characterYaw + appliedViewYawOffset;
                 isHoldingView = true;
             }
 
-            float aimYawFromTarget = Mathf.DeltaAngle(targetViewYaw, characterYaw);
-            if (Mathf.Abs(aimYawFromTarget) >= snapAngle)
+            float snapAngle = VHVRConfig.SnapTurnEnabled() ? VHVRConfig.GetSnapTurnAngle() : 0;
+            if (snapAngle <= 0)
             {
-                targetViewYaw += Mathf.Sign(aimYawFromTarget) * snapAngle * Mathf.Floor(Mathf.Abs(aimYawFromTarget) / snapAngle);
+                heldViewYaw = targetViewYaw = aimYaw;
             }
-            // SmoothSnapSpeed is in degrees per hundredth of a second, see Player_SetMouseLook_Patch in ControlPatches.
-            heldViewYaw =
-                VHVRConfig.SmoothSnapTurn() ?
-                Mathf.MoveTowardsAngle(heldViewYaw, targetViewYaw, VHVRConfig.SmoothSnapSpeed() * 100f * Time.unscaledDeltaTime) :
-                targetViewYaw;
+            else
+            {
+                float aimYawFromTarget = Mathf.DeltaAngle(targetViewYaw, aimYaw);
+                if (Mathf.Abs(aimYawFromTarget) >= snapAngle)
+                {
+                    targetViewYaw += Mathf.Sign(aimYawFromTarget) * snapAngle * Mathf.Floor(Mathf.Abs(aimYawFromTarget) / snapAngle);
+                }
+                // SmoothSnapSpeed is in degrees per hundredth of a second, see Player_SetMouseLook_Patch in ControlPatches.
+                heldViewYaw =
+                    VHVRConfig.SmoothSnapTurn() ?
+                    Mathf.MoveTowardsAngle(heldViewYaw, targetViewYaw, VHVRConfig.SmoothSnapSpeed() * 100f * Time.unscaledDeltaTime) :
+                    targetViewYaw;
+            }
             setViewYawOffset(rig, Mathf.DeltaAngle(characterYaw, heldViewYaw));
         }
 

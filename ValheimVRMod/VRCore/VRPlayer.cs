@@ -530,7 +530,7 @@ namespace ValheimVRMod.VRCore
         // After every LateUpdate, so that the look input of this frame is in already, whichever order they ran in.
         private static void onBeforeRender()
         {
-            MouseAim.UpdateSnapTurn(_instance != null ? _instance.transform : null);
+            MouseAim.UpdateView(_instance != null ? _instance.transform : null);
             CrosshairManager.instance.UpdateMouseAimCrosshair();
         }
 
