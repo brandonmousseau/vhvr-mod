@@ -145,8 +145,9 @@ namespace ValheimVRMod.Scripts
             {
                 // When using bare hands or claws to attack anything other than an enemy character,
                 // require both pressing trigger and grip so that the attack does not accidentally happen too easily.
+                // While this hand's laser pointer is active the trigger is a click instead and does not count.
                 if (handGesture.isHandFree() &&
-                    !SteamVR_Actions.valheim_Use.GetState(inputSource) &&
+                    (!SteamVR_Actions.valheim_Use.GetState(inputSource) || isLaserPointerActive()) &&
                     !Player.m_localPlayer.m_inCraftingStation) {
                     Character character = collider.GetComponentInParent<Character>();
                     if (character == null ||
@@ -161,6 +162,12 @@ namespace ValheimVRMod.Scripts
             }
 
             TryPushDoorOpen(collider);
+        }
+
+        private bool isLaserPointerActive()
+        {
+            var pointer = isRightHand ? VRPlayer.rightPointer : VRPlayer.leftPointer;
+            return pointer != null && pointer.pointerIsActive();
         }
 
         void Destroy()
