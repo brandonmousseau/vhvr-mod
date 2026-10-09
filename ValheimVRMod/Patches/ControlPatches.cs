@@ -807,6 +807,28 @@ namespace ValheimVRMod.Patches {
     }
 
     [HarmonyPatch(typeof(Player), nameof(Player.SetControls))]
+    class Player_SetControls_MouseAimPatch
+    {
+        static void Prefix(Player __instance, ref bool attack, ref bool attackHold, ref bool secondaryAttack,
+            ref bool secondaryAttackHold, bool blockHold)
+        {
+            MouseAim.UpdateAttackControls(__instance, ref attack, ref attackHold, ref secondaryAttack, ref secondaryAttackHold, blockHold);
+        }
+    }
+
+    [HarmonyPatch(typeof(Attack), nameof(Attack.OnAttackTrigger))]
+    class Attack_OnAttackTrigger_MouseAimPatch
+    {
+        static void Postfix(Attack __instance)
+        {
+            if (__instance.m_character == Player.m_localPlayer)
+            {
+                MouseAim.OnAttackTriggered();
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(Player), nameof(Player.SetControls))]
     class Player_SetControls_EquipPatch {
         protected static float timer = 2f;
         protected static float timeEnd = 2f;

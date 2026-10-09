@@ -218,10 +218,16 @@ namespace ValheimVRMod.Patches
     {
 
         public static float lastSpeedUp = 1f;
-        static void Prefix(Character ___m_character, ref Animator ___m_animator)
+        static void Prefix(Character ___m_character, ref Animator ___m_animator, float fixedDeltaTime)
         {
-            if (___m_character != Player.m_localPlayer || !VHVRConfig.UseVrControls())
+            if (___m_character != Player.m_localPlayer)
             {
+                return;
+            }
+
+            if (!VHVRConfig.UseVrControls())
+            {
+                MouseAim.UpdateAttackAnimationSpeed(___m_character, ___m_animator, fixedDeltaTime);
                 return;
             }
 

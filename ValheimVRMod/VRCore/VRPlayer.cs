@@ -147,7 +147,7 @@ namespace ValheimVRMod.VRCore
                 {
                     return _headZoomLevel;
                 }
-                if (Player.m_localPlayer.IsDrawingBow())
+                if (Player.m_localPlayer.IsDrawingBow() || MouseAim.IsAimingAttack)
                 {
                     mouseAimFirstPersonEndTime = Time.time + MOUSE_AIM_FIRST_PERSON_HOLD_TIME;
                 }

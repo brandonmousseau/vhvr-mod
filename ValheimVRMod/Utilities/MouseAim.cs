@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using ValheimVRMod.VRCore;
 
@@ -77,6 +78,168 @@ namespace ValheimVRMod.Utilities
                     VRPlayer.vrCam.transform.up * -Mathf.Sign(Vector3.Dot(VRPlayer.vrCam.transform.forward, up)), up);
             }
             return forward.sqrMagnitude < 0.0001f ? fallback : forward.normalized;
+        }
+
+        // Whether an attack is being aimed, which brings a third person view into first person like drawing a bow
+        // does, see VRPlayer.effectiveHeadZoomLevel.
+        public static bool IsAimingAttack { get; private set; }
+
+        private enum HeldAttackState { None, Aiming, Canceled }
+
+        // How long vanilla keeps an attack input queued, see Player.PlayerAttackInput().
+        private const float ATTACK_QUEUE_TIME = 0.5f;
+        private static HeldAttackState primaryAttackState;
+        private static HeldAttackState secondaryAttackState;
+        private static float primaryAttackHoldStartTime;
+        private static float secondaryAttackHoldStartTime;
+        private static bool isAttackReleased;
+        private static float attackReleaseTime;
+
+        // Makes aimed attacks (throwing, crossbows, the grappling hook, Dundr) come out
+        // when the button is let go of rather than when it is pressed, so that there is time to aim in first person
+        // while it is held. Blocking while holding the button calls the attack off.
+        //
+        // The staffs that can be swing-launched with motion controls shoot for as long as the button is held, which
+        // releasing on button up would get in the way of. They attack as in vanilla and are aimed by holding the
+        // secondary attack button instead, which they have no use for otherwise. Staffs with a continuous attack
+        // are aimed for as long as they shoot.
+        public static void UpdateAttackControls(
+            Player player, ref bool attack, ref bool attackHold, ref bool secondaryAttack, ref bool secondaryAttackHold, bool blockHold)
+        {
+            if (!IsActive || player != Player.m_localPlayer)
+            {
+                primaryAttackState = secondaryAttackState = HeldAttackState.None;
+                IsAimingAttack = isAttackReleased = false;
+                return;
+            }
+
+            var weapon = player.GetCurrentWeapon()?.m_shared;
+            bool isSwingableStaff = weapon != null && Scripts.SwingableStaffManager.STAFF_NAMES.Contains(weapon.m_name);
+            bool isAiming =
+                weapon != null &&
+                (isSwingableStaff ? secondaryAttackHold : (weapon.m_attack.m_loopingAttack && attackHold));
+
+            // Of the staffs only Dundr is released on button up.
+            bool isOtherStaff =
+                weapon != null &&
+                (weapon.m_skillType == Skills.SkillType.ElementalMagic || weapon.m_skillType == Skills.SkillType.BloodMagic) &&
+                !EquipScript.IsDundr(player.GetCurrentWeapon());
+            bool releasesPrimary =
+                weapon != null && !isOtherStaff && weapon.m_name != "$item_fishingrod" && isReleasedOnButtonUp(weapon.m_attack);
+            // E. g. throwing a spear, whose primary attack is left as it is.
+            bool releasesSecondary = weapon != null && !isOtherStaff && isReleasedOnButtonUp(weapon.m_secondaryAttack);
+            isAiming |=
+                updateHeldAttack(releasesPrimary, blockHold, ref primaryAttackState, ref primaryAttackHoldStartTime, ref attack, ref attackHold);
+            isAiming |=
+                updateHeldAttack(
+                    releasesSecondary, blockHold, ref secondaryAttackState, ref secondaryAttackHoldStartTime, ref secondaryAttack, ref secondaryAttackHold);
+            // The secondary attack button aims a weapon without an aimed secondary attack too, e. g. a harpoon.
+            isAiming |= releasesPrimary && !releasesSecondary && secondaryAttackHold;
+            bool isLaunchingPrimary = releasesPrimary && attack;
+            bool isLaunching = isLaunchingPrimary || (releasesSecondary && secondaryAttack);
+
+            // The view has to stay in first person until the projectile has left, not just until the button is let
+            // go of. OnAttackTriggered() ends this; the time out is for an attack that never starts, e. g. for lack
+            // of ammo or stamina.
+            if (isLaunching)
+            {
+                isAttackReleased = true;
+                attackReleaseTime = Time.time;
+                releasedAttackAnimation = (isLaunchingPrimary ? weapon.m_attack : weapon.m_secondaryAttack).m_attackAnimation;
+                releasedAttackHoldTime = Time.time - (isLaunchingPrimary ? primaryAttackHoldStartTime : secondaryAttackHoldStartTime);
+                releasedAttackWindUpProgress = 0;
+            }
+            else if (isAttackReleased && Time.time > attackReleaseTime + ATTACK_QUEUE_TIME && !player.InAttack())
+            {
+                isAttackReleased = false;
+            }
+            IsAimingAttack = isAiming || isAttackReleased;
+        }
+
+        // To be called when an attack of the local player gets to the point where it launches its projectile.
+        public static void OnAttackTriggered()
+        {
+            if (isAttackReleased && releasedAttackWindUpProgress > 0)
+            {
+                attackWindUpTimes[releasedAttackAnimation] = releasedAttackWindUpProgress;
+                shouldResetAttackAnimationSpeed = true;
+            }
+            isAttackReleased = false;
+        }
+
+        // How long each attack animation takes to get to launching its projectile at normal speed. Measured the
+        // first time the attack is used, which therefore plays at normal speed.
+        private static readonly Dictionary<string, float> attackWindUpTimes = new Dictionary<string, float>();
+        private const float MIN_ATTACK_WIND_UP_TIME = 0.05f;
+        private const float MAX_ATTACK_WIND_UP_SPEED = 20f;
+        private static string releasedAttackAnimation;
+        private static float releasedAttackHoldTime;
+        private static float releasedAttackWindUpProgress;
+        private static bool shouldResetAttackAnimationSpeed;
+
+        // The time the attack button was held counts toward the wind up of the attack it releases: the animation is
+        // sped up so that it launches the projectile after as much time as is left of its wind up, as if it had
+        // started when the button was pressed. What follows the launch plays at normal speed again.
+        //
+        // To be called before CharacterAnimEvent.CustomFixedUpdate() of the local player.
+        public static void UpdateAttackAnimationSpeed(Character character, Animator animator, float dt)
+        {
+            if (shouldResetAttackAnimationSpeed)
+            {
+                shouldResetAttackAnimationSpeed = false;
+                animator.speed = 1f;
+            }
+            if (!isAttackReleased || !character.InAttack())
+            {
+                return;
+            }
+            if (attackWindUpTimes.TryGetValue(releasedAttackAnimation, out float windUpTime))
+            {
+                animator.speed =
+                    Mathf.Min(
+                        windUpTime / Mathf.Max(windUpTime - releasedAttackHoldTime, MIN_ATTACK_WIND_UP_TIME),
+                        MAX_ATTACK_WIND_UP_SPEED);
+            }
+            releasedAttackWindUpProgress += dt * animator.speed;
+        }
+
+        private static bool isReleasedOnButtonUp(Attack attack)
+        {
+            return attack != null &&
+                attack.m_attackType == Attack.AttackType.Projectile &&
+                !string.IsNullOrEmpty(attack.m_attackAnimation) &&
+                !attack.m_bowDraw &&
+                !attack.m_loopingAttack;
+        }
+
+        // Returns whether the attack is being held back.
+        private static bool updateHeldAttack(
+            bool releasesOnButtonUp, bool cancel, ref HeldAttackState state, ref float holdStartTime, ref bool pressed, ref bool held)
+        {
+            if (!releasesOnButtonUp)
+            {
+                state = HeldAttackState.None;
+                return false;
+            }
+
+            bool isHeld = held;
+            pressed = held = false;
+            if (!isHeld)
+            {
+                pressed = state == HeldAttackState.Aiming;
+                state = HeldAttackState.None;
+                return false;
+            }
+            if (cancel)
+            {
+                state = HeldAttackState.Canceled;
+            }
+            else if (state == HeldAttackState.None)
+            {
+                state = HeldAttackState.Aiming;
+                holdStartTime = Time.time;
+            }
+            return state == HeldAttackState.Aiming;
         }
 
         // Keeps the view facing where it should while the character under it turns, by turning the camera rig,
