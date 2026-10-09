@@ -167,6 +167,9 @@ namespace ValheimVRMod.VRCore
         // From the character to the camera rig, in world space so that the character turning does not swing it.
         private static Vector3 lastViewOffsetFromCharacter;
         private static Vector3 viewTransitionStartOffset;
+        // How far the view still is from where it is gliding to.
+        private static float viewTransitionRemainingDistance;
+        private const float HEAD_HIDING_DISTANCE = 0.3f;
 
         private Camera _vrCam;
         private Camera _handsCam;
@@ -1430,7 +1433,6 @@ namespace ValheimVRMod.VRCore
                 initialRoomscaleLocomotiveOffsetFromHead = Vector3.zero;
             }
             float firstPersonAdjust = inFirstPerson ? (float) firstPersonHeightOffset : getThirdPersonHeightOffset(playerCharacter);
-            setHeadVisibility(!inFirstPerson);
             // Update the position with the first person adjustment calculated in init phase
             _instance.transform.localPosition = getDesiredLocalPosition(playerCharacter) // Base Positioning
                 + (firstPersonAdjust // Offset from calibration on tracking recenter
@@ -1465,6 +1467,8 @@ namespace ValheimVRMod.VRCore
                 setPlayerVisualsOffset(playerCharacter.transform, viewRotation * offset);
             }
             smoothViewTransition(playerCharacter);
+            // Gliding into first person, the head stays until the view gets to it rather than vanish in plain sight.
+            setHeadVisibility(!inFirstPerson || viewTransitionRemainingDistance > HEAD_HIDING_DISTANCE);
         }
 
         // Has the view glide to where a change of zoom level puts it, e. g. into first person and back out when a
@@ -1482,10 +1486,12 @@ namespace ValheimVRMod.VRCore
             lastTransitionHeadZoomLevel = zoomLevel;
             lastViewTransitionFrame = Time.frameCount;
 
+            viewTransitionRemainingDistance = 0;
             if (viewTransitionElapsedTime < VIEW_TRANSITION_TIME)
             {
                 viewTransitionElapsedTime += Time.unscaledDeltaTime;
                 float remaining = 1 - Mathf.SmoothStep(0, 1, viewTransitionElapsedTime / VIEW_TRANSITION_TIME);
+                viewTransitionRemainingDistance = viewTransitionStartOffset.magnitude * remaining;
                 offsetFromCharacter += viewTransitionStartOffset * remaining;
                 _instance.transform.position = playerCharacter.transform.position + offsetFromCharacter;
             }
