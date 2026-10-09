@@ -809,8 +809,9 @@ namespace ValheimVRMod.Utilities
             joystickForwardDirection = config.Bind(
                 "Controls", "JoyStickForwardDirection", "LookDirection",
                 new ConfigDescription(
-                    "The direction the character should move when the joystick is pushed forward. " +
-                    "\"Body\" requires a waist tracker and behaves the same as \"LookDirection\" without one.",
+                    "The direction the character should move when the joystick (or forward key with motion control is disabled) is pushed forward. " +
+                    "\"Body\" requires a waist tracker and behaves the same as \"LookDirection\" without one. " +
+                    "With motion controls disabled, \"LeftController\" and \"RightController\" uses crosshair as forward direction.",
                     new AcceptableValueList<string>(new string[] { "LookDirection", "LeftController", "RightController", "Body", "Original" })));
             smoothTurnSpeed = config.Bind("Controls",
                                           "SmoothTurnSpeed",
@@ -1556,6 +1557,19 @@ namespace ValheimVRMod.Utilities
                     return body.forward;
                 default:
                     return player.forward;
+            }
+        }
+
+        // The counterpart of GetJoystickForwardDirection() without motion controls, see MouseAim.GetMoveForward().
+        public static Vector3 GetKeyboardForwardDirection(Vector3 head, Vector3 aim, Vector3 view) {
+            switch (joystickForwardDirection.Value) {
+                case "LookDirection":
+                    return head;
+                case "LeftController":
+                case "RightController":
+                    return aim;
+                default:
+                    return view;
             }
         }
 

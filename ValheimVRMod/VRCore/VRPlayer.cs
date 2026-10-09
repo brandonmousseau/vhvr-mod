@@ -136,36 +136,29 @@ namespace ValheimVRMod.VRCore
         private static GameObject _instance;
         private static VRPlayer _vrPlayerInstance;
         private static HeadZoomLevel _headZoomLevel = HeadZoomLevel.FirstPerson;
-        // Without motion controls, drawing a bow brings a third person view into first person for the time being:
-        // the shot stays parallel to the crosshair's direction (see MouseAim), so from a camera that is metres above
-        // and behind the character it would land that far off the crosshair.
-        private static HeadZoomLevel effectiveHeadZoomLevel
+        // Third person aim view: camera is always close to aim line
+        public static bool inAimView
         {
             get
             {
-                if (_headZoomLevel == HeadZoomLevel.FirstPerson || !MouseAim.IsActive)
-                {
-                    return _headZoomLevel;
-                }
-                if (Player.m_localPlayer.IsDrawingBow() || MouseAim.IsAimingAttack)
-                {
-                    mouseAimFirstPersonEndTime = Time.time + MOUSE_AIM_FIRST_PERSON_HOLD_TIME;
-                }
-                else if (MouseAim.TakeAimEndedWithRecoil())
-                {
-                    mouseAimFirstPersonEndTime = 0;
-                }
-                return Time.time < mouseAimFirstPersonEndTime ? HeadZoomLevel.FirstPerson : _headZoomLevel;
+                return attachedToPlayer &&
+                    _headZoomLevel != HeadZoomLevel.FirstPerson &&
+                    MouseAim.IsActive &&
+                    (Player.m_localPlayer.IsDrawingBow() || MouseAim.IsAimingAttack);
             }
         }
 
-        // How long the view stays in first person after a bow is let go of, before gliding back out.
-        private const float MOUSE_AIM_FIRST_PERSON_HOLD_TIME = 0.25f;
-        private static float mouseAimFirstPersonEndTime;
+        // How far behind the first person view point the view is while aiming, as a share of the distance of the
+        // zoom level the view is brought in from. Zero puts it at the first person view point. See placeAimView().
+        private const float AIM_VIEW_DISTANCE_SCALE = 0.75f;
+        // How far above that the view is, in world space and perpendicular to the aim, so that it looks over the
+        // character rather than at the back of its head.
+        private const float AIM_VIEW_HEIGHT_OFFSET = 0.125f;
 
         // How long the view takes to glide from one zoom level to another, see smoothViewTransition().
         private const float VIEW_TRANSITION_TIME = 0.25f;
         private static HeadZoomLevel lastTransitionHeadZoomLevel;
+        private static bool lastTransitionInAimView;
         private static int lastViewTransitionFrame = -1;
         private static float viewTransitionElapsedTime = VIEW_TRANSITION_TIME;
         // From the character to the camera rig, in world space so that the character turning does not swing it.
@@ -373,7 +366,7 @@ namespace ValheimVRMod.VRCore
         {
             get
             {
-                return (effectiveHeadZoomLevel == HeadZoomLevel.FirstPerson) && attachedToPlayer;
+                return (_headZoomLevel == HeadZoomLevel.FirstPerson) && attachedToPlayer;
             }
         }
 
@@ -549,6 +542,7 @@ namespace ValheimVRMod.VRCore
         {
             MouseAim.UpdateView(_instance != null ? _instance.transform : null);
             CrosshairManager.instance.UpdateMouseAimCrosshair();
+            ComfortVignette.OnBeforeRender();
         }
 
         void OnDestroy()
@@ -905,6 +899,9 @@ namespace ValheimVRMod.VRCore
             pelvis.parent = trackedPelvis;
 
             hipTrackerRenderer = GameObject.CreatePrimitive(PrimitiveType.Cube).GetComponent<MeshRenderer>();
+            // Only there to be seen. Under the hip tracker it is inside the camera rig and with it part of the player
+            // character, whose rigidbody a collider would become a solid part of.
+            Destroy(hipTrackerRenderer.GetComponent<Collider>());
             hipTrackerRenderer.gameObject.layer = LayerUtils.getWorldspaceUiLayer();
             hipTrackerRenderer.transform.localScale = new Vector3(0.125f, 0.125f, 0.125f);
             hipTrackerRenderer.material = Instantiate(VRAssetManager.GetAsset<Material>("Unlit"));
@@ -1446,16 +1443,22 @@ namespace ValheimVRMod.VRCore
             // The offsets below are relative to where the view faces, which is where the character faces unless
             // MouseAim holds the view while the mouse turns the character.
             Quaternion viewRotation = MouseAim.ViewRotationFromCharacter;
-            if (effectiveHeadZoomLevel != HeadZoomLevel.FirstPerson)
+            float aimViewDistance = 0;
+            if (inAimView)
             {
-                _instance.transform.localPosition += viewRotation * (getHeadOffset(effectiveHeadZoomLevel) // Player controlled offset (zeroed on tracking reset)
+                setPlayerVisualsOffset(playerCharacter.transform, Vector3.zero);
+                aimViewDistance = placeAimView(playerCharacter);
+            }
+            else if (_headZoomLevel != HeadZoomLevel.FirstPerson)
+            {
+                _instance.transform.localPosition += viewRotation * (getHeadOffset(_headZoomLevel) // Player controlled offset (zeroed on tracking reset)
                             + Vector3.forward * NECK_OFFSET); // Move slightly forward to position on neck
                 setPlayerVisualsOffset(playerCharacter.transform, Vector3.zero);
                 pullThirdPersonViewInFrontOfObstruction(playerCharacter);
             }
             else
             {
-                var offset = -getHeadOffset(effectiveHeadZoomLevel); // Player controlled offset (zeroed on tracking reset)
+                var offset = -getHeadOffset(_headZoomLevel); // Player controlled offset (zeroed on tracking reset)
                 if (playerCharacter.IsSitting())
                 {
                     if (playerCharacter.IsAttached())
@@ -1471,23 +1474,50 @@ namespace ValheimVRMod.VRCore
                 setPlayerVisualsOffset(playerCharacter.transform, viewRotation * offset);
             }
             smoothViewTransition(playerCharacter);
-            // Gliding into first person, the head stays until the view gets to it rather than vanish in plain sight.
-            setHeadVisibility(!inFirstPerson || viewTransitionRemainingDistance > HEAD_HIDING_DISTANCE);
+            // The head is hidden while the view is inside it or close to it. Gliding there, it stays until the view
+            // gets to it rather than vanish in plain sight.
+            bool isViewAtHead = inFirstPerson || (inAimView && aimViewDistance <= HEAD_HIDING_DISTANCE);
+            setHeadVisibility(!isViewAtHead || viewTransitionRemainingDistance > HEAD_HIDING_DISTANCE);
+        }
+
+        // Puts the rig, which is where a first person view would have it, where the aim view has it (see inAimView):
+        // behind the first person view point along the aim, by a share of how far out the view is zoomed, and a
+        // little above that. Being close to the line of the aim, it keeps the shot near the crosshair, and it moves
+        // with the aim for as long as that changes.
+        //
+        // Returns how far the view is from the first person view point, in world space.
+        private float placeAimView(Player playerCharacter)
+        {
+            if (AIM_VIEW_DISTANCE_SCALE <= 0)
+            {
+                return 0;
+            }
+            Vector3 firstPersonPosition = _instance.transform.position;
+            // In the character's local space, like the zoom offsets are.
+            _instance.transform.localPosition -=
+                playerCharacter.transform.InverseTransformDirection(MouseAim.Forward) *
+                (getHeadOffset(_headZoomLevel).magnitude * AIM_VIEW_DISTANCE_SCALE);
+            _instance.transform.position += MouseAim.Rotation * Vector3.up * AIM_VIEW_HEIGHT_OFFSET;
+            pullThirdPersonViewInFrontOfObstruction(playerCharacter);
+            return Vector3.Distance(_instance.transform.position, firstPersonPosition);
         }
 
         // Has the view glide to where a change of zoom level puts it, e. g. into first person and back out when a
         // bow is drawn, rather than jump there. To be called every frame once the camera rig is placed.
         private void smoothViewTransition(Player playerCharacter)
         {
-            HeadZoomLevel zoomLevel = effectiveHeadZoomLevel;
+            HeadZoomLevel zoomLevel = _headZoomLevel;
+            bool isInAimView = inAimView;
             Vector3 offsetFromCharacter = _instance.transform.position - playerCharacter.transform.position;
             // Not after a break, e. g. when the view comes back from a cutscene to wherever it belongs now.
-            if (lastViewTransitionFrame == Time.frameCount - 1 && zoomLevel != lastTransitionHeadZoomLevel)
+            if (lastViewTransitionFrame == Time.frameCount - 1 &&
+                (zoomLevel != lastTransitionHeadZoomLevel || isInAimView != lastTransitionInAimView))
             {
                 viewTransitionStartOffset = lastViewOffsetFromCharacter - offsetFromCharacter;
                 viewTransitionElapsedTime = 0;
             }
             lastTransitionHeadZoomLevel = zoomLevel;
+            lastTransitionInAimView = isInAimView;
             lastViewTransitionFrame = Time.frameCount;
 
             viewTransitionRemainingDistance = 0;
@@ -1505,18 +1535,20 @@ namespace ValheimVRMod.VRCore
         // Like vanilla's third person camera, moves the view towards the character when something comes between the
         // two, instead of leaving the player looking at the back of a wall. The rig's position is rebuilt from the
         // zoom offset every frame, so the shift doesn't accumulate and the view goes back out once the way is clear.
+        //
+        // What is kept in front of the obstruction is where the view is centered, i. e. where the headset was when
+        // the view was last recentered, and not the headset itself: holding that to the line from the character
+        // would take away its freedom to move for as long as something is in the way.
         private void pullThirdPersonViewInFrontOfObstruction(Player playerCharacter)
         {
-            if (_vrCam == null)
-            {
-                return;
-            }
             // The point above the character where the first person view would be, taken from the character's own
             // transform so that nothing the view does can move where the test starts.
             Vector3 subject = playerCharacter.transform.TransformPoint(getDesiredLocalPosition(playerCharacter));
-            Vector3 viewPoint = _vrCam.transform.position;
-            Vector3 clampedViewPoint = CameraObstructionUtils.ClampToAvoidObstruction(subject, viewPoint);
-            _instance.transform.position += clampedViewPoint - viewPoint;
+            Vector3 viewCenter =
+                _instance.transform.position +
+                _instance.transform.up * (rawCaliberatedEyeHeight * _instance.transform.lossyScale.y);
+            Vector3 clampedViewCenter = CameraObstructionUtils.ClampToAvoidObstruction(subject, viewCenter);
+            _instance.transform.position += clampedViewCenter - viewCenter;
         }
 
         //Moves all the effects and the meshes that compose the player, doesn't move the Rigidbody
@@ -1983,13 +2015,13 @@ namespace ValheimVRMod.VRCore
                         Vector3.up);
             }
 
-            if (effectiveHeadZoomLevel != HeadZoomLevel.FirstPerson)
+            if (_headZoomLevel != HeadZoomLevel.FirstPerson)
             {
-                _instance.transform.localPosition += getHeadOffset(effectiveHeadZoomLevel);
+                _instance.transform.localPosition += getHeadOffset(_headZoomLevel);
             }
             else
             {
-                setPlayerVisualsOffset(playerCharacter.transform, -getHeadOffset(effectiveHeadZoomLevel));
+                setPlayerVisualsOffset(playerCharacter.transform, -getHeadOffset(_headZoomLevel));
             }
 
             // Without motion controls the view is lined up with the character too, since that is where the mouse

@@ -15,7 +15,7 @@ namespace ValheimVRMod.VRCore.UI
         private static readonly float CROSSHAIR_SCALAR = 0.1f;
         private static readonly float MIN_CROSSHAIR_DISTANCE = 0.5f;
         // The mouse aim crosshair is not where one looks, so it has to be easier to find.
-        private static readonly float MOUSE_AIM_CROSSHAIR_SCALE = 2f;
+        private static readonly float MOUSE_AIM_CROSSHAIR_SCALE = 1.5f;
         public static readonly float WEAPON_CROSSHAIR_DISTANCE = 128f;
 
         public static int crosshairDepth = 1;
@@ -259,7 +259,11 @@ namespace ValheimVRMod.VRCore.UI
                 // the world instead, which UpdateMouseAimCrosshair() keeps up every frame.
                 _crosshairCanvasParent.transform.SetParent(null, false);
                 Vector3 aimDirection = MouseAim.Forward;
-                float aimDistance = calculateCrosshairDistance(aimDirection);
+                // Use far HUD when aiming a weapon
+                float aimDistance =
+                    Player.m_localPlayer.IsDrawingBow() || MouseAim.IsAimingAttack ?
+                    WEAPON_CROSSHAIR_DISTANCE :
+                    calculateCrosshairDistance(aimDirection);
                 _crosshairCanvasParent.transform.SetPositionAndRotation(
                     _crosshairCamera.transform.position + aimDirection * aimDistance,
                     Quaternion.LookRotation(aimDirection, VRPlayer.instance.transform.up));
