@@ -35,11 +35,15 @@ namespace ValheimVRMod.Scripts
         private const float SNAP_TURN_HOLD_TIME = 0.2f;
         // Moving farther than this in one frame is a teleport or a respawn and not locomotion.
         private const float MAX_STEP_DISTANCE = 5f;
-        private const float CLOSE_TIME = 0.1f;
-        private const float OPEN_TIME = 0.4f;
+        private const float CLOSE_TIME = 0.5f;
+        private const float OPEN_TIME = 1f;
+        // How long the vignette stays as it is before it starts opening up.
+        private const float OPEN_DELAY = 0.5f;
 
         private static readonly int INNER_ID = Shader.PropertyToID("_Inner");
         private static readonly int OUTER_ID = Shader.PropertyToID("_Outer");
+
+        private static ComfortVignette instance;
 
         private Transform rig;
         private FadingManager fadingManager;
@@ -50,6 +54,7 @@ namespace ValheimVRMod.Scripts
         private float lastRigYaw;
         private float snapTurnHoldTimer;
         private float strength;
+        private float openDelayTimer;
 
         void Start()
         {
@@ -87,10 +92,15 @@ namespace ValheimVRMod.Scripts
             vignetteRenderer.enabled = false;
 
             Camera.onPreCull += OnCameraPreCull;
+            instance = this;
         }
 
         void OnDestroy()
         {
+            if (instance == this)
+            {
+                instance = null;
+            }
             Camera.onPreCull -= OnCameraPreCull;
             if (vignette != null)
             {
@@ -102,7 +112,19 @@ namespace ValheimVRMod.Scripts
             }
         }
 
-        void LateUpdate()
+        // To be called once everything that moves the camera rig in a frame has run. Without motion controls that
+        // includes MouseAim.UpdateView() turning the rig back by however far the character has turned under a view
+        // that stays put, e. g. to where it walks in third person: read any earlier, in a LateUpdate(), that shows
+        // as a turn that never gets to the view.
+        public static void OnBeforeRender()
+        {
+            if (instance != null && instance.isActiveAndEnabled)
+            {
+                instance.UpdateVignette();
+            }
+        }
+
+        private void UpdateVignette()
         {
             float deltaTime = Time.unscaledDeltaTime;
             if (deltaTime <= 0)
@@ -111,7 +133,20 @@ namespace ValheimVRMod.Scripts
             }
 
             float target = Mathf.Max(VHVRConfig.VignetteStrength(), GetMovementStrength(deltaTime));
-            strength = Mathf.MoveTowards(strength, target, deltaTime / (target > strength ? CLOSE_TIME : OPEN_TIME));
+            if (target >= strength)
+            {
+                openDelayTimer = OPEN_DELAY;
+                strength = Mathf.MoveTowards(strength, target, deltaTime / CLOSE_TIME);
+            }
+            else if (openDelayTimer > 0)
+            {
+                // Movement that stops often starts again right away, which would have the vignette flicker.
+                openDelayTimer -= deltaTime;
+            }
+            else
+            {
+                strength = Mathf.MoveTowards(strength, target, deltaTime / OPEN_TIME);
+            }
             if (strength < MIN_VISIBLE_STRENGTH)
             {
                 return;
