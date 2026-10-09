@@ -2185,6 +2185,10 @@ namespace ValheimVRMod.VRCore
             }
             _instance.transform.position = desirePosition;
             _instance.transform.rotation = mainCamera.gameObject.transform.rotation;
+            // Whatever MouseAim had the rig turned by is gone, and a third person view has to be lined up with the
+            // character again once it is back, like a first person one is by initializing the head position.
+            MouseAim.OnRecentered();
+            thirdPersonRecenteringRequestFrame = Time.frameCount;
             attachedToPlayer = false;
             headPositionInitialized = false;
             firstPersonOffset = Vector3.zero;
