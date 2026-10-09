@@ -84,6 +84,17 @@ namespace ValheimVRMod.Utilities
         // does, see VRPlayer.effectiveHeadZoomLevel.
         public static bool IsAimingAttack { get; private set; }
 
+        private static bool hasAimEndedWithRecoil;
+
+        // Whether the view should leave first person without the usual wait now that aiming is over. Only true once
+        // per attack.
+        public static bool TakeAimEndedWithRecoil()
+        {
+            bool result = hasAimEndedWithRecoil;
+            hasAimEndedWithRecoil = false;
+            return result;
+        }
+
         private enum HeldAttackState { None, Aiming, Canceled }
 
         // How long vanilla keeps an attack input queued, see Player.PlayerAttackInput().
@@ -144,6 +155,7 @@ namespace ValheimVRMod.Utilities
             if (isLaunching)
             {
                 isAttackReleased = true;
+                hasAimEndedWithRecoil = false;
                 attackReleaseTime = Time.time;
                 releasedAttackAnimation = (isLaunchingPrimary ? weapon.m_attack : weapon.m_secondaryAttack).m_attackAnimation;
                 releasedAttackHoldTime = Time.time - (isLaunchingPrimary ? primaryAttackHoldStartTime : secondaryAttackHoldStartTime);
@@ -157,8 +169,15 @@ namespace ValheimVRMod.Utilities
         }
 
         // To be called when an attack of the local player gets to the point where it launches its projectile.
-        public static void OnAttackTriggered()
+        public static void OnAttackTriggered(bool hasRecoil)
         {
+            if (isAttackReleased && hasRecoil)
+            {
+                // The recoil shoves the character back, and the first person view with it. Leaving first person
+                // right away makes that one motion with the view gliding out rather than two in a row.
+                IsAimingAttack = false;
+                hasAimEndedWithRecoil = true;
+            }
             if (isAttackReleased && releasedAttackWindUpProgress > 0)
             {
                 attackWindUpTimes[releasedAttackAnimation] = releasedAttackWindUpProgress;

@@ -220,6 +220,17 @@ namespace ValheimVRMod.Patches {
                 bowDrawPercentage = 0;
             }
         }
+
+        // The mouse aim crosshair moves around in the view rather than staying where one looks, so it is made
+        // opaque to be found more easily. See CrosshairManager for its size.
+        static void Postfix(Hud __instance) {
+            if (MouseAim.IsActive && __instance.m_crosshair != null)
+            {
+                var color = __instance.m_crosshair.color;
+                color.a = 1;
+                __instance.m_crosshair.color = color;
+            }
+        }
     }
 
     /**

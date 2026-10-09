@@ -823,7 +823,7 @@ namespace ValheimVRMod.Patches {
         {
             if (__instance.m_character == Player.m_localPlayer)
             {
-                MouseAim.OnAttackTriggered();
+                MouseAim.OnAttackTriggered(hasRecoil: __instance.m_recoilPushback != 0f);
             }
         }
     }

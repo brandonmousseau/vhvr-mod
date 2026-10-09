@@ -151,6 +151,10 @@ namespace ValheimVRMod.VRCore
                 {
                     mouseAimFirstPersonEndTime = Time.time + MOUSE_AIM_FIRST_PERSON_HOLD_TIME;
                 }
+                else if (MouseAim.TakeAimEndedWithRecoil())
+                {
+                    mouseAimFirstPersonEndTime = 0;
+                }
                 return Time.time < mouseAimFirstPersonEndTime ? HeadZoomLevel.FirstPerson : _headZoomLevel;
             }
         }
