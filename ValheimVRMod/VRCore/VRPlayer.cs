@@ -136,9 +136,6 @@ namespace ValheimVRMod.VRCore
         private static GameObject _instance;
         private static VRPlayer _vrPlayerInstance;
         private static HeadZoomLevel _headZoomLevel = HeadZoomLevel.FirstPerson;
-        // How long the view stays in first person after a bow is let go of, to see where the shot goes.
-        private const float MOUSE_AIM_FIRST_PERSON_LINGER_TIME = 1f;
-        private static float mouseAimFirstPersonEndTime;
         // Without motion controls, drawing a bow brings a third person view into first person for the time being:
         // the shot stays parallel to the crosshair's direction (see MouseAim), so from a camera that is metres above
         // and behind the character it would land that far off the crosshair.
@@ -146,17 +143,18 @@ namespace ValheimVRMod.VRCore
         {
             get
             {
-                if (_headZoomLevel == HeadZoomLevel.FirstPerson || !MouseAim.IsActive)
-                {
-                    return _headZoomLevel;
-                }
-                if (Player.m_localPlayer.IsDrawingBow())
-                {
-                    mouseAimFirstPersonEndTime = Time.time + MOUSE_AIM_FIRST_PERSON_LINGER_TIME;
-                }
-                return Time.time < mouseAimFirstPersonEndTime ? HeadZoomLevel.FirstPerson : _headZoomLevel;
+                return MouseAim.IsActive && Player.m_localPlayer.IsDrawingBow() ? HeadZoomLevel.FirstPerson : _headZoomLevel;
             }
         }
+
+        // How long the view takes to glide from one zoom level to another, see smoothViewTransition().
+        private const float VIEW_TRANSITION_TIME = 0.25f;
+        private static HeadZoomLevel lastTransitionHeadZoomLevel;
+        private static int lastViewTransitionFrame = -1;
+        private static float viewTransitionElapsedTime = VIEW_TRANSITION_TIME;
+        // From the character to the camera rig, in world space so that the character turning does not swing it.
+        private static Vector3 lastViewOffsetFromCharacter;
+        private static Vector3 viewTransitionStartOffset;
 
         private Camera _vrCam;
         private Camera _handsCam;
@@ -1454,6 +1452,32 @@ namespace ValheimVRMod.VRCore
                 }
                 setPlayerVisualsOffset(playerCharacter.transform, viewRotation * offset);
             }
+            smoothViewTransition(playerCharacter);
+        }
+
+        // Has the view glide to where a change of zoom level puts it, e. g. into first person and back out when a
+        // bow is drawn, rather than jump there. To be called every frame once the camera rig is placed.
+        private void smoothViewTransition(Player playerCharacter)
+        {
+            HeadZoomLevel zoomLevel = effectiveHeadZoomLevel;
+            Vector3 offsetFromCharacter = _instance.transform.position - playerCharacter.transform.position;
+            // Not after a break, e. g. when the view comes back from a cutscene to wherever it belongs now.
+            if (lastViewTransitionFrame == Time.frameCount - 1 && zoomLevel != lastTransitionHeadZoomLevel)
+            {
+                viewTransitionStartOffset = lastViewOffsetFromCharacter - offsetFromCharacter;
+                viewTransitionElapsedTime = 0;
+            }
+            lastTransitionHeadZoomLevel = zoomLevel;
+            lastViewTransitionFrame = Time.frameCount;
+
+            if (viewTransitionElapsedTime < VIEW_TRANSITION_TIME)
+            {
+                viewTransitionElapsedTime += Time.unscaledDeltaTime;
+                float remaining = 1 - Mathf.SmoothStep(0, 1, viewTransitionElapsedTime / VIEW_TRANSITION_TIME);
+                offsetFromCharacter += viewTransitionStartOffset * remaining;
+                _instance.transform.position = playerCharacter.transform.position + offsetFromCharacter;
+            }
+            lastViewOffsetFromCharacter = offsetFromCharacter;
         }
 
         // Like vanilla's third person camera, moves the view towards the character when something comes between the
