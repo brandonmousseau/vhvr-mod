@@ -155,7 +155,8 @@ namespace ValheimVRMod.Patches
             {
                 return;
             }
-            // The character moves relative to where it faces, or to where the headset faces without motion controls.
+            // The character moves relative to where it faces, or to what MouseAim makes of the forward direction
+            // setting without motion controls.
             ___m_lookDir = MouseAim.IsActive ? MouseAim.GetMoveForward(__instance.gameObject.transform.forward) : __instance.gameObject.transform.forward;
         }
     }
