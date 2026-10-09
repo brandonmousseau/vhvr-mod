@@ -273,4 +273,29 @@ namespace ValheimVRMod.Patches
         }
 
     }
+
+    // Vanilla makes the debris of a destroyed object out of copies of its renderers, materials and all. That includes
+    // the materials of an outline that the object has for having just been hit (see MeshCooldown), which are
+    // destroyed along with the object a moment later and leave the debris drawn in the pink of a missing shader for
+    // as long as it is around. So the outlines come off before the copies are made.
+    [HarmonyPatch(typeof(Destructible), nameof(Destructible.CreateFragments))]
+    class DebrisOutlineFixPatch
+    {
+        static void Prefix(GameObject rootObject)
+        {
+            if (VHVRConfig.NonVrPlayer() || rootObject == null)
+            {
+                return;
+            }
+            // The outline covers all the renderers below it, so it may be on a parent of what breaks apart.
+            foreach (Outline outline in rootObject.GetComponentsInParent<Outline>(includeInactive: true))
+            {
+                outline.enabled = false;
+            }
+            foreach (Outline outline in rootObject.GetComponentsInChildren<Outline>(includeInactive: true))
+            {
+                outline.enabled = false;
+            }
+        }
+    }
 }
