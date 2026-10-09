@@ -42,8 +42,15 @@ namespace ValheimVRMod.Scripts
         // over when the hands pass each other.
         private bool isLeftHandLowerOnSailRope;
         private bool isSailRopeHandOrderLatched;
+        // Null unless the rope has been held by a single hand since it came up.
+        private bool? isSailRopeHeldByLeftHandAlone;
         private bool isLeftGrabbing;
         private bool isRightGrabbing;
+        private const float PADDLE_BLADE_WIDTH = 0.2f;
+        private const float PADDLE_SHAFT_WIDTH = 0.03f;
+        // Where along the paddle its line has points, from one tip to the other: the blades widen from the shaft
+        // in the middle toward the tips.
+        private static readonly float[] PADDLE_POINTS = new float[] { 0, 0.3f, 0.7f, 1 };
         private LineRenderer paddle;
         private Transform steeringWheel;
         // In the ship's local space, so that the wheel stays put on the ship while it is being turned.
@@ -77,7 +84,17 @@ namespace ValheimVRMod.Scripts
             var material = Instantiate(VRAssetManager.GetAsset<Material>("StandardClone"));
             material.color = new Color(0.5f, 0.25f, 0);
             sailRope = CreateLine(transform, material, 3, 0.02f);
-            paddle = CreateLine(transform, material, 2, 0.03f);
+            paddle = CreateLine(transform, material, PADDLE_POINTS.Length, PADDLE_BLADE_WIDTH);
+            var paddleWidth = new AnimationCurve();
+            for (int i = 0; i < PADDLE_POINTS.Length; i++)
+            {
+                bool isTip = i == 0 || i == PADDLE_POINTS.Length - 1;
+                paddleWidth.AddKey(PADDLE_POINTS[i], isTip ? 1 : PADDLE_SHAFT_WIDTH / PADDLE_BLADE_WIDTH);
+            }
+            paddle.widthCurve = paddleWidth;
+            // A line facing the view by itself faces each eye separately, which the eyes cannot fuse into one shape
+            // when it is this wide. It is turned to the head as a whole instead, see LateUpdate().
+            paddle.alignment = LineAlignment.TransformZ;
 
             steeringWheel = new GameObject().transform;
             steeringWheel.parent = transform;
@@ -120,9 +137,10 @@ namespace ValheimVRMod.Scripts
         {
             var controls = shipControls;
             bool isActive = controls && VHVRConfig.IsGesturedSteeringEnabled() && VRPlayer.leftHand && VRPlayer.rightHand;
-            if (!isActive || (!isLeftGrabbing && !isRightGrabbing))
+            if (!isActive || isRowing || (!isLeftGrabbing && !isRightGrabbing))
             {
                 isSailRopeShown = false;
+                isSailRopeHeldByLeftHandAlone = null;
             }
             else if (isOperatingSail)
             {
@@ -148,10 +166,13 @@ namespace ValheimVRMod.Scripts
                     // Only the one hand still holds the rope.
                     isSailRopeHandOrderLatched = false;
                     isLeftHandLowerOnSailRope = !isLeftGrabbing;
+                    isSailRopeHeldByLeftHandAlone = isLeftGrabbing;
                 }
                 else if (!isSailRopeHandOrderLatched)
                 {
-                    isLeftHandLowerOnSailRope = Vector3.Dot(rightHand - leftHand, up) > 0;
+                    // A hand joining the one already on the rope takes it between that hand and the mast,
+                    // wherever it is. Only hands grabbing the rope together are ordered by their height.
+                    isLeftHandLowerOnSailRope = isSailRopeHeldByLeftHandAlone ?? Vector3.Dot(rightHand - leftHand, up) > 0;
                     isSailRopeHandOrderLatched = true;
                 }
                 Vector3 topHand = isLeftHandLowerOnSailRope ? rightHand : leftHand;
@@ -165,8 +186,21 @@ namespace ValheimVRMod.Scripts
                 Vector3 handSpan = rightHand - leftHand;
                 float handDist = handSpan.magnitude;
                 Vector3 extension = handSpan / handDist * Mathf.Max(PADDLE_LENGTH - handDist, 0) * 0.5f;
-                paddle.SetPosition(0, leftHand - extension);
-                paddle.SetPosition(1, rightHand + extension);
+                Vector3 leftTip = leftHand - extension;
+                Vector3 rightTip = rightHand + extension;
+                for (int i = 0; i < PADDLE_POINTS.Length; i++)
+                {
+                    paddle.SetPosition(i, Vector3.Lerp(leftTip, rightTip, PADDLE_POINTS[i]));
+                }
+                Vector3 toHead =
+                    VRPlayer.vrCam != null ?
+                    Vector3.ProjectOnPlane(VRPlayer.vrCam.transform.position - (leftHand + rightHand) * 0.5f, handSpan) :
+                    Vector3.zero;
+                if (toHead.sqrMagnitude > 0.0001f)
+                {
+                    // The line shows on the side its transform's Z points away from.
+                    paddle.transform.rotation = Quaternion.LookRotation(-toHead, handSpan);
+                }
             }
 
             if (isSteering)
