@@ -28,9 +28,9 @@ namespace ValheimVRMod.Scripts
         private const float STEERING_WHEEL_DISTANCE = 0.5f;
         // Grabbing with both hands to row starts with one hand a moment ahead of the other, which should not
         // flash the wheel.
-        private const float STEERING_WHEEL_SHOW_DELAY = 0.5f;
+        private const float STEERING_WHEEL_SHOW_DELAY = 0.25f;
         private const int STEERING_WHEEL_RIM_SEGMENTS = 32;
-        private const float PADDLE_LENGTH = 4f;
+        private const float PADDLE_LENGTH = 6f;
 
         private bool isRowing;
         private bool isSteeringWithLeftHand;
