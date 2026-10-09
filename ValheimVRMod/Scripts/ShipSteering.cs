@@ -24,7 +24,7 @@ namespace ValheimVRMod.Scripts
 
         // Used when the top of the mast cannot be found in the ship's model, in the mast's local space.
         private const float FALLBACK_MAST_HEIGHT = 10f;
-        private const float STEERING_WHEEL_RADIUS = 0.01f;
+        private const float STEERING_WHEEL_RADIUS = 0.125f;
         private const float STEERING_WHEEL_DISTANCE = 0.5f;
         // Grabbing with both hands to row starts with one hand a moment ahead of the other, which should not
         // flash the wheel.
@@ -119,7 +119,7 @@ namespace ValheimVRMod.Scripts
         void LateUpdate()
         {
             var controls = shipControls;
-            bool isActive = controls && VHVRConfig.IsGesturedSteeringEnabled() && VRPlayer.leftHandBone && VRPlayer.rightHandBone;
+            bool isActive = controls && VHVRConfig.IsGesturedSteeringEnabled() && VRPlayer.leftHand && VRPlayer.rightHand;
             if (!isActive || (!isLeftGrabbing && !isRightGrabbing))
             {
                 isSailRopeShown = false;
@@ -138,8 +138,8 @@ namespace ValheimVRMod.Scripts
 
             var ship = controls.m_ship;
             Vector3 up = upDirection;
-            Vector3 leftHand = VRPlayer.leftHandBone.position;
-            Vector3 rightHand = VRPlayer.rightHandBone.position;
+            Vector3 leftHand = GetGripPosition(VRPlayer.leftHand.transform);
+            Vector3 rightHand = GetGripPosition(VRPlayer.rightHand.transform);
 
             if (sailRope.enabled)
             {
@@ -184,13 +184,19 @@ namespace ValheimVRMod.Scripts
             }
         }
 
+        // Where the hand holds what is shown in it, which is a little behind where the controller is tracked.
+        private static Vector3 GetGripPosition(Transform hand)
+        {
+            return hand.position - hand.forward * 0.125f;
+        }
+
         // Puts the wheel in front of the seat at the height of the hand grabbing it.
         private void PlaceSteeringWheel()
         {
             var ship = shipControls.m_ship;
             var seat = Player.m_localPlayer.transform;
             Vector3 up = upDirection;
-            Vector3 hand = (isSteeringWithLeftHand ? VRPlayer.leftHandBone : VRPlayer.rightHandBone).position;
+            Vector3 hand = GetGripPosition((isSteeringWithLeftHand ? VRPlayer.leftHand : VRPlayer.rightHand).transform);
             Vector3 center = seat.position + Vector3.ProjectOnPlane(seat.forward, up).normalized * STEERING_WHEEL_DISTANCE;
             center += up * Vector3.Dot(hand - center, up);
             steeringWheelLocalCenter = ship.transform.InverseTransformPoint(center);
@@ -374,7 +380,7 @@ namespace ValheimVRMod.Scripts
             var ship = shipControls.m_ship;
             var lateral = Vector3.Cross(upDirection, ship.transform.forward).normalized;
             Vector3 saggitalArmSpanDirection =
-                Vector3.ProjectOnPlane(VRPlayer.rightHandBone.position - VRPlayer.leftHandBone.position, lateral).normalized;
+                Vector3.ProjectOnPlane(VRPlayer.rightHand.transform.position - VRPlayer.leftHand.transform.position, lateral).normalized;
             float leftHandSpeed =
                 Vector3.Dot(
                     Vector3.Cross(VRPlayer.leftHandPhysicsEstimator.GetAverageVelocityInSnapshots(), saggitalArmSpanDirection),
@@ -445,7 +451,7 @@ namespace ValheimVRMod.Scripts
 
         private float GetHandHeight()
         {
-            return VRPlayer.instance.transform.InverseTransformPoint(Vector3.Lerp(VRPlayer.leftHandBone.position, VRPlayer.rightHandBone.position, 0.5f)).y;
+            return VRPlayer.instance.transform.InverseTransformPoint(Vector3.Lerp(VRPlayer.leftHand.transform.position, VRPlayer.rightHand.transform.position, 0.5f)).y;
         }
     }
 }
