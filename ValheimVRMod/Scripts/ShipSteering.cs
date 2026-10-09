@@ -36,6 +36,14 @@ namespace ValheimVRMod.Scripts
         private bool isSteeringWithLeftHand;
         private float steeringStartTime;
         private LineRenderer sailRope;
+        // The rope comes up when the sail is grabbed with both hands and stays until both have let go of it.
+        private bool isSailRopeShown;
+        // Which hand is the lower one on the rope, kept for as long as both hands hold it so that it does not flip
+        // over when the hands pass each other.
+        private bool isLeftHandLowerOnSailRope;
+        private bool isSailRopeHandOrderLatched;
+        private bool isLeftGrabbing;
+        private bool isRightGrabbing;
         private LineRenderer paddle;
         private Transform steeringWheel;
         // In the ship's local space, so that the wheel stays put on the ship while it is being turned.
@@ -112,7 +120,15 @@ namespace ValheimVRMod.Scripts
         {
             var controls = shipControls;
             bool isActive = controls && VHVRConfig.IsGesturedSteeringEnabled() && VRPlayer.leftHandBone && VRPlayer.rightHandBone;
-            sailRope.enabled = isActive && isOperatingSail;
+            if (!isActive || (!isLeftGrabbing && !isRightGrabbing))
+            {
+                isSailRopeShown = false;
+            }
+            else if (isOperatingSail)
+            {
+                isSailRopeShown = true;
+            }
+            sailRope.enabled = isSailRopeShown;
             paddle.enabled = isActive && isRowing;
             steeringWheel.gameObject.SetActive(isActive && isSteering && Time.time - steeringStartTime >= STEERING_WHEEL_SHOW_DELAY);
             if (!isActive)
@@ -127,9 +143,19 @@ namespace ValheimVRMod.Scripts
 
             if (sailRope.enabled)
             {
-                bool isLeftHandLower = Vector3.Dot(rightHand - leftHand, up) > 0;
-                Vector3 topHand = isLeftHandLower ? rightHand : leftHand;
-                sailRope.SetPosition(0, isLeftHandLower ? leftHand : rightHand);
+                if (!isLeftGrabbing || !isRightGrabbing)
+                {
+                    // Only the one hand still holds the rope.
+                    isSailRopeHandOrderLatched = false;
+                    isLeftHandLowerOnSailRope = !isLeftGrabbing;
+                }
+                else if (!isSailRopeHandOrderLatched)
+                {
+                    isLeftHandLowerOnSailRope = Vector3.Dot(rightHand - leftHand, up) > 0;
+                    isSailRopeHandOrderLatched = true;
+                }
+                Vector3 topHand = isLeftHandLowerOnSailRope ? rightHand : leftHand;
+                sailRope.SetPosition(0, !isLeftGrabbing || !isRightGrabbing ? topHand : isLeftHandLowerOnSailRope ? leftHand : rightHand);
                 sailRope.SetPosition(1, topHand);
                 sailRope.SetPosition(2, ship.m_mastObject ? GetMastTip(ship) : topHand);
             }
@@ -214,9 +240,9 @@ namespace ValheimVRMod.Scripts
 
             var wasSingleGrabbing = isSingleGrabbing;
             var wasDoubleGrabbing = isDoubleGrabbing;
-            var isLeftGrabbing =
+            isLeftGrabbing =
                 leftHandGesture.isHandFree() && SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand);
-            var isRightGrabbing =
+            isRightGrabbing =
                 rightHandGesture.isHandFree() && SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand);
             isSingleGrabbing = isLeftGrabbing ^ isRightGrabbing;
             isDoubleGrabbing = isLeftGrabbing && isRightGrabbing;
