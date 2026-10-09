@@ -24,12 +24,12 @@ namespace ValheimVRMod.Scripts
 
         // Used when the top of the mast cannot be found in the ship's model, in the mast's local space.
         private const float FALLBACK_MAST_HEIGHT = 10f;
-        private const float STEERING_WHEEL_RADIUS = 0.3f;
+        private const float STEERING_WHEEL_RADIUS = 0.01f;
         private const float STEERING_WHEEL_DISTANCE = 0.5f;
         // Grabbing with both hands to row starts with one hand a moment ahead of the other, which should not
         // flash the wheel.
         private const float STEERING_WHEEL_SHOW_DELAY = 0.25f;
-        private const int STEERING_WHEEL_RIM_SEGMENTS = 32;
+        private const int STEERING_WHEEL_RIM_SEGMENTS = 16;
         private const float PADDLE_LENGTH = 6f;
 
         private bool isRowing;
