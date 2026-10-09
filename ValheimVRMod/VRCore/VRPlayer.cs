@@ -143,9 +143,21 @@ namespace ValheimVRMod.VRCore
         {
             get
             {
-                return MouseAim.IsActive && Player.m_localPlayer.IsDrawingBow() ? HeadZoomLevel.FirstPerson : _headZoomLevel;
+                if (_headZoomLevel == HeadZoomLevel.FirstPerson || !MouseAim.IsActive)
+                {
+                    return _headZoomLevel;
+                }
+                if (Player.m_localPlayer.IsDrawingBow())
+                {
+                    mouseAimFirstPersonEndTime = Time.time + MOUSE_AIM_FIRST_PERSON_HOLD_TIME;
+                }
+                return Time.time < mouseAimFirstPersonEndTime ? HeadZoomLevel.FirstPerson : _headZoomLevel;
             }
         }
+
+        // How long the view stays in first person after a bow is let go of, before gliding back out.
+        private const float MOUSE_AIM_FIRST_PERSON_HOLD_TIME = 0.25f;
+        private static float mouseAimFirstPersonEndTime;
 
         // How long the view takes to glide from one zoom level to another, see smoothViewTransition().
         private const float VIEW_TRANSITION_TIME = 0.25f;
