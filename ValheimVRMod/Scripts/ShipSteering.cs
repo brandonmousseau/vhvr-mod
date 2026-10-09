@@ -36,7 +36,8 @@ namespace ValheimVRMod.Scripts
         private bool isSteeringWithLeftHand;
         private float steeringStartTime;
         private LineRenderer sailRope;
-        // The rope comes up when the sail is grabbed with both hands and stays until both have let go of it.
+        // The rope comes up when the sail is grabbed with both hands and stays until it has been pulled or both
+        // hands have let go of it.
         private bool isSailRopeShown;
         // Which hand is the lower one on the rope, kept for as long as both hands hold it so that it does not flip
         // over when the hands pass each other.
@@ -137,9 +138,14 @@ namespace ValheimVRMod.Scripts
         {
             var controls = shipControls;
             bool isActive = controls && VHVRConfig.IsGesturedSteeringEnabled() && VRPlayer.leftHand && VRPlayer.rightHand;
-            if (!isActive || isRowing || (!isLeftGrabbing && !isRightGrabbing))
+            // A grip is only good for one pull (see UpdateSailOperationTargetSpeed()), so the rope goes away once
+            // that is done, until the sail is grabbed anew.
+            bool isSailPullDone = isOperatingSail && sailOperationTargetSpeed != sailOperationStartSpeed;
+            if (!isActive || isRowing || isSailPullDone || (!isLeftGrabbing && !isRightGrabbing))
             {
                 isSailRopeShown = false;
+                // The hands are ordered anew by where they are when the rope comes up again.
+                isSailRopeHandOrderLatched = false;
                 isSailRopeHeldByLeftHandAlone = null;
             }
             else if (isOperatingSail)
@@ -216,6 +222,13 @@ namespace ValheimVRMod.Scripts
                 steeringWheel.SetPositionAndRotation(
                     center, Quaternion.LookRotation(direction.sqrMagnitude > 0.0001f ? direction : ship.transform.forward, up));
             }
+        }
+
+        // Whether at least one of the hands is turned the way a hand holding a rope that comes down from above is.
+        private static bool IsEitherHandGrippingSailRope(Vector3 up)
+        {
+            return Vector3.Angle(VRPlayer.leftHand.transform.forward, up) < MAX_SAIL_PULL_ANGLE ||
+                Vector3.Angle(VRPlayer.rightHand.transform.forward, up) < MAX_SAIL_PULL_ANGLE;
         }
 
         // Where the hand holds what is shown in it, which is a little behind where the controller is tracked.
@@ -314,8 +327,7 @@ namespace ValheimVRMod.Scripts
             }
             else if (!wasDoubleGrabbing)
             {
-                if (Vector3.Angle(VRPlayer.leftHand.transform.forward, upDirection) < MAX_SAIL_PULL_ANGLE ||
-                    Vector3.Angle(VRPlayer.rightHand.transform.forward, upDirection) < MAX_SAIL_PULL_ANGLE)
+                if (IsEitherHandGrippingSailRope(upDirection))
                 {
                     Vector3 handSpan = VRPlayer.rightHand.transform.position - VRPlayer.leftHand.transform.position;
                     if (Vector3.Angle(handSpan, upDirection) < MAX_SAIL_PULL_ANGLE ||
