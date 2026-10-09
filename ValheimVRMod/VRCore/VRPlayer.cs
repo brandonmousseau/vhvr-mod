@@ -205,7 +205,12 @@ namespace ValheimVRMod.VRCore
                     InventoryGui.IsVisible() ||
                     Menu.IsVisible() ||
                     (TextViewer.instance && TextViewer.instance.IsVisible()) ||
-                    Minimap.IsOpen();
+                    Minimap.IsOpen() ||
+                    VHVRGuiCompat.isAnyRegisteredGuiOpen ||
+                    // A window of another mod on the VR GUI panel, while the game shows the cursor for it. Mods
+                    // get the cursor shown in various ways (Jotunn's GUIManager.BlockInput(), patching
+                    // Minimap.IsOpen() or TextInput.IsVisible(), ...), all of which end up in Cursor.visible.
+                    (Cursor.visible && VRGUI.isForeignGuiShowingSelectable);
             }
         }
 

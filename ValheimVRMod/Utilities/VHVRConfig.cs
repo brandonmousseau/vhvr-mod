@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using BepInEx.Configuration;
 using NDesk.Options;
 using Unity.XR.OpenVR;
@@ -63,6 +64,9 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> uiPanelSize;
         private static ConfigEntry<Vector2> uiPanelResolution;
         private static ConfigEntry<bool> uiPanelResolutionCompat;
+        private static ConfigEntry<bool> adoptForeignGuiCanvases;
+        private static ConfigEntry<string> foreignGuiCanvasBlacklist;
+        private static string[] foreignGuiCanvasBlacklistNames = new string[0];
         private static ConfigEntry<float> uiPanelVerticalOffset;
         private static ConfigEntry<float> uiPanelDistance;
         private static ConfigEntry<bool> showStaticCrosshair;
@@ -598,6 +602,17 @@ namespace ValheimVRMod.Utilities
                                       "UIPanelResolutionCompatibility",
                                       false,
                                       new ConfigDescription("Set UI resolution panel display compatibility mode, in case some mod have some mouse offset problem(Jewelcrafting mod for example), use this setting, set panel resolution below your monitor resolution, need restart to main menu to update"));
+            adoptForeignGuiCanvases = config.Bind("UI",
+                                      "AdoptForeignGuiCanvases",
+                                      true,
+                                      new ConfigDescription("Whether to move GUI windows of other mods that would only be shown on the desktop onto the VR GUI panel, so that they can be seen and used with the laser pointers. Each window moved is listed in the log."));
+            foreignGuiCanvasBlacklist = config.Bind("UI",
+                                      "ForeignGuiCanvasBlacklist",
+                                      "",
+                                      new ConfigDescription("Comma separated names of GUI canvases of other mods to leave on the desktop even though AdoptForeignGuiCanvases is on, as listed in the log."));
+            foreignGuiCanvasBlacklistNames = parseCanvasNames(foreignGuiCanvasBlacklist.Value);
+            foreignGuiCanvasBlacklist.SettingChanged +=
+                (sender, e) => foreignGuiCanvasBlacklistNames = parseCanvasNames(foreignGuiCanvasBlacklist.Value);
             uiPanelDistance = config.Bind("UI",
                                       "UIPanelDistance",
                                       3f,
@@ -1445,6 +1460,21 @@ namespace ValheimVRMod.Utilities
         {
             value = Mathf.Clamp(value, 0f, 1f);
             overlayCurvature.Value = value;
+        }
+
+        public static bool AdoptForeignGuiCanvases()
+        {
+            return adoptForeignGuiCanvases.Value;
+        }
+
+        public static string[] GetForeignGuiCanvasBlacklist()
+        {
+            return foreignGuiCanvasBlacklistNames;
+        }
+
+        private static string[] parseCanvasNames(string names)
+        {
+            return names.Split(',').Select(name => name.Trim()).Where(name => name.Length > 0).ToArray();
         }
 
         public static float GetUiPanelSize()
