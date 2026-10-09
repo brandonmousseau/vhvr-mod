@@ -332,6 +332,10 @@ namespace ValheimVRMod.Patches
 
         static Vector3 getRayDirectionCameraFacing()
         {
+            if (MouseAim.IsActive)
+            {
+                return MouseAim.Forward;
+            }
             Camera vrCam = CameraUtils.getCamera(CameraUtils.VR_CAMERA);
             if (vrCam == null)
             {

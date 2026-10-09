@@ -183,8 +183,23 @@ namespace ValheimVRMod.Patches
         }
     }
 
+    // With motion controls disabled, the aim of attacks follows the mouse rather than the head, see MouseAim.
+    // It is kept parallel to the crosshair's direction wherever the attack starts from, so that the two meet at
+    // infinity rather than at whatever happens to be under the crosshair.
+    [HarmonyPatch(typeof(Humanoid), nameof(Humanoid.GetAimDir))]
+    class KBandMouse_GetAimDirPatch
+    {
+        static void Postfix(Humanoid __instance, ref Vector3 __result)
+        {
+            if (__instance == Player.m_localPlayer && MouseAim.IsActive)
+            {
+                __result = MouseAim.Forward;
+            }
+        }
+    }
+
     // This swaps the Raycast camera from the original game camera to the VR camera
-    // so that the interaction aligns with the player's head orientation. This
+    // so that the interaction starts at the player's head, along the direction of MouseAim. This
     // only impacts M&KB players since interaction is done using Hands with VR controls enabled
     [HarmonyPatch(typeof(Player), nameof(Player.FindHoverObject))]
     class KBandMouse_FindHoverObjectPatch
@@ -210,6 +225,10 @@ namespace ValheimVRMod.Patches
 
         private static Vector3 GetVRCameraForward()
         {
+            if (MouseAim.IsActive)
+            {
+                return MouseAim.Forward;
+            }
             if (!vrCam)
             {
                 vrCam = CameraUtils.getCamera(CameraUtils.VR_CAMERA);

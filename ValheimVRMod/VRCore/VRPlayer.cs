@@ -55,10 +55,11 @@ namespace ValheimVRMod.VRCore
         private static float SIT_HEIGHT_ADJUST = -0.7f;
         // Relative to the first person eye point. Each keeps the distance it has always had, but at 25 to 30 degrees
         // above the eye instead of 35 to 60, so the view looks past the character rather than down onto it.
-        private static Vector3 THIRD_PERSON_0_OFFSET = new Vector3(0f, 0.6f, -1.0f);
-        private static Vector3 THIRD_PERSON_1_OFFSET = new Vector3(0f, 1.0f, -1.8f);
-        private static Vector3 THIRD_PERSON_2_OFFSET = new Vector3(0f, 1.4f, -2.9f);
-        private static Vector3 THIRD_PERSON_3_OFFSET = new Vector3(0f, 2.3f, -4.9f);
+        // From the character's eyes, each about 20 degrees above them.
+        private static Vector3 THIRD_PERSON_0_OFFSET = new Vector3(0f, 0.4f, -1.1f);
+        private static Vector3 THIRD_PERSON_1_OFFSET = new Vector3(0f, 0.7f, -1.95f);
+        private static Vector3 THIRD_PERSON_2_OFFSET = new Vector3(0f, 1.1f, -3.05f);
+        private static Vector3 THIRD_PERSON_3_OFFSET = new Vector3(0f, 1.85f, -5.1f);
         private static Vector3 THIRD_PERSON_CONFIG_OFFSET = Vector3.zero;
         private const float NECK_OFFSET = 0.25f;
         // Below this raw eye height the HMD is assumed not to be tracking, so height caliberation is deferred.
@@ -135,6 +136,27 @@ namespace ValheimVRMod.VRCore
         private static GameObject _instance;
         private static VRPlayer _vrPlayerInstance;
         private static HeadZoomLevel _headZoomLevel = HeadZoomLevel.FirstPerson;
+        // How long the view stays in first person after a bow is let go of, to see where the shot goes.
+        private const float MOUSE_AIM_FIRST_PERSON_LINGER_TIME = 1f;
+        private static float mouseAimFirstPersonEndTime;
+        // Without motion controls, drawing a bow brings a third person view into first person for the time being:
+        // the shot stays parallel to the crosshair's direction (see MouseAim), so from a camera that is metres above
+        // and behind the character it would land that far off the crosshair.
+        private static HeadZoomLevel effectiveHeadZoomLevel
+        {
+            get
+            {
+                if (_headZoomLevel == HeadZoomLevel.FirstPerson || !MouseAim.IsActive)
+                {
+                    return _headZoomLevel;
+                }
+                if (Player.m_localPlayer.IsDrawingBow())
+                {
+                    mouseAimFirstPersonEndTime = Time.time + MOUSE_AIM_FIRST_PERSON_LINGER_TIME;
+                }
+                return Time.time < mouseAimFirstPersonEndTime ? HeadZoomLevel.FirstPerson : _headZoomLevel;
+            }
+        }
 
         private Camera _vrCam;
         private Camera _handsCam;
@@ -334,7 +356,7 @@ namespace ValheimVRMod.VRCore
         {
             get
             {
-                return (_headZoomLevel == HeadZoomLevel.FirstPerson) && attachedToPlayer;
+                return (effectiveHeadZoomLevel == HeadZoomLevel.FirstPerson) && attachedToPlayer;
             }
         }
 
@@ -413,7 +435,11 @@ namespace ValheimVRMod.VRCore
             firstPersonOffset = Vector3.zero;
             firstPersonHeightOffset = null;
             heightCaliberationPending |= recaliberateHeight;
+            thirdPersonRecenteringRequestFrame = Time.frameCount;
         }
+
+        // The frame in which a recentering was asked for that a third person view has yet to follow, if any.
+        private static int? thirdPersonRecenteringRequestFrame;
 
         public static void RequestPelvisCaliberation()
         {
@@ -438,6 +464,8 @@ namespace ValheimVRMod.VRCore
 
         void Awake()
         {
+            Application.onBeforeRender -= onBeforeRender;
+            Application.onBeforeRender += onBeforeRender;
             _vrPlayerInstance = this;
             _prefab = VRAssetManager.GetAsset<GameObject>(PLAYER_PREFAB_NAME);
             headPositionInitialized = false;
@@ -499,8 +527,16 @@ namespace ValheimVRMod.VRCore
             }
         }
 
+        // After every LateUpdate, so that the look input of this frame is in already, whichever order they ran in.
+        private static void onBeforeRender()
+        {
+            MouseAim.UpdateSnapTurn(_instance != null ? _instance.transform : null);
+            CrosshairManager.instance.UpdateMouseAimCrosshair();
+        }
+
         void OnDestroy()
         {
+            Application.onBeforeRender -= onBeforeRender;
             Camera.onPostRender -= OnCameraPostRender;
             if (_dodgingRoom != null)
             {
@@ -1383,7 +1419,7 @@ namespace ValheimVRMod.VRCore
             {
                 initialRoomscaleLocomotiveOffsetFromHead = Vector3.zero;
             }
-            float firstPersonAdjust = inFirstPerson ? (float) firstPersonHeightOffset : 0.0f;
+            float firstPersonAdjust = inFirstPerson ? (float) firstPersonHeightOffset : getThirdPersonHeightOffset(playerCharacter);
             setHeadVisibility(!inFirstPerson);
             // Update the position with the first person adjustment calculated in init phase
             _instance.transform.localPosition = getDesiredLocalPosition(playerCharacter) // Base Positioning
@@ -1391,21 +1427,24 @@ namespace ValheimVRMod.VRCore
                 + getHeadHeightAdjust(playerCharacter)) * Vector3.up;
             maybeLogHeightDiagnostics(playerCharacter);
 
-            if (_headZoomLevel != HeadZoomLevel.FirstPerson)
+            // The offsets below are relative to where the view faces, which is where the character faces unless
+            // MouseAim holds the view while the mouse turns the character.
+            Quaternion viewRotation = MouseAim.ViewRotationFromCharacter;
+            if (effectiveHeadZoomLevel != HeadZoomLevel.FirstPerson)
             {
-                _instance.transform.localPosition += getHeadOffset(_headZoomLevel) // Player controlled offset (zeroed on tracking reset)
-                            + Vector3.forward * NECK_OFFSET; // Move slightly forward to position on neck
+                _instance.transform.localPosition += viewRotation * (getHeadOffset(effectiveHeadZoomLevel) // Player controlled offset (zeroed on tracking reset)
+                            + Vector3.forward * NECK_OFFSET); // Move slightly forward to position on neck
                 setPlayerVisualsOffset(playerCharacter.transform, Vector3.zero);
                 pullThirdPersonViewInFrontOfObstruction(playerCharacter);
             }
             else
             {
-                var offset = -getHeadOffset(_headZoomLevel); // Player controlled offset (zeroed on tracking reset)
+                var offset = -getHeadOffset(effectiveHeadZoomLevel); // Player controlled offset (zeroed on tracking reset)
                 if (playerCharacter.IsSitting())
                 {
                     if (playerCharacter.IsAttached())
                     {
-                        _instance.transform.localPosition += Vector3.forward * 0.33f;
+                        _instance.transform.localPosition += viewRotation * Vector3.forward * 0.33f;
                     }
                     offset += Vector3.forward * 0.0625f; // Move slightly backward to position on neck;
                 }
@@ -1413,7 +1452,7 @@ namespace ValheimVRMod.VRCore
                 {
                     offset -= Vector3.forward * NECK_OFFSET; // Move slightly forward to position on neck
                 }
-                setPlayerVisualsOffset(playerCharacter.transform, offset);
+                setPlayerVisualsOffset(playerCharacter.transform, viewRotation * offset);
             }
         }
 
@@ -1443,6 +1482,14 @@ namespace ValheimVRMod.VRCore
                 if (child == _instance.transform || child.name == "EyePos") continue;
                 playerTransform.GetChild(i).localPosition = offset;
             }
+        }
+
+        // The headset is above the rig's origin by the player's own eye height, which in third person must not
+        // come on top of the height the view is meant to have above the character's eyes.
+        private static float getThirdPersonHeightOffset(Player player)
+        {
+            float characterScale = player.transform.lossyScale.y;
+            return characterScale <= 0 ? 0 : -rawCaliberatedEyeHeight / characterScale;
         }
 
         private float getHeadHeightAdjust(Player player)
@@ -1499,6 +1546,13 @@ namespace ValheimVRMod.VRCore
             float characterScale = player.transform.lossyScale.y;
             if (characterScale <= 0)
             {
+                return 0;
+            }
+            if (!VHVRConfig.UseVrControls())
+            {
+                // Without motion controls there is no VRIK to bend the character down to the player's height, who
+                // is likely seated at that: the view would end up at the chest or the waist of a character that
+                // keeps standing upright.
                 return 0;
             }
 
@@ -1726,6 +1780,7 @@ namespace ValheimVRMod.VRCore
                 player.m_lookDir = desiredFacing;
                 player.FaceLookDirection();
                 _instance.transform.localRotation = Quaternion.Euler(0, -cameraLocalHeading, 0);
+                MouseAim.OnRecentered();
                 _vrCam.nearClipPlane = VHVRConfig.GetNearClipPlane();
                 _vrCameraRig.position += 
                     Vector3.ProjectOnPlane(
@@ -1853,10 +1908,18 @@ namespace ValheimVRMod.VRCore
                 }
             }
 
+            if (!inFirstPerson)
+            {
+                maybeRecenterThirdPersonView();
+            }
+
             if (headPositionInitialized || !inFirstPerson || playerCharacter.InDodge())
             {
                 return;
             }
+
+            // The first person view is lined up with the character below.
+            thirdPersonRecenteringRequestFrame = null;
 
             // First set the position without any adjustment
             _instance.transform.localPosition = getDesiredLocalPosition(playerCharacter);
@@ -1874,18 +1937,21 @@ namespace ValheimVRMod.VRCore
                         Vector3.up);
             }
 
-            if (_headZoomLevel != HeadZoomLevel.FirstPerson)
+            if (effectiveHeadZoomLevel != HeadZoomLevel.FirstPerson)
             {
-                _instance.transform.localPosition += getHeadOffset(_headZoomLevel);
+                _instance.transform.localPosition += getHeadOffset(effectiveHeadZoomLevel);
             }
             else
             {
-                setPlayerVisualsOffset(playerCharacter.transform, -getHeadOffset(_headZoomLevel));
+                setPlayerVisualsOffset(playerCharacter.transform, -getHeadOffset(effectiveHeadZoomLevel));
             }
 
-            if (VHVRConfig.UseLookLocomotion())
+            // Without motion controls the view is lined up with the character too, since that is where the mouse
+            // aims, see MouseAim.
+            if (VHVRConfig.UseLookLocomotion() || !VHVRConfig.UseVrControls())
             {
                 _instance.transform.localRotation = Quaternion.Euler(0f, -hmd.localRotation.eulerAngles.y, 0f);
+                MouseAim.OnRecentered();
             }
 
             if (PlayerCustomizaton.IsBarberGuiVisible())
@@ -1894,6 +1960,25 @@ namespace ValheimVRMod.VRCore
             }
 
             headPositionInitialized = true;
+        }
+
+        // The head position is only initialized in first person, which also lines the view up with the character.
+        // Without motion controls a third person view needs lining up as well, or the character ends up off to
+        // the side by however far the head was turned or moved since the view last was in first person.
+        private void maybeRecenterThirdPersonView()
+        {
+            // Not in the frame of the request itself: recentering the tracking origin only shows in the head pose
+            // from the next frame on.
+            if (thirdPersonRecenteringRequestFrame == null || Time.frameCount <= thirdPersonRecenteringRequestFrame ||
+                VHVRConfig.UseVrControls() || _vrCam == null)
+            {
+                return;
+            }
+            thirdPersonRecenteringRequestFrame = null;
+            var hmd = Valve.VR.InteractionSystem.Player.instance.hmdTransform;
+            _instance.transform.localRotation = Quaternion.Euler(0f, -hmd.localRotation.eulerAngles.y, 0f);
+            MouseAim.OnRecentered();
+            ResetRoomscaleCamera();
         }
 
         private static void maybeCaliberatePlayerHeight()
