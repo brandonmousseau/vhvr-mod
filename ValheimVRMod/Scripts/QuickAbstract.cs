@@ -5,6 +5,7 @@ using UnityEngine;
 using ValheimVRMod.Patches;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
+using ValheimVRMod.VRCore.UI;
 using Valve.VR;
 
 namespace ValheimVRMod.Scripts
@@ -596,7 +597,15 @@ namespace ValheimVRMod.Scripts
                             return true;
                         });
                 }
-                GuardianPowerCountdown.AttachTo(extraElements[extraElementCount].transform);
+                if (VRHud.UsesLegacyHud())
+                {
+                    // The countdown belongs on the legacy HUD along with everything else.
+                    GuardianPowerCountdown.DetachFrom(wrist.transform);
+                }
+                else
+                {
+                    GuardianPowerCountdown.AttachTo(extraElements[extraElementCount].transform);
+                }
                 extraElementCount++;
             }
             else
@@ -660,7 +669,7 @@ namespace ValheimVRMod.Scripts
             }
             extraElementCount++;
 
-            if (VHVRConfig.StatusEffectsOnWristQuickBar())
+            if (VHVRConfig.StatusEffectsOnWristQuickBar() && !VRHud.UsesLegacyHud())
             {
                 // One row above the first row of buttons, see reorderElements().
                 WristStatusEffects.AttachTo(wrist, 0.05f);

@@ -123,9 +123,16 @@ namespace ValheimVRMod.VRCore.UI
         // Elements whose update failure has been logged, so that it is not logged again on every update.
         private readonly HashSet<IVRHudElement> failedHudElements = new HashSet<IVRHudElement>();
 
+        // Whether the HUD is the legacy one on the GUI panel, either by choice or for the time being, e. g. while the VR
+        // camera is detached from the player. Nothing else should be put on the hands meanwhile either.
+        public static bool UsesLegacyHud()
+        {
+            return !VRPlayer.attachedToPlayer || VHVRConfig.UseLegacyHud() || !VHVRConfig.UseVrControls();
+        }
+
         public void Update()
         {
-            if (!VRPlayer.attachedToPlayer || VHVRConfig.UseLegacyHud() || !VHVRConfig.UseVrControls())
+            if (UsesLegacyHud())
             {
                 revertToLegacyHud();
                 return;

@@ -86,7 +86,7 @@ namespace ValheimVRMod.Utilities
                 VRPlayer.inFirstPerson ?
                 vrCamera.transform.position :
                 Player.m_localPlayer.transform.position + Vector3.up * 0.5f;
-            if (PlayerCustomizaton.IsBarberGuiVisible())
+            if (BarberMirror.IsUsingStation())
             {
                 targetPosition.y += 0.5f;
             }
@@ -97,7 +97,7 @@ namespace ValheimVRMod.Utilities
             cameraSpeed = 0.15f;
             targetCameraSpeed = 0.2f;
             float maxViewDistance = MAX_VIEW_DISTANCE;
-            if (PlayerCustomizaton.IsBarberGuiVisible())
+            if (BarberMirror.IsUsingStation())
             {
                 viewPoint = vrCamera.transform.position;
                 viewPoint.y = targetPosition.y;

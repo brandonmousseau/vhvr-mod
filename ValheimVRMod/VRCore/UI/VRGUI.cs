@@ -434,6 +434,11 @@ namespace ValheimVRMod.VRCore.UI
         {
             if (BarberMirror.IsActive)
             {
+                if (attachedToHand)
+                {
+                    // E. g. the inventory was opened on the hand right before sitting down.
+                    detachPanelFromHand(resetSize: true);
+                }
                 BarberMirror.GetGuiPose(
                     desiredOffset, VRPlayer.instance.transform.position, VRPlayer.instance.transform.up,
                     out Vector3 position, out Quaternion rotation);
@@ -451,9 +456,12 @@ namespace ValheimVRMod.VRCore.UI
             }
 
             bool wasAttachableUI = isAttachableToHandAsInventoryOrBuildMenu;
+            // Nothing goes on the hands while the HUD is the legacy one, whatever the settings say.
+            bool allowsHandAttachment = !VRHud.UsesLegacyHud();
             bool attachableToHandAsInventory =
-                InventoryGui.IsVisible() && VHVRConfig.AttachInventoryToHand();
-            bool attachableToHandAsBuildMenu = isBuildMenuOpen && VHVRConfig.AttachBuildMenuToHand();
+                allowsHandAttachment && InventoryGui.IsVisible() && VHVRConfig.AttachInventoryToHand();
+            bool attachableToHandAsBuildMenu =
+                allowsHandAttachment && isBuildMenuOpen && VHVRConfig.AttachBuildMenuToHand();
             isAttachableToHandAsInventoryOrBuildMenu = attachableToHandAsInventory || attachableToHandAsBuildMenu;
             if (!isAttachableToHandAsInventoryOrBuildMenu)
             {
@@ -589,6 +597,11 @@ namespace ValheimVRMod.VRCore.UI
             }
 
             if (!VHVRConfig.AttachInventoryToHand() && InventoryGui.IsVisible())
+            {
+                return true;
+            }
+
+            if (VRHud.UsesLegacyHud())
             {
                 return true;
             }
