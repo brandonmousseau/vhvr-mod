@@ -1,3 +1,4 @@
+using ValheimVRMod.VRCore.Backends;
 using AmplifyOcclusion;
 using RootMotion.FinalIK;
 using System.Collections.Generic;
@@ -13,9 +14,6 @@ using ValheimVRMod.Scripts.Block;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore.BodyTracking;
 using ValheimVRMod.VRCore.UI;
-using Valve.VR;
-using Valve.VR.Extras;
-using Valve.VR.InteractionSystem;
 using static ValheimVRMod.Utilities.LogUtils;
 using Pose = ValheimVRMod.Utilities.Pose;
 
@@ -120,13 +118,13 @@ namespace ValheimVRMod.VRCore
 
         /// <summary>
         /// The current eye height of the player above the floor, corrected for SteamVR floor level error.
-        /// Always use this instead of Valve.VR.InteractionSystem.Player.instance.eyeHeight: the raw
+        /// Always use this instead of VRBackend.Active.Rig.Player.eyeHeight: the raw
         /// value is measured against the SteamVR tracking origin, so a mis-calibrated floor shifts it by a
         /// constant, which in turn wrecks every height ratio computed against referencePlayerHeight
         /// (most visibly making roomscale sneak trigger on the slightest crouch).
         /// </summary>
         public static float playerEyeHeight =>
-            Valve.VR.InteractionSystem.Player.instance.eyeHeight + eyeHeightCaliberationOffset;
+            VRBackend.Active.Rig.Player.eyeHeight + eyeHeightCaliberationOffset;
         public static bool startingSit { get; private set; }
         public static bool isRoomscaleSneaking { get { return _isRoomscaleSneaking; } }
         private static bool _isRoomscaleSneaking = false;
@@ -190,8 +188,8 @@ namespace ValheimVRMod.VRCore
         public bool wasDodging { get; private set; } = false;
         public static GesturedLocomotionManager gesturedLocomotionManager { get; private set; } = null;
 
-        private static SteamVR_LaserPointer _leftPointer;
-        private static SteamVR_LaserPointer _rightPointer;
+        private static VRLaserPointer _leftPointer;
+        private static VRLaserPointer _rightPointer;
 
         private Vector3 roomLocalPositionBeforeDodge;
         private Transform _dodgingRoom;
@@ -202,8 +200,8 @@ namespace ValheimVRMod.VRCore
 
         private float timerLeft;
         private float timerRight;
-        public static Hand leftHand { get; private set; }
-        public static Hand rightHand { get; private set; }
+        public static VRHand leftHand { get; private set; }
+        public static VRHand rightHand { get; private set; }
 
         // Objects that are parented to the VR controllers but rotated and positioned like the character's hand bones.
         // They have the advantage of being in sync with the VR controller transform all the time without being
@@ -222,10 +220,10 @@ namespace ValheimVRMod.VRCore
             get { return isRightHandMainWeaponHand ? Player.m_localPlayer.GetRightItem() : Player.m_localPlayer.GetLeftItem(); }
         }
 
-        public static Hand mainWeaponHand { get { return isRightHandMainWeaponHand ? rightHand : leftHand; } }
+        public static VRHand mainWeaponHand { get { return isRightHandMainWeaponHand ? rightHand : leftHand; } }
 
-        public static Hand arrowHand { get { return VHVRConfig.LeftHanded() ^ offHandWield ? leftHand : rightHand; } }
-        public static Hand bowHand { get { return VHVRConfig.LeftHanded() ^ offHandWield ? rightHand : leftHand; } }
+        public static VRHand arrowHand { get { return VHVRConfig.LeftHanded() ^ offHandWield ? leftHand : rightHand; } }
+        public static VRHand bowHand { get { return VHVRConfig.LeftHanded() ^ offHandWield ? rightHand : leftHand; } }
         public static bool ShouldPauseMovement { get { return BarberMirror.IsUsingStation() || (Menu.IsVisible() && !VHVRConfig.AllowMovementWhenInMenu()); } }
         public static bool IsClickableGuiOpen
         {
@@ -302,11 +300,11 @@ namespace ValheimVRMod.VRCore
         private static float baseFootHeight;
 
 
-        public static SteamVR_Input_Sources dominantHandInputSource { get { return VHVRConfig.LeftHanded() ? SteamVR_Input_Sources.LeftHand : SteamVR_Input_Sources.RightHand; } }
-        public static SteamVR_Input_Sources mainWeaponHandInputSource { get { return VHVRConfig.LeftHanded() ^ offHandWield ? SteamVR_Input_Sources.LeftHand : SteamVR_Input_Sources.RightHand; } }
-        public static SteamVR_Input_Sources secondaryWeaponHandInputSource { get { return VHVRConfig.LeftHanded() ^ offHandWield ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand; } }
-        public static SteamVR_Input_Sources arrowHandInputSource { get { return VHVRConfig.LeftHanded() ^ offHandWield ? SteamVR_Input_Sources.LeftHand : SteamVR_Input_Sources.RightHand; } }
-        public static SteamVR_Input_Sources bowHandInputSource { get { return VHVRConfig.LeftHanded() ^ offHandWield ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand; } }
+        public static VRInputSource dominantHandInputSource { get { return VHVRConfig.LeftHanded() ? VRInputSource.LeftHand : VRInputSource.RightHand; } }
+        public static VRInputSource mainWeaponHandInputSource { get { return VHVRConfig.LeftHanded() ^ offHandWield ? VRInputSource.LeftHand : VRInputSource.RightHand; } }
+        public static VRInputSource secondaryWeaponHandInputSource { get { return VHVRConfig.LeftHanded() ^ offHandWield ? VRInputSource.RightHand : VRInputSource.LeftHand; } }
+        public static VRInputSource arrowHandInputSource { get { return VHVRConfig.LeftHanded() ^ offHandWield ? VRInputSource.LeftHand : VRInputSource.RightHand; } }
+        public static VRInputSource bowHandInputSource { get { return VHVRConfig.LeftHanded() ^ offHandWield ? VRInputSource.RightHand : VRInputSource.LeftHand; } }
 
         public static bool handsActive
         {
@@ -316,26 +314,26 @@ namespace ValheimVRMod.VRCore
             }
         }
 
-        public static SteamVR_LaserPointer leftPointer { get { return _leftPointer; } }
-        public static SteamVR_LaserPointer rightPointer { get { return _rightPointer; } }
+        public static VRLaserPointer leftPointer { get { return _leftPointer; } }
+        public static VRLaserPointer rightPointer { get { return _rightPointer; } }
 
         // The pointers selected purely by the dominant hand setting, deliberately not by which hand is
         // currently wielding (mainWeaponHand and the like are offhand wield sensitive): a tool that is aimed
         // with a ray, e. g. the build hammer, is aimed with the dominant hand whichever hand holds it.
-        public static SteamVR_LaserPointer dominantPointer
+        public static VRLaserPointer dominantPointer
         {
             get { return VHVRConfig.LeftHanded() ? leftPointer : rightPointer; }
         }
 
-        public static SteamVR_LaserPointer nonDominantPointer
+        public static VRLaserPointer nonDominantPointer
         {
             get { return VHVRConfig.LeftHanded() ? rightPointer : leftPointer; }
         }
 
         // Unlike mainWeaponHand, these follow the dominant hand setting only and not offhand wielding.
-        public static Hand dominantHand { get { return VHVRConfig.LeftHanded() ? leftHand : rightHand; } }
-        public static Hand nonDominantHand { get { return VHVRConfig.LeftHanded() ? rightHand : leftHand; } }
-        public static SteamVR_Input_Sources nonDominantHandInputSource { get { return VHVRConfig.LeftHanded() ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand; } }
+        public static VRHand dominantHand { get { return VHVRConfig.LeftHanded() ? leftHand : rightHand; } }
+        public static VRHand nonDominantHand { get { return VHVRConfig.LeftHanded() ? rightHand : leftHand; } }
+        public static VRInputSource nonDominantHandInputSource { get { return VHVRConfig.LeftHanded() ? VRInputSource.RightHand : VRInputSource.LeftHand; } }
 
         public static Vector3 dominantHandRayDirection { get
             {
@@ -343,7 +341,7 @@ namespace ValheimVRMod.VRCore
             }
         }
 
-        public static SteamVR_LaserPointer activePointer
+        public static VRLaserPointer activePointer
         {
             get
             {
@@ -412,7 +410,7 @@ namespace ValheimVRMod.VRCore
         private static bool awaitingForcedTracker;
         private static float bodyTrackingCaliberationDeadline;
         // Role-based body tracking (default, no device-count limit).
-        private static SteamVRBodyTrackingProvider bodyTrackingProvider;
+        private static VRTrackingProvider bodyTrackingProvider;
         // TEMPORARY: set false to bypass SteamVR role resolution so the auto (0) case goes
         // straight to coordinate-based detection (for testing the heuristic in isolation).
         private const bool USE_ROLE_BASED_TRACKING = true;
@@ -424,8 +422,8 @@ namespace ValheimVRMod.VRCore
         // and as the enumeration source for coordinate-based auto-detection. Indices 1..
         // MAX_AUTO_DETECT_INDEX are created eagerly so their poses are valid by caliberation;
         // higher forced indices are created on demand.
-        private static readonly Dictionary<int, SteamVR_TrackedObject> legacyTrackers =
-            new Dictionary<int, SteamVR_TrackedObject>();
+        private static readonly Dictionary<int, VRTrackedObject> legacyTrackers =
+            new Dictionary<int, VRTrackedObject>();
         // Waist tracker transform resolved at caliberation time (role -> coordinate -> forced
         // index), cached so the per-frame accessors stay cheap. Null when no waist tracker.
         private static Transform resolvedHipTransform;
@@ -528,12 +526,12 @@ namespace ValheimVRMod.VRCore
             if (timerLeft > 0)
             {
                 timerLeft -= Time.deltaTime;
-                leftHand.hapticAction.Execute(0f, 0.1f, 20f, 0.1f, SteamVR_Input_Sources.LeftHand);
+                leftHand.hapticAction.Execute(0f, 0.1f, 20f, 0.1f, VRInputSource.LeftHand);
             }
             if (timerRight > 0)
             {
                 timerRight -= Time.deltaTime;
-                rightHand.hapticAction.Execute(0f, 0.1f, 20f, 0.1f, SteamVR_Input_Sources.RightHand);
+                rightHand.hapticAction.Execute(0f, 0.1f, 20f, 0.1f, VRInputSource.RightHand);
             }
         }
 
@@ -651,7 +649,7 @@ namespace ValheimVRMod.VRCore
         // See: https://www.reddit.com/r/Pimax/comments/qhkrfp/pimax_unity_xr_plugin_issue/
         private static void UpdateTrackedPoseDriverPoseSource()
         {
-            var hmd = Valve.VR.InteractionSystem.Player.instance.hmdTransform;
+            var hmd = VRBackend.Active.Rig.Player.hmdTransform;
             var trackedPoseDriver = hmd.gameObject.GetComponent<TrackedPoseDriver>();
             if (trackedPoseDriver == null)
             {
@@ -780,7 +778,7 @@ namespace ValheimVRMod.VRCore
                     (leftHandBone = new GameObject().transform).parent = leftHand.transform;
                     leftHandBone.localPosition = VrikCreator.leftUnequippedPosition;
                     leftHandBone.localRotation = VrikCreator.leftUnequippedRotation;
-                    _leftPointer = leftHand.GetComponent<SteamVR_LaserPointer>();
+                    _leftPointer = VRBackend.Active.Rig.GetPointer(leftHand.gameObject);
                     if (_leftPointer != null)
                     {
                         _leftPointer.raycastLayerMask = LayerUtils.UI_PANEL_LAYER_MASK;
@@ -795,7 +793,7 @@ namespace ValheimVRMod.VRCore
                     (rightHandBone = new GameObject().transform).parent = rightHand.transform;
                     rightHandBone.localPosition = VrikCreator.rightUnequippedPosition;
                     rightHandBone.localRotation = VrikCreator.rightUnequippedRotation;
-                    _rightPointer = rightHand.GetComponent<SteamVR_LaserPointer>();
+                    _rightPointer = VRBackend.Active.Rig.GetPointer(rightHand.gameObject);
                     if (_rightPointer != null)
                     {
                         _rightPointer.raycastLayerMask = LayerUtils.UI_PANEL_LAYER_MASK;
@@ -806,7 +804,7 @@ namespace ValheimVRMod.VRCore
 
         // Sets the given pointer active if "active" parameter is true
         // and laser pointers should currently be active.
-        private void setPointerActive(SteamVR_LaserPointer p, bool active)
+        private void setPointerActive(VRLaserPointer p, bool active)
         {
             if (p == null)
             {
@@ -824,7 +822,7 @@ namespace ValheimVRMod.VRCore
 
         // Returns true if both the hand and pointer are not null
         // and the hand is active
-        private static bool handIsActive(Hand h, SteamVR_LaserPointer p)
+        private static bool handIsActive(VRHand h, VRLaserPointer p)
         {
             if (h == null || p == null)
             {
@@ -833,9 +831,9 @@ namespace ValheimVRMod.VRCore
             return h.enabled && h.isActive && h.isPoseValid;
         }
 
-        private Hand getHand(string hand, GameObject playerInstance)
+        private VRHand getHand(string hand, GameObject playerInstance)
         {
-            foreach (Hand h in playerInstance.GetComponentsInChildren<Hand>())
+            foreach (VRHand h in VRBackend.Active.Rig.GetHands(playerInstance))
             {
                 if (h.gameObject.name == hand)
                 {
@@ -855,7 +853,7 @@ namespace ValheimVRMod.VRCore
                     LogError("SteamVR Player Prefab is not loaded!");
                     return false;
                 }
-                _instance = Instantiate(_prefab);
+                _instance = VRBackend.Active.Rig.CreateRig(_prefab);
                 // Rigid bodies built into the SteamVR Player prefab will
                 // cause problems and we don't actually need them for anything,
                 // so disable all of them.
@@ -882,7 +880,7 @@ namespace ValheimVRMod.VRCore
                 return false;
             }
 
-            bodyTrackingProvider = _vrCameraRig.gameObject.AddComponent<SteamVRBodyTrackingProvider>();
+            bodyTrackingProvider = VRBackend.Active.Rig.AddBodyTracking(_vrCameraRig.gameObject);
             bodyTrackingProvider.Initialize(_vrCameraRig);
 
             // Pre-create the legacy trackers used for coordinate-based auto-detection so their
@@ -952,7 +950,7 @@ namespace ValheimVRMod.VRCore
             {
                 return null;
             }
-            SteamVR_TrackedObject best = null;
+            VRTrackedObject best = null;
             foreach (var entry in legacyTrackers)
             {
                 if (entry.Key > MAX_AUTO_DETECT_INDEX)
@@ -982,7 +980,7 @@ namespace ValheimVRMod.VRCore
             {
                 return null;
             }
-            SteamVR_TrackedObject best = null;
+            VRTrackedObject best = null;
             foreach (var entry in legacyTrackers)
             {
                 if (entry.Key > MAX_AUTO_DETECT_INDEX)
@@ -1007,10 +1005,10 @@ namespace ValheimVRMod.VRCore
         }
 
         // Returns (creating if needed) the legacy index-based tracker for a device index.
-        // The device index is assigned directly rather than via SteamVR_TrackedObject.
+        // The device index is assigned directly rather than via VRTrackedObject.
         // SetDeviceIndex, which would silently reject indices above 16 (its EIndex cap), so
         // a forced index override works for high-index trackers too.
-        private static SteamVR_TrackedObject GetOrCreateLegacyTracker(int deviceIndex)
+        private static VRTrackedObject GetOrCreateLegacyTracker(int deviceIndex)
         {
             var rig = vrPlayerInstance?._vrCameraRig;
             if (deviceIndex <= 0 || rig == null)
@@ -1019,9 +1017,9 @@ namespace ValheimVRMod.VRCore
             }
             if (!legacyTrackers.TryGetValue(deviceIndex, out var tracker) || tracker == null)
             {
-                tracker = new GameObject("VHVR_LegacyTracker_" + deviceIndex).AddComponent<SteamVR_TrackedObject>();
+                tracker = VRBackend.Active.Rig.AddTrackedObject(new GameObject("VHVR_LegacyTracker_" + deviceIndex));
                 tracker.transform.parent = rig;
-                tracker.index = (SteamVR_TrackedObject.EIndex)deviceIndex;
+                tracker.index = deviceIndex;
                 legacyTrackers[deviceIndex] = tracker;
             }
             return tracker;
@@ -2001,7 +1999,7 @@ namespace ValheimVRMod.VRCore
 
             // First set the position without any adjustment
             _instance.transform.localPosition = getDesiredLocalPosition(playerCharacter);
-            var hmd = Valve.VR.InteractionSystem.Player.instance.hmdTransform;
+            var hmd = VRBackend.Active.Rig.Player.hmdTransform;
             if (firstPersonHeightOffset == null)
             {
                 // Measure the offset between the HMD and the desired view point and save it. It is applied
@@ -2053,7 +2051,7 @@ namespace ValheimVRMod.VRCore
                 return;
             }
             thirdPersonRecenteringRequestFrame = null;
-            var hmd = Valve.VR.InteractionSystem.Player.instance.hmdTransform;
+            var hmd = VRBackend.Active.Rig.Player.hmdTransform;
             _instance.transform.localRotation = Quaternion.Euler(0f, -hmd.localRotation.eulerAngles.y, 0f);
             MouseAim.OnRecentered();
             ResetRoomscaleCamera();
@@ -2066,7 +2064,7 @@ namespace ValheimVRMod.VRCore
                 return;
             }
 
-            float rawEyeHeight = Valve.VR.InteractionSystem.Player.instance.eyeHeight;
+            float rawEyeHeight = VRBackend.Active.Rig.Player.eyeHeight;
             if (rawEyeHeight < MIN_TRACKED_EYE_HEIGHT)
             {
                 // The HMD is most likely not tracking yet (or is sitting on a desk). Retry later
@@ -2478,7 +2476,7 @@ namespace ValheimVRMod.VRCore
                 return;
             }
 
-            if (SteamVR_Actions.valheim_StopGesturedLocomotion.GetState(SteamVR_Input_Sources.Any) || EquipScript.CurrentMainHandEquipType() == EquipType.Fishing)
+            if (VRInputActions.valheim_StopGesturedLocomotion.GetState(VRInputSource.Any) || EquipScript.CurrentMainHandEquipType() == EquipType.Fishing)
             {
                 return;
             }
@@ -2615,8 +2613,8 @@ namespace ValheimVRMod.VRCore
 
                     if (roomscaleMovement.magnitude * 0.6f > lastDeltaMovement.magnitude)
                     {
-                        SteamVR_Fade.Start(Color.black, 0);
-                        SteamVR_Fade.Start(Color.clear, 1.5f);
+                        VRBackend.Active.Fade(Color.black, 0);
+                        VRBackend.Active.Fade(Color.clear, 1.5f);
                     }
 
                     _lastPlayerPosition = player.m_body.position;
@@ -2670,7 +2668,7 @@ namespace ValheimVRMod.VRCore
                 case EquipType.Knife:
                 case EquipType.None:
                 case EquipType.Tankard:
-                    if (GesturedLocomotionManager.isInUse || SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.Any))
+                    if (GesturedLocomotionManager.isInUse || VRInputActions.valheim_Grab.GetState(VRInputSource.Any))
                     {
                         // Allow leaning when holding small weapons or bare-handed.
                         return 1f;

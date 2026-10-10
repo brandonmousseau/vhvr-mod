@@ -1,9 +1,9 @@
+using ValheimVRMod.VRCore.Backends;
 using System.Collections.Generic;
 using System.ComponentModel;
 using UnityEngine;
 using UnityEngine.Rendering;
 using ValheimVRMod.VRCore;
-using Valve.VR;
 
 namespace ValheimVRMod.Utilities
 {
@@ -764,10 +764,10 @@ namespace ValheimVRMod.Utilities
         // Update the holding direction of the knife based button press and hand angular momentum.
         public static bool MaybeFlipKnife(bool isKnifeCurrentlyUlnarPointing, bool isLeftHand)
         {
-            var inputSource = isLeftHand ? SteamVR_Input_Sources.LeftHand : SteamVR_Input_Sources.RightHand;
-            var isReleasing = SteamVR_Actions.valheim_Grab.GetStateUp(inputSource);
+            var inputSource = isLeftHand ? VRInputSource.LeftHand : VRInputSource.RightHand;
+            var isReleasing = VRInputActions.valheim_Grab.GetStateUp(inputSource);
             if (!isReleasing) {
-                var isCatching = SteamVR_Actions.valheim_Grab.GetStateDown(inputSource);
+                var isCatching = VRInputActions.valheim_Grab.GetStateDown(inputSource);
                 if (!isCatching)
                 {
                     // Neither releasing or catching the knife, do not change current orientation.

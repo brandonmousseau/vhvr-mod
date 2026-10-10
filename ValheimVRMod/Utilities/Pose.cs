@@ -1,9 +1,9 @@
+using ValheimVRMod.VRCore.Backends;
 using UnityEngine;
 using ValheimVRMod.Patches;
 using ValheimVRMod.Scripts;
 using ValheimVRMod.VRCore;
 using ValheimVRMod.VRCore.UI;
-using Valve.VR;
 
 namespace ValheimVRMod.Utilities {
     public class Pose : MonoBehaviour
@@ -15,7 +15,7 @@ namespace ValheimVRMod.Utilities {
         private static bool isLeftHandStickyHolsterArmed = false;
         private static bool isRightHandStickyHolsterArmed = false;
 
-        private static SteamVR_Action_Boolean grabAction { get { return SteamVR_Actions.valheim_Grab; } }
+        private static VRBooleanAction grabAction { get { return VRInputActions.valheim_Grab; } }
 
         private enum BackReachLocation
         {
@@ -48,10 +48,10 @@ namespace ValheimVRMod.Utilities {
                 return;
             }
 
-            var leftHandStartsGripping = grabAction.GetStateDown(SteamVR_Input_Sources.LeftHand);
-            var rightHandStartsGripping = grabAction.GetStateDown(SteamVR_Input_Sources.RightHand);
-            var leftHandGripping = grabAction.GetState(SteamVR_Input_Sources.LeftHand);
-            var rightHandGripping = grabAction.GetState(SteamVR_Input_Sources.RightHand);
+            var leftHandStartsGripping = grabAction.GetStateDown(VRInputSource.LeftHand);
+            var rightHandStartsGripping = grabAction.GetStateDown(VRInputSource.RightHand);
+            var leftHandGripping = grabAction.GetState(VRInputSource.LeftHand);
+            var rightHandGripping = grabAction.GetState(VRInputSource.RightHand);
             var isDoubleGripping =
                 (leftHandStartsGripping && rightHandGripping) ||
                 (leftHandGripping && rightHandStartsGripping);
@@ -148,9 +148,9 @@ namespace ValheimVRMod.Utilities {
                 {
                     return;
                 }
-                if ((grabAction.GetStateUp(SteamVR_Input_Sources.LeftHand) && grabAction.GetStateUp(SteamVR_Input_Sources.RightHand)) ||
-                    (grabAction.GetStateUp(SteamVR_Input_Sources.LeftHand) && grabAction.GetState(SteamVR_Input_Sources.RightHand)) ||
-                    (grabAction.GetState(SteamVR_Input_Sources.LeftHand) && grabAction.GetStateUp(SteamVR_Input_Sources.RightHand)))
+                if ((grabAction.GetStateUp(VRInputSource.LeftHand) && grabAction.GetStateUp(VRInputSource.RightHand)) ||
+                    (grabAction.GetStateUp(VRInputSource.LeftHand) && grabAction.GetState(VRInputSource.RightHand)) ||
+                    (grabAction.GetState(VRInputSource.LeftHand) && grabAction.GetStateUp(VRInputSource.RightHand)))
                 {
                     PatchHideHandItems.HideLocalPlayerHandItem(true);
                 }
@@ -174,12 +174,12 @@ namespace ValheimVRMod.Utilities {
                 }
                 bool isLeftHandHolstering =
                     leftHandBackReach != BackReachLocation.None &&
-                    grabAction.GetStateUp(SteamVR_Input_Sources.LeftHand) &&
-                    !grabAction.GetState(SteamVR_Input_Sources.RightHand);
+                    grabAction.GetStateUp(VRInputSource.LeftHand) &&
+                    !grabAction.GetState(VRInputSource.RightHand);
                 bool isRightHandHolstering =
                     rightHandBackReach != BackReachLocation.None &&
-                    grabAction.GetStateUp(SteamVR_Input_Sources.RightHand) &&
-                    !grabAction.GetState(SteamVR_Input_Sources.LeftHand);
+                    grabAction.GetStateUp(VRInputSource.RightHand) &&
+                    !grabAction.GetState(VRInputSource.LeftHand);
                 if (isLeftHandHolstering || isRightHandHolstering) {
                     if (VRPlayer.leftHandItem != null)
                     {
@@ -196,7 +196,7 @@ namespace ValheimVRMod.Utilities {
             if (!isLeftHandDrawingWeapon &&
                 VRPlayer.leftHandItem != null &&
                 leftHandBackReach != BackReachLocation.None &&
-                grabAction.GetStateUp(SteamVR_Input_Sources.LeftHand))
+                grabAction.GetStateUp(VRInputSource.LeftHand))
             {
                 PatchHideHandItems.HideLocalPlayerHandItem(isMainHandItem: VRPlayer.isLeftHandMainWeaponHand);
             }
@@ -204,7 +204,7 @@ namespace ValheimVRMod.Utilities {
             if (!isRightHandDrawingWeapon &&
                 VRPlayer.rightHandItem != null &&
                 rightHandBackReach != BackReachLocation.None &&
-                grabAction.GetStateUp(SteamVR_Input_Sources.RightHand))
+                grabAction.GetStateUp(VRInputSource.RightHand))
             {
                 PatchHideHandItems.HideLocalPlayerHandItem(isMainHandItem: VRPlayer.isRightHandMainWeaponHand);
             }
@@ -214,15 +214,15 @@ namespace ValheimVRMod.Utilities {
         // by pressing and releasing grip behind the back, as long as the other hand does not grip in the meantime.
         private static void checkStickyTwoHandedHolster(BackReachLocation leftHandBackReach, BackReachLocation rightHandBackReach)
         {
-            bool leftHandGripping = grabAction.GetState(SteamVR_Input_Sources.LeftHand);
-            bool rightHandGripping = grabAction.GetState(SteamVR_Input_Sources.RightHand);
+            bool leftHandGripping = grabAction.GetState(VRInputSource.LeftHand);
+            bool rightHandGripping = grabAction.GetState(VRInputSource.RightHand);
 
             // A press only starts the gesture if the other hand is not gripping, i. e. neither hand was gripping before it.
-            if (grabAction.GetStateDown(SteamVR_Input_Sources.LeftHand))
+            if (grabAction.GetStateDown(VRInputSource.LeftHand))
             {
                 isLeftHandStickyHolsterArmed = !rightHandGripping;
             }
-            if (grabAction.GetStateDown(SteamVR_Input_Sources.RightHand))
+            if (grabAction.GetStateDown(VRInputSource.RightHand))
             {
                 isRightHandStickyHolsterArmed = !leftHandGripping;
             }
@@ -240,12 +240,12 @@ namespace ValheimVRMod.Utilities {
                 isLeftHandStickyHolsterArmed &&
                 !isLeftHandDrawingWeapon &&
                 leftHandBackReach != BackReachLocation.None &&
-                grabAction.GetStateUp(SteamVR_Input_Sources.LeftHand);
+                grabAction.GetStateUp(VRInputSource.LeftHand);
             bool isRightHandHolstering =
                 isRightHandStickyHolsterArmed &&
                 !isRightHandDrawingWeapon &&
                 rightHandBackReach != BackReachLocation.None &&
-                grabAction.GetStateUp(SteamVR_Input_Sources.RightHand);
+                grabAction.GetStateUp(VRInputSource.RightHand);
 
             if (!leftHandGripping)
             {
@@ -410,7 +410,7 @@ namespace ValheimVRMod.Utilities {
 
         private static void updateGrabbedBackReachLocation(BackReachLocation backReach, bool isRightHand)
         {
-            var inputSource = isRightHand ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand;
+            var inputSource = isRightHand ? VRInputSource.RightHand : VRInputSource.LeftHand;
 
             if (!grabAction.GetState(inputSource))
             {
@@ -457,8 +457,8 @@ namespace ValheimVRMod.Utilities {
                 return false;
             }
 
-            bool leftHandGripping = grabAction.GetState(SteamVR_Input_Sources.LeftHand);
-            bool rightHandGripping = grabAction.GetState(SteamVR_Input_Sources.RightHand);
+            bool leftHandGripping = grabAction.GetState(VRInputSource.LeftHand);
+            bool rightHandGripping = grabAction.GetState(VRInputSource.RightHand);
 
             // Check dual grip first
             if (leftHandGrabbedBackLocation != BackReachLocation.None &&
@@ -823,11 +823,11 @@ namespace ValheimVRMod.Utilities {
         private static void playEquippingHaptic(bool leftHand, bool rightHand) {
             if (leftHand)
             {
-                VRPlayer.leftHand.hapticAction.Execute(0, 0.2f, 100, 0.3f, SteamVR_Input_Sources.LeftHand);
+                VRPlayer.leftHand.hapticAction.Execute(0, 0.2f, 100, 0.3f, VRInputSource.LeftHand);
             }
             if (rightHand)
             {
-                VRPlayer.rightHand.hapticAction.Execute(0, 0.2f, 100, 0.3f, SteamVR_Input_Sources.RightHand);
+                VRPlayer.rightHand.hapticAction.Execute(0, 0.2f, 100, 0.3f, VRInputSource.RightHand);
             }
         }
     }

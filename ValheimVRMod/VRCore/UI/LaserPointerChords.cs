@@ -1,7 +1,7 @@
+using ValheimVRMod.VRCore.Backends;
 using UnityEngine;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
-using Valve.VR;
 
 namespace ValheimVRMod.VRCore.UI
 {
@@ -24,7 +24,7 @@ namespace ValheimVRMod.VRCore.UI
      * reference plane, snapping off, exclusive snap and the rotation gizmo) and hiding the click would swallow
      * the placement.
      *
-     * The decisions are made in SteamVR_Input.onNonVisualActionsUpdated, after all actions have been updated. Action
+     * The decisions are made in VRInput.onNonVisualActionsUpdated, after all actions have been updated. Action
      * state-down listeners cannot do this since they fire while actions are still being updated, before the chord
      * actions are. Action values can be updated more than once per frame, so edges come from the actions' own
      * per-frame down/up states rather than from comparing with the previous update, and each chord action is applied
@@ -65,12 +65,12 @@ namespace ValheimVRMod.VRCore.UI
         // This keeps the laser pointer usable, and with it the popup of MissingBindingsPrompt that tells the player
         // what is wrong. Only a LeftClick that is unbound on both hands falls back: it is read per hand in places
         // (e.g. only the dominant hand places a build piece), and Use is bound on both.
-        public static SteamVR_Action_Boolean leftClickAction
+        public static VRBooleanAction leftClickAction
         {
             get
             {
-                return SteamVR_Actions.valheim_LeftClick.activeBinding ?
-                    SteamVR_Actions.valheim_LeftClick : SteamVR_Actions.valheim_Use;
+                return VRInputActions.valheim_LeftClick.activeBinding ?
+                    VRInputActions.valheim_LeftClick : VRInputActions.valheim_Use;
             }
         }
 
@@ -81,7 +81,7 @@ namespace ValheimVRMod.VRCore.UI
                 return;
             }
             initialized = true;
-            SteamVR_Input.onNonVisualActionsUpdated += OnActionsUpdated;
+            VRInput.onNonVisualActionsUpdated += OnActionsUpdated;
         }
 
         public static bool FilterLeftClick(bool pressed)
@@ -98,32 +98,32 @@ namespace ValheimVRMod.VRCore.UI
         // share their buttons with the ScrollUp/ScrollDown chords (e.g. the run and crouch toggles on the Touch right
         // stick, whose grip + stick chords scroll). SteamVR still reports the stick direction of a chord, so without
         // this, scrolling would also toggle run or crouch. Pointing alone doesn't block them.
-        public static bool IsHeldWithoutLaserScroll(SteamVR_Action_Boolean action)
+        public static bool IsHeldWithoutLaserScroll(VRBooleanAction action)
         {
             return
-                (action.GetState(SteamVR_Input_Sources.LeftHand) && !IsScrollingWithLaser(SteamVR_Input_Sources.LeftHand)) ||
-                (action.GetState(SteamVR_Input_Sources.RightHand) && !IsScrollingWithLaser(SteamVR_Input_Sources.RightHand));
+                (action.GetState(VRInputSource.LeftHand) && !IsScrollingWithLaser(VRInputSource.LeftHand)) ||
+                (action.GetState(VRInputSource.RightHand) && !IsScrollingWithLaser(VRInputSource.RightHand));
         }
 
         // Whether the given hand's laser pointer is up while a scroll chord is held. The chords are read on Any,
         // since a chord's source hand isn't necessarily the hand of its stick.
-        public static bool IsScrollingWithLaser(SteamVR_Input_Sources hand)
+        public static bool IsScrollingWithLaser(VRInputSource hand)
         {
             return
                 IsLaserActiveFor(hand) &&
-                (SteamVR_Actions.valheim_ScrollUp.GetState(SteamVR_Input_Sources.Any) ||
-                    SteamVR_Actions.valheim_ScrollDown.GetState(SteamVR_Input_Sources.Any));
+                (VRInputActions.valheim_ScrollUp.GetState(VRInputSource.Any) ||
+                    VRInputActions.valheim_ScrollDown.GetState(VRInputSource.Any));
         }
 
         // Whether the given hand's own laser pointer is currently up. "Any" (asked by call sites that don't care
         // which hand) is true when either hand's pointer is active, matching VRControls.laserControlsActive.
-        public static bool IsLaserActiveFor(SteamVR_Input_Sources hand)
+        public static bool IsLaserActiveFor(VRInputSource hand)
         {
             switch (hand)
             {
-                case SteamVR_Input_Sources.LeftHand:
+                case VRInputSource.LeftHand:
                     return VRPlayer.leftPointer != null && VRPlayer.leftPointer.pointerIsActive();
-                case SteamVR_Input_Sources.RightHand:
+                case VRInputSource.RightHand:
                     return VRPlayer.rightPointer != null && VRPlayer.rightPointer.pointerIsActive();
                 default:
                     return VRPlayer.activePointer != null;
@@ -132,38 +132,38 @@ namespace ValheimVRMod.VRCore.UI
 
         private static void OnActionsUpdated()
         {
-            SteamVR_Action_Boolean leftClickAction = LaserPointerChords.leftClickAction;
-            SteamVR_Action_Boolean rightClickAction = SteamVR_Actions.valheim_RightClick;
+            VRBooleanAction leftClickAction = LaserPointerChords.leftClickAction;
+            VRBooleanAction rightClickAction = VRInputActions.valheim_RightClick;
 
             if (VRControls.laserControlsActive)
             {
-                if (Minimap.IsOpen() && SteamVR_Actions.valheim_AddMapPin.GetState(SteamVR_Input_Sources.Any))
+                if (Minimap.IsOpen() && VRInputActions.valheim_AddMapPin.GetState(VRInputSource.Any))
                 {
                     isLeftClickSuppressed = true;
                 }
-                if (isChordDown(SteamVR_Actions.valheim_AddMapPin, ref lastAddMapPinFrame) && isPointerOverLargeMap())
+                if (isChordDown(VRInputActions.valheim_AddMapPin, ref lastAddMapPinFrame) && isPointerOverLargeMap())
                 {
                     Minimap.instance.OnMapDblClick();
                     resetMapPointerState();
                 }
-                if (InventoryGui.IsVisible() && SteamVR_Actions.valheim_SplitStack.GetState(SteamVR_Input_Sources.Any))
+                if (InventoryGui.IsVisible() && VRInputActions.valheim_SplitStack.GetState(VRInputSource.Any))
                 {
                     isLeftClickSuppressed = true;
                 }
-                if (isChordDown(SteamVR_Actions.valheim_DiscardItem, ref lastDiscardItemFrame))
+                if (isChordDown(VRInputActions.valheim_DiscardItem, ref lastDiscardItemFrame))
                 {
                     VRGUI.SelectHoveredInventoryItem(InventoryGrid.Modifier.Move);
                 }
-                if (isChordDown(SteamVR_Actions.valheim_SplitStack, ref lastSplitStackFrame))
+                if (isChordDown(VRInputActions.valheim_SplitStack, ref lastSplitStackFrame))
                 {
                     VRGUI.SelectHoveredInventoryItem(InventoryGrid.Modifier.Split);
                 }
-                if (SteamVR_Actions.valheim_MiddleClick.GetState(SteamVR_Input_Sources.Any))
+                if (VRInputActions.valheim_MiddleClick.GetState(VRInputSource.Any))
                 {
                     isRightClickSuppressed = true;
                 }
             }
-            middleClick = VRControls.laserControlsActive && SteamVR_Actions.valheim_MiddleClick.GetState(SteamVR_Input_Sources.Any);
+            middleClick = VRControls.laserControlsActive && VRInputActions.valheim_MiddleClick.GetState(VRInputSource.Any);
 
             // Keep a suppression through the frame its button is released, so that release is hidden too, and so
             // that closing the GUI mid-click cannot leave the game with a button up it never saw go down.
@@ -180,8 +180,8 @@ namespace ValheimVRMod.VRCore.UI
             // laser pointer set to silence them while a pointer is inactive), so both are explicitly gated on
             // laserControlsActive here rather than relying on the action itself going quiet - otherwise pulling
             // the same physical trigger for Use while no pointer is up would also register as a click.
-            leftClick = VRControls.laserControlsActive && FilterLeftClick(leftClickAction.GetState(SteamVR_Input_Sources.Any));
-            leftClickDown = VRControls.laserControlsActive && FilterLeftClick(leftClickAction.GetStateDown(SteamVR_Input_Sources.Any));
+            leftClick = VRControls.laserControlsActive && FilterLeftClick(leftClickAction.GetState(VRInputSource.Any));
+            leftClickDown = VRControls.laserControlsActive && FilterLeftClick(leftClickAction.GetStateDown(VRInputSource.Any));
             if (leftClickDown)
             {
                 leftClickDelivered = true;
@@ -190,7 +190,7 @@ namespace ValheimVRMod.VRCore.UI
             // cannot be left without its button up, but a press that was hidden here stays hidden on release too.
             if (leftClickUpFrame != Time.frameCount)
             {
-                leftClickUp = leftClickDelivered && FilterLeftClick(leftClickAction.GetStateUp(SteamVR_Input_Sources.Any));
+                leftClickUp = leftClickDelivered && FilterLeftClick(leftClickAction.GetStateUp(VRInputSource.Any));
                 if (leftClickUp)
                 {
                     leftClickDelivered = false;
@@ -198,8 +198,8 @@ namespace ValheimVRMod.VRCore.UI
                 }
             }
 
-            rightClick = VRControls.laserControlsActive && FilterRightClick(rightClickAction.GetState(SteamVR_Input_Sources.Any));
-            rightClickDown = VRControls.laserControlsActive && FilterRightClick(rightClickAction.GetStateDown(SteamVR_Input_Sources.Any));
+            rightClick = VRControls.laserControlsActive && FilterRightClick(rightClickAction.GetState(VRInputSource.Any));
+            rightClickDown = VRControls.laserControlsActive && FilterRightClick(rightClickAction.GetStateDown(VRInputSource.Any));
             if (rightClickDown)
             {
                 rightClickDelivered = true;
@@ -208,7 +208,7 @@ namespace ValheimVRMod.VRCore.UI
             // cannot be left without its button up, but a press that was hidden here stays hidden on release too.
             if (rightClickUpFrame != Time.frameCount)
             {
-                rightClickUp = rightClickDelivered && FilterRightClick(rightClickAction.GetStateUp(SteamVR_Input_Sources.Any));
+                rightClickUp = rightClickDelivered && FilterRightClick(rightClickAction.GetStateUp(VRInputSource.Any));
                 if (rightClickUp)
                 {
                     rightClickDelivered = false;
@@ -222,9 +222,9 @@ namespace ValheimVRMod.VRCore.UI
             updateZInputButton(BUILD_MENU_BUTTON, rightClickDown, rightClickUp);
         }
 
-        private static bool isChordDown(SteamVR_Action_Boolean chordAction, ref int lastHandledFrame)
+        private static bool isChordDown(VRBooleanAction chordAction, ref int lastHandledFrame)
         {
-            if (!chordAction.GetStateDown(SteamVR_Input_Sources.Any) || lastHandledFrame == Time.frameCount)
+            if (!chordAction.GetStateDown(VRInputSource.Any) || lastHandledFrame == Time.frameCount)
             {
                 return false;
             }
@@ -232,9 +232,9 @@ namespace ValheimVRMod.VRCore.UI
             return true;
         }
 
-        private static bool isHeldOrJustReleased(SteamVR_Action_Boolean action)
+        private static bool isHeldOrJustReleased(VRBooleanAction action)
         {
-            return action.GetState(SteamVR_Input_Sources.Any) || action.GetStateUp(SteamVR_Input_Sources.Any);
+            return action.GetState(VRInputSource.Any) || action.GetStateUp(VRInputSource.Any);
         }
 
         private static void updateZInputButton(string buttonName, bool down, bool up)

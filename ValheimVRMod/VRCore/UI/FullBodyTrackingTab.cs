@@ -1,3 +1,4 @@
+using ValheimVRMod.VRCore.Backends;
 using System.Collections.Generic;
 using System.Text;
 using BepInEx.Configuration;
@@ -6,7 +7,6 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using ValheimVRMod.Utilities;
-using Valve.VR;
 
 namespace ValheimVRMod.VRCore.UI
 {
@@ -174,17 +174,9 @@ namespace ValheimVRMod.VRCore.UI
         private List<Tracker> ListTrackers()
         {
             var trackers = new List<Tracker>();
-            var system = OpenVR.System;
-            if (system != null)
+            foreach (var tracker in VRBackend.Active.GetConnectedTrackers())
             {
-                for (uint i = 1; i < OpenVR.k_unMaxTrackedDeviceCount; i++)
-                {
-                    if (system.GetTrackedDeviceClass(i) != ETrackedDeviceClass.GenericTracker || !system.IsTrackedDeviceConnected(i))
-                    {
-                        continue;
-                    }
-                    trackers.Add(new Tracker { deviceIndex = (int)i, title = GetTrackerTitle(system, i), connected = true });
-                }
+                trackers.Add(new Tracker { deviceIndex = tracker.Index, title = tracker.Title, connected = true });
             }
 
             foreach (int deviceIndex in selection)
@@ -199,41 +191,9 @@ namespace ValheimVRMod.VRCore.UI
         }
 
         // E. g. "#5  VIVE Tracker 3.0  LHR-1234ABCD  (waist)", the role being the one assigned in SteamVR.
-        private static string GetTrackerTitle(CVRSystem system, uint deviceIndex)
-        {
-            var title = new StringBuilder("#" + deviceIndex);
-            string model = GetStringProperty(system, deviceIndex, ETrackedDeviceProperty.Prop_ModelNumber_String);
-            if (model != "")
-            {
-                title.Append("  ").Append(model);
-            }
-            string serial = GetStringProperty(system, deviceIndex, ETrackedDeviceProperty.Prop_SerialNumber_String);
-            if (serial != "")
-            {
-                title.Append("  ").Append(serial);
-            }
-            // SteamVR reports the role assigned to a tracker as its controller type, e. g. vive_tracker_left_foot.
-            const string rolePrefix = "vive_tracker_";
-            string controllerType = GetStringProperty(system, deviceIndex, ETrackedDeviceProperty.Prop_ControllerType_String);
-            if (controllerType.StartsWith(rolePrefix) && controllerType != rolePrefix + "handed")
-            {
-                title.Append("  (").Append(controllerType.Substring(rolePrefix.Length).Replace('_', ' ')).Append(')');
-            }
-            return title.ToString();
-        }
 
-        private static string GetStringProperty(CVRSystem system, uint deviceIndex, ETrackedDeviceProperty property)
-        {
-            var error = ETrackedPropertyError.TrackedProp_Success;
-            uint capacity = system.GetStringTrackedDeviceProperty(deviceIndex, property, null, 0, ref error);
-            if (capacity <= 1)
-            {
-                return "";
-            }
-            var result = new StringBuilder((int)capacity);
-            system.GetStringTrackedDeviceProperty(deviceIndex, property, result, capacity, ref error);
-            return error == ETrackedPropertyError.TrackedProp_Success ? result.ToString().Trim() : "";
-        }
+
+
 
         private void BuildTable(List<Tracker> trackers)
         {

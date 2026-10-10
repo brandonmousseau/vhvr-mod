@@ -1,3 +1,4 @@
+using ValheimVRMod.VRCore.Backends;
 using System;
 using System.Collections.Generic;
 using ValheimVRMod.VRCore;
@@ -9,7 +10,6 @@ using ValheimVRMod.Utilities;
 using System.Reflection.Emit;
 using UnityEngine;
 using ValheimVRMod.Scripts.Block;
-using Valve.VR;
 
 namespace ValheimVRMod.Patches {
     // These patches are used to inject the VR inputs into the game's control system
@@ -657,7 +657,7 @@ namespace ValheimVRMod.Patches {
         {
             bool togglingRun = toggleRun();
             bool runIsTriggered = togglingRun && !lastToggleRunInput;
-            bool crouchApplied = LaserPointerChords.IsHeldWithoutLaserScroll(SteamVR_Actions.valheim_ToggleCrouch);
+            bool crouchApplied = LaserPointerChords.IsHeldWithoutLaserScroll(VRInputActions.valheim_ToggleCrouch);
             if (crouchApplied || !VRPlayer.isMoving || Player.m_localPlayer.m_stamina < 1)
             {
                 // If the player presses crouch or stops moving, then always stop running.
@@ -684,20 +684,20 @@ namespace ValheimVRMod.Patches {
         // fallback.
         private static bool toggleRun()
         {
-            if (LaserPointerChords.IsHeldWithoutLaserScroll(SteamVR_Actions.valheim_HoldRun))
+            if (LaserPointerChords.IsHeldWithoutLaserScroll(VRInputActions.valheim_HoldRun))
             {
                 return false;
             }
-            return SteamVR_Actions.valheim_ToggleRun.activeBinding ?
-                LaserPointerChords.IsHeldWithoutLaserScroll(SteamVR_Actions.valheim_ToggleRun) :
+            return VRInputActions.valheim_ToggleRun.activeBinding ?
+                LaserPointerChords.IsHeldWithoutLaserScroll(VRInputActions.valheim_ToggleRun) :
                 (ZInput_GetJoyRightStickY_Patch.togglingRun &&
-                    !LaserPointerChords.IsScrollingWithLaser(SteamVR_Input_Sources.RightHand));
+                    !LaserPointerChords.IsScrollingWithLaser(VRInputSource.RightHand));
         }
 
         private static bool holdRun()
         {
-            return SteamVR_Actions.valheim_HoldRun.activeBinding &&
-                LaserPointerChords.IsHeldWithoutLaserScroll(SteamVR_Actions.valheim_HoldRun);
+            return VRInputActions.valheim_HoldRun.activeBinding &&
+                LaserPointerChords.IsHeldWithoutLaserScroll(VRInputActions.valheim_HoldRun);
         }
     }
 
@@ -769,16 +769,16 @@ namespace ValheimVRMod.Patches {
 
         static void handleControllerOnlySneak(Player player, ref bool crouch, bool isCrouchToggled)
         {
-            bool currentToggleCrouchState = SteamVR_Actions.valheim_ToggleCrouch.state;
+            bool currentToggleCrouchState = VRInputActions.valheim_ToggleCrouch.state;
             // Crouch and run inputs are ignored on a hand that is scrolling with its laser pointer, since the scroll
             // chords may share their stick. The raw crouch state is still saved below, so letting go of the scroll chord
             // with the stick still held down does not toggle crouch.
             bool crouchToggleTriggered =
-                LaserPointerChords.IsHeldWithoutLaserScroll(SteamVR_Actions.valheim_ToggleCrouch) && !lastUpdateCrouchInput;
+                LaserPointerChords.IsHeldWithoutLaserScroll(VRInputActions.valheim_ToggleCrouch) && !lastUpdateCrouchInput;
             bool standupTriggered =
-                (ZInput_GetJoyRightStickY_Patch.hasRunInput && !LaserPointerChords.IsScrollingWithLaser(SteamVR_Input_Sources.RightHand)) ||
-                LaserPointerChords.IsHeldWithoutLaserScroll(SteamVR_Actions.valheim_ToggleRun) ||
-                LaserPointerChords.IsHeldWithoutLaserScroll(SteamVR_Actions.valheim_HoldRun);
+                (ZInput_GetJoyRightStickY_Patch.hasRunInput && !LaserPointerChords.IsScrollingWithLaser(VRInputSource.RightHand)) ||
+                LaserPointerChords.IsHeldWithoutLaserScroll(VRInputActions.valheim_ToggleRun) ||
+                LaserPointerChords.IsHeldWithoutLaserScroll(VRInputActions.valheim_HoldRun);
             if (crouchToggleTriggered)
             {
                 crouch = true;
@@ -863,14 +863,14 @@ namespace ValheimVRMod.Patches {
                         // string (BowLocalManager's pullingSource), so it is wrong for a left handed player, as
                         // is the right handed haptic feedback below. Preserved as-is for now.
                         if (BowLocalManager.isPullingArrow &&
-                            SteamVR_Actions.valheim_Use.GetState(SteamVR_Input_Sources.RightHand) &&
+                            VRInputActions.valheim_Use.GetState(VRInputSource.RightHand) &&
                             timer >= timeEnd)
                         {
                             timeEnd = 2f;
                             timer = 0f;
                             attack = true;
                             attackHold = true;
-                            VRPlayer.rightHand.hapticAction.Execute(0, 0.1f, 75, 0.3f, SteamVR_Input_Sources.RightHand);
+                            VRPlayer.rightHand.hapticAction.Execute(0, 0.1f, 75, 0.3f, VRInputSource.RightHand);
                         }
                         else
                         {
@@ -993,8 +993,8 @@ namespace ValheimVRMod.Patches {
                     break;
 
                 case EquipType.RuneSkyheim:
-                    if (SteamVR_Actions.valheim_Use.GetState(SteamVR_Input_Sources.RightHand) &&
-                        SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.Any) && timer >= timeEnd)
+                    if (VRInputActions.valheim_Use.GetState(VRInputSource.RightHand) &&
+                        VRInputActions.valheim_Grab.GetState(VRInputSource.Any) && timer >= timeEnd)
                     {
                         timeEnd = 2f;
                         timer = 0f;
@@ -1044,7 +1044,7 @@ namespace ValheimVRMod.Patches {
             lookDir =
                 Reining.shouldOverrideSpeedOrDirection ?
                 (Vector3)Reining.targetDirection :
-                Valve.VR.InteractionSystem.Player.instance.hmdTransform.forward; // This makes the mounts try to follow the hmd eyedir
+                VRBackend.Active.Rig.Player.hmdTransform.forward; // This makes the mounts try to follow the hmd eyedir
         }
     }
 
@@ -1323,7 +1323,7 @@ namespace ValheimVRMod.Patches {
             }
 
             Vector3? dir;
-            if (SteamVR_Actions.valheim_Dodge.state)
+            if (VRInputActions.valheim_Dodge.state)
             {
                 dir = __instance.GetMoveDir();
                 if (dir == Vector3.zero)

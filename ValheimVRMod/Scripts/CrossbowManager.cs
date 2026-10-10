@@ -1,9 +1,8 @@
+using ValheimVRMod.VRCore.Backends;
 using UnityEngine;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using ValheimVRMod.VRCore.UI;
-using Valve.VR;
-using Valve.VR.InteractionSystem;
 
 namespace ValheimVRMod.Scripts {
     class CrossbowManager : LocalWeaponWield
@@ -106,8 +105,8 @@ namespace ValheimVRMod.Scripts {
         private void UpdateOneHandedAiming()
         {
             bool isAiming =
-                !LaserPointerChords.IsLaserActiveFor(SteamVR_Input_Sources.Any) &&
-                SteamVR_Actions.valheim_Use.GetState(VRPlayer.dominantHandInputSource);
+                !LaserPointerChords.IsLaserActiveFor(VRInputSource.Any) &&
+                VRInputActions.valheim_Use.GetState(VRPlayer.dominantHandInputSource);
             if (!isAiming)
             {
                 transform.position = geometryProvider.GetDesiredSingleHandedPosition(this);
@@ -144,18 +143,18 @@ namespace ValheimVRMod.Scripts {
 
         // The trigger of the hand that doesn't fire: the front hand when wielding two-handed, otherwise the hand
         // holding the crossbow (the other hand's trigger fires it when wielding one-handed).
-        private SteamVR_Input_Sources OtherHandInputSource
+        private VRInputSource OtherHandInputSource
         {
             get
             {
                 switch (twoHandedState)
                 {
                     case TwoHandedState.LeftHandBehind:
-                        return SteamVR_Input_Sources.RightHand;
+                        return VRInputSource.RightHand;
                     case TwoHandedState.RightHandBehind:
-                        return SteamVR_Input_Sources.LeftHand;
+                        return VRInputSource.LeftHand;
                     default:
-                        return VRPlayer.isRightHandMainWeaponHand ? SteamVR_Input_Sources.LeftHand : SteamVR_Input_Sources.RightHand;
+                        return VRPlayer.isRightHandMainWeaponHand ? VRInputSource.LeftHand : VRInputSource.RightHand;
                 }
             }
         }
@@ -168,10 +167,10 @@ namespace ValheimVRMod.Scripts {
             // Not usable while any laser pointer is up, like the crossbow's own firing trigger below.
             bool isReleasingHook =
                 twoHandedState == TwoHandedState.SingleHanded && VHVRConfig.OneHandedBow() ?
-                SteamVR_Actions.valheim_Grab.GetStateDown(VRPlayer.mainWeaponHandInputSource) :
-                SteamVR_Actions.valheim_Use.GetStateDown(OtherHandInputSource);
+                VRInputActions.valheim_Grab.GetStateDown(VRPlayer.mainWeaponHandInputSource) :
+                VRInputActions.valheim_Use.GetStateDown(OtherHandInputSource);
             if (GrapplingPoint.m_localGrappler != null &&
-                !LaserPointerChords.IsLaserActiveFor(SteamVR_Input_Sources.Any) &&
+                !LaserPointerChords.IsLaserActiveFor(VRInputSource.Any) &&
                 isReleasingHook &&
                 EquipScript.IsGrapplingHook(Player.m_localPlayer.GetLeftItem()))
             {
@@ -238,13 +237,13 @@ namespace ValheimVRMod.Scripts {
                 case TwoHandedState.LeftHandBehind:
                     // Not usable while any laser pointer is up.
                     isPullingTrigger =
-                        !LaserPointerChords.IsLaserActiveFor(SteamVR_Input_Sources.Any) &&
-                        SteamVR_Actions.valheim_Use.GetStateDown(SteamVR_Input_Sources.LeftHand);
+                        !LaserPointerChords.IsLaserActiveFor(VRInputSource.Any) &&
+                        VRInputActions.valheim_Use.GetStateDown(VRInputSource.LeftHand);
                     break;
                 case TwoHandedState.RightHandBehind:
                     isPullingTrigger =
-                        !LaserPointerChords.IsLaserActiveFor(SteamVR_Input_Sources.Any) &&
-                        SteamVR_Actions.valheim_Use.GetStateDown(SteamVR_Input_Sources.RightHand);
+                        !LaserPointerChords.IsLaserActiveFor(VRInputSource.Any) &&
+                        VRInputActions.valheim_Use.GetStateDown(VRInputSource.RightHand);
                     break;
                 default:
                     if (VHVRConfig.OneHandedBow())
@@ -253,8 +252,8 @@ namespace ValheimVRMod.Scripts {
                         // Fires on release rather than on press: aiming (see UpdateOneHandedAiming) is already
                         // gated the same way, so a release seen while the pointer is up isn't one the player was
                         // still aiming through, and gating it here too keeps that consistent.
-                        isPullingTrigger = !LaserPointerChords.IsLaserActiveFor(SteamVR_Input_Sources.Any) &&
-                            SteamVR_Actions.valheim_Use.GetStateUp(VRPlayer.mainWeaponHandInputSource);
+                        isPullingTrigger = !LaserPointerChords.IsLaserActiveFor(VRInputSource.Any) &&
+                            VRInputActions.valheim_Use.GetStateUp(VRPlayer.mainWeaponHandInputSource);
                     }
                     break;
             }
@@ -283,8 +282,8 @@ namespace ValheimVRMod.Scripts {
                 // trigger while firing shoots and retracts instead (vanilla's primary attack). When firing one-handed,
                 // holding the firing hand's grip does the same so the other hand isn't needed.
                 bool useRetractingAttack = isFiringOneHanded ?
-                    SteamVR_Actions.valheim_Grab.GetState(VRPlayer.mainWeaponHandInputSource) :
-                    SteamVR_Actions.valheim_Use.GetState(instance.OtherHandInputSource);
+                    VRInputActions.valheim_Grab.GetState(VRPlayer.mainWeaponHandInputSource) :
+                    VRInputActions.valheim_Use.GetState(instance.OtherHandInputSource);
                 useSecondaryAttack = !useRetractingAttack;
             }
             

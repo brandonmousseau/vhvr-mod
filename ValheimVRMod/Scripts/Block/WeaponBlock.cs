@@ -1,7 +1,7 @@
+using ValheimVRMod.VRCore.Backends;
 using UnityEngine;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
-using Valve.VR;
 
 namespace ValheimVRMod.Scripts.Block
 {
@@ -39,7 +39,7 @@ namespace ValheimVRMod.Scripts.Block
             {
                 bool blockWithAngle = 15 < angle && angle < 165;
                 bool blockWithSpeed = weaponVelocity.magnitude > MIN_PARRY_SPEED;
-                _blocking = (blockWithAngle || blockWithSpeed) && hitIntersectsBlockBox(hitData) && SteamVR_Actions.valheim_Grab.GetState(VRPlayer.mainWeaponHandInputSource);
+                _blocking = (blockWithAngle || blockWithSpeed) && hitIntersectsBlockBox(hitData) && VRInputActions.valheim_Grab.GetState(VRPlayer.mainWeaponHandInputSource);
             }
             else if (LocalWeaponWield.nonDominantHandHasWeapon() && EquipScript.CurrentOffHandEquipType() != EquipType.Crossbow)
             {
