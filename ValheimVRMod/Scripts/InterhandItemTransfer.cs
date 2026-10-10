@@ -1,8 +1,8 @@
-﻿using UnityEngine;
+using ValheimVRMod.VRCore.Backends;
+using UnityEngine;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using ValheimVRMod.VRCore.UI;
-using Valve.VR;
 
 namespace ValheimVRMod.Scripts
 {
@@ -48,8 +48,8 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            bool leftReleased = SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.LeftHand);
-            bool rightReleased = SteamVR_Actions.valheim_Grab.GetStateUp(SteamVR_Input_Sources.RightHand);
+            bool leftReleased = VRInputActions.valheim_Grab.GetStateUp(VRInputSource.LeftHand);
+            bool rightReleased = VRInputActions.valheim_Grab.GetStateUp(VRInputSource.RightHand);
 
             if (leftReleased || rightReleased)
             {
@@ -68,12 +68,12 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            if (SteamVR_Actions.valheim_Grab.GetStateDown(SteamVR_Input_Sources.LeftHand))
+            if (VRInputActions.valheim_Grab.GetStateDown(VRInputSource.LeftHand))
             {
                 leftHandPreparingToTransfer = true;
             }
 
-            if (SteamVR_Actions.valheim_Grab.GetStateDown(SteamVR_Input_Sources.RightHand))
+            if (VRInputActions.valheim_Grab.GetStateDown(VRInputSource.RightHand))
             {
                 rightHandPreparingToTransfer = true;
             }
@@ -98,8 +98,8 @@ namespace ValheimVRMod.Scripts
 
             VRPlayer.offHandWield = !VRPlayer.offHandWield;
 
-            VRPlayer.rightHand.hapticAction.Execute(0, 0.3f, 100, 0.5f, SteamVR_Input_Sources.RightHand);
-            VRPlayer.leftHand.hapticAction.Execute(0, 0.3f, 100, 0.5f, SteamVR_Input_Sources.LeftHand);
+            VRPlayer.rightHand.hapticAction.Execute(0, 0.3f, 100, 0.5f, VRInputSource.RightHand);
+            VRPlayer.leftHand.hapticAction.Execute(0, 0.3f, 100, 0.5f, VRInputSource.LeftHand);
 
             if (isTransferringMainWeapon)
             {

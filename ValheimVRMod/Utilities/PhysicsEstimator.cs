@@ -1,6 +1,6 @@
+using ValheimVRMod.VRCore.Backends;
 using System.Collections.Generic;
 using UnityEngine;
-using Valve.VR.InteractionSystem;
 
 namespace ValheimVRMod.Utilities
 {
@@ -17,7 +17,7 @@ namespace ValheimVRMod.Utilities
         private List<Vector3> sparseSnapshots = new List<Vector3>(); // Sparsely snapshotted positions for estimating longest locomotion in a time span.
         private Vector3? cachedAverageVelocityInSnapshots = null;
         private LineRenderer debugVelocityLine;
-        private Hand hand = null;
+        private VRHand hand = null;
 
         private int sparseSnapshotTicker = 0;
 
@@ -45,7 +45,7 @@ namespace ValheimVRMod.Utilities
 
         public bool renderDebugVelocityLine = false;
 
-        public void UseVrHandControllerPhysics(Hand hand)
+        public void UseVrHandControllerPhysics(VRHand hand)
         {
             this.hand = hand;
         }

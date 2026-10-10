@@ -1,12 +1,10 @@
+using ValheimVRMod.VRCore.Backends;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using ValheimVRMod.Patches;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.Scripts;
-using Valve.VR;
-using Valve.VR.Extras;
-using Valve.VR.InteractionSystem;
 using System.Collections.Generic;
 
 using static ValheimVRMod.Utilities.LogUtils;
@@ -145,8 +143,8 @@ namespace ValheimVRMod.VRCore.UI
         private RenderTexture _guiTexture;
         private RenderTexture _overlayTexture;
 
-        private SteamVR_LaserPointer _leftPointer;
-        private SteamVR_LaserPointer _rightPointer;
+        private VRLaserPointer _leftPointer;
+        private VRLaserPointer _rightPointer;
 
         private VRGUI_InputModule _inputModule;
         // How far the laser pointer may drift on the panel while the trigger is held before a click becomes a drag.
@@ -177,7 +175,7 @@ namespace ValheimVRMod.VRCore.UI
         private bool reattachWhenKeyboardCloses;
 
         // Native handle to OpenVR overlay
-        private ulong _overlay = OpenVR.k_ulOverlayHandleInvalid;
+        private ulong _overlay = VROverlay.InvalidHandle;
         private int updateTicker = 0;
         private int textureUpdateTicker = 0;
 
@@ -269,7 +267,7 @@ namespace ValheimVRMod.VRCore.UI
         public void Update()
         {
             disableVanillaInputSystemUiInputModule();
-            if (VHVRConfig.UseVrControls() && SteamVR_Actions.valheim_ToggleMenu.GetStateDown(SteamVR_Input_Sources.Any))
+            if (VHVRConfig.UseVrControls() && VRInputActions.valheim_ToggleMenu.GetStateDown(VRInputSource.Any))
             {
                 ModConfigurationManagerBridge.CloseWindow();
             }
@@ -727,7 +725,7 @@ namespace ValheimVRMod.VRCore.UI
         }
 
 
-        public void OnPointerTrackingLeftHand(object p, PointerEventArgs e)
+        public void OnPointerTrackingLeftHand(object p, VRPointerEventArgs e)
         {
             // When the UI panel is attached to hand, improve responsiveness by updating cursor location
             // even if the raycast hits something other than UI panel
@@ -742,7 +740,7 @@ namespace ValheimVRMod.VRCore.UI
             UpdateMouseButtonsFromLaserPointer();
         }
 
-        public void OnPointerTracking(object p, PointerEventArgs e)
+        public void OnPointerTracking(object p, VRPointerEventArgs e)
         {
             if (!_leftPointer.pointerIsActive() && !_rightPointer.pointerIsActive())
             {
@@ -805,20 +803,20 @@ namespace ValheimVRMod.VRCore.UI
         {
             if (_leftPointer.pointerIsActive())
             {
-                UpdateMouseButtonsFromLaserPointer(SteamVR_Input_Sources.LeftHand);
+                UpdateMouseButtonsFromLaserPointer(VRInputSource.LeftHand);
             }
             if (_rightPointer.pointerIsActive())
             {
-                UpdateMouseButtonsFromLaserPointer(SteamVR_Input_Sources.RightHand);
+                UpdateMouseButtonsFromLaserPointer(VRInputSource.RightHand);
             }
         }
 
-        private void UpdateMouseButtonsFromLaserPointer(SteamVR_Input_Sources hand)
+        private void UpdateMouseButtonsFromLaserPointer(VRInputSource hand)
         {
             // The laser pointers have no middle button of their own, UpdateButtonStates adds the MiddleClick chord.
             _inputModule.UpdateButtonStates(
                 LaserPointerChords.leftClickAction.GetState(hand),
-                SteamVR_Actions.Valheim.RightClick.GetState(hand),
+                VRInputActions.valheim_RightClick.GetState(hand),
                 false);
         }
 
@@ -837,11 +835,11 @@ namespace ValheimVRMod.VRCore.UI
             float steps = GetScrollButtonSteps();
             if (_leftPointer.pointerIsActive())
             {
-                steps += SteamVR_Actions.Valheim.ContextScroll.GetAxis(SteamVR_Input_Sources.LeftHand).y;
+                steps += VRInputActions.valheim_ContextScroll.GetAxis(VRInputSource.LeftHand).y;
             }
             if (_rightPointer.pointerIsActive())
             {
-                steps += SteamVR_Actions.Valheim.ContextScroll.GetAxis(SteamVR_Input_Sources.RightHand).y;
+                steps += VRInputActions.valheim_ContextScroll.GetAxis(VRInputSource.RightHand).y;
             }
             _inputModule.ScrollBySteps(steps);
         }
@@ -924,7 +922,7 @@ namespace ValheimVRMod.VRCore.UI
         }
 
         // Use off-hand (non-dominant hand) to hold the inventory panel
-        private static Hand getPanelHoldingHand()
+        private static VRHand getPanelHoldingHand()
         {
             return VHVRConfig.LeftHanded() ? VRPlayer.rightHand : VRPlayer.leftHand;
         }
@@ -1055,7 +1053,7 @@ namespace ValheimVRMod.VRCore.UI
         {
             position = Vector3.zero;
             rotation = Quaternion.identity;
-            Hand hand = getPanelHoldingHand();
+            VRHand hand = getPanelHoldingHand();
             if (!attachedToHand || hand == null || _uiPanel == null ||
                 Vector3.Distance(_uiPanel.position, hand.transform.TransformPoint(DESIRED_HAND_ATTACHED_LOCAL_POSITION))
                     > HAND_PANEL_PROXY_MAX_DISTANCE_FROM_HAND ||
@@ -1070,7 +1068,7 @@ namespace ValheimVRMod.VRCore.UI
 
         // The laser beams need the same treatment as the panel: they are only a couple of millimeters thick and end
         // on the panel, so a beam drawn at its world space pose visibly shakes against it.
-        private void placeLaserProxy(int index, SteamVR_LaserPointer laser, Transform rig)
+        private void placeLaserProxy(int index, VRLaserPointer laser, Transform rig)
         {
             isLaserProxyShown[index] = false;
             if (laser == null || laser.pointer == null || !laser.pointer.activeInHierarchy)
@@ -1099,7 +1097,7 @@ namespace ValheimVRMod.VRCore.UI
         // The laser pointer ray in the local space of the panel held in the hand, composed from the local poses of
         // the pointer and the hand in the rig, rather than from their world space poses. False unless the panel is
         // held in the hand while it is being drawn at the origin.
-        private bool tryGetPreciseRayInHeldPanel(SteamVR_LaserPointer laser, out Vector3 localStart, out Vector3 localDirection)
+        private bool tryGetPreciseRayInHeldPanel(VRLaserPointer laser, out Vector3 localStart, out Vector3 localDirection)
         {
             localStart = Vector3.zero;
             localDirection = Vector3.forward;
@@ -1266,7 +1264,7 @@ namespace ValheimVRMod.VRCore.UI
             hideLaser(VRPlayer.rightPointer);
         }
 
-        private void hideLaser(SteamVR_LaserPointer laser)
+        private void hideLaser(VRLaserPointer laser)
         {
             if (laser == null || laser.pointer == null)
             {
@@ -1331,12 +1329,12 @@ namespace ValheimVRMod.VRCore.UI
 
         private void createOverlay()
         {
-            var overlay = OpenVR.Overlay;
+            var overlay = VRBackend.Active.Overlay;
             if (overlay != null)
             {
                 _overlayTexture = new RenderTexture(new RenderTextureDescriptor((int)GUI_DIMENSIONS.x, (int)GUI_DIMENSIONS.y));
                 var error = overlay.CreateOverlay(OVERLAY_KEY, OVERLAY_NAME, ref _overlay);
-                if (error != EVROverlayError.None)
+                if (error != VROverlayError.None)
                 {
                     LogError("Problem creating VR GUI Overlay. GUI is disabled.");
                     enabled = false;
@@ -1352,14 +1350,14 @@ namespace ValheimVRMod.VRCore.UI
 
         private void destroyOverlay()
         {
-            if (_overlay != OpenVR.k_ulOverlayHandleInvalid)
+            if (_overlay != VROverlay.InvalidHandle)
             {
-                var overlay = OpenVR.Overlay;
+                var overlay = VRBackend.Active.Overlay;
                 if (overlay != null)
                 {
                     overlay.DestroyOverlay(_overlay);
                 }
-                _overlay = OpenVR.k_ulOverlayHandleInvalid;
+                _overlay = VROverlay.InvalidHandle;
                 hasCreatedOverlay = false;
             }
         }
@@ -1414,39 +1412,35 @@ namespace ValheimVRMod.VRCore.UI
 
         private void updateOverlay()
         {
-            var overlay = OpenVR.Overlay;
+            var overlay = VRBackend.Active.Overlay;
             if (overlay == null)
             {
                 return;
             }
             var error = overlay.SetOverlayCurvature(_overlay, OVERLAY_CURVATURE);
-            if (error != EVROverlayError.None)
+            if (error != VROverlayError.None)
             {
                 LogError("Error setting overlay curvature.");
             }
             error = overlay.ShowOverlay(_overlay);
-            if (error == EVROverlayError.InvalidHandle || error == EVROverlayError.UnknownOverlay)
+            if (error == VROverlayError.InvalidHandle || error == VROverlayError.UnknownOverlay)
             {
                 LogDebug("Invalid Handle or UnknownOverlay");
-                if (overlay.FindOverlay(OVERLAY_KEY, ref _overlay) != EVROverlayError.None)
+                if (overlay.FindOverlay(OVERLAY_KEY, ref _overlay) != VROverlayError.None)
                     return;
             }
-            Texture_t tex = new Texture_t();
             // We need to blit the _guiTexture into a secondary texture upside down
             // and pass the second texture into the overlay instead to get the gui
             // to display right-side up.
             Graphics.Blit(_guiTexture, _overlayTexture, new Vector2(1, -1), new Vector2(0, 1));
-            tex.handle = _overlayTexture.GetNativeTexturePtr();
-            tex.eType = SteamVR.instance.textureType;
-            tex.eColorSpace = EColorSpace.Auto;
-            overlay.SetOverlayTexture(_overlay, ref tex);
+            overlay.SetTexture(_overlay, _overlayTexture.GetNativeTexturePtr());
             overlay.SetOverlayAlpha(_overlay, 1.0f);
             updateOverlayGuiSizeAndPosition();
         }
 
         private void updateOverlayGuiSizeAndPosition()
         {
-            var overlay = OpenVR.Overlay;
+            var overlay = VRBackend.Active.Overlay;
             if (overlay == null)
             {
                 return;
@@ -1476,10 +1470,7 @@ namespace ValheimVRMod.VRCore.UI
                     offsetRotation = currentRotation;
                 }
             }
-            var offset = new SteamVR_Utils.RigidTransform(offsetPosition, offsetRotation);
-            overlay.SetOverlayWidthInMeters(_overlay, VHVRConfig.GetOverlayWidth());
-            var t = offset.ToHmdMatrix34();
-            overlay.SetOverlayTransformAbsolute(_overlay, SteamVR.settings.trackingSpace, ref t);
+            overlay.SetWidthAndTransform(_overlay, VHVRConfig.GetOverlayWidth(), offsetPosition, offsetRotation);
         }
 
         private bool useDynamicallyPositionedGui()
@@ -1513,7 +1504,7 @@ namespace ValheimVRMod.VRCore.UI
 
         private Vector3 getTargetGuiDirection()
         {
-            var hmd = Valve.VR.InteractionSystem.Player.instance?.hmdTransform;
+            var hmd = VRBackend.Active.Rig.Player?.hmdTransform;
             if (Player.m_localPlayer == null || hmd == null || USING_OVERLAY)
             {
                 return Vector3.forward;
@@ -1529,19 +1520,12 @@ namespace ValheimVRMod.VRCore.UI
         {
             if (USING_OVERLAY)
             {
-                var overlay = OpenVR.Overlay;
+                var overlay = VRBackend.Active.Overlay;
                 if (overlay == null)
                 {
                     return Vector3.forward;
                 }
-                var currentTransform = new HmdMatrix34_t();
-                var trackingOrigin = SteamVR.settings.trackingSpace;
-                var error = overlay.GetOverlayTransformAbsolute(_overlay, ref trackingOrigin, ref currentTransform);
-                if (error != EVROverlayError.None)
-                {
-                    return Vector3.forward;
-                }
-                return new SteamVR_Utils.RigidTransform(currentTransform).rot * Vector3.forward;
+                return overlay.GetDirection(_overlay);
             } else
             {
                 if (!ensureUIPanel())

@@ -2,7 +2,6 @@ using UnityEngine;
 using UnityEngine.UI;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore.UI.HudElements;
-using Valve.VR.InteractionSystem;
 using System.Collections.Generic;
 using static ValheimVRMod.Utilities.LogUtils;
 

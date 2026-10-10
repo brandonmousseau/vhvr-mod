@@ -1,8 +1,7 @@
+using ValheimVRMod.VRCore.Backends;
 using UnityEngine;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
-using Valve.VR;
-using Valve.VR.InteractionSystem;
 
 namespace ValheimVRMod.Scripts
 {
@@ -46,19 +45,19 @@ namespace ValheimVRMod.Scripts
             {
                 return;
             }
-            updateHand(leftGrab, leftHandGesture, StaticObjects.leftFist().transform, VRPlayer.leftHand, SteamVR_Input_Sources.LeftHand);
-            updateHand(rightGrab, rightHandGesture, StaticObjects.rightFist().transform, VRPlayer.rightHand, SteamVR_Input_Sources.RightHand);
+            updateHand(leftGrab, leftHandGesture, StaticObjects.leftFist().transform, VRPlayer.leftHand, VRInputSource.LeftHand);
+            updateHand(rightGrab, rightHandGesture, StaticObjects.rightFist().transform, VRPlayer.rightHand, VRInputSource.RightHand);
         }
 
-        private void updateHand(GrabState grab, HandGesture handGesture, Transform fist, Hand hand, SteamVR_Input_Sources inputSource)
+        private void updateHand(GrabState grab, HandGesture handGesture, Transform fist, VRHand hand, VRInputSource inputSource)
         {
-            if (!SteamVR_Actions.valheim_Grab.GetState(inputSource) || !handGesture.isHandFree())
+            if (!VRInputActions.valheim_Grab.GetState(inputSource) || !handGesture.isHandFree())
             {
                 grab.drawbridge = null;
                 return;
             }
 
-            if (SteamVR_Actions.valheim_Grab.GetStateDown(inputSource))
+            if (VRInputActions.valheim_Grab.GetStateDown(inputSource))
             {
                 grab.drawbridge = findGrabbedDrawbridge(fist.position);
                 if (grab.drawbridge != null)
