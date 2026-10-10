@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <GameplayAssembly Condition="'$(GameplayAssembly)' == ''">../../ValheimVRMod/bin/Release/net46/ValheimVRMod.dll</GameplayAssembly>
+    <SteamVRManagedDir Condition="'$(SteamVRManagedDir)' == ''">../../Unity/build/ValheimVR_Data/Managed</SteamVRManagedDir>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Reference Include="ValheimVRMod" HintPath="$(GameplayAssembly)" Private="false" />
+    <Reference Include="SteamVR" HintPath="$(SteamVRManagedDir)/SteamVR.dll" Private="false" />
+    <Reference Include="SteamVR_Actions" HintPath="$(SteamVRManagedDir)/SteamVR_Actions.dll" Private="false" />
+    <Reference Include="UnityEngine.CoreModule" HintPath="$(ValheimDir)/Valheim_Data/Managed/UnityEngine.CoreModule.dll" Private="false" />
+    <Reference Include="Unity.XR.OpenVR" HintPath="$(ValheimDir)/Valheim_Data/Managed/Unity.XR.OpenVR.dll" Private="false" />
+  </ItemGroup>
+</Project>

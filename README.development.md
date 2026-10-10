@@ -1,5 +1,8 @@
 # Setting up a development environment
 
+The SteamVR-only backend refactor candidate and its reproducible checks are
+documented in [Backend refactor: stage 1](docs/BACKEND-REFACTOR.md).
+
 ## Who is this for?
 
 ## Software you will need
