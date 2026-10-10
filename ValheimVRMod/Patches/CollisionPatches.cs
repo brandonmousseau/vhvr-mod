@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
 using UnityEngine;
+using UnityEngine.TextCore;
 using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
 
@@ -9,12 +10,17 @@ namespace ValheimVRMod.Patches {
 
     [HarmonyPatch(typeof(Attack), nameof(Attack.GetAttackOrigin))]
     class PatchAreaAttack {
-
-        static bool Prefix(ref Transform __result,  ref Humanoid ___m_character) {
-            if (___m_character != Player.m_localPlayer || !VHVRConfig.UseVrControls()) {
+        static bool Prefix(ref Transform __result, ref Humanoid ___m_character, ItemDrop.ItemData ___m_weapon)
+        {
+            if (___m_character != Player.m_localPlayer || !VHVRConfig.UseVrControls())
+            {
                 return true;
             }
-             
+
+            if (___m_weapon != null && ___m_weapon == ___m_character.GetLeftItem())
+            {
+                return true;
+            }
             __result = StaticObjects.rightWeaponCollider().transform;
             return false;
         }
@@ -27,6 +33,12 @@ namespace ValheimVRMod.Patches {
         /**
          * in Start Patch we put some logic from original Start method and some more logic from original DoMeleeAttack
          */
+
+        // The per-target factor of vanilla's damage split for attacks with m_lowerDamagePerHit (damage / (targets * this)).
+        // Vanilla only splits when an attack hits more than one target, but this applies it to single hits as well,
+        // which boosts them by 4/3.
+        // TODO: consider setting it to 1 since the boost might have been an unintentional artifact.
+        private const float LOWER_DAMAGE_PER_HIT_FACTOR = 0.75f;
 
         private static float attackHeight ;
         private static float attackRange ;
@@ -64,7 +76,8 @@ namespace ValheimVRMod.Patches {
             if (character != Player.m_localPlayer || // if character is not local player, use original Start method
                 !VHVRConfig.UseVrControls() ||
                 __instance.m_attackType.ToString() == "Projectile" ||
-                __instance.m_attackType == Attack.AttackType.None) {
+                __instance.m_attackType == Attack.AttackType.None ||
+                EquipScript.IsMeleeMagicAttack(__instance, EquipScript.GetEquipType(weapon))) {
                 return true;
             }
 
@@ -78,6 +91,9 @@ namespace ValheimVRMod.Patches {
             ___m_attackRange = 0;
             ___m_attackOffset = 0;
             __result = true;
+
+            try
+            {
             
             if (___m_attackMask == 0)
             {
@@ -85,29 +101,37 @@ namespace ValheimVRMod.Patches {
                 ___m_attackMaskTerrain = LayerMask.GetMask("Default", "static_solid", "Default_small", "piece", "piece_nonsolid", "terrain", nameof (character), "character_net", "character_ghost", "hitbox", "character_noenv", "vehicle");
             }
             
-            if (!(AttackTargetMeshCooldown.staminaDrained || ButtonSecondaryAttackManager.isStaminaDrained)) {
-                float staminaUsage = (float) __instance.GetAttackStamina();
-                if (staminaUsage > 0.0f && !character.HaveStamina(staminaUsage + 0.1f)) {
-                    // FIXME: Mystlands probably changed this from StaminaBarNoStaminaFlash
-                    if (character.IsPlayer())
-                        Hud.instance.StaminaBarEmptyFlash();
-                    __result = false;
-                    ___m_attackHeight = attackHeight;
-                    ___m_attackRange = attackRange;
-                    ___m_attackOffset = attackOffset;
-                    return false;
+            // A hit during cooldown (see AttackTargetMeshCooldown.tryTriggerPrimaryAttack()) costs nothing and only
+            // deals damage and push force. The flag is cleared here so that it never outlives the hit it was set for.
+            bool isCooldownHit =
+                AttackTargetMeshCooldown.isCooldownHit && !ButtonSecondaryAttackManager.isSecondaryAttackStarted;
+            AttackTargetMeshCooldown.isCooldownHit = false;
+
+            if (!isCooldownHit) {
+                if (!(AttackTargetMeshCooldown.staminaDrained || ButtonSecondaryAttackManager.isStaminaDrained)) {
+                    float staminaUsage = (float) __instance.GetAttackStamina();
+                    if (staminaUsage > 0.0f && !character.HaveStamina(staminaUsage + 0.1f)) {
+                        // FIXME: Mystlands probably changed this from StaminaBarNoStaminaFlash
+                        if (character.IsPlayer())
+                            Hud.instance.StaminaBarEmptyFlash();
+                        __result = false;
+                        return false;
+                    }
+
+                    character.UseStamina(staminaUsage);
                 }
 
-                character.UseStamina(staminaUsage);
+                // Every target that this attack hits calls Start() separately, but like in vanilla the attack
+                // is only paid for once, so mark it as paid for regardless of which of the two flags covered it.
+                // The flag is cleared again when the next attack starts, see AttackTargetMeshCooldown.
                 AttackTargetMeshCooldown.staminaDrained = true;
+                ButtonSecondaryAttackManager.isStaminaDrained = false;
             }
-
-            ButtonSecondaryAttackManager.isStaminaDrained = false;
             Collider col = StaticObjects.lastHitCollider;
             Vector3 pos = StaticObjects.lastHitPoint;
             Vector3 dir = StaticObjects.lastHitDir;
 
-            if (__instance.m_attackType == Attack.AttackType.Area) {
+            if (__instance.m_attackType == Attack.AttackType.Area && !isCooldownHit) {
                 __instance.OnAttackTrigger();
             }
 
@@ -115,23 +139,94 @@ namespace ValheimVRMod.Patches {
             {
                 return false;
             }
-            
-            doMeleeAttack(___m_character, ___m_weapon, ___m_ammoItem, __instance, ___m_hitEffect, ___m_specialHitSkill, ___m_specialHitType, ___m_lowerDamagePerHit, ___m_forceMultiplier, ___m_staggerMultiplier, ___m_damageMultiplier, ___m_attackChainLevels, ___m_currentAttackCainLevel, ___m_resetChainIfHit, ref ___m_nextAttackChainLevel, ___m_hitTerrainEffect, ___m_attackHitNoise, pos, col, dir, ___m_spawnOnTrigger);
 
-            ___m_attackHeight = attackHeight;
-            ___m_attackRange = attackRange;
-            ___m_attackOffset = attackOffset;
+            doMeleeAttack(___m_character, ___m_weapon, ___m_ammoItem, __instance, ___m_hitEffect, ___m_specialHitSkill, ___m_specialHitType, ___m_lowerDamagePerHit, ___m_forceMultiplier, ___m_staggerMultiplier, ___m_damageMultiplier, ___m_attackChainLevels, ___m_currentAttackCainLevel, ___m_resetChainIfHit, ref ___m_nextAttackChainLevel, ___m_hitTerrainEffect, ___m_attackHitNoise, pos, col, dir, ___m_spawnOnTrigger, isCooldownHit);
+
+            if (!isCooldownHit)
+            {
+                maybeShovelSnow(__instance, pos);
+            }
 
             return false;
-            
+            }
+            finally
+            {
+                // These live on the shared Attack instance, so they must be restored on every exit
+                // path or the zeroed values leak into subsequent attacks.
+                ___m_attackHeight = attackHeight;
+                ___m_attackRange = attackRange;
+                ___m_attackOffset = attackOffset;
+            }
         }
 
-        private static void doMeleeAttack(Humanoid ___m_character, ItemDrop.ItemData ___m_weapon, ItemDrop.ItemData ___m_ammoItem, Attack __instance,
+        // Vanilla runs the snow shovel effect at the end of Attack.DoMeleeAttack, which the prefix
+        // above never reaches because it replaces the melee path wholesale. Ported here so shovelling
+        // works in VR, using the point where the weapon physically struck rather than
+        // Attack.GetSnowShovelPoint(): that derives from m_attackRange, which is zeroed above so that
+        // hits originate at the weapon collider instead of in front of the character.
+        // Like vanilla, this is not gated on Attack.m_snowShovel, which the game never reads.
+        private static readonly Collider[] snowShovelColliders = new Collider[200];
+        private static int snowShovelRayMask = 0;
+
+        private static void maybeShovelSnow(Attack attack, Vector3 hitPoint)
+        {
+            var player = Player.m_localPlayer;
+            if (player == null || EnvMan.instance == null ||
+                EnvMan.instance.GetCurrentBiome() != Heightmap.Biome.DeepNorth)
+            {
+                return;
+            }
+
+            if (snowShovelRayMask == 0)
+            {
+                snowShovelRayMask = LayerMask.GetMask("piece", "piece_nonsolid", "item", "terrain");
+            }
+
+            int hitCount =
+                Physics.OverlapSphereNonAlloc(
+                    hitPoint, attack.m_snowShovelRadius, snowShovelColliders, snowShovelRayMask);
+            for (int i = 0; i < hitCount; i++)
+            {
+                var collider = snowShovelColliders[i];
+                if (collider.gameObject.GetComponent<Heightmap>() != null)
+                {
+                    var snowPile = attack.m_snowShovelStrong ? player.m_snowShovelStrong : player.m_snowShovelDefault;
+                    if (snowPile != null)
+                    {
+                        UnityEngine.Object.Instantiate(
+                            snowPile, hitPoint + new Vector3(0, 0.5f, 0), Quaternion.identity);
+                    }
+                    player.m_snowShovelEffect.Create(hitPoint, Quaternion.identity);
+                    continue;
+                }
+
+                var wearNTear = collider.gameObject.GetComponentInParent<WearNTear>();
+                if (wearNTear != null)
+                {
+                    if (wearNTear.m_snowBuildup > 0f)
+                    {
+                        wearNTear.ChangeSnow(-attack.m_snowShovelStrength);
+                        player.m_snowShovelEffect.Create(collider.transform.position, collider.transform.rotation);
+                    }
+                    continue;
+                }
+
+                var snowDestruction = collider.gameObject.GetComponent<SnowDestruction>();
+                if (snowDestruction != null)
+                {
+                    snowDestruction.Damage(attack.m_snowShovelStrength);
+                    player.m_snowShovelEffect.Create(collider.transform.position, collider.transform.rotation);
+                }
+            }
+        }
+
+        private static void doMeleeAttack(
+            Humanoid ___m_character, ItemDrop.ItemData ___m_weapon, ItemDrop.ItemData ___m_ammoItem, Attack __instance,
             EffectList ___m_hitEffect, Skills.SkillType ___m_specialHitSkill, DestructibleType ___m_specialHitType,
             bool ___m_lowerDamagePerHit, float ___m_forceMultiplier, float ___m_staggerMultiplier, float ___m_damageMultiplier,
             int ___m_attackChainLevels, int ___m_currentAttackCainLevel, DestructibleType ___m_resetChainIfHit,
             ref int ___m_nextAttackChainLevel, EffectList ___m_hitTerrainEffect, float ___m_attackHitNoise, Vector3 pos,
-            Collider col, Vector3 dir, GameObject ___m_spawnOnTrigger) {
+            Collider col, Vector3 dir, GameObject ___m_spawnOnTrigger, bool isCooldownHit) {
             
             Vector3 zero = Vector3.zero;
             bool isHittingCharacter = false;
@@ -187,17 +282,17 @@ namespace ValheimVRMod.Patches {
                     
                     if(ButtonSecondaryAttackManager.isSecondaryAttackStarted && ButtonSecondaryAttackManager.secondaryHitList.Count >= 1)
                     {
-                        randomSkillFactor /= (ButtonSecondaryAttackManager.secondaryHitList.Count - ButtonSecondaryAttackManager.terrainHitCount) * 0.75f;
+                        randomSkillFactor /= (ButtonSecondaryAttackManager.secondaryHitList.Count - ButtonSecondaryAttackManager.terrainHitCount) * LOWER_DAMAGE_PER_HIT_FACTOR;
                     }
                     else
                     {
-                        randomSkillFactor /= 0.75f;
+                        randomSkillFactor /= LOWER_DAMAGE_PER_HIT_FACTOR;
                     }
                 }
 
                 HitData hitData = new HitData();
                 hitData.m_toolTier = (short) ___m_weapon.m_shared.m_toolTier;
-                hitData.m_statusEffectHash = ___m_weapon.m_shared.m_attackStatusEffect
+                hitData.m_statusEffectHash = ___m_weapon.m_shared.m_attackStatusEffect && !isCooldownHit
                     ? ___m_weapon.m_shared.m_attackStatusEffect.NameHash()
                     : 0;
                 hitData.m_pushForce = ___m_weapon.m_shared.m_attackForce * randomSkillFactor * ___m_forceMultiplier;
@@ -208,7 +303,7 @@ namespace ValheimVRMod.Patches {
                 hitData.m_skill = skill;
                 hitData.m_damage = ___m_weapon.GetDamage();
                 hitData.m_point = pos;
-                hitData.m_dir = ButtonSecondaryAttackManager.hitDir == Vector3.zero ? (pos - Player.m_localPlayer.transform.position).normalized : ButtonSecondaryAttackManager.hitDir;
+                hitData.m_dir = ButtonSecondaryAttackManager.hitDir == Vector3.zero ? (VHVRConfig.UseKnockbackSwingDirection() ? StaticObjects.lastHitDir.normalized : (pos - Player.m_localPlayer.transform.position).normalized) : ButtonSecondaryAttackManager.hitDir;
                 hitData.m_hitCollider = col;
                 hitData.SetAttacker(___m_character);
                 hitData.m_damage.Modify(___m_damageMultiplier);
@@ -222,16 +317,43 @@ namespace ValheimVRMod.Patches {
                 {
                     hitData.m_damage.Modify(AttackTargetMeshCooldown.calcDamageMultiplier());
                 }
+                else if (!ButtonSecondaryAttackManager.isSecondaryAttackStarted)
+                {
+                    // An attack that does not lower damage per hit skips the multi-target decay above, but momentum
+                    // must still scale it (1 for slow attacks and without MomentumScalesAttackDamage).
+                    hitData.m_damage.Modify(AttackTargetMeshCooldown.speedScaledDamageFactor);
+                }
+                if (isCooldownHit)
+                {
+                    hitData.m_pushForce *= AttackTargetMeshCooldown.speedScaledDamageFactor;
+                }
 
                 ___m_character.GetSEMan().ModifyAttack(skill, ref hitData);
-                if (destructible is Character) isHittingCharacter = true;
+                if (destructible is Character)
+                {
+                    isHittingCharacter = true;
+                }
                 destructible.Damage(hitData);
-                if ((destructibleType & ___m_resetChainIfHit) != DestructibleType.None) ___m_nextAttackChainLevel = 0;
+                if ((destructibleType & ___m_resetChainIfHit) != DestructibleType.None && !isCooldownHit)
+                {
+                    ___m_nextAttackChainLevel = 0;
+                }
+                if (isHittingCharacter && !isCooldownHit)
+                {
+                    ___m_character.AddAdrenaline(
+                        __instance.m_attackAdrenaline * ((Character)destructible).m_enemyAdrenalineMultiplier);
+                }
             }
 
             ___m_weapon.m_shared.m_hitTerrainEffect.Create(pos,
                 Quaternion.identity); // Quaternion.identity might need to be replaced
             ___m_hitTerrainEffect.Create(pos, Quaternion.identity);
+
+            // A hit during cooldown only deals damage and push force, so none of what follows applies to it.
+            if (isCooldownHit)
+            {
+                return;
+            }
 
             if (___m_weapon.m_shared.m_spawnOnHitTerrain && WeaponCollision.isLastHitOnTerrain) {
                 Attack.SpawnOnHitTerrain(

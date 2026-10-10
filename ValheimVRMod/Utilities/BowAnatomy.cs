@@ -40,8 +40,22 @@ namespace ValheimVRMod.Utilities
             /* fallbackHandleTop= */ new Vector3(0, 0.312f, 0),
             /* fallbackHandleBottom= */ new Vector3(0, -0.312f, 0));
 
+        private static BowAnatomy GoldBowAnatomy = new BowAnatomy(
+            /* handleHeight= */ 0.6f,
+            /* softLimbHeight= */ 0.125f,
+            /* stringRadius= */ 0.01f,
+            /* bowBendingImpl= */ BowBendingImplType.Auto,
+            /* fallbackHandleWidth= */ 0.05f,
+            /* fallbackStringTop= */ new Vector3(-0.022f, 0.75f, -0.295f),
+            /* fallbackStringBottom= */ new Vector3(-0.022f, -0.75f, -0.295f),
+            /* fallbackHandleTop= */ new Vector3(0, 0.275f, 0),
+            /* fallbackHandleBottom= */ new Vector3(0, -0.275f, 0));
+
         private static Dictionary<string, BowAnatomy> BowAnatomies = new Dictionary<string, BowAnatomy>
         {
+            { "$item_bow_gold", GoldBowAnatomy },                 // Nord Bow
+            { "$item_bow_gold_bloodlightning", GoldBowAnatomy },  // Thunderblood Bow
+            { "$item_bow_gold_frostfire", GoldBowAnatomy },       // Frostfire Bow
             {
                 "$item_bow_snipesnap", // Note: item name is snipesnap not spinesnap
                 new BowAnatomy(
@@ -52,8 +66,8 @@ namespace ValheimVRMod.Utilities
                     /* fallbackHandleWidth= */ 0.05f,
                     /* fallbackStringTop= */ new Vector3(0, 0.75f, -0.325f),
                     /* fallbackStringBottom= */ new Vector3(0, -0.75f, -0.325f),
-                    /* fallbackHandleTop= */ new Vector3(0, 0.26f, 0),
-                    /* fallbackHandleBottom= */ new Vector3(0, -0.26f, 0))
+                    /* fallbackHandleTop= */ new Vector3(0, 0.23f, 0),
+                    /* fallbackHandleBottom= */ new Vector3(0, -0.23f, 0))
             },
             {
                 "$item_bow_ashlands",
@@ -63,8 +77,8 @@ namespace ValheimVRMod.Utilities
                     /* stringRadius= */ 0.01f,
                     /* bowBendingImpl= */ BowBendingImplType.Auto,
                     /* fallbackHandleWidth= */ 0.0625f,
-                    /* fallbackStringTop= */ new Vector3(0.01f, 0.75f, -0.25f),
-                    /* fallbackStringBottom= */ new Vector3(0.01f, -0.75f, -0.25f),
+                    /* fallbackStringTop= */ new Vector3(0.01f, 0.75f, -0.2f),
+                    /* fallbackStringBottom= */ new Vector3(0.01f, -0.75f, -0.2f),
                     /* fallbackHandleTop= */ new Vector3(0, 0.375f, 0),
                     /* fallbackHandleBottom= */ new Vector3(0, -0.375f, 0))
             },
@@ -76,8 +90,8 @@ namespace ValheimVRMod.Utilities
                     /* stringRadius= */ 0.01f,
                     /* bowBendingImpl= */ BowBendingImplType.Auto,
                     /* fallbackHandleWidth= */ 0.0625f,
-                    /* fallbackStringTop= */ new Vector3(0, 0.75f, -0.245f),
-                    /* fallbackStringBottom= */ new Vector3(0, -0.75f, -0.245f),
+                    /* fallbackStringTop= */ new Vector3(0.03f, 0.75f, -0.22f),
+                    /* fallbackStringBottom= */ new Vector3(0.03f, -0.75f, -0.22f),
                     /* fallbackHandleTop= */ new Vector3(0, 0.35f, 0),
                     /* fallbackHandleBottom= */ new Vector3(0, -0.35f, 0))
             },
@@ -89,8 +103,8 @@ namespace ValheimVRMod.Utilities
                     /* stringRadius= */ 0.01f,
                     /* bowBendingImpl= */ BowBendingImplType.Auto,
                     /* fallbackHandleWidth= */ 0.0625f,
-                    /* fallbackStringTop= */ new Vector3(0, 0.8f, -0.24f),
-                    /* fallbackStringBottom= */ new Vector3(0, -0.8f, -0.24f),
+                    /* fallbackStringTop= */ new Vector3(0.01f, 0.8f, -0.18f),
+                    /* fallbackStringBottom= */ new Vector3(0.01f, -0.8f, -0.18f),
                     /* fallbackHandleTop= */ new Vector3(0, 0.375f, 0),
                     /* fallbackHandleBottom= */ new Vector3(0, -0.375f, 0))
             },
@@ -102,8 +116,8 @@ namespace ValheimVRMod.Utilities
                     /* stringRadius= */ 0.01f,
                     /* bowBendingImpl= */ BowBendingImplType.Auto,
                     /* fallbackHandleWidth= */ 0.0625f,
-                    /* fallbackStringTop= */ new Vector3(0.005f, 0.75f, -0.25f),
-                    /* fallbackStringBottom= */ new Vector3(0.005f, -0.75f, -0.25f),
+                    /* fallbackStringTop= */ new Vector3(0.03f, 0.75f, -0.205f),
+                    /* fallbackStringBottom= */ new Vector3(0.03f, -0.75f, -0.205f),
                     /* fallbackHandleTop= */ new Vector3(0, 0.4f, 0),
                     /* fallbackHandleBottom= */ new Vector3(0, -0.4f, 0))
             }

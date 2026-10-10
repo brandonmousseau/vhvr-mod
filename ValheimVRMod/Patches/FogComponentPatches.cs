@@ -37,8 +37,10 @@ class FogComponentPatches
             Material material = __instance.context.materialFactory.Get("Hidden/Post FX/Fog");
             material.shaderKeywords = null;
 
-            material.SetColor(Uniforms._FogColor, GraphicsUtils.isLinearColorSpace ? RenderSettings.fogColor.linear : RenderSettings.fogColor);
-            material.SetFloat(Uniforms._Density, UnderwaterEffectsUpdater.UsingUnderwaterEffects ? 0.125f : RenderSettings.fogDensity);
+            material.SetColor(
+                Uniforms._FogColor,
+                GraphicsUtils.isLinearColorSpace ? RenderSettings.fogColor.linear : RenderSettings.fogColor);
+            material.SetFloat(Uniforms._Density, UnderwaterEffectsUpdater.GetFogDensity());
             material.SetFloat(Uniforms._Start, RenderSettings.fogStartDistance);
             material.SetFloat(Uniforms._End, RenderSettings.fogEndDistance);
 

@@ -4,6 +4,7 @@ using ValheimVRMod.VRCore;
 using ValheimVRMod.Utilities;
 using System.Reflection;
 using System.Collections.Generic;
+using ValheimVRMod.Scripts;
 
 namespace ValheimVRMod.Patches
 {
@@ -43,6 +44,9 @@ namespace ValheimVRMod.Patches
                 !VHVRConfig.UseLookLocomotion() ||
                 ___m_currentStation != null /* Not Crafting */)
             {
+                // The heading keeps moving while this is inactive, so drop the stored angle: resuming
+                // against a stale one would apply everything that moved in the meantime as a single jump.
+                previousTrackedLocalAngle = null;
                 return;
             }
 
@@ -90,6 +94,7 @@ namespace ValheimVRMod.Patches
                         VRPlayer.instance.transform.rotation = Player_Rotation_Patch.attachmentIndependentRoomRotation;
                     }
                 }
+                previousTrackedLocalAngle = null;
                 return;
             }
             else
@@ -98,23 +103,46 @@ namespace ValheimVRMod.Patches
                 wasAttached = false;
             }
 
-            if (Player.m_localPlayer.InDodge() && !VHVRConfig.ImmersiveDodgeRoll())
+            if (!Player_Rotation_Patch.ShouldFaceLookDirection(__instance) || !VHVRConfig.UseVrControls())
             {
+                previousTrackedLocalAngle = null;
                 return;
             }
 
-            float currentLocalAngle = (Quaternion.Inverse(Valve.VR.InteractionSystem.Player.instance.hmdTransform.parent.rotation) * VRPlayer.pelvis.rotation).eulerAngles.y;
+            // The character follows the head only. The pelvis is deliberately not used here: it is a body
+            // IK target that carries terms which do not belong in the character facing, such as the
+            // hand-inferred adjustment applied when there is no waist tracker. Moving relative to the
+            // pelvis instead of the head is a locomotion option, applied where the joystick input is
+            // converted (see VHVRConfig.GetJoystickForwardDirection).
+            float currentLocalAngle = Valve.VR.InteractionSystem.Player.instance.hmdTransform.localRotation.eulerAngles.y;
+            float? deltaRotation = null;
             if (previousTrackedLocalAngle.HasValue)
             {
-                // Find the difference between the current rotation and previous rotation
-                float deltaRotation = currentLocalAngle - previousTrackedLocalAngle.Value;
+                // Find the difference between the current rotation and previous rotation. Taken as an
+                // angle difference rather than a plain subtraction, which yields a full turn either way
+                // whenever the angle wraps around zero.
+                deltaRotation = Mathf.DeltaAngle(previousTrackedLocalAngle.Value, currentLocalAngle);
+            }
+            else if (VRPlayer.headPositionInitialized)
+            {
+                // Resuming after the head was not followed for a while, e. g. with a menu or a crafting
+                // station open: catch up on however far it turned away from the character in the meantime.
+                // Recentering leaves the rig's yaw cancelling out the head's (see
+                // VRPlayer.maybeInitHeadPosition()), and following the head keeps it that way, so the sum
+                // of the two is how far off the character is. With a recentering pending there is nothing
+                // to catch up on, since it is about to turn the view to the character instead.
+                deltaRotation =
+                    Mathf.DeltaAngle(0, VRPlayer.instance.transform.localRotation.eulerAngles.y + currentLocalAngle);
+            }
 
+            if (deltaRotation.HasValue)
+            {
                 // Rotate the look yaw by the amount the player rotated their head since last iteration
-                ___m_lookYaw *= Quaternion.AngleAxis(deltaRotation, Vector3.up);
+                ___m_lookYaw *= Quaternion.AngleAxis(deltaRotation.Value, Vector3.up);
 
                 // Rotate the VRPlayer to match the current yaw
                 // to offset the rotation the VRPlayer will experience due to rotation of yaw.
-                VRPlayer.instance.transform.localRotation *= Quaternion.AngleAxis(-deltaRotation, Vector3.up);
+                VRPlayer.instance.transform.localRotation *= Quaternion.AngleAxis(-deltaRotation.Value, Vector3.up);
             }
 
             // Save the current rotation for use in next iteration
@@ -127,7 +155,9 @@ namespace ValheimVRMod.Patches
             {
                 return;
             }
-            ___m_lookDir = __instance.gameObject.transform.forward;
+            // The character moves relative to where it faces, or to what MouseAim makes of the forward direction
+            // setting without motion controls.
+            ___m_lookDir = MouseAim.IsActive ? MouseAim.GetMoveForward(__instance.gameObject.transform.forward) : __instance.gameObject.transform.forward;
         }
     }
 
@@ -177,6 +207,8 @@ namespace ValheimVRMod.Patches
     {
         public static Quaternion attachmentIndependentRoomRotation;
 
+        private static float lastPhysicsSyncAngle;
+
         [HarmonyPatch(typeof(Player), nameof(Player.Update))]
         class Player_Update_RotationPatch
         {
@@ -184,7 +216,14 @@ namespace ValheimVRMod.Patches
             {
                 if (ShouldFaceLookDirection(__instance))
                 {
-                    __instance.FaceLookDirection();
+                    __instance.transform.rotation = __instance.m_lookYaw;
+
+                    if (Player_SetMouseLook_Patch.previousTrackedLocalAngle != null &&
+                        Mathf.Abs(Player_SetMouseLook_Patch.previousTrackedLocalAngle.Value - lastPhysicsSyncAngle) > 30)
+                    {
+                        Physics.SyncTransforms();
+                        lastPhysicsSyncAngle = Player_SetMouseLook_Patch.previousTrackedLocalAngle.Value;
+                    }
                 }
             }
         }
@@ -213,11 +252,15 @@ namespace ValheimVRMod.Patches
             }
         }
 
-        static bool ShouldFaceLookDirection(Player player)
+        public static bool ShouldFaceLookDirection(Player player)
         {
             // TODO: Consider disabling face-look-direction patch whenever VRPlayer.attachedToPlayer is false as opposed to just when PlayerCustomizaton.IsBarberGuiVisible().
-            return !VHVRConfig.NonVrPlayer() && player == Player.m_localPlayer && !PlayerCustomizaton.IsBarberGuiVisible() && !VRPlayer.inImmersiveDodge && !player.IsAttached();
-            // return false;
+            return !VHVRConfig.NonVrPlayer() &&
+                player == Player.m_localPlayer &&
+                !PlayerCustomizaton.IsBarberGuiVisible() &&
+                !VRPlayer.inImmersiveDodge &&
+                !player.IsAttached() &&
+                !MouseAim.LeavesCharacterFacingToVanilla;
         }
 
         /// <summary>
@@ -286,14 +329,14 @@ namespace ValheimVRMod.Patches
                 {
                     var ship = player.GetStandingOnShip();
                     var movableBase = player.transform.parent;
-                    if (ship || (movableBase && movableBase?.name == "MovableBase"))
+                    if (ship || (movableBase && BuildingManager.IsModdedStructure(movableBase?.name)))
                     {
                         Transform referenceUp = null;
                         if (ship)
                         {
                             referenceUp = ship.transform;
                         }
-                        else if (movableBase && movableBase?.name == "MovableBase")
+                        else if (movableBase && BuildingManager.IsModdedStructure(movableBase?.name))
                         {
                             referenceUp = movableBase.transform;
                         }

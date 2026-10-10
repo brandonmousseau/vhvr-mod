@@ -1,6 +1,6 @@
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 using ValheimVRMod.Utilities;
 
 namespace ValheimVRMod.Scripts
@@ -11,11 +11,16 @@ namespace ValheimVRMod.Scripts
         private static readonly Queue<VRDamageTexts> pool = new Queue<VRDamageTexts>();
 
         private Canvas canvasText ;
-        private Text currText;
-        private Font ArialFont;
+        private TextMeshProUGUI currText;
         private float timer = 0f;
         private float textDuration = 1.5f;
         private bool selfText;
+
+        // The scale per meter of distance from the VR camera, when a text about something other than the player
+        // appears, so that it appears equally legible at any distance. Not below MIN_SCALE_DISTANCE, for a text right in
+        // front of the camera to not become too small to read.
+        private const float SCALE_PER_DISTANCE = 0.00025f;
+        private const float MIN_SCALE_DISTANCE = 2f;
 
         private static Camera vrCam;
 
@@ -34,46 +39,42 @@ namespace ValheimVRMod.Scripts
 
         private void Awake()
         {
-            ArialFont = (Font)Resources.GetBuiltinResource(typeof(Font), "Arial.ttf");
             canvasText = gameObject.GetOrAddComponent<Canvas>();
             canvasText.renderMode = RenderMode.WorldSpace;
-            currText = gameObject.GetOrAddComponent<Text>();
+            currText = gameObject.GetOrAddComponent<TextMeshProUGUI>();
+            currText.enableAutoSizing = false;
             currText.fontSize = 80;
-            currText.font = ArialFont;
-            currText.horizontalOverflow = HorizontalWrapMode.Overflow;
-            currText.verticalOverflow = VerticalWrapMode.Overflow;
-            currText.alignment = TextAnchor.MiddleCenter;
+            currText.textWrappingMode = TextWrappingModes.NoWrap;
+            currText.overflowMode = TextOverflowModes.Overflow;
+            currText.alignment = TextAlignmentOptions.Center;
+            currText.raycastTarget = false;
             currText.enabled = true;
         }
 
-        private void OnRenderObject()
+        private void LateUpdate()
         {
-            var dt = Time.unscaledDeltaTime;
-            timer += dt / 10; // TODO: Maybe move timer update to Update() or FixedUpdate();
-            //LogUtils.LogDebug("timer : " + timer + " / " + textDuration);
-            
+            float dt = Time.deltaTime;
+            timer += dt;
+            if (timer > textDuration)
+            {
+                gameObject.SetActive(false);
+                return;
+            }
+
             if (selfText)
             {
-                gameObject.transform.localPosition += new Vector3(0, dt / 300, dt / 2000);
+                transform.localPosition += new Vector3(0, dt / 30, dt / 200);
             }
             else
             {
                 if (vrCam == null)
                 {
+                    gameObject.SetActive(false);
                     return;
                 }
-
-                var camerapos = vrCam.transform.position;
-                var range = Mathf.Min(Vector3.Distance(gameObject.transform.position, camerapos)/20, 0.25f)*4;
-                gameObject.transform.localPosition += new Vector3(0, dt * range / 30, 0);
-                gameObject.transform.LookAt(vrCam.transform, Vector3.up);
-                gameObject.transform.Rotate(0, 180, 0);
-            }
-
-            if (timer > textDuration)
-            {
-                base.gameObject.SetActive(false);
-                return;
+                // Rises in the world like the vanilla text does.
+                transform.position += Vector3.up * dt;
+                faceCamera();
             }
 
             var colorA = currText.color;
@@ -81,15 +82,33 @@ namespace ValheimVRMod.Scripts
             currText.color = colorA;
         }
 
-        public void CreateText(string text, Vector3 pos, Color color, bool myself,float textDur)
+        private void faceCamera()
         {
+            Vector3 direction = transform.position - vrCam.transform.position;
+            if (direction.sqrMagnitude > 1e-6f)
+            {
+                transform.rotation = Quaternion.LookRotation(direction, Vector3.up);
+            }
+        }
+
+        // Uses the font and material of the vanilla text so that the VR copy looks the same.
+        public void CreateText(TMP_Text source, Vector3 worldPos, bool myself, float textDur)
+        {
+            vrCam = CameraUtils.getCamera(CameraUtils.VR_CAMERA);
+            // Draws the world space UI layer; it is otherwise only created along with VR HUD elements that use it.
+            if (source.font == null || vrCam == null || CameraUtils.getWorldspaceUiCamera() == null)
+            {
+                gameObject.SetActive(false);
+                return;
+            }
+
+            string text = source.text;
             timer = 0;
 
-            vrCam = CameraUtils.getCamera(CameraUtils.VR_CAMERA);
             if (myself)
             {
-                transform.localScale = Vector3.one * 0.0004f;
                 transform.SetParent(vrCam.transform);
+                transform.localScale = Vector3.one * 0.0004f;
                 if (Hud.instance.m_healthText)
                 {
                     Vector3 randomPos = new Vector3(Random.Range(-1f, 1f), UnityEngine.Random.Range(-1f, 1f), 0) / 100;
@@ -109,20 +128,28 @@ namespace ValheimVRMod.Scripts
             }
             else
             {
-                var camerapos = vrCam.transform.position;
-                var range = Mathf.Max(Vector3.Distance(pos, camerapos) / 6.5f, 0.2f) ;
-                transform.localScale = Vector3.one * 0.0015f * range;
+                // A pooled text may have been shown on the player's own HUD before.
+                transform.SetParent(null);
+                transform.position = worldPos;
+                float distance = Mathf.Max(Vector3.Distance(worldPos, vrCam.transform.position), MIN_SCALE_DISTANCE);
+                transform.localScale = Vector3.one * SCALE_PER_DISTANCE * distance;
                 if (text.Length > 4)
                 {
-                    gameObject.transform.localScale /= 1 + text.Length/10;
+                    transform.localScale /= 1 + text.Length / 10;
                 }
-                transform.position = pos ;
-                transform.LookAt(vrCam.transform, Vector3.up);
-                transform.Rotate(0, 180, 0);
+                faceCamera();
             }
-            
+
+            if (currText.font != source.font)
+            {
+                currText.font = source.font;
+            }
+            if (currText.fontSharedMaterial != source.fontSharedMaterial)
+            {
+                currText.fontSharedMaterial = source.fontSharedMaterial;
+            }
             currText.text = text;
-            currText.color = color;
+            currText.color = source.color;
 
             textDuration = textDur;
             selfText = myself;

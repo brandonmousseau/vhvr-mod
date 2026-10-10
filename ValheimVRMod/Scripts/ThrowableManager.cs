@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Valve.VR;
 using ValheimVRMod.VRCore;
+using ValheimVRMod.VRCore.UI;
 using UnityEngine.Rendering;
 using ValheimVRMod.Scripts.Block;
 using ValheimVRMod.Utilities;
@@ -17,20 +18,20 @@ namespace ValheimVRMod.Scripts
         public LocalWeaponWield weaponWield { private get; set; }
         public static Vector3 spawnPoint { get; private set; }
         public static Vector3 aimDir { get; private set; }
-        public static float throwSpeed { get; private set; }
+        // Hand speed along the throw direction in m/s, which WeaponUtils.GetThrowLaunchSpeed() maps to the launch speed.
+        public static float handSpeed { get; private set; }
         public static Vector3 startAim { get; private set; }
         public static bool isThrowing;
         public static bool isAiming { get; private set; }
-        public static bool preAimingInTwoStagedThrow { get { return VHVRConfig.SpearThrowType() == "TwoStagedThrowing" && !isAiming && SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource); } }
+        public static bool preAimingInTwoStagedThrow { get { return VHVRConfig.ThrowingMode() == "TwoStagedThrowing" && !isAiming && SteamVR_Actions.valheim_Grab.GetState(VRPlayer.mainWeaponHandInputSource); } }
 
         private GameObject rotSave;
         private LineRenderer directionLine;
-        private SteamVR_Action_Boolean useAction { get { return VHVRConfig.LeftHanded() ? SteamVR_Actions.valheim_UseLeft : SteamVR_Actions.valheim_Use; } }
 
         private float directionCooldown;
         private float aimingDuration = 0;
         private int tickCounter;
-        private PhysicsEstimator handPhysicsEstimator { get { return VHVRConfig.LeftHanded() ? VRPlayer.leftHandPhysicsEstimator : VRPlayer.rightHandPhysicsEstimator; } }
+        private PhysicsEstimator handPhysicsEstimator { get { return VRPlayer.isRightHandMainWeaponHand ? VRPlayer.rightHandPhysicsEstimator : VRPlayer.leftHandPhysicsEstimator; } }
 
         private void Awake()
         {
@@ -47,26 +48,28 @@ namespace ValheimVRMod.Scripts
 
         private void OnDestroy()
         {
-            ResetSpearOffset();
+            EndThrowPreparation();
             Destroy(rotSave);
             Destroy(directionLine, directionCooldown);
         }
 
         private void OnRenderObject()
         {
-            if (SteamVR_Actions.valheim_Grab.GetStateUp(VRPlayer.dominantHandInputSource))
+            // Letting go of the grip, wielding the weapon with both hands, or any laser pointer coming up all
+            // cancel an ongoing preparation rather than throw: throwing is disabled outright while a pointer is
+            // active, regardless of whether Use and LeftClick happen to share a button.
+            if (!SteamVR_Actions.valheim_Grab.GetState(VRPlayer.mainWeaponHandInputSource) ||
+                LocalWeaponWield.isCurrentlyTwoHanded() ||
+                LaserPointerChords.IsLaserActiveFor(SteamVR_Input_Sources.Any))
             {
-                startAim = Vector3.zero;
-                ResetSpearOffset();
+                if (isAiming)
+                {
+                    EndThrowPreparation();
+                }
                 return;
             }
 
-            if (!SteamVR_Actions.valheim_Grab.GetState(VRPlayer.dominantHandInputSource) || LocalWeaponWield.isCurrentlyTwoHanded())
-            {
-                return;
-            }
-
-            switch (VHVRConfig.SpearThrowType())
+            switch (VHVRConfig.ThrowingMode())
             {
                 case "DartType":
                     UpdateDartSpearThrowCalculation();
@@ -100,7 +103,7 @@ namespace ValheimVRMod.Scripts
             }
 
             tickCounter = 0;
-            if (!VHVRConfig.UseSpearDirectionGraphic())
+            if (!(VHVRConfig.UseThrowDirectionGraphicOnGrip() || (VHVRConfig.UseThrowDirectionGraphicOnTriggerGrip() && SteamVR_Actions.valheim_Use.GetState(VRPlayer.mainWeaponHandInputSource))))
             {
                 return;
             }
@@ -123,8 +126,15 @@ namespace ValheimVRMod.Scripts
         }
         private void UpdateSecondHandAimCalculation()
         {
-            ShieldBlock.instance?.ScaleShieldSize(0.4f);
-            var direction = VRPlayer.dominantHand.otherHand.transform.position - CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform.position;
+            if (VHVRConfig.UseThrowDirectionGraphicOnTriggerGrip() && !SteamVR_Actions.valheim_Use.GetState(VRPlayer.mainWeaponHandInputSource))
+            {
+                ShieldBlock.instance?.AdaptScaleShieldSize(1f);
+            }
+            else
+            {
+                ShieldBlock.instance?.AdaptScaleShieldSize(0.4f);
+            }
+            var direction = VRPlayer.mainWeaponHand.otherHand.transform.position - CameraUtils.getCamera(CameraUtils.VR_CAMERA).transform.position;
             var lineDirection = direction;
             var pStartAim = direction.normalized;
             UpdateThrowCalculation(direction, lineDirection, pStartAim);
@@ -134,7 +144,7 @@ namespace ValheimVRMod.Scripts
         {
             var vrTransform = VRPlayer.instance.transform;
             var direction = vrTransform.TransformDirection(startAim);
-            var lineDirection = VRPlayer.dominantHand.transform.TransformDirection(handAimOffset);
+            var lineDirection = VRPlayer.mainWeaponHand.transform.TransformDirection(handAimOffset);
             var pStartAim = vrTransform.InverseTransformDirection(lineDirection.normalized);
             UpdateThrowCalculation(direction, lineDirection, pStartAim);
         }
@@ -143,9 +153,9 @@ namespace ValheimVRMod.Scripts
         {
             var vrTransform = VRPlayer.instance.transform;
             var direction = vrTransform.TransformDirection(
-                vrTransform.InverseTransformPoint(VRPlayer.dominantHand.transform.position) - startAim);
+                vrTransform.InverseTransformPoint(VRPlayer.mainWeaponHand.transform.position) - startAim);
             var lineDirection = direction;
-            var pStartAim = vrTransform.InverseTransformPoint(VRPlayer.dominantHand.transform.position);
+            var pStartAim = vrTransform.InverseTransformPoint(VRPlayer.mainWeaponHand.transform.position);
             UpdateThrowCalculation(direction, lineDirection, pStartAim);
         }
 
@@ -153,7 +163,7 @@ namespace ValheimVRMod.Scripts
         {
             var avgDir = handPhysicsEstimator.GetAverageVelocityInSnapshots();
             var lineDirection = avgDir;
-            var pStartAim = VRPlayer.instance.transform.InverseTransformPoint(VRPlayer.dominantHand.transform.position);
+            var pStartAim = VRPlayer.instance.transform.InverseTransformPoint(VRPlayer.mainWeaponHand.transform.position);
             UpdateThrowCalculation(avgDir, lineDirection, pStartAim);
         }
 
@@ -161,94 +171,90 @@ namespace ValheimVRMod.Scripts
         {
             if (!isAiming && !isThrowing)
             {
-                switch (VHVRConfig.SpearThrowType())
+                switch (VHVRConfig.ThrowingMode())
                 {
                     case "DartType":
                     case "Classic":
                         break;
                     default:
                         UpdateDirectionLine(
-                            VRPlayer.dominantHand.transform.position,
-                            VRPlayer.dominantHand.transform.position + lineDirection.normalized * 50);
+                            VRPlayer.mainWeaponHand.transform.position,
+                            VRPlayer.mainWeaponHand.transform.position + lineDirection.normalized * 50);
                         break;
                 }
             }
 
-            if (useAction.GetStateDown(VRPlayer.dominantHandInputSource))
+            // The preparation phase lasts as long as the trigger is held on top of the grip; only entry into it is
+            // gated on the laser pointer above, so a hold or release that started while gated still reads real.
+            if (SteamVR_Actions.valheim_Use.GetState(VRPlayer.mainWeaponHandInputSource))
             {
-                if (startAim == Vector3.zero)
+                if (!isAiming)
                 {
+                    isAiming = true;
                     startAim = pStartAim;
+                    aimingDuration = 0;
                 }
 
-                isAiming = true;
-            }
-
-            if (isAiming)
-            {
                 aimDir = direction;
                 UpdateDirectionLine(
-                    VRPlayer.dominantHand.transform.position - direction.normalized,
-                    VRPlayer.dominantHand.transform.position + direction.normalized * 50);
+                    VRPlayer.mainWeaponHand.transform.position - direction.normalized,
+                    VRPlayer.mainWeaponHand.transform.position + direction.normalized * 50);
+                return;
             }
 
-            if (!useAction.GetStateUp(VRPlayer.dominantHandInputSource))
+            if (!isAiming)
             {
                 return;
             }
 
-            aimingDuration = 0;
+            // The trigger has been released, which ends the preparation whether or not it throws. Ending it
+            // before the throw is evaluated is what keeps the throw single: OnRenderObject() runs once per
+            // rendering camera, and the later passes of the same frame find no preparation left to release.
+            // The aiming duration is measured over the window the player spent aiming, so it has to be read
+            // before the preparation ends and resets it.
+            float completedAimingDuration = aimingDuration;
+            EndThrowPreparation();
 
             if (isThrowing)
             {
-                ResetSpearOffset();
-                startAim = Vector3.zero;
+                // The previous throw is still waiting to be handed over to vanilla, see ControlPatches.
                 return;
             }
 
-            spawnPoint = VRPlayer.dominantHand.transform.position;
-            var throwing = CalculateThrowAndDistance(direction);
+            spawnPoint = VRPlayer.mainWeaponHand.transform.position;
+            var throwing = CalculateThrowAndDistance(direction, completedAimingDuration);
             aimDir = direction;
-            throwSpeed = throwing.ThrowSpeed;
-            if (throwing.Distance > minDist)
+            handSpeed = throwing.HandSpeed;
+            if (throwing.Distance <= minDist)
             {
-                throwSpeed = throwing.ThrowSpeed;
-                if (MountedAttackUtils.StartAttackIfRiding(isSecondaryAttack: EquipScript.getRight() == EquipType.Spear))
-                {
-                    ResetSpearOffset();
-                }
-                else 
-                {
-                    // Let control patches and vanilla game handle attack if the player is not riding.
-                    isThrowing = true;
-                }
-                if (EquipScript.getRight() == EquipType.SpearChitin)
-                {
-                    GetComponentInParent<SpearWield>().HideHarpoon();
-                }
+                return;
             }
 
-            if (useAction.GetStateUp(VRPlayer.dominantHandInputSource) && throwing.Distance <= minDist)
+            if (!MountedAttackUtils.StartAttackIfRiding(isSecondaryAttack: EquipScript.CurrentMainHandEquipType() == EquipType.Spear))
             {
-                startAim = Vector3.zero;
-                ResetSpearOffset();
+                // Let control patches and vanilla game handle attack if the player is not riding.
+                isThrowing = true;
+            }
+
+            if (EquipScript.CurrentMainHandEquipType() == EquipType.SpearChitin)
+            {
+                GetComponentInParent<SpearWield>().HideHarpoon();
             }
         }
 
-        private void ResetSpearOffset()
+        // Ends the throw preparation phase without throwing: whoever ends it decides whether a throw comes out
+        // of it.
+        private void EndThrowPreparation()
         {
             isAiming = false;
-            ShieldBlock.instance?.ScaleShieldSize(1f);
-
-            if (!EquipScript.isSpearEquipped())
-            {
-                return;
-            }
+            startAim = Vector3.zero;
+            aimingDuration = 0;
+            ShieldBlock.instance?.AdaptScaleShieldSize(1f);
         }
 
         private void UpdateDirectionLine(Vector3 pos1, Vector3 pos2)
         {
-            if (!VHVRConfig.UseSpearDirectionGraphic() || LocalWeaponWield.isCurrentlyTwoHanded())
+            if (!(VHVRConfig.UseThrowDirectionGraphicOnGrip() || (VHVRConfig.UseThrowDirectionGraphicOnTriggerGrip() && SteamVR_Actions.valheim_Use.GetState(VRPlayer.mainWeaponHandInputSource))) || LocalWeaponWield.isCurrentlyTwoHanded())
             {
                 return;
             }
@@ -262,39 +268,32 @@ namespace ValheimVRMod.Scripts
 
         class ThrowCalculate
         {
-            public float ThrowSpeed { get; set; }
+            public float HandSpeed { get; set; }
             public float Distance { get; set; }
-            public ThrowCalculate(float throwSpeed, float distance)
+            public ThrowCalculate(float handSpeed, float distance)
             {
-                ThrowSpeed = throwSpeed;
+                HandSpeed = handSpeed;
                 Distance = distance;
             }
         }
 
-        private ThrowCalculate CalculateThrowAndDistance(Vector3 direction)
+        private ThrowCalculate CalculateThrowAndDistance(Vector3 direction, float completedAimingDuration)
         {
             direction = direction.normalized;
-            var handTipOffset = (VHVRConfig.LeftHanded() ? VRPlayer.leftHandBone.up : VRPlayer.rightHandBone.up) * 0.125f;
+            var handTipOffset =
+                (VRPlayer.isRightHandMainWeaponHand ? VRPlayer.rightHandBone.up : VRPlayer.leftHandBone.up) * 0.125f;
             var angularVelocity = handPhysicsEstimator.GetAngularVelocity();
 
-            var throwSpeed =
+            var speedAlongThrow =
                 Mathf.Max(
                     Vector3.Dot(
                         direction, WeaponUtils.GetWeaponVelocity(handPhysicsEstimator.GetVelocity(), angularVelocity, handTipOffset)),
                     Vector3.Dot(
                         direction, WeaponUtils.GetWeaponVelocity(handPhysicsEstimator.GetAverageVelocityInSnapshots(), angularVelocity, handTipOffset)));
 
-            if (throwSpeed < VHVRConfig.FullThrowSpeed())
-            {
-                throwSpeed /= VHVRConfig.FullThrowSpeed();
-            }
-            else
-            {
-                var normalizer = Mathf.Max(VHVRConfig.FullThrowSpeed(), 2);
-                throwSpeed = throwSpeed > normalizer ? throwSpeed / normalizer : 1;
-            }
-
-            return new ThrowCalculate(throwSpeed, handPhysicsEstimator.GetLongestLocomotion(Mathf.Min(0.4f, aimingDuration)).magnitude);
+            return new ThrowCalculate(
+                Mathf.Max(speedAlongThrow, 0),
+                handPhysicsEstimator.GetLongestLocomotion(Mathf.Min(0.4f, completedAimingDuration)).magnitude);
         }
     }
 }

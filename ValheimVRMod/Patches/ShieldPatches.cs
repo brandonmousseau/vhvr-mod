@@ -4,9 +4,6 @@ using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using Valve.VR;
-using Valve.VR.InteractionSystem;
-using UnityEngine;
-using System.Collections;
 
 namespace ValheimVRMod.Patches {
     
@@ -33,13 +30,14 @@ namespace ValheimVRMod.Patches {
 
             if(!VHVRConfig.UseGrabButtonBlock())
             {
-                if (StaticObjects.leftFist().blockingWithFist() || StaticObjects.rightFist().blockingWithFist())
-                {
-                    ___m_blockTimer = FistBlock.instance?.blockTimer ?? Block.blockTimerNonParry;
-                }
-                else if (WeaponBlock.instance && (WeaponBlock.instance.weaponWield.allowBlocking() || LocalWeaponWield.nonDominantHandHasWeapon()))
+
+                if (WeaponBlock.instance && (WeaponBlock.instance.weaponWield.allowBlocking() || LocalWeaponWield.nonDominantHandHasWeapon()))
                 {
                     ___m_blockTimer = WeaponBlock.instance?.blockTimer ?? Block.blockTimerNonParry;
+                }
+                else if (StaticObjects.leftFist().blockingWithFist() || StaticObjects.rightFist().blockingWithFist())
+                {
+                    ___m_blockTimer = FistBlock.instance?.blockTimer ?? Block.blockTimerNonParry;
                 }
                 else
                 {
@@ -52,7 +50,7 @@ namespace ValheimVRMod.Patches {
             if (ShieldBlock.instance?.isBlocking() ?? false)
             {
                 blocking = true;
-                handHapticTrigger = VHVRConfig.LeftHanded() ? HandHapticTrigger.RightHand : HandHapticTrigger.LeftHand;
+                handHapticTrigger = VRPlayer.isRightHandMainWeaponHand ? HandHapticTrigger.LeftHand : HandHapticTrigger.RightHand;
             }
             else if (WeaponBlock.instance?.isBlocking() ?? false)
             {
@@ -134,7 +132,16 @@ namespace ValheimVRMod.Patches {
     
     [HarmonyPatch(typeof(Humanoid), "IsBlocking")]
     class PatchIsBlocking {
+        // Whether it is a harpooned character that is currently asking, to find out whether to come off the harpoon.
+        public static bool isCheckingHarpoonRelease;
+
         static bool Prefix(Humanoid __instance, ref float ___m_blockTimer, ref bool __result) {
+
+            if (isCheckingHarpoonRelease && __instance == Player.m_localPlayer && SpearWield.isSignallingHarpoonRelease)
+            {
+                __result = true;
+                return false;
+            }
 
             if (__instance != Player.m_localPlayer || (FishingManager.instance && FishingManager.isFishing) || !VHVRConfig.UseVrControls()) {
                 return true;
@@ -161,6 +168,20 @@ namespace ValheimVRMod.Patches {
             return false;
         }
     }
+    [HarmonyPatch(typeof(SE_Harpooned), nameof(SE_Harpooned.IsDone))]
+    class PatchHarpoonedIsDone
+    {
+        static void Prefix()
+        {
+            PatchIsBlocking.isCheckingHarpoonRelease = true;
+        }
+
+        static void Postfix()
+        {
+            PatchIsBlocking.isCheckingHarpoonRelease = false;
+        }
+    }
+
     [HarmonyPatch(typeof(Hud),nameof(Hud.UpdateStagger))]
     class PatchStagger
     {
@@ -178,7 +199,21 @@ namespace ValheimVRMod.Patches {
     class PatchRPCDamager {
         static void Prefix(Character __instance, HitData hit) {
 
-            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls()) {
+            if (__instance != Player.m_localPlayer) {
+                return;
+            }
+
+            var vrCam = VRPlayer.vrCam;
+            if (vrCam != null)
+            {
+                var fadingManager = vrCam.GetComponent<FadingManager>();
+                if (fadingManager != null)
+                {
+                    fadingManager.OnPlayerInjure();
+                }
+            }
+            
+            if (!VHVRConfig.UseVrControls()) {
                 return;
             }
 
@@ -206,6 +241,7 @@ namespace ValheimVRMod.Patches {
             FistBlock.instance?.resetBlocking();
         }
     }
+
     [HarmonyPatch(typeof(Character),nameof(Character.AddStaggerDamage))]
     class PatchStaggerDamage
     {

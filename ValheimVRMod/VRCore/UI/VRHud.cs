@@ -112,6 +112,7 @@ namespace ValheimVRMod.VRCore.UI
             new HealthPanelElement(), //Vertical START
             new StaminaPanelElement(), //Horizontal START
             new EitrPanelElement(), //Horizontal START
+            new AdrenalinePanelElement(), //Horizontal START
             new StaggerPanelElement(), //Horizontal START
             new MinimapPanelElement(),
             new BuildSelectedInfoElement()
@@ -119,10 +120,19 @@ namespace ValheimVRMod.VRCore.UI
 
         // Map of "Panel Component" -> "Current Position"
         IDictionary<IVRHudElement, string> hudElementToPositionMap = new Dictionary<IVRHudElement, string>();
+        // Elements whose update failure has been logged, so that it is not logged again on every update.
+        private readonly HashSet<IVRHudElement> failedHudElements = new HashSet<IVRHudElement>();
+
+        // Whether the HUD is the legacy one on the GUI panel, either by choice or for the time being, e. g. while the VR
+        // camera is detached from the player. Nothing else should be put on the hands meanwhile either.
+        public static bool UsesLegacyHud()
+        {
+            return !VRPlayer.attachedToPlayer || VHVRConfig.UseLegacyHud() || !VHVRConfig.UseVrControls();
+        }
 
         public void Update()
         {
-            if (!VRPlayer.attachedToPlayer || VHVRConfig.UseLegacyHud() || !VHVRConfig.UseVrControls())
+            if (UsesLegacyHud())
             {
                 revertToLegacyHud();
                 return;
@@ -161,7 +171,7 @@ namespace ValheimVRMod.VRCore.UI
             foreach (var hudElement in VRHudElements)
             {
                 //Only update elements that aren't on the legacy hud
-                if(hudElement.Placement != LEGACY) hudElement.Update();
+                if(hudElement.Placement != LEGACY) updateHudElement(hudElement);
             }
             // Set the cloned panel as active only when attached to player
             if (leftHudCanvasParent)
@@ -169,6 +179,24 @@ namespace ValheimVRMod.VRCore.UI
                 leftHudCanvasParent.SetActive(VRPlayer.attachedToPlayer);
             }
             updateHudPositionAndScale();
+        }
+
+        // An element that fails, e. g. because another mod replaced the vanilla panel it clones, must not keep the
+        // others from being updated and placed: they have hidden their vanilla panels already, so they would be
+        // left showing nowhere.
+        private void updateHudElement(IVRHudElement hudElement)
+        {
+            try
+            {
+                hudElement.Update();
+            }
+            catch (System.Exception e)
+            {
+                if (failedHudElements.Add(hudElement))
+                {
+                    LogError("Failed to update VR HUD element " + hudElement.GetType().Name + ": " + e);
+                }
+            }
         }
 
         private void revertToLegacyHud()
@@ -257,6 +285,11 @@ namespace ValheimVRMod.VRCore.UI
             if (hudElementToPositionMap.ContainsKey(panelElement) && hudElementToPositionMap[panelElement] == placement)
             {
                 // Return immediately if no change in placement
+                return;
+            }
+            if (placement != LEGACY && !panelElement.Clone.Root)
+            {
+                // Nothing to place yet, or ever if the vanilla panel is unavailable; placed once it is cloned.
                 return;
             }
             hudElementToPositionMap[panelElement] = placement;

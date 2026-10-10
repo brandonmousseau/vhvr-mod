@@ -15,6 +15,56 @@ using ValheimVRMod.Utilities;
 
 namespace ValheimVRMod.Patches
 {
+    // Valheim 1.0 folded Amplify Occlusion into assembly_valheim.dll. VHVR used to ship its own
+    // forked amplify_occlusion.dll and copy it into the game, so the fork's two VR fixes were lost
+    // the moment the vanilla implementation started being the one that runs. These two patches
+    // reapply exactly those fixes to the vanilla type; everything else in the two versions matches,
+    // including the FOV-based projection math in UpdateGlobalShaderConstants.
+
+    // The fork loaded Amplify's shaders from VHVR's amplify_resources bundle, which holds variants
+    // compiled for stereo rendering. Shader.Find returns the game's own copies, which are built for
+    // a non-VR player and produce a single monoscopic occlusion pass shown to both eyes.
+    [HarmonyPatch(typeof(AmplifyOcclusion.AmplifyOcclusionCommon), nameof(AmplifyOcclusion.AmplifyOcclusionCommon.CreateMaterialWithShaderName))]
+    class PatchAmplifyOcclusionShaderSource
+    {
+        static bool Prefix(string aShaderName, ref Material __result)
+        {
+            if (VHVRConfig.NonVrPlayer())
+            {
+                return true;
+            }
+
+            var shader = Valve.VR.ShaderLoader.GetShader(aShaderName);
+            if (shader == null)
+            {
+                LogUtils.LogWarning(
+                    "Amplify Occlusion shader \"" + aShaderName +
+                    "\" not in the VHVR bundle, falling back to the game's copy. Occlusion may not render per-eye.");
+                return true;
+            }
+
+            __result = new Material(shader) { hideFlags = HideFlags.DontSave };
+            return false;
+        }
+    }
+
+    // The fork hardcoded this to true. Vanilla additionally requires Camera.stereoEnabled, and
+    // returning false here sends Amplify down its monoscopic path: two temporal history buffers
+    // instead of four, and mono view/projection matrices bound for both eyes.
+    [HarmonyPatch(typeof(AmplifyOcclusion.AmplifyOcclusionCommon), nameof(AmplifyOcclusion.AmplifyOcclusionCommon.IsStereoMultiPassEnabled))]
+    class PatchAmplifyOcclusionStereoMultiPass
+    {
+        static bool Prefix(ref bool __result)
+        {
+            if (VHVRConfig.NonVrPlayer())
+            {
+                return true;
+            }
+            __result = true;
+            return false;
+        }
+    }
+
     [HarmonyPatch]
     public class PostProcessingPatches
     {

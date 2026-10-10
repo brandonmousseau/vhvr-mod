@@ -5,6 +5,7 @@ using UnityEngine;
 using ValheimVRMod.Patches;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
+using ValheimVRMod.VRCore.UI;
 using Valve.VR;
 
 namespace ValheimVRMod.Scripts
@@ -46,8 +47,8 @@ namespace ValheimVRMod.Scripts
         private Texture2D mapTexture;
         private Texture2D recenterTexture;
         private Texture2D chatTexture;
-        public static bool toggleMap;
         public static bool shouldStartChat;
+        private static float? toggleMapHoldCountdown;
 
         protected virtual void Awake()
         {
@@ -120,6 +121,14 @@ namespace ValheimVRMod.Scripts
                 this.callback = callback;
             }
 
+            public void useAsNoOp()
+            {
+                this.item = null;
+                this.itemName = "NoOp";
+                this.sprite = null;
+                this.callback = null;
+            }
+
             private void ResizeIcon()
             {
                 Vector3 fSize;
@@ -187,6 +196,16 @@ namespace ValheimVRMod.Scripts
 
         private void Update()
         {
+            if (toggleMapHoldCountdown.HasValue)
+            {
+                toggleMapHoldCountdown -= Time.deltaTime;
+                if (toggleMapHoldCountdown <= 0)
+                {
+                    toggleMapHoldCountdown = null;
+                    GetButtonPatchUtils.Release("Map");
+                }
+            }
+
             if (!quickMenuLocker)
             {
                 resetQuickMenuLocker();
@@ -480,32 +499,38 @@ namespace ValheimVRMod.Scripts
             {
                 return;
             }
-            for (int i = 0; i < 8; i++)
+
+            if (VHVRConfig.SplitQuickMenuRadialItemsBySlot())
             {
-                ItemDrop.ItemData item = inventory?.GetItemAt(i, 0);
-
-                if (item == null)
+                var isRightHand = VHVRConfig.LeftHanded() ^ isDominantHand;
+                var startIndex = isRightHand ? 4 : 0;
+                elementCount = 4;
+                for (var i = 0; i < elementCount; i++)
                 {
-                    continue;
+                    ItemDrop.ItemData item = inventory?.GetItemAt(startIndex + i, 0);
+                    if (item == null)
+                    {
+                        elements[i].useAsNoOp();
+                    }
+                    else
+                    {
+                        elements[i].useAsInventoryItemAndRefreshColor(inventory, item);
+                    }
                 }
-                if (VHVRConfig.SplitQuickMenuRadialItemsByWieldingHand())
+            } else {
+                for (int i = 0; i < 8; i++)
                 {
-                    if (EquipScript.IsDominantHandItem(item) ^ isDominantHand)
+                    ItemDrop.ItemData item = inventory?.GetItemAt(i, 0);
+                    if (item == null)
                     {
                         continue;
                     }
-                }
-                else if (VHVRConfig.SplitQuickMenuRadialItemsBySlot())
-                {
-                    var isRightHand = VHVRConfig.LeftHanded() ^ isDominantHand;
-                    if (i >= 4 ^ isRightHand)
-                    {
+                    if (VHVRConfig.SplitQuickMenuRadialItemsByWieldingHand() && EquipScript.CanUseAsMainHandItem(item) ^ isDominantHand) {
                         continue;
                     }
+                    elements[elementCount].useAsInventoryItemAndRefreshColor(inventory, item);
+                    elementCount++;
                 }
-
-                elements[elementCount].useAsInventoryItemAndRefreshColor(inventory, item);
-                elementCount++;
             }
         }
 
@@ -517,6 +542,9 @@ namespace ValheimVRMod.Scripts
             }
 
             extraElementCount = 0;
+            // This wrist bar holds items now, the Forsaken Power button is on the other one if anywhere.
+            GuardianPowerCountdown.DetachFrom(wrist.transform);
+            WristStatusEffects.DetachFrom(wrist);
 
             Inventory inventory = Player.m_localPlayer?.GetInventory();
             if (inventory == null)
@@ -569,7 +597,20 @@ namespace ValheimVRMod.Scripts
                             return true;
                         });
                 }
+                if (VRHud.UsesLegacyHud())
+                {
+                    // The countdown belongs on the legacy HUD along with everything else.
+                    GuardianPowerCountdown.DetachFrom(wrist.transform);
+                }
+                else
+                {
+                    GuardianPowerCountdown.AttachTo(extraElements[extraElementCount].transform);
+                }
                 extraElementCount++;
+            }
+            else
+            {
+                GuardianPowerCountdown.DetachFrom(wrist.transform);
             }
 
             if (extraElements[extraElementCount].itemName != "QuickActionSIT")
@@ -595,7 +636,8 @@ namespace ValheimVRMod.Scripts
                     Sprite.Create(mapTexture, new Rect(0.0f, 0.0f, mapTexture.width, mapTexture.height), new Vector2(0.5f, 0.5f), 500),
                     delegate ()
                     {
-                        toggleMap = true;
+                        GetButtonPatchUtils.Press("Map");
+                        toggleMapHoldCountdown = 0.25f;
                         return true;
                     });
             }
@@ -621,29 +663,71 @@ namespace ValheimVRMod.Scripts
                     Sprite.Create(chatTexture, new Rect(0.0f, 0.0f, chatTexture.width, chatTexture.height), new Vector2(0.5f, 0.5f), 500),
                     delegate ()
                     {
-                        if (shouldStartChat && Chat.instance.HasFocus())
-                        {
-                            enterChatText();
-                        }
-                        else
-                        {
-                            shouldStartChat = true;
-                            if (SteamVR_Actions.valheim_Use.GetState(SteamVR_Input_Sources.Any) ||
-                                SteamVR_Actions.valheim_UseLeft.GetState(SteamVR_Input_Sources.Any))
-                            {
-                                ZInput_GetButtonDown_Patch.EmulateButtonDown("Chat");
-                            }
-                            else
-                            {
-                                // Use SteamVR virtual keyboard to chat
-                                TextInput.m_instance.Show("ChatText", "", 256);
-                                TextInput.m_instance.m_panel.gameObject.transform.localScale = new Vector3(0, 0, 0);
-                            }
-                        }
+                        ToggleChat();
                         return true;
                     });
             }
             extraElementCount++;
+
+            if (VHVRConfig.StatusEffectsOnWristQuickBar() && !VRHud.UsesLegacyHud())
+            {
+                // One row above the first row of buttons, see reorderElements().
+                WristStatusEffects.AttachTo(wrist, 0.05f);
+            }
+            else
+            {
+                WristStatusEffects.DetachFrom(wrist);
+            }
+        }
+
+        private static void ToggleChat()
+        {
+            if (Chat.instance == null)
+            {
+                return;
+            }
+
+            if (InputManager.keyboardActive && !InputManager.chatKeyboardActive)
+            {
+                // The SteamVR keyboard is typing into some other dialog.
+                return;
+            }
+
+            if (shouldStartChat && Chat.instance.HasFocus() && !InputManager.chatKeyboardActive)
+            {
+                // Physical keyboard chat: a repeat press is the "confirm" gesture.
+                enterChatText();
+                return;
+            }
+
+            if (InputManager.chatActive)
+            {
+                // This also covers either of the two being open without the other. The SteamVR keyboard
+                // sends the text with its own done key.
+                InputManager.CancelChat();
+                return;
+            }
+
+            if (!CanOpenChat())
+            {
+                return;
+            }
+
+            shouldStartChat = true;
+            // Holding Use opens the chat for a physical keyboard, without the SteamVR one.
+            InputManager.OpenChat(useSteamVrKeyboard: !SteamVR_Actions.valheim_Use.GetState(SteamVR_Input_Sources.Any));
+        }
+
+        // What Chat.Update() requires before it opens the chat.
+        private static bool CanOpenChat()
+        {
+            return Player.m_localPlayer != null &&
+                !global::Console.IsVisible() &&
+                !TextInput.IsVisible() &&
+                !Minimap.InTextInput() &&
+                !Menu.IsVisible() &&
+                !InventoryGui.IsVisible() &&
+                !Hud.IsPieceSelectionVisible();
         }
 
         public static void enterChatText()
@@ -654,8 +738,7 @@ namespace ValheimVRMod.Scripts
 
         public static void unfocusChatWindow()
         {
-            ZInput_GetKeyDown_Patch.EmulateKeyDown(KeyCode.Escape);
-            shouldStartChat = false;
+            InputManager.CancelChat();
         }
 
 

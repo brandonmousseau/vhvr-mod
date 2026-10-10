@@ -1,9 +1,9 @@
 ManifestFileVersion: 0
-CRC: 210283689
+CRC: 3760746279
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 4290c62e8a679e6e5fc4791670e3a5c9
+    Hash: cc84b82e1be25055710f8ad6e14fcfd5
   TypeTreeHash:
     serializedVersion: 2
     Hash: 1fe3abd029edb3522ae5dbbc711d0a74
@@ -34,16 +34,21 @@ Assets:
 - Assets/QuickOutline/Resources/Shaders/OutlineFill.shader
 - Assets/CustomResources/Textures/recenter.png
 - Assets/QuickOutline/Resources/Materials/OutlineMask.mat
+- Assets/CustomResources/Materials/VHVRMultiply.mat
 - Assets/CustomResources/Materials/StandardClone.mat
 - Assets/CustomResources/CustomObject/Reel/Reel.prefab
+- Assets/CustomResources/Materials/VHVRMultiply.shader
 - Assets/CustomResources/Textures/sit.png
 - Assets/CustomResources/Materials/OutlineMaterial.mat
 - Assets/CustomResources/Materials/BowBendingMaterial.mat
+- Assets/CustomResources/Materials/VHVRUnderwaterSurface.shader
 - Assets/QuickOutline/Resources/Shaders/OutlineMask.shader
 - Assets/CustomResources/Textures/black_screen.png
 - Assets/CustomResources/Materials/Slash.mat
+- Assets/CustomResources/Materials/StandardFade.mat
 - Assets/CustomResources/Materials/vr_panel_unlit.mat
 - Assets/CustomResources/GizmoRing.prefab
+- Assets/CustomResources/Materials/VHVRVignette.shader
 - Assets/CustomResources/Textures/map.png
 - Assets/CustomResources/CustomObject/Reel/Crank.prefab
 - Assets/QuickOutline/Resources/Materials/OutlineFill.mat

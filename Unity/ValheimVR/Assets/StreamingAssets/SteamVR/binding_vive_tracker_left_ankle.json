@@ -1,0 +1,19 @@
+{
+  "bindings": {
+    "/actions/valheim": {
+      "chords": [],
+      "haptics": [],
+      "poses": [
+        {
+          "output": "/actions/valheim/in/bodypose",
+          "path": "/user/ankle/left/pose/raw"
+        }
+      ],
+      "skeleton": [],
+      "sources": []
+    }
+  },
+  "controller_type": "vive_tracker_left_ankle",
+  "description": "",
+  "name": "ValheimVR_Tracker_LeftAnkle"
+}

@@ -9,7 +9,6 @@ namespace ValheimVRMod.Utilities {
     public class SettingCallback : MonoBehaviour {
 
         private static SteamVR_Input_Sources inputHand;
-        private static SteamVR_Action_Boolean inputAction;
         private static UnityAction<Vector3, Quaternion> action;
         private static UnityAction<Vector3> action3Axis;
         private static Transform target;
@@ -101,14 +100,12 @@ namespace ValheimVRMod.Utilities {
 
             string handness = "";
             if (isRightWrist) {
-                inputAction = SteamVR_Actions.valheim_UseLeft;
                 inputHand = SteamVR_Input_Sources.LeftHand;
                 target = VRPlayer.rightHand.transform;
                 sourceHand = VRPlayer.leftHand.transform;
                 handness = "Left Hand";
             }
             else {
-                inputAction = SteamVR_Actions.valheim_Use;
                 inputHand = SteamVR_Input_Sources.RightHand;
                 target = VRPlayer.leftHand.transform;
                 sourceHand = VRPlayer.rightHand.transform;
@@ -138,7 +135,6 @@ namespace ValheimVRMod.Utilities {
             {
                 LogUtils.LogWarning("Target does not exist");
             }
-            inputAction = SteamVR_Actions.valheim_Use;
             inputHand = SteamVR_Input_Sources.RightHand;
             sourceHand = VRPlayer.rightHand.transform;
             target = targetParent;
@@ -188,11 +184,11 @@ namespace ValheimVRMod.Utilities {
                 return;
             }
             
-            if (inputAction.GetStateUp(inputHand)) {
+            if (SteamVR_Actions.valheim_Use.GetStateUp(inputHand)) {
                 transform.SetParent(target);
             }
 
-            if (! inputAction.GetState(inputHand)) {
+            if (! SteamVR_Actions.valheim_Use.GetState(inputHand)) {
                 return;
             }
             

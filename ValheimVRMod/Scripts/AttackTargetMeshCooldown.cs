@@ -12,24 +12,34 @@ namespace ValheimVRMod.Scripts {
         public static bool durabilityDrained;
         private static AttackTargetMeshCooldown primaryTargetMeshCooldown;
 
+        // Vanilla charges stamina (in Attack.Update) and weapon durability (in Attack.DoMeleeAttack) once
+        // per attack, no matter how many targets that attack sweeps through. Roomscale attacks instead
+        // call Attack.Start once per target hit, so the charge is made on the first hit of an attack and
+        // then suppressed until this deadline, which marks the end of that attack.
+        private static float attackResourceDrainDeadline = float.NegativeInfinity;
+
+        // With MomentumScalesAttackDamage, a primary hit is allowed during cooldown once this long has passed since the
+        // last hit on the target.
+        private const float MinCooldownHitInterval = 0.25f;
+
+        // Whether the last triggered hit landed during cooldown, which PatchAttackStart reads and clears.
+        public static bool isCooldownHit;
+
         private bool isSecondaryAttackCooldown;
+        private float lastHitTime = float.NegativeInfinity;
 
         public bool tryTriggerPrimaryAttack(float cd, float speed)
         {
-            float? overideMinAttackInterval;
-            if (VHVRConfig.MomentumScalesAttackDamage() && EquipScript.getRight() != EquipType.Sledge)
-            {
-                speedScaledDamageFactor = Mathf.Min(GetSpeedScaledDamageFactor(cd, speed), 1 - getRemaningCooldownPercentage());
-                overideMinAttackInterval = 0.25f;
-            }
-            else
-            {
-                speedScaledDamageFactor = 1;
-                overideMinAttackInterval = null;
-            }
+            bool momentumScalesDamage =
+                VHVRConfig.MomentumScalesAttackDamage() && EquipScript.CurrentMainHandEquipType() != EquipType.Sledge;
+            float speedFactor = momentumScalesDamage ? GetSpeedScaledDamageFactor(cd, speed) : 1;
 
-            if (tryTrigger(cd, overideMinAttackInterval))
+            if (tryTrigger(cd))
             {
+                isCooldownHit = false;
+                speedScaledDamageFactor = speedFactor;
+                lastHitTime = Time.time;
+                maybeStartAttackResourceDrainWindow(cd);
                 isSecondaryAttackCooldown = false;
                 if (primaryTargetMeshCooldown == null)
                 {
@@ -44,13 +54,34 @@ namespace ValheimVRMod.Scripts {
 
                 return true;
             }
-            return false;
+
+            if (!momentumScalesDamage)
+            {
+                return false;
+            }
+
+            float timeSinceLastHit = Time.time - lastHitTime;
+            if (timeSinceLastHit <= MinCooldownHitInterval)
+            {
+                return false;
+            }
+            isCooldownHit = true;
+            speedScaledDamageFactor = Mathf.Min(speedFactor, timeSinceLastHit / cd);
+            lastHitTime = Time.time;
+            if (primaryTargetMeshCooldown == this)
+            {
+                damageMultiplier = 1;
+            }
+            return true;
         }
 
         public bool tryTriggerSecondaryAttack(float cd, bool ignorePrimaryAttackCooldown = true)
         {
             if (tryTrigger(cd))
             {
+                isCooldownHit = false;
+                lastHitTime = Time.time;
+                maybeStartAttackResourceDrainWindow(cd);
                 isSecondaryAttackCooldown = true;
                 speedScaledDamageFactor = 1;
                 colorModifier = 1;
@@ -68,6 +99,22 @@ namespace ValheimVRMod.Scripts {
                 return true;
             }
             return false;
+        }
+
+        // Starts a new window during which stamina and durability are charged at most once, unless the hit
+        // being triggered still belongs to an attack that has already been charged for. Unlike
+        // primaryTargetMeshCooldown, this is not tied to any particular target: an attack that sweeps
+        // through several targets must only be charged for once, even when the target it was charged for
+        // dies or is left behind mid-swing.
+        private static void maybeStartAttackResourceDrainWindow(float attackDuration)
+        {
+            if (Time.time < attackResourceDrainDeadline)
+            {
+                return;
+            }
+            attackResourceDrainDeadline = Time.time + attackDuration;
+            staminaDrained = false;
+            durabilityDrained = false;
         }
 
         public static float calcDamageMultiplier() {
@@ -100,18 +147,17 @@ namespace ValheimVRMod.Scripts {
         }
 
         protected override void OnDisable() {
-            primaryTargetMeshCooldown = null;
+            if (primaryTargetMeshCooldown == this)
+            {
+                primaryTargetMeshCooldown = null;
+            }
             base.OnDisable();
         }
 
         protected override void FixedUpdate() {
             base.FixedUpdate();
-            if (! inCoolDown()) {
-                if (primaryTargetMeshCooldown == this) {
-                    staminaDrained = false;
-                    durabilityDrained = false;
-                    primaryTargetMeshCooldown = null;
-                }
+            if (!inCoolDown() && primaryTargetMeshCooldown == this) {
+                primaryTargetMeshCooldown = null;
             }
         }
 

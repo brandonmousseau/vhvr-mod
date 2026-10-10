@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using ValheimVRMod.Utilities;
 
@@ -13,7 +14,10 @@ namespace ValheimVRMod.Scripts {
             origin.parent = transform.parent;
             origin.localPosition = transform.localPosition;
             origin.localRotation = transform.localRotation;
-            transform.SetParent(null);
+            if (VHVRConfig.UseVrControls())
+            {
+                transform.SetParent(null);
+            }
         }
         
         private void OnRenderObject() {
@@ -48,8 +52,27 @@ namespace ValheimVRMod.Scripts {
             var shouldHideParticles = isTorch ? false : (isRangedWeapon ? !VHVRConfig.EnableRangedWeaponGlowParticle() : !VHVRConfig.EnableMeleeWeaponGlowParticle());
 
             var particleSystems = target.GetComponentsInChildren<ParticleSystem>(includeInactive: true);
+            var skinnedMeshParticleSystems = new List<ParticleSystem>();
             foreach (ParticleSystem particleSystem in particleSystems) {
+                if (SkinnedParticleFix.EmitsFromSkinnedMesh(particleSystem))
+                {
+                    // Moving these particle systems does not move their emission, which follows the bones instead.
+                    if (shouldHideParticles)
+                    {
+                        particleSystem.gameObject.SetActive(false);
+                    }
+                    else
+                    {
+                        skinnedMeshParticleSystems.Add(particleSystem);
+                    }
+                    continue;
+                }
                 particleSystem.gameObject.AddComponent<ParticleFix>().shouldHide = shouldHideParticles;
+            }
+
+            if (skinnedMeshParticleSystems.Count > 0 && VHVRConfig.UseVrControls())
+            {
+                SkinnedParticleFix.Create(target, skinnedMeshParticleSystems);
             }
 
             if (isTorch)

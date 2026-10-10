@@ -81,7 +81,12 @@ namespace ValheimVRMod.Scripts.PostProcessing
         {
             get
             {
-                if (model.enabled && model.settings.method == AntialiasingModel.Method.Taa && SystemInfo.supportsMotionVectors && SystemInfo.supportedRenderTargetCount >= 2)
+                // Only stereo cameras, i.e. the VR camera while it renders to the headset. The flat screen camera shares
+                // the VR camera's post processing profile (see VRPlayer.maybeCopyPostProcessingToFlatscreenCamera()),
+                // and the mono path below would give it, or the VR camera on a frame it isn't stereo yet, an
+                // explicitly set projection matrix, which shows up vertically flipped.
+                if (model.enabled && model.settings.method == AntialiasingModel.Method.Taa && context.camera.stereoEnabled &&
+                    SystemInfo.supportsMotionVectors && SystemInfo.supportedRenderTargetCount >= 2)
                 {
                     return !context.interrupted;
                 }

@@ -14,6 +14,8 @@ namespace ValheimVRMod.VRCore.UI
     {
         private static readonly float CROSSHAIR_SCALAR = 0.1f;
         private static readonly float MIN_CROSSHAIR_DISTANCE = 0.5f;
+        // The mouse aim crosshair is not where one looks, so it has to be easier to find.
+        private static readonly float MOUSE_AIM_CROSSHAIR_SCALE = 1.5f;
         public static readonly float WEAPON_CROSSHAIR_DISTANCE = 128f;
 
         public static int crosshairDepth = 1;
@@ -251,12 +253,41 @@ namespace ValheimVRMod.VRCore.UI
             float canvasWidth = _crosshairCanvas.GetComponent<RectTransform>().rect.width;
             float scaleFactor = CROSSHAIR_SCALAR * VHVRConfig.CrosshairScalar() / canvasWidth;
             _crosshairCamera.transform.SetPositionAndRotation(VRPlayer.vrCam.transform.position, VRPlayer.vrCam.transform.rotation);
+            if (MouseAim.IsActive)
+            {
+                // The aim is not the head's, so the crosshair must not be carried along by the camera: placed in
+                // the world instead, which UpdateMouseAimCrosshair() keeps up every frame.
+                _crosshairCanvasParent.transform.SetParent(null, false);
+                Vector3 aimDirection = MouseAim.Forward;
+                // Use far HUD when aiming a weapon
+                float aimDistance =
+                    Player.m_localPlayer.IsDrawingBow() || MouseAim.IsAimingAttack ?
+                    WEAPON_CROSSHAIR_DISTANCE :
+                    calculateCrosshairDistance(aimDirection);
+                _crosshairCanvasParent.transform.SetPositionAndRotation(
+                    _crosshairCamera.transform.position + aimDirection * aimDistance,
+                    Quaternion.LookRotation(aimDirection, VRPlayer.instance.transform.up));
+                _crosshairCanvasParent.transform.localScale = Vector3.one;
+                _crosshairCanvas.GetComponent<RectTransform>().localScale =
+                    Vector3.one * scaleFactor * MOUSE_AIM_CROSSHAIR_SCALE * aimDistance;
+                return;
+            }
             _crosshairCanvasParent.transform.SetParent(_crosshairCamera.gameObject.transform, false);
             _crosshairCanvasParent.transform.position = VRPlayer.instance.transform.position;
-            float crosshairDistance = calculateCrosshairDistance();
+            float crosshairDistance = calculateCrosshairDistance(_crosshairCamera.transform.forward);
             _crosshairCanvasParent.transform.localPosition = new Vector3(0f, 0f, crosshairDistance);
             _crosshairCanvas.GetComponent<RectTransform>().localScale = Vector3.one * scaleFactor * crosshairDistance;
             _crosshairCanvasParent.transform.localRotation = Quaternion.identity;
+        }
+
+        // maybeReparentCrosshair() only runs at the physics rate, which is enough for a crosshair fixed to the
+        // camera but leaves one that follows MouseAim visibly lagging behind the turning view in between.
+        public void UpdateMouseAimCrosshair()
+        {
+            if (MouseAim.IsActive && _crosshairCanvas != null && _crosshairCanvasParent.activeInHierarchy && VRPlayer.vrCam != null)
+            {
+                setCrosshairCanvasPositionAndScale();
+            }
         }
 
         private void setPieceHealthCanvasPositionAndScale()
@@ -307,10 +338,10 @@ namespace ValheimVRMod.VRCore.UI
             return Player.m_localPlayer.m_hoveringPiece;
         }
 
-        private float calculateCrosshairDistance()
+        private float calculateCrosshairDistance(Vector3 direction)
         {
             RaycastHit hit;
-            if (Physics.Raycast(new Ray(_crosshairCamera.transform.position, _crosshairCamera.transform.forward), out hit,
+            if (Physics.Raycast(new Ray(_crosshairCamera.transform.position, direction), out hit,
                 _crosshairCamera.farClipPlane * 0.95f, CROSSHAIR_RAYCAST_LAYERMASK))
             {
                 return Mathf.Max(MIN_CROSSHAIR_DISTANCE, hit.distance);

@@ -16,6 +16,8 @@ using ValheimVRMod.Utilities;
 
 public class Outline : MonoBehaviour {
   private static HashSet<Mesh> registeredMeshes = new HashSet<Mesh>();
+  // Meshes already warned about in WarnIfOnlyLastSubmeshOutlined(), so that each is reported once.
+  private static HashSet<Mesh> multiSubmeshWarnedMeshes = new HashSet<Mesh>();
 
   public enum Mode {
     OutlineAll,
@@ -78,6 +80,8 @@ public class Outline : MonoBehaviour {
   private Renderer[] renderers;
   private static Material sharedOutlineMaskMaterial;
   private static Material sharedOutlineFillMaterial;
+  // The mask and fill materials of all outlines, to tell them from the copies that renderers make of them.
+  private static HashSet<Material> ownedMaterials = new HashSet<Material>();
   private Material outlineMaskMaterial;
   private Material outlineFillMaterial;
 
@@ -115,6 +119,46 @@ public class Outline : MonoBehaviour {
 
     outlineMaskMaterial = new Material(sharedOutlineMaskMaterial);
     outlineFillMaterial = new Material(sharedOutlineFillMaterial);
+    ownedMaterials.Add(outlineMaskMaterial);
+    ownedMaterials.Add(outlineFillMaterial);
+  }
+
+  // Whether the material is a copy that a renderer made of an outline material. Reading Renderer.materials replaces
+  // every material of the renderer with a copy, which the vanilla game does on some objects (e. g. on wards, to
+  // switch their glow). Such a copy no longer follows the outline's properties and is not found when it is time to
+  // remove the outline, which would leave the object outlined for good.
+  private static bool IsStrayCopy(Material material, Material original) {
+    return material != null && material.shader == original.shader && !ownedMaterials.Contains(material);
+  }
+
+  // Finds where the renderer has this outline's material, or else a stray copy of it. Only one stray copy is
+  // claimed, leaving any others to the other outlines that may cover the same renderer.
+  private static int FindOutlineMaterial(List<Material> materials, Material original) {
+    int index = materials.IndexOf(original);
+    return index >= 0 ? index : materials.FindIndex(material => IsStrayCopy(material, original));
+  }
+
+  // Puts this outline's materials back in the place of stray copies of them.
+  private void ReclaimMaterials() {
+    foreach (var renderer in renderers) {
+      if (renderer == null || renderer.GetType() == typeof(ParticleSystemRenderer)) {
+        continue;
+      }
+
+      var materials = renderer.sharedMaterials.ToList();
+      bool reclaimed = false;
+      foreach (var original in new Material[] { outlineMaskMaterial, outlineFillMaterial }) {
+        int index = FindOutlineMaterial(materials, original);
+        if (index >= 0 && materials[index] != original) {
+          Destroy(materials[index]);
+          materials[index] = original;
+          reclaimed = true;
+        }
+      }
+      if (reclaimed) {
+        renderer.sharedMaterials = materials.ToArray();
+      }
+    }
   }
 
   private bool IsPlayerHairMaterials(List<Material> materials) {
@@ -126,10 +170,40 @@ public class Outline : MonoBehaviour {
     return false;
   }
 
+  // Whether the renderer is the body model of a player or of an NPC built like one (e.g. the Viking ghosts in the Deep
+  // North). Its mesh has two submeshes, the body and then the eyebrows, and Unity draws the materials appended past
+  // the submesh count on the last submesh only, so an outline on it outlines just the eyebrows. Those sit too close to
+  // the VR camera on the local player, and VisEquipment.UpdateColors() reads the body model's Renderer.materials every
+  // frame, which replaces the outline materials with copies that no longer follow the outline's color and leaves the
+  // eyebrows outlined in whatever color the outline had at that moment.
+  private static bool IsCharacterBodyModel(Renderer renderer) {
+    var visEquipment = renderer.GetComponentInParent<VisEquipment>();
+    return visEquipment != null && visEquipment.m_bodyModel == renderer;
+  }
+
+  // For the same reason as above, the outline covers only the last submesh of a mesh with several of them.
+  private static void WarnIfOnlyLastSubmeshOutlined(Renderer renderer) {
+    var skinnedMeshRenderer = renderer as SkinnedMeshRenderer;
+    if (skinnedMeshRenderer == null) {
+      return;
+    }
+    var mesh = skinnedMeshRenderer.sharedMesh;
+    if (mesh == null || mesh.subMeshCount <= 1 || !multiSubmeshWarnedMeshes.Add(mesh)) {
+      return;
+    }
+    LogUtils.LogWarning(
+      "Outlining skinned mesh " + mesh.name + " on " + renderer.name + ", which has " + mesh.subMeshCount +
+      " submeshes: only the last one will be outlined.");
+  }
+
   void OnEnable() {
     foreach (var renderer in renderers) {
 
       if (renderer.GetType() == typeof(ParticleSystemRenderer)) {
+        continue;
+      }
+
+      if (IsCharacterBodyModel(renderer)) {
         continue;
       }
       
@@ -142,6 +216,8 @@ public class Outline : MonoBehaviour {
         // 2. The hair, espcially eyebrows, is too close to the camera and their outline may become visible even with a moderate near clip distance.
         continue;
       }
+
+      WarnIfOnlyLastSubmeshOutlined(renderer);
 
       materials.Add(outlineMaskMaterial);
       materials.Add(outlineFillMaterial);
@@ -184,13 +260,25 @@ public class Outline : MonoBehaviour {
 
       // Remove outline shaders
       var materials = renderer.sharedMaterials.ToList();
-      // TODO: there is a chance that the vanilla game or other mods has modified the material array since we added the outline materials,
-      // which would make the outline materials references here stale and cause us to fail to remove them.
-      // Consider, instead, iterating over the materials and check materials[i].name.startWith("OutlineMask") || materials[i].name.startWith("OutlineFill")
-      materials.Remove(outlineMaskMaterial);
-      materials.Remove(outlineFillMaterial);
+      foreach (var original in new Material[] { outlineMaskMaterial, outlineFillMaterial }) {
+        int index = FindOutlineMaterial(materials, original);
+        if (index < 0) {
+          continue;
+        }
+        if (materials[index] != original) {
+          Destroy(materials[index]);
+        }
+        materials.RemoveAt(index);
+      }
       renderer.materials = materials.ToArray();
     }
+  }
+
+  void OnDestroy() {
+    ownedMaterials.Remove(outlineMaskMaterial);
+    ownedMaterials.Remove(outlineFillMaterial);
+    Destroy(outlineMaskMaterial);
+    Destroy(outlineFillMaterial);
   }
 
   void Bake() {
@@ -281,6 +369,8 @@ public class Outline : MonoBehaviour {
   }
 
   void UpdateMaterialProperties() {
+
+    ReclaimMaterials();
 
     // Apply properties according to mode
     outlineFillMaterial.SetColor("_OutlineColor", outlineColor);
