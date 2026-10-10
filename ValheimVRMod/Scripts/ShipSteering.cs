@@ -1,7 +1,7 @@
+using ValheimVRMod.VRCore.Backends;
 using UnityEngine;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
-using Valve.VR;
 
 namespace ValheimVRMod.Scripts
 {
@@ -294,9 +294,9 @@ namespace ValheimVRMod.Scripts
             var wasSingleGrabbing = isSingleGrabbing;
             var wasDoubleGrabbing = isDoubleGrabbing;
             isLeftGrabbing =
-                leftHandGesture.isHandFree() && SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand);
+                leftHandGesture.isHandFree() && VRInputActions.valheim_Grab.GetState(VRInputSource.LeftHand);
             isRightGrabbing =
-                rightHandGesture.isHandFree() && SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand);
+                rightHandGesture.isHandFree() && VRInputActions.valheim_Grab.GetState(VRInputSource.RightHand);
             isSingleGrabbing = isLeftGrabbing ^ isRightGrabbing;
             isDoubleGrabbing = isLeftGrabbing && isRightGrabbing;
 

@@ -1,14 +1,14 @@
+using ValheimVRMod.VRCore.Backends;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
 using ValheimVRMod.VRCore;
 using ValheimVRMod.VRCore.UI;
-using Valve.VR;
 
 namespace ValheimVRMod.Utilities {
     public class SettingCallback : MonoBehaviour {
 
-        private static SteamVR_Input_Sources inputHand;
+        private static VRInputSource inputHand;
         private static UnityAction<Vector3, Quaternion> action;
         private static UnityAction<Vector3> action3Axis;
         private static Transform target;
@@ -100,13 +100,13 @@ namespace ValheimVRMod.Utilities {
 
             string handness = "";
             if (isRightWrist) {
-                inputHand = SteamVR_Input_Sources.LeftHand;
+                inputHand = VRInputSource.LeftHand;
                 target = VRPlayer.rightHand.transform;
                 sourceHand = VRPlayer.leftHand.transform;
                 handness = "Left Hand";
             }
             else {
-                inputHand = SteamVR_Input_Sources.RightHand;
+                inputHand = VRInputSource.RightHand;
                 target = VRPlayer.leftHand.transform;
                 sourceHand = VRPlayer.rightHand.transform;
                 handness = "Right Hand";
@@ -135,7 +135,7 @@ namespace ValheimVRMod.Utilities {
             {
                 LogUtils.LogWarning("Target does not exist");
             }
-            inputHand = SteamVR_Input_Sources.RightHand;
+            inputHand = VRInputSource.RightHand;
             sourceHand = VRPlayer.rightHand.transform;
             target = targetParent;
 
@@ -173,7 +173,7 @@ namespace ValheimVRMod.Utilities {
         
         private void OnRenderObject() {
             
-            if (SteamVR_Actions.valheim_Jump.GetState(SteamVR_Input_Sources.Any)) {
+            if (VRInputActions.valheim_Jump.GetState(VRInputSource.Any)) {
                 VHVRConfig.config.Save();
                 VHVRConfig.config.SaveOnConfigSet = true;
                 configRunning = false;
@@ -184,11 +184,11 @@ namespace ValheimVRMod.Utilities {
                 return;
             }
             
-            if (SteamVR_Actions.valheim_Use.GetStateUp(inputHand)) {
+            if (VRInputActions.valheim_Use.GetStateUp(inputHand)) {
                 transform.SetParent(target);
             }
 
-            if (! SteamVR_Actions.valheim_Use.GetState(inputHand)) {
+            if (! VRInputActions.valheim_Use.GetState(inputHand)) {
                 return;
             }
             

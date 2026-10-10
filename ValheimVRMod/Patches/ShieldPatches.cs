@@ -1,9 +1,9 @@
+using ValheimVRMod.VRCore.Backends;
 using HarmonyLib;
 using ValheimVRMod.Scripts.Block;
 using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
-using Valve.VR;
 
 namespace ValheimVRMod.Patches {
     
@@ -109,14 +109,14 @@ namespace ValheimVRMod.Patches {
                 switch (handHapticTrigger)
                 {
                     case HandHapticTrigger.BothHand:
-                        VRPlayer.leftHand.hapticAction.Execute(delay, duration, freq, amplitude, SteamVR_Input_Sources.LeftHand);
-                        VRPlayer.rightHand.hapticAction.Execute(delay, duration, freq, amplitude, SteamVR_Input_Sources.RightHand);
+                        VRPlayer.leftHand.hapticAction.Execute(delay, duration, freq, amplitude, VRInputSource.LeftHand);
+                        VRPlayer.rightHand.hapticAction.Execute(delay, duration, freq, amplitude, VRInputSource.RightHand);
                         break;
                     case HandHapticTrigger.LeftHand:
-                        VRPlayer.leftHand.hapticAction.Execute(delay, duration, freq, amplitude, SteamVR_Input_Sources.LeftHand);
+                        VRPlayer.leftHand.hapticAction.Execute(delay, duration, freq, amplitude, VRInputSource.LeftHand);
                         break;
                     case HandHapticTrigger.RightHand:
-                        VRPlayer.rightHand.hapticAction.Execute(delay, duration, freq, amplitude, SteamVR_Input_Sources.RightHand);
+                        VRPlayer.rightHand.hapticAction.Execute(delay, duration, freq, amplitude, VRInputSource.RightHand);
                         break;
                 }
             }

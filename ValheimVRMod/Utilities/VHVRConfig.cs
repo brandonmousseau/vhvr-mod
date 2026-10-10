@@ -1,8 +1,8 @@
+using ValheimVRMod.VRCore.Backends;
 using System;
 using System.Collections.Generic;
 using BepInEx.Configuration;
 using NDesk.Options;
-using Unity.XR.OpenVR;
 using ValheimVRMod.VRCore;
 using UnityEngine;
 using ValheimVRMod.VRCore.UI;
@@ -211,9 +211,6 @@ namespace ValheimVRMod.Utilities
         // The default is listed first because BepInEx clamps an unrecognized value to that entry.
         private static readonly string[] k_flatScreenModeValues =
             { k_flatScreenModeAuto, k_flatScreenModeOff, k_flatScreenModeOn };
-
-        // vrserver is the SteamVR runtime itself; vrmonitor is the status window started alongside it.
-        private static readonly string[] k_steamVrProcessNames = { "vrserver", "vrmonitor" };
 
         private const string k_arrowRestCenter = "Center";
         private const string k_arrowRestAsiatic = "Asiatic";
@@ -1268,16 +1265,16 @@ namespace ValheimVRMod.Utilities
             return dominantHand.Value == "Left" ? VRPlayer.LEFT_HAND : VRPlayer.RIGHT_HAND;
         }
 
-        public static OpenVRSettings.MirrorViewModes GetMirrorViewMode()
+        public static VRMirrorViewMode GetMirrorViewMode()
         {
             string mode = mirrorMode.Value;
             switch (mode) {
                 case "NativeRight":
-                    return OpenVRSettings.MirrorViewModes.Right;
+                    return VRMirrorViewMode.Right;
                 case "NativeLeft":
-                    return OpenVRSettings.MirrorViewModes.Left;
+                    return VRMirrorViewMode.Left;
                 case "OpenVR":
-                    return OpenVRSettings.MirrorViewModes.OpenVR;
+                    return VRMirrorViewMode.OpenVR;
                 case "None":
                 case "Right":
                 case "Left":
@@ -1288,10 +1285,10 @@ namespace ValheimVRMod.Utilities
                     // These modes render the flat screen view with a camera of their own, so the mirror
                     // image must not be drawn over it. It also leaves the flat screen frame rate free of
                     // the eye mirror blit that the NativeRight, NativeLeft and OpenVR modes are paced by.
-                    return OpenVRSettings.MirrorViewModes.None;
+                    return VRMirrorViewMode.None;
                 default:
                     LogUtils.LogWarning("Invalid mirror mode setting. Defaulting to None");
-                    return OpenVRSettings.MirrorViewModes.None;
+                    return VRMirrorViewMode.None;
             }
         }
 
@@ -1732,46 +1729,12 @@ namespace ValheimVRMod.Utilities
                 return mode == k_flatScreenModeOn;
             }
 
-            bool steamVrRunning = IsSteamVrRunning();
+            bool steamVrRunning = VRBackend.Active.IsRuntimeRunning();
             LogUtils.LogInfo("flatScreenMode is \"" + k_flatScreenModeAuto + "\" and SteamVR is " +
                 (steamVrRunning ? "running, so VR will be used." : "not running, so flat screen mode will be used."));
             return !steamVrRunning;
         }
 
-        // Looks for the SteamVR processes instead of asking OpenVR, because every OpenVR entry point
-        // that can answer this would launch SteamVR itself and therefore always report it as running.
-        private static bool IsSteamVrRunning()
-        {
-            foreach (string processName in k_steamVrProcessNames)
-            {
-                System.Diagnostics.Process[] processes;
-                try
-                {
-                    processes = System.Diagnostics.Process.GetProcessesByName(processName);
-                }
-                catch (Exception e)
-                {
-                    LogUtils.LogWarning("Could not check whether " + processName + " is running: " + e.Message);
-                    continue;
-                }
-
-                try
-                {
-                    if (processes.Length > 0)
-                    {
-                        return true;
-                    }
-                }
-                finally
-                {
-                    foreach (System.Diagnostics.Process process in processes)
-                    {
-                        process.Dispose();
-                    }
-                }
-            }
-            return false;
-        }
 
 #if DEBUG
         public static Vector3 getDebugPos()

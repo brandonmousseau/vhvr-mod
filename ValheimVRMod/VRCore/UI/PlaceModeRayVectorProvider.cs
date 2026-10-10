@@ -1,8 +1,8 @@
+using ValheimVRMod.VRCore.Backends;
 using System.Collections.Generic;
 using UnityEngine;
 using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
-using Valve.VR;
 
 namespace ValheimVRMod.VRCore.UI
 {
@@ -53,7 +53,7 @@ namespace ValheimVRMod.VRCore.UI
         }
 
         // The hand that the placement ray comes from, which is therefore the hand whose trigger places the piece.
-        public static SteamVR_Input_Sources rayHandInputSource
+        public static VRInputSource rayHandInputSource
         {
             get
             {

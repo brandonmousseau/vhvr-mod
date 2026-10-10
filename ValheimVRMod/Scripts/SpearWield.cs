@@ -1,9 +1,9 @@
+using ValheimVRMod.VRCore.Backends;
 using System.Collections.Generic;
 using UnityEngine;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using ValheimVRMod.VRCore.UI;
-using Valve.VR;
 
 namespace ValheimVRMod.Scripts
 {
@@ -44,7 +44,7 @@ namespace ValheimVRMod.Scripts
             if (EquipScript.CurrentMainHandEquipType() == EquipType.SpearChitin &&
                 !isCurrentlyTwoHanded() &&
                 !LaserPointerChords.IsLaserActiveFor(freeHand) &&
-                SteamVR_Actions.valheim_Use.GetState(freeHand))
+                VRInputActions.valheim_Use.GetState(freeHand))
             {
                 harpoonReleaseSignalCountdown = HARPOON_RELEASE_SIGNAL_MIN_DURATION;
             }

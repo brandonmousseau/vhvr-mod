@@ -1,6 +1,6 @@
+using ValheimVRMod.VRCore.Backends;
 using System.Collections.Generic;
 using ValheimVRMod.VRCore;
-using Valve.VR;
 
 namespace ValheimVRMod.Scripts
 {
@@ -37,7 +37,7 @@ namespace ValheimVRMod.Scripts
         {
             get
             {
-                var hand = IsInRightHand ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand;
+                var hand = IsInRightHand ? VRInputSource.RightHand : VRInputSource.LeftHand;
                 return MagicStaffUtils.IsCastTriggerHeld(hand);
             }
         }

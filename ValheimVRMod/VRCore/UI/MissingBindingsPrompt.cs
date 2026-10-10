@@ -1,6 +1,6 @@
+using ValheimVRMod.VRCore.Backends;
 using System.Collections.Generic;
 using System.Linq;
-using Valve.VR;
 using static ValheimVRMod.Utilities.LogUtils;
 
 namespace ValheimVRMod.VRCore.UI
@@ -21,36 +21,36 @@ namespace ValheimVRMod.VRCore.UI
         // ToggleRun falls back to the stick and is left unbound by the default holographic binding.
         // The poses are not in here: missing hand tracking is self evident, and they serve as the sign that the binding
         // is in a state fit for checking instead (see IsReadyToCheck()).
-        private static readonly SteamVR_Action[] ESSENTIAL_ACTIONS = {
-            SteamVR_Actions.valheim_Walk,
-            SteamVR_Actions.valheim_PitchAndYaw,
-            SteamVR_Actions.valheim_Grab,
+        private static readonly VRAction[] ESSENTIAL_ACTIONS = {
+            VRInputActions.valheim_Walk,
+            VRInputActions.valheim_PitchAndYaw,
+            VRInputActions.valheim_Grab,
             // TODO: find out why chords have false activeBinding
-            // SteamVR_Actions.valheim_ToggleMenu,
-            SteamVR_Actions.valheim_ToggleInventory,
-            SteamVR_Actions.valheim_Jump,
-            SteamVR_Actions.valheim_LeftClick,
-            SteamVR_Actions.valheim_RightClick,
+            // VRInputActions.valheim_ToggleMenu,
+            VRInputActions.valheim_ToggleInventory,
+            VRInputActions.valheim_Jump,
+            VRInputActions.valheim_LeftClick,
+            VRInputActions.valheim_RightClick,
         };
 
         // Scrolling the UI and zooming the map is done either with the ContextScroll trackpad or, on controllers
         // without one, with the ScrollUp/ScrollDown buttons standing in for it, so neither is essential on its own:
         // these are only reported as missing when ContextScroll is unbound as well.
-        private static readonly SteamVR_Action[] SCROLL_BUTTON_ACTIONS = {
-            SteamVR_Actions.valheim_ScrollUp,
-            SteamVR_Actions.valheim_ScrollDown,
+        private static readonly VRAction[] SCROLL_BUTTON_ACTIONS = {
+            VRInputActions.valheim_ScrollUp,
+            VRInputActions.valheim_ScrollDown,
         };
 
         // Actions bound on both hands, where each hand is separately essential. These cannot go in the list above:
         // activeBinding is a shortcut to the Any source, which cannot tell an action bound on one hand only from one
         // bound on both, so a binding that leaves a single hand out would go unreported.
-        private static readonly SteamVR_Action_Boolean[] TWO_HANDED_ACTIONS = {
-            SteamVR_Actions.valheim_Use,
+        private static readonly VRBooleanAction[] TWO_HANDED_ACTIONS = {
+            VRInputActions.valheim_Use,
         };
 
-        private static readonly SteamVR_Input_Sources[] HANDS = {
-            SteamVR_Input_Sources.LeftHand,
-            SteamVR_Input_Sources.RightHand,
+        private static readonly VRInputSource[] HANDS = {
+            VRInputSource.LeftHand,
+            VRInputSource.RightHand,
         };
 
         // SteamVR loads the bindings asynchronously, and an action only reports its binding once a device it is bound
@@ -91,7 +91,7 @@ namespace ValheimVRMod.VRCore.UI
 
             if (!canClickPopup)
             {
-                SteamVR_Input.OpenBindingUI(SteamVR_Actions.Valheim);
+                VRInput.OpenBindingUI(VRInputActions.Valheim);
                 return;
             }
 
@@ -102,7 +102,7 @@ namespace ValheimVRMod.VRCore.UI
                 "Open the SteamVR binding settings to bind them, or to switch back to the default binding?",
                 () => {
                     UnifiedPopup.Pop();
-                    SteamVR_Input.OpenBindingUI(SteamVR_Actions.Valheim);
+                    VRInput.OpenBindingUI(VRInputActions.Valheim);
                 },
                 () => UnifiedPopup.Pop(),
                 localizeText: false));
@@ -112,16 +112,16 @@ namespace ValheimVRMod.VRCore.UI
         // one that is not fully loaded yet, in which case the other actions cannot be judged either.
         private static bool IsReadyToCheck()
         {
-            return IsControllerConnected(ETrackedControllerRole.LeftHand) &&
-                IsControllerConnected(ETrackedControllerRole.RightHand) &&
-                SteamVR_Actions.valheim_PoseL.activeBinding &&
-                SteamVR_Actions.valheim_PoseR.activeBinding;
+            return VRBackend.Active.IsControllerConnected(VRInputSource.LeftHand) &&
+                VRBackend.Active.IsControllerConnected(VRInputSource.RightHand) &&
+                VRInputActions.valheim_PoseL.activeBinding &&
+                VRInputActions.valheim_PoseR.activeBinding;
         }
 
         private static void CheckBindings()
         {
-            IEnumerable<SteamVR_Action> unboundActions = ESSENTIAL_ACTIONS.Where(action => !action.activeBinding);
-            if (!SteamVR_Actions.valheim_ContextScroll.activeBinding)
+            IEnumerable<VRAction> unboundActions = ESSENTIAL_ACTIONS.Where(action => !action.activeBinding);
+            if (!VRInputActions.valheim_ContextScroll.activeBinding)
             {
                 // TODO: find out why chords have false activeBinding
                 // unboundActions = unboundActions.Concat(SCROLL_BUTTON_ACTIONS.Where(action => !action.activeBinding));
@@ -143,19 +143,11 @@ namespace ValheimVRMod.VRCore.UI
             canClickPopup = LaserPointerChords.leftClickAction.activeBinding;
         }
 
-        private static string GetHandSuffix(SteamVR_Input_Sources hand)
+        private static string GetHandSuffix(VRInputSource hand)
         {
-            return hand == SteamVR_Input_Sources.LeftHand ? " (left hand)" : " (right hand)";
+            return hand == VRInputSource.LeftHand ? " (left hand)" : " (right hand)";
         }
 
-        private static bool IsControllerConnected(ETrackedControllerRole role)
-        {
-            if (OpenVR.System == null)
-            {
-                return false;
-            }
-            uint deviceIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(role);
-            return deviceIndex != OpenVR.k_unTrackedDeviceIndexInvalid && OpenVR.System.IsTrackedDeviceConnected(deviceIndex);
-        }
+
     }
 }

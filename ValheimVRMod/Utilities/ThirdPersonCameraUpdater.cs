@@ -1,7 +1,7 @@
+using ValheimVRMod.VRCore.Backends;
 using UnityEngine;
 using ValheimVRMod.Scripts;
 using ValheimVRMod.VRCore;
-using Valve.VR;
 
 namespace ValheimVRMod.Utilities
 {
@@ -139,8 +139,8 @@ namespace ValheimVRMod.Utilities
                 // When holding both grab, usually happens when trying to hit monster & two-handing
                 else if (LocalWeaponWield.isCurrentlyTwoHanded() ||
                     (!Player.m_localPlayer.InPlaceMode()
-                    && SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.LeftHand)
-                    && SteamVR_Actions.valheim_Grab.GetState(SteamVR_Input_Sources.RightHand)))
+                    && VRInputActions.valheim_Grab.GetState(VRInputSource.LeftHand)
+                    && VRInputActions.valheim_Grab.GetState(VRInputSource.RightHand)))
                 {
                     var lateralOffset = Player.m_localPlayer.transform.right * 3;
                     switch (LocalWeaponWield.LocalPlayerTwoHandedState)

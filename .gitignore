@@ -1,1 +1,5 @@
 .vs/
+/work/
+/Unity/build/
+**/bin/
+**/obj/
