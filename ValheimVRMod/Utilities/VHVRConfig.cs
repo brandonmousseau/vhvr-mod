@@ -187,6 +187,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> shieldScale;
         private static ConfigEntry<float> maxShieldWidth;
         private static ConfigEntry<float> maxBucklerWidth;
+        private static ConfigEntry<bool> weaponColliderSweep;
         private static ConfigEntry<bool> movementSecondaryAttack;
         private static ConfigEntry<string> meleeAttackKnockbackDirection;
 
@@ -1182,6 +1183,12 @@ namespace ValheimVRMod.Utilities
                 1.5f,
                 new ConfigDescription("The max allowed width of a buckler in meters - any buckler wider will be shrinked to fit this width. About 0.3m gives a realistic size.",
                 new AcceptableValueRange<float>(0.05f, 3.0f)));
+            weaponColliderSweep = config.Bind("Motion Control",
+                "WeaponColliderSweep",
+                true,
+                "Also hit what the weapon passed over between two rendered frames. The weapon's hit box is only moved once per frame," +
+                " so at a low frame rate or during a hitch a fast swing can skip right over a target without ever touching it;" +
+                " with this on, the path between the last frame's and this frame's pose is checked as well.");
 
             meleeAttackKnockbackDirection = config.Bind("Motion Control",
                                         "MeleeAttackKnockbackDirection",
@@ -2049,6 +2056,11 @@ namespace ValheimVRMod.Utilities
         public static float GetMaxBucklerWidth()
         {
             return maxBucklerWidth.Value;
+        }
+
+        public static bool WeaponColliderSweep()
+        {
+            return weaponColliderSweep.Value;
         }
         public static bool MovementSecondaryAttack()
         {
