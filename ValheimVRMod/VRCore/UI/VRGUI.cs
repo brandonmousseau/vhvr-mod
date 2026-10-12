@@ -135,6 +135,10 @@ namespace ValheimVRMod.VRCore.UI
         private Canvas _cursorGuiCanvas;
         private Canvas _hudGuiCanvas;
         private Canvas _chatBox;
+        // The vanilla GUI canvas, which canvases of other mods are lined up with, see ForeignCanvasAdopter.
+        private Canvas _menuGuiCanvas;
+        private ForeignCanvasAdopter _foreignCanvasAdopter;
+        public static bool isForeignGuiShowingSelectable { get; private set; }
         private static Transform _uiPanel;
         // Whether onGuiCanvasFound() has run, which is where the GUI camera is positioned and given its
         // orthographic size. Before that it still has Unity's default size of 5, so anything laid out in
@@ -244,7 +248,7 @@ namespace ValheimVRMod.VRCore.UI
                     guiCanvas.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, GUI_DIMENSIONS.x);
                     guiCanvas.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, GUI_DIMENSIONS.y);
                 }
-
+                _foreignCanvasAdopter?.Resize();
             }
             CrosshairManager.instance.maybeReparentCrosshair();
             if (VHVRConfig.ShowRepairHammer() && RepairModePositionIndicator.instance != null)
@@ -269,6 +273,9 @@ namespace ValheimVRMod.VRCore.UI
         public void Update()
         {
             disableVanillaInputSystemUiInputModule();
+            // In Update rather than FixedUpdate, which doesn't run while the game is paused by a menu.
+            _foreignCanvasAdopter?.Update();
+            isForeignGuiShowingSelectable = _foreignCanvasAdopter != null && _foreignCanvasAdopter.isShowingSelectable;
             if (VHVRConfig.UseVrControls() && SteamVR_Actions.valheim_ToggleMenu.GetStateDown(SteamVR_Input_Sources.Any))
             {
                 ModConfigurationManagerBridge.CloseWindow();
@@ -1376,6 +1383,10 @@ namespace ValheimVRMod.VRCore.UI
             {
                 if (canvas.name == MENU_GUI_CANVAS || canvas.name == PASSWORD_CANVAS)
                 {
+                    if (canvas.name == MENU_GUI_CANVAS)
+                    {
+                        _menuGuiCanvas = canvas;
+                    }
                     _hudGuiCanvas = canvas;
                     _guiCanvases.Add(canvas);
                 }
@@ -1581,7 +1592,14 @@ namespace ValheimVRMod.VRCore.UI
             _guiCamera.gameObject.transform.position = new Vector3(Screen.width * 0.5f, Screen.height * 0.5f, -1);
             _guiCamera.orthographicSize = GUI_DIMENSIONS.y * 0.5f;
             hasConfiguredGuiCamera = true;
-            
+            if (_foreignCanvasAdopter == null)
+            {
+                _foreignCanvasAdopter = new ForeignCanvasAdopter(
+                    _guiCamera,
+                    () => _menuGuiCanvas != null ? _menuGuiCanvas : _hudGuiCanvas,
+                    canvas => _guiCanvases.Contains(canvas) || canvas == _chatBox || canvas == _cursorGuiCanvas);
+            }
+
         }
 
         private void creatGuiCamera()
