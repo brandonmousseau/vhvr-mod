@@ -1,10 +1,8 @@
+using ValheimVRMod.VRCore.Backends;
 using System.Collections.Generic;
 using UnityEngine;
 using ValheimVRMod.VRCore;
 using ValheimVRMod.VRCore.UI;
-using Valve.VR;
-using Valve.VR.Extras;
-using Valve.VR.InteractionSystem;
 
 namespace ValheimVRMod.Scripts
 {
@@ -32,22 +30,22 @@ namespace ValheimVRMod.Scripts
 
         private bool IsItemInRightHand { get { return isHeldInMainHand == VRPlayer.isRightHandMainWeaponHand; } }
 
-        private SteamVR_LaserPointer ItemHandPointer
+        private VRLaserPointer ItemHandPointer
         {
             get { return IsItemInRightHand ? VRPlayer.rightPointer : VRPlayer.leftPointer; }
         }
 
-        private SteamVR_Input_Sources ItemHandInputSource
+        private VRInputSource ItemHandInputSource
         {
-            get { return IsItemInRightHand ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand; }
+            get { return IsItemInRightHand ? VRInputSource.RightHand : VRInputSource.LeftHand; }
         }
 
         // The hand raised to summon is the one not holding the item.
         private bool IsGestureHandRight { get { return !IsItemInRightHand; } }
-        private Hand GestureHand { get { return IsGestureHandRight ? VRPlayer.rightHand : VRPlayer.leftHand; } }
-        private SteamVR_Input_Sources GestureHandInputSource
+        private VRHand GestureHand { get { return IsGestureHandRight ? VRPlayer.rightHand : VRPlayer.leftHand; } }
+        private VRInputSource GestureHandInputSource
         {
-            get { return IsGestureHandRight ? SteamVR_Input_Sources.RightHand : SteamVR_Input_Sources.LeftHand; }
+            get { return IsGestureHandRight ? VRInputSource.RightHand : VRInputSource.LeftHand; }
         }
         private void Awake()
         {
@@ -65,7 +63,7 @@ namespace ValheimVRMod.Scripts
         private void FixedUpdate()
         {
             var inputSource = GestureHandInputSource;
-            if (!LaserPointerChords.IsLaserActiveFor(inputSource) && SteamVR_Actions.valheim_Use.GetState(inputSource))
+            if (!LaserPointerChords.IsLaserActiveFor(inputSource) && VRInputActions.valheim_Use.GetState(inputSource))
             {
                 if (hasSummonedInCurrentMotion)
                 {

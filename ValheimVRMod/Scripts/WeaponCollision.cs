@@ -1,8 +1,8 @@
+using ValheimVRMod.VRCore.Backends;
 using System.ComponentModel;
 using UnityEngine;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
-using Valve.VR;
 
 namespace ValheimVRMod.Scripts
 {
@@ -423,7 +423,7 @@ namespace ValheimVRMod.Scripts
                     case EquipType.Spear:
                     case EquipType.SpearChitin:
                     case EquipType.Sword:
-                        if (!SteamVR_Actions.valheim_Grab.GetState(VRPlayer.mainWeaponHandInputSource))
+                        if (!VRInputActions.valheim_Grab.GetState(VRPlayer.mainWeaponHandInputSource))
                         {
                             return false;
                         }

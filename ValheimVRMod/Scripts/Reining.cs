@@ -1,8 +1,8 @@
+using ValheimVRMod.VRCore.Backends;
 using System.Collections.Generic;
 using UnityEngine;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
-using Valve.VR;
 
 namespace ValheimVRMod.Scripts
 {
@@ -122,8 +122,8 @@ namespace ValheimVRMod.Scripts
                 return;
             }
 
-            isLeftHandReining = IsReining(leftHandGesture, SteamVR_Input_Sources.LeftHand);
-            isRightHandReining = IsReining(rightHandGesture, SteamVR_Input_Sources.RightHand);
+            isLeftHandReining = IsReining(leftHandGesture, VRInputSource.LeftHand);
+            isRightHandReining = IsReining(rightHandGesture, VRInputSource.RightHand);
 
             var wasTurning = isTurning;
             targetDirection =
@@ -455,9 +455,9 @@ namespace ValheimVRMod.Scripts
             return lateralOffset <= -MIN_TURNING_OFFSET ? -1 : (lateralOffset < MIN_TURNING_OFFSET ? 0 : 1);
         }
 
-        private bool IsReining(HandGesture handGesture, SteamVR_Input_Sources inputSource)
+        private bool IsReining(HandGesture handGesture, VRInputSource inputSource)
         {
-            return handGesture.isHandFree() && SteamVR_Actions.valheim_Grab.GetState(inputSource);
+            return handGesture.isHandFree() && VRInputActions.valheim_Grab.GetState(inputSource);
         }
 
         private Vector3 GetCurrentDirection()

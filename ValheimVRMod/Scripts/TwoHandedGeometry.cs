@@ -1,7 +1,7 @@
+using ValheimVRMod.VRCore.Backends;
 using UnityEngine;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
-using Valve.VR;
 using static ValheimVRMod.Scripts.WeaponWield;
 
 namespace ValheimVRMod.Scripts
@@ -135,7 +135,7 @@ namespace ValheimVRMod.Scripts
 
         public class LocalAtgeirGeometryProvider : AtgeirGeometryProvider
         {
-            public static bool UsingArmpitAnchor { get { return VRPlayer.vrikRef != null && !SteamVR_Actions.valheim_Grab.GetState(VRPlayer.mainWeaponHandInputSource); } }
+            public static bool UsingArmpitAnchor { get { return VRPlayer.vrikRef != null && !VRInputActions.valheim_Grab.GetState(VRPlayer.mainWeaponHandInputSource); } }
 
             public LocalAtgeirGeometryProvider(float distanceBetweenGripAndRearEnd, LongGripStateProvider longGripStateProvider) :
                 base(distanceBetweenGripAndRearEnd, longGripStateProvider) { }
@@ -195,7 +195,7 @@ namespace ValheimVRMod.Scripts
 
         public class LocalBattleaxeGeometryProvider : BattleaxeGeometryProvider
         {
-            public static bool UsingArmpitAnchor { get { return VRPlayer.vrikRef != null && !SteamVR_Actions.valheim_Grab.GetState(VRPlayer.mainWeaponHandInputSource); } }
+            public static bool UsingArmpitAnchor { get { return VRPlayer.vrikRef != null && !VRInputActions.valheim_Grab.GetState(VRPlayer.mainWeaponHandInputSource); } }
 
             public LocalBattleaxeGeometryProvider(float distanceBetweenGripAndRearEnd, LongGripStateProvider longGripStateProvider) :
                 base(distanceBetweenGripAndRearEnd, longGripStateProvider) { }
@@ -241,7 +241,7 @@ namespace ValheimVRMod.Scripts
 
             public override Vector3 GetDesiredSingleHandedPosition(WeaponWield weaponWield)
             {
-                if (SteamVR_Actions.valheim_Grab.GetState(VRPlayer.mainWeaponHandInputSource))
+                if (VRInputActions.valheim_Grab.GetState(VRPlayer.mainWeaponHandInputSource))
                 {
                     return base.GetDesiredSingleHandedPosition(weaponWield);
                 }

@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <AssemblyName>ValheimVRMod</AssemblyName>
+    <LangVersion>latest</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <NoStdLib>true</NoStdLib>
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <AutomaticallyUseReferenceAssemblyPackages>false</AutomaticallyUseReferenceAssemblyPackages>
+    <FrameworkPathOverride>$(ValheimDir)/Valheim_Data/Managed</FrameworkPathOverride>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(VHVRSourceRoot)/ValheimVRMod/**/*.cs" Exclude="$(VHVRSourceRoot)/ValheimVRMod/**/obj/**/*.cs;$(VHVRSourceRoot)/ValheimVRMod/**/bin/**/*.cs" />
+    <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.3" PrivateAssets="all" />
+    <Reference Include="$(ValheimDir)/Valheim_Data/Managed/Unity*.dll" Private="false" />
+    <Reference Update="$(ValheimDir)/Valheim_Data/Managed/UnityEngine.CoreModule.dll" Publicize="true" />
+    <Reference Include="$(ValheimDir)/Valheim_Data/Managed/netstandard.dll" Private="false" />
+    <Reference Include="$(ValheimDir)/Valheim_Data/Managed/mscorlib.dll" Private="false" />
+    <Reference Include="$(ValheimDir)/Valheim_Data/Managed/System*.dll" Private="false" />
+    <Reference Include="$(ValheimDir)/Valheim_Data/Managed/assembly_valheim.dll" Publicize="true" Private="false" />
+    <Reference Include="$(ValheimDir)/Valheim_Data/Managed/assembly_utils.dll" Publicize="true" Private="false" />
+    <Reference Include="$(ValheimDir)/Valheim_Data/Managed/assembly_guiutils.dll" Publicize="true" Private="false" />
+    <Reference Include="$(ValheimDir)/Valheim_Data/Managed/assembly_postprocessing.dll" Publicize="true" Private="false" />
+    <Reference Include="$(ValheimDir)/Valheim_Data/Managed/gui_framework.dll" Private="false" />
+    <Reference Include="$(ValheimDir)/Valheim_Data/Managed/assembly_sunshafts.dll" Private="false" />
+    <Reference Include="$(ValheimDir)/Valheim_Data/Managed/Valve.Newtonsoft.Json.dll" Private="false" />
+    <Reference Include="$(ValheimDir)/Valheim_Data/Managed/final_ik.dll" Private="false" />
+    <Reference Include="$(ValheimDir)/Valheim_Data/Managed/root_motion_demo_assets.dll" Private="false" />
+    <Reference Include="$(ValheimDir)/Valheim_Data/Managed/root_motion_shared.dll" Private="false" />
+    <Reference Include="$(ValheimDir)/Valheim_Data/Managed/Bhaptics.Tact.dll" Private="false" />
+    <Reference Include="$(ValheimDir)/Valheim_Data/Managed/NDesk.Options.dll" Private="false" />
+    <Reference Include="$(ValheimDir)/BepInEx/core/BepInEx.dll" Private="false" />
+    <Reference Include="$(ValheimDir)/BepInEx/core/0Harmony.dll" Private="false" />
+    <ProjectReference Include="../SteamVR.Runtime/SteamVR.Runtime.csproj" />
+    <ProjectReference Include="../SteamVR.Actions/SteamVR.Actions.csproj" />
+  </ItemGroup>
+</Project>

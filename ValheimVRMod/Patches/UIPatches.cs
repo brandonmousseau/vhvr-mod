@@ -916,6 +916,19 @@ namespace ValheimVRMod.Patches
         }
     }
 
+    // The clone's Settings.Awake() fills Settings.SettingsTabs from the vanilla tabs and subscribes to
+    // TabHandler.ActiveTabChanged. createModSettings() then replaces the tabs with its own, which are more than
+    // the vanilla ones and are no ISettingsTab, so ActiveTabChanged() would open a hidden vanilla tab for the low
+    // indices and index out of range for the high ones.
+    [HarmonyPatch(typeof(Settings), "ActiveTabChanged")]
+    class Settings_ActiveTabChanged_VhvrSettingsPatch
+    {
+        static bool Prefix(Settings __instance)
+        {
+            return !ConfigSettings.isVHVRClone(__instance);
+        }
+    }
+
     // The menu button is ignored while the VHVR settings dialog is open, as vanilla ignores it while its own settings
     // are open (Menu.m_settingsInstance), which the VHVR dialog is not. Otherwise the menu would hide and show again
     // with the dialog left on top of it. The dialog is closed with its OK and Back buttons, so that a stray press

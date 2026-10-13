@@ -1,10 +1,9 @@
+using ValheimVRMod.VRCore.Backends;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
-using Valve.VR;
-using Valve.VR.InteractionSystem;
 
 namespace ValheimVRMod.Scripts
 {
@@ -145,7 +144,7 @@ namespace ValheimVRMod.Scripts
             {
                 if (fishingFloat)
                     fishingFloat.m_pullLineSpeed = 1;
-                isPulling = isFishing && SteamVR_Actions.valheim_Use.GetState(VRPlayer.mainWeaponHandInputSource);
+                isPulling = isFishing && VRInputActions.valheim_Use.GetState(VRPlayer.mainWeaponHandInputSource);
             }
 
             if (fishingFloat)
@@ -277,7 +276,7 @@ namespace ValheimVRMod.Scripts
                     VRPlayer.mainWeaponHand.otherHand.hapticAction.Execute(0, 0.002f, 150, 0.1f, VRPlayer.secondaryWeaponHandInputSource);
                 }
 
-                if (!SteamVR_Actions.valheim_Grab.GetState(VRPlayer.secondaryWeaponHandInputSource))
+                if (!VRInputActions.valheim_Grab.GetState(VRPlayer.secondaryWeaponHandInputSource))
                 {
                     reeltimer = 0;
                     reelStart = Vector3.zero;
@@ -288,7 +287,7 @@ namespace ValheimVRMod.Scripts
             }
             else
             {
-                if (SteamVR_Actions.valheim_Grab.GetState(VRPlayer.secondaryWeaponHandInputSource) && !LocalWeaponWield.isCurrentlyTwoHanded())
+                if (VRInputActions.valheim_Grab.GetState(VRPlayer.secondaryWeaponHandInputSource) && !LocalWeaponWield.isCurrentlyTwoHanded())
                 {
                     if (Vector3.Distance(offHandCenter, reelParent.transform.position) < 0.2f)
                     {

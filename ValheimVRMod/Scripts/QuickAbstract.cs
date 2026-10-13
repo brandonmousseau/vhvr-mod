@@ -1,3 +1,4 @@
+using ValheimVRMod.VRCore.Backends;
 using System;
 using System.Reflection;
 using HarmonyLib;
@@ -6,7 +7,6 @@ using ValheimVRMod.Patches;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using ValheimVRMod.VRCore.UI;
-using Valve.VR;
 
 namespace ValheimVRMod.Scripts
 {
@@ -715,7 +715,7 @@ namespace ValheimVRMod.Scripts
 
             shouldStartChat = true;
             // Holding Use opens the chat for a physical keyboard, without the SteamVR one.
-            InputManager.OpenChat(useSteamVrKeyboard: !SteamVR_Actions.valheim_Use.GetState(SteamVR_Input_Sources.Any));
+            InputManager.OpenChat(useSteamVrKeyboard: !VRInputActions.valheim_Use.GetState(VRInputSource.Any));
         }
 
         // What Chat.Update() requires before it opens the chat.

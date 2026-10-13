@@ -1,6 +1,6 @@
+using ValheimVRMod.VRCore.Backends;
 using System.Collections.Generic;
 using UnityEngine;
-using Valve.VR;
 using ValheimVRMod.VRCore;
 using ValheimVRMod.VRCore.UI;
 using UnityEngine.Rendering;
@@ -23,7 +23,7 @@ namespace ValheimVRMod.Scripts
         public static Vector3 startAim { get; private set; }
         public static bool isThrowing;
         public static bool isAiming { get; private set; }
-        public static bool preAimingInTwoStagedThrow { get { return VHVRConfig.ThrowingMode() == "TwoStagedThrowing" && !isAiming && SteamVR_Actions.valheim_Grab.GetState(VRPlayer.mainWeaponHandInputSource); } }
+        public static bool preAimingInTwoStagedThrow { get { return VHVRConfig.ThrowingMode() == "TwoStagedThrowing" && !isAiming && VRInputActions.valheim_Grab.GetState(VRPlayer.mainWeaponHandInputSource); } }
 
         private GameObject rotSave;
         private LineRenderer directionLine;
@@ -58,9 +58,9 @@ namespace ValheimVRMod.Scripts
             // Letting go of the grip, wielding the weapon with both hands, or any laser pointer coming up all
             // cancel an ongoing preparation rather than throw: throwing is disabled outright while a pointer is
             // active, regardless of whether Use and LeftClick happen to share a button.
-            if (!SteamVR_Actions.valheim_Grab.GetState(VRPlayer.mainWeaponHandInputSource) ||
+            if (!VRInputActions.valheim_Grab.GetState(VRPlayer.mainWeaponHandInputSource) ||
                 LocalWeaponWield.isCurrentlyTwoHanded() ||
-                LaserPointerChords.IsLaserActiveFor(SteamVR_Input_Sources.Any))
+                LaserPointerChords.IsLaserActiveFor(VRInputSource.Any))
             {
                 if (isAiming)
                 {
@@ -103,7 +103,7 @@ namespace ValheimVRMod.Scripts
             }
 
             tickCounter = 0;
-            if (!(VHVRConfig.UseThrowDirectionGraphicOnGrip() || (VHVRConfig.UseThrowDirectionGraphicOnTriggerGrip() && SteamVR_Actions.valheim_Use.GetState(VRPlayer.mainWeaponHandInputSource))))
+            if (!(VHVRConfig.UseThrowDirectionGraphicOnGrip() || (VHVRConfig.UseThrowDirectionGraphicOnTriggerGrip() && VRInputActions.valheim_Use.GetState(VRPlayer.mainWeaponHandInputSource))))
             {
                 return;
             }
@@ -126,7 +126,7 @@ namespace ValheimVRMod.Scripts
         }
         private void UpdateSecondHandAimCalculation()
         {
-            if (VHVRConfig.UseThrowDirectionGraphicOnTriggerGrip() && !SteamVR_Actions.valheim_Use.GetState(VRPlayer.mainWeaponHandInputSource))
+            if (VHVRConfig.UseThrowDirectionGraphicOnTriggerGrip() && !VRInputActions.valheim_Use.GetState(VRPlayer.mainWeaponHandInputSource))
             {
                 ShieldBlock.instance?.AdaptScaleShieldSize(1f);
             }
@@ -186,7 +186,7 @@ namespace ValheimVRMod.Scripts
 
             // The preparation phase lasts as long as the trigger is held on top of the grip; only entry into it is
             // gated on the laser pointer above, so a hold or release that started while gated still reads real.
-            if (SteamVR_Actions.valheim_Use.GetState(VRPlayer.mainWeaponHandInputSource))
+            if (VRInputActions.valheim_Use.GetState(VRPlayer.mainWeaponHandInputSource))
             {
                 if (!isAiming)
                 {
@@ -254,7 +254,7 @@ namespace ValheimVRMod.Scripts
 
         private void UpdateDirectionLine(Vector3 pos1, Vector3 pos2)
         {
-            if (!(VHVRConfig.UseThrowDirectionGraphicOnGrip() || (VHVRConfig.UseThrowDirectionGraphicOnTriggerGrip() && SteamVR_Actions.valheim_Use.GetState(VRPlayer.mainWeaponHandInputSource))) || LocalWeaponWield.isCurrentlyTwoHanded())
+            if (!(VHVRConfig.UseThrowDirectionGraphicOnGrip() || (VHVRConfig.UseThrowDirectionGraphicOnTriggerGrip() && VRInputActions.valheim_Use.GetState(VRPlayer.mainWeaponHandInputSource))) || LocalWeaponWield.isCurrentlyTwoHanded())
             {
                 return;
             }

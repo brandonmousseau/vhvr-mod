@@ -5,36 +5,12 @@ using UnityEngine;
 using ValheimVRMod.VRCore;
 using ValheimVRMod.VRCore.UI;
 using ValheimVRMod.Utilities;
-using Valve.VR.InteractionSystem;
 using Valheim.SettingsGui;
 using ValheimVRMod.Scripts;
 
 namespace ValheimVRMod.Patches
 {
-    [HarmonyPatch(typeof(Hand), "FixedUpdate")]
-    class PatchDebug
-    {
 
-        static bool Prefix(Hand __instance, ref List<Hand.AttachedObject> ___attachedObjects)
-        {
-            if (VHVRConfig.NonVrPlayer())
-            {
-                return true;
-            }
-            if (__instance.currentAttachedObject == null)
-            {
-                return false;
-            }
-
-            if (__instance.currentAttachedObjectInfo.Value.interactable == null)
-            {
-                ___attachedObjects.RemoveAt(___attachedObjects.Count - 1);
-                return false;
-            }
-
-            return true;
-        }
-    }
 
     [HarmonyPatch(typeof(Character), "SetVisible")]
     class PatchFixVanishing

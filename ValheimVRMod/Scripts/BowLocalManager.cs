@@ -1,3 +1,4 @@
+using ValheimVRMod.VRCore.Backends;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -5,8 +6,6 @@ using UnityEngine.Rendering;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using ValheimVRMod.VRCore.UI;
-using Valve.VR;
-using Valve.VR.InteractionSystem;
 
 namespace ValheimVRMod.Scripts {
     public class BowLocalManager : BowManager {
@@ -140,21 +139,21 @@ namespace ValheimVRMod.Scripts {
 
             // Enable using the bow hand orientation alone for aiming if the bow hand is holding down both the grip and the trigger.
             bowHandAiming =
-                SteamVR_Actions.valheim_Grab.GetState(VRPlayer.bowHandInputSource) &&
-                SteamVR_Actions.valheim_Use.GetState(bowHand);
+                VRInputActions.valheim_Grab.GetState(VRPlayer.bowHandInputSource) &&
+                VRInputActions.valheim_Use.GetState(bowHand);
 
             bool pullInputHeld =
-                SteamVR_Actions.valheim_Use.GetState(pullingSource) ||
-                SteamVR_Actions.valheim_Grab.GetState(pullingSource);
+                VRInputActions.valheim_Use.GetState(pullingSource) ||
+                VRInputActions.valheim_Grab.GetState(pullingSource);
             // Only the start of a draw is disabled while any laser pointer is up; a draw already in progress
             // keeps being read, and so does its release below, so a pointer coming up mid-draw (e.g. a container
             // opening) can never strand the string half-drawn or force-release it.
-            if (pullInputHeld && (pulling || !LaserPointerChords.IsLaserActiveFor(SteamVR_Input_Sources.Any))) {
+            if (pullInputHeld && (pulling || !LaserPointerChords.IsLaserActiveFor(VRInputSource.Any))) {
                 handlePulling();
             }
 
-            if (SteamVR_Actions.valheim_Use.GetStateUp(pullingSource) ||
-                SteamVR_Actions.valheim_Grab.GetStateUp(pullingSource)) {
+            if (VRInputActions.valheim_Use.GetStateUp(pullingSource) ||
+                VRInputActions.valheim_Grab.GetStateUp(pullingSource)) {
                 releaseString();
             }
 

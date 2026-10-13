@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <AssemblyName>SteamVR</AssemblyName>
+    <LangVersion>latest</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <NoStdLib>true</NoStdLib>
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <AutomaticallyUseReferenceAssemblyPackages>false</AutomaticallyUseReferenceAssemblyPackages>
+    <FrameworkPathOverride>$(ValheimDir)/Valheim_Data/Managed</FrameworkPathOverride>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <DefineConstants>UNITY_STANDALONE;UNITY_STANDALONE_WIN;UNITY_5_3_OR_NEWER;UNITY_5_4_OR_NEWER;UNITY_5_5_OR_NEWER;UNITY_5_6_OR_NEWER;UNITY_2017_1_OR_NEWER;UNITY_2017_2_OR_NEWER;UNITY_2017_3_OR_NEWER;UNITY_2017_4_OR_NEWER;UNITY_2018_1_OR_NEWER;UNITY_2018_2_OR_NEWER;UNITY_2018_3_OR_NEWER;UNITY_2018_4_OR_NEWER;UNITY_2019_1_OR_NEWER;UNITY_2019_2_OR_NEWER;UNITY_2019_3_OR_NEWER;UNITY_2019_4_OR_NEWER;UNITY_2020_1_OR_NEWER;UNITY_2020_2_OR_NEWER;UNITY_2020_3_OR_NEWER;UNITY_2021_1_OR_NEWER;UNITY_2021_2_OR_NEWER;UNITY_2021_3_OR_NEWER;UNITY_2022_1_OR_NEWER;UNITY_2022_2_OR_NEWER;UNITY_2022_3_OR_NEWER;UNITY_2023_1_OR_NEWER;UNITY_2023_2_OR_NEWER;UNITY_2023_3_OR_NEWER;UNITY_6000_0_OR_NEWER</DefineConstants>
+    <!-- Match SteamVR.asmdef versionDefines for the bundled XR packages. -->
+    <DefineConstants>$(DefineConstants);OPENVR_XR_API;UNITY_LEGACY_INPUT_HELPERS</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Using Include="UnityEngine.PhysicsMaterial" Alias="PhysicMaterial" />
+    <Using Include="UnityEngine.PhysicsMaterialCombine" Alias="PhysicMaterialCombine" />
+    <Compile Include="$(VHVRSourceRoot)/Unity/ValheimVR/Assets/SteamVR/**/*.cs" Exclude="$(VHVRSourceRoot)/Unity/ValheimVR/Assets/SteamVR/**/Editor/**/*.cs;$(VHVRSourceRoot)/Unity/ValheimVR/Assets/SteamVR/OpenVRUnityXRPackage/**/*.cs;$(VHVRSourceRoot)/Unity/ValheimVR/Assets/SteamVR/WindowsHelper/**/*.cs" />
+    <Reference Include="$(ValheimDir)/Valheim_Data/Managed/Unity*.dll" Private="false" />
+    <Reference Include="$(ValheimDir)/Valheim_Data/Managed/netstandard.dll" Private="false" />
+    <Reference Include="$(ValheimDir)/Valheim_Data/Managed/mscorlib.dll" Private="false" />
+    <Reference Include="$(ValheimDir)/Valheim_Data/Managed/System*.dll" Private="false" />
+    <Reference Include="$(ValheimDir)/Valheim_Data/Managed/Valve.Newtonsoft.Json.dll" Private="false" />
+  </ItemGroup>
+</Project>

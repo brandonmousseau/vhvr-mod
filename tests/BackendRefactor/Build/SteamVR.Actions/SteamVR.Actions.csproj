@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <AssemblyName>SteamVR_Actions</AssemblyName>
+    <LangVersion>latest</LangVersion>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <NoStdLib>true</NoStdLib>
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <AutomaticallyUseReferenceAssemblyPackages>false</AutomaticallyUseReferenceAssemblyPackages>
+    <FrameworkPathOverride>$(ValheimDir)/Valheim_Data/Managed</FrameworkPathOverride>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(VHVRSourceRoot)/Unity/ValheimVR/Assets/SteamVR_Input/**/*.cs" />
+    <Reference Include="$(ValheimDir)/Valheim_Data/Managed/Unity*.dll" Private="false" />
+    <Reference Include="$(ValheimDir)/Valheim_Data/Managed/netstandard.dll" Private="false" />
+    <Reference Include="$(ValheimDir)/Valheim_Data/Managed/mscorlib.dll" Private="false" />
+    <Reference Include="$(ValheimDir)/Valheim_Data/Managed/System*.dll" Private="false" />
+    <ProjectReference Include="../SteamVR.Runtime/SteamVR.Runtime.csproj" />
+  </ItemGroup>
+</Project>
