@@ -863,6 +863,7 @@ namespace ValheimVRMod.VRCore
                     UpdateTrackedPoseDriverPoseSource();
                     gameObject.GetOrAddComponent<Pose>();
                     gameObject.GetOrAddComponent<InterhandItemTransfer>();
+                    gameObject.GetOrAddComponent<HeldConsumable>();
                 }
             }
             return _instance != null;

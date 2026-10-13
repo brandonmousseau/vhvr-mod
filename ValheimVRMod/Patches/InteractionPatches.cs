@@ -6,6 +6,7 @@ using ValheimVRMod.Scripts;
 using ValheimVRMod.Utilities;
 using System.Collections.Generic;
 using System.Reflection.Emit;
+using UnityEngine.EventSystems;
 
 
 namespace ValheimVRMod.Patches
@@ -38,6 +39,13 @@ namespace ValheimVRMod.Patches
 
             if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls()) {
                 return true;
+            }
+
+            if (shouldChange == HandItemPatchTarget.Both ||
+                (shouldChange == HandItemPatchTarget.MainHandOnly ? HeldConsumable.isHoldingInMainHand : HeldConsumable.isHoldingInOffHand))
+            {
+                // E. g. when starting to swim.
+                HeldConsumable.PutAway(restoreWeapon: false);
             }
 
             if (___m_leftItem == null && ___m_rightItem == null)
@@ -131,6 +139,69 @@ namespace ValheimVRMod.Patches
             shouldChange = HandItemPatchTarget.Both; // Patching is done.
 
             return false;
+        }
+    }
+
+    // Using a food or mead puts it in the hand, to be consumed with a gesture, rather than consuming it right away.
+    [HarmonyPatch(typeof(Player), nameof(Player.ConsumeItem))]
+    class PatchConsumeItem
+    {
+        static bool Prefix(Player __instance, Inventory inventory, ItemDrop.ItemData item, bool checkWorldLevel, ref bool __result)
+        {
+            if (__instance != Player.m_localPlayer || !VHVRConfig.UseVrControls() || HeldConsumable.isConsuming)
+            {
+                return true;
+            }
+
+            // Food eaten directly from a container is consumed right away as usual.
+            if (inventory != __instance.GetInventory())
+            {
+                return true;
+            }
+
+            // Returning false keeps Humanoid.UseItem() from playing the eating effects.
+            __result = false;
+            if (HeldConsumable.IsHolding(item))
+            {
+                HeldConsumable.PutAway(restoreWeapon: true);
+            }
+            else
+            {
+                // Whether it can be consumed is checked when it is brought to the mouth.
+                HeldConsumable.Hold(inventory, item);
+                // With the food in hand the inventory is in the way, unless a container is open to go on with.
+                if (InventoryGui.IsVisible() && !InventoryGui.instance.IsContainerOpen())
+                {
+                    InventoryGui.instance.Hide();
+                }
+            }
+            return false;
+        }
+    }
+
+    // A middle click on a food or mead in the inventory consumes it right away, like the vanilla right click.
+    [HarmonyPatch(typeof(UIInputHandler), nameof(UIInputHandler.OnPointerDown))]
+    class PatchInventoryMiddleClick
+    {
+        static void Postfix(UIInputHandler __instance, PointerEventData eventData)
+        {
+            if (eventData.button != PointerEventData.InputButton.Middle || !VHVRConfig.UseVrControls() || Player.m_localPlayer == null)
+            {
+                return;
+            }
+
+            var grid = __instance.GetComponentInParent<InventoryGrid>();
+            if (grid == null || grid.GetInventory() == null)
+            {
+                return;
+            }
+
+            Vector2i pos = grid.GetButtonPos(__instance.gameObject);
+            var item = grid.GetInventory().GetItemAt(pos.x, pos.y);
+            if (item != null && item.m_shared.m_itemType == ItemDrop.ItemData.ItemType.Consumable)
+            {
+                HeldConsumable.ConsumeRightAway(grid.GetInventory(), item);
+            }
         }
     }
 
