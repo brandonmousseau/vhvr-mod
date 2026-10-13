@@ -421,6 +421,10 @@ namespace ValheimVRMod.VRCore.UI
                 createUiPanelCamera();
             }
             updateUiPanelScaleAndPosition();
+            // Here, where the panel has just been placed, rather than when a laser pointer reports hitting it: that
+            // is in Update, where the panel still is where the previous frame left it while the pointer has already
+            // moved with the player, so the cursor would be off by the travel in between.
+            UpdateCursorPosition();
             if (_guiCanvases.Count > 0 && _guiTexture != null && ++textureUpdateTicker > 128)
             {
                 textureUpdateTicker = 0;
@@ -508,7 +512,6 @@ namespace ValheimVRMod.VRCore.UI
             if (attachedToHand)
             {
                 UpdateHandAttachedTransform();
-                UpdateCursorPosition();
                 return;
             }
 
@@ -734,9 +737,14 @@ namespace ValheimVRMod.VRCore.UI
                 return;
             }
 
-            // TODO: consider parenting _uiPanel to hand when inventory is open
-            UpdateHandAttachedTransform();
-            UpdateCursorPosition();
+            // A panel that is not held in the hand still is where the previous frame left it, its cursor is
+            // updated once it has been placed for this frame instead, see updateUiPanel().
+            if (attachedToHand)
+            {
+                // TODO: consider parenting _uiPanel to hand when inventory is open
+                UpdateHandAttachedTransform();
+                UpdateCursorPosition();
+            }
             UpdateMouseButtonsFromLaserPointer();
         }
 
@@ -755,27 +763,49 @@ namespace ValheimVRMod.VRCore.UI
                 return;
             }
 
-            // TODO: consider parenting _uiPanel to hand when inventory is open
-            UpdateHandAttachedTransform();
-            UpdateCursorPosition();
+            // A panel that is not held in the hand still is where the previous frame left it, its cursor is
+            // updated once it has been placed for this frame instead, see updateUiPanel().
+            if (attachedToHand)
+            {
+                // TODO: consider parenting _uiPanel to hand when inventory is open
+                UpdateHandAttachedTransform();
+                UpdateCursorPosition();
+            }
 
             _inputModule.UpdateButtonStates(e.buttonStateLeft, e.buttonStateRight, false);
         }
 
         private void UpdateCursorPosition()
         {
-            if (!_leftPointer.pointerIsActive() && !_rightPointer.pointerIsActive())
+            // The pointers may not be there yet: the panel is placed from the first frame on, before the hands are.
+            if (_leftPointer == null || _rightPointer == null || VRPlayer.activePointer == null ||
+                (!_leftPointer.pointerIsActive() && !_rightPointer.pointerIsActive()))
             {
                 return;
             }
 
             if (!tryGetPreciseRayInHeldPanel(VRPlayer.activePointer, out Vector3 localStart, out Vector3 localDir))
             {
-                localDir = _uiPanel.InverseTransformVector(VRPlayer.activePointer.rayDirection * Vector3.forward);
-                localStart = _uiPanel.InverseTransformPoint(VRPlayer.activePointer.rayStartingPosition);
+                // The ray is taken off the pointer as it is right now, rather than as the pointer's last Update left
+                // it: this is called right after the panel is placed, and the two only line up while the player is
+                // moving, e.g. sliding on ice, if they are from the same instant.
+                GameObject holder = VRPlayer.activePointer.holder;
+                Vector3 rayStart =
+                    holder != null ? holder.transform.position : VRPlayer.activePointer.rayStartingPosition;
+                Vector3 rayForward =
+                    holder != null ? holder.transform.forward : VRPlayer.activePointer.rayDirection * Vector3.forward;
+                localDir = _uiPanel.InverseTransformVector(rayForward);
+                localStart = _uiPanel.InverseTransformPoint(rayStart);
             }
             // This is more precise than using raycast hit position especially when the player is moving fast
             var correctedLocalHit = localStart - localDir * (localStart.z / localDir.z);
+            if (!attachedToHand &&
+                (localStart.z * localDir.z >= 0 ||
+                    Mathf.Abs(correctedLocalHit.x) > 0.5f || Mathf.Abs(correctedLocalHit.y) > 0.5f))
+            {
+                // Pointing away from the panel or past its edge, the cursor stays where it last was on it.
+                return;
+            }
 
             if (_inputModule.inLaserClickDeadZone)
             {
