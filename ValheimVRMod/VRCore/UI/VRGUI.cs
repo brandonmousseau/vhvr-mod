@@ -165,6 +165,7 @@ namespace ValheimVRMod.VRCore.UI
         private float nextScrollRepeatTime;
 
         private static bool isRecentering = false;
+        private bool wasMenuOpen;
         private bool movingLastFrame = false;
         private Quaternion lastVrPlayerRotation = Quaternion.identity;
         private bool showingChatBox = false;
@@ -486,6 +487,27 @@ namespace ValheimVRMod.VRCore.UI
             else if ((!wasAttachableUI || reattachWhenKeyboardCloses) && isAttachableToHandAsInventoryOrBuildMenu && !shouldInstantlyDetachPanelFromHand())
             {
                 attachPanelToHand();
+            }
+
+            bool isMenuOpen = menuIsOpen();
+            bool menuJustOpened = isMenuOpen && !wasMenuOpen;
+            wasMenuOpen = isMenuOpen;
+            if (menuJustOpened && !attachedToHand && !Player.m_localPlayer.IsAttachedToShip())
+            {
+                // A menu opens in front of where the player is looking, instead of wherever the GUI last settled.
+                // Placed at once rather than by recentering, which moves gradually and which locking the GUI while
+                // a menu is open cancels.
+                var menuDirection = getTargetGuiDirection();
+                if (menuDirection != Vector3.zero)
+                {
+                    var menuRotation = Quaternion.LookRotation(menuDirection, VRPlayer.instance.transform.up);
+                    _uiPanel.SetPositionAndRotation(
+                        Player.m_localPlayer.transform.position + menuRotation * desiredOffset, menuRotation);
+                    _uiPanel.transform.localScale = desiredSize;
+                    _uiPanelTransformLocker.SetPositionAndRotation(_uiPanel.position, _uiPanel.rotation);
+                    lastVrPlayerRotation = VRPlayer.instance.transform.rotation;
+                    isRecentering = false;
+                }
             }
 
             if (shouldLockDynamicGuiPosition())
