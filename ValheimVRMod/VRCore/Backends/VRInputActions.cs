@@ -48,6 +48,10 @@ namespace ValheimVRMod.VRCore.Backends
         public static VRBooleanAction valheim_ScrollUp { get; private set; }
         public static VRBooleanAction valheim_ScrollDown { get; private set; }
         public static VRBooleanAction valheim_RemovePiece { get; private set; }
+        public static VRBooleanAction valheim_FacePieceToward { get; private set; }
+        public static VRBooleanAction valheim_FacePieceAway { get; private set; }
+        public static VRBooleanAction valheim_RotatePieceClockwise { get; private set; }
+        public static VRBooleanAction valheim_RotatePieceCounterclockwise { get; private set; }
         public static VRHapticAction valheim_Haptic { get; private set; }
 
         // Every action is resolved here, once, rather than where it is read: reads stay a plain static load,
@@ -97,6 +101,10 @@ namespace ValheimVRMod.VRCore.Backends
             valheim_ScrollUp = input.Boolean("/actions/Valheim/in/ScrollUp");
             valheim_ScrollDown = input.Boolean("/actions/Valheim/in/ScrollDown");
             valheim_RemovePiece = input.Boolean("/actions/Valheim/in/RemovePiece");
+            valheim_FacePieceToward = input.Boolean("/actions/Valheim/in/FacePieceToward");
+            valheim_FacePieceAway = input.Boolean("/actions/Valheim/in/FacePieceAway");
+            valheim_RotatePieceClockwise = input.Boolean("/actions/Valheim/in/RotatePieceClockwise");
+            valheim_RotatePieceCounterclockwise = input.Boolean("/actions/Valheim/in/RotatePieceCounterclockwise");
             valheim_Haptic = input.Haptic("/actions/Valheim/out/Haptic");
         }
     }

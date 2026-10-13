@@ -289,6 +289,38 @@ namespace Valve.VR
             }
         }
         
+        public virtual SteamVR_Action_Boolean FacePieceToward
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_FacePieceToward;
+            }
+        }
+        
+        public virtual SteamVR_Action_Boolean FacePieceAway
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_FacePieceAway;
+            }
+        }
+        
+        public virtual SteamVR_Action_Boolean RotatePieceClockwise
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_RotatePieceClockwise;
+            }
+        }
+        
+        public virtual SteamVR_Action_Boolean RotatePieceCounterclockwise
+        {
+            get
+            {
+                return SteamVR_Actions.valheim_RotatePieceCounterclockwise;
+            }
+        }
+        
         public virtual SteamVR_Action_Vibration Haptic
         {
             get

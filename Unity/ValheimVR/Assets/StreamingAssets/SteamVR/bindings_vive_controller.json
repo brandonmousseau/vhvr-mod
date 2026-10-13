@@ -190,6 +190,34 @@
             {
                "inputs" : [
                   [ "/user/hand/right/input/grip", "click" ],
+                  [ "/user/hand/right/input/trackpad", "south" ]
+               ],
+               "output" : "/actions/valheim/in/facepiecetoward"
+            },
+            {
+               "inputs" : [
+                  [ "/user/hand/right/input/grip", "click" ],
+                  [ "/user/hand/right/input/trackpad", "north" ]
+               ],
+               "output" : "/actions/valheim/in/facepieceaway"
+            },
+            {
+               "inputs" : [
+                  [ "/user/hand/right/input/grip", "click" ],
+                  [ "/user/hand/right/input/trackpad", "west" ]
+               ],
+               "output" : "/actions/valheim/in/rotatepiececlockwise"
+            },
+            {
+               "inputs" : [
+                  [ "/user/hand/right/input/grip", "click" ],
+                  [ "/user/hand/right/input/trackpad", "east" ]
+               ],
+               "output" : "/actions/valheim/in/rotatepiececounterclockwise"
+            },
+            {
+               "inputs" : [
+                  [ "/user/hand/right/input/grip", "click" ],
                   [ "/user/hand/right/input/trackpad", "click" ]
                ],
                "output" : "/actions/valheim/in/removepiece"
@@ -287,6 +315,29 @@
          ],
          "skeleton" : [],
          "sources" : [
+            {
+               "inputs" : {
+                  "east" : {
+                     "output" : "/actions/valheim/in/stopgesturedlocomotion"
+                  },
+                  "north" : {
+                     "output" : "/actions/valheim/in/stopgesturedlocomotion"
+                  },
+                  "south" : {
+                     "output" : "/actions/valheim/in/stopgesturedlocomotion"
+                  },
+                  "west" : {
+                     "output" : "/actions/valheim/in/stopgesturedlocomotion"
+                  }
+               },
+               "mode" : "dpad",
+               "parameters" : {
+                  "deadzone_pct" : "25",
+                  "overlap_pct" : "0",
+                  "sub_mode" : "touch"
+               },
+               "path" : "/user/hand/right/input/trackpad"
+            },
             {
                "inputs" : {
                   "click" : {

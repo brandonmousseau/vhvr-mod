@@ -299,12 +299,13 @@ namespace ValheimVRMod.VRCore.UI
         private void updateAltPieceRotationTimer()
         {
             altPieceRotationElapsedTime += Time.unscaledDeltaTime;
-            if (altPieceRotationElapsedTime >= ALT_PIECE_ROTATION_TIME_DELAY * VHVRConfig.AltPieceRotationDelay() || (combinedPitchAndYawX != 0 && !wasAltPieceTriggered))
+            bool isRotating = getPieceRotationDirection() != 0;
+            if (altPieceRotationElapsedTime >= ALT_PIECE_ROTATION_TIME_DELAY * VHVRConfig.AltPieceRotationDelay() || (isRotating && !wasAltPieceTriggered))
             {
                 altPieceTriggered = true;
                 altPieceRotationElapsedTime = 0f;
             }
-            if (combinedPitchAndYawX != 0)
+            if (isRotating)
             {
                 wasAltPieceTriggered = true;
             }
@@ -688,19 +689,58 @@ namespace ValheimVRMod.VRCore.UI
         }
         public int getDirectPieceRotation()
         {
-            if (!altPieceRotationControlsActive() || BuildingManager.instance == null)
+            if (BuildingManager.instance == null)
             {
                 return 999;
             }
-            if (-pitchAndYaw.axis.y>0.5f)
+            switch (getPieceFacingDirection())
             {
-                return BuildingManager.instance.TranslateRotation() + 8;
-            }
-            else if (-pitchAndYaw.axis.y < -0.5f)
-            {
-                return BuildingManager.instance.TranslateRotation();
+                case -1:
+                    return BuildingManager.instance.TranslateRotation() + 8;
+                case 1:
+                    return BuildingManager.instance.TranslateRotation();
             }
             return 999;
+        }
+
+        // The direction held on the RotatePieceClockwise/RotatePieceCounterclockwise buttons while a piece can be
+        // rotated: 1 for clockwise, -1 for counterclockwise, 0 for neither.
+        public int getPieceRotationDirection()
+        {
+            if (!pieceRotationControlsActive())
+            {
+                return 0;
+            }
+            int direction = 0;
+            if (VRInputActions.valheim_RotatePieceClockwise.GetState(VRInputSource.Any))
+            {
+                direction++;
+            }
+            if (VRInputActions.valheim_RotatePieceCounterclockwise.GetState(VRInputSource.Any))
+            {
+                direction--;
+            }
+            return direction;
+        }
+
+        // The direction held on the FacePieceAway/FacePieceToward buttons while a piece can be rotated: 1 for away
+        // from the player, -1 for toward the player, 0 for neither.
+        public int getPieceFacingDirection()
+        {
+            if (!pieceRotationControlsActive())
+            {
+                return 0;
+            }
+            int direction = 0;
+            if (VRInputActions.valheim_FacePieceAway.GetState(VRInputSource.Any))
+            {
+                direction++;
+            }
+            if (VRInputActions.valheim_FacePieceToward.GetState(VRInputSource.Any))
+            {
+                direction--;
+            }
+            return direction;
         }
 
         public int getDirectRightYAxis()
@@ -738,7 +778,7 @@ namespace ValheimVRMod.VRCore.UI
 
         public int getPieceRotation()
         {
-            if (altPieceRotationControlsActive())
+            if (pieceRotationControlsActive())
             {
                 return getAltPieceRotation();
             }
@@ -794,19 +834,7 @@ namespace ValheimVRMod.VRCore.UI
                 return 0;
             }
             altPieceTriggered = false;
-            float rightStickXAxis = combinedPitchAndYawX;
-            if (rightStickXAxis > 0.1f)
-            {
-                return -1;
-            }
-            else if (rightStickXAxis < -0.1f)
-            {
-                return 1;
-            }
-            else
-            {
-                return 0;
-            }
+            return getPieceRotationDirection();
         }
 
         public int getPieceRefModifier()
@@ -872,7 +900,17 @@ namespace ValheimVRMod.VRCore.UI
         // disable context scrolling for now 
         private bool altPieceRotationControlsActive()
         {
-            return inPlaceMode() && !Hud.IsPieceSelectionVisible() && VRInputActions.valheim_Grab.GetState(VRInputSource.RightHand);
+            return pieceRotationControlsActive() &&
+                (VRInputActions.valheim_Grab.GetState(VRInputSource.RightHand) ||
+                    getPieceRotationDirection() != 0 ||
+                    getPieceFacingDirection() != 0);
+        }
+
+        // Whether the piece rotation buttons apply: there is nothing to rotate while the build menu is open, where
+        // the buttons they are bound to by default (right grip + right stick) scroll instead.
+        private bool pieceRotationControlsActive()
+        {
+            return mainActionSet.IsActive() && inPlaceMode() && !Hud.IsPieceSelectionVisible();
         }
 
         private bool InRemovePieceContext()

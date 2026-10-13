@@ -105,6 +105,14 @@ namespace Valve.VR
 
         private static SteamVR_Action_Boolean p_valheim_RemovePiece;
         
+        private static SteamVR_Action_Boolean p_valheim_FacePieceToward;
+        
+        private static SteamVR_Action_Boolean p_valheim_FacePieceAway;
+        
+        private static SteamVR_Action_Boolean p_valheim_RotatePieceClockwise;
+        
+        private static SteamVR_Action_Boolean p_valheim_RotatePieceCounterclockwise;
+        
         private static SteamVR_Action_Vibration p_valheim_Haptic;
         
         public static SteamVR_Action_Boolean default_InteractUI
@@ -459,6 +467,38 @@ namespace Valve.VR
             }
         }
         
+        public static SteamVR_Action_Boolean valheim_FacePieceToward
+        {
+            get
+            {
+                return SteamVR_Actions.p_valheim_FacePieceToward.GetCopy<SteamVR_Action_Boolean>();
+            }
+        }
+        
+        public static SteamVR_Action_Boolean valheim_FacePieceAway
+        {
+            get
+            {
+                return SteamVR_Actions.p_valheim_FacePieceAway.GetCopy<SteamVR_Action_Boolean>();
+            }
+        }
+        
+        public static SteamVR_Action_Boolean valheim_RotatePieceClockwise
+        {
+            get
+            {
+                return SteamVR_Actions.p_valheim_RotatePieceClockwise.GetCopy<SteamVR_Action_Boolean>();
+            }
+        }
+        
+        public static SteamVR_Action_Boolean valheim_RotatePieceCounterclockwise
+        {
+            get
+            {
+                return SteamVR_Actions.p_valheim_RotatePieceCounterclockwise.GetCopy<SteamVR_Action_Boolean>();
+            }
+        }
+        
         public static SteamVR_Action_Vibration valheim_Haptic
         {
             get
@@ -514,6 +554,10 @@ namespace Valve.VR
                     SteamVR_Actions.valheim_ScrollUp,
                     SteamVR_Actions.valheim_ScrollDown,
                     SteamVR_Actions.valheim_RemovePiece,
+                    SteamVR_Actions.valheim_FacePieceToward,
+                    SteamVR_Actions.valheim_FacePieceAway,
+                    SteamVR_Actions.valheim_RotatePieceClockwise,
+                    SteamVR_Actions.valheim_RotatePieceCounterclockwise,
                     SteamVR_Actions.valheim_Haptic};
             Valve.VR.SteamVR_Input.actionsIn = new Valve.VR.ISteamVR_Action_In[] {
                     SteamVR_Actions.default_InteractUI,
@@ -558,7 +602,11 @@ namespace Valve.VR
                     SteamVR_Actions.valheim_SplitStack,
                     SteamVR_Actions.valheim_ScrollUp,
                     SteamVR_Actions.valheim_ScrollDown,
-                    SteamVR_Actions.valheim_RemovePiece};
+                    SteamVR_Actions.valheim_RemovePiece,
+                    SteamVR_Actions.valheim_FacePieceToward,
+                    SteamVR_Actions.valheim_FacePieceAway,
+                    SteamVR_Actions.valheim_RotatePieceClockwise,
+                    SteamVR_Actions.valheim_RotatePieceCounterclockwise};
             Valve.VR.SteamVR_Input.actionsOut = new Valve.VR.ISteamVR_Action_Out[] {
                     SteamVR_Actions.default_Haptic,
                     SteamVR_Actions.valheim_Haptic};
@@ -602,7 +650,11 @@ namespace Valve.VR
                     SteamVR_Actions.valheim_SplitStack,
                     SteamVR_Actions.valheim_ScrollUp,
                     SteamVR_Actions.valheim_ScrollDown,
-                    SteamVR_Actions.valheim_RemovePiece};
+                    SteamVR_Actions.valheim_RemovePiece,
+                    SteamVR_Actions.valheim_FacePieceToward,
+                    SteamVR_Actions.valheim_FacePieceAway,
+                    SteamVR_Actions.valheim_RotatePieceClockwise,
+                    SteamVR_Actions.valheim_RotatePieceCounterclockwise};
             Valve.VR.SteamVR_Input.actionsSingle = new Valve.VR.SteamVR_Action_Single[] {
                     SteamVR_Actions.default_Squeeze};
             Valve.VR.SteamVR_Input.actionsVector2 = new Valve.VR.SteamVR_Action_Vector2[] {
@@ -651,7 +703,11 @@ namespace Valve.VR
                     SteamVR_Actions.valheim_SplitStack,
                     SteamVR_Actions.valheim_ScrollUp,
                     SteamVR_Actions.valheim_ScrollDown,
-                    SteamVR_Actions.valheim_RemovePiece};
+                    SteamVR_Actions.valheim_RemovePiece,
+                    SteamVR_Actions.valheim_FacePieceToward,
+                    SteamVR_Actions.valheim_FacePieceAway,
+                    SteamVR_Actions.valheim_RotatePieceClockwise,
+                    SteamVR_Actions.valheim_RotatePieceCounterclockwise};
         }
         
         private static void PreInitActions()
@@ -700,6 +756,10 @@ namespace Valve.VR
             SteamVR_Actions.p_valheim_ScrollUp = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/Valheim/in/ScrollUp")));
             SteamVR_Actions.p_valheim_ScrollDown = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/Valheim/in/ScrollDown")));
             SteamVR_Actions.p_valheim_RemovePiece = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/Valheim/in/RemovePiece")));
+            SteamVR_Actions.p_valheim_FacePieceToward = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/Valheim/in/FacePieceToward")));
+            SteamVR_Actions.p_valheim_FacePieceAway = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/Valheim/in/FacePieceAway")));
+            SteamVR_Actions.p_valheim_RotatePieceClockwise = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/Valheim/in/RotatePieceClockwise")));
+            SteamVR_Actions.p_valheim_RotatePieceCounterclockwise = ((SteamVR_Action_Boolean)(SteamVR_Action.Create<SteamVR_Action_Boolean>("/actions/Valheim/in/RotatePieceCounterclockwise")));
             SteamVR_Actions.p_valheim_Haptic = ((SteamVR_Action_Vibration)(SteamVR_Action.Create<SteamVR_Action_Vibration>("/actions/Valheim/out/Haptic")));
         }
     }
