@@ -26,26 +26,35 @@ namespace ValheimVRMod.Utilities
             "Carrot".GetStableHashCode(),
             "MushroomJotunPuffs".GetStableHashCode(),
             "MushroomMagecap".GetStableHashCode(),
-            "MushroomSmokePuff".GetStableHashCode()
+            "MushroomSmokePuff".GetStableHashCode(),
+            "Mushroom".GetStableHashCode()
         };
 
         private static readonly HashSet<int> ITEMS_LAID_BELOW_PINKY = new HashSet<int>
         {
-            "MeatballsMashedPoteitr".GetStableHashCode()
+            "MeatballsMashedPoteitr".GetStableHashCode(),
+            "Pancakes".GetStableHashCode(),
+            "MarinatedGreens".GetStableHashCode()
         };
 
         // The items that the vanilla prefab puts on the back of the right hand rather than in its palm.
         private static readonly HashSet<int> ITEMS_HELD_ON_BACK_OF_HAND = new HashSet<int>
         {
             "OvenPancake".GetStableHashCode(),
-            "SparklingShroomshake".GetStableHashCode()
+            "SparklingShroomshake".GetStableHashCode(),
+            "ShocklateSmoothie".GetStableHashCode(),
+            "QueensJam".GetStableHashCode(),
+            "BakedPoteitr".GetStableHashCode(),
+            "Kale".GetStableHashCode(),
+            "SpicyMarmalade".GetStableHashCode()
         };
 
         // The items whose big end the vanilla prefab points to the little finger. They are to be held with it towards
         // the thumb instead.
         private static readonly HashSet<int> ITEMS_POINTING_TO_PINKY = new HashSet<int>
         {
-            "CookedWolfMeat".GetStableHashCode()
+            "CookedWolfMeat".GetStableHashCode(),
+            "CookedMeat".GetStableHashCode()
         };
 
         // The items whose equip offset is off by more than the height of the prefab that it was made for (see
@@ -74,6 +83,16 @@ namespace ValheimVRMod.Utilities
             "StaffFrostOrbs".GetStableHashCode(),
             "StaffSkeleton".GetStableHashCode(),
             "StaffSpiritCaller".GetStableHashCode(),
+            "BombOoze".GetStableHashCode(),
+            "BombBile".GetStableHashCode(),
+            "BombSmoke".GetStableHashCode(),
+            "BombLava".GetStableHashCode(),
+            "BombBlob_Frost".GetStableHashCode(),
+            "BombBlob_Lava".GetStableHashCode(),
+            "BombBlob_Morkhalla".GetStableHashCode(),
+            "BombBlob_Poison".GetStableHashCode(),
+            "BombBlob_PoisonElite".GetStableHashCode(),
+            "BombBlob_Tar".GetStableHashCode(),
         };
 
         // The normal of the plane that an item is symmetric about, for the items whose model does not tell (see
