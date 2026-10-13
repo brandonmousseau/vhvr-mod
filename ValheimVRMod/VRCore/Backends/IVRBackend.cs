@@ -4,7 +4,6 @@ using UnityEngine;
 
 namespace ValheimVRMod.VRCore.Backends
 {
-    // Stage 1 has exactly one provider. Runtime selection belongs to a later change.
     public interface IVRBackend
     {
         IVRInputBackend Input { get; }
