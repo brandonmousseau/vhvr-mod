@@ -1,7 +1,32 @@
 # Setting up a development environment
 
-The SteamVR-only backend refactor candidate and its reproducible checks are
-documented in [Backend refactor: stage 1](docs/BACKEND-REFACTOR.md).
+Build VHVR's Unity assets and plugin by following the
+[environment setup](#setting-up-the-environment) and [mod build](#build-the-mod)
+steps below.
+
+## Run automated checks
+
+Install Git, Python 3 (available as `python`), and .NET SDK 8 or newer with the
+.NET 8 runtime. Use an owned Valheim installation with BepInEx and the managed
+VHVR reference libraries, including FinalIK, OpenVR XR and bHaptics, available in
+`Valheim_Data\Managed`. Keep the tracked `Unity/ValheimVR/Assets/SteamVR` and
+`Unity/ValheimVR/Assets/SteamVR_Input` sources in the checkout, including when
+using a sparse checkout.
+
+From the repository root, run this in PowerShell with your Valheim path:
+
+```powershell
+./scripts/Test-BackendRefactor.ps1 -ValheimDir 'C:\Program Files (x86)\Steam\steamapps\common\Valheim'
+```
+
+The projects in `tests/BackendRefactor` are the build harness and automated test
+suite. The command builds the gameplay, bundled SteamVR SDK and generated
+actions, then checks provider boundaries, action paths, managed input snapshots,
+callbacks and haptic action identity. It uses a .NET Framework 4.7.2 diagnostic
+build; the production plugin's .NET Framework 4.6 build remains described below.
+Outputs stay in ignored `bin`/`obj` directories; nothing is deployed to the game
+or included in release packaging. Tracking, rendering and hardware haptics need
+separate testing in SteamVR.
 
 ## Who is this for?
 
