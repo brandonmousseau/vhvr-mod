@@ -164,6 +164,34 @@
             {
                "inputs" : [
                   [ "/user/hand/right/input/grip", "click" ],
+                  [ "/user/hand/right/input/joystick", "south" ]
+               ],
+               "output" : "/actions/valheim/in/facepiecetoward"
+            },
+            {
+               "inputs" : [
+                  [ "/user/hand/right/input/grip", "click" ],
+                  [ "/user/hand/right/input/joystick", "north" ]
+               ],
+               "output" : "/actions/valheim/in/facepieceaway"
+            },
+            {
+               "inputs" : [
+                  [ "/user/hand/right/input/grip", "click" ],
+                  [ "/user/hand/right/input/joystick", "west" ]
+               ],
+               "output" : "/actions/valheim/in/rotatepiececlockwise"
+            },
+            {
+               "inputs" : [
+                  [ "/user/hand/right/input/grip", "click" ],
+                  [ "/user/hand/right/input/joystick", "east" ]
+               ],
+               "output" : "/actions/valheim/in/rotatepiececounterclockwise"
+            },
+            {
+               "inputs" : [
+                  [ "/user/hand/right/input/grip", "click" ],
                   [ "/user/hand/right/input/a", "click" ]
                ],
                "output" : "/actions/valheim/in/removepiece"
@@ -464,11 +492,17 @@
             },
             {
                "inputs" : {
+                  "east" : {
+                     "output" : "/actions/valheim/in/stopgesturedlocomotion"
+                  },
                   "north" : {
                      "output" : "/actions/valheim/in/togglerun"
                   },
                   "south" : {
                      "output" : "/actions/valheim/in/togglecrouch"
+                  },
+                  "west" : {
+                     "output" : "/actions/valheim/in/stopgesturedlocomotion"
                   }
                },
                "mode" : "dpad",

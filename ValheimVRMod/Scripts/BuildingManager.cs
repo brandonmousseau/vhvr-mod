@@ -1367,9 +1367,9 @@ namespace ValheimVRMod.Scripts
                     rotUp = originalRayTraceMod.up;
                 }
             }
-            // Deliberately the physical right hand for both handednesses: the grip goes with the stick on the same
-            // controller, which is the turn stick, and VRControls stops turning while the right grip is held.
-            if (VRControls.instance.getDirectRightXAxis() != 0 && VRInputActions.valheim_Grab.GetState(VRInputSource.RightHand))
+            int rotationDirection = VRControls.instance.getPieceRotationDirection();
+            int facingDirection = VRControls.instance.getPieceFacingDirection();
+            if (rotationDirection != 0)
             {
                 if (lastAdvRot != Player.m_localPlayer.m_placeRotation)
                 {
@@ -1377,18 +1377,18 @@ namespace ValheimVRMod.Scripts
                     {
                         var ghost = Player.m_localPlayer.m_placementGhost;
                         ghost.transform.rotation = advRotationGhostObject.transform.rotation;
-                        ghost.transform.RotateAround(ghost.transform.position, rotUp, 22.5f * -VRControls.instance.getDirectRightXAxis());
+                        ghost.transform.RotateAround(ghost.transform.position, rotUp, 22.5f * rotationDirection);
                         advRotationGhostObject.transform.rotation = ghost.transform.rotation;
                     }
                     else
                     {
-                        advRotationGhostObject.transform.rotation *= Quaternion.Euler(0, 22.5f * -VRControls.instance.getDirectRightXAxis(), 0);
+                        advRotationGhostObject.transform.rotation *= Quaternion.Euler(0, 22.5f * rotationDirection, 0);
                     }
 
                     lastAdvRot = Player.m_localPlayer.m_placeRotation;
                 }
             }
-            if (VRControls.instance.getDirectRightYAxis() != 0 && VRInputActions.valheim_Grab.GetState(VRInputSource.RightHand))
+            if (facingDirection != 0)
             {
                 if (copyRotationTimer <= 4)
                 {
@@ -1407,7 +1407,7 @@ namespace ValheimVRMod.Scripts
                     {
                         Piece pieceParent = originalRayTraceTransform.GetComponentInParent(typeof(Piece)) as Piece;
                         var transformCopy = pieceParent ? pieceParent.transform : originalRayTraceTransform;
-                        switch (VRControls.instance.getDirectRightYAxis())
+                        switch (facingDirection)
                         {
                             case 1:
                                 advRotationGhostObject.transform.rotation = transformCopy.rotation * Quaternion.Euler(0, 180, 0);

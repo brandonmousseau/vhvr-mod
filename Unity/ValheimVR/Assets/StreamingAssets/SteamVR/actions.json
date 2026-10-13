@@ -215,6 +215,26 @@
       "requirement": "mandatory"
     },
     {
+      "name": "/actions/Valheim/in/FacePieceToward",
+      "type": "boolean",
+      "requirement": "optional"
+    },
+    {
+      "name": "/actions/Valheim/in/FacePieceAway",
+      "type": "boolean",
+      "requirement": "optional"
+    },
+    {
+      "name": "/actions/Valheim/in/RotatePieceClockwise",
+      "type": "boolean",
+      "requirement": "mandatory"
+    },
+    {
+      "name": "/actions/Valheim/in/RotatePieceCounterclockwise",
+      "type": "boolean",
+      "requirement": "mandatory"
+    },
+    {
       "name": "/actions/Valheim/out/Haptic",
       "type": "vibration",
       "requirement": "mandatory"
@@ -328,7 +348,11 @@
       "/actions/Valheim/in/LeftClick": "Left click",
       "/actions/Valheim/in/ScrollUp": "Scroll up",
       "/actions/Valheim/in/ScrollDown": "Scroll down",
-      "/actions/Valheim/in/RemovePiece": "Remove building piece"
+      "/actions/Valheim/in/RemovePiece": "Remove building piece",
+      "/actions/Valheim/in/FacePieceToward": "Face building piece toward you",
+      "/actions/Valheim/in/FacePieceAway": "Face building piece away from you",
+      "/actions/Valheim/in/RotatePieceClockwise": "Rotate building piece clockwise",
+      "/actions/Valheim/in/RotatePieceCounterclockwise": "Rotate building piece counterclockwise"
     }
   ]
 }
