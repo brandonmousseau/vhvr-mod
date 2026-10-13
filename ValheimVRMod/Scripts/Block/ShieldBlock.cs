@@ -1,7 +1,7 @@
+using ValheimVRMod.VRCore.Backends;
 using UnityEngine;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
-using Valve.VR;
 
 namespace ValheimVRMod.Scripts.Block {
     public class ShieldBlock : Block {
@@ -95,7 +95,7 @@ namespace ValheimVRMod.Scripts.Block {
         public override void setBlocking(HitData hitData) {
             if (VHVRConfig.UseGrabButtonBlock())
             {
-                _blocking = SteamVR_Actions.valheim_Grab.GetState(VRPlayer.secondaryWeaponHandInputSource);
+                _blocking = VRInputActions.valheim_Grab.GetState(VRPlayer.secondaryWeaponHandInputSource);
                 return;
             }
 

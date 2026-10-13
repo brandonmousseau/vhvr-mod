@@ -1,3 +1,4 @@
+using ValheimVRMod.VRCore.Backends;
 using System.Reflection;
 using System.Text;
 using GUIFramework;
@@ -8,7 +9,6 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using ValheimVRMod.Patches;
 using ValheimVRMod.Utilities;
-using Valve.VR;
 using TMPro;
 
 namespace ValheimVRMod.Patches {
@@ -163,11 +163,6 @@ namespace ValheimVRMod.Patches {
         // keep, here, which is what lets the caret be moved and a selection be typed over: OpenVR offers no
         // way to read the caret of the text a keyboard buffers itself, nor to correct that text (there is a
         // GetKeyboardText but no SetKeyboardText).
-        private const uint KeyboardFlags = (uint)EKeyboardFlags.KeyboardFlag_Minimal | KeyboardFlagShowArrowKeys;
-
-        // Missing from the EKeyboardFlags of the OpenVR bindings in use. Makes a minimal mode keyboard show
-        // its arrow keys, which it reports as ANSI escape sequences. Keyboards older than the flag ignore it.
-        private const uint KeyboardFlagShowArrowKeys = 1 << 2;
 
         private const char Escape = '\u001b';
 
@@ -210,9 +205,9 @@ namespace ValheimVRMod.Patches {
             }
 
             if (!initialized) {
-                SteamVR_Events.System(EVREventType.VREvent_KeyboardClosed).Listen(OnKeyboardClosed);
-                SteamVR_Events.System(EVREventType.VREvent_KeyboardCharInput).Listen(OnKeyboardCharInput);
-                SteamVR_Events.System(EVREventType.VREvent_KeyboardDone).Listen(OnKeyboardDone);
+                VRBackend.Active.Keyboard.ListenClosed(OnKeyboardClosed);
+                VRBackend.Active.Keyboard.ListenInput(OnKeyboardCharInput);
+                VRBackend.Active.Keyboard.ListenDone(OnKeyboardDone);
                 initialized = true;
             }
 
@@ -221,13 +216,13 @@ namespace ValheimVRMod.Patches {
             _liveText.Append(existingText);
             _caret = _selectionAnchor = existingText.Length;
 
-            EVROverlayError error = SteamVR.instance.overlay.ShowKeyboard(0, 0, KeyboardFlags, "TextInput", 256, existingText, 1);
-            if (error != EVROverlayError.None) {
+            string error = VRBackend.Active.Keyboard.Show(existingText);
+            if (error != null) {
                 // No keyboard came up, so no VREvent_KeyboardClosed will ever end this session. Leaving
                 // _keyboardOpen set would block every later start().
                 LogUtils.LogWarning($"[Keyboard] ShowKeyboard failed: {error}");
                 // The usual cause is a keyboard that is still up without us knowing about it.
-                SteamVR.instance.overlay.HideKeyboard();
+                VRBackend.Active.Keyboard.Hide();
                 if (chatInput) {
                     CancelChat();
                 } else {
@@ -265,7 +260,7 @@ namespace ValheimVRMod.Patches {
                 // raises is not taken as a submission.
                 ClearSession();
                 closeTime = Time.fixedTime;
-                SteamVR.instance.overlay.HideKeyboard();
+                VRBackend.Active.Keyboard.Hide();
             }
 
             Chat chat = Chat.instance;
@@ -293,7 +288,7 @@ namespace ValheimVRMod.Patches {
             _keyboardOpen = false;
         }
 
-        private static void OnKeyboardCharInput(VREvent_t args) {
+        private static void OnKeyboardCharInput(VRKeyboardInput args) {
             if (!_keyboardOpen) {
                 return;
             }
@@ -302,7 +297,7 @@ namespace ValheimVRMod.Patches {
             // say. Some keyboards have been seen to leave the payload blank instead (all zero bytes,
             // confirmed via logging on the big screen keyboard while it was still asked to buffer the text
             // itself), and those need the text polled back out of SteamVR.
-            string typed = DecodeKeystrokes(args.data.keyboard);
+            string typed = DecodeKeystrokes(args);
             if (typed.Length > 0) {
                 LogUtils.LogInfo($"[Keyboard] KeyboardCharInput payload=\"{typed.Replace(Escape, '^')}\"");
                 Type(typed);
@@ -314,14 +309,14 @@ namespace ValheimVRMod.Patches {
 
         // A keyboard in minimal mode is not bound to close on its Done key by itself. Submission is left to
         // the VREvent_KeyboardClosed that hiding it raises, as for every other way the keyboard closes.
-        private static void OnKeyboardDone(VREvent_t args) {
+        private static void OnKeyboardDone() {
             if (_keyboardOpen) {
-                SteamVR.instance.overlay.HideKeyboard();
+                VRBackend.Active.Keyboard.Hide();
             }
         }
 
         // The payload is UTF-8, which VREvent_Keyboard_t.cNewInput does not decode.
-        private static string DecodeKeystrokes(VREvent_Keyboard_t keyboard) {
+        private static string DecodeKeystrokes(VRKeyboardInput keyboard) {
             byte[] bytes = {
                 keyboard.cNewInput0, keyboard.cNewInput1, keyboard.cNewInput2, keyboard.cNewInput3,
                 keyboard.cNewInput4, keyboard.cNewInput5, keyboard.cNewInput6, keyboard.cNewInput7
@@ -332,7 +327,7 @@ namespace ValheimVRMod.Patches {
 
         private static string ReadKeyboardText() {
             StringBuilder textBuilder = new StringBuilder(256);
-            SteamVR.instance.overlay.GetKeyboardText(textBuilder, 256);
+            VRBackend.Active.Keyboard.ReadText(textBuilder, 256);
             return textBuilder.ToString().Replace("\0", string.Empty);
         }
 
@@ -386,7 +381,7 @@ namespace ValheimVRMod.Patches {
             ApplyLiveText();
 
             if (done) {
-                OnKeyboardDone(default);
+                OnKeyboardDone();
             }
         }
 
@@ -581,7 +576,7 @@ namespace ValheimVRMod.Patches {
             }
         }
 
-        private static void OnKeyboardClosed(VREvent_t args) {
+        private static void OnKeyboardClosed() {
             if (!_keyboardOpen) {
                 return;
             }

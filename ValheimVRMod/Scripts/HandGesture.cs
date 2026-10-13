@@ -1,7 +1,7 @@
+using ValheimVRMod.VRCore.Backends;
 using UnityEngine;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
-using Valve.VR.InteractionSystem;
 
 namespace ValheimVRMod.Scripts {
     public class HandGesture : MonoBehaviour {
@@ -9,13 +9,13 @@ namespace ValheimVRMod.Scripts {
         private bool isRightHand;
         private bool isMainHand { get { return isRightHand ^ !VRPlayer.isRightHandMainWeaponHand; } }
         private Quaternion handFixedRotation;
-        private Hand _sourceHand;
+        private VRHand _sourceHand;
         private Transform sourceTransform;
         // The wrist of the other hand, which is the one that drives this hand in the barber mirror.
         private Transform mirrorSourceTransform;
         private bool mirroringFingers;
 
-        public Hand sourceHand {
+        public VRHand sourceHand {
             get
             {
                 return _sourceHand;
@@ -120,7 +120,7 @@ namespace ValheimVRMod.Scripts {
             return mirrorSourceTransform != null;
         }
 
-        private static Transform findWrist(Hand hand)
+        private static Transform findWrist(VRHand hand)
         {
             if (hand == null)
             {

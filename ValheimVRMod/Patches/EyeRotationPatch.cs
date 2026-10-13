@@ -1,3 +1,4 @@
+using ValheimVRMod.VRCore.Backends;
 using HarmonyLib;
 using UnityEngine;
 using ValheimVRMod.VRCore;
@@ -114,7 +115,7 @@ namespace ValheimVRMod.Patches
             // hand-inferred adjustment applied when there is no waist tracker. Moving relative to the
             // pelvis instead of the head is a locomotion option, applied where the joystick input is
             // converted (see VHVRConfig.GetJoystickForwardDirection).
-            float currentLocalAngle = Valve.VR.InteractionSystem.Player.instance.hmdTransform.localRotation.eulerAngles.y;
+            float currentLocalAngle = VRBackend.Active.Rig.Player.hmdTransform.localRotation.eulerAngles.y;
             float? deltaRotation = null;
             if (previousTrackedLocalAngle.HasValue)
             {
@@ -188,7 +189,7 @@ namespace ValheimVRMod.Patches
             }
             if (VRPlayer.attachedToPlayer && !Player.m_localPlayer.InDodge())
             {
-                var hmdTransform = Valve.VR.InteractionSystem.Player.instance.hmdTransform;
+                var hmdTransform = VRBackend.Active.Rig.Player.hmdTransform;
                 // Set the eye rotation equal to HMD rotation
                 __instance.m_eye.rotation = hmdTransform.rotation;
             }

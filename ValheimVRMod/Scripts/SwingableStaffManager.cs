@@ -1,9 +1,9 @@
-﻿using System.Collections.Generic;
+using ValheimVRMod.VRCore.Backends;
+using System.Collections.Generic;
 using UnityEngine;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
 using ValheimVRMod.VRCore.UI;
-using Valve.VR;
 
 namespace ValheimVRMod.Scripts
 {
@@ -23,7 +23,7 @@ namespace ValheimVRMod.Scripts
         private SwingAttackMode currentSwingAttackMode = SwingAttackMode.None;
 
         // The rear hand trigger shoots at aiming direction whereas the front hand trigger swing-launches.
-        private SteamVR_Input_Sources RearHandInputSource { get { return MagicStaffUtils.RearHandInputSource; } }
+        private VRInputSource RearHandInputSource { get { return MagicStaffUtils.RearHandInputSource; } }
 
         private void Awake()
         {
@@ -65,13 +65,13 @@ namespace ValheimVRMod.Scripts
                 // (grab + trigger swing-launches instead), so it is only available with AllowSimpleMagicAttack.
                 if (LocalWeaponWield.isCurrentlyTwoHanded())
                 {
-                    return !LaserPointerChords.IsLaserActiveFor(SteamVR_Input_Sources.Any) &&
-                        SteamVR_Actions.valheim_Use.GetState(RearHandInputSource);
+                    return !LaserPointerChords.IsLaserActiveFor(VRInputSource.Any) &&
+                        VRInputActions.valheim_Use.GetState(RearHandInputSource);
                 }
                 var mainHand = VRPlayer.mainWeaponHandInputSource;
                 return VHVRConfig.AllowSimpleMagicAttack() &&
                     !LaserPointerChords.IsLaserActiveFor(mainHand) &&
-                    SteamVR_Actions.valheim_Use.GetState(mainHand);
+                    VRInputActions.valheim_Use.GetState(mainHand);
             }
         }
 
@@ -104,13 +104,13 @@ namespace ValheimVRMod.Scripts
         {
             if (LocalWeaponWield.isCurrentlyTwoHanded())
             {
-                if (SteamVR_Actions.valheim_Use.GetStateDown(RearHandInputSource) &&
-                    !SteamVR_Actions.valheim_Use.GetState(frontHandInputSource))
+                if (VRInputActions.valheim_Use.GetStateDown(RearHandInputSource) &&
+                    !VRInputActions.valheim_Use.GetState(frontHandInputSource))
                 {
                     currentSwingAttackMode = SwingAttackMode.AimAndShoot;
                 }
-                else if (SteamVR_Actions.valheim_Use.GetStateDown(frontHandInputSource) &&
-                    !SteamVR_Actions.valheim_Use.GetState(RearHandInputSource))
+                else if (VRInputActions.valheim_Use.GetStateDown(frontHandInputSource) &&
+                    !VRInputActions.valheim_Use.GetState(RearHandInputSource))
                 {
                     currentSwingAttackMode = SwingAttackMode.SwingLaunch;
                 }
@@ -118,11 +118,11 @@ namespace ValheimVRMod.Scripts
             else
             {
                 // Single-handed: swing-launch only if grip is held down the moment the trigger is pressed.
-                SteamVR_Input_Sources mainHandInputSource = VRPlayer.mainWeaponHandInputSource;
-                if (SteamVR_Actions.valheim_Use.GetStateDown(mainHandInputSource))
+                VRInputSource mainHandInputSource = VRPlayer.mainWeaponHandInputSource;
+                if (VRInputActions.valheim_Use.GetStateDown(mainHandInputSource))
                 {
                     currentSwingAttackMode =
-                        SteamVR_Actions.valheim_Grab.GetState(mainHandInputSource) ?
+                        VRInputActions.valheim_Grab.GetState(mainHandInputSource) ?
                         SwingAttackMode.SwingLaunch :
                         SwingAttackMode.AimAndShoot;
                 }

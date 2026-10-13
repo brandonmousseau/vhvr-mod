@@ -1,3 +1,4 @@
+using ValheimVRMod.VRCore.Backends;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -34,7 +35,7 @@ namespace ValheimVRMod.Patches
                 return true;
             }
 
-            var shader = Valve.VR.ShaderLoader.GetShader(aShaderName);
+            var shader = VRBackend.Active.GetShader(aShaderName);
             if (shader == null)
             {
                 LogUtils.LogWarning(

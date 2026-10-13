@@ -1,8 +1,8 @@
+using ValheimVRMod.VRCore.Backends;
 using System;
 using UnityEngine;
 using ValheimVRMod.Utilities;
 using ValheimVRMod.VRCore;
-using Valve.VR;
 
 namespace ValheimVRMod.Scripts
 {
@@ -316,7 +316,7 @@ namespace ValheimVRMod.Scripts
             bool wasPulling = isPulling;
             isPulling =
                 !Player.m_localPlayer.IsWeaponLoaded() &&
-                SteamVR_Actions.valheim_Grab.GetState(VRPlayer.arrowHandInputSource) &&
+                VRInputActions.valheim_Grab.GetState(VRPlayer.arrowHandInputSource) &&
                 (wasPulling || IsHandClosePullStart());
             if (isPulling)
             {
