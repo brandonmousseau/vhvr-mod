@@ -19,6 +19,10 @@ namespace ValheimVRMod.VRCore.UI
         private static readonly Vector3 RECENTER_POSE_POSITION_R = new Vector3(0.1f, 0f, 0.1f);
         // Tolerance for above pose
         private static readonly float RECENTER_POSE_TOLERANCE = 0.2f; // Magnitude
+        // How much the palms have to face the face (as the cosine of the angle) for the Recenter pose. The voice chat
+        // gesture (see VoiceChat) has the hands in about the same place but with the palms facing each other, which
+        // comes to at most 0.48 here.
+        private static readonly float RECENTER_POSE_MIN_PALM_FACING = 0.6f;
         // number of updates to skip before allowing a "rotation" update to occur
         // when using the alt piece rotation mode (ie, context scroll is not bound).
         private static readonly float ALT_PIECE_ROTATION_TIME_DELAY = 0.250f;
@@ -435,7 +439,24 @@ namespace ValheimVRMod.VRCore.UI
             var rightHand = poseR.localPosition;
             var leftHandDiff = leftHand - targetLocationLeft;
             var rightHandDiff = rightHand - targetLocationRight;
-            return leftHandDiff.magnitude <= RECENTER_POSE_TOLERANCE && rightHandDiff.magnitude <= RECENTER_POSE_TOLERANCE;
+            if (leftHandDiff.magnitude > RECENTER_POSE_TOLERANCE || rightHandDiff.magnitude > RECENTER_POSE_TOLERANCE)
+            {
+                return false;
+            }
+            return arePalmsFacingFace();
+        }
+
+        private static bool arePalmsFacingFace()
+        {
+            if (VRPlayer.vrCam == null || VRPlayer.leftHand == null || VRPlayer.rightHand == null)
+            {
+                return false;
+            }
+            Vector3 towardsFace = -VRPlayer.vrCam.transform.forward;
+            // The palm of the left hand faces the right of its controller and the palm of the right hand the left.
+            return
+                Vector3.Dot(VRPlayer.leftHand.transform.right, towardsFace) >= RECENTER_POSE_MIN_PALM_FACING &&
+                Vector3.Dot(-VRPlayer.rightHand.transform.right, towardsFace) >= RECENTER_POSE_MIN_PALM_FACING;
         }
 
         private void updateMainActionSetState()
