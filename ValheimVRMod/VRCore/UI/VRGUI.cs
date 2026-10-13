@@ -140,6 +140,8 @@ namespace ValheimVRMod.VRCore.UI
         private static bool hasConfiguredGuiCamera;
         private static bool hasCreatedOverlay;
         private Transform _uiPanelTransformLocker;
+        // Where the VR rig was when the UI panel was last placed, see UpdateCursorPosition().
+        private Vector3 rigPositionAtUiPanelUpdate;
         private RenderTexture _guiTexture;
         private RenderTexture _overlayTexture;
 
@@ -421,6 +423,7 @@ namespace ValheimVRMod.VRCore.UI
                 createUiPanelCamera();
             }
             updateUiPanelScaleAndPosition();
+            rigPositionAtUiPanelUpdate = VRPlayer.instance.transform.position;
             if (_guiCanvases.Count > 0 && _guiTexture != null && ++textureUpdateTicker > 128)
             {
                 textureUpdateTicker = 0;
@@ -771,8 +774,14 @@ namespace ValheimVRMod.VRCore.UI
 
             if (!tryGetPreciseRayInHeldPanel(VRPlayer.activePointer, out Vector3 localStart, out Vector3 localDir))
             {
+                // The panel is placed in OnRenderObject(), so here it still is where the previous frame left it, while
+                // the pointer has already moved with the player. It is placed again before it is drawn, so without
+                // making up for the travel in between the cursor is off by that much whenever the player is moving,
+                // e.g. sliding on ice. A panel held in the hand has just been placed.
+                Vector3 uiPanelLag =
+                    attachedToHand ? Vector3.zero : VRPlayer.instance.transform.position - rigPositionAtUiPanelUpdate;
                 localDir = _uiPanel.InverseTransformVector(VRPlayer.activePointer.rayDirection * Vector3.forward);
-                localStart = _uiPanel.InverseTransformPoint(VRPlayer.activePointer.rayStartingPosition);
+                localStart = _uiPanel.InverseTransformPoint(VRPlayer.activePointer.rayStartingPosition - uiPanelLag);
             }
             // This is more precise than using raycast hit position especially when the player is moving fast
             var correctedLocalHit = localStart - localDir * (localStart.z / localDir.z);
