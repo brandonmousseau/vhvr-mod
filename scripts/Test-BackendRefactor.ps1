@@ -4,7 +4,7 @@ $repo = Split-Path $PSScriptRoot -Parent
 $ValheimDir = (Resolve-Path -LiteralPath $ValheimDir).Path
 $checks = Join-Path $repo 'tests/BackendRefactor'
 $gameplay = Join-Path $checks 'Build/VHVR.Gameplay/bin/Release/net472/ValheimVRMod.dll'
-$sdk = Join-Path $checks 'Build/SteamVR.Actions/bin/Release/net472'
+$sdk = Join-Path $checks 'Build/SteamVR.Runtime/bin/Release/net472'
 
 # Build source against owned game/VR reference assemblies. No game files are written,
 # no Unity editor post-build command is invoked, and no runtime is started.

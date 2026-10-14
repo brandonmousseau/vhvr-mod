@@ -34,6 +34,5 @@
     <Reference Include="$(ValheimDir)/BepInEx/core/BepInEx.dll" Private="false" />
     <Reference Include="$(ValheimDir)/BepInEx/core/0Harmony.dll" Private="false" />
     <ProjectReference Include="../SteamVR.Runtime/SteamVR.Runtime.csproj" />
-    <ProjectReference Include="../SteamVR.Actions/SteamVR.Actions.csproj" />
   </ItemGroup>
 </Project>
