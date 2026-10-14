@@ -14,6 +14,8 @@ namespace ValheimVRMod.Scripts.Block {
 
         private float scaling = 1f;
         private Vector3 posRef;
+        // Where the hand holds the shield, in the same space as posRef.
+        private Vector3 gripRef;
         private Vector3 scaleRef;
         private float adaptScaleRef = 1f;
         private bool attemptingParry;
@@ -67,6 +69,9 @@ namespace ValheimVRMod.Scripts.Block {
         {
             posRef = transform.localPosition;
             scaleRef = transform.localScale;
+            var visEquipment = Player.m_localPlayer.m_visEquipment;
+            var shieldHandAttachPoint = VRPlayer.isRightHandMainWeaponHand ? visEquipment.m_leftHand : visEquipment.m_rightHand;
+            gripRef = transform.parent.InverseTransformPoint(shieldHandAttachPoint.position);
             hand = VRPlayer.mainWeaponHand.otherHand.transform;
             offhand = VRPlayer.mainWeaponHand.transform;
             
@@ -159,7 +164,9 @@ namespace ValheimVRMod.Scripts.Block {
 
         private Vector3 CalculatePos()
         {
-            return VRPlayer.leftHand.transform.InverseTransformDirection(hand.TransformDirection(posRef) *(scaleRef * scaling).x);
+            // Scales the shield about where the hand holds it, which what it is attached by may be beside (see
+            // HeldItemFixes).
+            return gripRef + (posRef - gripRef) * scaling;
         }
     }
 }
