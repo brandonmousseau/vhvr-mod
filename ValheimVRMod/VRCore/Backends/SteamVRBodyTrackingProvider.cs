@@ -1,8 +1,7 @@
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using Valve.VR;
-using static ValheimVRMod.Utilities.LogUtils;
+using ValheimVRMod.VRCore.Backends;
 
 namespace ValheimVRMod.VRCore.BodyTracking
 {
@@ -12,16 +11,17 @@ namespace ValheimVRMod.VRCore.BodyTracking
     // by position. SteamVR resolves each source to whichever tracker the user assigned
     // that role to in the SteamVR settings, so there is no device-count ceiling and no
     // heuristic role detection.
-    // The pose action is created and registered at runtime (see <see cref="EnsureActionRegistered"/>)
-    // so this needs no changes to the prebuilt SteamVR_Actions.dll / Unity project --
-    // only an entry in actions.json (shipped via StreamingAssets).
+    // The pose action is declared in the action catalog (VRInputActions) like every other action.
     public class SteamVRBodyTrackingProvider : MonoBehaviour, IBodyTrackingProvider
     {
-        // Must match the action name added to actions.json. Lives in the Valheim action
-        // set, which is already activated during gameplay so its poses update each frame.
+        // Lives in the Valheim action set, which is already activated during gameplay so its
+        // poses update each frame.
         public const string ActionPath = "/actions/Valheim/in/BodyPose";
 
-        private static SteamVR_Action_Pose bodyPose;
+        // Null until the actions have been created.
+        private static SteamVR_Action_Pose cachedBodyPose;
+        private static SteamVR_Action_Pose bodyPose => cachedBodyPose ??
+            (SteamVRActionCatalog.IsBuilt ? cachedBodyPose = SteamVRActionCatalog.Action<SteamVR_Action_Pose>(ActionPath) : null);
 
         // Each joint maps to one or more SteamVR input sources in priority order (highest
         // priority first). Feet prefer the Foot tracker role but fall back to the Ankle
@@ -37,34 +37,6 @@ namespace ValheimVRMod.VRCore.BodyTracking
             };
 
         private readonly Dictionary<BodyJoint, Transform> jointTransforms = new Dictionary<BodyJoint, Transform>();
-
-        // Creates the body pose action and registers it with SteamVR_Input. Must be called
-        // after SteamVR_Actions.PreInitialize() (which populates the action arrays) and
-        // before SteamVR_Input.Initialize() (which initializes every action in those arrays
-        // and which UpdatePoseActions() later iterates). Idempotent.
-        public static void EnsureActionRegistered()
-        {
-            if (bodyPose != null)
-            {
-                return;
-            }
-
-            if (SteamVR_Input.actions == null || SteamVR_Input.actionsPose == null)
-            {
-                LogError("Cannot register body pose action before SteamVR action arrays are initialized.");
-                return;
-            }
-
-            bodyPose = SteamVR_Action.Create<SteamVR_Action_Pose>(ActionPath);
-
-            // Append to the arrays that SteamVR_Input.Initialize() and UpdatePoseActions()
-            // iterate, so the action gets a handle and is updated every frame.
-            SteamVR_Input.actions = SteamVR_Input.actions.Concat(new SteamVR_Action[] { bodyPose }).ToArray();
-            SteamVR_Input.actionsPose = SteamVR_Input.actionsPose.Concat(new SteamVR_Action_Pose[] { bodyPose }).ToArray();
-            SteamVR_Input.actionsIn = SteamVR_Input.actionsIn.Concat(new ISteamVR_Action_In[] { bodyPose }).ToArray();
-
-            LogInfo("Registered body tracking pose action: " + ActionPath);
-        }
 
         // Attaches role-following child transforms under the given camera rig. Pose values
         // from the action are expressed relative to the tracking origin (the rig), matching

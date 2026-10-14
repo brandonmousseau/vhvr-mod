@@ -37,6 +37,10 @@ namespace ValheimVRMod.VRCore.Backends
 
     public interface IVRInputBackend
     {
+        // Creates the given action sets and actions with the runtime. Called before the backend is initialized, as
+        // a runtime may need all of its actions up front (as OpenXR does). Only the first call has any effect.
+        void Declare(IReadOnlyList<VRActionSetDecl> sets, IReadOnlyList<VRActionDecl> actions);
+        // Look up a declared action or set by path, once the backend is initialized.
         VRBooleanAction Boolean(string path);
         VRVector2Action Axis(string path);
         VRPoseAction Pose(string path);

@@ -4,7 +4,6 @@ if not exist "%GAME_DIR%BepInEx\plugins\bHaptics" mkdir "%GAME_DIR%BepInEx\plugi
 Xcopy /Y /E /I "%SOLUTION_DIR%bHaptics" "%GAME_DIR%BepInEx\plugins\bHaptics"
 if not exist "%GAME_DIR%Valheim_Data\Managed" mkdir "%GAME_DIR%Valheim_Data\Managed"
 copy "%SOLUTION_DIR%Unity\build\ValheimVR_Data\Managed\SteamVR.dll" "%GAME_DIR%Valheim_Data\Managed"
-copy "%SOLUTION_DIR%Unity\build\ValheimVR_Data\Managed\SteamVR_Actions.dll" "%GAME_DIR%Valheim_Data\Managed"
 copy "%SOLUTION_DIR%Unity\build\ValheimVR_Data\Managed\Unity.XR.Management.dll" "%GAME_DIR%Valheim_Data\Managed"
 copy "%SOLUTION_DIR%Unity\build\ValheimVR_Data\Managed\Unity.XR.OpenVR.dll" "%GAME_DIR%Valheim_Data\Managed"
 copy "%SOLUTION_DIR%Unity\build\ValheimVR_Data\Managed\UnityEngine.XR.LegacyInputHelpers.dll" "%GAME_DIR%Valheim_Data\Managed"
@@ -26,6 +25,7 @@ copy "%SOLUTION_DIR%Unity\build\ValheimVR_Data\UnitySubsystems\XRSDKOpenVR\Unity
 
 if not exist  "%GAME_DIR%Valheim_Data\StreamingAssets\SteamVR" mkdir  "%GAME_DIR%Valheim_Data\StreamingAssets\SteamVR"
 Xcopy /Y /E /I "%SOLUTION_DIR%Unity\build\ValheimVR_Data\StreamingAssets\SteamVR"  "%GAME_DIR%Valheim_Data\StreamingAssets\SteamVR"
+copy /Y "%SOLUTION_DIR%Unity\ValheimVR\Assets\StreamingAssets\SteamVR\*.json" "%GAME_DIR%Valheim_Data\StreamingAssets\SteamVR"
 
 if not exist "%GAME_DIR%Valheim_Data\StreamingAssets" mkdir "%GAME_DIR%Valheim_Data\StreamingAssets"
 copy  "%SOLUTION_DIR%Unity\ValheimVR\Assets\AssetBundles\AssetBundles"  "%GAME_DIR%Valheim_Data\StreamingAssets"
@@ -51,7 +51,7 @@ Xcopy /Y /E /I "%SOLUTION_DIR%bHaptics" "%SOLUTION_DIR%ValheimVRMod\release\BepI
 if not exist "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data" mkdir "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data"
 if not exist "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\Managed" mkdir "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\Managed"
 copy "%SOLUTION_DIR%Unity\build\ValheimVR_Data\Managed\SteamVR.dll" "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\Managed"
-copy "%SOLUTION_DIR%Unity\build\ValheimVR_Data\Managed\SteamVR_Actions.dll" "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\Managed"
+if exist "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\Managed\SteamVR_Actions.dll" del "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\Managed\SteamVR_Actions.dll"
 copy "%SOLUTION_DIR%Unity\build\ValheimVR_Data\Managed\Unity.XR.Management.dll" "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\Managed"
 copy "%SOLUTION_DIR%Unity\build\ValheimVR_Data\Managed\Unity.XR.OpenVR.dll" "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\Managed"
 copy "%SOLUTION_DIR%Unity\build\ValheimVR_Data\Managed\UnityEngine.XR.LegacyInputHelpers.dll" "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\Managed"
@@ -75,6 +75,7 @@ copy "%SOLUTION_DIR%Unity\build\ValheimVR_Data\UnitySubsystems\XRSDKOpenVR\Unity
 if not exist "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\StreamingAssets" mkdir "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\StreamingAssets"
 if not exist "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\StreamingAssets\SteamVR" mkdir  "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\StreamingAssets\SteamVR"
 Xcopy /Y /E /I "%SOLUTION_DIR%Unity\build\ValheimVR_Data\StreamingAssets\SteamVR"  "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\StreamingAssets\SteamVR"
+copy /Y "%SOLUTION_DIR%Unity\ValheimVR\Assets\StreamingAssets\SteamVR\*.json" "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\StreamingAssets\SteamVR"
 
 copy  "%SOLUTION_DIR%Unity\ValheimVR\Assets\AssetBundles\AssetBundles"  "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\StreamingAssets"
 copy  "%SOLUTION_DIR%Unity\ValheimVR\Assets\AssetBundles\AssetBundles.manifest"  "%SOLUTION_DIR%ValheimVRMod\release\Valheim_Data\StreamingAssets"
