@@ -49,6 +49,10 @@ namespace ValheimVRMod.VRCore.Backends
         public static VRBooleanAction valheim_AddMapPin { get; private set; }
         public static VRBooleanAction valheim_MiddleClick { get; private set; }
         public static VRBooleanAction valheim_DiscardItem { get; private set; }
+        public static VRBooleanAction valheim_HolsterLeftHandItem { get; private set; }
+        public static VRBooleanAction valheim_HolsterRightHandItem { get; private set; }
+        public static VRBooleanAction valheim_UnholsterLeftHandItem { get; private set; }
+        public static VRBooleanAction valheim_UnholsterRightHandItem { get; private set; }
         public static VRBooleanAction valheim_SplitStack { get; private set; }
         public static VRBooleanAction valheim_ScrollUp { get; private set; }
         public static VRBooleanAction valheim_ScrollDown { get; private set; }
@@ -114,6 +118,10 @@ namespace ValheimVRMod.VRCore.Backends
             Boolean("/actions/Valheim/in/AddMapPin", "Add map pin", Optional, a => valheim_AddMapPin = a),
             Boolean("/actions/Valheim/in/MiddleClick", "Middle click", Optional, a => valheim_MiddleClick = a),
             Boolean("/actions/Valheim/in/DiscardItem", "Discard or stash item", Optional, a => valheim_DiscardItem = a),
+            Boolean("/actions/Valheim/in/HolsterLeftHandItem", "Put away left hand item", Optional, a => valheim_HolsterLeftHandItem = a),
+            Boolean("/actions/Valheim/in/HolsterRightHandItem", "Put away right hand item", Optional, a => valheim_HolsterRightHandItem = a),
+            Boolean("/actions/Valheim/in/UnholsterLeftHandItem", "Equip holstered left hand item", Optional, a => valheim_UnholsterLeftHandItem = a),
+            Boolean("/actions/Valheim/in/UnholsterRightHandItem", "Equip holstered right hand item", Optional, a => valheim_UnholsterRightHandItem = a),
             Boolean("/actions/Valheim/in/SplitStack", "Split stack", Mandatory, a => valheim_SplitStack = a),
             Boolean("/actions/Valheim/in/ScrollUp", "Scroll up", Optional, a => valheim_ScrollUp = a),
             Boolean("/actions/Valheim/in/ScrollDown", "Scroll down", Optional, a => valheim_ScrollDown = a),
