@@ -1326,9 +1326,13 @@ namespace ValheimVRMod.Patches {
             if (VRInputActions.valheim_Dodge.state)
             {
                 dir = __instance.GetMoveDir();
-                if (dir == Vector3.zero)
+                // Standing still dodges backward, like vanilla's block + jump dodge, which the default dodge chords
+                // (grip + jump button) triggered before the chord stopped jumping (see VRControls.canJump()).
+                if (dir.Value.magnitude < 0.1f)
                 {
-                    return;
+                    Vector3 back = -__instance.m_lookDir;
+                    back.y = 0f;
+                    dir = back.normalized;
                 }
             }
             else
