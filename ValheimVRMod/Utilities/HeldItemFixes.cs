@@ -33,12 +33,14 @@ namespace ValheimVRMod.Utilities
         // The items that the vanilla prefab puts on the back of the right hand rather than in its palm.
         private static readonly HashSet<int> ITEMS_HELD_ON_BACK_OF_HAND = new HashSet<int>
         {
-            "OvenPancake".GetStableHashCode(),
-            "SparklingShroomshake".GetStableHashCode(),
-            "ShocklateSmoothie".GetStableHashCode(),
-            "QueensJam".GetStableHashCode(),
             "BakedPoteitr".GetStableHashCode(),
+            "CookedEgg".GetStableHashCode(),
             "Kale".GetStableHashCode(),
+            "OvenPancake".GetStableHashCode(),
+            "QueensJam".GetStableHashCode(),
+            "RoastedCrustPie".GetStableHashCode(),
+            "ShocklateSmoothie".GetStableHashCode(),
+            "SparklingShroomshake".GetStableHashCode(),
             "SpicyMarmalade".GetStableHashCode()
         };
 
