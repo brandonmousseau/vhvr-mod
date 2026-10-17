@@ -12,7 +12,6 @@
     <Compile Include="Program.cs" />
     <Reference Include="ValheimVRMod" HintPath="$(GameplayAssembly)" Private="false" />
     <Reference Include="SteamVR" HintPath="$(SteamVRManagedDir)/SteamVR.dll" Private="false" />
-    <Reference Include="SteamVR_Actions" HintPath="$(SteamVRManagedDir)/SteamVR_Actions.dll" Private="false" />
     <Reference Include="UnityEngine.CoreModule" HintPath="$(ValheimDir)/Valheim_Data/Managed/UnityEngine.CoreModule.dll" Private="false" />
     <Reference Include="Unity.XR.OpenVR" HintPath="$(ValheimDir)/Valheim_Data/Managed/Unity.XR.OpenVR.dll" Private="false" />
   </ItemGroup>

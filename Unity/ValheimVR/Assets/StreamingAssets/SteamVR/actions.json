@@ -195,6 +195,26 @@
       "requirement": "optional"
     },
     {
+      "name": "/actions/Valheim/in/HolsterLeftHandItem",
+      "type": "boolean",
+      "requirement": "optional"
+    },
+    {
+      "name": "/actions/Valheim/in/HolsterRightHandItem",
+      "type": "boolean",
+      "requirement": "optional"
+    },
+    {
+      "name": "/actions/Valheim/in/UnholsterLeftHandItem",
+      "type": "boolean",
+      "requirement": "optional"
+    },
+    {
+      "name": "/actions/Valheim/in/UnholsterRightHandItem",
+      "type": "boolean",
+      "requirement": "optional"
+    },
+    {
       "name": "/actions/Valheim/in/SplitStack",
       "type": "boolean",
       "requirement": "mandatory"
@@ -344,6 +364,10 @@
       "/actions/Valheim/in/AddMapPin": "Add map pin",
       "/actions/Valheim/in/MiddleClick": "Middle click",
       "/actions/Valheim/in/DiscardItem": "Discard or stash item",
+      "/actions/Valheim/in/HolsterLeftHandItem": "Put away left hand item",
+      "/actions/Valheim/in/HolsterRightHandItem": "Put away right hand item",
+      "/actions/Valheim/in/UnholsterLeftHandItem": "Equip holstered left hand item",
+      "/actions/Valheim/in/UnholsterRightHandItem": "Equip holstered right hand item",
       "/actions/Valheim/in/SplitStack": "Split stack",
       "/actions/Valheim/in/LeftClick": "Left click",
       "/actions/Valheim/in/ScrollUp": "Scroll up",

@@ -111,11 +111,11 @@
           "inputs": [
             [
               "/user/hand/left/input/grip",
-              "single"
+              "click"
             ],
             [
               "/user/hand/right/input/a",
-              "single"
+              "click"
             ]
           ]
         },

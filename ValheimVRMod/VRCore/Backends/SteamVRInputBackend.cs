@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using Valve.VR;
+using static ValheimVRMod.Utilities.LogUtils;
 
 namespace ValheimVRMod.VRCore.Backends
 {
@@ -62,34 +63,44 @@ namespace ValheimVRMod.VRCore.Backends
             }
         }
 
+        public void Declare(IReadOnlyList<VRActionSetDecl> sets, IReadOnlyList<VRActionDecl> actions)
+        {
+            if (SteamVRActionCatalog.IsBuilt)
+            {
+                return;
+            }
+            SteamVRActionCatalog.Build(sets, actions);
+            LogInfo("Created " + sets.Count + " SteamVR action sets and " + actions.Count + " actions.");
+            SteamVRActionCatalog.CheckManifest(sets, actions);
+        }
         public VRBooleanAction Boolean(string path)
         {
             if (!booleans.TryGetValue(path, out var value))
-                booleans[path] = value = new BooleanAction(SteamVR_Input.GetActionFromPath<SteamVR_Action_Boolean>(path));
+                booleans[path] = value = new BooleanAction(SteamVRActionCatalog.Action<SteamVR_Action_Boolean>(path));
             return value;
         }
         public VRVector2Action Axis(string path)
         {
             if (!axes.TryGetValue(path, out var value))
-                axes[path] = value = new AxisAction(SteamVR_Input.GetActionFromPath<SteamVR_Action_Vector2>(path));
+                axes[path] = value = new AxisAction(SteamVRActionCatalog.Action<SteamVR_Action_Vector2>(path));
             return value;
         }
         public VRPoseAction Pose(string path)
         {
             if (!poses.TryGetValue(path, out var value))
-                poses[path] = value = new PoseAction(SteamVR_Input.GetActionFromPath<SteamVR_Action_Pose>(path));
+                poses[path] = value = new PoseAction(SteamVRActionCatalog.Action<SteamVR_Action_Pose>(path));
             return value;
         }
         public VRHapticAction Haptic(string path)
         {
             if (!haptics.TryGetValue(path, out var value))
-                haptics[path] = value = Wrap(SteamVR_Input.GetActionFromPath<SteamVR_Action_Vibration>(path));
+                haptics[path] = value = Wrap(SteamVRActionCatalog.Action<SteamVR_Action_Vibration>(path));
             return value;
         }
         public VRActionSet ActionSet(string path)
         {
             if (!sets.TryGetValue(path, out var value))
-                sets[path] = value = new ActionSetAdapter(SteamVR_Input.GetActionSetFromPath(path));
+                sets[path] = value = new ActionSetAdapter(SteamVRActionCatalog.ActionSet(path));
             return value;
         }
         public event Action onNonVisualActionsUpdated

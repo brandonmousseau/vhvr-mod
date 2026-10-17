@@ -9,8 +9,8 @@ steps below.
 Install Git, Python 3 (available as `python`), and .NET SDK 8 or newer with the
 .NET 8 runtime. Use an owned Valheim installation with BepInEx and the managed
 VHVR reference libraries, including FinalIK, OpenVR XR and bHaptics, available in
-`Valheim_Data\Managed`. Keep the tracked `Unity/ValheimVR/Assets/SteamVR` and
-`Unity/ValheimVR/Assets/SteamVR_Input` sources in the checkout, including when
+`Valheim_Data\Managed`. Keep the tracked `Unity/ValheimVR/Assets/SteamVR` sources
+and `Unity/ValheimVR/Assets/StreamingAssets/SteamVR` in the checkout, including when
 using a sparse checkout.
 
 From the repository root, run this in PowerShell with your Valheim path:
@@ -20,13 +20,27 @@ From the repository root, run this in PowerShell with your Valheim path:
 ```
 
 The projects in `tests/BackendRefactor` are the build harness and automated test
-suite. The command builds the gameplay, bundled SteamVR SDK and generated
-actions, then checks provider boundaries, action paths, managed input snapshots,
-callbacks and haptic action identity. It uses a .NET Framework 4.7.2 diagnostic
+suite. The command builds the gameplay and bundled SteamVR SDK, creates the
+SteamVR actions from the action catalog, then checks provider boundaries, the
+catalog against `actions.json`, managed input snapshots, callbacks and haptic
+action identity. It uses a .NET Framework 4.7.2 diagnostic
 build; the production plugin's .NET Framework 4.6 build remains described below.
 Outputs stay in ignored `bin`/`obj` directories; nothing is deployed to the game
 or included in release packaging. Tracking, rendering and hardware haptics need
 separate testing in SteamVR.
+
+### Adding an input action
+
+Input actions are listed once, in `ValheimVRMod/VRCore/Backends/VRInputActions.cs`,
+and the SteamVR backend creates them from that list at startup. Adding one takes:
+
+1. an entry in `VRInputActions.Actions` (and a property, if the mod reads it);
+2. the same action in `Unity/ValheimVR/Assets/StreamingAssets/SteamVR/actions.json`
+   (type, requirement, English name) and in the default bindings that should bind it.
+
+No Unity rebuild is needed: the generated `SteamVR_Actions.dll` is no longer used.
+The mod logs an error at startup for any difference between the list and
+`actions.json`, and the test suite above fails on one.
 
 ## Who is this for?
 

@@ -48,6 +48,11 @@ namespace ValheimVRMod.Utilities {
                 return;
             }
 
+            checkHolsterActions(
+                isRightHand: false, VRInputActions.valheim_HolsterLeftHandItem, VRInputActions.valheim_UnholsterLeftHandItem);
+            checkHolsterActions(
+                isRightHand: true, VRInputActions.valheim_HolsterRightHandItem, VRInputActions.valheim_UnholsterRightHandItem);
+
             var leftHandStartsGripping = grabAction.GetStateDown(VRInputSource.LeftHand);
             var rightHandStartsGripping = grabAction.GetStateDown(VRInputSource.RightHand);
             var leftHandGripping = grabAction.GetState(VRInputSource.LeftHand);
@@ -58,16 +63,22 @@ namespace ValheimVRMod.Utilities {
 
             var leftHandBackReach = getBackReachLocation(VRPlayer.leftHand.transform, isRightHand: false);
             var rightHandBackReach = getBackReachLocation(VRPlayer.rightHand.transform, isRightHand: true);
+            // A grip pressed or released only starts or ends a gesture where the hand is steady. Drawing what has been
+            // gripped is told by the hand leaving or moving fast, so that goes by where the hand is regardless.
+            var leftHandSteadyBackReach =
+                getSteadyReach(isRightHand: false, leftHandBackReach);
+            var rightHandSteadyBackReach =
+                getSteadyReach(isRightHand: true, rightHandBackReach);
 
-            checkHolster(leftHandBackReach, rightHandBackReach);
+            checkHolster(leftHandSteadyBackReach, rightHandSteadyBackReach);
 
-            updateGrabbedBackReachLocation(leftHandBackReach, false);
-            updateGrabbedBackReachLocation(rightHandBackReach, true);
+            updateGrabbedBackReachLocation(leftHandSteadyBackReach, false);
+            updateGrabbedBackReachLocation(rightHandSteadyBackReach, true);
 
             if (checkGripDraw(leftHandBackReach, rightHandBackReach)) {
                 isLeftHandDrawingWeapon = isRightHandDrawingWeapon = true;
             }
-            else if (isDoubleGripping && checkUnsheathingHolsteredDualWieldWeapon(leftHandBackReach, rightHandBackReach))
+            else if (isDoubleGripping && checkUnsheathingHolsteredDualWieldWeapon(leftHandSteadyBackReach, rightHandSteadyBackReach))
             {
                 isLeftHandDrawingWeapon = isRightHandDrawingWeapon = true;
             }
@@ -76,9 +87,10 @@ namespace ValheimVRMod.Utilities {
                 {
                     if (VRPlayer.isRightHandMainWeaponHand)
                     {
+                        // Do not require steadiness for arrow or bolt toggle
                         checkArrowToggle(rightHandBackReach);
                     }
-                    if (checkUnsheathingHolsteredNonDualWieldItem(isRightHand: true, rightHandBackReach))
+                    if (checkUnsheathingHolsteredNonDualWieldItem(isRightHand: true, rightHandSteadyBackReach))
                     {
                         isRightHandDrawingWeapon = true;
                     }
@@ -87,9 +99,10 @@ namespace ValheimVRMod.Utilities {
                 {
                     if (VRPlayer.isLeftHandMainWeaponHand)
                     {
+                        // Do not require steadiness for arrow or bolt toggle
                         checkArrowToggle(leftHandBackReach);
                     }
-                    if (checkUnsheathingHolsteredNonDualWieldItem(isRightHand: false, leftHandBackReach))
+                    if (checkUnsheathingHolsteredNonDualWieldItem(isRightHand: false, leftHandSteadyBackReach))
                     {
                         isLeftHandDrawingWeapon = true;
                     }
@@ -113,6 +126,135 @@ namespace ValheimVRMod.Utilities {
                     isRightHandDrawingWeapon = false;
                 }
             }
+        }
+
+        // The bindable holster and unholster actions of a hand, the button counterpart of the back reach gestures.
+        // Both can be bound to the same button, which then toggles: the hand holsters what it holds, or else
+        // unholsters.
+        private static void checkHolsterActions(bool isRightHand, VRBooleanAction holsterAction, VRBooleanAction unholsterAction)
+        {
+            bool isHolstering = holsterAction.GetStateDown(VRInputSource.Any);
+            bool isUnholstering = unholsterAction.GetStateDown(VRInputSource.Any);
+            if (isHolstering && isUnholstering)
+            {
+                isHolstering = isHoldingItem(isRightHand);
+                isUnholstering = !isHolstering;
+            }
+            if (isHolstering)
+            {
+                holsterHandItem(isRightHand);
+            }
+            else if (isUnholstering)
+            {
+                unholsterHandItem(isRightHand);
+            }
+        }
+
+        // Including a weapon wielded with both hands, which either hand can holster.
+        private static bool isHoldingItem(bool isRightHand)
+        {
+            return (isRightHand ? VRPlayer.rightHandItem : VRPlayer.leftHandItem) != null ||
+                (HeldConsumable.isHolding && HeldConsumable.isInRightHand == isRightHand) ||
+                LocalWeaponWield.isCurrentlyTwoHanded() ||
+                FistCollision.hasDualWieldingWeaponEquipped();
+        }
+
+        // Puts away what the hand holds the way the holster gesture does, except that held food does not bring back
+        // the item it took the place of: that stays holstered for the unholster action.
+        private static void holsterHandItem(bool isRightHand)
+        {
+            if (HeldConsumable.isHolding && HeldConsumable.isInRightHand == isRightHand)
+            {
+                HeldConsumable.PutAway(restoreWeapon: false);
+                return;
+            }
+
+            if (FistCollision.hasDualWieldingWeaponEquipped())
+            {
+                PatchHideHandItems.HideLocalPlayerHandItem(isMainHandItem: true);
+                return;
+            }
+
+            if (LocalWeaponWield.isCurrentlyTwoHanded())
+            {
+                if (VRPlayer.leftHandItem != null)
+                {
+                    PatchHideHandItems.HideLocalPlayerHandItem(isMainHandItem: VRPlayer.isLeftHandMainWeaponHand);
+                }
+                if (VRPlayer.rightHandItem != null)
+                {
+                    PatchHideHandItems.HideLocalPlayerHandItem(isMainHandItem: VRPlayer.isRightHandMainWeaponHand);
+                }
+                return;
+            }
+
+            if ((isRightHand ? VRPlayer.rightHandItem : VRPlayer.leftHandItem) != null)
+            {
+                PatchHideHandItems.HideLocalPlayerHandItem(
+                    isMainHandItem: isRightHand ? VRPlayer.isRightHandMainWeaponHand : VRPlayer.isLeftHandMainWeaponHand);
+            }
+        }
+
+        // Takes into the hand the holstered item that the shoulder gesture of that hand would, or else the other
+        // holstered item. A holstered dual wield weapon needs both hands free.
+        private static void unholsterHandItem(bool isRightHand)
+        {
+            var player = Player.m_localPlayer;
+            if (isHoldingItem(isRightHand) || !canGrabNewWeapon(isRightHand))
+            {
+                return;
+            }
+
+            if (EquipScript.LocalPlayerHasDualWieldingWeaponHolstered())
+            {
+                if (canGrabNewWeapon(!isRightHand) && PatchShowHandItems.ShowLocalPlayerHandItem(isMainHandItem: true))
+                {
+                    VRPlayer.offHandWield = false;
+                    playEquippingHaptic(true, true);
+                }
+                return;
+            }
+
+            bool isOwnMainHandItem = isRightHand ^ VHVRConfig.LeftHanded();
+            if (PatchShowHandItems.ShowLocalPlayerHandItem(isOwnMainHandItem))
+            {
+                VRPlayer.offHandWield = false;
+                playEquippingHaptic(!isRightHand, isRightHand);
+                return;
+            }
+
+            var otherItem = isOwnMainHandItem ? player.m_hiddenLeftItem : player.m_hiddenRightItem;
+            if (TryEquipToHand(otherItem, isRightHand))
+            {
+                playEquippingHaptic(!isRightHand, isRightHand);
+            }
+        }
+
+        private static BackReachLocation getSteadyReach(bool isRightHand, BackReachLocation backReach)
+        {
+            switch (backReach)
+            {
+                case BackReachLocation.LeftWaistRadialMedial:
+                case BackReachLocation.LeftWaistRadialLateral:
+                case BackReachLocation.RightWaistRadialMedial:
+                case BackReachLocation.RightWaistRadialLateral:
+                    return isSteady(isRightHand, maxHeadSpeed: 4f, maxHandSpeed: 6f) ? backReach : BackReachLocation.None;
+                default:
+                    return isSteady(isRightHand, maxHeadSpeed: 1.5f, maxHandSpeed: 1.5f) ? backReach : BackReachLocation.None;
+            }
+        }
+
+        // Speeds are relative to the VR rig, so walking or running does not count against steadiness.
+        private static bool isSteady(bool isRightHand, float maxHeadSpeed, float maxHandSpeed)
+        {
+            var headPhysicsEstimator = VRPlayer.headPhysicsEstimator;
+            var handPhysicsEstimator = isRightHand ? VRPlayer.rightHandPhysicsEstimator : VRPlayer.leftHandPhysicsEstimator;
+            if (headPhysicsEstimator == null || handPhysicsEstimator == null)
+            {
+                return true;
+            }
+            return headPhysicsEstimator.GetVelocity().magnitude < maxHeadSpeed &&
+                handPhysicsEstimator.GetVelocity().magnitude < maxHandSpeed;
         }
 
         public static bool isBehindBack(Transform handTransform)
@@ -191,6 +333,18 @@ namespace ValheimVRMod.Utilities {
                     }
                 }
                 return;
+            }
+
+            if (HeldConsumable.isHolding)
+            {
+                bool isFoodInRightHand = HeldConsumable.isInRightHand;
+                if (!(isFoodInRightHand ? isRightHandDrawingWeapon : isLeftHandDrawingWeapon) &&
+                    (isFoodInRightHand ? rightHandBackReach : leftHandBackReach) != BackReachLocation.None &&
+                    grabAction.GetStateUp(isFoodInRightHand ? VRInputSource.RightHand : VRInputSource.LeftHand))
+                {
+                    HeldConsumable.PutAway(restoreWeapon: true);
+                    return;
+                }
             }
 
             if (!isLeftHandDrawingWeapon &&

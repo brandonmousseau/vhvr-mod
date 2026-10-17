@@ -41,14 +41,13 @@ namespace ValheimVRMod.VRCore.Backends
 
         public bool InitializeVR()
         {
-            // Need to PreInitialize actions before XRSDK
-            // to ensure SteamVR_Input is enabled.
-            LogDebug("PreInitializing SteamVR Actions...");
-            SteamVR_Actions.PreInitialize();
-            // Register the runtime-created body tracking pose action now that the SteamVR
-            // action arrays exist (via PreInitialize) but before SteamVR_Input.Initialize
-            // runs (triggered by InitializeSteamVR), which initializes every action in them.
-            BodyTracking.SteamVRBodyTrackingProvider.EnsureActionRegistered();
+            // The actions have to exist before XRSDK, to ensure SteamVR_Input is enabled, and before
+            // SteamVR_Input.Initialize (run by InitializeSteamVR), which gets a handle for each of them.
+            if (!SteamVRActionCatalog.IsBuilt)
+            {
+                LogError("SteamVR actions have not been declared.");
+                return false;
+            }
             LogInfo("Initializing VR...");
             if (!InitXRSDK())
             {
