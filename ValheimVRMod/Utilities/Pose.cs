@@ -65,8 +65,10 @@ namespace ValheimVRMod.Utilities {
             var rightHandBackReach = getBackReachLocation(VRPlayer.rightHand.transform, isRightHand: true);
             // A grip pressed or released only starts or ends a gesture where the hand is steady. Drawing what has been
             // gripped is told by the hand leaving or moving fast, so that goes by where the hand is regardless.
-            var leftHandSteadyBackReach = isSteady(isRightHand: false) ? leftHandBackReach : BackReachLocation.None;
-            var rightHandSteadyBackReach = isSteady(isRightHand: true) ? rightHandBackReach : BackReachLocation.None;
+            var leftHandSteadyBackReach =
+                getSteadyReach(isRightHand: false, leftHandBackReach);
+            var rightHandSteadyBackReach =
+                getSteadyReach(isRightHand: true, rightHandBackReach);
 
             checkHolster(leftHandSteadyBackReach, rightHandSteadyBackReach);
 
@@ -85,7 +87,8 @@ namespace ValheimVRMod.Utilities {
                 {
                     if (VRPlayer.isRightHandMainWeaponHand)
                     {
-                        checkArrowToggle(rightHandSteadyBackReach);
+                        // Do not require steadiness for arrow or bolt toggle
+                        checkArrowToggle(rightHandBackReach);
                     }
                     if (checkUnsheathingHolsteredNonDualWieldItem(isRightHand: true, rightHandSteadyBackReach))
                     {
@@ -96,7 +99,8 @@ namespace ValheimVRMod.Utilities {
                 {
                     if (VRPlayer.isLeftHandMainWeaponHand)
                     {
-                        checkArrowToggle(leftHandSteadyBackReach);
+                        // Do not require steadiness for arrow or bolt toggle
+                        checkArrowToggle(leftHandBackReach);
                     }
                     if (checkUnsheathingHolsteredNonDualWieldItem(isRightHand: false, leftHandSteadyBackReach))
                     {
@@ -226,10 +230,22 @@ namespace ValheimVRMod.Utilities {
             }
         }
 
-        // Whether a hand is steady enough to be reaching for a back reach location that it is at. Those locations are
-        // relative to the head, so they sweep over the hands when the head moves fast (e. g. in the crouch of a
-        // gestured dodge), and a hand that flies through one is not reaching for it (e. g. in the push of that dodge).
-        private static bool isSteady(bool isRightHand)
+        private static BackReachLocation getSteadyReach(bool isRightHand, BackReachLocation backReach)
+        {
+            switch (backReach)
+            {
+                case BackReachLocation.LeftWaistRadialMedial:
+                case BackReachLocation.LeftWaistRadialLateral:
+                case BackReachLocation.RightWaistRadialMedial:
+                case BackReachLocation.RightWaistRadialLateral:
+                    return isSteady(isRightHand, maxHeadSpeed: 4f, maxHandSpeed: 6f) ? backReach : BackReachLocation.None;
+                default:
+                    return isSteady(isRightHand, maxHeadSpeed: 1.5f, maxHandSpeed: 1.5f) ? backReach : BackReachLocation.None;
+            }
+        }
+
+        // Speeds are relative to the VR rig, so walking or running does not count against steadiness.
+        private static bool isSteady(bool isRightHand, float maxHeadSpeed, float maxHandSpeed)
         {
             var headPhysicsEstimator = VRPlayer.headPhysicsEstimator;
             var handPhysicsEstimator = isRightHand ? VRPlayer.rightHandPhysicsEstimator : VRPlayer.leftHandPhysicsEstimator;
@@ -237,8 +253,8 @@ namespace ValheimVRMod.Utilities {
             {
                 return true;
             }
-            Vector3 headVelocity = headPhysicsEstimator.GetVelocity();
-            return headVelocity.magnitude < 1.5f && handPhysicsEstimator.GetVelocity().magnitude < 2f;
+            return headPhysicsEstimator.GetVelocity().magnitude < maxHeadSpeed &&
+                handPhysicsEstimator.GetVelocity().magnitude < maxHandSpeed;
         }
 
         public static bool isBehindBack(Transform handTransform)
