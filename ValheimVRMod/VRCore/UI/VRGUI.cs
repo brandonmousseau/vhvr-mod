@@ -128,6 +128,7 @@ namespace ValheimVRMod.VRCore.UI
         private readonly bool[] isLaserProxyShown = new bool[2];
         // What onCameraPreCull() hid from the camera being rendered, for onCameraPostRender() to show again.
         private readonly List<Renderer> hiddenFromCurrentCamera = new List<Renderer>();
+        private static VRGUI instance;
         private Camera _guiCamera;
         private List<Canvas> _guiCanvases = new List<Canvas>();
         private Canvas _cursorGuiCanvas;
@@ -182,6 +183,7 @@ namespace ValheimVRMod.VRCore.UI
 
         public void Awake()
         {
+            instance = this;
             USING_OVERLAY = VHVRConfig.GetUseOverlayGui();
             OVERLAY_CURVATURE = VHVRConfig.GetOverlayCurvature();
             _inputModule = EventSystem.current.gameObject.AddComponent<VRGUI_InputModule>();
@@ -1608,16 +1610,35 @@ namespace ValheimVRMod.VRCore.UI
 
             foreach (Canvas guiCanvas in _guiCanvases)
             {
-                // Need to assign the camera to enable UI interactions
-                guiCanvas.worldCamera = _guiCamera;
-                guiCanvas.renderMode = RenderMode.WorldSpace;
-                guiCanvas.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, GUI_DIMENSIONS.x);
-                guiCanvas.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, GUI_DIMENSIONS.y);
+                configureGuiCanvas(guiCanvas);
             }
             _guiCamera.gameObject.transform.position = new Vector3(Screen.width * 0.5f, Screen.height * 0.5f, -1);
             _guiCamera.orthographicSize = GUI_DIMENSIONS.y * 0.5f;
             hasConfiguredGuiCamera = true;
             
+        }
+
+        private void configureGuiCanvas(Canvas guiCanvas)
+        {
+            // Need to assign the camera to enable UI interactions
+            guiCanvas.worldCamera = _guiCamera;
+            guiCanvas.renderMode = RenderMode.WorldSpace;
+            guiCanvas.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, GUI_DIMENSIONS.x);
+            guiCanvas.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, GUI_DIMENSIONS.y);
+        }
+
+        public static bool addGuiCanvas(Canvas canvas)
+        {
+            if (instance == null || canvas == null || !instance.hasFoundGuiCanvas())
+            {
+                return false;
+            }
+            if (!instance._guiCanvases.Contains(canvas))
+            {
+                instance._guiCanvases.Add(canvas);
+            }
+            instance.configureGuiCanvas(canvas);
+            return true;
         }
 
         private void creatGuiCamera()
@@ -1643,6 +1664,12 @@ namespace ValheimVRMod.VRCore.UI
             _guiCamera.farClipPlane = 5f;
             _guiCamera.nearClipPlane = 0.1f;
             _guiCamera.enabled = true;
+        }
+
+        // What the VRGUI camera renders, i. e. the image shown on the UI panel or overlay.
+        public static Texture guiTexture
+        {
+            get { return instance == null ? null : instance._guiTexture; }
         }
 
         public static GameObject getUiPanel()
