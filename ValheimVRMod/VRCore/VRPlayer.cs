@@ -1195,6 +1195,10 @@ namespace ValheimVRMod.VRCore
             _thirdPersonCamera.ResetStereoViewMatrices();
             _thirdPersonCamera.targetTexture = null;
             _thirdPersonCamera.depth = 4;
+            // Unlike the VR camera, this camera draws the world space UI in its own (deferred) pass. Deferred lighting
+            // leaves the stencil buffer non-zero over geometry, and the vanilla bar fill material ("lithud") only draws
+            // where the stencil is 0, so health and stamina bars looked empty unless sky was behind them.
+            _thirdPersonCamera.clearStencilAfterLightingPass = true;
             bool isStabilizedCamera = VHVRConfig.UseStabilizedCameraOnFlatscreen();
             if (!isStabilizedCamera)
             {
