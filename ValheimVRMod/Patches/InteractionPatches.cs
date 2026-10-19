@@ -159,6 +159,12 @@ namespace ValheimVRMod.Patches
                 return true;
             }
 
+            // Hands are kept empty while swimming, so the food is eaten right away.
+            if (__instance.IsSwimming() && !__instance.IsOnGround())
+            {
+                return true;
+            }
+
             // Returning false keeps Humanoid.UseItem() from playing the eating effects.
             __result = false;
             if (HeldConsumable.IsHolding(item))
