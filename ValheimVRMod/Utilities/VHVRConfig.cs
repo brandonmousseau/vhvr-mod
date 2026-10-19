@@ -50,6 +50,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> immersiveDodgeRoll;
         private static ConfigEntry<bool> allowMovementWhenInMenu;
         private static ConfigEntry<bool> showDebugColliders;
+        private static ConfigEntry<bool> fixCreatureSoundSource;
         private static ConfigEntry<int> hipTrackerIndex;
         private static ConfigEntry<int> leftFootTrackerIndex;
         private static ConfigEntry<int> rightFootTrackerIndex;
@@ -549,6 +550,11 @@ namespace ValheimVRMod.Utilities
                 "General", "IKOverrideLowerBody", false,
                 "When foot tracking is enabled, always drive the lower body with foot tracker IK instead of vanilla " +
                 "animation even if the player is walking/swimming/sitting (unless dodge-rolling). ");
+
+            fixCreatureSoundSource = config.Bind(
+                "General", "FixCreatureSoundSource", true,
+                "Make creature idle sounds follow the creature instead of staying where they started. " +
+                "Turn off to restore the vanilla behavior if this causes problems.");
 
         }
 
@@ -2358,6 +2364,11 @@ namespace ValheimVRMod.Utilities
         public static bool IKOverrideLowerBody()
         {
             return ikOverrideLowerBody.Value;
+        }
+
+        public static bool FixCreatureSoundSource()
+        {
+            return fixCreatureSoundSource.Value;
         }
 
         // The entries shown in the FBT tab of the settings dialog (see FullBodyTrackingTab) instead of in the tab

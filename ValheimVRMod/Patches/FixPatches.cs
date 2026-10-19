@@ -155,6 +155,44 @@ namespace ValheimVRMod.Patches
         }
     }
 
+    // BaseAI.DoIdleSound() creates the idle sound at the creature's position without attaching it, so it stays
+    // behind while the creature moves on. Makes the created sound follow the creature (see SoundSourceFollower).
+    // Leaves the vanilla call itself alone and only acts on its result, so the fix is a no-op when switched off.
+    [HarmonyPatch(typeof(BaseAI), "DoIdleSound")]
+    class BaseAI_DoIdleSound_FollowCreaturePatch
+    {
+        private static readonly System.Reflection.MethodInfo createEffects =
+            AccessTools.Method(typeof(EffectList), nameof(EffectList.Create));
+
+        private static GameObject[] Follow(GameObject[] effects, BaseAI ai)
+        {
+            if (VHVRConfig.FixCreatureSoundSource() && ai != null)
+            {
+                SoundSourceFollower.Attach(effects, ai.transform);
+            }
+            return effects;
+        }
+
+        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            int count = 0;
+            foreach (var instruction in instructions)
+            {
+                yield return instruction;
+                if (instruction.Calls(createEffects))
+                {
+                    count++;
+                    yield return new CodeInstruction(System.Reflection.Emit.OpCodes.Ldarg_0);
+                    yield return CodeInstruction.Call(typeof(BaseAI_DoIdleSound_FollowCreaturePatch), nameof(Follow));
+                }
+            }
+            if (count != 1)
+            {
+                LogUtils.LogWarning("BaseAI.DoIdleSound: found " + count + " of the 1 expected EffectList.Create() calls; idle sounds may not follow creatures.");
+            }
+        }
+    }
+
     // In VR, VHVR owns the cameras. If a cinematic was started the vanilla way (before the rig existed, or with an
     // older build), Play() captured the vanilla Main Camera in m_mainCamera and Stop() would switch it back on
     // behind VRPlayer's back: a second, untracked camera drawing the world and the GUI panel again over the VR
