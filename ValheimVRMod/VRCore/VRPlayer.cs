@@ -1056,6 +1056,8 @@ namespace ValheimVRMod.VRCore
                     _handsCam.renderingPath = handsPath;
                 }
             }
+            LeanUiCameras.Apply(VRGUI.uiPanelCamera);
+            LeanUiCameras.Apply(CameraUtils.existingWorldspaceUiCamera);
             if (_skyboxCam == null || !_skyboxCam.enabled)
             {
                 enableSkyboxCamera();
