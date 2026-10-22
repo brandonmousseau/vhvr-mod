@@ -138,6 +138,8 @@ namespace RootMotion.FinalIK {
 			public Vector3 centerOfMass { get; private set; }
 
 			private Footstep[] footsteps = new Footstep[0];
+			// Set by IKSolverVR, see IKSolverVR.solverOrigin.
+			[System.NonSerialized] public Vector3 solverOrigin;
 			private Vector3 lastComPosition;
 			private Vector3 comVelocity;
 			private int leftFootIndex;
@@ -390,6 +392,9 @@ namespace RootMotion.FinalIK {
 				direction.y = 0f;
 
 				RaycastHit hit;
+
+				// The positions are in solver space, see IKSolverVR.solverOrigin, while physics is in world space.
+				origin += solverOrigin;
 
 				if (raycastRadius <= 0f) {
 					return Physics.Raycast(origin, direction, out hit, direction.magnitude, blockingLayers);

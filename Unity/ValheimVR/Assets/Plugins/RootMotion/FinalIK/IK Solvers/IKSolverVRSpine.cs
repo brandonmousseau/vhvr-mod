@@ -301,16 +301,16 @@ namespace RootMotion.FinalIK {
 
 			public override void PreSolve() {
 				if (headTarget != null) {
-					IKPositionHead = headTarget.position;
+					IKPositionHead = headTarget.position - solverOrigin;
 					IKRotationHead = headTarget.rotation;
 				}
 
 				if (chestGoal != null) {
-					goalPositionChest = chestGoal.position;
+					goalPositionChest = chestGoal.position - solverOrigin;
 				}
 
 				if (pelvisTarget != null) {
-					IKPositionPelvis = pelvisTarget.position;
+					IKPositionPelvis = pelvisTarget.position - solverOrigin;
 					IKRotationPelvis = pelvisTarget.rotation;
 				}
 

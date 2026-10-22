@@ -247,10 +247,52 @@ namespace RootMotion.FinalIK {
 			return keys;
 		}
 
+		// Grid the solver origin snaps to, in meters. See solverOrigin.
+		private const float SOLVER_ORIGIN_GRID = 32f;
+
+		/// <summary>
+		/// World position that the solver's internal positions are relative to. Far from the world origin a float world
+		/// position is only accurate to about a millimeter, and solving in world space turns that error into rotation
+		/// noise across bones only tens of centimeters long, making the body shake. Solving relative to a nearby origin
+		/// keeps full precision. It is snapped to a coarse grid so that it stays put between frames, as some solver state
+		/// persists across frames. Add it to any solver space position (e.g. VirtualBone.solverPosition) to get a world one.
+		/// </summary>
+		public Vector3 solverOrigin { get; private set; }
+
+		private void UpdateSolverOrigin() {
+			Vector3 p = root.position;
+			Vector3 origin = new Vector3(
+				Mathf.Round(p.x / SOLVER_ORIGIN_GRID) * SOLVER_ORIGIN_GRID,
+				Mathf.Round(p.y / SOLVER_ORIGIN_GRID) * SOLVER_ORIGIN_GRID,
+				Mathf.Round(p.z / SOLVER_ORIGIN_GRID) * SOLVER_ORIGIN_GRID);
+			if (origin == solverOrigin) return;
+
+			// Move the solver space positions that persist across frames along with the origin.
+			Vector3 delta = solverOrigin - origin;
+			locomotion.AddDeltaPosition(delta);
+			raycastOriginPelvis += delta;
+			spine.IKPositionHead += delta;
+			spine.IKPositionPelvis += delta;
+			spine.goalPositionChest += delta;
+			leftArm.IKPosition += delta;
+			rightArm.IKPosition += delta;
+			leftLeg.IKPosition += delta;
+			rightLeg.IKPosition += delta;
+
+			solverOrigin = origin;
+			spine.solverOrigin = origin;
+			leftArm.solverOrigin = origin;
+			rightArm.solverOrigin = origin;
+			leftLeg.solverOrigin = origin;
+			rightLeg.solverOrigin = origin;
+			locomotion.solverOrigin = origin;
+		}
+
 		private void UpdateSolverTransforms() {
+			UpdateSolverOrigin();
 			for (int i = 0; i < solverTransforms.Length; i++) {
 				if (solverTransforms[i] != null) {
-					readPositions[i] = solverTransforms[i].position;
+					readPositions[i] = solverTransforms[i].position - solverOrigin;
 					readRotations[i] = solverTransforms[i].rotation;
 				}
 			}
@@ -545,8 +587,9 @@ namespace RootMotion.FinalIK {
             }
 		}
 
+		// In world space, for writing to the transforms.
 		private Vector3 GetPosition(int index) {
-			return solvedPositions[index];
+			return solvedPositions[index] + solverOrigin;
 		}
 
 		private Quaternion GetRotation(int index) {
@@ -651,12 +694,13 @@ namespace RootMotion.FinalIK {
 
 			//debugPos4 = sampledOrigin;
 
+			// Positions here are in solver space, see solverOrigin, while physics is in world space.
 			if (locomotion.raycastRadius <= 0f) {
-				if (Physics.Raycast(sampledOrigin, direction, out hit, direction.magnitude * 1.1f, locomotion.blockingLayers)) {
-					origin = hit.point;
+				if (Physics.Raycast(sampledOrigin + solverOrigin, direction, out hit, direction.magnitude * 1.1f, locomotion.blockingLayers)) {
+					origin = hit.point - solverOrigin;
 				}
 			} else {
-				if (Physics.SphereCast(sampledOrigin, locomotion.raycastRadius * 1.1f, direction, out hit, direction.magnitude, locomotion.blockingLayers)) {
+				if (Physics.SphereCast(sampledOrigin + solverOrigin, locomotion.raycastRadius * 1.1f, direction, out hit, direction.magnitude, locomotion.blockingLayers)) {
 					origin = sampledOrigin + direction.normalized * hit.distance / 1.1f;
 				}
 			}
@@ -668,12 +712,12 @@ namespace RootMotion.FinalIK {
 			//debugPos2 = position;
 
 			if (locomotion.raycastRadius <= 0f) {
-				if (Physics.Raycast(origin, direction, out hit, direction.magnitude, locomotion.blockingLayers)) {
-					position = hit.point;
+				if (Physics.Raycast(origin + solverOrigin, direction, out hit, direction.magnitude, locomotion.blockingLayers)) {
+					position = hit.point - solverOrigin;
 				}
 
 			} else {
-				if (Physics.SphereCast(origin, locomotion.raycastRadius, direction, out hit, direction.magnitude, locomotion.blockingLayers)) {
+				if (Physics.SphereCast(origin + solverOrigin, locomotion.raycastRadius, direction, out hit, direction.magnitude, locomotion.blockingLayers)) {
 					position = origin + direction.normalized * hit.distance;
 				}
 			}

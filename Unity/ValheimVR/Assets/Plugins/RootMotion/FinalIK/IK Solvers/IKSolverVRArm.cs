@@ -233,7 +233,7 @@ namespace RootMotion.FinalIK
             {
                 if (target != null)
                 {
-                    IKPosition = target.position;
+                    IKPosition = target.position - solverOrigin;
                     IKRotation = target.rotation;
                 }
 
@@ -485,7 +485,7 @@ namespace RootMotion.FinalIK
 
             private Vector3 GetBendNormal(Vector3 dir)
             {
-                if (bendGoal != null) bendDirection = bendGoal.position - bones[1].solverPosition;
+                if (bendGoal != null) bendDirection = bendGoal.position - solverOrigin - bones[1].solverPosition;
 
                 Vector3 armDir = bones[0].solverRotation * bones[0].axis;
 

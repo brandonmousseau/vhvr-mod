@@ -176,7 +176,7 @@ namespace RootMotion.FinalIK {
 
 			public override void PreSolve() {
 				if (target != null) {
-					IKPosition = target.position;
+					IKPosition = target.position - solverOrigin;
 					IKRotation = target.rotation;
 				}
 
@@ -236,7 +236,7 @@ namespace RootMotion.FinalIK {
 				float bAngle = 0f;
 
 				if (bendGoal != null && bendGoalWeight > 0f) {
-                    Vector3 b = Vector3.Cross(bendGoal.position - thigh.solverPosition, position - thigh.solverPosition);
+                    Vector3 b = Vector3.Cross(bendGoal.position - solverOrigin - thigh.solverPosition, position - thigh.solverPosition);
 					Quaternion l = Quaternion.LookRotation(bendNormal, thigh.solverPosition - foot.solverPosition);
 					Vector3 bRelative = Quaternion.Inverse(l) * b;
 					bAngle = Mathf.Atan2(bRelative.x, bRelative.z) * Mathf.Rad2Deg * bendGoalWeight;
