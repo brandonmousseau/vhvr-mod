@@ -150,6 +150,7 @@ namespace ValheimVRMod.Utilities
 
         // Graphics Settings
         private static ConfigEntry<bool> useAmplifyOcclusion;
+        private static ConfigEntry<bool> handsCameraForward;
         private static ConfigEntry<float> taaSharpenAmmount;
         private static ConfigEntry<float> nearClipPlane;
         private static ConfigEntry<float> vignetteStrength;
@@ -969,6 +970,12 @@ namespace ValheimVRMod.Utilities
                                               " cost. While you can enable SSAO and UseAmplifyOcclusion simultaneously, it is" +
                                               " not recommended. SSAO impacts performance significantly, which is bad for VR especially. Therefore" +
                                               " you should disable SSAO in the graphics settings of the game when using this.");
+            handsCameraForward = config.Bind("Graphics",
+                                              "HandsCameraForward",
+                                              false,
+                                              "Draws the hands camera (your hands and what they hold, drawn over the world) with forward rendering" +
+                                              " instead of copying the VR camera's deferred path, which sets up a full deferred lighting pass per eye" +
+                                              " just for the hands. Hands may be lit slightly differently. Applies at once.");
             taaSharpenAmmount = config.Bind("Graphics",
                                               "TAASharpenAmmount",
                                               0.3f,
@@ -1481,6 +1488,11 @@ namespace ValheimVRMod.Utilities
         public static float GetUiPanelDistance()
         {
             return uiPanelDistance.Value;
+        }
+
+        public static bool HandsCameraForward()
+        {
+            return handsCameraForward != null && handsCameraForward.Value;
         }
 
         public static bool UseAmplifyOcclusion()
