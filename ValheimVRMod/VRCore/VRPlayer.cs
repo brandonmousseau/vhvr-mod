@@ -94,6 +94,11 @@ namespace ValheimVRMod.VRCore
         private Vector3 initialRoomscaleLocomotiveOffsetFromHead;
 
         public static Camera vrCam { get { return vrPlayerInstance != null ? vrPlayerInstance._vrCam : null; } }
+        public static Camera handsCam { get { return vrPlayerInstance != null ? vrPlayerInstance._handsCam : null; } }
+        // The flat screen camera (FollowCamera) while there is one.
+        public static Camera thirdPersonCam { get { return vrPlayerInstance != null ? vrPlayerInstance._thirdPersonCamera : null; } }
+        // [Graphics] MergeUiCameras: the hands camera while it also draws the GUI panel and the world space UI, else null.
+        public static Camera mergedUiCamera { get { return vrPlayerInstance != null ? vrPlayerInstance._mergedUiCamera : null; } }
         // Raw SteamVR eye height (HMD height above the tracking origin) sampled the last time the
         // player height was caliberated. This is only trustworthy if the SteamVR floor level is set
         // up correctly, hence it is never used directly, only via referencePlayerHeight below.
@@ -168,6 +173,8 @@ namespace ValheimVRMod.VRCore
 
         private Camera _vrCam;
         private Camera _handsCam;
+        private Camera _mergedUiCamera;
+        private bool _uiCamerasMergedOff;
         private Camera _skyboxCam;
         private Camera _thirdPersonCamera;
         // Set once _vrCam has rendered a frame to the headset, see enableThirdPersonCamera().
@@ -1048,9 +1055,67 @@ namespace ValheimVRMod.VRCore
             {
                 enableHandsCamera();
             }
+            bool mergeUi = VHVRConfig.MergeUiCameras() && _handsCam != null && _vrCam != null;
+            if (_handsCam != null && _vrCam != null)
+            {
+                // The merged GUI panel is drawn by a command buffer at a forward rendering event.
+                RenderingPath handsPath =
+                    VHVRConfig.HandsCameraForward() || mergeUi ? RenderingPath.Forward : _vrCam.renderingPath;
+                if (_handsCam.renderingPath != handsPath)
+                {
+                    _handsCam.renderingPath = handsPath;
+                }
+            }
+            applyUiCameraMerge(mergeUi);
+            LeanUiCameras.Apply(VRGUI.uiPanelCamera);
+            LeanUiCameras.Apply(CameraUtils.existingWorldspaceUiCamera);
             if (_skyboxCam == null || !_skyboxCam.enabled)
             {
                 enableSkyboxCamera();
+            }
+        }
+
+        // [Graphics] MergeUiCameras: the hands camera also draws the world space UI layer and, through VRGUI's command
+        // buffer, the GUI panel, while VRUICamera and WorldSpaceUiCamera are switched off. Each of those culled the
+        // whole scene and its lights once per eye to draw a few quads. Their objects stay, switched off, since their
+        // transforms (children of the VR camera) are what the HUD, crosshair and enemy bars face and parent to.
+        // Runs in Update, between frames: never while the cameras render (see VRGUI.updateUiPanelCameraAnchoring()).
+        private void applyUiCameraMerge(bool merge)
+        {
+            Camera mergedCamera = merge ? _handsCam : null;
+            if (mergedCamera != _mergedUiCamera)
+            {
+                LogInfo(merge ?
+                    "MergeUiCameras: the GUI panel and the world space UI are drawn by " + CameraUtils.HANDS_CAMERA + "; " +
+                    CameraUtils.VR_UI_CAMERA + " and " + CameraUtils.WORLD_SPACE_UI_CAMERA + " are off." :
+                    "MergeUiCameras: back to " + CameraUtils.VR_UI_CAMERA + " and " + CameraUtils.WORLD_SPACE_UI_CAMERA + ".");
+            }
+            _mergedUiCamera = mergedCamera;
+            VRGUI.SetPanelDrawingCamera(mergedCamera);
+            // Every frame while merged, since any of these cameras may be made (again) later; put back only by this,
+            // so that with the setting off nothing changes from before.
+            if (merge || _uiCamerasMergedOff)
+            {
+                if (_handsCam != null)
+                {
+                    int handsMask = merge ?
+                        LayerUtils.HANDS_LAYER_MASK | LayerUtils.WORLDSPACE_UI_LAYER_MASK : LayerUtils.HANDS_LAYER_MASK;
+                    if (_handsCam.cullingMask != handsMask)
+                    {
+                        _handsCam.cullingMask = handsMask;
+                    }
+                }
+                setCameraEnabled(VRGUI.uiPanelCamera, !merge);
+                setCameraEnabled(CameraUtils.existingWorldspaceUiCamera, !merge);
+                _uiCamerasMergedOff = merge;
+            }
+        }
+
+        private static void setCameraEnabled(Camera camera, bool enabled)
+        {
+            if (camera != null && camera.enabled != enabled)
+            {
+                camera.enabled = enabled;
             }
         }
 

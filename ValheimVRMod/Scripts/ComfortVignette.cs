@@ -13,8 +13,8 @@ namespace ValheimVRMod.Scripts
     // Movement is read from the camera rig, which only the game moves: the user moving their head moves the camera
     // inside the rig and must not bring up the vignette.
     //
-    // Goes on the VR camera. The vignette is drawn by the world space UI camera, i. e. over the game world but
-    // under the hands and the VR GUI.
+    // Goes on the VR camera. The vignette is drawn by the world space UI camera, i. e. over the game world and the
+    // GUI panel but under the hands; with [Graphics] MergeUiCameras by the hands camera, so over the hands as well.
     class ComfortVignette : MonoBehaviour
     {
         private const float MIN_VISIBLE_STRENGTH = 0.001f;
