@@ -113,6 +113,7 @@ namespace ValheimVRMod.VRCore.UI
             new EitrPanelElement(), //Horizontal START
             new AdrenalinePanelElement(), //Horizontal START
             new StaggerPanelElement(), //Horizontal START
+            new ActionProgressPanelElement(), //Horizontal START
             new MinimapPanelElement(),
             new BuildSelectedInfoElement()
         };
