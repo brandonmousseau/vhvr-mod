@@ -767,27 +767,43 @@ namespace ValheimVRMod.Scripts
                 lastSnapDirection = pieceOnHand.transform.localRotation;
                 UpdateSnapPointCollider(pieceOnHand, lastSnapTransform);
             }
-            //Multiple Raycast 
-            RaycastHit[] snapPointsCast = new RaycastHit[10];
-            int hits = Physics.RaycastNonAlloc(PlaceModeRayVectorProvider.startingPosition, PlaceModeRayVectorProvider.rayDirection, snapPointsCast, 12f, LayerMask.GetMask("piece_nonsolid"));
-            if (hits == 0)
+            // Pick the candidate whose sphere the ray passes through and whose centre is closest to the aim. Checked
+            // directly against our own candidates: a physics raycast returned at most 10 of the overlapping spheres in
+            // no particular order (so with many snap points some candidates could not be picked), and could also
+            // return any other piece_nonsolid collider in the world.
+            var start = PlaceModeRayVectorProvider.startingPosition;
+            var dir = PlaceModeRayVectorProvider.rayDirection.normalized;
+            Transform nearestTransform = null;
+            float bestAlignment = float.MinValue;
+            foreach (var candidate in snapPointsCollider)
+            {
+                if (!candidate || !candidate.activeSelf)
+                {
+                    continue;
+                }
+                var toCenter = candidate.transform.position - start;
+                float along = Vector3.Dot(toCenter, dir);
+                float radius = SnapPointColliderRadius(candidate);
+                if (along < -radius || along > SNAP_POINT_PICK_RANGE + radius)
+                {
+                    continue;
+                }
+                if ((toCenter - dir * along).sqrMagnitude > radius * radius)
+                {
+                    continue;
+                }
+                float alignment = Vector3.Dot(dir, toCenter.normalized);
+                if (alignment > bestAlignment)
+                {
+                    bestAlignment = alignment;
+                    nearestTransform = candidate.transform;
+                }
+            }
+            if (!nearestTransform)
             {
                 snapLine.enabled = false;
                 isCancelled = true;
                 return onHand.transform.position;
-            }
-
-            Transform nearestTransform = snapPointsCast[0].collider.transform;
-
-            for (int i = 1; i < hits; i++)
-            {
-                var dir = PlaceModeRayVectorProvider.rayDirection;
-                var nearestPosRef = nearestTransform.position - PlaceModeRayVectorProvider.startingPosition;
-                var currPosRef = snapPointsCast[i].collider.transform.position - PlaceModeRayVectorProvider.startingPosition;
-                if (Vector3.Dot(dir, nearestPosRef.normalized) < Vector3.Dot(dir, currPosRef.normalized))
-                {
-                    nearestTransform = snapPointsCast[i].collider.transform;
-                }
             }
 
             if (nearestTransform.gameObject.activeSelf)
@@ -921,6 +937,16 @@ namespace ValheimVRMod.Scripts
             }
             return snapPoints;
         }
+        private const float SNAP_POINT_PICK_RANGE = 12f;
+
+        private static float SnapPointColliderRadius(GameObject candidate)
+        {
+            var sphere = candidate.GetComponent<SphereCollider>();
+            var scale = candidate.transform.lossyScale;
+            float maxScale = Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.y), Mathf.Abs(scale.z));
+            return (sphere ? sphere.radius : 0.5f) * maxScale;
+        }
+
         private GameObject CreateSnapPointCollider()
         {
             var newCollider = GameObject.CreatePrimitive(PrimitiveType.Sphere);
@@ -979,13 +1005,9 @@ namespace ValheimVRMod.Scripts
                 {
                     var currPos = aimedSnapPoints[i].position - (onHandSnapPoints[j].position - onHand.transform.position);
 
-                    //Snap point check 
-                    //check if its the same position as its reference
-                    if (currPos == aimedPoints.transform.position)
-                    {
-                        continue;
-                    }
-                    //check if there's already same piece on that snapping point 
+                    // A different piece may sit with its origin on the target's origin (e.g. two beams crossed at
+                    // their midpoints); only the same piece in the same place is skipped, below.
+                    //check if there's already same piece on that snapping point
                     if (CheckSamePieceSamePlace(currPos, onHand, onHandPiece))
                     {
                         continue;
