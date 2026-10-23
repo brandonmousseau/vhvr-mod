@@ -269,6 +269,8 @@ namespace ValheimVRMod.VRCore.Backends
                 return;
             }
 
+            // Resetting the tracking origin below raises the events TrackingOriginWatcher acts on.
+            TrackingOriginWatcher.NoteRecentering();
             List<XRInputSubsystem> inputSubsystems = new List<XRInputSubsystem>();
             SubsystemManager.GetInstances(inputSubsystems);
             foreach (var subsystem in inputSubsystems)
