@@ -996,13 +996,13 @@ namespace ValheimVRMod.Utilities
                                               " if any UI element looks wrong (missing, unlit, flickering) turn this off. Applies at once.");
             mergeUiCameras = config.Bind("Graphics",
                                               "MergeUiCameras",
-                                              false,
+                                              true,
                                               "Draws the GUI panel and the world space UI (enemy bars, hover names, crosshair, quick menus, vignette)" +
                                               " with the hands camera instead of two cameras of their own, each of which culls the whole scene once" +
                                               " per eye. Same order as before (world, GUI panel, world space UI, hands); world space UI nearer than a" +
                                               " hand now shows over it, and the comfort vignette also darkens the hands. The hands camera then renders" +
                                               " forward, as with HandsCameraForward. The panel is drawn relative to the camera rig, so it doesn't shake" +
-                                              " far from the world origin. Applies at once.");
+                                              " far from the world origin. Turn off to go back to the separate cameras. Applies at once.");
             desktopMirrorOff = config.Bind("Graphics",
                                               "DesktopMirrorOff",
                                               false,
