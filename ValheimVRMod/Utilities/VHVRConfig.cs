@@ -153,6 +153,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> handsCameraForward;
         private static ConfigEntry<bool> renderWorkOncePerFrame;
         private static ConfigEntry<bool> leanUiCameras;
+        private static ConfigEntry<bool> mergeUiCameras;
         private static ConfigEntry<bool> desktopMirrorOff;
         private static ConfigEntry<float> taaSharpenAmmount;
         private static ConfigEntry<float> nearClipPlane;
@@ -993,6 +994,15 @@ namespace ValheimVRMod.Utilities
                                               " over the world) cheaper: no depth texture or motion vectors copied from the VR camera, no occlusion" +
                                               " culling and no shadows while they render. They draw only unlit UI, so nothing should look different;" +
                                               " if any UI element looks wrong (missing, unlit, flickering) turn this off. Applies at once.");
+            mergeUiCameras = config.Bind("Graphics",
+                                              "MergeUiCameras",
+                                              false,
+                                              "Draws the GUI panel and the world space UI (enemy bars, hover names, crosshair, quick menus, vignette)" +
+                                              " with the hands camera instead of two cameras of their own, each of which culls the whole scene once" +
+                                              " per eye. Same order as before (world, GUI panel, world space UI, hands); world space UI nearer than a" +
+                                              " hand now shows over it, and the comfort vignette also darkens the hands. The hands camera then renders" +
+                                              " forward, as with HandsCameraForward. The panel is drawn relative to the camera rig, so it doesn't shake" +
+                                              " far from the world origin. Applies at once.");
             desktopMirrorOff = config.Bind("Graphics",
                                               "DesktopMirrorOff",
                                               false,
@@ -1533,6 +1543,11 @@ namespace ValheimVRMod.Utilities
         public static bool LeanUiCameras()
         {
             return leanUiCameras != null && leanUiCameras.Value;
+        }
+
+        public static bool MergeUiCameras()
+        {
+            return mergeUiCameras != null && mergeUiCameras.Value;
         }
 
         public static bool DesktopMirrorOff()
