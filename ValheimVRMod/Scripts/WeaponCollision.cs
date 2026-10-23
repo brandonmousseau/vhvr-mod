@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using ValheimVRMod.VRCore.Backends;
 using System.ComponentModel;
 using UnityEngine;
@@ -41,6 +42,24 @@ namespace ValheimVRMod.Scripts
         private bool usesUnarmedAttack;
         // Whether stabbing with the held item is an attack with the item itself even though it uses fist attacks.
         private bool stabsWithHeldItem;
+
+        // The pose the box had when it was last placed, for sweeping the gap to this frame's pose, see sweepFromLastPose().
+        private bool hasLastPose;
+        private Vector3 lastPosition;
+        private Quaternion lastRotation;
+        private float lastPoseTime;
+        private int lastSweepFrame = -1;
+        // Everything the box can be entered by, i.e. all but the mod's own weapon, hand and UI layers.
+        private const int SWEEP_LAYER_MASK =
+            ~((1 << LayerUtils.VHVR_WEAPON) | LayerUtils.HANDS_LAYER_MASK | LayerUtils.UI_PANEL_LAYER_MASK | LayerUtils.WORLDSPACE_UI_LAYER_MASK);
+        // A gap longer than this is not a hitch during a swing but a break (menu, cutscene), and a move longer than
+        // this is not a swing but the player being moved.
+        private const float MAX_SWEEP_GAP_SECONDS = 0.5f;
+        private const float MAX_SWEEP_DISTANCE = 3f;
+        private const int MAX_SWEEP_STEPS = 12;
+        private const float MIN_SWEEP_STEP = 0.02f;
+        private static readonly Collider[] sweepHits = new Collider[32];
+        private static readonly HashSet<Collider> sweptColliders = new HashSet<Collider>();
         private bool isHoldingTankard { get { return isVanillaRightHandedWeapon && EquipScript.CurrentMainHandEquipType() == EquipType.Tankard; } }
 
         public PhysicsEstimator physicsEstimator { get; private set; }
@@ -475,10 +494,104 @@ namespace ValheimVRMod.Scripts
             transform.localPosition = Vector3.zero;
             transform.localScale = Vector3.one;
             transform.SetParent(Player.m_localPlayer.transform, true);
+            // Once per frame, whichever camera renders first.
+            if (Time.frameCount != lastSweepFrame)
+            {
+                lastSweepFrame = Time.frameCount;
+                sweepFromLastPose();
+            }
+        }
+
+        // The box is only put where the weapon is once per rendered frame (see OnRenderObject), and the trigger
+        // events only know of what it overlaps at those poses. At 30 to 40 fps a swing moves it 15 to 25 cm between
+        // frames, far more across a hitch, so a target thinner than that, or anything at all during a hitch, can fall
+        // into the gap and never be entered. The gap is swept instead: the box is tested at poses in between the
+        // last frame's and this one's, and whatever it finds there that it overlaps at neither end is hit as if it
+        // had been entered. What it overlaps at either end is left to the trigger events, which see those poses.
+        private void sweepFromLastPose()
+        {
+            Vector3 position = transform.position;
+            Quaternion rotation = transform.rotation;
+            bool hadLastPose = hasLastPose;
+            Vector3 fromPosition = lastPosition;
+            Quaternion fromRotation = lastRotation;
+            float gap = Time.unscaledTime - lastPoseTime;
+            lastPosition = position;
+            lastRotation = rotation;
+            lastPoseTime = Time.unscaledTime;
+            hasLastPose = true;
+
+            if (!hadLastPose || !VHVRConfig.WeaponColliderSweep() || isHoldingTankard || gap > MAX_SWEEP_GAP_SECONDS)
+            {
+                return;
+            }
+
+            float distance = Vector3.Distance(fromPosition, position);
+            if (distance > MAX_SWEEP_DISTANCE)
+            {
+                return;
+            }
+            // The box is a unit cube scaled by its parent, so its half extents are half its scale.
+            Vector3 halfExtents = transform.lossyScale * 0.5f;
+            float thickness = Mathf.Max(MIN_SWEEP_STEP, 2 * Mathf.Min(halfExtents.x, Mathf.Min(halfExtents.y, halfExtents.z)));
+            int steps = Mathf.Min(MAX_SWEEP_STEPS, Mathf.FloorToInt(distance / thickness));
+            if (steps <= 0)
+            {
+                // The two poses overlap, nothing can have been passed over.
+                return;
+            }
+
+            sweptColliders.Clear();
+            addOverlaps(fromPosition, fromRotation, halfExtents);
+            addOverlaps(position, rotation, halfExtents);
+
+            for (int i = 1; i <= steps; i++)
+            {
+                float t = (float)i / (steps + 1);
+                Vector3 stepPosition = Vector3.Lerp(fromPosition, position, t);
+                Quaternion stepRotation = Quaternion.Slerp(fromRotation, rotation, t);
+                int count = Physics.OverlapBoxNonAlloc(
+                    stepPosition, halfExtents, sweepHits, stepRotation, SWEEP_LAYER_MASK, QueryTriggerInteraction.Collide);
+                if (count == 0)
+                {
+                    continue;
+                }
+                // The hit handlers read the box's pose, so it is put where the target was found for them.
+                transform.SetPositionAndRotation(stepPosition, stepRotation);
+                for (int j = 0; j < count; j++)
+                {
+                    Collider collider = sweepHits[j];
+                    if (collider == null || !sweptColliders.Add(collider))
+                    {
+                        continue;
+                    }
+                    if (VHVRConfig.ShowDebugColliders())
+                    {
+                        LogUtils.LogInfo(
+                            "VHVR weapon sweep: " + collider.name + " found in the " + distance.ToString("F2") +
+                            " m gap between frames (" + steps + " steps, " + (gap * 1000).ToString("F0") + " ms).");
+                    }
+                    MaybeAttackCollider(collider, requireStab: false, requireStabOrBackSlash: false);
+                }
+                transform.SetPositionAndRotation(position, rotation);
+            }
+        }
+
+        private static void addOverlaps(Vector3 position, Quaternion rotation, Vector3 halfExtents)
+        {
+            int count = Physics.OverlapBoxNonAlloc(position, halfExtents, sweepHits, rotation, SWEEP_LAYER_MASK, QueryTriggerInteraction.Collide);
+            for (int i = 0; i < count; i++)
+            {
+                if (sweepHits[i] != null)
+                {
+                    sweptColliders.Add(sweepHits[i]);
+                }
+            }
         }
 
         public void setColliderParent(MeshFilter meshFilter, Vector3 handPosition, int itemHash, bool isDominantHand)
         {
+            hasLastPose = false;
             var meshTranform = meshFilter.transform;
             outline = meshTranform.parent.gameObject.GetComponent<Outline>();
             if (outline == null)
