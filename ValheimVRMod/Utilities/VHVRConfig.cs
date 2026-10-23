@@ -150,6 +150,10 @@ namespace ValheimVRMod.Utilities
 
         // Graphics Settings
         private static ConfigEntry<bool> useAmplifyOcclusion;
+        private static ConfigEntry<bool> handsCameraForward;
+        private static ConfigEntry<bool> renderWorkOncePerFrame;
+        private static ConfigEntry<bool> leanUiCameras;
+        private static ConfigEntry<bool> desktopMirrorOff;
         private static ConfigEntry<float> taaSharpenAmmount;
         private static ConfigEntry<float> nearClipPlane;
         private static ConfigEntry<float> vignetteStrength;
@@ -187,6 +191,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> shieldScale;
         private static ConfigEntry<float> maxShieldWidth;
         private static ConfigEntry<float> maxBucklerWidth;
+        private static ConfigEntry<bool> weaponColliderSweep;
         private static ConfigEntry<bool> movementSecondaryAttack;
         private static ConfigEntry<string> meleeAttackKnockbackDirection;
 
@@ -968,6 +973,34 @@ namespace ValheimVRMod.Utilities
                                               " cost. While you can enable SSAO and UseAmplifyOcclusion simultaneously, it is" +
                                               " not recommended. SSAO impacts performance significantly, which is bad for VR especially. Therefore" +
                                               " you should disable SSAO in the graphics settings of the game when using this.");
+            handsCameraForward = config.Bind("Graphics",
+                                              "HandsCameraForward",
+                                              false,
+                                              "Draws the hands camera (your hands and what they hold, drawn over the world) with forward rendering" +
+                                              " instead of copying the VR camera's deferred path, which sets up a full deferred lighting pass per eye" +
+                                              " just for the hands. Hands may be lit slightly differently. Applies at once.");
+            renderWorkOncePerFrame = config.Bind("Graphics",
+                                              "RenderWorkOncePerFrame",
+                                              true,
+                                              "Does the per-render work of the held weapon (two-handed wield, weapon hit box) and of the GUI panel" +
+                                              " once per frame instead of after every camera render (about 10 a frame in VR: two eyes times several" +
+                                              " cameras). The results are the same; turn it off only to compare, or if a held weapon or the GUI panel" +
+                                              " behaves differently than before. Applies at once.");
+            leanUiCameras = config.Bind("Graphics",
+                                              "LeanUiCameras",
+                                              false,
+                                              "Makes the two UI cameras (the GUI panel camera and the world space UI camera, each drawn once per eye" +
+                                              " over the world) cheaper: no depth texture or motion vectors copied from the VR camera, no occlusion" +
+                                              " culling and no shadows while they render. They draw only unlit UI, so nothing should look different;" +
+                                              " if any UI element looks wrong (missing, unlit, flickering) turn this off. Applies at once.");
+            desktopMirrorOff = config.Bind("Graphics",
+                                              "DesktopMirrorOff",
+                                              false,
+                                              "Stops drawing the game window on the desktop while in VR: no mirror camera and no VR runtime eye mirror." +
+                                              " The window keeps its last image. Saves the mirror camera's cost per frame. Has no effect in the" +
+                                              " Follow, Spectator and Stabilized mirror modes, which draw the window with a camera of their own." +
+                                              " Applies at once.");
+            desktopMirrorOff.SettingChanged += (sender, e) => VRManager.UpdateMirrorViewMode();
             taaSharpenAmmount = config.Bind("Graphics",
                                               "TAASharpenAmmount",
                                               0.3f,
@@ -1182,6 +1215,12 @@ namespace ValheimVRMod.Utilities
                 1.5f,
                 new ConfigDescription("The max allowed width of a buckler in meters - any buckler wider will be shrinked to fit this width. About 0.3m gives a realistic size.",
                 new AcceptableValueRange<float>(0.05f, 3.0f)));
+            weaponColliderSweep = config.Bind("Motion Control",
+                "WeaponColliderSweep",
+                true,
+                "Also hit what the weapon passed over between two rendered frames. The weapon's hit box is only moved once per frame," +
+                " so at a low frame rate or during a hitch a fast swing can skip right over a target without ever touching it;" +
+                " with this on, the path between the last frame's and this frame's pose is checked as well.");
 
             meleeAttackKnockbackDirection = config.Bind("Motion Control",
                                         "MeleeAttackKnockbackDirection",
@@ -1273,6 +1312,11 @@ namespace ValheimVRMod.Utilities
 
         public static VRMirrorViewMode GetMirrorViewMode()
         {
+            if (DesktopMirrorOff())
+            {
+                // Nothing draws the window, neither the runtime's eye mirror nor a camera of the mod's own.
+                return VRMirrorViewMode.None;
+            }
             string mode = mirrorMode.Value;
             switch (mode) {
                 case "NativeRight":
@@ -1474,6 +1518,26 @@ namespace ValheimVRMod.Utilities
         public static float GetUiPanelDistance()
         {
             return uiPanelDistance.Value;
+        }
+
+        public static bool HandsCameraForward()
+        {
+            return handsCameraForward != null && handsCameraForward.Value;
+        }
+
+        public static bool RenderWorkOncePerFrame()
+        {
+            return renderWorkOncePerFrame == null || renderWorkOncePerFrame.Value;
+        }
+
+        public static bool LeanUiCameras()
+        {
+            return leanUiCameras != null && leanUiCameras.Value;
+        }
+
+        public static bool DesktopMirrorOff()
+        {
+            return desktopMirrorOff != null && desktopMirrorOff.Value;
         }
 
         public static bool UseAmplifyOcclusion()
@@ -2049,6 +2113,11 @@ namespace ValheimVRMod.Utilities
         public static float GetMaxBucklerWidth()
         {
             return maxBucklerWidth.Value;
+        }
+
+        public static bool WeaponColliderSweep()
+        {
+            return weaponColliderSweep.Value;
         }
         public static bool MovementSecondaryAttack()
         {
