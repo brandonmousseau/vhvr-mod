@@ -130,7 +130,7 @@ namespace ValheimVRMod.VRCore.UI
         // What onCameraPreCull() hid from the camera being rendered, for onCameraPostRender() to show again.
         private readonly List<Renderer> hiddenFromCurrentCamera = new List<Renderer>();
         // [Graphics] MergeUiCameras: the camera (the hands camera) that draws the panel with panelCommandBuffer instead
-        // of VRUICamera, else null. See drawPanelForEye().
+        // of VRUICamera, else null. See onCameraPreRender().
         private Camera panelDrawingCamera;
         private CommandBuffer panelCommandBuffer;
         private const CameraEvent PANEL_DRAW_EVENT = CameraEvent.BeforeForwardOpaque;
@@ -138,7 +138,12 @@ namespace ValheimVRMod.VRCore.UI
         // it is drawn with world space matrices instead. See checkPanelInEye().
         private bool eyeOffsetsTrusted = true;
         private bool hasCheckedEyeOffsets;
-        private bool hasLoggedMissingEyeOffsets;
+        // Each eye's pose in the camera (left, right), see getEyeInCamera(), and how far from the world origin, in
+        // metres, it is read afresh.
+        private readonly bool[] hasEyeInCamera = new bool[2];
+        private readonly Vector3[] eyeOffsetInCamera = new Vector3[2];
+        private readonly Quaternion[] eyeRotationInCamera = new Quaternion[2];
+        private const float EYE_IN_CAMERA_READ_RANGE = 1000f;
         private static VRGUI instance;
         // The GUI panel camera (VRUICamera) once created, else null.
         public static Camera uiPanelCamera { get { return instance != null ? instance._uiPanelCamera : null; } }
@@ -1410,7 +1415,7 @@ namespace ValheimVRMod.VRCore.UI
         // The panel and the eye in the space of the camera rig moved to the world origin (its rotation and scale
         // kept), composed from local poses: the same precision fix as updateUiPanelCameraAnchoring(), at any distance
         // from the origin, without moving any camera or copying the panel. The eye's offset from the head comes from
-        // the headset's own eye poses, which are relative to the head and so precise. False to draw in world space.
+        // the camera's own eye view, see getEyeInCamera(). False to draw in world space.
         private bool tryGetPanelMatricesInRig(
             Camera camera, bool stereo, Camera.StereoscopicEye eye, Matrix4x4 cameraView,
             out Matrix4x4 view, out Matrix4x4 model)
@@ -1424,18 +1429,7 @@ namespace ValheimVRMod.VRCore.UI
             {
                 return false;
             }
-            Vector3 eyeOffset = Vector3.zero;
-            Quaternion eyeRotation = Quaternion.identity;
-            if (stereo && !tryGetEyeOffset(eye, out eyeOffset, out eyeRotation))
-            {
-                if (!hasLoggedMissingEyeOffsets)
-                {
-                    hasLoggedMissingEyeOffsets = true;
-                    LogWarning("MergeUiCameras: the headset reports no eye poses; the GUI panel is drawn in world space" +
-                               " (it may shake far from the world origin).");
-                }
-                return false;
-            }
+            getEyeInCamera(camera, stereo, eye, cameraView, rig, out Vector3 eyeOffset, out Quaternion eyeRotation);
 
             Quaternion rigRotation = rig.rotation;
             Vector3 rigScale = rig.lossyScale;
@@ -1445,56 +1439,53 @@ namespace ValheimVRMod.VRCore.UI
             Quaternion eyeWorldRotation = rigRotation * cameraRotation * eyeRotation;
             view = Matrix4x4.Scale(new Vector3(1, 1, -1)) * Matrix4x4.TRS(eyePosition, eyeWorldRotation, Vector3.one).inverse;
 
-            Vector3 panelPosition;
-            Quaternion panelRotation;
-            bool held = tryGetHeldPanelPoseInRig(rig, out panelPosition, out panelRotation);
-            if (!held)
-            {
-                // Wherever the panel is instead, only as precise as its world space pose, as further from the eyes.
-                panelPosition = rig.InverseTransformPoint(_uiPanel.position);
-                panelRotation = Quaternion.Inverse(rigRotation) * _uiPanel.rotation;
-            }
+            // Where the real panel is, also while held: the laser beams and the cursor go by the real panel, and a
+            // panel drawn at the pose composed from the hand sits visibly off from them while the hand moves.
+            Vector3 panelPosition = rig.InverseTransformPoint(_uiPanel.position);
+            Quaternion panelRotation = Quaternion.Inverse(rigRotation) * _uiPanel.rotation;
             // The panel has no parent, so its local scale is its world scale.
             Vector3 panelScale = _uiPanel.localScale;
             model = rigAtOrigin * Matrix4x4.TRS(panelPosition, panelRotation, divide(panelScale, rigScale));
 
-            // Not while held: the held pose is composed from the hand and may lead the real panel a little.
-            if (!held && !hasCheckedEyeOffsets)
+            if (!hasCheckedEyeOffsets)
             {
                 checkPanelInEye(eye, eyeOffset, cameraView, view, model);
             }
             return eyeOffsetsTrusted;
         }
 
-        // The eye's position and rotation relative to the head, from the headset's tracking (head and eye poses read
-        // together, so their difference holds however the head moved since the camera was posed).
-        private static bool tryGetEyeOffset(Camera.StereoscopicEye eye, out Vector3 offset, out Quaternion rotation)
+        // The eye's pose relative to the camera, from the very view the camera renders the world with (the headset's
+        // own eye poses were found ~4 mm off from it, enough to put the panel out of step between the eyes). Read
+        // from world space matrices, so only within a millimetre or so far out: it hardly changes (only with the
+        // headset's IPD), so out there the last one read near the origin is kept.
+        private void getEyeInCamera(
+            Camera camera, bool stereo, Camera.StereoscopicEye eye, Matrix4x4 cameraView, Transform rig,
+            out Vector3 offset, out Quaternion rotation)
         {
             offset = Vector3.zero;
             rotation = Quaternion.identity;
-            UnityEngine.XR.InputDevice head = UnityEngine.XR.InputDevices.GetDeviceAtXRNode(UnityEngine.XR.XRNode.Head);
-            bool left = eye == Camera.StereoscopicEye.Left;
-            if (!head.isValid ||
-                !head.TryGetFeatureValue(UnityEngine.XR.CommonUsages.devicePosition, out Vector3 headPosition) ||
-                !head.TryGetFeatureValue(UnityEngine.XR.CommonUsages.deviceRotation, out Quaternion headRotation) ||
-                !head.TryGetFeatureValue(
-                    left ? UnityEngine.XR.CommonUsages.leftEyePosition : UnityEngine.XR.CommonUsages.rightEyePosition,
-                    out Vector3 eyePosition) ||
-                !head.TryGetFeatureValue(
-                    left ? UnityEngine.XR.CommonUsages.leftEyeRotation : UnityEngine.XR.CommonUsages.rightEyeRotation,
-                    out Quaternion eyeRotation))
+            if (!stereo)
             {
-                return false;
+                return;
             }
-            Quaternion toHead = Quaternion.Inverse(headRotation);
-            offset = toHead * (eyePosition - headPosition);
-            rotation = toHead * eyeRotation;
-            return true;
+            int index = eye == Camera.StereoscopicEye.Left ? 0 : 1;
+            if (!hasEyeInCamera[index] || rig.position.sqrMagnitude < EYE_IN_CAMERA_READ_RANGE * EYE_IN_CAMERA_READ_RANGE)
+            {
+                // The view matrix looks down -z: un-flipped it is the inverse of the eye's world pose.
+                Matrix4x4 cameraInEye = Matrix4x4.Scale(new Vector3(1, 1, -1)) * cameraView *
+                    Matrix4x4.TRS(camera.transform.position, camera.transform.rotation, Vector3.one);
+                Matrix4x4 eyeInCamera = cameraInEye.inverse;
+                eyeOffsetInCamera[index] = eyeInCamera.GetColumn(3);
+                eyeRotationInCamera[index] = eyeInCamera.rotation;
+                hasEyeInCamera[index] = true;
+            }
+            offset = eyeOffsetInCamera[index];
+            rotation = eyeRotationInCamera[index];
         }
 
-        // Once, with the panel not held: the panel seen from the eye through the rig has to be where the camera's own
-        // eye view and the panel's world pose put it, or it would sit off from the world in that eye (e. g. a wrong
-        // eye offset, which would be centimetres). Within 1 cm, since the world space matrices themselves are only
+        // Once: the panel seen from the eye through the rig has to be where the camera's own eye view and the panel's
+        // world pose put it, or it would sit off from the world in that eye (e. g. a camera pose in the rig gone
+        // wrong, which would be centimetres). Within 1 cm, since the world space matrices themselves are only
         // precise to about a millimetre 10 km out. If not, the panel stays drawn in world space for the session.
         private void checkPanelInEye(
             Camera.StereoscopicEye eye, Vector3 eyeOffset, Matrix4x4 cameraView, Matrix4x4 view, Matrix4x4 model)
