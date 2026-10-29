@@ -154,7 +154,6 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<bool> renderWorkOncePerFrame;
         private static ConfigEntry<bool> leanUiCameras;
         private static ConfigEntry<bool> mergeUiCameras;
-        private static ConfigEntry<bool> desktopMirrorOff;
         private static ConfigEntry<float> taaSharpenAmmount;
         private static ConfigEntry<float> nearClipPlane;
         private static ConfigEntry<float> vignetteStrength;
@@ -192,7 +191,7 @@ namespace ValheimVRMod.Utilities
         private static ConfigEntry<float> shieldScale;
         private static ConfigEntry<float> maxShieldWidth;
         private static ConfigEntry<float> maxBucklerWidth;
-        private static ConfigEntry<bool> weaponColliderSweep;
+        private static ConfigEntry<int> weaponSweepMaxSteps;
         private static ConfigEntry<bool> movementSecondaryAttack;
         private static ConfigEntry<string> meleeAttackKnockbackDirection;
 
@@ -1003,14 +1002,6 @@ namespace ValheimVRMod.Utilities
                                               " hand now shows over it, and the comfort vignette also darkens the hands. The hands camera then renders" +
                                               " forward, as with HandsCameraForward. The panel is drawn relative to the camera rig, so it doesn't shake" +
                                               " far from the world origin. Turn off to go back to the separate cameras. Applies at once.");
-            desktopMirrorOff = config.Bind("Graphics",
-                                              "DesktopMirrorOff",
-                                              false,
-                                              "Stops drawing the game window on the desktop while in VR: no mirror camera and no VR runtime eye mirror." +
-                                              " The window keeps its last image. Saves the mirror camera's cost per frame. Has no effect in the" +
-                                              " Follow, Spectator and Stabilized mirror modes, which draw the window with a camera of their own." +
-                                              " Applies at once.");
-            desktopMirrorOff.SettingChanged += (sender, e) => VRManager.UpdateMirrorViewMode();
             taaSharpenAmmount = config.Bind("Graphics",
                                               "TAASharpenAmmount",
                                               0.3f,
@@ -1225,19 +1216,21 @@ namespace ValheimVRMod.Utilities
                 1.5f,
                 new ConfigDescription("The max allowed width of a buckler in meters - any buckler wider will be shrinked to fit this width. About 0.3m gives a realistic size.",
                 new AcceptableValueRange<float>(0.05f, 3.0f)));
-            weaponColliderSweep = config.Bind("Motion Control",
-                "WeaponColliderSweep",
-                true,
-                "Also hit what the weapon passed over between two rendered frames. The weapon's hit box is only moved once per frame," +
-                " so at a low frame rate or during a hitch a fast swing can skip right over a target without ever touching it;" +
-                " with this on, the path between the last frame's and this frame's pose is checked as well.");
+            weaponSweepMaxSteps = config.Bind("Motion Control",
+                "WeaponSweepMaxSteps",
+                12,
+                new ConfigDescription(
+                    "Steps of weapon trajectory interpolation between frames for collision detection: " +
+                    "set to 0 to disable; tune up to increase collison sensitity " +
+                    "if you notice that weapon collison fail to register in laggy situations",
+                new AcceptableValueRange<int>(0, 16)));
 
             meleeAttackKnockbackDirection = config.Bind("Motion Control",
                                         "MeleeAttackKnockbackDirection",
                                         "Basic",
                                         new ConfigDescription("Melee Attack Knockback Direction: " +
                                         "Basic - Melee knockback direction away from player position. " +
-                                        "Swing - Melee knockback follow swing direction when hewing and stabbed enemy can be moved by the weapon shortly.",
+                                        "Swing - Melee knockback follow swing direction when hewing and stabbed enemy can be moved by the weapon shortly",
                                         new AcceptableValueList<string>(new string[] { "Basic", "Swing" })));
 
             movementSecondaryAttack = config.Bind("Motion Control",
@@ -1322,11 +1315,6 @@ namespace ValheimVRMod.Utilities
 
         public static VRMirrorViewMode GetMirrorViewMode()
         {
-            if (DesktopMirrorOff())
-            {
-                // Nothing draws the window, neither the runtime's eye mirror nor a camera of the mod's own.
-                return VRMirrorViewMode.None;
-            }
             string mode = mirrorMode.Value;
             switch (mode) {
                 case "NativeRight":
@@ -1548,11 +1536,6 @@ namespace ValheimVRMod.Utilities
         public static bool MergeUiCameras()
         {
             return mergeUiCameras != null && mergeUiCameras.Value;
-        }
-
-        public static bool DesktopMirrorOff()
-        {
-            return desktopMirrorOff != null && desktopMirrorOff.Value;
         }
 
         public static bool UseAmplifyOcclusion()
@@ -2130,9 +2113,9 @@ namespace ValheimVRMod.Utilities
             return maxBucklerWidth.Value;
         }
 
-        public static bool WeaponColliderSweep()
+        public static int WeaponSweepMaxSteps()
         {
-            return weaponColliderSweep.Value;
+            return weaponSweepMaxSteps.Value;
         }
         public static bool MovementSecondaryAttack()
         {
