@@ -75,8 +75,7 @@ namespace ValheimVRMod.Utilities
         void Update()
         {
             mirrorCamera.enabled =
-                !VHVRConfig.NonVrPlayer() && !VHVRConfig.DesktopMirrorOff() &&
-                (VHVRConfig.UseFullWidthMirror(out _) || VHVRConfig.UseSideBySideMirror() || VHVRConfig.UseNoFlatscreenView());
+                !VHVRConfig.NonVrPlayer() && (VHVRConfig.UseFullWidthMirror(out _) || VHVRConfig.UseSideBySideMirror() || VHVRConfig.UseNoFlatscreenView());
         }
 
         void OnDestroy()

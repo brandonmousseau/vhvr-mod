@@ -65,7 +65,6 @@ namespace ValheimVRMod.Scripts
         // this is not a swing but the player being moved.
         private const float MAX_SWEEP_GAP_SECONDS = 0.5f;
         private const float MAX_SWEEP_DISTANCE = 3f;
-        private const int MAX_SWEEP_STEPS = 12;
         private const float MIN_SWEEP_STEP = 0.02f;
         private static readonly Collider[] sweepHits = new Collider[32];
         private static readonly HashSet<Collider> sweptColliders = new HashSet<Collider>();
@@ -566,7 +565,8 @@ namespace ValheimVRMod.Scripts
             lastPoseTime = Time.unscaledTime;
             hasLastPose = true;
 
-            if (!hadLastPose || !VHVRConfig.WeaponColliderSweep() || isHoldingTankard || gap > MAX_SWEEP_GAP_SECONDS)
+            int maxSteps = VHVRConfig.WeaponSweepMaxSteps();
+            if (!hadLastPose || maxSteps <= 0 || isHoldingTankard || gap > MAX_SWEEP_GAP_SECONDS)
             {
                 return;
             }
@@ -579,7 +579,7 @@ namespace ValheimVRMod.Scripts
             // The box is a unit cube scaled by its parent, so its half extents are half its scale.
             Vector3 halfExtents = transform.lossyScale * 0.5f;
             float thickness = Mathf.Max(MIN_SWEEP_STEP, 2 * Mathf.Min(halfExtents.x, Mathf.Min(halfExtents.y, halfExtents.z)));
-            int steps = Mathf.Min(MAX_SWEEP_STEPS, Mathf.FloorToInt(distance / thickness));
+            int steps = Mathf.Min(maxSteps, Mathf.FloorToInt(distance / thickness));
             if (steps <= 0)
             {
                 // The two poses overlap, nothing can have been passed over.
