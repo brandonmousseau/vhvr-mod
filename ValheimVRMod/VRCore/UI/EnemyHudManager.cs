@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.UI;
 using ValheimVRMod.Utilities;
 
@@ -13,6 +14,15 @@ namespace ValheimVRMod.VRCore.UI
         private static EnemyHudManager _instance;
         private Dictionary<Character, HudData> _enemyHuds;
         private Camera _hudCamera;
+
+        // The flat screen camera (Follow, Spectator and Stabilized mirror modes) draws the world space UI in the same
+        // pass as the world, so terrain and pieces in front of an enemy covered its HUD there, while the headset's UI
+        // cameras clear depth first and show it over the world. The HUDs draw with copies of their materials whose
+        // depth test is turned off while that camera renders: the UI, TextMeshPro and the bars' LitGui ("lithud")
+        // shaders all take their ZTest from unity_GUIZTestMode.
+        private static readonly int GUI_ZTEST_MODE = Shader.PropertyToID("unity_GUIZTestMode");
+        private readonly Dictionary<Material, Material> flatscreenOverlayMaterials = new Dictionary<Material, Material>();
+        private bool isFlatscreenOverlayOn;
 
         public static EnemyHudManager instance {  get
             {
@@ -27,6 +37,73 @@ namespace ValheimVRMod.VRCore.UI
         {
             _enemyHuds = new Dictionary<Character, HudData>();
             ensureHudCamera();
+            Camera.onPreCull += onCameraPreCull;
+            Camera.onPostRender += onCameraPostRender;
+        }
+
+        private void onCameraPreCull(Camera camera)
+        {
+            setFlatscreenOverlay(camera != null && camera == VRPlayer.thirdPersonCam);
+        }
+
+        private void onCameraPostRender(Camera camera)
+        {
+            setFlatscreenOverlay(false);
+        }
+
+        private void setFlatscreenOverlay(bool on)
+        {
+            if (isFlatscreenOverlayOn == on)
+            {
+                return;
+            }
+            isFlatscreenOverlayOn = on;
+            int zTest = (int)(on ? CompareFunction.Always : CompareFunction.LessEqual);
+            foreach (Material material in flatscreenOverlayMaterials.Values)
+            {
+                if (material != null)
+                {
+                    material.SetInt(GUI_ZTEST_MODE, zTest);
+                }
+            }
+        }
+
+        // Points every graphic of the HUD at a copy of its material, shared by all HUDs, see GUI_ZTEST_MODE.
+        private void useFlatscreenOverlayMaterials(GameObject gui)
+        {
+            foreach (Graphic graphic in gui.GetComponentsInChildren<Graphic>(true))
+            {
+                // A text's material getter would make an instance of its own, so its shared material is copied instead.
+                if (graphic is TMP_Text text)
+                {
+                    Material textCopy = getFlatscreenOverlayMaterial(text.fontSharedMaterial);
+                    if (textCopy != null)
+                    {
+                        text.fontSharedMaterial = textCopy;
+                    }
+                    continue;
+                }
+                Material copy = getFlatscreenOverlayMaterial(graphic.material);
+                if (copy != null)
+                {
+                    graphic.material = copy;
+                }
+            }
+        }
+
+        private Material getFlatscreenOverlayMaterial(Material source)
+        {
+            if (source == null)
+            {
+                return null;
+            }
+            if (!flatscreenOverlayMaterials.TryGetValue(source, out Material copy) || copy == null)
+            {
+                copy = new Material(source) { name = source.name + " (VHVR enemy HUD)" };
+                copy.SetInt(GUI_ZTEST_MODE, (int)(isFlatscreenOverlayOn ? CompareFunction.Always : CompareFunction.LessEqual));
+                flatscreenOverlayMaterials[source] = copy;
+            }
+            return copy;
         }
 
         private bool ensureHudCamera()
@@ -236,6 +313,7 @@ namespace ValheimVRMod.VRCore.UI
             data.gui.transform.localScale = Vector3.one;
 
             updateGuiLayers(data.gui.transform);
+            useFlatscreenOverlayMaterials(data.gui);
             data.gui.SetActive(true);
             data.hudCanvasRoot = canvasRoot;
             data.healthRoot = data.gui.transform.Find("Health").gameObject; //This is no longer set in the base game
