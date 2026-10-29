@@ -347,43 +347,43 @@ namespace ValheimVRMod.Patches
         [HarmonyPatch(typeof(Player), "PieceRayTest")]
         class Player_PieceRaytest_Patch
         {
-            static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+            static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, MethodBase original)
             {
                 if (VHVRConfig.NonVrPlayer()) {
                     return instructions;
                 }
-                return GetRaycastPatchedInstructions(instructions, 4, nameof(getStartingPositionPlaceMode), nameof(getRayDirectionPlaceMode));
+                return GetRaycastPatchedInstructions(instructions, 4, nameof(getStartingPositionPlaceMode), nameof(getRayDirectionPlaceMode), original);
             }
         }
 
         [HarmonyPatch(typeof(Player), "RemovePiece")]
         class Player_RemovePiece_Patch
         {
-            static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+            static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, MethodBase original)
             {
                 if (VHVRConfig.NonVrPlayer()) {
                     return instructions;
                 }
-                return GetRaycastPatchedInstructions(instructions, 5, nameof(getStartingPositionPlaceMode), nameof(getRayDirectionPlaceMode));
+                return GetRaycastPatchedInstructions(instructions, 5, nameof(getStartingPositionPlaceMode), nameof(getRayDirectionPlaceMode), original);
             }
         }
 
         [HarmonyPatch(typeof(Player), "UpdateWearNTearHover")]
         class Player_UpdateWearNTearHover_Patch
         {
-            static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+            static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, MethodBase original)
             {
                 if (VHVRConfig.NonVrPlayer()) {
                     return instructions;
                 }
-                return GetRaycastPatchedInstructions(instructions, 5, nameof(getStartingPositionPlaceMode), nameof(getRayDirectionPlaceMode));
+                return GetRaycastPatchedInstructions(instructions, 5, nameof(getStartingPositionPlaceMode), nameof(getRayDirectionPlaceMode), original);
             }
         }
 
-        static IEnumerable<CodeInstruction> GetRaycastPatchedInstructions(IEnumerable<CodeInstruction> instructions, int popOffset, string startingPosition, string rayDirection)
+        static IEnumerable<CodeInstruction> GetRaycastPatchedInstructions(IEnumerable<CodeInstruction> instructions, int popOffset, string startingPosition, string rayDirection, MethodBase original = null)
         {
             return Rayscast_VectorReplace_Transpiler.GetRaycastPatchedInstructions(instructions, typeof(Player_RaycastVector_Patches),
-                startingPosition, rayDirection, popOffset);
+                startingPosition, rayDirection, popOffset, original);
         }
 
         static IEnumerable<CodeInstruction> GetRaycastAllPatchedInstructions(IEnumerable<CodeInstruction> instructions, int popOffset, string startingPosition, string rayDirection)
@@ -405,9 +405,10 @@ namespace ValheimVRMod.Patches
                                                                                 Type methodType,
                                                                                 string startingPosition,
                                                                                 string rayDirection,
-                                                                                int popOffset)
+                                                                                int popOffset,
+                                                                                MethodBase original = null)
             {
-                return GetPatchedInstructions(instructions, methodType, startingPosition, rayDirection, popOffset, raycastMethod);
+                return GetPatchedInstructions(instructions, methodType, startingPosition, rayDirection, popOffset, raycastMethod, original);
             }
 
             public static IEnumerable<CodeInstruction> GetRaycastAllPatchedInstructions(IEnumerable<CodeInstruction> instructions,
@@ -424,7 +425,8 @@ namespace ValheimVRMod.Patches
                                                                                 string startingPosition,
                                                                                 string rayDirection,
                                                                                 int popOffset,
-                                                                                MethodInfo raycastMethod)
+                                                                                MethodInfo raycastMethod,
+                                                                                MethodBase patchedMethod = null)
             {
                 if (raycastMethod == null)
                 {
@@ -450,7 +452,12 @@ namespace ValheimVRMod.Patches
                 }
                 if (!foundIndex)
                 {
-                    LogError("Could not find Raycast Method call.");
+                    // Seen when another mod's transpiler on the same method ran first and replaced the call (Ravengates
+                    // swaps it in RemovePiece and UpdateWearNTearHover for a ray that reaches through its gates): the
+                    // method then keeps aiming with the head instead of the hand.
+                    LogError("Could not find Raycast Method call" +
+                        (patchedMethod == null ? "" : " in " + patchedMethod.DeclaringType?.Name + "." + patchedMethod.Name) +
+                        "; another patch may have replaced it, so this ray stays on the head instead of the VR hand.");
                     return instructions;
                 }
                 for (int i = 0; i < original.Count; i++)

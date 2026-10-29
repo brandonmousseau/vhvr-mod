@@ -49,6 +49,15 @@ namespace ValheimVRMod.Scripts
         private Quaternion lastRotation;
         private float lastPoseTime;
         private int lastSweepFrame = -1;
+        // What the box was last placed from and where it was put, see OnRenderObject(): while none of it has changed,
+        // placing it again would give the same pose.
+        private bool hasPlacedPose;
+        private Matrix4x4 placedFromColliderParent;
+        private Matrix4x4 placedUnderPlayer;
+        private Transform placedPlayerTransform;
+        private Vector3 placedLocalPosition;
+        private Quaternion placedLocalRotation;
+        private Vector3 placedLocalScale;
         // Everything the box can be entered by, i.e. all but the mod's own weapon, hand and UI layers.
         private const int SWEEP_LAYER_MASK =
             ~((1 << LayerUtils.VHVR_WEAPON) | LayerUtils.HANDS_LAYER_MASK | LayerUtils.UI_PANEL_LAYER_MASK | LayerUtils.WORLDSPACE_UI_LAYER_MASK);
@@ -489,17 +498,53 @@ namespace ValheimVRMod.Scripts
             {
                 return;
             }
-            transform.SetParent(colliderParent.transform);
-            transform.localRotation = Quaternion.identity;
-            transform.localPosition = Vector3.zero;
-            transform.localScale = Vector3.one;
-            transform.SetParent(Player.m_localPlayer.transform, true);
+            Transform playerTransform = Player.m_localPlayer.transform;
+            if (!isPlacedPoseCurrent(playerTransform))
+            {
+                transform.SetParent(colliderParent.transform);
+                transform.localRotation = Quaternion.identity;
+                transform.localPosition = Vector3.zero;
+                transform.localScale = Vector3.one;
+                transform.SetParent(playerTransform, true);
+                rememberPlacedPose(playerTransform);
+            }
             // Once per frame, whichever camera renders first.
             if (Time.frameCount != lastSweepFrame)
             {
                 lastSweepFrame = Time.frameCount;
                 sweepFromLastPose();
             }
+        }
+
+        // Whether the box is still where placing it again would put it: the same weapon pose (colliderParent), the same
+        // player pose, and nothing has moved the box since. OnRenderObject runs after every camera render, about ten
+        // times a frame in VR, and re-placing the box costs two SetParent calls each time. Exact comparisons, so the
+        // box ends up exactly where it did before; the weapon is posed by LocalWeaponWield in the same callback, in an
+        // order Unity does not fix, so the first render of a frame may place it before the weapon moves and a later
+        // one after, as before.
+        private bool isPlacedPoseCurrent(Transform playerTransform)
+        {
+            if (!hasPlacedPose || !VHVRConfig.RenderWorkOncePerFrame() ||
+                transform.parent != playerTransform || placedPlayerTransform != playerTransform)
+            {
+                return false;
+            }
+            return colliderParent.transform.localToWorldMatrix.Equals(placedFromColliderParent) &&
+                playerTransform.localToWorldMatrix.Equals(placedUnderPlayer) &&
+                transform.localPosition.Equals(placedLocalPosition) &&
+                transform.localRotation.Equals(placedLocalRotation) &&
+                transform.localScale.Equals(placedLocalScale);
+        }
+
+        private void rememberPlacedPose(Transform playerTransform)
+        {
+            hasPlacedPose = true;
+            placedPlayerTransform = playerTransform;
+            placedFromColliderParent = colliderParent.transform.localToWorldMatrix;
+            placedUnderPlayer = playerTransform.localToWorldMatrix;
+            placedLocalPosition = transform.localPosition;
+            placedLocalRotation = transform.localRotation;
+            placedLocalScale = transform.localScale;
         }
 
         // The box is only put where the weapon is once per rendered frame (see OnRenderObject), and the trigger
@@ -592,6 +637,7 @@ namespace ValheimVRMod.Scripts
         public void setColliderParent(MeshFilter meshFilter, Vector3 handPosition, int itemHash, bool isDominantHand)
         {
             hasLastPose = false;
+            hasPlacedPose = false;
             var meshTranform = meshFilter.transform;
             outline = meshTranform.parent.gameObject.GetComponent<Outline>();
             if (outline == null)

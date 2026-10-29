@@ -129,6 +129,8 @@ namespace ValheimVRMod.VRCore.UI
         // What onCameraPreCull() hid from the camera being rendered, for onCameraPostRender() to show again.
         private readonly List<Renderer> hiddenFromCurrentCamera = new List<Renderer>();
         private static VRGUI instance;
+        // The GUI panel camera (VRUICamera) once created, else null.
+        public static Camera uiPanelCamera { get { return instance != null ? instance._uiPanelCamera : null; } }
         private Camera _guiCamera;
         private List<Canvas> _guiCanvases = new List<Canvas>();
         private Canvas _cursorGuiCanvas;
@@ -201,10 +203,21 @@ namespace ValheimVRMod.VRCore.UI
             }
         }
 
+        // The frame the panel was last placed in the render phase, see OnRenderObject().
+        private int lastPanelRenderFrame = -1;
+
         public void OnRenderObject()
         {
             if (ensureGuiCanvas() && !USING_OVERLAY)
             {
+                // Placing the panel gives the same pose after every camera render of a frame, except while it is
+                // recentering, which steps towards its target by the frame time on each call, so its speed as seen
+                // depends on that number of calls: that keeps running after every render, as before.
+                if (!isRecentering && !RenderPhase.ShouldRun(ref lastPanelRenderFrame))
+                {
+                    countTextureUpdate();
+                    return;
+                }
                 updateUiPanel();
                 maybeInitializePointers();
             }
@@ -428,7 +441,13 @@ namespace ValheimVRMod.VRCore.UI
             // is in Update, where the panel still is where the previous frame left it while the pointer has already
             // moved with the player, so the cursor would be off by the travel in between.
             UpdateCursorPosition();
-            if (_guiCanvases.Count > 0 && _guiTexture != null && ++textureUpdateTicker > 128)
+            countTextureUpdate();
+        }
+
+        // Puts the GUI texture back on the panel every 128 calls of OnRenderObject, also those that skip placing it.
+        private void countTextureUpdate()
+        {
+            if (_uiPanel != null && _guiCanvases.Count > 0 && _guiTexture != null && ++textureUpdateTicker > 128)
             {
                 textureUpdateTicker = 0;
                 _uiPanel.GetComponent<Renderer>().material.mainTexture = _guiTexture;
